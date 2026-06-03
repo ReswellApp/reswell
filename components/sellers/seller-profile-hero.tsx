@@ -1,26 +1,25 @@
 "use client"
 
-import type { LucideIcon } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
-import {
-  Calendar,
-  Globe,
-  MapPin,
-  MessageSquare,
-  Package,
-  Phone,
-  ShoppingBag,
-  TrendingUp,
-  Users,
-} from "lucide-react"
+import { formatDistanceToNow } from "date-fns"
+import { Globe, MessageSquare, Phone } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { VerifiedBadge, verifiedSellerBadgeClassName } from "@/components/verified-badge"
+import { VerifiedBadge } from "@/components/verified-badge"
 import { FollowButton } from "@/components/follows/follow-button"
 import { SellerRatingStarRow } from "@/components/seller-rating-stars"
-import { wideShimmer } from "@/lib/image-shimmer"
+import { ShareButton } from "@/components/share-button"
+import {
+  SELLER_PROFILE_BANNER_DEFAULT,
+} from "@/lib/brand-colors"
+import {
+  sellerProfileBannerClassName,
+  sellerProfileBannerImageSizes,
+  sellerProfileShellClassName,
+} from "@/lib/sellers/seller-profile-layout"
+import { cn } from "@/lib/utils"
+
 export type SellerProfileHeroShop = {
   id: string
   seller_slug: string
@@ -29,6 +28,7 @@ export type SellerProfileHeroShop = {
   city: string | null
   bio: string | null
   created_at: string
+  last_active_at?: string | null
   is_shop: boolean | null
   shop_name: string | null
   shop_description: string | null
@@ -41,6 +41,8 @@ export type SellerProfileHeroShop = {
   sales_count: number | null
 }
 
+export type SellerProfileTab = "listings" | "about" | "sold"
+
 type SellerProfileHeroProps = {
   shop: SellerProfileHeroShop
   displayName: string | null | undefined
@@ -49,30 +51,54 @@ type SellerProfileHeroProps = {
   reviewCount: number
   currentListingCount: number
   followerCount: number
+  followingCount: number | null
   isFollowing: boolean
   isOwnProfile: boolean
   isLoggedIn: boolean
+  activeTab: SellerProfileTab
+  onTabChange: (tab: SellerProfileTab) => void
+  soldCount: number
 }
 
-function StatPill({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: LucideIcon
-  label: string
-  value: string | number
-}) {
+function StatColumn({ value, label }: { value: number; label: string }) {
   return (
-    <div className="inline-flex min-w-0 items-center gap-2 rounded-full border border-border/70 bg-background/80 px-3 py-1.5 text-sm shadow-sm backdrop-blur-sm">
-      <Icon className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
-      <span className="truncate">
-        <span className="sr-only">{label}: </span>
-        <span className="font-semibold tabular-nums text-foreground">{value}</span>
-        <span className="text-muted-foreground"> {label}</span>
-      </span>
+    <div className="min-w-0 text-right">
+      <p className="text-base font-bold tabular-nums text-white sm:text-lg lg:text-xl">{value.toLocaleString()}</p>
+      <p className="text-[10px] font-medium text-white/80 sm:text-xs">{label}</p>
     </div>
   )
+}
+
+function ProfileTabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "rounded-full px-4 py-1.5 text-sm font-semibold transition-colors",
+        active
+          ? "bg-white text-foreground shadow-sm"
+          : "text-white/90 hover:bg-white/15 hover:text-white",
+      )}
+    >
+      {children}
+    </button>
+  )
+}
+
+function formatLastActive(lastActiveAt: string | null | undefined): string | null {
+  if (!lastActiveAt?.trim()) return null
+  const date = new Date(lastActiveAt)
+  if (Number.isNaN(date.getTime())) return null
+  return `Active ${formatDistanceToNow(date, { addSuffix: true })}`
 }
 
 export function SellerProfileHero({
@@ -83,18 +109,24 @@ export function SellerProfileHero({
   reviewCount,
   currentListingCount,
   followerCount,
+  followingCount,
   isFollowing,
   isOwnProfile,
   isLoggedIn,
+  activeTab,
+  onTabChange,
+  soldCount,
 }: SellerProfileHeroProps) {
-  const salesCount = shop.sales_count ?? 0
   const avatarSrc = (isShop ? shop.shop_logo_url : shop.avatar_url) || ""
-  const description = shop.shop_description || shop.bio
+  const lastActiveLabel = formatLastActive(shop.last_active_at)
+  const handle = shop.seller_slug ? `@${shop.seller_slug}` : null
+  const hasCustomBanner = Boolean(shop.shop_banner_url?.trim())
+  const customBannerUrl = shop.shop_banner_url?.trim() ?? ""
 
   return (
     <>
-      <div className="border-b border-border/80 bg-muted/15">
-        <div className="container mx-auto max-w-6xl px-4 py-5 sm:px-6">
+      <div className="border-b border-border/80 bg-background">
+        <div className={cn(sellerProfileShellClassName, "py-3 sm:py-4")}>
           <Link
             href="/sellers"
             className="inline-flex text-sm font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
@@ -104,137 +136,146 @@ export function SellerProfileHero({
         </div>
       </div>
 
-      <header className="relative overflow-hidden border-b border-border/80">
-        <div className="relative h-44 sm:h-56 lg:h-64">
-          {shop.shop_banner_url ? (
+      <div className={cn(sellerProfileShellClassName, "pb-6 pt-3 sm:pb-10 sm:pt-4")}>
+        <div
+          className={sellerProfileBannerClassName}
+          style={hasCustomBanner ? undefined : { backgroundColor: SELLER_PROFILE_BANNER_DEFAULT }}
+        >
+          {hasCustomBanner ? (
             <Image
-              src={shop.shop_banner_url}
+              src={customBannerUrl}
               alt=""
               fill
-              sizes="100vw"
+              sizes={sellerProfileBannerImageSizes}
               className="object-cover"
-              placeholder="blur"
-              blurDataURL={wideShimmer}
               priority
             />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-muted/50 to-offwhite" />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-black/10" />
-        </div>
+          ) : null}
 
-        <div className="container relative mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="-mt-14 pb-8 sm:-mt-16 sm:pb-10">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-              <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:gap-5">
-                <Avatar className="h-24 w-24 shrink-0 border-4 border-background shadow-lg ring-2 ring-primary/10 sm:h-28 sm:w-28">
-                  <AvatarImage src={avatarSrc} alt="" />
-                  <AvatarFallback className="bg-primary text-2xl font-semibold text-primary-foreground">
-                    {displayName?.charAt(0).toUpperCase() || "S"}
-                  </AvatarFallback>
-                </Avatar>
-
-                <div className="min-w-0 pb-1">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-                    {isShop ? "Shop" : "Seller"}
-                  </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-2">
-                    <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
-                      {displayName}
-                    </h1>
-                    {shop.shop_verified ? (
-                      <Badge variant="outline" className={verifiedSellerBadgeClassName}>
-                        <VerifiedBadge size="sm" className="-ml-0.5 mr-px" />
-                        Verified
-                      </Badge>
-                    ) : null}
-                    {isShop && !shop.shop_verified ? <Badge variant="secondary">Seller</Badge> : null}
-                  </div>
-
-                  {(shop.city || shop.shop_address) && (
-                    <p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4 shrink-0" aria-hidden />
-                      <span className="truncate">{shop.shop_address || shop.city}</span>
-                    </p>
-                  )}
-
-                  {reviewCount > 0 ? (
-                    <p
-                      className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"
-                      role="img"
-                      aria-label={`Average ${avgRating.toFixed(1)} out of 5 stars from ${reviewCount} reviews`}
-                    >
-                      <SellerRatingStarRow value={avgRating} size="sm" />
-                      <span className="font-semibold tabular-nums text-foreground">{avgRating.toFixed(1)}</span>
-                      <span className="text-muted-foreground">
-                        ({reviewCount} review{reviewCount !== 1 ? "s" : ""})
-                      </span>
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                <FollowButton
-                  sellerId={shop.id}
-                  sellerName={displayName ?? undefined}
-                  sellerSlug={shop.seller_slug || undefined}
-                  sellerCity={shop.city || undefined}
-                  initialFollowing={isFollowing}
-                  initialFollowerCount={followerCount}
-                  isLoggedIn={isLoggedIn}
-                  isOwnProfile={isOwnProfile}
-                  showCount={true}
-                />
-                {shop.shop_website ? (
-                  <Button variant="outline" size="sm" className="rounded-full" asChild>
-                    <a href={shop.shop_website} target="_blank" rel="noopener noreferrer">
-                      <Globe className="mr-1.5 h-3.5 w-3.5" />
-                      Website
-                    </a>
-                  </Button>
-                ) : null}
-                {shop.shop_phone ? (
-                  <Button variant="outline" size="sm" className="rounded-full" asChild>
-                    <a href={`tel:${shop.shop_phone}`}>
-                      <Phone className="mr-1.5 h-3.5 w-3.5" />
-                      Call
-                    </a>
-                  </Button>
-                ) : null}
-                <Button variant="outline" size="sm" className="rounded-full" asChild>
-                  <Link href={`/messages?seller=${shop.id}`}>
-                    <MessageSquare className="mr-1.5 h-3.5 w-3.5" />
-                    Message
-                  </Link>
-                </Button>
-              </div>
+          <div className="relative flex min-h-[inherit] flex-col justify-end px-4 pb-4 pt-4 sm:px-6 sm:pb-5 sm:pt-5 lg:px-8 lg:pb-6 lg:pt-6">
+            <div className="absolute right-4 top-4 flex items-start gap-3 sm:right-5 sm:top-5 sm:gap-5 lg:gap-8">
+              <StatColumn value={currentListingCount} label="Listings" />
+              <StatColumn value={followerCount} label="Followers" />
+              {followingCount != null ? (
+                <StatColumn value={followingCount} label="Following" />
+              ) : (
+                <StatColumn value={soldCount} label="Sold" />
+              )}
             </div>
 
-            <div className="mt-6 flex flex-wrap gap-2">
-              <StatPill icon={TrendingUp} label="sold" value={salesCount} />
-              <StatPill icon={ShoppingBag} label="listed now" value={currentListingCount} />
-              {followerCount > 0 ? (
-                <StatPill icon={Users} label="followers" value={followerCount} />
-              ) : null}
-              <StatPill
-                icon={Calendar}
-                label="on Reswell"
-                value={new Date(shop.created_at).toLocaleDateString("en-US", {
-                  month: "short",
-                  year: "numeric",
-                })}
+            <div className="absolute bottom-4 right-4 sm:bottom-5 sm:right-5">
+              <ShareButton
+                title={displayName ?? "Seller profile"}
+                className="h-9 w-9 rounded-full border-white/30 bg-white/15 text-white hover:bg-white/25 hover:text-white"
+                iconClassName="h-4 w-4"
               />
             </div>
 
-            {description ? (
-              <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-[17px]">
-                {description}
-              </p>
-            ) : null}
+            <div className="min-w-0 max-w-[calc(100%-7rem)] sm:max-w-none">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4 lg:gap-5">
+                  <div className="flex shrink-0 flex-col items-start gap-1.5 sm:gap-2">
+                    <Avatar className="h-[4.5rem] w-[4.5rem] border-4 border-white shadow-md sm:h-24 sm:w-24 lg:h-28 lg:w-28">
+                      <AvatarImage src={avatarSrc} alt="" />
+                      <AvatarFallback className="bg-white text-xl font-semibold text-[#5574AD]">
+                        {displayName?.charAt(0).toUpperCase() || "S"}
+                      </AvatarFallback>
+                    </Avatar>
+                    {lastActiveLabel ? (
+                      <p className="text-xs font-medium text-white/80">{lastActiveLabel}</p>
+                    ) : null}
+                  </div>
+
+                  <div className="min-w-0 pb-0.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl lg:text-3xl">
+                        {displayName}
+                      </h1>
+                      {shop.shop_verified ? (
+                        <VerifiedBadge size="lg" className="fill-white text-[#7F9DD5]" />
+                      ) : null}
+                    </div>
+
+                    {handle ? <p className="mt-0.5 text-sm font-medium text-white/85">{handle}</p> : null}
+
+                    {reviewCount > 0 ? (
+                      <div
+                        className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-white"
+                        role="img"
+                        aria-label={`Average ${avgRating.toFixed(1)} out of 5 stars from ${reviewCount} reviews`}
+                      >
+                        <SellerRatingStarRow value={avgRating} size="sm" />
+                        <span className="font-semibold tabular-nums">({reviewCount})</span>
+                      </div>
+                    ) : null}
+
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <FollowButton
+                        sellerId={shop.id}
+                        sellerName={displayName ?? undefined}
+                        sellerSlug={shop.seller_slug || undefined}
+                        sellerCity={shop.city || undefined}
+                        initialFollowing={isFollowing}
+                        initialFollowerCount={followerCount}
+                        isLoggedIn={isLoggedIn}
+                        isOwnProfile={isOwnProfile}
+                        size="sm"
+                        appearance="profileHero"
+                      />
+                      {!isOwnProfile ? (
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="h-9 w-9 rounded-full border-white/30 bg-white/15 text-white hover:bg-white/25 hover:text-white"
+                          asChild
+                        >
+                          <Link href={`/messages?seller=${shop.id}`} aria-label="Message seller">
+                            <MessageSquare className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      ) : null}
+                      {shop.shop_website ? (
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="h-9 w-9 rounded-full border-white/30 bg-white/15 text-white hover:bg-white/25 hover:text-white"
+                          asChild
+                        >
+                          <a href={shop.shop_website} target="_blank" rel="noopener noreferrer" aria-label="Visit website">
+                            <Globe className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      ) : null}
+                      {shop.shop_phone ? (
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="h-9 w-9 rounded-full border-white/30 bg-white/15 text-white hover:bg-white/25 hover:text-white"
+                          asChild
+                        >
+                          <a href={`tel:${shop.shop_phone}`} aria-label="Call seller">
+                            <Phone className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      ) : null}
+                    </div>
+
+                    <div className="mt-4 inline-flex flex-wrap items-center gap-1 rounded-full bg-black/10 p-1">
+                      <ProfileTabButton active={activeTab === "listings"} onClick={() => onTabChange("listings")}>
+                        Listings
+                      </ProfileTabButton>
+                      <ProfileTabButton active={activeTab === "about"} onClick={() => onTabChange("about")}>
+                        About
+                      </ProfileTabButton>
+                      <ProfileTabButton active={activeTab === "sold"} onClick={() => onTabChange("sold")}>
+                        Sold
+                      </ProfileTabButton>
+                    </div>
+                  </div>
+                </div>
+            </div>
           </div>
         </div>
-      </header>
+      </div>
     </>
   )
 }

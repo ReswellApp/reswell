@@ -1,23 +1,17 @@
 import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { Card, CardContent } from "@/components/ui/card"
 import { resolveDynamicSeo } from "@/lib/seo/resolve-dynamic-seo"
-import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Star, Package } from "lucide-react"
-import { SellerRatingStarRow } from "@/components/seller-rating-stars"
-import { SellerProfileHero } from "@/components/sellers/seller-profile-hero"
-import { FadeInSection } from "@/components/fade-in-section"
-import { ratingStarFilledClassName } from "@/lib/rating-star-styles"
-import { cn } from "@/lib/utils"
+import { SellerProfileView } from "@/components/sellers/seller-profile-view"
+import type { SellerProfileListing } from "@/components/sellers/seller-profile-listings-panel"
+import { deriveSellerDirectoryTileMeta } from "@/lib/sellers/directory-tile-meta"
 import { absoluteUrl } from "@/lib/site-metadata"
 
 const PROFILE_UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 const sellerProfileSelect =
-  "id, seller_slug, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count, follower_count"
+  "id, seller_slug, display_name, avatar_url, location, city, bio, created_at, updated_at, last_active_at, is_shop, shop_name, shop_description, shop_banner_url, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count, follower_count"
 
 function trimUrl(u: string | null | undefined): string | undefined {
   const t = typeof u === "string" ? u.trim() : ""
@@ -133,6 +127,7 @@ export default async function SellerProfilePage({
     bio: string | null
     created_at: string
     updated_at: string
+    last_active_at: string | null
     is_shop: boolean | null
     shop_name: string | null
     shop_description: string | null
@@ -199,13 +194,6 @@ export default async function SellerProfilePage({
   }
   const { data: listings } = await listingsQuery.order("created_at", { ascending: false })
 
-  /**
-   * Fetch reviews received in either direction (buyer→seller and seller→buyer).
-   * The listing owner determines direction: if `listing.user_id === id`, the
-   * reviewed user was the seller (reviews "as seller"); otherwise they were
-   * the buyer (reviews "as buyer"). Both sections render on this page so a
-   * visitor sees the user's full reputation across roles.
-   */
   const { data: reviews } = await supabase
     .from("reviews")
     .select(
@@ -235,12 +223,8 @@ export default async function SellerProfilePage({
   }
 
   const allReviews = (reviews ?? []) as ReviewRow[]
-  const reviewsAsSeller = allReviews.filter(
-    (r) => pickRel(r.listing)?.user_id === id,
-  )
-  const reviewsAsBuyer = allReviews.filter(
-    (r) => pickRel(r.listing)?.user_id !== id,
-  )
+  const reviewsAsSeller = allReviews.filter((r) => pickRel(r.listing)?.user_id === id)
+  const reviewsAsBuyer = allReviews.filter((r) => pickRel(r.listing)?.user_id !== id)
 
   const avgRating =
     allReviews.length > 0
@@ -254,14 +238,13 @@ export default async function SellerProfilePage({
       .from("favorites")
       .select("listing_id")
       .eq("user_id", user.id)
-      .in("listing_id", listings.map((l: any) => l.id))
+      .in("listing_id", listings.map((l) => l.id))
     favoritedIds = (favs ?? []).map((f) => f.listing_id)
   }
 
-  // Follow status for the current user
   const isOwnProfile = user?.id === id
   let isFollowing = false
-  const followerCount = (shop as { follower_count?: number }).follower_count ?? 0
+  const followerCount = shop.follower_count ?? 0
   if (user && !isOwnProfile) {
     const { data: follow } = await supabase
       .from("seller_follows")
@@ -272,18 +255,22 @@ export default async function SellerProfilePage({
     isFollowing = !!follow
   }
 
+  let followingCount: number | null = null
+  if (isOwnProfile) {
+    const { count } = await supabase
+      .from("seller_follows")
+      .select("id", { count: "exact", head: true })
+      .eq("follower_id", id)
+    followingCount = count ?? 0
+  }
+
   const allListings = listings || []
 
-  /** In-flight checkout (reserved) counts as current inventory, not "previous". */
   const inCurrentInventory = (l: (typeof allListings)[number]) =>
     !l.archived_at && (l.status === "active" || l.status === "pending_sale")
 
   const currentListings = allListings.filter(inCurrentInventory)
 
-  /**
-   * Public shop history: never show site-hidden (moderation) rows here, even for the seller.
-   * User-ended / archived unsold listings use status `removed` (see endSellerListing archive).
-   */
   const pastListings = allListings.filter((l) => {
     if (inCurrentInventory(l)) return false
     if (l.hidden_from_site) return false
@@ -291,257 +278,72 @@ export default async function SellerProfilePage({
     return true
   })
 
-  const newListings = currentListings.filter((l) => l.section === "new")
-  const boardListings = currentListings.filter(
-    (l) => l.section === "surfboards"
+  const tileMeta = deriveSellerDirectoryTileMeta(
+    allListings.map((listing) => ({
+      city: listing.city ?? null,
+      state: listing.state ?? null,
+      shipping_available: listing.shipping_available ?? null,
+    })),
   )
-  const totalListings = allListings.length
 
   const isShop = shop.is_shop
-  const displayName = isShop
-    ? shop.shop_name || shop.display_name
-    : shop.display_name
+  const displayName = isShop ? shop.shop_name || shop.display_name : shop.display_name
+  const soldCount = shop.sales_count ?? 0
 
-  return (
-      <main className="flex-1">
-        <SellerProfileHero
-          shop={shop}
-          displayName={displayName}
-          isShop={isShop}
-          avgRating={avgRating}
-          reviewCount={reviewCount}
-          currentListingCount={currentListings.length}
-          followerCount={followerCount}
-          isFollowing={isFollowing}
-          isOwnProfile={isOwnProfile}
-          isLoggedIn={!!user}
-        />
+  function mapListing(listing: (typeof allListings)[number]): SellerProfileListing {
+    return {
+      id: listing.id,
+      slug: listing.slug,
+      user_id: listing.user_id,
+      title: listing.title,
+      price: listing.price,
+      status: listing.status ?? "active",
+      section: listing.section,
+      local_pickup: listing.local_pickup,
+      shipping_available: listing.shipping_available,
+      condition: listing.condition,
+      created_at: listing.created_at,
+      listing_images: listing.listing_images,
+      categories: listing.categories,
+      board_type: listing.board_type,
+    }
+  }
 
-        <div className="container mx-auto max-w-6xl px-4 sm:px-6">
-          <FadeInSection>
-          <ReviewsSection
-            heading="Reviews as a seller"
-            emptyFallback={
-              reviewCount === 0
-                ? "No reviews yet."
-                : "No seller reviews yet."
-            }
-            defaultReviewerLabel="Verified buyer"
-            reviews={reviewsAsSeller}
-          />
-          {reviewsAsBuyer.length > 0 ? (
-            <ReviewsSection
-              heading="Reviews as a buyer"
-              emptyFallback="No buyer reviews yet."
-              defaultReviewerLabel="Verified seller"
-              reviews={reviewsAsBuyer}
-            />
-          ) : null}
-          </FadeInSection>
-
-          <FadeInSection delay={80}>
-          <div className="border-t border-border/80 py-10 sm:py-12">
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-                Shop their listings
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {currentListings.length} active now
-                {totalListings !== currentListings.length
-                  ? ` · ${totalListings} total on profile`
-                  : null}
-              </p>
-            </div>
-            <Tabs defaultValue="all">
-              <TabsList className="h-auto flex-wrap gap-1 bg-muted/40 p-1">
-                <TabsTrigger value="all" className="rounded-full px-4">
-                  All ({currentListings.length})
-                </TabsTrigger>
-                {newListings.length > 0 && (
-                  <TabsTrigger value="new" className="rounded-full px-4">
-                    New ({newListings.length})
-                  </TabsTrigger>
-                )}
-                {boardListings.length > 0 && (
-                  <TabsTrigger value="boards" className="rounded-full px-4">
-                    Boards ({boardListings.length})
-                  </TabsTrigger>
-                )}
-              </TabsList>
-
-              <TabsContent value="all" className="mt-6">
-                <ListingGrid
-                  listings={currentListings}
-                  favoritedIds={favoritedIds}
-                  viewerId={user?.id ?? null}
-                />
-              </TabsContent>
-              <TabsContent value="new" className="mt-6">
-                <ListingGrid
-                  listings={newListings}
-                  favoritedIds={favoritedIds}
-                  viewerId={user?.id ?? null}
-                />
-              </TabsContent>
-              <TabsContent value="boards" className="mt-6">
-                <ListingGrid
-                  listings={boardListings}
-                  favoritedIds={favoritedIds}
-                  viewerId={user?.id ?? null}
-                />
-              </TabsContent>
-            </Tabs>
-          </div>
-          </FadeInSection>
-
-          {pastListings.length > 0 && (
-            <FadeInSection delay={120}>
-            <div className="border-t border-border/80 py-10 sm:py-12">
-              <h2 className="mb-6 flex items-center gap-2 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-                <Package className="h-5 w-5 text-muted-foreground" aria-hidden />
-                Previous &amp; sold
-                <span className="text-sm font-normal text-muted-foreground">
-                  ({pastListings.length})
-                </span>
-              </h2>
-              <ListingGrid
-                listings={pastListings}
-                favoritedIds={favoritedIds}
-                viewerId={user?.id ?? null}
-              />
-            </div>
-            </FadeInSection>
-          )}
-        </div>
-      </main>
-  )
-}
-
-function ReviewsSection({
-  heading,
-  emptyFallback,
-  defaultReviewerLabel,
-  reviews,
-}: {
-  heading: string
-  emptyFallback: string
-  defaultReviewerLabel: string
-  reviews: Array<{
-    id: string
-    rating: number
-    comment: string | null
-    created_at: string
-    reviewer:
-      | { display_name: string | null }
-      | { display_name: string | null }[]
-      | null
-  }>
-}) {
-  return (
-    <div className="py-8 sm:py-10">
-      <h2 className="mb-5 flex items-center gap-2 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-        <Star className={cn("h-5 w-5", ratingStarFilledClassName)} strokeWidth={0} aria-hidden />
-        {heading}
-      </h2>
-      {reviews.length > 0 ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {reviews.map((review) => {
-            const rel = review.reviewer
-            const reviewer = Array.isArray(rel) ? rel[0] : rel
-            const reviewerLabel =
-              reviewer?.display_name?.trim() || defaultReviewerLabel
-            return (
-              <Card key={review.id} className="border-border/80 shadow-soft">
-                <CardContent className="px-4 py-4">
-                  <div className="flex items-center gap-2 text-sm mb-1 flex-wrap">
-                    <span className="font-medium text-foreground">{reviewerLabel}</span>
-                    <span className="text-muted-foreground">·</span>
-                    <span
-                      className="inline-flex items-center"
-                      role="img"
-                      aria-label={`${review.rating} out of 5 stars`}
-                    >
-                      <SellerRatingStarRow value={review.rating} size="md" />
-                    </span>
-                    <span className="text-xs text-muted-foreground ml-auto">
-                      {review.created_at
-                        ? new Date(review.created_at).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })
-                        : null}
-                    </span>
-                  </div>
-                  {review.comment?.trim() ? (
-                    <p className="text-sm text-muted-foreground">{review.comment}</p>
-                  ) : null}
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-      ) : (
-        <p className="text-sm text-muted-foreground">{emptyFallback}</p>
-      )}
-    </div>
-  )
-}
-
-function ListingGrid({
-  listings,
-  favoritedIds,
-  viewerId,
-}: {
-  listings: any[]
-  favoritedIds: string[]
-  viewerId: string | null
-}) {
-  if (listings.length === 0) {
-    return (
-      <div className="rounded-2xl border border-dashed border-border/80 bg-muted/20 py-14 text-center">
-        <Package className="mx-auto h-10 w-10 text-muted-foreground" aria-hidden />
-        <p className="mt-3 text-muted-foreground">No listings in this category yet.</p>
-      </div>
-    )
+  function mapReview(
+    review: ReviewRow,
+    defaultReviewerLabel: string,
+  ) {
+    const reviewer = pickRel(review.reviewer)
+    return {
+      id: review.id,
+      rating: review.rating,
+      comment: review.comment,
+      created_at: review.created_at,
+      reviewerLabel: reviewer?.display_name?.trim() || defaultReviewerLabel,
+    }
   }
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-      {listings.map((listing) => {
-        const statusLabel =
-          !listing.status || listing.status === "active"
-            ? null
-            : listing.status === "sold"
-              ? ("sold" as const)
-              : listing.status === "pending"
-                ? ("pending" as const)
-                : ("ended" as const)
-        return (
-          <HomePeerListingScrollTile
-            key={listing.id}
-            layout="grid"
-            userId={viewerId}
-            isFavorited={favoritedIds.includes(listing.id)}
-            statusLabel={statusLabel}
-            listing={{
-              id: listing.id,
-              slug: listing.slug,
-              user_id: listing.user_id,
-              title: listing.title,
-              price: listing.price,
-              status: listing.status ?? "active",
-              section: listing.section,
-              local_pickup: listing.local_pickup,
-              shipping_available: listing.shipping_available,
-              listing_images: listing.listing_images,
-              categories: listing.categories,
-              board_type: listing.board_type,
-              condition: listing.condition,
-            }}
-          />
-        )
-      })}
-    </div>
+    <SellerProfileView
+      shop={shop}
+      displayName={displayName}
+      isShop={isShop}
+      avgRating={avgRating}
+      reviewCount={reviewCount}
+      currentListingCount={currentListings.length}
+      followerCount={followerCount}
+      followingCount={followingCount}
+      soldCount={soldCount}
+      isFollowing={isFollowing}
+      isOwnProfile={isOwnProfile}
+      isLoggedIn={!!user}
+      currentListings={currentListings.map(mapListing)}
+      pastListings={pastListings.map(mapListing)}
+      favoritedIds={favoritedIds}
+      viewerId={user?.id ?? null}
+      tileMeta={tileMeta}
+      reviewsAsSeller={reviewsAsSeller.map((review) => mapReview(review, "Verified buyer"))}
+      reviewsAsBuyer={reviewsAsBuyer.map((review) => mapReview(review, "Verified seller"))}
+    />
   )
 }

@@ -15,3 +15,6 @@ export const BRAND_OFF_WHITE = "#F9F9F2"
 
 /** Hover / pressed — slightly darker than {@link BRAND_CTA_BLUE}. Tailwind: `hover:bg-[#466091]`. */
 export const BRAND_CTA_BLUE_HOVER = "#466091"
+
+/** Default seller profile header when no custom banner is uploaded. */
+export const SELLER_PROFILE_BANNER_DEFAULT = BRAND_CTA_BLUE

@@ -23,6 +23,12 @@ type Translations = {
       removePhoto: string
       removingPhoto: string
       uploading: string
+      banner: string
+      bannerHint: string
+      changeBanner: string
+      removeBanner: string
+      removingBanner: string
+      bannerDefaultHint: string
       email: string
       emailHint: string
       displayName: string
@@ -112,6 +118,12 @@ const en: Translations = {
       removePhoto: 'Remove photo',
       removingPhoto: 'Removing...',
       uploading: 'Uploading...',
+      banner: 'Profile banner',
+      bannerHint: 'Wide image shown at the top of your public seller profile.',
+      changeBanner: 'Upload banner',
+      removeBanner: 'Remove banner',
+      removingBanner: 'Removing...',
+      bannerDefaultHint: 'Uses the default Reswell blue when no banner is uploaded.',
       email: 'Email',
       emailHint: 'Your email cannot be changed',
       displayName: 'Display Name',
@@ -206,6 +218,12 @@ const es: Translations = {
       removePhoto: 'Quitar foto',
       removingPhoto: 'Quitando...',
       uploading: 'Subiendo...',
+      banner: 'Banner del perfil',
+      bannerHint: 'Imagen ancha en la parte superior de tu perfil público de vendedor.',
+      changeBanner: 'Subir banner',
+      removeBanner: 'Quitar banner',
+      removingBanner: 'Quitando...',
+      bannerDefaultHint: 'Se usa el azul predeterminado de Reswell si no subes un banner.',
       email: 'Correo electrónico',
       emailHint: 'Tu correo no se puede cambiar',
       displayName: 'Nombre público',

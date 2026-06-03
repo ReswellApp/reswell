@@ -28,7 +28,7 @@ interface FollowButtonProps {
   /** Stretch to match sibling outline buttons in a shared flex row (e.g. listing seller actions). */
   fillRow?: boolean
   /** Compact marketplace tile styling (e.g. `/sellers` directory cards). */
-  appearance?: "default" | "directory"
+  appearance?: "default" | "directory" | "profileHero"
 }
 
 export function FollowButton({
@@ -96,11 +96,12 @@ export function FollowButton({
 
   const baseLabel = sellerCity ? `Follow — ${sellerCity}` : "Follow"
   const isDirectory = appearance === "directory"
+  const isProfileHero = appearance === "profileHero"
 
   return (
     <div className={cn("flex items-center gap-2", fillRow && "w-full min-w-0", className)}>
       <Button
-        variant={isDirectory ? "ghost" : following ? "default" : "outline"}
+        variant={isDirectory || isProfileHero ? "ghost" : following ? "default" : "outline"}
         size={size}
         onClick={handleClick}
         disabled={loading}
@@ -109,9 +110,11 @@ export function FollowButton({
         className={cn(
           isDirectory
             ? "h-9 shrink-0 rounded-full px-5 text-sm font-bold shadow-none"
-            : fillRow
-              ? "min-h-touch w-full min-w-0 justify-center"
-              : "min-w-[120px]",
+            : isProfileHero
+              ? "h-9 shrink-0 rounded-full px-5 text-sm font-semibold shadow-none"
+              : fillRow
+                ? "min-h-touch w-full min-w-0 justify-center"
+                : "min-w-[120px]",
           "transition-all duration-150",
           isDirectory &&
             !following &&
@@ -124,11 +127,24 @@ export function FollowButton({
             following &&
             hovering &&
             "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+          isProfileHero &&
+            !following &&
+            "bg-white text-listingHeart hover:bg-white/90",
+          isProfileHero &&
+            following &&
+            !hovering &&
+            "bg-white/90 text-listingHeart hover:bg-white",
+          isProfileHero &&
+            following &&
+            hovering &&
+            "bg-destructive text-destructive-foreground hover:bg-destructive/90",
           !isDirectory &&
+            !isProfileHero &&
             following &&
             !hovering &&
             "bg-foreground text-background hover:bg-foreground/90",
           !isDirectory &&
+            !isProfileHero &&
             following &&
             hovering &&
             "bg-destructive hover:bg-destructive/90 border-destructive text-destructive-foreground",
@@ -136,25 +152,25 @@ export function FollowButton({
       >
         {loading ? (
           <>
-            {!isDirectory ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-            {following ? "…" : isDirectory ? "Follow" : "Following…"}
+            {!isDirectory && !isProfileHero ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+            {following ? "…" : isDirectory || isProfileHero ? "Follow" : "Following…"}
           </>
         ) : following ? (
           hovering ? (
             <>
-              {!isDirectory ? <UserMinus className="mr-1.5 h-4 w-4" /> : null}
-              {isDirectory ? "Unfollow" : "Unfollow"}
+              {!isDirectory && !isProfileHero ? <UserMinus className="mr-1.5 h-4 w-4" /> : null}
+              Unfollow
             </>
           ) : (
             <>
-              {!isDirectory ? <UserCheck className="mr-1.5 h-4 w-4" /> : null}
+              {!isDirectory && !isProfileHero ? <UserCheck className="mr-1.5 h-4 w-4" /> : null}
               Following
             </>
           )
         ) : (
           <>
-            {!isDirectory ? <UserPlus className="mr-1.5 h-4 w-4" /> : null}
-            {isDirectory ? "Follow" : baseLabel}
+            {!isDirectory && !isProfileHero ? <UserPlus className="mr-1.5 h-4 w-4" /> : null}
+            {isDirectory || isProfileHero ? "Follow" : baseLabel}
           </>
         )}
       </Button>

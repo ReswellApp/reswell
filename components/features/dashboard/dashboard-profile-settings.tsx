@@ -13,7 +13,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ProfileAddressesManager } from "@/components/profile-addresses-manager"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Check, Loader2, Save, LogOut, Camera, User, KeyRound } from "lucide-react"
+import Image from "next/image"
+import { Check, Loader2, Save, LogOut, Camera, User, KeyRound, ImageIcon } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "sonner"
 import { validateDisplayName } from "@/lib/display-name-validation"
@@ -21,6 +22,8 @@ import { useLocale } from "@/components/locale-provider"
 import { revalidateListingDetailAfterProfileUpdate } from "@/app/actions/listing-detail-cache"
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
 import { PROFILE_AVATAR_MAX_INPUT_BYTES } from "@/lib/validations/profileAvatar"
+import { PROFILE_BANNER_MAX_INPUT_BYTES } from "@/lib/validations/profileBanner"
+import { SELLER_PROFILE_BANNER_DEFAULT } from "@/lib/brand-colors"
 import { cn } from "@/lib/utils"
 import { buildPasswordRecoveryCallbackUrl } from "@/lib/auth/password-recovery-callback-url"
 import { ProfileChangePasswordSection } from "@/components/features/dashboard/profile-change-password-section"
@@ -30,6 +33,7 @@ interface Profile {
   email: string
   display_name: string
   avatar_url: string | null
+  shop_banner_url: string | null
   location: string | null
   city: string | null
   bio: string | null
@@ -45,8 +49,11 @@ export function DashboardProfileSettings() {
   const [saving, setSaving] = useState(false)
   const [profileSavedFlash, setProfileSavedFlash] = useState(false)
   const [avatarSavedFlash, setAvatarSavedFlash] = useState(false)
+  const [bannerSavedFlash, setBannerSavedFlash] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [removingAvatar, setRemovingAvatar] = useState(false)
+  const [uploadingBanner, setUploadingBanner] = useState(false)
+  const [removingBanner, setRemovingBanner] = useState(false)
   const [resetPasswordSending, setResetPasswordSending] = useState(false)
   const router = useRouter()
   const supabase = createClient()
@@ -205,6 +212,82 @@ export function DashboardProfileSettings() {
     }
   }
 
+  async function handleBannerUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !profile) return
+
+    if (file.size > PROFILE_BANNER_MAX_INPUT_BYTES) {
+      toast.error(
+        `Image must be under ${Math.round(PROFILE_BANNER_MAX_INPUT_BYTES / (1024 * 1024))}MB`,
+      )
+      return
+    }
+
+    setUploadingBanner(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const res = await fetch("/api/profile/banner", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      })
+
+      const json = (await res.json()) as { data?: { bannerUrl: string }; error?: string }
+
+      if (!res.ok) {
+        throw new Error(json.error || "Upload failed")
+      }
+
+      const bannerUrl = json.data?.bannerUrl
+      if (!bannerUrl) throw new Error("Missing banner URL")
+
+      setProfile({ ...profile, shop_banner_url: bannerUrl })
+      setBannerSavedFlash(true)
+      window.setTimeout(() => setBannerSavedFlash(false), 2000)
+      void revalidateListingDetailAfterProfileUpdate()
+      router.refresh()
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to upload banner"
+      console.error("Banner upload error:", message)
+      toast.error(message)
+    } finally {
+      setUploadingBanner(false)
+      e.target.value = ""
+    }
+  }
+
+  async function handleRemoveBanner() {
+    if (!profile?.shop_banner_url) return
+
+    setRemovingBanner(true)
+    try {
+      const res = await fetch("/api/profile/banner", {
+        method: "DELETE",
+        credentials: "include",
+      })
+
+      const json = (await res.json()) as { data?: { removed: boolean }; error?: string }
+
+      if (!res.ok) {
+        throw new Error(json.error || "Remove failed")
+      }
+
+      setProfile({ ...profile, shop_banner_url: null })
+      setBannerSavedFlash(true)
+      window.setTimeout(() => setBannerSavedFlash(false), 2000)
+      void revalidateListingDetailAfterProfileUpdate()
+      router.refresh()
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to remove banner"
+      console.error("Banner remove error:", message)
+      toast.error(message)
+    } finally {
+      setRemovingBanner(false)
+    }
+  }
+
   async function handleSendPasswordReset() {
     const acctStrings = t("settings").account
     if (!profile?.email) {
@@ -344,6 +427,82 @@ export function DashboardProfileSettings() {
                       </button>
                     ) : null}
                   </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-foreground">{p.banner}</p>
+                  <p className="text-xs text-muted-foreground">{p.bannerHint}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{p.bannerDefaultHint}</p>
+                </div>
+                <div className="relative group overflow-hidden rounded-xl border border-border">
+                  <div
+                    className="relative aspect-[4/1] w-full min-h-[88px] sm:min-h-[104px]"
+                    style={
+                      profile.shop_banner_url?.trim()
+                        ? undefined
+                        : { backgroundColor: SELLER_PROFILE_BANNER_DEFAULT }
+                    }
+                  >
+                    {profile.shop_banner_url ? (
+                      <Image
+                        src={profile.shop_banner_url}
+                        alt=""
+                        fill
+                        sizes="(max-width: 768px) 100vw, 640px"
+                        className="object-cover"
+                      />
+                    ) : null}
+                    <label
+                      htmlFor="banner-upload"
+                      className="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
+                    >
+                      {uploadingBanner ? (
+                        <Loader2 className="h-6 w-6 animate-spin text-white" />
+                      ) : (
+                        <ImageIcon className="h-6 w-6 text-white" />
+                      )}
+                    </label>
+                    <input
+                      id="banner-upload"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
+                      className="hidden"
+                      onChange={handleBannerUpload}
+                      disabled={uploadingBanner || removingBanner}
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  {bannerSavedFlash ? (
+                    <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400" role="status">
+                      Updated
+                    </p>
+                  ) : null}
+                  <label
+                    htmlFor="banner-upload"
+                    className={cn(
+                      "inline-flex items-center text-xs font-medium text-primary hover:underline",
+                      uploadingBanner || removingBanner
+                        ? "cursor-not-allowed opacity-60"
+                        : "cursor-pointer",
+                    )}
+                  >
+                    {uploadingBanner ? p.uploading : p.changeBanner}
+                  </label>
+                  {profile.shop_banner_url ? (
+                    <button
+                      type="button"
+                      onClick={handleRemoveBanner}
+                      disabled={uploadingBanner || removingBanner}
+                      className="inline-flex items-center text-xs font-medium text-muted-foreground underline-offset-4 hover:text-destructive hover:underline disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:text-muted-foreground disabled:hover:no-underline"
+                    >
+                      {removingBanner ? p.removingBanner : p.removeBanner}
+                    </button>
+                  ) : null}
                 </div>
               </div>
 
