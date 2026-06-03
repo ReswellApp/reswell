@@ -19,6 +19,7 @@ import {
   orderStatusLabel,
 } from "@/lib/order-status"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import { REAL_MARKETPLACE_PURCHASES_FILTER } from "@/lib/order-admin-test"
 import { LocalDateOnly } from "@/components/ui/local-datetime"
 import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
 import {
@@ -91,6 +92,7 @@ export function BuyerPurchasesTab() {
       `
       )
       .eq("buyer_id", user.id)
+      .match(REAL_MARKETPLACE_PURCHASES_FILTER)
       .in("status", [...ORDER_STATUS_LIST])
       .order("created_at", { ascending: false })
 

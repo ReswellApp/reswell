@@ -22,6 +22,7 @@ import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
 import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import { ReviewSellerControls } from "@/components/review-seller-controls"
 import { OrdersListRealtimeRefresh } from "@/components/order-realtime-refresh"
+import { REAL_MARKETPLACE_PURCHASES_FILTER } from "@/lib/order-admin-test"
 
 export const metadata = privatePageMetadata({
   title: "Purchases — Reswell",
@@ -147,6 +148,7 @@ export default async function PurchasesPage() {
     `
     )
     .eq("buyer_id", user.id)
+    .match(REAL_MARKETPLACE_PURCHASES_FILTER)
     .in("status", [...ORDER_STATUS_LIST])
     .order("created_at", { ascending: false })
 

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Package, Truck, MapPin } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
+import { REAL_MARKETPLACE_PURCHASES_FILTER } from "@/lib/order-admin-test"
 import {
   orderStatusBadgeVariant,
   orderStatusIsRefunded,
@@ -184,6 +185,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
     )
     .eq("id", id)
     .eq("buyer_id", user.id)
+    .match(REAL_MARKETPLACE_PURCHASES_FILTER)
     .maybeSingle()
 
   if (error || !row) {
