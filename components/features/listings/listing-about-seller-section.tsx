@@ -18,6 +18,10 @@ import { ratingStarEmptyClassName, ratingStarFilledClassName } from "@/lib/ratin
 import { cn } from "@/lib/utils"
 import { getPublicSellerDisplayName } from "@/lib/listing-labels"
 import {
+  resolveSellerProfileDisplayImageUrl,
+  type ListingImageSourcePick,
+} from "@/lib/sellers/profile-display-image"
+import {
   reswellProtectionCardClassName,
   reswellProtectionTrustRibbonColumnDividerClassName,
 } from "@/lib/reswell-protection-surface"
@@ -157,6 +161,8 @@ interface ListingAboutSellerSectionProps {
   profiles: {
     id: string
     avatar_url?: string | null
+    is_shop?: boolean | null
+    shop_logo_url?: string | null
     location?: string | null
     created_at?: string | null
     display_name?: string | null
@@ -175,6 +181,8 @@ interface ListingAboutSellerSectionProps {
   previewReviews: (SellerReviewPreviewRow & { reviewer?: ReviewerEmbed })[]
   /** When false, omit the trust ribbon (e.g. rendered elsewhere on the PDP). */
   showTrustRibbon?: boolean
+  /** Listing photos when the seller has no profile image (e.g. current PDP listing). */
+  listingImageFallbacks?: ListingImageSourcePick[]
 }
 
 /** Reverb-style “About the seller” rail (profile, accordions, trust ribbon). */
@@ -191,9 +199,17 @@ export function ListingAboutSellerSection({
   itemsSold,
   previewReviews,
   showTrustRibbon = true,
+  listingImageFallbacks,
 }: ListingAboutSellerSectionProps) {
   const displayName = getPublicSellerDisplayName(profiles)
-  const avatarSrc = profiles?.avatar_url ?? ""
+  const avatarSrc = resolveSellerProfileDisplayImageUrl(
+    {
+      is_shop: profiles?.is_shop,
+      shop_logo_url: profiles?.shop_logo_url,
+      avatar_url: profiles?.avatar_url,
+    },
+    listingImageFallbacks,
+  )
   const locationLine = profiles?.location?.trim() || null
   const effectiveReviewCount = Math.max(reviewCount, previewReviews.length)
 

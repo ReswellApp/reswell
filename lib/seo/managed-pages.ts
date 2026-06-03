@@ -184,9 +184,9 @@ export const MANAGED_PAGES: ManagedPage[] = [
     path: "/brands",
   }),
   page("sellers", "marketplace", "Sellers directory", {
-    title: "Surf sellers — Reswell",
+    title: "Explore sellers — Reswell",
     description:
-      "Browse local surf sellers on Reswell — shop profiles, verified shops, and peer listings near you.",
+      "Explore surf sellers on Reswell — support fellow surfers and find shops near you or who ship to your area.",
     path: "/sellers",
   }),
   page("surfers", "marketplace", "Surfers directory", {

@@ -355,6 +355,7 @@ export async function SurfboardListingDetailPage({
   const aboutSellerSection = (
     <ListingAboutSellerSection
       profiles={board.profiles as AboutSellerProfilesProp}
+      listingImageFallbacks={[{ listing_images: board.listing_images }]}
       sellerProfileHref={sellerProfileHref(board.profiles)}
       messageHrefAuthenticated={`/messages/new?user=${board.user_id}&listing=${board.id}`}
       messageHrefLoginRedirect={`/auth/login?redirect=${encodeURIComponent(listingDetailHref(board))}`}

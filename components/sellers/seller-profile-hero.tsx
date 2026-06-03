@@ -1,7 +1,6 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
 import { formatDistanceToNow } from "date-fns"
 import { Globe, MessageSquare, Phone } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -15,9 +14,12 @@ import {
 } from "@/lib/brand-colors"
 import {
   sellerProfileBannerClassName,
-  sellerProfileBannerImageSizes,
   sellerProfileShellClassName,
 } from "@/lib/sellers/seller-profile-layout"
+import {
+  resolveSellerProfileDisplayImageUrl,
+  type ListingImageSourcePick,
+} from "@/lib/sellers/profile-display-image"
 import { cn } from "@/lib/utils"
 
 export type SellerProfileHeroShop = {
@@ -58,6 +60,8 @@ type SellerProfileHeroProps = {
   activeTab: SellerProfileTab
   onTabChange: (tab: SellerProfileTab) => void
   soldCount: number
+  /** Active and sold listings used when profile photo / shop logo are missing. */
+  listingImageFallbacks?: ListingImageSourcePick[]
 }
 
 function StatColumn({ value, label }: { value: number; label: string }) {
@@ -116,13 +120,18 @@ export function SellerProfileHero({
   activeTab,
   onTabChange,
   soldCount,
+  listingImageFallbacks,
 }: SellerProfileHeroProps) {
-  const avatarSrc = (isShop ? shop.shop_logo_url : shop.avatar_url) || ""
+  const avatarSrc = resolveSellerProfileDisplayImageUrl(
+    {
+      is_shop: isShop,
+      shop_logo_url: shop.shop_logo_url,
+      avatar_url: shop.avatar_url,
+    },
+    listingImageFallbacks,
+  )
   const lastActiveLabel = formatLastActive(shop.last_active_at)
   const handle = shop.seller_slug ? `@${shop.seller_slug}` : null
-  const hasCustomBanner = Boolean(shop.shop_banner_url?.trim())
-  const customBannerUrl = shop.shop_banner_url?.trim() ?? ""
-
   return (
     <>
       <div className="border-b border-border/80 bg-background">
@@ -139,19 +148,8 @@ export function SellerProfileHero({
       <div className={cn(sellerProfileShellClassName, "pb-6 pt-3 sm:pb-10 sm:pt-4")}>
         <div
           className={sellerProfileBannerClassName}
-          style={hasCustomBanner ? undefined : { backgroundColor: SELLER_PROFILE_BANNER_DEFAULT }}
+          style={{ backgroundColor: SELLER_PROFILE_BANNER_DEFAULT }}
         >
-          {hasCustomBanner ? (
-            <Image
-              src={customBannerUrl}
-              alt=""
-              fill
-              sizes={sellerProfileBannerImageSizes}
-              className="object-cover"
-              priority
-            />
-          ) : null}
-
           <div className="relative flex min-h-[inherit] flex-col justify-end px-4 pb-4 pt-4 sm:px-6 sm:pb-5 sm:pt-5 lg:px-8 lg:pb-6 lg:pt-6">
             <div className="absolute right-4 top-4 flex items-start gap-3 sm:right-5 sm:top-5 sm:gap-5 lg:gap-8">
               <StatColumn value={currentListingCount} label="Listings" />
@@ -209,29 +207,30 @@ export function SellerProfileHero({
                     ) : null}
 
                     <div className="mt-4 flex flex-wrap items-center gap-2">
-                      <FollowButton
-                        sellerId={shop.id}
-                        sellerName={displayName ?? undefined}
-                        sellerSlug={shop.seller_slug || undefined}
-                        sellerCity={shop.city || undefined}
-                        initialFollowing={isFollowing}
-                        initialFollowerCount={followerCount}
-                        isLoggedIn={isLoggedIn}
-                        isOwnProfile={isOwnProfile}
-                        size="sm"
-                        appearance="profileHero"
-                      />
                       {!isOwnProfile ? (
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-9 w-9 rounded-full border-white/30 bg-white/15 text-white hover:bg-white/25 hover:text-white"
-                          asChild
-                        >
-                          <Link href={`/messages?seller=${shop.id}`} aria-label="Message seller">
-                            <MessageSquare className="h-4 w-4" />
-                          </Link>
-                        </Button>
+                        <>
+                          <FollowButton
+                            sellerId={shop.id}
+                            sellerName={displayName ?? undefined}
+                            sellerSlug={shop.seller_slug || undefined}
+                            sellerCity={shop.city || undefined}
+                            initialFollowing={isFollowing}
+                            initialFollowerCount={followerCount}
+                            isLoggedIn={isLoggedIn}
+                            size="sm"
+                            appearance="profileHero"
+                          />
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="h-9 w-9 rounded-full border-white/30 bg-white/15 text-white hover:bg-white/25 hover:text-white"
+                            asChild
+                          >
+                            <Link href={`/messages?seller=${shop.id}`} aria-label="Message seller">
+                              <MessageSquare className="h-4 w-4" />
+                            </Link>
+                          </Button>
+                        </>
                       ) : null}
                       {shop.shop_website ? (
                         <Button

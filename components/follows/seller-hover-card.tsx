@@ -15,6 +15,7 @@ import { getFollowStatusForSeller } from "@/app/actions/follows"
 import { listingDetailHref } from "@/lib/listing-href"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { ratingStarFilledClassName } from "@/lib/rating-star-styles"
+import { resolveSellerProfileDisplayImageUrl } from "@/lib/sellers/profile-display-image"
 import { cn } from "@/lib/utils"
 
 interface SellerHoverCardProps {
@@ -134,7 +135,14 @@ export function SellerHoverCard({
   }, [])
 
   const displayName = seller?.shop_name || seller?.display_name || sellerName
-  const avatarSrc = seller?.shop_logo_url || seller?.avatar_url || ""
+  const avatarSrc = resolveSellerProfileDisplayImageUrl(
+    {
+      is_shop: seller?.is_shop,
+      shop_logo_url: seller?.shop_logo_url,
+      avatar_url: seller?.avatar_url,
+    },
+    listings,
+  )
   const location = seller?.shop_address || seller?.city || sellerCity
   const shopProfilePath = sellerProfileHref({
     seller_slug: seller?.seller_slug ?? sellerSlugProp,

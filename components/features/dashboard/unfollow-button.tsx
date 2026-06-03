@@ -44,7 +44,7 @@ export function UnfollowButton({ sellerId, sellerName, followId: _followId }: Un
       size="sm"
       onClick={handleUnfollow}
       disabled={loading}
-      className="text-destructive border-destructive/40 hover:bg-destructive/10"
+      className="border-[#5574AD]/40 text-[#5574AD] hover:border-[#5574AD] hover:bg-[#5574AD] hover:text-white"
     >
       {loading ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" />

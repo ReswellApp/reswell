@@ -13,6 +13,7 @@ import {
   sellerDirectoryMosaicHasRenderableImage,
   type SellerDirectoryMosaicSlot,
 } from "@/lib/sellers/directory-mosaic-images"
+import { resolveSellerProfileDisplayImageUrl } from "@/lib/sellers/profile-display-image"
 import type { SellerDirectoryTileMeta } from "@/lib/sellers/directory-tile-meta"
 import { cn } from "@/lib/utils"
 
@@ -78,13 +79,13 @@ function ListingMosaicImage({
   }
 
   return (
-    <div className={cn("relative overflow-hidden bg-muted", className)}>
+    <div className={cn("relative min-h-0 overflow-hidden bg-muted", className)}>
       <Image
         src={slot.src}
         alt={slot.alt}
         fill
         sizes={sizes}
-        className="object-cover"
+        className="object-cover object-center"
         unoptimized={listingImageShouldBypassOptimization(slot.src)}
         placeholder="blur"
         blurDataURL={wideShimmer}
@@ -118,21 +119,21 @@ function SellerDirectoryMosaic({
       href={href}
       className="block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)] grid-rows-2 gap-[2px] bg-white p-[2px]">
+      <div className="grid h-[152px] grid-cols-[minmax(0,2fr)_minmax(0,1fr)] grid-rows-2 gap-0 overflow-hidden rounded-t-[16px] sm:h-[172px]">
         <ListingMosaicImage
           slot={slots[0]!}
-          className="col-span-1 row-span-2 min-h-[152px] rounded-tl-[16px] sm:min-h-[172px]"
+          className="col-span-1 row-span-2 h-full min-h-0"
           sizes="(max-width: 640px) 55vw, 220px"
           priority
         />
         <ListingMosaicImage
           slot={slots[1]!}
-          className="min-h-[75px] rounded-tr-[16px] sm:min-h-[85px]"
+          className="h-full min-h-0"
           sizes="(max-width: 640px) 28vw, 110px"
         />
         <ListingMosaicImage
           slot={slots[2]!}
-          className="min-h-[75px] sm:min-h-[85px]"
+          className="h-full min-h-0"
           sizes="(max-width: 640px) 28vw, 110px"
         />
       </div>
@@ -160,7 +161,7 @@ export function SellerDirectoryCard({
   className,
 }: SellerDirectoryCardProps) {
   const label = sellerLabel(shop)
-  const avatarSrc = shop.shop_logo_url || shop.avatar_url || ""
+  const avatarSrc = resolveSellerProfileDisplayImageUrl(shop, thumbs)
   const href = sellerProfileHref(shop)
   const mosaicSlots = buildSellerDirectoryMosaicSlots(thumbs, shop)
 

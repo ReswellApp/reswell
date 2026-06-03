@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { MapPin, Star } from "lucide-react"
+import { MapPin, Star, Truck } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   SellerProfileHero,
@@ -152,6 +152,7 @@ export function SellerProfileView({
         activeTab={activeTab}
         onTabChange={setActiveTab}
         soldCount={soldCount}
+        listingImageFallbacks={[...currentListings, ...pastListings]}
       />
 
       <div className={cn(sellerProfileShellClassName, "pb-10 sm:pb-14 lg:pb-16")}>
@@ -176,7 +177,11 @@ export function SellerProfileView({
         {activeTab === "about" ? (
           <FadeInSection>
             <div className="space-y-10">
-              {(description || shop.city || shop.shop_address) && (
+              {(description ||
+                shop.city ||
+                shop.shop_address ||
+                tileMeta.offersShipping ||
+                tileMeta.locatedInLabel) && (
                 <section className="space-y-4">
                   <h2 className="text-lg font-semibold tracking-tight text-foreground sm:text-xl">About</h2>
                   {description ? (
@@ -188,6 +193,21 @@ export function SellerProfileView({
                       <span>{shop.shop_address || shop.city}</span>
                     </p>
                   )}
+                  {tileMeta.offersShipping ? (
+                    <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <Truck className="h-4 w-4 shrink-0" aria-hidden />
+                      <span>
+                        {tileMeta.shipFromState
+                          ? `Ships from ${tileMeta.shipFromState}. Seller offers shipping on select listings.`
+                          : "Seller offers shipping on select listings."}
+                      </span>
+                    </p>
+                  ) : tileMeta.locatedInLabel ? (
+                    <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <MapPin className="h-4 w-4 shrink-0" aria-hidden />
+                      <span>{tileMeta.locatedInLabel}. Local pickup may be available.</span>
+                    </p>
+                  ) : null}
                   <p className="text-sm text-muted-foreground">
                     Member since{" "}
                     {new Date(shop.created_at).toLocaleDateString("en-US", {

@@ -206,18 +206,12 @@ export default async function SellersPage({
             <SellersDirectoryAdminBar />
           </div>
           <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm ring-1 ring-primary/10">
-              <Store className="h-6 w-6" aria-hidden />
-            </div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              Reswell marketplace
-            </p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl text-balance">
-              Meet the sellers
+            <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl text-balance">
+              Explore sellers on Reswell
             </h1>
-            <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground text-pretty sm:text-base">
-              Discover local shops and surfers with boards and gear listed now — ranked by sales and what they have in
-              stock.
+            <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground text-pretty sm:text-base">
+              Every board you buy on Reswell supports another surfer just like you. Browse profiles below to find
+              sellers near you or who offer shipping to your area.
             </p>
             {orderedShops.length > 0 ? (
               <p className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/80 px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur-sm">

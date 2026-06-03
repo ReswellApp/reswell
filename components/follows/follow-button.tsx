@@ -97,6 +97,9 @@ export function FollowButton({
   const baseLabel = sellerCity ? `Follow — ${sellerCity}` : "Follow"
   const isDirectory = appearance === "directory"
   const isProfileHero = appearance === "profileHero"
+  /** Matches seller profile banner ({@link SELLER_PROFILE_BANNER_DEFAULT}). */
+  const unfollowHoverClasses =
+    "border-[#5574AD] bg-[#5574AD] text-white hover:border-[#466091] hover:bg-[#466091] hover:text-white"
 
   return (
     <div className={cn("flex items-center gap-2", fillRow && "w-full min-w-0", className)}>
@@ -126,7 +129,7 @@ export function FollowButton({
           isDirectory &&
             following &&
             hovering &&
-            "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+            unfollowHoverClasses,
           isProfileHero &&
             !following &&
             "bg-white text-listingHeart hover:bg-white/90",
@@ -137,7 +140,7 @@ export function FollowButton({
           isProfileHero &&
             following &&
             hovering &&
-            "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+            unfollowHoverClasses,
           !isDirectory &&
             !isProfileHero &&
             following &&
@@ -147,7 +150,7 @@ export function FollowButton({
             !isProfileHero &&
             following &&
             hovering &&
-            "bg-destructive hover:bg-destructive/90 border-destructive text-destructive-foreground",
+            unfollowHoverClasses,
         )}
       >
         {loading ? (

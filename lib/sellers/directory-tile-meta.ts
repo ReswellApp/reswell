@@ -8,6 +8,7 @@ export type SellerListingForTileMeta = {
 
 export type SellerDirectoryTileMeta = {
   offersShipping: boolean
+  /** Location fragment after "Ships from" (e.g. "San Diego, CA" or "CA"). */
   shipFromState: string | null
   shippingLine: string | null
   locatedInLabel: string | null
@@ -23,38 +24,76 @@ function normalizeSellerDirectoryState(raw: string | null | undefined): string |
   return toUsStateCode(trimmed) ?? null
 }
 
-function formatLocatedIn(state: string | null | undefined): string | null {
-  const s = normalizeSellerDirectoryState(state)
-  if (s) return `Located in ${s}`
+function trimCity(raw: string | null | undefined): string | null {
+  const trimmed = typeof raw === "string" ? raw.trim() : ""
+  return trimmed.length > 0 ? trimmed : null
+}
+
+/** "San Diego, CA" when both exist; otherwise whichever part is available. */
+function formatLocationCityState(city: string | null, state: string | null): string | null {
+  const normalizedState = normalizeSellerDirectoryState(state)
+  const normalizedCity = trimCity(city)
+  if (normalizedCity && normalizedState) return `${normalizedCity}, ${normalizedState}`
+  if (normalizedState) return normalizedState
+  if (normalizedCity) return normalizedCity
   return null
 }
 
-function resolvePrimaryListingState(listings: SellerListingForTileMeta[]): string | null {
-  const stateCounts = new Map<string, number>()
+function formatLocatedIn(city: string | null, state: string | null): string | null {
+  const location = formatLocationCityState(city, state)
+  if (location) return `Located in ${location}`
+  return null
+}
+
+type ListingLocationPair = {
+  city: string | null
+  state: string | null
+}
+
+function listingLocationPair(listing: SellerListingForTileMeta): ListingLocationPair | null {
+  const city = trimCity(listing.city)
+  const state = normalizeSellerDirectoryState(listing.state)
+  if (!city && !state) return null
+  return { city, state }
+}
+
+function locationPairKey(pair: ListingLocationPair): string {
+  return `${pair.city ?? ""}|${pair.state ?? ""}`
+}
+
+/** Most common city/state among listings; ties favor the first seen pair. */
+function resolvePrimaryListingLocation(listings: SellerListingForTileMeta[]): ListingLocationPair | null {
+  const pairCounts = new Map<string, { pair: ListingLocationPair; count: number }>()
+
   for (const listing of listings) {
-    const state = normalizeSellerDirectoryState(listing.state)
-    if (state) {
-      stateCounts.set(state, (stateCounts.get(state) ?? 0) + 1)
-    }
+    const pair = listingLocationPair(listing)
+    if (!pair) continue
+    const key = locationPairKey(pair)
+    const existing = pairCounts.get(key)
+    if (existing) existing.count += 1
+    else pairCounts.set(key, { pair, count: 1 })
   }
 
-  let state: string | null = null
-  let topCount = 0
-  for (const [candidate, count] of stateCounts) {
-    if (count > topCount) {
-      topCount = count
-      state = candidate
-    }
+  let best: { pair: ListingLocationPair; count: number } | null = null
+  for (const entry of pairCounts.values()) {
+    if (!best || entry.count > best.count) best = entry
   }
+  if (best) return best.pair
 
-  if (state) return state
+  const fallbackListing = listings.find((l) => l.city?.trim() || l.state?.trim())
+  return fallbackListing ? listingLocationPair(fallbackListing) : null
+}
 
-  const fallbackListing = listings.find((l) => l.state?.trim())
-  return normalizeSellerDirectoryState(fallbackListing?.state)
+function resolvePrimaryListingState(listings: SellerListingForTileMeta[]): string | null {
+  const pair = resolvePrimaryListingLocation(listings)
+  if (!pair) return null
+  return formatLocationCityState(pair.city, pair.state)
 }
 
 function resolveLocatedInLabel(listings: SellerListingForTileMeta[]): string | null {
-  return formatLocatedIn(resolvePrimaryListingState(listings))
+  const pair = resolvePrimaryListingLocation(listings)
+  if (!pair) return null
+  return formatLocatedIn(pair.city, pair.state)
 }
 
 /** Aggregate ship-from / located-in copy from listing rows (active and/or sold). */
@@ -64,10 +103,10 @@ export function deriveSellerDirectoryTileMeta(
   const offersShipping = listings.some((l) => l.shipping_available === true)
 
   if (offersShipping) {
-    const state = resolvePrimaryListingState(listings)
+    const shipFrom = resolvePrimaryListingState(listings)
     return {
       offersShipping: true,
-      shipFromState: state,
+      shipFromState: shipFrom,
       shippingLine: "Seller offers shipping",
       locatedInLabel: null,
     }
