@@ -1,62 +1,84 @@
+import { toUsStateCode } from "@/lib/utils/us-state-code"
+
 export type SellerListingForTileMeta = {
+  city: string | null
   state: string | null
   shipping_available: boolean | null
-  board_shipping_cost_mode: "reswell" | "flat" | "free" | null
-  shipping_price: number | string | null
 }
 
 export type SellerDirectoryTileMeta = {
+  offersShipping: boolean
   shipFromState: string | null
   shippingLine: string | null
+  locatedInLabel: string | null
 }
 
-function parseShippingPrice(raw: number | string | null | undefined): number {
-  const n = typeof raw === "number" ? raw : Number.parseFloat(String(raw ?? ""))
-  return Number.isFinite(n) ? Math.max(0, n) : 0
+/**
+ * Collapse full state names and abbreviations to one USPS code (California / CALIFORNIA / CA → CA).
+ * Returns null when the value is not a recognized US state or territory code.
+ */
+function normalizeSellerDirectoryState(raw: string | null | undefined): string | null {
+  const trimmed = typeof raw === "string" ? raw.trim() : ""
+  if (!trimmed) return null
+  return toUsStateCode(trimmed) ?? null
 }
 
-/** Aggregate ship-from and free-shipping copy from a seller's active listings. */
-export function deriveSellerDirectoryTileMeta(
-  listings: SellerListingForTileMeta[],
-): SellerDirectoryTileMeta {
-  if (listings.length === 0) {
-    return { shipFromState: null, shippingLine: null }
-  }
+function formatLocatedIn(state: string | null | undefined): string | null {
+  const s = normalizeSellerDirectoryState(state)
+  if (s) return `Located in ${s}`
+  return null
+}
 
+function resolvePrimaryListingState(listings: SellerListingForTileMeta[]): string | null {
   const stateCounts = new Map<string, number>()
   for (const listing of listings) {
-    const state = listing.state?.trim().toUpperCase()
-    if (state && state.length >= 2) {
+    const state = normalizeSellerDirectoryState(listing.state)
+    if (state) {
       stateCounts.set(state, (stateCounts.get(state) ?? 0) + 1)
     }
   }
 
-  let shipFromState: string | null = null
+  let state: string | null = null
   let topCount = 0
-  for (const [state, count] of stateCounts) {
+  for (const [candidate, count] of stateCounts) {
     if (count > topCount) {
       topCount = count
-      shipFromState = state
+      state = candidate
     }
   }
-  if (!shipFromState) {
-    const fallback = listings.find((l) => l.state?.trim())?.state?.trim()
-    shipFromState = fallback ? fallback.toUpperCase() : null
+
+  if (state) return state
+
+  const fallbackListing = listings.find((l) => l.state?.trim())
+  return normalizeSellerDirectoryState(fallbackListing?.state)
+}
+
+function resolveLocatedInLabel(listings: SellerListingForTileMeta[]): string | null {
+  return formatLocatedIn(resolvePrimaryListingState(listings))
+}
+
+/** Aggregate ship-from / located-in copy from listing rows (active and/or sold). */
+export function deriveSellerDirectoryTileMeta(
+  listings: SellerListingForTileMeta[],
+): SellerDirectoryTileMeta {
+  const offersShipping = listings.some((l) => l.shipping_available === true)
+
+  if (offersShipping) {
+    const state = resolvePrimaryListingState(listings)
+    return {
+      offersShipping: true,
+      shipFromState: state,
+      shippingLine: "Seller offers shipping",
+      locatedInLabel: null,
+    }
   }
 
-  const shippable = listings.filter((l) => l.shipping_available === true)
-  let shippingLine: string | null = null
-  if (shippable.some((l) => l.board_shipping_cost_mode === "free")) {
-    shippingLine = "Free shipping"
-  } else if (
-    shippable.some(
-      (l) => l.board_shipping_cost_mode !== "flat" && parseShippingPrice(l.shipping_price) === 0,
-    )
-  ) {
-    shippingLine = "Free shipping"
+  return {
+    offersShipping: false,
+    shipFromState: null,
+    shippingLine: null,
+    locatedInLabel: resolveLocatedInLabel(listings),
   }
-
-  return { shipFromState, shippingLine }
 }
 
 export type SellerReviewSummary = {

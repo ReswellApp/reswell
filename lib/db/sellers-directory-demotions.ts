@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { fetchSellersDirectoryEligibleSellerIds } from "@/lib/sellers/directory-eligibility"
 
 const PROFILE_PICK_FIELDS =
   "id, seller_slug, display_name, shop_name, shop_logo_url, avatar_url, city, shop_address, is_shop, shop_verified" as const
@@ -108,7 +109,7 @@ export type SellerDemotionSearchHit = {
 }
 
 /**
- * Same seller eligibility as `/sellers` + search actions: shop accounts or anyone with an active visible listing.
+ * Same seller eligibility as `/sellers` + search actions (see `directory-eligibility`).
  */
 export async function searchProfilesForSellersDirectoryDemotionPicker(
   supabase: SupabaseClient,
@@ -121,21 +122,10 @@ export async function searchProfilesForSellersDirectoryDemotionPicker(
   const safe = escapeIlikeToken(q)
   const pattern = `"%${safe}%"`
 
-  const [{ data: shopRows }, { data: listingSellerRows }] = await Promise.all([
-    supabase.from("profiles").select("id").eq("is_shop", true),
-    supabase
-      .from("listings")
-      .select("user_id")
-      .eq("status", "active")
-      .eq("hidden_from_site", false)
-      .is("archived_at", null),
-  ])
+  const { sellerIds: eligibleSellerIds } =
+    await fetchSellersDirectoryEligibleSellerIds(supabase)
 
-  const eligibleIds = new Set<string>()
-  for (const row of shopRows ?? []) eligibleIds.add(row.id as string)
-  for (const row of listingSellerRows ?? []) eligibleIds.add(row.user_id as string)
-
-  if (eligibleIds.size === 0) return []
+  if (eligibleSellerIds.length === 0) return []
 
   const cap = Math.min(Math.max(limit, 1), 500)
 
@@ -143,7 +133,7 @@ export async function searchProfilesForSellersDirectoryDemotionPicker(
     supabase
       .from("profiles")
       .select(PROFILE_PICK_FIELDS)
-      .in("id", [...eligibleIds])
+      .in("id", eligibleSellerIds)
       .or(
         `shop_name.ilike.${pattern},display_name.ilike.${pattern},seller_slug.ilike.${pattern},city.ilike.${pattern},shop_address.ilike.${pattern}`,
       )

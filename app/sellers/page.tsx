@@ -8,10 +8,8 @@ import { SellersDirectorySearch } from "@/components/sellers/sellers-directory-s
 import { SellersDirectoryGrid } from "@/components/sellers/sellers-directory-grid"
 import { listSellersDirectoryDemotedProfileIdsOrdered } from "@/lib/db/sellers-directory-demotions"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
-import {
-  buildInventoryCountBySeller,
-  orderSellersWithDemotions,
-} from "@/lib/sellers/directory-ranking"
+import { fetchSellersDirectoryEligibleSellerIds } from "@/lib/sellers/directory-eligibility"
+import { orderSellersWithDemotions } from "@/lib/sellers/directory-ranking"
 import {
   deriveSellerDirectoryTileMeta,
   summarizeSellerReviews,
@@ -58,25 +56,8 @@ export default async function SellersPage({
   const profilePublicFields =
     "id, seller_slug, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
 
-  const [{ data: shopRows, error: shopIdsError }, { data: listingRows, error: listingIdsError }] =
-    await Promise.all([
-      supabase.from("profiles").select("id").eq("is_shop", true),
-      supabase
-        .from("listings")
-        .select("user_id")
-        .eq("status", "active")
-        .eq("hidden_from_site", false)
-        .is("archived_at", null),
-    ])
-
-  if (shopIdsError) console.error("[sellers] profiles (is_shop) ids:", shopIdsError)
-  if (listingIdsError) console.error("[sellers] listings seller ids:", listingIdsError)
-
-  const sellerIdSet = new Set<string>()
-  for (const row of shopRows ?? []) sellerIdSet.add(row.id)
-  for (const row of listingRows ?? []) sellerIdSet.add(row.user_id)
-  const sellerIds = [...sellerIdSet]
-  const inventoryCountBySeller = buildInventoryCountBySeller(listingRows)
+  const { sellerIds, inventoryCountBySeller } =
+    await fetchSellersDirectoryEligibleSellerIds(supabase)
 
   const shopsRaw =
     sellerIds.length === 0
@@ -118,7 +99,7 @@ export default async function SellersPage({
         : supabase
             .from("listings")
             .select(
-              "id, user_id, title, price, slug, section, created_at, state, shipping_available, board_shipping_cost_mode, shipping_price, listing_images (url, thumbnail_url, is_primary)",
+              "id, user_id, title, price, slug, section, created_at, city, state, shipping_available, listing_images (url, thumbnail_url, is_primary)",
             )
             .in("user_id", orderedSellerIds)
             .eq("status", "active")
@@ -138,24 +119,54 @@ export default async function SellersPage({
         : Promise.resolve({ data: [] as { seller_id: string }[] }),
     ])
 
+  const accumulateDirectoryListingRow = (row: ListingDirectoryRow) => {
+    const metaRow: SellerListingForTileMeta = {
+      city: row.city ?? null,
+      state: row.state ?? null,
+      shipping_available: row.shipping_available ?? null,
+    }
+    const metaList = listingsForMetaBySeller.get(row.user_id) ?? []
+    metaList.push(metaRow)
+    listingsForMetaBySeller.set(row.user_id, metaList)
+
+    const cur = thumbsBySeller.get(row.user_id) ?? []
+    if (cur.length < THUMB_PER_SELLER) {
+      cur.push(row)
+      thumbsBySeller.set(row.user_id, cur)
+    }
+  }
+
   if (invError) {
     console.error("[sellers] inventory thumbnails:", invError)
   } else {
     for (const row of (invRows ?? []) as ListingDirectoryRow[]) {
-      const metaRow: SellerListingForTileMeta = {
-        state: row.state ?? null,
-        shipping_available: row.shipping_available ?? null,
-        board_shipping_cost_mode: row.board_shipping_cost_mode ?? null,
-        shipping_price: row.shipping_price ?? null,
-      }
-      const metaList = listingsForMetaBySeller.get(row.user_id) ?? []
-      metaList.push(metaRow)
-      listingsForMetaBySeller.set(row.user_id, metaList)
+      accumulateDirectoryListingRow(row)
+    }
+  }
 
-      const cur = thumbsBySeller.get(row.user_id) ?? []
-      if (cur.length < THUMB_PER_SELLER) {
-        cur.push(row)
-        thumbsBySeller.set(row.user_id, cur)
+  const sellerIdsNeedingSoldListings = orderedSellerIds.filter(
+    (id) => (thumbsBySeller.get(id)?.length ?? 0) === 0,
+  )
+
+  if (sellerIdsNeedingSoldListings.length > 0) {
+    const { data: soldRows, error: soldError } = await supabase
+      .from("listings")
+      .select(
+        "id, user_id, title, price, slug, section, created_at, city, state, shipping_available, listing_images (url, thumbnail_url, is_primary)",
+      )
+      .in("user_id", sellerIdsNeedingSoldListings)
+      .eq("status", "sold")
+      .eq("section", "surfboards")
+      .eq("hidden_from_site", false)
+      .is("archived_at", null)
+      .order("created_at", { ascending: false })
+      .limit(LISTINGS_FETCH_CAP)
+
+    if (soldError) {
+      console.error("[sellers] sold surfboard thumbnails:", soldError)
+    } else {
+      for (const row of (soldRows ?? []) as ListingDirectoryRow[]) {
+        accumulateDirectoryListingRow(row)
       }
     }
   }

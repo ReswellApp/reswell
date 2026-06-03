@@ -115,11 +115,11 @@ export function FollowButton({
           "transition-all duration-150",
           isDirectory &&
             !following &&
-            "bg-[#e8eef9] text-[#3b5bdb] hover:bg-[#dce6f7] hover:text-[#364fc7]",
+            "bg-muted text-listingHeart hover:bg-lightgray hover:text-listingHeart",
           isDirectory &&
             following &&
             !hovering &&
-            "bg-[#dce6f7] text-[#364fc7] hover:bg-[#dce6f7]",
+            "bg-lightgray text-primary hover:bg-lightgray",
           isDirectory &&
             following &&
             hovering &&

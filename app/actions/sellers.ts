@@ -3,6 +3,7 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { searchSellerIdsFromElasticsearch } from "@/lib/elasticsearch/sellers-index"
+import { fetchSellersDirectoryEligibleSellerIds } from "@/lib/sellers/directory-eligibility"
 
 /** Shape returned to the `/sellers` directory dropdown. */
 export type SellerSuggestRow = {
@@ -54,8 +55,8 @@ function normalizeRow(row: Record<string, unknown>): SellerSuggestRow {
 }
 
 /**
- * Search the seller directory — shops and individual sellers who have at least one
- * active, visible listing. Returns profile rows only (never listings / brands / categories).
+ * Search the seller directory — shops and sellers with active inventory or sold surfboards.
+ * Returns profile rows only (never listings / brands / categories).
  *
  * Uses Elasticsearch when configured; otherwise falls back to Supabase `ilike` with the
  * same eligibility filter used by `/sellers` server page rendering.
@@ -99,27 +100,15 @@ export async function searchSellersCatalogSuggest(
   const safe = escapeIlikeToken(q)
   const pattern = `"%${safe}%"`
 
-  const [{ data: shopRows }, { data: listingSellerRows }] = await Promise.all([
-    supabase.from("profiles").select("id").eq("is_shop", true),
-    supabase
-      .from("listings")
-      .select("user_id")
-      .eq("status", "active")
-      .eq("hidden_from_site", false)
-      .is("archived_at", null),
-  ])
+  const { sellerIds: eligibleSellerIds } =
+    await fetchSellersDirectoryEligibleSellerIds(supabase)
 
-  const eligibleIds = new Set<string>()
-  for (const row of shopRows ?? []) eligibleIds.add(row.id as string)
-  for (const row of listingSellerRows ?? [])
-    eligibleIds.add(row.user_id as string)
-
-  if (eligibleIds.size === 0) return []
+  if (eligibleSellerIds.length === 0) return []
 
   const { data, error } = await supabase
     .from("profiles")
     .select(SELLER_PUBLIC_FIELDS)
-    .in("id", [...eligibleIds])
+    .in("id", eligibleSellerIds)
     .or(
       `shop_name.ilike.${pattern},display_name.ilike.${pattern},seller_slug.ilike.${pattern},city.ilike.${pattern},shop_address.ilike.${pattern}`,
     )

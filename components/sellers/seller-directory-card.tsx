@@ -6,13 +6,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { SellerRatingStarRow } from "@/components/seller-rating-stars"
 import { SellerDirectoryTileFollow } from "@/components/sellers/seller-directory-tile-follow"
 import { wideShimmer } from "@/lib/image-shimmer"
-import { listingCardImageSrc } from "@/lib/listing-image-display"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { sellerProfileHref } from "@/lib/seller-slug"
+import {
+  buildSellerDirectoryMosaicSlots,
+  sellerDirectoryMosaicHasRenderableImage,
+  type SellerDirectoryMosaicSlot,
+} from "@/lib/sellers/directory-mosaic-images"
 import type { SellerDirectoryTileMeta } from "@/lib/sellers/directory-tile-meta"
 import { cn } from "@/lib/utils"
-
-const PLACEHOLDER_IMAGE = "/placeholder.svg"
 
 export type SellerDirectoryListingThumb = {
   id: string
@@ -56,29 +58,34 @@ function sellerLabel(shop: SellerDirectoryCardShop): string {
 }
 
 function ListingMosaicImage({
-  listing,
+  slot,
   className,
   sizes,
   priority,
 }: {
-  listing: SellerDirectoryListingThumb | undefined
+  slot: SellerDirectoryMosaicSlot
   className?: string
   sizes: string
   priority?: boolean
 }) {
-  const src = listing
-    ? listingCardImageSrc(listing.listing_images) || PLACEHOLDER_IMAGE
-    : PLACEHOLDER_IMAGE
+  if (!slot.src) {
+    return (
+      <div
+        className={cn("bg-muted", className)}
+        aria-hidden
+      />
+    )
+  }
 
   return (
     <div className={cn("relative overflow-hidden bg-muted", className)}>
       <Image
-        src={src}
-        alt={listing?.title ?? ""}
+        src={slot.src}
+        alt={slot.alt}
         fill
         sizes={sizes}
         className="object-cover"
-        unoptimized={listingImageShouldBypassOptimization(src)}
+        unoptimized={listingImageShouldBypassOptimization(slot.src)}
         placeholder="blur"
         blurDataURL={wideShimmer}
         priority={priority}
@@ -87,9 +94,55 @@ function ListingMosaicImage({
   )
 }
 
+function SellerDirectoryMosaic({
+  slots,
+  href,
+}: {
+  slots: SellerDirectoryMosaicSlot[]
+  href: string
+}) {
+  const hasImages = sellerDirectoryMosaicHasRenderableImage(slots)
+
+  if (!hasImages) {
+    return (
+      <Link
+        href={href}
+        className="block min-h-[152px] bg-muted outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring sm:min-h-[172px]"
+        aria-label="View seller profile"
+      />
+    )
+  }
+
+  return (
+    <Link
+      href={href}
+      className="block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)] grid-rows-2 gap-[2px] bg-white p-[2px]">
+        <ListingMosaicImage
+          slot={slots[0]!}
+          className="col-span-1 row-span-2 min-h-[152px] rounded-tl-[16px] sm:min-h-[172px]"
+          sizes="(max-width: 640px) 55vw, 220px"
+          priority
+        />
+        <ListingMosaicImage
+          slot={slots[1]!}
+          className="min-h-[75px] rounded-tr-[16px] sm:min-h-[85px]"
+          sizes="(max-width: 640px) 28vw, 110px"
+        />
+        <ListingMosaicImage
+          slot={slots[2]!}
+          className="min-h-[75px] sm:min-h-[85px]"
+          sizes="(max-width: 640px) 28vw, 110px"
+        />
+      </div>
+    </Link>
+  )
+}
+
 function PolicyIcon({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#d8f0df] text-foreground">
+    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-primary">
       {children}
     </span>
   )
@@ -109,8 +162,7 @@ export function SellerDirectoryCard({
   const label = sellerLabel(shop)
   const avatarSrc = shop.shop_logo_url || shop.avatar_url || ""
   const href = sellerProfileHref(shop)
-  const mosaic = thumbs.slice(0, 3)
-  const hasPolicyFooter = tileMeta.shipFromState || tileMeta.shippingLine
+  const mosaicSlots = buildSellerDirectoryMosaicSlots(thumbs, shop)
 
   return (
     <article
@@ -119,29 +171,7 @@ export function SellerDirectoryCard({
         className,
       )}
     >
-      <Link
-        href={href}
-        className="block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)] grid-rows-2 gap-[2px] bg-white p-[2px]">
-          <ListingMosaicImage
-            listing={mosaic[0]}
-            className="col-span-1 row-span-2 min-h-[152px] rounded-tl-[16px] sm:min-h-[172px]"
-            sizes="(max-width: 640px) 55vw, 220px"
-            priority
-          />
-          <ListingMosaicImage
-            listing={mosaic[1]}
-            className="min-h-[75px] rounded-tr-[16px] sm:min-h-[85px]"
-            sizes="(max-width: 640px) 28vw, 110px"
-          />
-          <ListingMosaicImage
-            listing={mosaic[2]}
-            className="min-h-[75px] sm:min-h-[85px]"
-            sizes="(max-width: 640px) 28vw, 110px"
-          />
-        </div>
-      </Link>
+      <SellerDirectoryMosaic slots={mosaicSlots} href={href} />
 
       <div className="flex items-start gap-3 px-4 pb-3 pt-3.5">
         <Link
@@ -163,7 +193,7 @@ export function SellerDirectoryCard({
                 aria-label={`${avgRating.toFixed(1)} out of 5 stars from ${reviewCount} reviews`}
               >
                 <SellerRatingStarRow value={avgRating} size="sm" />
-                <span className="text-sm tabular-nums text-neutral-500">({reviewCount})</span>
+                <span className="text-sm tabular-nums text-muted-foreground">({reviewCount})</span>
               </div>
             ) : null}
           </div>
@@ -179,23 +209,27 @@ export function SellerDirectoryCard({
         />
       </div>
 
-      {hasPolicyFooter ? (
-        <div className="space-y-2 px-4 pb-4 pt-0.5">
-          {tileMeta.shipFromState ? (
-            <p className="text-[15px] font-bold leading-snug text-[#1b5e3b]">
-              Ships from {tileMeta.shipFromState}
-            </p>
-          ) : null}
-          {tileMeta.shippingLine ? (
-            <div className="flex items-center gap-2.5">
-              <PolicyIcon>
-                <Truck className="h-3.5 w-3.5" aria-hidden />
-              </PolicyIcon>
-              <p className="text-[15px] font-bold leading-snug text-[#1b5e3b]">{tileMeta.shippingLine}</p>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
+      <div className="min-h-[4.75rem] space-y-2 px-4 pb-4 pt-0.5">
+        {tileMeta.offersShipping ? (
+          <>
+            {tileMeta.shipFromState ? (
+              <p className="text-[15px] font-bold leading-snug text-primary">
+                Ships from {tileMeta.shipFromState}
+              </p>
+            ) : null}
+            {tileMeta.shippingLine ? (
+              <div className="flex items-center gap-2.5">
+                <PolicyIcon>
+                  <Truck className="h-3.5 w-3.5" aria-hidden />
+                </PolicyIcon>
+                <p className="text-[15px] font-bold leading-snug text-primary">{tileMeta.shippingLine}</p>
+              </div>
+            ) : null}
+          </>
+        ) : tileMeta.locatedInLabel ? (
+          <p className="text-[15px] font-bold leading-snug text-primary">{tileMeta.locatedInLabel}</p>
+        ) : null}
+      </div>
     </article>
   )
 }
