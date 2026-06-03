@@ -83,7 +83,6 @@ export interface ListingTileProps {
   imageAspect?: "portrait" | "square"
   imageFit?: "cover" | "contain"
   imageClassName?: string
-  imageGrayscale?: boolean
 
   cardClassName?: string
   linkLayout?: ListingTileLinkLayout
@@ -154,7 +153,6 @@ export function ListingTile({
   imageAspect = "portrait",
   imageFit = "cover",
   imageClassName,
-  imageGrayscale,
   cardClassName = listingProductCardGridClassName,
   linkLayout = "split",
   linkClassName,
@@ -204,7 +202,6 @@ export function ListingTile({
       linkLayoutUnified={linkLayout === "unified"}
       imageFit={imageFit}
       imageClassName={imageClassName}
-      imageGrayscale={imageGrayscale}
       overlayTopLeft={imageTopLeftOverlay ?? null}
       overlayBottomRight={favoriteOverlay}
       overlayFull={

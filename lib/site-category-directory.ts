@@ -74,10 +74,11 @@ export function boardBrowseNavItemIsActive(
   return pathname === path
 }
 
-/** Sellers, Brands — desktop header rail, mobile strip, hamburger. */
+/** Sellers, Brands, Sold — desktop header rail, mobile strip, hamburger. */
 export const siteHeaderSecondaryNavLinks: CategoryLink[] = [
   { label: "Sellers", href: "/sellers" },
   { label: "Brands", href: BRANDS_BASE },
+  { label: "Sold", href: "/sold" },
 ]
 
 export function siteHeaderSecondaryNavItemIsActive(pathname: string | null, href: string): boolean {

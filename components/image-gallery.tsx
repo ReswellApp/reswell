@@ -17,7 +17,7 @@ interface ImageGalleryProps {
     thumbnail_url?: string | null
   }>
   title: string
-  /** Sold listings: SOLD badge on the hero (full-color photos; grayscale is for feed tiles only). */
+  /** Sold listings: SOLD badge on the hero. */
   sold?: boolean
   /** Mobile PDP: shorter hero frame so title + image fit above the fold. */
   compactMobile?: boolean

@@ -15,8 +15,12 @@ import {
   homePeerTilePriceClass,
 } from "@/lib/home-listing-scroll-styles"
 import { cn } from "@/lib/utils"
-import { Package } from "lucide-react"
+import { Package, Truck } from "lucide-react"
 import { listingDetailHref } from "@/lib/listing-href"
+import {
+  MarketplaceFeedSoldStatsBanner,
+  MarketplaceFeedStatsBanner,
+} from "@/components/features/marketplace/marketplace-feed-stats-banner"
 
 export type SoldFeedListing = {
   id: string
@@ -62,7 +66,13 @@ function soldRelativeLabel(iso: string): string {
   return `Sold ${formatDistanceToNowStrict(d, { addSuffix: true })}`
 }
 
-function SoldListingCard({ listing }: { listing: SoldFeedListing }) {
+function SoldListingCard({
+  listing,
+  showShippedLabel = false,
+}: {
+  listing: SoldFeedListing
+  showShippedLabel?: boolean
+}) {
   const href = listingDetailHref(listing)
   const locationText =
     listing.city && listing.state
@@ -84,7 +94,6 @@ function SoldListingCard({ listing }: { listing: SoldFeedListing }) {
       linkClassName={homeUniformScrollLinkClass}
       cardClassName={homePeerListingGridCardClass}
       cardContentClassName={homeUniformScrollBodyClass}
-      imageGrayscale
       showFavorites={false}
       favorites={null}
       titleSlot={
@@ -105,10 +114,22 @@ function SoldListingCard({ listing }: { listing: SoldFeedListing }) {
           >
             Sold for ${listing.soldPrice.toFixed(2)}
           </p>
-          <div className="mt-1.5 text-xs font-normal leading-snug text-muted-foreground">
-            {timeLine}
-            <span className="text-muted-foreground/80"> · </span>
-            {locationText}
+          <div className="mt-1.5 space-y-0.5 text-xs font-normal leading-snug text-muted-foreground">
+            <p>
+              {timeLine}
+              {!showShippedLabel ? (
+                <>
+                  <span className="text-muted-foreground/80"> · </span>
+                  {locationText}
+                </>
+              ) : null}
+            </p>
+            {showShippedLabel ? (
+              <p className="inline-flex items-center gap-1 text-foreground/80">
+                <Truck className="h-3 w-3 shrink-0" aria-hidden />
+                <span>This board was shipped</span>
+              </p>
+            ) : null}
           </div>
         </div>
       }
@@ -116,16 +137,26 @@ function SoldListingCard({ listing }: { listing: SoldFeedListing }) {
   )
 }
 
-function SoldFeedGrid({ listings }: { listings: SoldFeedListing[] }) {
+function SoldFeedGrid({
+  listings,
+  variant = "sold",
+}: {
+  listings: SoldFeedListing[]
+  variant?: "sold" | "shipped"
+}) {
   if (!listings.length) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
         <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted text-muted-foreground">
-          <Package className="h-7 w-7" />
+          {variant === "shipped" ? <Truck className="h-7 w-7" /> : <Package className="h-7 w-7" />}
         </div>
-        <h2 className="text-lg font-semibold text-foreground">No sales yet</h2>
+        <h2 className="text-lg font-semibold text-foreground">
+          {variant === "shipped" ? "No shipped boards yet" : "No sales yet"}
+        </h2>
         <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-          Be the first to sell something on Reswell.
+          {variant === "shipped"
+            ? "When a buyer chooses shipping at checkout, the board will show up here."
+            : "Be the first to sell something on Reswell."}
         </p>
         <Link
           href="/boards"
@@ -140,57 +171,37 @@ function SoldFeedGrid({ listings }: { listings: SoldFeedListing[] }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
       {listings.map((listing) => (
-        <SoldListingCard key={listing.id} listing={listing} />
+        <SoldListingCard
+          key={listing.id}
+          listing={listing}
+          showShippedLabel={variant === "shipped"}
+        />
       ))}
     </div>
   )
 }
 
-export function RecentlySoldPageClient({
+export function SoldFeedPanel({
   soldListings,
   soldStats,
-  brandFilterName = null,
-  brandUnknown = false,
-}: RecentlySoldPageClientProps) {
+  variant = "sold",
+}: Pick<RecentlySoldPageClientProps, "soldListings" | "soldStats"> & {
+  variant?: "sold" | "shipped"
+}) {
   return (
     <>
-      <section className="border-b border-border bg-background">
-        <div className="container mx-auto py-8">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            {brandUnknown ? (
-              "Brand not found"
-            ) : brandFilterName ? (
-              <>Recently sold — {brandFilterName}</>
-            ) : (
-              "Recently sold"
-            )}
-          </h1>
-          <p className="mt-1 text-muted-foreground">
-            {brandUnknown ? (
-              <>That brand slug is not in our directory.</>
-            ) : brandFilterName ? (
-              <>Sold surfboards and gear linked to {brandFilterName} on Reswell.</>
-            ) : (
-              <>Surfboards that found new homes on Reswell</>
-            )}
-          </p>
-        </div>
-      </section>
-
-      <section className="container mx-auto py-6">
-        <div className="mb-6 rounded-lg border border-border bg-muted/30 px-4 py-3 text-center text-sm text-foreground">
+      {variant === "shipped" ? (
+        <MarketplaceFeedStatsBanner>
           <span className="inline-flex flex-wrap items-center justify-center gap-x-1 gap-y-1">
-            <span aria-hidden>🤝</span>
-            <span className="font-medium tabular-nums">{soldStats.count}</span>
-            <span>items sold on Reswell ·</span>
-            <span className="font-medium tabular-nums text-listingHeart">
-              {soldStats.gmvFormatted}
-            </span>
-            <span>in sales</span>
+            <Truck className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+            <span className="font-medium tabular-nums">{soldListings.length}</span>
+            <span>shipped boards on Reswell</span>
           </span>
-        </div>
-        <SoldFeedGrid listings={soldListings} />
-      </section>
+        </MarketplaceFeedStatsBanner>
+      ) : (
+        <MarketplaceFeedSoldStatsBanner count={soldStats.count} gmvFormatted={soldStats.gmvFormatted} />
+      )}
+      <SoldFeedGrid listings={soldListings} variant={variant} />
     </>
   )
 }

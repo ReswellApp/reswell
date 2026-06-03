@@ -3,6 +3,7 @@ import {
   HOME_RECENTLY_SOLD_CACHE_TAG,
   HOME_STABLE_CATALOG_CACHE_TAG,
 } from "@/lib/cache/home-public-catalog"
+import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
 
 /** Bust admin-curated homepage sections after CMS or homepage-visibility changes. */
 export function revalidateHomeStableCatalog(): void {
@@ -20,6 +21,7 @@ export function revalidateHomeRecentlySoldCatalog(): void {
 /** Recently sold feeds after a listing leaves the sold state (e.g. refund relist). */
 export function revalidateRecentlySoldSurfaces(): void {
   revalidateHomeRecentlySoldCatalog()
+  revalidateMarketplaceSoldFeedCatalog()
   revalidatePath("/sold", "page")
   revalidatePath("/sold", "layout")
   revalidatePath("/listyoursurfboard", "page")

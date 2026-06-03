@@ -32,7 +32,7 @@ interface RecentFeedClientProps {
   viewerUserId: string | null
   /** Override default empty state copy (e.g. search results). */
   emptyMessage?: string
-  /** Sold strip: grayscale photo + “Sold” label (see `/sold`, seller profile past listings). */
+  /** Sold strip: “Sold” label under title (see `/sold`, brand sold grids). */
   soldPresentation?: boolean
 }
 
@@ -61,7 +61,6 @@ export function RecentFeedClient({
           userId={viewerUserId}
           isFavorited={favoritedListingIds.includes(listing.id)}
           statusLabel={soldPresentation ? "sold" : undefined}
-          imageGrayscale={soldPresentation}
           listing={{
             id: listing.id,
             slug: listing.slug,

@@ -1,8 +1,15 @@
 import Link from "next/link"
-import { Package } from "lucide-react"
+import { Package, Truck } from "lucide-react"
 
 /** Full-width callout on listing detail when status is sold — desktop and mobile. */
-export function ListingSoldDetailNotice({ className }: { className?: string }) {
+export function ListingSoldDetailNotice({
+  className,
+  shipped = false,
+}: {
+  className?: string
+  /** Listing offered shipping — shown as a simple shipped note on sold pages. */
+  shipped?: boolean
+}) {
   return (
     <div
       role="status"
@@ -22,6 +29,12 @@ export function ListingSoldDetailNotice({ className }: { className?: string }) {
             It’s no longer available to buy, and offers aren’t accepted. You can still browse photos and
             details for reference.
           </p>
+          {shipped ? (
+            <p className="inline-flex items-center gap-1.5 pt-0.5 text-[13px] leading-snug text-foreground/85">
+              <Truck className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+              <span>This board was shipped</span>
+            </p>
+          ) : null}
         </div>
       </div>
     </div>

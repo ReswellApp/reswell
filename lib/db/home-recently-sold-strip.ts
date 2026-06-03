@@ -7,7 +7,7 @@ export const HOME_RECENTLY_SOLD_STRIP_LIMIT = 12
 type RpcListingSaleTime = { listing_id: string; sale_confirmed_at: string }
 
 /** Drop ids that are no longer sold (e.g. refunded and relisted to active). */
-async function filterListingIdsStillSoldOnMarketplace(
+export async function filterListingIdsStillSoldOnMarketplace(
   supabase: SupabaseClient,
   orderedListingIds: readonly string[],
 ): Promise<string[]> {

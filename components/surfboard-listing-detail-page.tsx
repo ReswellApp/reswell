@@ -24,7 +24,7 @@ import {
 } from "@/lib/listing-detail-cache"
 import { ShareButton } from "@/components/share-button"
 import { EndListingButton } from "@/components/end-listing-button"
-import { Hourglass, Flag, ShoppingCart } from "lucide-react"
+import { Hourglass, Flag, ShoppingCart, Truck } from "lucide-react"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ImageGallery } from "@/components/image-gallery"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
@@ -40,6 +40,7 @@ import {
 
 import { TranslateableDescription } from "@/components/translateable-description"
 import { boardFulfillmentDetailLabels } from "@/lib/listing-fulfillment"
+import { getCachedSoldSurfboardUsedShippingFulfillment } from "@/lib/cache/marketplace-sold-feed"
 import { findListingByParam } from "@/lib/listing-query"
 import {
   ListingAboutSellerSection,
@@ -118,6 +119,7 @@ export async function SurfboardListingDetailPage({
   }
 
   const sellerId = board.user_id
+  const isSold = board.status === "sold"
 
   const [
     sellerReviewSummaryRes,
@@ -184,7 +186,8 @@ export async function SurfboardListingDetailPage({
   ) || []
 
   const isOwnListing = user?.id === board.user_id
-  const isSold = board.status === "sold"
+  const soldUsedShipping =
+    isSold && (await getCachedSoldSurfboardUsedShippingFulfillment(board.id))
   const metaCatalogEligible = isMetaCatalogEligibleListing(board)
 
   const pickupOffered = board.local_pickup !== false
@@ -434,7 +437,7 @@ export async function SurfboardListingDetailPage({
 
           {isSold && (
             <div className="mx-auto mb-6 w-full min-w-0 max-w-full lg:mb-8">
-              <ListingSoldDetailNotice />
+              <ListingSoldDetailNotice shipped={soldUsedShipping} />
             </div>
           )}
 
@@ -501,7 +504,8 @@ export async function SurfboardListingDetailPage({
                   ) : null}
                 </div>
               )}
-              {(mobileProductMetaItems.length > 0 || mobileFulfillmentChips.length > 0) ? (
+              {(mobileProductMetaItems.length > 0 ||
+                (isSold ? soldUsedShipping : mobileFulfillmentChips.length > 0)) ? (
                 <div className="mt-3 space-y-2 border-y border-border/50 py-2.5 text-[14px]">
                   {mobileProductMetaItems.length > 0 ? (
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-foreground">
@@ -513,7 +517,12 @@ export async function SurfboardListingDetailPage({
                       ))}
                     </div>
                   ) : null}
-                  {mobileFulfillmentChips.length > 0 ? (
+                  {isSold && soldUsedShipping ? (
+                    <p className="inline-flex items-center gap-1.5 text-muted-foreground">
+                      <Truck className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                      <span>This board was shipped</span>
+                    </p>
+                  ) : mobileFulfillmentChips.length > 0 ? (
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground">
                       {mobileFulfillmentChips.map((item, index) => (
                         <span key={item} className="inline-flex items-center gap-3">
@@ -578,7 +587,12 @@ export async function SurfboardListingDetailPage({
                       Used – {conditionWords}
                     </span>
                   ) : null}
-                  {specSubline ? (
+                  {isSold && soldUsedShipping ? (
+                    <p className="inline-flex items-center gap-1.5 text-[14px] text-muted-foreground">
+                      <Truck className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                      <span>This board was shipped</span>
+                    </p>
+                  ) : specSubline ? (
                     <p className="text-[14px] text-muted-foreground">{specSubline}</p>
                   ) : null}
                 </div>

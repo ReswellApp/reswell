@@ -56,7 +56,6 @@ export function HomePeerListingScrollTile({
   imageSizesOverride,
   statusLabel,
   soldOverlay,
-  imageGrayscale,
   footerTrailing,
   imageTopLeftOverlay,
   showFavorites = true,
@@ -70,7 +69,6 @@ export function HomePeerListingScrollTile({
   imageSizesOverride?: string
   statusLabel?: "sold" | "pending" | "ended" | null
   soldOverlay?: boolean
-  imageGrayscale?: boolean
   /** Renders below the price + cart row inside the footer band (e.g. favorites: seller + location). */
   footerTrailing?: ReactNode
   imageTopLeftOverlay?: ReactNode
@@ -108,7 +106,6 @@ export function HomePeerListingScrollTile({
       price={Number(listing.price)}
       imageTopLeftOverlay={imageTopLeftOverlay}
       imageSizes={imageSizes}
-      imageGrayscale={imageGrayscale}
       linkLayout="unified"
       linkClassName={homeUniformScrollLinkClass}
       cardClassName={isGrid ? homePeerListingGridCardClass : homeUniformScrollCardClass}

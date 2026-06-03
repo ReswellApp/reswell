@@ -15,6 +15,7 @@ import {
 } from "@/lib/utils/marketplace-brand-query"
 import { hydrateListingsByIds } from "@/lib/search/hydrate-listings"
 import { listActiveListingsForBrand } from "@/lib/db/brand-listings"
+import { fetchCuratedRecentListings } from "@/lib/db/curatedRecentListings"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { resolveDirectoryBrandRowFromLabel } from "@/lib/services/brandDirectorySearch"
 import { isLikelyTypoBrandMatch } from "@/lib/utils/marketplace-brand-query"
@@ -249,8 +250,8 @@ async function resolveSearchListings(
   }
 
   if (!rawQuery.trim()) {
-    const r = await fetchCuratedRecentListings(supabase, categoryId, LIMIT)
-    return { listings: r.listings, searchMeta: null }
+    const listings = await fetchCuratedRecentListings(supabase, categoryId, LIMIT)
+    return { listings, searchMeta: null }
   }
 
   if (isElasticsearchConfigured()) {
@@ -288,65 +289,6 @@ async function resolveSearchListings(
   return {
     listings,
     searchMeta: { resultCount: listings.length, backend: "supabase" },
-  }
-}
-
-async function fetchCuratedRecentListings(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  categoryId: string | null,
-  limit: number,
-): Promise<{
-  listings: RecentListing[]
-}> {
-  const pool = Math.min(120, Math.max(limit * 4, 48))
-  let q = supabase
-    .from("listings")
-    .select(
-      `
-      id,
-      slug,
-      user_id,
-      title,
-      price,
-      condition,
-      section,
-      city,
-      state,
-      shipping_available,
-      board_type,
-      dimensions,
-      created_at,
-      listing_images (url, is_primary),
-      profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
-      categories (name, slug)
-    `,
-    )
-    .eq("status", "active")
-    .eq("hidden_from_site", false)
-
-  if (categoryId) {
-    q = q.eq("category_id", categoryId)
-  } else {
-    q = q.eq("section", "surfboards")
-  }
-
-  q = q.order("created_at", { ascending: false }).limit(pool)
-  const { data: rows, error } = await q
-
-  if (error || !rows?.length) {
-    const fallback = await buildSearchFromSupabase(supabase, "", categoryId, limit)
-    return { listings: fallback.listings }
-  }
-
-  const sorted = [...rows].sort((a: any, b: any) => {
-    const sa = a.profiles?.sales_count ?? 0
-    const sb = b.profiles?.sales_count ?? 0
-    if (sb !== sa) return sb - sa
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  })
-
-  return {
-    listings: sorted.slice(0, limit).map((row) => rowToRecentListing(row)),
   }
 }
 

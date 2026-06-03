@@ -34,7 +34,6 @@ export interface ListingTileImageMediaProps {
   linkLayoutUnified: boolean
   imageFit: "cover" | "contain"
   imageClassName?: string
-  imageGrayscale?: boolean
   overlayTopLeft?: ReactNode
   /** Corner overlay (e.g. favorites). Position comes from the overlay root (top-right on cards). */
   overlayBottomRight?: ReactNode
@@ -51,7 +50,6 @@ export function ListingTileImageMedia({
   linkLayoutUnified,
   imageFit,
   imageClassName,
-  imageGrayscale,
   overlayTopLeft,
   overlayBottomRight,
   overlayFull,
@@ -140,7 +138,6 @@ export function ListingTileImageMedia({
                 "transition-transform duration-300 group-hover:scale-105",
                 imageFit === "cover" && "object-cover",
                 imageFit === "contain" && "object-contain",
-                imageGrayscale && "[filter:grayscale(30%)]",
                 imageClassName,
               )}
               style={objectStyle}
