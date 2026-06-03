@@ -1,5 +1,8 @@
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
+import { createServiceRoleClient } from "@/lib/supabase/server"
+import { aggregateDemandCaptureByQuery } from "@/lib/db/searchDemandCapture"
 import {
+  aggregateMarketplaceHourOfDay,
   aggregateSearchAnalytics,
   aggregateNavBarMarketplaceKeywordAnalytics,
   getMarketplaceOccurredAtBounds,
@@ -214,6 +217,8 @@ export type SearchAnalyticsDashboard = {
   categoryFilterSplit: { key: string; count: number }[]
   topCategorySlugs: { slug: string; count: number }[]
   volumeByDay: { date: string; count: number }[]
+  /** Marketplace searches folded into UTC hour-of-day buckets (0–23). */
+  hourOfDay: { hour: number; count: number }[]
   topQueries: { query: string; count: number }[]
   zeroResultQueries: { query: string; count: number }[]
   byBackend: { backend: string; count: number }[]
@@ -250,6 +255,12 @@ export type SearchAnalyticsDashboard = {
     /** Newest-first line items for the selected range (capped). */
     recentEvents: NavSearchBarEventLine[]
   }
+  /** Buyer "notify me when listed" demand captured on no-results screens, by query. */
+  demandCapture: {
+    total: number
+    uniquePeople: number
+    byQuery: { query: string; count: number; people: number; lastAt: string }[]
+  }
   /** "What matters most" derived headline metrics. */
   headline: SearchAnalyticsHeadline
   /** Prioritized, business-facing insights with recommended actions. */
@@ -276,6 +287,26 @@ const EMPTY_BRAND_DIRECTORY_DASH: SearchAnalyticsDashboard["brandDirectory"] = {
   topQueries: [],
   zeroResultQueries: [],
   byBackend: [],
+}
+
+const EMPTY_DEMAND_CAPTURE: SearchAnalyticsDashboard["demandCapture"] = {
+  total: 0,
+  uniquePeople: 0,
+  byQuery: [],
+}
+
+/** Best-effort demand-capture aggregate; never throws (missing service role → empty). */
+async function fetchDemandCaptureSafe(
+  fromIso: string,
+): Promise<SearchAnalyticsDashboard["demandCapture"]> {
+  try {
+    const service = createServiceRoleClient()
+    return await aggregateDemandCaptureByQuery(service, fromIso)
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[searchAnalytics] demand capture fetch failed:", msg)
+    return EMPTY_DEMAND_CAPTURE
+  }
 }
 
 const EMPTY_NAV_SEARCH_BAR: SearchAnalyticsDashboard["navSearchBar"] = {
@@ -907,6 +938,7 @@ export async function getSearchAnalyticsDashboardService(
       categoryFilterSplit: [],
       topCategorySlugs: [],
       volumeByDay: [],
+      hourOfDay: [],
       topQueries: [],
       zeroResultQueries: [],
       byBackend: [],
@@ -921,6 +953,7 @@ export async function getSearchAnalyticsDashboardService(
       suggestTopListingClicks: [],
       brandDirectory: EMPTY_BRAND_DIRECTORY_DASH,
       navSearchBar: EMPTY_NAV_SEARCH_BAR,
+      demandCapture: EMPTY_DEMAND_CAPTURE,
       fetchedAt,
     })
   }
@@ -930,13 +963,16 @@ export async function getSearchAnalyticsDashboardService(
   const from = start.toISOString()
   const to = end.toISOString()
 
-  const [main, suggestPicks, navMp, navSuggest, navRecentEvents] = await Promise.all([
-    aggregateSearchAnalytics(from, to),
-    aggregateSearchSuggestPicks(from, to),
-    aggregateNavBarMarketplaceKeywordAnalytics(from, to),
-    aggregateHeaderNavSuggestClickAnalytics(from, to),
-    fetchNavSearchBarRecentEvents(from, to),
-  ])
+  const [main, suggestPicks, navMp, navSuggest, navRecentEvents, hourOfDay, demandCapture] =
+    await Promise.all([
+      aggregateSearchAnalytics(from, to),
+      aggregateSearchSuggestPicks(from, to),
+      aggregateNavBarMarketplaceKeywordAnalytics(from, to),
+      aggregateHeaderNavSuggestClickAnalytics(from, to),
+      fetchNavSearchBarRecentEvents(from, to),
+      aggregateMarketplaceHourOfDay(from, to),
+      fetchDemandCaptureSafe(from),
+    ])
 
   const navSearchBar = buildNavSearchBarSlice(navMp, navSuggest, navRecentEvents)
 
@@ -956,6 +992,7 @@ export async function getSearchAnalyticsDashboardService(
       categoryFilterSplit: [],
       topCategorySlugs: [],
       volumeByDay: [],
+      hourOfDay,
       topQueries: [],
       zeroResultQueries: [],
       byBackend: [],
@@ -970,6 +1007,7 @@ export async function getSearchAnalyticsDashboardService(
       suggestTopListingClicks: suggestPicks?.topListingClicks ?? [],
       brandDirectory: EMPTY_BRAND_DIRECTORY_DASH,
       navSearchBar,
+      demandCapture,
       fetchedAt,
     })
   }
@@ -1014,6 +1052,7 @@ export async function getSearchAnalyticsDashboardService(
     categoryFilterSplit: main.categoryFilterSplit,
     topCategorySlugs: main.topCategorySlugs,
     volumeByDay: main.volumeByDay,
+    hourOfDay,
     topQueries: main.topQueries,
     zeroResultQueries: main.zeroResultQueries,
     byBackend: main.byBackend,
@@ -1037,6 +1076,7 @@ export async function getSearchAnalyticsDashboardService(
       byBackend: bd.byBackend,
     },
     navSearchBar,
+    demandCapture,
     fetchedAt,
   })
 }

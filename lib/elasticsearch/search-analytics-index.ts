@@ -417,6 +417,69 @@ export async function aggregateSearchAnalytics(
   }
 }
 
+/**
+ * Marketplace searches grouped by UTC hour-of-day (0–23), folded across every
+ * day in the range. Runs as an isolated query with a scripted terms agg so a
+ * scripting failure can never take down the main dashboard aggregation.
+ */
+export async function aggregateMarketplaceHourOfDay(
+  fromIso: string,
+  toIso: string,
+): Promise<{ hour: number; count: number }[]> {
+  const es = getElasticsearchClient()
+  if (!es) return []
+
+  try {
+    const res = await es.search({
+      index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
+      size: 0,
+      query: {
+        bool: {
+          filter: [
+            { range: { occurred_at: { gte: fromIso, lte: toIso } } },
+            MARKETPLACE_SURFACE_FILTER as unknown as Record<string, unknown>,
+          ],
+        },
+      },
+      aggs: {
+        by_hour: {
+          terms: {
+            script: {
+              source: "doc['occurred_at'].value.getHour()",
+              lang: "painless",
+            },
+            size: 24,
+            order: { _key: "asc" },
+          },
+        },
+      },
+    })
+
+    const aggs = res.aggregations as
+      | { by_hour?: { buckets?: Array<{ key: string | number; doc_count: number }> } }
+      | undefined
+
+    const counts = new Map<number, number>()
+    for (const b of aggs?.by_hour?.buckets ?? []) {
+      const hour = typeof b.key === "number" ? b.key : Number(b.key)
+      if (Number.isInteger(hour) && hour >= 0 && hour <= 23) {
+        counts.set(hour, b.doc_count)
+      }
+    }
+
+    return Array.from({ length: 24 }, (_, hour) => ({
+      hour,
+      count: counts.get(hour) ?? 0,
+    }))
+  } catch (e) {
+    const status = (e as { meta?: { statusCode?: number } })?.meta?.statusCode
+    if (status === 404) return []
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] aggregateMarketplaceHourOfDay failed:", msg)
+    return []
+  }
+}
+
 export type MarketplaceOccurredAtBounds = {
   minIso: string
   maxIso: string

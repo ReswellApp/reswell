@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/breadcrumb"
 import { createClient } from "@/lib/supabase/server"
 import { BoardsBrowseClient } from "@/components/boards-browse-client"
+import { BoardsNoResultsRequestPanel } from "@/components/boards-no-results-request-panel"
+import { boardSavedSearchCriteriaFromFilters } from "@/lib/utils/board-saved-search-criteria"
 import { BoardsBrowseJsonLd } from "@/components/features/marketplace/boards-browse-json-ld"
 import { getBoardsBrowseCategoryTypePageCached } from "@/lib/cache/boards-browse-catalog"
 import { Users } from "lucide-react"
@@ -351,6 +353,23 @@ async function BoardListings({
   }
 
   if (!boards || boards.length === 0) {
+    const requestCriteria = boardSavedSearchCriteriaFromFilters({
+      q: query,
+      brand,
+      model,
+      catalogBrandId: brandIdRaw,
+      catalogBrandModelId: brandModelIdRaw,
+      boardLength: searchParams.dimLength ?? "",
+      boardWidthInches: searchParams.dimWidth ?? "",
+      boardThicknessInches: searchParams.dimThickness ?? "",
+      boardVolumeL: searchParams.dimVolume ?? "",
+      minPrice: searchParams.minPrice ?? "",
+      maxPrice: searchParams.maxPrice ?? "",
+      type: boardType,
+      condition,
+      sort,
+    })
+
     return (
       <div className="text-center py-16">
         <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -359,6 +378,11 @@ async function BoardListings({
         <Button variant="outline" asChild>
           <Link href="/boards">Clear Filters</Link>
         </Button>
+        <BoardsNoResultsRequestPanel
+          source="boards"
+          query={query}
+          criteria={requestCriteria}
+        />
       </div>
     )
   }

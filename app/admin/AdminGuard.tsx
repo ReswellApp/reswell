@@ -23,6 +23,7 @@ export function AdminGuard({
         pathname === '/admin/wallets' ||
         pathname === '/admin/settings' ||
         pathname === '/admin/seo' ||
+        pathname === '/admin/search-curation' ||
         pathname === '/admin/shipping' ||
         pathname === '/admin/pnl' ||
         pathname === '/admin/orders/test-purchase'

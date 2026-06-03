@@ -30,13 +30,24 @@ import {
 import {
   AlertTriangle,
   ArrowRight,
+  Check,
   CheckCircle2,
+  ClipboardList,
+  Clock,
+  Copy,
+  ExternalLink,
   Lightbulb,
+  ListChecks,
   Loader2,
+  Play,
   RefreshCw,
   Sparkles,
   TrendingDown,
   TrendingUp,
+  Undo2,
+  User,
+  Wand2,
+  X,
   Zap,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -189,6 +200,33 @@ const REPORT_PIE_PALETTE = [
   "#9842E3",
   "#B89B37",
 ] as const
+
+/** Mon→Sun ordering for the day-of-week pattern (week starts Monday). */
+const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const
+const WEEKDAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const
+const WEEKDAY_LONG = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+] as const
+
+/** Weekday index (0=Sun) for a "YYYY-MM-DD" bucket, read as a calendar date. */
+function weekdayIndexForBucket(dateIso: string): number {
+  const [y, m, d] = dateIso.split("-").map(Number)
+  if (!y || !m || !d) return new Date(dateIso).getDay()
+  return new Date(y, m - 1, d).getDay()
+}
+
+/** "0".."23" hour → "12a", "1a", … "12p", "11p". */
+function formatHourLabel(hour: number): string {
+  const period = hour < 12 ? "a" : "p"
+  const base = hour % 12 === 0 ? 12 : hour % 12
+  return `${base}${period}`
+}
 
 const SUGGEST_KIND_LABELS: Record<string, string> = {
   top_listing: "Top listing row",
@@ -675,16 +713,322 @@ const SEVERITY_STYLES: Record<
   },
 }
 
-function InsightCard({ insight }: { insight: SearchInsight }) {
+// ---------------------------------------------------------------------------
+// Insight action workflow — team-shared status (Supabase) + deep-link actions
+// ---------------------------------------------------------------------------
+
+type InsightStatus = "open" | "in_progress" | "snoozed" | "done" | "dismissed"
+
+/** Mirrors SearchInsightActionDto from the API (shared across all staff). */
+type InsightActionRecord = {
+  insightId: string
+  status: InsightStatus
+  snoozeUntil: string | null
+  assigneeId: string | null
+  dueDate: string | null
+  note: string | null
+  updatedBy: string | null
+  updatedAt: string
+}
+
+type InsightAssignee = { id: string; name: string }
+type InsightActionMap = Record<string, InsightActionRecord>
+
+const INSIGHT_SNOOZE_DAYS = 7
+
+type InsightActionPatch = Partial<
+  Pick<InsightActionRecord, "status" | "snoozeUntil" | "assigneeId" | "dueDate" | "note">
+>
+
+/** Team-shared persistence via the admin API (every staff member sees the same state). */
+function useInsightActions() {
+  const [map, setMap] = useState<InsightActionMap>({})
+  const [assignees, setAssignees] = useState<InsightAssignee[]>([])
+  const [hydrated, setHydrated] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      try {
+        const res = await fetch("/api/admin/search-analytics/insight-actions", {
+          credentials: "include",
+        })
+        const body = await res.json().catch(() => ({}))
+        if (cancelled || !res.ok) {
+          if (!cancelled) setHydrated(true)
+          return
+        }
+        const actions = (body?.data?.actions ?? []) as InsightActionRecord[]
+        const next: InsightActionMap = {}
+        for (const a of actions) next[a.insightId] = a
+        setMap(next)
+        setAssignees((body?.data?.assignees ?? []) as InsightAssignee[])
+      } catch {
+        // Leave map empty; cards default to "open".
+      } finally {
+        if (!cancelled) setHydrated(true)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  /** Optimistic merge + persist. `status: "open"` with no metadata clears the row. */
+  const update = useCallback(
+    (insightId: string, patch: InsightActionPatch) => {
+      setSaveError(null)
+      let optimistic: InsightActionRecord | null = null
+
+      setMap((prev) => {
+        const current: InsightActionRecord = prev[insightId] ?? {
+          insightId,
+          status: "open",
+          snoozeUntil: null,
+          assigneeId: null,
+          dueDate: null,
+          note: null,
+          updatedBy: null,
+          updatedAt: new Date().toISOString(),
+        }
+        const merged: InsightActionRecord = {
+          ...current,
+          ...patch,
+          insightId,
+          updatedAt: new Date().toISOString(),
+        }
+        optimistic = merged
+        const isCleanReset =
+          merged.status === "open" &&
+          !merged.snoozeUntil &&
+          !merged.assigneeId &&
+          !merged.dueDate &&
+          !merged.note
+        const next = { ...prev }
+        if (isCleanReset) delete next[insightId]
+        else next[insightId] = merged
+        return next
+      })
+
+      if (!optimistic) return
+      const payload = optimistic as InsightActionRecord
+      void (async () => {
+        try {
+          const res = await fetch("/api/admin/search-analytics/insight-actions", {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              insightId: payload.insightId,
+              status: payload.status,
+              snoozeUntil: payload.snoozeUntil,
+              assigneeId: payload.assigneeId,
+              dueDate: payload.dueDate,
+              note: payload.note,
+            }),
+          })
+          if (!res.ok) setSaveError("Couldn't sync that change — it may not be saved.")
+        } catch {
+          setSaveError("Couldn't sync that change — it may not be saved.")
+        }
+      })()
+    },
+    [],
+  )
+
+  const setStatus = useCallback(
+    (id: string, status: InsightStatus) => {
+      if (status === "open") {
+        update(id, { status: "open", snoozeUntil: null })
+        return
+      }
+      const patch: InsightActionPatch = { status }
+      patch.snoozeUntil =
+        status === "snoozed"
+          ? new Date(Date.now() + INSIGHT_SNOOZE_DAYS * 86_400_000).toISOString()
+          : null
+      update(id, patch)
+    },
+    [update],
+  )
+
+  const setAssignee = useCallback(
+    (id: string, assigneeId: string | null) => update(id, { assigneeId }),
+    [update],
+  )
+  const setDueDate = useCallback(
+    (id: string, dueDate: string | null) => update(id, { dueDate }),
+    [update],
+  )
+
+  return { map, assignees, hydrated, saveError, setStatus, setAssignee, setDueDate }
+}
+
+/** A future-dated snooze collapses back to "open" once its timer elapses. */
+function effectiveInsightStatus(record: InsightActionRecord | undefined): InsightStatus {
+  if (!record) return "open"
+  if (
+    record.status === "snoozed" &&
+    record.snoozeUntil &&
+    Date.parse(record.snoozeUntil) <= Date.now()
+  ) {
+    return "open"
+  }
+  return record.status
+}
+
+/** Strip a trailing " (1,234)" volume suffix from an insight example chip. */
+function stripExampleCount(example: string): string {
+  return example.replace(/\s*\(\d[\d,]*(?:\.\d+)?[×x]?[^)]*\)\s*$/, "").trim()
+}
+
+/** Best single query to preview on /search for this insight, if any. */
+function primaryQueryForInsight(insight: SearchInsight): string | null {
+  const quoted = insight.title.match(/[“"']([^”"']+)[”"']/)
+  if (quoted?.[1]?.trim()) return quoted[1].trim()
+  const first = insight.examples?.[0]
+  if (first) {
+    const stripped = stripExampleCount(first)
+    if (stripped) return stripped
+  }
+  return null
+}
+
+/** Plain query terms for copy/export (counts removed). */
+function insightCopyTerms(insight: SearchInsight): string[] {
+  const fromExamples = (insight.examples ?? [])
+    .map(stripExampleCount)
+    .filter(Boolean)
+  if (fromExamples.length > 0) return fromExamples
+  const primary = primaryQueryForInsight(insight)
+  return primary ? [primary] : []
+}
+
+const INSIGHT_STATUS_BADGE: Record<
+  Exclude<InsightStatus, "open">,
+  { label: string; className: string }
+> = {
+  in_progress: { label: "In progress", className: "bg-blue-100 text-blue-700" },
+  snoozed: { label: "Snoozed", className: "bg-slate-200 text-slate-600" },
+  done: { label: "Done", className: "bg-emerald-100 text-emerald-700" },
+  dismissed: { label: "Dismissed", className: "bg-slate-200 text-slate-500" },
+}
+
+type AsyncActionState = "idle" | "loading" | "done" | "error"
+
+function InsightCard({
+  insight,
+  record,
+  status,
+  assignees,
+  onSetStatus,
+  onSetAssignee,
+  onSetDueDate,
+}: {
+  insight: SearchInsight
+  record: InsightActionRecord | undefined
+  status: InsightStatus
+  assignees: InsightAssignee[]
+  onSetStatus: (id: string, status: InsightStatus) => void
+  onSetAssignee: (id: string, assigneeId: string | null) => void
+  onSetDueDate: (id: string, dueDate: string | null) => void
+}) {
   const s = SEVERITY_STYLES[insight.severity]
+  const [copied, setCopied] = useState(false)
+  const [bmrState, setBmrState] = useState<AsyncActionState>("idle")
+  const [synonymOpen, setSynonymOpen] = useState(false)
+  const [synonymTarget, setSynonymTarget] = useState("")
+  const [synonymState, setSynonymState] = useState<AsyncActionState>("idle")
+
+  const query = primaryQueryForInsight(insight)
+  const terms = insightCopyTerms(insight)
+  const showCatalog =
+    insight.category === "inventory" || insight.id === "brand-directory-unmet"
+  const showSettings = insight.category === "infrastructure"
+  /** Query-driven insights where rewriting a dead-end term to real inventory helps. */
+  const showSynonym =
+    Boolean(query) &&
+    ["demand", "inventory", "relevance", "growth"].includes(insight.category)
+  const resolved = status === "done" || status === "dismissed"
+  const badge = status !== "open" ? INSIGHT_STATUS_BADGE[status] : null
+
+  const openInNewTab = (href: string) => {
+    window.open(href, "_blank", "noopener,noreferrer")
+  }
+
+  const copyTerms = async () => {
+    if (terms.length === 0) return
+    try {
+      await navigator.clipboard.writeText(terms.join("\n"))
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 1600)
+    } catch {
+      // Clipboard blocked — no-op.
+    }
+  }
+
+  const queueBrandModelRequest = async () => {
+    if (!query || bmrState === "loading") return
+    setBmrState("loading")
+    try {
+      const res = await fetch("/api/admin/search-analytics/brand-model-request", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, insightId: insight.id }),
+      })
+      setBmrState(res.ok ? "done" : "error")
+    } catch {
+      setBmrState("error")
+    }
+  }
+
+  const saveSynonym = async () => {
+    const target = synonymTarget.trim()
+    if (!query || !target || synonymState === "loading") return
+    setSynonymState("loading")
+    try {
+      // Uses the existing search-curation synonyms system (term → expansions),
+      // which the live marketplace search path already reads via expandSearchQueryTerms.
+      const res = await fetch("/api/admin/search-curation/synonyms", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ term: query, expansions: [target], enabled: true }),
+      })
+      if (res.ok) {
+        setSynonymState("done")
+        window.setTimeout(() => setSynonymOpen(false), 1200)
+      } else {
+        setSynonymState("error")
+      }
+    } catch {
+      setSynonymState("error")
+    }
+  }
+
   return (
-    <div className={cn("rounded-xl border p-4 shadow-sm", s.ring)}>
+    <div
+      className={cn(
+        "flex flex-col rounded-xl border p-4 shadow-sm transition-opacity",
+        s.ring,
+        resolved && "opacity-60",
+      )}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-2.5">
           <span className="mt-0.5 shrink-0">{s.icon}</span>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h4 className="text-sm font-semibold text-slate-900">{insight.title}</h4>
+              <h4
+                className={cn(
+                  "text-sm font-semibold text-slate-900",
+                  resolved && "line-through decoration-slate-400",
+                )}
+              >
+                {insight.title}
+              </h4>
               <span
                 className={cn(
                   "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
@@ -696,6 +1040,16 @@ function InsightCard({ insight }: { insight: SearchInsight }) {
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
                 {insight.category}
               </span>
+              {badge ? (
+                <span
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                    badge.className,
+                  )}
+                >
+                  {badge.label}
+                </span>
+              ) : null}
             </div>
             <p className="mt-1.5 text-sm text-slate-600">{insight.finding}</p>
           </div>
@@ -738,6 +1092,248 @@ function InsightCard({ insight }: { insight: SearchInsight }) {
       {insight.impact ? (
         <p className="mt-2 pl-1 text-xs italic text-slate-500">{insight.impact}</p>
       ) : null}
+
+      {/* Take action — deep links + copy */}
+      {(query || showCatalog || showSettings || terms.length > 0) && status !== "dismissed" ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {query ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 border-slate-200 bg-white text-xs"
+              onClick={() => openInNewTab(`/search?q=${encodeURIComponent(query)}`)}
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              View “{truncateQuery(query, 18)}” in search
+            </Button>
+          ) : null}
+          {showCatalog ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 border-slate-200 bg-white text-xs"
+              onClick={() => openInNewTab("/admin/catalog-overview")}
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              Brand catalog
+            </Button>
+          ) : null}
+          {showSettings ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 border-slate-200 bg-white text-xs"
+              onClick={() => openInNewTab("/admin/settings")}
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              Open settings
+            </Button>
+          ) : null}
+          {terms.length > 0 ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 border-slate-200 bg-white text-xs"
+              onClick={copyTerms}
+            >
+              {copied ? (
+                <Check className="h-3.5 w-3.5 text-emerald-600" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+              {copied ? "Copied" : `Copy ${terms.length === 1 ? "term" : `${terms.length} terms`}`}
+            </Button>
+          ) : null}
+          {showCatalog && query ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 border-slate-200 bg-white text-xs"
+              onClick={queueBrandModelRequest}
+              disabled={bmrState === "loading" || bmrState === "done"}
+            >
+              {bmrState === "loading" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : bmrState === "done" ? (
+                <Check className="h-3.5 w-3.5 text-emerald-600" />
+              ) : (
+                <ClipboardList className="h-3.5 w-3.5" />
+              )}
+              {bmrState === "done"
+                ? "Queued"
+                : bmrState === "error"
+                  ? "Retry queue"
+                  : "Queue catalog request"}
+            </Button>
+          ) : null}
+          {showSynonym ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 border-slate-200 bg-white text-xs"
+              onClick={() => setSynonymOpen((v) => !v)}
+            >
+              <Wand2 className="h-3.5 w-3.5" />
+              Add synonym
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {/* One-click synonym — rewrite the dead-end term to one with inventory */}
+      {showSynonym && synonymOpen && status !== "dismissed" ? (
+        <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50/70 p-3">
+          <p className="text-xs text-slate-600">
+            When shoppers search{" "}
+            <span className="font-semibold text-slate-800">“{query}”</span>, run this query
+            instead:
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              value={synonymTarget}
+              onChange={(e) => setSynonymTarget(e.target.value)}
+              placeholder="e.g. fish surfboard"
+              className="h-8 min-w-[160px] flex-1 rounded-md border border-slate-200 bg-white px-2.5 text-xs text-slate-800 outline-none focus:border-slate-400"
+            />
+            <Button
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              onClick={saveSynonym}
+              disabled={!synonymTarget.trim() || synonymState === "loading"}
+            >
+              {synonymState === "loading" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : synonymState === "done" ? (
+                <Check className="h-3.5 w-3.5" />
+              ) : null}
+              {synonymState === "done" ? "Mapped" : "Save synonym"}
+            </Button>
+          </div>
+          {synonymState === "error" ? (
+            <p className="mt-1.5 text-xs text-rose-600">Couldn’t save. Check the target query.</p>
+          ) : null}
+        </div>
+      ) : null}
+
+      {/* Track — status workflow + assignment */}
+      <div className="mt-3 space-y-2 border-t border-slate-200/70 pt-3">
+      <div className="flex flex-wrap items-center gap-2">
+        {status === "snoozed" && record?.snoozeUntil ? (
+          <span className="mr-1 inline-flex items-center gap-1 text-[11px] font-medium text-slate-500">
+            <Clock className="h-3.5 w-3.5" />
+            Snoozed until{" "}
+            {(() => {
+              try {
+                return format(parseISO(record.snoozeUntil), "MMM d")
+              } catch {
+                return "later"
+              }
+            })()}
+          </span>
+        ) : null}
+        {resolved ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 gap-1.5 text-xs text-slate-600"
+            onClick={() => onSetStatus(insight.id, "open")}
+          >
+            <Undo2 className="h-3.5 w-3.5" />
+            Reopen
+          </Button>
+        ) : (
+          <>
+            {status !== "in_progress" ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1.5 text-xs text-blue-700 hover:bg-blue-50"
+                onClick={() => onSetStatus(insight.id, "in_progress")}
+              >
+                <Play className="h-3.5 w-3.5" />
+                Start
+              </Button>
+            ) : null}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 text-xs text-emerald-700 hover:bg-emerald-50"
+              onClick={() => onSetStatus(insight.id, "done")}
+            >
+              <Check className="h-3.5 w-3.5" />
+              Mark done
+            </Button>
+            {status !== "snoozed" ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1.5 text-xs text-slate-600"
+                onClick={() => onSetStatus(insight.id, "snoozed")}
+              >
+                <Clock className="h-3.5 w-3.5" />
+                Snooze {INSIGHT_SNOOZE_DAYS}d
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1.5 text-xs text-slate-600"
+                onClick={() => onSetStatus(insight.id, "open")}
+              >
+                <Undo2 className="h-3.5 w-3.5" />
+                Unsnooze
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 text-xs text-slate-500 hover:text-rose-600"
+              onClick={() => onSetStatus(insight.id, "dismissed")}
+            >
+              <X className="h-3.5 w-3.5" />
+              Dismiss
+            </Button>
+          </>
+        )}
+      </div>
+        {status !== "dismissed" ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500">
+              <User className="h-3.5 w-3.5" />
+              Owner
+            </span>
+            <Select
+              value={record?.assigneeId ?? "unassigned"}
+              onValueChange={(v) =>
+                onSetAssignee(insight.id, v === "unassigned" ? null : v)
+              }
+            >
+              <SelectTrigger className="h-8 w-[170px] border-slate-200 bg-white text-xs">
+                <SelectValue placeholder="Unassigned" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {assignees.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="ml-1 inline-flex items-center gap-1 text-[11px] font-medium text-slate-500">
+              <Clock className="h-3.5 w-3.5" />
+              Due
+            </span>
+            <input
+              type="date"
+              value={record?.dueDate ?? ""}
+              onChange={(e) => onSetDueDate(insight.id, e.target.value || null)}
+              className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-700 outline-none focus:border-slate-400"
+            />
+          </div>
+        ) : null}
+      </div>
     </div>
   )
 }
@@ -770,8 +1366,69 @@ function TrendStatTile({
   )
 }
 
+type InsightFilter = "todo" | "snoozed" | "done" | "dismissed" | "all"
+
+const INSIGHT_FILTER_TABS: { value: InsightFilter; label: string }[] = [
+  { value: "todo", label: "To do" },
+  { value: "snoozed", label: "Snoozed" },
+  { value: "done", label: "Done" },
+  { value: "dismissed", label: "Dismissed" },
+  { value: "all", label: "All" },
+]
+
 function InsightsPanel({ insights }: { insights: SearchInsight[] }) {
-  const actionable = insights.filter((i) => i.severity !== "positive").length
+  const { map, assignees, hydrated, saveError, setStatus, setAssignee, setDueDate } =
+    useInsightActions()
+  const [filter, setFilter] = useState<InsightFilter>("todo")
+
+  const withStatus = useMemo(
+    () =>
+      insights.map((insight) => {
+        const record = map[insight.id]
+        return { insight, record, status: effectiveInsightStatus(record) }
+      }),
+    [insights, map],
+  )
+
+  const counts = useMemo(() => {
+    const c = { todo: 0, snoozed: 0, done: 0, dismissed: 0, all: withStatus.length }
+    for (const { status } of withStatus) {
+      if (status === "open" || status === "in_progress") c.todo += 1
+      else if (status === "snoozed") c.snoozed += 1
+      else if (status === "done") c.done += 1
+      else if (status === "dismissed") c.dismissed += 1
+    }
+    return c
+  }, [withStatus])
+
+  /** Outstanding work = non-healthy items still open or in progress. */
+  const actionable = useMemo(
+    () =>
+      withStatus.filter(
+        ({ insight, status }) =>
+          insight.severity !== "positive" &&
+          (status === "open" || status === "in_progress"),
+      ).length,
+    [withStatus],
+  )
+
+  const visible = useMemo(() => {
+    return withStatus.filter(({ status }) => {
+      switch (filter) {
+        case "todo":
+          return status === "open" || status === "in_progress"
+        case "snoozed":
+          return status === "snoozed"
+        case "done":
+          return status === "done"
+        case "dismissed":
+          return status === "dismissed"
+        default:
+          return true
+      }
+    })
+  }, [withStatus, filter])
+
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-6 py-5">
@@ -782,27 +1439,92 @@ function InsightsPanel({ insights }: { insights: SearchInsight[] }) {
           <div>
             <h3 className="text-lg font-semibold text-slate-900">Insights &amp; recommended actions</h3>
             <p className="mt-0.5 text-sm text-slate-500">
-              Automated read of what the data is telling you — and the next step to take.
+              Automated read of what the data is telling you — act on each one and track it to done.
             </p>
           </div>
         </div>
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold",
+            actionable > 0 ? "bg-amber-100 text-amber-700" : "bg-emerald-100 text-emerald-700",
+          )}
+        >
+          <ListChecks className="h-3.5 w-3.5" />
           {actionable} action{actionable === 1 ? "" : "s"} to take
         </span>
       </div>
+
+      {insights.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5 border-b border-slate-100 px-6 py-3">
+          {INSIGHT_FILTER_TABS.map((tab) => {
+            const count = counts[tab.value]
+            const active = filter === tab.value
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => setFilter(tab.value)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                  active
+                    ? "border-slate-900 bg-slate-900 text-white"
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
+                )}
+              >
+                {tab.label}
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 text-[10px] font-semibold tabular-nums",
+                    active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500",
+                  )}
+                >
+                  {count}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
+
       <div className="p-6">
         {insights.length === 0 ? (
           <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50/50 px-4 py-6 text-sm text-emerald-700">
             <CheckCircle2 className="h-4 w-4" />
             Nothing needs attention right now — search demand and inventory look well matched.
           </div>
+        ) : visible.length === 0 ? (
+          <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/70 px-4 py-6 text-sm text-slate-600">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            {filter === "todo"
+              ? "No open items — everything here has been actioned, snoozed, or dismissed."
+              : `No ${filter} insights.`}
+          </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {insights.map((insight) => (
-              <InsightCard key={insight.id} insight={insight} />
+          <div
+            className={cn(
+              "grid grid-cols-1 gap-4 lg:grid-cols-2",
+              !hydrated && "opacity-90",
+            )}
+          >
+            {visible.map(({ insight, record, status }) => (
+              <InsightCard
+                key={insight.id}
+                insight={insight}
+                record={record}
+                status={status}
+                assignees={assignees}
+                onSetStatus={setStatus}
+                onSetAssignee={setAssignee}
+                onSetDueDate={setDueDate}
+              />
             ))}
           </div>
         )}
+        {saveError ? (
+          <p className="mt-3 text-xs text-rose-600" role="alert">
+            {saveError}
+          </p>
+        ) : null}
       </div>
     </div>
   )
@@ -1210,6 +1932,94 @@ export function SearchAnalyticsAdminClient() {
     [data?.navSearchBar?.topFreeFormQueries],
   )
 
+  // --- "Searches per day" detailed breakdown + time-pattern analytics --------
+  const dailyBreakdownRows = useMemo(() => {
+    const rows = data?.volumeByDay ?? []
+    const total = rows.reduce((s, r) => s + r.count, 0)
+    return rows.map((row, i) => {
+      const prev = i > 0 ? rows[i - 1].count : null
+      const deltaPct =
+        prev != null && prev > 0
+          ? ((row.count - prev) / prev) * 100
+          : prev === 0 && row.count > 0
+            ? 100
+            : null
+      return {
+        date: row.date,
+        count: row.count,
+        weekdayLong: WEEKDAY_LONG[weekdayIndexForBucket(row.date)],
+        sharePct: total > 0 ? (row.count / total) * 100 : 0,
+        deltaPct,
+      }
+    })
+  }, [data?.volumeByDay])
+
+  const dailySummary = useMemo(() => {
+    const rows = data?.volumeByDay ?? []
+    if (rows.length === 0) return null
+    const total = rows.reduce((s, r) => s + r.count, 0)
+    const activeDays = rows.filter((r) => r.count > 0)
+    const busiest = rows.reduce((b, r) => (r.count > b.count ? r : b), rows[0])
+    const quietestActive =
+      activeDays.length > 0
+        ? activeDays.reduce((q, r) => (r.count < q.count ? r : q), activeDays[0])
+        : null
+    return {
+      total,
+      avgPerDay: total / rows.length,
+      avgPerActiveDay: activeDays.length > 0 ? total / activeDays.length : 0,
+      busiest,
+      quietestActive,
+      activeDayCount: activeDays.length,
+      dayCount: rows.length,
+    }
+  }, [data?.volumeByDay])
+
+  const dayOfWeekRows = useMemo(() => {
+    const rows = data?.volumeByDay ?? []
+    const totals = new Array(7).fill(0) as number[]
+    const occurrences = new Array(7).fill(0) as number[]
+    for (const r of rows) {
+      const wd = weekdayIndexForBucket(r.date)
+      totals[wd] += r.count
+      occurrences[wd] += 1
+    }
+    return WEEKDAY_ORDER.map((wd) => ({
+      label: WEEKDAY_SHORT[wd],
+      total: totals[wd],
+      avg: occurrences[wd] > 0 ? Math.round((totals[wd] / occurrences[wd]) * 10) / 10 : 0,
+    }))
+  }, [data?.volumeByDay])
+
+  const busiestWeekday = useMemo(() => {
+    if (dayOfWeekRows.every((r) => r.total === 0)) return null
+    return dayOfWeekRows.reduce((b, r) => (r.total > b.total ? r : b), dayOfWeekRows[0])
+  }, [dayOfWeekRows])
+
+  const hourOfDayRows = useMemo(() => {
+    const rows = data?.hourOfDay ?? []
+    if (rows.length === 0) return []
+    return rows.map((r) => ({
+      hour: r.hour,
+      label: formatHourLabel(r.hour),
+      count: r.count,
+    }))
+  }, [data?.hourOfDay])
+
+  const peakHour = useMemo(() => {
+    if (hourOfDayRows.length === 0) return null
+    if (hourOfDayRows.every((r) => r.count === 0)) return null
+    return hourOfDayRows.reduce((b, r) => (r.count > b.count ? r : b), hourOfDayRows[0])
+  }, [hourOfDayRows])
+
+  const cumulativeRows = useMemo(() => {
+    let running = 0
+    return (data?.volumeByDay ?? []).map((r) => {
+      running += r.count
+      return { date: r.date, cumulative: running, count: r.count }
+    })
+  }, [data?.volumeByDay])
+
   const periodTrendShowSpinner = Boolean(
     data?.configured &&
       (periodTrendLoading || (periodTrendPayload === null && !periodTrendError)),
@@ -1307,7 +2117,7 @@ export function SearchAnalyticsAdminClient() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <DashboardKPICard
               label="Total searches"
               value={data.totalSearches.toLocaleString()}
@@ -1315,6 +2125,19 @@ export function SearchAnalyticsAdminClient() {
               changeType={volTrend.changeType}
               subtitle={`Marketplace /search · ${data.rangeDays}d`}
               icon="📊"
+              trend={kpiSpark}
+            />
+            <DashboardKPICard
+              label="Searches / day"
+              value={dailySummary ? dailySummary.avgPerDay.toFixed(1) : "—"}
+              change={volTrend.change}
+              changeType={volTrend.changeType}
+              subtitle={
+                dailySummary
+                  ? `Avg over ${dailySummary.dayCount}d · peak ${dailySummary.busiest.count.toLocaleString()}`
+                  : "Average per day in range"
+              }
+              icon="📅"
               trend={kpiSpark}
             />
             <DashboardKPICard
@@ -1893,6 +2716,389 @@ export function SearchAnalyticsAdminClient() {
                       stroke="#10B981"
                       strokeWidth={2.5}
                       fill="url(#p50g)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+
+          {/* Searches per day — exact daily counts + summary */}
+          <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">Searches per day</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Marketplace /search only — exact count for each day in the range, day-over-day
+                  change, and each day&apos;s share of total volume.
+                </p>
+              </div>
+            </div>
+
+            {dailySummary == null ? (
+              <EmptyChart />
+            ) : (
+              <>
+                <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Avg / day
+                    </p>
+                    <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
+                      {dailySummary.avgPerDay.toFixed(1)}
+                    </p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {dailySummary.avgPerActiveDay.toFixed(1)} per active day
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Busiest day
+                    </p>
+                    <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
+                      {dailySummary.busiest.count.toLocaleString()}
+                    </p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {(() => {
+                        try {
+                          return format(parseISO(dailySummary.busiest.date), "EEE, MMM d")
+                        } catch {
+                          return dailySummary.busiest.date
+                        }
+                      })()}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Quietest active day
+                    </p>
+                    <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
+                      {dailySummary.quietestActive
+                        ? dailySummary.quietestActive.count.toLocaleString()
+                        : "—"}
+                    </p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {dailySummary.quietestActive
+                        ? (() => {
+                            try {
+                              return format(
+                                parseISO(dailySummary.quietestActive.date),
+                                "EEE, MMM d",
+                              )
+                            } catch {
+                              return dailySummary.quietestActive.date
+                            }
+                          })()
+                        : "No active days"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                      Active days
+                    </p>
+                    <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900">
+                      {dailySummary.activeDayCount}/{dailySummary.dayCount}
+                    </p>
+                    <p className="mt-0.5 text-xs text-slate-500">Days with ≥1 search</p>
+                  </div>
+                </div>
+
+                <div className="max-h-[420px] overflow-auto rounded-lg border border-slate-200">
+                  <table className="w-full border-collapse text-sm">
+                    <thead className="sticky top-0 z-10 bg-slate-50 text-left">
+                      <tr className="border-b border-slate-200 text-xs font-medium uppercase tracking-wide text-slate-500">
+                        <th className="px-4 py-2.5">Date</th>
+                        <th className="px-4 py-2.5">Day</th>
+                        <th className="px-4 py-2.5 text-right">Searches</th>
+                        <th className="px-4 py-2.5 text-right">% of total</th>
+                        <th className="px-4 py-2.5 text-right">Δ vs prev</th>
+                        <th className="hidden px-4 py-2.5 sm:table-cell">Volume</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...dailyBreakdownRows].reverse().map((row) => {
+                        const deltaType =
+                          row.deltaPct == null
+                            ? "neutral"
+                            : row.deltaPct > 0.5
+                              ? "positive"
+                              : row.deltaPct < -0.5
+                                ? "negative"
+                                : "neutral"
+                        const barPct =
+                          dailySummary.busiest.count > 0
+                            ? (row.count / dailySummary.busiest.count) * 100
+                            : 0
+                        return (
+                          <tr
+                            key={row.date}
+                            className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60"
+                          >
+                            <td className="whitespace-nowrap px-4 py-2.5 font-medium text-slate-700 tabular-nums">
+                              {(() => {
+                                try {
+                                  return format(parseISO(row.date), "MMM d, yyyy")
+                                } catch {
+                                  return row.date
+                                }
+                              })()}
+                            </td>
+                            <td className="whitespace-nowrap px-4 py-2.5 text-slate-500">
+                              {row.weekdayLong}
+                            </td>
+                            <td className="px-4 py-2.5 text-right font-semibold tabular-nums text-slate-900">
+                              {row.count.toLocaleString()}
+                            </td>
+                            <td className="px-4 py-2.5 text-right tabular-nums text-slate-500">
+                              {row.sharePct.toFixed(1)}%
+                            </td>
+                            <td
+                              className={cn(
+                                "px-4 py-2.5 text-right font-medium tabular-nums",
+                                deltaType === "positive"
+                                  ? "text-emerald-600"
+                                  : deltaType === "negative"
+                                    ? "text-rose-600"
+                                    : "text-slate-400",
+                              )}
+                            >
+                              {row.deltaPct == null
+                                ? "—"
+                                : `${row.deltaPct > 0 ? "+" : ""}${row.deltaPct.toFixed(0)}%`}
+                            </td>
+                            <td className="hidden px-4 py-2.5 sm:table-cell">
+                              <div className="h-2 w-full max-w-[160px] overflow-hidden rounded-full bg-slate-100">
+                                <div
+                                  className="h-full rounded-full bg-blue-500"
+                                  style={{ width: `${Math.max(barPct, row.count > 0 ? 4 : 0)}%` }}
+                                />
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Time-of-week + time-of-day patterns */}
+          <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">Day-of-week pattern</h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Average searches per weekday across the range — find the days demand peaks.
+                  </p>
+                </div>
+                {busiestWeekday ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700">
+                    <span className="h-2 w-2 rounded-full bg-indigo-600" />
+                    Peak: {busiestWeekday.label}
+                  </span>
+                ) : null}
+              </div>
+              {dayOfWeekRows.every((r) => r.total === 0) ? (
+                <EmptyChart />
+              ) : (
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={dayOfWeekRows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fill: "#64748B", fontSize: 12 }}
+                        tickLine={false}
+                        axisLine={{ stroke: "#E2E8F0" }}
+                      />
+                      <YAxis
+                        tick={{ fill: "#64748B", fontSize: 11 }}
+                        tickLine={false}
+                        axisLine={false}
+                        width={40}
+                      />
+                      <RechartsTooltip
+                        cursor={{ fill: "rgba(99,102,241,0.08)" }}
+                        content={({ active, payload, label }) => {
+                          if (!active || !payload?.length) return null
+                          const row = payload[0]?.payload as { total: number; avg: number }
+                          return (
+                            <AnalyticsTooltip
+                              active
+                              label={String(label ?? "")}
+                              payload={[
+                                { name: "Avg / day", value: row.avg, color: "#6366F1" },
+                                { name: "Total", value: row.total, color: "#94A3B8" },
+                              ]}
+                            />
+                          )
+                        }}
+                      />
+                      <Bar dataKey="avg" radius={[4, 4, 0, 0]} maxBarSize={48} name="Avg / day">
+                        {dayOfWeekRows.map((row) => (
+                          <Cell
+                            key={row.label}
+                            fill={
+                              busiestWeekday && row.label === busiestWeekday.label
+                                ? "#6366F1"
+                                : "#C7D2FE"
+                            }
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+              <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">Peak search hours</h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Searches folded into hour-of-day buckets (UTC) — the windows shoppers search most.
+                  </p>
+                </div>
+                {peakHour ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-teal-200 bg-teal-50 px-3 py-1.5 text-xs font-medium text-teal-700">
+                    <span className="h-2 w-2 rounded-full bg-teal-600" />
+                    Peak: {formatHourLabel(peakHour.hour)} UTC
+                  </span>
+                ) : null}
+              </div>
+              {hourOfDayRows.length === 0 || hourOfDayRows.every((r) => r.count === 0) ? (
+                <EmptyChart />
+              ) : (
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={hourOfDayRows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="hourGradientDash" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#0D9488" stopOpacity={0.95} />
+                          <stop offset="100%" stopColor="#5EEAD4" stopOpacity={0.7} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                      <XAxis
+                        dataKey="label"
+                        interval={1}
+                        tick={{ fill: "#64748B", fontSize: 10 }}
+                        tickLine={false}
+                        axisLine={{ stroke: "#E2E8F0" }}
+                      />
+                      <YAxis
+                        tick={{ fill: "#64748B", fontSize: 11 }}
+                        tickLine={false}
+                        axisLine={false}
+                        width={40}
+                      />
+                      <RechartsTooltip
+                        cursor={{ fill: "rgba(13,148,136,0.08)" }}
+                        content={({ active, payload }) => {
+                          if (!active || !payload?.length) return null
+                          const row = payload[0]?.payload as { hour: number; count: number }
+                          return (
+                            <AnalyticsTooltip
+                              active
+                              label={`${formatHourLabel(row.hour)} – ${formatHourLabel((row.hour + 1) % 24)} UTC`}
+                              payload={[{ name: "Searches", value: row.count, color: "#0D9488" }]}
+                            />
+                          )
+                        }}
+                      />
+                      <Bar
+                        dataKey="count"
+                        fill="url(#hourGradientDash)"
+                        radius={[3, 3, 0, 0]}
+                        maxBarSize={22}
+                        name="Searches"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Cumulative search volume */}
+          <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">Cumulative searches</h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Running total across the range — a steepening curve means accelerating demand.
+                </p>
+              </div>
+            </div>
+            {cumulativeRows.length === 0 ? (
+              <EmptyChart />
+            ) : (
+              <div className="h-[320px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={cumulativeRows} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="cumulativeGradientDash" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#8B5CF6" stopOpacity={0.25} />
+                        <stop offset="100%" stopColor="#8B5CF6" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      stroke="#94A3B8"
+                      tick={{ fill: "#64748B", fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={{ stroke: "#E2E8F0" }}
+                      tickFormatter={(v) => {
+                        try {
+                          return format(parseISO(String(v)), "MMM d")
+                        } catch {
+                          return String(v)
+                        }
+                      }}
+                    />
+                    <YAxis
+                      stroke="#94A3B8"
+                      tick={{ fill: "#64748B", fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={false}
+                      width={48}
+                    />
+                    <RechartsTooltip
+                      content={({ active, payload, label }) => {
+                        if (!active || !payload?.length) return null
+                        const row = payload[0]?.payload as { cumulative: number; count: number }
+                        let labelStr = ""
+                        if (label != null && label !== "") {
+                          try {
+                            labelStr = format(parseISO(String(label)), "MMM d, yyyy")
+                          } catch {
+                            labelStr = String(label)
+                          }
+                        }
+                        return (
+                          <AnalyticsTooltip
+                            active
+                            label={labelStr || undefined}
+                            payload={[
+                              { name: "Cumulative", value: row.cumulative, color: "#8B5CF6" },
+                              { name: "That day", value: row.count, color: "#C4B5FD" },
+                            ]}
+                          />
+                        )
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="cumulative"
+                      stroke="#8B5CF6"
+                      strokeWidth={2.5}
+                      fill="url(#cumulativeGradientDash)"
+                      name="Cumulative"
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -2788,6 +3994,75 @@ export function SearchAnalyticsAdminClient() {
                     </BarChart>
                   </ChartContainer>
                 </div>
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Captured demand — “notify me when listed”
+                </h3>
+                <p className="mt-1 text-sm text-slate-500">
+                  Shoppers who hit a dead end and left an email so Reswell can source the board or
+                  alert them. Each one is a confirmed sale waiting on supply.
+                </p>
+              </div>
+              {data.demandCapture.total > 0 ? (
+                <div className="flex gap-4">
+                  <div className="text-right">
+                    <div className="text-2xl font-bold tabular-nums text-slate-900">
+                      {data.demandCapture.total.toLocaleString()}
+                    </div>
+                    <div className="text-[10px] uppercase tracking-wide text-slate-400">Requests</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold tabular-nums text-blue-600">
+                      {data.demandCapture.uniquePeople.toLocaleString()}
+                    </div>
+                    <div className="text-[10px] uppercase tracking-wide text-slate-400">People</div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+            {data.demandCapture.byQuery.length === 0 ? (
+              <p className="py-4 text-center text-sm text-slate-500">
+                No demand captured in this range — when a dead-end search converts a “notify me”
+                signup, it shows here.
+              </p>
+            ) : (
+              <div className="max-h-[340px] overflow-y-auto rounded-lg border border-slate-200">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 border-b border-slate-200 bg-slate-50">
+                    <tr className="text-left text-slate-500">
+                      <th className="p-2 font-medium">Query</th>
+                      <th className="p-2 text-right font-medium">Requests</th>
+                      <th className="p-2 text-right font-medium">People</th>
+                      <th className="p-2 text-right font-medium">Last asked</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.demandCapture.byQuery.map((row) => {
+                      let last = row.lastAt
+                      try {
+                        last = format(parseISO(row.lastAt), "MMM d")
+                      } catch {
+                        /* keep raw */
+                      }
+                      return (
+                        <tr key={row.query} className="border-b border-slate-100 last:border-0">
+                          <td className="max-w-[280px] truncate p-2" title={row.query}>
+                            {row.query}
+                          </td>
+                          <td className="p-2 text-right tabular-nums">{row.count}</td>
+                          <td className="p-2 text-right tabular-nums text-blue-600">{row.people}</td>
+                          <td className="p-2 text-right tabular-nums text-slate-500">{last}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>

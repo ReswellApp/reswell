@@ -3,7 +3,16 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { format } from "date-fns"
-import { ArrowLeft, Loader2, MessageCircle, MessageSquarePlus, MoreVertical, Paperclip, Trash2 } from "lucide-react"
+import {
+  ArrowLeft,
+  Loader2,
+  MessageCircle,
+  MessageSquarePlus,
+  MoreVertical,
+  Paperclip,
+  Send,
+  Trash2,
+} from "lucide-react"
 import { toast } from "sonner"
 import { getAdminSession } from "@/app/actions/account"
 import type { AdminConversationHeaderRow } from "@/lib/db/adminConversations"
@@ -21,6 +30,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { OpenMarketplacePdfButton } from "@/components/features/messages/open-marketplace-pdf-button"
 import {
   AdminSendUserMessageDialog,
@@ -61,6 +71,8 @@ export function AdminMarketplaceMessageThreadClient({ conversationId }: ThreadPr
       cancelled = true
     }
   }, [])
+  const [replyText, setReplyText] = useState("")
+  const [sendingReply, setSendingReply] = useState(false)
   const [caption, setCaption] = useState("")
   const [uploading, setUploading] = useState(false)
   const [dragActive, setDragActive] = useState(false)
@@ -122,6 +134,34 @@ export function AdminMarketplaceMessageThreadClient({ conversationId }: ThreadPr
   useEffect(() => {
     void load()
   }, [load])
+
+  const sendReply = useCallback(async () => {
+    const body = replyText.trim()
+    if (!body) {
+      toast.error("Enter a message")
+      return
+    }
+    setSendingReply(true)
+    try {
+      const res = await fetch(`/api/admin/conversations/${conversationId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: body }),
+      })
+      const json = (await res.json()) as { error?: string }
+      if (!res.ok) {
+        toast.error(typeof json.error === "string" ? json.error : "Could not send message")
+        return
+      }
+      setReplyText("")
+      toast.success("Message sent to buyer and seller")
+      await load()
+    } catch {
+      toast.error("Could not send message")
+    } finally {
+      setSendingReply(false)
+    }
+  }, [conversationId, load, replyText])
 
   const sendPdf = useCallback(
     async (file: File) => {
@@ -373,7 +413,45 @@ export function AdminMarketplaceMessageThreadClient({ conversationId }: ThreadPr
           </Card>
         )}
 
-        <div className="mt-4 space-y-2 rounded-xl border border-border/60 bg-muted/20 p-4">
+        <div className="mt-4 space-y-3 rounded-xl border border-border/60 bg-muted/20 p-4">
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              Reply in this thread — visible to buyer and seller in their messages.
+            </p>
+            <Textarea
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              placeholder="Write a message…"
+              disabled={sendingReply}
+              rows={3}
+              className="min-h-[80px] resize-y bg-background"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault()
+                  void sendReply()
+                }
+              }}
+            />
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                className="gap-2"
+                disabled={sendingReply || !replyText.trim()}
+                onClick={() => void sendReply()}
+              >
+                {sendingReply ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                ) : (
+                  <Send className="h-4 w-4" aria-hidden />
+                )}
+                Send reply
+              </Button>
+              <span className="text-xs text-muted-foreground">⌘/Ctrl + Enter to send</span>
+            </div>
+          </div>
+
+          <div className="border-t border-border/60 pt-3 space-y-2">
           <p className="text-xs text-muted-foreground">
             Send a PDF to buyer and seller — drag a file here or choose one. Optional note applies to
             the same message.
@@ -413,6 +491,7 @@ export function AdminMarketplaceMessageThreadClient({ conversationId }: ThreadPr
               Choose PDF
             </Button>
             <span className="text-xs text-muted-foreground">or drag onto the thread above</span>
+          </div>
           </div>
         </div>
       </div>

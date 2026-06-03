@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { SearchCategoryFilters } from "./search-section-filters"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { RecentFeedClient } from "@/components/recent-feed-client"
+import { BoardsNoResultsRequestPanel } from "@/components/boards-no-results-request-panel"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import {
   meaningfulSearchTerms,
@@ -24,6 +25,11 @@ import {
   normalizeMarketplaceSearchQueryForAnalytics,
   recordMarketplaceSearchAnalyticsEvent,
 } from "@/lib/services/searchAnalytics"
+import {
+  expandSearchQueryTerms,
+  getActiveSearchSynonyms,
+} from "@/lib/services/searchSynonyms"
+import { resolveSearchOverrideListingIds } from "@/lib/services/searchResultOverrides"
 
 const LIMIT = 48
 
@@ -225,6 +231,13 @@ export async function SearchPageView({
                   : "No listings to show yet. Check back soon or browse by category."
           }
         />
+        {listings.length === 0 && rawQuery.trim() && !brandUnknown ? (
+          <BoardsNoResultsRequestPanel
+            source="search"
+            query={rawQuery}
+            criteria={{ q: rawQuery.trim() }}
+          />
+        ) : null}
       </section>
     </main>
   )
@@ -254,12 +267,20 @@ async function resolveSearchListings(
     return { listings, searchMeta: null }
   }
 
+  // Admin synonyms widen recall (e.g. "ci" -> "channel islands") on both backends.
+  const synonyms = await getActiveSearchSynonyms()
+  const expansions = expandSearchQueryTerms(rawQuery, synonyms)
+
+  let listings: RecentListing[]
+  let backend: MarketplaceSearchResolutionMeta["backend"]
+
   if (isElasticsearchConfigured()) {
     try {
       const ids = await searchListingIdsFromElasticsearch(rawQuery, LIMIT, {
         categoryName: category?.name ?? null,
+        expansions,
       })
-      let listings = await hydrateListingsByIds(supabase, ids)
+      listings = await hydrateListingsByIds(supabase, ids)
       if (listings.length === 0) {
         const typoIds = await searchListingIdsFromElasticsearch(rawQuery, LIMIT, {
           categoryName: category?.name ?? null,
@@ -267,28 +288,35 @@ async function resolveSearchListings(
         })
         listings = await hydrateListingsByIds(supabase, typoIds)
       }
-      return {
-        listings,
-        searchMeta: { resultCount: listings.length, backend: "elasticsearch" },
-      }
+      backend = "elasticsearch"
     } catch (err) {
       console.error("[search] Elasticsearch error, falling back to Supabase:", err)
-      const { listings } = await buildSearchFromSupabase(supabase, rawQuery, categoryId, LIMIT)
-      return {
-        listings,
-        searchMeta: { resultCount: listings.length, backend: "supabase" },
-      }
+      const r = await buildSearchFromSupabase(supabase, rawQuery, categoryId, LIMIT, expansions)
+      listings = r.listings
+      backend = "supabase"
+    }
+  } else {
+    const r = await buildSearchFromSupabase(supabase, rawQuery, categoryId, LIMIT, expansions)
+    listings = r.listings
+    if (listings.length === 0) {
+      const retry = await buildSearchFromSupabaseTypoFallback(supabase, rawQuery, categoryId, LIMIT)
+      listings = retry.listings
+    }
+    backend = "supabase"
+  }
+
+  // Final safety net: admin-pinned listings for queries that still found nothing.
+  if (listings.length === 0) {
+    const overrideIds = await resolveSearchOverrideListingIds(rawQuery)
+    if (overrideIds.length > 0) {
+      const pinned = await hydrateListingsByIds(supabase, overrideIds)
+      if (pinned.length > 0) listings = pinned
     }
   }
 
-  let { listings } = await buildSearchFromSupabase(supabase, rawQuery, categoryId, LIMIT)
-  if (listings.length === 0) {
-    const retry = await buildSearchFromSupabaseTypoFallback(supabase, rawQuery, categoryId, LIMIT)
-    listings = retry.listings
-  }
   return {
     listings,
-    searchMeta: { resultCount: listings.length, backend: "supabase" },
+    searchMeta: { resultCount: listings.length, backend },
   }
 }
 
@@ -297,11 +325,26 @@ async function buildSearchFromSupabase(
   rawQuery: string,
   categoryId: string | null,
   limit: number,
+  expansions: string[] = [],
 ): Promise<{
   listings: RecentListing[]
 }> {
   const allRes = await buildSearchQuery(supabase, rawQuery, categoryId, limit)
-  const rows = allRes.data ?? []
+  let rows = allRes.data ?? []
+
+  // Synonym recovery: when the literal query matches nothing, try each expansion.
+  if (rows.length === 0 && expansions.length > 0) {
+    const merged = new Map<string, any>()
+    for (const expansion of expansions) {
+      if (merged.size >= limit) break
+      const expRes = await buildSearchQuery(supabase, expansion, categoryId, limit)
+      for (const row of expRes.data ?? []) {
+        if (!merged.has(row.id)) merged.set(row.id, row)
+      }
+    }
+    rows = Array.from(merged.values()).slice(0, limit)
+  }
+
   const listings = rows.map((row: any) => rowToRecentListing(row))
 
   return {

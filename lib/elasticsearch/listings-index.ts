@@ -185,13 +185,50 @@ function requiredMeaningfulMatches(meaningfulCount: number): number {
   return Math.min(meaningfulCount, Math.max(2, Math.ceil(meaningfulCount * 0.65)))
 }
 
+/** Normalized, de-duped admin synonym expansions to widen recall (e.g. "ci" -> "channel islands"). */
+function normalizeExpansions(expansions: string[] | undefined): string[] {
+  if (!expansions?.length) return []
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (const e of expansions) {
+    const v = e.trim()
+    const key = v.toLowerCase()
+    if (!v || seen.has(key)) continue
+    seen.add(key)
+    out.push(v)
+  }
+  return out
+}
+
 /**
  * Builds a bool query: requires a majority of meaningful terms (not lone digits),
- * plus optional phrase boosts so exact titles rank higher.
+ * plus optional phrase boosts so exact titles rank higher. Admin `expansions`
+ * (synonyms) are added as additional satisfying clauses so aliases/typos recover results.
  */
-function buildListingsSearchQueryBody(filter: object[], rawQuery: string): object {
+function buildListingsSearchQueryBody(
+  filter: object[],
+  rawQuery: string,
+  expansions?: string[],
+): object {
   const q = rawQuery.trim()
   const meaningful = meaningfulSearchTerms(q)
+  const expansionTerms = normalizeExpansions(expansions)
+  const expansionClauses = expansionTerms.map((term) => ({
+    multi_match: {
+      query: term,
+      fields: [...SEARCH_FIELDS],
+      type: "best_fields" as const,
+      operator: "or" as const,
+    },
+  }))
+  const expansionPhraseBoosts = expansionTerms.map((term) => ({
+    multi_match: {
+      query: term,
+      fields: ["title^3", "brand^3", "model^3", "category_name^2"],
+      type: "phrase" as const,
+      boost: 3,
+    },
+  }))
 
   if (meaningful.length === 0) {
     // Only digits / symbols / very short tokens — keep lenient but still use analyzed match
@@ -200,13 +237,21 @@ function buildListingsSearchQueryBody(filter: object[], rawQuery: string): objec
         filter,
         must: [
           {
-            multi_match: {
-              query: q,
-              fields: [...SEARCH_FIELDS],
-              type: "best_fields",
-              tie_breaker: 0.2,
-              operator: "or",
-              fuzziness: "AUTO",
+            bool: {
+              should: [
+                {
+                  multi_match: {
+                    query: q,
+                    fields: [...SEARCH_FIELDS],
+                    type: "best_fields",
+                    tie_breaker: 0.2,
+                    operator: "or",
+                    fuzziness: "AUTO",
+                  },
+                },
+                ...expansionClauses,
+              ],
+              minimum_should_match: 1,
             },
           },
         ],
@@ -230,7 +275,8 @@ function buildListingsSearchQueryBody(filter: object[], rawQuery: string): objec
       must: [
         {
           bool: {
-            should: termClauses,
+            // Expansion clauses can satisfy the requirement on their own (alias/typo recovery).
+            should: [...termClauses, ...expansionClauses],
             minimum_should_match: required,
           },
         },
@@ -263,6 +309,7 @@ function buildListingsSearchQueryBody(filter: object[], rawQuery: string): objec
             boost: 0.35,
           },
         },
+        ...expansionPhraseBoosts,
       ],
       minimum_should_match: 0,
     },
@@ -306,7 +353,13 @@ function buildListingsTypoFallbackQueryBody(filter: object[], rawQuery: string):
 export async function searchListingIdsFromElasticsearch(
   rawQuery: string,
   limit: number,
-  options?: { sections?: string[]; categoryName?: string | null; typoFallback?: boolean },
+  options?: {
+    sections?: string[]
+    categoryName?: string | null
+    typoFallback?: boolean
+    /** Admin synonym expansions OR-added to widen recall (ignored on typo fallback). */
+    expansions?: string[]
+  },
 ): Promise<string[]> {
   const es = getElasticsearchClient()
   if (!es) return []
@@ -329,7 +382,7 @@ export async function searchListingIdsFromElasticsearch(
     const q = rawQuery.trim()
     const queryBody = options?.typoFallback
       ? buildListingsTypoFallbackQueryBody(filter, q)
-      : buildListingsSearchQueryBody(filter, q)
+      : buildListingsSearchQueryBody(filter, q, options?.expansions)
 
     if (q && options?.typoFallback && !queryBody) {
       return []
