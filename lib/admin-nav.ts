@@ -23,6 +23,7 @@ export type AdminNavIconKey =
   | 'contactRound'
   | 'search'
   | 'wrench'
+  | 'dollarSign'
 
 export interface AdminNavItemConfig {
   href: string
@@ -44,6 +45,7 @@ const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
   '/admin/seo',
   '/admin/shipping',
   '/admin/tools',
+  '/admin/pnl',
   '/admin/listings/brand-requests',
   '/admin/listings/board-catalog-data',
   '/admin/orders/test-purchase',
@@ -101,6 +103,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     id: 'admin-tools',
     label: 'Admin tools',
     items: [
+      { href: '/admin/pnl', label: 'P&L Tracker', icon: 'dollarSign' },
       { href: '/admin/tools', label: 'Admin tools', icon: 'wrench' },
       { href: '/admin/settings', label: 'Settings', icon: 'settings' },
     ],

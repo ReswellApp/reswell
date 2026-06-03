@@ -24,6 +24,7 @@ import {
   ContactRound,
   Search,
   Wrench,
+  DollarSign,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -62,6 +63,7 @@ const NAV_ICONS: Record<AdminNavIconKey, LucideIcon> = {
   contactRound: ContactRound,
   search: Search,
   wrench: Wrench,
+  dollarSign: DollarSign,
 }
 
 function isNavActive(pathname: string, href: string): boolean {
