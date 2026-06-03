@@ -13,6 +13,7 @@ import {
   type MouseEvent,
 } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -186,9 +187,10 @@ function resolveHeaderAvatarUrl(
     null
 
   if (profile?.is_shop && trim(profile.shop_logo_url)) {
-    return trim(profile.shop_logo_url)
+    return profileMediaDisplaySrc(trim(profile.shop_logo_url))
   }
-  return trim(profile?.avatar_url) || oauth
+  const profileAvatar = trim(profile?.avatar_url)
+  return (profileAvatar ? profileMediaDisplaySrc(profileAvatar) : null) || oauth
 }
 
 /** Desktop + mobile: “All Surfboards” first, then each `type=` link (order from {@link surfboardBrowseLinks}). */

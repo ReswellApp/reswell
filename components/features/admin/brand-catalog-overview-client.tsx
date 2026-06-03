@@ -54,6 +54,8 @@ import { BRANDS_BASE } from "@/lib/brands/routes"
 import { finBoxesDisplayName, finPlugsDisplayName, materialDisplayName } from "@/lib/utils/brand-model-dimensions"
 import { formatCondition } from "@/lib/listing-labels"
 import { cn } from "@/lib/utils"
+import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -662,7 +664,14 @@ function BrandRow({
         />
         {isValidImg(brand.logo_url) ? (
           <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-            <Image src={brand.logo_url} alt={`${brand.name} logo`} fill className="object-contain p-1" sizes="44px" />
+            <Image
+              src={brandLogoDisplaySrc(brand.logo_url)}
+              alt={`${brand.name} logo`}
+              fill
+              className="object-contain p-1"
+              sizes="44px"
+              unoptimized={listingImageShouldBypassOptimization(brandLogoDisplaySrc(brand.logo_url))}
+            />
           </span>
         ) : (
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-400">

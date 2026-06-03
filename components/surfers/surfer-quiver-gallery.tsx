@@ -1,5 +1,7 @@
 import Image from "next/image"
 import type { SurferQuiverItem } from "@/lib/surfers/parse-surfer-quiver-items"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { surferMediaDisplaySrc } from "@/lib/public-media-display-src"
 
 /**
  * Portrait tile geometry matches listing tiles (`aspect-[3/4]`, `rounded-xl`, `object-cover`).
@@ -33,12 +35,15 @@ export function SurferQuiverGallery({
                 )}
                 <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-muted">
                   <Image
-                    src={item.image_url}
+                    src={surferMediaDisplaySrc(item.image_url)}
                     alt={alt}
                     fill
                     className="object-cover object-center"
                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                     quality={88}
+                    unoptimized={listingImageShouldBypassOptimization(
+                      surferMediaDisplaySrc(item.image_url),
+                    )}
                   />
                 </div>
                 {item.description?.trim() ? (

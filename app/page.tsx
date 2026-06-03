@@ -13,6 +13,8 @@ import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardSolidClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
 import { sellerProfileHref } from "@/lib/seller-slug"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { FadeInSection } from "@/components/fade-in-section"
 import {
@@ -338,11 +340,14 @@ export default async function HomePage() {
                       <div className="h-20 bg-offwhite relative overflow-hidden">
                         {shop.shop_banner_url && (
                           <Image
-                            src={shop.shop_banner_url}
+                            src={profileMediaDisplaySrc(shop.shop_banner_url)}
                             alt=""
                             fill
                             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                             className="object-cover"
+                            unoptimized={listingImageShouldBypassOptimization(
+                              profileMediaDisplaySrc(shop.shop_banner_url),
+                            )}
                             placeholder="blur"
                             blurDataURL={wideShimmer}
                           />
@@ -351,7 +356,11 @@ export default async function HomePage() {
                       <CardContent className="p-4 pt-0">
                         <div className="flex items-end gap-3 -mt-6 mb-3">
                           <Avatar className="h-12 w-12 border-2 border-card">
-                            <AvatarImage src={shop.shop_logo_url || shop.avatar_url || ""} />
+                            <AvatarImage
+                              src={profileMediaDisplaySrc(
+                                shop.shop_logo_url || shop.avatar_url || "",
+                              )}
+                            />
                             <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                               {(shop.shop_name || shop.display_name || "S").charAt(0).toUpperCase()}
                             </AvatarFallback>

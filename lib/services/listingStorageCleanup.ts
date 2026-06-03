@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { revalidatePublicStorageObjects } from "@/lib/cache/revalidate-public-storage-object"
 
 const BUCKET = "listings" as const
 const PUBLIC_MARKER = `/storage/v1/object/public/${BUCKET}/`
@@ -72,11 +73,19 @@ export async function removeListingImageFilesFromStorage(
   const paths = bucketPathsFromListingImageUrls(imagePublicUrls)
   if (paths.length === 0) return
 
+  const removedPaths: string[] = []
+
   for (let i = 0; i < paths.length; i += REMOVE_BATCH) {
     const batch = paths.slice(i, i + REMOVE_BATCH)
     const { error } = await supabase.storage.from(BUCKET).remove(batch)
     if (error) {
       console.warn("[listingStorageCleanup] storage.remove failed:", error.message)
+    } else {
+      removedPaths.push(...batch)
     }
+  }
+
+  if (removedPaths.length > 0) {
+    revalidatePublicStorageObjects(BUCKET, removedPaths)
   }
 }

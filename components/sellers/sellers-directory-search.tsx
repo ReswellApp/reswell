@@ -17,6 +17,8 @@ import {
   searchSellersCatalogSuggest,
   type SellerSuggestRow,
 } from "@/app/actions/sellers"
+import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 
 const DEBOUNCE_MS = 200
 const MIN_QUERY_LENGTH = 1
@@ -227,7 +229,8 @@ export function SellersDirectorySearch({
           {rows!.map((row, i) => {
             const label = sellerLabel(row)
             const location = sellerLocationLabel(row)
-            const avatar = row.shop_logo_url || row.avatar_url || null
+            const avatarRaw = row.shop_logo_url || row.avatar_url || null
+            const avatar = avatarRaw ? profileMediaDisplaySrc(avatarRaw) : null
             return (
               <li key={row.id} role="none">
                 <button
@@ -252,7 +255,7 @@ export function SellersDirectorySearch({
                         fill
                         className="object-cover"
                         sizes="40px"
-                        unoptimized
+                        unoptimized={listingImageShouldBypassOptimization(avatar)}
                       />
                     </span>
                   ) : (

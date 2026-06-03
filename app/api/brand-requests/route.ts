@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { randomUUID } from "crypto"
+import { revalidatePublicStorageObjects } from "@/lib/cache/revalidate-public-storage-object"
 import { createClient } from "@/lib/supabase/server"
 
 const MAX_LOGO_BYTES = 5 * 1024 * 1024
@@ -110,6 +111,7 @@ export async function POST(request: NextRequest) {
     console.error("[brand-requests] insert:", insertError.message)
     if (uploadedPath) {
       await supabase.storage.from("brand-request-logos").remove([uploadedPath])
+      revalidatePublicStorageObjects("brand-request-logos", [uploadedPath])
     }
     return NextResponse.json({ error: "Could not save your request. Try again." }, { status: 500 })
   }

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import { SurferProfileView } from "@/components/surfers/surfer-profile-view"
 import { createAnonSupabaseClient, createClient } from "@/lib/supabase/server"
 import { getSurferBySlug } from "@/lib/surfers/server"
+import { absoluteProxiedSurferMediaUrl } from "@/lib/public-media-display-src"
 import { absoluteUrl } from "@/lib/site-metadata"
 
 export const revalidate = 3600
@@ -28,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     `Read about ${surfer.name} on Reswell — bio, links, and marketplace search.`
   const path = `/surfers/${surfer.slug}`
   const url = absoluteUrl(path)
-  const photo = surfer.photo_url?.trim()
+  const photo = absoluteProxiedSurferMediaUrl(surfer.photo_url)
 
   return {
     title,

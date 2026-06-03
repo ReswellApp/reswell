@@ -8,11 +8,11 @@ export function isProxiedListingMediaSrc(src: string | null | undefined): boolea
 }
 
 /**
- * Listing photos are pre-sized WebP in Supabase; skip Vercel Image Optimization for
- * same-origin proxy URLs to avoid transformation + cache-write charges.
+ * Pre-sized storage served via `/media/*` proxies; skip Vercel Image Optimization to
+ * avoid transformation + cache-write charges.
  */
 export function listingImageShouldBypassOptimization(src: string | null | undefined): boolean {
-  return isProxiedListingMediaSrc(src)
+  return typeof src === "string" && src.startsWith("/media/")
 }
 
 const PUBLIC_LISTINGS_MARKER = "/storage/v1/object/public/listings/"

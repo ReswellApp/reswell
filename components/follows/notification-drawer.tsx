@@ -13,6 +13,7 @@ import type { FollowNotification } from "@/lib/follows/types"
 import { getFollowNotifications, markFollowNotificationsRead } from "@/app/actions/follows"
 import { listingDetailHref } from "@/lib/listing-href"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -143,7 +144,10 @@ export function NotificationDrawer() {
                   >
                     {/* Seller avatar */}
                     <Avatar className="h-10 w-10 shrink-0">
-                      <AvatarImage src={n.actor?.avatar_url || ""} alt={actorName} />
+                      <AvatarImage
+                        src={profileMediaDisplaySrc(n.actor?.avatar_url || "")}
+                        alt={actorName}
+                      />
                       <AvatarFallback className="text-sm font-semibold bg-primary text-primary-foreground">
                         {actorName.charAt(0).toUpperCase()}
                       </AvatarFallback>

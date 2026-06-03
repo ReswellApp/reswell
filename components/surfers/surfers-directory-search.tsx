@@ -13,6 +13,8 @@ import {
 import { cn } from "@/lib/utils"
 import type { SurferRow } from "@/lib/surfers/types"
 import { SURFERS_BASE } from "@/lib/surfers/routes"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { surferMediaDisplaySrc } from "@/lib/public-media-display-src"
 
 const BROWSE_LIMIT = 36
 
@@ -183,12 +185,15 @@ export function SurfersDirectorySearch({ surfers, className }: SurfersDirectoryS
                   {s.photo_url ? (
                     <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-border/60 bg-background">
                       <Image
-                        src={s.photo_url}
+                        src={surferMediaDisplaySrc(s.photo_url)}
                         alt=""
                         fill
                         className="object-cover object-center"
                         sizes="120px"
                         quality={88}
+                        unoptimized={listingImageShouldBypassOptimization(
+                          surferMediaDisplaySrc(s.photo_url),
+                        )}
                       />
                     </span>
                   ) : (

@@ -5,6 +5,7 @@ import { resolveDynamicSeo } from "@/lib/seo/resolve-dynamic-seo"
 import { SellerProfileView } from "@/components/sellers/seller-profile-view"
 import type { SellerProfileListing } from "@/components/sellers/seller-profile-listings-panel"
 import { deriveSellerDirectoryTileMeta } from "@/lib/sellers/directory-tile-meta"
+import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
 import { absoluteUrl } from "@/lib/site-metadata"
 
 const PROFILE_UUID_RE =
@@ -26,12 +27,12 @@ function sellerSocialImage(shop: {
   shop_banner_url: string | null
 }): { url: string; isSquare: boolean } | undefined {
   if (shop.is_shop) {
-    const logo = trimUrl(shop.shop_logo_url)
+    const logo = absoluteProxiedProfileMediaUrl(shop.shop_logo_url)
     if (logo) return { url: logo, isSquare: true }
   }
-  const avatar = trimUrl(shop.avatar_url)
+  const avatar = absoluteProxiedProfileMediaUrl(shop.avatar_url)
   if (avatar) return { url: avatar, isSquare: true }
-  const banner = trimUrl(shop.shop_banner_url)
+  const banner = absoluteProxiedProfileMediaUrl(shop.shop_banner_url)
   if (banner) return { url: banner, isSquare: false }
   return undefined
 }

@@ -2,6 +2,7 @@ import "server-only"
 import type { Metadata } from "next"
 import { unstable_cache } from "next/cache"
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { metadataShareImageUrl } from "@/lib/public-media-display-src"
 import { absoluteUrl } from "@/lib/site-metadata"
 import { getManagedPage, MANAGED_PAGES } from "@/lib/seo/managed-pages"
 import {
@@ -45,9 +46,13 @@ function effectiveToMetadata(eff: EffectivePageSeo): Metadata {
   const canonicalIsAbsolute = /^https?:\/\//i.test(eff.canonical)
   const ogUrl = canonicalIsAbsolute ? eff.canonical : absoluteUrl(eff.canonical)
 
-  const resolvedOgImage = eff.ogImageUrl || autoOgImageUrl(eff)
+  const resolvedOgImage = eff.ogImageUrl
+    ? metadataShareImageUrl(eff.ogImageUrl)
+    : autoOgImageUrl(eff)
   const ogImages = [{ url: resolvedOgImage, width: 1200, height: 630 }]
-  const twitterImages = [eff.twitterImageUrl || resolvedOgImage]
+  const twitterImages = [
+    eff.twitterImageUrl ? metadataShareImageUrl(eff.twitterImageUrl) : resolvedOgImage,
+  ]
 
   return {
     title: eff.title,

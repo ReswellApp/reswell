@@ -1,5 +1,6 @@
 import "server-only"
 import type { Metadata } from "next"
+import { metadataShareImageUrl } from "@/lib/public-media-display-src"
 import { absoluteUrl } from "@/lib/site-metadata"
 import { STANDARD_OG_SIZE } from "@/lib/og/og-size"
 import { getManagedPage } from "@/lib/seo/managed-pages"
@@ -74,7 +75,7 @@ export async function metadataForBoardsBrowse(sp: BoardsBrowseSearchParams): Pro
       if (ov.title?.trim()) title = ov.title.trim()
       if (ov.description?.trim()) description = ov.description.trim()
       const overrideImage = ov.ogImageUrl?.trim()
-      if (overrideImage) shareImageUrl = overrideImage
+      if (overrideImage) shareImageUrl = metadataShareImageUrl(overrideImage)
       if (typeof ov.robotsIndex === "boolean") robotsIndex = ov.robotsIndex
       if (typeof ov.robotsFollow === "boolean") robotsFollow = ov.robotsFollow
     }

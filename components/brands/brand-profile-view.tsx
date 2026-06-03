@@ -8,6 +8,8 @@ import {
   brandSoldListingsBrowseHref,
 } from "@/lib/brands/routes"
 import type { BrandRow } from "@/lib/brands/types"
+import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { BrandDetailAdminBar } from "@/components/brands/brand-detail-admin-bar"
 import { Button } from "@/components/ui/button"
 import type { RecentListing } from "@/components/recent-feed-client"
@@ -59,12 +61,15 @@ export function BrandProfileView({
             {brand.logo_url ? (
               <div className="relative mx-auto mt-6 h-16 w-44 overflow-hidden rounded-xl border border-border/80 bg-background px-3 py-2 shadow-soft sm:h-[72px] sm:w-48">
                 <Image
-                  src={brand.logo_url}
+                  src={brandLogoDisplaySrc(brand.logo_url)}
                   alt={`${brand.name} logo`}
                   fill
                   className="object-contain object-center"
                   sizes="(max-width: 640px) 176px, 192px"
                   priority
+                  unoptimized={listingImageShouldBypassOptimization(
+                    brandLogoDisplaySrc(brand.logo_url),
+                  )}
                 />
               </div>
             ) : null}

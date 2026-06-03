@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { Globe } from "lucide-react"
+import { seoMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { cn } from "@/lib/utils"
 import {
   PIXEL_LIMITS,
@@ -80,7 +81,7 @@ export function SerpPreview({ title, description, url, siteOrigin, faviconUrl }:
         <span className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full border border-border bg-secondary">
           {faviconUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- arbitrary external/SVG favicon URL
-            <img src={faviconUrl} alt="" className="h-3.5 w-3.5 object-contain" />
+            <img src={seoMediaDisplaySrc(faviconUrl)} alt="" className="h-3.5 w-3.5 object-contain" />
           ) : (
             <Globe className="h-3.5 w-3.5 text-muted-foreground" aria-hidden />
           )}

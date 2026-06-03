@@ -25,6 +25,8 @@ import { PROFILE_AVATAR_MAX_INPUT_BYTES } from "@/lib/validations/profileAvatar"
 import { PROFILE_BANNER_MAX_INPUT_BYTES } from "@/lib/validations/profileBanner"
 import { SELLER_PROFILE_BANNER_DEFAULT } from "@/lib/brand-colors"
 import { cn } from "@/lib/utils"
+import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { buildPasswordRecoveryCallbackUrl } from "@/lib/auth/password-recovery-callback-url"
 import { ProfileChangePasswordSection } from "@/components/features/dashboard/profile-change-password-section"
 
@@ -372,7 +374,14 @@ export function DashboardProfileSettings() {
               <div className="flex items-center gap-5">
                 <div className="relative group">
                   <Avatar className="h-20 w-20 border-2 border-border">
-                    <AvatarImage src={profile.avatar_url || undefined} alt={profile.display_name} />
+                    <AvatarImage
+                      src={
+                        profile.avatar_url
+                          ? profileMediaDisplaySrc(profile.avatar_url)
+                          : undefined
+                      }
+                      alt={profile.display_name}
+                    />
                     <AvatarFallback className="text-lg bg-muted">
                       <User className="h-8 w-8 text-muted-foreground" />
                     </AvatarFallback>
@@ -449,11 +458,14 @@ export function DashboardProfileSettings() {
                   >
                     {profile.shop_banner_url ? (
                       <Image
-                        src={profile.shop_banner_url}
+                        src={profileMediaDisplaySrc(profile.shop_banner_url)}
                         alt=""
                         fill
                         sizes="(max-width: 768px) 100vw, 640px"
                         className="object-cover"
+                        unoptimized={listingImageShouldBypassOptimization(
+                          profileMediaDisplaySrc(profile.shop_banner_url),
+                        )}
                       />
                     ) : null}
                     <label

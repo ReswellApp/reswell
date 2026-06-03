@@ -11,7 +11,11 @@ import { CommunityDashboardTabs } from "@/components/features/dashboard/communit
 import { capitalizeWords } from "@/lib/listing-labels"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
-import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import {
+  listingImageShouldBypassOptimization,
+  proxiedListingImageSrc,
+} from "@/lib/listing-media-proxy-url"
+import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 
 function timeAgo(dateStr: string | null): string {
   if (!dateStr) return "Never"
@@ -225,7 +229,8 @@ export async function FollowersDashboardPanels() {
             const f = row.follower
             if (!f) return null
             const name = followerDisplayName(f)
-            const avatar = f.is_shop ? f.shop_logo_url || f.avatar_url : f.avatar_url
+            const avatarRaw = f.is_shop ? f.shop_logo_url || f.avatar_url : f.avatar_url
+            const avatar = avatarRaw ? profileMediaDisplaySrc(avatarRaw) : null
             const place = f.city || f.location
 
             return (
@@ -244,6 +249,7 @@ export async function FollowersDashboardPanels() {
                             width={48}
                             height={48}
                             className="h-full w-full object-cover"
+                            unoptimized={listingImageShouldBypassOptimization(avatar)}
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-muted-foreground">
@@ -335,7 +341,7 @@ export async function FollowersDashboardPanels() {
             } | null
             if (!s) return null
             const name = s.shop_name || s.display_name || "Seller"
-            const avatar = s.shop_logo_url || s.avatar_url || ""
+            const avatar = profileMediaDisplaySrc(s.shop_logo_url || s.avatar_url || "")
             const location = s.shop_address || s.city
             const stats = statsByUser[s.id] ?? { count: 0, lastAt: null, sample: null }
 

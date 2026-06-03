@@ -2,6 +2,7 @@ import {
   listingCardImageSrc,
   type ListingImageForCard,
 } from "@/lib/listing-image-display"
+import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 
 export type SellerProfileImagePick = {
   is_shop?: boolean | null
@@ -28,11 +29,11 @@ export function resolveSellerProfileDisplayImageUrl(
 ): string {
   if (profile.is_shop) {
     const logo = trimUrl(profile.shop_logo_url)
-    if (logo) return logo
+    if (logo) return profileMediaDisplaySrc(logo)
   }
 
   const avatar = trimUrl(profile.avatar_url)
-  if (avatar) return avatar
+  if (avatar) return profileMediaDisplaySrc(avatar)
 
   for (const listing of listingSources ?? []) {
     const src = listingCardImageSrc(listing.listing_images)

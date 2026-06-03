@@ -160,3 +160,98 @@ export async function applyListingBrandModelAttach(
   }
   return { ok: true }
 }
+
+/** One audit entry capturing a brand/model the backfill cron attached to a listing. */
+export type ListingBrandModelAutofillInsert = {
+  listing_id: string
+  listing_title: string | null
+  brand_id: string | null
+  brand_name: string | null
+  brand_model_id: string | null
+  model_name: string | null
+  attached_brand: boolean
+  attached_model: boolean
+}
+
+/** Append an audit row so admins can cross-verify auto-attached brands/models. */
+export async function recordListingBrandModelAutofill(
+  supabase: SupabaseClient,
+  entry: ListingBrandModelAutofillInsert,
+): Promise<void> {
+  const { error } = await supabase.from("listing_brand_model_autofills").insert(entry)
+  if (error) {
+    console.error("recordListingBrandModelAutofill:", error.message)
+  }
+}
+
+/** Audit row joined to the listing's current state for the admin verification page. */
+export type ListingBrandModelAutofillRow = {
+  id: string
+  listing_id: string
+  listing_title: string | null
+  brand_id: string | null
+  brand_name: string | null
+  brand_model_id: string | null
+  model_name: string | null
+  attached_brand: boolean
+  attached_model: boolean
+  created_at: string
+  listing: {
+    id: string
+    slug: string | null
+    section: string
+    status: string
+    title: string | null
+    brand: string | null
+    model: string | null
+    brand_id: string | null
+    brand_model_id: string | null
+    listing_images: { url: string | null; is_primary: boolean | null }[]
+  } | null
+}
+
+const AUTOFILL_ADMIN_SELECT = `
+  id,
+  listing_id,
+  listing_title,
+  brand_id,
+  brand_name,
+  brand_model_id,
+  model_name,
+  attached_brand,
+  attached_model,
+  created_at,
+  listing:listing_id (
+    id,
+    slug,
+    section,
+    status,
+    title,
+    brand,
+    model,
+    brand_id,
+    brand_model_id,
+    listing_images ( url, is_primary )
+  )
+` as const
+
+/** Most recent auto-attach audit rows for the admin verification page. */
+export async function listListingBrandModelAutofills(
+  supabase: SupabaseClient,
+  options?: { limit?: number },
+): Promise<ListingBrandModelAutofillRow[]> {
+  const limit = Math.min(Math.max(options?.limit ?? 500, 1), 2000)
+
+  const { data, error } = await supabase
+    .from("listing_brand_model_autofills")
+    .select(AUTOFILL_ADMIN_SELECT)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.error("listListingBrandModelAutofills:", error.message)
+    return []
+  }
+
+  return (data ?? []) as unknown as ListingBrandModelAutofillRow[]
+}

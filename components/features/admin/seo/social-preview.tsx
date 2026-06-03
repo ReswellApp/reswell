@@ -2,6 +2,8 @@
 
 import Image from "next/image"
 import { ImageIcon } from "lucide-react"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { seoMediaDisplaySrc } from "@/lib/public-media-display-src"
 
 interface SocialPreviewProps {
   title: string
@@ -33,14 +35,15 @@ export function SocialPreview({
   const host = domain(url, siteOrigin)
   const large = card === "summary_large_image"
 
-  const hero = imageUrl ? (
+  const displayImage = imageUrl ? seoMediaDisplaySrc(imageUrl) : ""
+  const hero = displayImage ? (
     <Image
-      src={imageUrl}
+      src={displayImage}
       alt=""
       width={large ? 1200 : 240}
       height={large ? 630 : 240}
       className={large ? "h-40 w-full object-cover" : "h-24 w-24 shrink-0 object-cover"}
-      unoptimized
+      unoptimized={listingImageShouldBypassOptimization(displayImage)}
     />
   ) : (
     <div

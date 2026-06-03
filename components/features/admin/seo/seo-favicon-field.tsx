@@ -4,6 +4,7 @@ import { useRef, useState } from "react"
 import { ImageIcon, Loader2, Trash2, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
+import { seoMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { uploadSeoIconFile } from "@/lib/seo/upload-seo-icon-client"
 
 interface SeoFaviconFieldProps {
@@ -37,7 +38,7 @@ export function SeoFaviconField({ label, helpText, value, onChange }: SeoFavicon
         <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border bg-secondary">
           {value ? (
             // eslint-disable-next-line @next/next/no-img-element -- arbitrary external/SVG icon URL, no optimization needed
-            <img src={value} alt="" className="h-10 w-10 object-contain" />
+            <img src={seoMediaDisplaySrc(value)} alt="" className="h-10 w-10 object-contain" />
           ) : (
             <ImageIcon className="h-5 w-5 text-muted-foreground" aria-hidden />
           )}

@@ -14,6 +14,8 @@ import {
   Trash2,
 } from "lucide-react"
 import { toast } from "sonner"
+import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -255,7 +257,8 @@ export function SellersDirectoryAdminBar() {
                   <ul className="min-w-0 space-y-2 pr-1">
                     {demoted.map((row) => {
                       const label = sellerLabel(row.shop_name, row.display_name)
-                      const avatar = row.shop_logo_url || row.avatar_url || null
+                      const avatarRaw = row.shop_logo_url || row.avatar_url || null
+                      const avatar = avatarRaw ? profileMediaDisplaySrc(avatarRaw) : null
                       return (
                         <li
                           key={row.profile_id}
@@ -269,7 +272,7 @@ export function SellersDirectoryAdminBar() {
                                 fill
                                 sizes="48px"
                                 className="object-cover"
-                                unoptimized={avatar.startsWith("/")}
+                                unoptimized={listingImageShouldBypassOptimization(avatar)}
                               />
                             </span>
                           ) : (
@@ -347,7 +350,8 @@ export function SellersDirectoryAdminBar() {
                     {searchHits.map((hit) => {
                       const label = sellerLabel(hit.shop_name, hit.display_name)
                       const loc = sellerLocation(hit)
-                      const avatar = hit.shop_logo_url || hit.avatar_url || null
+                      const hitAvatarRaw = hit.shop_logo_url || hit.avatar_url || null
+                      const avatar = hitAvatarRaw ? profileMediaDisplaySrc(hitAvatarRaw) : null
                       return (
                         <li
                           key={hit.id}
@@ -361,7 +365,7 @@ export function SellersDirectoryAdminBar() {
                                 fill
                                 sizes="48px"
                                 className="object-cover"
-                                unoptimized={avatar.startsWith("/")}
+                                unoptimized={listingImageShouldBypassOptimization(avatar)}
                               />
                             </span>
                           ) : (

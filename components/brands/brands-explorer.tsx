@@ -5,6 +5,8 @@ import Link from "next/link"
 import { ArrowUpRight, MapPin, Package } from "lucide-react"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import type { BrandRow } from "@/lib/brands/types"
+import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 
 export function BrandsExplorer({ brands }: { brands: BrandRow[] }) {
   return (
@@ -26,11 +28,14 @@ export function BrandsExplorer({ brands }: { brands: BrandRow[] }) {
                     {entry.logo_url ? (
                       <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-xl border border-border/60 bg-background p-2">
                         <Image
-                          src={entry.logo_url}
+                          src={brandLogoDisplaySrc(entry.logo_url)}
                           alt={`${entry.name} logo`}
                           fill
                           className="object-contain object-center"
                           sizes="72px"
+                          unoptimized={listingImageShouldBypassOptimization(
+                            brandLogoDisplaySrc(entry.logo_url),
+                          )}
                         />
                       </div>
                     ) : (

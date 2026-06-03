@@ -16,6 +16,7 @@ import { MetaPixel } from '@/components/meta-pixel'
 import { MetaPixelPageViewTracker } from '@/components/meta-pixel-page-view-tracker'
 import { JsonLd } from '@/components/seo/json-ld'
 import { organizationSchema, webSiteSchema } from '@/lib/seo/structured-data'
+import { absoluteProxiedSeoMediaUrl } from '@/lib/public-media-display-src'
 import { getCachedSeoSettings } from '@/lib/seo/resolve-seo-settings'
 
 import './globals.css'
@@ -50,11 +51,14 @@ const stackSansHeadline = localFont({
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getCachedSeoSettings()
 
+  const favicon = absoluteProxiedSeoMediaUrl(settings.faviconUrl) ?? settings.faviconUrl ?? null
+  const appleIcon = absoluteProxiedSeoMediaUrl(settings.appleIconUrl) ?? settings.appleIconUrl ?? null
+
   const icons: Metadata["icons"] =
-    settings.faviconUrl || settings.appleIconUrl
+    favicon || appleIcon
       ? {
-          ...(settings.faviconUrl ? { icon: [{ url: settings.faviconUrl }], shortcut: [settings.faviconUrl] } : {}),
-          ...(settings.appleIconUrl ? { apple: [{ url: settings.appleIconUrl }] } : {}),
+          ...(favicon ? { icon: [{ url: favicon }], shortcut: [favicon] } : {}),
+          ...(appleIcon ? { apple: [{ url: appleIcon }] } : {}),
         }
       : undefined
 

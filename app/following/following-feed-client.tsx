@@ -14,6 +14,7 @@ import { sellerProfileHref } from "@/lib/seller-slug"
 import { getFollowingFeedPage } from "@/app/actions/follows"
 import { listingDetailHref } from "@/lib/listing-href"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 
 type Listing = {
   id: string
@@ -307,7 +308,9 @@ function EmptyState({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {suggestedSellers.map((seller) => {
               const name = seller.shop_name || seller.display_name || "Seller"
-              const avatar = seller.shop_logo_url || seller.avatar_url || ""
+              const avatar = profileMediaDisplaySrc(
+                seller.shop_logo_url || seller.avatar_url || "",
+              )
               return (
                 <Card key={seller.id} className="p-4 flex items-center gap-3">
                   <Avatar className="h-11 w-11 shrink-0">

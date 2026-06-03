@@ -5,6 +5,8 @@ import Link from "next/link"
 import { ArrowUpRight, MapPin, User } from "lucide-react"
 import { SURFERS_BASE } from "@/lib/surfers/routes"
 import type { SurferRow } from "@/lib/surfers/types"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { surferMediaDisplaySrc } from "@/lib/public-media-display-src"
 
 export function SurfersExplorer({ surfers }: { surfers: SurferRow[] }) {
   return (
@@ -26,12 +28,15 @@ export function SurfersExplorer({ surfers }: { surfers: SurferRow[] }) {
                     {entry.photo_url ? (
                       <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full border border-border/60 bg-background">
                         <Image
-                          src={entry.photo_url}
+                          src={surferMediaDisplaySrc(entry.photo_url)}
                           alt=""
                           fill
                           className="object-cover object-center"
                           sizes="216px"
                           quality={90}
+                          unoptimized={listingImageShouldBypassOptimization(
+                            surferMediaDisplaySrc(entry.photo_url),
+                          )}
                         />
                       </div>
                     ) : (

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { revalidatePublicStorageObjects } from "@/lib/cache/revalidate-public-storage-object"
 
 const BUCKET = "avatars"
 
@@ -63,5 +64,7 @@ export async function removeAvatarObjectFromStorage(
   const { error } = await supabase.storage.from(BUCKET).remove([path])
   if (error) {
     console.warn("[profileAvatar] storage remove failed", { userId, message: error.message })
+  } else {
+    revalidatePublicStorageObjects(BUCKET, [path])
   }
 }

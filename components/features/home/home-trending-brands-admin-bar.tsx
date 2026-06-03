@@ -17,6 +17,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { cn } from "@/lib/utils"
+import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 
 type CuratedRow = {
   id: string
@@ -316,17 +318,18 @@ function BrandPickerRow({
   href: string
   action: React.ReactNode
 }) {
+  const logoSrc = imageUrl ? brandLogoDisplaySrc(imageUrl) : null
   return (
     <li className="flex w-full min-w-0 max-w-full items-center gap-2 rounded-lg border border-border/80 bg-muted/20 p-2 sm:gap-3">
       <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md border border-border/50 bg-background p-1">
-        {imageUrl ? (
+        {logoSrc ? (
           <Image
-            src={imageUrl}
+            src={logoSrc}
             alt=""
             fill
             sizes="48px"
             className="object-contain p-0.5"
-            unoptimized={imageUrl.startsWith("/")}
+            unoptimized={listingImageShouldBypassOptimization(logoSrc)}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-muted-foreground">

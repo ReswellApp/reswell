@@ -6,6 +6,8 @@ import type { SurferRow } from "@/lib/surfers/types"
 import { SurferDetailAdminBar } from "@/components/surfers/surfer-detail-admin-bar"
 import { SurferQuiverGallery } from "@/components/surfers/surfer-quiver-gallery"
 import { Button } from "@/components/ui/button"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { surferMediaDisplaySrc } from "@/lib/public-media-display-src"
 
 export function SurferProfileView({ surfer }: { surfer: SurferRow }) {
   const paras = (surfer.about_paragraphs ?? []).map((p) => p.trim()).filter(Boolean)
@@ -37,13 +39,16 @@ export function SurferProfileView({ surfer }: { surfer: SurferRow }) {
             {surfer.photo_url ? (
               <div className="relative mx-auto mt-6 h-28 w-28 overflow-hidden rounded-full border border-border/80 bg-background shadow-soft sm:h-32 sm:w-32">
                 <Image
-                  src={surfer.photo_url}
+                  src={surferMediaDisplaySrc(surfer.photo_url)}
                   alt={`${surfer.name} photo`}
                   fill
                   className="object-cover object-center"
                   sizes="(max-width: 640px) 320px, 384px"
                   quality={92}
                   priority
+                  unoptimized={listingImageShouldBypassOptimization(
+                    surferMediaDisplaySrc(surfer.photo_url),
+                  )}
                 />
               </div>
             ) : null}

@@ -14,6 +14,8 @@ import type { BrandCatalogSuggestRow } from "@/lib/services/brandDirectorySearch
 import { recordSearchSuggestPick } from "@/app/actions/search-suggest-analytics"
 import { LISTING_TITLE_MAX_LENGTH } from "@/lib/sell-form-validation"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 
 const BRAND_SUGGEST_DEBOUNCE_MS = 200
 
@@ -396,12 +398,14 @@ export function SurfboardTitleIndexInput({
                   <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted sm:h-12 sm:w-12 sm:rounded-lg">
                     {item.logo_url ? (
                       <Image
-                        src={item.logo_url}
+                        src={brandLogoDisplaySrc(item.logo_url)}
                         alt=""
                         fill
                         className="object-contain p-1"
                         sizes="(max-width:640px) 40px, 48px"
-                        unoptimized
+                        unoptimized={listingImageShouldBypassOptimization(
+                          brandLogoDisplaySrc(item.logo_url),
+                        )}
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-xs font-bold text-cerulean sm:text-sm">

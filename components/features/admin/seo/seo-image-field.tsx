@@ -6,6 +6,8 @@ import { ImageIcon, Loader2, Trash2, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { seoMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { uploadSeoImageFile } from "@/lib/seo/upload-seo-image-client"
 
 interface SeoImageFieldProps {
@@ -48,7 +50,14 @@ export function SeoImageField({ label, helpText, value, onChange }: SeoImageFiel
       <div className="flex items-start gap-3">
         <div className="relative h-20 w-32 shrink-0 overflow-hidden rounded-md border border-border bg-secondary">
           {value ? (
-            <Image src={value} alt="" fill sizes="128px" className="object-cover" unoptimized />
+            <Image
+              src={seoMediaDisplaySrc(value)}
+              alt=""
+              fill
+              sizes="128px"
+              className="object-cover"
+              unoptimized={listingImageShouldBypassOptimization(seoMediaDisplaySrc(value))}
+            />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
               <ImageIcon className="h-5 w-5 text-muted-foreground" aria-hidden />

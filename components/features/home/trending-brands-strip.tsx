@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { cn } from "@/lib/utils"
 import type { BrandRow } from "@/lib/brands/types"
+import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import {
   homeHorizontalScrollOuterClassName,
   homeHorizontalScrollPlDefault,
@@ -49,11 +51,12 @@ function BrandCell({ b }: { b: TrendingStripBrand }) {
           {b.logo_url ? (
             <div className="relative h-14 w-full sm:h-16">
               <Image
-                src={b.logo_url}
+                src={brandLogoDisplaySrc(b.logo_url)}
                 alt=""
                 fill
                 className="object-contain object-center"
                 sizes="(max-width: 640px) 112px, 120px"
+                unoptimized={listingImageShouldBypassOptimization(brandLogoDisplaySrc(b.logo_url))}
               />
             </div>
           ) : (

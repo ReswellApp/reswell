@@ -23,7 +23,11 @@ import {
 } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
-import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import {
+  listingImageShouldBypassOptimization,
+  proxiedListingImageSrc,
+} from "@/lib/listing-media-proxy-url"
+import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { ORDER_STATUS_LIST } from "@/lib/order-status"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { DashboardOverviewRealtimeRefresh } from "@/components/features/dashboard/dashboard-overview-realtime-refresh"
@@ -151,9 +155,12 @@ export default async function DashboardPage() {
 
   const profileTitle =
     (profile?.is_shop && profile?.shop_name?.trim()) || profile?.display_name?.trim() || welcomeName
-  const profileImageUrl = profile?.is_shop
+  const profileImageRaw = profile?.is_shop
     ? profile?.shop_logo_url || profile?.avatar_url
     : profile?.avatar_url
+  const profileImageUrl = profileImageRaw
+    ? profileMediaDisplaySrc(profileImageRaw)
+    : null
 
   let walletBalance = 0
   let allTimeEarned = 0
@@ -273,6 +280,7 @@ export default async function DashboardPage() {
                     width={64}
                     height={64}
                     className="h-full w-full object-cover"
+                    unoptimized={listingImageShouldBypassOptimization(profileImageUrl)}
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-muted-foreground" aria-hidden>

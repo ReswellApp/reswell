@@ -4,6 +4,7 @@ import {
   collectActiveSurfboardListingsNeedingBrandOrModel,
   loadBrandModelsByBrandId,
   loadDirectoryBrandsForMatching,
+  recordListingBrandModelAutofill,
   type ListingBrandModelPatch,
 } from "@/lib/db/listingBrandModelBackfill"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
@@ -104,6 +105,18 @@ export async function runListingBrandModelBackfill(
 
       if (patch.brand_id) summary.brand_attached += 1
       if (patch.brand_model_id) summary.model_attached += 1
+
+      // Audit trail so admins can cross-verify what the cron attached.
+      await recordListingBrandModelAutofill(supabase, {
+        listing_id: row.id,
+        listing_title: row.title,
+        brand_id: patch.brand_id ?? null,
+        brand_name: patch.brand ?? null,
+        brand_model_id: patch.brand_model_id ?? null,
+        model_name: patch.model ?? null,
+        attached_brand: Boolean(patch.brand_id),
+        attached_model: Boolean(patch.brand_model_id),
+      })
 
       // Best-effort: keep the search index in step with the new brand/model labels.
       await syncListingToIndex(supabase, row.id).catch((e) => {

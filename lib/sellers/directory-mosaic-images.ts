@@ -2,6 +2,7 @@ import {
   listingTileCarouselImageUrls,
   type ListingImageForCard,
 } from "@/lib/listing-image-display"
+import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 
 const MOSAIC_SLOT_COUNT = 3
 
@@ -73,7 +74,9 @@ function collectShopFallbackUrls(shop: MosaicShopPick): string[] {
     trimUrl(shop.shop_banner_url),
     trimUrl(shop.shop_logo_url),
     trimUrl(shop.avatar_url),
-  ].filter((url): url is string => url != null)
+  ]
+    .map((url) => (url ? profileMediaDisplaySrc(url) : ""))
+    .filter((url): url is string => url.length > 0)
 
   if (raw.length === 0) return []
 

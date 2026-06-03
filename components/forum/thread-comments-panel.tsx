@@ -19,6 +19,7 @@ import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { clearImpersonation, getImpersonation } from "@/lib/impersonation"
 
 export type ThreadCommentRow = {
@@ -554,7 +555,10 @@ export function ThreadCommentsPanel({
                   >
                     <div className="flex gap-3 sm:gap-4">
                       <Avatar className="h-9 w-9 shrink-0 ring-2 ring-background sm:h-10 sm:w-10">
-                        <AvatarImage src={c.profiles?.avatar_url || ""} alt="" />
+                        <AvatarImage
+                          src={profileMediaDisplaySrc(c.profiles?.avatar_url || "")}
+                          alt=""
+                        />
                         <AvatarFallback className="text-xs">{initial}</AvatarFallback>
                       </Avatar>
                       <div className="min-w-0 flex-1">
@@ -675,7 +679,10 @@ export function ThreadCommentsPanel({
                                 <li key={r.id} id={`comment-${r.id}`} className="scroll-mt-16">
                                   <div className="flex gap-2.5">
                                     <Avatar className="h-8 w-8 shrink-0">
-                                      <AvatarImage src={r.profiles?.avatar_url || ""} alt="" />
+                                      <AvatarImage
+                                        src={profileMediaDisplaySrc(r.profiles?.avatar_url || "")}
+                                        alt=""
+                                      />
                                       <AvatarFallback className="text-[10px]">{rinitial}</AvatarFallback>
                                     </Avatar>
                                     <div className="min-w-0 flex-1">

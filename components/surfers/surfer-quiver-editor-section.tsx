@@ -12,6 +12,8 @@ import {
 import { createPreviewUrlForImageFile } from "@/lib/surfers/staged-image-preview-client"
 import { surferImagePreviewRotateClass } from "@/lib/surfers/surfer-image-quarter-turns"
 import { uploadSurferQuiverImageFile } from "@/lib/surfers/upload-surfer-quiver-client"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { surferMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -255,7 +257,16 @@ export function SurferQuiverEditorSection({
                 />
               </div>
               <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-muted">
-                <Image src={item.image_url} alt="" fill className="object-cover object-center" sizes="200px" />
+                <Image
+                  src={surferMediaDisplaySrc(item.image_url)}
+                  alt=""
+                  fill
+                  className="object-cover object-center"
+                  sizes="200px"
+                  unoptimized={listingImageShouldBypassOptimization(
+                    surferMediaDisplaySrc(item.image_url),
+                  )}
+                />
               </div>
               <div className="space-y-1">
                 <Label htmlFor={`${idPrefix}-quiver-desc-${i}`} className="text-xs text-muted-foreground">

@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
 import { Skeleton } from "@/components/ui/skeleton"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { cn } from "@/lib/utils"
 
 const sizeClasses = {
@@ -43,7 +45,8 @@ export function MessageProfileAvatar({
   const [imageFailed, setImageFailed] = useState(false)
   const mountedRef = useRef(true)
 
-  const trimmedUrl = avatarUrl?.trim() || null
+  const rawUrl = avatarUrl?.trim() || null
+  const trimmedUrl = rawUrl ? profileMediaDisplaySrc(rawUrl) : null
   const trimmedName = displayName?.trim() || ""
   const initial = trimmedName[0]?.toUpperCase() ?? null
 
@@ -80,6 +83,7 @@ export function MessageProfileAvatar({
           alt={trimmedName || "Profile photo"}
           fill
           sizes={imageSizes[size]}
+          unoptimized={listingImageShouldBypassOptimization(trimmedUrl)}
           className={cn("object-cover", imageClassName)}
           onLoad={() => {
             if (mountedRef.current) setImageReady(true)
