@@ -2,6 +2,7 @@
 
 import { useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useScrollToTopOnSearchParam } from "@/hooks/use-scroll-to-top-on-search-param"
 import { RecentFeedClient } from "@/components/recent-feed-client"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { Button } from "@/components/ui/button"
@@ -32,13 +33,11 @@ export function NewListingsFeedPanel({
 }: NewListingsFeedPanelProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  useScrollToTopOnSearchParam("page")
 
   const goToPage = (pageNum: number) => {
     startTransition(() => {
-      router.push(
-        marketplaceFeedHref("new", { page: pageNum <= 1 ? undefined : pageNum }),
-        { scroll: false },
-      )
+      router.push(marketplaceFeedHref("new", { page: pageNum <= 1 ? undefined : pageNum }))
     })
   }
 

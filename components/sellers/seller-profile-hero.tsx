@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { SellersBreadcrumbs } from "@/components/sellers/sellers-breadcrumbs"
 import { formatDistanceToNow } from "date-fns"
 import { Globe, MessageSquare, Phone } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -135,13 +136,8 @@ export function SellerProfileHero({
   return (
     <>
       <div className="border-b border-border/80 bg-background">
-        <div className={cn(sellerProfileShellClassName, "py-3 sm:py-4")}>
-          <Link
-            href="/sellers"
-            className="inline-flex text-sm font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
-          >
-            ← All sellers
-          </Link>
+        <div className={cn(sellerProfileShellClassName, "px-4 py-3 sm:px-6 sm:py-4")}>
+          <SellersBreadcrumbs sellerName={displayName ?? "Seller"} className="min-w-0 max-w-full" />
         </div>
       </div>
 

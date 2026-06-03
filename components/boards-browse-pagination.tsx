@@ -4,6 +4,8 @@ import { useTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useBoardsBrowseRouter } from "@/hooks/use-boards-browse-router"
+import { useScrollToTopOnSearchParam } from "@/hooks/use-scroll-to-top-on-search-param"
+import { BOARDS_BROWSE_PAGE_PARAM } from "@/lib/utils/boards-browse-navigate"
 
 type BoardsBrowsePaginationProps = {
   page: number
@@ -18,6 +20,7 @@ function preventBlurBeforeClick(event: React.MouseEvent<HTMLButtonElement>) {
 export function BoardsBrowsePagination({ page, totalPages }: BoardsBrowsePaginationProps) {
   const { navigate } = useBoardsBrowseRouter()
   const [isPending, startTransition] = useTransition()
+  useScrollToTopOnSearchParam(BOARDS_BROWSE_PAGE_PARAM)
 
   if (totalPages <= 1) return null
 

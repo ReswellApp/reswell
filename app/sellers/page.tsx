@@ -2,6 +2,7 @@ import Link from "next/link"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { Button } from "@/components/ui/button"
 import { Store, Users } from "lucide-react"
+import { SellersBreadcrumbs } from "@/components/sellers/sellers-breadcrumbs"
 import { SellersPageSellCta } from "@/components/sellers/sellers-page-sell-cta"
 import { SellersDirectoryAdminBar } from "@/components/sellers/sellers-directory-admin-bar"
 import { SellersDirectorySearch } from "@/components/sellers/sellers-directory-search"
@@ -205,6 +206,7 @@ export default async function SellersPage({
           <div className="absolute right-2 top-0 z-10 sm:right-4">
             <SellersDirectoryAdminBar />
           </div>
+          <SellersBreadcrumbs className="mb-6 min-w-0 max-w-full sm:mb-8" />
           <div className="mx-auto max-w-3xl text-center">
             <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl text-balance">
               Explore sellers on Reswell
