@@ -1,7 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { createClient } from "@/lib/supabase/client"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -30,13 +29,6 @@ export function BoardsNoResultsRequestPanel({
   const [email, setEmail] = useState("")
   const [pending, setPending] = useState(false)
   const [submitted, setSubmitted] = useState(false)
-
-  useEffect(() => {
-    const supabase = createClient()
-    void supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user?.email) setEmail((prev) => prev || user.email!)
-    })
-  }, [])
 
   const trimmedQuery = query?.trim() || ""
   const summary = criteria ? boardSavedSearchCriteriaSummary(criteria) : ""

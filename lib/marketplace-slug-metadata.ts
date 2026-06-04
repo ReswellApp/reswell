@@ -11,6 +11,7 @@ const BOARD_TYPE_LABELS: Record<string, string> = {
   "step-up-gun": "Step-Up / Gun",
   "step-up": "Step-Up / Gun",
   groveler: "Groveler",
+  fish: "Fish",
   gun: "Step-Up / Gun",
   other: "Other boards",
 }
@@ -21,7 +22,6 @@ export function boardTypeForDbFromBrowseParam(
 ): string | undefined {
   if (!type || type === "all") return undefined
   if (type === "mid-length" || type === "funboard") return "hybrid"
-  if (type === "fish") return "groveler"
   if (type === "step-up" || type === "gun") return "step-up-gun"
   return type
 }
@@ -33,7 +33,6 @@ export function browseTypeParamFromBoardType(
   if (!boardType?.trim()) return undefined
   const t = boardType.trim()
   if (t === "funboard") return "hybrid"
-  if (t === "fish") return "groveler"
   if (t === "step-up" || t === "gun") return "step-up-gun"
   return t
 }
@@ -42,13 +41,11 @@ export function browseTypeParamFromBoardType(
 export function boardsBrowseBoardTypeLabel(type: string | undefined | null): string | undefined {
   if (!type || type === "all") return undefined
   const key =
-    type === "fish"
-      ? "groveler"
-      : type === "mid-length" || type === "funboard"
-        ? "hybrid"
-        : type === "step-up" || type === "gun"
-          ? "step-up-gun"
-          : type
+    type === "mid-length" || type === "funboard"
+      ? "hybrid"
+      : type === "step-up" || type === "gun"
+        ? "step-up-gun"
+        : type
   if (BOARD_TYPE_LABELS[key]) return BOARD_TYPE_LABELS[key]
   return type.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
 }
@@ -102,7 +99,6 @@ export type BoardsBrowseSearchParams = {
 /** Canonical `type=` value for browse URLs, OG, and DB filters (legacy aliases → current slug). */
 export function normalizedBoardsBrowseTypeFromParam(type: string | undefined | null): string | undefined {
   if (!type?.trim() || type === "all") return undefined
-  if (type === "fish") return "groveler"
   if (type === "mid-length" || type === "funboard") return "hybrid"
   if (type === "step-up" || type === "gun") return "step-up-gun"
   return type.trim()
@@ -123,6 +119,8 @@ export function boardsBrowseHeroSubtext(type: string | undefined | null): string
       "Extra paddle without feeling like a tank. A sweet spot when you want volume but still want to turn.",
     groveler:
       "Wide and forgiving for mushy beach breaks. Makes weak swell feel fun when you just want to surf.",
+    fish:
+      "Wide, flat, and fast with a split tail. Built for speed and flow in small to medium surf without feeling sluggish.",
     "step-up-gun":
       "Stepped up outlines for bigger days when you want drive and a steady feeling under your feet.",
     other:

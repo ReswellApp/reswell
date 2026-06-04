@@ -27,6 +27,7 @@ const BOARD_TYPE_FILTERS = [
   "longboard",
   "hybrid",
   "groveler",
+  "fish",
   "step-up-gun",
 ]
 

@@ -26,7 +26,8 @@ export type RangeBucket = {
 /** Board style — maps to `listings.board_type`. Mirrors the canonical board-type set. */
 export const BOARD_STYLE_OPTIONS: readonly FacetOption[] = [
   { value: "shortboard", label: "Shortboard" },
-  { value: "groveler", label: "Groveler / Fish" },
+  { value: "groveler", label: "Groveler" },
+  { value: "fish", label: "Fish" },
   { value: "hybrid", label: "Hybrid / Mid-Length" },
   { value: "longboard", label: "Longboard" },
   { value: "step-up-gun", label: "Step-Up / Gun" },

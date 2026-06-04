@@ -141,7 +141,13 @@ export const MANAGED_PAGES: ManagedPage[] = [
     description:
       "Browse groveler for sale. Find shortboards, longboards, grovelers, and more from local surfers on Reswell.",
     path: "/boards?type=groveler",
-  }, { variationOf: "boards", note: "/boards?type=groveler (fish)" }),
+  }, { variationOf: "boards", note: "/boards?type=groveler" }),
+  page("boards:type=fish", "marketplace", "Boards — Fish", {
+    title: "Fish For Sale | Reswell",
+    description:
+      "Browse fish surfboards for sale. Find shortboards, longboards, grovelers, and more from local surfers on Reswell.",
+    path: "/boards?type=fish",
+  }, { variationOf: "boards", note: "/boards?type=fish" }),
   page("boards:type=step-up-gun", "marketplace", "Boards — Step-Up / Gun", {
     title: "Step-Up / Gun For Sale | Reswell",
     description:

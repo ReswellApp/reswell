@@ -13,7 +13,6 @@ function normalizeListingsBoardTypeRaw(input: string): string {
 export function canonicalListingsBoardTypeKey(boardType: string | null | undefined): string {
   const normalized = normalizeListingsBoardTypeRaw(boardType ?? "")
   if (!normalized || normalized === "all") return ""
-  if (normalized === "fish") return "groveler"
   if (normalized === "mid-length" || normalized === "funboard") return "hybrid"
   if (normalized === "step-up" || normalized === "gun") return "step-up-gun"
   return normalized
@@ -27,7 +26,6 @@ export function listingBoardTypeDbValuesForFilter(boardType: string | null | und
   if (!canonical) return []
 
   const aliasGroups: Record<string, readonly string[]> = {
-    groveler: ["groveler", "fish"],
     hybrid: ["hybrid", "funboard", "mid-length"],
     "step-up-gun": ["step-up-gun", "step-up", "gun"],
   }

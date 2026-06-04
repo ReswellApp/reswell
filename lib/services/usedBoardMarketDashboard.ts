@@ -144,7 +144,7 @@ function boardTypeLabel(boardType: string | null | undefined): string {
     longboard: "Longboard",
     hybrid: "Hybrid",
     funboard: "Hybrid",
-    fish: "Groveler",
+    fish: "Fish",
     groveler: "Groveler",
     "step-up": "Step-up / Gun",
     "step-up-gun": "Step-up / Gun",

@@ -14,6 +14,7 @@ export const surfboardBrowseLinks: CategoryLink[] = [
   { label: surfboardsBrowseRootLabel, href: "/boards" },
   { label: "Shortboard", href: "/boards?type=shortboard" },
   { label: "Groveler", href: "/boards?type=groveler" },
+  { label: "Fish", href: "/boards?type=fish" },
   { label: "Hybrid", href: "/boards?type=hybrid" },
   { label: "Longboard", href: "/boards?type=longboard" },
   { label: "Step-Up / Gun", href: "/boards?type=step-up-gun" },
@@ -121,6 +122,7 @@ export const advancedCategorySections: AdvancedCategorySection[] = [
         links: [
           { label: "Shortboard", href: "/boards?type=shortboard" },
           { label: "Groveler", href: "/boards?type=groveler" },
+          { label: "Fish", href: "/boards?type=fish" },
           { label: "Hybrid", href: "/boards?type=hybrid" },
           { label: "Longboard", href: "/boards?type=longboard" },
           { label: "Step-Up / Gun", href: "/boards?type=step-up-gun" },

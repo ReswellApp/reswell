@@ -4,6 +4,7 @@ import { boardCategoryMap } from "@/lib/utils/board-type-from-category-id"
 export const SURFBOARD_SELL_CATEGORY_ORDER = [
   "shortboard",
   "groveler",
+  "fish",
   "hybrid",
   "longboard",
   "step-up-gun",
@@ -16,6 +17,7 @@ export type SurfboardSellCategoryKey = (typeof SURFBOARD_SELL_CATEGORY_ORDER)[nu
 export const SURFBOARD_SELL_CATEGORY_LABELS: Record<SurfboardSellCategoryKey, string> = {
   shortboard: "Shortboard",
   groveler: "Groveler",
+  fish: "Fish",
   hybrid: "Hybrid",
   longboard: "Longboard",
   "step-up-gun": "Step-Up / Gun",
@@ -34,6 +36,7 @@ export const SELL_BOARD_CATEGORY_UNSELECTED_LABEL = "Choose category"
 export const SURFBOARD_SELL_CATEGORY_SLUG: Record<SurfboardSellCategoryKey, string> = {
   shortboard: "shortboard",
   groveler: "groveler",
+  fish: "fish",
   hybrid: "hybrid",
   longboard: "longboard",
   "step-up-gun": "step-up-gun",

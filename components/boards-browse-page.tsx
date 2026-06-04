@@ -482,18 +482,6 @@ export async function BoardsBrowsePage(props: {
     }
     redirect(`/boards?${next.toString()}`)
   }
-  if (searchParams.type === "fish") {
-    const next = new URLSearchParams()
-    for (const [k, v] of Object.entries(searchParams)) {
-      if (v == null || v === "") continue
-      if (k === "type") {
-        next.set("type", "groveler")
-        continue
-      }
-      next.set(k, v)
-    }
-    redirect(`/boards?${next.toString()}`)
-  }
   if (searchParams.type === "step-up" || searchParams.type === "gun") {
     const next = new URLSearchParams()
     for (const [k, v] of Object.entries(searchParams)) {
