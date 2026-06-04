@@ -7,6 +7,7 @@ import {
   clearProfileShopBannerUrlRow,
   removeShopBannerObjectFromStorage,
 } from "@/lib/db/profileBanner"
+import { revalidateSellersDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { processProfileBannerToWebp } from "@/lib/services/profileBannerImage"
 
 async function revalidateSellerProfilePaths(
@@ -23,7 +24,7 @@ async function revalidateSellerProfilePaths(
   if (slug) {
     revalidatePath(`/sellers/${slug}`, "page")
   }
-  revalidatePath("/sellers", "page")
+  revalidateSellersDirectoryCatalog()
 }
 
 export async function uploadProcessedProfileBanner(params: {

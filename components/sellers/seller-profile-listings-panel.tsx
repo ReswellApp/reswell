@@ -189,9 +189,9 @@ export function SellerProfileListingsPanel({
       </div>
 
       <div className="flex flex-col gap-2.5 sm:gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 flex-wrap gap-2">
+        <div className="flex min-w-0 gap-2">
           <Select value={sectionFilter} onValueChange={setSectionFilter}>
-            <SelectTrigger className="h-9 w-full min-w-[8.75rem] max-w-full rounded-full bg-background sm:w-[140px]">
+            <SelectTrigger className="h-9 min-w-0 flex-1 rounded-full bg-background sm:w-[140px] sm:flex-none">
               <SelectValue placeholder="Section" />
             </SelectTrigger>
             <SelectContent>
@@ -205,7 +205,7 @@ export function SellerProfileListingsPanel({
           </Select>
 
           <Select value={conditionFilter} onValueChange={setConditionFilter}>
-            <SelectTrigger className="h-9 w-full min-w-[8.75rem] max-w-full rounded-full bg-background sm:w-[150px]">
+            <SelectTrigger className="h-9 min-w-0 flex-1 rounded-full bg-background sm:w-[150px] sm:flex-none">
               <SelectValue placeholder="Condition" />
             </SelectTrigger>
             <SelectContent>

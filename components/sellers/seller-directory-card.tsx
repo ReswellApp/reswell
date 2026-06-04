@@ -49,6 +49,9 @@ type SellerDirectoryCardProps = {
   initialFollowing: boolean
   isLoggedIn: boolean
   isOwnProfile: boolean
+  /** Pre-resolved from the sellers directory cache when available. */
+  avatarSrc?: string
+  mosaicSlots?: SellerDirectoryMosaicSlot[]
   className?: string
 }
 
@@ -119,12 +122,14 @@ export function SellerDirectoryCard({
   initialFollowing,
   isLoggedIn,
   isOwnProfile,
+  avatarSrc: avatarSrcProp,
+  mosaicSlots: mosaicSlotsProp,
   className,
 }: SellerDirectoryCardProps) {
   const label = sellerLabel(shop)
-  const avatarSrc = resolveSellerProfileDisplayImageUrl(shop, thumbs)
+  const avatarSrc = avatarSrcProp ?? resolveSellerProfileDisplayImageUrl(shop, thumbs)
   const href = sellerProfileHref(shop)
-  const mosaicSlots = buildSellerDirectoryMosaicSlots(thumbs, shop)
+  const mosaicSlots = mosaicSlotsProp ?? buildSellerDirectoryMosaicSlots(thumbs, shop)
 
   return (
     <article

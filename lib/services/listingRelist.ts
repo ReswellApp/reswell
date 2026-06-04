@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
+import { revalidateSellersDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { revalidateRecentlySoldSurfaces } from "@/lib/cache/revalidate-home-public-catalog"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
@@ -50,6 +51,7 @@ export async function relistListingsAfterRefund(
   }
 
   revalidateBoardsBrowseCatalog()
+  revalidateSellersDirectoryCatalog()
 
   for (const listingId of relistedIds) {
     void syncListingToGoogleMerchantBestEffort(supabase, listingId)

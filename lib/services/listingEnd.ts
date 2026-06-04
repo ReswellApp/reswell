@@ -4,6 +4,7 @@ import {
   syncListingToIndex,
 } from "@/lib/elasticsearch/listings-index"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
+import { revalidateSellersDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import {
   fetchListingImageUrlsForListingIds,
@@ -163,6 +164,7 @@ export async function endSellerListing(
     void syncListingToGoogleMerchantBestEffort(supabase, listingId)
 
     revalidateBoardsBrowseCatalog()
+    revalidateSellersDirectoryCatalog()
 
     return { ok: true, mode: "archive" }
   }
@@ -188,6 +190,7 @@ export async function endSellerListing(
       }
       void syncListingToGoogleMerchantBestEffort(supabase, listingId)
       revalidateBoardsBrowseCatalog()
+      revalidateSellersDirectoryCatalog()
       return {
         ok: true,
         mode: "archive",
@@ -212,6 +215,7 @@ export async function endSellerListing(
   }
 
   revalidateBoardsBrowseCatalog()
+  revalidateSellersDirectoryCatalog()
 
   return { ok: true, mode: "delete" }
 }

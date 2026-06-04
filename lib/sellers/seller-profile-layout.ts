@@ -6,7 +6,7 @@ export const sellerProfileShellClassName = cn("container mx-auto w-full min-w-0"
 /** Profile header banner — minimum height scales up on larger viewports. */
 export const sellerProfileBannerClassName = cn(
   "relative overflow-hidden rounded-xl sm:rounded-2xl",
-  "min-h-[168px] sm:min-h-[192px] lg:min-h-[220px]",
+  "min-h-[200px] sm:min-h-[192px] lg:min-h-[220px]",
 )
 
 /** Listing grid — 2-up on mobile, denser as viewport grows. */

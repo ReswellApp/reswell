@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
-import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/brands/admin-server"
+import { revalidateSellersDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { adminSellersDirectoryDemotionBodySchema } from "@/lib/validations/sellers-directory-demotions"
 import {
   addSellersDirectoryDemotionService,
@@ -40,6 +40,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: result.error }, { status: result.status ?? 500 })
   }
 
-  revalidatePath("/sellers", "page")
+  revalidateSellersDirectoryCatalog()
   return NextResponse.json({ data: { ok: true } }, { status: 201 })
 }

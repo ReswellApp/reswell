@@ -6,6 +6,7 @@ import {
   type SellerDirectoryCardShop,
   type SellerDirectoryListingThumb,
 } from "@/components/sellers/seller-directory-card"
+import type { SellerDirectoryMosaicSlot } from "@/lib/sellers/directory-mosaic-images"
 import type { SellerDirectoryTileMeta } from "@/lib/sellers/directory-tile-meta"
 
 export type SellerDirectoryGridItem = {
@@ -14,6 +15,8 @@ export type SellerDirectoryGridItem = {
   tileMeta: SellerDirectoryTileMeta
   avgRating: number
   reviewCount: number
+  avatarSrc?: string
+  mosaicSlots?: SellerDirectoryMosaicSlot[]
   initialFollowing: boolean
   isOwnProfile: boolean
 }
@@ -35,6 +38,8 @@ export function SellersDirectoryGrid({ items, isLoggedIn }: SellersDirectoryGrid
               tileMeta={item.tileMeta}
               avgRating={item.avgRating}
               reviewCount={item.reviewCount}
+              avatarSrc={item.avatarSrc}
+              mosaicSlots={item.mosaicSlots}
               initialFollowing={item.initialFollowing}
               isLoggedIn={isLoggedIn}
               isOwnProfile={item.isOwnProfile}

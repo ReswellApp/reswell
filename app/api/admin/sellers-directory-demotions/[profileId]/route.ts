@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
-import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/brands/admin-server"
+import { revalidateSellersDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { removeSellersDirectoryDemotionService } from "@/lib/services/sellersDirectoryDemotions"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -20,6 +20,6 @@ export async function DELETE(_request: Request, ctx: { params: Promise<{ profile
     return NextResponse.json({ error: result.error }, { status: result.status ?? 500 })
   }
 
-  revalidatePath("/sellers", "page")
+  revalidateSellersDirectoryCatalog()
   return NextResponse.json({ data: { deleted: true } }, { status: 200 })
 }
