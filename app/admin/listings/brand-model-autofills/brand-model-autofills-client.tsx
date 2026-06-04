@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { format, formatDistanceToNow } from "date-fns"
@@ -10,6 +10,7 @@ import {
   ExternalLink,
   Loader2,
   Package,
+  Pencil,
   Sparkles,
   Tag,
   Undo2,
@@ -38,6 +39,11 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  ListingBrandModelEditor,
+  listingBrandModelEditorInitialFromAutofill,
+  listingBrandModelEditorInitialFromUnmatched,
+} from "./listing-brand-model-editor"
 
 type AutofillRow = {
   id: string
@@ -54,6 +60,8 @@ type AutofillRow = {
   modelName: string | null
   currentBrand: string | null
   currentModel: string | null
+  currentBrandId: string | null
+  currentBrandModelId: string | null
   brandStillLinked: boolean
   modelStillLinked: boolean
   listingDeleted: boolean
@@ -83,6 +91,11 @@ type UnmatchedRow = {
   needsBrand: boolean
   needsModel: boolean
   matchedBrandName: string | null
+  matchedBrandId: string | null
+  currentBrand: string | null
+  currentModel: string | null
+  currentBrandId: string | null
+  currentBrandModelId: string | null
   brandKnownModelMissing: boolean
   firstSeenAt: string
   lastSeenAt: string
@@ -209,6 +222,7 @@ export function BrandModelAutofillsAdminClient() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
   const [undoingId, setUndoingId] = useState<string | null>(null)
+  const [editingListingId, setEditingListingId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -446,8 +460,11 @@ export function BrandModelAutofillsAdminClient() {
                     })
                     const brandDrifted = row.attachedBrand && !row.brandStillLinked
                     const modelDrifted = row.attachedModel && !row.modelStillLinked
+                    const isEditing = editingListingId === row.listingId
+                    const canEditCatalog = !row.listingDeleted
                     return (
-                      <TableRow key={row.id}>
+                      <Fragment key={row.id}>
+                      <TableRow>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <ListingThumb url={row.primaryImageUrl} href={href} />
@@ -545,7 +562,19 @@ export function BrandModelAutofillsAdminClient() {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center justify-end gap-1">
+                          <div className="flex flex-wrap items-center justify-end gap-1">
+                            {canEditCatalog ? (
+                              <Button
+                                variant={isEditing ? "secondary" : "outline"}
+                                size="sm"
+                                onClick={() =>
+                                  setEditingListingId(isEditing ? null : row.listingId)
+                                }
+                              >
+                                <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                                {isEditing ? "Close" : "Edit"}
+                              </Button>
+                            ) : null}
                             <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
                               <Link href={href} target="_blank" aria-label="Open listing">
                                 <ExternalLink className="h-4 w-4" />
@@ -568,6 +597,22 @@ export function BrandModelAutofillsAdminClient() {
                           </div>
                         </TableCell>
                       </TableRow>
+                      {isEditing && canEditCatalog ? (
+                        <TableRow className="hover:bg-transparent">
+                          <TableCell colSpan={6} className="bg-muted/20 py-4">
+                            <ListingBrandModelEditor
+                              listingId={row.listingId}
+                              initial={listingBrandModelEditorInitialFromAutofill(row)}
+                              onCancel={() => setEditingListingId(null)}
+                              onSaved={() => {
+                                setEditingListingId(null)
+                                void load()
+                              }}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ) : null}
+                      </Fragment>
                     )
                   })}
                 </TableBody>
@@ -611,12 +656,13 @@ export function BrandModelAutofillsAdminClient() {
           </div>
 
           <p className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-            These active listings have a title the cron couldn’t match to the catalog. Add the
-            missing brand or model in the{" "}
+            These active listings have a title the cron couldn’t match to the catalog. Use{" "}
+            <span className="font-medium text-foreground">Edit catalog</span> to link a directory
+            brand and model directly on the listing, or add missing entries in the{" "}
             <Link href="/admin/catalog-overview" className="text-primary underline-offset-2 hover:underline">
               brand catalog explorer
             </Link>{" "}
-            and they’ll auto-attach on the next run.
+            for the cron to pick up on the next run.
           </p>
 
           <div className="overflow-hidden rounded-2xl border border-border bg-card">
@@ -643,7 +689,7 @@ export function BrandModelAutofillsAdminClient() {
                     <TableHead>Known brand</TableHead>
                     <TableHead>First seen</TableHead>
                     <TableHead>Last seen</TableHead>
-                    <TableHead className="w-12" />
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -653,8 +699,10 @@ export function BrandModelAutofillsAdminClient() {
                       slug: row.listingSlug,
                       section: row.listingSection,
                     })
+                    const isEditing = editingListingId === row.listingId
                     return (
-                      <TableRow key={row.listingId}>
+                      <Fragment key={row.listingId}>
+                      <TableRow>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <ListingThumb url={row.primaryImageUrl} href={href} />
@@ -708,13 +756,107 @@ export function BrandModelAutofillsAdminClient() {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                            <Link href={href} target="_blank" aria-label="Open listing">
-                              <ExternalLink className="h-4 w-4" />
-                            </Link>
-                          </Button>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant={isEditing ? "secondary" : "outline"}
+                              size="sm"
+                              onClick={() =>
+                                setEditingListingId(isEditing ? null : row.listingId)
+                              }
+                            >
+                              <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                              {isEditing ? "Close" : "Edit catalog"}
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                              <Link href={href} target="_blank" aria-label="Open listing">
+                                <ExternalLink className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
+                      {isEditing ? (
+                        <TableRow key={`${row.listingId}-edit`} className="hover:bg-transparent">
+                          <TableCell colSpan={6} className="bg-muted/20 py-4">
+                            <ListingBrandModelEditor
+                              listingId={row.listingId}
+                              initial={listingBrandModelEditorInitialFromUnmatched(row)}
+                              onCancel={() => setEditingListingId(null)}
+                              onSaved={(data) => {
+                                setEditingListingId(null)
+                                setUnmatched((prev) => {
+                                  const stillNeedsBrand = !data.brandId
+                                  const stillNeedsModel = !data.brandModelId
+                                  if (!stillNeedsBrand && !stillNeedsModel) {
+                                    return prev.filter((r) => r.listingId !== row.listingId)
+                                  }
+                                  return prev.map((r) =>
+                                    r.listingId === row.listingId
+                                      ? {
+                                          ...r,
+                                          needsBrand: stillNeedsBrand,
+                                          needsModel: stillNeedsModel,
+                                          currentBrand: data.brand,
+                                          currentModel: data.model,
+                                          currentBrandId: data.brandId,
+                                          currentBrandModelId: data.brandModelId,
+                                          matchedBrandName: data.brand ?? r.matchedBrandName,
+                                          matchedBrandId: data.brandId ?? r.matchedBrandId,
+                                          brandKnownModelMissing:
+                                            stillNeedsModel &&
+                                            !stillNeedsBrand &&
+                                            !!data.brand,
+                                        }
+                                      : r,
+                                  )
+                                })
+                                setUnmatchedSummary((prev) => {
+                                  const removed =
+                                    data.brandId && data.brandModelId
+                                  if (!removed) return prev
+                                  const wasBrand = row.needsBrand
+                                  const wasModel = row.needsModel
+                                  const wasKnown = row.brandKnownModelMissing
+                                  return {
+                                    total: Math.max(0, prev.total - 1),
+                                    needsBrand: Math.max(
+                                      0,
+                                      prev.needsBrand - (wasBrand ? 1 : 0),
+                                    ),
+                                    needsModel: Math.max(
+                                      0,
+                                      prev.needsModel - (wasModel ? 1 : 0),
+                                    ),
+                                    brandKnownModelMissing: Math.max(
+                                      0,
+                                      prev.brandKnownModelMissing - (wasKnown ? 1 : 0),
+                                    ),
+                                  }
+                                })
+                                if (data.brandId && data.brandModelId) {
+                                  setCoverage((c) =>
+                                    c
+                                      ? {
+                                          ...c,
+                                          missingEither: Math.max(0, c.missingEither - 1),
+                                          missingBrand: Math.max(
+                                            0,
+                                            c.missingBrand - (row.needsBrand ? 1 : 0),
+                                          ),
+                                          missingModel: Math.max(
+                                            0,
+                                            c.missingModel - (row.needsModel ? 1 : 0),
+                                          ),
+                                        }
+                                      : c,
+                                  )
+                                }
+                              }}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ) : null}
+                      </Fragment>
                     )
                   })}
                 </TableBody>

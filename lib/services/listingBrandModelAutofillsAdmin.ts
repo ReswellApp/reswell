@@ -31,6 +31,8 @@ export type AdminListingBrandModelAutofill = {
   /** Brand/model currently on the listing (may differ if edited since). */
   currentBrand: string | null
   currentModel: string | null
+  currentBrandId: string | null
+  currentBrandModelId: string | null
   /** Whether the cron's link is still the one on the listing. */
   brandStillLinked: boolean
   modelStillLinked: boolean
@@ -79,6 +81,8 @@ function toAdminRow(row: ListingBrandModelAutofillRow): AdminListingBrandModelAu
     modelName: row.model_name?.trim() || null,
     currentBrand: listing?.brand?.trim() || null,
     currentModel: listing?.model?.trim() || null,
+    currentBrandId: listing?.brand_id ?? null,
+    currentBrandModelId: listing?.brand_model_id ?? null,
     brandStillLinked,
     modelStillLinked,
     listingDeleted: listing == null,
@@ -173,6 +177,11 @@ export type AdminListingBrandModelUnmatched = {
   needsModel: boolean
   /** Brand to add the missing model under (when only the model is unresolved). */
   matchedBrandName: string | null
+  matchedBrandId: string | null
+  currentBrand: string | null
+  currentModel: string | null
+  currentBrandId: string | null
+  currentBrandModelId: string | null
   /** Brand is in the catalog, but the title's model isn't — just add the model under that brand. */
   brandKnownModelMissing: boolean
   firstSeenAt: string
@@ -218,6 +227,11 @@ function toUnmatchedAdminRow(
     needsBrand,
     needsModel,
     matchedBrandName,
+    matchedBrandId: row.matched_brand_id?.trim() || listing?.brand_id || null,
+    currentBrand: listing?.brand?.trim() || null,
+    currentModel: listing?.model?.trim() || null,
+    currentBrandId: listing?.brand_id ?? null,
+    currentBrandModelId: listing?.brand_model_id ?? null,
     brandKnownModelMissing: needsModel && !needsBrand && !!matchedBrandName,
     firstSeenAt: row.first_seen_at,
     lastSeenAt: row.last_seen_at,
