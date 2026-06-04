@@ -46,6 +46,29 @@ export function normalizeContactMessageRow(raw: Record<string, unknown>): Contac
   }
 }
 
+/** Website /contact form row — server-only (service role); never trust client for source/user_id. */
+export async function insertContactFormMessage(
+  supabase: SupabaseClient,
+  row: { name: string; email: string; message: string },
+): Promise<{ id: string } | { error: Error }> {
+  const { data, error } = await supabase
+    .from("contact_messages")
+    .insert({
+      name: row.name,
+      email: row.email,
+      message: row.message,
+      source: "contact_form",
+      user_id: null,
+    })
+    .select("id")
+    .single()
+
+  if (error || !data?.id) {
+    return { error: new Error(error?.message ?? "Insert failed") }
+  }
+  return { id: String(data.id) }
+}
+
 export async function getContactMessageRowById(
   supabase: SupabaseClient,
   id: string,

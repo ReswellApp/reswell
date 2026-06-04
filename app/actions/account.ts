@@ -1,7 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
-import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
+import { submitContactFormMessageService } from "@/lib/services/contactForm"
 
 export async function getAdminSession() {
   const supabase = await createClient()
@@ -63,42 +63,9 @@ export async function updatePresenceHeartbeat() {
 }
 
 export async function submitContactMessage(input: { name: string; email: string; message: string }) {
-  const name = typeof input.name === "string" ? input.name.trim() : ""
-  const email = typeof input.email === "string" ? input.email.trim() : ""
-  const message = typeof input.message === "string" ? input.message.trim() : ""
-
-  if (!name || !email || !message) {
-    return { error: "Name, email, and message are required" as const }
+  const result = await submitContactFormMessageService(input)
+  if ("error" in result) {
+    return { error: result.error as const }
   }
-
-  if (message.length > 10000) {
-    return { error: "Message is too long" as const }
-  }
-
-  const supabase = await createClient()
-  const { data, error } = await supabase
-    .from("contact_messages")
-    .insert({
-      name,
-      email,
-      message,
-      source: "contact_form",
-      user_id: null,
-    })
-    .select("id")
-    .single()
-
-  if (error || !data?.id) {
-    console.error("Contact form insert error:", error)
-    return { error: "Failed to send message" as const }
-  }
-
-  await trackKlaviyoSupportTicketCreated({
-    supportTicketId: String(data.id),
-    email,
-    source: "contact_form",
-    subject: "Website contact",
-  })
-
   return { success: true as const }
 }
