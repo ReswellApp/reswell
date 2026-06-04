@@ -1,10 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import {
   applyListingBrandModelAttach,
+  clearListingBrandModelUnmatched,
   collectActiveSurfboardListingsNeedingBrandOrModel,
   loadBrandModelsByBrandId,
   loadDirectoryBrandsForMatching,
   recordListingBrandModelAutofill,
+  upsertListingBrandModelUnmatched,
   type ListingBrandModelPatch,
 } from "@/lib/db/listingBrandModelBackfill"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
@@ -71,12 +73,14 @@ export async function runListingBrandModelBackfill(
       const patch: ListingBrandModelPatch = {}
 
       let effectiveBrandId = row.brand_id
+      let effectiveBrandName = row.brand?.trim() || null
       if (!effectiveBrandId) {
         const brand = matchBrandFromTitle(row.title, brands)
         if (brand) {
           patch.brand_id = brand.id
           patch.brand = brand.name
           effectiveBrandId = brand.id
+          effectiveBrandName = brand.name
         }
       }
 
@@ -89,42 +93,59 @@ export async function runListingBrandModelBackfill(
         }
       }
 
-      if (!patch.brand_id && !patch.brand_model_id) {
-        summary.unmatched += 1
-        continue
-      }
-
-      const result = await applyListingBrandModelAttach(supabase, row.id, patch)
-      if (!result.ok) {
-        summary.errors += 1
-        if (summary.error_samples.length < MAX_ERROR_SAMPLES) {
-          summary.error_samples.push({ listingId: row.id, error: result.message })
+      const attachedSomething = Boolean(patch.brand_id || patch.brand_model_id)
+      if (attachedSomething) {
+        const result = await applyListingBrandModelAttach(supabase, row.id, patch)
+        if (!result.ok) {
+          summary.errors += 1
+          if (summary.error_samples.length < MAX_ERROR_SAMPLES) {
+            summary.error_samples.push({ listingId: row.id, error: result.message })
+          }
+          continue
         }
-        continue
+
+        if (patch.brand_id) summary.brand_attached += 1
+        if (patch.brand_model_id) summary.model_attached += 1
+
+        // Audit trail so admins can cross-verify what the cron attached.
+        await recordListingBrandModelAutofill(supabase, {
+          listing_id: row.id,
+          listing_title: row.title,
+          brand_id: patch.brand_id ?? null,
+          brand_name: patch.brand ?? null,
+          brand_model_id: patch.brand_model_id ?? null,
+          model_name: patch.model ?? null,
+          attached_brand: Boolean(patch.brand_id),
+          attached_model: Boolean(patch.brand_model_id),
+        })
+
+        // Best-effort: keep the search index in step with the new brand/model labels.
+        await syncListingToIndex(supabase, row.id).catch((e) => {
+          console.error("[listing-brand-model-backfill] ES re-sync failed", {
+            listingId: row.id,
+            error: e instanceof Error ? e.message : String(e),
+          })
+        })
+      } else {
+        summary.unmatched += 1
       }
 
-      if (patch.brand_id) summary.brand_attached += 1
-      if (patch.brand_model_id) summary.model_attached += 1
-
-      // Audit trail so admins can cross-verify what the cron attached.
-      await recordListingBrandModelAutofill(supabase, {
-        listing_id: row.id,
-        listing_title: row.title,
-        brand_id: patch.brand_id ?? null,
-        brand_name: patch.brand ?? null,
-        brand_model_id: patch.brand_model_id ?? null,
-        model_name: patch.model ?? null,
-        attached_brand: Boolean(patch.brand_id),
-        attached_model: Boolean(patch.brand_model_id),
-      })
-
-      // Best-effort: keep the search index in step with the new brand/model labels.
-      await syncListingToIndex(supabase, row.id).catch((e) => {
-        console.error("[listing-brand-model-backfill] ES re-sync failed", {
-          listingId: row.id,
-          error: e instanceof Error ? e.message : String(e),
+      // Self-healing worklist: surface what the title still couldn't resolve so an
+      // admin can add the missing brand/model to the catalog. Cleared once matched.
+      const stillNeedsBrand = !row.brand_id && !patch.brand_id
+      const stillNeedsModel = !row.brand_model_id && !patch.brand_model_id
+      if (stillNeedsBrand || stillNeedsModel) {
+        await upsertListingBrandModelUnmatched(supabase, {
+          listing_id: row.id,
+          listing_title: row.title,
+          needs_brand: stillNeedsBrand,
+          needs_model: stillNeedsModel,
+          matched_brand_id: stillNeedsModel ? effectiveBrandId : null,
+          matched_brand_name: stillNeedsModel ? effectiveBrandName : null,
         })
-      })
+      } else {
+        await clearListingBrandModelUnmatched(supabase, row.id)
+      }
     } catch (e) {
       summary.errors += 1
       if (summary.error_samples.length < MAX_ERROR_SAMPLES) {

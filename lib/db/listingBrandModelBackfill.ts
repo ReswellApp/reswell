@@ -255,3 +255,202 @@ export async function listListingBrandModelAutofills(
 
   return (data ?? []) as unknown as ListingBrandModelAutofillRow[]
 }
+
+/** Single audit row + the listing's current link state, for an undo action. */
+export type ListingBrandModelAutofillUndoRow = {
+  id: string
+  listing_id: string
+  brand_id: string | null
+  brand_model_id: string | null
+  attached_brand: boolean
+  attached_model: boolean
+  listing: {
+    id: string
+    brand_id: string | null
+    brand_model_id: string | null
+  } | null
+}
+
+export async function getListingBrandModelAutofillById(
+  supabase: SupabaseClient,
+  autofillId: string,
+): Promise<ListingBrandModelAutofillUndoRow | null> {
+  const { data, error } = await supabase
+    .from("listing_brand_model_autofills")
+    .select(
+      "id, listing_id, brand_id, brand_model_id, attached_brand, attached_model, listing:listing_id ( id, brand_id, brand_model_id )",
+    )
+    .eq("id", autofillId)
+    .maybeSingle()
+
+  if (error || !data) {
+    if (error) console.error("getListingBrandModelAutofillById:", error.message)
+    return null
+  }
+  return data as unknown as ListingBrandModelAutofillUndoRow
+}
+
+/**
+ * Clear the cron-set brand on a listing — only when it still matches the value the
+ * cron attached, so a later manual change is never clobbered.
+ */
+export async function clearListingBrandIfMatches(
+  supabase: SupabaseClient,
+  listingId: string,
+  brandId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("listings")
+    .update({ brand_id: null, brand: null, updated_at: new Date().toISOString() })
+    .eq("id", listingId)
+    .eq("brand_id", brandId)
+    .select("id")
+    .maybeSingle()
+
+  if (error) {
+    console.error("clearListingBrandIfMatches:", error.message)
+    return false
+  }
+  return data != null
+}
+
+/** Clear the cron-set model on a listing — only when it still matches what was attached. */
+export async function clearListingModelIfMatches(
+  supabase: SupabaseClient,
+  listingId: string,
+  brandModelId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("listings")
+    .update({ brand_model_id: null, model: null, updated_at: new Date().toISOString() })
+    .eq("id", listingId)
+    .eq("brand_model_id", brandModelId)
+    .select("id")
+    .maybeSingle()
+
+  if (error) {
+    console.error("clearListingModelIfMatches:", error.message)
+    return false
+  }
+  return data != null
+}
+
+export async function deleteListingBrandModelAutofill(
+  supabase: SupabaseClient,
+  autofillId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("listing_brand_model_autofills")
+    .delete()
+    .eq("id", autofillId)
+  if (error) {
+    console.error("deleteListingBrandModelAutofill:", error.message)
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Unmatched worklist: titles the cron could not resolve to a catalog brand/model.
+// ---------------------------------------------------------------------------
+
+export type ListingBrandModelUnmatchedUpsert = {
+  listing_id: string
+  listing_title: string | null
+  needs_brand: boolean
+  needs_model: boolean
+  matched_brand_id: string | null
+  matched_brand_name: string | null
+}
+
+/** Record (or refresh) a listing the cron could not fully match. */
+export async function upsertListingBrandModelUnmatched(
+  supabase: SupabaseClient,
+  entry: ListingBrandModelUnmatchedUpsert,
+): Promise<void> {
+  const { error } = await supabase.from("listing_brand_model_unmatched").upsert(
+    { ...entry, last_seen_at: new Date().toISOString() },
+    { onConflict: "listing_id" },
+  )
+  if (error) {
+    console.error("upsertListingBrandModelUnmatched:", error.message)
+  }
+}
+
+/** Remove a listing from the unmatched worklist (a match was found). */
+export async function clearListingBrandModelUnmatched(
+  supabase: SupabaseClient,
+  listingId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("listing_brand_model_unmatched")
+    .delete()
+    .eq("listing_id", listingId)
+  if (error) {
+    console.error("clearListingBrandModelUnmatched:", error.message)
+  }
+}
+
+export type ListingBrandModelUnmatchedRow = {
+  listing_id: string
+  listing_title: string | null
+  needs_brand: boolean
+  needs_model: boolean
+  matched_brand_id: string | null
+  matched_brand_name: string | null
+  first_seen_at: string
+  last_seen_at: string
+  listing: {
+    id: string
+    slug: string | null
+    section: string
+    status: string
+    title: string | null
+    brand: string | null
+    model: string | null
+    brand_id: string | null
+    brand_model_id: string | null
+    listing_images: { url: string | null; is_primary: boolean | null }[]
+  } | null
+}
+
+const UNMATCHED_ADMIN_SELECT = `
+  listing_id,
+  listing_title,
+  needs_brand,
+  needs_model,
+  matched_brand_id,
+  matched_brand_name,
+  first_seen_at,
+  last_seen_at,
+  listing:listing_id (
+    id,
+    slug,
+    section,
+    status,
+    title,
+    brand,
+    model,
+    brand_id,
+    brand_model_id,
+    listing_images ( url, is_primary )
+  )
+` as const
+
+export async function listListingBrandModelUnmatched(
+  supabase: SupabaseClient,
+  options?: { limit?: number },
+): Promise<ListingBrandModelUnmatchedRow[]> {
+  const limit = Math.min(Math.max(options?.limit ?? 500, 1), 2000)
+
+  const { data, error } = await supabase
+    .from("listing_brand_model_unmatched")
+    .select(UNMATCHED_ADMIN_SELECT)
+    .order("last_seen_at", { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.error("listListingBrandModelUnmatched:", error.message)
+    return []
+  }
+
+  return (data ?? []) as unknown as ListingBrandModelUnmatchedRow[]
+}

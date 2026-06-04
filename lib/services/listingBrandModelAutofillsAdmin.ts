@@ -1,8 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import {
+  clearListingBrandIfMatches,
+  clearListingModelIfMatches,
+  deleteListingBrandModelAutofill,
+  getListingBrandModelAutofillById,
   listListingBrandModelAutofills,
+  listListingBrandModelUnmatched,
   type ListingBrandModelAutofillRow,
+  type ListingBrandModelUnmatchedRow,
 } from "@/lib/db/listingBrandModelBackfill"
+import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 
 /** Admin verification row: what the cron attached + the listing's current state. */
 export type AdminListingBrandModelAutofill = {
@@ -100,4 +107,121 @@ export async function getListingBrandModelAutofillsForAdmin(
     rows,
     summary: { total: rows.length, brandAttached, modelAttached, changedSince },
   }
+}
+
+export type UndoListingBrandModelAutofillResult =
+  | { ok: true; clearedBrand: boolean; clearedModel: boolean }
+  | { ok: false; status: number; error: string }
+
+/**
+ * Undo a cron-attached brand/model: clears the link from the listing (only when it
+ * still matches what the cron set, so manual edits are preserved), removes the audit
+ * row, and re-syncs the listing to Elasticsearch.
+ */
+export async function undoListingBrandModelAutofill(
+  supabase: SupabaseClient,
+  autofillId: string,
+): Promise<UndoListingBrandModelAutofillResult> {
+  const audit = await getListingBrandModelAutofillById(supabase, autofillId)
+  if (!audit) {
+    return { ok: false, status: 404, error: "Autofill not found" }
+  }
+
+  let clearedBrand = false
+  let clearedModel = false
+
+  if (audit.attached_brand && audit.brand_id) {
+    clearedBrand = await clearListingBrandIfMatches(supabase, audit.listing_id, audit.brand_id)
+  }
+  if (audit.attached_model && audit.brand_model_id) {
+    clearedModel = await clearListingModelIfMatches(
+      supabase,
+      audit.listing_id,
+      audit.brand_model_id,
+    )
+  }
+
+  await deleteListingBrandModelAutofill(supabase, autofillId)
+
+  // The listing is now missing a brand/model again — keep ES + the worklist in step.
+  await syncListingToIndex(supabase, audit.listing_id).catch((e) => {
+    console.error("[brand-model-autofill undo] ES re-sync failed", {
+      listingId: audit.listing_id,
+      error: e instanceof Error ? e.message : String(e),
+    })
+  })
+
+  return { ok: true, clearedBrand, clearedModel }
+}
+
+export type AdminListingBrandModelUnmatched = {
+  listingId: string
+  listingTitle: string
+  listingSlug: string | null
+  listingSection: string
+  listingStatus: string | null
+  primaryImageUrl: string | null
+  needsBrand: boolean
+  needsModel: boolean
+  /** Brand to add the missing model under (when only the model is unresolved). */
+  matchedBrandName: string | null
+  firstSeenAt: string
+  lastSeenAt: string
+}
+
+export type AdminListingBrandModelUnmatchedResult = {
+  rows: AdminListingBrandModelUnmatched[]
+  summary: { total: number; needsBrand: number; needsModel: number }
+}
+
+/** True when the listing still actually has the gap recorded (not already resolved/gone). */
+function unmatchedRowStillRelevant(row: ListingBrandModelUnmatchedRow): boolean {
+  const listing = row.listing
+  if (!listing) return false
+  if (listing.status !== "active") return false
+  const brandGap = row.needs_brand && !listing.brand_id
+  const modelGap = row.needs_model && !listing.brand_model_id
+  return brandGap || modelGap
+}
+
+function toUnmatchedAdminRow(
+  row: ListingBrandModelUnmatchedRow,
+): AdminListingBrandModelUnmatched {
+  const listing = row.listing
+  return {
+    listingId: row.listing_id,
+    listingTitle: (listing?.title ?? row.listing_title ?? "").trim() || "Untitled listing",
+    listingSlug: listing?.slug ?? null,
+    listingSection: listing?.section ?? "surfboards",
+    listingStatus: listing?.status ?? null,
+    primaryImageUrl: pickPrimaryImageUrl(listing?.listing_images ?? []),
+    // Reflect the listing's live state so a partially-resolved gap shows correctly.
+    needsBrand: row.needs_brand && !listing?.brand_id,
+    needsModel: row.needs_model && !listing?.brand_model_id,
+    matchedBrandName: row.matched_brand_name?.trim() || null,
+    firstSeenAt: row.first_seen_at,
+    lastSeenAt: row.last_seen_at,
+  }
+}
+
+/**
+ * Listings whose title the cron could not match to a catalog brand/model — a worklist
+ * for adding missing entries. Rows already resolved (or whose listing is gone/inactive)
+ * are filtered out so the list stays actionable.
+ */
+export async function getListingBrandModelUnmatchedForAdmin(
+  supabase: SupabaseClient,
+  options?: { limit?: number },
+): Promise<AdminListingBrandModelUnmatchedResult> {
+  const raw = await listListingBrandModelUnmatched(supabase, options)
+  const rows = raw.filter(unmatchedRowStillRelevant).map(toUnmatchedAdminRow)
+
+  let needsBrand = 0
+  let needsModel = 0
+  for (const row of rows) {
+    if (row.needsBrand) needsBrand += 1
+    if (row.needsModel) needsModel += 1
+  }
+
+  return { rows, summary: { total: rows.length, needsBrand, needsModel } }
 }

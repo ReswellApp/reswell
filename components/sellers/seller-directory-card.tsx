@@ -1,12 +1,10 @@
 import type { ReactNode } from "react"
 import Link from "next/link"
-import Image from "next/image"
 import { Truck } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { SellerRatingStarRow } from "@/components/seller-rating-stars"
+import { SellerDirectoryMosaicImage } from "@/components/sellers/seller-directory-mosaic-image"
 import { SellerDirectoryTileFollow } from "@/components/sellers/seller-directory-tile-follow"
-import { wideShimmer } from "@/lib/image-shimmer"
-import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import {
   buildSellerDirectoryMosaicSlots,
@@ -58,43 +56,6 @@ function sellerLabel(shop: SellerDirectoryCardShop): string {
   return shop.shop_name?.trim() || shop.display_name?.trim() || "Seller"
 }
 
-function ListingMosaicImage({
-  slot,
-  className,
-  sizes,
-  priority,
-}: {
-  slot: SellerDirectoryMosaicSlot
-  className?: string
-  sizes: string
-  priority?: boolean
-}) {
-  if (!slot.src) {
-    return (
-      <div
-        className={cn("bg-muted", className)}
-        aria-hidden
-      />
-    )
-  }
-
-  return (
-    <div className={cn("relative min-h-0 overflow-hidden bg-muted", className)}>
-      <Image
-        src={slot.src}
-        alt={slot.alt}
-        fill
-        sizes={sizes}
-        className="object-cover object-center"
-        unoptimized={listingImageShouldBypassOptimization(slot.src)}
-        placeholder="blur"
-        blurDataURL={wideShimmer}
-        priority={priority}
-      />
-    </div>
-  )
-}
-
 function SellerDirectoryMosaic({
   slots,
   href,
@@ -120,18 +81,18 @@ function SellerDirectoryMosaic({
       className="block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
     >
       <div className="grid h-[152px] grid-cols-[minmax(0,2fr)_minmax(0,1fr)] grid-rows-2 gap-0 overflow-hidden rounded-t-[16px] sm:h-[172px]">
-        <ListingMosaicImage
+        <SellerDirectoryMosaicImage
           slot={slots[0]!}
           className="col-span-1 row-span-2 h-full min-h-0"
           sizes="(max-width: 640px) 55vw, 220px"
           priority
         />
-        <ListingMosaicImage
+        <SellerDirectoryMosaicImage
           slot={slots[1]!}
           className="h-full min-h-0"
           sizes="(max-width: 640px) 28vw, 110px"
         />
-        <ListingMosaicImage
+        <SellerDirectoryMosaicImage
           slot={slots[2]!}
           className="h-full min-h-0"
           sizes="(max-width: 640px) 28vw, 110px"
