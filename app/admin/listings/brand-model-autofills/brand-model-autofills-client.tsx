@@ -66,6 +66,13 @@ type AutofillSummary = {
   changedSince: number
 }
 
+type Coverage = {
+  activeSurfboards: number
+  missingEither: number
+  missingBrand: number
+  missingModel: number
+}
+
 type UnmatchedRow = {
   listingId: string
   listingTitle: string
@@ -76,14 +83,22 @@ type UnmatchedRow = {
   needsBrand: boolean
   needsModel: boolean
   matchedBrandName: string | null
+  brandKnownModelMissing: boolean
   firstSeenAt: string
   lastSeenAt: string
 }
 
-type UnmatchedSummary = { total: number; needsBrand: number; needsModel: number }
+type UnmatchedSummary = {
+  total: number
+  needsBrand: number
+  needsModel: number
+  brandKnownModelMissing: number
+}
+
+type UnmatchedFilter = "all" | "brand" | "model" | "brandKnown"
 
 type AutofillApiResponse = {
-  data?: { rows?: AutofillRow[]; summary?: AutofillSummary }
+  data?: { rows?: AutofillRow[]; summary?: AutofillSummary; coverage?: Coverage }
   error?: string
 }
 type UnmatchedApiResponse = {
@@ -181,12 +196,15 @@ export function BrandModelAutofillsAdminClient() {
     modelAttached: 0,
     changedSince: 0,
   })
+  const [coverage, setCoverage] = useState<Coverage | null>(null)
   const [unmatched, setUnmatched] = useState<UnmatchedRow[]>([])
   const [unmatchedSummary, setUnmatchedSummary] = useState<UnmatchedSummary>({
     total: 0,
     needsBrand: 0,
     needsModel: 0,
+    brandKnownModelMissing: 0,
   })
+  const [unmatchedFilter, setUnmatchedFilter] = useState<UnmatchedFilter>("all")
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
@@ -208,6 +226,7 @@ export function BrandModelAutofillsAdminClient() {
       } else {
         setRows(Array.isArray(attachedJson.data?.rows) ? attachedJson.data!.rows : [])
         if (attachedJson.data?.summary) setSummary(attachedJson.data.summary)
+        if (attachedJson.data?.coverage) setCoverage(attachedJson.data.coverage)
       }
 
       if (!unmatchedRes.ok) {
@@ -253,13 +272,17 @@ export function BrandModelAutofillsAdminClient() {
 
   const filteredUnmatched = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
-    if (!q) return unmatched
-    return unmatched.filter(
-      (row) =>
+    return unmatched.filter((row) => {
+      if (unmatchedFilter === "brand" && !row.needsBrand) return false
+      if (unmatchedFilter === "model" && !row.needsModel) return false
+      if (unmatchedFilter === "brandKnown" && !row.brandKnownModelMissing) return false
+      if (!q) return true
+      return (
         row.listingTitle.toLowerCase().includes(q) ||
-        (row.matchedBrandName ?? "").toLowerCase().includes(q),
-    )
-  }, [unmatched, searchQuery])
+        (row.matchedBrandName ?? "").toLowerCase().includes(q)
+      )
+    })
+  }, [unmatched, searchQuery, unmatchedFilter])
 
   async function handleUndo(row: AutofillRow) {
     const parts = [row.attachedBrand ? "brand" : null, row.attachedModel ? "model" : null].filter(
@@ -316,6 +339,23 @@ export function BrandModelAutofillsAdminClient() {
           Refresh
         </Button>
       </div>
+
+      {coverage ? (
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+          <span className="font-medium text-foreground tabular-nums">{coverage.missingEither}</span> of{" "}
+          <span className="tabular-nums">{coverage.activeSurfboards}</span> active surfboard listings
+          still have no catalog link
+          {coverage.missingEither > 0 ? (
+            <>
+              {" "}(<span className="tabular-nums">{coverage.missingBrand}</span> missing a brand,{" "}
+              <span className="tabular-nums">{coverage.missingModel}</span> missing a model). The cron
+              works through these oldest-first, up to 500 per day.
+            </>
+          ) : (
+            <> — every listing is fully linked.</>
+          )}
+        </div>
+      ) : null}
 
       <div className="rounded-2xl border border-border bg-card p-3">
         <Input
@@ -430,8 +470,11 @@ export function BrandModelAutofillsAdminClient() {
                         <TableCell className="max-w-[170px]">
                           {row.attachedBrand ? (
                             <div className="flex flex-col gap-1">
-                              <span className="line-clamp-1 text-sm font-medium text-foreground">
+                              <span className="inline-flex w-fit items-center gap-1 line-clamp-1 text-sm font-medium text-foreground">
                                 {row.brandName ?? "—"}
+                                <Badge variant="outline" className="border-emerald-500/30 px-1 py-0 text-[10px] text-emerald-600 dark:text-emerald-400">
+                                  added
+                                </Badge>
                               </span>
                               {brandDrifted ? (
                                 <span className="inline-flex w-fit items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
@@ -440,6 +483,13 @@ export function BrandModelAutofillsAdminClient() {
                                 </span>
                               ) : null}
                             </div>
+                          ) : row.currentBrand ? (
+                            <div className="flex flex-col">
+                              <span className="line-clamp-1 text-sm text-muted-foreground">
+                                {row.currentBrand}
+                              </span>
+                              <span className="text-[11px] text-muted-foreground/70">already linked</span>
+                            </div>
                           ) : (
                             <span className="text-sm text-muted-foreground">—</span>
                           )}
@@ -447,8 +497,11 @@ export function BrandModelAutofillsAdminClient() {
                         <TableCell className="max-w-[170px]">
                           {row.attachedModel ? (
                             <div className="flex flex-col gap-1">
-                              <span className="line-clamp-1 text-sm font-medium text-foreground">
+                              <span className="inline-flex w-fit items-center gap-1 line-clamp-1 text-sm font-medium text-foreground">
                                 {row.modelName ?? "—"}
+                                <Badge variant="outline" className="border-emerald-500/30 px-1 py-0 text-[10px] text-emerald-600 dark:text-emerald-400">
+                                  added
+                                </Badge>
                               </span>
                               {modelDrifted ? (
                                 <span className="inline-flex w-fit items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
@@ -456,6 +509,13 @@ export function BrandModelAutofillsAdminClient() {
                                   now: {row.currentModel ?? "cleared"}
                                 </span>
                               ) : null}
+                            </div>
+                          ) : row.currentModel ? (
+                            <div className="flex flex-col">
+                              <span className="line-clamp-1 text-sm text-muted-foreground">
+                                {row.currentModel}
+                              </span>
+                              <span className="text-[11px] text-muted-foreground/70">already linked</span>
                             </div>
                           ) : (
                             <span className="text-sm text-muted-foreground">—</span>
@@ -520,10 +580,34 @@ export function BrandModelAutofillsAdminClient() {
         {/* Unmatched tab                                                  */}
         {/* -------------------------------------------------------------- */}
         <TabsContent value="unmatched" className="mt-6 space-y-4">
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <StatTile icon={AlertTriangle} accent="amber" label="No matches" value={String(unmatchedSummary.total)} />
             <StatTile icon={Tag} accent="rose" label="Missing brand" value={String(unmatchedSummary.needsBrand)} />
             <StatTile icon={Package} accent="rose" label="Missing model" value={String(unmatchedSummary.needsModel)} />
+            <StatTile
+              icon={Package}
+              accent="sky"
+              label="Brand known · add model"
+              value={String(unmatchedSummary.brandKnownModelMissing)}
+              hint="Just add the model to that brand"
+            />
+          </div>
+
+          <div className="flex items-center justify-end">
+            <Select
+              value={unmatchedFilter}
+              onValueChange={(v) => setUnmatchedFilter(v as UnmatchedFilter)}
+            >
+              <SelectTrigger className="w-60">
+                <SelectValue placeholder="Filter" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All unmatched</SelectItem>
+                <SelectItem value="brand">Missing brand</SelectItem>
+                <SelectItem value="model">Missing model</SelectItem>
+                <SelectItem value="brandKnown">Brand known · add model</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <p className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
@@ -597,10 +681,21 @@ export function BrandModelAutofillsAdminClient() {
                             ) : null}
                           </div>
                         </TableCell>
-                        <TableCell className="max-w-[160px]">
-                          <span className="line-clamp-1 text-sm text-muted-foreground">
-                            {row.matchedBrandName ?? "—"}
-                          </span>
+                        <TableCell className="max-w-[180px]">
+                          {row.brandKnownModelMissing ? (
+                            <div className="flex flex-col">
+                              <span className="line-clamp-1 text-sm font-medium text-foreground">
+                                {row.matchedBrandName}
+                              </span>
+                              <span className="text-[11px] text-sky-600 dark:text-sky-400">
+                                add model to this brand
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="line-clamp-1 text-sm text-muted-foreground">
+                              {row.matchedBrandName ?? "—"}
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell>
                           <span className="text-xs text-muted-foreground">

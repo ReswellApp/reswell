@@ -4,9 +4,11 @@ import {
   clearListingModelIfMatches,
   deleteListingBrandModelAutofill,
   getListingBrandModelAutofillById,
+  getListingBrandModelCoverage,
   listListingBrandModelAutofills,
   listListingBrandModelUnmatched,
   type ListingBrandModelAutofillRow,
+  type ListingBrandModelCoverage,
   type ListingBrandModelUnmatchedRow,
 } from "@/lib/db/listingBrandModelBackfill"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
@@ -37,6 +39,7 @@ export type AdminListingBrandModelAutofill = {
 
 export type AdminListingBrandModelAutofillsResult = {
   rows: AdminListingBrandModelAutofill[]
+  coverage: ListingBrandModelCoverage
   summary: {
     total: number
     brandAttached: number
@@ -90,7 +93,11 @@ export async function getListingBrandModelAutofillsForAdmin(
   supabase: SupabaseClient,
   options?: { limit?: number },
 ): Promise<AdminListingBrandModelAutofillsResult> {
-  const rows = (await listListingBrandModelAutofills(supabase, options)).map(toAdminRow)
+  const [autofills, coverage] = await Promise.all([
+    listListingBrandModelAutofills(supabase, options),
+    getListingBrandModelCoverage(supabase),
+  ])
+  const rows = autofills.map(toAdminRow)
 
   let brandAttached = 0
   let modelAttached = 0
@@ -105,6 +112,7 @@ export async function getListingBrandModelAutofillsForAdmin(
 
   return {
     rows,
+    coverage,
     summary: { total: rows.length, brandAttached, modelAttached, changedSince },
   }
 }
@@ -165,13 +173,21 @@ export type AdminListingBrandModelUnmatched = {
   needsModel: boolean
   /** Brand to add the missing model under (when only the model is unresolved). */
   matchedBrandName: string | null
+  /** Brand is in the catalog, but the title's model isn't — just add the model under that brand. */
+  brandKnownModelMissing: boolean
   firstSeenAt: string
   lastSeenAt: string
 }
 
 export type AdminListingBrandModelUnmatchedResult = {
   rows: AdminListingBrandModelUnmatched[]
-  summary: { total: number; needsBrand: number; needsModel: number }
+  summary: {
+    total: number
+    needsBrand: number
+    needsModel: number
+    /** Subset of needsModel where the brand is already known (add model to that brand). */
+    brandKnownModelMissing: number
+  }
 }
 
 /** True when the listing still actually has the gap recorded (not already resolved/gone). */
@@ -188,6 +204,10 @@ function toUnmatchedAdminRow(
   row: ListingBrandModelUnmatchedRow,
 ): AdminListingBrandModelUnmatched {
   const listing = row.listing
+  // Reflect the listing's live state so a partially-resolved gap shows correctly.
+  const needsBrand = row.needs_brand && !listing?.brand_id
+  const needsModel = row.needs_model && !listing?.brand_model_id
+  const matchedBrandName = row.matched_brand_name?.trim() || null
   return {
     listingId: row.listing_id,
     listingTitle: (listing?.title ?? row.listing_title ?? "").trim() || "Untitled listing",
@@ -195,10 +215,10 @@ function toUnmatchedAdminRow(
     listingSection: listing?.section ?? "surfboards",
     listingStatus: listing?.status ?? null,
     primaryImageUrl: pickPrimaryImageUrl(listing?.listing_images ?? []),
-    // Reflect the listing's live state so a partially-resolved gap shows correctly.
-    needsBrand: row.needs_brand && !listing?.brand_id,
-    needsModel: row.needs_model && !listing?.brand_model_id,
-    matchedBrandName: row.matched_brand_name?.trim() || null,
+    needsBrand,
+    needsModel,
+    matchedBrandName,
+    brandKnownModelMissing: needsModel && !needsBrand && !!matchedBrandName,
     firstSeenAt: row.first_seen_at,
     lastSeenAt: row.last_seen_at,
   }
@@ -218,10 +238,15 @@ export async function getListingBrandModelUnmatchedForAdmin(
 
   let needsBrand = 0
   let needsModel = 0
+  let brandKnownModelMissing = 0
   for (const row of rows) {
     if (row.needsBrand) needsBrand += 1
     if (row.needsModel) needsModel += 1
+    if (row.brandKnownModelMissing) brandKnownModelMissing += 1
   }
 
-  return { rows, summary: { total: rows.length, needsBrand, needsModel } }
+  return {
+    rows,
+    summary: { total: rows.length, needsBrand, needsModel, brandKnownModelMissing },
+  }
 }

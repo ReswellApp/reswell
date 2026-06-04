@@ -62,6 +62,45 @@ export async function collectActiveSurfboardListingsNeedingBrandOrModel(
   return { rows, capped }
 }
 
+/** Live coverage counts: how many active surfboard listings still lack a brand/model link. */
+export type ListingBrandModelCoverage = {
+  activeSurfboards: number
+  missingEither: number
+  missingBrand: number
+  missingModel: number
+}
+
+function activeSurfboardCountQuery(supabase: SupabaseClient) {
+  return supabase
+    .from("listings")
+    .select("id", { count: "exact", head: true })
+    .eq("section", "surfboards")
+    .eq("status", "active")
+    .eq("hidden_from_site", false)
+}
+
+export async function getListingBrandModelCoverage(
+  supabase: SupabaseClient,
+): Promise<ListingBrandModelCoverage> {
+  const [allRes, eitherRes, brandRes, modelRes] = await Promise.all([
+    activeSurfboardCountQuery(supabase),
+    activeSurfboardCountQuery(supabase).or("brand_id.is.null,brand_model_id.is.null"),
+    activeSurfboardCountQuery(supabase).is("brand_id", null),
+    activeSurfboardCountQuery(supabase).is("brand_model_id", null),
+  ])
+
+  for (const res of [allRes, eitherRes, brandRes, modelRes]) {
+    if (res.error) console.error("getListingBrandModelCoverage:", res.error.message)
+  }
+
+  return {
+    activeSurfboards: allRes.count ?? 0,
+    missingEither: eitherRes.count ?? 0,
+    missingBrand: brandRes.count ?? 0,
+    missingModel: modelRes.count ?? 0,
+  }
+}
+
 /** Every directory brand (id, name, slug) for in-memory title matching. */
 export async function loadDirectoryBrandsForMatching(
   supabase: SupabaseClient,
