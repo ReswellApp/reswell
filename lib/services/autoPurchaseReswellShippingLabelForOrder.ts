@@ -9,6 +9,7 @@ import { getLatestAdminLabelUrlsForOrder } from "@/lib/db/adminOrderShippingLabe
 import { getLatestOrderShippingLabelUrlsForOrder } from "@/lib/db/orderShippingLabels"
 import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
 import { attachOrderShippingLabel } from "@/lib/services/attachOrderShippingLabel"
+import { autoDispatchOrderIfTrackingReady } from "@/lib/services/markOrderShipped"
 import { purchaseLabelWithRateId } from "@/lib/services/orderShippingLabel"
 import {
   effectiveBoardShippingMode,
@@ -236,6 +237,10 @@ export async function autoPurchaseReswellShippingLabelForOrder(
     await fail("attach_label", attached.error)
     return
   }
+
+  // Match manual tracking save: pending + tracking must become `shipped` so the 7-day
+  // unshipped auto-cancel job does not refund buyers after a label was purchased.
+  await autoDispatchOrderIfTrackingReady(supabase, o.id, o.seller_id)
 
   console.info(`${tag} label attached for seller sale page.`)
 }
