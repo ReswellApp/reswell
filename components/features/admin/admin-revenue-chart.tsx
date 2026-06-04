@@ -78,12 +78,17 @@ function ChartTooltip({ active, payload, label }: TooltipProps<number, string>) 
 
 interface AdminRevenueChartProps {
   data: AdminInsightsDailyPoint[]
-  periodDays: number
+  chartSubtitle: string
   totalGmv: number
   totalOrders: number
 }
 
-export function AdminRevenueChart({ data, periodDays, totalGmv, totalOrders }: AdminRevenueChartProps) {
+export function AdminRevenueChart({
+  data,
+  chartSubtitle,
+  totalGmv,
+  totalOrders,
+}: AdminRevenueChartProps) {
   const [metric, setMetric] = useState<Metric>('gmv')
 
   const hasData = useMemo(() => data.some((d) => d.gmv > 0 || d.orders > 0), [data])
@@ -93,9 +98,7 @@ export function AdminRevenueChart({ data, periodDays, totalGmv, totalOrders }: A
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h3 className="font-headline text-base font-semibold text-foreground">Revenue trend</h3>
-          <p className="text-xs text-muted-foreground">
-            Daily GMV and platform fees over the last {periodDays} days
-          </p>
+          <p className="text-xs text-muted-foreground">{chartSubtitle}</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="text-right">

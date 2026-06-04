@@ -1,6 +1,21 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+import { isHiddenFromAdminOverviewReport } from '@/lib/admin/overview-report-orders'
+import type {
+  AdminOverviewListingPreview,
+  AdminOverviewSupportPreview,
+  AdminOverviewUserPreview,
+} from '@/lib/db/adminOverview'
+import type { ContactMessageSupportStatus } from '@/lib/db/contactMessages'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import {
+  resolveAdminInsightsPeriod,
+  utcMonthStartIso,
+  utcYearMonthChoices,
+  type AdminInsightsPeriodMode,
+} from '@/lib/utils/adminInsightsPeriod'
+
+export { ADMIN_INSIGHTS_PERIOD_DAYS } from '@/lib/utils/adminInsightsPeriod'
 
 /**
  * Marketplace-wide business intelligence for the admin overview.
@@ -15,9 +30,6 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
  * for confirmed, non-test orders. "Sale time" is `orders.created_at` (there is
  * no `listings.sold_at`).
  */
-
-/** Rolling comparison window for the BI dashboard. */
-export const ADMIN_INSIGHTS_PERIOD_DAYS = 30
 
 const ORDERS_FETCH_CAP = 20000
 const LISTING_LOOKUP_CHUNK = 200
@@ -66,7 +78,18 @@ export type AdminInsightsOrderPreview = {
   created_at: string
 }
 
+export type AdminMonthlyRevenueRow = {
+  yearMonth: string
+  gmv: number
+  platformRevenue: number
+  orders: number
+}
+
 export type AdminBusinessInsights = {
+  periodMode: AdminInsightsPeriodMode
+  periodLabel: string
+  comparePeriodLabel: string
+  selectedYearMonth: string | null
   periodDays: number
   revenue: {
     gmv: TrendMetric
@@ -83,6 +106,7 @@ export type AdminBusinessInsights = {
   growth: {
     newMembers: TrendMetric
     newListings: TrendMetric
+    newSupportThreads: TrendMetric
   }
   supply: {
     activeListings: number
@@ -101,6 +125,12 @@ export type AdminBusinessInsights = {
     acceptanceRatePct: number | null
   }
   recentOrders: AdminInsightsOrderPreview[]
+  /** Listings created in the selected period (newest first). */
+  recentListings: AdminOverviewListingPreview[]
+  /** Profiles created in the selected period (newest first). */
+  recentUsers: AdminOverviewUserPreview[]
+  /** Support tickets created in the selected period (newest first). */
+  recentSupport: AdminOverviewSupportPreview[]
 }
 
 type OrderRow = {
@@ -128,6 +158,67 @@ function trend(current: number, previous: number): TrendMetric {
 
 function dayKey(iso: string): string {
   return iso.slice(0, 10)
+}
+
+function listingSellerName(
+  profiles: { display_name: string | null } | { display_name: string | null }[] | null,
+): string | null {
+  if (!profiles) return null
+  if (Array.isArray(profiles)) return profiles[0]?.display_name ?? null
+  return profiles.display_name ?? null
+}
+
+function mapRecentListings(data: unknown[] | null): AdminOverviewListingPreview[] {
+  const rows: AdminOverviewListingPreview[] = []
+  for (const row of data ?? []) {
+    const r = row as Record<string, unknown>
+    const profilesRaw = r.profiles as
+      | { display_name: string | null }
+      | { display_name: string | null }[]
+      | null
+    rows.push({
+      id: String(r.id ?? ''),
+      title: String(r.title ?? ''),
+      slug: r.slug == null ? null : String(r.slug),
+      price: Number(r.price ?? 0),
+      section: String(r.section ?? ''),
+      status: String(r.status ?? ''),
+      created_at: String(r.created_at ?? ''),
+      seller_display_name: listingSellerName(profilesRaw),
+    })
+  }
+  return rows
+}
+
+function mapRecentUsers(data: unknown[] | null): AdminOverviewUserPreview[] {
+  const rows: AdminOverviewUserPreview[] = []
+  for (const row of data ?? []) {
+    const r = row as Record<string, unknown>
+    rows.push({
+      id: String(r.id ?? ''),
+      display_name: r.display_name == null ? null : String(r.display_name),
+      email: r.email == null ? null : String(r.email),
+      created_at: String(r.created_at ?? ''),
+    })
+  }
+  return rows
+}
+
+function mapRecentSupport(data: unknown[] | null): AdminOverviewSupportPreview[] {
+  const rows: AdminOverviewSupportPreview[] = []
+  for (const row of data ?? []) {
+    const r = row as Record<string, unknown>
+    rows.push({
+      id: String(r.id ?? ''),
+      name: String(r.name ?? ''),
+      email: String(r.email ?? ''),
+      subject: r.subject == null || r.subject === '' ? null : String(r.subject),
+      support_status: (r.support_status as ContactMessageSupportStatus) ?? 'new',
+      source: String(r.source ?? 'contact_form'),
+      created_at: String(r.created_at ?? ''),
+    })
+  }
+  return rows
 }
 
 function buildDayKeys(fromMs: number, toMs: number): string[] {
@@ -183,17 +274,33 @@ async function fetchSellerNames(
   return names
 }
 
-export async function loadAdminBusinessInsights(): Promise<
+export type LoadAdminBusinessInsightsOptions = {
+  /** `YYYY-MM` calendar month (UTC). Omit for the rolling window. */
+  yearMonth?: string | null
+}
+
+export async function loadAdminBusinessInsights(
+  options?: LoadAdminBusinessInsightsOptions,
+): Promise<
   { ok: true; data: AdminBusinessInsights } | { ok: false; error: string }
 > {
   try {
     const db = createServiceRoleClient()
 
     const now = Date.now()
-    const dayMs = 24 * 60 * 60 * 1000
-    const periodMs = ADMIN_INSIGHTS_PERIOD_DAYS * dayMs
-    const since30 = new Date(now - periodMs).toISOString()
-    const since60 = new Date(now - 2 * periodMs).toISOString()
+    const period = resolveAdminInsightsPeriod(options?.yearMonth)
+    const {
+      periodStartMs,
+      periodEndMs,
+      prevStartMs,
+      prevEndMs,
+      fetchSinceIso: sinceFetch,
+    } = period
+
+    const growthSinceIso = new Date(periodStartMs).toISOString()
+    const periodEndIso = new Date(periodEndMs).toISOString()
+    const growthPrevSinceIso = new Date(prevStartMs).toISOString()
+    const growthPrevUntilIso = new Date(prevEndMs).toISOString()
 
     const [
       ordersRes,
@@ -204,6 +311,11 @@ export async function loadAdminBusinessInsights(): Promise<
       newMembersPrevRes,
       newListingsCurRes,
       newListingsPrevRes,
+      newSupportCurRes,
+      newSupportPrevRes,
+      recentListingsRes,
+      recentUsersRes,
+      recentSupportRes,
     ] = await Promise.all([
       db
         .from('orders')
@@ -211,10 +323,10 @@ export async function loadAdminBusinessInsights(): Promise<
           'id, order_num, amount, platform_fee, shipping_amount, status, created_at, seller_id, listing_id',
         )
         .eq('is_admin_test', false)
-        .gte('created_at', since60)
+        .gte('created_at', sinceFetch)
         .order('created_at', { ascending: false })
         .limit(ORDERS_FETCH_CAP),
-      db.from('offers').select('status, created_at').gte('created_at', since60),
+      db.from('offers').select('status, created_at').gte('created_at', sinceFetch),
       db.from('listings').select('*', { count: 'exact', head: true }).eq('status', 'active'),
       db
         .from('listings')
@@ -222,38 +334,81 @@ export async function loadAdminBusinessInsights(): Promise<
         .eq('status', 'active')
         .eq('section', 'surfboards')
         .eq('hidden_from_site', false),
-      db.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', since30),
       db
         .from('profiles')
         .select('*', { count: 'exact', head: true })
-        .gte('created_at', since60)
-        .lt('created_at', since30),
-      db.from('listings').select('*', { count: 'exact', head: true }).gte('created_at', since30),
+        .gte('created_at', growthSinceIso)
+        .lt('created_at', new Date(periodEndMs).toISOString()),
+      db
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', growthPrevSinceIso)
+        .lt('created_at', growthPrevUntilIso),
       db
         .from('listings')
         .select('*', { count: 'exact', head: true })
-        .gte('created_at', since60)
-        .lt('created_at', since30),
+        .gte('created_at', growthSinceIso)
+        .lt('created_at', new Date(periodEndMs).toISOString()),
+      db
+        .from('listings')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', growthPrevSinceIso)
+        .lt('created_at', growthPrevUntilIso),
+      db
+        .from('contact_messages')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', growthSinceIso)
+        .lt('created_at', periodEndIso),
+      db
+        .from('contact_messages')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', growthPrevSinceIso)
+        .lt('created_at', growthPrevUntilIso),
+      db
+        .from('listings')
+        .select(
+          'id, title, slug, price, section, status, created_at, profiles!listings_user_id_fkey(display_name)',
+        )
+        .gte('created_at', growthSinceIso)
+        .lt('created_at', periodEndIso)
+        .order('created_at', { ascending: false })
+        .limit(8),
+      db
+        .from('profiles')
+        .select('id, display_name, email, created_at')
+        .gte('created_at', growthSinceIso)
+        .lt('created_at', periodEndIso)
+        .order('created_at', { ascending: false })
+        .limit(8),
+      db
+        .from('contact_messages')
+        .select('id, name, email, subject, support_status, source, created_at')
+        .gte('created_at', growthSinceIso)
+        .lt('created_at', periodEndIso)
+        .order('created_at', { ascending: false })
+        .limit(8),
     ])
 
     if (ordersRes.error) {
       return { ok: false, error: 'Could not load marketplace orders for insights.' }
     }
 
-    const orders: OrderRow[] = (ordersRes.data ?? []).map((row) => {
-      const r = row as Record<string, unknown>
-      return {
-        id: String(r.id ?? ''),
-        order_num: r.order_num == null ? null : String(r.order_num),
-        amount: num(r.amount),
-        platform_fee: num(r.platform_fee),
-        shipping_amount: num(r.shipping_amount),
-        status: String(r.status ?? ''),
-        created_at: String(r.created_at ?? ''),
-        seller_id: r.seller_id == null ? null : String(r.seller_id),
-        listing_id: r.listing_id == null ? null : String(r.listing_id),
-      }
-    })
+    const orders: OrderRow[] = (ordersRes.data ?? [])
+      .map((row) => {
+        const r = row as Record<string, unknown>
+        return {
+          id: String(r.id ?? ''),
+          order_num: r.order_num == null ? null : String(r.order_num),
+          amount: num(r.amount),
+          platform_fee: num(r.platform_fee),
+          shipping_amount: num(r.shipping_amount),
+          status: String(r.status ?? ''),
+          created_at: String(r.created_at ?? ''),
+          seller_id: r.seller_id == null ? null : String(r.seller_id),
+          listing_id: r.listing_id == null ? null : String(r.listing_id),
+        }
+      })
+      .filter((o) => !isHiddenFromAdminOverviewReport(o))
 
     // Partition by window + status.
     let gmvCur = 0
@@ -266,7 +421,7 @@ export async function loadAdminBusinessInsights(): Promise<
     let refundedCur = 0
 
     const dailyMap = new Map<string, { gmv: number; fees: number; orders: number }>()
-    for (const key of buildDayKeys(now - periodMs, now)) {
+    for (const key of buildDayKeys(periodStartMs, periodEndMs)) {
       dailyMap.set(key, { gmv: 0, fees: 0, orders: 0 })
     }
 
@@ -275,7 +430,8 @@ export async function loadAdminBusinessInsights(): Promise<
 
     for (const o of orders) {
       const ts = new Date(o.created_at).getTime()
-      const inCurrent = ts >= now - periodMs
+      const inCurrent = ts >= periodStartMs && ts < periodEndMs
+      const inPrevious = ts >= prevStartMs && ts < prevEndMs
       const confirmed = o.status === 'confirmed'
       const refunded = o.status === 'refunded' || o.status === 'refunding'
 
@@ -304,7 +460,7 @@ export async function loadAdminBusinessInsights(): Promise<
             l.orders += 1
             listingAgg.set(o.listing_id, l)
           }
-        } else {
+        } else if (inPrevious) {
           gmvPrev += o.amount
           feesPrev += o.platform_fee
           ordersPrev += 1
@@ -372,14 +528,20 @@ export async function loadAdminBusinessInsights(): Promise<
       }))
       .sort((a, b) => b.gmv - a.gmv)
 
-    // Recent orders (accurate, service-role).
-    const recentOrders: AdminInsightsOrderPreview[] = orders.slice(0, 8).map((o) => ({
-      id: o.id,
-      order_num: o.order_num,
-      status: o.status,
-      amount: o.amount,
-      created_at: o.created_at,
-    }))
+    // Recent orders in the current period only (service-role).
+    const recentOrders: AdminInsightsOrderPreview[] = orders
+      .filter((o) => {
+        const ts = new Date(o.created_at).getTime()
+        return ts >= periodStartMs && ts < periodEndMs
+      })
+      .slice(0, 8)
+      .map((o) => ({
+        id: o.id,
+        order_num: o.order_num,
+        status: o.status,
+        amount: o.amount,
+        created_at: o.created_at,
+      }))
 
     // Offers funnel.
     let offersCreatedCur = 0
@@ -391,13 +553,14 @@ export async function loadAdminBusinessInsights(): Promise<
       const r = row as Record<string, unknown>
       const status = String(r.status ?? '').toUpperCase()
       const ts = new Date(String(r.created_at ?? '')).getTime()
-      const inCurrent = ts >= now - periodMs
+      const inCurrent = ts >= periodStartMs && ts < periodEndMs
+      const inPrevious = ts >= prevStartMs && ts < prevEndMs
       if (inCurrent) {
         offersCreatedCur += 1
         if (status === 'ACCEPTED' || status === 'COMPLETED') offersAcceptedCur += 1
         else if (status === 'DECLINED') offersDeclinedCur += 1
         else if (status === 'EXPIRED') offersExpiredCur += 1
-      } else {
+      } else if (inPrevious) {
         offersCreatedPrev += 1
       }
     }
@@ -414,7 +577,11 @@ export async function loadAdminBusinessInsights(): Promise<
     return {
       ok: true,
       data: {
-        periodDays: ADMIN_INSIGHTS_PERIOD_DAYS,
+        periodMode: period.mode,
+        periodLabel: period.label,
+        comparePeriodLabel: period.compareLabel,
+        selectedYearMonth: period.mode === 'month' ? period.yearMonth : null,
+        periodDays: period.periodDays,
         revenue: {
           gmv: trend(gmvCur, gmvPrev),
           platformRevenue: trend(feesCur, feesPrev),
@@ -428,6 +595,10 @@ export async function loadAdminBusinessInsights(): Promise<
         growth: {
           newMembers: trend(newMembersCurRes.count ?? 0, newMembersPrevRes.count ?? 0),
           newListings: trend(newListingsCurRes.count ?? 0, newListingsPrevRes.count ?? 0),
+          newSupportThreads: trend(
+            newSupportCurRes.count ?? 0,
+            newSupportPrevRes.count ?? 0,
+          ),
         },
         supply: {
           activeListings: activeListingsRes.count ?? 0,
@@ -444,6 +615,9 @@ export async function loadAdminBusinessInsights(): Promise<
           acceptanceRatePct,
         },
         recentOrders,
+        recentListings: mapRecentListings(recentListingsRes.data),
+        recentUsers: mapRecentUsers(recentUsersRes.data),
+        recentSupport: mapRecentSupport(recentSupportRes.data),
       },
     }
   } catch {
@@ -451,6 +625,72 @@ export async function loadAdminBusinessInsights(): Promise<
       ok: false,
       error:
         'Add SUPABASE_SERVICE_ROLE_KEY on the server to compute marketplace business insights.',
+    }
+  }
+}
+
+const MONTHLY_BREAKDOWN_DEFAULT_MONTHS = 12
+
+/** Confirmed-order GMV and platform fees grouped by UTC calendar month. */
+export async function loadAdminMonthlyRevenueBreakdown(
+  monthCount = MONTHLY_BREAKDOWN_DEFAULT_MONTHS,
+): Promise<
+  { ok: true; data: AdminMonthlyRevenueRow[] } | { ok: false; error: string }
+> {
+  try {
+    const db = createServiceRoleClient()
+    const months = utcYearMonthChoices(monthCount)
+    const earliestYm = months[months.length - 1]
+    const sinceIso = earliestYm ? utcMonthStartIso(earliestYm) : null
+    if (!sinceIso) {
+      return { ok: true, data: [] }
+    }
+
+    const { data: orderRows, error } = await db
+      .from('orders')
+      .select('amount, platform_fee, created_at, status')
+      .eq('is_admin_test', false)
+      .eq('status', 'confirmed')
+      .gte('created_at', sinceIso)
+      .order('created_at', { ascending: false })
+      .limit(ORDERS_FETCH_CAP)
+
+    if (error) {
+      return { ok: false, error: 'Could not load monthly revenue breakdown.' }
+    }
+
+    const bucket = new Map<string, { gmv: number; platformRevenue: number; orders: number }>()
+    for (const ym of months) {
+      bucket.set(ym, { gmv: 0, platformRevenue: 0, orders: 0 })
+    }
+
+    for (const row of orderRows ?? []) {
+      const r = row as Record<string, unknown>
+      if (isHiddenFromAdminOverviewReport(r)) continue
+      const ym = String(r.created_at ?? '').slice(0, 7)
+      const b = bucket.get(ym)
+      if (!b) continue
+      b.gmv += num(r.amount)
+      b.platformRevenue += num(r.platform_fee)
+      b.orders += 1
+    }
+
+    const data: AdminMonthlyRevenueRow[] = months.map((yearMonth) => {
+      const v = bucket.get(yearMonth) ?? { gmv: 0, platformRevenue: 0, orders: 0 }
+      return {
+        yearMonth,
+        gmv: v.gmv,
+        platformRevenue: v.platformRevenue,
+        orders: v.orders,
+      }
+    })
+
+    return { ok: true, data }
+  } catch {
+    return {
+      ok: false,
+      error:
+        'Add SUPABASE_SERVICE_ROLE_KEY on the server to load monthly revenue breakdown.',
     }
   }
 }

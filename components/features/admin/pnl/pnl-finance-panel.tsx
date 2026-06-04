@@ -10,6 +10,8 @@ import { PnlLoanCard } from "./pnl-loan-card"
 
 interface PnlFinancePanelProps {
   capital: CapitalSummary
+  /** Shown when viewing a single month — loans/cash stay lifetime totals. */
+  scopeNote?: string
   loans: PnlLoanWithRepayments[]
   onAddLoan: () => void
   onLogRepayment: (loanId?: string) => void
@@ -29,6 +31,7 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
 
 export function PnlFinancePanel({
   capital,
+  scopeNote,
   loans,
   onAddLoan,
   onLogRepayment,
@@ -61,6 +64,11 @@ export function PnlFinancePanel({
       </CardHeader>
 
       <CardContent className="space-y-5">
+        {scopeNote ? (
+          <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+            {scopeNote}
+          </p>
+        ) : null}
         {loans.length === 0 ? (
           <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
             Add the loan you were given to buy boards. We&apos;ll track how much capital is left to

@@ -1,4 +1,5 @@
 import type { ComponentType, ReactNode } from 'react'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import {
   Activity,
@@ -42,7 +43,10 @@ import type {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { AdminMonthlyRevenueTable } from '@/components/features/admin/admin-monthly-revenue-table'
+import { AdminOverviewPeriodFilter } from '@/components/features/admin/admin-overview-period-filter'
 import { AdminRevenueChart } from '@/components/features/admin/admin-revenue-chart'
+import type { AdminMonthlyRevenueRow } from '@/lib/services/adminBusinessInsights'
 import { listingDetailHref } from '@/lib/listing-href'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { cn } from '@/lib/utils'
@@ -557,6 +561,9 @@ export interface AdminOverviewViewProps {
   platformFeesError: string | null
   insights: AdminBusinessInsights | null
   insightsError: string | null
+  monthlyRevenue: AdminMonthlyRevenueRow[] | null
+  monthlyRevenueError: string | null
+  selectedYearMonth: string | null
 }
 
 export function AdminOverviewView({
@@ -566,10 +573,16 @@ export function AdminOverviewView({
   platformFeesError,
   insights,
   insightsError,
+  monthlyRevenue,
+  monthlyRevenueError,
+  selectedYearMonth,
 }: AdminOverviewViewProps) {
   const totalListings = snapshot.totals.listings || 1
   const surfPct = Math.round((snapshot.listingsBySection.surfboards / totalListings) * 100)
-  const periodLabel = insights ? `${insights.periodDays} days` : `${snapshot.periodDays} days`
+  const periodBadgeLabel = insights?.periodLabel ?? `Last ${snapshot.periodDays} days`
+  const compareFootnote = insights
+    ? `vs ${insights.comparePeriodLabel}`
+    : `last ${snapshot.periodDays} days`
 
   const attentionTotal =
     snapshot.attention.openSupportTickets +
@@ -578,8 +591,12 @@ export function AdminOverviewView({
     (isAdmin ? snapshot.attention.pendingBrandReviews : 0)
 
   const ordersFeed: OrderPreview[] = insights ? insights.recentOrders : snapshot.previews.recentOrders
+  const listingsFeed = insights?.recentListings ?? snapshot.previews.recentListings
+  const usersFeed = insights?.recentUsers ?? snapshot.previews.recentUsers
+  const supportFeed = insights?.recentSupport ?? snapshot.previews.recentSupportTickets
   const maxSellerGmv = insights ? Math.max(0, ...insights.topSellers.map((s) => s.gmv)) : 0
   const maxBrandGmv = insights ? Math.max(0, ...insights.topBrands.map((b) => b.gmv)) : 0
+  const periodActivityLabel = insights?.periodLabel ?? `the last ${snapshot.periodDays} days`
 
   return (
     <div className="space-y-8">
@@ -593,15 +610,23 @@ export function AdminOverviewView({
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
               </span>
-              Last {periodLabel}
+              {periodBadgeLabel}
             </span>
           </div>
           <p className="max-w-2xl text-sm text-muted-foreground">
             {isAdmin
-              ? 'Marketplace performance, growth, and the queues that need attention — measured against the prior period.'
+              ? insights?.periodMode === 'month'
+                ? `Marketplace performance for ${insights.periodLabel} — compared to ${insights.comparePeriodLabel}.`
+                : 'Marketplace performance, growth, and the queues that need attention — measured against the prior period.'
               : 'Marketplace pulse, queues that need attention, and fresh activity.'}
           </p>
         </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          {isAdmin ? (
+            <Suspense fallback={null}>
+              <AdminOverviewPeriodFilter selectedYearMonth={selectedYearMonth} />
+            </Suspense>
+          ) : null}
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" asChild>
             <Link href="/admin/contact-messages">Support inbox</Link>
@@ -624,9 +649,10 @@ export function AdminOverviewView({
             </Link>
           </Button>
         </div>
+        </div>
       </div>
 
-      {snapshot.errors.length > 0 || insightsError ? (
+      {snapshot.errors.length > 0 || insightsError || monthlyRevenueError ? (
         <Card className="border-destructive/40 bg-destructive/[0.06]">
           <CardHeader className="pb-2">
             <CardTitle className="font-headline text-base text-destructive">
@@ -639,6 +665,7 @@ export function AdminOverviewView({
           <CardContent>
             <ul className="list-inside list-disc text-sm text-muted-foreground">
               {insightsError ? <li>{insightsError}</li> : null}
+              {monthlyRevenueError ? <li>{monthlyRevenueError}</li> : null}
               {snapshot.errors.slice(0, 6).map((e) => (
                 <li key={e}>{e}</li>
               ))}
@@ -657,7 +684,7 @@ export function AdminOverviewView({
               label="GMV"
               value={compactUsd(insights.revenue.gmv.current)}
               delta={insights.revenue.gmv}
-              footnote={`vs ${compactUsd(insights.revenue.gmv.previous)} prior ${insights.periodDays}d`}
+              footnote={`${compareFootnote} · ${compactUsd(insights.revenue.gmv.previous)}`}
             />
             <KpiCard
               icon={Coins}
@@ -677,7 +704,7 @@ export function AdminOverviewView({
               label="Paid orders"
               value={String(insights.revenue.orders.current)}
               delta={insights.revenue.orders}
-              footnote={`vs ${insights.revenue.orders.previous} prior ${insights.periodDays}d`}
+              footnote={`${compareFootnote} · ${insights.revenue.orders.previous} orders`}
             />
             <KpiCard
               icon={Receipt}
@@ -685,17 +712,28 @@ export function AdminOverviewView({
               label="Avg order value"
               value={compactUsd(insights.revenue.aov.current)}
               delta={insights.revenue.aov}
-              footnote={`vs ${compactUsd(insights.revenue.aov.previous)} prior ${insights.periodDays}d`}
+              footnote={`${compareFootnote} · ${compactUsd(insights.revenue.aov.previous)} AOV`}
             />
           </div>
 
           {/* Revenue trend */}
           <AdminRevenueChart
             data={insights.daily}
-            periodDays={insights.periodDays}
+            chartSubtitle={
+              insights.periodMode === 'month'
+                ? `Daily GMV and platform fees in ${insights.periodLabel} (UTC)`
+                : `Daily GMV and platform fees over the last ${insights.periodDays} days`
+            }
             totalGmv={insights.revenue.gmv.current}
             totalOrders={insights.revenue.orders.current}
           />
+
+          {monthlyRevenue ? (
+            <AdminMonthlyRevenueTable
+              rows={monthlyRevenue}
+              selectedYearMonth={selectedYearMonth}
+            />
+          ) : null}
 
           {/* Lifetime context */}
           {platformFees ? (
@@ -743,14 +781,14 @@ export function AdminOverviewView({
           {/* Growth & supply */}
           <section className="space-y-3">
             <h2 className="font-headline text-lg font-semibold text-foreground">Growth &amp; supply</h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               <SimpleStat
                 icon={UserPlus}
                 accent="violet"
                 label="New members"
                 value={insights.growth.newMembers.current}
                 delta={insights.growth.newMembers}
-                footnote={`vs ${insights.growth.newMembers.previous} prior ${insights.periodDays}d`}
+                footnote={`${compareFootnote} · ${insights.growth.newMembers.previous}`}
               />
               <SimpleStat
                 icon={Package}
@@ -758,7 +796,15 @@ export function AdminOverviewView({
                 label="New listings"
                 value={insights.growth.newListings.current}
                 delta={insights.growth.newListings}
-                footnote={`vs ${insights.growth.newListings.previous} prior ${insights.periodDays}d`}
+                footnote={`${compareFootnote} · ${insights.growth.newListings.previous}`}
+              />
+              <SimpleStat
+                icon={MessageSquare}
+                accent="amber"
+                label="Support intake"
+                value={insights.growth.newSupportThreads.current}
+                delta={insights.growth.newSupportThreads}
+                footnote={`${compareFootnote} · ${insights.growth.newSupportThreads.previous}`}
               />
               <SimpleStat
                 icon={Boxes}
@@ -896,7 +942,7 @@ export function AdminOverviewView({
             icon={Trophy}
             accent="emerald"
             title="Top sellers"
-            description={`By GMV · last ${insights.periodDays} days`}
+            description={`By GMV · ${insights.periodLabel}`}
           >
             {insights.topSellers.length === 0 ? (
               <EmptyState label="No sales in this window." />
@@ -913,7 +959,7 @@ export function AdminOverviewView({
             icon={Tag}
             accent="sky"
             title="Top brands"
-            description={`By GMV · last ${insights.periodDays} days`}
+            description={`By GMV · ${insights.periodLabel}`}
           >
             {insights.topBrands.length === 0 ? (
               <EmptyState label="No sales in this window." />
@@ -930,7 +976,7 @@ export function AdminOverviewView({
             icon={Layers}
             accent="violet"
             title="Revenue by section"
-            description={`GMV split · last ${insights.periodDays} days`}
+            description={`GMV split · ${insights.periodLabel}`}
           >
             {insights.sectionMix.length === 0 ? (
               <EmptyState label="No sales in this window." />
@@ -947,16 +993,26 @@ export function AdminOverviewView({
           <FeedCard
             icon={Package}
             accent="sky"
-            title="Latest listings"
-            description="Newest across the marketplace"
+            title={insights ? 'New listings' : 'Latest listings'}
+            description={
+              insights
+                ? `Created in ${insights.periodLabel}`
+                : 'Newest across the marketplace'
+            }
             href="/admin/listings"
             actionLabel="All"
           >
-            {snapshot.previews.recentListings.length === 0 ? (
-              <EmptyState label="No listings yet." />
+            {listingsFeed.length === 0 ? (
+              <EmptyState
+                label={
+                  insights
+                    ? `No new listings in ${insights.periodLabel}.`
+                    : 'No listings yet.'
+                }
+              />
             ) : (
               <div className="divide-y divide-border">
-                {snapshot.previews.recentListings.map((l) => (
+                {listingsFeed.map((l) => (
                   <ListingRow key={l.id} listing={l} />
                 ))}
               </div>
@@ -967,12 +1023,22 @@ export function AdminOverviewView({
             icon={ShoppingBag}
             accent="emerald"
             title="Recent orders"
-            description="Latest checkout activity"
+            description={
+              insights
+                ? `Paid orders in ${insights.periodLabel}`
+                : 'Latest checkout activity'
+            }
             href="/admin/orders"
             actionLabel="All"
           >
             {ordersFeed.length === 0 ? (
-              <EmptyState label="No orders yet." />
+              <EmptyState
+                label={
+                  insights
+                    ? `No paid orders in ${insights.periodLabel}.`
+                    : 'No orders yet.'
+                }
+              />
             ) : (
               <div className="divide-y divide-border">
                 {ordersFeed.map((o) => (
@@ -988,15 +1054,25 @@ export function AdminOverviewView({
             icon={MessageSquare}
             accent="amber"
             title="Support inbox"
-            description="Most recent tickets by created date"
+            description={
+              insights
+                ? `Tickets opened in ${insights.periodLabel}`
+                : 'Most recent tickets by created date'
+            }
             href="/admin/contact-messages"
             actionLabel="Inbox"
           >
-            {snapshot.previews.recentSupportTickets.length === 0 ? (
-              <EmptyState label="No tickets yet." />
+            {supportFeed.length === 0 ? (
+              <EmptyState
+                label={
+                  insights
+                    ? `No support tickets in ${insights.periodLabel}.`
+                    : 'No tickets yet.'
+                }
+              />
             ) : (
               <div className="divide-y divide-border">
-                {snapshot.previews.recentSupportTickets.map((r) => (
+                {supportFeed.map((r) => (
                   <SupportRow key={r.id} row={r} />
                 ))}
               </div>
@@ -1007,7 +1083,11 @@ export function AdminOverviewView({
             icon={UserPlus}
             accent="violet"
             title="New members"
-            description="Latest profiles by signup"
+            description={
+              insights
+                ? `Signups in ${insights.periodLabel}`
+                : `Latest profiles in ${periodActivityLabel}`
+            }
             href={isAdmin ? '/admin/users' : undefined}
             actionLabel={isAdmin ? 'Users' : undefined}
           >
@@ -1016,11 +1096,17 @@ export function AdminOverviewView({
                 User administration is limited to full admins. Counts above still reflect overall signups.
               </p>
             ) : null}
-            {snapshot.previews.recentUsers.length === 0 ? (
-              <EmptyState label="No users yet." />
+            {usersFeed.length === 0 ? (
+              <EmptyState
+                label={
+                  insights
+                    ? `No new members in ${insights.periodLabel}.`
+                    : 'No users yet.'
+                }
+              />
             ) : (
               <div className="divide-y divide-border">
-                {snapshot.previews.recentUsers.map((u) => (
+                {usersFeed.map((u) => (
                   <UserRow key={u.id} row={u} canLink={isAdmin} />
                 ))}
               </div>

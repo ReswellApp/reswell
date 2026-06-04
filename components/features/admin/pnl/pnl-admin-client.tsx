@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { Suspense, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { Download, LineChart, Link2, Plus, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -47,21 +47,29 @@ import { PnlAttachDialog } from "./pnl-attach-dialog"
 import { PnlFinancePanel } from "./pnl-finance-panel"
 import { PnlLoanDialog } from "./pnl-loan-dialog"
 import { PnlRepaymentDialog } from "./pnl-repayment-dialog"
+import { PnlPeriodFilter } from "./pnl-period-filter"
 
 interface PnlAdminClientProps {
   initialEntries: PnlEntryRow[]
   initialLoans: PnlLoanWithRepayments[]
+  /** `YYYY-MM` from URL, or null for all-time. */
+  selectedYearMonth: string | null
 }
 
 type StatusFilter = PnlStatus | "all"
 type SortKey = "recent" | "profit" | "name"
 
-export function PnlAdminClient({ initialEntries, initialLoans }: PnlAdminClientProps) {
+export function PnlAdminClient({
+  initialEntries,
+  initialLoans,
+  selectedYearMonth,
+}: PnlAdminClientProps) {
   const [entries, setEntries] = useState<PnlEntryRow[]>(initialEntries)
   const [loans, setLoans] = useState<PnlLoanWithRepayments[]>(initialLoans)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
-  const [monthFilter, setMonthFilter] = useState<string>("all")
+  const monthFilter = selectedYearMonth ?? "all"
+  const periodLabel = selectedYearMonth ? formatMonthKey(selectedYearMonth) : null
   const [sortKey, setSortKey] = useState<SortKey>("recent")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [attachOpen, setAttachOpen] = useState(false)
@@ -81,15 +89,6 @@ export function PnlAdminClient({ initialEntries, initialLoans }: PnlAdminClientP
     () => computeCapital(summarize(computed), summarizeLoans(loans)),
     [computed, loans],
   )
-
-  const months = useMemo(() => {
-    const set = new Set<string>()
-    for (const e of entries) {
-      const key = entryMonthKey(e)
-      if (key) set.add(key)
-    }
-    return Array.from(set).sort((a, b) => b.localeCompare(a))
-  }, [entries])
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -224,23 +223,41 @@ export function PnlAdminClient({ initialEntries, initialLoans }: PnlAdminClientP
       toast.error("Nothing to export for these filters")
       return
     }
-    const scope = monthFilter === "all" ? "all" : monthFilter
-    downloadPnlCsv(filtered, scope)
+    const scope = monthFilter
+    const scopeLabel = periodLabel ?? "All time"
+    downloadPnlCsv(filtered, {
+      scope,
+      scopeLabel,
+      summary,
+      capital,
+    })
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
-            <LineChart className="h-8 w-8 text-neutral-800" aria-hidden />
-            P&amp;L Tracker
-          </h1>
-          <p className="mt-2 max-w-2xl text-muted-foreground">
-            Your live profit-and-loss sheet for buying and selling surfboards. Add boards, log fees,
-            filter by month, and export to CSV.
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="flex items-center gap-2 text-3xl font-bold tracking-tight">
+              <LineChart className="h-8 w-8 text-neutral-800" aria-hidden />
+              P&amp;L Tracker
+            </h1>
+            {periodLabel ? (
+              <span className="inline-flex rounded-full border border-border bg-muted/50 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+                {periodLabel}
+              </span>
+            ) : null}
+          </div>
+          <p className="max-w-2xl text-muted-foreground">
+            {periodLabel
+              ? `Profit and loss for ${periodLabel}. Sold boards use their sale month; inventory and listed boards use purchase month.`
+              : "Your live profit-and-loss sheet for buying and selling surfboards. Pick a report month, add boards, log fees, and export to CSV."}
           </p>
         </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <Suspense fallback={null}>
+            <PnlPeriodFilter selectedYearMonth={selectedYearMonth} />
+          </Suspense>
         <div className="flex shrink-0 flex-wrap gap-2">
           <Button variant="outline" onClick={handleExport}>
             <Download className="mr-2 h-4 w-4" />
@@ -255,12 +272,18 @@ export function PnlAdminClient({ initialEntries, initialLoans }: PnlAdminClientP
             Add board
           </Button>
         </div>
+        </div>
       </div>
 
-      <PnlSummaryCards summary={summary} />
+      <PnlSummaryCards summary={summary} periodLabel={periodLabel ?? undefined} />
 
       <PnlFinancePanel
         capital={capital}
+        scopeNote={
+          periodLabel
+            ? `Financing and capital below are all-time totals (not limited to ${periodLabel}).`
+            : undefined
+        }
         loans={loans}
         onAddLoan={openAddLoan}
         onLogRepayment={openRepayment}
@@ -290,19 +313,6 @@ export function PnlAdminClient({ initialEntries, initialLoans }: PnlAdminClientP
             <SelectItem value="sold">Sold</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={monthFilter} onValueChange={setMonthFilter}>
-          <SelectTrigger className="w-full sm:w-[160px]">
-            <SelectValue placeholder="Month" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All time</SelectItem>
-            {months.map((m) => (
-              <SelectItem key={m} value={m}>
-                {formatMonthKey(m)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
           <SelectTrigger className="w-full sm:w-[150px]">
             <SelectValue placeholder="Sort" />
@@ -314,6 +324,13 @@ export function PnlAdminClient({ initialEntries, initialLoans }: PnlAdminClientP
           </SelectContent>
         </Select>
       </div>
+
+      {periodLabel && filtered.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+          No boards attributed to {periodLabel}. Try another month or add a board with a purchase or
+          sale date in this month.
+        </p>
+      ) : null}
 
       <PnlTable
         rows={filtered}

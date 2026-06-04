@@ -1,6 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import type { ContactMessageSupportStatus } from '@/lib/db/contactMessages'
+import {
+  buildAdminOverviewReportOrdersOrFilter,
+  isHiddenFromAdminOverviewReport,
+} from '@/lib/admin/overview-report-orders'
+import { REAL_MARKETPLACE_SALES_FILTER } from '@/lib/order-admin-test'
+
+const OVERVIEW_REPORT_ORDERS_OR = buildAdminOverviewReportOrdersOrFilter()
 
 /** Rolling window for “pulse” metrics on the admin home dashboard. */
 export const ADMIN_OVERVIEW_PERIOD_DAYS = 7
@@ -105,6 +112,10 @@ function listingSellerName(
   return profiles.display_name ?? null
 }
 
+/**
+ * Aggregates marketplace-wide counts and previews. Pass a **service-role** client
+ * (see `loadAdminOverviewSnapshot`) — the user session cannot read all `orders`.
+ */
 export async function fetchAdminOverviewSnapshot(
   supabase: SupabaseClient,
   options: { includeBrandRequestQueries: boolean },
@@ -146,15 +157,28 @@ export async function fetchAdminOverviewSnapshot(
     supabase
       .from('orders')
       .select('*', { count: 'exact', head: true })
+      .match(REAL_MARKETPLACE_SALES_FILTER)
       .gte('created_at', since)
-      .eq('status', 'confirmed'),
-    supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-    supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'confirmed'),
+      .eq('status', 'confirmed')
+      .or(OVERVIEW_REPORT_ORDERS_OR),
     supabase
       .from('orders')
       .select('*', { count: 'exact', head: true })
+      .match(REAL_MARKETPLACE_SALES_FILTER)
+      .eq('status', 'pending'),
+    supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .match(REAL_MARKETPLACE_SALES_FILTER)
       .eq('status', 'confirmed')
-      .in('delivery_status', ['delivered', 'picked_up']),
+      .or(OVERVIEW_REPORT_ORDERS_OR),
+    supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .match(REAL_MARKETPLACE_SALES_FILTER)
+      .eq('status', 'confirmed')
+      .in('delivery_status', ['delivered', 'picked_up'])
+      .or(OVERVIEW_REPORT_ORDERS_OR),
     supabase
       .from('listings')
       .select(
@@ -175,6 +199,7 @@ export async function fetchAdminOverviewSnapshot(
     supabase
       .from('orders')
       .select('id, order_num, status, amount, created_at')
+      .match(REAL_MARKETPLACE_SALES_FILTER)
       .order('created_at', { ascending: false })
       .limit(8),
     options.includeBrandRequestQueries
@@ -288,13 +313,15 @@ export async function fetchAdminOverviewSnapshot(
   } else {
     for (const row of ordersRecentRes.data ?? []) {
       const r = row as Record<string, unknown>
-      recentOrders.push({
+      const preview = {
         id: String(r.id ?? ''),
         order_num: r.order_num == null ? null : String(r.order_num),
         status: String(r.status ?? ''),
         amount: Number(r.amount ?? 0),
         created_at: String(r.created_at ?? ''),
-      })
+      }
+      if (isHiddenFromAdminOverviewReport(preview)) continue
+      recentOrders.push(preview)
     }
   }
 

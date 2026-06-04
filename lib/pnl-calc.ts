@@ -55,6 +55,16 @@ export function computeEntry(entry: PnlEntryRow): PnlComputedEntry {
   return { ...entry, totalCost, revenue, profit, margin, roi }
 }
 
+/** Sum of absolute losses on sold boards (profit < 0 only). */
+export function realizedLosses(entries: PnlComputedEntry[]): number {
+  let total = 0
+  for (const e of entries) {
+    const p = e.profit
+    if (p != null && p < 0) total += -p
+  }
+  return total
+}
+
 export function summarize(entries: PnlComputedEntry[]): PnlSummary {
   let soldCount = 0
   let listedCount = 0

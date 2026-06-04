@@ -1,7 +1,11 @@
 import { AdminOverviewView } from '@/components/features/admin/admin-overview-view'
-import { fetchAdminOverviewSnapshot } from '@/lib/db/adminOverview'
+import { loadAdminOverviewSnapshot } from '@/lib/services/adminOverviewSnapshot'
 import { loadAdminPlatformPurchaseFees } from '@/lib/services/adminPlatformFees'
-import { loadAdminBusinessInsights } from '@/lib/services/adminBusinessInsights'
+import {
+  loadAdminBusinessInsights,
+  loadAdminMonthlyRevenueBreakdown,
+} from '@/lib/services/adminBusinessInsights'
+import { adminInsightsYearMonthSchema } from '@/lib/utils/adminInsightsPeriod'
 import { privatePageMetadata } from '@/lib/site-metadata'
 import { createClient } from '@/lib/supabase/server'
 
@@ -11,7 +15,15 @@ export const metadata = privatePageMetadata({
   path: '/admin',
 })
 
-export default async function AdminDashboard() {
+type AdminDashboardProps = {
+  searchParams: Promise<{ month?: string }>
+}
+
+export default async function AdminDashboard({ searchParams }: AdminDashboardProps) {
+  const { month: monthParam } = await searchParams
+  const parsedMonth = adminInsightsYearMonthSchema.safeParse(monthParam?.trim())
+  const selectedYearMonth = parsedMonth.success ? parsedMonth.data : null
+
   const supabase = await createClient()
   const {
     data: { user },
@@ -30,13 +42,19 @@ export default async function AdminDashboard() {
 
   type InsightsOutcome = Awaited<ReturnType<typeof loadAdminBusinessInsights>>
   const insightsPromise: Promise<InsightsOutcome | null> = isAdmin
-    ? loadAdminBusinessInsights()
+    ? loadAdminBusinessInsights({ yearMonth: selectedYearMonth })
     : Promise.resolve(null)
 
-  const [snapshot, feesResult, insightsResult] = await Promise.all([
-    fetchAdminOverviewSnapshot(supabase, { includeBrandRequestQueries: isAdmin }),
+  type MonthlyOutcome = Awaited<ReturnType<typeof loadAdminMonthlyRevenueBreakdown>>
+  const monthlyPromise: Promise<MonthlyOutcome | null> = isAdmin
+    ? loadAdminMonthlyRevenueBreakdown()
+    : Promise.resolve(null)
+
+  const [snapshot, feesResult, insightsResult, monthlyResult] = await Promise.all([
+    loadAdminOverviewSnapshot({ includeBrandRequestQueries: isAdmin }),
     feesPromise,
     insightsPromise,
+    monthlyPromise,
   ])
 
   const platformFees = feesResult && feesResult.ok ? feesResult.data : null
@@ -47,6 +65,11 @@ export default async function AdminDashboard() {
   const insightsError =
     isAdmin && insightsResult && !insightsResult.ok ? insightsResult.error : null
 
+  const monthlyRevenue =
+    monthlyResult && monthlyResult.ok ? monthlyResult.data : null
+  const monthlyRevenueError =
+    isAdmin && monthlyResult && !monthlyResult.ok ? monthlyResult.error : null
+
   return (
     <AdminOverviewView
       snapshot={snapshot}
@@ -55,6 +78,9 @@ export default async function AdminDashboard() {
       platformFeesError={platformFeesError}
       insights={insights}
       insightsError={insightsError}
+      monthlyRevenue={monthlyRevenue}
+      monthlyRevenueError={monthlyRevenueError}
+      selectedYearMonth={selectedYearMonth}
     />
   )
 }

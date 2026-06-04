@@ -1,3 +1,4 @@
+import { isHiddenFromAdminOverviewReport } from '@/lib/admin/overview-report-orders'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 
 export type AdminPlatformPurchaseFees = {
@@ -16,7 +17,7 @@ export async function loadAdminPlatformPurchaseFees(): Promise<
     const adminDb = createServiceRoleClient()
     const { data: orderRows, error: ordersError } = await adminDb
       .from('orders')
-      .select('platform_fee, amount, delivery_status')
+      .select('platform_fee, amount, delivery_status, created_at, status')
       .eq('status', 'confirmed')
       .eq('is_admin_test', false)
 
@@ -24,7 +25,7 @@ export async function loadAdminPlatformPurchaseFees(): Promise<
       return { ok: false, error: 'Could not load purchase fee totals.' }
     }
 
-    const rows = orderRows ?? []
+    const rows = (orderRows ?? []).filter((r) => !isHiddenFromAdminOverviewReport(r))
     const fulfilled = rows.filter((r) =>
       r.delivery_status === 'delivered' || r.delivery_status === 'picked_up',
     )

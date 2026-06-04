@@ -7,9 +7,12 @@ import { formatCurrency, formatPercent, type PnlSummary } from "@/lib/pnl-calc"
 
 interface PnlSummaryCardsProps {
   summary: PnlSummary
+  /** When set, metrics are scoped to this calendar month. */
+  periodLabel?: string
 }
 
-export function PnlSummaryCards({ summary }: PnlSummaryCardsProps) {
+export function PnlSummaryCards({ summary, periodLabel }: PnlSummaryCardsProps) {
+  const scopeSuffix = periodLabel ? ` · ${periodLabel}` : ""
   const profitable = summary.netProfit >= 0
 
   const cards = [
@@ -18,14 +21,14 @@ export function PnlSummaryCards({ summary }: PnlSummaryCardsProps) {
       value: formatCurrency(summary.netProfit),
       icon: profitable ? TrendingUp : TrendingDown,
       accent: profitable ? "text-emerald-600" : "text-rose-600",
-      sub: `${summary.soldCount} sold`,
+      sub: `${summary.soldCount} sold${scopeSuffix}`,
     },
     {
       label: "Revenue",
       value: formatCurrency(summary.totalRevenue),
       icon: DollarSign,
       accent: "text-foreground",
-      sub: "Gross sale proceeds",
+      sub: `Gross sale proceeds${scopeSuffix}`,
     },
     {
       label: "Spent",
