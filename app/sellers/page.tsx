@@ -92,7 +92,7 @@ export default async function SellersPage({
       </section>
 
       <section className="py-10 sm:py-14">
-        <div className="container mx-auto max-w-6xl px-4 sm:px-6">
+        <div className="container mx-auto px-4 sm:px-6">
           {q ? (
             <div className="mb-8 flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm text-muted-foreground">

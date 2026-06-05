@@ -4,7 +4,7 @@ import {
 } from "@/lib/listing-image-display"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 
-const MOSAIC_SLOT_COUNT = 3
+const MOSAIC_SLOT_COUNT = 1
 
 export type SellerDirectoryMosaicSlot = {
   src: string
@@ -88,8 +88,7 @@ function collectShopFallbackUrls(shop: MosaicShopPick): string[] {
 }
 
 /**
- * Always returns three mosaic slots. Reuses listing photos (including repeats) before
- * falling back to shop banner / logo / avatar — never placeholder tiles.
+ * Returns one tile image slot. Uses the first listing photo, then shop banner / logo / avatar.
  */
 export function buildSellerDirectoryMosaicSlots(
   listings: MosaicListingPick[],

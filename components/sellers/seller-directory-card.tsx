@@ -11,6 +11,7 @@ import {
   sellerDirectoryMosaicHasRenderableImage,
   type SellerDirectoryMosaicSlot,
 } from "@/lib/sellers/directory-mosaic-images"
+import { homePeerListingGridCardClass, homePeerListingGridImageSizes } from "@/lib/home-listing-scroll-styles"
 import { resolveSellerProfileDisplayImageUrl } from "@/lib/sellers/profile-display-image"
 import type { SellerDirectoryTileMeta } from "@/lib/sellers/directory-tile-meta"
 import { cn } from "@/lib/utils"
@@ -72,7 +73,7 @@ function SellerDirectoryMosaic({
     return (
       <Link
         href={href}
-        className="block min-h-[152px] bg-muted outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring sm:min-h-[172px]"
+        className="block aspect-[3/4] w-full rounded-t-xl bg-muted outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="View seller profile"
       />
     )
@@ -83,24 +84,12 @@ function SellerDirectoryMosaic({
       href={href}
       className="block outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <div className="grid h-[152px] grid-cols-[minmax(0,2fr)_minmax(0,1fr)] grid-rows-2 gap-0 overflow-hidden rounded-t-[16px] sm:h-[172px]">
-        <SellerDirectoryMosaicImage
-          slot={slots[0]!}
-          className="col-span-1 row-span-2 h-full min-h-0"
-          sizes="(max-width: 640px) 55vw, 220px"
-          priority
-        />
-        <SellerDirectoryMosaicImage
-          slot={slots[1]!}
-          className="h-full min-h-0"
-          sizes="(max-width: 640px) 28vw, 110px"
-        />
-        <SellerDirectoryMosaicImage
-          slot={slots[2]!}
-          className="h-full min-h-0"
-          sizes="(max-width: 640px) 28vw, 110px"
-        />
-      </div>
+      <SellerDirectoryMosaicImage
+        slot={slots[0]!}
+        className="aspect-[3/4] w-full shrink-0 rounded-t-xl"
+        sizes={homePeerListingGridImageSizes}
+        priority
+      />
     </Link>
   )
 }
@@ -132,15 +121,10 @@ export function SellerDirectoryCard({
   const mosaicSlots = mosaicSlotsProp ?? buildSellerDirectoryMosaicSlots(thumbs, shop)
 
   return (
-    <article
-      className={cn(
-        "overflow-hidden rounded-[18px] border border-border/70 bg-card shadow-[0_2px_12px_rgba(0,0,0,0.06)]",
-        className,
-      )}
-    >
+    <article className={cn(homePeerListingGridCardClass, className)}>
       <SellerDirectoryMosaic slots={mosaicSlots} href={href} />
 
-      <div className="flex items-start gap-3 px-4 pb-3 pt-3.5">
+      <div className="flex items-start gap-2.5 px-2.5 pb-2 pt-2.5">
         <Link
           href={href}
           className="flex min-w-0 flex-1 items-start gap-3 outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
@@ -176,7 +160,7 @@ export function SellerDirectoryCard({
         />
       </div>
 
-      <div className="min-h-[4.75rem] space-y-2 px-4 pb-4 pt-0.5">
+      <div className="space-y-1.5 px-2.5 pb-2.5 pt-0">
         {tileMeta.offersShipping ? (
           <>
             {tileMeta.shipFromState ? (

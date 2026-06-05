@@ -28,9 +28,9 @@ type SellersDirectoryGridProps = {
 
 export function SellersDirectoryGrid({ items, isLoggedIn }: SellersDirectoryGridProps) {
   return (
-    <ul className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+    <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
       {items.map((item, index) => (
-        <li key={item.shop.id}>
+        <li key={item.shop.id} className="min-w-0 h-full">
           <FadeInSection delay={Math.min(index * 40, 320)}>
             <SellerDirectoryCard
               shop={item.shop}

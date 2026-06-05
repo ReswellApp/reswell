@@ -20,11 +20,11 @@ import { resolveSellerProfileDisplayImageUrl } from "@/lib/sellers/profile-displ
 import { createAnonSupabaseClient } from "@/lib/supabase/anon"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 
-/** 7-day cache for `/sellers` directory tiles (profiles, mosaic images, tile metadata). */
+/** 7-day cache for `/sellers` directory tiles (profiles, tile images, tile metadata). */
 export const SELLERS_DIRECTORY_CACHE_TAG = "sellers-directory"
 export const SELLERS_DIRECTORY_REVALIDATE_SECONDS = 60 * 60 * 24 * 7
 
-const THUMB_PER_SELLER = 3
+const THUMB_PER_SELLER = 1
 const LISTINGS_FETCH_CAP = 4000
 
 const profilePublicFields =
