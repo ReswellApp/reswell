@@ -36,6 +36,23 @@ export const SELL_FINS_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[] = [
   },
 ]
 
+/**
+ * Section nav items for an accessory-type sell flow (wetsuits, boardbags,
+ * surfpacks, leashes, apparel, accessories). `prefix` is the section slug used in
+ * each section's DOM id (e.g. "wetsuits" → "sell-wetsuits-section-photos-title").
+ */
+export function buildSellSectionNavItems(
+  prefix: string,
+  detailsLabel: string,
+): readonly SellSectionNavItem[] {
+  return [
+    { id: `sell-${prefix}-section-photos-title`, label: "Title & photos", shortLabel: "Start" },
+    { id: `sell-${prefix}-section-details`, label: detailsLabel, shortLabel: "Details" },
+    { id: `sell-${prefix}-section-delivery`, label: "Pickup & shipping", shortLabel: "Delivery" },
+    { id: `sell-${prefix}-section-publish`, label: "Price & publish", shortLabel: "Publish" },
+  ]
+}
+
 export const SELL_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[] = [
   {
     id: "sell-section-photos-title",

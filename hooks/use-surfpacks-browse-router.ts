@@ -1,0 +1,33 @@
+"use client"
+
+import { useCallback } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import {
+  boardsBrowseSearchParamsEqual,
+  mutateBoardsBrowseSearchParams,
+  type BoardsBrowseNavigateOptions,
+} from "@/lib/utils/boards-browse-navigate"
+
+type NavigateMutator = (params: URLSearchParams) => void
+
+/** URL navigation for `/surfpacks` browse (same page-reset semantics as `/boards`). */
+export function useSurfpacksBrowseRouter(transitionStart?: (cb: () => void) => void) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  const navigate = useCallback(
+    (mutate: NavigateMutator, options?: BoardsBrowseNavigateOptions) => {
+      const current = new URLSearchParams(searchParams.toString())
+      const next = mutateBoardsBrowseSearchParams(current, mutate, options)
+      if (!next || boardsBrowseSearchParamsEqual(next, current)) return
+      const qs = next.toString()
+      const run = () => router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false })
+      if (transitionStart) transitionStart(run)
+      else run()
+    },
+    [pathname, router, searchParams, transitionStart],
+  )
+
+  return { navigate, pathname, searchParams }
+}

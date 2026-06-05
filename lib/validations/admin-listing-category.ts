@@ -1,6 +1,16 @@
 import { z } from "zod"
 
-export const ADMIN_LISTING_SECTIONS = ["surfboards", "new", "fins"] as const
+export const ADMIN_LISTING_SECTIONS = [
+  "surfboards",
+  "new",
+  "fins",
+  "wetsuits",
+  "boardbags",
+  "surfpacks",
+  "leashes",
+  "apparel",
+  "accessories",
+] as const
 
 export type AdminListingSection = (typeof ADMIN_LISTING_SECTIONS)[number]
 

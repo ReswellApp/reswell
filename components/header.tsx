@@ -193,7 +193,6 @@ function resolveHeaderAvatarUrl(
   return (profileAvatar ? profileMediaDisplaySrc(profileAvatar) : null) || oauth
 }
 
-/** Desktop + mobile: surfboard shapes, then Fins (order from {@link siteHeaderMainCategoryNavLinks}). */
 const boardShapeNav = siteHeaderMainCategoryNavLinks.map((link) => ({
   name: link.label,
   href: link.href,

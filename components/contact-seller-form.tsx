@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 import { MessageSquare, Send } from "lucide-react"
 import { listingDetailHref } from "@/lib/listing-href"
+import type { PeerListingSection } from "@/lib/peer-listing-sections"
 
 interface ContactSellerFormProps {
   listingId: string
@@ -18,8 +19,8 @@ interface ContactSellerFormProps {
   sellerId: string
   listingTitle: string
   isLoggedIn: boolean
-  /** Peer listings (surfboards, fins): shipping vs local pickup affects quick-message options. */
-  section?: "surfboards" | "fins"
+  /** Peer listings (surfboards, fins, accessory types): shipping vs local pickup affects quick-message options. */
+  section?: PeerListingSection
   /** Surfboards: seller offers shipping (shows shipping-related quick prompts). */
   shippingAvailable?: boolean
   /** When true, no in-form section title is shown (parent already provides the label). */

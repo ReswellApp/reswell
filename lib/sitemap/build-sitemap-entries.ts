@@ -1,6 +1,12 @@
 import { pressArticles } from "@/lib/press-articles"
 import { fetchSurfboardListingSitemapEntries } from "@/lib/db/sitemap-surfboard-listings"
 import { fetchFinListingSitemapEntries } from "@/lib/db/fin-listings"
+import { fetchWetsuitListingSitemapEntries } from "@/lib/db/wetsuit-listings"
+import { fetchBoardbagListingSitemapEntries } from "@/lib/db/boardbag-listings"
+import { fetchSurfpackListingSitemapEntries } from "@/lib/db/surfpack-listings"
+import { fetchLeashListingSitemapEntries } from "@/lib/db/leash-listings"
+import { fetchApparelListingSitemapEntries } from "@/lib/db/apparel-listings"
+import { fetchAccessoryListingSitemapEntries } from "@/lib/db/accessory-listings"
 import { fetchBrandSlugRowsForSitemap } from "@/lib/db/sitemap-brands"
 import { fetchSellerProfileSitemapEntries } from "@/lib/db/sitemap-seller-profiles"
 import { fetchForumThreadSitemapEntries } from "@/lib/db/sitemap-forum-threads"
@@ -113,6 +119,12 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     { url: `${BASE}/`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
     { url: `${BASE}/boards`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
     { url: `${BASE}/fins`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
+    { url: `${BASE}/wetsuits`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
+    { url: `${BASE}/boardbags`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
+    { url: `${BASE}/surfpacks`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
+    { url: `${BASE}/leashes`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
+    { url: `${BASE}/apparel`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
+    { url: `${BASE}/accessories`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
     { url: `${BASE}/categories`, lastModified: now, changeFrequency: "weekly", priority: 0.65 },
     {
       url: `${BASE}/what-is-reswell`,
@@ -221,17 +233,42 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
   return deduped
 }
 
-/** Active surfboard + fin listing detail URLs (`/l/{slug-or-id}`). */
+/** Active peer listing detail URLs (`/l/{slug-or-id}`). */
 export async function buildListingSitemapUrlEntries(): Promise<SitemapUrlEntry[]> {
   const supabase = await supabaseForSitemapPublicRead()
-  const [listingEntries, finEntries] = await Promise.all([
+  const [
+    listingEntries,
+    finEntries,
+    wetsuitEntries,
+    boardbagEntries,
+    surfpackEntries,
+    leashEntries,
+    apparelEntries,
+    accessoryEntries,
+  ] = await Promise.all([
     fetchSurfboardListingSitemapEntries(supabase),
     fetchFinListingSitemapEntries(supabase),
+    fetchWetsuitListingSitemapEntries(supabase),
+    fetchBoardbagListingSitemapEntries(supabase),
+    fetchSurfpackListingSitemapEntries(supabase),
+    fetchLeashListingSitemapEntries(supabase),
+    fetchApparelListingSitemapEntries(supabase),
+    fetchAccessoryListingSitemapEntries(supabase),
   ])
+
+  const peerEntries = [
+    ...finEntries,
+    ...wetsuitEntries,
+    ...boardbagEntries,
+    ...surfpackEntries,
+    ...leashEntries,
+    ...apparelEntries,
+    ...accessoryEntries,
+  ]
 
   const normalized: { path: string; lastModified: Date }[] = [
     ...listingEntries.map((e) => ({ path: e.path, lastModified: e.lastModified })),
-    ...finEntries.map((e) => ({
+    ...peerEntries.map((e) => ({
       path: e.path,
       lastModified: e.updatedAt ? new Date(e.updatedAt) : new Date(),
     })),

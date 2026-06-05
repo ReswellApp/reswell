@@ -134,18 +134,65 @@ interface CategoryOption {
   board: boolean
 }
 
-type AdminListingSection = 'surfboards' | 'new' | 'fins'
+type AdminListingSection =
+  | 'surfboards'
+  | 'new'
+  | 'fins'
+  | 'wetsuits'
+  | 'boardbags'
+  | 'surfpacks'
+  | 'leashes'
+  | 'apparel'
+  | 'accessories'
+
+const ADMIN_LISTING_SECTION_VALUES: readonly AdminListingSection[] = [
+  'surfboards',
+  'new',
+  'fins',
+  'wetsuits',
+  'boardbags',
+  'surfpacks',
+  'leashes',
+  'apparel',
+  'accessories',
+]
+
+/**
+ * Peer sections that resolve to a single fixed category and have a dedicated
+ * /sell sub-flow (admin edit goes straight there, like fins).
+ */
+const PEER_SELL_ROUTE_BY_SECTION: Partial<Record<AdminListingSection, string>> = {
+  fins: '/sell/fins',
+  wetsuits: '/sell/wetsuits',
+  boardbags: '/sell/boardbags',
+  surfpacks: '/sell/surfpacks',
+  leashes: '/sell/leashes',
+  apparel: '/sell/apparel',
+  accessories: '/sell/accessories',
+}
+
+const ADMIN_LISTING_SECTION_LABELS: Record<AdminListingSection, string> = {
+  surfboards: 'Surfboards',
+  new: 'New',
+  fins: 'Fins',
+  wetsuits: 'Wetsuits',
+  boardbags: 'Boardbags',
+  surfpacks: 'Surfpacks',
+  leashes: 'Leashes',
+  apparel: 'Apparel',
+  accessories: 'Accessories',
+}
 
 function normalizeListingSection(section: string | undefined | null): AdminListingSection | null {
-  if (section === 'surfboards' || section === 'new' || section === 'fins') return section
+  if (section && (ADMIN_LISTING_SECTION_VALUES as readonly string[]).includes(section)) {
+    return section as AdminListingSection
+  }
   return null
 }
 
 function formatListingSectionLabel(section: string): string {
-  if (section === 'new') return 'New'
-  if (section === 'fins') return 'Fins'
-  if (section === 'surfboards') return 'Surfboards'
-  return section
+  const normalized = normalizeListingSection(section)
+  return normalized ? ADMIN_LISTING_SECTION_LABELS[normalized] : section
 }
 
 type SortKey = 'created_at' | 'price' | 'views' | 'title'
@@ -311,7 +358,7 @@ export default function AdminListingsPage() {
         }
         rows.sort((a, b) => a.name.localeCompare(b.name))
         setDialogCategoryRows(rows)
-        if (section === 'fins' && rows[0]) {
+        if (PEER_SELL_ROUTE_BY_SECTION[section] && rows[0]) {
           setCategoryPick(rows[0].id)
           return
         }
@@ -425,10 +472,13 @@ export default function AdminListingsPage() {
     })
     if (res.ok) {
       setImpersonation({ userId: listing.user_id, displayName, email })
-      const editPath =
-        listing.section === 'fins'
-          ? `/sell/fins?edit=${listing.id}`
-          : `/sell?edit=${listing.id}`
+      const normalizedSection = normalizeListingSection(listing.section)
+      const peerSellRoute = normalizedSection
+        ? PEER_SELL_ROUTE_BY_SECTION[normalizedSection]
+        : undefined
+      const editPath = peerSellRoute
+        ? `${peerSellRoute}?edit=${listing.id}`
+        : `/sell?edit=${listing.id}`
       router.push(editPath)
     } else {
       toast.error('Failed to start impersonation for editing')
@@ -771,6 +821,12 @@ export default function AdminListingsPage() {
                 <SelectItem value="all">All sections</SelectItem>
                 <SelectItem value="surfboards">Surfboards</SelectItem>
                 <SelectItem value="fins">Fins</SelectItem>
+                <SelectItem value="wetsuits">Wetsuits</SelectItem>
+                <SelectItem value="boardbags">Boardbags</SelectItem>
+                <SelectItem value="surfpacks">Surfpacks</SelectItem>
+                <SelectItem value="leashes">Leashes</SelectItem>
+                <SelectItem value="apparel">Apparel</SelectItem>
+                <SelectItem value="accessories">Accessories</SelectItem>
                 <SelectItem value="new">New &amp; retail</SelectItem>
               </SelectContent>
             </Select>
@@ -874,13 +930,20 @@ export default function AdminListingsPage() {
                   <SelectContent>
                     <SelectItem value="surfboards">Surfboard</SelectItem>
                     <SelectItem value="fins">Fins</SelectItem>
+                    <SelectItem value="wetsuits">Wetsuit</SelectItem>
+                    <SelectItem value="boardbags">Boardbag</SelectItem>
+                    <SelectItem value="surfpacks">Surfpack</SelectItem>
+                    <SelectItem value="leashes">Leash</SelectItem>
+                    <SelectItem value="apparel">Apparel</SelectItem>
+                    <SelectItem value="accessories">Accessories</SelectItem>
                     <SelectItem value="new">Shop / retail</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              {sectionPick === 'fins' ? (
+              {PEER_SELL_ROUTE_BY_SECTION[sectionPick] ? (
                 <p className="text-sm text-muted-foreground">
-                  Fins listings use the marketplace fins category.
+                  {ADMIN_LISTING_SECTION_LABELS[sectionPick]} listings use the marketplace{' '}
+                  {ADMIN_LISTING_SECTION_LABELS[sectionPick]} category.
                 </p>
               ) : (
                 <div className="space-y-2">

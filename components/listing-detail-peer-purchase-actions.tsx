@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { addCartItem } from "@/app/actions/cart"
 import { trackMetaAddToCart } from "@/lib/meta/pixel-events"
 import { peerListingCheckoutHref } from "@/lib/listing-href"
+import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { toast } from "sonner"
@@ -41,7 +42,7 @@ export function ListingDetailPeerPurchaseActions({
   listingId: string
   /** Slug or id for `/checkout?listing=` */
   checkoutListingParam: string
-  section: "surfboards" | "fins"
+  section: PeerListingSection
   isLoggedIn: boolean
   makeOffer?: ListingMakeOfferConfig
   /** When the buyer has an ACCEPTED offer, checkout uses this item price (listing stays at list price in the gallery). */

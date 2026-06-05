@@ -13,6 +13,12 @@ import { resolveListingDetailMetadata } from "@/lib/seo/resolve-listing-metadata
 import { canViewHiddenListing } from "@/lib/listing-site-access"
 import { SurfboardListingDetailPage } from "@/components/surfboard-listing-detail-page"
 import { FinsListingDetailPage } from "@/components/fins-listing-detail-page"
+import { WetsuitsListingDetailPage } from "@/components/wetsuits-listing-detail-page"
+import { BoardbagsListingDetailPage } from "@/components/boardbags-listing-detail-page"
+import { SurfpacksListingDetailPage } from "@/components/surfpacks-listing-detail-page"
+import { LeashesListingDetailPage } from "@/components/leashes-listing-detail-page"
+import { ApparelListingDetailPage } from "@/components/apparel-listing-detail-page"
+import { AccessoriesListingDetailPage } from "@/components/accessories-listing-detail-page"
 import { ShopListingDetailPage } from "@/components/shop-listing-detail-page"
 import { ListingViewTracker } from "@/components/features/listings/listing-view-tracker"
 import { UnavailableListingLandingPage } from "@/components/features/listings/unavailable-listing-landing-page"
@@ -115,6 +121,18 @@ export default async function ListingDetailPage(props: {
             return <SurfboardListingDetailPage listingParam={listingParam} />
           case "fins":
             return <FinsListingDetailPage listingParam={listingParam} />
+          case "wetsuits":
+            return <WetsuitsListingDetailPage listingParam={listingParam} />
+          case "boardbags":
+            return <BoardbagsListingDetailPage listingParam={listingParam} />
+          case "surfpacks":
+            return <SurfpacksListingDetailPage listingParam={listingParam} />
+          case "leashes":
+            return <LeashesListingDetailPage listingParam={listingParam} />
+          case "apparel":
+            return <ApparelListingDetailPage listingParam={listingParam} />
+          case "accessories":
+            return <AccessoriesListingDetailPage listingParam={listingParam} />
           case "new":
             return <ShopListingDetailPage listingParam={listingParam} />
           default:

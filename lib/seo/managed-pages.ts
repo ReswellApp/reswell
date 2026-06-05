@@ -124,6 +124,42 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Browse used and pre-owned surfboard fins for sale. Find Futures, FCS, and more from surfers on Reswell.",
     path: "/fins",
   }, { note: "Main /fins browse hub." }),
+  page("wetsuits", "marketplace", "Browse wetsuits", {
+    title: "Wetsuits For Sale | Reswell",
+    description:
+      "Browse used and pre-owned wetsuits for sale. Find steamers, springsuits, and more from surfers on Reswell.",
+    path: "/wetsuits",
+  }, { note: "Main /wetsuits browse hub." }),
+  page("boardbags", "marketplace", "Browse boardbags", {
+    title: "Boardbags For Sale | Reswell",
+    description:
+      "Browse used and pre-owned boardbags for sale. Find day bags, travel bags, and coffins from surfers on Reswell.",
+    path: "/boardbags",
+  }, { note: "Main /boardbags browse hub." }),
+  page("surfpacks", "marketplace", "Browse surfpacks", {
+    title: "Surfpacks For Sale | Reswell",
+    description:
+      "Browse used and pre-owned surfpacks for sale. Find surf gear bundles from surfers on Reswell.",
+    path: "/surfpacks",
+  }, { note: "Main /surfpacks browse hub." }),
+  page("leashes", "marketplace", "Browse leashes", {
+    title: "Surf Leashes For Sale | Reswell",
+    description:
+      "Browse used and pre-owned surf leashes for sale. Find leashes from surfers on Reswell.",
+    path: "/leashes",
+  }, { note: "Main /leashes browse hub." }),
+  page("apparel", "marketplace", "Browse apparel", {
+    title: "Surf Apparel For Sale | Reswell",
+    description:
+      "Browse used and pre-owned surf apparel for sale. Find boardshorts, tees, and more from surfers on Reswell.",
+    path: "/apparel",
+  }, { note: "Main /apparel browse hub." }),
+  page("accessories", "marketplace", "Browse accessories", {
+    title: "Surf Accessories For Sale | Reswell",
+    description:
+      "Browse used and pre-owned surf accessories for sale. Find wax, traction, tools, and more from surfers on Reswell.",
+    path: "/accessories",
+  }, { note: "Main /accessories browse hub." }),
   page("boards:type=shortboard", "marketplace", "Boards — Shortboards", {
     title: "Shortboards For Sale | Reswell",
     description:

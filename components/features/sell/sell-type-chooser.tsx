@@ -3,7 +3,16 @@ import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const OPTIONS = [
+type SellTypeOption = {
+  href: string
+  title: string
+  description: string
+  imageSrc: string | null
+  imageAlt: string
+}
+
+/** Shown on /sell chooser. Other sell flows stay live at their routes until launch. */
+const OPTIONS: readonly SellTypeOption[] = [
   {
     href: "/sell?type=surfboard",
     title: "Surfboard",
@@ -18,9 +27,9 @@ const OPTIONS = [
     imageSrc: "/images/sell/fins.jpg",
     imageAlt: "Surfboard fin",
   },
-] as const
+]
 
-/** First step of /sell: pick surfboard or fins. */
+/** First step of /sell: pick a product type. */
 export function SellTypeChooser() {
   return (
     <main className="flex-1 bg-offwhite">
