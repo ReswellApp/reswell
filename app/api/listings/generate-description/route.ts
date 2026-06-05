@@ -1,5 +1,6 @@
 import Anthropic, { APIError, AuthenticationError } from "@anthropic-ai/sdk"
 import { NextResponse } from "next/server"
+import { createClient } from "@/lib/supabase/server"
 import { formatCondition } from "@/lib/listing-labels"
 
 /** Strips surrounding quotes and whitespace — common .env mistakes cause invalid x-api-key. */
@@ -33,6 +34,15 @@ function userFacingAnthropicError(err: unknown): string {
 }
 
 export async function POST(req: Request) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return NextResponse.json({ error: "Sign in to generate descriptions." }, { status: 401 })
+  }
+
   const apiKey = normalizeAnthropicApiKey(process.env.ANTHROPIC_API_KEY ?? "")
   if (!apiKey) {
     return NextResponse.json(
