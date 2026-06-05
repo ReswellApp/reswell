@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import {
+  verifyPayPalWebhookSignature,
+  PayPalWebhookVerificationError,
+} from "@/lib/paypal-webhook-signature"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -40,12 +44,32 @@ function extractFailureMessage(body: Record<string, unknown>): string | null {
 /**
  * PayPal payout webhooks — update local payout rows (and refund wallet on failure).
  * Configure in PayPal Developer Dashboard → Webhooks.
- * TODO: Verify webhook signatures in production (transmission id + cert chain).
+ * Signatures verified via PayPal's verify-webhook-signature REST endpoint.
  */
 export async function POST(req: NextRequest) {
+  const rawBody = await req.text()
+
+  try {
+    await verifyPayPalWebhookSignature(req.headers, rawBody)
+  } catch (e) {
+    if (e instanceof PayPalWebhookVerificationError) {
+      if (e.code === "missing_config") {
+        console.error("[paypal webhook] verification not configured:", e.message)
+        return NextResponse.json({ error: "Webhook not configured" }, { status: 501 })
+      }
+      if (e.code === "missing_headers") {
+        return new NextResponse(null, { status: 404 })
+      }
+      console.error("[paypal webhook] signature verification failed:", e.message)
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
+    }
+    console.error("[paypal webhook] unexpected verification error:", e)
+    return NextResponse.json({ error: "Verification failed" }, { status: 500 })
+  }
+
   let body: Record<string, unknown>
   try {
-    body = (await req.json()) as Record<string, unknown>
+    body = JSON.parse(rawBody) as Record<string, unknown>
   } catch {
     return NextResponse.json({ received: false }, { status: 400 })
   }
