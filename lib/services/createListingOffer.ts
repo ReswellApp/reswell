@@ -154,6 +154,8 @@ export async function createListingOffer(
       initial_amount: amount,
       current_amount: amount,
       offer_timeline: [timelineEntry],
+      fulfillment: body.fulfillment,
+      shipping_amount: body.fulfillment === "shipping" ? resolved.shipping : null,
     })
     .select("id")
     .single()

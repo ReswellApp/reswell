@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { toast } from "sonner"
-import { UserPlus, UserCheck, UserMinus, Loader2 } from "lucide-react"
+import { UserPlus, UserCheck, UserMinus, Loader2, Heart } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { followSeller, unfollowSeller } from "@/app/actions/follows"
@@ -28,7 +28,7 @@ interface FollowButtonProps {
   /** Stretch to match sibling outline buttons in a shared flex row (e.g. listing seller actions). */
   fillRow?: boolean
   /** Compact marketplace tile styling (e.g. `/sellers` directory cards). */
-  appearance?: "default" | "directory" | "profileHero"
+  appearance?: "default" | "directory" | "profileHero" | "profilePage"
 }
 
 export function FollowButton({
@@ -97,6 +97,8 @@ export function FollowButton({
   const baseLabel = sellerCity ? `Follow — ${sellerCity}` : "Follow"
   const isDirectory = appearance === "directory"
   const isProfileHero = appearance === "profileHero"
+  const isProfilePage = appearance === "profilePage"
+  const profilePageSaveLabel = following ? (hovering ? "Unsave" : "Saved") : "Save Shop"
   /** Matches seller profile banner ({@link SELLER_PROFILE_BANNER_DEFAULT}). */
   const unfollowHoverClasses =
     "border-[#5574AD] bg-[#5574AD] text-white hover:border-[#466091] hover:bg-[#466091] hover:text-white"
@@ -104,7 +106,9 @@ export function FollowButton({
   return (
     <div className={cn("flex items-center gap-2", fillRow && "w-full min-w-0", className)}>
       <Button
-        variant={isDirectory || isProfileHero ? "ghost" : following ? "default" : "outline"}
+        variant={
+          isDirectory || isProfileHero ? "ghost" : isProfilePage ? "outline" : following ? "default" : "outline"
+        }
         size={size}
         onClick={handleClick}
         disabled={loading}
@@ -115,7 +119,9 @@ export function FollowButton({
             ? "h-9 shrink-0 rounded-full px-5 text-sm font-bold shadow-none"
             : isProfileHero
               ? "h-9 shrink-0 rounded-full px-5 text-sm font-semibold shadow-none"
-              : fillRow
+              : isProfilePage
+                ? "h-8 shrink-0 rounded-full px-3.5 text-xs font-semibold shadow-none"
+                : fillRow
                 ? "min-h-touch w-full min-w-0 justify-center"
                 : "min-w-[120px]",
           "transition-all duration-150",
@@ -141,13 +147,26 @@ export function FollowButton({
             following &&
             hovering &&
             unfollowHoverClasses,
+          isProfilePage &&
+            !following &&
+            "border-border text-foreground hover:bg-muted/50",
+          isProfilePage &&
+            following &&
+            !hovering &&
+            "border-listingHeart/40 bg-listingHeart/5 text-listingHeart hover:bg-listingHeart/10",
+          isProfilePage &&
+            following &&
+            hovering &&
+            unfollowHoverClasses,
           !isDirectory &&
             !isProfileHero &&
+            !isProfilePage &&
             following &&
             !hovering &&
             "bg-foreground text-background hover:bg-foreground/90",
           !isDirectory &&
             !isProfileHero &&
+            !isProfilePage &&
             following &&
             hovering &&
             unfollowHoverClasses,
@@ -155,25 +174,45 @@ export function FollowButton({
       >
         {loading ? (
           <>
-            {!isDirectory && !isProfileHero ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
-            {following ? "…" : isDirectory || isProfileHero ? "Follow" : "Following…"}
+            {!isDirectory && !isProfileHero && !isProfilePage ? (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : null}
+            {following
+              ? "…"
+              : isProfilePage
+                ? "Save Shop"
+                : isDirectory || isProfileHero
+                  ? "Follow"
+                  : "Following…"}
           </>
         ) : following ? (
           hovering ? (
             <>
-              {!isDirectory && !isProfileHero ? <UserMinus className="mr-1.5 h-4 w-4" /> : null}
-              Unfollow
+              {!isDirectory && !isProfileHero && !isProfilePage ? (
+                <UserMinus className="mr-1.5 h-4 w-4" />
+              ) : isProfilePage ? (
+                <Heart className="mr-1.5 h-3.5 w-3.5 fill-current" aria-hidden />
+              ) : null}
+              {isProfilePage ? "Unsave" : "Unfollow"}
             </>
           ) : (
             <>
-              {!isDirectory && !isProfileHero ? <UserCheck className="mr-1.5 h-4 w-4" /> : null}
-              Following
+              {!isDirectory && !isProfileHero && !isProfilePage ? (
+                <UserCheck className="mr-1.5 h-4 w-4" />
+              ) : isProfilePage ? (
+                <Heart className="mr-1.5 h-3.5 w-3.5 fill-current" aria-hidden />
+              ) : null}
+              {isProfilePage ? profilePageSaveLabel : "Following"}
             </>
           )
         ) : (
           <>
-            {!isDirectory && !isProfileHero ? <UserPlus className="mr-1.5 h-4 w-4" /> : null}
-            {isDirectory || isProfileHero ? "Follow" : baseLabel}
+            {!isDirectory && !isProfileHero && !isProfilePage ? (
+              <UserPlus className="mr-1.5 h-4 w-4" />
+            ) : isProfilePage ? (
+              <Heart className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+            ) : null}
+            {isProfilePage ? "Save Shop" : isDirectory || isProfileHero ? "Follow" : baseLabel}
           </>
         )}
       </Button>

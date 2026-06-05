@@ -39,4 +39,6 @@ export type DashboardOfferRow = {
   seller_counter_note?: string | null
   /** Buyer's opening offer message when status is PENDING (offers on your listings). */
   buyer_note?: string | null
+  fulfillment?: "pickup" | "shipping" | null
+  shipping_amount?: string | number | null
 }

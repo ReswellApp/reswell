@@ -37,6 +37,8 @@ const OFFER_SELECT = `
   seller_id,
   seller_initiated,
   offer_timeline,
+  fulfillment,
+  shipping_amount,
   listings (
     id,
     title,

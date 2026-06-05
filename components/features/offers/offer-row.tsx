@@ -21,6 +21,7 @@ import type {
   DashboardOfferRow,
   DashboardProfileLite,
 } from "@/lib/types/offers-dashboard"
+import { offerFulfillmentLabel } from "@/lib/utils/offer-message-display"
 import { dashboardListingForOffer, offerIsSoldPresentation } from "@/lib/utils/offers-dashboard-display"
 
 function money(n: unknown): string {
@@ -180,6 +181,12 @@ export function OfferRow({
 
   const listPriceKnown = !!listing && Number.isFinite(listPrice) && listPrice > 0
   const priceLines = offerTilePriceLines(role, offer, listPriceKnown, listPrice)
+  const shippingAmount =
+    offer.shipping_amount != null ? parseFloat(String(offer.shipping_amount)) : null
+  const fulfillmentLabel = offerFulfillmentLabel(
+    offer.fulfillment ?? null,
+    Number.isFinite(shippingAmount) ? shippingAmount : null,
+  )
 
   return (
     <article
@@ -275,6 +282,10 @@ export function OfferRow({
               </div>
             ))}
           </div>
+
+          {role === "seller" && fulfillmentLabel ? (
+            <p className="mt-1 text-[12px] font-medium text-foreground/85">{fulfillmentLabel}</p>
+          ) : null}
 
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
             <span className="inline-flex items-center gap-1">

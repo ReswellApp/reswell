@@ -10,10 +10,11 @@ import { SellersDirectoryGrid } from "@/components/sellers/sellers-directory-gri
 import {
   filterSellersDirectoryCatalog,
   getCachedSellersDirectoryCatalog,
+  SELLERS_DIRECTORY_REVALIDATE_SECONDS,
 } from "@/lib/cache/sellers-directory-catalog"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
-export const revalidate = 3600
+export const revalidate = SELLERS_DIRECTORY_REVALIDATE_SECONDS
 
 export async function generateMetadata() {
   return resolvePageMetadata("sellers")

@@ -2,17 +2,15 @@
 
 import Link from "next/link"
 import { SellersBreadcrumbs } from "@/components/sellers/sellers-breadcrumbs"
+import { SellerProfileBannerEditor } from "@/components/sellers/seller-profile-banner-editor"
 import { formatDistanceToNow } from "date-fns"
-import { Globe, MessageSquare, Phone } from "lucide-react"
+import { Globe, MapPin, MessageSquare, Phone } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { FollowButton } from "@/components/follows/follow-button"
 import { SellerRatingStarRow } from "@/components/seller-rating-stars"
 import { ShareButton } from "@/components/share-button"
-import {
-  SELLER_PROFILE_BANNER_DEFAULT,
-} from "@/lib/brand-colors"
 import {
   sellerProfileBannerClassName,
   sellerProfileShellClassName,
@@ -28,6 +26,7 @@ export type SellerProfileHeroShop = {
   seller_slug: string
   display_name: string | null
   avatar_url: string | null
+  location: string | null
   city: string | null
   bio: string | null
   created_at: string
@@ -44,7 +43,7 @@ export type SellerProfileHeroShop = {
   sales_count: number | null
 }
 
-export type SellerProfileTab = "listings" | "about" | "sold"
+export type SellerProfileTab = "listings" | "feedback" | "info" | "sold"
 
 type SellerProfileHeroProps = {
   shop: SellerProfileHeroShop
@@ -65,18 +64,34 @@ type SellerProfileHeroProps = {
   listingImageFallbacks?: ListingImageSourcePick[]
 }
 
-function StatColumn({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="min-w-0 text-center sm:text-right">
-      <p className="text-sm font-bold tabular-nums text-white sm:text-lg lg:text-xl">
-        {value.toLocaleString()}
-      </p>
-      <p className="text-[10px] font-medium leading-tight text-white/80 sm:text-xs">{label}</p>
-    </div>
-  )
+const BANNER_STOPWORDS = new Set(["the", "official", "shop", "store", "a", "an", "and"])
+
+function bannerMonogram(name: string): string {
+  const words = name.split(/\s+/).filter(Boolean)
+  const pick =
+    words.find((word) => word.length >= 3 && !BANNER_STOPWORDS.has(word.toLowerCase())) ||
+    words[0] ||
+    "S"
+  return pick.slice(0, 6).toUpperCase()
 }
 
-function ProfileTabButton({
+function formatLastActive(lastActiveAt: string | null | undefined): string | null {
+  if (!lastActiveAt?.trim()) return null
+  const date = new Date(lastActiveAt)
+  if (Number.isNaN(date.getTime())) return null
+  return `Active ${formatDistanceToNow(date, { addSuffix: true })}`
+}
+
+function locationLabel(shop: SellerProfileHeroShop): string | null {
+  const address = shop.shop_address?.trim()
+  if (address) return address
+  const city = shop.city?.trim()
+  const region = shop.location?.trim()
+  if (city && region) return `${city}, ${region}`
+  return city || region || null
+}
+
+function ProfileTabLink({
   active,
   onClick,
   children,
@@ -90,22 +105,15 @@ function ProfileTabButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full rounded-full px-2 py-1.5 text-xs font-semibold transition-colors sm:w-auto sm:px-4 sm:text-sm",
+        "-mb-px shrink-0 border-b-2 px-1 pb-3 pt-1 text-sm font-semibold transition-colors sm:text-[15px]",
         active
-          ? "bg-white text-foreground shadow-sm"
-          : "text-white/90 hover:bg-white/15 hover:text-white",
+          ? "border-foreground text-foreground"
+          : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
       )}
     >
       {children}
     </button>
   )
-}
-
-function formatLastActive(lastActiveAt: string | null | undefined): string | null {
-  if (!lastActiveAt?.trim()) return null
-  const date = new Date(lastActiveAt)
-  if (Number.isNaN(date.getTime())) return null
-  return `Active ${formatDistanceToNow(date, { addSuffix: true })}`
 }
 
 export function SellerProfileHero({
@@ -116,7 +124,7 @@ export function SellerProfileHero({
   reviewCount,
   currentListingCount,
   followerCount,
-  followingCount,
+  followingCount: _followingCount,
   isFollowing,
   isOwnProfile,
   isLoggedIn,
@@ -134,152 +142,154 @@ export function SellerProfileHero({
     listingImageFallbacks,
   )
   const lastActiveLabel = formatLastActive(shop.last_active_at)
-  const handle = shop.seller_slug ? `@${shop.seller_slug}` : null
+  const description = shop.shop_description || shop.bio
+  const loc = locationLabel(shop)
+  const monogram = bannerMonogram(displayName?.trim() || "Seller")
+
   return (
     <>
-      <div className="border-b border-border/80 bg-background">
-        <div className={cn(sellerProfileShellClassName, "px-4 py-3 sm:px-6 sm:py-4")}>
+      <div className="border-b border-border/60 bg-background">
+        <div className={cn(sellerProfileShellClassName, "py-3 sm:py-4")}>
           <SellersBreadcrumbs sellerName={displayName ?? "Seller"} className="min-w-0 max-w-full" />
         </div>
       </div>
 
-      <div className={cn(sellerProfileShellClassName, "pb-6 pt-3 sm:pb-10 sm:pt-4")}>
-        <div
-          className={sellerProfileBannerClassName}
-          style={{ backgroundColor: SELLER_PROFILE_BANNER_DEFAULT }}
-        >
-          <div className="relative flex min-h-[inherit] flex-col justify-end px-4 pb-4 pt-4 sm:px-6 sm:pb-5 sm:pt-5 lg:px-8 lg:pb-6 lg:pt-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-4 lg:gap-5">
-              <div className="flex w-full min-w-0 items-start justify-between gap-3 sm:w-auto sm:shrink-0 sm:flex-col sm:items-start sm:justify-start sm:gap-2">
-                <Avatar className="h-16 w-16 shrink-0 border-4 border-white shadow-md sm:h-24 sm:w-24 lg:h-28 lg:w-28">
-                  <AvatarImage src={avatarSrc} alt="" />
-                  <AvatarFallback className="bg-white text-lg font-semibold text-[#5574AD] sm:text-xl">
-                    {displayName?.charAt(0).toUpperCase() || "S"}
-                  </AvatarFallback>
-                </Avatar>
-                {lastActiveLabel ? (
-                  <p className="hidden text-xs font-medium text-white/80 sm:block">{lastActiveLabel}</p>
-                ) : null}
-                <div className="flex shrink-0 items-start gap-2.5 sm:hidden">
-                  <StatColumn value={currentListingCount} label="Listings" />
-                  <StatColumn value={followerCount} label="Followers" />
-                  {followingCount != null ? (
-                    <StatColumn value={followingCount} label="Following" />
-                  ) : (
-                    <StatColumn value={soldCount} label="Sold" />
-                  )}
-                </div>
-              </div>
+      <div className={sellerProfileBannerClassName}>
+        <SellerProfileBannerEditor
+          initialBannerUrl={shop.shop_banner_url}
+          monogram={monogram}
+          editable={isOwnProfile}
+        />
+      </div>
 
-              <div className="min-w-0 flex-1 pb-0.5 sm:pr-36 lg:pr-44">
-                {lastActiveLabel ? (
-                  <p className="mb-1 text-xs font-medium text-white/80 sm:hidden">{lastActiveLabel}</p>
-                ) : null}
+      <div className={cn(sellerProfileShellClassName, "pt-5 sm:pt-6")}>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5 lg:gap-6">
+          <Avatar className="h-16 w-16 shrink-0 border border-border/80 shadow-sm sm:h-20 sm:w-20 lg:h-24 lg:w-24">
+            <AvatarImage src={avatarSrc} alt="" />
+            <AvatarFallback className="bg-muted text-lg font-semibold text-foreground sm:text-xl">
+              {displayName?.charAt(0).toUpperCase() || "S"}
+            </AvatarFallback>
+          </Avatar>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <h1 className="text-lg font-bold tracking-tight text-white sm:text-2xl lg:text-3xl">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl lg:text-[28px]">
                     {displayName}
                   </h1>
-                  {shop.shop_verified ? (
-                    <VerifiedBadge size="lg" className="fill-white text-[#7F9DD5]" />
-                  ) : null}
+                  {!isOwnProfile ? (
+                    <FollowButton
+                      sellerId={shop.id}
+                      sellerName={displayName ?? undefined}
+                      sellerSlug={shop.seller_slug || undefined}
+                      sellerCity={shop.city || undefined}
+                      initialFollowing={isFollowing}
+                      initialFollowerCount={followerCount}
+                      isLoggedIn={isLoggedIn}
+                      size="sm"
+                      appearance="profilePage"
+                    />
+                  ) : (
+                    <span className="text-sm text-muted-foreground">
+                      {followerCount.toLocaleString()} follower{followerCount !== 1 ? "s" : ""}
+                    </span>
+                  )}
                 </div>
 
-                {handle ? <p className="mt-0.5 truncate text-sm font-medium text-white/85">{handle}</p> : null}
-
-                {reviewCount > 0 ? (
-                  <div
-                    className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-white"
-                    role="img"
-                    aria-label={`Average ${avgRating.toFixed(1)} out of 5 stars from ${reviewCount} reviews`}
-                  >
-                    <SellerRatingStarRow value={avgRating} size="sm" />
-                    <span className="font-semibold tabular-nums">({reviewCount})</span>
-                  </div>
-                ) : null}
-
-                <div className="mt-3 flex flex-wrap items-center gap-2 sm:mt-4">
-                  {!isOwnProfile ? (
-                    <>
-                      <FollowButton
-                        sellerId={shop.id}
-                        sellerName={displayName ?? undefined}
-                        sellerSlug={shop.seller_slug || undefined}
-                        sellerCity={shop.city || undefined}
-                        initialFollowing={isFollowing}
-                        initialFollowerCount={followerCount}
-                        isLoggedIn={isLoggedIn}
-                        size="sm"
-                        appearance="profileHero"
-                      />
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        className="h-9 w-9 rounded-full border-white/30 bg-white/15 text-white hover:bg-white/25 hover:text-white"
-                        asChild
-                      >
-                        <Link href={`/messages?seller=${shop.id}`} aria-label="Message seller">
-                          <MessageSquare className="h-4 w-4" />
+                {(loc || lastActiveLabel) && (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-2">
+                    {loc ? (
+                      <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <MapPin className="h-4 w-4 shrink-0" aria-hidden />
+                        <span>{loc}</span>
+                      </p>
+                    ) : null}
+                    {!isOwnProfile ? (
+                      <Button variant="outline" size="sm" className="h-8 rounded-full px-3 text-xs font-semibold" asChild>
+                        <Link href={`/messages?seller=${shop.id}`}>
+                          <MessageSquare className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+                          Message
                         </Link>
                       </Button>
-                    </>
-                  ) : null}
+                    ) : null}
+                    {lastActiveLabel ? (
+                      <p className="text-xs text-muted-foreground">{lastActiveLabel}</p>
+                    ) : null}
+                  </div>
+                )}
+
+                <div className="mt-2.5 flex flex-wrap items-center gap-2">
                   {shop.shop_website ? (
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      className="h-9 w-9 rounded-full border-white/30 bg-white/15 text-white hover:bg-white/25 hover:text-white"
-                      asChild
-                    >
+                    <Button size="icon" variant="outline" className="h-8 w-8 rounded-full" asChild>
                       <a href={shop.shop_website} target="_blank" rel="noopener noreferrer" aria-label="Visit website">
-                        <Globe className="h-4 w-4" />
+                        <Globe className="h-3.5 w-3.5" />
                       </a>
                     </Button>
                   ) : null}
                   {shop.shop_phone ? (
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      className="h-9 w-9 rounded-full border-white/30 bg-white/15 text-white hover:bg-white/25 hover:text-white"
-                      asChild
-                    >
+                    <Button size="icon" variant="outline" className="h-8 w-8 rounded-full" asChild>
                       <a href={`tel:${shop.shop_phone}`} aria-label="Call seller">
-                        <Phone className="h-4 w-4" />
+                        <Phone className="h-3.5 w-3.5" />
                       </a>
                     </Button>
                   ) : null}
                   <ShareButton
                     title={displayName ?? "Seller profile"}
-                    className="h-9 w-9 rounded-full border-white/30 bg-white/15 text-white hover:bg-white/25 hover:text-white"
-                    iconClassName="h-4 w-4"
+                    className="h-8 w-8 rounded-full"
+                    iconClassName="h-3.5 w-3.5"
                   />
                 </div>
+              </div>
 
-                <div className="mt-3 grid w-full grid-cols-3 gap-1 rounded-full bg-black/10 p-1 sm:mt-4 sm:max-w-xs">
-                  <ProfileTabButton active={activeTab === "listings"} onClick={() => onTabChange("listings")}>
-                    Listings
-                  </ProfileTabButton>
-                  <ProfileTabButton active={activeTab === "about"} onClick={() => onTabChange("about")}>
-                    About
-                  </ProfileTabButton>
-                  <ProfileTabButton active={activeTab === "sold"} onClick={() => onTabChange("sold")}>
-                    Sold
-                  </ProfileTabButton>
+              {shop.shop_verified ? (
+                <div className="flex shrink-0 flex-col items-center gap-1 text-center">
+                  <VerifiedBadge size="lg" />
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Verified
+                  </span>
                 </div>
-              </div>
-
-              <div className="absolute right-4 top-4 hidden items-start gap-5 sm:flex lg:gap-8">
-                <StatColumn value={currentListingCount} label="Listings" />
-                <StatColumn value={followerCount} label="Followers" />
-                {followingCount != null ? (
-                  <StatColumn value={followingCount} label="Following" />
-                ) : (
-                  <StatColumn value={soldCount} label="Sold" />
-                )}
-              </div>
+              ) : null}
             </div>
+
+            {description ? (
+              <p className="mt-4 max-w-4xl text-sm leading-relaxed text-muted-foreground sm:text-[15px]">
+                {description}
+              </p>
+            ) : null}
           </div>
         </div>
+
+        <nav
+          className="mt-6 flex gap-5 overflow-x-auto border-b border-border/80 sm:mt-8 sm:gap-8"
+          aria-label="Seller profile sections"
+        >
+          <ProfileTabLink active={activeTab === "listings"} onClick={() => onTabChange("listings")}>
+            Listings ({currentListingCount.toLocaleString()})
+          </ProfileTabLink>
+          <ProfileTabLink active={activeTab === "feedback"} onClick={() => onTabChange("feedback")}>
+            <span className="inline-flex items-center gap-2">
+              Feedback ({reviewCount.toLocaleString()})
+              {reviewCount > 0 ? (
+                <span
+                  className="inline-flex items-center"
+                  role="img"
+                  aria-label={`${avgRating.toFixed(1)} out of 5 stars`}
+                >
+                  <SellerRatingStarRow value={avgRating} size="sm" />
+                </span>
+              ) : null}
+            </span>
+          </ProfileTabLink>
+          <ProfileTabLink active={activeTab === "info"} onClick={() => onTabChange("info")}>
+            Info &amp; Policies
+          </ProfileTabLink>
+          {soldCount > 0 ? (
+            <ProfileTabLink active={activeTab === "sold"} onClick={() => onTabChange("sold")}>
+              Sold ({soldCount.toLocaleString()})
+            </ProfileTabLink>
+          ) : null}
+        </nav>
       </div>
     </>
   )

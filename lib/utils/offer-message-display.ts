@@ -24,7 +24,7 @@ export type OfferMessageDisplay = {
   shippingAmount?: string
 }
 
-function fulfillmentSummary(
+export function offerFulfillmentLabel(
   fulfillment: string | null | undefined,
   shippingAmount: number | null,
 ): string | undefined {
@@ -67,7 +67,7 @@ export function buildOfferMessageDisplay(
     }) ?? undefined
 
   const amount = `$${total.toFixed(2)}`
-  const fulfillLabel = fulfillmentSummary(fulfillment, shippingAmount)
+  const fulfillLabel = offerFulfillmentLabel(fulfillment, shippingAmount)
   const bundleLine = lineItems ? bundleContextLine(lineItems) : undefined
 
   const base: Pick<OfferMessageDisplay, "note" | "lineItems" | "fulfillmentLabel" | "itemsSubtotal" | "shippingAmount"> =

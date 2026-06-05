@@ -90,6 +90,8 @@ export function DashboardOffersView({
         current_amount: dialogOffer.current_amount,
         buyer_id: dialogOffer.buyer_id,
         seller_id: dialogOffer.seller_id,
+        fulfillment: dialogOffer.fulfillment ?? null,
+        shipping_amount: dialogOffer.shipping_amount ?? null,
       }
     : null
 
@@ -230,6 +232,8 @@ export function DashboardOffersView({
             seller_counter_note: buyerCounterOffer.seller_counter_note,
             seller_initiated: buyerCounterOffer.seller_initiated ?? false,
             expires_at: buyerCounterOffer.expires_at,
+            fulfillment: buyerCounterOffer.fulfillment ?? null,
+            shipping_amount: buyerCounterOffer.shipping_amount ?? null,
           }}
           listingTitle={titleBuyerCounter}
           listPrice={listPriceBuyerCounter}

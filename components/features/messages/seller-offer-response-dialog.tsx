@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { respondToOfferAction } from "@/lib/actions/offerRespond"
 import { capitalizeWords } from "@/lib/listing-labels"
+import { offerFulfillmentLabel } from "@/lib/utils/offer-message-display"
 import { openingOfferNoteFromTimeline } from "@/lib/utils/offer-timeline"
 import { cn } from "@/lib/utils"
 
@@ -119,6 +120,10 @@ export function SellerOfferResponseDialog({
     openingOfferNoteFromTimeline(offer.offer_timeline, { sellerInitiated: false }) ||
     null
 
+  const shippingAmount =
+    offer.shipping_amount != null ? parseMoney(offer.shipping_amount) : null
+  const fulfillmentLabel = offerFulfillmentLabel(offer.fulfillment ?? null, shippingAmount)
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent
@@ -144,6 +149,14 @@ export function SellerOfferResponseDialog({
               List ${listPrice.toFixed(2)} · Minimum offer ${minOfferAmount.toFixed(2)} (
               {minOfferPct}%)
             </p>
+            {fulfillmentLabel ? (
+              <p className="mt-1.5 text-[13px] font-medium text-foreground/85">{fulfillmentLabel}</p>
+            ) : null}
+            {offer.fulfillment === "shipping" && shippingAmount != null && shippingAmount > 0 ? (
+              <p className="mt-0.5 text-[12px] text-muted-foreground">
+                ${current.toFixed(2)} item + ${shippingAmount.toFixed(2)} shipping
+              </p>
+            ) : null}
           </div>
 
           {resolvedBuyerNote ? (
