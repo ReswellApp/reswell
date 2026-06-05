@@ -86,19 +86,6 @@ export async function POST(request: NextRequest) {
     feeWaived,
   })
 
-  const { data: buyerWallet } = await supabase
-    .from("wallets")
-    .select("*")
-    .eq("user_id", user.id)
-    .single()
-
-  if (!buyerWallet || parseFloat(buyerWallet.balance) < price) {
-    return NextResponse.json(
-      { error: "Insufficient wallet balance", balance: buyerWallet?.balance || 0 },
-      { status: 400 }
-    )
-  }
-
   let serviceSupabase
   try {
     serviceSupabase = createServiceRoleClient()
@@ -109,20 +96,26 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const newBuyerBalance = parseFloat(buyerWallet.balance) - price
+  const { data: debitResult, error: debitError } = await serviceSupabase.rpc(
+    "debit_wallet_for_purchase",
+    { p_user_id: user.id, p_amount: price },
+  )
 
-  const { error: buyerUpdateError } = await supabase
-    .from("wallets")
-    .update({
-      balance: newBuyerBalance,
-      lifetime_spent: parseFloat(buyerWallet.lifetime_spent) + price,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", buyerWallet.id)
-
-  if (buyerUpdateError) {
+  if (debitError) {
+    console.error("[wallet/purchase] debit rpc:", debitError)
     return NextResponse.json({ error: "Failed to process payment" }, { status: 500 })
   }
+
+  const debitRow = Array.isArray(debitResult) ? debitResult[0] : debitResult
+  if (!debitRow?.wallet_id) {
+    return NextResponse.json(
+      { error: "Insufficient wallet balance" },
+      { status: 400 },
+    )
+  }
+
+  const newBuyerBalance = parseFloat(String(debitRow.new_balance))
+  const buyerWalletId: string = debitRow.wallet_id
 
   const isPickup = fulfillment === "pickup" || (!listing.shipping_available && listing.local_pickup !== false)
   const deliveryStatus = isPickup ? "pickup_ready" : "pending"
@@ -210,8 +203,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Could not record pending sale" }, { status: 500 })
   }
 
-  const { error: buyerTxErr } = await supabase.from("wallet_transactions").insert({
-    wallet_id: buyerWallet.id,
+  const { error: buyerTxErr } = await serviceSupabase.from("wallet_transactions").insert({
+    wallet_id: buyerWalletId,
     user_id: user.id,
     type: "purchase",
     amount: -price,
