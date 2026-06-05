@@ -16,8 +16,10 @@ export interface SellPriceFieldsProps {
   onListingPriceChange: (value: string) => void
   sellerPurchasePrice: string
   onSellerPurchasePriceChange: (value: string) => void
-  /** Renders after “What you paid for the board” (e.g. sell-faster toggles). */
+  /** Renders after the purchase-price accordion (e.g. sell-faster toggles). */
   afterListingPrice?: ReactNode
+  purchaseAccordionTitle?: string
+  purchaseAccordionDescription?: string
 }
 
 export function SellPriceFields({
@@ -26,6 +28,8 @@ export function SellPriceFields({
   sellerPurchasePrice,
   onSellerPurchasePriceChange,
   afterListingPrice,
+  purchaseAccordionTitle = "What you paid for the board",
+  purchaseAccordionDescription = "Keep track of what you paid for the board versus what it sells for. This info is for your benefit only.",
 }: SellPriceFieldsProps) {
   return (
     <div className="max-w-lg space-y-4">
@@ -65,12 +69,11 @@ export function SellPriceFields({
         <Accordion type="single" collapsible className="w-full px-1">
           <AccordionItem value="purchase" className="border-0">
             <AccordionTrigger className="px-3 py-3 text-left text-sm font-semibold hover:no-underline [&[data-state=open]]:pb-1">
-              What you paid for the board
+              {purchaseAccordionTitle}
             </AccordionTrigger>
             <AccordionContent className="px-3 pb-3 pt-0">
               <p className="text-sm leading-relaxed text-muted-foreground/45">
-                Keep track of what you paid for the board versus what it sells for. This info is for
-                your benefit only.
+                {purchaseAccordionDescription}
               </p>
               <div className="mt-4 space-y-2">
                 <Label htmlFor="sell-seller-purchase-price" className="text-sm font-semibold">

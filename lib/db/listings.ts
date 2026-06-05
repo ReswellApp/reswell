@@ -63,6 +63,32 @@ export async function updateListingSuppressedOnBoardsBrowse(
   return { ok: true }
 }
 
+export async function updateAdminListingSectionCategory(
+  client: SupabaseClient,
+  listingId: string,
+  patch: { section: string; category_id: string; board_type: string | null },
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  const { data, error } = await client
+    .from("listings")
+    .update({
+      section: patch.section,
+      category_id: patch.category_id,
+      board_type: patch.board_type,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", listingId)
+    .select("id")
+    .maybeSingle()
+
+  if (error) {
+    return { ok: false, message: error.message }
+  }
+  if (!data) {
+    return { ok: false, message: "Listing not found" }
+  }
+  return { ok: true }
+}
+
 export async function updateListingCategoryRow(
   client: SupabaseClient,
   listingId: string,

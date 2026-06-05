@@ -1,5 +1,6 @@
 import { Suspense } from "react"
 import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
+import { SellTypeChooser } from "@/components/features/sell/sell-type-chooser"
 import SellFlowShell from "./sell-flow-client"
 
 function parseEditListingId(
@@ -13,6 +14,12 @@ function parseEditListingId(
   return null
 }
 
+function firstParam(value: string | string[] | undefined): string | undefined {
+  if (typeof value === "string") return value
+  if (Array.isArray(value)) return value[0]
+  return undefined
+}
+
 function SellPageSuspenseFallback() {
   return <SellFlowRouteSkeleton />
 }
@@ -20,13 +27,26 @@ function SellPageSuspenseFallback() {
 export default async function SellPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string | string[]; new?: string | string[] }>
+  searchParams: Promise<{
+    edit?: string | string[]
+    new?: string | string[]
+    type?: string | string[]
+  }>
 }) {
   const qs = await searchParams
+  const editId = parseEditListingId(qs.edit)
+  const type = firstParam(qs.type)
 
-  return (
-    <Suspense fallback={<SellPageSuspenseFallback />}>
-      <SellFlowShell urlEditListingId={parseEditListingId(qs.edit)} />
-    </Suspense>
-  )
+  // Editing an existing listing or explicitly choosing surfboards goes straight
+  // to the surfboard flow. A fresh /sell visit shows the product-type chooser
+  // (fins continue to a dedicated /sell/fins flow).
+  if (editId || type === "surfboard") {
+    return (
+      <Suspense fallback={<SellPageSuspenseFallback />}>
+        <SellFlowShell urlEditListingId={editId} />
+      </Suspense>
+    )
+  }
+
+  return <SellTypeChooser />
 }

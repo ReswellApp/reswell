@@ -50,9 +50,9 @@ import { BRANDS_BASE } from "@/lib/brands/routes"
 import { navigateToBrandProfileFromNavPick } from "@/lib/nav-marketplace-brand-search"
 import {
   boardBrowseNavItemIsActive,
+  siteHeaderMainCategoryNavLinks,
   siteHeaderSecondaryNavLinks,
   siteHeaderSecondaryNavItemIsActive,
-  surfboardBrowseLinks,
 } from "@/lib/site-category-directory"
 import { siteFooterNavLinks } from "@/lib/site-footer-nav"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
@@ -193,8 +193,8 @@ function resolveHeaderAvatarUrl(
   return (profileAvatar ? profileMediaDisplaySrc(profileAvatar) : null) || oauth
 }
 
-/** Desktop + mobile: “All Surfboards” first, then each `type=` link (order from {@link surfboardBrowseLinks}). */
-const boardShapeNav = surfboardBrowseLinks.map((link) => ({
+/** Desktop + mobile: surfboard shapes, then Fins (order from {@link siteHeaderMainCategoryNavLinks}). */
+const boardShapeNav = siteHeaderMainCategoryNavLinks.map((link) => ({
   name: link.label,
   href: link.href,
 }))

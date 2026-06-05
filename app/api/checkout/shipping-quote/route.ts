@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
 import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
@@ -60,7 +61,7 @@ export async function POST(request: Request) {
     .from("listings")
     .select(PEER_SURFBOARD_CHECKOUT_LISTING_SELECT)
     .eq("id", listingId)
-    .eq("section", "surfboards")
+    .in("section", PEER_LISTING_SECTIONS_FILTER)
     .eq("hidden_from_site", false)
     .in("status", ["active", "pending_sale"])
     .maybeSingle()

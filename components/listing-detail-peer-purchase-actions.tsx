@@ -41,7 +41,7 @@ export function ListingDetailPeerPurchaseActions({
   listingId: string
   /** Slug or id for `/checkout?listing=` */
   checkoutListingParam: string
-  section: "surfboards"
+  section: "surfboards" | "fins"
   isLoggedIn: boolean
   makeOffer?: ListingMakeOfferConfig
   /** When the buyer has an ACCEPTED offer, checkout uses this item price (listing stays at list price in the gallery). */

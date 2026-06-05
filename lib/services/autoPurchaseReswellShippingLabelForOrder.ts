@@ -164,7 +164,8 @@ export async function autoPurchaseReswellShippingLabelForOrder(
   if (o.delivery_status !== "pending") return
 
   const listing = Array.isArray(o.listings) ? o.listings[0] : o.listings
-  if (!listing || (listing as { section?: string }).section !== "surfboards") return
+  const listingSection = (listing as { section?: string } | null)?.section
+  if (!listing || (listingSection !== "surfboards" && listingSection !== "fins")) return
 
   const listingForQuote = listing as unknown as PeerListingForShippingQuote
   if (effectiveBoardShippingMode(listingForQuote) !== "reswell") return

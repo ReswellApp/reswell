@@ -17,6 +17,25 @@ function scrollToSection(id: string) {
   el.scrollIntoView({ behavior: "smooth", block: "start" })
 }
 
+export const SELL_FINS_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[] = [
+  {
+    id: "sell-fins-section-photos-title",
+    label: "Title & photos",
+    shortLabel: "Start",
+  },
+  {
+    id: "sell-fins-section-details",
+    label: "Fin details",
+    shortLabel: "Details",
+  },
+  { id: "sell-fins-section-delivery", label: "Pickup & shipping", shortLabel: "Delivery" },
+  {
+    id: "sell-fins-section-publish",
+    label: "Price & publish",
+    shortLabel: "Publish",
+  },
+]
+
 export const SELL_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[] = [
   {
     id: "sell-section-photos-title",

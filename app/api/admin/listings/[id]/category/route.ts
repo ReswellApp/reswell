@@ -61,6 +61,7 @@ export async function PATCH(
 
   const result = await setAdminListingCategory({
     listingId: listingId.trim(),
+    section: parsed.data.section,
     categoryId: parsed.data.category_id,
   })
 
@@ -88,6 +89,7 @@ export async function PATCH(
   }
 
   revalidatePath("/boards")
+  revalidatePath("/fins")
   revalidateBoardsBrowseCatalog()
   revalidatePath("/sold")
   revalidatePath("/search")

@@ -134,6 +134,20 @@ interface CategoryOption {
   board: boolean
 }
 
+type AdminListingSection = 'surfboards' | 'new' | 'fins'
+
+function normalizeListingSection(section: string | undefined | null): AdminListingSection | null {
+  if (section === 'surfboards' || section === 'new' || section === 'fins') return section
+  return null
+}
+
+function formatListingSectionLabel(section: string): string {
+  if (section === 'new') return 'New'
+  if (section === 'fins') return 'Fins'
+  if (section === 'surfboards') return 'Surfboards'
+  return section
+}
+
 type SortKey = 'created_at' | 'price' | 'views' | 'title'
 type SortDir = 'asc' | 'desc'
 
@@ -233,6 +247,7 @@ export default function AdminListingsPage() {
   const [bulkBusy, setBulkBusy] = useState(false)
   const [isAdminUser, setIsAdminUser] = useState(false)
   const [categoryDialogListing, setCategoryDialogListing] = useState<Listing | null>(null)
+  const [sectionPick, setSectionPick] = useState<AdminListingSection>('surfboards')
   const [categoryPick, setCategoryPick] = useState('')
   const [categorySaving, setCategorySaving] = useState(false)
   const [dialogCategoryRows, setDialogCategoryRows] = useState<CategoryOption[]>([])
@@ -267,13 +282,7 @@ export default function AdminListingsPage() {
       return
     }
 
-    const listing = categoryDialogListing
-    const section =
-      listing.section === 'surfboards' || listing.section === 'new' ? listing.section : null
-    if (!section) {
-      setDialogCategoryRows([])
-      return
-    }
+    const section = sectionPick
 
     let cancelled = false
     setDialogCategoriesLoading(true)
@@ -290,9 +299,10 @@ export default function AdminListingsPage() {
           return
         }
         const rows = [...(json.categories ?? [])]
+        const listing = categoryDialogListing
         const targetId = listing.category_id.trim().toLowerCase()
         const hasCurrent = rows.some((r) => r.id.trim().toLowerCase() === targetId)
-        if (!hasCurrent) {
+        if (!hasCurrent && section === normalizeListingSection(listing.section)) {
           rows.push({
             id: listing.category_id.trim(),
             name: listing.categories?.name ?? 'Current category',
@@ -301,8 +311,16 @@ export default function AdminListingsPage() {
         }
         rows.sort((a, b) => a.name.localeCompare(b.name))
         setDialogCategoryRows(rows)
+        if (section === 'fins' && rows[0]) {
+          setCategoryPick(rows[0].id)
+          return
+        }
         const match = rows.find((r) => r.id.trim().toLowerCase() === targetId)
-        if (match) setCategoryPick(match.id)
+        if (match) {
+          setCategoryPick(match.id)
+        } else if (rows[0]) {
+          setCategoryPick(rows[0].id)
+        }
       })
       .catch(() => {
         if (!cancelled) {
@@ -317,7 +335,7 @@ export default function AdminListingsPage() {
     return () => {
       cancelled = true
     }
-  }, [categoryDialogListing])
+  }, [categoryDialogListing, sectionPick])
 
   async function fetchListings() {
     setLoading(true)
@@ -407,7 +425,11 @@ export default function AdminListingsPage() {
     })
     if (res.ok) {
       setImpersonation({ userId: listing.user_id, displayName, email })
-      router.push(`/sell?edit=${listing.id}`)
+      const editPath =
+        listing.section === 'fins'
+          ? `/sell/fins?edit=${listing.id}`
+          : `/sell?edit=${listing.id}`
+      router.push(editPath)
     } else {
       toast.error('Failed to start impersonation for editing')
     }
@@ -421,7 +443,8 @@ export default function AdminListingsPage() {
       return
     }
     const currentId = normalizeCategoryId(categoryDialogListing.category_id)
-    if (currentId && nextId === currentId) {
+    const currentSection = normalizeListingSection(categoryDialogListing.section)
+    if (currentId && nextId === currentId && currentSection === sectionPick) {
       setCategoryDialogListing(null)
       return
     }
@@ -434,7 +457,7 @@ export default function AdminListingsPage() {
           method: 'PATCH',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ category_id: categoryPick.trim() }),
+          body: JSON.stringify({ section: sectionPick, category_id: categoryPick.trim() }),
         },
       )
       const data = await res.json().catch(() => ({}))
@@ -449,11 +472,16 @@ export default function AdminListingsPage() {
       setListings((prev) =>
         prev.map((l) =>
           l.id === categoryDialogListing.id
-            ? { ...l, category_id: categoryPick.trim(), categories: { name: label } }
+            ? {
+                ...l,
+                section: sectionPick,
+                category_id: categoryPick.trim(),
+                categories: { name: label },
+              }
             : l,
         ),
       )
-      toast.success('Category updated')
+      toast.success('Listing type updated')
       setCategoryDialogListing(null)
     } finally {
       setCategorySaving(false)
@@ -742,6 +770,7 @@ export default function AdminListingsPage() {
               <SelectContent>
                 <SelectItem value="all">All sections</SelectItem>
                 <SelectItem value="surfboards">Surfboards</SelectItem>
+                <SelectItem value="fins">Fins</SelectItem>
                 <SelectItem value="new">New &amp; retail</SelectItem>
               </SelectContent>
             </Select>
@@ -825,31 +854,59 @@ export default function AdminListingsPage() {
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Change category</DialogTitle>
+            <DialogTitle>Change listing type</DialogTitle>
           </DialogHeader>
           {categoryDialogListing ? (
-            <div className="space-y-3 py-1">
+            <div className="space-y-4 py-1">
               <p className="line-clamp-2 text-sm text-muted-foreground">
                 {capitalizeWords(categoryDialogListing.title)}
               </p>
-              <Select
-                value={categoryPick || undefined}
-                onValueChange={setCategoryPick}
-                disabled={dialogCategoriesLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={dialogCategoriesLoading ? 'Loading categories…' : 'Select category'}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {dialogCategoryRows.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-foreground">Listing type</p>
+                <Select
+                  value={sectionPick}
+                  onValueChange={(value) => setSectionPick(value as AdminListingSection)}
+                  disabled={categorySaving}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="surfboards">Surfboard</SelectItem>
+                    <SelectItem value="fins">Fins</SelectItem>
+                    <SelectItem value="new">Shop / retail</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {sectionPick === 'fins' ? (
+                <p className="text-sm text-muted-foreground">
+                  Fins listings use the marketplace fins category.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-foreground">Category</p>
+                  <Select
+                    value={categoryPick || undefined}
+                    onValueChange={setCategoryPick}
+                    disabled={dialogCategoriesLoading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={
+                          dialogCategoriesLoading ? 'Loading categories…' : 'Select category'
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {dialogCategoryRows.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           ) : null}
           <DialogFooter className="gap-2 sm:gap-2">
@@ -1019,9 +1076,7 @@ export default function AdminListingsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="capitalize">
-                        {listing.section === 'new' ? 'New' : listing.section}
-                      </Badge>
+                      <Badge variant="outline">{formatListingSectionLabel(listing.section)}</Badge>
                     </TableCell>
                     <TableCell className="max-w-[160px]">
                       <span className="line-clamp-1 text-sm text-foreground">
@@ -1074,11 +1129,12 @@ export default function AdminListingsPage() {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => {
+                              setSectionPick(normalizeListingSection(listing.section) ?? 'surfboards')
                               setCategoryPick(listing.category_id.trim())
                               setCategoryDialogListing(listing)
                             }}
                           >
-                            <Layers className="mr-2 h-4 w-4" /> Change category
+                            <Layers className="mr-2 h-4 w-4" /> Change listing type
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => toggleSiteVisibility(listing)}>
                             {listing.hidden_from_site ? (

@@ -4,6 +4,7 @@ import {
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 import { parseOfferLineItems, type OfferLineItem } from "@/lib/types/offer-line-item"
+import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -162,7 +163,7 @@ export async function loadAcceptedOfferCheckoutListings(
     .in("id", listingIdsOrdered)
     .in("status", ["active", "pending_sale"])
     .eq("hidden_from_site", false)
-    .eq("section", "surfboards")
+    .in("section", PEER_LISTING_SECTIONS_FILTER)
 
   if (listErr || !listingRows?.length) {
     return { ok: false, error: "One or more listings are no longer available." }

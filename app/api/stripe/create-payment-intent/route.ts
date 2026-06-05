@@ -12,6 +12,7 @@ import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAc
 import { validateAcceptedOfferForPaymentIntent } from "@/lib/services/acceptedOfferCheckout"
 import { dedupeIdsPreserveOrder } from "@/lib/stripe-marketplace-metadata"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
+import { isPeerListingSection } from "@/lib/peer-listing-sections"
 
 const JSON_NO_STORE_HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -114,7 +115,7 @@ export async function POST(request: NextRequest) {
     listingsOrdered,
   )
 
-  if (listingsOrdered.some((l) => l.section !== "surfboards")) {
+  if (listingsOrdered.some((l) => !isPeerListingSection(l.section))) {
     return NextResponse.json({ error: "This listing cannot be purchased here" }, { status: 400 })
   }
 

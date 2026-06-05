@@ -8,6 +8,13 @@ import {
   RESWELL_MAX_REASONABLE_STORED_PARCEL_LENGTH_IN,
   RESWELL_MAX_REASONABLE_STORED_PARCEL_WEIGHT_OZ,
   RESWELL_MAX_REASONABLE_STORED_PARCEL_WIDTH_IN,
+  RESWELL_FALLBACK_SMALL_PARCEL_WEIGHT_OZ,
+  RESWELL_MAX_REASONABLE_SMALL_PARCEL_HEIGHT_IN,
+  RESWELL_MAX_REASONABLE_SMALL_PARCEL_LENGTH_IN,
+  RESWELL_MAX_REASONABLE_SMALL_PARCEL_WIDTH_IN,
+  RESWELL_MIN_REASONABLE_SMALL_PARCEL_HEIGHT_IN,
+  RESWELL_MIN_REASONABLE_SMALL_PARCEL_LENGTH_IN,
+  RESWELL_MIN_REASONABLE_SMALL_PARCEL_WIDTH_IN,
   RESWELL_MIN_REASONABLE_STORED_PARCEL_HEIGHT_IN,
   RESWELL_MIN_REASONABLE_STORED_PARCEL_LENGTH_IN,
   RESWELL_MIN_REASONABLE_STORED_PARCEL_WEIGHT_OZ,
@@ -27,6 +34,17 @@ function num(v: unknown): number | null {
   if (v == null || v === "") return null
   const n = typeof v === "number" ? v : parseFloat(String(v).replace(/,/g, ""))
   return Number.isFinite(n) && n > 0 ? n : null
+}
+
+function storedPackedSmallParcelDimsLookUsable(lengthIn: number, widthIn: number, heightIn: number) {
+  return (
+    lengthIn >= RESWELL_MIN_REASONABLE_SMALL_PARCEL_LENGTH_IN &&
+    lengthIn <= RESWELL_MAX_REASONABLE_SMALL_PARCEL_LENGTH_IN &&
+    widthIn >= RESWELL_MIN_REASONABLE_SMALL_PARCEL_WIDTH_IN &&
+    widthIn <= RESWELL_MAX_REASONABLE_SMALL_PARCEL_WIDTH_IN &&
+    heightIn >= RESWELL_MIN_REASONABLE_SMALL_PARCEL_HEIGHT_IN &&
+    heightIn <= RESWELL_MAX_REASONABLE_SMALL_PARCEL_HEIGHT_IN
+  )
 }
 
 function storedPackedSurfboardDimsLookUsable(lengthIn: number, widthIn: number, heightIn: number, oz: number) {
@@ -156,7 +174,7 @@ export function resolvePackedParcelFromListing(row: ListingPackedParcelSource):
     }
   }
 
-  /** No board dims at all — legacy/draft path. Fall back to stored packed values if they look usable. */
+  /** No board dims — seller-entered packed box (fins, legacy surfboard rows). */
   const Ls = num(row.shipping_packed_length_in)
   const Ws = num(row.shipping_packed_width_in)
   const Hs = num(row.shipping_packed_height_in)
@@ -170,9 +188,25 @@ export function resolvePackedParcelFromListing(row: ListingPackedParcelSource):
       heightIn: Hs,
     }
   }
+  if (Ls && Ws && Hs && storedPackedSmallParcelDimsLookUsable(Ls, Ws, Hs)) {
+    const weightOz =
+      Woz != null &&
+      Woz >= 1 &&
+      Woz <= RESWELL_MAX_REASONABLE_STORED_PARCEL_WEIGHT_OZ
+        ? Woz
+        : RESWELL_FALLBACK_SMALL_PARCEL_WEIGHT_OZ
+    return {
+      ok: true,
+      source: "heuristic",
+      weightOz,
+      lengthIn: Ls,
+      widthIn: Ws,
+      heightIn: Hs,
+    }
+  }
   return {
     ok: false,
     error:
-      "This listing is missing board dimensions. Ask the seller to enter length, width, and thickness.",
+      "This listing is missing packed shipping dimensions. Ask the seller to update Reswell shipping.",
   }
 }

@@ -1,5 +1,6 @@
 import { pressArticles } from "@/lib/press-articles"
 import { fetchSurfboardListingSitemapEntries } from "@/lib/db/sitemap-surfboard-listings"
+import { fetchFinListingSitemapEntries } from "@/lib/db/fin-listings"
 import { fetchBrandSlugRowsForSitemap } from "@/lib/db/sitemap-brands"
 import { fetchSellerProfileSitemapEntries } from "@/lib/db/sitemap-seller-profiles"
 import { fetchForumThreadSitemapEntries } from "@/lib/db/sitemap-forum-threads"
@@ -111,6 +112,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
   const staticPages: SitemapUrlEntry[] = [
     { url: `${BASE}/`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
     { url: `${BASE}/boards`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
+    { url: `${BASE}/fins`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
     { url: `${BASE}/categories`, lastModified: now, changeFrequency: "weekly", priority: 0.65 },
     {
       url: `${BASE}/what-is-reswell`,
@@ -219,15 +221,34 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
   return deduped
 }
 
-/** Active surfboard listing detail URLs (`/l/{slug-or-id}`). */
+/** Active surfboard + fin listing detail URLs (`/l/{slug-or-id}`). */
 export async function buildListingSitemapUrlEntries(): Promise<SitemapUrlEntry[]> {
   const supabase = await supabaseForSitemapPublicRead()
-  const listingEntries = await fetchSurfboardListingSitemapEntries(supabase)
+  const [listingEntries, finEntries] = await Promise.all([
+    fetchSurfboardListingSitemapEntries(supabase),
+    fetchFinListingSitemapEntries(supabase),
+  ])
 
-  return listingEntries.map((e) => ({
-    url: `${BASE}${e.path}`,
-    lastModified: e.lastModified,
-    changeFrequency: "daily",
-    priority: 0.75,
-  }))
+  const normalized: { path: string; lastModified: Date }[] = [
+    ...listingEntries.map((e) => ({ path: e.path, lastModified: e.lastModified })),
+    ...finEntries.map((e) => ({
+      path: e.path,
+      lastModified: e.updatedAt ? new Date(e.updatedAt) : new Date(),
+    })),
+  ]
+
+  const seen = new Set<string>()
+  const entries: SitemapUrlEntry[] = []
+  for (const e of normalized) {
+    const url = `${BASE}${e.path}`
+    if (seen.has(url)) continue
+    seen.add(url)
+    entries.push({
+      url,
+      lastModified: e.lastModified,
+      changeFrequency: "daily",
+      priority: 0.75,
+    })
+  }
+  return entries
 }

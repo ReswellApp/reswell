@@ -18,8 +18,8 @@ interface ContactSellerFormProps {
   sellerId: string
   listingTitle: string
   isLoggedIn: boolean
-  /** Surfboard listings: shipping vs local pickup affects quick-message options. */
-  section?: "surfboards"
+  /** Peer listings (surfboards, fins): shipping vs local pickup affects quick-message options. */
+  section?: "surfboards" | "fins"
   /** Surfboards: seller offers shipping (shows shipping-related quick prompts). */
   shippingAvailable?: boolean
   /** When true, no in-form section title is shown (parent already provides the label). */

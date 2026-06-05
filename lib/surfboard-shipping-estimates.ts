@@ -64,6 +64,19 @@ export const RESWELL_MAX_REASONABLE_STORED_PARCEL_WEIGHT_OZ = 56 * 16
 /** Below this, stored weight is likely missing or wrong (ounces). */
 export const RESWELL_MIN_REASONABLE_STORED_PARCEL_WEIGHT_OZ = 16
 
+/**
+ * Bounds for seller-entered packed dims when a listing has no board dimensions
+ * (e.g. fins). Surfboard min lengths assume a full board carton.
+ */
+export const RESWELL_MIN_REASONABLE_SMALL_PARCEL_LENGTH_IN = 4
+export const RESWELL_MAX_REASONABLE_SMALL_PARCEL_LENGTH_IN = 48
+export const RESWELL_MIN_REASONABLE_SMALL_PARCEL_WIDTH_IN = 4
+export const RESWELL_MAX_REASONABLE_SMALL_PARCEL_WIDTH_IN = 24
+export const RESWELL_MIN_REASONABLE_SMALL_PARCEL_HEIGHT_IN = 1
+export const RESWELL_MAX_REASONABLE_SMALL_PARCEL_HEIGHT_IN = 24
+/** When small-parcel sellers omit weight, use a conservative minimum for rating. */
+export const RESWELL_FALLBACK_SMALL_PARCEL_WEIGHT_OZ = 8
+
 const KG_PER_LITER_ROUGH = 0.45
 const MIN_SHIP_LB = 5
 const MAX_SHIP_LB = 45

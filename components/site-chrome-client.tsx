@@ -20,10 +20,15 @@ function hideSiteChrome(pathname: string | null): boolean {
   return pathname.startsWith("/auth") || pathname === "/help" || pathname.startsWith("/help/")
 }
 
-/** Messages inbox + threads use full vertical space without the marketing footer. */
+/** Full-height flows without the marketing footer (messages, sell listing). */
 function hideFooter(pathname: string | null): boolean {
   if (!pathname) return false
-  return pathname === "/messages" || pathname.startsWith("/messages/")
+  return (
+    pathname === "/messages" ||
+    pathname.startsWith("/messages/") ||
+    pathname === "/sell" ||
+    pathname.startsWith("/sell/")
+  )
 }
 
 /** Single listing thread: fill viewport; only the message list scrolls. */

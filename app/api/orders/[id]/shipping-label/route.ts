@@ -13,6 +13,7 @@ import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import { shippingLabelPostBodySchema } from "@/lib/validations/order-shipping-label"
 import type { ListingPackedParcelSource } from "@/lib/reswell-packed-parcel-from-listing"
 import type { ProfileAddressRow } from "@/lib/profile-address"
+import { isPeerListingSection } from "@/lib/peer-listing-sections"
 
 export const dynamic = "force-dynamic"
 
@@ -85,7 +86,9 @@ export async function GET(
     : { ok: false as const, error: "Could not load listing for this order." }
 
   const reasons: string[] = []
-  if (section !== "surfboards") reasons.push("Labels are available for surfboard orders only.")
+  if (!isPeerListingSection(section)) {
+    reasons.push("Labels are available for marketplace peer listings only.")
+  }
   if (row.fulfillment_method !== "shipping") reasons.push("This order is not shipping fulfillment.")
   if (row.delivery_status !== "pending") reasons.push("Tracking is already set for this order.")
   const eligible = reasons.length === 0
@@ -197,8 +200,11 @@ export async function POST(
   }
 
   const listing = Array.isArray(o.listings) ? o.listings[0] : o.listings
-  if (listing?.section !== "surfboards") {
-    return NextResponse.json({ error: "Shipping labels are only for surfboard orders." }, { status: 400 })
+  if (!listing || !isPeerListingSection(listing.section)) {
+    return NextResponse.json(
+      { error: "Shipping labels are only for marketplace peer listings." },
+      { status: 400 },
+    )
   }
   if (o.fulfillment_method !== "shipping") {
     return NextResponse.json({ error: "This order is not a shipping order." }, { status: 400 })

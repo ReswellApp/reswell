@@ -7,6 +7,7 @@ import { CheckoutAccountRequired } from "@/components/checkout-account-required"
 import { CheckoutClient } from "@/components/checkout-client"
 import type { CheckoutCopy, CheckoutListing, CheckoutSeller } from "@/components/checkout-types"
 import { findListingByParam } from "@/lib/listing-query"
+import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { listingDetailHref } from "@/lib/listing-href"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
@@ -335,7 +336,7 @@ export default async function CheckoutPage(props: {
     redirect(listingDetailHref(listing))
   }
 
-  if (listing.section !== "surfboards") {
+  if (!isPeerListingSection(listing.section)) {
     notFound()
   }
 

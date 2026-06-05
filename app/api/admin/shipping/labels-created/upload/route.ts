@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/brands/admin-server"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { attachAdminShippingLabelToOrder } from "@/lib/services/adminOrderShippingLabelNotify"
 import { PEER_SURFBOARD_CHECKOUT_LISTING_SELECT } from "@/lib/services/peerListingShippingQuote"
+import { isPeerListingSection } from "@/lib/peer-listing-sections"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -92,8 +93,11 @@ export async function POST(request: NextRequest) {
   }
 
   const listing = Array.isArray(o.listings) ? o.listings[0] : o.listings
-  if (!listing || (listing as { section?: string }).section !== "surfboards") {
-    return NextResponse.json({ error: "Labels are for surfboard shipping orders only." }, { status: 400 })
+  if (!listing || !isPeerListingSection((listing as { section?: string }).section)) {
+    return NextResponse.json(
+      { error: "Labels are for marketplace shipping orders only." },
+      { status: 400 },
+    )
   }
 
   const listingTitle =

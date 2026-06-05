@@ -12,6 +12,7 @@ import { appendConversationMessage } from "@/lib/services/conversationThread"
 import { syncOfferThreadIfMissing } from "@/lib/services/syncOfferMessagesThread"
 import { formatOfferThreadContent } from "@/lib/utils/format-offer-thread-content"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
+import { isPeerListingSection } from "@/lib/peer-listing-sections"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -66,7 +67,7 @@ export async function createListingOffer(
     return { ok: false, status: 404, error: "Listing not found." }
   }
 
-  if (listing.section !== "surfboards") {
+  if (!isPeerListingSection(listing.section)) {
     return { ok: false, status: 400, error: "Offers are not available for this listing type." }
   }
 

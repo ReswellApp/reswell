@@ -180,8 +180,6 @@ const nextConfig = {
       { source: "/gear/:path*", destination: "/boards", permanent: true },
       { source: "/wetsuits", destination: "/boards", permanent: true },
       { source: "/wetsuits/:path*", destination: "/boards", permanent: true },
-      { source: "/fins", destination: "/boards", permanent: true },
-      { source: "/fins/:path*", destination: "/boards", permanent: true },
       { source: "/leashes", destination: "/boards", permanent: true },
       { source: "/leashes/:path*", destination: "/boards", permanent: true },
       { source: "/board-bags", destination: "/boards", permanent: true },

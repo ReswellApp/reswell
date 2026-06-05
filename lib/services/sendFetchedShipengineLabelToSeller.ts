@@ -111,8 +111,9 @@ export async function sendFetchedShipengineLabelPdfToSeller(params: {
   }
 
   const listing = Array.isArray(o.listings) ? o.listings[0] : o.listings
-  if (!listing || (listing as { section?: string }).section !== "surfboards") {
-    return { ok: false, error: "Labels are for surfboard shipping orders only.", status: 400 }
+  const listingSection = (listing as { section?: string } | null)?.section
+  if (!listing || (listingSection !== "surfboards" && listingSection !== "fins")) {
+    return { ok: false, error: "Labels are for marketplace shipping orders only.", status: 400 }
   }
 
   const listingTitle =

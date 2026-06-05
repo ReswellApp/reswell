@@ -5,6 +5,7 @@ import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { attachAdminShippingLabelToOrder } from "@/lib/services/adminOrderShippingLabelNotify"
 import { PEER_SURFBOARD_CHECKOUT_LISTING_SELECT } from "@/lib/services/peerListingShippingQuote"
 import { adminShippingManualTrackingBodySchema } from "@/lib/validations/admin-shipping-labels"
+import { isPeerListingSection } from "@/lib/peer-listing-sections"
 
 export const dynamic = "force-dynamic"
 
@@ -78,8 +79,11 @@ export async function POST(request: NextRequest) {
   }
 
   const listing = Array.isArray(o.listings) ? o.listings[0] : o.listings
-  if (!listing || (listing as { section?: string }).section !== "surfboards") {
-    return NextResponse.json({ error: "Tracking tool is for surfboard shipping orders." }, { status: 400 })
+  if (!listing || !isPeerListingSection((listing as { section?: string }).section)) {
+    return NextResponse.json(
+      { error: "Tracking tool is for marketplace shipping orders only." },
+      { status: 400 },
+    )
   }
 
   const listingTitle =

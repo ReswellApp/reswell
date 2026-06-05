@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { PEER_SURFBOARD_CHECKOUT_LISTING_SELECT } from "@/lib/services/peerListingShippingQuote"
+import {
+  PEER_LISTING_SECTIONS_FILTER,
+  isPeerListingSection,
+} from "@/lib/peer-listing-sections"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -51,7 +55,7 @@ export async function fetchCheckoutCartListingsForSeller(
     .eq("user_id", sellerId.trim())
     .in("status", ["active", "pending_sale"])
     .eq("hidden_from_site", false)
-    .eq("section", "surfboards")
+    .in("section", PEER_LISTING_SECTIONS_FILTER)
 
   if (listErr || !listingRows) {
     return { error: listErr?.message ?? "Could not load listings" }
@@ -112,7 +116,7 @@ export async function inferPeerCartSellerIdFromBuyerCart(
     const Lraw = raw.listings
     const L = Array.isArray(Lraw) ? Lraw[0] : Lraw
     if (!L?.user_id) continue
-    if (String(L.section ?? "") !== "surfboards") continue
+    if (!isPeerListingSection(String(L.section ?? ""))) continue
     if (L.status !== "active" && L.status !== "pending_sale") continue
     if (L.hidden_from_site) continue
     sellers.add(L.user_id)

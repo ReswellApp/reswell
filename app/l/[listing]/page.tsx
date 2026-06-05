@@ -12,6 +12,7 @@ import {
 import { resolveListingDetailMetadata } from "@/lib/seo/resolve-listing-metadata"
 import { canViewHiddenListing } from "@/lib/listing-site-access"
 import { SurfboardListingDetailPage } from "@/components/surfboard-listing-detail-page"
+import { FinsListingDetailPage } from "@/components/fins-listing-detail-page"
 import { ShopListingDetailPage } from "@/components/shop-listing-detail-page"
 import { ListingViewTracker } from "@/components/features/listings/listing-view-tracker"
 import { UnavailableListingLandingPage } from "@/components/features/listings/unavailable-listing-landing-page"
@@ -112,6 +113,8 @@ export default async function ListingDetailPage(props: {
         switch (listing.section) {
           case "surfboards":
             return <SurfboardListingDetailPage listingParam={listingParam} />
+          case "fins":
+            return <FinsListingDetailPage listingParam={listingParam} />
           case "new":
             return <ShopListingDetailPage listingParam={listingParam} />
           default:

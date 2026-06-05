@@ -223,6 +223,9 @@ export async function PUT(request: NextRequest) {
     revalidatePath(`/l/${slug.trim()}`, "page")
     revalidateListingPublicDetailCatalog()
   }
+  if (String(listingData?.section ?? "") === "fins") {
+    revalidatePath("/fins")
+  }
 
   return NextResponse.json({ success: true, slug, seller_display_name: sellerDisplayName })
 }

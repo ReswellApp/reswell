@@ -22,6 +22,14 @@ export const surfboardBrowseLinks: CategoryLink[] = [
   { label: "Other", href: "/boards?type=other" },
 ]
 
+/**
+ * Desktop + mobile main category bar: surfboard shapes, then Fins (after Other).
+ */
+export const siteHeaderMainCategoryNavLinks: CategoryLink[] = [
+  ...surfboardBrowseLinks,
+  { label: "Fins", href: "/fins" },
+]
+
 /** Header Categories dropdown + /categories page: surfboards only. */
 export const allCategoriesForNav: CategoryLink[] = surfboardBrowseLinks
 
@@ -36,11 +44,25 @@ export type CategoryDirectorySection = {
   links: CategoryLink[]
 }
 
+/** `/fins` browse links — peer-to-peer surfboard fins. */
+export const finBrowseLinks: CategoryLink[] = [
+  { label: "All Fins", href: "/fins" },
+  { label: "Thruster", href: "/fins?fin=thruster" },
+  { label: "Twin", href: "/fins?fin=twin_only" },
+  { label: "Quad", href: "/fins?fin=quad" },
+  { label: "Single", href: "/fins?fin=single" },
+]
+
 export const categoryDirectorySections: CategoryDirectorySection[] = [
   {
     title: "Surfboards",
     description: "Local listings by board shape — inspect in person before you buy.",
     links: surfboardBrowseLinks,
+  },
+  {
+    title: "Fins",
+    description: "Used and pre-owned surfboard fins from surfers.",
+    links: finBrowseLinks,
   },
 ]
 
@@ -133,15 +155,42 @@ export const advancedCategorySections: AdvancedCategorySection[] = [
       },
     ],
   },
+  {
+    id: "fins",
+    title: "Fins",
+    description:
+      "Browse used surfboard fins by setup. Every set is listed by a real seller you can meet or have shipped.",
+    browseAllHref: "/fins",
+    browseAllLabel: "View all fins",
+    subcategories: [
+      {
+        heading: "By setup",
+        links: [
+          { label: "Thruster", href: "/fins?fin=thruster" },
+          { label: "Twin", href: "/fins?fin=twin_only" },
+          { label: "Quad", href: "/fins?fin=quad" },
+          { label: "Single", href: "/fins?fin=single" },
+          { label: "5-fin", href: "/fins?fin=five" },
+        ],
+      },
+    ],
+  },
 ]
 
-const HEADER_CATEGORIES_DROPDOWN_IDS = new Set(["surfboards"])
+const HEADER_CATEGORIES_DROPDOWN_IDS = new Set(["surfboards", "fins"])
 
 /** Surfboard shapes shown in the header Categories dropdown only (full list stays on /categories). */
 const headerSurfboardsDropdownShapes: CategoryLink[] = [
   { label: "Shortboard", href: "/boards?type=shortboard" },
   { label: "Groveler", href: "/boards?type=groveler" },
   { label: "Longboard", href: "/boards?type=longboard" },
+]
+
+/** Fin setups shown in the header Categories dropdown only (full list stays on /categories). */
+const headerFinsDropdownSetups: CategoryLink[] = [
+  { label: "Thruster", href: "/fins?fin=thruster" },
+  { label: "Twin", href: "/fins?fin=twin_only" },
+  { label: "Quad", href: "/fins?fin=quad" },
 ]
 
 /** Subcategory submenus in the header Categories dropdown only (all sections remain on /categories). */
@@ -153,6 +202,12 @@ export const headerCategoriesDropdownSections: AdvancedCategorySection[] =
         return {
           ...s,
           subcategories: [{ heading: "Surfboards", links: headerSurfboardsDropdownShapes }],
+        }
+      }
+      if (s.id === "fins") {
+        return {
+          ...s,
+          subcategories: [{ heading: "Fins", links: headerFinsDropdownSetups }],
         }
       }
       return s

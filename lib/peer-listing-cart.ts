@@ -1,4 +1,5 @@
 import type { ListingTilePriceAction } from "@/components/listing-tile"
+import { isPeerListingSection } from "@/lib/peer-listing-sections"
 
 export type PeerListingCartFields = {
   id: string
@@ -14,7 +15,7 @@ export function computePeerCartPriceAction(
   viewerId: string | null,
   listing: PeerListingCartFields,
 ): ListingTilePriceAction | null {
-  if (listing.section !== "surfboards") return null
+  if (!isPeerListingSection(listing.section)) return null
   if (listing.status !== "active" && listing.status !== "pending_sale") return null
   const lp = listing.local_pickup !== false
   const sa = !!listing.shipping_available

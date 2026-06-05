@@ -12,6 +12,7 @@ import {
   type SellerInitiatedOfferBody,
 } from "@/lib/validations/seller-initiated-offer"
 import { randomUUID } from "node:crypto"
+import { isPeerListingSection } from "@/lib/peer-listing-sections"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -55,7 +56,7 @@ function validateListingForSellerOffer(
   if (listing.user_id !== sellerUserId) {
     return { ok: false, error: "You can only include your own listings in an offer." }
   }
-  if (listing.section !== "surfboards") {
+  if (!isPeerListingSection(listing.section)) {
     return { ok: false, error: "Offers are not available for one or more listing types." }
   }
   if (listing.status !== "active" && listing.status !== "pending_sale") {

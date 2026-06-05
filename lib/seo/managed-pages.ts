@@ -118,6 +118,12 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Browse surfboards for sale. Find shortboards, longboards, grovelers, and more from local surfers on Reswell.",
     path: "/boards",
   }, { note: "Main /boards browse hub. Variations below override the filtered views." }),
+  page("fins", "marketplace", "Browse fins", {
+    title: "Surfboard Fins For Sale | Reswell",
+    description:
+      "Browse used and pre-owned surfboard fins for sale. Find Futures, FCS, and more from surfers on Reswell.",
+    path: "/fins",
+  }, { note: "Main /fins browse hub." }),
   page("boards:type=shortboard", "marketplace", "Boards — Shortboards", {
     title: "Shortboards For Sale | Reswell",
     description:

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server"
 import { trackKlaviyoAddedToCart } from "@/lib/klaviyo/track-added-to-cart"
 import { trackMetaAddToCartServerEvent } from "@/lib/meta/track-add-to-cart-server-event"
 import type { PeerListingCartFields } from "@/lib/peer-listing-cart"
+import { isPeerListingSection } from "@/lib/peer-listing-sections"
 
 export type CartListingRow = {
   id: string
@@ -58,7 +59,7 @@ async function assertListingEligibleForCart(
   if (listing.hidden_from_site) {
     return { ok: false, message: "This listing is not available" }
   }
-  if (listing.section !== "surfboards") {
+  if (!isPeerListingSection(listing.section)) {
     return { ok: false, message: "This listing cannot be added to cart" }
   }
   if (listing.status !== "active" && listing.status !== "pending_sale") {

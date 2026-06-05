@@ -23,6 +23,7 @@ import {
   rateQuoteFieldsToShippingInput,
 } from "@/lib/shipping/rate-address"
 import { adminOrderShippingLabelPostBodySchema } from "@/lib/validations/order-shipping-label"
+import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import type { ListingPackedParcelSource } from "@/lib/reswell-packed-parcel-from-listing"
 
@@ -95,7 +96,9 @@ export async function GET(request: NextRequest) {
     : { ok: false as const, error: "Listing not loaded." }
 
   const reasons: string[] = []
-  if (section !== "surfboards") reasons.push("Labels are available for surfboard orders only.")
+  if (!isPeerListingSection(section)) {
+    reasons.push("Labels are available for marketplace peer listings only.")
+  }
   if (row.fulfillment_method !== "shipping") reasons.push("This order is not shipping fulfillment.")
   if (row.delivery_status !== "pending") reasons.push("Tracking is already set for this order.")
   const eligible = reasons.length === 0
@@ -207,8 +210,11 @@ export async function POST(request: NextRequest) {
   }
 
   const listing = Array.isArray(o.listings) ? o.listings[0] : o.listings
-  if (!listing || (listing as { section?: string }).section !== "surfboards") {
-    return NextResponse.json({ error: "Shipping labels are only for surfboard orders." }, { status: 400 })
+  if (!listing || !isPeerListingSection((listing as { section?: string }).section)) {
+    return NextResponse.json(
+      { error: "Shipping labels are only for marketplace peer listings." },
+      { status: 400 },
+    )
   }
   if (o.fulfillment_method !== "shipping") {
     return NextResponse.json({ error: "This order is not a shipping order." }, { status: 400 })
