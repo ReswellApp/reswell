@@ -12,6 +12,7 @@ const CANONICAL_NAME_BY_CATEGORY_ID: Record<string, string> = {
   [boardCategoryMap["step-up-gun"]]: "Step-Up / Gun",
   [boardCategoryMap.groveler]: "Groveler",
   [boardCategoryMap.fish]: "Fish",
+  [boardCategoryMap.asym]: "Asym",
   [boardCategoryMap.other]: "Other",
 }
 
@@ -25,6 +26,7 @@ const CANONICAL_NAME_BY_SLUG: Record<string, string> = {
   gun: "Step-Up / Gun",
   groveler: "Groveler",
   fish: "Fish",
+  asym: "Asym",
   funboard: "Hybrid",
   "mid-length": "Hybrid",
   other: "Other",

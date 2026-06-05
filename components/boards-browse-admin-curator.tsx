@@ -4,7 +4,20 @@ import * as React from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowDownToLine, ChevronDown, ChevronUp, ExternalLink, Eye, EyeOff, Loader2, Plus, Search, Star, Trash2 } from "lucide-react"
+import {
+  ArrowDownToLine,
+  ChevronDown,
+  ChevronUp,
+  ChevronsUp,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  Loader2,
+  Plus,
+  Search,
+  Star,
+  Trash2,
+} from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
@@ -195,6 +208,15 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
     const tmp = next[index]!
     next[index] = next[j]!
     next[j] = tmp
+    await persistTopPickReorder(next)
+  }
+
+  async function sendTopPickRowToTop(index: number) {
+    if (index <= 0) return
+    const next = topPicks.slice()
+    const [item] = next.splice(index, 1)
+    if (!item) return
+    next.unshift(item)
     await persistTopPickReorder(next)
   }
 
@@ -466,6 +488,18 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
                           ) : null}
                         </div>
                         <div className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9"
+                            title="Send to top"
+                            aria-label="Send to top"
+                            disabled={reorderingTopPicks || i <= 0}
+                            onClick={() => void sendTopPickRowToTop(i)}
+                          >
+                            <ChevronsUp className="h-4 w-4" />
+                          </Button>
                           <Button
                             type="button"
                             variant="ghost"

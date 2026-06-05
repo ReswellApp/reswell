@@ -148,6 +148,12 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Browse fish surfboards for sale. Find shortboards, longboards, grovelers, and more from local surfers on Reswell.",
     path: "/boards?type=fish",
   }, { variationOf: "boards", note: "/boards?type=fish" }),
+  page("boards:type=asym", "marketplace", "Boards — Asym", {
+    title: "Asym For Sale | Reswell",
+    description:
+      "Browse asymmetric surfboards for sale. Find shortboards, longboards, grovelers, and more from local surfers on Reswell.",
+    path: "/boards?type=asym",
+  }, { variationOf: "boards", note: "/boards?type=asym" }),
   page("boards:type=step-up-gun", "marketplace", "Boards — Step-Up / Gun", {
     title: "Step-Up / Gun For Sale | Reswell",
     description:

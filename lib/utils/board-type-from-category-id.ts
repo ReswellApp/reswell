@@ -6,6 +6,7 @@ export const boardCategoryMap: Record<string, string> = {
   "step-up-gun": "91c4e8a2-3f5b-4d1c-9e6a-7b8c9d0e1f2a",
   groveler: "f3ccddc0-f0f3-45d3-ad43-51bcf9935b45",
   fish: "a5b6c7d8-e9f0-4123-a456-7890abcdef01",
+  asym: "b6c7d8e9-f0a1-4234-b567-890abcdef012",
   /** Matches `20260415130000_surfboard_category_others_row.sql` — distinct from shortboard for /sell. */
   other: "c3d4e5f6-a7b8-49c0-b123-456789abcdef",
 }
@@ -22,6 +23,7 @@ export function boardTypeFromCategoryId(categoryId: string): string {
   if (keys.includes("step-up-gun")) return "step-up-gun"
   if (keys.includes("longboard")) return "longboard"
   if (keys.includes("fish")) return "fish"
+  if (keys.includes("asym")) return "asym"
   if (keys.includes("groveler")) return "groveler"
   return keys[0]
 }

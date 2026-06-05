@@ -113,6 +113,7 @@ const BOARD_TYPE_LABELS: Record<string, string> = {
   "step-up": "Step-Up / Gun",
   groveler: "Groveler",
   fish: "Fish",
+  asym: "Asym",
   gun: "Step-Up / Gun",
   other: "Other",
 }

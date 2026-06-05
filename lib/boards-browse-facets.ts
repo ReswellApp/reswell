@@ -28,6 +28,7 @@ export const BOARD_STYLE_OPTIONS: readonly FacetOption[] = [
   { value: "shortboard", label: "Shortboard" },
   { value: "groveler", label: "Groveler" },
   { value: "fish", label: "Fish" },
+  { value: "asym", label: "Asym" },
   { value: "hybrid", label: "Hybrid / Mid-Length" },
   { value: "longboard", label: "Longboard" },
   { value: "step-up-gun", label: "Step-Up / Gun" },

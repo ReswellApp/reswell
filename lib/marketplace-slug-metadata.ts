@@ -12,6 +12,7 @@ const BOARD_TYPE_LABELS: Record<string, string> = {
   "step-up": "Step-Up / Gun",
   groveler: "Groveler",
   fish: "Fish",
+  asym: "Asym",
   gun: "Step-Up / Gun",
   other: "Other boards",
 }
@@ -121,6 +122,8 @@ export function boardsBrowseHeroSubtext(type: string | undefined | null): string
       "Wide and forgiving for mushy beach breaks. Makes weak swell feel fun when you just want to surf.",
     fish:
       "Wide, flat, and fast with a split tail. Built for speed and flow in small to medium surf without feeling sluggish.",
+    asym:
+      "Different rails and fin setups for toe-side and heel-side. Built for riders who want an outline tuned to how they actually surf.",
     "step-up-gun":
       "Stepped up outlines for bigger days when you want drive and a steady feeling under your feet.",
     other:

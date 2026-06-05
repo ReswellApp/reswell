@@ -28,6 +28,7 @@ const BOARD_TYPE_FILTERS = [
   "hybrid",
   "groveler",
   "fish",
+  "asym",
   "step-up-gun",
 ]
 
