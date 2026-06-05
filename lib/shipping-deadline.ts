@@ -32,10 +32,12 @@ export function isEligibleForShippingDeadlineAutoCancel(order: {
   status: string
   fulfillment_method: string | null
   delivery_status: string
+  tracking_number?: string | null
 }): boolean {
   return (
     order.status === "confirmed" &&
     order.fulfillment_method === "shipping" &&
-    order.delivery_status === "pending"
+    order.delivery_status === "pending" &&
+    !order.tracking_number?.trim()
   )
 }
