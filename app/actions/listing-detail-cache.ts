@@ -5,10 +5,7 @@ import { z } from "zod"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
 import { revalidateListingPublicDetailCatalog } from "@/lib/cache/revalidate-listing-public-detail"
 import { revalidateNavSuggestedSurfboards } from "@/lib/cache/revalidate-nav-suggested-surfboards"
-import {
-  revalidateSellerProfileAndDirectoryCatalog,
-  revalidateSellersDirectoryCatalog,
-} from "@/lib/cache/revalidate-sellers-directory-catalog"
+import { revalidateSellerProfileAndDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { listingDetailHref } from "@/lib/listing-href"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
@@ -88,7 +85,7 @@ export async function revalidateListingDetailAfterListingMutation(
   revalidateListingDetailPaths(listingId, slug ?? null)
   revalidateBoardsBrowseCatalog()
   revalidateNavSuggestedSurfboards()
-  revalidateSellersDirectoryCatalog()
+  await revalidateSellerProfileAndDirectoryCatalog(supabase, user.id)
 
   try {
     const serviceSupabase = createServiceRoleClient()

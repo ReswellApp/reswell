@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
+import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { patchListingPriceByOwner } from "@/lib/db/listings"
 
@@ -101,6 +102,7 @@ export async function updateSellerListingQuickPrice(
   }
 
   void syncListingToGoogleMerchantBestEffort(supabase, listingId)
+  await revalidateSellersAfterListingChange(supabase, sellerUserId)
 
   return { ok: true, priceUsd: nextUsd }
 }

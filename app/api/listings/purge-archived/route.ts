@@ -6,6 +6,7 @@ import {
   removeListingImageFilesFromStorage,
 } from "@/lib/services/listingStorageCleanup"
 import { NextResponse } from "next/server"
+import { revalidateSellersForUserIds } from "@/lib/cache/revalidate-sellers-directory-catalog"
 
 const ARCHIVE_DAYS = 30
 
@@ -33,7 +34,7 @@ export async function GET(request: Request) {
 
   const { data: toDelete, error: fetchError } = await supabase
     .from("listings")
-    .select("id")
+    .select("id, user_id")
     .not("archived_at", "is", null)
     .lt("archived_at", cutoffIso)
 
@@ -71,6 +72,11 @@ export async function GET(request: Request) {
   } catch {
     /* best-effort storage cleanup */
   }
+
+  const sellerUserIds = (toDelete ?? [])
+    .map((row) => (row as { user_id?: string | null }).user_id)
+    .filter((id): id is string => typeof id === "string" && id.length > 0)
+  await revalidateSellersForUserIds(supabase, sellerUserIds)
 
   return NextResponse.json({ deleted: ids.length, ids })
 }

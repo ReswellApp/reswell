@@ -2,7 +2,10 @@ import { revalidatePath } from "next/cache"
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
-import { revalidateSellersDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
+import {
+  revalidateSellersAfterListingChange,
+  revalidateSellersDirectoryCatalog,
+} from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { setListingSiteVisibility } from "@/lib/services/listingSiteVisibility"
@@ -74,7 +77,7 @@ export async function PATCH(
 
   const { data: listingRow } = await supabaseForEs
     .from("listings")
-    .select("slug")
+    .select("slug, user_id")
     .eq("id", listingId.trim())
     .maybeSingle()
   const slug =
@@ -91,7 +94,15 @@ export async function PATCH(
   revalidatePath("/search")
   revalidatePath("/shop")
   revalidatePath("/")
-  revalidateSellersDirectoryCatalog()
+  const sellerUserId =
+    listingRow && typeof (listingRow as { user_id?: unknown }).user_id === "string"
+      ? String((listingRow as { user_id: string }).user_id).trim()
+      : ""
+  if (sellerUserId) {
+    await revalidateSellersAfterListingChange(supabaseForEs, sellerUserId)
+  } else {
+    revalidateSellersDirectoryCatalog()
+  }
 
   return NextResponse.json({ success: true })
 }

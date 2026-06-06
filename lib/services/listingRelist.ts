@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
-import { revalidateSellersDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
+import { revalidateSellersForUserIds } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { revalidateRecentlySoldSurfaces } from "@/lib/cache/revalidate-home-public-catalog"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
@@ -29,7 +29,7 @@ export async function relistListingsAfterRefund(
     .update({ status: "active", updated_at: nowIso })
     .in("id", uniqueIds)
     .eq("status", "sold")
-    .select("id")
+    .select("id, user_id")
 
   if (error) {
     console.error("[relist] failed to reactivate listings after refund", {
@@ -51,7 +51,10 @@ export async function relistListingsAfterRefund(
   }
 
   revalidateBoardsBrowseCatalog()
-  revalidateSellersDirectoryCatalog()
+  const sellerUserIds = (data ?? [])
+    .map((row) => (row as { user_id?: string | null }).user_id)
+    .filter((id): id is string => typeof id === "string" && id.length > 0)
+  await revalidateSellersForUserIds(supabase, sellerUserIds)
 
   for (const listingId of relistedIds) {
     void syncListingToGoogleMerchantBestEffort(supabase, listingId)

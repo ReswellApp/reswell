@@ -1,5 +1,6 @@
 "use server"
 
+import { revalidateSellerProfileAndDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { createClient } from "@/lib/supabase/server"
 
 export async function followSeller(
@@ -48,6 +49,8 @@ export async function followSeller(
     .eq("id", sellerId)
     .single()
 
+  await revalidateSellerProfileAndDirectoryCatalog(supabase, sellerId)
+
   return { following: true, followerCount: updated?.follower_count ?? 0 }
 }
 
@@ -83,6 +86,8 @@ export async function unfollowSeller(
     .select("follower_count")
     .eq("id", sellerId)
     .single()
+
+  await revalidateSellerProfileAndDirectoryCatalog(supabase, sellerId)
 
   return { following: false, followerCount: updated?.follower_count ?? 0 }
 }

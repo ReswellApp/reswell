@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { revalidateBoardsBrowseCatalog } from '@/lib/cache/revalidate-boards-browse-catalog'
-import { revalidateSellersDirectoryCatalog } from '@/lib/cache/revalidate-sellers-directory-catalog'
+import { revalidateSellersAfterListingChange } from '@/lib/cache/revalidate-sellers-directory-catalog'
 import { revalidateNavSearchSuggest } from '@/lib/cache/revalidate-nav-search-suggest'
 import { syncListingToIndex } from '@/lib/elasticsearch/listings-index'
 import { syncListingToGoogleMerchantBestEffort } from '@/lib/services/googleMerchantSync'
@@ -232,7 +232,7 @@ export async function POST(request: NextRequest) {
   if (section === 'surfboards') {
     revalidateBoardsBrowseCatalog()
   }
-  revalidateSellersDirectoryCatalog()
+  await revalidateSellersAfterListingChange(supabase, user.id)
   revalidateNavSearchSuggest()
 
   return NextResponse.json({ success: true, listing_id: listing.id })

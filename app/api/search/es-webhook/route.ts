@@ -9,6 +9,7 @@ import {
   syncProfileToSellerIndex,
 } from "@/lib/elasticsearch/sellers-index"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
+import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 
 type WebhookRecord = { id?: string; user_id?: string }
 
@@ -68,7 +69,10 @@ export async function POST(request: NextRequest) {
       if (body.type === "DELETE") {
         const id = body.old_record?.id
         if (id) await deleteListingDocument(id)
-        if (ownerId) await syncProfileToSellerIndex(supabase, ownerId)
+        if (ownerId) {
+          await syncProfileToSellerIndex(supabase, ownerId)
+          await revalidateSellersAfterListingChange(supabase, ownerId)
+        }
         return NextResponse.json({ ok: true, action: "deleted" })
       }
 
@@ -78,7 +82,10 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ ok: true, ignored: true })
         }
         await syncListingToIndex(supabase, id)
-        if (ownerId) await syncProfileToSellerIndex(supabase, ownerId)
+        if (ownerId) {
+          await syncProfileToSellerIndex(supabase, ownerId)
+          await revalidateSellersAfterListingChange(supabase, ownerId)
+        }
         return NextResponse.json({ ok: true, action: "synced" })
       }
 

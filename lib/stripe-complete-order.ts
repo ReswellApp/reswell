@@ -26,7 +26,7 @@ import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-m
 import { autoPurchaseReswellShippingLabelForOrder } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
-import { revalidateSellersDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
+import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
 import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnPurchase"
 
@@ -615,7 +615,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   }
 
   revalidateBoardsBrowseCatalog()
-  revalidateSellersDirectoryCatalog()
+  await revalidateSellersAfterListingChange(serviceSupabase, bundleSellerId)
   revalidateMarketplaceSoldFeedCatalog()
 
   void completeAcceptedOfferOnPurchase(

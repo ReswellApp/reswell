@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { revalidateListingPublicDetailCatalog } from "@/lib/cache/revalidate-listing-public-detail"
+import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { IMPERSONATION_COOKIE, parseImpersonationCookie } from "@/lib/impersonation"
 import {
@@ -226,6 +227,8 @@ export async function PUT(request: NextRequest) {
   if (String(listingData?.section ?? "") === "fins") {
     revalidatePath("/fins")
   }
+
+  await revalidateSellersAfterListingChange(service, existingListing.user_id)
 
   return NextResponse.json({ success: true, slug, seller_display_name: sellerDisplayName })
 }

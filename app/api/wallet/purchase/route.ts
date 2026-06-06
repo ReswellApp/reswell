@@ -14,7 +14,7 @@ import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
-import { revalidateSellersDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
+import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
 import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnPurchase"
 
@@ -238,7 +238,7 @@ export async function POST(request: NextRequest) {
   }
 
   revalidateBoardsBrowseCatalog()
-  revalidateSellersDirectoryCatalog()
+  await revalidateSellersAfterListingChange(serviceSupabase, listing.user_id)
   revalidateMarketplaceSoldFeedCatalog()
 
   void completeAcceptedOfferOnPurchase(serviceSupabase, user.id, [listing.id], listing.user_id)
