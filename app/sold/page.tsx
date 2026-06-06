@@ -149,7 +149,7 @@ function FeedPageFallback({ activeTab }: { activeTab: MarketplaceFeedTab }) {
               ? "Loading new listings"
               : activeTab === "shipped"
                 ? "Loading shipped boards"
-                : "Loading recently sold surfboards"
+                : "Loading recently sold listings"
           }
         />
       </section>

@@ -1,7 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { RecentListing } from "@/components/recent-feed-client"
 import type { SoldFeedListing } from "@/app/sold/sold-page-client"
-import { fetchRecentlySoldSurfboardsConfirmedCheckoutOrdering } from "@/lib/db/home-recently-sold-strip"
+import {
+  fetchRecentlySoldListingsConfirmedCheckoutOrdering,
+  MARKETPLACE_SOLD_FEED_SECTIONS,
+} from "@/lib/db/home-recently-sold-strip"
 import {
   fetchRecentlyShippedSurfboardsConfirmedCheckoutOrdering,
   fetchSoldSurfboardListingIdsWithShippingFulfillment,
@@ -104,7 +107,7 @@ export async function loadMarketplaceSoldFeed(
   if (brandSlug) {
     const brand = await getBrandBySlug(supabase, brandSlug)
     if (!brand) {
-      const stats = await getSoldFeedStats()
+      const stats = await getSoldFeedStats([...MARKETPLACE_SOLD_FEED_SECTIONS])
       return {
         soldListings: [],
         soldStats: { count: stats.soldCount, gmvFormatted: formatGmv(stats.gmvTotal) },
@@ -128,7 +131,7 @@ export async function loadMarketplaceSoldFeed(
         .filter((row) => row.section === "surfboards" && shippedIds.has(row.id))
         .slice(0, MARKETPLACE_SOLD_FEED_LIMIT)
     }
-    const stats = await getSoldFeedStats()
+    const stats = await getSoldFeedStats([...MARKETPLACE_SOLD_FEED_SECTIONS])
     return {
       soldListings: filteredRows.map(mapRecentListingToSoldFeed),
       soldStats: { count: stats.soldCount, gmvFormatted: formatGmv(stats.gmvTotal) },
@@ -142,7 +145,11 @@ export async function loadMarketplaceSoldFeed(
         supabase,
         MARKETPLACE_SOLD_FEED_LIMIT,
       )
-    : await fetchRecentlySoldSurfboardsConfirmedCheckoutOrdering(supabase, MARKETPLACE_SOLD_FEED_LIMIT)
+    : await fetchRecentlySoldListingsConfirmedCheckoutOrdering(
+        supabase,
+        MARKETPLACE_SOLD_FEED_LIMIT,
+        MARKETPLACE_SOLD_FEED_SECTIONS,
+      )
 
   const [soldRes, stats] = await Promise.all([
     orderedListingIds.length === 0
@@ -155,7 +162,7 @@ export async function loadMarketplaceSoldFeed(
           .select(SOLD_LISTING_SELECT)
           .in("id", orderedListingIds)
           .eq("status", "sold"),
-    getSoldFeedStats(),
+    getSoldFeedStats([...MARKETPLACE_SOLD_FEED_SECTIONS]),
   ])
 
   if (soldRes.error) {

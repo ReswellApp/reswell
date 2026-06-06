@@ -158,12 +158,14 @@ function SoldFeedGrid({
             ? "When a buyer chooses shipping at checkout, the board will show up here."
             : "Be the first to sell something on Reswell."}
         </p>
-        <Link
-          href="/boards"
-          className="mt-6 text-sm font-medium text-cerulean hover:underline"
-        >
-          Browse surfboards →
-        </Link>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm font-medium text-cerulean">
+          <Link href="/boards" className="hover:underline">
+            Browse surfboards →
+          </Link>
+          <Link href="/fins" className="hover:underline">
+            Browse fins →
+          </Link>
+        </div>
       </div>
     )
   }
