@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { insertOrderSupportRequest } from "@/lib/db/order-support"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
 import { SHIPPING_DEADLINE_DAYS } from "@/lib/shipping-deadline"
 import {
   issueMarketplaceOrderRefund,
@@ -35,9 +36,11 @@ export async function autoCancelUnshippedOrders(
     .select(
       "id, seller_id, buyer_id, listing_id, amount, seller_earnings, status, payment_method, stripe_checkout_session_id, order_num, created_at, tracking_number",
     )
+    .match(REAL_MARKETPLACE_SALES_FILTER)
     .eq("status", "confirmed")
     .eq("fulfillment_method", "shipping")
     .eq("delivery_status", "pending")
+    .is("tracking_number", null)
     .lt("created_at", cutoffIso)
 
   if (error) {
