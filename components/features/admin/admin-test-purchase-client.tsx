@@ -131,7 +131,8 @@ export function AdminTestPurchaseClient() {
             Seed purchase
           </CardTitle>
           <CardDescription>
-            Buyer is always your current admin account. The listing stays active — nothing is marked sold.
+            Buyer is always your current admin account. The listing is marked sold while the test order
+            exists — delete the test order from Admin → Orders to put it back on the market.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -257,7 +258,7 @@ export function AdminTestPurchaseClient() {
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-2">
           <p>Creates a confirmed order row with a fake Stripe reference (`admin_test_…`).</p>
-          <p>Does not charge Stripe, debit wallets, mark the listing sold, or send Klaviyo events.</p>
+          <p>Does not charge Stripe or debit wallets. Marks the listing sold so a real buyer cannot double-purchase.</p>
           <p>
             Hidden from the seller&apos;s Sales and Earnings dashboards — no payout row, no lifetime earned
             credit. The buyer account still sees it under Purchases for QA.
