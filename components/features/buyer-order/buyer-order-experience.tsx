@@ -326,6 +326,7 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
       status: props.status,
       fulfillment_method: props.fulfillmentMethod,
       delivery_status: props.deliveryStatus,
+      tracking_number: props.trackingNumber,
     })
   const shippingDaysLeft = showShippingDeadlineNotice
     ? daysUntilShippingDeadline(props.createdAtIso)
