@@ -48,11 +48,17 @@ export async function addHomeRecentSectionListingService(params: {
   if (row.status !== "active" || row.hidden_from_site === true || row.hidden_from_homepage === true) {
     return { ok: false, error: "Only active homepage-visible listings can be featured here", status: 400 }
   }
-  if (row.section !== "surfboards") {
-    return { ok: false, error: "Only surfboard listings can appear in this row", status: 400 }
-  }
-  if (params.key === "recent_shortboards" && row.board_type !== "shortboard") {
-    return { ok: false, error: "Only shortboard listings can appear in the shortboard row", status: 400 }
+  if (params.key === "recent_fins") {
+    if (row.section !== "fins") {
+      return { ok: false, error: "Only fin listings can appear in the fins row", status: 400 }
+    }
+  } else {
+    if (row.section !== "surfboards") {
+      return { ok: false, error: "Only surfboard listings can appear in this row", status: 400 }
+    }
+    if (params.key === "recent_shortboards" && row.board_type !== "shortboard") {
+      return { ok: false, error: "Only shortboard listings can appear in the shortboard row", status: 400 }
+    }
   }
 
   const result = await insertHomeRecentSectionListing(svc, params.key, params.listingId)

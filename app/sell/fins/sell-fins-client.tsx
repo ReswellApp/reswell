@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { toast } from "sonner"
-import { Heart, Loader2, Upload, X, Zap } from "lucide-react"
+import { Heart, Loader2, RotateCw, Upload, X, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -82,6 +82,11 @@ type PhotoSlot = {
   thumbnailUrl?: string
   phase: PhotoPhase
   progress: number
+  /** True = apply 180° after automatic landscape→portrait step (toggle). */
+  userRotate180?: boolean
+  /** After upload, drop `file` so the next rotation re-downloads from `url`. */
+  dropSourceFileAfterUpload?: boolean
+  prepareSeq?: number
 }
 
 function shippingPriceToFormValue(v: unknown): string {
@@ -187,6 +192,7 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
 
   const photosRef = useRef<PhotoSlot[]>([])
   photosRef.current = photos
+  const latestPhotoPrepareSeqRef = useRef(new Map<string, number>())
 
   useEffect(() => {
     return () => {
@@ -357,13 +363,38 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
     setPhotos((prev) => prev.map((p) => (p.clientId === clientId ? { ...p, ...patch } : p)))
   }, [])
 
+  const photoPrepareSeqInSync = useCallback((clientId: string, prepareSeq: number): boolean => {
+    return (latestPhotoPrepareSeqRef.current.get(clientId) ?? 0) === prepareSeq
+  }, [])
+
   const uploadSlot = useCallback(
     async (slot: PhotoSlot) => {
-      if (!slot.file) return
+      const clientId = slot.clientId
+      const prepareSeq = slot.prepareSeq ?? 0
+      latestPhotoPrepareSeqRef.current.set(clientId, prepareSeq)
+      const src = slot.file
+      if (!src) return
+
       try {
-        const decodable = await ensureBrowserDecodableImageFile(slot.file)
-        const prepared = await prepareListingImagePairFromFile(decodable)
-        updateSlot(slot.clientId, { phase: "uploading", progress: 5 })
+        updateSlot(clientId, { phase: "optimizing", progress: 0 })
+        const decodable = await ensureBrowserDecodableImageFile(src)
+        const prepared = await prepareListingImagePairFromFile(decodable, {
+          rotate180: Boolean(slot.userRotate180),
+        })
+        if (!photoPrepareSeqInSync(clientId, prepareSeq)) return
+
+        setPhotos((prev) =>
+          prev.map((p) => {
+            if (p.clientId !== clientId) return p
+            if (p.previewUrl.startsWith("blob:")) URL.revokeObjectURL(p.previewUrl)
+            return {
+              ...p,
+              previewUrl: URL.createObjectURL(prepared.thumb),
+              phase: "uploading",
+              progress: 5,
+            }
+          }),
+        )
 
         const supabase = supabaseRef.current
         const {
@@ -373,7 +404,8 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
           data: { user },
         } = await supabase.auth.getUser()
         if (!session?.access_token || !user) {
-          updateSlot(slot.clientId, { phase: "error" })
+          if (!photoPrepareSeqInSync(clientId, prepareSeq)) return
+          updateSlot(clientId, { phase: "error" })
           signIn("/sell/fins")
           return
         }
@@ -391,23 +423,30 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
             const pct = total > 0 ? Math.round((loaded / total) * 100) : 50
             if (pct < 100 && pct - lastReportedPct < 10) return
             lastReportedPct = pct
-            updateSlot(slot.clientId, { progress: pct })
+            if (!photoPrepareSeqInSync(clientId, prepareSeq)) return
+            updateSlot(clientId, { progress: pct })
           },
         })
 
-        updateSlot(slot.clientId, {
+        if (!photoPrepareSeqInSync(clientId, prepareSeq)) return
+
+        updateSlot(clientId, {
           phase: "done",
           progress: 100,
           url: fullUrl,
           thumbnailUrl: thumbUrl,
+          ...(slot.dropSourceFileAfterUpload
+            ? { file: undefined, dropSourceFileAfterUpload: undefined }
+            : {}),
         })
       } catch (err) {
+        if (!photoPrepareSeqInSync(clientId, prepareSeq)) return
         console.error("fin photo upload failed", err)
-        updateSlot(slot.clientId, { phase: "error" })
+        updateSlot(clientId, { phase: "error" })
         toast.error(err instanceof Error ? err.message : "Photo upload failed")
       }
     },
-    [signIn, updateSlot],
+    [photoPrepareSeqInSync, signIn, updateSlot],
   )
 
   const addFiles = useCallback(
@@ -452,10 +491,99 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
           ids.includes(target.imageId!) ? ids : [...ids, target.imageId!],
         )
       }
-      if (target?.file) URL.revokeObjectURL(target.previewUrl)
+      if (target?.previewUrl.startsWith("blob:")) URL.revokeObjectURL(target.previewUrl)
       return prev.filter((p) => p.clientId !== clientId)
     })
   }, [])
+
+  const rotatePhoto180 = useCallback(
+    (clientId: string) => {
+      const live = photosRef.current.find((p) => p.clientId === clientId)
+      if (!live) return
+      if (live.phase === "error") return
+      if (live.phase === "optimizing" || live.phase === "uploading") return
+
+      if (live.file) {
+        let nextSlot: PhotoSlot | null = null
+        setPhotos((prev) =>
+          prev.map((p) => {
+            if (p.clientId !== clientId) return p
+            const src = p.file
+            if (!src) return p
+            if (p.previewUrl.startsWith("blob:")) URL.revokeObjectURL(p.previewUrl)
+            const nextSeq = (p.prepareSeq ?? 0) + 1
+            latestPhotoPrepareSeqRef.current.set(clientId, nextSeq)
+            nextSlot = {
+              ...p,
+              userRotate180: !p.userRotate180,
+              prepareSeq: nextSeq,
+              phase: "optimizing",
+              progress: 0,
+              url: undefined,
+              thumbnailUrl: undefined,
+              previewUrl: URL.createObjectURL(src),
+            }
+            return nextSlot
+          }),
+        )
+        if (nextSlot) void uploadSlot(nextSlot)
+        return
+      }
+
+      const fullUrl = (live.url ?? "").trim()
+      if (!fullUrl || live.phase !== "done") return
+
+      const snapshot = { ...live }
+      setPhotos((prev) =>
+        prev.map((p) =>
+          p.clientId === clientId ? { ...p, phase: "optimizing", progress: 0 } : p,
+        ),
+      )
+
+      void (async () => {
+        try {
+          const res = await fetch(proxiedListingImageSrc(fullUrl))
+          if (!res.ok) {
+            throw new Error("Could not load this photo to rotate it.")
+          }
+          const blob = await res.blob()
+          const file = new File(
+            [blob],
+            "listing-photo.jpg",
+            { type: blob.type && blob.type.startsWith("image/") ? blob.type : "image/jpeg" },
+          )
+
+          let nextSlot: PhotoSlot | null = null
+          setPhotos((prev) =>
+            prev.map((p) => {
+              if (p.clientId !== clientId) return p
+              if (p.previewUrl.startsWith("blob:")) URL.revokeObjectURL(p.previewUrl)
+              const nextSeq = (p.prepareSeq ?? 0) + 1
+              latestPhotoPrepareSeqRef.current.set(clientId, nextSeq)
+              nextSlot = {
+                ...p,
+                userRotate180: !p.userRotate180,
+                prepareSeq: nextSeq,
+                phase: "optimizing",
+                progress: 0,
+                url: undefined,
+                thumbnailUrl: undefined,
+                previewUrl: URL.createObjectURL(file),
+                file,
+                dropSourceFileAfterUpload: true,
+              }
+              return nextSlot
+            }),
+          )
+          if (nextSlot) void uploadSlot(nextSlot)
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : "Could not rotate photo. Try again.")
+          setPhotos((prev) => prev.map((p) => (p.clientId === clientId ? snapshot : p)))
+        }
+      })()
+    },
+    [uploadSlot],
+  )
 
   const makePrimary = useCallback((clientId: string) => {
     setPhotos((prev) => {
@@ -807,7 +935,15 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
                     </p>
                     <Label className="sr-only">Listing photos</Label>
                     <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
-                      {photos.map((photo, index) => (
+                      {photos.map((photo, index) => {
+                        const canRotate =
+                          photo.phase !== "error" &&
+                          photo.phase !== "optimizing" &&
+                          photo.phase !== "uploading" &&
+                          (Boolean(photo.file) ||
+                            (photo.phase === "done" && Boolean((photo.url ?? "").trim())))
+
+                        return (
                         <div
                           key={photo.clientId}
                           className="relative aspect-square overflow-hidden rounded-lg border border-transparent bg-muted"
@@ -832,35 +968,54 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
                               )}
                             </div>
                           ) : null}
-                          {index === 0 ? (
-                            <span className="absolute left-1.5 top-1.5 rounded bg-foreground px-1.5 py-0.5 text-[10px] font-medium text-background">
+                          {index === 0 && photo.phase === "done" ? (
+                            <span className="absolute bottom-1.5 left-1.5 rounded bg-foreground px-1.5 py-0.5 text-[10px] font-medium text-background">
                               Main
                             </span>
                           ) : null}
-                          <div className="absolute right-1 top-1 flex gap-1">
-                            {index !== 0 && photo.phase === "done" ? (
+                          <div
+                            className={cn(
+                              "absolute inset-x-1 top-1 flex gap-1",
+                              canRotate ? "justify-between" : "justify-end",
+                            )}
+                          >
+                            {canRotate ? (
                               <button
                                 type="button"
-                                onClick={() => makePrimary(photo.clientId)}
+                                onClick={() => rotatePhoto180(photo.clientId)}
                                 className="rounded-full bg-background/90 p-1 text-foreground shadow-sm hover:bg-background"
-                                title="Make main photo"
-                                aria-label="Make main photo"
+                                title="Rotate 180°"
+                                aria-label={`Rotate photo ${index + 1} 180 degrees`}
                               >
-                                ★
+                                <RotateCw className="h-3.5 w-3.5" aria-hidden />
                               </button>
                             ) : null}
-                            <button
-                              type="button"
-                              onClick={() => removePhoto(photo.clientId)}
-                              className="rounded-full bg-background/90 p-1 text-foreground shadow-sm hover:bg-background"
-                              title="Remove photo"
-                              aria-label="Remove photo"
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </button>
+                            <div className="flex gap-1">
+                              {index !== 0 && photo.phase === "done" ? (
+                                <button
+                                  type="button"
+                                  onClick={() => makePrimary(photo.clientId)}
+                                  className="rounded-full bg-background/90 p-1 text-foreground shadow-sm hover:bg-background"
+                                  title="Make main photo"
+                                  aria-label="Make main photo"
+                                >
+                                  ★
+                                </button>
+                              ) : null}
+                              <button
+                                type="button"
+                                onClick={() => removePhoto(photo.clientId)}
+                                className="rounded-full bg-background/90 p-1 text-foreground shadow-sm hover:bg-background"
+                                title="Remove photo"
+                                aria-label="Remove photo"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      ))}
+                        )
+                      })}
                       {photos.length < FIN_LISTING_MAX_PHOTOS ? (
                         <div className="relative aspect-square overflow-hidden rounded-lg border-2 border-dashed border-border transition-colors hover:border-primary/50">
                           <label

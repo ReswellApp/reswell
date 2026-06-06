@@ -1,12 +1,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { listingHeroSlideSrc, type ListingImageForCard } from "@/lib/listing-image-display"
 
-export type HomeRecentSectionKey = "recent_surfboards" | "recent_shortboards"
+export type HomeRecentSectionKey = "recent_surfboards" | "recent_shortboards" | "recent_fins"
+
+const CURATION_TABLE_BY_KEY: Record<HomeRecentSectionKey, string> = {
+  recent_surfboards: "home_recent_surfboards_listings",
+  recent_shortboards: "home_recent_shortboards_listings",
+  recent_fins: "home_recent_fins_listings",
+}
 
 function curationTableName(key: HomeRecentSectionKey): string {
-  return key === "recent_surfboards"
-    ? "home_recent_surfboards_listings"
-    : "home_recent_shortboards_listings"
+  return CURATION_TABLE_BY_KEY[key]
 }
 
 type JoinedListing = {
@@ -222,6 +226,7 @@ export async function searchListingsForHomeRecentSectionPicker(
   limit = 20,
 ): Promise<HomeRecentSectionSearchHit[]> {
   const q = query.trim()
+  const section = key === "recent_fins" ? "fins" : "surfboards"
   let builder = supabase
     .from("listings")
     .select(
@@ -231,7 +236,7 @@ export async function searchListingsForHomeRecentSectionPicker(
     )
     .eq("status", "active")
     .eq("hidden_from_site", false)
-    .eq("section", "surfboards")
+    .eq("section", section)
     .order("created_at", { ascending: false })
     .limit(Math.min(Math.max(limit, 1), 50))
 

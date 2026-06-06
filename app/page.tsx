@@ -57,6 +57,7 @@ export default async function HomePage() {
     homeTrendingBrandRows,
     featuredShops,
     featuredBoards,
+    featuredFins,
     featuredShortboards,
     featuredNew,
     howItWorksBuyerHighlightImages,
@@ -241,6 +242,43 @@ export default async function HomePage() {
             </Link>
           </div>
         </section>
+
+        {featuredFins && featuredFins.length > 0 && (
+          <FadeInSection>
+            <section className="py-16">
+              <div className="container mx-auto">
+                <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <h2 className="text-2xl font-bold">Recently added fins</h2>
+                    <HomeRecentSectionListingCurator
+                      sectionPath="recent-fins"
+                      isAdmin={isHomeHeroAdmin}
+                      buttonLabel="Curate Recently added fins"
+                      dialogTitle="Recently added fins"
+                      dialogDescription="When picks exist here, only these fin listings appear on the homepage, in order. Clearing the list restores automatic sorting by newest listings. Homepage-only hiding helps keep stray listings off the homepage without removing site-wide listings."
+                    />
+                  </div>
+                  <Button variant="outline" asChild>
+                    <Link href="/fins">
+                      Find More
+                      <ArrowRight className="ml-1 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+                <HomeListingScrollRow uniformCardHeights>
+                  {featuredFins.map((fin) => (
+                    <HomePeerListingScrollTile
+                      key={fin.id}
+                      listing={fin}
+                      userId={user?.id ?? null}
+                      isFavorited={favoritedIds.includes(fin.id)}
+                    />
+                  ))}
+                </HomeListingScrollRow>
+              </div>
+            </section>
+          </FadeInSection>
+        )}
 
         {featuredShortboards && featuredShortboards.length > 0 && (
           <FadeInSection>

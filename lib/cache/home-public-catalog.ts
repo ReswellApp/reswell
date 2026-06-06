@@ -8,6 +8,7 @@ import { listingHeroSlideSrc, type ListingImageForCard } from "@/lib/listing-ima
 import type { HomePeerScrollListing } from "@/components/features/home/home-peer-listing-scroll-tile"
 import { listHomeTrendingBrandsForPublicService } from "@/lib/services/homeTrendingBrands"
 import {
+  loadHomeFeaturedFinRows,
   loadHomeFeaturedShortboardRows,
   loadHomeFeaturedSurfboardRows,
 } from "@/lib/services/homeFeaturedPeerSections"
@@ -74,6 +75,7 @@ export type HomeStableCatalog = {
   homeTrendingBrandRows: HomeTrendingBrandRow[]
   featuredShops: HomeFeaturedShop[] | null
   featuredBoards: HomePeerScrollListing[] | null
+  featuredFins: HomePeerScrollListing[] | null
   featuredShortboards: HomePeerScrollListing[] | null
   featuredNew: HomeFeaturedNewItem[]
   howItWorksBuyerHighlightImages: {
@@ -130,6 +132,7 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
     homeTrendingBrandRows,
     featuredShopsRes,
     surfboardFeaturedRows,
+    finFeaturedRows,
     shortboardFeaturedRows,
     newGearRes,
     howItWorksBuyerImageUrls,
@@ -145,6 +148,7 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
       .order("created_at", { ascending: false })
       .limit(4),
     loadHomeFeaturedSurfboardRows(supabase),
+    loadHomeFeaturedFinRows(supabase),
     loadHomeFeaturedShortboardRows(supabase),
     supabase
       .from("listings")
@@ -172,9 +176,11 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
         .limit(24)
 
   const rawFeaturedBoards = surfboardFeaturedRows as HomePeerScrollListing[]
+  const rawFeaturedFins = finFeaturedRows as HomePeerScrollListing[]
   const rawFeaturedShortboards = shortboardFeaturedRows as HomePeerScrollListing[]
 
   const featuredBoards = rawFeaturedBoards.length > 0 ? rawFeaturedBoards : null
+  const featuredFins = rawFeaturedFins.length > 0 ? rawFeaturedFins : null
   const featuredShortboards = rawFeaturedShortboards.length > 0 ? rawFeaturedShortboards : null
 
   const featuredNew =
@@ -200,6 +206,7 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
 
   const featuredListingIds = [
     ...(featuredBoards ?? []).map((b) => b.id),
+    ...(featuredFins ?? []).map((b) => b.id),
     ...(featuredShortboards ?? []).map((b) => b.id),
     ...featuredNew.map(({ listing }) => listing.id),
   ]
@@ -209,6 +216,7 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
     homeTrendingBrandRows,
     featuredShops: (featuredShopsRes.data as HomeFeaturedShop[] | null) ?? null,
     featuredBoards,
+    featuredFins,
     featuredShortboards,
     featuredNew,
     howItWorksBuyerHighlightImages: {
@@ -235,7 +243,7 @@ async function loadHomeRecentlySoldCatalogUncached(): Promise<HomeRecentlySoldCa
 
 export const getCachedHomeStableCatalog = unstable_cache(
   loadHomeStableCatalogUncached,
-  ["home-stable-catalog-v1"],
+  ["home-stable-catalog-v2"],
   {
     revalidate: HOME_STABLE_CATALOG_REVALIDATE_SECONDS,
     tags: [HOME_STABLE_CATALOG_CACHE_TAG],

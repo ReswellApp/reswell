@@ -1,13 +1,26 @@
 import { z } from "zod"
 
-export const adminHomeRecentSectionParamSchema = z.enum(["recent-surfboards", "recent-shortboards"])
+export const adminHomeRecentSectionParamSchema = z.enum([
+  "recent-surfboards",
+  "recent-shortboards",
+  "recent-fins",
+])
 
 export type AdminHomeRecentSectionParam = z.infer<typeof adminHomeRecentSectionParamSchema>
 
+const HOME_RECENT_SECTION_KEY_BY_PARAM: Record<
+  AdminHomeRecentSectionParam,
+  "recent_surfboards" | "recent_shortboards" | "recent_fins"
+> = {
+  "recent-surfboards": "recent_surfboards",
+  "recent-shortboards": "recent_shortboards",
+  "recent-fins": "recent_fins",
+}
+
 export function homeRecentSectionKeyFromParam(
   param: AdminHomeRecentSectionParam,
-): "recent_surfboards" | "recent_shortboards" {
-  return param === "recent-surfboards" ? "recent_surfboards" : "recent_shortboards"
+): "recent_surfboards" | "recent_shortboards" | "recent_fins" {
+  return HOME_RECENT_SECTION_KEY_BY_PARAM[param]
 }
 
 export const adminHomeRecentSectionListingBodySchema = z.object({

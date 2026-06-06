@@ -22,7 +22,7 @@ import { createClient } from "@/lib/supabase/server"
 import { SURFBOARD_LISTING_SELECT } from "@/lib/listing-detail-cache"
 import { findListingByParam } from "@/lib/listing-query"
 import { ShareButton } from "@/components/share-button"
-import { EndListingButton } from "@/components/end-listing-button"
+import { ListingOwnerManageActions } from "@/components/features/listings/listing-owner-manage-actions"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ImageGallery } from "@/components/image-gallery"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
@@ -620,19 +620,13 @@ export async function ApparelListingDetailPage({
               </div>
             )}
 
-            {isOwnListing && !isSold && (
-              <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">
-                <div className="flex min-w-0 flex-col items-start gap-2">
-                  <p className="text-[14px] text-muted-foreground">Your listing</p>
-                  <div className="flex min-w-0 flex-wrap gap-2">
-                    <EndListingButton
-                      listingId={apparel.id}
-                      triggerClassName="rounded-full border-border/60 shadow-none"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
+            {isOwnListing && !isSold ? (
+              <ListingOwnerManageActions
+                listingId={apparel.id}
+                section="apparel"
+                currentPriceUsd={listPriceNum}
+              />
+            ) : null}
           </div>
 
           <div className="col-span-full mt-8 min-w-0 max-w-full border-t border-neutral-200/90 pt-6 dark:border-neutral-700/70 max-lg:order-3 lg:col-span-1 lg:[grid-area:about] lg:order-none lg:mt-0 lg:border-t lg:border-neutral-200/90 lg:pt-5 dark:lg:border-neutral-700/70 xl:pt-6">

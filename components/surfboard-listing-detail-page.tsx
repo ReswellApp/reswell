@@ -23,7 +23,7 @@ import {
   SURFBOARD_LISTING_SELECT,
 } from "@/lib/listing-detail-cache"
 import { ShareButton } from "@/components/share-button"
-import { EndListingButton } from "@/components/end-listing-button"
+import { ListingOwnerManageActions } from "@/components/features/listings/listing-owner-manage-actions"
 import { Hourglass, Flag, ShoppingCart, Truck } from "lucide-react"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ImageGallery } from "@/components/image-gallery"
@@ -64,7 +64,6 @@ import {
 } from "@/lib/marketplace-slug-metadata"
 import { formatDistanceToNow } from "date-fns"
 import { ListingPdpRecentSections } from "@/components/features/listings/listing-pdp-recent-sections"
-import { QuickEditListingPriceDialog } from "@/components/features/listings/quick-edit-listing-price-dialog"
 import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
 import { getListingFavoriteCount } from "@/lib/db/listing-favorite-count"
 import { HOME_PEER_LISTING_WITH_PROFILE_SELECT } from "@/lib/db/home-peer-listing-feed"
@@ -738,29 +737,13 @@ export async function SurfboardListingDetailPage({
                 </div>
               )}
 
-              {isOwnListing && !isSold && (
-                <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">
-                  <div className="flex min-w-0 flex-col items-start gap-2">
-                    <p className="text-[14px] text-muted-foreground">Your listing</p>
-                    <div className="flex min-w-0 flex-wrap gap-2">
-                      <Button asChild className="rounded-full">
-                        <Link prefetch={false} href={`/sell?edit=${board.id}`}>
-                          Edit listing
-                        </Link>
-                      </Button>
-                      <QuickEditListingPriceDialog
-                        listingId={board.id}
-                        currentPriceUsd={listPriceNum}
-                        triggerClassName="rounded-full border-border/60 shadow-none"
-                      />
-                      <EndListingButton
-                        listingId={board.id}
-                        triggerClassName="rounded-full border-border/60 shadow-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
+              {isOwnListing && !isSold ? (
+                <ListingOwnerManageActions
+                  listingId={board.id}
+                  section="surfboards"
+                  currentPriceUsd={listPriceNum}
+                />
+              ) : null}
             </div>
 
             <div className="col-span-full mt-8 min-w-0 max-w-full border-t border-neutral-200/90 pt-6 dark:border-neutral-700/70 max-lg:order-3 lg:col-span-1 lg:[grid-area:about] lg:order-none lg:mt-0 lg:border-t lg:border-neutral-200/90 lg:pt-5 dark:lg:border-neutral-700/70 xl:pt-6">

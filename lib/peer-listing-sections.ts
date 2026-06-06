@@ -29,5 +29,27 @@ export function isPeerListingSection(
   return section != null && PEER_LISTING_SECTION_SET.has(section)
 }
 
+/** Dedicated /sell sub-flow routes for peer sections (surfboards use `/sell`). */
+const PEER_SELL_ROUTE_BY_SECTION: Partial<Record<PeerListingSection, string>> = {
+  fins: "/sell/fins",
+  wetsuits: "/sell/wetsuits",
+  boardbags: "/sell/boardbags",
+  surfpacks: "/sell/surfpacks",
+  leashes: "/sell/leashes",
+  apparel: "/sell/apparel",
+  accessories: "/sell/accessories",
+}
+
+/** Owner edit URL for a peer listing on the listing detail page. */
+export function peerListingEditHref(
+  section: string | null | undefined,
+  listingId: string,
+): string {
+  if (isPeerListingSection(section) && PEER_SELL_ROUTE_BY_SECTION[section]) {
+    return `${PEER_SELL_ROUTE_BY_SECTION[section]}?edit=${listingId}`
+  }
+  return `/sell?edit=${listingId}`
+}
+
 /** Mutable copy for Supabase `.in("section", …)` filters. */
 export const PEER_LISTING_SECTIONS_FILTER: string[] = [...PEER_LISTING_SECTIONS]
