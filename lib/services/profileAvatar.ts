@@ -6,6 +6,7 @@ import {
   clearProfileAvatarUrlRow,
   removeAvatarObjectFromStorage,
 } from "@/lib/db/profileAvatar"
+import { revalidateSellerProfileAndDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { processProfileAvatarToWebp } from "@/lib/services/profileAvatarImage"
 
 export async function uploadProcessedProfileAvatar(params: {
@@ -24,6 +25,7 @@ export async function uploadProcessedProfileAvatar(params: {
   const { publicUrl } = await upsertAvatarWebp(supabase, userId, webp)
   const avatarUrl = `${publicUrl}?t=${Date.now()}`
   await updateProfileAvatarUrlRow(supabase, userId, avatarUrl)
+  await revalidateSellerProfileAndDirectoryCatalog(supabase, userId)
 
   return { avatarUrl }
 }
@@ -35,4 +37,5 @@ export async function removeProfileAvatar(params: {
   const { supabase, userId } = params
   await clearProfileAvatarUrlRow(supabase, userId)
   await removeAvatarObjectFromStorage(supabase, userId)
+  await revalidateSellerProfileAndDirectoryCatalog(supabase, userId)
 }

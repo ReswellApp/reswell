@@ -124,40 +124,53 @@ export function SellerDirectoryCard({
     <article className={cn(homePeerListingGridCardClass, className)}>
       <SellerDirectoryMosaic slots={mosaicSlots} href={href} />
 
-      <div className="flex items-start gap-2.5 px-2.5 pb-2 pt-2.5">
-        <Link
-          href={href}
-          className="flex min-w-0 flex-1 items-start gap-3 outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <Avatar className="h-10 w-10 shrink-0">
-            <AvatarImage src={avatarSrc} alt="" />
-            <AvatarFallback className="bg-muted text-sm font-semibold text-foreground">
-              {label.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 pt-0.5">
-            <h2 className="truncate text-[15px] font-bold leading-tight text-foreground">{label}</h2>
+      <div className="px-2.5 pb-2 pt-2.5">
+        <div className="flex items-start gap-3">
+          <Link
+            href={href}
+            className="shrink-0 outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={avatarSrc} alt="" />
+              <AvatarFallback className="bg-muted text-sm font-semibold text-foreground">
+                {label.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          </Link>
+
+          <div className="min-w-0 flex-1 pt-0.5">
+            <div className="flex min-w-0 items-start gap-2">
+              <Link
+                href={href}
+                className="min-w-0 flex-1 outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <h2 className="truncate text-[15px] font-bold leading-tight text-foreground">{label}</h2>
+              </Link>
+
+              <SellerDirectoryTileFollow
+                sellerId={shop.id}
+                sellerSlug={shop.seller_slug}
+                sellerName={label}
+                initialFollowing={initialFollowing}
+                isLoggedIn={isLoggedIn}
+                isOwnProfile={isOwnProfile}
+              />
+            </div>
+
             {reviewCount > 0 ? (
               <div
-                className="mt-1 flex items-center gap-1"
+                className="mt-1 flex min-w-0 items-center gap-1"
                 role="img"
                 aria-label={`${avgRating.toFixed(1)} out of 5 stars from ${reviewCount} reviews`}
               >
-                <SellerRatingStarRow value={avgRating} size="sm" />
-                <span className="text-sm tabular-nums text-muted-foreground">({reviewCount})</span>
+                <SellerRatingStarRow value={avgRating} size="sm" className="shrink-0" />
+                <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
+                  ({reviewCount})
+                </span>
               </div>
             ) : null}
           </div>
-        </Link>
-
-        <SellerDirectoryTileFollow
-          sellerId={shop.id}
-          sellerSlug={shop.seller_slug}
-          sellerName={label}
-          initialFollowing={initialFollowing}
-          isLoggedIn={isLoggedIn}
-          isOwnProfile={isOwnProfile}
-        />
+        </div>
       </div>
 
       <div className="space-y-1.5 px-2.5 pb-2.5 pt-0">

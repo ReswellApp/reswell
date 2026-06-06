@@ -171,7 +171,7 @@ export default function AdminUserDetailPage() {
     if (!error) {
       setProfile({ ...profile, shop_verified: next })
       toast.success(next ? 'Verified seller badge granted' : 'Verified seller badge removed')
-      void revalidateListingDetailAfterProfileUpdate()
+      void revalidateListingDetailAfterProfileUpdate({ profileId: id })
     } else {
       toast.error('Failed to update profile')
     }

@@ -1,5 +1,4 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { revalidatePath } from "next/cache"
 
 import {
   upsertShopBannerWebp,
@@ -7,25 +6,8 @@ import {
   clearProfileShopBannerUrlRow,
   removeShopBannerObjectFromStorage,
 } from "@/lib/db/profileBanner"
-import { revalidateSellersDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
+import { revalidateSellerProfileAndDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { processProfileBannerToWebp } from "@/lib/services/profileBannerImage"
-
-async function revalidateSellerProfilePaths(
-  supabase: SupabaseClient,
-  userId: string,
-): Promise<void> {
-  const { data } = await supabase
-    .from("profiles")
-    .select("seller_slug")
-    .eq("id", userId)
-    .maybeSingle()
-
-  const slug = typeof data?.seller_slug === "string" ? data.seller_slug.trim() : ""
-  if (slug) {
-    revalidatePath(`/sellers/${slug}`, "page")
-  }
-  revalidateSellersDirectoryCatalog()
-}
 
 export async function uploadProcessedProfileBanner(params: {
   supabase: SupabaseClient
@@ -43,7 +25,7 @@ export async function uploadProcessedProfileBanner(params: {
   const { publicUrl } = await upsertShopBannerWebp(supabase, userId, webp)
   const bannerUrl = `${publicUrl}?t=${Date.now()}`
   await updateProfileShopBannerUrlRow(supabase, userId, bannerUrl)
-  await revalidateSellerProfilePaths(supabase, userId)
+  await revalidateSellerProfileAndDirectoryCatalog(supabase, userId)
 
   return { bannerUrl }
 }
@@ -55,5 +37,5 @@ export async function removeProfileBanner(params: {
   const { supabase, userId } = params
   await clearProfileShopBannerUrlRow(supabase, userId)
   await removeShopBannerObjectFromStorage(supabase, userId)
-  await revalidateSellerProfilePaths(supabase, userId)
+  await revalidateSellerProfileAndDirectoryCatalog(supabase, userId)
 }

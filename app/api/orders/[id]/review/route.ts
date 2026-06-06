@@ -1,3 +1,4 @@
+import { revalidateSellerProfileAndDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import {
@@ -100,6 +101,10 @@ export async function POST(
       rating: parsed.data.rating,
       comment: parsed.data.comment ?? null,
     })
+  }
+
+  if (isBuyer && order.seller_id) {
+    await revalidateSellerProfileAndDirectoryCatalog(supabase, order.seller_id)
   }
 
   return NextResponse.json({ success: true, id: data.id, created_at: data.created_at })

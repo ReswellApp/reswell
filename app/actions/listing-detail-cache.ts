@@ -5,7 +5,10 @@ import { z } from "zod"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
 import { revalidateListingPublicDetailCatalog } from "@/lib/cache/revalidate-listing-public-detail"
 import { revalidateNavSuggestedSurfboards } from "@/lib/cache/revalidate-nav-suggested-surfboards"
-import { revalidateSellersDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
+import {
+  revalidateSellerProfileAndDirectoryCatalog,
+  revalidateSellersDirectoryCatalog,
+} from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { listingDetailHref } from "@/lib/listing-href"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
@@ -35,11 +38,20 @@ function revalidateListingDetailPaths(listingId: string, slug?: string | null) {
   revalidateListingPublicDetailCatalog()
 }
 
+const profileUpdateRevalidateSchema = z.object({
+  profileId: z.string().uuid().optional(),
+})
+
 /**
- * Call after a user or admin updates profile fields that appear on `/l/[slug]`
- * (e.g. display name, avatar, location, shop verification).
+ * Call after a user or admin updates profile fields shown on seller surfaces
+ * (display name, avatar, location, shop verification, banner, etc.).
  */
-export async function revalidateListingDetailAfterProfileUpdate() {
+export async function revalidateListingDetailAfterProfileUpdate(rawInput?: unknown) {
+  const parsed = profileUpdateRevalidateSchema.safeParse(rawInput ?? {})
+  if (!parsed.success) {
+    return { ok: false as const }
+  }
+
   const supabase = await createClient()
   const {
     data: { user },
@@ -47,6 +59,9 @@ export async function revalidateListingDetailAfterProfileUpdate() {
   if (!user) {
     return { ok: false as const }
   }
+
+  const profileId = parsed.data.profileId ?? user.id
+  await revalidateSellerProfileAndDirectoryCatalog(supabase, profileId)
   return { ok: true as const }
 }
 
