@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
@@ -206,6 +207,8 @@ export async function sendSellerReviewRequestForOrder(
     .from("conversations")
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conversation.id)
+
+  revalidateMessagesInboxForParticipants(row.buyer_id, row.seller_id)
 
   const { data: senderProfile } = await supabase
     .from("profiles")

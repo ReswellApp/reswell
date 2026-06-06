@@ -50,7 +50,8 @@ import {
   DndContext,
   closestCenter,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   type DragEndEvent,
   type DraggableAttributes,
   type DraggableSyntheticListeners,
@@ -491,7 +492,7 @@ function isOsFileDragEvent(e: React.DragEvent): boolean {
  */
 const sellListingThumbLoadedSrcByClientId = new Map<string, string>()
 
-function SellListingPhotoSortableTile({
+const SellListingPhotoSortableTile = React.memo(function SellListingPhotoSortableTile({
   image,
   index,
   onRemove,
@@ -500,9 +501,10 @@ function SellListingPhotoSortableTile({
 }: {
   image: ListingPhotoSlot
   index: number
-  onRemove: () => void
-  onRetry: () => void
-  onRotate180: () => void
+  /** Stable, clientId-keyed handlers so this memoized tile is not invalidated on every parent render. */
+  onRemove: (clientId: string) => void
+  onRetry: (clientId: string) => void
+  onRotate180: (clientId: string) => void
 }) {
   const {
     attributes,
@@ -521,9 +523,9 @@ function SellListingPhotoSortableTile({
     <SellListingPhotoTile
       image={image}
       index={index}
-      onRemove={onRemove}
-      onRetry={onRetry}
-      onRotate180={onRotate180}
+      onRemove={() => onRemove(image.clientId)}
+      onRetry={() => onRetry(image.clientId)}
+      onRotate180={() => onRotate180(image.clientId)}
       sortable={{
         setNodeRef,
         style: {
@@ -536,7 +538,7 @@ function SellListingPhotoSortableTile({
       }}
     />
   )
-}
+})
 
 function SellListingPhotoTile({
   image,
@@ -598,7 +600,9 @@ function SellListingPhotoTile({
       ref={sortable.setNodeRef}
       style={sortable.style}
       className={cn(
-        "relative aspect-square rounded-lg overflow-hidden bg-muted flex flex-col border border-transparent touch-none",
+        "relative aspect-square rounded-lg overflow-hidden bg-muted flex flex-col border border-transparent",
+        // Allow normal touch scrolling over tiles; only suppress it once a drag is actually active.
+        sortable.isDragging ? "touch-none" : "touch-pan-y",
         sortable.isDragging && "z-[60] opacity-70 shadow-lg ring-2 ring-primary/40 scale-[1.02]",
         !isFailure && !skeletonVisible && "cursor-grab active:cursor-grabbing",
       )}
@@ -1742,6 +1746,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         ),
       )
 
+      // No per-tick progress state: the tile only shows a skeleton until upload completes, so
+      // streaming XHR progress here just re-rendered the whole (very large) form on every chunk.
       const { fullUrl, thumbUrl } = await uploadListingImagePairToSupabase({
         supabaseUrl: supabaseProjectUrl,
         accessToken: session.access_token,
@@ -1749,20 +1755,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         userId: user.id,
         clientId,
         prepared,
-        onProgressFull: (loaded, total) => {
-          if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
-          const pct = total ? Math.round((100 * loaded) / total) : 0
-          setImages((prev) =>
-            prev.map((s) => (s.clientId === clientId ? { ...s, progressFull: pct } : s)),
-          )
-        },
-        onProgressThumb: (loaded, total) => {
-          if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
-          const pct = total ? Math.round((100 * loaded) / total) : 0
-          setImages((prev) =>
-            prev.map((s) => (s.clientId === clientId ? { ...s, progressThumb: pct } : s)),
-          )
-        },
       })
 
       if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
@@ -2031,9 +2023,45 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     })
   }
 
+  /**
+   * Stable, clientId-keyed tile handlers. The ref always points at the latest closures so the
+   * `useCallback([])` wrappers below never change identity — letting the memoized photo tiles skip
+   * re-rendering when unrelated form state changes (e.g. typing in another field).
+   */
+  const photoTileActionsRef = useRef({
+    remove: (_clientId: string) => {},
+    retry: (_clientId: string) => {},
+    rotate: (_clientId: string) => {},
+  })
+  photoTileActionsRef.current.remove = (clientId: string) => {
+    const idx = imagesRef.current.findIndex((s) => s.clientId === clientId)
+    if (idx >= 0) removeImage(idx)
+  }
+  photoTileActionsRef.current.retry = retryListingPhotoUpload
+  photoTileActionsRef.current.rotate = rotateListingPhoto180
+
+  const handlePhotoTileRemove = useCallback(
+    (clientId: string) => photoTileActionsRef.current.remove(clientId),
+    [],
+  )
+  const handlePhotoTileRetry = useCallback(
+    (clientId: string) => photoTileActionsRef.current.retry(clientId),
+    [],
+  )
+  const handlePhotoTileRotate = useCallback(
+    (clientId: string) => photoTileActionsRef.current.rotate(clientId),
+    [],
+  )
+
+  // Mouse drags after an 8px move; touch reorder needs a short press-and-hold so a normal swipe
+  // scrolls the page (a plain PointerSensor + `touch-action: none` made the photo grid unscrollable
+  // on mobile). The hold tolerance lets the gesture cancel into a scroll if the finger moves first.
   const photoDragSensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: { distance: 8 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 8 },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
@@ -2999,9 +3027,9 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                         key={image.clientId}
                         image={image}
                         index={index}
-                        onRemove={() => removeImage(index)}
-                        onRetry={() => retryListingPhotoUpload(image.clientId)}
-                        onRotate180={() => rotateListingPhoto180(image.clientId)}
+                        onRemove={handlePhotoTileRemove}
+                        onRetry={handlePhotoTileRetry}
+                        onRotate180={handlePhotoTileRotate}
                       />
                     ))}
                     </SortableContext>

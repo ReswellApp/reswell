@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { revalidateMessagesInboxForConversationId } from "@/lib/cache/revalidate-messages-inbox"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import type { ContactMessageSupportStatus } from "@/lib/db/contactMessages"
 
@@ -44,6 +45,9 @@ export async function insertMemberMessageInConversation(
     console.error("insertMemberMessageInConversation", error)
     return false
   }
+
+  void revalidateMessagesInboxForConversationId(args.conversationId)
+
   return true
 }
 

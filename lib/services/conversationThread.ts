@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
 import { ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 
 export type AppendConversationMessageOptions = {
@@ -82,6 +83,8 @@ export async function appendConversationMessageWithClient(
     .from("conversations")
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conversationId)
+
+  revalidateMessagesInboxForParticipants(buyerId, sellerId)
 
   return { ok: true, conversationId, inserted: true }
 }

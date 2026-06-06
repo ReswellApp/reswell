@@ -1,3 +1,4 @@
+import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
@@ -125,6 +126,8 @@ export async function sendMarketplaceMediaMessage(input: {
     .from("conversations")
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conversationId)
+
+  revalidateMessagesInboxForParticipants(conv.buyer_id as string, conv.seller_id as string)
 
   const receiverId = senderId === conv.buyer_id ? conv.seller_id : conv.buyer_id
   const { data: senderProfile } = await service

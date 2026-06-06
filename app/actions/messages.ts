@@ -1,6 +1,7 @@
 "use server"
 
 import { z } from "zod"
+import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
@@ -285,6 +286,8 @@ export async function sendMarketplaceListingMessage(input: unknown) {
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conversation.id)
 
+  revalidateMessagesInboxForParticipants(ctx.buyerId, ctx.sellerId)
+
   const { data: senderProfile } = await supabase
     .from("profiles")
     .select("display_name, shop_name, is_shop")
@@ -387,6 +390,8 @@ export async function sendListingMessage(input: {
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conversation.id)
 
+  revalidateMessagesInboxForParticipants(user.id, seller_id)
+
   const { data: senderProfile } = await supabase
     .from("profiles")
     .select("display_name, shop_name, is_shop")
@@ -474,6 +479,8 @@ export async function sendConversationReply(input: {
     .from("conversations")
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conv.id)
+
+  revalidateMessagesInboxForParticipants(conv.buyer_id, conv.seller_id)
 
   const { data: senderProfile } = await supabase
     .from("profiles")
@@ -624,6 +631,8 @@ export async function sendConversationLocationReply(input: unknown) {
     .from("conversations")
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conv.id)
+
+  revalidateMessagesInboxForParticipants(conv.buyer_id, conv.seller_id)
 
   const { data: senderProfile } = await supabase
     .from("profiles")

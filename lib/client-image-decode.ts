@@ -1,6 +1,7 @@
 "use client"
 
 import { browserCanDecodeImage } from "@/lib/listing-image-pipeline"
+import { runImageCpuTask } from "@/lib/client-image-cpu-queue"
 
 /** Vercel serverless request bodies are capped at ~4.5MB; stay under for FormData overhead. */
 export const SERVER_IMAGE_CONVERT_MAX_BYTES = 4 * 1024 * 1024
@@ -151,7 +152,8 @@ export async function ensureBrowserDecodableImageFile(file: File): Promise<File>
   const heicish = await fileLooksLikeHeic(file)
   if (heicish) {
     try {
-      return await convertHeicClientSide(file)
+      // HEIC decode is heavy main-thread wasm; serialize so parallel photo adds don't freeze scroll.
+      return await runImageCpuTask(() => convertHeicClientSide(file))
     } catch (err) {
       if (file.size <= SERVER_IMAGE_CONVERT_MAX_BYTES) {
         try {

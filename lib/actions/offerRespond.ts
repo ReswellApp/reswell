@@ -25,11 +25,7 @@ export async function respondToOfferAction(raw: unknown) {
     return { error: result.error as string }
   }
 
-  revalidatePath("/messages")
   revalidatePath("/dashboard/offers")
-  if (result.conversationId) {
-    revalidatePath(`/messages/${result.conversationId}`)
-  }
 
   return { success: true as const }
 }

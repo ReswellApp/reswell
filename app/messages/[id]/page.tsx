@@ -118,6 +118,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const [listingThreads, setListingThreads] = useState<ListingThreadOption[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
+  const [threadLoading, setThreadLoading] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [listingBannerImageReady, setListingBannerImageReady] = useState(false)
   const messagesScrollRef = useRef<HTMLDivElement>(null)
@@ -186,6 +187,11 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
   useEffect(() => {
     stickToBottomRef.current = true
+    setThreadLoading(true)
+    setConversation(null)
+    setMessages([])
+    setOffersById({})
+    setCurrentUserId(null)
     setThreadListingsById({})
     setListingThreads([])
     setListingBannerImageReady(false)
@@ -283,7 +289,6 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     const { data: { user } } = await supabase.auth.getUser()
     if (!isActive()) return
     if (!user) return
-    setCurrentUserId(user.id)
 
     const { data: convData } = await supabase
       .from('conversations')
@@ -297,12 +302,13 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       .single()
     if (!isActive()) return
 
-    if (convData) {
-      const nextConv = convData as Conversation
-      setConversation(nextConv)
+    const nextConv = convData ? (convData as Conversation) : null
+    let nextListingThreads: ListingThreadOption[] = []
+    const nextThreadListingsPatch: Record<string, NonNullable<Conversation['listing']>> = {}
+
+    if (nextConv) {
       if (nextConv.listing) {
-        const L = nextConv.listing
-        setThreadListingsById((prev) => ({ ...prev, [L.id]: L }))
+        nextThreadListingsPatch[nextConv.listing.id] = nextConv.listing
       }
       const otherUserId =
         nextConv.buyer_id === user.id ? nextConv.seller_id : nextConv.buyer_id
@@ -327,13 +333,12 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         .order('last_message_at', { ascending: false })
       if (!isActive()) return
 
-      setListingThreads(
-        (siblingRows ?? [])
-          .filter((row) => {
-            const messages = (row as { messages?: unknown[] }).messages
-            return Array.isArray(messages) && messages.length > 0
-          })
-          .map((row) => {
+      nextListingThreads = (siblingRows ?? [])
+        .filter((row) => {
+          const messages = (row as { messages?: unknown[] }).messages
+          return Array.isArray(messages) && messages.length > 0
+        })
+        .map((row) => {
           const listing = Array.isArray(row.listing) ? row.listing[0] : row.listing
           return {
             conversationId: row.id as string,
@@ -344,8 +349,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
               null,
             lastMessageAt: row.last_message_at as string,
           }
-        }),
-      )
+        })
     }
 
     const { data: msgData } = await supabase
@@ -356,10 +360,10 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     if (!isActive()) return
 
     const rows = (msgData ?? []) as Message[]
-    setMessages((prev) => mergeServerMessagesPreservingLocalPhoneBlocks(prev, rows))
 
     const offerIds = [...new Set(rows.map((m) => m.offer_id).filter(Boolean))] as string[]
     let offerRows: OfferRowLite[] = []
+    const nextOffersById: Record<string, OfferRowLite> = {}
     if (offerIds.length > 0) {
       const { data: orows } = await supabase
         .from('offers')
@@ -367,14 +371,8 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         .in('id', offerIds)
       if (!isActive()) return
       offerRows = (orows ?? []) as OfferRowLite[]
-      if (offerRows.length) {
-        setOffersById((prev) => {
-          const next = { ...prev }
-          for (const o of offerRows) {
-            next[o.id as string] = o
-          }
-          return next
-        })
+      for (const o of offerRows) {
+        nextOffersById[o.id as string] = o
       }
     }
 
@@ -391,11 +389,22 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         .select('id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct')
         .in('id', offerListingIds)
       if (!isActive()) return
-      const next: Record<string, NonNullable<Conversation['listing']>> = {}
       for (const row of (listingRows ?? []) as NonNullable<Conversation['listing']>[]) {
-        next[row.id] = row
+        nextThreadListingsPatch[row.id] = row
       }
-      setThreadListingsById((prev) => ({ ...prev, ...next }))
+    }
+
+    if (!isActive()) return
+
+    setCurrentUserId(user.id)
+    setConversation(nextConv)
+    setListingThreads(nextListingThreads)
+    if (Object.keys(nextThreadListingsPatch).length > 0) {
+      setThreadListingsById((prev) => ({ ...prev, ...nextThreadListingsPatch }))
+    }
+    setMessages((prev) => mergeServerMessagesPreservingLocalPhoneBlocks(prev, rows))
+    if (Object.keys(nextOffersById).length > 0) {
+      setOffersById((prev) => ({ ...prev, ...nextOffersById }))
     }
 
     await supabase
@@ -416,6 +425,10 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     } catch (err) {
       if (!isAbortError(err)) {
         console.error("[messages] loadThread failed:", err)
+      }
+    } finally {
+      if (isActive()) {
+        setThreadLoading(false)
       }
     }
   }, [id, supabase])
@@ -663,8 +676,24 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     return format(date, 'MMM d, h:mm a')
   }
 
-  if (!conversation) {
+  if (threadLoading) {
     return <ConversationThreadSkeleton />
+  }
+
+  if (!conversation) {
+    return (
+      <main className="flex flex-1 flex-col bg-background">
+        <div className="container mx-auto flex max-w-2xl flex-1 flex-col items-center justify-center px-4 py-16 text-center sm:px-5 md:max-w-4xl lg:max-w-5xl">
+          <p className="text-[17px] font-medium text-foreground">Conversation not found</p>
+          <p className="mt-2 max-w-sm text-[15px] text-muted-foreground">
+            This thread may have been removed or you may not have access.
+          </p>
+          <Button asChild className="mt-6 rounded-full" variant="outline">
+            <Link href="/messages">Back to messages</Link>
+          </Button>
+        </div>
+      </main>
+    )
   }
 
   const otherUser = conversation.buyer_id === currentUserId ? conversation.seller : conversation.buyer
@@ -830,7 +859,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
             className="h-full min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y"
             aria-label="Message thread"
           >
-            {messages.length === 0 ? (
+            {!threadLoading && messages.length === 0 ? (
               <div className="flex h-full min-h-[12rem] flex-col items-center justify-center px-6 py-8 text-center">
                 <p className="text-[17px] font-medium text-foreground/90">No messages yet</p>
                 <p className="mt-1.5 max-w-[18rem] text-[15px] leading-relaxed text-muted-foreground">

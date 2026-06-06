@@ -378,6 +378,8 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
           return
         }
 
+        // Coalesce progress to ~10% steps so each upload chunk doesn't re-render the whole form.
+        let lastReportedPct = 5
         const { fullUrl, thumbUrl } = await uploadListingImagePairToSupabase({
           supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
           accessToken: session.access_token,
@@ -385,10 +387,12 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
           userId: user.id,
           clientId: slot.clientId,
           prepared,
-          onProgressFull: (loaded, total) =>
-            updateSlot(slot.clientId, {
-              progress: total > 0 ? Math.round((loaded / total) * 100) : 50,
-            }),
+          onProgressFull: (loaded, total) => {
+            const pct = total > 0 ? Math.round((loaded / total) * 100) : 50
+            if (pct < 100 && pct - lastReportedPct < 10) return
+            lastReportedPct = pct
+            updateSlot(slot.clientId, { progress: pct })
+          },
         })
 
         updateSlot(slot.clientId, {

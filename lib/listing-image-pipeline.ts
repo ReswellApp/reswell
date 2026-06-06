@@ -2,6 +2,9 @@
  * Client-side listing photo pipeline: decode → resize (long edge cap) → WebP (or JPEG fallback).
  */
 
+import { runImageCpuTask } from "@/lib/client-image-cpu-queue"
+import { prepareListingImagePairInWorker } from "@/lib/listing-image-worker"
+
 export const LISTING_IMAGE_MAX_ORIGINAL_BYTES = 20 * 1024 * 1024
 export const LISTING_FULL_MAX_LONG_EDGE = 2000
 /** Browse grids (retina / 2–5 columns) need ~600px+ long edge so thumbs are not upscaled and look soft. */
@@ -162,14 +165,15 @@ async function renderResizedToBlob(
   return canvasToImageBlob(canvas, useWebp, quality)
 }
 
-/**
- * Single decode; produces full (≤2000px long edge) + thumb (≤640px) in one pipeline step.
- */
-export async function prepareListingImagePairFromFile(
+/** Synchronous main-thread fallback when the OffscreenCanvas worker is unavailable. */
+async function prepareListingImagePairOnMainThread(
   file: File,
   options?: PrepareListingImagePairOptions,
 ): Promise<PreparedListingImagePair> {
-  let bitmap = await createImageBitmap(file)
+  // `from-image` bakes the EXIF orientation tag into the pixels so camera/iPhone
+  // photos (which store rotation metadata rather than rotated pixels) are not decoded
+  // upside down or sideways. Default decoding (`none`) ignores EXIF in some browsers.
+  let bitmap = await createImageBitmap(file, { imageOrientation: "from-image" })
   try {
     bitmap = await rotateLandscapeToPortraitIfNeeded(bitmap)
     if (options?.rotate180) {
@@ -191,4 +195,23 @@ export async function prepareListingImagePairFromFile(
   } finally {
     bitmap.close()
   }
+}
+
+/**
+ * Single decode; produces full (≤2000px long edge) + thumb (≤640px) in one pipeline step.
+ *
+ * Runs in an OffscreenCanvas worker when supported so heavy canvas work never blocks scrolling on
+ * mobile; otherwise falls back to a main-thread path serialized through the shared CPU queue.
+ */
+export async function prepareListingImagePairFromFile(
+  file: File,
+  options?: PrepareListingImagePairOptions,
+): Promise<PreparedListingImagePair> {
+  try {
+    const viaWorker = await prepareListingImagePairInWorker(file, options)
+    if (viaWorker) return viaWorker
+  } catch {
+    /* Worker failed mid-flight — fall back to the main thread below. */
+  }
+  return runImageCpuTask(() => prepareListingImagePairOnMainThread(file, options))
 }

@@ -48,7 +48,6 @@ export async function POST(
   }
 
   revalidatePath("/dashboard/offers")
-  revalidatePath("/messages")
 
   return NextResponse.json(
     {
