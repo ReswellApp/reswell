@@ -14,7 +14,15 @@ import { cn } from "@/lib/utils"
 
 type ActiveChip = { id: string; label: string; onRemove: () => void }
 
-export function FinsBrowseClient({ children }: { children: ReactNode }) {
+type FacetCountsMap = Record<string, Record<string, number>>
+
+export function FinsBrowseClient({
+  children,
+  counts = {},
+}: {
+  children: ReactNode
+  counts?: FacetCountsMap
+}) {
   const [isPending, startTransition] = useTransition()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [desktopFiltersOpen, setDesktopFiltersOpen] = useState(false)
@@ -91,7 +99,7 @@ export function FinsBrowseClient({ children }: { children: ReactNode }) {
                 </button>
               ) : null}
             </div>
-            <FinsBrowseFacetControls state={state} />
+            <FinsBrowseFacetControls state={state} counts={counts} />
           </div>
         </aside>
 
@@ -149,7 +157,7 @@ export function FinsBrowseClient({ children }: { children: ReactNode }) {
 
           <ScrollArea className="min-h-0 flex-1">
             <div className="px-4 pb-4">
-              <FinsBrowseFacetControls state={state} />
+              <FinsBrowseFacetControls state={state} counts={counts} />
             </div>
           </ScrollArea>
 

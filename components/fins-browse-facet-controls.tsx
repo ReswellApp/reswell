@@ -36,7 +36,7 @@ type CheckRowProps = {
 }
 
 function CheckRow({ checked, count, label, onToggle, id }: CheckRowProps) {
-  const disabled = !checked && (count ?? 0) === 0
+  const disabled = count != null && !checked && count === 0
   return (
     <label
       htmlFor={id}

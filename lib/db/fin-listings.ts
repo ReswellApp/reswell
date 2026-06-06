@@ -12,6 +12,10 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { FINS_SECTION } from "@/lib/fin-listing-config"
 import type { FinsBrowseFacetSelections } from "@/lib/fins-browse-facets"
 import { normalizedFinsBrowseSort } from "@/lib/fins-browse-metadata"
+import {
+  finSetupFilterPatterns,
+  finSystemFilterPatterns,
+} from "@/lib/fin-listing-effective-facets"
 import { listingDetailHref } from "@/lib/listing-href"
 
 export const FINS_BROWSE_PAGE_SIZE = 40
@@ -53,6 +57,10 @@ export type FinBrowseListingRow = {
   listing_images: FinListingImage[] | null
 }
 
+function escapePostgrestIlikeFragment(fragment: string): string {
+  return fragment.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+}
+
 const FIN_BROWSE_LISTING_SELECT = `
   id,
   slug,
@@ -73,21 +81,10 @@ const FIN_BROWSE_LISTING_SELECT = `
   listing_images ( id, url, thumbnail_url, is_primary, sort_order )
 `
 
-/**
- * OR-group patterns matching an exact slug inside a comma-joined column.
- * Values are wrapped in double quotes because they contain commas (the or()
- * delimiter), with boundary patterns to avoid overlapping-slug false positives.
- */
-function commaListMembershipOrGroups(column: string, slugs: string[]): string | null {
+function facetOrGroups(patternsForSlug: (slug: string) => string[], slugs: string[]): string | null {
   const groups: string[] = []
   for (const slug of slugs) {
-    if (!/^[a-z0-9_]+$/.test(slug)) continue
-    groups.push(
-      `${column}.eq.${slug}`,
-      `${column}.ilike."${slug},%"`,
-      `${column}.ilike."%,${slug}"`,
-      `${column}.ilike."%,${slug},%"`,
-    )
+    groups.push(...patternsForSlug(slug))
   }
   return groups.length ? groups.join(",") : null
 }
@@ -124,11 +121,12 @@ export async function fetchFinsBrowsePage(
     q = q.in("condition", input.facets.conditions)
   }
   if (input.facets.finSetups.length > 0) {
-    const finOr = commaListMembershipOrGroups("fins_setup", input.facets.finSetups)
+    const finOr = facetOrGroups(finSetupFilterPatterns, input.facets.finSetups)
     if (finOr) q = q.or(finOr)
   }
   if (input.facets.finSystems.length > 0) {
-    q = q.in("fin_system", input.facets.finSystems)
+    const finSystemOr = facetOrGroups(finSystemFilterPatterns, input.facets.finSystems)
+    if (finSystemOr) q = q.or(finSystemOr)
   }
   if (input.facets.sizes.length > 0) {
     q = q.in("fin_size", input.facets.sizes)
@@ -141,7 +139,10 @@ export async function fetchFinsBrowsePage(
 
   const query = input.query?.trim()
   if (query) {
-    q = q.ilike("title", `%${query}%`)
+    const pat = `"%${escapePostgrestIlikeFragment(query)}%"`
+    q = q.or(
+      `title.ilike.${pat},description.ilike.${pat},brand.ilike.${pat},model.ilike.${pat},fins_setup.ilike.${pat},fin_system.ilike.${pat}`,
+    )
   }
 
   if (input.minPrice != null && Number.isFinite(input.minPrice)) {

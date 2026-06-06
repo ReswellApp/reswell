@@ -23,6 +23,10 @@ import {
   finsBrowseRootLabel,
   type FinsBrowseSearchParams,
 } from "@/lib/fins-browse-metadata"
+import {
+  finsFacetCountsByParamKey,
+  getFinsBrowseFacetCounts,
+} from "@/lib/services/finsBrowseFacetCounts"
 
 async function FinListings({
   searchParams: searchParamsPromise,
@@ -113,6 +117,21 @@ export async function FinsBrowsePage(props: {
   const searchParams = await props.searchParams
   const filterCrumb = finsBrowseFilterHeadline(searchParams)
 
+  const supabase = await createClient()
+  const browseFacetSelections = finFacetSelectionsFromParams(searchParams)
+  const facetCounts = finsFacetCountsByParamKey(
+    await getFinsBrowseFacetCounts(
+      supabase,
+      {
+        query: searchParams.q,
+        brand: searchParams.brand,
+        minPrice: searchParams.minPrice ? Number(searchParams.minPrice) : undefined,
+        maxPrice: searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined,
+      },
+      browseFacetSelections,
+    ),
+  )
+
   return (
     <main className="flex-1">
       <section className="bg-offwhite pt-6 pb-4 sm:pt-8 sm:pb-5">
@@ -161,7 +180,7 @@ export async function FinsBrowsePage(props: {
 
       <section className="min-w-0 pt-2 pb-4">
         <div className="container mx-auto min-w-0">
-          <FinsBrowseClient>
+          <FinsBrowseClient counts={facetCounts}>
             <Suspense fallback={<ListingTileGridSkeleton count={10} ariaLabel="Loading fins" />}>
               <FinListings searchParams={props.searchParams} />
             </Suspense>
