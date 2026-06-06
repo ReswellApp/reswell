@@ -32,6 +32,12 @@ export function getCachedMarketplaceSoldFeed(
   brandSlug: string | null,
   shippedOnly: boolean,
 ): Promise<MarketplaceSoldFeedPayload> {
+  // Dev: skip `unstable_cache` so RPC/migration fixes show up without waiting out the 1h TTL
+  // or restarting after an earlier failed fetch cached an empty listing grid.
+  if (process.env.NODE_ENV === "development") {
+    const supabase = createAnonSupabaseClient()
+    return loadMarketplaceSoldFeed(supabase, brandSlug?.trim() || null, { shippedOnly })
+  }
   return getCachedSoldFeedPayload(brandSlug?.trim() || BRAND_NONE, shippedOnly)
 }
 
