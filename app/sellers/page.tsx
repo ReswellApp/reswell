@@ -10,11 +10,11 @@ import { SellersDirectoryGrid } from "@/components/sellers/sellers-directory-gri
 import {
   filterSellersDirectoryCatalog,
   getCachedSellersDirectoryCatalog,
-  SELLERS_DIRECTORY_REVALIDATE_SECONDS,
 } from "@/lib/cache/sellers-directory-catalog"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
-export const revalidate = SELLERS_DIRECTORY_REVALIDATE_SECONDS
+/** Must be a static literal for Next segment config (see SELLERS_DIRECTORY_REVALIDATE_SECONDS). */
+export const revalidate = 604800
 
 export async function generateMetadata() {
   return resolvePageMetadata("sellers")
