@@ -12,17 +12,18 @@ import { ConversationThreadSkeleton } from '@/components/features/messages/messa
 import { Skeleton } from '@/components/ui/skeleton'
 import { ConversationPartyProfile } from '@/components/features/messages/conversation-party-profile'
 import { ConversationThreadHeaderChip } from '@/components/features/messages/conversation-thread-header-chip'
-import {
-  loadOtherPartyProfile,
-  type OtherPartyProfileSummary,
-} from '@/lib/messages/profile-reviews-loader'
+import { type OtherPartyProfileSummary } from '@/lib/messages/profile-reviews-loader'
 import { format, isToday, isYesterday } from 'date-fns'
 import { toast } from 'sonner'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingDetailPath } from '@/lib/listing-query'
 import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
-import { sendConversationReply, sendConversationLocationReply } from '@/app/actions/messages'
+import {
+  sendConversationReply,
+  sendConversationLocationReply,
+  loadConversationThread,
+} from '@/app/actions/messages'
 import { MESSAGE_BLOCKED_PHONE_ERROR } from '@/lib/messages/policy-errors'
 import { OfferMessageCard } from '@/components/features/messages/offer-message-card'
 import {
@@ -286,142 +287,47 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
   const loadThread = useCallback(async (isActive: () => boolean = () => true) => {
     try {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!isActive()) return
-    if (!user) return
+      const result = await loadConversationThread(id)
+      if (!isActive()) return
 
-    const { data: convData } = await supabase
-      .from('conversations')
-      .select(`
-          *,
-          listing:listings(id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct),
-          buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url, shop_verified),
-          seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url, shop_verified)
-        `)
-      .eq('id', id)
-      .single()
-    if (!isActive()) return
+      if ('error' in result) {
+        // Unauthorized or not a participant — leave conversation null so the
+        // "Conversation not found" view renders (handled below by !conversation).
+        return
+      }
 
-    const nextConv = convData ? (convData as Conversation) : null
-    let nextListingThreads: ListingThreadOption[] = []
-    const nextThreadListingsPatch: Record<string, NonNullable<Conversation['listing']>> = {}
+      const nextConv = (result.conversation as Conversation | null) ?? null
+      const nextThreadListingsPatch: Record<string, NonNullable<Conversation['listing']>> = {}
 
-    if (nextConv) {
-      if (nextConv.listing) {
+      if (nextConv?.listing) {
         nextThreadListingsPatch[nextConv.listing.id] = nextConv.listing
       }
-      const otherUserId =
-        nextConv.buyer_id === user.id ? nextConv.seller_id : nextConv.buyer_id
-      void loadOtherPartyProfile(supabase, otherUserId)
-        .then((snapshot) => {
-          if (!isActive()) return
-          setOtherPartyProfile(snapshot)
-        })
-        .catch(() => {})
-
-      const { data: siblingRows } = await supabase
-        .from('conversations')
-        .select(`
-          id,
-          listing_id,
-          last_message_at,
-          listing:listings(id, title, listing_images(url, thumbnail_url, is_primary)),
-          messages(id)
-        `)
-        .eq('buyer_id', nextConv.buyer_id)
-        .eq('seller_id', nextConv.seller_id)
-        .order('last_message_at', { ascending: false })
-      if (!isActive()) return
-
-      nextListingThreads = (siblingRows ?? [])
-        .filter((row) => {
-          const messages = (row as { messages?: unknown[] }).messages
-          return Array.isArray(messages) && messages.length > 0
-        })
-        .map((row) => {
-          const listing = Array.isArray(row.listing) ? row.listing[0] : row.listing
-          return {
-            conversationId: row.id as string,
-            listingId: (row.listing_id as string | null) ?? null,
-            listingTitle: (listing as { title?: string | null } | null)?.title ?? null,
-            listingImages:
-              (listing as { listing_images?: ListingImageForCard[] | null } | null)?.listing_images ??
-              null,
-            lastMessageAt: row.last_message_at as string,
-          }
-        })
-    }
-
-    const { data: msgData } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('conversation_id', id)
-      .order('created_at', { ascending: true })
-    if (!isActive()) return
-
-    const rows = (msgData ?? []) as Message[]
-
-    const offerIds = [...new Set(rows.map((m) => m.offer_id).filter(Boolean))] as string[]
-    let offerRows: OfferRowLite[] = []
-    const nextOffersById: Record<string, OfferRowLite> = {}
-    if (offerIds.length > 0) {
-      const { data: orows } = await supabase
-        .from('offers')
-        .select('id, status, current_amount, initial_amount, buyer_id, seller_id, listing_id, seller_initiated, expires_at, offer_timeline, fulfillment, shipping_amount, line_items')
-        .in('id', offerIds)
-      if (!isActive()) return
-      offerRows = (orows ?? []) as OfferRowLite[]
-      for (const o of offerRows) {
-        nextOffersById[o.id as string] = o
-      }
-    }
-
-    const offerListingIds = [
-      ...new Set(
-        offerRows
-          .map((o) => o.listing_id)
-          .filter((lid): lid is string => typeof lid === 'string' && lid.length > 0),
-      ),
-    ]
-    if (offerListingIds.length > 0) {
-      const { data: listingRows } = await supabase
-        .from('listings')
-        .select('id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct')
-        .in('id', offerListingIds)
-      if (!isActive()) return
-      for (const row of (listingRows ?? []) as NonNullable<Conversation['listing']>[]) {
+      for (const row of result.threadListings as NonNullable<Conversation['listing']>[]) {
         nextThreadListingsPatch[row.id] = row
       }
-    }
 
-    if (!isActive()) return
+      const nextOffersById: Record<string, OfferRowLite> = {}
+      for (const o of result.offers as unknown as OfferRowLite[]) {
+        nextOffersById[o.id as string] = o
+      }
 
-    setCurrentUserId(user.id)
-    setConversation(nextConv)
-    setListingThreads(nextListingThreads)
-    if (Object.keys(nextThreadListingsPatch).length > 0) {
-      setThreadListingsById((prev) => ({ ...prev, ...nextThreadListingsPatch }))
-    }
-    setMessages((prev) => mergeServerMessagesPreservingLocalPhoneBlocks(prev, rows))
-    if (Object.keys(nextOffersById).length > 0) {
-      setOffersById((prev) => ({ ...prev, ...nextOffersById }))
-    }
+      const rows = result.messages as unknown as Message[]
 
-    await supabase
-      .from('messages')
-      .update({ is_read: true })
-      .eq('conversation_id', id)
-      .neq('sender_id', user.id)
+      setOtherPartyProfile(result.otherPartyProfile)
+      setCurrentUserId(result.currentUserId)
+      setConversation(nextConv)
+      setListingThreads(result.listingThreads as ListingThreadOption[])
+      if (Object.keys(nextThreadListingsPatch).length > 0) {
+        setThreadListingsById((prev) => ({ ...prev, ...nextThreadListingsPatch }))
+      }
+      setMessages((prev) => mergeServerMessagesPreservingLocalPhoneBlocks(prev, rows))
+      if (Object.keys(nextOffersById).length > 0) {
+        setOffersById((prev) => ({ ...prev, ...nextOffersById }))
+      }
 
-    await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('user_id', user.id)
-      .eq('is_read', false)
-
-    if (isActive() && typeof window !== 'undefined') {
-      window.setTimeout(() => window.dispatchEvent(new CustomEvent('unreadCountRefresh')), 150)
-    }
+      if (isActive() && typeof window !== 'undefined') {
+        window.setTimeout(() => window.dispatchEvent(new CustomEvent('unreadCountRefresh')), 150)
+      }
     } catch (err) {
       if (!isAbortError(err)) {
         console.error("[messages] loadThread failed:", err)
@@ -431,7 +337,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         setThreadLoading(false)
       }
     }
-  }, [id, supabase])
+  }, [id])
 
   useEffect(() => {
     let active = true

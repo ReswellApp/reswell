@@ -17,6 +17,10 @@ import {
 } from "@/lib/validations/message-location-metadata"
 import { marketplaceMessageAttachmentInputSchema } from "@/lib/validations/marketplace-message-attachment"
 import { sendMarketplaceMediaMessage } from "@/lib/services/sendMarketplaceMediaMessage"
+import {
+  loadOtherPartyProfile,
+  type OtherPartyProfileSummary,
+} from "@/lib/messages/profile-reviews-loader"
 
 const sendConversationLocationReplySchema = z.object({
   conversation_id: z.string().uuid(),
@@ -700,4 +704,176 @@ export async function sendSellerReviewRequest(input: unknown) {
   }
 
   return { success: true as const, conversation_id: result.conversationId }
+}
+
+const CONVERSATION_THREAD_SELECT = `
+  *,
+  listing:listings(id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct),
+  buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url, shop_verified),
+  seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url, shop_verified)
+`
+
+const CONVERSATION_THREAD_OFFER_SELECT =
+  "id, status, current_amount, initial_amount, buyer_id, seller_id, listing_id, seller_initiated, expires_at, offer_timeline, fulfillment, shipping_amount, line_items"
+
+const CONVERSATION_THREAD_LISTING_SELECT =
+  "id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct"
+
+export type ConversationThreadListingOption = {
+  conversationId: string
+  listingId: string | null
+  listingTitle: string | null
+  listingImages: unknown
+  lastMessageAt: string
+}
+
+export type ConversationThreadData = {
+  currentUserId: string
+  conversation: Record<string, unknown> | null
+  listingThreads: ConversationThreadListingOption[]
+  messages: Record<string, unknown>[]
+  offers: Record<string, unknown>[]
+  threadListings: Record<string, unknown>[]
+  otherPartyProfile: OtherPartyProfileSummary | null
+}
+
+/**
+ * Server-side thread loader: resolves the signed-in user from the request session
+ * (reliable, unlike a client-side `getUser()`), verifies participation, then reads
+ * the conversation, messages, offers, and sibling listing threads via the service
+ * role. Also marks the thread read. Returns everything the client needs to render
+ * without depending on a browser Supabase session.
+ */
+export async function loadConversationThread(
+  conversationId: string,
+): Promise<{ error: string } | ConversationThreadData> {
+  if (typeof conversationId !== "string" || !z.string().uuid().safeParse(conversationId).success) {
+    return { error: "Invalid request" }
+  }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: "Unauthorized" }
+  }
+
+  const service = createServiceRoleClient()
+
+  const { data: convData, error: convErr } = await service
+    .from("conversations")
+    .select(CONVERSATION_THREAD_SELECT)
+    .eq("id", conversationId)
+    .maybeSingle()
+
+  if (convErr || !convData) {
+    return { error: "Conversation not found" }
+  }
+
+  const conv = convData as Record<string, unknown>
+  const buyerId = conv.buyer_id as string
+  const sellerId = conv.seller_id as string
+
+  if (user.id !== buyerId && user.id !== sellerId) {
+    return { error: "Conversation not found" }
+  }
+
+  const otherUserId = user.id === buyerId ? sellerId : buyerId
+
+  const [{ data: siblingRows }, { data: msgData }, otherPartyProfile] = await Promise.all([
+    service
+      .from("conversations")
+      .select(
+        `id, listing_id, last_message_at, listing:listings(id, title, listing_images(url, thumbnail_url, is_primary)), messages(id)`,
+      )
+      .eq("buyer_id", buyerId)
+      .eq("seller_id", sellerId)
+      .order("last_message_at", { ascending: false }),
+    service
+      .from("messages")
+      .select("*")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true }),
+    loadOtherPartyProfile(service, otherUserId).catch(() => null),
+  ])
+
+  const listingThreads: ConversationThreadListingOption[] = (siblingRows ?? [])
+    .filter((row) => {
+      const messages = (row as { messages?: unknown[] }).messages
+      return Array.isArray(messages) && messages.length > 0
+    })
+    .map((row) => {
+      const listing = Array.isArray(row.listing) ? row.listing[0] : row.listing
+      return {
+        conversationId: row.id as string,
+        listingId: (row.listing_id as string | null) ?? null,
+        listingTitle: (listing as { title?: string | null } | null)?.title ?? null,
+        listingImages:
+          (listing as { listing_images?: unknown } | null)?.listing_images ?? null,
+        lastMessageAt: row.last_message_at as string,
+      }
+    })
+
+  const messages = (msgData ?? []) as Record<string, unknown>[]
+
+  const offerIds = [
+    ...new Set(messages.map((m) => m.offer_id).filter(Boolean)),
+  ] as string[]
+
+  let offers: Record<string, unknown>[] = []
+  if (offerIds.length > 0) {
+    const { data: orows } = await service
+      .from("offers")
+      .select(CONVERSATION_THREAD_OFFER_SELECT)
+      .in("id", offerIds)
+    offers = (orows ?? []) as Record<string, unknown>[]
+  }
+
+  const threadListingIds = [
+    ...new Set(
+      offers
+        .map((o) => o.listing_id)
+        .filter((lid): lid is string => typeof lid === "string" && lid.length > 0),
+    ),
+  ]
+  if (conv.listing_id && typeof conv.listing_id === "string") {
+    if (!threadListingIds.includes(conv.listing_id)) {
+      threadListingIds.push(conv.listing_id)
+    }
+  }
+
+  let threadListings: Record<string, unknown>[] = []
+  if (threadListingIds.length > 0) {
+    const { data: listingRows } = await service
+      .from("listings")
+      .select(CONVERSATION_THREAD_LISTING_SELECT)
+      .in("id", threadListingIds)
+    threadListings = (listingRows ?? []) as Record<string, unknown>[]
+  }
+
+  await service
+    .from("messages")
+    .update({ is_read: true })
+    .eq("conversation_id", conversationId)
+    .neq("sender_id", user.id)
+
+  await service
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("user_id", user.id)
+    .eq("is_read", false)
+
+  revalidateMessagesInboxForParticipants(buyerId, sellerId)
+
+  return {
+    currentUserId: user.id,
+    conversation: conv,
+    listingThreads,
+    messages,
+    offers,
+    threadListings,
+    otherPartyProfile,
+  }
 }
