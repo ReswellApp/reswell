@@ -4,7 +4,7 @@ import { SELLERS_DIRECTORY_CACHE_TAG } from "@/lib/cache/sellers-directory-catal
 
 /** Bust cached `/sellers` directory tiles and all public seller profile pages. */
 export function revalidateSellersDirectoryCatalog(): void {
-  revalidateTag(SELLERS_DIRECTORY_CACHE_TAG)
+  revalidateTag(SELLERS_DIRECTORY_CACHE_TAG, 'max')
   revalidatePath("/sellers", "layout")
 }
 

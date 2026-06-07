@@ -215,12 +215,6 @@ export function MessageMediaAttachmentCard({
           : "rounded-bl-[6px] border border-border/45 bg-card text-foreground shadow-sm",
       )}
     >
-      {imageAtt ? (
-        <MessageMediaAttachmentImage messageId={messageId} fileName={imageAtt.file_name} />
-      ) : null}
-      {videoAtt ? (
-        <MessageMediaAttachmentVideo messageId={messageId} fileName={videoAtt.file_name} />
-      ) : null}
       {pdfAtt ? (
         <OpenMarketplacePdfButton
           messageId={messageId}

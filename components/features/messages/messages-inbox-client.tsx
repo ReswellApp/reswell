@@ -90,7 +90,7 @@ function isOfferActivityType(type: string | undefined) {
 }
 
 export interface MessagesInboxClientProps {
-  currentUserId: string | null
+  currentUserId: string
   initialConversations: InboxConversationRow[]
   initialNotifications: MessagesInboxNotification[]
 }
@@ -104,9 +104,9 @@ export function MessagesInboxClient({
   const router = useRouter()
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations)
   const [notifications, setNotifications] = useState<MessagesInboxNotification[]>(initialNotifications)
-  const [loading, setLoading] = useState(initialUserId == null)
+  const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [currentUserId, setCurrentUserId] = useState<string | null>(initialUserId)
+  const [currentUserId, setCurrentUserId] = useState<string>(initialUserId)
   const [sellerOfferDraft, setSellerOfferDraft] = useState<SellerOfferDraft | null>(null)
   const [sentSellerOffersByKey, setSentSellerOffersByKey] = useState<
     Record<string, SentSellerActivityOffer>
@@ -181,7 +181,7 @@ export function MessagesInboxClient({
     setCurrentUserId(initialUserId)
     setConversations(initialConversations)
     setNotifications(initialNotifications)
-    setLoading(initialUserId == null)
+    setLoading(false)
   }, [initialUserId, initialConversations, initialNotifications])
 
   const setMessagesTab = useCallback(
@@ -275,7 +275,7 @@ export function MessagesInboxClient({
 
   const filteredNotifications = activityNotifications.filter((n) => {
     if (!searchLower) return true
-    const listing = n.listing ?? n.listings
+    const listing = n.listings
     const text = (n.message || '').toLowerCase()
     const title = listing?.title?.toLowerCase() ?? ''
     return text.includes(searchLower) || title.includes(searchLower)
@@ -351,11 +351,9 @@ export function MessagesInboxClient({
                   Conversations about your listings and purchases. Reach Reswell anytime with Need help?
                 </p>
               </div>
-              {currentUserId ? (
-                <div className="shrink-0 self-start sm:mt-1 w-full sm:w-auto">
+              <div className="shrink-0 self-start sm:mt-1 w-full sm:w-auto">
                   <MessagesSupportDialog triggerClassName="w-full sm:w-auto" />
                 </div>
-              ) : null}
             </header>
 
             <div className="relative mb-5">

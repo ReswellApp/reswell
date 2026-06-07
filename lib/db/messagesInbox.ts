@@ -82,6 +82,6 @@ export async function loadMessagesInboxForUser(userId: string): Promise<Messages
 
   return {
     conversations,
-    notifications: (notifData ?? []) as MessagesInboxNotification[],
+    notifications: (notifData ?? []) as unknown as MessagesInboxNotification[],
   }
 }

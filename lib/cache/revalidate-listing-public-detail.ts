@@ -3,5 +3,5 @@ import { LISTING_PUBLIC_DETAIL_CACHE_TAG } from "@/lib/cache/listing-public-deta
 
 /** Bust hourly anonymous listing detail cache after publish, sold, or hide events. */
 export function revalidateListingPublicDetailCatalog(): void {
-  revalidateTag(LISTING_PUBLIC_DETAIL_CACHE_TAG)
+  revalidateTag(LISTING_PUBLIC_DETAIL_CACHE_TAG, 'max')
 }

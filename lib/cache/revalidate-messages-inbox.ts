@@ -6,8 +6,8 @@ export function revalidateMessagesInboxForParticipants(
   buyerId: string,
   sellerId: string,
 ): void {
-  revalidateTag(messagesInboxTag(buyerId))
-  revalidateTag(messagesInboxTag(sellerId))
+  revalidateTag(messagesInboxTag(buyerId), 'max')
+  revalidateTag(messagesInboxTag(sellerId), 'max')
 }
 
 /** When only `conversationId` is known (support/system inserts). */

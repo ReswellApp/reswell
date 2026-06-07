@@ -3,5 +3,5 @@ import { MARKETPLACE_SOLD_FEED_CACHE_TAG } from "@/lib/cache/marketplace-sold-fe
 
 /** Bust hourly `/sold` sold, shipped, and new-listings feed caches. */
 export function revalidateMarketplaceSoldFeedCatalog(): void {
-  revalidateTag(MARKETPLACE_SOLD_FEED_CACHE_TAG)
+  revalidateTag(MARKETPLACE_SOLD_FEED_CACHE_TAG, 'max')
 }

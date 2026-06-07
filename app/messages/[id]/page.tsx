@@ -458,23 +458,25 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
             return [...withoutPending, msg]
           })
           if (msg.offer_id) {
-            void supabase
-              .from('offers')
-              .select('id, status, current_amount, initial_amount, buyer_id, seller_id, listing_id, seller_initiated, expires_at, offer_timeline, fulfillment, shipping_amount, line_items')
-              .eq('id', msg.offer_id)
-              .maybeSingle()
-              .then(({ data: o }) => {
+            void Promise.resolve(
+              supabase
+                .from('offers')
+                .select('id, status, current_amount, initial_amount, buyer_id, seller_id, listing_id, seller_initiated, expires_at, offer_timeline, fulfillment, shipping_amount, line_items')
+                .eq('id', msg.offer_id)
+                .maybeSingle()
+            ).then(({ data: o }) => {
                 if (!active || !o) return
                 const offer = o as OfferRowLite
                 setOffersById((prev) => ({ ...prev, [offer.id]: offer }))
                 const lid = offer.listing_id
                 if (lid) {
-                  void supabase
-                    .from('listings')
-                    .select('id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct')
-                    .eq('id', lid)
-                    .maybeSingle()
-                    .then(({ data: row }) => {
+                  void Promise.resolve(
+                    supabase
+                      .from('listings')
+                      .select('id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct')
+                      .eq('id', lid)
+                      .maybeSingle()
+                  ).then(({ data: row }) => {
                       if (!active || !row) return
                       const L = row as NonNullable<Conversation['listing']>
                       setThreadListingsById((prev) => ({ ...prev, [L.id]: L }))

@@ -16,7 +16,7 @@ const LISTING_SELECT = `
   board_type,
   dimensions,
   created_at,
-  listing_images (url, is_primary),
+  listing_images (url, thumbnail_url, is_primary),
   profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
   categories (name, slug)
 `

@@ -4,7 +4,7 @@ import { revalidateListingPublicDetailCatalog } from "@/lib/cache/revalidate-lis
 
 /** Bust cached `/boards` category-type grids after publish, sold, or hide events. */
 export function revalidateBoardsBrowseCatalog(): void {
-  revalidateTag(BOARDS_BROWSE_CACHE_TAG)
+  revalidateTag(BOARDS_BROWSE_CACHE_TAG, 'max')
   revalidateListingPublicDetailCatalog()
   revalidatePath("/boards", "page")
 }

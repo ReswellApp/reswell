@@ -7,14 +7,14 @@ import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-mar
 
 /** Bust admin-curated homepage sections after CMS or homepage-visibility changes. */
 export function revalidateHomeStableCatalog(): void {
-  revalidateTag(HOME_STABLE_CATALOG_CACHE_TAG)
+  revalidateTag(HOME_STABLE_CATALOG_CACHE_TAG, 'max')
   revalidatePath("/", "layout")
   revalidatePath("/", "page")
 }
 
 /** Bust the auto-generated recently sold strip (e.g. after homepage hide on a sold listing). */
 export function revalidateHomeRecentlySoldCatalog(): void {
-  revalidateTag(HOME_RECENTLY_SOLD_CACHE_TAG)
+  revalidateTag(HOME_RECENTLY_SOLD_CACHE_TAG, 'max')
   revalidatePath("/", "page")
 }
 

@@ -16,15 +16,7 @@ export default async function MessagesPage({
   const { user } = await getCachedRequestSession()
 
   if (!user) {
-    return (
-      <Suspense fallback={<MessagesInboxSkeleton />}>
-        <MessagesInboxClient
-          currentUserId={null}
-          initialConversations={[]}
-          initialNotifications={[]}
-        />
-      </Suspense>
-    )
+    redirect('/auth/login?redirect=/messages')
   }
 
   const userParam = params.user?.trim()

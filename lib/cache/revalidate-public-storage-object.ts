@@ -12,6 +12,6 @@ export function revalidatePublicStorageObjects(
   for (const objectPath of objectPaths) {
     const trimmed = objectPath.trim()
     if (!trimmed) continue
-    revalidateTag(publicStorageObjectCacheTag(bucket, trimmed))
+    revalidateTag(publicStorageObjectCacheTag(bucket, trimmed), 'max')
   }
 }

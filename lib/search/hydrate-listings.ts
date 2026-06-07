@@ -17,7 +17,7 @@ const SELECT = `
   local_pickup,
   board_type,
   dimensions,
-  listing_images (url, is_primary),
+  listing_images (url, thumbnail_url, is_primary),
   profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
   categories (name, slug)
 `
