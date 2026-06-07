@@ -1,18 +1,45 @@
 /**
- * - `listingCardImageSrc` — marketplace tiles (`ListingTile` and similar): prefer full `url`
- *   via same-origin `/media/listings/...` proxy; served with `unoptimized` to skip Vercel Image Optimization.
+ * - `listingTileImageSrcFromRow` — single image row for browse tiles: stored thumb first,
+ *   then derived `-thumb.` sibling, then on-demand `?variant=tile` resize for legacy full-res.
+ * - `listingCardImageSrc` — primary photo for marketplace tiles (`ListingTile` and similar).
  * - `listingTileCarouselImageUrls` — ordered CDN URLs for multi-photo tiles (primary first).
- * - `listingTitleThumbnailSrc` — compact “thumb + title” rows (cart, checkout, orders):
- *   prefer `thumbnail_url` for bandwidth; fall back to `url`.
+ * - `listingTitleThumbnailSrc` — compact “thumb + title” rows (cart, checkout, orders).
  * - `listingHeroSlideSrc` — large hero imagery: full `url` only.
  */
 
-import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import {
+  proxiedListingImageSrc,
+  withListingMediaTileVariant,
+} from "@/lib/listing-media-proxy-url"
 
 export type ListingImageForCard = {
   url?: string | null
   thumbnail_url?: string | null
   is_primary?: boolean | null
+}
+
+/** When `thumbnail_url` was never persisted, pair uploads still store `*-thumb.webp` beside `*-full.*`. */
+function derivedListingThumbUrlFromFullUrl(fullUrl: string): string | null {
+  const t = fullUrl.trim()
+  if (!t.includes("-full.")) return null
+  return t.replace("-full.", "-thumb.")
+}
+
+/**
+ * Best src for a listing photo in browse grids / carousels — never returns an unscaled full-res
+ * proxy unless `?variant=tile` is appended for server-side resize.
+ */
+export function listingTileImageSrcFromRow(img: ListingImageForCard): string {
+  const thumb = img.thumbnail_url?.trim()
+  if (thumb) return proxiedListingImageSrc(thumb)
+
+  const full = img.url?.trim()
+  if (!full) return ""
+
+  const derivedThumb = derivedListingThumbUrlFromFullUrl(full)
+  if (derivedThumb) return proxiedListingImageSrc(derivedThumb)
+
+  return withListingMediaTileVariant(proxiedListingImageSrc(full))
 }
 
 export function listingCardImageSrc(
@@ -21,11 +48,7 @@ export function listingCardImageSrc(
   const list = images ?? []
   const primary = list.find((i) => i.is_primary) || list[0]
   if (!primary) return ""
-  const full = primary.url?.trim()
-  if (full) return proxiedListingImageSrc(full)
-  const thumb = primary.thumbnail_url?.trim()
-  if (thumb) return proxiedListingImageSrc(thumb)
-  return ""
+  return listingTileImageSrcFromRow(primary)
 }
 
 /** All listing photos for carousel tiles: primary first, then remaining images in original order. */
@@ -42,13 +65,7 @@ export function listingTileCarouselImageUrls(
       : [list[primaryIdx]!, ...list.filter((_, i) => i !== primaryIdx)]
 
   return ordered
-    .map((img) => {
-      const full = img.url?.trim()
-      if (full) return proxiedListingImageSrc(full)
-      const thumb = img.thumbnail_url?.trim()
-      if (thumb) return proxiedListingImageSrc(thumb)
-      return ""
-    })
+    .map((img) => listingTileImageSrcFromRow(img))
     .filter((url): url is string => url.length > 0)
 }
 
@@ -62,11 +79,7 @@ export function listingTitleThumbnailSrc(
   const list = images ?? []
   const primary = list.find((i) => i.is_primary) || list[0]
   if (!primary) return ""
-  const thumb = primary.thumbnail_url?.trim()
-  if (thumb) return proxiedListingImageSrc(thumb)
-  const full = primary.url?.trim()
-  if (full) return proxiedListingImageSrc(full)
-  return ""
+  return listingTileImageSrcFromRow(primary)
 }
 
 /** Full-size primary image for large backdrops (e.g. homepage hero); skips thumbnails. */

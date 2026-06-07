@@ -3,6 +3,9 @@ import { absoluteUrl } from "@/lib/site-metadata"
 /** Same-origin listing photo proxy — see `app/media/listings/[...path]/route.ts`. */
 export const LISTING_MEDIA_PROXY_PATH_PREFIX = "/media/listings/" as const
 
+/** Resize hint for legacy full-res listing objects without a stored thumb file. */
+export const LISTING_MEDIA_TILE_VARIANT_PARAM = "tile" as const
+
 export function isProxiedListingMediaSrc(src: string | null | undefined): boolean {
   return typeof src === "string" && src.startsWith(LISTING_MEDIA_PROXY_PATH_PREFIX)
 }
@@ -53,6 +56,15 @@ export function proxiedListingImageSrc(url: string | null | undefined): string {
   const path = listingStorageObjectPathFromUrl(t)
   if (!path) return t
   return `${LISTING_MEDIA_PROXY_PATH_PREFIX}${path}`
+}
+
+/** Appends `?variant=tile` so `/media/listings` can serve a cached 640px WebP for browse grids. */
+export function withListingMediaTileVariant(src: string): string {
+  const t = src.trim()
+  if (!t || !t.startsWith(LISTING_MEDIA_PROXY_PATH_PREFIX)) return t
+  if (t.includes("variant=")) return t
+  const sep = t.includes("?") ? "&" : "?"
+  return `${t}${sep}variant=${LISTING_MEDIA_TILE_VARIANT_PARAM}`
 }
 
 /** Absolute `https://reswell.app/media/listings/...` for OG tags, catalog feeds, and crawlers. */

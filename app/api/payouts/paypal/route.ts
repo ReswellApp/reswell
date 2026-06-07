@@ -2,15 +2,15 @@ import { NextResponse } from "next/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { getPayPalHttpClient, paypalSdk } from "@/lib/paypal"
-import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
+import {
+  deductWalletBeforeCashout,
+  restoreWalletAfterFailedCashout,
+} from "@/lib/services/walletCashout"
 import { trackKlaviyoPayout } from "@/lib/klaviyo/track-payout"
+import { roundMoney } from "@/lib/utils/stripe-connect-cashout"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
-
-function roundMoney(n: number): number {
-  return Math.round(n * 100) / 100
-}
 
 function getClientForPrivilegedWalletWrites(sessionClient: SupabaseClient) {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
@@ -116,61 +116,12 @@ export async function POST(req: Request) {
     const receiver = usePayerId ? paypalPayerId : paypalEmail
     const recipientType = usePayerId ? "PAYPAL_ID" : "EMAIL"
 
-    let { data: wallet } = await supabase
-      .from("wallets")
-      .select("*")
-      .eq("user_id", user.id)
-      .single()
-
-    if (!wallet) {
-      const { data: inserted, error: insertErr } = await supabase
-        .from("wallets")
-        .insert({ user_id: user.id })
-        .select("*")
-        .single()
-      if (insertErr || !inserted) {
-        return NextResponse.json({ error: "Could not create wallet" }, { status: 500 })
-      }
-      wallet = inserted
+    const deduction = await deductWalletBeforeCashout(supabase, user.id, amountUsd)
+    if (!deduction.ok) {
+      return NextResponse.json({ error: deduction.error }, { status: deduction.status })
     }
 
-    const agg = reconcileWalletAggregates(wallet)
-    if (agg.needsPersist) {
-      const s = walletAggregateStrings(agg)
-      const writeDb = getClientForPrivilegedWalletWrites(supabase)
-      await writeDb
-        .from("wallets")
-        .update({
-          balance: s.balance,
-          pending_balance: s.pending_balance,
-          lifetime_cashed_out: s.lifetime_cashed_out,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", wallet.id)
-        .eq("user_id", user.id)
-      wallet = {
-        ...wallet,
-        balance: s.balance,
-        pending_balance: s.pending_balance,
-        lifetime_cashed_out: s.lifetime_cashed_out,
-      }
-    }
-
-    const spendable = roundMoney(agg.availableBalance)
-    const rawBalance = roundMoney(parseFloat(String(wallet.balance)))
-
-    if (amountUsd > spendable) {
-      return NextResponse.json(
-        {
-          error:
-            spendable < 0.01 && rawBalance < 0
-              ? "Your in-wallet Reswell balance is below zero (for example after a refund to the buyer). " +
-                "You cannot cash out until new in-app sales bring it back to zero or above."
-              : `Insufficient balance. Available: $${spendable.toFixed(2)}`,
-        },
-        { status: 400 },
-      )
-    }
+    const { walletId, balanceAfter: newBalance } = deduction
 
     const senderBatchId = `reswell_${user.id}_${Date.now()}`
 
@@ -198,12 +149,40 @@ export async function POST(req: Request) {
       ],
     })
 
-    const response = await paypalClient.execute(request)
-    const result = response.result as {
-      batch_header?: { payout_batch_id?: string; batch_status?: string }
-    }
+    let payoutBatchId: string | null = null
+    try {
+      const response = await paypalClient.execute(request)
+      const result = response.result as {
+        batch_header?: { payout_batch_id?: string; batch_status?: string }
+      }
+      payoutBatchId = result.batch_header?.payout_batch_id ?? null
+    } catch (error: unknown) {
+      await restoreWalletAfterFailedCashout(supabase, user.id, amountUsd)
 
-    const payoutBatchId = result.batch_header?.payout_batch_id ?? null
+      const statusCode =
+        error && typeof error === "object" && "statusCode" in error
+          ? Number((error as { statusCode: unknown }).statusCode)
+          : undefined
+
+      console.error("PayPal payout error:", {
+        message: error instanceof Error ? error.message : String(error),
+        statusCode,
+      })
+
+      let userMessage = "Payout failed. Please try again."
+
+      if (statusCode === 422) {
+        userMessage =
+          "PayPal could not process this payout. Check your PayPal connection and try again."
+      } else if (statusCode === 401) {
+        userMessage = "PayPal authentication failed. Contact Reswell support."
+      } else if (statusCode === 403) {
+        userMessage =
+          "PayPal Payouts not enabled on this account. Contact Reswell support."
+      }
+
+      return NextResponse.json({ error: userMessage }, { status: 500 })
+    }
 
     const payoutEmailForRow = paypalEmail || paypalPayerId || "PayPal"
 
@@ -223,36 +202,11 @@ export async function POST(req: Request) {
       console.error("[paypal payout] paypal_payouts insert:", payoutInsertErr)
     }
 
-    const newBalance = roundMoney(rawBalance - amountUsd)
-    const lifetimeCashedOutAfter = roundMoney(
-      parseFloat(String(wallet.lifetime_cashed_out)) + amountUsd,
-    )
-
     const writeDb = getClientForPrivilegedWalletWrites(supabase)
-    const { error: walletErr } = await writeDb
-      .from("wallets")
-      .update({
-        balance: newBalance,
-        lifetime_cashed_out: lifetimeCashedOutAfter,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", wallet.id)
-      .eq("user_id", user.id)
-
-    if (walletErr) {
-      console.error("[paypal payout] Balance update error after PayPal send:", walletErr)
-      return NextResponse.json(
-        {
-          error:
-            "PayPal may have received this payout, but we could not update your Reswell balance. Contact support before trying again.",
-        },
-        { status: 500 },
-      )
-    }
 
     if (payoutRow) {
       await writeDb.from("wallet_transactions").insert({
-        wallet_id: wallet.id,
+        wallet_id: walletId,
         user_id: user.id,
         type: "cashout",
         amount: -amountUsd,
@@ -287,28 +241,7 @@ export async function POST(req: Request) {
       message: `$${amountUsd.toFixed(2)} is on its way to your PayPal account`,
     })
   } catch (error: unknown) {
-    const statusCode =
-      error && typeof error === "object" && "statusCode" in error
-        ? Number((error as { statusCode: unknown }).statusCode)
-        : undefined
-
-    console.error("PayPal payout error:", {
-      message: error instanceof Error ? error.message : String(error),
-      statusCode,
-    })
-
-    let userMessage = "Payout failed. Please try again."
-
-    if (statusCode === 422) {
-      userMessage =
-        "PayPal could not process this payout. Check your PayPal connection and try again."
-    } else if (statusCode === 401) {
-      userMessage = "PayPal authentication failed. Contact Reswell support."
-    } else if (statusCode === 403) {
-      userMessage =
-        "PayPal Payouts not enabled on this account. Contact Reswell support."
-    }
-
-    return NextResponse.json({ error: userMessage }, { status: 500 })
+    console.error("[paypal payout] unexpected error:", error)
+    return NextResponse.json({ error: "Payout failed. Please try again." }, { status: 500 })
   }
 }

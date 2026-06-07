@@ -12,7 +12,10 @@ import {
 } from "@/lib/db/stripeConnect"
 import { getStripe } from "@/lib/stripe-server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
+import {
+  deductWalletBeforeCashout,
+  restoreWalletAfterFailedCashout,
+} from "@/lib/services/walletCashout"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { toUsStateCode } from "@/lib/utils/us-state-code"
 import {
@@ -520,56 +523,6 @@ export async function cashOutToStripeConnectedAccount(
     }
   }
 
-  let { data: wallet } = await supabase.from("wallets").select("*").eq("user_id", userId).single()
-
-  if (!wallet) {
-    const { data: inserted, error: insertErr } = await supabase
-      .from("wallets")
-      .insert({ user_id: userId })
-      .select("*")
-      .single()
-    if (insertErr || !inserted) {
-      return { ok: false, error: "Could not load wallet", status: 500 }
-    }
-    wallet = inserted
-  }
-
-  const agg = reconcileWalletAggregates(wallet)
-  if (agg.needsPersist) {
-    const s = walletAggregateStrings(agg)
-    const writeDb = getClientForPrivilegedWalletWrites(supabase)
-    await writeDb
-      .from("wallets")
-      .update({
-        balance: s.balance,
-        pending_balance: s.pending_balance,
-        lifetime_cashed_out: s.lifetime_cashed_out,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", wallet.id)
-      .eq("user_id", userId)
-    wallet = {
-      ...wallet,
-      balance: s.balance,
-      pending_balance: s.pending_balance,
-      lifetime_cashed_out: s.lifetime_cashed_out,
-    }
-  }
-
-  const spendable = roundMoney(agg.availableBalance)
-  const rawBalance = roundMoney(parseFloat(String(wallet.balance)))
-  if (amountUsd > spendable) {
-    return {
-      ok: false,
-      error:
-        spendable < 0.01 && rawBalance < 0
-          ? "Your in-wallet Reswell balance is below zero (for example after a refund to the buyer). " +
-            "You cannot cash out until new in-app sales bring it back to zero or above."
-          : `Insufficient balance. Available: $${spendable.toFixed(2)}`,
-      status: 400,
-    }
-  }
-
   const stripe = getStripe()
   const transferAmountCents = Math.round(netTransferUsd * 100)
 
@@ -646,6 +599,13 @@ export async function cashOutToStripeConnectedAccount(
     }
   }
 
+  const deduction = await deductWalletBeforeCashout(supabase, userId, amountUsd)
+  if (!deduction.ok) {
+    return { ok: false, error: deduction.error, status: deduction.status }
+  }
+
+  const { walletId, balanceAfter: newBalance, lifetimeCashedOutAfter } = deduction
+
   const transferRowId = randomUUID()
 
   let transfer: Stripe.Transfer
@@ -667,6 +627,7 @@ export async function cashOutToStripeConnectedAccount(
     )
   } catch (e) {
     console.error("[stripe connect] transfers.create", e)
+    await restoreWalletAfterFailedCashout(supabase, userId, amountUsd)
     return {
       ok: false,
       error: userFacingMessageForStripeTransferError(e),
@@ -700,6 +661,7 @@ export async function cashOutToStripeConnectedAccount(
       } catch (revErr) {
         console.error("[stripe connect] createReversal after instant payout failure", revErr)
       }
+      await restoreWalletAfterFailedCashout(supabase, userId, amountUsd)
       return {
         ok: false,
         error: userFacingMessageForStripeInstantPayoutError(e),
@@ -728,37 +690,7 @@ export async function cashOutToStripeConnectedAccount(
     }
   }
 
-  const newBalance = roundMoney(rawBalance - amountUsd)
-  const lifetimeCashedOutAfter = roundMoney(
-    parseFloat(String(wallet.lifetime_cashed_out)) + amountUsd,
-  )
-
   const writeDb = getClientForPrivilegedWalletWrites(supabase)
-  const { error: walletErr } = await writeDb
-    .from("wallets")
-    .update({
-      balance: newBalance,
-      lifetime_cashed_out: lifetimeCashedOutAfter,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", wallet.id)
-    .eq("user_id", userId)
-
-  if (walletErr) {
-    console.error("[stripe connect] wallet update after transfer (privileged client)", walletErr, {
-      userId,
-      walletId: wallet.id,
-      amountUsd,
-      stripeTransferId: transfer.id,
-    })
-    return {
-      ok: false,
-      error:
-        "Your payout may have been sent, but we could not update your Reswell balance. Please contact support before cashing out again.",
-      status: 500,
-    }
-  }
-
   const feeLabel = `fee: $${feeUsd.toFixed(2)}`
   const routeLabel =
     speed === "instant" && stripePayoutId
@@ -766,7 +698,7 @@ export async function cashOutToStripeConnectedAccount(
       : `transfer: ${transfer.id}`
 
   const { error: txErr } = await writeDb.from("wallet_transactions").insert({
-    wallet_id: wallet.id,
+    wallet_id: walletId,
     user_id: userId,
     type: "cashout",
     amount: -amountUsd,
@@ -780,7 +712,7 @@ export async function cashOutToStripeConnectedAccount(
   if (txErr) {
     console.error("[stripe connect] wallet_transactions insert after transfer", txErr, {
       userId,
-      walletId: wallet.id,
+      walletId,
       transferRowId,
     })
   }

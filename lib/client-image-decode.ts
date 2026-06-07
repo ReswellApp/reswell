@@ -2,9 +2,9 @@
 
 import { browserCanDecodeImage } from "@/lib/listing-image-pipeline"
 import { runImageCpuTask } from "@/lib/client-image-cpu-queue"
+import { SERVER_IMAGE_CONVERT_MAX_BYTES } from "@/lib/utils/server-image-convert"
 
-/** Vercel serverless request bodies are capped at ~4.5MB; stay under for FormData overhead. */
-export const SERVER_IMAGE_CONVERT_MAX_BYTES = 4 * 1024 * 1024
+export { SERVER_IMAGE_CONVERT_MAX_BYTES }
 
 const HEIC_BRAND_RE = /^(heic|heix|hevc|hevx|mif1|msf1|heim|heis|hevm|hevs)$/i
 

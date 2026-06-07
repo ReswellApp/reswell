@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import sharp from "sharp"
+import { createClient } from "@/lib/supabase/server"
+import { SERVER_IMAGE_CONVERT_MAX_BYTES } from "@/lib/utils/server-image-convert"
 
 export const maxDuration = 60
 
@@ -12,10 +14,32 @@ function bufferLooksLikeHeif(buffer: Buffer): boolean {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const formData = await request.formData()
     const file = formData.get("file") as File | null
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
+    }
+
+    if (file.size <= 0) {
+      return NextResponse.json({ error: "Empty file" }, { status: 400 })
+    }
+
+    if (file.size > SERVER_IMAGE_CONVERT_MAX_BYTES) {
+      return NextResponse.json(
+        {
+          error: `File must be ${(SERVER_IMAGE_CONVERT_MAX_BYTES / (1024 * 1024)).toFixed(0)} MB or smaller.`,
+        },
+        { status: 413 },
+      )
     }
 
     const buffer = Buffer.from(await file.arrayBuffer())
