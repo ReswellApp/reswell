@@ -35,6 +35,10 @@
     {
       "path": "/api/cron/backfill-listing-brand-model",
       "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/cron/vercel-error-digest",
+      "schedule": "0 13 * * *"
     }
   ]
 }
