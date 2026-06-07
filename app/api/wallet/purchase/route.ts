@@ -17,6 +17,7 @@ import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-bro
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
 import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnPurchase"
+import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -287,6 +288,10 @@ export async function POST(request: NextRequest) {
       contentIds: [listing.id],
       includeBrowserSignals: true,
     })
+
+    if (!isPickup) {
+      await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, purchase.id)
+    }
   }
 
   return NextResponse.json({

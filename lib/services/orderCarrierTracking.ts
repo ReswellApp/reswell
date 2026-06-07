@@ -41,16 +41,9 @@ export type OrderCarrierTrackingResult =
     }
   | { ok: false; error: string; status: number }
 
-/**
- * Returns live carrier tracking for an order participant (buyer or seller).
- * Attempts ShipEngine API first, falls back to cached `tracking_detail`.
- */
-export async function getOrderCarrierTrackingForParticipant(
-  supabase: SupabaseClient,
-  orderId: string,
-  userId: string,
+async function resolveOrderCarrierTracking(
+  order: OrderTrackingRow | null,
 ): Promise<OrderCarrierTrackingResult> {
-  const order = await loadOrderForParticipant(supabase, orderId, userId)
   if (!order) {
     return { ok: false, error: "Order not found", status: 404 }
   }
@@ -111,4 +104,36 @@ export async function getOrderCarrierTrackingForParticipant(
     error: live.error || "Could not load carrier tracking",
     status: live.status >= 400 ? live.status : 502,
   }
+}
+
+/**
+ * Returns live carrier tracking for an order participant (buyer or seller).
+ * Attempts ShipEngine API first, falls back to cached `tracking_detail`.
+ */
+export async function getOrderCarrierTrackingForParticipant(
+  supabase: SupabaseClient,
+  orderId: string,
+  userId: string,
+): Promise<OrderCarrierTrackingResult> {
+  const order = await loadOrderForParticipant(supabase, orderId, userId)
+  return resolveOrderCarrierTracking(order)
+}
+
+/** Admin/support view — same carrier payload without buyer/seller membership check. */
+export async function getOrderCarrierTrackingForAdmin(
+  supabase: SupabaseClient,
+  orderId: string,
+): Promise<OrderCarrierTrackingResult> {
+  const { data, error } = await supabase
+    .from("orders")
+    .select("id, tracking_number, tracking_carrier, tracking_detail")
+    .eq("id", orderId)
+    .maybeSingle()
+
+  if (error) {
+    console.error("[orderCarrierTracking] admin load order:", error.message)
+    return { ok: false, error: "Could not load order", status: 500 }
+  }
+
+  return resolveOrderCarrierTracking(data as OrderTrackingRow | null)
 }

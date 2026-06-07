@@ -4,6 +4,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import { requireAdmin, requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { getOrderDetailForAdmin, isPostgrestSchemaStaleError } from "@/lib/db/adminOrders"
 import { deleteAdminTestOrderService } from "@/lib/services/adminOrderDelete"
+import { orderHasAccessibleShippingLabelPdf } from "@/lib/services/resolveOrderShippingLabelPdf"
 
 const orderIdSchema = z.string().uuid()
 
@@ -48,11 +49,17 @@ export async function GET(
     return NextResponse.json({ error: "Order not found" }, { status: 404 })
   }
 
+  const hasShippingLabel = await orderHasAccessibleShippingLabelPdf(serviceSupabase, {
+    orderId: parsed.data,
+    trackingNumber: data.tracking_number,
+  })
+
   return NextResponse.json({
     data,
     capabilities: {
       canRefund: gate.ctx.isAdmin,
       canReleaseShippingSellerEarnings: gate.ctx.isAdmin,
+      hasShippingLabel,
     },
   })
 }

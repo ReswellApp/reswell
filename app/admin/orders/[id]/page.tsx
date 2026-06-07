@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { format } from "date-fns"
 import { AdminIssueRefundButton } from "@/components/features/admin/admin-issue-refund-button"
+import { ReswellTrackingSection } from "@/components/features/orders/reswell-tracking-section"
+import { SellerPreparedShippingLabelCard } from "@/components/features/sales/seller-prepared-shipping-label-card"
 import { orderStatusBadgeVariant, orderStatusLabel, deliveryStatusLabel, payoutStatusLabel } from "@/lib/order-status"
 import { carrierDeliveryPayoutEligibleAt } from "@/lib/shipping/carrier-delivery-payout-hold"
 import type { AdminOrderDetail } from "@/lib/db/adminOrders"
@@ -20,7 +22,11 @@ import { toast } from "sonner"
 type OrderApiResponse =
   | {
       data: AdminOrderDetail
-      capabilities: { canRefund: boolean; canReleaseShippingSellerEarnings: boolean }
+      capabilities: {
+        canRefund: boolean
+        canReleaseShippingSellerEarnings: boolean
+        hasShippingLabel: boolean
+      }
     }
   | { error: string }
 
@@ -78,6 +84,7 @@ export default function AdminOrderDetailPage() {
             canRefund: body.capabilities.canRefund === true,
             canReleaseShippingSellerEarnings:
               body.capabilities.canReleaseShippingSellerEarnings === true,
+            hasShippingLabel: body.capabilities.hasShippingLabel === true,
           },
         })
       } else {
@@ -147,6 +154,11 @@ export default function AdminOrderDetailPage() {
   const canRefund = payload.capabilities.canRefund
   const canReleaseShippingSellerEarnings =
     payload.capabilities.canReleaseShippingSellerEarnings
+  const hasShippingLabel = payload.capabilities.hasShippingLabel
+  const showShippingLabel =
+    o.fulfillment_method === "shipping" && hasShippingLabel
+  const showCarrierTracking =
+    o.fulfillment_method === "shipping" && Boolean(o.tracking_number?.trim())
   const showLegacyManualPayoutRelease =
     canReleaseShippingSellerEarnings &&
     o.payout?.status === "held" &&
@@ -427,6 +439,24 @@ export default function AdminOrderDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {showShippingLabel ? (
+        <SellerPreparedShippingLabelCard
+          orderId={o.id}
+          downloadApiPrefix="/api/admin/orders"
+        />
+      ) : null}
+
+      {showCarrierTracking && o.tracking_number ? (
+        <ReswellTrackingSection
+          orderId={o.id}
+          trackingNumber={o.tracking_number}
+          trackingCarrier={o.tracking_carrier}
+          marketplaceDeliveryStatus={o.delivery_status ?? "pending"}
+          variant="seller"
+          carrierTrackingFetchPath={`/api/admin/orders/${encodeURIComponent(o.id)}/carrier-tracking`}
+        />
+      ) : null}
 
       {/* Support requests for this order */}
       <Card>

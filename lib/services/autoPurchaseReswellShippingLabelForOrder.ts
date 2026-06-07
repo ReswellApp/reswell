@@ -9,6 +9,7 @@ import { getLatestAdminLabelUrlsForOrder } from "@/lib/db/adminOrderShippingLabe
 import { getLatestOrderShippingLabelUrlsForOrder } from "@/lib/db/orderShippingLabels"
 import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
 import { attachOrderShippingLabel } from "@/lib/services/attachOrderShippingLabel"
+import { ensureReswellShippingLabelReadyThreadNotification } from "@/lib/services/postReswellShippingLabelReadyNotification"
 import { purchaseLabelWithRateId } from "@/lib/services/orderShippingLabel"
 import {
   effectiveBoardShippingMode,
@@ -110,20 +111,22 @@ export async function autoPurchaseReswellShippingLabelForOrder(
     await recordOrderShippingLabelFailure(supabase, { orderId, stage, errorMessage })
   }
 
-  if (!isShipEngineConfigured()) {
-    await fail(
-      "shipengine_not_configured",
-      "ShipEngine is not configured (missing SHIPENGINE_API_KEY). Set the key and create the label manually.",
-    )
-    return
-  }
+  try {
+    if (!isShipEngineConfigured()) {
+      await fail(
+        "shipengine_not_configured",
+        "ShipEngine is not configured (missing SHIPENGINE_API_KEY). Set the key and create the label manually.",
+      )
+      return
+    }
 
-  if (await orderAlreadyHasPreparedLabel(supabase, orderId)) {
-    await resolveOpenOrderShippingLabelFailures(supabase, orderId)
-    return
-  }
+    if (await orderAlreadyHasPreparedLabel(supabase, orderId)) {
+      await resolveOpenOrderShippingLabelFailures(supabase, orderId)
+      await ensureReswellShippingLabelReadyThreadNotification(supabase, orderId)
+      return
+    }
 
-  const { data: order, error: orderErr } = await supabase
+    const { data: order, error: orderErr } = await supabase
     .from("orders")
     .select(
       `
@@ -143,12 +146,12 @@ export async function autoPurchaseReswellShippingLabelForOrder(
     .eq("id", orderId)
     .maybeSingle()
 
-  if (orderErr || !order) {
-    console.error(`${tag} order load:`, orderErr?.message ?? "not found")
-    return
-  }
+    if (orderErr || !order) {
+      console.error(`${tag} order load:`, orderErr?.message ?? "not found")
+      return
+    }
 
-  const o = order as unknown as {
+    const o = order as unknown as {
     id: string
     order_num: string | null
     buyer_id: string
@@ -158,85 +161,102 @@ export async function autoPurchaseReswellShippingLabelForOrder(
     delivery_status: string
     shipping_address: unknown
     listings: Record<string, unknown> | Record<string, unknown>[] | null
-  }
+    }
 
-  if (o.fulfillment_method !== "shipping") return
-  if (o.delivery_status !== "pending") return
+    if (o.fulfillment_method !== "shipping") return
+    if (o.delivery_status !== "pending") return
 
-  const listing = Array.isArray(o.listings) ? o.listings[0] : o.listings
-  const listingSection = (listing as { section?: string } | null)?.section
-  if (!listing || (listingSection !== "surfboards" && listingSection !== "fins")) return
+    const listing = Array.isArray(o.listings) ? o.listings[0] : o.listings
+    const listingSection = (listing as { section?: string } | null)?.section
+    if (!listing || (listingSection !== "surfboards" && listingSection !== "fins")) return
 
-  const listingForQuote = listing as unknown as PeerListingForShippingQuote
-  if (effectiveBoardShippingMode(listingForQuote) !== "reswell") return
+    const listingForQuote = listing as unknown as PeerListingForShippingQuote
+    if (effectiveBoardShippingMode(listingForQuote) !== "reswell") return
 
-  const shipToFields = orderShippingJsonToRateQuoteAddress(o.shipping_address)
-  if (!shipToFields) {
-    await fail(
-      "incomplete_address",
-      "This order does not have a complete buyer shipping address. Add the address on the order, then create the label manually.",
-    )
-    return
-  }
-  const shipTo = rateQuoteFieldsToShippingInput(shipToFields)
+    const shipToFields = orderShippingJsonToRateQuoteAddress(o.shipping_address)
+    if (!shipToFields) {
+      await fail(
+        "incomplete_address",
+        "This order does not have a complete buyer shipping address. Add the address on the order, then create the label manually.",
+      )
+      return
+    }
+    const shipTo = rateQuoteFieldsToShippingInput(shipToFields)
 
-  const sellerShipFromName = await fetchSellerShipFromLabelName(supabase, o.seller_id)
-  const quoted = await getCheapestReswellRateForListing({
-    listing: listingForQuote,
-    shipTo,
-    diagnosticTag: `auto-reswell-label:${o.id}`,
-    sellerShipFromName,
-  })
+    const sellerShipFromName = await fetchSellerShipFromLabelName(supabase, o.seller_id)
+    const quoted = await getCheapestReswellRateForListing({
+      listing: listingForQuote,
+      shipTo,
+      diagnosticTag: `auto-reswell-label:${o.id}`,
+      sellerShipFromName,
+    })
 
-  if (!quoted.ok) {
-    await fail("rate_quote", quoted.error)
-    return
-  }
+    if (!quoted.ok) {
+      await fail("rate_quote", quoted.error)
+      return
+    }
 
-  const rateId = quoted.cheapest.rate_id
-  if (!rateId) {
-    await fail("rate_id", "ShipEngine returned no purchasable rate id for this shipment.")
-    return
-  }
+    const rateId = quoted.cheapest.rate_id
+    if (!rateId) {
+      await fail("rate_id", "ShipEngine returned no purchasable rate id for this shipment.")
+      return
+    }
 
-  const purchased = await purchaseLabelWithRateId(rateId)
-  if (!purchased.ok) {
-    await fail("label_purchase", purchased.error)
-    return
-  }
+    const purchased = await purchaseLabelWithRateId(rateId)
+    if (!purchased.ok) {
+      await fail("label_purchase", purchased.error)
+      return
+    }
 
-  let labelPdfUrl: string | null = purchased.result.labelUrl
-  let labelStoragePath: string | null = null
+    let labelPdfUrl: string | null = purchased.result.labelUrl
+    let labelStoragePath: string | null = null
 
-  if (labelPdfUrl) {
-    const stored = await downloadAndStoreLabelPdf({
+    if (labelPdfUrl) {
+      const stored = await downloadAndStoreLabelPdf({
+        supabase,
+        orderId: o.id,
+        pdfUrl: labelPdfUrl,
+      })
+      if (stored.ok) {
+        labelStoragePath = stored.storagePath
+        labelPdfUrl = null
+      } else {
+        console.warn(`${tag} PDF storage failed (${stored.error}); keeping ShipEngine URL.`)
+      }
+    }
+
+    const attached = await attachOrderShippingLabel({
       supabase,
       orderId: o.id,
-      pdfUrl: labelPdfUrl,
+      origin: "auto_reswell_checkout",
+      labelPdfUrl,
+      labelStoragePath,
+      trackingNumber: purchased.result.trackingNumber,
+      trackingCarrier: purchased.result.trackingCarrier,
+      shipengineRateId: rateId,
     })
-    if (stored.ok) {
-      labelStoragePath = stored.storagePath
-      labelPdfUrl = null
-    } else {
-      console.warn(`${tag} PDF storage failed (${stored.error}); keeping ShipEngine URL.`)
+
+    if (!attached.ok) {
+      await fail("attach_label", attached.error)
+      return
     }
+
+    await ensureReswellShippingLabelReadyThreadNotification(supabase, orderId)
+    console.info(`${tag} label attached for seller sale page.`)
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unexpected error during label purchase"
+    await fail("label_purchase", message)
   }
+}
 
-  const attached = await attachOrderShippingLabel({
-    supabase,
-    orderId: o.id,
-    origin: "auto_reswell_checkout",
-    labelPdfUrl,
-    labelStoragePath,
-    trackingNumber: purchased.result.trackingNumber,
-    trackingCarrier: purchased.result.trackingCarrier,
-    shipengineRateId: rateId,
-  })
-
-  if (!attached.ok) {
-    await fail("attach_label", attached.error)
-    return
+/** Checkout hook — awaits label purchase so serverless handlers do not exit early. */
+export async function purchaseReswellShippingLabelAfterCheckout(
+  supabase: SupabaseClient,
+  orderId: string,
+): Promise<void> {
+  try {
+    await autoPurchaseReswellShippingLabelForOrder(supabase, orderId)
+  } catch (e) {
+    console.error(`[purchaseReswellShippingLabelAfterCheckout:${orderId}]`, e)
   }
-
-  console.info(`${tag} label attached for seller sale page.`)
 }

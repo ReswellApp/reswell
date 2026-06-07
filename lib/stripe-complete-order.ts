@@ -23,7 +23,7 @@ import { trackMetaPurchaseServerEvent } from "@/lib/meta/track-purchase-server-e
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
-import { autoPurchaseReswellShippingLabelForOrder } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
+import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
@@ -221,7 +221,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
     if (pendingLedger?.id) {
       await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
-      void autoPurchaseReswellShippingLabelForOrder(serviceSupabase, existing.id)
+      await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, existing.id)
       return { ok: true, orderId: existing.id, alreadyProcessed: true }
     }
 
@@ -234,7 +234,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       return recovered
     }
     await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
-    void autoPurchaseReswellShippingLabelForOrder(serviceSupabase, existing.id)
+    await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, existing.id)
     return { ok: true, orderId: existing.id, alreadyProcessed: true }
   }
 
@@ -697,7 +697,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   })
 
   if (!isPickup && fulfillmentMethod === "shipping") {
-    void autoPurchaseReswellShippingLabelForOrder(serviceSupabase, purchase.id)
+    await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, purchase.id)
   }
 
   return { ok: true, orderId: purchase.id }

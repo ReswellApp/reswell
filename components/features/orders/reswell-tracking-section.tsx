@@ -96,6 +96,8 @@ export function ReswellTrackingSection(props: {
   marketplaceDeliveryStatus: string
   variant?: "buyer" | "seller"
   className?: string
+  /** Defaults to `/api/orders/:id/carrier-tracking` (buyer/seller). Pass admin path for staff views. */
+  carrierTrackingFetchPath?: string
 }) {
   const {
     orderId,
@@ -105,6 +107,7 @@ export function ReswellTrackingSection(props: {
     marketplaceDeliveryStatus,
     variant = "buyer",
     className,
+    carrierTrackingFetchPath,
   } = props
 
   const [detail, setDetail] = useState<OrderTrackingDetail | null>(initialDetail ?? null)
@@ -131,7 +134,10 @@ export function ReswellTrackingSection(props: {
       const timer = window.setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
 
       try {
-        const res = await fetch(`/api/orders/${orderId}/carrier-tracking`, {
+        const fetchPath =
+          carrierTrackingFetchPath ??
+          `/api/orders/${encodeURIComponent(orderId)}/carrier-tracking`
+        const res = await fetch(fetchPath, {
           cache: "no-store",
           credentials: "include",
           signal: controller.signal,
@@ -167,7 +173,7 @@ export function ReswellTrackingSection(props: {
         setRefreshing(false)
       }
     },
-    [orderId],
+    [carrierTrackingFetchPath, orderId],
   )
 
   useEffect(() => {

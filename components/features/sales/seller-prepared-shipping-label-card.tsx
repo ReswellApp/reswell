@@ -13,11 +13,19 @@ import {
 } from "@/components/ui/dialog"
 import { SHIPPING_LABEL_CREATED_STATUS } from "@/lib/sale-card-status"
 
-export function SellerPreparedShippingLabelCard({ orderId }: { orderId: string }) {
+export function SellerPreparedShippingLabelCard({
+  orderId,
+  downloadApiPrefix = "/api/orders",
+}: {
+  orderId: string
+  /** API prefix before `/:orderId/shipping-label/download` — use `/api/admin/orders` on admin pages. */
+  downloadApiPrefix?: string
+}) {
   const [pdfOpen, setPdfOpen] = useState(false)
 
-  const viewHref = `/api/orders/${encodeURIComponent(orderId)}/shipping-label/download?inline=1`
-  const downloadHref = `/api/orders/${encodeURIComponent(orderId)}/shipping-label/download`
+  const encodedId = encodeURIComponent(orderId)
+  const viewHref = `${downloadApiPrefix}/${encodedId}/shipping-label/download?inline=1`
+  const downloadHref = `${downloadApiPrefix}/${encodedId}/shipping-label/download`
 
   return (
     <>
