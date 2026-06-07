@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: result.ok,
       message:
-        "Seed event sent. Open Klaviyo → Flows → Create flow → Metric — the "Platform Error Digest" metric should appear under API within a few minutes. Seed events use profile external_id reswell-metric-seed-platform-error-digest and property reswell_metric_seed — add a flow filter to ignore them if needed.",
+        "Seed event sent. Open Klaviyo → Flows → Create flow → Metric — the \"Platform Error Digest\" metric should appear under API within a few minutes. Seed events use profile external_id reswell-metric-seed-platform-error-digest and property reswell_metric_seed — add a flow filter to ignore them if needed.",
       result,
     })
   } catch (e) {
