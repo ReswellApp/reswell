@@ -1,6 +1,5 @@
+import { PLATFORM_ERROR_DIGEST_METRIC } from "@/lib/klaviyo/bootstrap-platform-error-digest-metric"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
-
-const DIGEST_METRIC = "Platform Error Digest"
 const MAX_ISSUES_IN_DIGEST = 20
 const DEFAULT_SCAN_HOURS = 24
 const MAX_LOG_PAGES = 10
@@ -625,7 +624,7 @@ export async function runVercelErrorDigest(
 
   for (const email of recipients) {
     const res = await sendKlaviyoServerEvent({
-      metricName: DIGEST_METRIC,
+      metricName: PLATFORM_ERROR_DIGEST_METRIC,
       properties,
       profile: { email },
       uniqueId: `platform-error-digest:${dayKey}:${email}`,
