@@ -159,12 +159,13 @@ export default async function HomePage() {
                 </Button>
               </div>
               <HomeListingScrollRow uniformCardHeights>
-                {featuredBoards.map((board) => (
+                {featuredBoards.map((board, tileIdx) => (
                   <HomePeerListingScrollTile
                     key={board.id}
                     listing={board}
                     userId={user?.id ?? null}
                     isFavorited={favoritedIds.includes(board.id)}
+                    imagePriority={tileIdx === 0}
                   />
                 ))}
               </HomeListingScrollRow>

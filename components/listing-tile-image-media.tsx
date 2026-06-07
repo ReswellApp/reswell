@@ -38,6 +38,12 @@ export interface ListingTileImageMediaProps {
   /** Corner overlay (e.g. favorites). Position comes from the overlay root (top-right on cards). */
   overlayBottomRight?: ReactNode
   overlayFull?: ReactNode
+  /**
+   * Set to true only on tiles that are genuinely above the fold on first paint (e.g. the first
+   * 1–2 tiles in a grid). Enables `fetchpriority="high"` + a `<link rel="preload">` hint.
+   * Defaults to false — every tile without this flag gets native lazy loading for free.
+   */
+  imagePriority?: boolean
 }
 
 /** Listing tile imagery — wave shimmer overlay while photos load (default for all {@link ListingTile} usage). */
@@ -53,6 +59,7 @@ export function ListingTileImageMedia({
   overlayTopLeft,
   overlayBottomRight,
   overlayFull,
+  imagePriority = false,
 }: ListingTileImageMediaProps) {
   const count = urls.length
   const [index, setIndex] = useState(0)
@@ -143,7 +150,7 @@ export function ListingTileImageMedia({
               style={objectStyle}
               onLoad={handleImageLoad(u)}
               onError={handleImageLoad(u)}
-              priority={i === 0 && index === 0}
+              priority={imagePriority && i === 0 && index === 0}
             />
           )
         })

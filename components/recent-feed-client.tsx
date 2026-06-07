@@ -1,5 +1,7 @@
 "use client"
 
+import { useState, useEffect } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
 import type { ListingImageForCard } from "@/lib/listing-image-display"
 
@@ -32,8 +34,15 @@ interface RecentFeedClientProps {
   viewerUserId: string | null
   /** Override default empty state copy (e.g. search results). */
   emptyMessage?: string
-  /** Sold strip: “Sold” label under title (see `/sold`, brand sold grids). */
+  /** Sold strip: "Sold" label under title (see `/sold`, brand sold grids). */
   soldPresentation?: boolean
+  /**
+   * When true (ISR-cached pages), the server skipped auth to avoid baking
+   * per-user data into the cached HTML. Favorites and viewer ID are fetched
+   * from the browser Supabase client after mount so hearts and own-listing
+   * detection still work correctly for logged-in users.
+   */
+  hydrateOwnFavorites?: boolean
 }
 
 export function RecentFeedClient({
@@ -43,7 +52,47 @@ export function RecentFeedClient({
   viewerUserId,
   emptyMessage,
   soldPresentation = false,
+  hydrateOwnFavorites = false,
 }: RecentFeedClientProps) {
+  const [clientFavIds, setClientFavIds] = useState<string[] | null>(null)
+  const [clientViewerUserId, setClientViewerUserId] = useState<string | null>(viewerUserId)
+
+  useEffect(() => {
+    if (!hydrateOwnFavorites) return
+    let cancelled = false
+
+    async function hydrate() {
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (cancelled) return
+      setClientViewerUserId(user?.id ?? null)
+      if (!user) {
+        setClientFavIds([])
+        return
+      }
+      const { data: favs } = await supabase
+        .from("favorites")
+        .select("listing_id")
+        .eq("user_id", user.id)
+      if (!cancelled) {
+        setClientFavIds((favs ?? []).map((f) => f.listing_id))
+      }
+    }
+
+    void hydrate()
+    return () => {
+      cancelled = true
+    }
+  }, [hydrateOwnFavorites])
+
+  // When hydrateOwnFavorites is set, clientFavIds starts null (before hydration)
+  // and updates after the auth check; fall back to the server-provided array
+  // (empty on ISR-cached pages) until the client result arrives.
+  const effectiveFavIds = clientFavIds ?? favoritedListingIds
+  const effectiveViewerUserId = clientViewerUserId
+
   if (!listings.length) {
     return (
       <p className="text-center text-muted-foreground py-12">
@@ -54,12 +103,13 @@ export function RecentFeedClient({
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-      {listings.map((listing) => (
+      {listings.map((listing, tileIdx) => (
         <HomePeerListingScrollTile
           key={listing.id}
           layout="grid"
-          userId={viewerUserId}
-          isFavorited={favoritedListingIds.includes(listing.id)}
+          userId={effectiveViewerUserId}
+          isFavorited={effectiveFavIds.includes(listing.id)}
+          imagePriority={tileIdx < 2}
           statusLabel={soldPresentation ? "sold" : undefined}
           listing={{
             id: listing.id,

@@ -60,6 +60,7 @@ export function HomePeerListingScrollTile({
   imageTopLeftOverlay,
   showFavorites = true,
   onFavoritedChange,
+  imagePriority = false,
 }: {
   listing: HomePeerScrollListing
   userId: string | null
@@ -75,6 +76,8 @@ export function HomePeerListingScrollTile({
   showFavorites?: boolean
   /** Optional — e.g. cart favorites row removes a tile when unfavorited. */
   onFavoritedChange?: (favorited: boolean) => void
+  /** Forwarded to ListingTile → ListingTileImageMedia — see its JSDoc for usage rules. */
+  imagePriority?: boolean
 }) {
   const cart = computePeerCartPriceAction(userId, {
     id: listing.id,
@@ -106,6 +109,7 @@ export function HomePeerListingScrollTile({
       price={Number(listing.price)}
       imageTopLeftOverlay={imageTopLeftOverlay}
       imageSizes={imageSizes}
+      imagePriority={imagePriority}
       linkLayout="unified"
       linkClassName={homeUniformScrollLinkClass}
       cardClassName={isGrid ? homePeerListingGridCardClass : homeUniformScrollCardClass}

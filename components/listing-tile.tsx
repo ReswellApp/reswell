@@ -83,6 +83,8 @@ export interface ListingTileProps {
   imageAspect?: "portrait" | "square"
   imageFit?: "cover" | "contain"
   imageClassName?: string
+  /** Forwarded to ListingTileImageMedia — see its JSDoc for usage rules. */
+  imagePriority?: boolean
 
   cardClassName?: string
   linkLayout?: ListingTileLinkLayout
@@ -153,6 +155,7 @@ export function ListingTile({
   imageAspect = "portrait",
   imageFit = "cover",
   imageClassName,
+  imagePriority = false,
   cardClassName = listingProductCardGridClassName,
   linkLayout = "split",
   linkClassName,
@@ -202,6 +205,7 @@ export function ListingTile({
       linkLayoutUnified={linkLayout === "unified"}
       imageFit={imageFit}
       imageClassName={imageClassName}
+      imagePriority={imagePriority}
       overlayTopLeft={imageTopLeftOverlay ?? null}
       overlayBottomRight={favoriteOverlay}
       overlayFull={

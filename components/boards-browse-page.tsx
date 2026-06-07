@@ -416,12 +416,13 @@ async function BoardListings({
         </p>
       ) : null}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {boardRows.map((board) => (
+        {boardRows.map((board, tileIdx) => (
           <HomePeerListingScrollTile
             key={board.id}
             layout="grid"
             userId={user?.id ?? null}
             isFavorited={favoritedIds.includes(board.id)}
+            imagePriority={tileIdx < 2}
             listing={{
               id: board.id,
               slug: board.slug,

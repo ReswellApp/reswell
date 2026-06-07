@@ -5,7 +5,12 @@ interface SearchParams {
   category?: string
 }
 
-export const dynamic = "force-dynamic"
+/**
+ * ISR: curated listings are the same for everyone. User-specific state (favorites,
+ * viewer ID) is hydrated on the client after mount to avoid baking per-user data
+ * into the cached HTML. See RecentFeedClient for the client-side hydration path.
+ */
+export const revalidate = 60
 
 export async function generateMetadata() {
   return resolvePageMetadata("search-recent")
@@ -23,6 +28,7 @@ export default async function SearchRecentPage(props: {
       brandSlugFromUrl=""
       categorySlugFromUrl={categorySlugFromUrl}
       showSeoBookmark
+      skipAuthLookup
     />
   )
 }

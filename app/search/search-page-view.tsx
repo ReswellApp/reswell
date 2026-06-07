@@ -1,5 +1,6 @@
 import { Suspense } from "react"
 import { after } from "next/server"
+import { unstable_cache } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { SearchCategoryFilters } from "./search-section-filters"
 import type { RecentListing } from "@/components/recent-feed-client"
@@ -33,6 +34,20 @@ import { resolveSearchOverrideListingIds } from "@/lib/services/searchResultOver
 
 const LIMIT = 48
 
+/** Categories change only when an admin adds/removes one — safe to cache for a full day. */
+const getCachedBrowseCategories = unstable_cache(
+  async () => {
+    const supabase = await createClient()
+    const { data } = await supabase
+      .from("categories")
+      .select("id, name, slug, board")
+      .eq("board", true)
+    return data ?? []
+  },
+  ["browse-categories"],
+  { revalidate: 60 * 60 * 24, tags: ["browse-categories"] },
+)
+
 type MarketplaceSearchResolutionMeta = {
   resultCount: number
   backend: "elasticsearch" | "supabase"
@@ -55,6 +70,7 @@ export async function SearchPageView({
   categorySlugFromUrl,
   showSeoBookmark,
   analyticsOriginHeaderNav = false,
+  skipAuthLookup = false,
 }: {
   rawQuery: string
   /** Raw `?brandSlug=` — must match `public.brands.slug` to apply. */
@@ -67,6 +83,12 @@ export async function SearchPageView({
    * True when `/search` was opened from the header nav bar (`nq=1`), used for analytics attribution only.
    */
   analyticsOriginHeaderNav?: boolean
+  /**
+   * When true, skip `getUser()` and per-user favorites loading so the rendered
+   * HTML is user-agnostic and safe to serve from a shared ISR cache.
+   * The client component re-hydrates favorites after mount.
+   */
+  skipAuthLookup?: boolean
 }) {
   const brandSlugRequested = brandSlugFromUrl.trim()
   const curatedView = !rawQuery.trim() && !brandSlugRequested
@@ -87,12 +109,16 @@ export async function SearchPageView({
     brandRow = await resolveDirectoryBrandRowFromLabel(supabase, rawQuery)
   }
 
-  const [{ data: { user } }, { data: categoryRows }] = await Promise.all([
-    supabase.auth.getUser(),
-    supabase.from("categories").select("id, name, slug, board").eq("board", true),
+  const [{ data: { user } }, categoryRows] = await Promise.all([
+    // When skipAuthLookup is set, the page is cached by ISR so we must not
+    // bake per-user state into the HTML. Skip the auth round-trip entirely.
+    skipAuthLookup
+      ? Promise.resolve({ data: { user: null } })
+      : supabase.auth.getUser(),
+    getCachedBrowseCategories(),
   ])
 
-  const sortedCategories = sortMarketplaceBrowseCategories(categoryRows ?? [])
+  const sortedCategories = sortMarketplaceBrowseCategories(categoryRows)
   const requestedSlug = categorySlugFromUrl.trim()
   const matched = requestedSlug
     ? sortedCategories.find((c) => c.slug === requestedSlug)
@@ -221,6 +247,7 @@ export async function SearchPageView({
           favoritedListingIds={favoritedListingIds}
           isLoggedIn={!!user}
           viewerUserId={user?.id ?? null}
+          hydrateOwnFavorites={skipAuthLookup}
           emptyMessage={
             brandUnknown
               ? "No brand matches that URL. Return to search and pick a brand from suggestions."
