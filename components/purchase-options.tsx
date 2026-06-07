@@ -12,8 +12,9 @@ const StripeCardCheckout = dynamic(
     })),
   {
     ssr: false,
+    // Matches the reserved min-h of the mounted Stripe element so the page doesn't reflow.
     loading: () => (
-      <div className="flex items-center justify-center gap-2 rounded-lg border bg-card py-8 text-sm text-muted-foreground">
+      <div className="flex min-h-[280px] flex-col items-center justify-center gap-2 rounded-lg border bg-card text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
         Loading secure checkout…
       </div>
@@ -64,6 +65,9 @@ export function PurchaseOptions({
 }: PurchaseOptionsProps) {
   const showCard = stripeCardCheckoutEnabled()
 
+  const canMountStripe =
+    purchaseDetailsReady && (!needsShipping || Boolean(shippingAddressId?.trim()))
+
   if (!showCard) {
     return (
       <div className="rounded-lg border border-dashed bg-muted/30 p-4 text-sm text-muted-foreground">
@@ -76,34 +80,33 @@ export function PurchaseOptions({
     )
   }
 
-  const canMountStripe =
-    purchaseDetailsReady && (!needsShipping || Boolean(shippingAddressId?.trim()))
-
-  if (!canMountStripe) {
-    return (
-      <div className="rounded-lg border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
-        {purchaseDetailsPlaceholder(needsShipping)}
-      </div>
-    )
-  }
-
+  // Reserve space matching the mounted Stripe element + Pay button so the page
+  // doesn't shift when the iframe loads (CLS fix).
   return (
-    <div className="space-y-3">
-      <StripeCardCheckout
-        listingIds={listingIds}
-        listingTitle={listingTitle}
-        price={price}
-        fulfillment={fulfillment ?? null}
-        shippingAddressId={shippingAddressId ?? null}
-        offerId={offerId ?? null}
-        purchaseDetailsReady
-        needsShipping={needsShipping}
-        submitButtonLabel={submitButtonLabel}
-        submitButtonClassName={submitButtonClassName}
-      />
-      {!hideStripeFooter ? (
-        <p className="text-xs text-muted-foreground">Secure payment processed by Stripe.</p>
-      ) : null}
+    <div className="flex min-h-[340px] flex-col">
+      {!canMountStripe ? (
+        <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+          {purchaseDetailsPlaceholder(needsShipping)}
+        </div>
+      ) : (
+        <div className="flex flex-1 flex-col space-y-3">
+          <StripeCardCheckout
+            listingIds={listingIds}
+            listingTitle={listingTitle}
+            price={price}
+            fulfillment={fulfillment ?? null}
+            shippingAddressId={shippingAddressId ?? null}
+            offerId={offerId ?? null}
+            purchaseDetailsReady
+            needsShipping={needsShipping}
+            submitButtonLabel={submitButtonLabel}
+            submitButtonClassName={submitButtonClassName}
+          />
+          {!hideStripeFooter ? (
+            <p className="text-xs text-muted-foreground">Secure payment processed by Stripe.</p>
+          ) : null}
+        </div>
+      )}
     </div>
   )
 }

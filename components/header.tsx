@@ -1,5 +1,6 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
@@ -36,18 +37,13 @@ import {
   LogOut,
 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
-import { HeaderNavSearch } from "@/components/header-nav-search"
-import { SiteSearchBar, siteSearchInputClassName, SITE_FILTER_BAR_HEIGHT } from "@/components/site-search-bar"
+import { SITE_FILTER_BAR_HEIGHT } from "@/components/site-search-bar"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { forceReleaseBodyScrollLock, useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { useClientSearchParams } from "@/hooks/use-client-search-params"
 import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
 import { clearNavSearchQuery, writeNavSearchQuery } from "@/lib/nav-search-storage"
-import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
-import { BRANDS_BASE } from "@/lib/brands/routes"
-import { navigateToBrandProfileFromNavPick } from "@/lib/nav-marketplace-brand-search"
 import {
   boardBrowseNavItemIsActive,
   siteHeaderMainCategoryNavLinks,
@@ -71,6 +67,18 @@ import { SiteWordmarkLink } from "@/components/site-wordmark-link"
 import { HeaderMobileCategoryBar } from "@/components/header-mobile-category-bar"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
+
+// Lazy-loaded: keeps SearchInputWithSuggest (1 400+ lines) and HeaderNavSearch
+// (529 lines) out of the initial page bundle — they load after first paint.
+const HeaderNavSearch = dynamic(
+  () => import("@/components/header-nav-search").then((m) => ({ default: m.HeaderNavSearch })),
+  { ssr: false },
+)
+const HeaderSearchOverlay = dynamic(
+  () =>
+    import("@/components/header-search-overlay").then((m) => ({ default: m.HeaderSearchOverlay })),
+  { ssr: false, loading: () => null },
+)
 
 /** Post-auth destination when a guest taps “List your board” in the header. */
 const GUEST_SELL_REDIRECT = "/sell"
@@ -202,19 +210,6 @@ function isSearchResultsPath(p: string) {
   return p === "/search" || p === "/search/recent"
 }
 
-/** `/search` opened from header overlay / compact nav — drives analytics `nq=1` + category carry-over. */
-function marketplaceNavSearchHref(
-  rawQuery: string,
-  pathname: string | null,
-  categorySource: Pick<URLSearchParams, "get">,
-): string {
-  const params = new URLSearchParams()
-  params.set("q", rawQuery.trim())
-  params.set("nq", "1")
-  const cat = isSearchResultsPath(pathname ?? "") ? categorySource.get("category") : null
-  if (cat?.trim()) params.set("category", cat.trim())
-  return `/search?${params.toString()}`
-}
 
 const CATEGORY_BAR_GAP_PX = 32
 
@@ -845,70 +840,6 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       pathname === "/checkout" ||
       pathname.startsWith("/checkout/"))
 
-  const headerSearchOverlayForm = (
-    <SiteSearchBar
-      compact
-      onSubmit={async (e) => {
-        e.preventDefault()
-        const q = searchQuery.trim()
-        if (!q) {
-          clearNavSearchQuery()
-          setSearchQuery("")
-          setSearchOpen(false)
-          await goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
-          return
-        }
-        const href = marketplaceNavSearchHref(q, pathname, headerSearchParams)
-        setSearchQuery(q)
-        writeNavSearchQuery(q)
-        router.push(href)
-        setSearchOpen(false)
-      }}
-      className="w-full"
-    >
-      <SearchInputWithSuggest
-        value={searchQuery}
-        onChange={setSearchQuery}
-        onBrandStripPick={(brandName, resolved) => {
-          if (resolved?.catalogSlug) {
-            router.push(`${BRANDS_BASE}/${encodeURIComponent(resolved.catalogSlug)}`)
-          } else {
-            void navigateToBrandProfileFromNavPick(router, brandName, {
-              categorySlug: isSearchResultsPath(pathname ?? "")
-                ? headerSearchParams.get("category")
-                : null,
-              navSubmitted: true,
-            })
-          }
-          setSearchQuery("")
-          clearNavSearchQuery()
-          setSearchOpen(false)
-        }}
-        onSelect={(text) => {
-          const term = text.trim()
-          if (!term) return
-          setSearchQuery(term)
-          writeNavSearchQuery(term)
-          router.push(marketplaceNavSearchHref(term, pathname, headerSearchParams))
-          setSearchOpen(false)
-        }}
-        onNavigate={() => {
-          setSearchQuery("")
-          clearNavSearchQuery()
-          setSearchOpen(false)
-        }}
-        placeholder="Search surfboards…"
-        section=""
-        listboxId="nav-search-suggestions-tablet"
-        inputClassName={siteSearchInputClassName({ compact: true })}
-        className="w-full"
-        autoFocus={searchOpen}
-        analyticsSurface="header_nav"
-        showTextSuggestions={false}
-        matchAnchorWidth
-      />
-    </SiteSearchBar>
-  )
 
   if (isMinimalNavChrome) {
     return (
@@ -1108,7 +1039,12 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 align="center"
                 sideOffset={8}
               >
-                {headerSearchOverlayForm}
+                <HeaderSearchOverlay
+                  searchQuery={searchQuery}
+                  searchOpen={searchOpen}
+                  onQueryChange={setSearchQuery}
+                  onClose={() => setSearchOpen(false)}
+                />
               </PopoverContent>
             </Popover>
 

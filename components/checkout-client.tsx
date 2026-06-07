@@ -223,8 +223,9 @@ export function CheckoutClient({
     if (!needsShipping) {
       return <span className="text-neutral-500">Local pickup</span>
     }
+    // Short text keeps the aside shipping row stable (no line-wrap on mobile = no height shift).
     if (!purchaseDetails.readyToPay) {
-      return <span className="text-neutral-400">Enter shipping address</span>
+      return <span className="text-neutral-400">—</span>
     }
     if (quoteLoading) {
       return <span className="text-neutral-500">Calculating…</span>
@@ -351,7 +352,7 @@ export function CheckoutClient({
                     {quoteError}
                   </p>
                 ) : null}
-                <div className="rounded-[8px] border border-neutral-200 bg-neutral-100/80 px-4 py-3.5 text-[13px] leading-relaxed text-neutral-600">
+                <div className="min-h-[3.5rem] rounded-[8px] border border-neutral-200 bg-neutral-100/80 px-4 py-3.5 text-[13px] leading-relaxed text-neutral-600">
                   {!purchaseDetails.readyToPay
                     ? "Enter your shipping address above to confirm delivery."
                     : quoteLoading

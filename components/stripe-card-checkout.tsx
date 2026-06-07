@@ -320,7 +320,7 @@ export function StripeCardCheckout({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center gap-2 rounded-lg border bg-card py-8 text-sm text-muted-foreground">
+      <div className="flex min-h-[280px] flex-col items-center justify-center gap-2 rounded-lg border bg-card text-sm text-muted-foreground">
         <Loader2 className="h-4 w-4 animate-spin" />
         Loading secure checkout…
       </div>
@@ -328,11 +328,19 @@ export function StripeCardCheckout({
   }
 
   if (error) {
-    return <p className="text-sm text-destructive">{error}</p>
+    return (
+      <div className="flex min-h-[100px] flex-col items-start justify-center">
+        <p className="text-sm text-destructive">{error}</p>
+      </div>
+    )
   }
 
   if (!clientSecret) {
-    return <p className="text-sm text-muted-foreground">Card payment is unavailable.</p>
+    return (
+      <div className="flex min-h-[100px] flex-col items-start justify-center">
+        <p className="text-sm text-muted-foreground">Card payment is unavailable.</p>
+      </div>
+    )
   }
 
   const appearance: Appearance =

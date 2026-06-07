@@ -150,7 +150,7 @@ export function CheckoutOrderSummaryAside({
           </div>
           <div className="flex justify-between gap-4">
             <span className="text-neutral-600">Shipping</span>
-            <div className="text-right text-[14px]">{shippingSummaryRight}</div>
+            <div className="min-w-[5rem] shrink-0 text-right text-[14px]">{shippingSummaryRight}</div>
           </div>
           <div className="flex justify-between gap-4 border-t border-neutral-200/90 pt-4 text-[16px] font-semibold">
             <span className="text-foreground">Total</span>
