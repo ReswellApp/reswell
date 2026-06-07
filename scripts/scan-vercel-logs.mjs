@@ -1,18 +1,21 @@
 #!/usr/bin/env node
 /**
- * Scan Vercel production logs for user-facing errors (CLI / automation).
- * Usage: npm run logs:scan [-- --hours 24]
+ * Scan production Vercel request logs for user-impacting errors and warnings.
  *
- * Loads .env.local and .env.production.local when present (production keys first).
+ * Requires VERCEL_ACCESS_TOKEN (project/team IDs auto-discovered when unset).
+ *
+ * Usage:
+ *   npm run logs:scan
+ *   npm run logs:scan -- --hours 6 --json
  */
 import { readFileSync, existsSync } from "node:fs"
-import { resolve } from "node:path"
+import { join } from "node:path"
 
-function loadEnvFile(relativePath) {
-  const filePath = resolve(process.cwd(), relativePath)
-  if (!existsSync(filePath)) return
-  const content = readFileSync(filePath, "utf8")
-  for (const line of content.split("\n")) {
+function loadDotEnvFile(filename) {
+  const path = join(process.cwd(), filename)
+  if (!existsSync(path)) return
+  const text = readFileSync(path, "utf8")
+  for (const line of text.split("\n")) {
     const trimmed = line.trim()
     if (!trimmed || trimmed.startsWith("#")) continue
     const eq = trimmed.indexOf("=")
@@ -25,58 +28,72 @@ function loadEnvFile(relativePath) {
     ) {
       value = value.slice(1, -1)
     }
-    if (!value) continue
-    if (process.env[key]?.trim()) continue
-    process.env[key] = value
+    if (process.env[key] === undefined) process.env[key] = value
   }
 }
 
-function parseHours(argv) {
-  const idx = argv.indexOf("--hours")
-  if (idx >= 0 && argv[idx + 1]) {
-    const n = Number(argv[idx + 1])
-    if (Number.isFinite(n) && n > 0) return n
-  }
-  return 24
-}
+loadDotEnvFile(".env.local")
+loadDotEnvFile(".env.production.local")
 
-loadEnvFile(".env.local")
-loadEnvFile(".env.production.local")
+const args = process.argv.slice(2)
+const jsonOutput = args.includes("--json")
+const hoursArg = args.find((a) => a.startsWith("--hours="))
+const hoursFlagIndex = args.indexOf("--hours")
+const hours =
+  hoursArg != null
+    ? Number(hoursArg.split("=")[1])
+    : hoursFlagIndex >= 0
+      ? Number(args[hoursFlagIndex + 1])
+      : 24
 
-const hours = parseHours(process.argv.slice(2))
-
-const { scanVercelLogs } = await import("../lib/services/vercelLogs.ts")
-
-const result = await scanVercelLogs(hours)
-
-console.log("")
-console.log("=== Vercel log scan ===")
-console.log(`Range: last ${result.rangeHours}h · scanned ${result.scannedAt}`)
-console.log(
-  `Deployments: ${result.deploymentsScanned} · raw logs: ${result.rawLogCount} · flagged: ${result.filteredLogCount}`,
+const { scanVercelPlatformLogs } = await import(
+  "../lib/services/vercelRequestLogMonitor.ts"
 )
 
-if (result.skippedReason) {
-  console.log("")
-  console.log(`⚠ Scan could not run: ${result.skippedReason}`)
+const summary = await scanVercelPlatformLogs({
+  sinceHours: Math.max(1, hours),
+  environment: "production",
+})
+
+if (summary.skippedReason) {
+  if (jsonOutput) {
+    console.log(JSON.stringify(summary, null, 2))
+  } else {
+    console.error(`[scan-vercel-logs] ${summary.skippedReason}`)
+    console.error(
+      "[scan-vercel-logs] Add VERCEL_ACCESS_TOKEN to Vercel env or pull with: npm run env:pull",
+    )
+  }
   process.exit(2)
 }
 
-console.log(`Critical: ${result.criticalCount} · Warnings: ${result.warningCount}`)
+if (jsonOutput) {
+  console.log(JSON.stringify(summary, null, 2))
+  process.exit(summary.issueCount > 0 ? 1 : 0)
+}
+
+console.log(`Vercel log scan — last ${summary.rangeHours}h (${summary.environment})`)
+console.log(`Fetched ${summary.totalLogsFetched} request log rows`)
+console.log(
+  `Found ${summary.issueCount} issue groups (${summary.criticalCount} critical, ${summary.warningCount} warning)`,
+)
 console.log("")
 
-if (result.issues.length === 0) {
-  console.log("No user-facing errors or warnings in this window.")
+if (summary.issues.length === 0) {
+  console.log("No user-impacting errors or warnings detected.")
   process.exit(0)
 }
 
-for (const issue of result.issues) {
-  const badge = issue.severity === "critical" ? "CRITICAL" : "WARNING "
-  const status = issue.statusCode != null ? ` ${issue.statusCode}` : ""
-  const count = issue.occurrences > 1 ? ` (×${issue.occurrences})` : ""
+for (const issue of summary.issues) {
+  const flag = issue.severity === "critical" ? "CRITICAL" : "WARNING"
   console.log(
-    `[${badge}] ${issue.method} ${issue.path}${status} — ${issue.message.slice(0, 160)}${count}`,
+    `[${flag}] ${issue.requestMethod} ${issue.requestPath} → ${issue.responseStatusCode || "—"} (${issue.occurrenceCount}x)`,
   )
+  console.log(`  ${issue.message}`)
+  if (issue.sampleRequestIds?.length) {
+    console.log(`  request ids: ${issue.sampleRequestIds.join(", ")}`)
+  }
+  console.log("")
 }
 
-process.exit(result.criticalCount > 0 ? 1 : 0)
+process.exit(summary.criticalCount > 0 ? 1 : 0)

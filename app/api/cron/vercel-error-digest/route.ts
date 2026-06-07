@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server"
-import { runVercelErrorDigest } from "@/lib/services/vercelErrorDigest"
+import { runVercelErrorDigest } from "@/lib/services/vercelRequestLogMonitor"
 
 /**
- * Daily digest of Vercel production errors (critical + warning) emailed to the
- * team via Klaviyo. Protected with CRON_SECRET (same pattern as other cron routes).
+ * Daily scan of production Vercel request logs for user-impacting errors and warnings.
+ * Emails admins via Klaviyo ("Platform Error Digest" metric) when issues are found.
+ * Protected with CRON_SECRET (same pattern as other cron routes).
  */
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization")
@@ -12,20 +13,17 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const url = new URL(request.url)
+  const rangeHours = Number(url.searchParams.get("hours") ?? "24")
+  const safeHours =
+    Number.isFinite(rangeHours) && rangeHours > 0 && rangeHours <= 168
+      ? rangeHours
+      : 24
+
   try {
-    const summary = await runVercelErrorDigest(24)
+    const summary = await runVercelErrorDigest(safeHours)
     return NextResponse.json({
-      summary: {
-        sent: summary.sent,
-        skipped: summary.skipped,
-        recipients: summary.recipients,
-        critical_count: summary.criticalCount,
-        warning_count: summary.warningCount,
-        range_hours: summary.rangeHours,
-        deployments_scanned: summary.scan.deploymentsScanned,
-        issue_count: summary.scan.issues.length,
-        skipped_reason: summary.scan.skippedReason ?? null,
-      },
+      summary,
       reference_time: new Date().toISOString(),
     })
   } catch (e) {
