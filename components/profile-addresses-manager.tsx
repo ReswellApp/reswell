@@ -74,9 +74,17 @@ const emptyForm = {
   is_default: false,
 }
 
-export function ProfileAddressesManager({ copy }: { copy: ProfileAddressesCopy }) {
-  const [addresses, setAddresses] = useState<ProfileAddressRow[]>([])
-  const [loading, setLoading] = useState(true)
+export function ProfileAddressesManager({
+  copy,
+  initialAddresses,
+  fetchError,
+}: {
+  copy: ProfileAddressesCopy
+  initialAddresses?: ProfileAddressRow[]
+  fetchError?: string
+}) {
+  const [addresses, setAddresses] = useState<ProfileAddressRow[]>(initialAddresses ?? [])
+  const [loading, setLoading] = useState(initialAddresses === undefined)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState(emptyForm)
@@ -96,8 +104,13 @@ export function ProfileAddressesManager({ copy }: { copy: ProfileAddressesCopy }
   }, [])
 
   useEffect(() => {
-    load()
-  }, [load])
+    if (initialAddresses !== undefined) {
+      setAddresses(initialAddresses)
+      setLoading(false)
+      return
+    }
+    void load()
+  }, [load, initialAddresses])
 
   function openAdd() {
     setEditingId(null)
@@ -212,6 +225,9 @@ export function ProfileAddressesManager({ copy }: { copy: ProfileAddressesCopy }
 
   return (
     <>
+      {fetchError ? (
+        <p className="mb-4 text-sm text-destructive">Could not load addresses. Please refresh the page.</p>
+      ) : null}
       <Card>
         <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4 space-y-0">
           <div>

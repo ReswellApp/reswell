@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { profileAddressInputSchema, profileAddressPatchSchema } from "@/lib/address-input"
+import { fetchProfileAddresses } from "@/lib/db/profile-addresses"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 
 export async function getProfileAddresses(): Promise<{
@@ -17,18 +18,9 @@ export async function getProfileAddresses(): Promise<{
     return { addresses: [], error: "Unauthorized" }
   }
 
-  const { data, error } = await supabase
-    .from("addresses")
-    .select("*")
-    .eq("profile_id", user.id)
-    .order("is_default", { ascending: false })
-    .order("created_at", { ascending: false })
+  const { addresses, error } = await fetchProfileAddresses(supabase, user.id)
 
-  if (error) {
-    return { addresses: [], error: error.message }
-  }
-
-  return { addresses: (data ?? []) as ProfileAddressRow[], error: null }
+  return { addresses, error: error ?? null }
 }
 
 export async function createProfileAddress(

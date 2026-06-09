@@ -29,25 +29,27 @@ import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { buildPasswordRecoveryCallbackUrl } from "@/lib/auth/password-recovery-callback-url"
 import { ProfileChangePasswordSection } from "@/components/features/dashboard/profile-change-password-section"
-
-interface Profile {
-  id: string
-  email: string
-  display_name: string
-  avatar_url: string | null
-  shop_banner_url: string | null
-  location: string | null
-  city: string | null
-  bio: string | null
-}
+import type { DashboardProfileRow } from "@/lib/db/dashboard-profile"
+import type { ProfileAddressRow } from "@/lib/profile-address"
 
 type ProfileSettingsTab = "profile" | "addresses"
 
-export function DashboardProfileSettings() {
+interface DashboardProfileSettingsProps {
+  initialProfile: DashboardProfileRow | null
+  profileFetchError?: string
+  initialAddresses: ProfileAddressRow[]
+  addressesFetchError?: string
+}
+
+export function DashboardProfileSettings({
+  initialProfile,
+  profileFetchError,
+  initialAddresses,
+  addressesFetchError,
+}: DashboardProfileSettingsProps) {
   const { t } = useLocale()
   const [activeTab, setActiveTab] = useState<ProfileSettingsTab>("profile")
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState<DashboardProfileRow | null>(initialProfile)
   const [saving, setSaving] = useState(false)
   const [profileSavedFlash, setProfileSavedFlash] = useState(false)
   const [avatarSavedFlash, setAvatarSavedFlash] = useState(false)
@@ -61,22 +63,8 @@ export function DashboardProfileSettings() {
   const supabase = createClient()
 
   useEffect(() => {
-    async function fetchProfile() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).single()
-
-      if (!error && data) {
-        setProfile(data as Profile)
-      }
-      setLoading(false)
-    }
-
-    fetchProfile()
-  }, [supabase])
+    setProfile(initialProfile)
+  }, [initialProfile])
 
   useEffect(() => {
     const applyHash = () => {
@@ -330,18 +318,12 @@ export function DashboardProfileSettings() {
     window.location.assign("/")
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )
-  }
-
   if (!profile) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">Profile not found</p>
+        <p className="text-muted-foreground">
+          {profileFetchError ? "Could not load profile. Please refresh the page." : "Profile not found"}
+        </p>
       </div>
     )
   }
@@ -595,7 +577,11 @@ export function DashboardProfileSettings() {
         </TabsContent>
 
         <TabsContent value="addresses" className="mt-6">
-          <ProfileAddressesManager copy={addr} />
+          <ProfileAddressesManager
+            copy={addr}
+            initialAddresses={initialAddresses}
+            fetchError={addressesFetchError}
+          />
         </TabsContent>
       </Tabs>
 
