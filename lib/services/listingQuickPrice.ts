@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
+import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
+import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { patchListingPriceByOwner } from "@/lib/db/listings"
@@ -12,6 +14,8 @@ type ListingQuickPriceRow = {
   user_id: string
   status: string
   price: string | number
+  slug: string | null
+  section: string | null
 }
 
 export type UpdateSellerListingQuickPriceResult =
@@ -28,7 +32,7 @@ async function loadListingQuickPriceRow(
 ): Promise<ListingQuickPriceRow | null> {
   const { data, error } = await supabase
     .from("listings")
-    .select("user_id, status, price")
+    .select("user_id, status, price, slug, section")
     .eq("id", listingId)
     .maybeSingle()
 
@@ -103,6 +107,11 @@ export async function updateSellerListingQuickPrice(
 
   void syncListingToGoogleMerchantBestEffort(supabase, listingId)
   await revalidateSellersAfterListingChange(supabase, sellerUserId)
+
+  revalidateListingDetailPage(listingId, row.slug)
+  if (row.section === "surfboards") {
+    revalidateBoardsBrowseCatalog()
+  }
 
   return { ok: true, priceUsd: nextUsd }
 }

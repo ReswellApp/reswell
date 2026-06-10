@@ -8,6 +8,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { VerifiedBadge } from "@/components/verified-badge"
+import { MessageSellerDialog } from "@/components/features/messages/message-seller-dialog"
 import {
   ShieldCheck,
   Lock,
@@ -223,7 +224,16 @@ export function ListingAboutSellerSection({
 
   const messageHref = isLoggedIn ? messageHrefAuthenticated : messageHrefLoginRedirect
 
+  // `/messages/new?user={sellerId}&listing={listingId}` — drives the in-page popup.
+  const composeParams = new URLSearchParams(messageHrefAuthenticated.split("?")[1] ?? "")
+  const composeUserId = composeParams.get("user")
+  const composeListingId = composeParams.get("listing")
+  const canUseMessageDialog = isLoggedIn && !!composeUserId && !!composeListingId
+
   const showActions = !isOwnListing && !isSold
+
+  const messageButtonClassName =
+    "min-h-touch w-full rounded-full border-0 bg-[#f2f3f5] px-5 py-2.5 text-[16px] font-semibold text-foreground shadow-none hover:bg-[#e8e9ec] dark:bg-secondary dark:hover:bg-secondary/80"
 
   return (
     <section className="border-b border-neutral-200/90 pb-6 dark:border-neutral-700/70">
@@ -261,22 +271,28 @@ export function ListingAboutSellerSection({
 
         {showActions ? (
           <div className="flex w-full shrink-0 flex-col gap-[10px] lg:mt-0 lg:w-[min(100%,246px)]">
+            {canUseMessageDialog ? (
+              <MessageSellerDialog
+                listingId={composeListingId}
+                sellerId={composeUserId}
+                sellerDisplayName={displayName}
+                sellerAvatarSrc={avatarSrc}
+                sellerShopVerified={!!profiles?.shop_verified}
+                triggerClassName={messageButtonClassName}
+              />
+            ) : (
+              <Button variant="secondary" size="lg" asChild className={messageButtonClassName}>
+                <Link href={messageHref} prefetch={false}>
+                  <MessageSquare className="mr-2 h-[18px] w-[18px]" aria-hidden />
+                  Message Seller
+                </Link>
+              </Button>
+            )}
             <Button
               variant="secondary"
               size="lg"
               asChild
-              className="min-h-touch w-full rounded-full border-0 bg-[#f2f3f5] px-5 py-2.5 text-[16px] font-semibold text-foreground shadow-none hover:bg-[#e8e9ec] dark:bg-secondary dark:hover:bg-secondary/80"
-            >
-              <Link href={messageHref} prefetch={false}>
-                <MessageSquare className="mr-2 h-[18px] w-[18px]" aria-hidden />
-                Message Seller
-              </Link>
-            </Button>
-            <Button
-              variant="secondary"
-              size="lg"
-              asChild
-              className="min-h-touch w-full rounded-full border-0 bg-[#f2f3f5] px-5 py-2.5 text-[16px] font-semibold text-foreground shadow-none hover:bg-[#e8e9ec] dark:bg-secondary dark:hover:bg-secondary/80"
+              className={messageButtonClassName}
             >
               <Link href={sellerProfileHref} prefetch={false}>
                 View more from this shop

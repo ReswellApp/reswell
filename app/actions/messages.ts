@@ -225,6 +225,50 @@ export async function ensureMarketplaceThread(input: unknown) {
   return { compose: true as const }
 }
 
+/**
+ * Ensures the listing conversation exists (creating it if needed) so media can be
+ * sent as the first message — uploads are conversation-scoped.
+ */
+export async function ensureMarketplaceListingConversation(input: unknown) {
+  const parsed = marketplaceListingThreadSchema.safeParse(input)
+  if (!parsed.success) {
+    return { error: "Invalid request." as const }
+  }
+
+  const { listing_id, other_user_id } = parsed.data
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: "Unauthorized" as const }
+  }
+
+  const ctx = await resolveMarketplaceListingThreadContext(
+    supabase,
+    user.id,
+    listing_id,
+    other_user_id,
+  )
+  if (!ctx.ok) {
+    return { error: ctx.error as "Invalid request." | "Listing not found." | "You can’t open this conversation." }
+  }
+
+  const conversation = await ensureConversationForBuyerSellerListing(
+    supabase,
+    ctx.buyerId,
+    ctx.sellerId,
+    listing_id,
+  )
+  if (!conversation) {
+    return { error: "Could not start conversation." as const }
+  }
+
+  return { conversation_id: conversation.id }
+}
+
 /** Creates the listing thread on first send (buyer or seller). */
 export async function sendMarketplaceListingMessage(input: unknown) {
   const parsed = marketplaceListingThreadSchema

@@ -48,7 +48,7 @@ export function BoardsBrowseFilterToolbar({
   onToggleDesktopFilters,
   transitionStart,
 }: Props) {
-  const { navigate, searchParams } = useBoardsBrowseRouter(transitionStart)
+  const { navigate, searchParams } = useBoardsBrowseRouter({ transitionStart })
 
   const urlQ = searchParams.get("q") ?? ""
   const [q, setQ] = useState(urlQ)

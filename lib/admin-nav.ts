@@ -14,6 +14,7 @@ export type AdminNavIconKey =
   | 'users'
   | 'wallet'
   | 'shoppingBag'
+  | 'shoppingCart'
   | 'lifeBuoy'
   | 'messageSquare'
   | 'shield'
@@ -43,6 +44,7 @@ const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
   '/admin/wallets',
   '/admin/settings',
   '/admin/seo',
+  '/admin/google-merchant',
   '/admin/search-curation',
   '/admin/shipping',
   '/admin/tools',
@@ -70,6 +72,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     label: 'Analytics',
     items: [
       { href: '/admin/live', label: 'Live', icon: 'activity' },
+      { href: '/admin/google-merchant', label: 'Google Merchant', icon: 'shoppingCart' },
       { href: '/admin/used-board-market-dashboard', label: 'Used board market', icon: 'waves' },
       { href: '/admin/catalog-overview', label: 'Brand catalog explorer', icon: 'folderTree' },
       { href: '/admin/search-analytics', label: 'Search analytics', icon: 'lineChart' },

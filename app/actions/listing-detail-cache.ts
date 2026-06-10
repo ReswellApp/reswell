@@ -1,12 +1,10 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
-import { revalidateListingPublicDetailCatalog } from "@/lib/cache/revalidate-listing-public-detail"
+import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
 import { revalidateNavSuggestedSurfboards } from "@/lib/cache/revalidate-nav-suggested-surfboards"
 import { revalidateSellerProfileAndDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
-import { listingDetailHref } from "@/lib/listing-href"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 
@@ -14,26 +12,6 @@ const listingMutationRevalidateSchema = z.object({
   listingId: z.string().uuid(),
   slug: z.string().nullable().optional(),
 })
-
-/**
- * `/l/[listing]` is cached by the App Router; invalidate the canonical URL (and the `/l/{uuid}`
- * alias when a slug exists) so the next visit reflects fresh fulfillment and listing fields.
- */
-function revalidateListingDetailPaths(listingId: string, slug?: string | null) {
-  const primary = listingDetailHref({
-    id: listingId,
-    slug: slug ?? undefined,
-    section: "surfboards",
-  })
-  revalidatePath(primary, "page")
-
-  const trimmed = typeof slug === "string" ? slug.trim() : ""
-  if (trimmed !== "") {
-    revalidatePath(`/l/${listingId}`, "page")
-  }
-
-  revalidateListingPublicDetailCatalog()
-}
 
 const profileUpdateRevalidateSchema = z.object({
   profileId: z.string().uuid().optional(),
@@ -82,7 +60,7 @@ export async function revalidateListingDetailAfterListingMutation(
     return { ok: false, error: "Unauthorized" }
   }
 
-  revalidateListingDetailPaths(listingId, slug ?? null)
+  revalidateListingDetailPage(listingId, slug ?? null)
   revalidateBoardsBrowseCatalog()
   revalidateNavSuggestedSurfboards()
   await revalidateSellerProfileAndDirectoryCatalog(supabase, user.id)

@@ -1,6 +1,7 @@
 "use client"
 
-import { useCallback, useMemo } from "react"
+import { useCallback, useMemo, useOptimistic } from "react"
+import { useSearchParams } from "next/navigation"
 import { useBoardsBrowseRouter } from "@/hooks/use-boards-browse-router"
 import {
   FACET_PARAM_KEYS,
@@ -56,7 +57,26 @@ export type BoardsFilterState = {
 export function useBoardsFilterState(
   transitionStart?: (cb: () => void) => void,
 ): BoardsFilterState {
-  const { navigate, searchParams } = useBoardsBrowseRouter(transitionStart)
+  const liveSearchParams = useSearchParams()
+
+  // The selection UI (checkboxes, chips, count) is driven entirely by the URL, but a
+  // filtered navigation keeps `useSearchParams()` pinned to the old URL until the server
+  // finishes re-rendering. An optimistic mirror of the params flips instantly on click and
+  // converges with the real URL once the navigation commits.
+  const baseParams = useMemo(
+    () => new URLSearchParams(liveSearchParams.toString()),
+    [liveSearchParams],
+  )
+  const [searchParams, applyOptimisticParams] = useOptimistic(
+    baseParams,
+    (_prev: URLSearchParams, next: URLSearchParams) => next,
+  )
+
+  const { navigate } = useBoardsBrowseRouter({
+    transitionStart,
+    baseParams: searchParams,
+    onNavigate: applyOptimisticParams,
+  })
 
   const selections = useMemo(
     () =>

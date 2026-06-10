@@ -49,7 +49,7 @@ export function SignUpWelcomePanel({
         }
         await clearGoogleNewSignupCookie()
       }
-      navigateAfterClientAuth(nextPath, router)
+      await navigateAfterClientAuth(nextPath, router)
     })()
   }
 

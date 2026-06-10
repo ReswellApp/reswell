@@ -53,8 +53,8 @@ export function SignUpFormPanel({
   useEffect(() => {
     const supabase = createClient()
     const dest = safeRedirectPath(redirectTo)
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) navigateAfterClientAuth(dest, router)
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (user) await navigateAfterClientAuth(dest, router)
     })
   }, [router, redirectTo])
 

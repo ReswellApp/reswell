@@ -25,6 +25,7 @@ import {
 } from "@/lib/auth/auth-modal-shell-classes"
 import { navigateAfterClientAuth } from "@/lib/auth/navigate-after-client-auth"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
+import { documentHasSupabaseAuthCookies } from "@/lib/auth/wait-for-auth-cookies-on-document"
 import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 
 export function LoginFormPanel({
@@ -57,7 +58,9 @@ export function LoginFormPanel({
       if (!session?.user) {
         session = await waitForClientSession({ supabase })
       }
-      if (session?.user) navigateAfterClientAuth(dest, router)
+      if (session?.user && documentHasSupabaseAuthCookies()) {
+        await navigateAfterClientAuth(dest, router)
+      }
     })()
   }, [router, redirectTo])
 
@@ -78,7 +81,7 @@ export function LoginFormPanel({
         window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
       }
       onLoggedIn?.()
-      navigateAfterClientAuth(redirectTo, router)
+      await navigateAfterClientAuth(redirectTo, router)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An error occurred")
     } finally {

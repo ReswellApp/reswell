@@ -31,13 +31,16 @@ export function MessageMediaSendButton({
   onSent,
   onBlockedPolicy,
   className,
+  ensureConversationId,
 }: {
-  conversationId: string
+  conversationId: string | null
   disabled?: boolean
   caption?: string
   onSent: (message: SentMediaMessage) => void
   onBlockedPolicy?: (originalContent: string, reasonCode: MessagePolicyReasonCode) => void
   className?: string
+  /** Creates the conversation on demand when media is the first message. */
+  ensureConversationId?: () => Promise<string | null>
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
@@ -53,6 +56,15 @@ export function MessageMediaSendButton({
 
     setUploading(true)
     try {
+      let targetConversationId = conversationId
+      if (!targetConversationId && ensureConversationId) {
+        targetConversationId = await ensureConversationId()
+      }
+      if (!targetConversationId) {
+        toast.error("Could not start the conversation. Try sending a message first.")
+        return
+      }
+
       const {
         data: { session },
       } = await supabase.auth.getSession()
@@ -63,7 +75,7 @@ export function MessageMediaSendButton({
 
       const uploaded = await uploadMessageMediaFile({
         file,
-        conversationId,
+        conversationId: targetConversationId,
         supabaseUrl: supabaseProjectUrl,
         accessToken: session.access_token,
         anonKey: supabaseAnonKey,
@@ -71,7 +83,7 @@ export function MessageMediaSendButton({
 
       const result = await raceWithDeadline(
         sendConversationMediaReply({
-          conversation_id: conversationId,
+          conversation_id: targetConversationId,
           attachment: uploaded.attachment,
           caption: caption?.trim() || undefined,
         }),
