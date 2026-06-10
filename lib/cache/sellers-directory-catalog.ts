@@ -214,7 +214,7 @@ async function loadSellersDirectoryCatalogUncached(): Promise<SellersDirectoryCa
 
 export const getCachedSellersDirectoryCatalog = unstable_cache(
   loadSellersDirectoryCatalogUncached,
-  ["sellers-directory-catalog-v1"],
+  ["sellers-directory-catalog-v2"],
   {
     revalidate: SELLERS_DIRECTORY_REVALIDATE_SECONDS,
     tags: [SELLERS_DIRECTORY_CACHE_TAG],

@@ -9,6 +9,8 @@ const MOSAIC_SLOT_COUNT = 1
 export type SellerDirectoryMosaicSlot = {
   src: string
   alt: string
+  /** Tried in order when `src` fails to load (e.g. deleted storage object behind a stale cache). */
+  fallbackSrcs?: string[]
 }
 
 type MosaicListingPick = {
@@ -87,8 +89,36 @@ function collectShopFallbackUrls(shop: MosaicShopPick): string[] {
   return urls.slice(0, MOSAIC_SLOT_COUNT)
 }
 
+/** Every renderable candidate URL for a seller tile, in preference order, deduped. */
+function collectAllCandidateUrls(listings: MosaicListingPick[], shop: MosaicShopPick): string[] {
+  const seen = new Set<string>()
+  const urls: string[] = []
+  const push = (url: string | null | undefined) => {
+    const t = trimUrl(url)
+    if (t && !seen.has(t)) {
+      seen.add(t)
+      urls.push(t)
+    }
+  }
+
+  for (const listing of listings) {
+    for (const url of listingTileCarouselImageUrls(listing.listing_images)) {
+      push(url)
+    }
+  }
+
+  for (const raw of [shop.shop_banner_url, shop.shop_logo_url, shop.avatar_url]) {
+    const t = trimUrl(raw)
+    if (t) push(profileMediaDisplaySrc(t))
+  }
+
+  return urls
+}
+
 /**
  * Returns one tile image slot. Uses the first listing photo, then shop banner / logo / avatar.
+ * Remaining candidates are kept as `fallbackSrcs` so the client can recover when the primary
+ * image 404s (e.g. a listing photo deleted after the directory cache was populated).
  */
 export function buildSellerDirectoryMosaicSlots(
   listings: MosaicListingPick[],
@@ -97,6 +127,7 @@ export function buildSellerDirectoryMosaicSlots(
   const label = sellerLabel(shop)
   const listingUrls = collectListingPhotoUrls(listings)
   const urls = listingUrls.length > 0 ? listingUrls : collectShopFallbackUrls(shop)
+  const allCandidates = collectAllCandidateUrls(listings, shop)
 
   if (urls.length === 0) {
     return Array.from({ length: MOSAIC_SLOT_COUNT }, (_, index) => ({
@@ -108,6 +139,7 @@ export function buildSellerDirectoryMosaicSlots(
   return urls.map((src, index) => ({
     src,
     alt: listings[index]?.title ?? listings[0]?.title ?? label,
+    fallbackSrcs: allCandidates.filter((url) => url !== src),
   }))
 }
 

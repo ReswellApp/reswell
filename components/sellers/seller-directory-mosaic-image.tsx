@@ -21,12 +21,21 @@ export function SellerDirectoryMosaicImage({
   priority,
 }: SellerDirectoryMosaicImageProps) {
   const [loaded, setLoaded] = useState(false)
+  // Index into [slot.src, ...slot.fallbackSrcs]; advances when an image fails to load.
+  const [candidateIndex, setCandidateIndex] = useState(0)
 
   const handleLoad = useCallback((_event: SyntheticEvent<HTMLImageElement>) => {
     setLoaded(true)
   }, [])
 
-  if (!slot.src) {
+  const handleError = useCallback((_event: SyntheticEvent<HTMLImageElement>) => {
+    setCandidateIndex((index) => index + 1)
+  }, [])
+
+  const candidates = [slot.src, ...(slot.fallbackSrcs ?? [])].filter((url) => url.length > 0)
+  const src = candidates[candidateIndex]
+
+  if (!src) {
     return <div className={cn("bg-muted", className)} aria-hidden />
   }
 
@@ -35,16 +44,18 @@ export function SellerDirectoryMosaicImage({
   return (
     <div className={cn("relative min-h-0 overflow-hidden bg-muted", className)}>
       <Image
-        src={slot.src}
+        key={src}
+        src={src}
         alt={slot.alt}
         fill
         sizes={sizes}
         className="object-cover object-center"
-        unoptimized={listingImageShouldBypassOptimization(slot.src)}
+        unoptimized={listingImageShouldBypassOptimization(src)}
         onLoad={handleLoad}
-        onError={handleLoad}
+        onError={handleError}
         priority={priority}
       />
+
       <div
         className={cn(
           "listing-tile-shimmer listing-tile-shimmer-overlay absolute inset-0 z-[3]",
