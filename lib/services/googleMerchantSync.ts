@@ -11,6 +11,7 @@ import {
 import {
   deleteGoogleMerchantProductInput,
   insertGoogleMerchantProductInput,
+  listAllGoogleMerchantProducts,
 } from "@/lib/services/googleMerchantSetup"
 
 export type GoogleMerchantSyncListingResult =
@@ -82,7 +83,63 @@ export type GoogleMerchantBulkSyncSummary = {
   deleted: number
   skipped: number
   errors: number
+  reconciled_checked: number
+  reconciled_deleted: number
+  reconciled_errors: number
   error_samples: Array<{ offerId: string; error: string }>
+}
+
+async function collectEligibleOfferIds(supabase: SupabaseClient): Promise<Set<string>> {
+  const offerIds = new Set<string>()
+  const pageSize = 100
+  let from = 0
+
+  for (;;) {
+    const batch = await listGoogleMerchantListingBatch(supabase, { from, limit: pageSize })
+    if (batch.length === 0) break
+
+    for (const listing of batch) {
+      if (isGoogleMerchantEligibleListing(listing)) {
+        offerIds.add(listing.id)
+      }
+    }
+
+    if (batch.length < pageSize) break
+    from += pageSize
+  }
+
+  return offerIds
+}
+
+async function reconcileGoogleMerchantOrphans(
+  eligibleOfferIds: Set<string>,
+  summary: GoogleMerchantBulkSyncSummary,
+): Promise<void> {
+  const listed = await listAllGoogleMerchantProducts()
+  if (!listed.ok) {
+    summary.reconciled_errors += 1
+    if (summary.error_samples.length < 10) {
+      summary.error_samples.push({ offerId: "*", error: listed.error })
+    }
+    return
+  }
+
+  summary.reconciled_checked = listed.products.length
+
+  for (const product of listed.products) {
+    if (eligibleOfferIds.has(product.offerId)) continue
+
+    const deleted = await deleteGoogleMerchantProductInput(product.offerId)
+    if (deleted.ok || deleted.status === 404) {
+      summary.reconciled_deleted += 1
+      continue
+    }
+
+    summary.reconciled_errors += 1
+    if (summary.error_samples.length < 10) {
+      summary.error_samples.push({ offerId: product.offerId, error: deleted.error })
+    }
+  }
 }
 
 export async function syncAllActiveListingsToGoogleMerchant(
@@ -94,6 +151,9 @@ export async function syncAllActiveListingsToGoogleMerchant(
     deleted: 0,
     skipped: 0,
     errors: 0,
+    reconciled_checked: 0,
+    reconciled_deleted: 0,
+    reconciled_errors: 0,
     error_samples: [],
   }
 
@@ -101,6 +161,7 @@ export async function syncAllActiveListingsToGoogleMerchant(
     return summary
   }
 
+  const eligibleOfferIds = await collectEligibleOfferIds(supabase)
   const pageSize = 100
   let from = 0
 
@@ -135,6 +196,8 @@ export async function syncAllActiveListingsToGoogleMerchant(
     if (batch.length < pageSize) break
     from += pageSize
   }
+
+  await reconcileGoogleMerchantOrphans(eligibleOfferIds, summary)
 
   return summary
 }

@@ -9,10 +9,14 @@ const GOOGLE_MERCHANT_LISTING_SELECT = `
   price,
   condition,
   brand,
+  model,
   section,
   status,
   hidden_from_site,
-  listing_images ( url, thumbnail_url, is_primary )
+  shipping_available,
+  shipping_price,
+  board_shipping_cost_mode,
+  listing_images ( url, thumbnail_url, is_primary, sort_order )
 `
 
 export async function getGoogleMerchantListingById(

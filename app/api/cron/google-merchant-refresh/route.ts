@@ -4,10 +4,10 @@ import { isGoogleMerchantConfigured } from "@/lib/google-merchant/config"
 import { syncAllActiveListingsToGoogleMerchant } from "@/lib/services/googleMerchantSync"
 
 /**
- * Daily refresh for Google Merchant product feed (Google recommends updates at least every 30 days).
+ * Hourly refresh + reconciliation for Google Merchant product feed.
  * GET /api/cron/google-merchant-refresh
  *
- * Protected with CRON_SECRET when set.
+ * Protected with CRON_SECRET when set. Scheduled in vercel.json (`0 * * * *`).
  */
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization")

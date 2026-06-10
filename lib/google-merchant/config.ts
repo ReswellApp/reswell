@@ -68,6 +68,35 @@ export function getGoogleMerchantDeveloperEmail(): string | null {
   return raw || null
 }
 
+/**
+ * National median placeholder for Reswell-calculated surfboard shipping in the Merchant feed.
+ * Checkout still uses live ShipEngine quotes; this is only for Google Shopping row metadata.
+ */
+export const GOOGLE_MERCHANT_DEFAULT_ESTIMATED_SHIPPING_USD = 89
+
+/** Representative USD shipping for Reswell-calculated surfboard rates in the Merchant feed. */
+export function getGoogleMerchantEstimatedShippingUsd(): number {
+  const raw = process.env.GOOGLE_MERCHANT_ESTIMATED_SHIPPING_USD?.trim()
+  if (raw) {
+    const parsed = Number.parseFloat(raw)
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      return Math.round(parsed * 100) / 100
+    }
+  }
+  return GOOGLE_MERCHANT_DEFAULT_ESTIMATED_SHIPPING_USD
+}
+
+/** Optional US tax rate (percentage) for feed rows, e.g. `0` or `8.25`. Omit when unset. */
+export function getGoogleMerchantUsTaxRate(): number | null {
+  const raw = process.env.GOOGLE_MERCHANT_US_TAX_RATE?.trim()
+  if (!raw) return null
+  const parsed = Number.parseFloat(raw)
+  if (!Number.isFinite(parsed) || parsed < 0) return null
+  return parsed
+}
+
+export const GOOGLE_MERCHANT_MAX_ADDITIONAL_IMAGES = 10
+
 export function getGoogleMerchantWorkloadIdentityAudience(): string | null {
   const projectNumber = process.env.GCP_PROJECT_NUMBER?.trim()
   const poolId = process.env.GCP_WORKLOAD_IDENTITY_POOL_ID?.trim()

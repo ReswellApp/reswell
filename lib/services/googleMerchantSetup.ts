@@ -1,7 +1,9 @@
 import { googleMerchantRequest } from "@/lib/google-merchant/client"
 import {
+  getGoogleMerchantContentLanguage,
   getGoogleMerchantDataSourceName,
   getGoogleMerchantDeveloperEmail,
+  getGoogleMerchantFeedLabel,
   getGoogleMerchantParentAccount,
   isGoogleMerchantConfigured,
 } from "@/lib/google-merchant/config"
@@ -146,6 +148,96 @@ export async function deleteGoogleMerchantProductInput(
   }
 
   return { ok: true, data: res.data ?? { deleted: true } }
+}
+
+export type GoogleMerchantListedProduct = {
+  offerId: string
+  contentLanguage: string
+  feedLabel: string
+}
+
+type GoogleMerchantProductsListResponse = {
+  products?: Array<{
+    offerId?: string
+    contentLanguage?: string
+    feedLabel?: string
+  }>
+  nextPageToken?: string
+}
+
+/**
+ * Page through processed Merchant Center products for reconciliation deletes.
+ */
+export async function listGoogleMerchantProductsPage(options?: {
+  pageToken?: string
+  pageSize?: number
+}): Promise<
+  | { ok: true; products: GoogleMerchantListedProduct[]; nextPageToken?: string }
+  | { ok: false; status: number; error: string }
+> {
+  if (!isGoogleMerchantConfigured()) {
+    return { ok: false, status: 503, error: "Google Merchant API is not configured" }
+  }
+
+  const parent = getGoogleMerchantParentAccount()
+  const pageSize = Math.min(Math.max(options?.pageSize ?? 250, 1), 1000)
+  const params = new URLSearchParams({ pageSize: String(pageSize) })
+  if (options?.pageToken?.trim()) {
+    params.set("pageToken", options.pageToken.trim())
+  }
+
+  const res = await googleMerchantRequest(`/products/v1/${parent}/products?${params.toString()}`, {
+    method: "GET",
+  })
+
+  if (!res.ok) {
+    return {
+      ok: false,
+      status: res.status,
+      error: errorMessage(res.data, "products.list failed"),
+    }
+  }
+
+  const data = res.data as GoogleMerchantProductsListResponse
+  const contentLanguage = getGoogleMerchantContentLanguage()
+  const feedLabel = getGoogleMerchantFeedLabel()
+  const products = (data.products ?? [])
+    .map((product) => ({
+      offerId: product.offerId?.trim() ?? "",
+      contentLanguage: product.contentLanguage?.trim() ?? "",
+      feedLabel: product.feedLabel?.trim() ?? "",
+    }))
+    .filter(
+      (product) =>
+        product.offerId &&
+        product.contentLanguage === contentLanguage &&
+        product.feedLabel === feedLabel,
+    )
+
+  return {
+    ok: true,
+    products,
+    nextPageToken: data.nextPageToken?.trim() || undefined,
+  }
+}
+
+export async function listAllGoogleMerchantProducts(): Promise<
+  | { ok: true; products: GoogleMerchantListedProduct[] }
+  | { ok: false; status: number; error: string }
+> {
+  const products: GoogleMerchantListedProduct[] = []
+  let pageToken: string | undefined
+
+  for (;;) {
+    const page = await listGoogleMerchantProductsPage({ pageToken })
+    if (!page.ok) return page
+
+    products.push(...page.products)
+    if (!page.nextPageToken) break
+    pageToken = page.nextPageToken
+  }
+
+  return { ok: true, products }
 }
 
 export async function getGoogleMerchantDeveloperRegistration(): Promise<GoogleMerchantSetupResult> {
