@@ -1,14 +1,12 @@
 /**
- * Server-only: Klaviyo Events API — fires when a buyer’s purchase succeeds (payment captured).
+ * Server-only: Klaviyo Events API — fires when a buyer completes checkout with local pickup.
  *
- * **Metric name in Klaviyo:** `Purchase Successful` — use as the flow trigger (Flows → Metric).
- * Also emits **Placed Order** (standard commerce metric; same payload).
- * Pickup checkouts also emit **Local Pickup Order Placed** (dedicated pickup buyer email trigger).
+ * **Metric name in Klaviyo:** `Local Pickup Order Placed` — use as the flow trigger (Flows → Metric).
+ * Mirrors the shipping order confirmation flow (which uses **Purchase Successful** filtered on
+ * `fulfillment_method = shipping`) but is a dedicated metric for pickup-specific buyer email.
  *
- * **Building the flow in Klaviyo:** Flows → Create flow → Metric → select **Purchase Successful** →
- * add email; in the template use event variables, e.g. `{{ event.order_num }}`, `{{ event.Title }}`,
- * `{{ event.order_url }}`, `{{ event.listing_url }}`, `{{ event.fulfillment_method }}`, `{{ event.payment_method }}`.
- * For shipping-only confirmation, filter `fulfillment_method` equals `shipping`. For pickup, use metric **Local Pickup Order Placed** instead.
+ * Template variables: `{{ event.order_num }}`, `{{ event.Title }}`, `{{ event.order_url }}`,
+ * `{{ event.listing_url }}`, `{{ event.pickup_code }}`, `{{ event.payment_method }}`.
  *
  * Profile on the event is the **buyer** (`external_id` + email when available).
  */
@@ -20,44 +18,14 @@ import {
 } from "@/lib/klaviyo/catalog-product"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
-import { trackKlaviyoLocalPickupOrderPlaced } from "@/lib/klaviyo/track-local-pickup-order-placed"
-import { trackKlaviyoPlacedOrder } from "@/lib/klaviyo/track-placed-order"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import type { KlaviyoBuyerOrderConfirmedPayload } from "@/lib/klaviyo/track-buyer-order-confirmed"
 
-export type KlaviyoBuyerOrderLineItem = {
-  listingId: string
-  listingTitle: string
-  listingSection: string
-  listingSlug?: string | null
-  listingImageUrl?: string | null
-  price: number
-  quantity?: number
-}
-
-export type KlaviyoBuyerOrderConfirmedPayload = {
-  /** Omitted for sessionless guest checkout (email-only Klaviyo profile). */
-  buyerUserId?: string | null
-  buyerEmail: string | null
-  orderId: string
-  /** From `orders.order_num` (optional for legacy callers). */
-  orderNum?: string | null
-  listingId: string
-  listingTitle: string
-  listingSection: string
-  listingSlug?: string | null
-  listingImageUrl?: string | null
-  /** Optional multi-item checkout lines (defaults to primary listing). */
-  lineItems?: KlaviyoBuyerOrderLineItem[]
-  amount: number
-  fulfillmentMethod: "shipping" | "pickup"
-  /** Six-digit code the buyer shows the seller at pickup (pickup orders only). */
-  pickupCode?: string | null
-  paymentMethod: "stripe" | "reswell_bucks"
-}
-
-export async function trackKlaviyoBuyerOrderConfirmed(
+export async function trackKlaviyoLocalPickupOrderPlaced(
   payload: KlaviyoBuyerOrderConfirmedPayload,
 ): Promise<void> {
+  if (payload.fulfillmentMethod !== "pickup") return
+
   const amountNum =
     typeof payload.amount === "number" ? payload.amount : Number(payload.amount)
   const origin = publicSiteOrigin()
@@ -106,9 +74,9 @@ export async function trackKlaviyoBuyerOrderConfirmed(
     : [commerceItem]
 
   await sendKlaviyoServerEvent({
-    metricName: "Purchase Successful",
+    metricName: "Local Pickup Order Placed",
     profile,
-    uniqueId: `purchase-successful-${payload.orderId}`,
+    uniqueId: `local-pickup-order-placed-${payload.orderId}`,
     value: Number.isFinite(amountNum) ? amountNum : undefined,
     valueCurrency: "USD",
     properties: {
@@ -120,16 +88,11 @@ export async function trackKlaviyoBuyerOrderConfirmed(
       order_num: formatOrderNumForCustomer(payload.orderNum, payload.orderId),
       listing_id: payload.listingId,
       Title: payload.listingTitle,
-      fulfillment_method: payload.fulfillmentMethod,
+      fulfillment_method: "pickup",
       payment_method: payload.paymentMethod,
+      pickup_code: payload.pickupCode?.trim() ?? "",
       listing_url: listingUrl,
       order_url: orderUrl,
     },
   })
-
-  await trackKlaviyoPlacedOrder(payload)
-
-  if (payload.fulfillmentMethod === "pickup") {
-    await trackKlaviyoLocalPickupOrderPlaced(payload)
-  }
 }

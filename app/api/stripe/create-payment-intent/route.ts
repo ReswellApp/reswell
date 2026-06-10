@@ -85,6 +85,7 @@ export async function POST(request: NextRequest) {
     .in("id", listingIdsOrdered)
     .in("status", ["active", "pending_sale"])
     .eq("hidden_from_site", false)
+    .is("archived_at", null)
 
   if (listingsErr || !listingsRows?.length) {
     return NextResponse.json({ error: "Listing not found or not available" }, { status: 404 })

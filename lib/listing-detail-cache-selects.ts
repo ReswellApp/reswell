@@ -1,9 +1,10 @@
 import { LISTING_SELLER_PROFILES_EMBED } from "@/lib/db/listing-seller-profile-embed"
 
 export const LISTING_META_SELECT =
-  "id, slug, title, description, status, price, listing_images (url, is_primary, sort_order), categories (name, slug), section, user_id, hidden_from_site"
+  "id, slug, title, description, status, price, listing_images (url, is_primary, sort_order), categories (name, slug), section, user_id, hidden_from_site, archived_at"
 
-export const LISTING_ROUTE_SHELL_SELECT = "id, section, slug, user_id, hidden_from_site"
+export const LISTING_ROUTE_SHELL_SELECT =
+  "id, section, slug, user_id, hidden_from_site, archived_at"
 
 export const SURFBOARD_LISTING_SELECT = `
         *,

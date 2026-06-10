@@ -3,8 +3,13 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 /** Whether the current user may view a listing that has hidden_from_site set. */
 export async function canViewHiddenListing(
   supabase: SupabaseClient,
-  listing: { user_id: string; hidden_from_site?: boolean | null },
+  listing: {
+    user_id: string
+    hidden_from_site?: boolean | null
+    archived_at?: string | null
+  },
 ): Promise<boolean> {
+  if (listing.archived_at) return false
   if (!listing.hidden_from_site) return true
 
   const {

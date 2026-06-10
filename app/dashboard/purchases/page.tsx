@@ -9,11 +9,10 @@ import { Receipt, Package, Truck, MapPin, RotateCcw } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import {
   ORDER_STATUS_LIST,
-  orderStatusBadgeVariant,
   orderStatusIsRefunded,
   orderStatusIsRefundInProgress,
-  orderStatusLabel,
 } from "@/lib/order-status"
+import { resolveSaleCardStatusDisplay } from "@/lib/sale-card-status"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { LocalDateTime } from "@/components/ui/local-datetime"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
@@ -50,6 +49,7 @@ type MarketplaceOrderRow = {
   amount: number | string
   status: string
   delivery_status: string
+  tracking_number: string | null
   tracking_detail?: unknown
   created_at: string
   shipping_address: ShippingAddressJson
@@ -132,6 +132,7 @@ export default async function PurchasesPage() {
       amount,
       status,
       delivery_status,
+      tracking_number,
       tracking_detail,
       created_at,
       shipping_address,
@@ -243,6 +244,12 @@ export default async function PurchasesPage() {
             !existingSellerReview &&
             canSubmitSellerReview(row, parseOrderTrackingDetail(row.tracking_detail))
           const showSellerReview = canReviewSeller || !!existingSellerReview
+          const statusDisplay = resolveSaleCardStatusDisplay({
+            orderStatus: row.status,
+            deliveryStatus: row.delivery_status ?? "pending",
+            trackingNumber: row.tracking_number,
+            trackingDetail: parseOrderTrackingDetail(row.tracking_detail),
+          })
 
           return (
             <Card
@@ -270,15 +277,8 @@ export default async function PurchasesPage() {
                         <LocalDateTime iso={row.created_at} dateStyle="medium" timeStyle="short" />
                       </CardDescription>
                     </div>
-                    <Badge
-                      variant={orderStatusBadgeVariant(row.status)}
-                      className={
-                        orderStatusIsRefundInProgress(row.status)
-                          ? "border-amber-500/40 text-amber-950 dark:text-amber-100"
-                          : undefined
-                      }
-                    >
-                      {orderStatusLabel(row.status)}
+                    <Badge variant={statusDisplay.variant} className={statusDisplay.className}>
+                      {statusDisplay.label}
                     </Badge>
                   </div>
                 </CardHeader>

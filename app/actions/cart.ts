@@ -7,6 +7,7 @@ import { trackKlaviyoAddedToCart } from "@/lib/klaviyo/track-added-to-cart"
 import { trackMetaAddToCartServerEvent } from "@/lib/meta/track-add-to-cart-server-event"
 import type { PeerListingCartFields } from "@/lib/peer-listing-cart"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { isListingPurchasable } from "@/lib/listing-public-visibility"
 
 export type CartListingRow = {
   id: string
@@ -47,7 +48,7 @@ async function assertListingEligibleForCart(
 ): Promise<{ ok: true; listing: PeerListingCartFields } | { ok: false; message: string }> {
   const { data: row, error } = await supabase
     .from("listings")
-    .select("id, user_id, section, status, local_pickup, shipping_available, hidden_from_site")
+    .select("id, user_id, section, status, local_pickup, shipping_available, hidden_from_site, archived_at")
     .eq("id", listingId)
     .maybeSingle()
 
@@ -55,15 +56,15 @@ async function assertListingEligibleForCart(
     return { ok: false, message: "Listing not found" }
   }
 
-  const listing = row as PeerListingCartFields & { hidden_from_site?: boolean | null }
-  if (listing.hidden_from_site) {
+  const listing = row as PeerListingCartFields & {
+    hidden_from_site?: boolean | null
+    archived_at?: string | null
+  }
+  if (!isListingPurchasable(listing)) {
     return { ok: false, message: "This listing is not available" }
   }
   if (!isPeerListingSection(listing.section)) {
     return { ok: false, message: "This listing cannot be added to cart" }
-  }
-  if (listing.status !== "active" && listing.status !== "pending_sale") {
-    return { ok: false, message: "This listing is no longer available" }
   }
   const lp = listing.local_pickup !== false
   const sa = !!listing.shipping_available
@@ -273,6 +274,8 @@ export async function getCartPageItems(): Promise<{
         condition,
         board_type,
         dimensions,
+        hidden_from_site,
+        archived_at,
         listing_images ( url, thumbnail_url, is_primary ),
         profiles!listings_user_id_fkey ( display_name, avatar_url, seller_slug, shop_verified, shop_name, is_shop )
       )
@@ -297,6 +300,16 @@ export async function getCartPageItems(): Promise<{
     const Lraw = raw.listings
     const L = Array.isArray(Lraw) ? Lraw[0] : Lraw
     if (!L) continue
+    if (
+      !isListingPurchasable(
+        L as CartListingRow & {
+          hidden_from_site?: boolean | null
+          archived_at?: string | null
+        },
+      )
+    ) {
+      continue
+    }
     const p = L.profiles
     const profiles = Array.isArray(p) ? p[0] ?? null : p ?? null
     const listing: CartListingRow = { ...L, profiles }

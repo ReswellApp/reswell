@@ -10,6 +10,8 @@ import {
   fetchListingImageUrlsForListingIds,
   removeListingImageFilesFromStorage,
 } from "@/lib/services/listingStorageCleanup"
+import { deleteAllCartRowsForListing } from "@/lib/db/cart-items-server"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 
 type ListingEndRow = {
   id: string
@@ -63,6 +65,13 @@ async function applySellerArchive(
 
   if (error) {
     return { ok: false, status: 500, error: "Failed to archive listing" }
+  }
+
+  try {
+    const service = createServiceRoleClient()
+    await deleteAllCartRowsForListing(service, listingId)
+  } catch {
+    // best-effort — listing is already archived
   }
 
   return { ok: true }

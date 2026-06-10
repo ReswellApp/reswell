@@ -63,6 +63,7 @@ export async function POST(request: Request) {
     .eq("id", listingId)
     .in("section", PEER_LISTING_SECTIONS_FILTER)
     .eq("hidden_from_site", false)
+    .is("archived_at", null)
     .in("status", ["active", "pending_sale"])
     .maybeSingle()
 

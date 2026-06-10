@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
     .eq("id", listing_id)
     .eq("status", "active")
     .eq("hidden_from_site", false)
+    .is("archived_at", null)
     .single()
 
   if (listingError || !listing) {
@@ -277,6 +278,7 @@ export async function POST(request: NextRequest) {
       listingSection: listing.section,
       amount: price,
       fulfillmentMethod: isPickup ? "pickup" : "shipping",
+      pickupCode,
       paymentMethod: "reswell_bucks",
     })
 

@@ -22,6 +22,19 @@ export type SaleCardStatusDisplay = {
 
 export const SHIPPING_LABEL_CREATED_STATUS = "Shipping label created" as const
 
+const FULFILLMENT_COMPLETE_BADGE_CLASS =
+  "border-transparent bg-emerald-600 text-white hover:bg-emerald-600"
+
+function fulfillmentCompleteBadgeDisplay(
+  deliveryStatus: "delivered" | "picked_up",
+): SaleCardStatusDisplay {
+  return {
+    label: deliveryStatusLabel(deliveryStatus),
+    variant: "default",
+    className: FULFILLMENT_COMPLETE_BADGE_CLASS,
+  }
+}
+
 function truncateForBadge(label: string, maxLength = 44): string {
   const trimmed = label.trim()
   if (trimmed.length <= maxLength) return trimmed
@@ -44,9 +57,8 @@ function carrierBadgeDisplay(detail: OrderTrackingDetail): SaleCardStatusDisplay
 }
 
 /**
- * Status shown on seller sale cards and headers.
- * Keeps refund/payment labels authoritative; live carrier tracking is the source of truth
- * for shipped orders once ShipEngine scans are available.
+ * Status shown on purchase and sale list cards (and sale detail headers).
+ * Refund labels stay authoritative; marketplace delivery confirmation wins over carrier scans.
  */
 export function resolveSaleCardStatusDisplay(params: {
   orderStatus: string
@@ -74,23 +86,17 @@ export function resolveSaleCardStatusDisplay(params: {
   }
 
   if (deliveryStatus === "picked_up") {
-    return {
-      label: deliveryStatusLabel(deliveryStatus),
-      variant: deliveryStatusBadgeVariant(deliveryStatus),
-    }
+    return fulfillmentCompleteBadgeDisplay("picked_up")
+  }
+
+  if (deliveryStatus === "delivered") {
+    return fulfillmentCompleteBadgeDisplay("delivered")
   }
 
   const hasTracking = !!trackingNumber?.trim()
 
   if (hasTracking && carrierTrackingDetailIsActionable(trackingDetail)) {
     return carrierBadgeDisplay(trackingDetail)
-  }
-
-  if (deliveryStatus === "delivered") {
-    return {
-      label: deliveryStatusLabel(deliveryStatus),
-      variant: deliveryStatusBadgeVariant(deliveryStatus),
-    }
   }
 
   if (hasTracking && deliveryStatus === "pending" && hasPreparedShippingLabel) {

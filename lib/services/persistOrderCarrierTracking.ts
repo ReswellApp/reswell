@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { notifyBuyerOrderShippingUpdateKlaviyo } from "@/lib/services/notifyBuyerOrderShippingUpdateKlaviyo"
 import type { OrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import { syncCarrierDeliveryFromTracking } from "@/lib/services/syncCarrierDeliveryFromTracking"
 import { tryReleaseShippingPayoutAfterCarrierHold } from "@/lib/services/autoReleaseShippingPayoutsAfterCarrierDelivery"
@@ -11,6 +12,19 @@ export async function persistOrderCarrierTrackingSnapshot(
   orderId: string,
   detail: OrderTrackingDetail,
 ): Promise<void> {
+  const { data: existing, error: readErr } = await supabase
+    .from("orders")
+    .select("tracking_detail")
+    .eq("id", orderId)
+    .maybeSingle()
+
+  if (readErr) {
+    console.error("[persistOrderCarrierTrackingSnapshot] tracking_detail read:", readErr.message)
+    return
+  }
+
+  const previousDetailRaw = (existing as { tracking_detail?: unknown } | null)?.tracking_detail
+
   const { error: updErr } = await supabase
     .from("orders")
     .update({
@@ -26,4 +40,5 @@ export async function persistOrderCarrierTrackingSnapshot(
 
   await syncCarrierDeliveryFromTracking(supabase, orderId, detail)
   await tryReleaseShippingPayoutAfterCarrierHold(orderId)
+  await notifyBuyerOrderShippingUpdateKlaviyo(supabase, orderId, previousDetailRaw, detail)
 }

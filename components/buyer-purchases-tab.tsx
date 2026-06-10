@@ -13,12 +13,13 @@ import { Package, ChevronRight, Receipt, RotateCcw } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import {
   ORDER_STATUS_LIST,
-  orderStatusBadgeVariant,
   orderStatusIsRefunded,
   orderStatusIsRefundInProgress,
-  orderStatusLabel,
 } from "@/lib/order-status"
+import { resolveSaleCardStatusDisplay } from "@/lib/sale-card-status"
+import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import { cn } from "@/lib/utils"
 import { REAL_MARKETPLACE_PURCHASES_FILTER } from "@/lib/order-admin-test"
 import { LocalDateOnly } from "@/components/ui/local-datetime"
 import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
@@ -33,6 +34,8 @@ type Row = {
   amount: number | string
   status: string
   delivery_status: string
+  tracking_number: string | null
+  tracking_detail?: unknown
   created_at: string
   fulfillment_method: string | null
   stripe_checkout_session_id: string | null
@@ -84,6 +87,8 @@ export function BuyerPurchasesTab() {
         amount,
         status,
         delivery_status,
+        tracking_number,
+        tracking_detail,
         created_at,
         fulfillment_method,
         stripe_checkout_session_id,
@@ -235,6 +240,12 @@ export function BuyerPurchasesTab() {
                 : "—"
 
           const sellerRaw = row.sellerReview
+          const statusDisplay = resolveSaleCardStatusDisplay({
+            orderStatus: row.status,
+            deliveryStatus: row.delivery_status ?? "pending",
+            trackingNumber: row.tracking_number,
+            trackingDetail: parseOrderTrackingDetail(row.tracking_detail),
+          })
 
           return (
             <li
@@ -259,8 +270,11 @@ export function BuyerPurchasesTab() {
                     <p className="text-xs font-mono text-muted-foreground">
                       #{formatOrderNumForCustomer(row.order_num, row.id)}
                     </p>
-                    <Badge variant={orderStatusBadgeVariant(row.status)} className="text-[10px] px-1.5 py-0">
-                      {orderStatusLabel(row.status)}
+                    <Badge
+                      variant={statusDisplay.variant}
+                      className={cn("text-[10px] px-1.5 py-0", statusDisplay.className)}
+                    >
+                      {statusDisplay.label}
                     </Badge>
                   </div>
                   <p className="font-medium text-foreground line-clamp-1">{title}</p>

@@ -140,7 +140,7 @@ async function emitPurchaseSuccessfulKlaviyoForOrderId(
   const { data: order } = await serviceSupabase
     .from("orders")
     .select(
-      "id, order_num, buyer_id, seller_id, listing_id, amount, fulfillment_method, payment_method",
+      "id, order_num, buyer_id, seller_id, listing_id, amount, fulfillment_method, payment_method, pickup_code",
     )
     .eq("id", orderId)
     .maybeSingle()
@@ -178,6 +178,7 @@ async function emitPurchaseSuccessfulKlaviyoForOrderId(
     listingSlug: listing.slug ?? null,
     amount: Number.isFinite(amount) ? amount : 0,
     fulfillmentMethod,
+    pickupCode: (order as { pickup_code?: string | null }).pickup_code ?? null,
     paymentMethod,
   })
 
@@ -685,6 +686,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     lineItems: klaviyoLineItems,
     amount: chargedUsd,
     fulfillmentMethod: isPickup ? "pickup" : "shipping",
+    pickupCode,
     paymentMethod: "stripe",
   })
 

@@ -4,6 +4,7 @@ import {
   PEER_LISTING_SECTIONS_FILTER,
   isPeerListingSection,
 } from "@/lib/peer-listing-sections"
+import { isListingPurchasable } from "@/lib/listing-public-visibility"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -55,6 +56,7 @@ export async function fetchCheckoutCartListingsForSeller(
     .eq("user_id", sellerId.trim())
     .in("status", ["active", "pending_sale"])
     .eq("hidden_from_site", false)
+    .is("archived_at", null)
     .in("section", PEER_LISTING_SECTIONS_FILTER)
 
   if (listErr || !listingRows) {
@@ -80,6 +82,7 @@ type CartJoinedListing = {
   section: string | null
   status: string | null
   hidden_from_site?: boolean | null
+  archived_at?: string | null
 }
 
 /**
@@ -100,7 +103,8 @@ export async function inferPeerCartSellerIdFromBuyerCart(
         user_id,
         section,
         status,
-        hidden_from_site
+        hidden_from_site,
+        archived_at
       )
     `,
     )
@@ -117,8 +121,7 @@ export async function inferPeerCartSellerIdFromBuyerCart(
     const L = Array.isArray(Lraw) ? Lraw[0] : Lraw
     if (!L?.user_id) continue
     if (!isPeerListingSection(String(L.section ?? ""))) continue
-    if (L.status !== "active" && L.status !== "pending_sale") continue
-    if (L.hidden_from_site) continue
+    if (!isListingPurchasable(L)) continue
     sellers.add(L.user_id)
   }
 

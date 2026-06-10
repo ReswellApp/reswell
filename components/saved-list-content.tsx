@@ -9,6 +9,7 @@ import { ListingTileGridSkeleton } from '@/components/listing-tile-skeleton'
 import { Heart, MapPin } from 'lucide-react'
 import { VerifiedBadge } from '@/components/verified-badge'
 import { getPublicSellerDisplayName } from '@/lib/listing-labels'
+import { isListingVisibleInSavedList } from '@/lib/listing-public-visibility'
 import { HomePeerListingScrollTile } from '@/components/features/home/home-peer-listing-scroll-tile'
 import type { ListingImageForCard } from '@/lib/listing-image-display'
 
@@ -23,6 +24,8 @@ export interface SavedFavorite {
     price: number
     status: string
     section: string
+    hidden_from_site?: boolean | null
+    archived_at?: string | null
     city: string | null
     state: string | null
     condition?: string | null
@@ -68,6 +71,8 @@ export function SavedListContent() {
           price,
           status,
           section,
+          hidden_from_site,
+          archived_at,
           city,
           state,
           condition,
@@ -84,7 +89,12 @@ export function SavedListContent() {
       .order('created_at', { ascending: false })
 
     if (!error && data) {
-      setFavorites(data as unknown as SavedFavorite[])
+      const rows = (data as unknown as SavedFavorite[]).filter((favorite) => {
+        const listing = favorite.listing
+        if (!listing) return false
+        return isListingVisibleInSavedList(listing)
+      })
+      setFavorites(rows)
     }
     setLoading(false)
   }

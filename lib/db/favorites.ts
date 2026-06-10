@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { isListingVisibleInSavedList } from "@/lib/listing-public-visibility"
 
 /** Listing fields needed for the cart page favorites carousel (surfboard tiles). */
 export type CartCarouselFavoriteListing = {
@@ -49,6 +50,7 @@ export async function getFavoriteListingsForCartCarousel(
         local_pickup,
         shipping_available,
         hidden_from_site,
+        archived_at,
         listing_images ( url, thumbnail_url, is_primary ),
         categories ( name ),
         profiles!listings_user_id_fkey ( display_name, shop_verified )
@@ -71,16 +73,18 @@ export async function getFavoriteListingsForCartCarousel(
       listing:
         | (CartCarouselFavoriteListing & {
             hidden_from_site?: boolean | null
+            archived_at?: string | null
           })
         | (CartCarouselFavoriteListing & {
             hidden_from_site?: boolean | null
+            archived_at?: string | null
           })[]
         | null
     }
     const Lraw = raw.listing
     const L = Array.isArray(Lraw) ? Lraw[0] : Lraw
     if (!L) continue
-    if (L.hidden_from_site) continue
+    if (!isListingVisibleInSavedList(L)) continue
     if (L.section !== "surfboards") continue
     if (exclude.has(L.id)) continue
 

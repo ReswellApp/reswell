@@ -1,7 +1,8 @@
 /**
  * Server-only: Klaviyo Events API — fires when the seller adds tracking to a shipped purchase.
  *
- * **Metric name in Klaviyo:** `Order Shipped` — create a flow triggered by this metric.
+ * **Metric name in Klaviyo:** `Order Shipped` — create a flow triggered by this metric (fires once
+ * when tracking is added). For ongoing carrier scan updates, use **Order Shipping Update** instead.
  * Template variables: `{{ event.Title }}`, `{{ event.tracking_number }}`,
  * `{{ event.tracking_carrier }}`, `{{ event.order_url }}`.
  *
