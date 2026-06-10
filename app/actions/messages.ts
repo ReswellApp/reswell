@@ -6,10 +6,11 @@ import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
-import { messageAppearsToSharePhoneNumber } from "@/lib/utils/detect-message-phone-sharing"
+import { detectMessagePolicyViolation } from "@/lib/utils/detect-message-policy-violation"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
-import { MESSAGE_BLOCKED_PHONE_ERROR } from "@/lib/messages/policy-errors"
+import { MESSAGE_BLOCKED_POLICY_ERROR } from "@/lib/messages/policy-errors"
+import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
 import { sendSellerReviewRequestForOrder } from "@/lib/services/sellerReviewRequest"
 import {
   composeLocationShareMessageBody,
@@ -158,6 +159,7 @@ async function capturePolicyBlockedDmContent(row: {
   recipientId: string
   listingId: string | null
   content: string
+  reasonCode: MessagePolicyReasonCode
 }) {
   try {
     const service = createServiceRoleClient()
@@ -167,10 +169,15 @@ async function capturePolicyBlockedDmContent(row: {
       recipientId: row.recipientId,
       listingId: row.listingId,
       content: row.content,
+      reasonCode: row.reasonCode,
     })
   } catch (e) {
     console.error("[messages] Could not persist fraud_messages row:", e)
   }
+}
+
+function policyBlockedSendResult(reasonCode: MessagePolicyReasonCode) {
+  return { error: MESSAGE_BLOCKED_POLICY_ERROR, policyReason: reasonCode } as const
 }
 
 /**
@@ -259,15 +266,17 @@ export async function sendMarketplaceListingMessage(input: unknown) {
 
   const receiverId = user.id === ctx.buyerId ? ctx.sellerId : ctx.buyerId
 
-  if (messageAppearsToSharePhoneNumber(body)) {
+  const policyViolation = detectMessagePolicyViolation(body)
+  if (policyViolation) {
     await capturePolicyBlockedDmContent({
       conversationId: conversation.id,
       senderId: user.id,
       recipientId: receiverId,
       listingId: listing_id,
       content: body,
+      reasonCode: policyViolation,
     })
-    return { error: MESSAGE_BLOCKED_PHONE_ERROR }
+    return policyBlockedSendResult(policyViolation)
   }
 
   const { data: inserted, error: msgError } = await supabase
@@ -363,15 +372,17 @@ export async function sendListingMessage(input: {
     conversation = ensured
   }
 
-  if (messageAppearsToSharePhoneNumber(body)) {
+  const policyViolation = detectMessagePolicyViolation(body)
+  if (policyViolation) {
     await capturePolicyBlockedDmContent({
       conversationId: conversation.id,
       senderId: user.id,
       recipientId: seller_id,
       listingId: listing_id ?? null,
       content: body,
+      reasonCode: policyViolation,
     })
-    return { error: MESSAGE_BLOCKED_PHONE_ERROR }
+    return policyBlockedSendResult(policyViolation)
   }
 
   const { data: inserted, error: msgError } = await supabase
@@ -453,15 +464,17 @@ export async function sendConversationReply(input: {
 
   const receiverId = user.id === conv.buyer_id ? conv.seller_id : conv.buyer_id
 
-  if (messageAppearsToSharePhoneNumber(body)) {
+  const policyViolation = detectMessagePolicyViolation(body)
+  if (policyViolation) {
     await capturePolicyBlockedDmContent({
       conversationId: conv.id,
       senderId: user.id,
       recipientId: receiverId,
       listingId: conv.listing_id,
       content: body,
+      reasonCode: policyViolation,
     })
-    return { error: MESSAGE_BLOCKED_PHONE_ERROR }
+    return policyBlockedSendResult(policyViolation)
   }
 
   const { data: inserted, error: msgError } = await supabase
@@ -552,6 +565,9 @@ export async function sendConversationMediaReply(input: unknown) {
   })
 
   if (!result.ok) {
+    if (result.policyReason) {
+      return { error: result.error, policyReason: result.policyReason }
+    }
     return { error: result.error }
   }
 
@@ -594,15 +610,17 @@ export async function sendConversationLocationReply(input: unknown) {
 
   const receiverId = user.id === conv.buyer_id ? conv.seller_id : conv.buyer_id
 
-  if (messageAppearsToSharePhoneNumber(formattedAddress)) {
+  const policyViolation = detectMessagePolicyViolation(formattedAddress)
+  if (policyViolation) {
     await capturePolicyBlockedDmContent({
       conversationId: conv.id,
       senderId: user.id,
       recipientId: receiverId,
       listingId: conv.listing_id,
       content: formattedAddress,
+      reasonCode: policyViolation,
     })
-    return { error: MESSAGE_BLOCKED_PHONE_ERROR }
+    return policyBlockedSendResult(policyViolation)
   }
 
   const metadataPayload = messageLocationMetadataSchema.parse({

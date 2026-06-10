@@ -2,10 +2,11 @@ import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-m
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
-import { messageAppearsToSharePhoneNumber } from "@/lib/utils/detect-message-phone-sharing"
+import { detectMessagePolicyViolation } from "@/lib/utils/detect-message-policy-violation"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
-import { MESSAGE_BLOCKED_PHONE_ERROR } from "@/lib/messages/policy-errors"
+import { MESSAGE_BLOCKED_POLICY_ERROR } from "@/lib/messages/policy-errors"
+import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
 import {
   MARKETPLACE_MESSAGE_ATTACHMENTS_BUCKET,
   composeMediaAttachmentMessageBody,
@@ -26,7 +27,7 @@ export type SendMarketplaceMediaMessageResult =
         metadata: { attachment: MarketplaceMessageAttachment }
       }
     }
-  | { ok: false; error: string; status?: number }
+  | { ok: false; error: string; policyReason?: MessagePolicyReasonCode; status?: number }
 
 function attachmentPathBelongsToConversation(path: string, conversationId: string): boolean {
   const prefix = `${conversationId}/`
@@ -84,20 +85,29 @@ export async function sendMarketplaceMediaMessage(input: {
   const trimmedCaption = caption?.trim() ?? ""
   const content = (trimmedCaption || defaultBody).slice(0, 8000)
 
-  if (trimmedCaption && messageAppearsToSharePhoneNumber(trimmedCaption)) {
-    const receiverId = senderId === conv.buyer_id ? conv.seller_id : conv.buyer_id
-    try {
-      await insertFraudMessageCapturedContent(service, {
-        conversationId,
-        senderId,
-        recipientId: receiverId,
-        listingId: conv.listing_id,
-        content: trimmedCaption,
-      })
-    } catch (e) {
-      console.error("[sendMarketplaceMediaMessage] fraud_messages insert:", e)
+  if (trimmedCaption) {
+    const policyViolation = detectMessagePolicyViolation(trimmedCaption)
+    if (policyViolation) {
+      const receiverId = senderId === conv.buyer_id ? conv.seller_id : conv.buyer_id
+      try {
+        await insertFraudMessageCapturedContent(service, {
+          conversationId,
+          senderId,
+          recipientId: receiverId,
+          listingId: conv.listing_id,
+          content: trimmedCaption,
+          reasonCode: policyViolation,
+        })
+      } catch (e) {
+        console.error("[sendMarketplaceMediaMessage] fraud_messages insert:", e)
+      }
+      return {
+        ok: false,
+        error: MESSAGE_BLOCKED_POLICY_ERROR,
+        policyReason: policyViolation,
+        status: 400,
+      }
     }
-    return { ok: false, error: MESSAGE_BLOCKED_PHONE_ERROR, status: 400 }
   }
 
   const metadata = { attachment }

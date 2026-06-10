@@ -4,7 +4,8 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { sendListingMessage } from "@/app/actions/messages"
 import { LocalPhonePolicyBlockBubble } from "@/components/features/messages/local-phone-policy-block-bubble"
-import { MESSAGE_BLOCKED_PHONE_ERROR } from "@/lib/messages/policy-errors"
+import { getPolicyBlockFromSendResult } from "@/lib/messages/policy-block-client"
+import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -38,7 +39,10 @@ export function ContactSellerForm({
   hideSectionTitle = false,
 }: ContactSellerFormProps) {
   const [message, setMessage] = useState("")
-  const [blockedPhoneNotice, setBlockedPhoneNotice] = useState<string | null>(null)
+  const [blockedPolicyNotice, setBlockedPolicyNotice] = useState<{
+    content: string
+    reasonCode: MessagePolicyReasonCode
+  } | null>(null)
   const [sending, setSending] = useState(false)
   const router = useRouter()
   const openSignIn = useSignInGate()
@@ -79,8 +83,9 @@ export function ContactSellerForm({
           openSignIn(listingReturnPath)
           return
         }
-        if (result.error === MESSAGE_BLOCKED_PHONE_ERROR) {
-          setBlockedPhoneNotice(message.trim())
+        const policyReason = getPolicyBlockFromSendResult(result)
+        if (policyReason) {
+          setBlockedPolicyNotice({ content: message.trim(), reasonCode: policyReason })
           setMessage("")
           return
         }
@@ -89,7 +94,7 @@ export function ContactSellerForm({
       }
 
       setMessage("")
-      setBlockedPhoneNotice(null)
+      setBlockedPolicyNotice(null)
       router.push(`/messages/${result.conversation_id}`)
     } catch (e) {
       console.error("[contact-seller] sendListingMessage failed:", e)
@@ -143,15 +148,16 @@ export function ContactSellerForm({
         value={message}
         onChange={(e) => {
           setMessage(e.target.value)
-          if (blockedPhoneNotice) setBlockedPhoneNotice(null)
+          if (blockedPolicyNotice) setBlockedPolicyNotice(null)
         }}
         rows={3}
         className="rounded-2xl border-border/60 bg-background text-[16px] text-foreground shadow-none placeholder:text-foreground/75 transition-colors focus-visible:ring-[1.5px]"
       />
 
-      {blockedPhoneNotice ? (
+      {blockedPolicyNotice ? (
         <LocalPhonePolicyBlockBubble
-          originalContent={blockedPhoneNotice}
+          originalContent={blockedPolicyNotice.content}
+          reasonCode={blockedPolicyNotice.reasonCode}
           relatedConversationId={null}
           align="inline"
         />

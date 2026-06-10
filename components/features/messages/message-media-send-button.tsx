@@ -8,7 +8,8 @@ import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import { uploadMessageMediaFile } from "@/lib/message-media-upload-client"
 import { sendConversationMediaReply } from "@/app/actions/messages"
-import { MESSAGE_BLOCKED_PHONE_ERROR } from "@/lib/messages/policy-errors"
+import { getPolicyBlockFromSendResult } from "@/lib/messages/policy-block-client"
+import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
 import { raceWithDeadline } from "@/lib/utils/race-with-deadline"
 import type { MarketplaceMessageAttachment } from "@/lib/validations/marketplace-message-attachment"
 
@@ -28,14 +29,14 @@ export function MessageMediaSendButton({
   disabled,
   caption,
   onSent,
-  onBlockedPhone,
+  onBlockedPolicy,
   className,
 }: {
   conversationId: string
   disabled?: boolean
   caption?: string
   onSent: (message: SentMediaMessage) => void
-  onBlockedPhone?: (originalContent: string) => void
+  onBlockedPolicy?: (originalContent: string, reasonCode: MessagePolicyReasonCode) => void
   className?: string
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -78,8 +79,9 @@ export function MessageMediaSendButton({
       )
 
       if ("error" in result) {
-        if (result.error === MESSAGE_BLOCKED_PHONE_ERROR) {
-          onBlockedPhone?.(caption?.trim() || "")
+        const policyReason = getPolicyBlockFromSendResult(result)
+        if (policyReason) {
+          onBlockedPolicy?.(caption?.trim() || "", policyReason)
           return
         }
         toast.error(typeof result.error === "string" ? result.error : "Could not send media")

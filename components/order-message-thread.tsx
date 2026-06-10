@@ -12,10 +12,11 @@ import { Check, Loader2, MessageCircle, Send } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { sendConversationReply, sendListingMessage } from "@/app/actions/messages"
 import { LocalPhonePolicyBlockBubble } from "@/components/features/messages/local-phone-policy-block-bubble"
-import { MESSAGE_BLOCKED_PHONE_ERROR } from "@/lib/messages/policy-errors"
+import { getPolicyBlockFromSendResult } from "@/lib/messages/policy-block-client"
+import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
 import {
-  createLocalPhonePolicyBlockMessage,
-  parseLocalPhonePolicyBlockMetadata,
+  createLocalPolicyBlockMessage,
+  parseLocalPolicyBlockMetadata,
 } from "@/lib/messages/local-phone-policy-block-message"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 
@@ -48,7 +49,10 @@ export function OrderMessageThread({
   const [sending, setSending] = useState(false)
   const [sentFlash, setSentFlash] = useState(false)
   /** First-send path (no thread row yet): show policy bubble without a conversation id. */
-  const [blockedPhoneNotice, setBlockedPhoneNotice] = useState<string | null>(null)
+  const [blockedPolicyNotice, setBlockedPolicyNotice] = useState<{
+    content: string
+    reasonCode: MessagePolicyReasonCode
+  } | null>(null)
   const supabase = createClient()
   const router = useRouter()
   const openSignIn = useSignInGate()
@@ -77,14 +81,15 @@ export function OrderMessageThread({
           content: text,
         })
         if ("error" in result) {
-          if (result.error === MESSAGE_BLOCKED_PHONE_ERROR) {
-            setBlockedPhoneNotice(text)
+          const policyReason = getPolicyBlockFromSendResult(result)
+          if (policyReason) {
+            setBlockedPolicyNotice({ content: text, reasonCode: policyReason })
             setBody("")
             return
           }
           throw new Error(result.error)
         }
-        setBlockedPhoneNotice(null)
+        setBlockedPolicyNotice(null)
         setBody("")
         setSentFlash(true)
         window.setTimeout(() => setSentFlash(false), 2000)
@@ -112,12 +117,14 @@ export function OrderMessageThread({
       })
 
       if ("error" in result) {
-        if (result.error === MESSAGE_BLOCKED_PHONE_ERROR) {
+        const policyReason = getPolicyBlockFromSendResult(result)
+        if (policyReason) {
           setMessages((prev) => [
             ...prev,
-            createLocalPhonePolicyBlockMessage({
+            createLocalPolicyBlockMessage({
               senderId: currentUserId,
               originalContent: text,
+              reasonCode: policyReason,
             }),
           ])
           setBody("")
@@ -128,7 +135,7 @@ export function OrderMessageThread({
 
       const inserted = result.message as OrderThreadMessage
       setMessages((prev) => [...prev, inserted])
-      setBlockedPhoneNotice(null)
+      setBlockedPolicyNotice(null)
       setBody("")
       setSentFlash(true)
       window.setTimeout(() => setSentFlash(false), 2000)
@@ -191,9 +198,10 @@ export function OrderMessageThread({
           <p className="text-sm text-muted-foreground">No messages yet. Say hello below.</p>
         )}
 
-        {blockedPhoneNotice && !conversationId ? (
+        {blockedPolicyNotice && !conversationId ? (
           <LocalPhonePolicyBlockBubble
-            originalContent={blockedPhoneNotice}
+            originalContent={blockedPolicyNotice.content}
+            reasonCode={blockedPolicyNotice.reasonCode}
             relatedConversationId={null}
             align="inline"
           />
@@ -203,15 +211,16 @@ export function OrderMessageThread({
           <ul className="space-y-3 max-h-72 overflow-y-auto rounded-lg border bg-muted/30 p-3 text-sm">
             {messages.map((m) => {
               const fromSelf = m.sender_id === currentUserId
-              const phoneBlock = parseLocalPhonePolicyBlockMetadata(m.metadata)
-              if (phoneBlock && fromSelf) {
+              const policyBlock = parseLocalPolicyBlockMetadata(m.metadata)
+              if (policyBlock && fromSelf) {
                 return (
                   <li key={m.id} className="flex flex-col gap-0.5 items-end">
                     <span className="text-xs text-muted-foreground">
                       You · {formatDistanceToNow(new Date(m.created_at), { addSuffix: true })}
                     </span>
                     <LocalPhonePolicyBlockBubble
-                      originalContent={phoneBlock.originalContent}
+                      originalContent={policyBlock.originalContent}
+                      reasonCode={policyBlock.reasonCode}
                       relatedConversationId={conversationId}
                       align="inline"
                     />
@@ -249,7 +258,7 @@ export function OrderMessageThread({
               value={body}
               onChange={(e) => {
                 setBody(e.target.value)
-                if (blockedPhoneNotice) setBlockedPhoneNotice(null)
+                if (blockedPolicyNotice) setBlockedPolicyNotice(null)
               }}
               rows={3}
               className="resize-none"

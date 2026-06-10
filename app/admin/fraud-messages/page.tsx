@@ -5,7 +5,7 @@ import { FraudMessagesAdminClient } from "@/components/features/admin/fraud-mess
 
 export const metadata = privatePageMetadata({
   title: "Intercepted chats — Admin — Reswell",
-  description: "Marketplace messages blocked for policy (phone-like content).",
+  description: "Marketplace messages blocked for policy (phone, email, off-platform payment).",
   path: "/admin/fraud-messages",
 })
 

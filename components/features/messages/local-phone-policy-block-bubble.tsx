@@ -1,16 +1,15 @@
 "use client"
 
 import { MessagesSupportDialog } from "@/components/features/messages/messages-support-dialog"
-import {
-  PHONE_SHARING_POLICY_BODY,
-  PHONE_SHARING_POLICY_HEADING,
-} from "@/lib/messages/phone-policy-notice"
+import { getMessagePolicyNotice } from "@/lib/messages/phone-policy-notice"
+import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
 import { cn } from "@/lib/utils"
 
 type Align = "thread" | "inline"
 
 interface LocalPhonePolicyBlockBubbleProps {
   originalContent: string
+  reasonCode?: MessagePolicyReasonCode
   formattedTime?: string
   /** Links the support ticket to this marketplace thread when present. */
   relatedConversationId?: string | null
@@ -20,12 +19,14 @@ interface LocalPhonePolicyBlockBubbleProps {
 
 export function LocalPhonePolicyBlockBubble({
   originalContent,
+  reasonCode = "phone_like",
   formattedTime,
   relatedConversationId = null,
   align = "thread",
   className,
 }: LocalPhonePolicyBlockBubbleProps) {
   const isThread = align === "thread"
+  const notice = getMessagePolicyNotice(reasonCode)
 
   return (
     <div
@@ -55,10 +56,10 @@ export function LocalPhonePolicyBlockBubble({
         />
 
         <p className="text-[13px] font-semibold leading-snug text-amber-950 dark:text-amber-100">
-          {PHONE_SHARING_POLICY_HEADING}
+          {notice.heading}
         </p>
         <p className="mt-1 text-[13px] leading-relaxed text-amber-950/90 dark:text-amber-50/90">
-          {PHONE_SHARING_POLICY_BODY}
+          {notice.body}
         </p>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">

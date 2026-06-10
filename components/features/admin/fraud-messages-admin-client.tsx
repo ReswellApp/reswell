@@ -7,6 +7,10 @@ import {
   FRAUD_MESSAGES_ADMIN_LIST_SELECT,
   type FraudMessageRow,
 } from "@/lib/db/fraudMessages"
+import {
+  isMessagePolicyReasonCode,
+  messagePolicyReasonLabel,
+} from "@/lib/messages/fraud-reason-codes"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -59,8 +63,8 @@ export function FraudMessagesAdminClient() {
               Intercepted marketplace chats
             </CardTitle>
             <CardDescription>
-              Sender text blocked before delivery — kept here because it matched phone-sharing heuristics. Users were
-              not suspended.
+              Sender text blocked before delivery — phone numbers, email addresses, and off-platform
+              payment terms (Venmo, PayPal, cash). Users were not suspended.
             </CardDescription>
           </div>
           <Button variant="outline" size="sm" disabled={loading} onClick={() => void load()}>
@@ -87,6 +91,7 @@ export function FraudMessagesAdminClient() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[140px]">When</TableHead>
+                  <TableHead className="w-[120px]">Reason</TableHead>
                   <TableHead>Sender</TableHead>
                   <TableHead>Recipient</TableHead>
                   <TableHead>Content</TableHead>
@@ -98,6 +103,11 @@ export function FraudMessagesAdminClient() {
                   <TableRow key={r.id}>
                     <TableCell className="whitespace-nowrap align-top text-muted-foreground text-xs">
                       {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
+                    </TableCell>
+                    <TableCell className="align-top text-sm whitespace-nowrap">
+                      {isMessagePolicyReasonCode(r.reason_code)
+                        ? messagePolicyReasonLabel(r.reason_code)
+                        : r.reason_code}
                     </TableCell>
                     <TableCell className="align-top text-sm">
                       {r.sender_profile?.display_name ?? "—"}

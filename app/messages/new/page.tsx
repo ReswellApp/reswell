@@ -20,7 +20,8 @@ import { listingDetailPath } from '@/lib/listing-query'
 import { listingTitleThumbnailSrc, type ListingImageForCard } from '@/lib/listing-image-display'
 import { listingImageShouldBypassOptimization } from '@/lib/listing-media-proxy-url'
 import { sendMarketplaceListingMessage } from '@/app/actions/messages'
-import { MESSAGE_BLOCKED_PHONE_ERROR } from '@/lib/messages/policy-errors'
+import { getPolicyBlockFromSendResult } from '@/lib/messages/policy-block-client'
+import type { MessagePolicyReasonCode } from '@/lib/messages/fraud-reason-codes'
 import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/local-phone-policy-block-bubble'
 import { cn } from '@/lib/utils'
 import { isAbortError } from '@/lib/utils/is-abort-error'
@@ -56,7 +57,10 @@ function NewMessageComposeContent() {
   const [otherPartyProfile, setOtherPartyProfile] = useState<OtherPartyProfileSummary | null>(null)
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
-  const [blockedPhoneNotice, setBlockedPhoneNotice] = useState<string | null>(null)
+  const [blockedPolicyNotice, setBlockedPolicyNotice] = useState<{
+    content: string
+    reasonCode: MessagePolicyReasonCode
+  } | null>(null)
   const [listingBannerImageReady, setListingBannerImageReady] = useState(false)
 
   const threadListingThumbSrc = useMemo(() => {
@@ -161,8 +165,9 @@ function NewMessageComposeContent() {
       })
 
       if ('error' in result) {
-        if (result.error === MESSAGE_BLOCKED_PHONE_ERROR) {
-          setBlockedPhoneNotice(trimmed)
+        const policyReason = getPolicyBlockFromSendResult(result)
+        if (policyReason) {
+          setBlockedPolicyNotice({ content: trimmed, reasonCode: policyReason })
           setNewMessage('')
           return
         }
@@ -170,7 +175,7 @@ function NewMessageComposeContent() {
         return
       }
 
-      setBlockedPhoneNotice(null)
+      setBlockedPolicyNotice(null)
       setNewMessage('')
       router.replace(`/messages/${result.conversation_id}`)
     } catch {
@@ -271,10 +276,11 @@ function NewMessageComposeContent() {
           )}
         >
           <div className="flex h-full min-h-[12rem] flex-col items-center justify-center px-6 py-8 text-center">
-            {blockedPhoneNotice ? (
+            {blockedPolicyNotice ? (
               <div className="w-full max-w-md">
                 <LocalPhonePolicyBlockBubble
-                  originalContent={blockedPhoneNotice}
+                  originalContent={blockedPolicyNotice.content}
+                  reasonCode={blockedPolicyNotice.reasonCode}
                   relatedConversationId={null}
                   align="inline"
                 />
@@ -301,7 +307,7 @@ function NewMessageComposeContent() {
             value={newMessage}
             onChange={(e) => {
               setNewMessage(e.target.value)
-              if (blockedPhoneNotice) setBlockedPhoneNotice(null)
+              if (blockedPolicyNotice) setBlockedPolicyNotice(null)
             }}
             placeholder="Message"
             disabled={sending}

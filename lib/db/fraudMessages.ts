@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
 
 export interface FraudMessageRow {
   id: string
@@ -35,7 +36,7 @@ export async function insertFraudMessageCapturedContent(
     recipientId: string
     listingId: string | null
     content: string
-    reasonCode?: "phone_like"
+    reasonCode?: MessagePolicyReasonCode
   },
 ): Promise<{ ok: boolean; errorMessage?: string }> {
   const { error } = await supabase.from("fraud_messages").insert({

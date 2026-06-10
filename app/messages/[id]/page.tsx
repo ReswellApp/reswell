@@ -24,7 +24,12 @@ import {
   sendConversationLocationReply,
   loadConversationThread,
 } from '@/app/actions/messages'
-import { MESSAGE_BLOCKED_PHONE_ERROR } from '@/lib/messages/policy-errors'
+import { getPolicyBlockFromSendResult, isPolicyBlockedSendResult } from '@/lib/messages/policy-block-client'
+import {
+  createLocalPolicyBlockMessage,
+  mergeServerMessagesPreservingLocalPolicyBlocks,
+  parseLocalPolicyBlockMetadata,
+} from '@/lib/messages/local-phone-policy-block-message'
 import { OfferMessageCard } from '@/components/features/messages/offer-message-card'
 import {
   OfferLegacyMirrorCard,
@@ -57,11 +62,6 @@ import { effectiveMinimumOfferPct } from '@/lib/utils/offers-minimum-pct'
 import { type ListingThreadOption } from '@/components/features/messages/conversation-listing-switcher'
 import { getOtherUserIdFromConversation } from '@/lib/utils/messages-inbox-grouping'
 import { resolveThreadPrimaryListingId } from '@/lib/utils/message-thread-active-listing'
-import {
-  createLocalPhonePolicyBlockMessage,
-  mergeServerMessagesPreservingLocalPhoneBlocks,
-  parseLocalPhonePolicyBlockMetadata,
-} from '@/lib/messages/local-phone-policy-block-message'
 import { PromiseDeadlineError, raceWithDeadline } from '@/lib/utils/race-with-deadline'
 import { isAbortError } from '@/lib/utils/is-abort-error'
 
@@ -320,7 +320,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       if (Object.keys(nextThreadListingsPatch).length > 0) {
         setThreadListingsById((prev) => ({ ...prev, ...nextThreadListingsPatch }))
       }
-      setMessages((prev) => mergeServerMessagesPreservingLocalPhoneBlocks(prev, rows))
+      setMessages((prev) => mergeServerMessagesPreservingLocalPolicyBlocks(prev, rows))
       if (Object.keys(nextOffersById).length > 0) {
         setOffersById((prev) => ({ ...prev, ...nextOffersById }))
       }
@@ -439,18 +439,20 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       if ('error' in result) {
         setMessages((prev) => {
           const withoutPending = prev.filter((m) => m.id !== tempId)
-          if (result.error === MESSAGE_BLOCKED_PHONE_ERROR) {
+          const policyReason = getPolicyBlockFromSendResult(result)
+          if (policyReason) {
             return [
               ...withoutPending,
-              createLocalPhonePolicyBlockMessage({
+              createLocalPolicyBlockMessage({
                 senderId: currentUserId,
                 originalContent: content,
+                reasonCode: policyReason,
               }),
             ]
           }
           return withoutPending
         })
-        if (result.error !== MESSAGE_BLOCKED_PHONE_ERROR) {
+        if (!isPolicyBlockedSendResult(result)) {
           setNewMessage(content)
           const messageText =
             result.error === 'Unauthorized'
@@ -542,18 +544,20 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         if ('error' in result) {
           setMessages((prev) => {
             const withoutPending = prev.filter((m) => m.id !== tempId)
-            if (result.error === MESSAGE_BLOCKED_PHONE_ERROR) {
+            const policyReason = getPolicyBlockFromSendResult(result)
+            if (policyReason) {
               return [
                 ...withoutPending,
-                createLocalPhonePolicyBlockMessage({
+                createLocalPolicyBlockMessage({
                   senderId: currentUserId,
                   originalContent: formattedAddress,
+                  reasonCode: policyReason,
                 }),
               ]
             }
             return withoutPending
           })
-          if (result.error !== MESSAGE_BLOCKED_PHONE_ERROR) {
+          if (!isPolicyBlockedSendResult(result)) {
             toast.error('Failed to send location')
           }
           return { ok: false }
@@ -784,12 +788,13 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
                       : undefined
                   const isSeller = currentUserId === conversation.seller_id
 
-                  const phoneBlock = parseLocalPhonePolicyBlockMetadata(message.metadata)
-                  if (phoneBlock && isOwn) {
+                  const policyBlock = parseLocalPolicyBlockMetadata(message.metadata)
+                  if (policyBlock && isOwn) {
                     return (
                       <LocalPhonePolicyBlockBubble
                         key={message.id}
-                        originalContent={phoneBlock.originalContent}
+                        originalContent={policyBlock.originalContent}
+                        reasonCode={policyBlock.reasonCode}
                         formattedTime={formatMessageDate(message.created_at)}
                         relatedConversationId={id}
                       />
@@ -1018,13 +1023,14 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
               disabled={sending || !currentUserId || !conversation}
               caption={newMessage}
               onSent={handleMediaSent}
-              onBlockedPhone={(originalContent) => {
+              onBlockedPolicy={(originalContent, reasonCode) => {
                 if (!currentUserId) return
                 setMessages((prev) => [
                   ...prev,
-                  createLocalPhonePolicyBlockMessage({
+                  createLocalPolicyBlockMessage({
                     senderId: currentUserId,
                     originalContent,
+                    reasonCode,
                   }),
                 ])
                 setNewMessage('')
