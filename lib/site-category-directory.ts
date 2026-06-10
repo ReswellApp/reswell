@@ -39,12 +39,12 @@ export const siteHeaderMainPeerProductNavLinks: CategoryLink[] = [
 ]
 
 /**
- * Desktop + mobile main category bar: surfboard shapes, Fins (before Other), then Other.
+ * Desktop + mobile main category bar: surfboard shapes and peer gear (Fins).
+ * “Other” shape stays on /boards and /categories but is not shown in the main nav.
  */
 export const siteHeaderMainCategoryNavLinks: CategoryLink[] = [
   ...surfboardBrowseLinks.filter((link) => link.href !== "/boards?type=other"),
   ...siteHeaderMainPeerProductNavLinks,
-  ...surfboardBrowseLinks.filter((link) => link.href === "/boards?type=other"),
 ]
 
 /** Header Categories dropdown + /categories page: surfboards only. */
