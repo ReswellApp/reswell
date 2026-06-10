@@ -148,6 +148,11 @@ export function ListingTileImageMedia({
                 imageClassName,
               )}
               style={objectStyle}
+              ref={(img) => {
+                // Images cached/loaded before hydration never re-fire `load`;
+                // without this the shimmer overlay stays on top forever.
+                if (img?.complete) markImageLoaded(u)
+              }}
               onLoad={handleImageLoad(u)}
               onError={handleImageLoad(u)}
               priority={imagePriority && i === 0 && index === 0}
