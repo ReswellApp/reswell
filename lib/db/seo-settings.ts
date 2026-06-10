@@ -38,18 +38,46 @@ export function mapSeoSettingsRow(row: SeoSettingsRow | null): SeoSettingsValues
   }
 }
 
-export async function getSeoSettingsRow(supabase: SupabaseClient): Promise<SeoSettingsRow | null> {
-  const { data, error } = await supabase
-    .from("seo_settings")
-    .select("*")
-    .eq("id", "global")
-    .maybeSingle()
+/** Network-level failures (undici "fetch failed", resets, timeouts) — transient, worth retrying. */
+function isTransientNetworkError(message: string): boolean {
+  return /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|socket hang up|network/i.test(
+    message,
+  )
+}
 
-  if (error) {
-    console.error("getSeoSettingsRow:", error.message)
-    return null
+const FETCH_RETRY_ATTEMPTS = 3
+const FETCH_RETRY_BASE_DELAY_MS = 200
+
+export async function getSeoSettingsRow(supabase: SupabaseClient): Promise<SeoSettingsRow | null> {
+  let lastErrorMessage = ""
+
+  for (let attempt = 1; attempt <= FETCH_RETRY_ATTEMPTS; attempt++) {
+    const { data, error } = await supabase
+      .from("seo_settings")
+      .select("*")
+      .eq("id", "global")
+      .maybeSingle()
+
+    if (!error) {
+      return (data as SeoSettingsRow | null) ?? null
+    }
+
+    lastErrorMessage = error.message
+    if (!isTransientNetworkError(error.message)) {
+      console.error("getSeoSettingsRow:", error.message)
+      return null
+    }
+    if (attempt < FETCH_RETRY_ATTEMPTS) {
+      await new Promise((resolve) => setTimeout(resolve, FETCH_RETRY_BASE_DELAY_MS * attempt))
+    }
   }
-  return (data as SeoSettingsRow | null) ?? null
+
+  // Transient network failure persisted through retries — callers fall back to
+  // DEFAULT_SEO_SETTINGS, so this is degraded behavior, not an application error.
+  console.warn(
+    `getSeoSettingsRow: transient network failure after ${FETCH_RETRY_ATTEMPTS} attempts: ${lastErrorMessage}`,
+  )
+  return null
 }
 
 export async function upsertSeoSettings(

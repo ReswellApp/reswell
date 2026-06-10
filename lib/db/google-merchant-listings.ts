@@ -14,7 +14,6 @@ const GOOGLE_MERCHANT_LISTING_SELECT = `
   status,
   hidden_from_site,
   archived_at,
-  excluded_from_google_merchant,
   shipping_available,
   shipping_price,
   board_shipping_cost_mode,

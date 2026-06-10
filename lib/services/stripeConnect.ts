@@ -254,9 +254,22 @@ async function loadStripeConnectAccountPrefillParams(
   return params
 }
 
+/** Identity fields the platform may only set before Stripe takes ownership of them (Express onboarding). */
+function stripIdentityFields(
+  prefill: StripeConnectAccountPrefillFields,
+): Pick<StripeConnectAccountPrefillFields, "business_profile"> {
+  return { business_profile: prefill.business_profile }
+}
+
 /**
  * Syncs Reswell profile + default address into the connected account so Stripe onboarding asks for less
  * (business URL, description, name, phone, mailing address when we have them).
+ *
+ * Express accounts: `business_type`, `email`, and `individual.*` are only platform-editable until the
+ * account holder submits onboarding — after that Stripe owns those fields and updates return a 403
+ * `StripePermissionError`. We proactively restrict to `business_profile` once `details_submitted` is
+ * true, and fall back to `business_profile`-only if Stripe still rejects the identity fields (covers
+ * the window where onboarding is in progress but not yet reflected in `details_submitted`).
  */
 export async function prefillConnectAccountMarketplaceBusinessProfile(
   supabase: SupabaseClient,
@@ -266,9 +279,28 @@ export async function prefillConnectAccountMarketplaceBusinessProfile(
 ): Promise<void> {
   const stripe = getStripe()
   try {
-    const prefill = await loadStripeConnectAccountPrefillParams(supabase, userId, email)
-    await stripe.accounts.update(stripeAccountId, prefill)
+    const [prefill, account] = await Promise.all([
+      loadStripeConnectAccountPrefillParams(supabase, userId, email),
+      stripe.accounts.retrieve(stripeAccountId),
+    ])
+
+    if (account.details_submitted) {
+      await stripe.accounts.update(stripeAccountId, stripIdentityFields(prefill))
+      return
+    }
+
+    try {
+      await stripe.accounts.update(stripeAccountId, prefill)
+    } catch (e) {
+      if (e instanceof Stripe.errors.StripePermissionError) {
+        // Stripe already owns the identity fields; business_profile is always platform-editable.
+        await stripe.accounts.update(stripeAccountId, stripIdentityFields(prefill))
+        return
+      }
+      throw e
+    }
   } catch (e) {
+    // Prefill is best-effort: onboarding must still proceed if it fails.
     console.error("[stripe connect] prefillConnectAccountMarketplaceBusinessProfile", e)
   }
 }

@@ -21,7 +21,6 @@ import {
 import {
   AlertTriangle,
   ArrowUpRight,
-  Ban,
   BadgeCheck,
   BarChart3,
   CheckCircle2,
@@ -332,7 +331,6 @@ export function GoogleMerchantDashboardClient({
   const [issuesOnly, setIssuesOnly] = useState(false)
 
   const [resyncing, setResyncing] = useState(false)
-  const [feedActionOfferId, setFeedActionOfferId] = useState<string | null>(null)
   const [banner, setBanner] = useState<{ tone: "ok" | "error"; text: string } | null>(null)
 
   const fetchInsights = useCallback(
@@ -404,54 +402,6 @@ export function GoogleMerchantDashboardClient({
       setResyncing(false)
     }
   }, [fetchInsights, rangeDays])
-
-  const setFeedExclusion = useCallback(
-    async (offerId: string, excluded: boolean) => {
-      setFeedActionOfferId(offerId)
-      setBanner(null)
-      try {
-        const res = await fetch(`/api/admin/listings/${offerId}/google-merchant-exclusion`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ excluded_from_google_merchant: excluded }),
-        })
-        const json = (await res.json()) as {
-          success?: boolean
-          error?: string
-          sync?: { action: string; error?: string }
-        }
-        if (!res.ok || !json.success) {
-          setBanner({
-            tone: "error",
-            text: json.error || `Could not ${excluded ? "remove" : "restore"} listing in feed.`,
-          })
-          return
-        }
-        if (json.sync?.action === "error") {
-          setBanner({
-            tone: "error",
-            text:
-              json.sync.error ||
-              "Saved exclusion in Reswell, but Google Merchant sync failed. Try Resync feed.",
-          })
-          await fetchInsights(rangeDays)
-          return
-        }
-        setBanner({
-          tone: "ok",
-          text: excluded
-            ? "Listing removed from the Google Merchant feed. It stays live on Reswell."
-            : "Listing restored to the Google Merchant feed.",
-        })
-        await fetchInsights(rangeDays)
-      } catch {
-        setBanner({ tone: "error", text: "Network error updating feed exclusion." })
-      } finally {
-        setFeedActionOfferId(null)
-      }
-    },
-    [fetchInsights, rangeDays],
-  )
 
   // --- Merge products with performance ---
   const perfByOffer = useMemo(() => {
@@ -993,49 +943,12 @@ export function GoogleMerchantDashboardClient({
                   value={coverage.syncedEligible}
                   total={coverage.eligibleListings}
                 />
-                <div className="grid grid-cols-2 gap-3 pt-1 sm:grid-cols-4">
+                <div className="grid grid-cols-3 gap-3 pt-1">
                   <CoverageStat label="Eligible" value={coverage.eligibleListings} tone="blue" />
                   <CoverageStat label="In feed" value={coverage.productsInMerchant} tone="emerald" />
-                  <CoverageStat
-                    label="Excluded"
-                    value={coverage.excludedFromMerchant.length}
-                    tone="slate"
-                  />
                   <CoverageStat label="Orphans" value={coverage.orphanOfferIds.length} tone="amber" />
                 </div>
               </div>
-
-              {coverage.excludedFromMerchant.length > 0 ? (
-                <div className="mt-4">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Manually excluded ({coverage.excludedFromMerchant.length})
-                  </p>
-                  <ul className="max-h-48 space-y-1.5 overflow-y-auto pr-1">
-                    {coverage.excludedFromMerchant.slice(0, 25).map((item) => (
-                      <li key={item.offerId} className="flex items-center justify-between gap-2 text-sm">
-                        <a
-                          href={item.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex min-w-0 items-center gap-1.5 truncate text-slate-700 hover:text-blue-600"
-                        >
-                          <Link2 className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                          <span className="truncate">{item.title}</span>
-                        </a>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 shrink-0 px-2 text-xs"
-                          disabled={feedActionOfferId === item.offerId}
-                          onClick={() => void setFeedExclusion(item.offerId, false)}
-                        >
-                          {feedActionOfferId === item.offerId ? "Restoring…" : "Restore"}
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
 
               {coverage.missingFromMerchant.length > 0 ? (
                 <div className="mt-4">
@@ -1062,12 +975,12 @@ export function GoogleMerchantDashboardClient({
                     Run <span className="font-medium text-slate-700">Resync feed</span> to push these to Google.
                   </p>
                 </div>
-              ) : coverage.excludedFromMerchant.length === 0 ? (
+              ) : (
                 <p className="mt-4 flex items-center gap-1.5 text-sm text-emerald-700">
                   <CheckCircle2 className="h-4 w-4" />
                   Every eligible listing is live in the feed.
                 </p>
-              ) : null}
+              )}
             </SectionCard>
           </div>
 
@@ -1148,7 +1061,7 @@ export function GoogleMerchantDashboardClient({
               </EmptyState>
             ) : (
               <div className="overflow-x-auto rounded-lg border border-slate-200">
-                <table className="w-full min-w-[1020px] border-collapse text-left text-sm">
+                <table className="w-full min-w-[920px] border-collapse text-left text-sm">
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500">
                       <th className="px-3 py-2 font-medium">Product</th>
@@ -1159,7 +1072,6 @@ export function GoogleMerchantDashboardClient({
                       <th className="px-3 py-2 text-right font-medium">Impr.</th>
                       <th className="px-3 py-2 text-right font-medium">CTR</th>
                       <th className="px-3 py-2 text-right font-medium">Conv.</th>
-                      <th className="px-3 py-2 text-right font-medium">Feed</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1222,18 +1134,6 @@ export function GoogleMerchantDashboardClient({
                         </td>
                         <td className="px-3 py-2 text-right align-top tabular-nums text-slate-600">
                           {perfConfigured ? formatNumber(r.conversions) : "—"}
-                        </td>
-                        <td className="px-3 py-2 text-right align-top">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 gap-1 px-2 text-xs text-rose-700 hover:bg-rose-50 hover:text-rose-800"
-                            disabled={feedActionOfferId === r.offerId}
-                            onClick={() => void setFeedExclusion(r.offerId, true)}
-                          >
-                            <Ban className="h-3.5 w-3.5" />
-                            {feedActionOfferId === r.offerId ? "Removing…" : "Remove"}
-                          </Button>
                         </td>
                       </tr>
                     ))}

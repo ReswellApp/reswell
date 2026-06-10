@@ -8,9 +8,9 @@ import {
 } from "@/lib/auth/google-sign-up-welcome"
 import { oauthWelcomeFirstName } from "@/lib/auth/oauth-welcome-name"
 import { isGoogleAuthUser } from "@/lib/auth/profile-completion"
+import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { buildGoogleSignUpSuccessPath } from "@/lib/google-ads/sign-up-success-path"
-import { createClient } from "@/lib/supabase/server"
 
 type PageProps = {
   searchParams: Promise<{ next?: string }>
@@ -24,10 +24,7 @@ export default async function GoogleSignUpSuccessPage({ searchParams }: PageProp
   const { next: nextRaw } = await searchParams
   const next = safeRedirectPath(nextRaw ?? null)
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { user } = await getCachedRequestSession()
 
   if (!user) {
     redirect(

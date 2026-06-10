@@ -56,14 +56,23 @@ async function shouldBypassPublicStorageDataCache(upstreamUrl: string): Promise<
 
 async function fetchPublicStorageObjectUpstream(
   upstreamUrl: string,
+  options?: { bypassDataCache?: boolean },
 ): Promise<CachedPublicStorageObject | null> {
   let res: Response
   try {
-    res = await fetch(upstreamUrl, {
-      headers: { Accept: "image/*" },
-      cache: "force-cache",
-      next: { revalidate: PUBLIC_STORAGE_OBJECT_REVALIDATE_SECONDS },
-    })
+    // Objects over the Data Cache limit must use `no-store`: a `force-cache` fetch
+    // would attempt (and fail) to write the >2MB body into the fetch data cache,
+    // logging "Failed to set Next.js data cache" on every origin miss.
+    res = await fetch(
+      upstreamUrl,
+      options?.bypassDataCache
+        ? { headers: { Accept: "image/*" }, cache: "no-store" }
+        : {
+            headers: { Accept: "image/*" },
+            cache: "force-cache",
+            next: { revalidate: PUBLIC_STORAGE_OBJECT_REVALIDATE_SECONDS },
+          },
+    )
   } catch {
     return null
   }
@@ -104,7 +113,7 @@ export async function getCachedPublicStorageObject(
   upstreamUrl: string,
 ): Promise<CachedPublicStorageObject | null> {
   if (await shouldBypassPublicStorageDataCache(upstreamUrl)) {
-    return fetchPublicStorageObjectUpstream(upstreamUrl)
+    return fetchPublicStorageObjectUpstream(upstreamUrl, { bypassDataCache: true })
   }
   return getCachedPublicStorageObjectLoader(bucket, objectPath, upstreamUrl)()
 }

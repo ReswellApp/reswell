@@ -1,7 +1,7 @@
 import { Suspense } from "react"
 import { after } from "next/server"
 import { unstable_cache } from "next/cache"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { SearchCategoryFilters } from "./search-section-filters"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { RecentFeedClient } from "@/components/recent-feed-client"
@@ -37,7 +37,9 @@ const LIMIT = 48
 /** Categories change only when an admin adds/removes one — safe to cache for a full day. */
 const getCachedBrowseCategories = unstable_cache(
   async () => {
-    const supabase = await createClient()
+    // Must not use the cookie-bound client here: cookies() is forbidden
+    // inside an unstable_cache scope. Categories are public data anyway.
+    const supabase = createServiceRoleClient()
     const { data } = await supabase
       .from("categories")
       .select("id, name, slug, board")

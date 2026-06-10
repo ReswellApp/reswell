@@ -26,9 +26,12 @@ export type SubscribeKlaviyoEmailMarketingResult = {
  * Optional `KLAVIYO_EMAIL_SUBSCRIBE_LIST_ID` — when set, subscribes via that list (the list’s
  * single vs double opt-in rules apply). Omit to use account default API opt-in settings.
  */
+// Note: `externalId` is accepted for backwards compatibility but is not sent —
+// the subscribe-job endpoint only allows email/phone_number/subscriptions on
+// the profile resource, and rejects `external_id` with a 400.
 export async function subscribeKlaviyoProfileEmailMarketing(input: {
   email: string
-  externalId: string
+  externalId?: string
 }): Promise<SubscribeKlaviyoEmailMarketingResult> {
   const apiKey = process.env.KLAVIYO_API_KEY?.trim()
   if (!apiKey) {
@@ -42,13 +45,12 @@ export async function subscribeKlaviyoProfileEmailMarketing(input: {
   }
 
   const email = input.email.trim()
-  const externalId = input.externalId.trim()
-  if (!email || !externalId) {
+  if (!email) {
     return {
       ok: false,
       status: 0,
       skipped: true,
-      skipReason: "Missing email or external_id",
+      skipReason: "Missing email",
       detail: "",
     }
   }
@@ -64,7 +66,6 @@ export async function subscribeKlaviyoProfileEmailMarketing(input: {
             type: "profile",
             attributes: {
               email,
-              external_id: externalId,
               subscriptions: {
                 email: {
                   marketing: {
