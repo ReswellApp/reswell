@@ -5,7 +5,7 @@ import {
 } from "@/lib/elasticsearch/listings-index"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
-import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
+import { removeListingFromGoogleMerchantFeed } from "@/lib/services/googleMerchantSync"
 import {
   fetchListingImageUrlsForListingIds,
   removeListingImageFilesFromStorage,
@@ -130,7 +130,7 @@ export async function deleteSellerDraftListing(
     // ES optional
   }
 
-  void syncListingToGoogleMerchantBestEffort(supabase, listingId)
+  await removeListingFromGoogleMerchantFeed(listingId)
 
   try {
     await removeListingImageFilesFromStorage(supabase, imageUrls)
@@ -172,7 +172,7 @@ export async function endSellerListing(
       // ES optional
     }
 
-    void syncListingToGoogleMerchantBestEffort(supabase, listingId)
+    await removeListingFromGoogleMerchantFeed(listingId)
 
     revalidateBoardsBrowseCatalog()
     await revalidateSellersAfterListingChange(supabase, sellerUserId)
@@ -199,7 +199,7 @@ export async function endSellerListing(
       } catch {
         // ES optional
       }
-      void syncListingToGoogleMerchantBestEffort(supabase, listingId)
+      await removeListingFromGoogleMerchantFeed(listingId)
       revalidateBoardsBrowseCatalog()
       await revalidateSellersAfterListingChange(supabase, sellerUserId)
       return {
@@ -217,7 +217,7 @@ export async function endSellerListing(
     // ES optional
   }
 
-  void syncListingToGoogleMerchantBestEffort(supabase, listingId)
+  await removeListingFromGoogleMerchantFeed(listingId)
 
   try {
     await removeListingImageFilesFromStorage(supabase, imageUrls)

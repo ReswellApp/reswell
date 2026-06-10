@@ -42,6 +42,27 @@ export async function updateListingHiddenFromHomepage(
   return { ok: true }
 }
 
+export async function updateListingExcludedFromGoogleMerchant(
+  client: SupabaseClient,
+  listingId: string,
+  excluded: boolean,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  const { data, error } = await client
+    .from("listings")
+    .update({ excluded_from_google_merchant: excluded })
+    .eq("id", listingId)
+    .select("id")
+    .maybeSingle()
+
+  if (error) {
+    return { ok: false, message: error.message }
+  }
+  if (!data) {
+    return { ok: false, message: "Listing not found" }
+  }
+  return { ok: true }
+}
+
 export async function updateListingSuppressedOnBoardsBrowse(
   client: SupabaseClient,
   listingId: string,

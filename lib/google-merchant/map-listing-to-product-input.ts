@@ -28,6 +28,8 @@ export type GoogleMerchantListingRow = {
   section: string
   status: string
   hidden_from_site?: boolean | null
+  archived_at?: string | null
+  excluded_from_google_merchant?: boolean | null
   shipping_available?: boolean | null
   shipping_price?: string | number | null
   board_shipping_cost_mode?: string | null
@@ -237,7 +239,9 @@ function mapListingTaxAttributes(): GoogleMerchantTax[] | undefined {
 export function isGoogleMerchantEligibleListing(listing: GoogleMerchantListingRow): boolean {
   if (listing.section !== "surfboards") return false
   if (listing.status !== "active") return false
+  if (listing.archived_at) return false
   if (listing.hidden_from_site === true) return false
+  if (listing.excluded_from_google_merchant === true) return false
   if (!listing.title?.trim()) return false
   if (!Number.isFinite(listing.price) || listing.price <= 0) return false
   const origin = publicSiteOrigin()

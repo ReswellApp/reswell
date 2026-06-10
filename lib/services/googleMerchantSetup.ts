@@ -132,8 +132,14 @@ export async function deleteGoogleMerchantProductInput(
     return { ok: false, status: 503, error: "Google Merchant API is not configured" }
   }
 
+  const dataSource = getGoogleMerchantDataSourceName()
+  if (!dataSource) {
+    return { ok: false, status: 503, error: "GOOGLE_MERCHANT_DATA_SOURCE_NAME is not set" }
+  }
+
   const name = buildProductInputResourceName(offerId)
-  const res = await googleMerchantRequest(`/products/v1/${name}`, {
+  const query = new URLSearchParams({ dataSource })
+  const res = await googleMerchantRequest(`/products/v1/${name}?${query.toString()}`, {
     method: "DELETE",
   })
 

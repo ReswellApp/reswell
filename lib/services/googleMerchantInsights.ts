@@ -11,6 +11,8 @@ import {
   matchesGoogleMerchantFeedProduct,
 } from "@/lib/google-merchant/config"
 import { listGoogleMerchantListingBatch } from "@/lib/db/google-merchant-listings"
+import { listingDetailHref } from "@/lib/listing-href"
+import { publicSiteOrigin } from "@/lib/public-site-origin"
 import {
   isGoogleMerchantEligibleListing,
   mapListingToProductInput,
@@ -126,11 +128,19 @@ export interface GoogleMerchantMissingListing {
   priceUsd: number
 }
 
+export interface GoogleMerchantExcludedListing {
+  offerId: string
+  title: string
+  link: string
+  priceUsd: number
+}
+
 export interface GoogleMerchantCoverage {
   eligibleListings: number
   productsInMerchant: number
   syncedEligible: number
   missingFromMerchant: GoogleMerchantMissingListing[]
+  excludedFromMerchant: GoogleMerchantExcludedListing[]
   orphanOfferIds: string[]
 }
 
@@ -180,6 +190,7 @@ const FREE_COVERAGE: GoogleMerchantCoverage = {
   productsInMerchant: 0,
   syncedEligible: 0,
   missingFromMerchant: [],
+  excludedFromMerchant: [],
   orphanOfferIds: [],
 }
 
@@ -577,6 +588,7 @@ async function computeCoverage(
 ): Promise<GoogleMerchantCoverage> {
   const eligibleOfferIds = new Set<string>()
   const missingFromMerchant: GoogleMerchantMissingListing[] = []
+  const excludedFromMerchant: GoogleMerchantExcludedListing[] = []
   const pageSize = 100
   let from = 0
 
@@ -585,6 +597,19 @@ async function computeCoverage(
     if (batch.length === 0) break
 
     for (const listing of batch) {
+      if (listing.excluded_from_google_merchant === true) {
+        if (excludedFromMerchant.length < 100) {
+          const origin = publicSiteOrigin()
+          excludedFromMerchant.push({
+            offerId: listing.id,
+            title: listing.title.trim(),
+            link: `${origin}${listingDetailHref(listing)}`,
+            priceUsd: listing.price,
+          })
+        }
+        continue
+      }
+
       if (!isGoogleMerchantEligibleListing(listing)) continue
       eligibleOfferIds.add(listing.id)
 
@@ -620,6 +645,7 @@ async function computeCoverage(
     productsInMerchant: merchantOfferIds.size,
     syncedEligible,
     missingFromMerchant,
+    excludedFromMerchant,
     orphanOfferIds,
   }
 }

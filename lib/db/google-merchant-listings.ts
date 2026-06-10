@@ -13,6 +13,8 @@ const GOOGLE_MERCHANT_LISTING_SELECT = `
   section,
   status,
   hidden_from_site,
+  archived_at,
+  excluded_from_google_merchant,
   shipping_available,
   shipping_price,
   board_shipping_cost_mode,
@@ -43,6 +45,7 @@ export async function listGoogleMerchantListingBatch(
     .eq("section", "surfboards")
     .eq("status", "active")
     .eq("hidden_from_site", false)
+    .is("archived_at", null)
     .order("created_at", { ascending: false })
     .range(options.from, options.from + options.limit - 1)
 

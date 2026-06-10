@@ -1,5 +1,6 @@
 import { after } from "next/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
   getGoogleMerchantListingById,
   listGoogleMerchantListingBatch,
@@ -49,6 +50,37 @@ export function syncListingToGoogleMerchantBestEffort(
     after(run)
   } catch {
     void run()
+  }
+}
+
+/**
+ * Remove a listing from Merchant Center when it is archived, deleted, sold, or otherwise ineligible.
+ * Uses the service-role client so removal is reliable after destructive listing mutations.
+ */
+export async function removeListingFromGoogleMerchantFeed(
+  listingId: string,
+): Promise<GoogleMerchantSyncListingResult> {
+  if (!isGoogleMerchantConfigured()) {
+    return { action: "skipped", offerId: listingId }
+  }
+
+  try {
+    const supabase = createServiceRoleClient()
+    const result = await syncListingToGoogleMerchant(supabase, listingId)
+    if (result.action === "error") {
+      console.error("[google-merchant] feed removal failed", {
+        listingId,
+        offerId: result.offerId,
+        error: result.error,
+      })
+    }
+    return result
+  } catch (e) {
+    console.error("[google-merchant] feed removal threw", {
+      listingId,
+      error: e instanceof Error ? e.message : String(e),
+    })
+    return { action: "skipped", offerId: listingId }
   }
 }
 
