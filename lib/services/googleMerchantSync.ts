@@ -1,3 +1,4 @@
+import { after } from "next/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import {
   getGoogleMerchantListingById,
@@ -20,26 +21,34 @@ export type GoogleMerchantSyncListingResult =
 
 /**
  * Fire-and-forget helper for listing mutations. Logs failures; never throws.
- * Mirrors the optional Elasticsearch sync pattern used after publish/sold/delete.
+ * Uses Next.js `after()` so the sync completes on Vercel after the response is sent.
  */
-export async function syncListingToGoogleMerchantBestEffort(
+export function syncListingToGoogleMerchantBestEffort(
   supabase: SupabaseClient,
   listingId: string,
-): Promise<void> {
-  try {
-    const result = await syncListingToGoogleMerchant(supabase, listingId)
-    if (result.action === "error") {
-      console.error("[google-merchant] sync failed", {
+): void {
+  const run = async () => {
+    try {
+      const result = await syncListingToGoogleMerchant(supabase, listingId)
+      if (result.action === "error") {
+        console.error("[google-merchant] sync failed", {
+          listingId,
+          offerId: result.offerId,
+          error: result.error,
+        })
+      }
+    } catch (e) {
+      console.error("[google-merchant] sync threw", {
         listingId,
-        offerId: result.offerId,
-        error: result.error,
+        error: e instanceof Error ? e.message : String(e),
       })
     }
-  } catch (e) {
-    console.error("[google-merchant] sync threw", {
-      listingId,
-      error: e instanceof Error ? e.message : String(e),
-    })
+  }
+
+  try {
+    after(run)
+  } catch {
+    void run()
   }
 }
 

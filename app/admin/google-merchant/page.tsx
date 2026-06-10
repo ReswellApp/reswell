@@ -1,5 +1,5 @@
 import { privatePageMetadata } from "@/lib/site-metadata"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { buildGoogleMerchantInsights } from "@/lib/services/googleMerchantInsights"
 import { GoogleMerchantDashboardClient } from "@/components/features/admin/google-merchant-dashboard-client"
 
@@ -15,7 +15,13 @@ export const metadata = privatePageMetadata({
 const DEFAULT_RANGE_DAYS = 28
 
 export default async function AdminGoogleMerchantPage() {
-  const supabase = await createClient()
+  let supabase
+  try {
+    supabase = createServiceRoleClient()
+  } catch {
+    supabase = await createClient()
+  }
+
   const insights = await buildGoogleMerchantInsights(supabase, { days: DEFAULT_RANGE_DAYS })
 
   return <GoogleMerchantDashboardClient initialInsights={insights} />

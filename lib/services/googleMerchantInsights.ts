@@ -8,6 +8,7 @@ import {
   getGoogleMerchantFeedLabel,
   getGoogleMerchantParentAccount,
   isGoogleMerchantConfigured,
+  matchesGoogleMerchantFeedProduct,
 } from "@/lib/google-merchant/config"
 import { listGoogleMerchantListingBatch } from "@/lib/db/google-merchant-listings"
 import {
@@ -244,6 +245,7 @@ interface RawProduct {
   offerId?: string
   contentLanguage?: string
   feedLabel?: string
+  dataSource?: string
   productAttributes?: RawProductAttributes
   productStatus?: RawProductStatus
 }
@@ -394,8 +396,6 @@ export async function listGoogleMerchantProductsDetailed(): Promise<
   }
 
   const parent = getGoogleMerchantParentAccount()
-  const feedLabel = getGoogleMerchantFeedLabel()
-  const contentLanguage = getGoogleMerchantContentLanguage()
   const products: GoogleMerchantProductDetail[] = []
   let pageToken: string | undefined
 
@@ -418,8 +418,7 @@ export async function listGoogleMerchantProductsDetailed(): Promise<
 
     const data = res.data as RawProductsListResponse
     for (const raw of data.products ?? []) {
-      if (raw.feedLabel && raw.feedLabel !== feedLabel) continue
-      if (raw.contentLanguage && raw.contentLanguage !== contentLanguage) continue
+      if (!matchesGoogleMerchantFeedProduct(raw)) continue
       const mapped = mapRawProduct(raw)
       if (mapped.offerId) products.push(mapped)
     }
@@ -469,18 +468,20 @@ async function runProductPerformanceQuery(
  */
 export async function getGoogleMerchantProductPerformance(options?: {
   days?: number
+  offerIdFilter?: Set<string>
 }): Promise<GoogleMerchantPerformanceResult> {
   if (!isGoogleMerchantConfigured()) {
     return { configured: false, reason: "Google Merchant API is not configured." }
   }
 
   const days = options?.days ?? 28
+  const offerIdFilter = options?.offerIdFilter
   const startDate = isoDaysAgo(days)
   const endDate = isoDaysAgo(1)
 
   try {
     const offerQuery = `SELECT offer_id, title, clicks, impressions, click_through_rate, conversions, conversion_value FROM product_performance_view WHERE date BETWEEN '${startDate}' AND '${endDate}' ORDER BY clicks DESC`
-    const dailyQuery = `SELECT date, clicks, impressions FROM product_performance_view WHERE date BETWEEN '${startDate}' AND '${endDate}' ORDER BY date ASC`
+    const dailyQuery = `SELECT offer_id, date, clicks, impressions FROM product_performance_view WHERE date BETWEEN '${startDate}' AND '${endDate}' ORDER BY date ASC`
 
     const [offerRows, dailyRows] = await Promise.all([
       runProductPerformanceQuery(offerQuery),
@@ -492,6 +493,7 @@ export async function getGoogleMerchantProductPerformance(options?: {
     for (const row of offerRows) {
       const offerId = (row.offerId ?? "").trim()
       if (!offerId) continue
+      if (offerIdFilter && !offerIdFilter.has(offerId)) continue
       const existing = offerMap.get(offerId)
       const clicks = toNumber(row.clicks)
       const impressions = toNumber(row.impressions)
@@ -518,6 +520,8 @@ export async function getGoogleMerchantProductPerformance(options?: {
 
     const dailyMap = new Map<string, GoogleMerchantPerformanceDaily>()
     for (const row of dailyRows) {
+      const offerId = (row.offerId ?? "").trim()
+      if (offerIdFilter && offerId && !offerIdFilter.has(offerId)) continue
       const date = isoFromReportDate(row.date)
       if (!date) continue
       const existing = dailyMap.get(date)
@@ -729,7 +733,7 @@ export async function buildGoogleMerchantInsights(
   const merchantOfferIds = new Set(products.map((p) => p.offerId))
 
   const [performance, coverage, analytics] = await Promise.all([
-    getGoogleMerchantProductPerformance({ days }),
+    getGoogleMerchantProductPerformance({ days, offerIdFilter: merchantOfferIds }),
     computeCoverage(supabase, merchantOfferIds),
     getGoogleAnalyticsMerchantTraffic({ days }),
   ])

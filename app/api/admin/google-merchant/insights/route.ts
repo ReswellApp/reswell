@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/brands/admin-server"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 import { buildGoogleMerchantInsights } from "@/lib/services/googleMerchantInsights"
 
 export const dynamic = "force-dynamic"
@@ -21,7 +22,14 @@ export async function GET(request: NextRequest) {
   const days = ALLOWED_RANGE_DAYS.has(daysParam) ? daysParam : 28
 
   try {
-    const insights = await buildGoogleMerchantInsights(gate.ctx.supabase, { days })
+    let supabase = gate.ctx.supabase
+    try {
+      supabase = createServiceRoleClient()
+    } catch {
+      // Local dev without service role — fall back to admin session client.
+    }
+
+    const insights = await buildGoogleMerchantInsights(supabase, { days })
     return NextResponse.json({ data: insights }, { status: 200 })
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)

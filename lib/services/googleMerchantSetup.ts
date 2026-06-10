@@ -1,11 +1,10 @@
 import { googleMerchantRequest } from "@/lib/google-merchant/client"
 import {
-  getGoogleMerchantContentLanguage,
   getGoogleMerchantDataSourceName,
   getGoogleMerchantDeveloperEmail,
-  getGoogleMerchantFeedLabel,
   getGoogleMerchantParentAccount,
   isGoogleMerchantConfigured,
+  matchesGoogleMerchantFeedProduct,
 } from "@/lib/google-merchant/config"
 import type { GoogleMerchantProductInputPayload } from "@/lib/google-merchant/map-listing-to-product-input"
 import { buildProductInputResourceName } from "@/lib/google-merchant/product-input-name"
@@ -161,6 +160,7 @@ type GoogleMerchantProductsListResponse = {
     offerId?: string
     contentLanguage?: string
     feedLabel?: string
+    dataSource?: string
   }>
   nextPageToken?: string
 }
@@ -199,20 +199,14 @@ export async function listGoogleMerchantProductsPage(options?: {
   }
 
   const data = res.data as GoogleMerchantProductsListResponse
-  const contentLanguage = getGoogleMerchantContentLanguage()
-  const feedLabel = getGoogleMerchantFeedLabel()
   const products = (data.products ?? [])
     .map((product) => ({
       offerId: product.offerId?.trim() ?? "",
       contentLanguage: product.contentLanguage?.trim() ?? "",
       feedLabel: product.feedLabel?.trim() ?? "",
+      dataSource: product.dataSource?.trim() ?? "",
     }))
-    .filter(
-      (product) =>
-        product.offerId &&
-        product.contentLanguage === contentLanguage &&
-        product.feedLabel === feedLabel,
-    )
+    .filter((product) => matchesGoogleMerchantFeedProduct(product))
 
   return {
     ok: true,

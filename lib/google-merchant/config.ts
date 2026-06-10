@@ -112,3 +112,39 @@ export function getGoogleMerchantParentAccount(): string {
   }
   return `accounts/${accountId}`
 }
+
+/** Fields read from Merchant API `Product` resources when scoping to this integration. */
+export type GoogleMerchantFeedProductIdentity = {
+  offerId?: string | null
+  contentLanguage?: string | null
+  feedLabel?: string | null
+  dataSource?: string | null
+}
+
+/**
+ * True when a processed Merchant Center product belongs to this Reswell API primary feed.
+ * Excludes legacy Content API feeds and other data sources in the same account.
+ */
+export function matchesGoogleMerchantFeedProduct(
+  product: GoogleMerchantFeedProductIdentity,
+): boolean {
+  const offerId = product.offerId?.trim()
+  if (!offerId) return false
+
+  const contentLanguage = getGoogleMerchantContentLanguage()
+  const feedLabel = getGoogleMerchantFeedLabel()
+  const dataSourceName = getGoogleMerchantDataSourceName()
+
+  const lang = product.contentLanguage?.trim()
+  const label = product.feedLabel?.trim()
+  const source = product.dataSource?.trim()
+
+  if (lang && lang !== contentLanguage) return false
+  if (label && label !== feedLabel) return false
+
+  if (dataSourceName) {
+    if (!source || source !== dataSourceName) return false
+  }
+
+  return true
+}

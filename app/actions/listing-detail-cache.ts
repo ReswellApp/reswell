@@ -67,7 +67,7 @@ export async function revalidateListingDetailAfterListingMutation(
 
   try {
     const serviceSupabase = createServiceRoleClient()
-    await syncListingToGoogleMerchantBestEffort(serviceSupabase, listingId)
+    syncListingToGoogleMerchantBestEffort(serviceSupabase, listingId)
   } catch {
     // Service role optional in local dev; GMC sync also runs via DB webhook when configured.
   }

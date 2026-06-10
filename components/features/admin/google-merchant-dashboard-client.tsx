@@ -371,7 +371,13 @@ export function GoogleMerchantDashboardClient({
       const res = await fetch("/api/integrations/google-merchant/sync", { method: "POST" })
       const json = (await res.json()) as {
         ok?: boolean
-        summary?: { inserted: number; deleted: number; errors: number; reconciled_deleted: number }
+        summary?: {
+          inserted: number
+          deleted: number
+          errors: number
+          reconciled_deleted: number
+          error_samples?: Array<{ offerId: string; error: string }>
+        }
         error?: string
       }
       if (!res.ok || !json.ok) {
@@ -379,11 +385,15 @@ export function GoogleMerchantDashboardClient({
         return
       }
       const s = json.summary
+      const errorNote =
+        s && s.errors > 0 && s.error_samples?.length
+          ? ` First error: ${s.error_samples[0].offerId} — ${s.error_samples[0].error}`
+          : ""
       setBanner({
         tone: "ok",
         text: s
-          ? `Resync complete — ${s.inserted} upserted, ${s.deleted + s.reconciled_deleted} removed, ${s.errors} errors.`
-          : "Resync complete.",
+          ? `Resync complete — ${s.inserted} upserted, ${s.deleted + s.reconciled_deleted} removed, ${s.errors} errors.${errorNote} Google may take a few minutes to reflect changes in this dashboard.`
+          : "Resync complete. Google may take a few minutes to reflect changes in this dashboard.",
       })
       await fetchInsights(rangeDays)
     } catch {
@@ -562,6 +572,11 @@ export function GoogleMerchantDashboardClient({
                 feed <span className="font-medium text-foreground">{insights.account.feedLabel}</span> ·{" "}
                 {insights.account.contentLanguage}
               </span>
+              {insights.account.dataSourceName ? (
+                <span className="font-mono" title={insights.account.dataSourceName}>
+                  API data source
+                </span>
+              ) : null}
               <span>
                 auth <span className="font-medium text-foreground">{insights.account.authMode}</span>
               </span>
@@ -1134,7 +1149,9 @@ export function GoogleMerchantDashboardClient({
           </SectionCard>
 
           <p className="pt-2 text-center text-xs text-slate-400">
-            Live snapshot · generated {new Date(insights.generatedAt).toLocaleString()} · trailing {rangeDays} days
+            Live snapshot · Reswell API feed only · generated{" "}
+            {new Date(insights.generatedAt).toLocaleString()} · trailing {rangeDays} days · processed
+            products can lag product input updates by a few minutes
           </p>
         </>
       )}
