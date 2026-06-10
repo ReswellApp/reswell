@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/server"
@@ -316,7 +317,17 @@ export default async function ShippingGuidePage(props: {
           </Alert>
         )}
 
-        {labelFlow && user && <ShippingLabelTool orderId={orderId!} />}
+        {labelFlow && user && (
+          <Suspense
+            fallback={
+              <div className="rounded-lg border bg-card p-10 text-sm text-muted-foreground">
+                Loading shipping tools…
+              </div>
+            }
+          >
+            <ShippingLabelTool orderId={orderId!} />
+          </Suspense>
+        )}
 
         {labelFlow && (
           <p className="mt-10 text-sm text-muted-foreground border-t border-border/60 pt-8">

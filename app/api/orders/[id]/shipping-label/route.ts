@@ -1,14 +1,13 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
-import { saveOrderTracking } from "@/lib/services/markOrderShipped"
 import { PEER_SURFBOARD_CHECKOUT_LISTING_SELECT } from "@/lib/services/peerListingShippingQuote"
 import {
   fetchRatesForSurfboardOrder,
-  purchaseLabelWithRateId,
   resolveAddressesForLabel,
   resolveOrderLabelParcelFromListing,
 } from "@/lib/services/orderShippingLabel"
+import { loadSellerShippingLabelOrderContext } from "@/lib/services/sellerShippingLabelCheckout"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import { shippingLabelPostBodySchema } from "@/lib/validations/order-shipping-label"
 import type { ListingPackedParcelSource } from "@/lib/reswell-packed-parcel-from-listing"
@@ -91,6 +90,14 @@ export async function GET(
   }
   if (row.fulfillment_method !== "shipping") reasons.push("This order is not shipping fulfillment.")
   if (row.delivery_status !== "pending") reasons.push("Tracking is already set for this order.")
+
+  if (user) {
+    const sellerCtx = await loadSellerShippingLabelOrderContext(supabase, orderId, user.id)
+    if (!sellerCtx.ok && sellerCtx.status !== 404) {
+      reasons.push(sellerCtx.error)
+    }
+  }
+
   const eligible = reasons.length === 0
 
   const { data: addrRows } = await supabase
@@ -215,6 +222,11 @@ export async function POST(
 
   const body = parsed.data
 
+  const sellerCtx = await loadSellerShippingLabelOrderContext(supabase, orderId, user.id)
+  if (!sellerCtx.ok) {
+    return NextResponse.json({ error: sellerCtx.error }, { status: sellerCtx.status })
+  }
+
   if (body.action === "rates") {
     let sellerAddressId = body.seller_address_id?.trim() || null
     if (!sellerAddressId) {
@@ -301,29 +313,11 @@ export async function POST(
     })
   }
 
-  const purchased = await purchaseLabelWithRateId(body.rate_id)
-  if (!purchased.ok) {
-    return NextResponse.json({ error: purchased.error }, { status: purchased.status })
-  }
-
-  const marked = await saveOrderTracking(
-    supabase,
-    o.id,
-    user.id,
-    purchased.result.trackingNumber,
-    purchased.result.trackingCarrier,
-  )
-
-  if (!marked.ok) {
-    return NextResponse.json({ error: marked.error }, { status: marked.status })
-  }
-
-  return NextResponse.json({
-    data: {
-      labelUrl: purchased.result.labelUrl,
-      trackingNumber: purchased.result.trackingNumber,
-      trackingCarrier: purchased.result.trackingCarrier,
-      orderDisplayNum: formatOrderNumForCustomer(o.order_num, o.id),
+  return NextResponse.json(
+    {
+      error:
+        "Payment is required before purchasing a label. Pay for the selected rate, then finalize the label purchase.",
     },
-  })
+    { status: 402 },
+  )
 }

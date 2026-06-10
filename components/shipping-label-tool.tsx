@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,9 +24,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ChevronDown, Loader2, Printer, Truck } from "lucide-react"
+import { ChevronDown, Loader2, Truck } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { SellerShippingLabelCheckout } from "@/components/seller-shipping-label-checkout"
 
 type SellerAddr = { id: string; label: string; oneLine: string; isDefault: boolean }
 
@@ -77,10 +78,10 @@ const FALLBACK_MANUAL_PARCEL = {
 
 export function ShippingLabelTool({ orderId }: { orderId: string }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [overview, setOverview] = useState<OverviewResponse["data"] | null>(null)
   const [loading, setLoading] = useState(true)
   const [ratesBusy, setRatesBusy] = useState(false)
-  const [purchaseBusy, setPurchaseBusy] = useState(false)
   const [rates, setRates] = useState<RateRow[] | null>(null)
   const [selectedRateId, setSelectedRateId] = useState<string>("")
 
@@ -202,47 +203,97 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
     orderId,
   ])
 
-  const buyLabel = async () => {
-    if (!selectedRateId) {
-      toast.error("Select a rate")
-      return
+  const selectedRate = useMemo(
+    () => rates?.find((r) => r.rate_id === selectedRateId) ?? null,
+    [rates, selectedRateId],
+  )
+
+  const checkoutPayload = useMemo(() => {
+    if (!selectedRate) return null
+    const payload: {
+      rate_id: string
+      seller_address_id?: string
+      parcel?: {
+        length_in: number
+        width_in: number
+        height_in: number
+        weight_lb: number
+      }
+    } = { rate_id: selectedRate.rate_id }
+    if (sellerAddressId) {
+      payload.seller_address_id = sellerAddressId
     }
-    setPurchaseBusy(true)
-    try {
-      const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}/shipping-label`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "purchase",
-          rate_id: selectedRateId,
-        }),
-      })
-      const data = (await res.json()) as {
-        data?: { labelUrl: string | null; trackingNumber: string; orderDisplayNum: string }
-        error?: string
+    if (adjustOpen || !overview?.autoLabelParcel.ok) {
+      payload.parcel = {
+        length_in: Number(manualParcel.length_in),
+        width_in: Number(manualParcel.width_in),
+        height_in: Number(manualParcel.height_in),
+        weight_lb: Number(manualParcel.weight_lb),
       }
-      if (!res.ok || !data.data) {
-        const msg = data.error?.trim() || "Could not buy label"
-        toast.error("Could not buy label", {
-          description:
-            msg.length > 500 ? `${msg.slice(0, 500)}…` : msg,
-          duration: 14_000,
-        })
-        return
-      }
-      if (data.data.labelUrl) {
-        window.open(data.data.labelUrl, "_blank", "noopener,noreferrer")
+    }
+    return payload
+  }, [
+    selectedRate,
+    sellerAddressId,
+    adjustOpen,
+    overview?.autoLabelParcel.ok,
+    manualParcel.length_in,
+    manualParcel.width_in,
+    manualParcel.height_in,
+    manualParcel.weight_lb,
+  ])
+
+  const handleLabelPurchaseSuccess = useCallback(
+    (data: { labelUrl: string | null; trackingNumber: string; orderDisplayNum: string }) => {
+      toast.success(`Label purchased for order #${data.orderDisplayNum}`)
+      if (data.labelUrl) {
+        window.open(data.labelUrl, "_blank", "noopener,noreferrer")
       }
       router.refresh()
       void load()
       setRates(null)
-    } catch {
-      toast.error("Could not buy label")
-    } finally {
-      setPurchaseBusy(false)
+      setSelectedRateId("")
+    },
+    [load, router],
+  )
+
+  useEffect(() => {
+    const paymentIntentId = searchParams.get("payment_intent")?.trim()
+    const redirectStatus = searchParams.get("redirect_status")?.trim()
+    if (!paymentIntentId || redirectStatus !== "succeeded") return
+
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch(
+          `/api/orders/${encodeURIComponent(orderId)}/shipping-label/finalize`,
+          {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ payment_intent_id: paymentIntentId }),
+          },
+        )
+        const data = (await res.json()) as {
+          data?: { labelUrl: string | null; trackingNumber: string; orderDisplayNum: string }
+          error?: string
+        }
+        if (cancelled) return
+        if (!res.ok || !data.data) {
+          toast.error(data.error ?? "Could not complete label purchase after payment")
+          return
+        }
+        handleLabelPurchaseSuccess(data.data)
+        router.replace(`/shipping?order=${encodeURIComponent(orderId)}`, { scroll: false })
+      } catch {
+        if (!cancelled) toast.error("Could not complete label purchase after payment")
+      }
+    })()
+
+    return () => {
+      cancelled = true
     }
-  }
+  }, [orderId, searchParams, router, handleLabelPurchaseSuccess])
 
   if (loading) {
     return (
@@ -486,17 +537,15 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
                   </Table>
                 </div>
 
-                <Button type="button" onClick={() => void buyLabel()} disabled={purchaseBusy}>
-                  {purchaseBusy ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <Printer className="h-4 w-4 mr-2" />
-                  )}
-                  Buy label &amp; add tracking
-                </Button>
+                <SellerShippingLabelCheckout
+                  orderId={orderId}
+                  checkoutPayload={checkoutPayload}
+                  amountUsd={selectedRate?.amount ?? 0}
+                  onSuccess={handleLabelPurchaseSuccess}
+                />
                 <p className="text-xs text-muted-foreground">
-                  Carrier charges your ShipEngine-connected accounts. We add tracking to the order and notify the
-                  buyer—same as entering tracking manually on the sale page.
+                  You pay the carrier rate shown above. After payment, Reswell purchases the label on
+                  your behalf, adds tracking to the order, and notifies the buyer.
                 </p>
               </div>
             )}

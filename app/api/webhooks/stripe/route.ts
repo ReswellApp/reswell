@@ -6,6 +6,11 @@ import {
 } from "@/lib/stripe-server"
 import { completeMarketplaceOrderFromPaymentIntent } from "@/lib/stripe-complete-order"
 import { marketplaceListingIdsFromPaymentIntent } from "@/lib/stripe-marketplace-metadata"
+import {
+  completeSellerShippingLabelFromPaymentIntent,
+  isSellerShippingLabelPaymentIntent,
+} from "@/lib/services/sellerShippingLabelCheckout"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 import { tryHandleStripeConnectEvent } from "@/lib/services/stripeConnectWebhook"
 import {
   tryHandleStripeChargeRefundedEvent,
@@ -89,6 +94,35 @@ export async function POST(request: Request) {
 
   if (pi.status !== "succeeded") {
     return NextResponse.json({ received: true, skipped: "not_succeeded" })
+  }
+
+  if (isSellerShippingLabelPaymentIntent(pi)) {
+    let serviceSupabase
+    try {
+      serviceSupabase = createServiceRoleClient()
+    } catch (e) {
+      console.error("[stripe webhook] service role client for seller label:", e)
+      return NextResponse.json({ error: "server_config" }, { status: 503 })
+    }
+
+    const result = await completeSellerShippingLabelFromPaymentIntent({
+      supabase: serviceSupabase,
+      paymentIntent: pi,
+    })
+    if (!result.ok) {
+      console.error("[stripe webhook] seller label purchase failed:", result.error, { pi: pi.id })
+      if (result.status >= 500) {
+        return NextResponse.json({ error: result.error }, { status: 500 })
+      }
+      return NextResponse.json({ received: true, skipped: "seller_label_failed", detail: result.error })
+    }
+
+    return NextResponse.json({
+      received: true,
+      orderId: result.orderId,
+      sellerLabel: true,
+      alreadyProcessed: result.alreadyProcessed,
+    })
   }
 
   if (!marketplaceListingIdsFromPaymentIntent(pi).length || !pi.metadata?.buyer_id?.trim()) {

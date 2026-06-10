@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { getLatestAdminLabelUrlsForOrder } from "@/lib/db/adminOrderShippingLabels"
 
-export type OrderShippingLabelOrigin = "auto_reswell_checkout"
+export type OrderShippingLabelOrigin = "auto_reswell_checkout" | "seller_paid"
 
 export type OrderShippingLabelRow = {
   id: string
@@ -25,6 +25,7 @@ export async function insertOrderShippingLabel(
     tracking_number?: string | null
     tracking_carrier?: string | null
     shipengine_rate_id?: string | null
+    stripe_payment_intent_id?: string | null
   },
 ): Promise<{ error: Error | null }> {
   const { error } = await supabase.from("order_shipping_labels").insert({
@@ -35,6 +36,7 @@ export async function insertOrderShippingLabel(
     tracking_number: row.tracking_number ?? null,
     tracking_carrier: row.tracking_carrier ?? null,
     shipengine_rate_id: row.shipengine_rate_id ?? null,
+    stripe_payment_intent_id: row.stripe_payment_intent_id ?? null,
   })
 
   if (!error) return { error: null }
