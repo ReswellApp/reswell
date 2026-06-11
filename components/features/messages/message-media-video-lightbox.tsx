@@ -1,8 +1,8 @@
 "use client"
 
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { Play, X } from "lucide-react"
-import { useEffect, useRef } from "react"
+import { Loader2, Play, X } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
@@ -23,6 +23,8 @@ export function MessageMediaVideoLightbox({
   fileName,
 }: MessageMediaVideoLightboxProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null)
+  const [ready, setReady] = useState(false)
+  const [isPortrait, setIsPortrait] = useState(true)
 
   useEffect(() => {
     const video = videoRef.current
@@ -37,6 +39,7 @@ export function MessageMediaVideoLightbox({
 
     video.pause()
     video.currentTime = 0
+    setReady(false)
   }, [open])
 
   return (
@@ -73,25 +76,41 @@ export function MessageMediaVideoLightbox({
 
                 <div
                   className={cn(
-                    "relative shrink-0 overflow-hidden rounded-xl sm:rounded-2xl",
+                    "relative shrink-0 overflow-hidden rounded-xl bg-black/90 sm:rounded-2xl",
                     "max-md:w-full max-md:max-w-[min(calc(100vw-1rem),100%)]",
-                    "md:aspect-[3/4] md:h-auto md:w-[29rem] md:max-w-[min(29rem,calc(100vw-3rem))] xl:w-[32rem] xl:max-w-[min(32rem,calc(100vw-3rem))]",
+                    isPortrait
+                      ? "md:w-[29rem] md:max-w-[min(29rem,calc(100vw-3rem))] xl:w-[32rem] xl:max-w-[min(32rem,calc(100vw-3rem))]"
+                      : "md:w-[min(56rem,calc(100vw-3rem))]",
+                    // Hold a stable portrait frame until metadata arrives so the
+                    // player never flashes the browser's default landscape box.
+                    !ready && "aspect-[3/4] max-h-[min(88dvh,calc(100dvh-10rem))]",
                   )}
                 >
-                  <video
-                    ref={videoRef}
-                    controls
-                    playsInline
-                    preload="metadata"
-                    className={cn(
-                      "block max-h-[min(88dvh,calc(100dvh-10rem))] w-auto max-w-full object-contain",
-                      "md:absolute md:inset-0 md:h-full md:w-full md:max-h-none md:max-w-none md:object-cover md:object-center",
-                    )}
-                    aria-label={`Video: ${fileName}`}
-                  >
-                    <source src={src} />
-                    Your browser does not support embedded video.
-                  </video>
+                  {!ready ? (
+                    <span className="absolute inset-0 flex items-center justify-center" aria-hidden>
+                      <Loader2 className="h-7 w-7 animate-spin text-white/70" />
+                    </span>
+                  ) : null}
+                  {open ? (
+                    <video
+                      ref={videoRef}
+                      src={src}
+                      controls
+                      autoPlay
+                      playsInline
+                      preload="auto"
+                      onLoadedMetadata={(event) => {
+                        const video = event.currentTarget
+                        setIsPortrait(video.videoHeight >= video.videoWidth)
+                        setReady(true)
+                      }}
+                      className={cn(
+                        "mx-auto block max-h-[min(88dvh,calc(100dvh-10rem))] w-auto max-w-full object-contain",
+                        ready ? "opacity-100 transition-opacity duration-200" : "absolute inset-0 h-full opacity-0",
+                      )}
+                      aria-label={`Video: ${fileName}`}
+                    />
+                  ) : null}
                 </div>
               </div>
             </div>

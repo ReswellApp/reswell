@@ -93,6 +93,8 @@ function MessageMediaAttachmentVideo({
 }) {
   const attachmentPath = `/api/messages/${messageId}/attachment`
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [frameReady, setFrameReady] = useState(false)
+  const [failed, setFailed] = useState(false)
 
   return (
     <>
@@ -105,15 +107,29 @@ function MessageMediaAttachmentVideo({
         )}
         aria-label={`Play video: ${fileName}`}
       >
-        <video
-          playsInline
-          preload="metadata"
-          muted
-          className={messageMediaMaxSizeClass}
-          aria-hidden
-        >
-          <source src={attachmentPath} />
-        </video>
+        {!frameReady ? (
+          <div className="flex aspect-[3/4] w-full min-w-[8rem] items-center justify-center bg-muted/30">
+            {failed ? (
+              <span className="px-3 text-center text-sm text-muted-foreground">Video</span>
+            ) : (
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" aria-hidden />
+            )}
+          </div>
+        ) : null}
+        {!failed ? (
+          <video
+            // The #t fragment forces mobile Safari to decode and paint the
+            // first frame, which it skips with plain preload="metadata".
+            src={`${attachmentPath}#t=0.001`}
+            playsInline
+            preload="metadata"
+            muted
+            className={cn(messageMediaMaxSizeClass, !frameReady && "absolute inset-0 opacity-0")}
+            onLoadedData={() => setFrameReady(true)}
+            onError={() => setFailed(true)}
+            aria-hidden
+          />
+        ) : null}
         <MessageMediaVideoPreviewOverlay />
       </button>
       <MessageMediaVideoLightbox
