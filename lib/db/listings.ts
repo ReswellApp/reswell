@@ -1,5 +1,47 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
+export async function updateAdminListingStatus(
+  client: SupabaseClient,
+  listingIds: string[],
+  patch: {
+    status: string
+    hidden_from_site?: boolean
+  },
+): Promise<{ ok: true; updatedIds: string[] } | { ok: false; message: string }> {
+  if (listingIds.length === 0) {
+    return { ok: false, message: "No listing ids provided" }
+  }
+
+  const row: {
+    status: string
+    updated_at: string
+    hidden_from_site?: boolean
+  } = {
+    status: patch.status,
+    updated_at: new Date().toISOString(),
+  }
+  if (patch.hidden_from_site !== undefined) {
+    row.hidden_from_site = patch.hidden_from_site
+  }
+
+  const { data, error } = await client
+    .from("listings")
+    .update(row)
+    .in("id", listingIds)
+    .select("id")
+
+  if (error) {
+    return { ok: false, message: error.message }
+  }
+
+  const updatedIds = (data ?? []).map((r) => String((r as { id: string }).id))
+  if (updatedIds.length === 0) {
+    return { ok: false, message: "Listing not found" }
+  }
+
+  return { ok: true, updatedIds }
+}
+
 export async function updateListingHiddenFromSite(
   client: SupabaseClient,
   listingId: string,

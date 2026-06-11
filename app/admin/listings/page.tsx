@@ -404,12 +404,35 @@ export default function AdminListingsPage() {
   }
 
   async function updateListingStatus(id: string, newStatus: string) {
-    const { error } = await supabase.from('listings').update({ status: newStatus }).eq('id', id)
-    if (!error) {
-      setListings((prev) => prev.map((l) => (l.id === id ? { ...l, status: newStatus } : l)))
+    const res = await fetch('/api/admin/listings/status', {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ listing_ids: [id], status: newStatus }),
+    })
+    const json = (await res.json().catch(() => ({}))) as {
+      success?: boolean
+      error?: unknown
+    }
+    if (res.ok) {
+      setListings((prev) =>
+        prev.map((l) =>
+          l.id === id
+            ? {
+                ...l,
+                status: newStatus,
+                hidden_from_site: newStatus === 'removed' ? true : l.hidden_from_site,
+              }
+            : l,
+        ),
+      )
       toast.success(`Listing marked as ${newStatus}`)
     } else {
-      toast.error('Failed to update listing')
+      const errMsg =
+        typeof json.error === 'string'
+          ? json.error
+          : 'Failed to update listing'
+      toast.error(errMsg)
     }
   }
 
@@ -662,14 +685,29 @@ export default function AdminListingsPage() {
     if (selectedListings.length === 0) return
     setBulkBusy(true)
     const ids = selectedListings.map((l) => l.id)
-    const { error } = await supabase.from('listings').update({ status }).in('id', ids)
+    const res = await fetch('/api/admin/listings/status', {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ listing_ids: ids, status }),
+    })
     setBulkBusy(false)
-    if (error) {
+    if (!res.ok) {
       toast.error('Failed to update selection')
       return
     }
     const idSet = new Set(ids)
-    setListings((prev) => prev.map((l) => (idSet.has(l.id) ? { ...l, status } : l)))
+    setListings((prev) =>
+      prev.map((l) =>
+        idSet.has(l.id)
+          ? {
+              ...l,
+              status,
+              hidden_from_site: status === 'removed' ? true : l.hidden_from_site,
+            }
+          : l,
+      ),
+    )
     toast.success(`${ids.length} marked as ${status}`)
   }
 

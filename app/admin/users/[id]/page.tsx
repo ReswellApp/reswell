@@ -52,6 +52,7 @@ interface ListingRow {
   price: number
   section: string
   status: string
+  hidden_from_site?: boolean | null
   created_at: string
   listing_images: { url: string }[]
 }
@@ -213,17 +214,35 @@ export default function AdminUserDetailPage() {
   }
 
   async function updateListingStatus(listingId: string, newStatus: string) {
-    const { error } = await supabase
-      .from('listings')
-      .update({ status: newStatus })
-      .eq('id', listingId)
-    if (!error) {
+    const res = await fetch('/api/admin/listings/status', {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ listing_ids: [listingId], status: newStatus }),
+    })
+    const json = (await res.json().catch(() => ({}))) as {
+      success?: boolean
+      error?: unknown
+    }
+    if (res.ok) {
       setListings((prev) =>
-        prev.map((l) => (l.id === listingId ? { ...l, status: newStatus } : l))
+        prev.map((l) =>
+          l.id === listingId
+            ? {
+                ...l,
+                status: newStatus,
+                hidden_from_site: newStatus === 'removed' ? true : l.hidden_from_site,
+              }
+            : l,
+        ),
       )
       toast.success(`Listing marked as ${newStatus}`)
     } else {
-      toast.error('Failed to update listing')
+      const errMsg =
+        typeof json.error === 'string'
+          ? json.error
+          : 'Failed to update listing'
+      toast.error(errMsg)
     }
   }
 

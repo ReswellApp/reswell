@@ -1,4 +1,5 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { deleteAllCartRowsForListing } from "@/lib/db/cart-items-server"
 import { updateListingHiddenFromSite } from "@/lib/db/listings"
 
 export async function setListingSiteVisibility(params: {
@@ -12,5 +13,22 @@ export async function setListingSiteVisibility(params: {
     return { ok: false, message: "Server misconfigured" }
   }
 
-  return updateListingHiddenFromSite(service, params.listingId, params.hiddenFromSite)
+  const result = await updateListingHiddenFromSite(
+    service,
+    params.listingId,
+    params.hiddenFromSite,
+  )
+  if (!result.ok) {
+    return result
+  }
+
+  if (params.hiddenFromSite) {
+    try {
+      await deleteAllCartRowsForListing(service, params.listingId)
+    } catch {
+      // best-effort
+    }
+  }
+
+  return { ok: true }
 }

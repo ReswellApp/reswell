@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
-/** Whether the current user may view a listing that has hidden_from_site set. */
+/** Whether the current user may view a listing that is hidden or removed from the public site. */
 export async function canViewHiddenListing(
   supabase: SupabaseClient,
   listing: {
@@ -12,7 +12,11 @@ export async function canViewHiddenListing(
 ): Promise<boolean> {
   if (listing.status === "sold") return true
   if (listing.archived_at) return false
-  if (!listing.hidden_from_site) return true
+
+  const restrictedFromPublic =
+    listing.hidden_from_site === true || listing.status === "removed"
+
+  if (!restrictedFromPublic) return true
 
   const {
     data: { user },
