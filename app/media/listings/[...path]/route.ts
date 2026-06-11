@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server"
 import { evaluateListingMediaAccess } from "@/lib/listing-media-crawler-guard"
 import { isValidListingMediaObjectPath } from "@/lib/listing-media-proxy-path-validation"
-import { LISTING_MEDIA_TILE_VARIANT_PARAM } from "@/lib/listing-media-proxy-url"
+import {
+  LISTING_MEDIA_PDP_VARIANT_PARAM,
+  LISTING_MEDIA_TILE_VARIANT_PARAM,
+} from "@/lib/listing-media-proxy-url"
 import { cachedPublicStorageGetResponse } from "@/lib/media/cached-public-storage-get-response"
 import {
-  getCachedListingTileVariantBody,
+  getCachedListingVariantBody,
   listingMediaPathLooksLikeStoredThumb,
+  type ListingMediaResizeVariant,
 } from "@/lib/media/listing-tile-variant-resize"
 import { PUBLIC_MEDIA_CACHE_CONTROL } from "@/lib/listing-media-cache-control"
 
@@ -38,10 +42,16 @@ export async function GET(
     return new NextResponse("Not found", { status: 404 })
   }
 
-  const variant = new URL(request.url).searchParams.get("variant")
-  const wantsTileVariant = variant === LISTING_MEDIA_TILE_VARIANT_PARAM
+  const variantParam = new URL(request.url).searchParams.get("variant")
+  const resizeVariant: ListingMediaResizeVariant | null =
+    variantParam === LISTING_MEDIA_TILE_VARIANT_PARAM
+      ? LISTING_MEDIA_TILE_VARIANT_PARAM
+      : variantParam === LISTING_MEDIA_PDP_VARIANT_PARAM
+        ? LISTING_MEDIA_PDP_VARIANT_PARAM
+        : null
 
-  if (!wantsTileVariant || listingMediaPathLooksLikeStoredThumb(path)) {
+  // Stored thumbs (≤640px) are already smaller than any resize variant — serve as-is.
+  if (!resizeVariant || listingMediaPathLooksLikeStoredThumb(path)) {
     return cachedPublicStorageGetResponse({
       bucket: "listings",
       objectPath: path,
@@ -61,15 +71,15 @@ export async function GET(
     .join("/")
   const upstreamUrl = `${base}${PUBLIC_LISTINGS_MARKER}${encodedPath}`
 
-  const tileVariant = await getCachedListingTileVariantBody("listings", path, upstreamUrl)
-  if (!tileVariant) {
+  const resized = await getCachedListingVariantBody("listings", path, upstreamUrl, resizeVariant)
+  if (!resized) {
     return new NextResponse("Not found", { status: 404 })
   }
 
-  return new NextResponse(new Uint8Array(tileVariant.body), {
+  return new NextResponse(new Uint8Array(resized.body), {
     status: 200,
     headers: {
-      "Content-Type": tileVariant.contentType,
+      "Content-Type": resized.contentType,
       "Cache-Control": PUBLIC_MEDIA_CACHE_CONTROL,
     },
   })

@@ -54,8 +54,10 @@ import {
   HomeListingScrollRow,
 } from "@/components/features/home"
 import { HOME_PEER_LISTING_WITH_PROFILE_SELECT } from "@/lib/db/home-peer-listing-feed"
-import { getSellerReviewSummary } from "@/lib/db/seller-reviews"
-import { getReswellPlatformReviewSummary } from "@/lib/db/reswellPlatformReviews"
+import {
+  getCachedReswellPlatformReviewSummary,
+  getCachedSellerReviewSummary,
+} from "@/lib/cache/review-summaries"
 import { ReswellPlatformRatingWidget } from "@/components/features/reswell/reswell-platform-rating-widget"
 import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
 import { getListingFavoriteCount } from "@/lib/db/listing-favorite-count"
@@ -126,7 +128,7 @@ export async function BoardbagsListingDetailPage({
     indexBrand,
     [cartHolderCount, listingWatchersCount],
   ] = await Promise.all([
-    getSellerReviewSummary(supabase, sellerId),
+    getCachedSellerReviewSummary(sellerId),
     supabase
       .from("reviews")
       .select(
@@ -135,7 +137,7 @@ export async function BoardbagsListingDetailPage({
       .eq("reviewed_id", sellerId)
       .order("created_at", { ascending: false })
       .limit(8),
-    getReswellPlatformReviewSummary(supabase),
+    getCachedReswellPlatformReviewSummary(),
     supabase
       .from("listings")
       .select(HOME_PEER_LISTING_WITH_PROFILE_SELECT)
@@ -155,9 +157,9 @@ export async function BoardbagsListingDetailPage({
   ])
 
   const { avgRating: sellerAvgRating, reviewCount: sellerReviewCount } =
-    sellerReviewSummaryRes.data
+    sellerReviewSummaryRes
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
-  const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes.data
+  const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes
   const sellerBoardbags = sellerBoardbagsRes.data
   const user = userRes.data.user
 

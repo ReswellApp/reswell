@@ -6,6 +6,9 @@ export const LISTING_MEDIA_PROXY_PATH_PREFIX = "/media/listings/" as const
 /** Resize hint for legacy full-res listing objects without a stored thumb file. */
 export const LISTING_MEDIA_TILE_VARIANT_PARAM = "tile" as const
 
+/** Resize hint for the listing detail hero (≤1024px long edge WebP). */
+export const LISTING_MEDIA_PDP_VARIANT_PARAM = "pdp" as const
+
 export function isProxiedListingMediaSrc(src: string | null | undefined): boolean {
   return typeof src === "string" && src.startsWith(LISTING_MEDIA_PROXY_PATH_PREFIX)
 }
@@ -58,13 +61,22 @@ export function proxiedListingImageSrc(url: string | null | undefined): string {
   return `${LISTING_MEDIA_PROXY_PATH_PREFIX}${path}`
 }
 
-/** Appends `?variant=tile` so `/media/listings` can serve a cached 640px WebP for browse grids. */
-export function withListingMediaTileVariant(src: string): string {
+function withListingMediaVariant(src: string, variant: string): string {
   const t = src.trim()
   if (!t || !t.startsWith(LISTING_MEDIA_PROXY_PATH_PREFIX)) return t
   if (t.includes("variant=")) return t
   const sep = t.includes("?") ? "&" : "?"
-  return `${t}${sep}variant=${LISTING_MEDIA_TILE_VARIANT_PARAM}`
+  return `${t}${sep}variant=${variant}`
+}
+
+/** Appends `?variant=tile` so `/media/listings` can serve a cached 640px WebP for browse grids. */
+export function withListingMediaTileVariant(src: string): string {
+  return withListingMediaVariant(src, LISTING_MEDIA_TILE_VARIANT_PARAM)
+}
+
+/** Appends `?variant=pdp` so `/media/listings` serves a cached ≤1024px WebP for the PDP hero. */
+export function withListingMediaPdpVariant(src: string): string {
+  return withListingMediaVariant(src, LISTING_MEDIA_PDP_VARIANT_PARAM)
 }
 
 /** Absolute `https://reswell.app/media/listings/...` for OG tags, catalog feeds, and crawlers. */

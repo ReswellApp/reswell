@@ -2,12 +2,24 @@
 
 import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
+import dynamic from "next/dynamic"
 import { cn } from "@/lib/utils"
 import { portraitShimmer, squareShimmer } from "@/lib/image-shimmer"
-import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import {
+  proxiedListingImageSrc,
+  withListingMediaPdpVariant,
+} from "@/lib/listing-media-proxy-url"
 import { Maximize2 } from "lucide-react"
 import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
-import { ListingImageLightbox } from "@/components/features/listings/listing-image-lightbox"
+
+/** Zoom/pan library only loads once the user first enlarges a photo. */
+const ListingImageLightbox = dynamic(
+  () =>
+    import("@/components/features/listings/listing-image-lightbox").then(
+      (m) => m.ListingImageLightbox,
+    ),
+  { ssr: false },
+)
 
 interface ImageGalleryProps {
   images: Array<{
@@ -57,6 +69,8 @@ function gallerySlideNearSelected(i: number, selected: number, total: number): b
 export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }: ImageGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  /** Mount the lightbox (and its zoom library chunk) only after the first enlarge. */
+  const [lightboxEverOpened, setLightboxEverOpened] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
   /** Natural width/height per slide — mobile hero uses this instead of a fixed crop frame. */
   const [imageAspectRatios, setImageAspectRatios] = useState<Record<number, number>>({})
@@ -72,9 +86,18 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
     [images],
   )
 
-  const galleryUrls = useMemo(
-    () => proxiedUrls.filter((u) => u && u !== "/placeholder.svg"),
+  /** Hero slides: ≤1024px proxy variant — full-res stays lightbox-only. */
+  const heroUrls = useMemo(
+    () =>
+      proxiedUrls.map((u) =>
+        u === "/placeholder.svg" ? u : withListingMediaPdpVariant(u),
+      ),
     [proxiedUrls],
+  )
+
+  const galleryUrls = useMemo(
+    () => heroUrls.filter((u) => u && u !== "/placeholder.svg"),
+    [heroUrls],
   )
 
   /** Stable primitive — never pass `images`/`proxiedUrls` arrays as effect deps (fixed length). */
@@ -116,6 +139,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
   function openLightbox() {
     for (const url of proxiedUrls) warmListingImageSrc(url)
     setLightboxIndex(selectedIndex)
+    setLightboxEverOpened(true)
     setLightboxOpen(true)
   }
 
@@ -126,21 +150,23 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
         compactMobile ? "max-md:space-y-0 md:space-y-5" : "space-y-5",
       )}
     >
-      <ListingImageLightbox
-        open={lightboxOpen}
-        onOpenChange={(o) => {
-          setLightboxOpen(o)
-          if (o) {
-            for (const url of proxiedUrls) warmListingImageSrc(url)
-            return
-          }
-          setSelectedIndex(lightboxIndex)
-        }}
-        proxiedUrls={proxiedUrls}
-        title={title}
-        index={lightboxIndex}
-        onIndexChange={setLightboxIndex}
-      />
+      {lightboxEverOpened ? (
+        <ListingImageLightbox
+          open={lightboxOpen}
+          onOpenChange={(o) => {
+            setLightboxOpen(o)
+            if (o) {
+              for (const url of proxiedUrls) warmListingImageSrc(url)
+              return
+            }
+            setSelectedIndex(lightboxIndex)
+          }}
+          proxiedUrls={proxiedUrls}
+          title={title}
+          index={lightboxIndex}
+          onIndexChange={setLightboxIndex}
+        />
+      ) : null}
 
       {/* Main Image — tablet/desktop: stable 3:4 frame; phone (compactMobile): shorter natural-ratio hero */}
       <div
@@ -220,7 +246,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
             return (
               <Image
                 key={image.id}
-                src={proxiedListingImageSrc(image.url) || "/placeholder.svg"}
+                src={heroUrls[i] || "/placeholder.svg"}
                 alt={`${title} - Image ${i + 1}`}
                 fill
                 unoptimized
