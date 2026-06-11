@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
 import {
   GOOGLE_NEW_SIGNUP_WELCOME_COMPLETED_KEY,
+  GOOGLE_NEW_SIGNUP_WELCOME_REDIRECT_ATTEMPTED_KEY,
   shouldShowGoogleSignUpWelcome,
 } from "@/lib/auth/google-sign-up-welcome"
 import { buildGoogleSignUpSuccessPath, GOOGLE_SIGN_UP_SUCCESS_PATH } from "@/lib/google-ads/sign-up-success-path"
@@ -38,6 +39,18 @@ export function GoogleSignUpWelcomeRedirect(): null {
       const { data } = await supabase.auth.getSession()
       const user = data.session?.user
       if (!user || !shouldShowGoogleSignUpWelcome(user)) return
+
+      // Redirect to the welcome page at most once per session. If the server can't see the
+      // session cookie (in-app browser / cookie hiccup), the welcome page bounces back to
+      // login — without this guard the two would ping-pong into "This page couldn't load".
+      try {
+        if (sessionStorage.getItem(GOOGLE_NEW_SIGNUP_WELCOME_REDIRECT_ATTEMPTED_KEY) === "1") {
+          return
+        }
+        sessionStorage.setItem(GOOGLE_NEW_SIGNUP_WELCOME_REDIRECT_ATTEMPTED_KEY, "1")
+      } catch {
+        /* sessionStorage unavailable: fall through (single mount is still guarded by handledRef) */
+      }
 
       handledRef.current = true
       const query = searchParams?.toString()

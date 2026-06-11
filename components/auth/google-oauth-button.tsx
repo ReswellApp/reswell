@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { buildOAuthCallbackUrl } from '@/lib/auth/oauth-callback-url'
+import { isInAppBrowserClient } from '@/lib/utils/is-in-app-browser'
 import { cn } from '@/lib/utils'
 
 /** Standard multicolor Google “G” mark (brand colors). */
@@ -44,8 +45,15 @@ type GoogleOAuthButtonProps = {
 export function GoogleOAuthButton({ nextPath, className }: GoogleOAuthButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Detect after mount so SSR and first client render match (avoids hydration mismatch).
+  const [inApp, setInApp] = useState(false)
+  const [copied, setCopied] = useState(false)
 
-  const handleClick = async () => {
+  useEffect(() => {
+    setInApp(isInAppBrowserClient())
+  }, [])
+
+  const startGoogleOAuth = async () => {
     const supabase = createClient()
     setIsLoading(true)
     setError(null)
@@ -66,6 +74,26 @@ export function GoogleOAuthButton({ nextPath, className }: GoogleOAuthButtonProp
     }
   }
 
+  // In-app browsers (Instagram, Facebook, TikTok, Gmail, the Google app, etc.) can't
+  // complete Google OAuth — the return navigation dies as a native "This page couldn't
+  // load". Don't send them down that dead end; help them reopen in the system browser.
+  const handleInAppClick = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setCopied(true)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  const handleClick = () => {
+    if (inApp) {
+      void handleInAppClick()
+      return
+    }
+    void startGoogleOAuth()
+  }
+
   return (
     <div className={cn('flex flex-col gap-2', className)}>
       <Button
@@ -82,6 +110,16 @@ export function GoogleOAuthButton({ nextPath, className }: GoogleOAuthButtonProp
         <GoogleMark />
         {isLoading ? 'Redirecting…' : 'Continue with Google'}
       </Button>
+      {inApp ? (
+        <p className="text-sm leading-relaxed text-neutral-700">
+          {copied ? 'Link copied — ' : 'Google sign-in needs your full browser. '}
+          Open this page in Safari or Chrome (tap{' '}
+          <span className="font-semibold" aria-hidden>
+            ⋯
+          </span>{' '}
+          then “Open in Browser”) to continue with Google — or just sign up with email below.
+        </p>
+      ) : null}
       {error ? <p className="text-sm text-neutral-700">{error}</p> : null}
     </div>
   )

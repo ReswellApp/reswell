@@ -12,6 +12,14 @@ export const GOOGLE_NEW_SIGNUP_COOKIE = "rw_google_new_signup"
 /** Set in sessionStorage after the user clicks through the welcome page. */
 export const GOOGLE_NEW_SIGNUP_WELCOME_COMPLETED_KEY = "rw_google_welcome_completed"
 
+/**
+ * One-shot guard: the client safety net redirects to the welcome page at most once per
+ * session. Without it, a host/cookie hiccup where the client sees a session but the server
+ * does not can ping-pong welcome ⇄ login until the browser bails with "This page couldn't load".
+ */
+export const GOOGLE_NEW_SIGNUP_WELCOME_REDIRECT_ATTEMPTED_KEY =
+  "rw_google_welcome_redirect_attempted"
+
 /** Max gap between account creation and first sign-in (same OAuth session). */
 const FIRST_SIGN_IN_MAX_DELTA_MS = 3 * 60 * 1000
 

@@ -1,9 +1,10 @@
 /**
  * Canonical public origin (no trailing slash) for metadata, sitemaps, email links, and OG URL resolution.
  *
- * **Production default:** `https://reswell.app`
+ * **Production default:** `https://www.reswell.app` (Vercel canonical host — the apex 308s to www,
+ * so emitting apex URLs adds a redirect hop to every link, including mid-OAuth).
  *
- * Override in Vercel / `.env` with `NEXT_PUBLIC_SITE_URL` or `NEXT_PUBLIC_APP_URL` (e.g. `https://reswell.app`).
+ * Override in Vercel / `.env` with `NEXT_PUBLIC_SITE_URL` or `NEXT_PUBLIC_APP_URL` (e.g. `https://www.reswell.app`).
  * If unset, **`VERCEL_URL`** is used (`https://…vercel.app`) so preview deployments emit correct `og:image` URLs.
  *
  * **Link previews (Messages, Slack, etc.):** Crawlers cannot fetch `http://localhost` on your machine. To test
@@ -15,7 +16,7 @@ export function publicSiteOrigin(): string {
   const vercel = process.env.VERCEL_URL?.trim()
 
   const raw = explicit || (vercel ? `https://${vercel}` : "") || ""
-  if (!raw) return "https://reswell.app"
+  if (!raw) return "https://www.reswell.app"
   try {
     const normalized = /^https?:\/\//i.test(raw)
       ? raw
@@ -23,7 +24,7 @@ export function publicSiteOrigin(): string {
     const u = new URL(normalized)
     return `${u.protocol}//${u.host}`
   } catch {
-    return "https://reswell.app"
+    return "https://www.reswell.app"
   }
 }
 
@@ -33,7 +34,7 @@ export function publicSiteOrigin(): string {
  * Does **not** use `VERCEL_URL`, so cron/jobs from preview deploys won’t emit `*.vercel.app`
  * listing URLs unless you set an explicit app URL below.
  *
- * Precedence: `KLAVIYO_EMAIL_SITE_URL` → `NEXT_PUBLIC_SITE_URL` → `NEXT_PUBLIC_APP_URL` → `https://reswell.app`.
+ * Precedence: `KLAVIYO_EMAIL_SITE_URL` → `NEXT_PUBLIC_SITE_URL` → `NEXT_PUBLIC_APP_URL` → `https://www.reswell.app`.
  */
 export function publicSiteOriginForEmail(): string {
   const raw =
@@ -41,7 +42,7 @@ export function publicSiteOriginForEmail(): string {
     process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
     process.env.NEXT_PUBLIC_APP_URL?.trim() ||
     ""
-  if (!raw) return "https://reswell.app"
+  if (!raw) return "https://www.reswell.app"
   try {
     const normalized = /^https?:\/\//i.test(raw)
       ? raw
@@ -49,6 +50,6 @@ export function publicSiteOriginForEmail(): string {
     const u = new URL(normalized)
     return `${u.protocol}//${u.host}`
   } catch {
-    return "https://reswell.app"
+    return "https://www.reswell.app"
   }
 }
