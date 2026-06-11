@@ -218,7 +218,7 @@ export function ReswellTrackingSection(props: {
             <div className="min-w-0 space-y-1">
               <CardTitle className="text-base">Reswell tracking</CardTitle>
               <CardDescription className="text-[13px] leading-snug">
-                Live carrier scans for your shipment via ShipEngine.
+                Live carrier scans for your shipment.
               </CardDescription>
             </div>
           </div>

@@ -61,6 +61,7 @@ import { AskBuyerReviewButton } from "@/components/features/sales/ask-buyer-revi
 import { SellerPreparedShippingLabelCard } from "@/components/features/sales/seller-prepared-shipping-label-card"
 import { ReviewBuyerControls } from "@/components/review-buyer-controls"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
+import { isPeerListingSection } from "@/lib/peer-listing-sections"
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>
@@ -635,10 +636,10 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
             </>
           )}
 
-          {/* Self-purchase ShipEngine label (flat/free surfboard shipping only — not Reswell shipping) */}
+          {/* Self-purchase ShipEngine label (flat/free shipping on peer listings — not Reswell shipping) */}
           {!fulfillmentLocked &&
             sale.fulfillment_method === "shipping" &&
-            displayListings.some((l) => l.section === "surfboards") &&
+            displayListings.some((l) => isPeerListingSection(l.section)) &&
             sale.delivery_status === "pending" &&
             !hasPreparedShippingLabel &&
             !isReswellShippingOrder && (
@@ -649,15 +650,16 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                       <Truck className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium">Shipping label</p>
+                      <p className="text-sm font-medium">Buy a shipping label</p>
                       <p className="text-xs text-muted-foreground">
-                        Purchase via ShipEngine
+                        Purchase a label through Reswell — tracking and carrier are added to
+                        this order automatically.
                       </p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" asChild>
+                  <Button size="sm" asChild>
                     <Link href={`/shipping?order=${encodeURIComponent(sale.id)}`}>
-                      Print label
+                      Buy label
                     </Link>
                   </Button>
                 </CardContent>

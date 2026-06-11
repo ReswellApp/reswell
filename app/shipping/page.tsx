@@ -7,6 +7,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 import { SHIPPING_DEADLINE_DAYS } from "@/lib/shipping-deadline"
+import { listSellerLabelPurchasableOrders } from "@/lib/services/sellerShippingLabelCheckout"
+import { capitalizeWords } from "@/lib/listing-labels"
+import { Truck } from "lucide-react"
 
 export async function generateMetadata() {
   return resolvePageMetadata("shipping")
@@ -122,8 +125,7 @@ function ShippingGuideCards() {
               </li>
               <li>
                 Use a tracked service like USPS, FedEx, or UPS, and drop the tracking number in
-                Messages. You can also buy a label straight from the sale when ShipEngine is set
-                up.
+                Messages. You can also buy a label straight from the sale page.
               </li>
               <li>
                 Ship within the window you agreed with the buyer, usually 1 to 3 business days.
@@ -272,6 +274,43 @@ function ShippingGuideCards() {
   )
 }
 
+/** Pending sales where the seller can buy a label — entry point into the label checkout. */
+async function SellerBuyLabelEntry({ sellerId }: { sellerId: string }) {
+  const supabase = await createClient()
+  const orders = await listSellerLabelPurchasableOrders(supabase, sellerId)
+  if (orders.length === 0) return null
+
+  return (
+    <Card className="mb-8 border-primary/25">
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Truck className="h-5 w-5" />
+          Buy a shipping label
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          These sales are waiting to ship. Purchase a discounted carrier label through Reswell —
+          tracking and carrier are added to the order automatically.
+        </p>
+        <ul className="divide-y rounded-md border">
+          {orders.map((o) => (
+            <li key={o.orderId} className="flex items-center justify-between gap-4 px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate">{capitalizeWords(o.listingTitle)}</p>
+                <p className="text-xs text-muted-foreground">Order #{o.displayOrderNum}</p>
+              </div>
+              <Button size="sm" asChild>
+                <Link href={`/shipping?order=${encodeURIComponent(o.orderId)}`}>Buy label</Link>
+              </Button>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  )
+}
+
 export default async function ShippingGuidePage(props: {
   searchParams: Promise<{ order?: string }>
 }) {
@@ -300,7 +339,7 @@ export default async function ShippingGuidePage(props: {
           </h1>
           <p className="text-muted-foreground mt-1">
             {labelFlow
-              ? "Buy a carrier label and add tracking to this order (ShipEngine)."
+              ? "Buy a carrier label and add tracking to this order."
               : "How to ship and receive surfboards safely"}
           </p>
         </div>
@@ -337,6 +376,12 @@ export default async function ShippingGuidePage(props: {
             </Link>{" "}
             (same page, no order link needed).
           </p>
+        )}
+
+        {!labelFlow && user && (
+          <Suspense fallback={null}>
+            <SellerBuyLabelEntry sellerId={user.id} />
+          </Suspense>
         )}
 
         {!labelFlow && <ShippingGuideCards />}

@@ -32,7 +32,7 @@ export function CarrierTrackingPanel(props: {
           <div className="min-w-0 space-y-1">
             <CardTitle className="text-base">Carrier tracking</CardTitle>
             <CardDescription className="text-[13px] leading-snug">
-              Updates from the shipping carrier (via ShipEngine).{" "}
+              Updates from the shipping carrier.{" "}
               {marketplaceDeliveryStatus !== "delivered" ? (
                 variant === "seller" ? (
                   <>

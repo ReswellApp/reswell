@@ -469,7 +469,7 @@ export const sellingHelpArticles: HelpArticle[] = [
                   <>
                     If Reswell prepared a label, tap <strong>Open label PDF</strong> or{" "}
                     <strong>Print label</strong> from the sale page. You can also purchase a label
-                    via ShipEngine when available, or add your own tracking with{" "}
+                    through Reswell when available, or add your own tracking with{" "}
                     <strong>Add tracking</strong>.
                   </>
                 ),
@@ -478,7 +478,7 @@ export const sellingHelpArticles: HelpArticle[] = [
                 title: "Ship the board",
                 body: (
                   <>
-                    For Reswell shipping, Reswell purchases the cheapest ShipEngine label after checkout and adds
+                    For Reswell shipping, Reswell purchases the cheapest carrier label after checkout and adds
                     tracking automatically. Print the label from your sale page, drop the package with the carrier,
                     then tap <strong>I&apos;ve dropped this off with the carrier</strong>. For your own label, enter
                     tracking with <strong>Save tracking</strong>. Ship within {SHIPPING_DEADLINE_DAYS} days of

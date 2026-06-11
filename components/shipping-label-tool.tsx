@@ -245,16 +245,16 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
 
   const handleLabelPurchaseSuccess = useCallback(
     (data: { labelUrl: string | null; trackingNumber: string; orderDisplayNum: string }) => {
-      toast.success(`Label purchased for order #${data.orderDisplayNum}`)
+      toast.success(
+        `Label purchased for order #${data.orderDisplayNum} — tracking added to the order`,
+      )
       if (data.labelUrl) {
         window.open(data.labelUrl, "_blank", "noopener,noreferrer")
       }
-      router.refresh()
-      void load()
-      setRates(null)
-      setSelectedRateId("")
+      // Back to the sale: the label PDF, tracking, and shipped status all live there.
+      router.push(`/dashboard/sales/${encodeURIComponent(orderId)}`)
     },
-    [load, router],
+    [router, orderId],
   )
 
   useEffect(() => {
@@ -284,7 +284,6 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
           return
         }
         handleLabelPurchaseSuccess(data.data)
-        router.replace(`/shipping?order=${encodeURIComponent(orderId)}`, { scroll: false })
       } catch {
         if (!cancelled) toast.error("Could not complete label purchase after payment")
       }
@@ -343,7 +342,7 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
           <Alert>
             <AlertTitle>Printing unavailable</AlertTitle>
             <AlertDescription>
-              Integrated labels require ShipEngine (`SHIPENGINE_API_KEY`) on the server. You can still add
+              Label purchasing is not set up right now. You can still add
               tracking manually from{" "}
               <Link href={`/dashboard/sales/${orderId}`} className="underline font-medium">
                 this sale

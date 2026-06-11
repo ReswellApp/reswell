@@ -4,24 +4,107 @@ import { fetchOrderIdsWithPreparedShippingLabels } from "@/lib/db/orderShippingL
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
-import { saveOrderTracking } from "@/lib/services/markOrderShipped"
+import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
+import { autoDispatchOrderIfTrackingReady } from "@/lib/services/markOrderShipped"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
-  fetchRatesForSurfboardOrder,
   purchaseLabelWithRateId,
   resolveAddressesForLabel,
-  resolveOrderLabelParcelFromListing,
 } from "@/lib/services/orderShippingLabel"
-import {
-  effectiveBoardShippingMode,
-  PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
-} from "@/lib/services/peerListingShippingQuote"
+import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import { retrieveSucceededPaymentIntent } from "@/lib/stripe-complete-order"
 import { getStripe, getStripeCheckoutKeyConfigError } from "@/lib/stripe-server"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
-import type { ListingPackedParcelSource } from "@/lib/reswell-packed-parcel-from-listing"
+import { getShipEngineRateById } from "@/lib/shipengine/surfboard-label"
 import type { ShipEngineRateOption } from "@/lib/shipengine/surfboard-label"
 
 export const SELLER_SHIPPING_LABEL_PI_PURPOSE = "seller_shipping_label"
+
+export type SellerLabelPurchasableOrder = {
+  orderId: string
+  displayOrderNum: string
+  listingTitle: string
+  section: string
+  shippingMode: "free" | "flat"
+  createdAt: string
+}
+
+/**
+ * Pending shipping sales where the seller can buy a label through Reswell
+ * (flat/free shipping on a peer listing, no label on file yet). Powers the
+ * label entry point on /shipping for logged-in sellers.
+ */
+export async function listSellerLabelPurchasableOrders(
+  supabase: SupabaseClient,
+  sellerId: string,
+): Promise<SellerLabelPurchasableOrder[]> {
+  if (!isShipEngineConfigured()) return []
+
+  const { data, error } = await supabase
+    .from("orders")
+    .select(
+      `
+      id,
+      order_num,
+      status,
+      created_at,
+      listings ( section, title, board_shipping_cost_mode, shipping_price )
+    `,
+    )
+    .eq("seller_id", sellerId)
+    .eq("fulfillment_method", "shipping")
+    .eq("delivery_status", "pending")
+    .in("status", ["pending", "confirmed"])
+    .match(REAL_MARKETPLACE_SALES_FILTER)
+    .order("created_at", { ascending: false })
+    .limit(20)
+
+  if (error || !data?.length) return []
+
+  type Row = {
+    id: string
+    order_num: string | null
+    status: string
+    created_at: string
+    listings:
+      | {
+          section: string
+          title: string | null
+          board_shipping_cost_mode?: string | null
+          shipping_price?: string | number | null
+        }
+      | {
+          section: string
+          title: string | null
+          board_shipping_cost_mode?: string | null
+          shipping_price?: string | number | null
+        }[]
+      | null
+  }
+
+  const candidates: SellerLabelPurchasableOrder[] = []
+  for (const row of data as Row[]) {
+    const listing = Array.isArray(row.listings) ? row.listings[0] : row.listings
+    if (!listing || !isPeerListingSection(listing.section)) continue
+    const mode = effectiveBoardShippingMode(listing)
+    if (mode === "reswell") continue
+    candidates.push({
+      orderId: row.id,
+      displayOrderNum: formatOrderNumForCustomer(row.order_num, row.id),
+      listingTitle: listing.title?.trim() || "Item",
+      section: listing.section,
+      shippingMode: mode,
+      createdAt: row.created_at,
+    })
+  }
+  if (candidates.length === 0) return []
+
+  const prepared = await fetchOrderIdsWithPreparedShippingLabels(
+    supabase,
+    candidates.map((c) => c.orderId),
+  )
+  return candidates.filter((c) => !prepared.has(c.orderId))
+}
 
 type SellerLabelOrderRow = {
   id: string
@@ -31,7 +114,18 @@ type SellerLabelOrderRow = {
   fulfillment_method: string | null
   delivery_status: string
   shipping_address: unknown
-  listings: { section: string } | { section: string }[] | null
+  listings:
+    | {
+        section: string
+        board_shipping_cost_mode?: string | null
+        shipping_price?: string | number | null
+      }
+    | {
+        section: string
+        board_shipping_cost_mode?: string | null
+        shipping_price?: string | number | null
+      }[]
+    | null
 }
 
 export type SellerShippingLabelOrderContext =
@@ -51,7 +145,7 @@ export async function loadSellerShippingLabelOrderContext(
   if (!isShipEngineConfigured()) {
     return {
       ok: false,
-      error: "Label printing is not configured (missing SHIPENGINE_API_KEY).",
+      error: "Label purchasing is not available right now. Contact support.",
       status: 503,
     }
   }
@@ -78,20 +172,7 @@ export async function loadSellerShippingLabelOrderContext(
     return { ok: false, error: "Order not found", status: 404 }
   }
 
-  const o = order as SellerLabelOrderRow & {
-    listings:
-      | {
-          section: string
-          board_shipping_cost_mode?: string | null
-          shipping_price?: string | number | null
-        }
-      | {
-          section: string
-          board_shipping_cost_mode?: string | null
-          shipping_price?: string | number | null
-        }[]
-      | null
-  }
+  const o = order as SellerLabelOrderRow
 
   const listing = Array.isArray(o.listings) ? o.listings[0] : o.listings
   const section = listing?.section ?? ""
@@ -172,52 +253,6 @@ async function resolveSellerAddress(
   return { ok: true, address: addr as ProfileAddressRow }
 }
 
-async function resolveParcelForRates(
-  supabase: SupabaseClient,
-  listingId: string,
-  parcelInput?: { length_in: number; width_in: number; height_in: number; weight_lb: number },
-): Promise<
-  | { ok: true; parcel: { lengthIn: number; widthIn: number; heightIn: number; weightLb: number } }
-  | { ok: false; error: string; status: number }
-> {
-  if (parcelInput) {
-    return {
-      ok: true,
-      parcel: {
-        lengthIn: parcelInput.length_in,
-        widthIn: parcelInput.width_in,
-        heightIn: parcelInput.height_in,
-        weightLb: parcelInput.weight_lb,
-      },
-    }
-  }
-
-  const { data: listingRow, error: listingErr } = await supabase
-    .from("listings")
-    .select(PEER_SURFBOARD_CHECKOUT_LISTING_SELECT)
-    .eq("id", listingId)
-    .maybeSingle()
-
-  if (listingErr || !listingRow) {
-    return { ok: false, error: "Could not load listing for this order.", status: 500 }
-  }
-
-  const fromListing = resolveOrderLabelParcelFromListing(listingRow as ListingPackedParcelSource)
-  if (!fromListing.ok) {
-    return { ok: false, error: fromListing.error, status: 400 }
-  }
-
-  return {
-    ok: true,
-    parcel: {
-      lengthIn: fromListing.parcel.lengthIn,
-      widthIn: fromListing.parcel.widthIn,
-      heightIn: fromListing.parcel.heightIn,
-      weightLb: fromListing.parcel.weightLb,
-    },
-  }
-}
-
 export async function resolveSellerShippingLabelRate(params: {
   supabase: SupabaseClient
   order: SellerLabelOrderRow
@@ -244,33 +279,12 @@ export async function resolveSellerShippingLabelRate(params: {
     return { ok: false, error: resolved.error, status: 400 }
   }
 
-  const parcelResult = await resolveParcelForRates(
-    params.supabase,
-    params.order.listing_id,
-    params.parcel,
-  )
-  if (!parcelResult.ok) return parcelResult
+  // ShipEngine mints new rate ids on every quote request, so the selected rate
+  // must be looked up directly by id — re-quoting would never re-find it.
+  const rateResult = await getShipEngineRateById(params.rateId)
+  if (!rateResult.ok) return rateResult
 
-  const ratesResult = await fetchRatesForSurfboardOrder({
-    shipFrom: resolved.from,
-    shipTo: resolved.to,
-    parcel: parcelResult.parcel,
-  })
-
-  if (!ratesResult.ok) {
-    return { ok: false, error: ratesResult.error, status: ratesResult.status }
-  }
-
-  const trimmedRateId = params.rateId.trim()
-  const rate = ratesResult.rates.find((r) => r.rate_id === trimmedRateId)
-  if (!rate) {
-    return {
-      ok: false,
-      error: "That carrier rate expired or is invalid. Refresh rates and try again.",
-      status: 400,
-    }
-  }
-
+  const rate = rateResult.rate
   if (rate.currency.toUpperCase() !== "USD") {
     return { ok: false, error: "Only USD carrier rates are supported.", status: 400 }
   }
@@ -422,9 +436,19 @@ export async function completeSellerShippingLabelFromPaymentIntent(params: {
     return { ok: false, error: meta.error, status: 400 }
   }
 
-  const existing = await findLabelPurchaseByPaymentIntent(params.supabase, params.paymentIntent.id)
+  // order_shipping_labels has RLS with no user policies — label reads/writes and
+  // the tracking update must run with the service role, regardless of the caller.
+  let serviceSupabase: SupabaseClient
+  try {
+    serviceSupabase = createServiceRoleClient()
+  } catch (e) {
+    console.error("[completeSellerShippingLabelFromPaymentIntent] service role client:", e)
+    return { ok: false, error: "Label purchasing is not configured on the server.", status: 503 }
+  }
+
+  const existing = await findLabelPurchaseByPaymentIntent(serviceSupabase, params.paymentIntent.id)
   if (existing) {
-    const { data: orderRow } = await params.supabase
+    const { data: orderRow } = await serviceSupabase
       .from("orders")
       .select("order_num, tracking_number")
       .eq("id", existing.orderId)
@@ -452,7 +476,7 @@ export async function completeSellerShippingLabelFromPaymentIntent(params: {
     return { ok: false, error: purchased.error, status: purchased.status }
   }
 
-  const { error: labelInsertErr } = await params.supabase.from("order_shipping_labels").insert({
+  const { error: labelInsertErr } = await serviceSupabase.from("order_shipping_labels").insert({
     order_id: meta.orderId,
     origin: "seller_paid",
     label_pdf_url: purchased.result.labelUrl,
@@ -468,7 +492,7 @@ export async function completeSellerShippingLabelFromPaymentIntent(params: {
       labelInsertErr.code === "23505" ||
       labelInsertErr.message?.includes("order_shipping_labels_stripe_pi_uidx")
     if (isDuplicate) {
-      const raced = await findLabelPurchaseByPaymentIntent(params.supabase, params.paymentIntent.id)
+      const raced = await findLabelPurchaseByPaymentIntent(serviceSupabase, params.paymentIntent.id)
       if (raced) {
         return {
           ok: true,
@@ -484,23 +508,35 @@ export async function completeSellerShippingLabelFromPaymentIntent(params: {
     return { ok: false, error: "Label purchased but could not be saved. Contact support.", status: 500 }
   }
 
-  const marked = await saveOrderTracking(
-    params.supabase,
-    meta.orderId,
-    meta.sellerId,
-    purchased.result.trackingNumber,
-    purchased.result.trackingCarrier,
-  )
+  // Direct service-role update (the seller RPC requires auth.uid(), which the
+  // webhook path does not have). Scoped to the seller and pending delivery.
+  const { data: trackedOrder, error: trackErr } = await serviceSupabase
+    .from("orders")
+    .update({
+      tracking_number: purchased.result.trackingNumber,
+      tracking_carrier: purchased.result.trackingCarrier,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", meta.orderId)
+    .eq("seller_id", meta.sellerId)
+    .eq("delivery_status", "pending")
+    .select("id")
+    .maybeSingle()
 
-  if (!marked.ok) {
-    console.error("[completeSellerShippingLabelFromPaymentIntent] save tracking:", marked.error)
+  if (trackErr || !trackedOrder) {
+    console.error(
+      "[completeSellerShippingLabelFromPaymentIntent] save tracking:",
+      trackErr?.message ?? "order not pending or not found",
+    )
     return {
       ok: false,
       error:
         "Label purchased and paid for, but tracking could not be saved. Contact support with your payment confirmation.",
-      status: marked.status,
+      status: 500,
     }
   }
+
+  await autoDispatchOrderIfTrackingReady(serviceSupabase, meta.orderId, meta.sellerId)
 
   return {
     ok: true,

@@ -38,7 +38,7 @@ async function fetchCarrierIds(): Promise<string[]> {
     const hint = formatShipEngineApiError(data)
     throw new Error(
       hint ||
-        (typeof data === "string" ? data : "Could not load carriers from ShipEngine"),
+        (typeof data === "string" ? data : "Could not load shipping carriers"),
     )
   }
   return extractCarrierIdsFromCarriersResponse(data)
@@ -100,7 +100,7 @@ export async function getTopSurfboardShippingRates(
     console.error("[surfboardShippingEstimate] rates HTTP:", res.status, raw)
     return {
       ok: false,
-      error: msg.trim() || "ShipEngine did not return rates for this package.",
+      error: msg.trim() || "No carrier rates were returned for this package.",
     }
   }
 

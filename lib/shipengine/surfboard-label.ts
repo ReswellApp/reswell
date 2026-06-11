@@ -94,7 +94,7 @@ export async function fetchShipEngineRatesForSurfboard(params: {
   if (!isShipEngineConfigured()) {
     return {
       ok: false,
-      error: "Label printing is not configured (missing SHIPENGINE_API_KEY).",
+      error: "Label purchasing is not available right now. Contact support.",
       status: 503,
     }
   }
@@ -103,8 +103,7 @@ export async function fetchShipEngineRatesForSurfboard(params: {
   if (!carrierIds.length) {
     return {
       ok: false,
-      error:
-        "No carriers connected in ShipEngine. Connect carriers in the ShipEngine dashboard, then try again.",
+      error: "No shipping carriers are available right now. Try again later or contact support.",
       status: 422,
     }
   }
@@ -134,7 +133,7 @@ export async function fetchShipEngineRatesForSurfboard(params: {
     const msg =
       typeof data === "object" && data
         ? JSON.stringify(data).slice(0, 600)
-        : "ShipEngine could not rate this shipment"
+        : "Could not get carrier rates for this shipment"
     return { ok: false, error: msg, status: res.status >= 400 ? res.status : 502 }
   }
 
@@ -148,6 +147,60 @@ export async function fetchShipEngineRatesForSurfboard(params: {
     }
   }
   return { ok: true, rates }
+}
+
+/**
+ * Look up a previously quoted rate by id (GET /v1/rates/{rate_id}). Quote requests
+ * mint new rate ids every time, so re-quoting can never re-find a selected rate —
+ * this is the only reliable way to validate a rate the user already picked.
+ */
+export async function getShipEngineRateById(rateId: string): Promise<
+  | { ok: true; rate: ShipEngineRateOption }
+  | { ok: false; error: string; status: number }
+> {
+  if (!isShipEngineConfigured()) {
+    return { ok: false, error: "Label printing is not configured.", status: 503 }
+  }
+
+  const trimmed = rateId.trim()
+  if (!trimmed) {
+    return { ok: false, error: "Missing carrier rate.", status: 400 }
+  }
+
+  const res = await shipEngineRequest(`/rates/${encodeURIComponent(trimmed)}`)
+  const data = await parseJsonSafe(res)
+
+  if (!res.ok) {
+    if (res.status === 404) {
+      return {
+        ok: false,
+        error: "That carrier rate expired or is invalid. Refresh rates and try again.",
+        status: 400,
+      }
+    }
+    const msg =
+      formatShipEngineApiError(data) ||
+      (typeof data === "object" && data
+        ? JSON.stringify(data).slice(0, 600)
+        : "Could not look up the carrier rate")
+    return { ok: false, error: msg, status: res.status >= 400 ? res.status : 502 }
+  }
+
+  const row = asRecord(data)
+  if (!row) {
+    return { ok: false, error: "Could not look up the carrier rate.", status: 502 }
+  }
+
+  const [rate] = normalizeShipEngineRatesForUi([row])
+  if (!rate || rate.rate_id !== trimmed || !(rate.amount > 0)) {
+    return {
+      ok: false,
+      error: "That carrier rate expired or is invalid. Refresh rates and try again.",
+      status: 400,
+    }
+  }
+
+  return { ok: true, rate }
 }
 
 export type PurchasedShipEngineLabelResult = {
@@ -301,7 +354,7 @@ export async function purchaseShipEngineLabel(rateId: string): Promise<
       return {
         ok: false,
         error:
-          "ShipEngine returned a label without a tracking number in the response. Open this label in the ShipEngine dashboard or add tracking manually on the sale.",
+          "The carrier returned a label without a tracking number. Add tracking manually on the sale or contact support.",
         status: 502,
       }
     }
