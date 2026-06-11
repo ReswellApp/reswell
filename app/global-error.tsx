@@ -37,7 +37,12 @@ export default function GlobalError({
         <div className="flex min-h-dvh w-full items-center justify-center px-6 py-16">
           <div className="flex w-full max-w-sm flex-col items-center text-center">
             {recovering ? (
-              <p className="text-[15px] text-neutral-500">Updating to the latest version…</p>
+              /* Silent self-heal: reload lands in <1s — no alarming copy. */
+              <div
+                className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-200 border-t-neutral-500"
+                role="status"
+                aria-label="Loading page"
+              />
             ) : (
               <>
                 <h1 className="text-[22px] font-semibold tracking-tight">Something went wrong</h1>

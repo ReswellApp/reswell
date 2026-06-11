@@ -34,12 +34,15 @@ export default function RootError({
   }, [error])
 
   if (recovering) {
+    // Silent self-heal: the page reloads in <1s, so render a quiet route-transition
+    // surface instead of alarming "updating" copy (matters most mid-login on mobile).
     return (
-      <main className="flex flex-1 items-center justify-center bg-background px-4 py-16">
-        <div className="flex flex-col items-center gap-3 text-center">
-          <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" aria-hidden />
-          <p className="text-[15px] text-muted-foreground">Updating to the latest version…</p>
-        </div>
+      <main
+        className="flex flex-1 items-center justify-center bg-gradient-to-b from-background via-background to-muted/30 px-4 py-16"
+        role="status"
+        aria-label="Loading page"
+      >
+        <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground/60" aria-hidden />
       </main>
     )
   }
