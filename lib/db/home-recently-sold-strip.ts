@@ -39,9 +39,7 @@ export async function filterListingIdsStillSoldOnMarketplace(
     .select("id")
     .in("id", [...orderedListingIds])
     .eq("status", "sold")
-    .eq("hidden_from_site", false)
     .in("section", [...sections])
-    .is("archived_at", null)
 
   if (error) {
     console.error("filterListingIdsStillSoldOnMarketplace:", error.message)
@@ -186,8 +184,6 @@ async function fetchRecentlySoldListingSaleTimesFallback(
     .in("id", candidateIds)
     .in("section", [...sections])
     .eq("status", "sold")
-    .eq("hidden_from_site", false)
-    .is("archived_at", null)
 
   if (listingsError) {
     console.error("[recently-sold-fallback] listings:", listingsError.message)

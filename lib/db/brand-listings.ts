@@ -133,8 +133,6 @@ export async function listRecentlySoldListingsForBrand(
     .from("listings")
     .select(BRAND_MARKETPLACE_LISTING_SELECT)
     .eq("status", "sold")
-    .eq("hidden_from_site", false)
-    .is("archived_at", null)
 
   if (categoryId) {
     q = q.eq("category_id", categoryId)

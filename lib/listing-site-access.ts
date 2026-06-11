@@ -5,10 +5,12 @@ export async function canViewHiddenListing(
   supabase: SupabaseClient,
   listing: {
     user_id: string
+    status?: string | null
     hidden_from_site?: boolean | null
     archived_at?: string | null
   },
 ): Promise<boolean> {
+  if (listing.status === "sold") return true
   if (listing.archived_at) return false
   if (!listing.hidden_from_site) return true
 

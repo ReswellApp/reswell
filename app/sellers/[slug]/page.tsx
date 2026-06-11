@@ -191,7 +191,8 @@ export default async function SellerProfilePage({
     )
     .eq("user_id", id)
   if (!canSeeHiddenListings) {
-    listingsQuery = listingsQuery.eq("hidden_from_site", false)
+    // Sold history stays public on the profile even after seller archive/cleanup.
+    listingsQuery = listingsQuery.or("hidden_from_site.eq.false,status.eq.sold")
   }
   const { data: listings } = await listingsQuery.order("created_at", { ascending: false })
 
@@ -274,8 +275,9 @@ export default async function SellerProfilePage({
 
   const pastListings = allListings.filter((l) => {
     if (inCurrentInventory(l)) return false
-    if (l.hidden_from_site) return false
     if (l.status === "removed" || l.status === "draft") return false
+    if (l.status === "sold") return true
+    if (l.hidden_from_site) return false
     return true
   })
 
