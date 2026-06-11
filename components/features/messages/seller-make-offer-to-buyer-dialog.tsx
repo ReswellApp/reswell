@@ -20,7 +20,6 @@ import { createClient } from "@/lib/supabase/client"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { cn } from "@/lib/utils"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
-import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
 
@@ -94,11 +93,8 @@ function SelectedOfferListingCard({
   onAmountChange: (value: string) => void
   onRemove?: () => void
 }) {
-  const minPct = effectiveMinimumOfferPct(row)
-  const minAmount = roundMoney(row.price * (minPct / 100))
   const parsed = parseAmountInput(amountInput)
-  const amountInvalid =
-    amountInput.trim() !== "" && (parsed === null || parsed < minAmount || parsed > row.price)
+  const amountInvalid = amountInput.trim() !== "" && (parsed === null || parsed > row.price)
   const thumb = listingTitleThumbnailSrc(row.listing_images)
   const title = capitalizeWords((row.title ?? "Listing").trim() || "Listing")
 
@@ -158,7 +154,7 @@ function SelectedOfferListingCard({
                     "h-8 border-0 bg-transparent p-0 pl-4 text-lg font-semibold tabular-nums shadow-none focus-visible:ring-0",
                     amountInvalid ? "text-destructive" : "",
                   )}
-                  placeholder={minAmount.toFixed(2)}
+                  placeholder="0.00"
                   inputMode="decimal"
                   value={amountInput}
                   onChange={(e) => onAmountChange(e.target.value)}
@@ -169,7 +165,7 @@ function SelectedOfferListingCard({
           </div>
 
           <p className="mt-2 text-[11px] tabular-nums text-muted-foreground">
-            Offer between ${minAmount.toFixed(2)} and ${row.price.toFixed(2)} ({minPct}% min)
+            Offer any amount up to ${row.price.toFixed(2)}
           </p>
         </div>
       </div>
@@ -381,14 +377,12 @@ export function SellerMakeOfferToBuyerDialog({
       listingId: row.id,
       amount: parseAmountInput(amountByListingId[row.id] ?? ""),
       listPrice: row.price,
-      minPct: effectiveMinimumOfferPct(row),
-      minAmount: roundMoney(row.price * (effectiveMinimumOfferPct(row) / 100)),
       title: row.title,
     }))
   }, [orderedSelectedListings, amountByListingId])
 
   const allAmountsValid = lineItems.every(
-    (row) => row.amount !== null && row.amount >= row.minAmount && row.amount <= row.listPrice,
+    (row) => row.amount !== null && row.amount <= row.listPrice,
   )
 
   const itemsSubtotal = useMemo(() => {

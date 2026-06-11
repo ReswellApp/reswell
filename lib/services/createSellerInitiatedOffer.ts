@@ -2,7 +2,6 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { fetchListingForOffer, type ListingRowForOffer } from "@/lib/db/offers"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
-import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import { trackKlaviyoSellerMadeOfferToBuyer } from "@/lib/klaviyo/track-seller-made-offer-to-buyer"
 import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
 import { formatSellerOfferThreadContent } from "@/lib/utils/format-offer-thread-content"
@@ -49,7 +48,7 @@ function validateListingForSellerOffer(
   listing: ListingRowForOffer,
   sellerUserId: string,
   lineAmount: number,
-): { ok: true; listPrice: number; minOffer: number; minPct: number } | { ok: false; error: string } {
+): { ok: true; listPrice: number } | { ok: false; error: string } {
   if (listing.hidden_from_site) {
     return { ok: false, error: "One or more listings were not found." }
   }
@@ -71,14 +70,13 @@ function validateListingForSellerOffer(
     return { ok: false, error: "One or more listings do not have a valid price." }
   }
 
-  const minPct = effectiveMinimumOfferPct(listing)
-  const minOffer = roundMoney(listPrice * (minPct / 100))
+  // Seller-initiated offers have no minimum — the owner can offer any amount above $0.
   const amount = roundMoney(lineAmount)
 
-  if (amount < minOffer) {
+  if (!Number.isFinite(amount) || amount <= 0) {
     return {
       ok: false,
-      error: `Each offer price must be at least ${minPct}% of list price (e.g. $${minOffer.toFixed(2)} for “${(listing.title ?? "listing").trim() || "listing"}”).`,
+      error: `Each offer price must be greater than $0 (check “${(listing.title ?? "listing").trim() || "listing"}”).`,
     }
   }
   if (amount > listPrice) {
@@ -88,7 +86,7 @@ function validateListingForSellerOffer(
     }
   }
 
-  return { ok: true, listPrice, minOffer, minPct }
+  return { ok: true, listPrice }
 }
 
 /**
