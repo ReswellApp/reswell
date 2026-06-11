@@ -832,13 +832,15 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       />
     ) : null
 
-  /** Sell flow and checkout: logo + account only (no main nav / search / cart). */
+  /** Sell flow, checkout, and messages: logo + account only (no main nav / search / cart). */
   const isMinimalNavChrome =
     pathname !== null &&
     (pathname === "/sell" ||
       pathname.startsWith("/sell/") ||
       pathname === "/checkout" ||
-      pathname.startsWith("/checkout/"))
+      pathname.startsWith("/checkout/") ||
+      pathname === "/messages" ||
+      pathname.startsWith("/messages/"))
 
 
   if (isMinimalNavChrome) {

@@ -7,7 +7,7 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { MessageCircle, Heart, Search, Inbox, Handshake } from 'lucide-react'
+import { ArrowLeft, MessageCircle, Heart, Search, Inbox, Handshake } from 'lucide-react'
 import { MessagesOffersTab } from '@/components/features/messages/messages-offers-tab'
 import { MessageProfileAvatar } from '@/components/features/messages/message-profile-avatar'
 import {
@@ -344,9 +344,21 @@ export function MessagesInboxClient({
           <>
             <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <h1 className="text-[28px] font-semibold tracking-tight text-foreground sm:text-[34px]">
-                  Messages
-                </h1>
+                <div className="flex items-center gap-2">
+                  <Link href="/" className="-ml-2 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 rounded-full text-foreground hover:bg-muted/80"
+                      aria-label="Back to Reswell"
+                    >
+                      <ArrowLeft className="h-5 w-5" strokeWidth={2} />
+                    </Button>
+                  </Link>
+                  <h1 className="text-[28px] font-semibold tracking-tight text-foreground sm:text-[34px]">
+                    Messages
+                  </h1>
+                </div>
                 <p className="mt-1 max-w-xl text-[15px] leading-snug text-muted-foreground">
                   Conversations about your listings and purchases. Reach Reswell anytime with Need help?
                 </p>
