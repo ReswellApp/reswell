@@ -11,7 +11,10 @@ import {
 
 export { LISTING_IMAGE_MAX_ORIGINAL_BYTES as MESSAGE_IMAGE_MAX_ORIGINAL_BYTES }
 
-export const MESSAGE_VIDEO_MAX_BYTES = 50 * 1024 * 1024
+// Sized for ~2 minutes of high-bitrate phone footage (4K HEVC) without transcoding.
+export const MESSAGE_VIDEO_MAX_BYTES = 500 * 1024 * 1024
+
+export const MESSAGE_VIDEO_MAX_DURATION_SECONDS = 120
 
 export const MESSAGE_VIDEO_MIME_TYPES = [
   "video/mp4",
@@ -42,7 +45,43 @@ export function assertMessageImageOriginalSize(file: File): void {
 export function assertMessageVideoOriginalSize(file: File): void {
   if (file.size > MESSAGE_VIDEO_MAX_BYTES) {
     throw new Error(
-      `This video is over 50MB. Choose a smaller file (yours is ${(file.size / (1024 * 1024)).toFixed(1)}MB).`,
+      `This video is over 500MB. Choose a smaller file (yours is ${(file.size / (1024 * 1024)).toFixed(1)}MB).`,
+    )
+  }
+}
+
+/**
+ * Reads video duration via an off-screen <video> element. Returns null when the
+ * browser cannot decode the file's metadata (we allow those through; size still caps them).
+ */
+export function readMessageVideoDurationSeconds(file: File): Promise<number | null> {
+  return new Promise((resolve) => {
+    const objectUrl = URL.createObjectURL(file)
+    const video = document.createElement("video")
+    video.preload = "metadata"
+
+    const finish = (duration: number | null) => {
+      URL.revokeObjectURL(objectUrl)
+      video.removeAttribute("src")
+      video.load()
+      resolve(duration)
+    }
+
+    video.onloadedmetadata = () => {
+      finish(Number.isFinite(video.duration) ? video.duration : null)
+    }
+    video.onerror = () => finish(null)
+    video.src = objectUrl
+  })
+}
+
+export async function assertMessageVideoDuration(file: File): Promise<void> {
+  const duration = await readMessageVideoDurationSeconds(file)
+  if (duration != null && duration > MESSAGE_VIDEO_MAX_DURATION_SECONDS) {
+    const minutes = Math.floor(duration / 60)
+    const seconds = Math.round(duration % 60)
+    throw new Error(
+      `Videos can be up to 2 minutes long (yours is ${minutes}:${String(seconds).padStart(2, "0")}). Trim it and try again.`,
     )
   }
 }

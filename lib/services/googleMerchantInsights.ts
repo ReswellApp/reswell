@@ -40,6 +40,13 @@ export type GoogleMerchantProductStatus =
   | "disapproved"
   | "no_destination"
 
+/** Per-channel (reporting context) status, scoped to the target country (US). */
+export type GoogleMerchantChannelStatus =
+  | "approved"
+  | "pending"
+  | "disapproved"
+  | "not_targeted"
+
 export interface GoogleMerchantDestinationStatus {
   reportingContext: string
   approvedCountries: string[]
@@ -58,6 +65,8 @@ export interface GoogleMerchantItemIssue {
   detail: string | null
   documentation: string | null
   applicableCountries: string[]
+  /** True when this issue impacts Shopping ads in the target country (US). */
+  affectsAds: boolean
 }
 
 export interface GoogleMerchantProductDetail {
@@ -66,11 +75,20 @@ export interface GoogleMerchantProductDetail {
   brand: string | null
   link: string | null
   imageLink: string | null
+  additionalImageCount: number
   priceMicros: number | null
   currency: string | null
   availability: string | null
   condition: string | null
+  /**
+   * Headline status, ads-first: Shopping ads status in the target country (US).
+   * Falls back to free listings when the product isn't targeted to ads at all.
+   */
   status: GoogleMerchantProductStatus
+  /** Shopping ads status in the target country (US). */
+  adsStatus: GoogleMerchantChannelStatus
+  /** Free listings (organic Shopping tab) status in the target country (US). */
+  freeListingsStatus: GoogleMerchantChannelStatus
   destinationStatuses: GoogleMerchantDestinationStatus[]
   issues: GoogleMerchantItemIssue[]
   errorCount: number
@@ -141,6 +159,8 @@ export interface GoogleMerchantTopIssue {
   documentation: string | null
   count: number
   sampleOfferIds: string[]
+  /** True when this issue impacts Shopping ads in the target country (US). */
+  affectsAds: boolean
 }
 
 export interface GoogleMerchantInsightsSummary {
@@ -149,10 +169,40 @@ export interface GoogleMerchantInsightsSummary {
   pending: number
   disapproved: number
   noDestination: number
+  /** Approved for Shopping ads in the target country (US). */
+  adsApproved: number
+  /** Disapproved for Shopping ads in the target country (US). */
+  adsDisapproved: number
+  /** In the feed but not targeted to Shopping ads at all. */
+  adsNotTargeted: number
+  /** Approved for free listings in the target country (US). */
+  freeListingsApproved: number
   withErrors: number
   withWarnings: number
   totalErrorIssues: number
   totalWarningIssues: number
+}
+
+export type GoogleMerchantOptimizationImpact = "high" | "medium" | "low"
+
+export interface GoogleMerchantOptimizationTip {
+  code: string
+  title: string
+  detail: string
+  impact: GoogleMerchantOptimizationImpact
+}
+
+export interface GoogleMerchantProductOptimization {
+  offerId: string
+  title: string | null
+  link: string | null
+  imageLink: string | null
+  /** 0–100. 100 = nothing to improve. */
+  score: number
+  clicks: number
+  impressions: number
+  ctr: number
+  tips: GoogleMerchantOptimizationTip[]
 }
 
 export interface GoogleMerchantInsights {
@@ -172,6 +222,8 @@ export interface GoogleMerchantInsights {
   performance: GoogleMerchantPerformanceResult
   coverage: GoogleMerchantCoverage
   topIssues: GoogleMerchantTopIssue[]
+  /** Per-product ads optimization opportunities, biggest upside first. */
+  optimizations: GoogleMerchantProductOptimization[]
   analytics: GoogleAnalyticsResult
 }
 
@@ -189,6 +241,10 @@ const EMPTY_SUMMARY: GoogleMerchantInsightsSummary = {
   pending: 0,
   disapproved: 0,
   noDestination: 0,
+  adsApproved: 0,
+  adsDisapproved: 0,
+  adsNotTargeted: 0,
+  freeListingsApproved: 0,
   withErrors: 0,
   withWarnings: 0,
   totalErrorIssues: 0,
@@ -209,6 +265,7 @@ interface RawProductAttributes {
   brand?: string
   link?: string
   imageLink?: string
+  additionalImageLinks?: string[]
   availability?: string
   condition?: string
   price?: RawProductPrice
@@ -309,22 +366,70 @@ function isoDaysAgo(days: number): string {
   return d.toISOString().slice(0, 10)
 }
 
-function deriveProductStatus(
-  destinations: GoogleMerchantDestinationStatus[],
-): GoogleMerchantProductStatus {
-  if (destinations.length === 0) return "no_destination"
-  const hasDisapproved = destinations.some((d) => d.disapprovedCountries.length > 0)
-  if (hasDisapproved) return "disapproved"
-  const hasApproved = destinations.some((d) => d.approvedCountries.length > 0)
-  if (hasApproved) return "approved"
-  const hasPending = destinations.some((d) => d.pendingCountries.length > 0)
-  if (hasPending) return "pending"
-  return "no_destination"
+/** Reporting contexts that drive paid Shopping placements. */
+const ADS_REPORTING_CONTEXTS = new Set(["SHOPPING_ADS", "DEMAND_GEN_ADS", "VIDEO_ADS", "DISPLAY_ADS"])
+const FREE_REPORTING_CONTEXTS = new Set(["FREE_LISTINGS", "FREE_LOCAL_LISTINGS"])
+
+/** The country Reswell sells in — drives all status scoping. */
+function targetCountry(): string {
+  return getGoogleMerchantFeedLabel()
 }
 
-/** Disapproving issues count as errors; demoted/other as warnings. */
-function issueIsError(severity: string): boolean {
-  return severity.toUpperCase() === "DISAPPROVED"
+/** Status for a set of reporting contexts in the target country only. */
+function channelStatusForCountry(
+  destinations: GoogleMerchantDestinationStatus[],
+  contexts: Set<string>,
+  country: string,
+): GoogleMerchantChannelStatus {
+  const matching = destinations.filter((d) => contexts.has(d.reportingContext))
+  if (matching.length === 0) return "not_targeted"
+
+  let approved = false
+  let pending = false
+  let disapproved = false
+  for (const d of matching) {
+    if (d.disapprovedCountries.includes(country)) disapproved = true
+    if (d.approvedCountries.includes(country)) approved = true
+    if (d.pendingCountries.includes(country)) pending = true
+  }
+  if (disapproved) return "disapproved"
+  if (approved) return "approved"
+  if (pending) return "pending"
+  return "not_targeted"
+}
+
+/**
+ * Headline status is ads-first: what matters is whether the product can serve
+ * Shopping ads in the US. Free listings only decide the status when the product
+ * isn't targeted to ads at all.
+ */
+function deriveProductStatus(
+  adsStatus: GoogleMerchantChannelStatus,
+  freeListingsStatus: GoogleMerchantChannelStatus,
+): GoogleMerchantProductStatus {
+  const primary = adsStatus !== "not_targeted" ? adsStatus : freeListingsStatus
+  if (primary === "not_targeted") return "no_destination"
+  return primary
+}
+
+/** True when an item issue impacts ads serving in the target country. */
+function issueAffectsAds(issue: {
+  reportingContext: string | null
+  applicableCountries: string[]
+}): boolean {
+  const country = targetCountry()
+  if (issue.applicableCountries.length > 0 && !issue.applicableCountries.includes(country)) {
+    return false
+  }
+  if (issue.reportingContext && !ADS_REPORTING_CONTEXTS.has(issue.reportingContext)) {
+    return false
+  }
+  return true
+}
+
+/** Ads-blocking disapprovals count as errors; everything else is a warning. */
+function issueIsError(issue: { severity: string; affectsAds: boolean }): boolean {
+  return issue.severity.toUpperCase() === "DISAPPROVED" && issue.affectsAds
 }
 
 function mapRawProduct(raw: RawProduct): GoogleMerchantProductDetail {
@@ -340,26 +445,37 @@ function mapRawProduct(raw: RawProduct): GoogleMerchantProductDetail {
     disapprovedCountries: d.disapprovedCountries ?? [],
   }))
 
-  const issues: GoogleMerchantItemIssue[] = (status.itemLevelIssues ?? []).map((i) => ({
-    code: i.code ?? "unknown",
-    severity: i.severity ?? "NOT_IMPACTED",
-    resolution: i.resolution ?? null,
-    attribute: i.attribute ?? null,
-    reportingContext: i.reportingContext ?? null,
-    description: i.description ?? null,
-    detail: i.detail ?? null,
-    documentation: i.documentation ?? null,
-    applicableCountries: i.applicableCountries ?? [],
-  }))
+  const issues: GoogleMerchantItemIssue[] = (status.itemLevelIssues ?? []).map((i) => {
+    const base = {
+      code: i.code ?? "unknown",
+      severity: i.severity ?? "NOT_IMPACTED",
+      resolution: i.resolution ?? null,
+      attribute: i.attribute ?? null,
+      reportingContext: i.reportingContext ?? null,
+      description: i.description ?? null,
+      detail: i.detail ?? null,
+      documentation: i.documentation ?? null,
+      applicableCountries: i.applicableCountries ?? [],
+    }
+    return { ...base, affectsAds: issueAffectsAds(base) }
+  })
 
   let errorCount = 0
   let warningCount = 0
   for (const issue of issues) {
-    if (issueIsError(issue.severity)) errorCount += 1
+    if (issueIsError(issue)) errorCount += 1
     else warningCount += 1
   }
 
   const priceMicros = attrs.price?.amountMicros ? toNumber(attrs.price.amountMicros) : null
+
+  const country = targetCountry()
+  const adsStatus = channelStatusForCountry(destinationStatuses, ADS_REPORTING_CONTEXTS, country)
+  const freeListingsStatus = channelStatusForCountry(
+    destinationStatuses,
+    FREE_REPORTING_CONTEXTS,
+    country,
+  )
 
   return {
     offerId: (raw.offerId ?? "").trim(),
@@ -367,11 +483,14 @@ function mapRawProduct(raw: RawProduct): GoogleMerchantProductDetail {
     brand: attrs.brand?.trim() || null,
     link: attrs.link?.trim() || null,
     imageLink: attrs.imageLink?.trim() || null,
+    additionalImageCount: attrs.additionalImageLinks?.length ?? 0,
     priceMicros,
     currency: attrs.price?.currencyCode ?? null,
     availability: attrs.availability ?? null,
     condition: attrs.condition ?? null,
-    status: deriveProductStatus(destinationStatuses),
+    status: deriveProductStatus(adsStatus, freeListingsStatus),
+    adsStatus,
+    freeListingsStatus,
     destinationStatuses,
     issues,
     errorCount,
@@ -645,6 +764,10 @@ function summarize(products: GoogleMerchantProductDetail[]): GoogleMerchantInsig
       default:
         summary.noDestination += 1
     }
+    if (product.adsStatus === "approved") summary.adsApproved += 1
+    if (product.adsStatus === "disapproved") summary.adsDisapproved += 1
+    if (product.adsStatus === "not_targeted") summary.adsNotTargeted += 1
+    if (product.freeListingsStatus === "approved") summary.freeListingsApproved += 1
     if (product.errorCount > 0) summary.withErrors += 1
     if (product.warningCount > 0) summary.withWarnings += 1
     summary.totalErrorIssues += product.errorCount
@@ -661,7 +784,8 @@ function buildTopIssues(products: GoogleMerchantProductDetail[]): GoogleMerchant
       if (existing) {
         existing.count += 1
         if (existing.sampleOfferIds.length < 5) existing.sampleOfferIds.push(product.offerId)
-        if (issueIsError(issue.severity)) existing.severity = "DISAPPROVED"
+        if (issueIsError(issue)) existing.severity = "DISAPPROVED"
+        if (issue.affectsAds) existing.affectsAds = true
       } else {
         byCode.set(issue.code, {
           code: issue.code,
@@ -670,11 +794,208 @@ function buildTopIssues(products: GoogleMerchantProductDetail[]): GoogleMerchant
           documentation: issue.documentation,
           count: 1,
           sampleOfferIds: [product.offerId],
+          affectsAds: issue.affectsAds,
         })
       }
     }
   }
-  return [...byCode.values()].sort((a, b) => b.count - a.count)
+  // Ads-blocking issues first, then by frequency.
+  return [...byCode.values()].sort(
+    (a, b) => Number(b.affectsAds) - Number(a.affectsAds) || b.count - a.count,
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Ads optimization engine
+// ---------------------------------------------------------------------------
+
+const IMPACT_PENALTY: Record<GoogleMerchantOptimizationImpact, number> = {
+  high: 25,
+  medium: 12,
+  low: 5,
+}
+
+/** Feed-wide CTR floor: products with traffic but well below this need creative work. */
+const OPTIMIZATION_MIN_TITLE_LENGTH = 30
+const OPTIMIZATION_GOOD_TITLE_LENGTH = 50
+const OPTIMIZATION_MIN_IMPRESSIONS_FOR_CTR = 30
+
+function median(values: number[]): number | null {
+  if (values.length === 0) return null
+  const sorted = [...values].sort((a, b) => a - b)
+  const mid = Math.floor(sorted.length / 2)
+  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid]
+}
+
+function buildProductOptimization(
+  product: GoogleMerchantProductDetail,
+  perf: GoogleMerchantPerformanceRow | undefined,
+  context: { feedMedianCtr: number | null; feedMedianPriceMicros: number | null },
+): GoogleMerchantProductOptimization {
+  const tips: GoogleMerchantOptimizationTip[] = []
+  const title = product.title?.trim() ?? ""
+  const clicks = perf?.clicks ?? 0
+  const impressions = perf?.impressions ?? 0
+  const ctr = impressions > 0 ? clicks / impressions : 0
+
+  // 1. Serving blockers / demotions straight from Google.
+  if (product.adsStatus === "disapproved") {
+    tips.push({
+      code: "ads_disapproved",
+      title: "Disapproved for US Shopping ads",
+      detail:
+        product.issues.find((i) => i.affectsAds && i.severity.toUpperCase() === "DISAPPROVED")
+          ?.description ?? "Resolve the disapproval issue, then resync the feed.",
+      impact: "high",
+    })
+  }
+  for (const issue of product.issues) {
+    if (issue.affectsAds && issue.severity.toUpperCase() === "DEMOTED") {
+      tips.push({
+        code: `demoted_${issue.code}`,
+        title: "Google is demoting this ad",
+        detail: issue.description ?? issue.code,
+        impact: "high",
+      })
+    }
+  }
+
+  // 2. Identifier completeness — drives query matching and ranking.
+  if (!product.brand) {
+    tips.push({
+      code: "missing_brand",
+      title: "Add a brand",
+      detail:
+        "No brand is set. Brand is one of the strongest matching signals for surfboard queries (e.g. \"Channel Islands surfboard\"). Set it on the Reswell listing.",
+      impact: "high",
+    })
+  }
+
+  // 3. Title quality — the single biggest CTR lever in Shopping.
+  if (title.length > 0 && title.length < OPTIMIZATION_MIN_TITLE_LENGTH) {
+    tips.push({
+      code: "title_too_short",
+      title: "Title is too short",
+      detail: `"${title}" (${title.length} chars). Aim for ${OPTIMIZATION_GOOD_TITLE_LENGTH}+ chars: brand + model + length + condition, e.g. "Channel Islands Dumpster Diver 5'10\\" Used Shortboard".`,
+      impact: "high",
+    })
+  } else if (title.length < OPTIMIZATION_GOOD_TITLE_LENGTH) {
+    tips.push({
+      code: "title_could_be_richer",
+      title: "Enrich the title",
+      detail: `Titles around ${OPTIMIZATION_GOOD_TITLE_LENGTH}–70 chars with brand, model, and dimensions match more queries. Current: ${title.length} chars.`,
+      impact: "low",
+    })
+  }
+  if (product.brand && title && !title.toLowerCase().includes(product.brand.toLowerCase())) {
+    tips.push({
+      code: "brand_not_in_title",
+      title: "Put the brand in the title",
+      detail: `The brand "${product.brand}" isn't in the title. Google heavily weights title text for ad matching.`,
+      impact: "medium",
+    })
+  }
+
+  // 4. Imagery — second biggest CTR lever.
+  if (product.additionalImageCount === 0) {
+    tips.push({
+      code: "single_image",
+      title: "Add more photos",
+      detail:
+        "Only one image is in the feed. Extra angles (deck, bottom, rails, dings) improve both CTR and buyer trust.",
+      impact: "medium",
+    })
+  }
+
+  // 5. Performance-based signals.
+  if (
+    impressions >= OPTIMIZATION_MIN_IMPRESSIONS_FOR_CTR &&
+    context.feedMedianCtr != null &&
+    context.feedMedianCtr > 0 &&
+    ctr < context.feedMedianCtr / 2
+  ) {
+    tips.push({
+      code: "ctr_below_feed",
+      title: "CTR well below your feed median",
+      detail: `${(ctr * 100).toFixed(1)}% vs feed median ${(context.feedMedianCtr * 100).toFixed(1)}%. Shoppers see it but skip it — lead with a cleaner hero image and a price check.`,
+      impact: "high",
+    })
+  }
+  if (product.adsStatus === "approved" && impressions === 0) {
+    tips.push({
+      code: "approved_no_impressions",
+      title: "Approved but not serving",
+      detail:
+        "Zero impressions in this window. Usually price competitiveness, a too-generic title, or low campaign priority/budget for this product group.",
+      impact: "medium",
+    })
+  }
+
+  // 6. Price positioning (soft signal in a marketplace of unique boards).
+  if (
+    context.feedMedianPriceMicros != null &&
+    product.priceMicros != null &&
+    product.priceMicros > context.feedMedianPriceMicros * 2.5 &&
+    impressions > 0 &&
+    clicks === 0
+  ) {
+    tips.push({
+      code: "price_outlier_no_clicks",
+      title: "Priced far above the feed, with no clicks",
+      detail:
+        "Google shows price directly in the ad. If this board is premium, make the title justify it (brand, model, condition); otherwise revisit the price.",
+      impact: "low",
+    })
+  }
+
+  const score = Math.max(
+    0,
+    100 - tips.reduce((acc, tip) => acc + IMPACT_PENALTY[tip.impact], 0),
+  )
+
+  return {
+    offerId: product.offerId,
+    title: product.title,
+    link: product.link,
+    imageLink: product.imageLink,
+    score,
+    clicks,
+    impressions,
+    ctr,
+    tips,
+  }
+}
+
+/**
+ * Per-product ads optimization opportunities, ranked by upside: products with
+ * traffic (or blocked from serving) and the lowest scores come first.
+ */
+export function buildGoogleMerchantOptimizations(
+  products: GoogleMerchantProductDetail[],
+  performance: GoogleMerchantPerformanceResult,
+): GoogleMerchantProductOptimization[] {
+  const perfByOffer = new Map<string, GoogleMerchantPerformanceRow>()
+  if (performance.configured) {
+    for (const row of performance.byOffer) perfByOffer.set(row.offerId, row)
+  }
+
+  const ctrs = performance.configured
+    ? performance.byOffer.filter((r) => r.impressions >= 10).map((r) => r.ctr)
+    : []
+  const context = {
+    feedMedianCtr: median(ctrs),
+    feedMedianPriceMicros: median(
+      products.map((p) => p.priceMicros).filter((v): v is number => v != null && v > 0),
+    ),
+  }
+
+  return products
+    .map((product) => buildProductOptimization(product, perfByOffer.get(product.offerId), context))
+    .filter((o) => o.tips.length > 0)
+    .sort(
+      (a, b) =>
+        a.score - b.score || b.impressions - a.impressions || b.clicks - a.clicks,
+    )
 }
 
 /**
@@ -708,6 +1029,7 @@ export async function buildGoogleMerchantInsights(
       performance: { configured: false, reason: "Google Merchant API is not configured." },
       coverage: { ...FREE_COVERAGE },
       topIssues: [],
+      optimizations: [],
       analytics: { configured: false, reason: "Google Analytics is not configured." },
     }
   }
@@ -725,6 +1047,7 @@ export async function buildGoogleMerchantInsights(
       performance: { configured: false, reason: productsResult.error },
       coverage: { ...FREE_COVERAGE },
       topIssues: [],
+      optimizations: [],
       analytics: { configured: false, reason: "Google Analytics is not configured." },
     }
   }
@@ -748,6 +1071,7 @@ export async function buildGoogleMerchantInsights(
     performance,
     coverage,
     topIssues: buildTopIssues(products),
+    optimizations: buildGoogleMerchantOptimizations(products, performance),
     analytics,
   }
 }

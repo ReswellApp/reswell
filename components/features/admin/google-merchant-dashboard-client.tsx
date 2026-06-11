@@ -54,9 +54,12 @@ import {
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import type {
+  GoogleMerchantChannelStatus,
   GoogleMerchantInsights,
+  GoogleMerchantOptimizationImpact,
   GoogleMerchantPerformanceRow,
   GoogleMerchantProductDetail,
+  GoogleMerchantProductOptimization,
   GoogleMerchantProductStatus,
 } from "@/lib/services/googleMerchantInsights"
 
@@ -78,7 +81,14 @@ const STATUS_META: Record<
   approved: { label: "Approved", tone: "emerald", fill: "#10b981" },
   pending: { label: "Pending", tone: "amber", fill: "#f59e0b" },
   disapproved: { label: "Disapproved", tone: "rose", fill: "#ef4444" },
-  no_destination: { label: "No destination", tone: "slate", fill: "#94a3b8" },
+  no_destination: { label: "Not targeted", tone: "slate", fill: "#94a3b8" },
+}
+
+const CHANNEL_META: Record<GoogleMerchantChannelStatus, { label: string; tone: PillTone }> = {
+  approved: { label: "Approved", tone: "emerald" },
+  pending: { label: "Pending", tone: "amber" },
+  disapproved: { label: "Disapproved", tone: "rose" },
+  not_targeted: { label: "Not targeted", tone: "slate" },
 }
 
 /** Impressions above which a zero-click product is flagged as a CTR problem. */
@@ -249,9 +259,19 @@ function Pill({
   )
 }
 
-function StatusBadge({ status }: { status: GoogleMerchantProductStatus }) {
-  const meta = STATUS_META[status]
-  return <Pill tone={meta.tone}>{meta.label}</Pill>
+function ChannelBadge({
+  channel,
+  status,
+}: {
+  channel: "Ads" | "Free"
+  status: GoogleMerchantChannelStatus
+}) {
+  const meta = CHANNEL_META[status]
+  return (
+    <Pill tone={meta.tone} title={`${channel === "Ads" ? "Shopping ads" : "Free listings"} (US): ${meta.label}`}>
+      <span className="font-normal opacity-70">{channel}</span> {meta.label}
+    </Pill>
+  )
 }
 
 function EmptyState({ children }: { children: ReactNode }) {
@@ -430,14 +450,14 @@ export function GoogleMerchantDashboardClient({
 
   // --- Derived decision lists ("PRO insights") ---
   const decisions = useMemo(() => {
-    const disapproved = rows.filter((r) => r.status === "disapproved")
+    const disapproved = rows.filter((r) => r.adsStatus === "disapproved")
     const lowCtr = perfConfigured
       ? rows
           .filter((r) => r.impressions >= LOW_CTR_IMPRESSION_FLOOR && r.clicks === 0)
           .sort((a, b) => b.impressions - a.impressions)
       : []
     const notServed = perfConfigured
-      ? rows.filter((r) => r.status === "approved" && r.impressions === 0)
+      ? rows.filter((r) => r.adsStatus === "approved" && r.impressions === 0)
       : []
     const topPerformers = perfConfigured
       ? [...rows].filter((r) => r.clicks > 0).sort((a, b) => b.clicks - a.clicks).slice(0, 8)
@@ -453,7 +473,7 @@ export function GoogleMerchantDashboardClient({
         { name: "Approved", value: s.approved, fill: STATUS_META.approved.fill },
         { name: "Pending", value: s.pending, fill: STATUS_META.pending.fill },
         { name: "Disapproved", value: s.disapproved, fill: STATUS_META.disapproved.fill },
-        { name: "No destination", value: s.noDestination, fill: STATUS_META.no_destination.fill },
+        { name: "Not targeted", value: s.noDestination, fill: STATUS_META.no_destination.fill },
       ] as const
     ).filter((d) => d.value > 0)
   }, [insights.summary])
@@ -482,6 +502,8 @@ export function GoogleMerchantDashboardClient({
       "title",
       "brand",
       "status",
+      "ads_status_us",
+      "free_listings_status_us",
       "availability",
       "price_usd",
       "error_issues",
@@ -501,6 +523,8 @@ export function GoogleMerchantDashboardClient({
           r.title ?? "",
           r.brand ?? "",
           r.status,
+          r.adsStatus,
+          r.freeListingsStatus,
           r.availability ?? "",
           microsToUsd(r.priceMicros) ?? "",
           r.errorCount,
@@ -553,8 +577,8 @@ export function GoogleMerchantDashboardClient({
               </span>
             </div>
             <p className="max-w-2xl text-sm text-muted-foreground">
-              Live feed health, approval status, item-level issues, Shopping performance, and
-              Google Analytics traffic for every product Reswell advertises on Google.
+              Ads-first view of Merchant Center: every status, issue, and metric here is scoped to
+              what Reswell is actually doing — running Shopping ads in the US to sell surfboards.
             </p>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">
@@ -672,23 +696,23 @@ export function GoogleMerchantDashboardClient({
               accent="primary"
             />
             <KpiCard
-              label="Approved"
-              value={formatNumber(summary.approved)}
-              subtitle={`${formatPercent(totalProducts > 0 ? summary.approved / totalProducts : 0, 0)} of feed`}
+              label="Approved for ads (US)"
+              value={formatNumber(summary.adsApproved)}
+              subtitle={`${formatPercent(totalProducts > 0 ? summary.adsApproved / totalProducts : 0, 0)} of feed · ${formatNumber(summary.freeListingsApproved)} on free listings`}
               icon={<BadgeCheck className="h-5 w-5" />}
               accent="emerald"
             />
             <KpiCard
-              label="Needs attention"
-              value={formatNumber(summary.disapproved + summary.noDestination)}
-              subtitle={`${formatNumber(summary.disapproved)} disapproved · ${formatNumber(summary.pending)} pending`}
+              label="Blocked from ads"
+              value={formatNumber(summary.adsDisapproved + summary.adsNotTargeted)}
+              subtitle={`${formatNumber(summary.adsDisapproved)} disapproved · ${formatNumber(summary.adsNotTargeted)} not targeted · ${formatNumber(summary.pending)} pending`}
               icon={<AlertTriangle className="h-5 w-5" />}
               accent="rose"
             />
             <KpiCard
-              label="Item issues"
-              value={formatNumber(summary.totalErrorIssues + summary.totalWarningIssues)}
-              subtitle={`${formatNumber(summary.totalErrorIssues)} errors · ${formatNumber(summary.totalWarningIssues)} warnings`}
+              label="Ads-blocking issues"
+              value={formatNumber(summary.totalErrorIssues)}
+              subtitle={`${formatNumber(summary.totalWarningIssues)} warnings (demotions / other channels)`}
               icon={<Filter className="h-5 w-5" />}
               accent="amber"
             />
@@ -786,8 +810,8 @@ export function GoogleMerchantDashboardClient({
 
             <SectionCard>
               <SectionHeader
-                title="Approval status"
-                description="How your feed breaks down across Google destinations."
+                title="Shopping ads approval (US)"
+                description="Status for the channel you're actually running: Shopping ads in the United States."
                 icon={<CheckCircle2 className="h-4 w-4" />}
               />
               {statusData.length > 0 ? (
@@ -843,12 +867,12 @@ export function GoogleMerchantDashboardClient({
           {/* Decisions / opportunities */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <DecisionPanel
-              title="Disapproved — fix to restore reach"
-              description="Products Google is refusing to show. Resolve the issue, then resync."
+              title="Disapproved for ads — fix to restore reach"
+              description="Products Google won't serve in US Shopping ads. Resolve the issue, then resync."
               icon={<AlertTriangle className="h-4 w-4" />}
               tone="rose"
               rows={decisions.disapproved}
-              metric={(r) => `${r.errorCount} error${r.errorCount === 1 ? "" : "s"}`}
+              metric={(r) => `${r.errorCount} ads error${r.errorCount === 1 ? "" : "s"}`}
             />
             <DecisionPanel
               title="Shown but never clicked"
@@ -879,12 +903,15 @@ export function GoogleMerchantDashboardClient({
             />
           </div>
 
+          {/* Per-product ads optimizations */}
+          <OptimizationsPanel optimizations={insights.optimizations} />
+
           {/* Issues + coverage */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <SectionCard>
               <SectionHeader
                 title="Top item-level issues"
-                description="Grouped across the whole feed, most frequent first. Open Google's docs to resolve."
+                description="Ads-blocking issues first, then by frequency. Open Google's docs to resolve."
                 icon={<AlertTriangle className="h-4 w-4" />}
               />
               {insights.topIssues.length === 0 ? (
@@ -892,7 +919,7 @@ export function GoogleMerchantDashboardClient({
               ) : (
                 <ul className="space-y-2">
                   {insights.topIssues.slice(0, 8).map((issue) => {
-                    const isError = issue.severity.toUpperCase() === "DISAPPROVED"
+                    const isError = issue.severity.toUpperCase() === "DISAPPROVED" && issue.affectsAds
                     return (
                       <li
                         key={issue.code}
@@ -910,6 +937,15 @@ export function GoogleMerchantDashboardClient({
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="text-sm font-medium text-slate-900">{issue.description}</span>
                             <Pill tone={isError ? "rose" : "amber"}>{issue.count}</Pill>
+                            {issue.affectsAds ? (
+                              <Pill tone="rose" title="Impacts US Shopping ads serving">
+                                Blocks ads
+                              </Pill>
+                            ) : (
+                              <Pill tone="slate" title="Does not block US Shopping ads (other channel or country)">
+                                Ads OK
+                              </Pill>
+                            )}
                           </div>
                           <p className="mt-0.5 font-mono text-[11px] text-slate-400">{issue.code}</p>
                         </div>
@@ -1019,7 +1055,7 @@ export function GoogleMerchantDashboardClient({
                     <SelectItem value="approved">Approved</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="disapproved">Disapproved</SelectItem>
-                    <SelectItem value="no_destination">No destination</SelectItem>
+                    <SelectItem value="no_destination">Not targeted</SelectItem>
                   </SelectContent>
                 </Select>
                 <button
@@ -1065,7 +1101,7 @@ export function GoogleMerchantDashboardClient({
                   <thead>
                     <tr className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500">
                       <th className="px-3 py-2 font-medium">Product</th>
-                      <th className="px-3 py-2 font-medium">Status</th>
+                      <th className="px-3 py-2 font-medium">Channels (US)</th>
                       <th className="px-3 py-2 text-right font-medium">Price</th>
                       <th className="px-3 py-2 text-right font-medium">Issues</th>
                       <th className="px-3 py-2 text-right font-medium">Clicks</th>
@@ -1109,7 +1145,10 @@ export function GoogleMerchantDashboardClient({
                           </a>
                         </td>
                         <td className="px-3 py-2 align-top">
-                          <StatusBadge status={r.status} />
+                          <div className="flex flex-col items-start gap-1">
+                            <ChannelBadge channel="Ads" status={r.adsStatus} />
+                            <ChannelBadge channel="Free" status={r.freeListingsStatus} />
+                          </div>
                         </td>
                         <td className="px-3 py-2 text-right align-top tabular-nums text-slate-700">
                           {formatUsd(microsToUsd(r.priceMicros))}
@@ -1240,6 +1279,113 @@ function DecisionPanel({
               </a>
               <Pill tone={tone}>{metric(r)}</Pill>
             </li>
+          ))}
+        </ul>
+      )}
+    </SectionCard>
+  )
+}
+
+const IMPACT_META: Record<GoogleMerchantOptimizationImpact, { label: string; tone: PillTone }> = {
+  high: { label: "High impact", tone: "rose" },
+  medium: { label: "Medium", tone: "amber" },
+  low: { label: "Low", tone: "slate" },
+}
+
+function scoreTone(score: number): string {
+  if (score >= 80) return "text-emerald-600"
+  if (score >= 55) return "text-amber-600"
+  return "text-rose-600"
+}
+
+function OptimizationCard({ opt }: { opt: GoogleMerchantProductOptimization }) {
+  const [expanded, setExpanded] = useState(false)
+  const shown = expanded ? opt.tips : opt.tips.slice(0, 2)
+  return (
+    <li className="rounded-lg border border-slate-200 p-3">
+      <div className="flex items-start gap-3">
+        {opt.imageLink ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={opt.imageLink}
+            alt=""
+            loading="lazy"
+            className="h-10 w-10 shrink-0 rounded-md border border-slate-200 object-cover"
+          />
+        ) : (
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-300">
+            <Package className="h-4 w-4" />
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <a
+            href={productHref(opt)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block max-w-[320px] truncate text-sm font-medium text-slate-900 hover:text-blue-600"
+          >
+            {opt.title ?? "(untitled)"}
+          </a>
+          <p className="mt-0.5 text-xs tabular-nums text-slate-500">
+            {formatNumber(opt.impressions)} impr · {formatNumber(opt.clicks)} clicks
+            {opt.impressions > 0 ? ` · ${formatPercent(opt.ctr)} CTR` : ""}
+          </p>
+        </div>
+        <div className="shrink-0 text-right">
+          <span className={cn("text-lg font-bold tabular-nums", scoreTone(opt.score))}>{opt.score}</span>
+          <span className="block text-[10px] uppercase tracking-wide text-slate-400">ad score</span>
+        </div>
+      </div>
+      <ul className="mt-2.5 space-y-1.5">
+        {shown.map((tip) => (
+          <li key={tip.code} className="flex items-start gap-2 text-xs">
+            <Pill tone={IMPACT_META[tip.impact].tone}>{IMPACT_META[tip.impact].label}</Pill>
+            <span className="min-w-0 text-slate-600">
+              <span className="font-medium text-slate-800">{tip.title}.</span> {tip.detail}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {opt.tips.length > 2 ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-2 text-xs font-medium text-blue-600 hover:underline"
+        >
+          {expanded ? "Show less" : `Show ${opt.tips.length - 2} more`}
+        </button>
+      ) : null}
+    </li>
+  )
+}
+
+function OptimizationsPanel({
+  optimizations,
+}: {
+  optimizations: GoogleMerchantProductOptimization[]
+}) {
+  const [showAll, setShowAll] = useState(false)
+  const visible = showAll ? optimizations.slice(0, 30) : optimizations.slice(0, 6)
+  return (
+    <SectionCard>
+      <SectionHeader
+        title="Ads optimizations"
+        description="Per-product opportunities ranked by upside — serving blockers and weak creative first. Fix on the Reswell listing, then resync."
+        icon={<Sparkles className="h-4 w-4" />}
+        trailing={
+          optimizations.length > 6 ? (
+            <Button variant="outline" size="sm" onClick={() => setShowAll((v) => !v)}>
+              {showAll ? "Show top 6" : `Show all ${Math.min(optimizations.length, 30)}`}
+            </Button>
+          ) : null
+        }
+      />
+      {optimizations.length === 0 ? (
+        <EmptyState>No optimization opportunities found — your feed is in great shape.</EmptyState>
+      ) : (
+        <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+          {visible.map((opt) => (
+            <OptimizationCard key={opt.offerId} opt={opt} />
           ))}
         </ul>
       )}

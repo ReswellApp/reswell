@@ -34,8 +34,53 @@ export async function HEAD(
   return new NextResponse(null, { status: 200 })
 }
 
+/**
+ * Streams large video attachments from storage with HTTP Range support so the
+ * browser can seek and progressively play without buffering the whole file
+ * in function memory.
+ */
+async function streamVideoFromStorage(
+  request: NextRequest,
+  auth: { bucket: string; path: string; mimeType: string; fileName: string },
+): Promise<NextResponse> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!supabaseUrl || !serviceKey) {
+    return NextResponse.json({ error: "Could not load file" }, { status: 500 })
+  }
+
+  const range = request.headers.get("range")
+  const upstream = await fetch(
+    `${supabaseUrl}/storage/v1/object/${auth.bucket}/${auth.path}`,
+    {
+      headers: {
+        Authorization: `Bearer ${serviceKey}`,
+        ...(range ? { Range: range } : {}),
+      },
+    },
+  )
+
+  if (!upstream.ok && upstream.status !== 206) {
+    console.error("[message attachment GET] video stream:", upstream.status)
+    return NextResponse.json({ error: "Could not load file" }, { status: 500 })
+  }
+
+  const headers = new Headers({
+    "Content-Type": auth.mimeType,
+    "Content-Disposition": contentDispositionHeader(auth.fileName, true),
+    "Cache-Control": "private, no-store",
+    "Accept-Ranges": "bytes",
+  })
+  const contentLength = upstream.headers.get("content-length")
+  if (contentLength) headers.set("Content-Length", contentLength)
+  const contentRange = upstream.headers.get("content-range")
+  if (contentRange) headers.set("Content-Range", contentRange)
+
+  return new NextResponse(upstream.body, { status: upstream.status, headers })
+}
+
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   context: { params: Promise<{ messageId: string }> },
 ) {
   const { messageId } = await context.params
@@ -49,6 +94,10 @@ export async function GET(
     return NextResponse.json({ error: auth.error }, { status: auth.status })
   }
 
+  if (auth.attachmentKind === "video") {
+    return streamVideoFromStorage(request, auth)
+  }
+
   const sr = createServiceRoleClient()
   const { data: blob, error: dlErr } = await sr.storage.from(auth.bucket).download(auth.path)
 
@@ -58,7 +107,7 @@ export async function GET(
   }
 
   const buf = await blob.arrayBuffer()
-  const inline = auth.attachmentKind === "image" || auth.attachmentKind === "video"
+  const inline = auth.attachmentKind === "image"
 
   return new NextResponse(buf, {
     status: 200,

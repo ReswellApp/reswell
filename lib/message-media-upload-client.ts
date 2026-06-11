@@ -6,6 +6,7 @@ import {
 import { ensureBrowserDecodableImageFile } from "@/lib/client-image-decode"
 import {
   assertMessageImageOriginalSize,
+  assertMessageVideoDuration,
   assertMessageVideoOriginalSize,
   isMessageVideoFile,
   messageVideoExtensionForMime,
@@ -41,6 +42,7 @@ export async function uploadMessageMediaFile(opts: {
 
   if (isMessageVideoFile(file)) {
     assertMessageVideoOriginalSize(file)
+    await assertMessageVideoDuration(file)
     const mimeType = normalizeMessageVideoMimeType(file)
     const ext = messageVideoExtensionForMime(mimeType)
     const objectId = crypto.randomUUID()
