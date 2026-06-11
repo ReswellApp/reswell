@@ -121,12 +121,17 @@ export async function FinsListingDetailPage({
   const sellerId = fin.user_id as string
   const isSold = fin.status === "sold"
   const finHref = listingDetailHref({ id: fin.id as string, slug: fin.slug as string | null })
+  const brandId = (fin.brand_id as string | null)?.trim() ?? ""
 
+  // Wave 1: everything that depends only on the listing row runs in parallel.
   const [
     sellerReviewSummaryRes,
     sellerReviewPreviewRes,
     reswellPlatformReviewSummaryRes,
     sellerFinsRes,
+    userRes,
+    indexBrand,
+    [cartHolderCount, listingWatchersCount],
   ] = await Promise.all([
     getSellerReviewSummary(supabase, sellerId),
     supabase
@@ -148,6 +153,12 @@ export async function FinsListingDetailPage({
       .neq("id", fin.id)
       .order("created_at", { ascending: false })
       .limit(SELLER_FINS_PDP_LIMIT),
+    supabase.auth.getUser(),
+    brandId ? getBrandById(supabase, brandId) : Promise.resolve(null),
+    Promise.all([
+      !isSold ? getListingCartHolderCount(supabase, fin.id) : Promise.resolve(0),
+      !isSold ? getListingFavoriteCount(supabase, fin.id) : Promise.resolve(0),
+    ]),
   ])
 
   const { avgRating: sellerAvgRating, reviewCount: sellerReviewCount } =
@@ -155,32 +166,30 @@ export async function FinsListingDetailPage({
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes.data
   const sellerFins = sellerFinsRes.data
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = userRes.data.user
 
   const sellerFinIds = (sellerFins ?? []).map((f) => f.id)
-  let sellerFinFavoritedIds: string[] = []
-  if (user && sellerFinIds.length > 0) {
-    const { data: favs } = await supabase
-      .from("favorites")
-      .select("listing_id")
-      .eq("user_id", user.id)
-      .in("listing_id", sellerFinIds)
-    sellerFinFavoritedIds = (favs ?? []).map((f) => f.listing_id)
-  }
+  const isOwnListingViewer = user?.id === fin.user_id
 
-  let isFavorited = false
-  if (user) {
-    const { data: favorite } = await supabase
-      .from("favorites")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("listing_id", fin.id)
-      .single()
-    isFavorited = !!favorite
-  }
+  // Wave 2: viewer-dependent lookups in parallel, favorites coalesced into one query.
+  const [favoriteRowsRes, acceptedOffer] = await Promise.all([
+    user
+      ? supabase
+          .from("favorites")
+          .select("listing_id")
+          .eq("user_id", user.id)
+          .in("listing_id", [fin.id, ...sellerFinIds])
+      : Promise.resolve({ data: null }),
+    user && !isOwnListingViewer && fin.status === "active"
+      ? fetchAcceptedOfferForBuyerListing(supabase, user.id, fin.id)
+      : Promise.resolve(null),
+  ])
+
+  const favoritedIds = new Set(
+    (favoriteRowsRes.data ?? []).map((f: { listing_id: string }) => f.listing_id),
+  )
+  const isFavorited = favoritedIds.has(fin.id)
+  const sellerFinFavoritedIds = sellerFinIds.filter((id) => favoritedIds.has(id))
 
   const images: GalleryImage[] =
     (fin.listing_images as GalleryImage[] | null)
@@ -202,8 +211,6 @@ export async function FinsListingDetailPage({
     (fin.status === "active" || fin.status === "pending_sale") &&
     (pickupOffered || shippingOffered)
 
-  const brandId = (fin.brand_id as string | null)?.trim() ?? ""
-  const indexBrand = brandId ? await getBrandById(supabase, brandId) : null
   const freeBrandLabel = (fin.brand as string | null)?.trim() ?? ""
   const specsBrandLabel = (indexBrand?.name ?? freeBrandLabel).trim() || null
   const specsBrandHref = indexBrand ? `${BRANDS_BASE}/${indexBrand.slug}` : null
@@ -247,12 +254,9 @@ export async function FinsListingDetailPage({
       : undefined
 
   let buyerAgreedPriceUsd: number | null = null
-  if (user && !isOwnListing && fin.status === "active") {
-    const accepted = await fetchAcceptedOfferForBuyerListing(supabase, user.id, fin.id)
-    if (accepted && accepted.seller_id === fin.user_id) {
-      const n = Math.round(parseFloat(String(accepted.current_amount)) * 100) / 100
-      if (Number.isFinite(n) && n > 0) buyerAgreedPriceUsd = n
-    }
+  if (acceptedOffer && acceptedOffer.seller_id === fin.user_id) {
+    const n = Math.round(parseFloat(String(acceptedOffer.current_amount)) * 100) / 100
+    if (Number.isFinite(n) && n > 0) buyerAgreedPriceUsd = n
   }
 
   const listingLocationLine =
@@ -291,10 +295,6 @@ export async function FinsListingDetailPage({
   ].filter(Boolean) as string[]
 
   const listingViews = Number((fin.views as number | null) ?? 0)
-  const [cartHolderCount, listingWatchersCount] = await Promise.all([
-    !isSold ? getListingCartHolderCount(supabase, fin.id) : Promise.resolve(0),
-    !isSold ? getListingFavoriteCount(supabase, fin.id) : Promise.resolve(0),
-  ])
   let listedRelative: string | null = null
   if (fin.created_at != null) {
     const d = new Date(fin.created_at as string | number | Date)

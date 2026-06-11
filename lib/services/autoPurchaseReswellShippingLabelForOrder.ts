@@ -16,7 +16,7 @@ import {
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerListingForShippingQuote,
 } from "@/lib/services/peerListingShippingQuote"
-import { getCheapestReswellRateForListing } from "@/lib/services/reswellListingShippingRate"
+import { getCheapestReswellRateForListings } from "@/lib/services/reswellListingShippingRate"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import {
   orderShippingJsonToRateQuoteAddress,
@@ -170,8 +170,29 @@ export async function autoPurchaseReswellShippingLabelForOrder(
     const listingSection = (listing as { section?: string } | null)?.section
     if (!listing || (listingSection !== "surfboards" && listingSection !== "fins")) return
 
-    const listingForQuote = listing as unknown as PeerListingForShippingQuote
-    if (effectiveBoardShippingMode(listingForQuote) !== "reswell") return
+    /** Multi-item orders ship as one box — pull every line's listing for the combined parcel. */
+    let listingsForQuote: PeerListingForShippingQuote[] = [
+      listing as unknown as PeerListingForShippingQuote,
+    ]
+    const { data: itemRows } = await supabase
+      .from("order_items")
+      .select(`sort_order, listings ( ${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT} )`)
+      .eq("order_id", o.id)
+      .order("sort_order", { ascending: true })
+    if (itemRows && itemRows.length > 1) {
+      const lineListings = itemRows
+        .map((r) => {
+          const l = (r as { listings?: unknown }).listings
+          return (Array.isArray(l) ? l[0] : l) as PeerListingForShippingQuote | null | undefined
+        })
+        .filter((l): l is PeerListingForShippingQuote => l != null)
+      if (lineListings.length === itemRows.length) {
+        listingsForQuote = lineListings
+      }
+    }
+
+    /** No Reswell-quoted shipping anywhere in the order → seller handles labels (flat/free). */
+    if (!listingsForQuote.some((l) => effectiveBoardShippingMode(l) === "reswell")) return
 
     const shipToFields = orderShippingJsonToRateQuoteAddress(o.shipping_address)
     if (!shipToFields) {
@@ -184,8 +205,8 @@ export async function autoPurchaseReswellShippingLabelForOrder(
     const shipTo = rateQuoteFieldsToShippingInput(shipToFields)
 
     const sellerShipFromName = await fetchSellerShipFromLabelName(supabase, o.seller_id)
-    const quoted = await getCheapestReswellRateForListing({
-      listing: listingForQuote,
+    const quoted = await getCheapestReswellRateForListings({
+      listings: listingsForQuote,
       shipTo,
       diagnosticTag: `auto-reswell-label:${o.id}`,
       sellerShipFromName,

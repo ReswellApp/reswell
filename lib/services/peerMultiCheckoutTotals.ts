@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
 import {
+  computePeerBundleShippingUsd,
   computePeerCheckoutTotalsUsd,
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
@@ -20,7 +21,10 @@ export type PeerCheckoutLineComputation = {
 
 /**
  * Computes totals for one or more peer surfboard listings (same seller).
- * Bundles with more than one line support **local pickup only** — shipping stays single-board per PaymentIntent.
+ *
+ * Multi-line shipping ships as **one box**: a single combined-parcel quote
+ * (biggest item's dims + summed weights — see {@link computePeerBundleShippingUsd}).
+ * The bundle shipping charge is carried on the first line; subsequent lines have $0 shipping.
  */
 export async function computePeerMultiCheckoutUsd(params: {
   supabase: SupabaseClient
@@ -53,18 +57,18 @@ export async function computePeerMultiCheckoutUsd(params: {
     return { ok: false, error: "All items must be from the same seller" }
   }
 
-  if (listingsOrdered.length > 1) {
-    if (fulfillment !== "pickup") {
+  const isMultiLine = listingsOrdered.length > 1
+  if (isMultiLine) {
+    if (fulfillment === "pickup" && !listingsOrdered.every((l) => l.local_pickup !== false)) {
       return {
         ok: false,
-        error:
-          "Shipping checkout supports one board at a time. Complete pickup for multiple boards from this seller in one order, or check out shipped boards separately.",
+        error: "Every board in a multi-item pickup checkout must offer local pickup.",
       }
     }
-    if (!listingsOrdered.every((l) => l.local_pickup !== false)) {
+    if (fulfillment === "shipping" && !listingsOrdered.every((l) => !!l.shipping_available)) {
       return {
         ok: false,
-        error: "Every board in a multi-item checkout must offer local pickup.",
+        error: "Every board in a multi-item shipped checkout must offer shipping.",
       }
     }
   }
@@ -79,11 +83,15 @@ export async function computePeerMultiCheckoutUsd(params: {
   const lines: PeerCheckoutLineComputation[] = []
   let anyUsedReswellQuote = false
 
+  /** Multi-line shipping is quoted once for the whole box — per-line totals are computed shipping-free. */
+  const perLineFulfillment: "pickup" | "shipping" =
+    isMultiLine && fulfillment === "shipping" ? "pickup" : fulfillment
+
   for (let i = 0; i < listingsOrdered.length; i++) {
     const listing = listingsOrdered[i]!
     const totals = await computePeerCheckoutTotalsUsd({
       listing,
-      fulfillment,
+      fulfillment: perLineFulfillment,
       buyerAddress,
       diagnosticTag: `${diagnosticTagPrefix}:${listing.id}:${i}`,
       sellerShipFromName,
@@ -106,6 +114,25 @@ export async function computePeerMultiCheckoutUsd(params: {
       platformFee,
       sellerEarnings,
     })
+  }
+
+  if (isMultiLine && fulfillment === "shipping") {
+    const bundleShipping = await computePeerBundleShippingUsd({
+      listings: listingsOrdered,
+      buyerAddress,
+      diagnosticTag: `${diagnosticTagPrefix}:bundle`,
+      sellerShipFromName,
+    })
+    if (!bundleShipping.ok) {
+      return { ok: false, error: bundleShipping.error }
+    }
+    if (bundleShipping.usedReswellQuote) anyUsedReswellQuote = true
+
+    /** Carry the one-box shipping charge on the first line so line sums stay exact. */
+    const firstLine = lines[0]!
+    firstLine.shippingUsd = bundleShipping.shippingUsd
+    firstLine.totalUsd = Math.round((firstLine.itemPrice + bundleShipping.shippingUsd) * 100) / 100
+    firstLine.usedReswellQuote = bundleShipping.usedReswellQuote
   }
 
   const totalItemPriceUsd =

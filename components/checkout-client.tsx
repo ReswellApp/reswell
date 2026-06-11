@@ -43,7 +43,7 @@ export function CheckoutClient({
   seller,
   offerId = null,
 }: CheckoutClientProps) {
-  const bundlePickupOnly = listings.length > 1
+  const isBundle = listings.length > 1
 
   const primaryListing = listings[0]
   if (!primaryListing) {
@@ -57,48 +57,54 @@ export function CheckoutClient({
     )
   }
 
-  const canPick = bundlePickupOnly
+  const canPick = isBundle
     ? listings.every((l) => l.local_pickup !== false)
     : primaryListing.local_pickup !== false
 
-  const canShip = bundlePickupOnly ? false : !!primaryListing.shipping_available
+  /** Bundles ship as one box only when every board offers shipping. */
+  const canShip = isBundle
+    ? listings.every((l) => !!l.shipping_available)
+    : !!primaryListing.shipping_available
 
   const [method, setMethod] = useState<"pickup" | "shipping">(() => {
-    if (bundlePickupOnly) return "pickup"
     if (canPick && !canShip) return "pickup"
     if (!canPick && canShip) return "shipping"
     return "pickup"
   })
 
-  const fulfillmentForApi = bundlePickupOnly ? "pickup" : canPick && canShip ? method : undefined
+  /** Multi-item payment intents always require an explicit fulfillment. */
+  const impliedFulfillment: "pickup" | "shipping" =
+    canPick && canShip ? method : !canPick && canShip ? "shipping" : "pickup"
 
-  const impliedFulfillment: "pickup" | "shipping" = bundlePickupOnly
-    ? "pickup"
+  const fulfillmentForApi = isBundle
+    ? impliedFulfillment
     : canPick && canShip
       ? method
-      : !canPick && canShip
-        ? "shipping"
-        : "pickup"
+      : undefined
 
   const needsShipping = impliedFulfillment === "shipping"
 
   const resolved = useMemo(() => {
-    if (bundlePickupOnly) {
+    if (isBundle) {
       let itemSum = 0
       for (const l of listings) {
         const r = resolvePayableAmount(l, "pickup")
         if (!r.ok) return r
         itemSum += r.itemPrice
       }
+      /** Bundle shipping is a single live one-box quote — shown once the quote API responds. */
       return { ok: true as const, itemPrice: itemSum, shipping: 0, total: itemSum }
     }
     return resolvePayableAmount(primaryListing, impliedFulfillment)
-  }, [bundlePickupOnly, listings, primaryListing, impliedFulfillment])
+  }, [isBundle, listings, primaryListing, impliedFulfillment])
 
   const [purchaseDetails, setPurchaseDetails] = useState<PurchaseDetailsState>({
     readyToPay: false,
     shippingAddressId: null,
   })
+
+  const listingIds = useMemo(() => listings.map((l) => l.id), [listings])
+  const listingIdsKey = listingIds.join(",")
 
   const [shipQuote, setShipQuote] = useState<{
     shippingUsd: number
@@ -138,7 +144,7 @@ export function CheckoutClient({
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({
-            listing_id: primaryListing.id,
+            listing_ids: listingIdsKey.split(","),
             address_id: purchaseDetails.shippingAddressId,
           }),
         })
@@ -169,7 +175,7 @@ export function CheckoutClient({
     return () => {
       cancelled = true
     }
-  }, [needsShipping, primaryListing.id, purchaseDetails.shippingAddressId])
+  }, [needsShipping, listingIdsKey, purchaseDetails.shippingAddressId])
 
   const handlePurchaseDetailsChange = useCallback((state: PurchaseDetailsState) => {
     setPurchaseDetails(state)
@@ -185,12 +191,22 @@ export function CheckoutClient({
   const inspectNounPhrase =
     listings.length > 1 ? `${listings.length} boards` : copy.inspectNoun
 
-  const listingIds = useMemo(() => listings.map((l) => l.id), [listings])
-
   const listingSummaryTitle =
     listings.length === 1
       ? capitalizeWords(primaryListing.title)
       : `${listings.length} surfboards`
+
+  if (isBundle && !canPick && !canShip) {
+    return (
+      <p className="text-sm text-destructive">
+        These boards don&apos;t share a delivery method — some are pickup-only and others are shipping-only. Check them
+        out separately.{" "}
+        <Link href="/cart" className="underline">
+          Back to cart
+        </Link>
+      </p>
+    )
+  }
 
   if (!resolved.ok) {
     return (
@@ -250,12 +266,21 @@ export function CheckoutClient({
         {/* Left — forms */}
         <div className="order-2 flex-1 bg-white px-4 py-8 sm:px-8 lg:order-1 lg:max-w-[640px] lg:shrink-0 lg:px-10 lg:py-10 xl:px-14">
           <div className="mx-auto max-w-[520px] lg:mx-0">
-            {bundlePickupOnly ? (
+            {isBundle ? (
               <div className="mb-10 rounded-[8px] border border-[#5574AD]/25 bg-[#5574AD]/[0.06] px-4 py-3.5 text-[13px] leading-relaxed text-neutral-700">
                 You&apos;re buying <span className="font-semibold text-foreground">{listings.length} boards</span>{" "}
-                from one seller in a single payment. This combined checkout uses{" "}
-                <span className="font-medium text-foreground">local pickup</span> — you&apos;ll get one pickup code that
-                covers every board in this order.
+                from one seller in a single payment.{" "}
+                {needsShipping ? (
+                  <>
+                    Everything ships together in <span className="font-medium text-foreground">one box</span> — shipping
+                    is quoted once for the whole order.
+                  </>
+                ) : (
+                  <>
+                    This combined checkout uses <span className="font-medium text-foreground">local pickup</span> —
+                    you&apos;ll get one pickup code that covers every board in this order.
+                  </>
+                )}
               </div>
             ) : null}
 
@@ -301,13 +326,15 @@ export function CheckoutClient({
                         Ship to me
                       </span>
                       <p className="mt-1 text-xs leading-relaxed text-neutral-500">
-                        {shipQuote?.usedReswellQuote
-                          ? displayTotals.shipping > 0
-                            ? `Includes about $${displayTotals.shipping.toFixed(2)} carrier shipping (Reswell rate).`
-                            : "Seller offers free shipping."
-                          : displayTotals.shipping > 0
-                            ? `Includes $${displayTotals.shipping.toFixed(2)} shipping (set by seller).`
-                            : "Seller offers free shipping."}
+                        {isBundle && !shipQuote
+                          ? "All boards ship together in one box — rate is calculated for your address."
+                          : shipQuote?.usedReswellQuote
+                            ? displayTotals.shipping > 0
+                              ? `Includes about $${displayTotals.shipping.toFixed(2)} carrier shipping (Reswell rate).`
+                              : "Seller offers free shipping."
+                            : displayTotals.shipping > 0
+                              ? `Includes $${displayTotals.shipping.toFixed(2)} shipping (set by seller).`
+                              : "Seller offers free shipping."}
                       </p>
                     </div>
                   </label>

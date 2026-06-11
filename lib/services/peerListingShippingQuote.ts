@@ -3,6 +3,7 @@ import type { ListingPackedParcelSource } from "@/lib/reswell-packed-parcel-from
 import {
   buyerProfileAddressToShipTo,
   getCheapestReswellRateForListing,
+  getCheapestReswellRateForListings,
   type ReswellRateableListing,
 } from "@/lib/services/reswellListingShippingRate"
 
@@ -86,6 +87,64 @@ export async function quoteReswellPeerShippingUsd(input: {
     return result
   }
   return { ok: true, shippingUsd: result.cheapest.totalAmount }
+}
+
+/**
+ * One-box shipping total (USD) for a same-seller bundle shipped together.
+ *
+ * Cost policy:
+ *   • every listing mode `"free"` → $0
+ *   • no `"reswell"` listing (flat/free mix) → sum of the flat shipping prices
+ *   • any `"reswell"` listing → single combined-box ShipEngine quote
+ *     (biggest item's dims + summed weights — flat prices are NOT added on top,
+ *     since the whole bundle ships in that one carton)
+ */
+export async function computePeerBundleShippingUsd(input: {
+  listings: PeerListingForShippingQuote[]
+  buyerAddress: ProfileAddressRow | null
+  diagnosticTag?: string
+  sellerShipFromName: string
+}): Promise<
+  | { ok: true; shippingUsd: number; usedReswellQuote: boolean }
+  | { ok: false; error: string }
+> {
+  if (input.listings.length === 0) {
+    return { ok: false, error: "No listings to quote shipping for." }
+  }
+
+  const modes = input.listings.map(effectiveBoardShippingMode)
+
+  if (modes.every((m) => m === "free")) {
+    return { ok: true, shippingUsd: 0, usedReswellQuote: false }
+  }
+
+  if (!modes.includes("reswell")) {
+    const flatSum = input.listings.reduce(
+      (sum, l) => sum + Math.max(0, parseFloat(String(l.shipping_price ?? 0)) || 0),
+      0,
+    )
+    return { ok: true, shippingUsd: Math.round(flatSum * 100) / 100, usedReswellQuote: false }
+  }
+
+  if (!input.buyerAddress) {
+    return { ok: false, error: "Shipping address is required" }
+  }
+
+  const shipTo = buyerProfileAddressToShipTo(input.buyerAddress)
+  if (!shipTo.ok) {
+    return { ok: false, error: shipTo.error }
+  }
+
+  const result = await getCheapestReswellRateForListings({
+    listings: input.listings,
+    shipTo: shipTo.address,
+    diagnosticTag: input.diagnosticTag ?? "checkout-bundle",
+    sellerShipFromName: input.sellerShipFromName,
+  })
+  if (!result.ok) {
+    return result
+  }
+  return { ok: true, shippingUsd: result.cheapest.totalAmount, usedReswellQuote: true }
 }
 
 /**

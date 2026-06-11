@@ -5,9 +5,9 @@ import type { ProfileAddressRow } from "@/lib/profile-address"
 import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
 import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
 import {
+  computePeerBundleShippingUsd,
   computePeerCheckoutTotalsUsd,
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
-  type PeerListingForShippingQuote,
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 
@@ -41,56 +41,60 @@ export async function POST(request: Request) {
     )
   }
 
-  const listingId =
-    body && typeof body === "object" && "listing_id" in body
-      ? String((body as { listing_id?: unknown }).listing_id ?? "").trim()
-      : ""
-  const addressId =
-    body && typeof body === "object" && "address_id" in body
-      ? String((body as { address_id?: unknown }).address_id ?? "").trim()
-      : ""
+  const bodyObj = body && typeof body === "object" ? (body as Record<string, unknown>) : {}
+  const fromArray = Array.isArray(bodyObj.listing_ids)
+    ? bodyObj.listing_ids
+        .map((x) => (typeof x === "string" ? x.trim() : ""))
+        .filter((x) => x.length > 0)
+    : []
+  const singleId = String(bodyObj.listing_id ?? "").trim()
+  const listingIds = [...new Set(fromArray.length > 0 ? fromArray : singleId ? [singleId] : [])]
+  const addressId = String(bodyObj.address_id ?? "").trim()
 
-  if (!listingId || !addressId) {
+  if (listingIds.length === 0 || !addressId) {
     return NextResponse.json(
-      { error: "listing_id and address_id are required" },
+      { error: "listing_id (or listing_ids) and address_id are required" },
       { status: 400, headers: JSON_NO_STORE_HEADERS },
     )
   }
 
-  const { data: listing, error: listingError } = await supabase
+  const { data: listingRowsRaw, error: listingError } = await supabase
     .from("listings")
     .select(PEER_SURFBOARD_CHECKOUT_LISTING_SELECT)
-    .eq("id", listingId)
+    .in("id", listingIds)
     .in("section", PEER_LISTING_SECTIONS_FILTER)
     .eq("hidden_from_site", false)
     .is("archived_at", null)
     .in("status", ["active", "pending_sale"])
-    .maybeSingle()
 
-  if (listingError || !listing) {
+  if (listingError || !listingRowsRaw || listingRowsRaw.length !== listingIds.length) {
     return NextResponse.json({ error: "Listing not found" }, { status: 404, headers: JSON_NO_STORE_HEADERS })
   }
 
   /** Runtime select fragment loses Supabase's row inference; cast through `unknown` once. */
-  let listingRow = listing as unknown as PeerListingForShippingQuote & {
-    id: string
-    user_id: string
-    price: number | string
-  }
+  let listingRows = listingRowsRaw as unknown as PeerSurfboardCheckoutListingRow[]
 
-  const [pricedListing] = await applyAcceptedOfferToPeerCheckoutListings(
-    supabase,
-    user.id,
-    [listingRow as PeerSurfboardCheckoutListingRow],
-  )
-  if (pricedListing) {
-    listingRow = pricedListing as typeof listingRow
-  }
+  listingRows = await applyAcceptedOfferToPeerCheckoutListings(supabase, user.id, listingRows)
 
-  if (listingRow.user_id === user.id) {
+  if (listingRows.some((l) => l.user_id === user.id)) {
     return NextResponse.json(
       { error: "Cannot quote your own listing" },
       { status: 400, headers: JSON_NO_STORE_HEADERS },
+    )
+  }
+
+  const sellerId = listingRows[0]!.user_id
+  if (!listingRows.every((l) => l.user_id === sellerId)) {
+    return NextResponse.json(
+      { error: "All items must be from the same seller" },
+      { status: 400, headers: JSON_NO_STORE_HEADERS },
+    )
+  }
+
+  if (!listingRows.every((l) => !!l.shipping_available)) {
+    return NextResponse.json(
+      { error: "Every board in this order must offer shipping." },
+      { status: 422, headers: JSON_NO_STORE_HEADERS },
     )
   }
 
@@ -105,27 +109,61 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Address not found" }, { status: 400, headers: JSON_NO_STORE_HEADERS })
   }
 
-  const sellerShipFromName = await fetchSellerShipFromLabelName(supabase, listingRow.user_id)
+  const sellerShipFromName = await fetchSellerShipFromLabelName(supabase, sellerId)
+  const buyerAddress = addr as ProfileAddressRow
 
-  const totals = await computePeerCheckoutTotalsUsd({
-    listing: listingRow,
-    fulfillment: "shipping",
-    buyerAddress: addr as ProfileAddressRow,
-    diagnosticTag: `checkout-quote:${listingRow.id}`,
+  if (listingRows.length === 1) {
+    const listingRow = listingRows[0]!
+    const totals = await computePeerCheckoutTotalsUsd({
+      listing: listingRow,
+      fulfillment: "shipping",
+      buyerAddress,
+      diagnosticTag: `checkout-quote:${listingRow.id}`,
+      sellerShipFromName,
+    })
+
+    if (!totals.ok) {
+      return NextResponse.json({ error: totals.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })
+    }
+
+    return NextResponse.json(
+      {
+        data: {
+          itemPrice: totals.itemPrice,
+          shippingUsd: totals.shippingUsd,
+          totalUsd: totals.totalUsd,
+          usedReswellQuote: totals.usedReswellQuote,
+        },
+      },
+      { headers: JSON_NO_STORE_HEADERS },
+    )
+  }
+
+  /** Multi-item bundle ships as one box — single combined-parcel quote for the seller group. */
+  const itemPriceSum = listingRows.reduce((sum, l) => {
+    const p = parseFloat(String(l.price))
+    return sum + (Number.isFinite(p) && p > 0 ? p : 0)
+  }, 0)
+  const itemPrice = Math.round(itemPriceSum * 100) / 100
+
+  const bundleShipping = await computePeerBundleShippingUsd({
+    listings: listingRows,
+    buyerAddress,
+    diagnosticTag: `checkout-quote-bundle:${listingIds.join(",")}`,
     sellerShipFromName,
   })
 
-  if (!totals.ok) {
-    return NextResponse.json({ error: totals.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })
+  if (!bundleShipping.ok) {
+    return NextResponse.json({ error: bundleShipping.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })
   }
 
   return NextResponse.json(
     {
       data: {
-        itemPrice: totals.itemPrice,
-        shippingUsd: totals.shippingUsd,
-        totalUsd: totals.totalUsd,
-        usedReswellQuote: totals.usedReswellQuote,
+        itemPrice,
+        shippingUsd: bundleShipping.shippingUsd,
+        totalUsd: Math.round((itemPrice + bundleShipping.shippingUsd) * 100) / 100,
+        usedReswellQuote: bundleShipping.usedReswellQuote,
       },
     },
     { headers: JSON_NO_STORE_HEADERS },

@@ -114,11 +114,17 @@ export async function LeashesListingDetailPage({
   const isSold = leash.status === "sold"
   const leashHref = listingDetailHref({ id: leash.id as string, slug: leash.slug as string | null })
 
+  const brandId = (leash.brand_id as string | null)?.trim() ?? ""
+
+  // Wave 1: everything that depends only on the listing row runs in parallel.
   const [
     sellerReviewSummaryRes,
     sellerReviewPreviewRes,
     reswellPlatformReviewSummaryRes,
     sellerLeashesRes,
+    userRes,
+    indexBrand,
+    [cartHolderCount, listingWatchersCount],
   ] = await Promise.all([
     getSellerReviewSummary(supabase, sellerId),
     supabase
@@ -140,6 +146,12 @@ export async function LeashesListingDetailPage({
       .neq("id", leash.id)
       .order("created_at", { ascending: false })
       .limit(SELLER_LEASHES_PDP_LIMIT),
+    supabase.auth.getUser(),
+    brandId ? getBrandById(supabase, brandId) : Promise.resolve(null),
+    Promise.all([
+      !isSold ? getListingCartHolderCount(supabase, leash.id) : Promise.resolve(0),
+      !isSold ? getListingFavoriteCount(supabase, leash.id) : Promise.resolve(0),
+    ]),
   ])
 
   const { avgRating: sellerAvgRating, reviewCount: sellerReviewCount } =
@@ -147,32 +159,29 @@ export async function LeashesListingDetailPage({
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes.data
   const sellerLeashes = sellerLeashesRes.data
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = userRes.data.user
 
   const sellerLeashIds = (sellerLeashes ?? []).map((f) => f.id)
-  let sellerLeashFavoritedIds: string[] = []
-  if (user && sellerLeashIds.length > 0) {
-    const { data: favs } = await supabase
-      .from("favorites")
-      .select("listing_id")
-      .eq("user_id", user.id)
-      .in("listing_id", sellerLeashIds)
-    sellerLeashFavoritedIds = (favs ?? []).map((f) => f.listing_id)
-  }
 
-  let isFavorited = false
-  if (user) {
-    const { data: favorite } = await supabase
-      .from("favorites")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("listing_id", leash.id)
-      .single()
-    isFavorited = !!favorite
-  }
+  // Wave 2: viewer-dependent lookups in parallel, favorites coalesced into one query.
+  const [favoriteRowsRes, acceptedOffer] = await Promise.all([
+    user
+      ? supabase
+          .from("favorites")
+          .select("listing_id")
+          .eq("user_id", user.id)
+          .in("listing_id", [leash.id, ...sellerLeashIds])
+      : Promise.resolve({ data: null }),
+    user && user.id !== leash.user_id && leash.status === "active"
+      ? fetchAcceptedOfferForBuyerListing(supabase, user.id, leash.id)
+      : Promise.resolve(null),
+  ])
+
+  const favoritedIds = new Set(
+    (favoriteRowsRes.data ?? []).map((f: { listing_id: string }) => f.listing_id),
+  )
+  const isFavorited = favoritedIds.has(leash.id)
+  const sellerLeashFavoritedIds = sellerLeashIds.filter((id) => favoritedIds.has(id))
 
   const images: GalleryImage[] =
     (leash.listing_images as GalleryImage[] | null)
@@ -194,8 +203,6 @@ export async function LeashesListingDetailPage({
     (leash.status === "active" || leash.status === "pending_sale") &&
     (pickupOffered || shippingOffered)
 
-  const brandId = (leash.brand_id as string | null)?.trim() ?? ""
-  const indexBrand = brandId ? await getBrandById(supabase, brandId) : null
   const freeBrandLabel = (leash.brand as string | null)?.trim() ?? ""
   const specsBrandLabel = (indexBrand?.name ?? freeBrandLabel).trim() || null
   const specsBrandHref = indexBrand ? `${BRANDS_BASE}/${indexBrand.slug}` : null
@@ -237,12 +244,9 @@ export async function LeashesListingDetailPage({
       : undefined
 
   let buyerAgreedPriceUsd: number | null = null
-  if (user && !isOwnListing && leash.status === "active") {
-    const accepted = await fetchAcceptedOfferForBuyerListing(supabase, user.id, leash.id)
-    if (accepted && accepted.seller_id === leash.user_id) {
-      const n = Math.round(parseFloat(String(accepted.current_amount)) * 100) / 100
-      if (Number.isFinite(n) && n > 0) buyerAgreedPriceUsd = n
-    }
+  if (acceptedOffer && acceptedOffer.seller_id === leash.user_id) {
+    const n = Math.round(parseFloat(String(acceptedOffer.current_amount)) * 100) / 100
+    if (Number.isFinite(n) && n > 0) buyerAgreedPriceUsd = n
   }
 
   const listingLocationLine =
@@ -281,10 +285,6 @@ export async function LeashesListingDetailPage({
   ].filter(Boolean) as string[]
 
   const listingViews = Number((leash.views as number | null) ?? 0)
-  const [cartHolderCount, listingWatchersCount] = await Promise.all([
-    !isSold ? getListingCartHolderCount(supabase, leash.id) : Promise.resolve(0),
-    !isSold ? getListingFavoriteCount(supabase, leash.id) : Promise.resolve(0),
-  ])
   let listedRelative: string | null = null
   if (leash.created_at != null) {
     const d = new Date(leash.created_at as string | number | Date)

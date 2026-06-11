@@ -1,7 +1,7 @@
 import { resolveListingShipFromForRating } from "@/lib/geocoding/resolve-listing-ship-from-for-rating"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import {
-  resolvePackedParcelFromListing,
+  resolveCombinedPackedParcelFromListings,
   type ListingPackedParcelSource,
   type ResolvedPackedParcelSource,
 } from "@/lib/reswell-packed-parcel-from-listing"
@@ -213,16 +213,38 @@ export async function getCheapestReswellRateForListing(input: {
    */
   sellerShipFromName: string
 }): Promise<ReswellListingRateResult> {
+  return getCheapestReswellRateForListings({ ...input, listings: [input.listing] })
+}
+
+/**
+ * One-box rate for multiple same-seller listings shipped together.
+ *
+ * The combined parcel uses the **biggest item's dimensions** and the **sum of all item weights**
+ * (see {@link resolveCombinedPackedParcelFromListings}). Ship-from is resolved from the first
+ * listing — all listings belong to one seller, so localities match.
+ */
+export async function getCheapestReswellRateForListings(input: {
+  listings: ReswellRateableListing[]
+  shipTo: ShippingAddressInput
+  carrierIds?: string[]
+  diagnosticTag?: string
+  sellerShipFromName: string
+}): Promise<ReswellListingRateResult> {
   if (!isShipEngineConfigured()) {
     return { ok: false, error: "Shipping quotes are temporarily unavailable." }
   }
 
-  const parcel = resolvePackedParcelFromListing(input.listing)
+  const firstListing = input.listings[0]
+  if (!firstListing) {
+    return { ok: false, error: "No listings to rate for shipping." }
+  }
+
+  const parcel = resolveCombinedPackedParcelFromListings(input.listings)
   if (!parcel.ok) {
     return { ok: false, error: parcel.error }
   }
 
-  const shipFrom = await resolveListingShipFromAddress(input.listing, input.sellerShipFromName)
+  const shipFrom = await resolveListingShipFromAddress(firstListing, input.sellerShipFromName)
   if (!shipFrom.ok) {
     return { ok: false, error: shipFrom.error }
   }

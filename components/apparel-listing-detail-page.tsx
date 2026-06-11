@@ -114,11 +114,17 @@ export async function ApparelListingDetailPage({
   const isSold = apparel.status === "sold"
   const apparelHref = listingDetailHref({ id: apparel.id as string, slug: apparel.slug as string | null })
 
+  const brandId = (apparel.brand_id as string | null)?.trim() ?? ""
+
+  // Wave 1: everything that depends only on the listing row runs in parallel.
   const [
     sellerReviewSummaryRes,
     sellerReviewPreviewRes,
     reswellPlatformReviewSummaryRes,
     sellerApparelRes,
+    userRes,
+    indexBrand,
+    [cartHolderCount, listingWatchersCount],
   ] = await Promise.all([
     getSellerReviewSummary(supabase, sellerId),
     supabase
@@ -140,6 +146,12 @@ export async function ApparelListingDetailPage({
       .neq("id", apparel.id)
       .order("created_at", { ascending: false })
       .limit(SELLER_APPAREL_PDP_LIMIT),
+    supabase.auth.getUser(),
+    brandId ? getBrandById(supabase, brandId) : Promise.resolve(null),
+    Promise.all([
+      !isSold ? getListingCartHolderCount(supabase, apparel.id) : Promise.resolve(0),
+      !isSold ? getListingFavoriteCount(supabase, apparel.id) : Promise.resolve(0),
+    ]),
   ])
 
   const { avgRating: sellerAvgRating, reviewCount: sellerReviewCount } =
@@ -147,32 +159,29 @@ export async function ApparelListingDetailPage({
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes.data
   const sellerApparel = sellerApparelRes.data
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = userRes.data.user
 
   const sellerApparelIds = (sellerApparel ?? []).map((f) => f.id)
-  let sellerApparelFavoritedIds: string[] = []
-  if (user && sellerApparelIds.length > 0) {
-    const { data: favs } = await supabase
-      .from("favorites")
-      .select("listing_id")
-      .eq("user_id", user.id)
-      .in("listing_id", sellerApparelIds)
-    sellerApparelFavoritedIds = (favs ?? []).map((f) => f.listing_id)
-  }
 
-  let isFavorited = false
-  if (user) {
-    const { data: favorite } = await supabase
-      .from("favorites")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("listing_id", apparel.id)
-      .single()
-    isFavorited = !!favorite
-  }
+  // Wave 2: viewer-dependent lookups in parallel, favorites coalesced into one query.
+  const [favoriteRowsRes, acceptedOffer] = await Promise.all([
+    user
+      ? supabase
+          .from("favorites")
+          .select("listing_id")
+          .eq("user_id", user.id)
+          .in("listing_id", [apparel.id, ...sellerApparelIds])
+      : Promise.resolve({ data: null }),
+    user && user.id !== apparel.user_id && apparel.status === "active"
+      ? fetchAcceptedOfferForBuyerListing(supabase, user.id, apparel.id)
+      : Promise.resolve(null),
+  ])
+
+  const favoritedIds = new Set(
+    (favoriteRowsRes.data ?? []).map((f: { listing_id: string }) => f.listing_id),
+  )
+  const isFavorited = favoritedIds.has(apparel.id)
+  const sellerApparelFavoritedIds = sellerApparelIds.filter((id) => favoritedIds.has(id))
 
   const images: GalleryImage[] =
     (apparel.listing_images as GalleryImage[] | null)
@@ -194,8 +203,6 @@ export async function ApparelListingDetailPage({
     (apparel.status === "active" || apparel.status === "pending_sale") &&
     (pickupOffered || shippingOffered)
 
-  const brandId = (apparel.brand_id as string | null)?.trim() ?? ""
-  const indexBrand = brandId ? await getBrandById(supabase, brandId) : null
   const freeBrandLabel = (apparel.brand as string | null)?.trim() ?? ""
   const specsBrandLabel = (indexBrand?.name ?? freeBrandLabel).trim() || null
   const specsBrandHref = indexBrand ? `${BRANDS_BASE}/${indexBrand.slug}` : null
@@ -237,12 +244,9 @@ export async function ApparelListingDetailPage({
       : undefined
 
   let buyerAgreedPriceUsd: number | null = null
-  if (user && !isOwnListing && apparel.status === "active") {
-    const accepted = await fetchAcceptedOfferForBuyerListing(supabase, user.id, apparel.id)
-    if (accepted && accepted.seller_id === apparel.user_id) {
-      const n = Math.round(parseFloat(String(accepted.current_amount)) * 100) / 100
-      if (Number.isFinite(n) && n > 0) buyerAgreedPriceUsd = n
-    }
+  if (acceptedOffer && acceptedOffer.seller_id === apparel.user_id) {
+    const n = Math.round(parseFloat(String(acceptedOffer.current_amount)) * 100) / 100
+    if (Number.isFinite(n) && n > 0) buyerAgreedPriceUsd = n
   }
 
   const listingLocationLine =
@@ -281,10 +285,6 @@ export async function ApparelListingDetailPage({
   ].filter(Boolean) as string[]
 
   const listingViews = Number((apparel.views as number | null) ?? 0)
-  const [cartHolderCount, listingWatchersCount] = await Promise.all([
-    !isSold ? getListingCartHolderCount(supabase, apparel.id) : Promise.resolve(0),
-    !isSold ? getListingFavoriteCount(supabase, apparel.id) : Promise.resolve(0),
-  ])
   let listedRelative: string | null = null
   if (apparel.created_at != null) {
     const d = new Date(apparel.created_at as string | number | Date)

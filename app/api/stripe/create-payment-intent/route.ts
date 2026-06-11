@@ -188,16 +188,25 @@ export async function POST(request: NextRequest) {
   let impliedFulfillment: "pickup" | "shipping"
 
   if (listingsOrdered.length > 1) {
-    if (body.fulfillment !== "pickup") {
+    if (body.fulfillment !== "pickup" && body.fulfillment !== "shipping") {
       return NextResponse.json(
-        {
-          error:
-            "Cart checkout with multiple boards uses local pickup only. Check out shipped boards one at a time.",
-        },
+        { error: "Choose pickup or shipping for this order" },
         { status: 400 },
       )
     }
-    impliedFulfillment = "pickup"
+    if (body.fulfillment === "pickup" && !listingsOrdered.every((l) => l.local_pickup !== false)) {
+      return NextResponse.json(
+        { error: "Every board in a multi-item pickup checkout must offer local pickup." },
+        { status: 400 },
+      )
+    }
+    if (body.fulfillment === "shipping" && !listingsOrdered.every((l) => !!l.shipping_available)) {
+      return NextResponse.json(
+        { error: "Every board in a multi-item shipped checkout must offer shipping." },
+        { status: 400 },
+      )
+    }
+    impliedFulfillment = body.fulfillment
   } else {
     const listingRow = listingsOrdered[0]!
     const lp = listingRow.local_pickup !== false

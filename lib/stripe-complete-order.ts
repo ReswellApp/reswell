@@ -302,17 +302,24 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   let impliedFulfillment: "pickup" | "shipping"
 
   if (listingsOrdered.length > 1) {
-    if (fulfillmentMeta !== "pickup") {
+    if (fulfillmentMeta !== "pickup" && fulfillmentMeta !== "shipping") {
       return { ok: false, error: "Invalid payment metadata", status: 400 }
     }
-    if (!listingsOrdered.every((l) => l.local_pickup !== false)) {
+    if (fulfillmentMeta === "pickup" && !listingsOrdered.every((l) => l.local_pickup !== false)) {
       return {
         ok: false,
         error: "Every board in this order must offer local pickup.",
         status: 400,
       }
     }
-    impliedFulfillment = "pickup"
+    if (fulfillmentMeta === "shipping" && !listingsOrdered.every((l) => !!l.shipping_available)) {
+      return {
+        ok: false,
+        error: "Every board in this order must offer shipping.",
+        status: 400,
+      }
+    }
+    impliedFulfillment = fulfillmentMeta
   } else {
     const listingOne = listingsOrdered[0]!
     const lp = listingOne.local_pickup !== false

@@ -114,11 +114,17 @@ export async function WetsuitsListingDetailPage({
   const isSold = wetsuit.status === "sold"
   const wetsuitHref = listingDetailHref({ id: wetsuit.id as string, slug: wetsuit.slug as string | null })
 
+  const brandId = (wetsuit.brand_id as string | null)?.trim() ?? ""
+
+  // Wave 1: everything that depends only on the listing row runs in parallel.
   const [
     sellerReviewSummaryRes,
     sellerReviewPreviewRes,
     reswellPlatformReviewSummaryRes,
     sellerWetsuitsRes,
+    userRes,
+    indexBrand,
+    [cartHolderCount, listingWatchersCount],
   ] = await Promise.all([
     getSellerReviewSummary(supabase, sellerId),
     supabase
@@ -140,6 +146,12 @@ export async function WetsuitsListingDetailPage({
       .neq("id", wetsuit.id)
       .order("created_at", { ascending: false })
       .limit(SELLER_WETSUITS_PDP_LIMIT),
+    supabase.auth.getUser(),
+    brandId ? getBrandById(supabase, brandId) : Promise.resolve(null),
+    Promise.all([
+      !isSold ? getListingCartHolderCount(supabase, wetsuit.id) : Promise.resolve(0),
+      !isSold ? getListingFavoriteCount(supabase, wetsuit.id) : Promise.resolve(0),
+    ]),
   ])
 
   const { avgRating: sellerAvgRating, reviewCount: sellerReviewCount } =
@@ -147,32 +159,29 @@ export async function WetsuitsListingDetailPage({
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes.data
   const sellerWetsuits = sellerWetsuitsRes.data
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = userRes.data.user
 
   const sellerWetsuitIds = (sellerWetsuits ?? []).map((f) => f.id)
-  let sellerWetsuitFavoritedIds: string[] = []
-  if (user && sellerWetsuitIds.length > 0) {
-    const { data: favs } = await supabase
-      .from("favorites")
-      .select("listing_id")
-      .eq("user_id", user.id)
-      .in("listing_id", sellerWetsuitIds)
-    sellerWetsuitFavoritedIds = (favs ?? []).map((f) => f.listing_id)
-  }
 
-  let isFavorited = false
-  if (user) {
-    const { data: favorite } = await supabase
-      .from("favorites")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("listing_id", wetsuit.id)
-      .single()
-    isFavorited = !!favorite
-  }
+  // Wave 2: viewer-dependent lookups in parallel, favorites coalesced into one query.
+  const [favoriteRowsRes, acceptedOffer] = await Promise.all([
+    user
+      ? supabase
+          .from("favorites")
+          .select("listing_id")
+          .eq("user_id", user.id)
+          .in("listing_id", [wetsuit.id, ...sellerWetsuitIds])
+      : Promise.resolve({ data: null }),
+    user && user.id !== wetsuit.user_id && wetsuit.status === "active"
+      ? fetchAcceptedOfferForBuyerListing(supabase, user.id, wetsuit.id)
+      : Promise.resolve(null),
+  ])
+
+  const favoritedIds = new Set(
+    (favoriteRowsRes.data ?? []).map((f: { listing_id: string }) => f.listing_id),
+  )
+  const isFavorited = favoritedIds.has(wetsuit.id)
+  const sellerWetsuitFavoritedIds = sellerWetsuitIds.filter((id) => favoritedIds.has(id))
 
   const images: GalleryImage[] =
     (wetsuit.listing_images as GalleryImage[] | null)
@@ -194,8 +203,6 @@ export async function WetsuitsListingDetailPage({
     (wetsuit.status === "active" || wetsuit.status === "pending_sale") &&
     (pickupOffered || shippingOffered)
 
-  const brandId = (wetsuit.brand_id as string | null)?.trim() ?? ""
-  const indexBrand = brandId ? await getBrandById(supabase, brandId) : null
   const freeBrandLabel = (wetsuit.brand as string | null)?.trim() ?? ""
   const specsBrandLabel = (indexBrand?.name ?? freeBrandLabel).trim() || null
   const specsBrandHref = indexBrand ? `${BRANDS_BASE}/${indexBrand.slug}` : null
@@ -237,12 +244,9 @@ export async function WetsuitsListingDetailPage({
       : undefined
 
   let buyerAgreedPriceUsd: number | null = null
-  if (user && !isOwnListing && wetsuit.status === "active") {
-    const accepted = await fetchAcceptedOfferForBuyerListing(supabase, user.id, wetsuit.id)
-    if (accepted && accepted.seller_id === wetsuit.user_id) {
-      const n = Math.round(parseFloat(String(accepted.current_amount)) * 100) / 100
-      if (Number.isFinite(n) && n > 0) buyerAgreedPriceUsd = n
-    }
+  if (acceptedOffer && acceptedOffer.seller_id === wetsuit.user_id) {
+    const n = Math.round(parseFloat(String(acceptedOffer.current_amount)) * 100) / 100
+    if (Number.isFinite(n) && n > 0) buyerAgreedPriceUsd = n
   }
 
   const listingLocationLine =
@@ -281,10 +285,6 @@ export async function WetsuitsListingDetailPage({
   ].filter(Boolean) as string[]
 
   const listingViews = Number((wetsuit.views as number | null) ?? 0)
-  const [cartHolderCount, listingWatchersCount] = await Promise.all([
-    !isSold ? getListingCartHolderCount(supabase, wetsuit.id) : Promise.resolve(0),
-    !isSold ? getListingFavoriteCount(supabase, wetsuit.id) : Promise.resolve(0),
-  ])
   let listedRelative: string | null = null
   if (wetsuit.created_at != null) {
     const d = new Date(wetsuit.created_at as string | number | Date)

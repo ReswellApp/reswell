@@ -97,6 +97,60 @@ export type ResolvedPackedParcelSource =
  * When `shipping_packed_weight_oz` is set, it is preferred; otherwise weight is estimated from
  * board length/volume (same heuristics as the sell flow when lb/oz are left blank).
  */
+export type ResolvedPackedParcel = {
+  source: ResolvedPackedParcelSource
+  weightOz: number
+  lengthIn: number
+  widthIn: number
+  heightIn: number
+}
+
+/**
+ * Combined one-box parcel for multiple listings shipped together (same seller).
+ *
+ * Box sizing policy: every item is assumed to fit in the carton of the **biggest item**
+ * (largest L×W×H volume), so the combined parcel uses that item's dimensions and the
+ * **sum of every item's weight**. If any listing cannot resolve a parcel, the whole
+ * combination fails — checkout must not silently under-quote.
+ */
+export function resolveCombinedPackedParcelFromListings(
+  rows: ListingPackedParcelSource[],
+): { ok: true } & ResolvedPackedParcel | { ok: false; error: string } {
+  if (rows.length === 0) {
+    return { ok: false, error: "No listings to build a shipping parcel from." }
+  }
+
+  const parcels: ResolvedPackedParcel[] = []
+  for (const row of rows) {
+    const resolved = resolvePackedParcelFromListing(row)
+    if (!resolved.ok) {
+      return resolved
+    }
+    parcels.push(resolved)
+  }
+
+  let biggest = parcels[0]!
+  let biggestVolume = biggest.lengthIn * biggest.widthIn * biggest.heightIn
+  for (const p of parcels.slice(1)) {
+    const v = p.lengthIn * p.widthIn * p.heightIn
+    if (v > biggestVolume) {
+      biggest = p
+      biggestVolume = v
+    }
+  }
+
+  const totalWeightOz = Math.round(parcels.reduce((sum, p) => sum + p.weightOz, 0) * 100) / 100
+
+  return {
+    ok: true,
+    source: biggest.source,
+    weightOz: totalWeightOz,
+    lengthIn: biggest.lengthIn,
+    widthIn: biggest.widthIn,
+    heightIn: biggest.heightIn,
+  }
+}
+
 export function resolvePackedParcelFromListing(row: ListingPackedParcelSource):
   | {
       ok: true

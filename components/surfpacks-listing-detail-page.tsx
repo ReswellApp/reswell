@@ -114,11 +114,17 @@ export async function SurfpacksListingDetailPage({
   const isSold = surfpack.status === "sold"
   const surfpackHref = listingDetailHref({ id: surfpack.id as string, slug: surfpack.slug as string | null })
 
+  const brandId = (surfpack.brand_id as string | null)?.trim() ?? ""
+
+  // Wave 1: everything that depends only on the listing row runs in parallel.
   const [
     sellerReviewSummaryRes,
     sellerReviewPreviewRes,
     reswellPlatformReviewSummaryRes,
     sellerSurfpacksRes,
+    userRes,
+    indexBrand,
+    [cartHolderCount, listingWatchersCount],
   ] = await Promise.all([
     getSellerReviewSummary(supabase, sellerId),
     supabase
@@ -140,6 +146,12 @@ export async function SurfpacksListingDetailPage({
       .neq("id", surfpack.id)
       .order("created_at", { ascending: false })
       .limit(SELLER_SURFPACKS_PDP_LIMIT),
+    supabase.auth.getUser(),
+    brandId ? getBrandById(supabase, brandId) : Promise.resolve(null),
+    Promise.all([
+      !isSold ? getListingCartHolderCount(supabase, surfpack.id) : Promise.resolve(0),
+      !isSold ? getListingFavoriteCount(supabase, surfpack.id) : Promise.resolve(0),
+    ]),
   ])
 
   const { avgRating: sellerAvgRating, reviewCount: sellerReviewCount } =
@@ -147,32 +159,29 @@ export async function SurfpacksListingDetailPage({
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes.data
   const sellerSurfpacks = sellerSurfpacksRes.data
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = userRes.data.user
 
   const sellerSurfpackIds = (sellerSurfpacks ?? []).map((f) => f.id)
-  let sellerSurfpackFavoritedIds: string[] = []
-  if (user && sellerSurfpackIds.length > 0) {
-    const { data: favs } = await supabase
-      .from("favorites")
-      .select("listing_id")
-      .eq("user_id", user.id)
-      .in("listing_id", sellerSurfpackIds)
-    sellerSurfpackFavoritedIds = (favs ?? []).map((f) => f.listing_id)
-  }
 
-  let isFavorited = false
-  if (user) {
-    const { data: favorite } = await supabase
-      .from("favorites")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("listing_id", surfpack.id)
-      .single()
-    isFavorited = !!favorite
-  }
+  // Wave 2: viewer-dependent lookups in parallel, favorites coalesced into one query.
+  const [favoriteRowsRes, acceptedOffer] = await Promise.all([
+    user
+      ? supabase
+          .from("favorites")
+          .select("listing_id")
+          .eq("user_id", user.id)
+          .in("listing_id", [surfpack.id, ...sellerSurfpackIds])
+      : Promise.resolve({ data: null }),
+    user && user.id !== surfpack.user_id && surfpack.status === "active"
+      ? fetchAcceptedOfferForBuyerListing(supabase, user.id, surfpack.id)
+      : Promise.resolve(null),
+  ])
+
+  const favoritedIds = new Set(
+    (favoriteRowsRes.data ?? []).map((f: { listing_id: string }) => f.listing_id),
+  )
+  const isFavorited = favoritedIds.has(surfpack.id)
+  const sellerSurfpackFavoritedIds = sellerSurfpackIds.filter((id) => favoritedIds.has(id))
 
   const images: GalleryImage[] =
     (surfpack.listing_images as GalleryImage[] | null)
@@ -194,8 +203,6 @@ export async function SurfpacksListingDetailPage({
     (surfpack.status === "active" || surfpack.status === "pending_sale") &&
     (pickupOffered || shippingOffered)
 
-  const brandId = (surfpack.brand_id as string | null)?.trim() ?? ""
-  const indexBrand = brandId ? await getBrandById(supabase, brandId) : null
   const freeBrandLabel = (surfpack.brand as string | null)?.trim() ?? ""
   const specsBrandLabel = (indexBrand?.name ?? freeBrandLabel).trim() || null
   const specsBrandHref = indexBrand ? `${BRANDS_BASE}/${indexBrand.slug}` : null
@@ -237,12 +244,9 @@ export async function SurfpacksListingDetailPage({
       : undefined
 
   let buyerAgreedPriceUsd: number | null = null
-  if (user && !isOwnListing && surfpack.status === "active") {
-    const accepted = await fetchAcceptedOfferForBuyerListing(supabase, user.id, surfpack.id)
-    if (accepted && accepted.seller_id === surfpack.user_id) {
-      const n = Math.round(parseFloat(String(accepted.current_amount)) * 100) / 100
-      if (Number.isFinite(n) && n > 0) buyerAgreedPriceUsd = n
-    }
+  if (acceptedOffer && acceptedOffer.seller_id === surfpack.user_id) {
+    const n = Math.round(parseFloat(String(acceptedOffer.current_amount)) * 100) / 100
+    if (Number.isFinite(n) && n > 0) buyerAgreedPriceUsd = n
   }
 
   const listingLocationLine =
@@ -281,10 +285,6 @@ export async function SurfpacksListingDetailPage({
   ].filter(Boolean) as string[]
 
   const listingViews = Number((surfpack.views as number | null) ?? 0)
-  const [cartHolderCount, listingWatchersCount] = await Promise.all([
-    !isSold ? getListingCartHolderCount(supabase, surfpack.id) : Promise.resolve(0),
-    !isSold ? getListingFavoriteCount(supabase, surfpack.id) : Promise.resolve(0),
-  ])
   let listedRelative: string | null = null
   if (surfpack.created_at != null) {
     const d = new Date(surfpack.created_at as string | number | Date)

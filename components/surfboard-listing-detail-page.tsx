@@ -119,12 +119,22 @@ export async function SurfboardListingDetailPage({
 
   const sellerId = board.user_id
   const isSold = board.status === "sold"
+  const brandId = (board as { brand_id?: string | null }).brand_id?.trim() ?? ""
+  const rawBoardType = board.board_type?.trim() || null
+  const listPriceNum =
+    typeof board.price === "number" ? board.price : Number.parseFloat(String(board.price)) || 0
 
+  // Wave 1: everything that depends only on the listing row runs in parallel.
   const [
     sellerReviewSummaryRes,
     sellerReviewPreviewRes,
     reswellPlatformReviewSummaryRes,
     sellerBoardsRes,
+    userRes,
+    soldUsedShipping,
+    indexBrand,
+    similarBoardsRaw,
+    [cartHolderCount, listingWatchersCount],
   ] = await Promise.all([
     getSellerReviewSummary(supabase, sellerId),
     supabase
@@ -146,6 +156,20 @@ export async function SurfboardListingDetailPage({
       .neq("id", board.id)
       .order("created_at", { ascending: false })
       .limit(SELLER_BOARDS_PDP_LIMIT),
+    supabase.auth.getUser(),
+    isSold
+      ? getCachedSoldSurfboardUsedShippingFulfillment(board.id)
+      : Promise.resolve(false as const),
+    brandId ? getBrandById(supabase, brandId) : Promise.resolve(null),
+    fetchSimilarSurfboardsForListingPdp(supabase, {
+      excludeListingId: board.id,
+      boardType: rawBoardType,
+      priceUsd: listPriceNum,
+    }),
+    Promise.all([
+      !isSold ? getListingCartHolderCount(supabase, board.id) : Promise.resolve(0),
+      !isSold ? getListingFavoriteCount(supabase, board.id) : Promise.resolve(0),
+    ]),
   ])
 
   const { avgRating: sellerAvgRating, reviewCount: sellerReviewCount } =
@@ -153,40 +177,38 @@ export async function SurfboardListingDetailPage({
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes.data
   const sellerBoards = sellerBoardsRes.data
-
-  // Get current user
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = userRes.data.user
 
   const sellerBoardIds = (sellerBoards ?? []).map((b) => b.id)
-  let sellerBoardFavoritedIds: string[] = []
-  if (user && sellerBoardIds.length > 0) {
-    const { data: sellerBoardFavs } = await supabase
-      .from("favorites")
-      .select("listing_id")
-      .eq("user_id", user.id)
-      .in("listing_id", sellerBoardIds)
-    sellerBoardFavoritedIds = (sellerBoardFavs ?? []).map((f) => f.listing_id)
-  }
+  const similarBoardIds = similarBoardsRaw.map((r) => String(r.id))
+  const isOwnListing = user?.id === board.user_id
 
-  // Check if favorited
-  let isFavorited = false
-  if (user) {
-    const { data: favorite } = await supabase
-      .from("favorites")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("listing_id", board.id)
-      .single()
-    isFavorited = !!favorite
-  }
+  // Wave 2: everything that depends on the viewer runs in parallel,
+  // with all favorite lookups coalesced into a single query.
+  const [favoriteRowsRes, acceptedOffer] = await Promise.all([
+    user
+      ? supabase
+          .from("favorites")
+          .select("listing_id")
+          .eq("user_id", user.id)
+          .in("listing_id", [board.id, ...sellerBoardIds, ...similarBoardIds])
+      : Promise.resolve({ data: null }),
+    user && !isOwnListing && board.status === "active"
+      ? fetchAcceptedOfferForBuyerListing(supabase, user.id, board.id)
+      : Promise.resolve(null),
+  ])
+
+  const favoritedIds = new Set(
+    (favoriteRowsRes.data ?? []).map((f: { listing_id: string }) => f.listing_id),
+  )
+  const isFavorited = favoritedIds.has(board.id)
+  const sellerBoardFavoritedIds = sellerBoardIds.filter((id) => favoritedIds.has(id))
+  const similarBoardFavoritedIds = similarBoardIds.filter((id) => favoritedIds.has(id))
 
   const images = board.listing_images?.sort((a: { is_primary: boolean; sort_order?: number }, b: { is_primary: boolean; sort_order?: number }) => 
     (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || (a.sort_order ?? 0) - (b.sort_order ?? 0)
   ) || []
 
-  const isOwnListing = user?.id === board.user_id
-  const soldUsedShipping =
-    isSold && (await getCachedSoldSurfboardUsedShippingFulfillment(board.id))
   const metaCatalogEligible = isMetaCatalogEligibleListing(board)
 
   const pickupOffered = board.local_pickup !== false
@@ -198,21 +220,15 @@ export async function SurfboardListingDetailPage({
     (board.status === "active" || board.status === "pending_sale") &&
     (pickupOffered || shippingOffered)
 
-  const brandId = (board as { brand_id?: string | null }).brand_id?.trim() ?? ""
-  const indexBrand = brandId ? await getBrandById(supabase, brandId) : null
-
   const freeBrandLabel = (board as { brand?: string | null }).brand?.trim() ?? ""
   const modelForSpecs = (board as { model?: string | null }).model?.trim() ?? ""
   const boardSpecsBrandLabel = (indexBrand?.name ?? freeBrandLabel).trim() || null
   const boardSpecsBrandHref = indexBrand ? `${BRANDS_BASE}/${indexBrand.slug}` : null
 
-  const rawBoardType = board.board_type?.trim() || null
   const typeCrumb = boardsBrowseBoardTypeLabel(rawBoardType ?? undefined)
   const browseBoardTypeParam = browseTypeParamFromBoardType(rawBoardType)
   const listingTitle = capitalizeWords(board.title)
 
-  const listPriceNum =
-    typeof board.price === "number" ? board.price : Number.parseFloat(String(board.price)) || 0
   /** Public sold/browse price — always original list price, never negotiated offer amounts. */
   const publicListPriceUsd = publicListingListPriceUsd(board.price)
   const buyerOffersOn =
@@ -222,23 +238,6 @@ export async function SurfboardListingDetailPage({
   )
   const minOfferAmount = Math.round(listPriceNum * (offerPct / 100) * 100) / 100
   const acceptOffers = buyerOffersOn
-
-  const similarBoardsRaw = await fetchSimilarSurfboardsForListingPdp(supabase, {
-    excludeListingId: board.id,
-    boardType: rawBoardType,
-    priceUsd: listPriceNum,
-  })
-  const similarBoardIds = similarBoardsRaw.map((r) => String(r.id))
-
-  let similarBoardFavoritedIds: string[] = []
-  if (user && similarBoardIds.length > 0) {
-    const { data: similarFavs } = await supabase
-      .from("favorites")
-      .select("listing_id")
-      .eq("user_id", user.id)
-      .in("listing_id", similarBoardIds)
-    similarBoardFavoritedIds = (similarFavs ?? []).map((f) => f.listing_id)
-  }
 
   const primaryImageRaw =
     (images[0] as { thumbnail_url?: string | null; url?: string | null } | undefined)
@@ -262,12 +261,9 @@ export async function SurfboardListingDetailPage({
       : undefined
 
   let buyerAgreedPriceUsd: number | null = null
-  if (user && !isOwnListing && board.status === "active") {
-    const accepted = await fetchAcceptedOfferForBuyerListing(supabase, user.id, board.id)
-    if (accepted && accepted.seller_id === board.user_id) {
-      const n = Math.round(parseFloat(String(accepted.current_amount)) * 100) / 100
-      if (Number.isFinite(n) && n > 0) buyerAgreedPriceUsd = n
-    }
+  if (acceptedOffer && acceptedOffer.seller_id === board.user_id) {
+    const n = Math.round(parseFloat(String(acceptedOffer.current_amount)) * 100) / 100
+    if (Number.isFinite(n) && n > 0) buyerAgreedPriceUsd = n
   }
 
   const listingLocationLine =
@@ -331,10 +327,6 @@ export async function SurfboardListingDetailPage({
   ].filter(Boolean) as string[]
 
   const listingViews = Number((board as { views?: number | null }).views ?? 0)
-  const [cartHolderCount, listingWatchersCount] = await Promise.all([
-    !isSold ? getListingCartHolderCount(supabase, board.id) : Promise.resolve(0),
-    !isSold ? getListingFavoriteCount(supabase, board.id) : Promise.resolve(0),
-  ])
   let listedRelative: string | null = null
   if (board.created_at != null) {
     const d = new Date(board.created_at as string | number | Date)
