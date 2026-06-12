@@ -4,11 +4,11 @@ import Image from "next/image"
 import {
   Fragment,
   useCallback,
+  useEffect,
   useMemo,
   useState,
   type MouseEventHandler,
   type ReactNode,
-  type SyntheticEvent,
 } from "react"
 import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
@@ -16,14 +16,6 @@ import { cn } from "@/lib/utils"
 
 const hoverRevealNav =
   "opacity-0 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 [@media(pointer:coarse)]:pointer-events-auto [@media(pointer:coarse)]:opacity-100 has-[:focus-visible]:pointer-events-auto has-[:focus-visible]:opacity-100"
-
-function carouselSlideNearActive(i: number, active: number, total: number): boolean {
-  if (total <= 1) return true
-  if (i === active) return true
-  if (i === (active + 1) % total) return true
-  if (i === (active - 1 + total) % total) return true
-  return false
-}
 
 export interface ListingTileImageMediaProps {
   urls: string[]
@@ -61,29 +53,34 @@ export function ListingTileImageMedia({
   overlayFull,
   imagePriority = false,
 }: ListingTileImageMediaProps) {
-  const count = urls.length
   const [index, setIndex] = useState(0)
   const [loadedByUrl, setLoadedByUrl] = useState<Record<string, true>>({})
-
-  const mountedSlideIndices = useMemo(() => {
-    if (count <= 1) return [0]
-    const indices = new Set<number>()
-    for (let i = 0; i < count; i += 1) {
-      if (carouselSlideNearActive(i, index, count)) indices.add(i)
-    }
-    return [...indices].sort((a, b) => a - b)
-  }, [count, index])
+  const [failedByUrl, setFailedByUrl] = useState<Record<string, true>>({})
 
   const markImageLoaded = useCallback((url: string) => {
     setLoadedByUrl((prev) => (prev[url] ? prev : { ...prev, [url]: true }))
   }, [])
 
-  const handleImageLoad = useCallback(
-    (url: string) => (_event: SyntheticEvent<HTMLImageElement>) => {
+  const handleImageError = useCallback(
+    (url: string) => () => {
+      setFailedByUrl((prev) => (prev[url] ? prev : { ...prev, [url]: true }))
       markImageLoaded(url)
     },
     [markImageLoaded],
   )
+
+  const visibleUrls = useMemo(
+    () => urls.filter((url) => url && !failedByUrl[url]),
+    [failedByUrl, urls],
+  )
+  const count = visibleUrls.length
+
+  useEffect(() => {
+    if (count === 0) return
+    if (index >= count) {
+      setIndex(0)
+    }
+  }, [count, index])
 
   const goPrev = useCallback<MouseEventHandler<HTMLButtonElement>>(
     (e) => {
@@ -111,7 +108,7 @@ export function ListingTileImageMedia({
       : ({ objectFit: "cover" } as const)
 
   const hasImage = count > 0
-  const activeUrl = urls[index] ?? ""
+  const activeUrl = visibleUrls[index] ?? ""
   const showImageShimmer = hasImage && !loadedByUrl[activeUrl]
 
   return (
@@ -124,8 +121,7 @@ export function ListingTileImageMedia({
       )}
     >
       {hasImage ? (
-        mountedSlideIndices.map((i) => {
-          const u = urls[i]
+        visibleUrls.map((u, i) => {
           if (!u) return null
           const active = i === index
           return (
@@ -151,10 +147,20 @@ export function ListingTileImageMedia({
               ref={(img) => {
                 // Images cached/loaded before hydration never re-fire `load`;
                 // without this the shimmer overlay stays on top forever.
+                if (img?.complete && !img.naturalWidth) {
+                  handleImageError(u)()
+                  return
+                }
                 if (img?.complete) markImageLoaded(u)
               }}
-              onLoad={handleImageLoad(u)}
-              onError={handleImageLoad(u)}
+              onLoad={(event) => {
+                if (event.currentTarget.naturalWidth === 0) {
+                  handleImageError(u)()
+                  return
+                }
+                markImageLoaded(u)
+              }}
+              onError={handleImageError(u)}
               priority={imagePriority && i === 0 && index === 0}
             />
           )

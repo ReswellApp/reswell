@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/brands/admin-server"
+import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
 import { revalidateSellersDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { createClient } from "@/lib/supabase/server"
 import { revalidateRequestSchema, type RevalidateTarget } from "@/lib/validations/admin-tools"
 
 /** Public paths refreshed for each target. `all` revalidates the whole root layout tree. */
-const TARGET_PATHS: Record<Exclude<RevalidateTarget, "all">, string[]> = {
+const TARGET_PATHS: Record<Exclude<RevalidateTarget, "all" | "boards" | "sellers">, string[]> = {
   home: ["/"],
   shop: ["/shop"],
   brands: ["/brands"],
-  sellers: ["/sellers"],
   blog: ["/blog"],
 }
 
@@ -59,6 +59,14 @@ export async function POST(request: NextRequest) {
     revalidateSellersDirectoryCatalog()
     return NextResponse.json(
       { data: { target, paths: ["/sellers (layout)", "sellers-directory cache tag"] } },
+      { status: 200 },
+    )
+  }
+
+  if (target === "boards") {
+    revalidateBoardsBrowseCatalog()
+    return NextResponse.json(
+      { data: { target, paths: ["/boards (page)", "boards-browse cache tag"] } },
       { status: 200 },
     )
   }

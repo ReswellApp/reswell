@@ -10,6 +10,7 @@ import {
 } from "@/lib/elasticsearch/sellers-index"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
+import { revalidateAfterListingRemoval } from "@/lib/services/listingSiteModerationRevalidation"
 
 type WebhookRecord = { id?: string; user_id?: string }
 
@@ -71,7 +72,12 @@ export async function POST(request: NextRequest) {
         if (id) await deleteListingDocument(id)
         if (ownerId) {
           await syncProfileToSellerIndex(supabase, ownerId)
-          await revalidateSellersAfterListingChange(supabase, ownerId)
+        }
+        if (id) {
+          await revalidateAfterListingRemoval(supabase, {
+            listingId: id,
+            sellerUserId: ownerId,
+          })
         }
         return NextResponse.json({ ok: true, action: "deleted" })
       }

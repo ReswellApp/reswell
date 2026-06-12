@@ -47,6 +47,7 @@ interface ToolResult {
 
 const REVALIDATE_LABELS: Record<RevalidateTarget, string> = {
   home: 'Home page',
+  boards: 'Surfboards browse (/boards)',
   shop: 'Shop / browse',
   brands: 'Brands directory',
   sellers: 'Sellers directory',
