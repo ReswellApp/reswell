@@ -3,8 +3,7 @@ import {
   deleteListingDocument,
   syncListingToIndex,
 } from "@/lib/elasticsearch/listings-index"
-import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
-import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
+import { revalidateAfterListingRemoval } from "@/lib/services/listingSiteModerationRevalidation"
 import { removeListingFromGoogleMerchantFeed } from "@/lib/services/googleMerchantSync"
 import {
   fetchListingImageUrlsForListingIds,
@@ -18,6 +17,7 @@ type ListingEndRow = {
   user_id: string
   status: string
   archived_at: string | null
+  slug: string | null
 }
 
 export type EndSellerListingResult =
@@ -83,7 +83,7 @@ async function loadListingForEnd(
 ): Promise<ListingEndRow | null> {
   const { data, error } = await supabase
     .from("listings")
-    .select("id, user_id, status, archived_at")
+    .select("id, user_id, status, archived_at, slug")
     .eq("id", listingId)
     .maybeSingle()
 
@@ -138,7 +138,11 @@ export async function deleteSellerDraftListing(
     // best-effort
   }
 
-  await revalidateSellersAfterListingChange(supabase, sellerUserId)
+  await revalidateAfterListingRemoval(supabase, {
+    listingId,
+    slug: row.slug,
+    sellerUserId,
+  })
 
   return { ok: true }
 }
@@ -174,8 +178,11 @@ export async function endSellerListing(
 
     await removeListingFromGoogleMerchantFeed(listingId)
 
-    revalidateBoardsBrowseCatalog()
-    await revalidateSellersAfterListingChange(supabase, sellerUserId)
+    await revalidateAfterListingRemoval(supabase, {
+      listingId,
+      slug: row.slug,
+      sellerUserId,
+    })
 
     return { ok: true, mode: "archive" }
   }
@@ -200,8 +207,11 @@ export async function endSellerListing(
         // ES optional
       }
       await removeListingFromGoogleMerchantFeed(listingId)
-      revalidateBoardsBrowseCatalog()
-      await revalidateSellersAfterListingChange(supabase, sellerUserId)
+      await revalidateAfterListingRemoval(supabase, {
+        listingId,
+        slug: row.slug,
+        sellerUserId,
+      })
       return {
         ok: true,
         mode: "archive",
@@ -225,8 +235,11 @@ export async function endSellerListing(
     // best-effort cleanup after DB delete
   }
 
-  revalidateBoardsBrowseCatalog()
-  await revalidateSellersAfterListingChange(supabase, sellerUserId)
+  await revalidateAfterListingRemoval(supabase, {
+    listingId,
+    slug: row.slug,
+    sellerUserId,
+  })
 
   return { ok: true, mode: "delete" }
 }

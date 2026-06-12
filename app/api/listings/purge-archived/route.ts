@@ -6,7 +6,7 @@ import {
   removeListingImageFilesFromStorage,
 } from "@/lib/services/listingStorageCleanup"
 import { NextResponse } from "next/server"
-import { revalidateSellersForUserIds } from "@/lib/cache/revalidate-sellers-directory-catalog"
+import { revalidateAfterBulkListingRemoval } from "@/lib/services/listingSiteModerationRevalidation"
 
 const ARCHIVE_DAYS = 30
 
@@ -76,7 +76,7 @@ export async function GET(request: Request) {
   const sellerUserIds = (toDelete ?? [])
     .map((row) => (row as { user_id?: string | null }).user_id)
     .filter((id): id is string => typeof id === "string" && id.length > 0)
-  await revalidateSellersForUserIds(supabase, sellerUserIds)
+  await revalidateAfterBulkListingRemoval(supabase, sellerUserIds)
 
   return NextResponse.json({ deleted: ids.length, ids })
 }

@@ -16,6 +16,7 @@ import {
   fetchListingImageUrlsForListingIds,
   removeListingImageFilesFromStorage,
 } from '@/lib/services/listingStorageCleanup'
+import { revalidateAfterListingRemoval } from '@/lib/services/listingSiteModerationRevalidation'
 import {
   composeListingDimensionsFromSplitListingFields,
   listingDimensionsColumnTrim,
@@ -362,6 +363,20 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 })
   }
 
+  const { data: listingRow, error: listingLookupError } = await service
+    .from('listings')
+    .select('id, slug, user_id')
+    .eq('id', listingId)
+    .maybeSingle()
+
+  if (listingLookupError) {
+    console.error('[admin listings] delete lookup failed:', listingLookupError)
+    return NextResponse.json({ error: 'Failed to load listing' }, { status: 500 })
+  }
+  if (!listingRow) {
+    return NextResponse.json({ error: 'Listing not found' }, { status: 404 })
+  }
+
   const imageUrls = await fetchListingImageUrlsForListingIds(service, [listingId])
 
   const { error } = await service.from('listings').delete().eq('id', listingId)
@@ -389,6 +404,12 @@ export async function DELETE(request: NextRequest) {
   } catch {
     /* best-effort storage cleanup */
   }
+
+  await revalidateAfterListingRemoval(service, {
+    listingId,
+    slug: typeof listingRow.slug === 'string' ? listingRow.slug : null,
+    sellerUserId: typeof listingRow.user_id === 'string' ? listingRow.user_id : null,
+  })
 
   return NextResponse.json({ success: true })
 }
