@@ -27,7 +27,7 @@ import { SELLER_PROFILE_BANNER_DEFAULT } from "@/lib/brand-colors"
 import { cn } from "@/lib/utils"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
-import { buildPasswordRecoveryCallbackUrl } from "@/lib/auth/password-recovery-callback-url"
+import { requestPasswordResetAction } from "@/lib/actions/passwordReset"
 import { ProfileChangePasswordSection } from "@/components/features/dashboard/profile-change-password-section"
 import type { DashboardProfileRow } from "@/lib/db/dashboard-profile"
 import type { ProfileAddressRow } from "@/lib/profile-address"
@@ -286,21 +286,11 @@ export function DashboardProfileSettings({
     }
     setResetPasswordSending(true)
     try {
-      let siteOrigin = window.location.origin
-      const devOverride = process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL?.trim()
-      if (devOverride && process.env.NODE_ENV === "development") {
-        try {
-          const u = new URL(devOverride.startsWith("http") ? devOverride : `https://${devOverride}`)
-          if (u.hostname === "localhost" || u.hostname === "127.0.0.1") {
-            siteOrigin = `${u.protocol}//${u.host}`
-          }
-        } catch {
-          /* keep window.location.origin */
-        }
-      }
-      const redirectTo = buildPasswordRecoveryCallbackUrl(siteOrigin)
-      const { error } = await supabase.auth.resetPasswordForEmail(profile.email, { redirectTo })
-      if (error) throw error
+      const result = await requestPasswordResetAction({
+        email: profile.email,
+        siteOrigin: window.location.origin,
+      })
+      if ("error" in result) throw new Error(result.error)
       toast.success(acctStrings.resetPasswordToastSuccess)
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Could not send reset email")

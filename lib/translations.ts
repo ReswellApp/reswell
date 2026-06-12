@@ -152,7 +152,7 @@ const en: Translations = {
       resetPasswordButton: 'Email reset link',
       resetPasswordSending: 'Sending…',
       resetPasswordToastSuccess:
-        'Check your email for a link to reset your password. You can close this tab after you finish.',
+        'If an account exists for that email, we sent a password reset link. You can close this tab after you finish.',
       resetPasswordToastNoEmail:
         'This account does not have an email on file. Change your password via the provider you signed up with.',
       changePassword: 'Change password',
@@ -252,7 +252,7 @@ const es: Translations = {
       resetPasswordButton: 'Enviar enlace',
       resetPasswordSending: 'Enviando…',
       resetPasswordToastSuccess:
-        'Revisa tu correo para el enlace de restablecimiento. Puedes cerrar esta pestaña cuando termines.',
+        'Si existe una cuenta con ese correo, enviamos un enlace para restablecer la contraseña. Puedes cerrar esta pestaña cuando termines.',
       resetPasswordToastNoEmail:
         'Esta cuenta no tiene correo. Cambia tu contraseña desde el método con el que te registraste.',
       changePassword: 'Cambiar contraseña',

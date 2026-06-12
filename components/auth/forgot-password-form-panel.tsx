@@ -2,8 +2,7 @@
 
 import { useState, type ReactNode } from "react"
 import Link from "next/link"
-import { createClient } from "@/lib/supabase/client"
-import { buildPasswordRecoveryCallbackUrl } from "@/lib/auth/password-recovery-callback-url"
+import { requestPasswordResetAction } from "@/lib/actions/passwordReset"
 import {
   AUTH_MODAL_INNER_CARD_CLASS,
   AUTH_MODAL_INNER_CARD_CONTENT_CLASS,
@@ -49,28 +48,18 @@ export function ForgotPasswordFormPanel({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const supabase = createClient()
     setIsLoading(true)
     setError(null)
 
     try {
-      let siteOrigin = window.location.origin
-      const devOverride = process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL?.trim()
-      if (devOverride && process.env.NODE_ENV === "development") {
-        try {
-          const u = new URL(devOverride.startsWith("http") ? devOverride : `https://${devOverride}`)
-          if (u.hostname === "localhost" || u.hostname === "127.0.0.1") {
-            siteOrigin = `${u.protocol}//${u.host}`
-          }
-        } catch {
-          /* keep window.location.origin */
-        }
-      }
-      const redirectTo = buildPasswordRecoveryCallbackUrl(siteOrigin)
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo,
+      const result = await requestPasswordResetAction({
+        email,
+        siteOrigin: window.location.origin,
       })
-      if (resetError) throw resetError
+      if ("error" in result) {
+        setError(result.error)
+        return
+      }
       setDidRequest(true)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An error occurred")
@@ -85,8 +74,8 @@ export function ForgotPasswordFormPanel({
         <CardTitle className="text-2xl">Reset your password</CardTitle>
         <CardDescription>
           {didRequest
-            ? "Check your inbox for an email from us with a link to choose a new password."
-            : "Enter your email and we’ll send you a reset link."}
+            ? "If an account exists for that email, we sent a link to reset your password."
+            : "Enter your email and we’ll send you a secure reset link."}
         </CardDescription>
       </CardHeader>
       <CardContent
