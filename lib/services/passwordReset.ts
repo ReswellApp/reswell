@@ -1,4 +1,7 @@
-import { buildPasswordRecoveryCallbackUrl } from "@/lib/auth/password-recovery-callback-url"
+import {
+  buildPasswordRecoveryCallbackUrl,
+  buildPasswordRecoveryEmailUrl,
+} from "@/lib/auth/password-recovery-callback-url"
 import { resolveAuthSiteOrigin } from "@/lib/auth/resolve-auth-site-origin"
 import { trackKlaviyoPasswordResetRequested } from "@/lib/klaviyo/track-password-reset-requested"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
@@ -53,15 +56,18 @@ export async function requestPasswordResetService(
         options: { redirectTo },
       })
 
-      if (error || !data?.properties?.action_link) {
+      const hashedToken = data?.properties?.hashed_token?.trim()
+      if (error || !hashedToken) {
         // No account for this email, or link generation failed — do not reveal which.
         return { success: true }
       }
 
+      const resetUrl = buildPasswordRecoveryEmailUrl(redirectTo, hashedToken)
+
       const klaviyo = await trackKlaviyoPasswordResetRequested({
         email,
         externalId: data.user?.id ?? null,
-        resetUrl: data.properties.action_link,
+        resetUrl,
       })
 
       if (!klaviyo.ok && !klaviyo.skipped) {
@@ -75,13 +81,19 @@ export async function requestPasswordResetService(
     }
   }
 
-  // Dev fallback when Klaviyo is not configured — uses Supabase's built-in email.
-  const supabase = await createClient()
-  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
-  if (error) {
-    console.error("[auth] resetPasswordForEmail failed:", error.message)
-    return { error: "Could not send reset email. Please try again." }
+  // Local dev only — production/staging must use Klaviyo (avoids duplicate Supabase auth emails).
+  if (process.env.NODE_ENV === "development") {
+    const supabase = await createClient()
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
+    if (error) {
+      console.error("[auth] resetPasswordForEmail failed:", error.message)
+      return { error: "Could not send reset email. Please try again." }
+    }
+    return { success: true }
   }
 
-  return { success: true }
+  console.error(
+    "[auth] password reset unavailable — KLAVIYO_API_KEY is not set in this environment",
+  )
+  return { error: "Could not send reset email. Please try again." }
 }
