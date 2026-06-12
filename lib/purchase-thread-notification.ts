@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 import type { OrderPlacedMessagePayload } from "@/lib/validations/order-placed-message-metadata"
@@ -172,6 +173,12 @@ export async function postPurchaseThreadNotification(
     .from("conversations")
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conversation.id)
+
+  try {
+    revalidateMessagesInboxForParticipants(buyerId, sellerId)
+  } catch (revalidateErr) {
+    console.error("[purchase notification] inbox revalidate (non-fatal):", revalidateErr)
+  }
 }
 
 /**

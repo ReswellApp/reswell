@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache"
 import { loadMessagesInboxForUser, type MessagesInboxPayload } from "@/lib/db/messagesInbox"
 
-export const MESSAGES_INBOX_CACHE_KEY_PREFIX = "messages-inbox-v1"
+export const MESSAGES_INBOX_CACHE_KEY_PREFIX = "messages-inbox-v2"
 
 export function messagesInboxTag(userId: string): string {
   return `${MESSAGES_INBOX_CACHE_KEY_PREFIX}:${userId}`
