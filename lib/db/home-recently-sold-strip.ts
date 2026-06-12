@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { HOME_PEER_LISTING_WITH_PROFILE_SELECT } from "@/lib/db/home-peer-listing-feed"
+import { isListingVisibleInPublicSoldFeed } from "@/lib/listing-public-visibility"
 
 /** Matches `/sold` sold-tab listing filters (surfboards + fins). */
 export const MARKETPLACE_SOLD_FEED_SECTIONS = ["surfboards", "fins"] as const
@@ -36,7 +37,7 @@ export async function filterListingIdsStillSoldOnMarketplace(
 
   const { data, error } = await supabase
     .from("listings")
-    .select("id")
+    .select("id, title, status, hidden_from_site, archived_at")
     .in("id", [...orderedListingIds])
     .eq("status", "sold")
     .in("section", [...sections])
@@ -48,6 +49,14 @@ export async function filterListingIdsStillSoldOnMarketplace(
 
   const stillSold = new Set(
     (data ?? [])
+      .filter((row) =>
+        isListingVisibleInPublicSoldFeed({
+          title: (row as { title?: string | null }).title,
+          status: String((row as { status?: string | null }).status ?? "sold"),
+          hidden_from_site: (row as { hidden_from_site?: boolean | null }).hidden_from_site,
+          archived_at: (row as { archived_at?: string | null }).archived_at,
+        }),
+      )
       .map((row) => (row as { id?: string | null }).id)
       .filter((id): id is string => typeof id === "string" && id.length > 0),
   )
@@ -180,7 +189,7 @@ async function fetchRecentlySoldListingSaleTimesFallback(
 
   const { data: listings, error: listingsError } = await supabase
     .from("listings")
-    .select("id")
+    .select("id, title, status, hidden_from_site, archived_at")
     .in("id", candidateIds)
     .in("section", [...sections])
     .eq("status", "sold")
@@ -192,6 +201,14 @@ async function fetchRecentlySoldListingSaleTimesFallback(
 
   const validIds = new Set(
     (listings ?? [])
+      .filter((row) =>
+        isListingVisibleInPublicSoldFeed({
+          title: (row as { title?: string | null }).title,
+          status: String((row as { status?: string | null }).status ?? "sold"),
+          hidden_from_site: (row as { hidden_from_site?: boolean | null }).hidden_from_site,
+          archived_at: (row as { archived_at?: string | null }).archived_at,
+        }),
+      )
       .map((row) => (row as { id?: string | null }).id)
       .filter((id): id is string => typeof id === "string" && id.length > 0),
   )
@@ -258,7 +275,7 @@ export async function fetchHomeRecentlySoldSurfboardRows(
 
   const { data, error } = await supabase
     .from("listings")
-    .select(HOME_PEER_LISTING_WITH_PROFILE_SELECT)
+    .select(`${HOME_PEER_LISTING_WITH_PROFILE_SELECT}, hidden_from_site, archived_at`)
     .in("id", orderedListingIds)
     .eq("status", "sold")
 
@@ -273,7 +290,18 @@ export async function fetchHomeRecentlySoldSurfboardRows(
   const ordered: Record<string, unknown>[] = []
   for (const id of orderedListingIds) {
     const row = byId.get(id)
-    if (row) ordered.push(row)
+    if (!row) continue
+    if (
+      !isListingVisibleInPublicSoldFeed({
+        title: row.title as string | null | undefined,
+        status: String(row.status ?? "sold"),
+        hidden_from_site: row.hidden_from_site as boolean | null | undefined,
+        archived_at: row.archived_at as string | null | undefined,
+      })
+    ) {
+      continue
+    }
+    ordered.push(row)
   }
   return ordered
 }

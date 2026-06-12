@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { fetchRecentlySoldSurfboardsConfirmedCheckoutOrdering } from "@/lib/db/home-recently-sold-strip"
+import { isListingVisibleInPublicSoldFeed } from "@/lib/listing-public-visibility"
 
 const BRAND_MARKETPLACE_LISTING_SELECT = `
   id,
@@ -20,6 +21,8 @@ const BRAND_MARKETPLACE_LISTING_SELECT = `
   dimensions,
   created_at,
   updated_at,
+  hidden_from_site,
+  archived_at,
   listing_images (url, is_primary),
   profiles!listings_user_id_fkey (display_name, avatar_url, location, sales_count, shop_verified),
   categories (name, slug)
@@ -38,6 +41,8 @@ interface BrandMarketplaceListingRow {
   condition: string
   section: string
   status?: string
+  hidden_from_site?: boolean | null
+  archived_at?: string | null
   city?: string | null
   state?: string | null
   shipping_available?: boolean | null
@@ -151,6 +156,7 @@ export async function listRecentlySoldListingsForBrand(
   if (!data?.length) return []
 
   const rows = (data as BrandMarketplaceListingRow[]).filter((row) => {
+    if (!isListingVisibleInPublicSoldFeed(row)) return false
     if (row.section === "surfboards") {
       return confirmedSurfboardSet.has(row.id)
     }

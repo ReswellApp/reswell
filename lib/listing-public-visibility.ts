@@ -1,6 +1,7 @@
 /** Fields needed to decide whether a listing is visible or purchasable on the public site. */
 export type ListingPublicVisibilityFields = {
   status: string
+  title?: string | null
   hidden_from_site?: boolean | null
   archived_at?: string | null
 }
@@ -10,6 +11,7 @@ const SAVED_LIST_STATUSES = new Set(["active", "pending_sale", "sold"])
 
 /** Listing appears in browse, search, and public `/l/` pages (excluding sold-only PDP rules). */
 export function isListingPubliclyVisible(listing: ListingPublicVisibilityFields): boolean {
+  if (isAdminSeedListingTitle(listing.title)) return false
   if (listing.archived_at) return false
   if (listing.hidden_from_site) return false
   return PURCHASABLE_STATUSES.has(listing.status)
@@ -18,6 +20,19 @@ export function isListingPubliclyVisible(listing: ListingPublicVisibilityFields)
 /** Buyer can add to cart or complete checkout. */
 export function isListingPurchasable(listing: ListingPublicVisibilityFields): boolean {
   return isListingPubliclyVisible(listing)
+}
+
+import { isAdminSeedListingTitle } from "@/lib/utils/admin-seed-listing"
+
+/**
+ * Public sold feed / recently sold strips.
+ * Seller-archived sold listings stay visible; admin hide-from-site (no archive) does not.
+ */
+export function isListingVisibleInPublicSoldFeed(listing: ListingPublicVisibilityFields): boolean {
+  if (isAdminSeedListingTitle(listing.title)) return false
+  if (listing.status !== "sold") return false
+  if (listing.hidden_from_site && !listing.archived_at) return false
+  return true
 }
 
 /** Saved favorites: keep sold boards with overlay; drop archived, removed, hidden, and drafts. */

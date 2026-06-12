@@ -15,6 +15,7 @@ import { getSoldFeedStats } from "@/lib/feed-sold-stats"
 import { formatGmv } from "@/lib/format-gmv"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
+import { isListingVisibleInPublicSoldFeed } from "@/lib/listing-public-visibility"
 
 export const MARKETPLACE_SOLD_FEED_LIMIT = 40
 
@@ -159,7 +160,7 @@ export async function loadMarketplaceSoldFeed(
         })
       : supabase
           .from("listings")
-          .select(SOLD_LISTING_SELECT)
+          .select(`${SOLD_LISTING_SELECT}, hidden_from_site, archived_at`)
           .in("id", orderedListingIds)
           .eq("status", "sold"),
     getSoldFeedStats([...MARKETPLACE_SOLD_FEED_SECTIONS]),
@@ -175,6 +176,16 @@ export async function loadMarketplaceSoldFeed(
     .map((id) => {
       const row = mapById.get(id)
       if (!row) return null
+      if (
+        !isListingVisibleInPublicSoldFeed({
+          title: String(row.title ?? ""),
+          status: String(row.status ?? "sold"),
+          hidden_from_site: row.hidden_from_site as boolean | null | undefined,
+          archived_at: row.archived_at as string | null | undefined,
+        })
+      ) {
+        return null
+      }
       const at = confirmedAtIsoByListingId.get(id) ?? null
       return mapSoldRow(row, at)
     })
