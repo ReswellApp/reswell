@@ -57,8 +57,7 @@ import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { singleFinSetupSlugForForm } from "@/lib/listing-fin-setup-tags"
 import {
   clearImpersonation,
-  clearImpersonationStorageIfCookieMissing,
-  getImpersonation,
+  resolveSellFlowImpersonation,
 } from "@/lib/impersonation"
 import { reswellPackageFormFromDbRow } from "@/lib/sell-listing-fulfillment-flags"
 import {
@@ -212,19 +211,26 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
     setEditLoading(true)
 
     void (async () => {
+      try {
       const supabase = supabaseRef.current
       const {
         data: { user },
       } = await supabase.auth.getUser()
       if (!user) {
         if (mounted) {
-          setEditLoading(false)
           signIn(`/sell/fins?edit=${editId}`)
         }
         return
       }
 
-      const imp = getImpersonation()
+      const { data: actorProfile } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", user.id)
+        .maybeSingle()
+      const actorIsAdmin = actorProfile?.is_admin === true
+
+      const imp = resolveSellFlowImpersonation()
       let query = supabase
         .from("listings")
         .select(
@@ -234,7 +240,7 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
         `,
         )
         .eq("id", editId)
-      if (!imp) {
+      if (!imp && !actorIsAdmin) {
         query = query.eq("user_id", user.id)
       }
 
@@ -244,7 +250,6 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
       if (error || !listing) {
         toast.error("Listing not found or cannot be edited")
         router.replace("/sell/fins", { scroll: false })
-        setEditLoading(false)
         return
       }
 
@@ -256,14 +261,12 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
             slug: (listing as { slug?: string | null }).slug ?? null,
           }),
         )
-        setEditLoading(false)
         return
       }
 
       if ((listing as { section?: string }).section !== "fins") {
         toast.error("Only fin listings can be edited here.")
         router.replace("/sell/fins", { scroll: false })
-        setEditLoading(false)
         return
       }
 
@@ -347,7 +350,15 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
 
       setPhotos(existingImages)
       setRemovedImageIds([])
-      setEditLoading(false)
+      } catch (err) {
+        console.error("[sell/fins] edit listing load failed:", err)
+        if (mounted) {
+          toast.error("Could not load this listing. Try again from Admin → Listings.")
+          router.replace("/sell/fins", { scroll: false })
+        }
+      } finally {
+        if (mounted) setEditLoading(false)
+      }
     })()
 
     return () => {
@@ -733,8 +744,6 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
 
     setSubmitting(true)
     try {
-      clearImpersonationStorageIfCookieMissing()
-
       const { data: actorProfile } = await supabase
         .from("profiles")
         .select("is_admin")
@@ -742,7 +751,7 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
         .maybeSingle()
       const actorIsAdmin = actorProfile?.is_admin === true
 
-      let storedImpersonation = getImpersonation()
+      let storedImpersonation = resolveSellFlowImpersonation()
       if (storedImpersonation && !actorIsAdmin) {
         clearImpersonation()
         storedImpersonation = null

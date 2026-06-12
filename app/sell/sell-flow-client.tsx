@@ -94,8 +94,8 @@ import {
 import { slugify } from "@/lib/slugify"
 import {
   clearImpersonation,
-  clearImpersonationStorageIfCookieMissing,
   getImpersonation,
+  resolveSellFlowImpersonation,
   type ImpersonationData,
 } from "@/lib/impersonation"
 import type { IndexBoardModelSelection } from "@/components/index-board-model-combobox"
@@ -851,8 +851,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const [impersonation, setImpersonation] = useState<ImpersonationData | null>(null)
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
   useEffect(() => {
-    clearImpersonationStorageIfCookieMissing()
-    setImpersonation(getImpersonation())
+    setImpersonation(resolveSellFlowImpersonation())
   }, [])
 
   const [loading, setLoading] = useState(false)
@@ -860,6 +859,11 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const [submitStepIndex, setSubmitStepIndex] = useState(0)
   const submitStepIndexRef = useRef(0)
   const [publishPreview, setPublishPreview] = useState<PublishPreviewState | null>(null)
+  useEffect(() => {
+    if (!loading || !publishPreview) return
+    const t = window.setTimeout(() => setLoading(false), 20_000)
+    return () => window.clearTimeout(t)
+  }, [loading, publishPreview])
   const formRef = useRef<HTMLFormElement>(null)
   /** Prevents concurrent publishes (double-tap / stacked submits before `loading` flips). */
   const publishInFlightRef = useRef(false)
@@ -1382,36 +1386,46 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     }
     let mounted = true
     ;(async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        setEditLoading(false)
-        return
-      }
-      const imp = getImpersonation()
-      // Use `*` so edit load picks up new listing columns without tight select coupling; see
-      // supabase/migrations/20260815120000_listings_dimensions_column.sql
-      let query = supabase
-        .from("listings")
-        .select(
-          `
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          setEditLoading(false)
+          return
+        }
+
+        const { data: actorProfile } = await supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", user.id)
+          .maybeSingle()
+        const actorIsAdmin = actorProfile?.is_admin === true
+
+        const imp = resolveSellFlowImpersonation()
+        if (mounted) setImpersonation(imp)
+
+        // Use `*` so edit load picks up new listing columns without tight select coupling; see
+        // supabase/migrations/20260815120000_listings_dimensions_column.sql
+        let query = supabase
+          .from("listings")
+          .select(
+            `
           *,
           listing_images (id, url, thumbnail_url, is_primary, sort_order),
           user_listing_board_model_data ( model_name, catalog_model_slug, catalog_brand_slug ),
           brand_models ( id, name, brands ( slug ) )
         `,
-        )
-        .eq("id", editId)
-      if (!imp) {
-        query = query.eq("user_id", user.id)
-      }
-      const { data: listing, error } = await query.single()
-      if (!mounted) return
-      if (error || !listing) {
-        toast.error("Listing not found or cannot be edited")
-        router.replace("/sell", { scroll: false })
-        setEditLoading(false)
-        return
-      }
+          )
+          .eq("id", editId)
+        if (!imp && !actorIsAdmin) {
+          query = query.eq("user_id", user.id)
+        }
+        const { data: listing, error } = await query.single()
+        if (!mounted) return
+        if (error || !listing) {
+          toast.error("Listing not found or cannot be edited")
+          router.replace("/sell", { scroll: false })
+          return
+        }
       if ((listing as { status?: string }).status === "sold") {
         toast.message("This listing has sold — it can’t be edited.")
         router.replace(
@@ -1421,13 +1435,11 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
             id: String(listing.id),
           }),
         )
-        setEditLoading(false)
         return
       }
       if ((listing as { section?: string }).section !== "surfboards") {
         toast.error("Only surfboard listings can be edited here.")
         router.replace("/sell", { scroll: false })
-        setEditLoading(false)
         return
       }
       setEditListingOwnerId(listing.user_id as string)
@@ -1624,7 +1636,15 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       latestListingPhotoPrepareSeqRef.current.clear()
       setImages(existingImages)
       setRemovedImageIds([])
-      setEditLoading(false)
+      } catch (err) {
+        console.error("[sell] edit listing load failed:", err)
+        if (mounted) {
+          toast.error("Could not load this listing. Try again from Admin → Listings.")
+          router.replace("/sell", { scroll: false })
+        }
+      } finally {
+        if (mounted) setEditLoading(false)
+      }
     })()
     return () => { mounted = false }
   }, [editId, supabase, router])
@@ -2227,8 +2247,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         return
       }
 
-      clearImpersonationStorageIfCookieMissing()
-
       const { data: actorProfile } = await supabase
         .from("profiles")
         .select("is_admin")
@@ -2237,7 +2255,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       const actorIsAdmin = actorProfile?.is_admin === true
 
       /** Only admins may use impersonation listing APIs; server also requires the HTTP cookie + target id. */
-      let storedImpersonation = getImpersonation()
+      let storedImpersonation = resolveSellFlowImpersonation()
       if (storedImpersonation && !actorIsAdmin) {
         clearImpersonation()
         setImpersonation(null)

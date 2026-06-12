@@ -6,6 +6,7 @@ import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
+import { loadMessagePolicyOptionsForSender } from "@/lib/messages/sender-policy-options"
 import { detectMessagePolicyViolation } from "@/lib/utils/detect-message-policy-violation"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
@@ -310,7 +311,8 @@ export async function sendMarketplaceListingMessage(input: unknown) {
 
   const receiverId = user.id === ctx.buyerId ? ctx.sellerId : ctx.buyerId
 
-  const policyViolation = detectMessagePolicyViolation(body)
+  const policyOptions = await loadMessagePolicyOptionsForSender(supabase, user.id)
+  const policyViolation = detectMessagePolicyViolation(body, policyOptions)
   if (policyViolation) {
     await capturePolicyBlockedDmContent({
       conversationId: conversation.id,
@@ -416,7 +418,8 @@ export async function sendListingMessage(input: {
     conversation = ensured
   }
 
-  const policyViolation = detectMessagePolicyViolation(body)
+  const policyOptions = await loadMessagePolicyOptionsForSender(supabase, user.id)
+  const policyViolation = detectMessagePolicyViolation(body, policyOptions)
   if (policyViolation) {
     await capturePolicyBlockedDmContent({
       conversationId: conversation.id,
@@ -508,7 +511,8 @@ export async function sendConversationReply(input: {
 
   const receiverId = user.id === conv.buyer_id ? conv.seller_id : conv.buyer_id
 
-  const policyViolation = detectMessagePolicyViolation(body)
+  const policyOptions = await loadMessagePolicyOptionsForSender(supabase, user.id)
+  const policyViolation = detectMessagePolicyViolation(body, policyOptions)
   if (policyViolation) {
     await capturePolicyBlockedDmContent({
       conversationId: conv.id,
@@ -601,11 +605,14 @@ export async function sendConversationMediaReply(input: unknown) {
     return { error: "Unauthorized" as const }
   }
 
+  const policyOptions = await loadMessagePolicyOptionsForSender(supabase, user.id)
+
   const result = await sendMarketplaceMediaMessage({
     conversationId: parsed.data.conversation_id,
     senderId: user.id,
     attachment: parsed.data.attachment,
     caption: parsed.data.caption,
+    allowPhoneSharing: policyOptions.allowPhoneSharing,
   })
 
   if (!result.ok) {
@@ -654,7 +661,8 @@ export async function sendConversationLocationReply(input: unknown) {
 
   const receiverId = user.id === conv.buyer_id ? conv.seller_id : conv.buyer_id
 
-  const policyViolation = detectMessagePolicyViolation(formattedAddress)
+  const policyOptions = await loadMessagePolicyOptionsForSender(supabase, user.id)
+  const policyViolation = detectMessagePolicyViolation(formattedAddress, policyOptions)
   if (policyViolation) {
     await capturePolicyBlockedDmContent({
       conversationId: conv.id,

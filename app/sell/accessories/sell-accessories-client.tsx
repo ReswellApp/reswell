@@ -57,8 +57,7 @@ import { listingDetailHref } from "@/lib/listing-href"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import {
   clearImpersonation,
-  clearImpersonationStorageIfCookieMissing,
-  getImpersonation,
+  resolveSellFlowImpersonation,
 } from "@/lib/impersonation"
 import { reswellPackageFormFromDbRow } from "@/lib/sell-listing-fulfillment-flags"
 import {
@@ -204,19 +203,26 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
     setEditLoading(true)
 
     void (async () => {
+      try {
       const supabase = supabaseRef.current
       const {
         data: { user },
       } = await supabase.auth.getUser()
       if (!user) {
         if (mounted) {
-          setEditLoading(false)
           signIn(`/sell/accessories?edit=${editId}`)
         }
         return
       }
 
-      const imp = getImpersonation()
+      const { data: actorProfile } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", user.id)
+        .maybeSingle()
+      const actorIsAdmin = actorProfile?.is_admin === true
+
+      const imp = resolveSellFlowImpersonation()
       let query = supabase
         .from("listings")
         .select(
@@ -226,7 +232,7 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
         `,
         )
         .eq("id", editId)
-      if (!imp) {
+      if (!imp && !actorIsAdmin) {
         query = query.eq("user_id", user.id)
       }
 
@@ -236,7 +242,6 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
       if (error || !listing) {
         toast.error("Listing not found or cannot be edited")
         router.replace("/sell/accessories", { scroll: false })
-        setEditLoading(false)
         return
       }
 
@@ -248,14 +253,12 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
             slug: (listing as { slug?: string | null }).slug ?? null,
           }),
         )
-        setEditLoading(false)
         return
       }
 
       if ((listing as { section?: string }).section !== "accessories") {
         toast.error("Only accessory listings can be edited here.")
         router.replace("/sell/accessories", { scroll: false })
-        setEditLoading(false)
         return
       }
 
@@ -337,7 +340,15 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
 
       setPhotos(existingImages)
       setRemovedImageIds([])
-      setEditLoading(false)
+      } catch (err) {
+        console.error("[sell/accessories] edit listing load failed:", err)
+        if (mounted) {
+          toast.error("Could not load this listing. Try again from Admin → Listings.")
+          router.replace("/sell/accessories", { scroll: false })
+        }
+      } finally {
+        if (mounted) setEditLoading(false)
+      }
     })()
 
     return () => {
@@ -595,8 +606,6 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
 
     setSubmitting(true)
     try {
-      clearImpersonationStorageIfCookieMissing()
-
       const { data: actorProfile } = await supabase
         .from("profiles")
         .select("is_admin")
@@ -604,7 +613,7 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
         .maybeSingle()
       const actorIsAdmin = actorProfile?.is_admin === true
 
-      let storedImpersonation = getImpersonation()
+      let storedImpersonation = resolveSellFlowImpersonation()
       if (storedImpersonation && !actorIsAdmin) {
         clearImpersonation()
         storedImpersonation = null

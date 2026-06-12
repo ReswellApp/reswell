@@ -97,3 +97,16 @@ export function getActiveImpersonationClient(): ImpersonationData | null {
   if (!raw) return null
   return parseImpersonationCookie(raw)
 }
+
+/**
+ * Sell flows: cookie is the source of truth (admin APIs require it). Keeps localStorage in sync
+ * so legacy call sites and the impersonation banner stay aligned after admin → edit navigation.
+ */
+export function resolveSellFlowImpersonation(): ImpersonationData | null {
+  const active = getActiveImpersonationClient()
+  if (active) {
+    setImpersonation(active)
+    return active
+  }
+  return null
+}

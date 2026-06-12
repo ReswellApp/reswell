@@ -490,11 +490,21 @@ export default function AdminListingsPage() {
     const email = listing.profiles?.email || null
     const res = await fetch('/api/admin/impersonate', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: listing.user_id, displayName, email }),
     })
     if (res.ok) {
-      setImpersonation({ userId: listing.user_id, displayName, email })
+      const body = (await res.json()) as {
+        userId?: string
+        displayName?: string
+        email?: string | null
+      }
+      setImpersonation({
+        userId: body.userId ?? listing.user_id,
+        displayName: body.displayName ?? displayName,
+        email: body.email ?? email,
+      })
       const normalizedSection = normalizeListingSection(listing.section)
       const peerSellRoute = normalizedSection
         ? PEER_SELL_ROUTE_BY_SECTION[normalizedSection]

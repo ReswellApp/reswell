@@ -39,6 +39,7 @@ export async function sendMarketplaceMediaMessage(input: {
   senderId: string
   attachment: Omit<MarketplaceMessageAttachment, "bucket">
   caption?: string | null
+  allowPhoneSharing?: boolean
 }): Promise<SendMarketplaceMediaMessageResult> {
   const { conversationId, senderId, caption } = input
 
@@ -86,7 +87,9 @@ export async function sendMarketplaceMediaMessage(input: {
   const content = (trimmedCaption || defaultBody).slice(0, 8000)
 
   if (trimmedCaption) {
-    const policyViolation = detectMessagePolicyViolation(trimmedCaption)
+    const policyViolation = detectMessagePolicyViolation(trimmedCaption, {
+      allowPhoneSharing: input.allowPhoneSharing,
+    })
     if (policyViolation) {
       const receiverId = senderId === conv.buyer_id ? conv.seller_id : conv.buyer_id
       try {
