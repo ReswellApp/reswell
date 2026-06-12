@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
 import { notifyBoardSavedSearchMatchesForListing } from "@/lib/services/notifyBoardSavedSearchMatches"
+import { notifyBoardListingRequestMatchesForListing } from "@/lib/services/notifyBoardListingRequestMatches"
 
 /**
  * Called from `/sell` after a listing is live (insert or draft→publish) so Klaviyo runs server-side
@@ -66,6 +67,7 @@ export async function POST(request: NextRequest) {
   })
 
   void notifyBoardSavedSearchMatchesForListing(listing.id)
+  void notifyBoardListingRequestMatchesForListing(listing.id)
 
   return NextResponse.json({ ok: true })
 }

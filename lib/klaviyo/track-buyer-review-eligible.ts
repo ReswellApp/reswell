@@ -18,11 +18,15 @@
  *
  * Also fires when a seller manually requests a review (**Review Requested** includes the same
  * `review_url` for a faster follow-up email).
+ *
+ * Manual test / metric bootstrap:
+ * - `POST /api/integrations/klaviyo/bootstrap-buyer-review-eligible` — seed metric in Klaviyo UI
+ * - `POST /api/integrations/klaviyo/trigger-buyer-review-eligible` — real order payload (Bearer `CRON_SECRET` when set)
  */
 
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { buildBuyerReviewSellerUrl } from "@/lib/klaviyo/order-review-url"
-import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
+import { sendKlaviyoServerEvent, type SendKlaviyoServerEventResult } from "@/lib/klaviyo/send-event"
 import { listingDetailHref } from "@/lib/listing-href"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
@@ -31,6 +35,8 @@ export type KlaviyoBuyerReviewEligibleTrigger =
   | "carrier_delivered"
   | "buyer_confirmed_delivery"
   | "pickup_complete"
+
+export const BUYER_REVIEW_ELIGIBLE_METRIC_NAME = "Buyer Review Eligible" as const
 
 export type KlaviyoBuyerReviewEligiblePayload = {
   orderId: string
@@ -44,11 +50,13 @@ export type KlaviyoBuyerReviewEligiblePayload = {
   sellerDisplayName: string
   fulfillmentMethod: "shipping" | "pickup"
   trigger: KlaviyoBuyerReviewEligibleTrigger
+  /** Appended to Klaviyo `unique_id` for manual test sends (omit in production). */
+  dedupeNonce?: string
 }
 
 export async function trackKlaviyoBuyerReviewEligible(
   payload: KlaviyoBuyerReviewEligiblePayload,
-): Promise<void> {
+): Promise<SendKlaviyoServerEventResult> {
   const buyerEmail = await getAuthEmailForUserId(payload.buyerUserId)
   const origin = publicSiteOriginForEmail()
   const listingPath = listingDetailHref({
@@ -60,8 +68,8 @@ export async function trackKlaviyoBuyerReviewEligible(
   const purchaseUrl = `${origin}/dashboard/purchases/${payload.orderId}`
   const reviewUrl = buildBuyerReviewSellerUrl(payload.orderId)
 
-  await sendKlaviyoServerEvent({
-    metricName: "Buyer Review Eligible",
+  return sendKlaviyoServerEvent({
+    metricName: BUYER_REVIEW_ELIGIBLE_METRIC_NAME,
     profile: {
       external_id: payload.buyerUserId,
       email: buyerEmail,
@@ -82,6 +90,8 @@ export async function trackKlaviyoBuyerReviewEligible(
         display_name: payload.sellerDisplayName,
       },
     },
-    uniqueId: `buyer-review-eligible-${payload.orderId}`,
+    uniqueId: payload.dedupeNonce
+      ? `buyer-review-eligible-${payload.orderId}-${payload.dedupeNonce}`
+      : `buyer-review-eligible-${payload.orderId}`,
   })
 }

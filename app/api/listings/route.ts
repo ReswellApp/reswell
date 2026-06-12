@@ -8,6 +8,7 @@ import { syncListingToGoogleMerchantBestEffort } from '@/lib/services/googleMerc
 import { slugify } from '@/lib/slugify'
 import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
 import { notifyBoardSavedSearchMatchesForListing } from '@/lib/services/notifyBoardSavedSearchMatches'
+import { notifyBoardListingRequestMatchesForListing } from '@/lib/services/notifyBoardListingRequestMatches'
 import { LISTING_TITLE_MAX_LENGTH } from '@/lib/sell-form-validation'
 import {
   composeListingDimensionsFromSplitListingFields,
@@ -228,6 +229,7 @@ export async function POST(request: NextRequest) {
     photoUrl: photoUrl || null,
   })
   void notifyBoardSavedSearchMatchesForListing(listing.id)
+  void notifyBoardListingRequestMatchesForListing(listing.id)
 
   if (section === 'surfboards') {
     revalidateBoardsBrowseCatalog()

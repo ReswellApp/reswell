@@ -97,3 +97,57 @@ export async function hasDuplicateBoardListingRequest(
 
   return { duplicate: (count ?? 0) > 0, error: null }
 }
+
+/** Open demand-capture rows eligible for listing-match notifications. */
+export async function fetchOpenBoardListingRequests(
+  service: SupabaseClient,
+): Promise<{ data: BoardListingRequestRow[]; error: Error | null }> {
+  const { data, error } = await service
+    .from("board_listing_requests")
+    .select("id, user_id, email, query, criteria, source, status, created_at")
+    .eq("status", "open")
+    .order("created_at", { ascending: true })
+
+  if (error) {
+    return { data: [], error: new Error(error.message) }
+  }
+
+  return { data: (data ?? []) as BoardListingRequestRow[], error: null }
+}
+
+export async function markBoardListingRequestFulfilled(
+  service: SupabaseClient,
+  requestId: string,
+): Promise<{ error: Error | null }> {
+  const { error } = await service
+    .from("board_listing_requests")
+    .update({ status: "fulfilled" })
+    .eq("id", requestId)
+    .eq("status", "open")
+
+  if (error) {
+    return { error: new Error(error.message) }
+  }
+
+  return { error: null }
+}
+
+export async function tryInsertBoardListingRequestAlertSent(
+  service: SupabaseClient,
+  requestId: string,
+  listingId: string,
+): Promise<{ inserted: boolean; error: Error | null }> {
+  const { error } = await service.from("board_listing_request_alert_sent").insert({
+    request_id: requestId,
+    listing_id: listingId,
+  })
+
+  if (error) {
+    if (error.code === "23505") {
+      return { inserted: false, error: null }
+    }
+    return { inserted: false, error: new Error(error.message) }
+  }
+
+  return { inserted: true, error: null }
+}

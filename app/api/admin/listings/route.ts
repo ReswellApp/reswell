@@ -4,6 +4,7 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
 import { slugify } from '@/lib/slugify'
 import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
 import { notifyBoardSavedSearchMatchesForListing } from '@/lib/services/notifyBoardSavedSearchMatches'
+import { notifyBoardListingRequestMatchesForListing } from '@/lib/services/notifyBoardListingRequestMatches'
 import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
@@ -321,6 +322,7 @@ export async function POST(request: NextRequest) {
     photoUrl: photoUrl || null,
   })
   void notifyBoardSavedSearchMatchesForListing(listing.id)
+  void notifyBoardListingRequestMatchesForListing(listing.id)
 
   return NextResponse.json({ success: true, listing_id: listing.id })
 }

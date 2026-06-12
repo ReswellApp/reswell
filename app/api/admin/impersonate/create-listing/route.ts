@@ -4,6 +4,7 @@ import { IMPERSONATION_COOKIE, parseImpersonationCookie } from "@/lib/impersonat
 import { slugify } from "@/lib/slugify"
 import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
 import { notifyBoardSavedSearchMatchesForListing } from "@/lib/services/notifyBoardSavedSearchMatches"
+import { notifyBoardListingRequestMatchesForListing } from "@/lib/services/notifyBoardListingRequestMatches"
 import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
@@ -186,6 +187,7 @@ export async function POST(request: NextRequest) {
     photoUrl,
   })
   void notifyBoardSavedSearchMatchesForListing(listing.id)
+  void notifyBoardListingRequestMatchesForListing(listing.id)
   void syncListingToGoogleMerchantBestEffort(service, listing.id)
 
   revalidatePath(`/l/${listing.slug}`, "page")

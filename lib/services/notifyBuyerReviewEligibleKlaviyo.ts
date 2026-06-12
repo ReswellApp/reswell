@@ -3,6 +3,7 @@ import {
   trackKlaviyoBuyerReviewEligible,
   type KlaviyoBuyerReviewEligibleTrigger,
 } from "@/lib/klaviyo/track-buyer-review-eligible"
+import type { SendKlaviyoServerEventResult } from "@/lib/klaviyo/send-event"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
@@ -72,7 +73,8 @@ export async function notifyBuyerReviewEligibleKlaviyo(
   supabase: SupabaseClient,
   orderId: string,
   trigger: KlaviyoBuyerReviewEligibleTrigger,
-): Promise<void> {
+  options?: { dedupeNonce?: string; force?: boolean },
+): Promise<{ sent: boolean; reason?: string; klaviyo?: SendKlaviyoServerEventResult }> {
   const { data: row, error } = await supabase
     .from("orders")
     .select(
@@ -100,7 +102,7 @@ export async function notifyBuyerReviewEligibleKlaviyo(
     if (error) {
       console.error("[notifyBuyerReviewEligibleKlaviyo] order load:", error.message)
     }
-    return
+    return { sent: false, reason: "order_not_found" }
   }
 
   const order = row as {
@@ -117,11 +119,17 @@ export async function notifyBuyerReviewEligibleKlaviyo(
     order_items?: Array<{ sort_order: number | null; listings: OrderListingRow | OrderListingRow[] | null }> | null
   }
 
-  if (order.status === "refunded" || order.status === "refunding") return
-  if (!order.buyer_id || !order.seller_id) return
+  if (order.status === "refunded" || order.status === "refunding") {
+    return { sent: false, reason: "order_refunded" }
+  }
+  if (!order.buyer_id || !order.seller_id) {
+    return { sent: false, reason: "missing_participants" }
+  }
 
   const trackingDetail = parseOrderTrackingDetail(order.tracking_detail)
-  if (!canSubmitSellerReview(order, trackingDetail)) return
+  if (!options?.force && !canSubmitSellerReview(order, trackingDetail)) {
+    return { sent: false, reason: "not_review_eligible" }
+  }
 
   const { data: existingReview, error: revErr } = await getMarketplaceReviewByOrderAndReviewer(
     supabase,
@@ -130,13 +138,17 @@ export async function notifyBuyerReviewEligibleKlaviyo(
   )
   if (revErr) {
     console.error("[notifyBuyerReviewEligibleKlaviyo] review check:", revErr.message)
-    return
+    return { sent: false, reason: "review_check_failed" }
   }
-  if (existingReview) return
+  if (!options?.force && existingReview) {
+    return { sent: false, reason: "buyer_already_reviewed" }
+  }
 
   const listing = primaryListingRow(order)
   const listingId = listing?.id ?? order.listing_id
-  if (!listingId) return
+  if (!listingId) {
+    return { sent: false, reason: "missing_listing" }
+  }
 
   const { data: sellerProfile } = await supabase
     .from("profiles")
@@ -147,7 +159,7 @@ export async function notifyBuyerReviewEligibleKlaviyo(
   const fulfillmentMethod =
     order.fulfillment_method === "pickup" ? "pickup" : "shipping"
 
-  await trackKlaviyoBuyerReviewEligible({
+  const klaviyo = await trackKlaviyoBuyerReviewEligible({
     orderId: order.id,
     orderNum: formatOrderNumForCustomer(order.order_num, order.id),
     listingId,
@@ -159,5 +171,8 @@ export async function notifyBuyerReviewEligibleKlaviyo(
     sellerDisplayName: displayNameFromProfileRow(sellerProfile ?? null),
     fulfillmentMethod,
     trigger,
+    dedupeNonce: options?.dedupeNonce,
   })
+
+  return { sent: klaviyo.ok, klaviyo, reason: klaviyo.ok ? undefined : klaviyo.skipReason ?? "klaviyo_rejected" }
 }
