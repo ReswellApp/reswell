@@ -5,11 +5,13 @@
  * flows email them. Seller display context lives under `request_from` (nested), not top-level scalars.
  *
  * **Building the flow:** Flows → Metric → **Review Requested** → email; use e.g.
+ * `{{ event.review_url }}` (direct link — opens the review dialog on the purchase page),
  * `{{ event.order_num }}`, `{{ event.Title }}`, `{{ event.messages_url }}`, `{{ event.purchase_url }}`,
  * `{{ event.request_from.display_name }}`.
  */
 
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
+import { buildBuyerReviewSellerUrl } from "@/lib/klaviyo/order-review-url"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { listingDetailHref } from "@/lib/listing-href"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
@@ -127,6 +129,7 @@ export async function trackKlaviyoReviewRequested(
       : null
   const listingUrl = listingPath != null ? `${origin}${listingPath}` : null
   const purchaseUrl = `${origin}/dashboard/purchases/${payload.orderId}`
+  const reviewUrl = buildBuyerReviewSellerUrl(payload.orderId)
   const messagesUrl = `${origin}/messages/${payload.conversationId}`
 
   await sendKlaviyoServerEvent({
@@ -143,6 +146,7 @@ export async function trackKlaviyoReviewRequested(
       Title: payload.listingTitle,
       listing_url: listingUrl,
       purchase_url: purchaseUrl,
+      review_url: reviewUrl,
       messages_url: messagesUrl,
       conversation_id: payload.conversationId,
       message_id: payload.messageId,

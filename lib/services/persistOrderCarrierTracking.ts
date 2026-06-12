@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { notifyBuyerOrderShippingUpdateKlaviyo } from "@/lib/services/notifyBuyerOrderShippingUpdateKlaviyo"
+import { notifyBuyerReviewEligibleKlaviyo } from "@/lib/services/notifyBuyerReviewEligibleKlaviyo"
 import type { OrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
+import { trackingDetailReportsDelivered } from "@/lib/shipping/carrier-delivery-payout-hold"
 import { syncCarrierDeliveryFromTracking } from "@/lib/services/syncCarrierDeliveryFromTracking"
 import { tryReleaseShippingPayoutAfterCarrierHold } from "@/lib/services/autoReleaseShippingPayoutsAfterCarrierDelivery"
 
@@ -38,7 +40,14 @@ export async function persistOrderCarrierTrackingSnapshot(
     return
   }
 
-  await syncCarrierDeliveryFromTracking(supabase, orderId, detail)
+  const syncResult = await syncCarrierDeliveryFromTracking(supabase, orderId, detail)
   await tryReleaseShippingPayoutAfterCarrierHold(orderId)
   await notifyBuyerOrderShippingUpdateKlaviyo(supabase, orderId, previousDetailRaw, detail)
+
+  if (
+    trackingDetailReportsDelivered(detail) &&
+    (syncResult.deliveredNewlyRecorded || syncResult.deliveryStatusUpdated)
+  ) {
+    void notifyBuyerReviewEligibleKlaviyo(supabase, orderId, "carrier_delivered")
+  }
 }

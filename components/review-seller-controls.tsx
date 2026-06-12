@@ -1,8 +1,9 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Star } from "lucide-react"
+import { BUYER_REVIEW_SELLER_QUERY } from "@/lib/klaviyo/order-review-url"
 import { ratingStarEmptyClassName, ratingStarFilledClassName } from "@/lib/rating-star-styles"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -46,6 +47,8 @@ type ReviewSellerControlsProps = {
   existingReview: ExistingSellerReview | null
   /** When true, use compact layout (e.g. purchases list). */
   compact?: boolean
+  /** Open the review dialog on load (e.g. from Klaviyo `?review=seller` deep link). */
+  autoOpen?: boolean
   /** Called after a new review is saved (e.g. refetch client-loaded purchase lists). */
   onSuccess?: () => void
 }
@@ -56,10 +59,25 @@ export function ReviewSellerControls({
   canReview,
   existingReview,
   compact,
+  autoOpen = false,
   onSuccess,
 }: ReviewSellerControlsProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    if (!autoOpen || !canReview || existingReview) return
+    setOpen(true)
+
+    if (typeof window === "undefined") return
+    const url = new URL(window.location.href)
+    if (url.searchParams.get(BUYER_REVIEW_SELLER_QUERY.key) !== BUYER_REVIEW_SELLER_QUERY.value) {
+      return
+    }
+    url.searchParams.delete(BUYER_REVIEW_SELLER_QUERY.key)
+    const next = `${url.pathname}${url.search}${url.hash}`
+    router.replace(next, { scroll: false })
+  }, [autoOpen, canReview, existingReview, router])
 
   if (existingReview) {
     return (

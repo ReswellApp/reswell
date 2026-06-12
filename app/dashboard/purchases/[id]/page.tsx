@@ -38,6 +38,7 @@ import {
   fetchOptionalOrderTrackingDetailJson,
   parseOrderTrackingDetail,
 } from "@/lib/shipping/order-tracking-detail"
+import { purchasePageHasSellerReviewDeepLink } from "@/lib/klaviyo/order-review-url"
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>
@@ -130,8 +131,13 @@ function formatAddress(addr: NonNullable<ShippingAddressJson>["address"]) {
   return parts.length ? parts.join("\n") : null
 }
 
-export default async function OrderDetailPage(props: { params: Promise<{ id: string }> }) {
+export default async function OrderDetailPage(props: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ review?: string }>
+}) {
   const raw = (await props.params).id
+  const searchParams = await props.searchParams
+  const openSellerReviewFromLink = purchasePageHasSellerReviewDeepLink(searchParams)
   const id = decodeURIComponent(typeof raw === "string" ? raw.trim() : "").trim()
   if (!id || !UUID_RE.test(id)) {
     notFound()
@@ -359,6 +365,7 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
           existing: existingSellerReview,
         }}
         reviewFromSeller={reviewFromSeller}
+        openSellerReviewFromLink={openSellerReviewFromLink}
       />
 
       {/* Buyer action: confirm delivery for shipped purchases (hidden when refunded) */}

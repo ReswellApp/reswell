@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import { notifyBuyerReviewEligibleKlaviyo } from "@/lib/services/notifyBuyerReviewEligibleKlaviyo"
 import { verifyOrderPickupForSeller } from "@/lib/services/orderPickupVerification"
 import type { OrderCompletedMessagePayload } from "@/lib/validations/order-completed-message-metadata"
 import { NextRequest, NextResponse } from "next/server"
@@ -93,6 +94,8 @@ export async function POST(
       .update({ last_message_at: now })
       .eq("id", conv.id)
   }
+
+  void notifyBuyerReviewEligibleKlaviyo(supabase, orderId, "pickup_complete")
 
   return NextResponse.json({ success: true })
 }
