@@ -5,8 +5,10 @@ import { resolveDynamicSeo } from "@/lib/seo/resolve-dynamic-seo"
 import { SellerProfileView } from "@/components/sellers/seller-profile-view"
 import type { SellerProfileListing } from "@/components/sellers/seller-profile-listings-panel"
 import { deriveSellerDirectoryTileMeta } from "@/lib/sellers/directory-tile-meta"
+import { isListingVisibleInPublicSoldFeed } from "@/lib/listing-public-visibility"
 import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
 import { absoluteUrl } from "@/lib/site-metadata"
+import { isAdminSeedListingTitle } from "@/lib/utils/admin-seed-listing"
 
 const PROFILE_UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -191,8 +193,10 @@ export default async function SellerProfilePage({
     )
     .eq("user_id", id)
   if (!canSeeHiddenListings) {
-    // Sold history stays public on the profile even after seller archive/cleanup.
-    listingsQuery = listingsQuery.or("hidden_from_site.eq.false,status.eq.sold")
+    // Visible listings, plus seller-archived sold history (hidden_from_site + archived_at).
+    listingsQuery = listingsQuery.or(
+      "hidden_from_site.eq.false,and(status.eq.sold,archived_at.not.is.null)",
+    )
   }
   const { data: listings } = await listingsQuery.order("created_at", { ascending: false })
 
@@ -271,13 +275,29 @@ export default async function SellerProfilePage({
   const inCurrentInventory = (l: (typeof allListings)[number]) =>
     !l.archived_at && (l.status === "active" || l.status === "pending_sale")
 
-  const currentListings = allListings.filter(inCurrentInventory)
+  const isExcludedFromSellerProfile = (l: (typeof allListings)[number]) =>
+    isAdminSeedListingTitle(l.title)
+
+  const currentListings = allListings.filter((l) => {
+    if (isExcludedFromSellerProfile(l)) return false
+    if (!inCurrentInventory(l)) return false
+    if (l.hidden_from_site && !canSeeHiddenListings) return false
+    return true
+  })
 
   const pastListings = allListings.filter((l) => {
+    if (isExcludedFromSellerProfile(l)) return false
     if (inCurrentInventory(l)) return false
     if (l.status === "removed" || l.status === "draft") return false
-    if (l.status === "sold") return true
-    if (l.hidden_from_site) return false
+    if (l.status === "sold") {
+      return isListingVisibleInPublicSoldFeed({
+        title: l.title,
+        status: l.status,
+        hidden_from_site: l.hidden_from_site,
+        archived_at: l.archived_at,
+      })
+    }
+    if (l.hidden_from_site && !canSeeHiddenListings) return false
     return true
   })
 
@@ -291,7 +311,7 @@ export default async function SellerProfilePage({
 
   const isShop = shop.is_shop
   const displayName = isShop ? shop.shop_name || shop.display_name : shop.display_name
-  const soldCount = shop.sales_count ?? 0
+  const soldCount = pastListings.filter((l) => l.status === "sold").length
 
   function mapListing(listing: (typeof allListings)[number]): SellerProfileListing {
     return {
