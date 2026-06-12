@@ -40,9 +40,7 @@ async function pollForSession(msBetween: number, maxAttempts: number) {
 function PasswordResetRequiredDialogInner() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const [open, setOpen] = useState(false)
-  const [phase, setPhase] = useState<"idle" | "waiting_session" | "ready">("idle")
-  const [sessionValid, setSessionValid] = useState(false)
+  const dismissedRef = useRef(false)
   const strippedRef = useRef(false)
 
   const urlRequestsReset = useMemo(
@@ -50,61 +48,78 @@ function PasswordResetRequiredDialogInner() {
     [searchParams],
   )
 
+  const [dismissed, setDismissed] = useState(false)
+  const [open, setOpen] = useState(urlRequestsReset)
+  const [phase, setPhase] = useState<"idle" | "checking" | "ready">(
+    urlRequestsReset ? "checking" : "idle",
+  )
+  const [sessionValid, setSessionValid] = useState(false)
+
+  const stripResetQueryFromUrl = useCallback(() => {
+    if (typeof window === "undefined" || strippedRef.current) return
+    strippedRef.current = true
+    const live = new URLSearchParams(window.location.search)
+    const clean = stripPasswordResetQuery(pathname || "/", live)
+    window.history.replaceState(window.history.state, "", clean)
+  }, [pathname])
+
+  const handleDismiss = useCallback(() => {
+    dismissedRef.current = true
+    setDismissed(true)
+    setOpen(false)
+    setPhase("ready")
+    stripResetQueryFromUrl()
+  }, [stripResetQueryFromUrl])
+
   const applySnapshot = useCallback(
     (session: { access_token?: string } | null | undefined) => {
+      if (dismissedRef.current) return
+
       const token = session?.access_token ?? null
       const recoveryJwt = accessTokenIndicatesPasswordRecovery(token)
       const showForJwt = !!token && recoveryJwt
       const showForLanding = !!token && urlRequestsReset
 
-      if (urlRequestsReset && !token) {
-        setOpen(true)
-        setPhase("waiting_session")
-        setSessionValid(false)
-        return
-      }
-
-      setPhase("ready")
       setSessionValid(!!token)
-      const shouldOpen = showForJwt || showForLanding
-      setOpen(shouldOpen)
+      setPhase("ready")
+      setOpen(urlRequestsReset || showForJwt || showForLanding)
 
-      if (shouldOpen && urlRequestsReset && token && typeof window !== "undefined" && !strippedRef.current) {
-        strippedRef.current = true
-        const live = new URLSearchParams(window.location.search)
-        const clean = stripPasswordResetQuery(pathname || "/", live)
-        window.history.replaceState(window.history.state, "", clean)
+      if ((showForJwt || showForLanding) && urlRequestsReset && token) {
+        stripResetQueryFromUrl()
       }
     },
-    [pathname, urlRequestsReset],
+    [stripResetQueryFromUrl, urlRequestsReset],
   )
 
   useEffect(() => {
+    if (!urlRequestsReset) return
+    dismissedRef.current = false
     strippedRef.current = false
+    setDismissed(false)
+    setOpen(true)
+    setPhase("checking")
+  }, [urlRequestsReset])
+
+  useEffect(() => {
     const supabase = createClient()
     let cancelled = false
 
     void (async () => {
-      let { data } = await supabase.auth.getSession()
-      if (cancelled) return
+      const { data } = await supabase.auth.getSession()
+      if (cancelled || dismissedRef.current) return
+
       let session = data.session ?? null
 
       if (urlRequestsReset && !session?.access_token) {
-        applySnapshot(null)
-        session = await pollForSession(75, 40)
-        if (cancelled) return
+        session = await pollForSession(32, 20)
+        if (cancelled || dismissedRef.current) return
       }
 
       if (urlRequestsReset && !session?.access_token) {
         setPhase("ready")
         setSessionValid(false)
         setOpen(true)
-        if (typeof window !== "undefined" && !strippedRef.current) {
-          strippedRef.current = true
-          const live = new URLSearchParams(window.location.search)
-          const clean = stripPasswordResetQuery(pathname || "/", live)
-          window.history.replaceState(window.history.state, "", clean)
-        }
+        stripResetQueryFromUrl()
         return
       }
 
@@ -112,6 +127,7 @@ function PasswordResetRequiredDialogInner() {
     })()
 
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (dismissedRef.current) return
       if (
         event === "PASSWORD_RECOVERY" ||
         event === "SIGNED_IN" ||
@@ -131,42 +147,46 @@ function PasswordResetRequiredDialogInner() {
       cancelled = true
       data.subscription.unsubscribe()
     }
-  }, [applySnapshot, pathname, urlRequestsReset])
+  }, [applySnapshot, stripResetQueryFromUrl, urlRequestsReset])
 
   const handleSuccess = useCallback(() => {
+    dismissedRef.current = true
+    setDismissed(true)
     setOpen(false)
     setPhase("ready")
-  }, [])
+    stripResetQueryFromUrl()
+  }, [stripResetQueryFromUrl])
 
-  const title =
-    phase === "waiting_session"
-      ? "Opening password reset…"
-      : sessionValid
-        ? "Set new password"
-        : "Link expired or invalid"
+  const showPasswordForm =
+    sessionValid || (urlRequestsReset && phase === "checking")
 
-  const description =
-    phase === "waiting_session"
-      ? "Hang on — we’re finishing sign-in from your email link."
-      : sessionValid
-        ? "Choose a strong password you haven’t used elsewhere."
-        : "Open the reset link from your email again, or request a new one."
+  const title = showPasswordForm
+    ? "Set new password"
+    : "Link expired or invalid"
+
+  const description = showPasswordForm
+    ? "Choose a strong password you haven't used elsewhere."
+    : "Open the reset link from your email again, or request a new one."
 
   return (
-    <Dialog open={open} onOpenChange={() => {}}>
+    <Dialog
+      open={open && !dismissed}
+      onOpenChange={(next) => {
+        if (!next) handleDismiss()
+      }}
+    >
       <DialogContent
-        showCloseButton={false}
-        overlayClassName="z-[110]"
-        className="z-[110] max-h-[min(90vh,720px)] w-[calc(100%-2rem)] max-w-md overflow-y-auto p-6 sm:p-8"
+        showCloseButton
+        overlayClassName="z-[110] data-[state=open]:animate-none data-[state=closed]:animate-none"
+        className="z-[110] max-h-[min(90vh,720px)] w-[calc(100%-2rem)] max-w-md overflow-y-auto p-6 duration-0 data-[state=open]:animate-none data-[state=closed]:animate-none sm:p-8"
         onPointerDownOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
           <DialogTitle className="text-2xl">{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        {phase === "waiting_session" ? null : sessionValid ? (
+        {showPasswordForm ? (
           <UpdatePasswordFormFields onSuccess={handleSuccess} />
         ) : (
           <UpdatePasswordInvalidSessionActions />
@@ -176,7 +196,7 @@ function PasswordResetRequiredDialogInner() {
   )
 }
 
-/** Modal for setting a new password after the user follows the Supabase reset link. */
+/** Modal for setting a new password after the user follows the reset link. */
 export function PasswordResetRequiredDialog() {
   return (
     <Suspense fallback={null}>
