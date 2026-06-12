@@ -10,6 +10,7 @@ import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
 import { notifyBoardSavedSearchMatchesForListing } from '@/lib/services/notifyBoardSavedSearchMatches'
 import { notifyBoardListingRequestMatchesForListing } from '@/lib/services/notifyBoardListingRequestMatches'
 import { LISTING_TITLE_MAX_LENGTH } from '@/lib/sell-form-validation'
+import { validateSurfboardListingShippingForSave } from '@/lib/validations/surfboardListingShipping'
 import {
   composeListingDimensionsFromSplitListingFields,
   listingDimensionsColumnTrim,
@@ -123,6 +124,33 @@ export async function POST(request: NextRequest) {
       ? listingModelText.trim()
       : null
 
+  const resolvedDimensions =
+    listingDimensionsColumnTrim(dimensions) ??
+    composeListingDimensionsFromSplitListingFields({
+      length_feet,
+      length_inches,
+      length_inches_display,
+      width,
+      width_inches_display,
+      thickness,
+      thickness_inches_display,
+      volume,
+      volume_display,
+    })
+
+  if (section === 'surfboards') {
+    const shippingSaveErr = validateSurfboardListingShippingForSave({
+      section: 'surfboards',
+      shipping_available: shipping_available || false,
+      board_shipping_cost_mode: modeRaw,
+      shipping_price: shipping_price ? parseFloat(shipping_price) : null,
+      dimensions: resolvedDimensions,
+    })
+    if (shippingSaveErr) {
+      return NextResponse.json({ error: shippingSaveErr }, { status: 400 })
+    }
+  }
+
   const listingInsertRow = {
     user_id: user.id,
     title: resolvedTitle,
@@ -139,19 +167,7 @@ export async function POST(request: NextRequest) {
     city,
     state,
     board_type,
-    dimensions:
-      listingDimensionsColumnTrim(dimensions) ??
-      composeListingDimensionsFromSplitListingFields({
-        length_feet,
-        length_inches,
-        length_inches_display,
-        width,
-        width_inches_display,
-        thickness,
-        thickness_inches_display,
-        volume,
-        volume_display,
-      }),
+    dimensions: resolvedDimensions,
     brand,
     shaper,
     brand_id: listingBrandId,

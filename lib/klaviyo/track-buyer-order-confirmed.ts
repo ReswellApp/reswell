@@ -13,16 +13,24 @@
  * Profile on the event is the **buyer** (`external_id` + email when available).
  */
 
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { listingDetailHref } from "@/lib/listing-href"
 import {
   klaviyoCommerceEventProperties,
   listingToKlaviyoEventCommerceItem,
 } from "@/lib/klaviyo/catalog-product"
+import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { trackKlaviyoLocalPickupOrderPlaced } from "@/lib/klaviyo/track-local-pickup-order-placed"
 import { trackKlaviyoPlacedOrder } from "@/lib/klaviyo/track-placed-order"
+import { klaviyoOrderEventUniqueId } from "@/lib/klaviyo/klaviyo-order-event-unique-id"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+
+export type KlaviyoBuyerOrderEventOptions = {
+  /** Appended to event unique_ids so Klaviyo accepts a deliberate re-send (manual recovery). */
+  resendKey?: string
+}
 
 export type KlaviyoBuyerOrderLineItem = {
   listingId: string
@@ -57,6 +65,7 @@ export type KlaviyoBuyerOrderConfirmedPayload = {
 
 export async function trackKlaviyoBuyerOrderConfirmed(
   payload: KlaviyoBuyerOrderConfirmedPayload,
+  options?: KlaviyoBuyerOrderEventOptions,
 ): Promise<void> {
   const amountNum =
     typeof payload.amount === "number" ? payload.amount : Number(payload.amount)
@@ -108,7 +117,11 @@ export async function trackKlaviyoBuyerOrderConfirmed(
   await sendKlaviyoServerEvent({
     metricName: "Purchase Successful",
     profile,
-    uniqueId: `purchase-successful-${payload.orderId}`,
+    uniqueId: klaviyoOrderEventUniqueId(
+      "purchase-successful",
+      payload.orderId,
+      options?.resendKey,
+    ),
     value: Number.isFinite(amountNum) ? amountNum : undefined,
     valueCurrency: "USD",
     properties: {
@@ -127,9 +140,109 @@ export async function trackKlaviyoBuyerOrderConfirmed(
     },
   })
 
-  await trackKlaviyoPlacedOrder(payload)
+  await trackKlaviyoPlacedOrder(payload, options)
 
   if (payload.fulfillmentMethod === "pickup") {
-    await trackKlaviyoLocalPickupOrderPlaced(payload)
+    await trackKlaviyoLocalPickupOrderPlaced(payload, options)
   }
+}
+
+/**
+ * Emits buyer order confirmation Klaviyo metrics from a stored order row.
+ * Use after interrupted checkout completion (webhook/finalize recovery).
+ */
+export async function trackKlaviyoBuyerOrderConfirmedForOrderId(
+  supabase: SupabaseClient,
+  orderId: string,
+  options?: KlaviyoBuyerOrderEventOptions,
+): Promise<void> {
+  const trimmedOrderId = orderId.trim()
+  if (!trimmedOrderId) return
+
+  const { data: order } = await supabase
+    .from("orders")
+    .select(
+      "id, order_num, buyer_id, seller_id, listing_id, amount, fulfillment_method, payment_method, pickup_code",
+    )
+    .eq("id", trimmedOrderId)
+    .maybeSingle()
+
+  if (!order?.listing_id) return
+
+  const { data: orderItems } = await supabase
+    .from("order_items")
+    .select("listing_id, item_price, sort_order")
+    .eq("order_id", trimmedOrderId)
+    .order("sort_order", { ascending: true })
+
+  const listingIds =
+    orderItems && orderItems.length > 0
+      ? orderItems.map((row) => String((row as { listing_id: string }).listing_id))
+      : [order.listing_id]
+
+  const { data: listingRows } = await supabase
+    .from("listings")
+    .select("id, title, section, slug")
+    .in("id", listingIds)
+
+  const listingMap = new Map(
+    (listingRows ?? []).map((row) => {
+      const r = row as { id: string; title: string | null; section: string | null; slug: string | null }
+      return [r.id, r]
+    }),
+  )
+
+  const listingsOrdered = listingIds
+    .map((id) => listingMap.get(id))
+    .filter(
+      (row): row is { id: string; title: string | null; section: string | null; slug: string | null } =>
+        row != null,
+    )
+
+  if (listingsOrdered.length === 0) return
+
+  const primaryListing = listingsOrdered[0]!
+  const buyerEmail = order.buyer_id != null ? await getAuthEmailForUserId(order.buyer_id) : null
+  const rawAmount = order.amount as unknown
+  const amount =
+    typeof rawAmount === "number"
+      ? rawAmount
+      : parseFloat(typeof rawAmount === "string" ? rawAmount : String(rawAmount))
+
+  const lineItems: KlaviyoBuyerOrderLineItem[] = listingsOrdered.map((listing, idx) => {
+    const orderItem = orderItems?.[idx] as { item_price?: number | string | null } | undefined
+    const itemPriceRaw = orderItem?.item_price
+    const itemPrice =
+      typeof itemPriceRaw === "number"
+        ? itemPriceRaw
+        : parseFloat(typeof itemPriceRaw === "string" ? itemPriceRaw : String(amount))
+
+    return {
+      listingId: listing.id,
+      listingTitle: String(listing.title ?? ""),
+      listingSection: String(listing.section ?? "surfboards"),
+      listingSlug: listing.slug ?? null,
+      price: Number.isFinite(itemPrice) ? itemPrice : amount,
+      quantity: 1,
+    }
+  })
+
+  await trackKlaviyoBuyerOrderConfirmed(
+    {
+      buyerUserId: order.buyer_id ?? undefined,
+      buyerEmail,
+      orderId: order.id,
+      orderNum: (order as { order_num?: string | null }).order_num ?? null,
+      listingId: primaryListing.id,
+      listingTitle: String(primaryListing.title ?? ""),
+      listingSection: String(primaryListing.section ?? "surfboards"),
+      listingSlug: primaryListing.slug ?? null,
+      lineItems,
+      amount: Number.isFinite(amount) ? amount : 0,
+      fulfillmentMethod: order.fulfillment_method === "pickup" ? "pickup" : "shipping",
+      pickupCode: (order as { pickup_code?: string | null }).pickup_code ?? null,
+      paymentMethod: order.payment_method === "reswell_bucks" ? "reswell_bucks" : "stripe",
+    },
+    options,
+  )
 }

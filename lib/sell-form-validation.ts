@@ -13,10 +13,7 @@ import {
   parseVolumeLiters,
 } from "@/lib/board-measurements"
 import { isListingSellableCondition } from "@/lib/listing-labels"
-import {
-  parseReswellParcelLengthRawToCarrierInches,
-  parseReswellParcelWidthHeightRawToCarrierInches,
-} from "@/lib/reswell-parcel-fields"
+import { validateSurfboardSellFormReswellShipping } from "@/lib/validations/surfboardListingShipping"
 
 const PRICE_MIN = 0.01
 const PRICE_MAX = 999_999.99
@@ -207,40 +204,9 @@ export function validateSellListingForm(
         }
       }
     }
-    if (mode === "reswell" && !relaxed) {
-      const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
-      const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
-      const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
-      if (L == null || L <= 0) {
-        const raw = form.reswellPackageLengthIn?.trim() ?? ""
-        const hasPrime = raw.replace(/[\u2032\u2019＇]/g, "'").includes("'")
-        return hasPrime
-          ? "Packed length: check feet and inches (e.g. 6'1) or use total outer length in inches."
-          : "Enter packed length — feet'inches such as 6'1 from your Dimensions, or outer box length in inches."
-      }
-      if (W == null || W <= 0) {
-        return "Enter packed box width — use the same inches as in Dimensions (decimals or fractions) for Reswell shipping."
-      }
-      if (H == null || H <= 0) {
-        return "Enter packed box height — use the same inches as board thickness (decimals or fractions) for Reswell shipping."
-      }
-      const lbRaw = form.reswellPackageWeightLb?.trim() ?? ""
-      const ozRaw = form.reswellPackageWeightOz?.trim() ?? ""
-      const lb = lbRaw === "" ? 0 : parseFloat(lbRaw.replace(/,/g, ""))
-      const oz = ozRaw === "" ? 0 : parseFloat(ozRaw.replace(/,/g, ""))
-      if (!Number.isFinite(lb) || lb < 0 || !Number.isFinite(oz) || oz < 0) {
-        return "Enter a valid packed weight (pounds and ounces), or leave both fields blank."
-      }
-      if (oz >= 16) {
-        return "Ounces must be under 16 — add whole pounds in the pounds field instead."
-      }
-      const hasAnyWeight = lbRaw !== "" || ozRaw !== ""
-      if (hasAnyWeight) {
-        const totalOz = lb * 16 + oz
-        if (!Number.isFinite(totalOz) || totalOz <= 0) {
-          return "Enter a positive packed weight, or leave both fields blank if you do not know it yet."
-        }
-      }
+    if (mode === "reswell") {
+      const reswellErr = validateSurfboardSellFormReswellShipping(form)
+      if (reswellErr) return reswellErr
     }
   }
 

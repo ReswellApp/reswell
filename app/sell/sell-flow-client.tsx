@@ -136,6 +136,7 @@ import {
   type BoardShippingCostMode,
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
+import { validateSurfboardListingShippingForSave } from "@/lib/validations/surfboardListingShipping"
 import { LISTING_CONDITION_SELL_OPTIONS, sellFormConditionValue } from "@/lib/listing-labels"
 import {
   formatBoardLengthForTitle,
@@ -2463,6 +2464,30 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           seller_purchase_price_usd: sellerPurchasePriceToDb(fd.sellerPurchasePrice),
         }
 
+        const shippingSaveErr = validateSurfboardListingShippingForSave({
+          section: "surfboards",
+          shipping_available: editListingFields.shipping_available,
+          local_pickup: editListingFields.local_pickup,
+          board_shipping_cost_mode: editListingFields.board_shipping_cost_mode,
+          shipping_price: editListingFields.shipping_price,
+          dimensions: editListingFields.dimensions,
+          shipping_packed_length_in: editListingFields.shipping_packed_length_in,
+          shipping_packed_width_in: editListingFields.shipping_packed_width_in,
+          shipping_packed_height_in: editListingFields.shipping_packed_height_in,
+          shipping_packed_weight_oz: editListingFields.shipping_packed_weight_oz,
+        })
+        if (shippingSaveErr) {
+          dismissUploadProgressToast()
+          setPublishValidationBanner(shippingSaveErr)
+          setLoading(false)
+          window.requestAnimationFrame(() => {
+            document
+              .getElementById("sell-publish-validation-banner")
+              ?.scrollIntoView({ behavior: "smooth", block: "center" })
+          })
+          return
+        }
+
         if (ownerEditsOwnListing) {
           let publishSlug: string | null = null
           const publishingFromDraftRow = listingIsDraft
@@ -2613,6 +2638,19 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           brand_id: fd.boardBrandId.trim() || null,
           ...listingSurfboardBrandFieldsForDb(fd),
           seller_purchase_price_usd: sellerPurchasePriceToDb(fd.sellerPurchasePrice),
+        }
+
+        const shippingSaveErrNew = validateSurfboardListingShippingForSave(listingFields)
+        if (shippingSaveErrNew) {
+          dismissUploadProgressToast()
+          setPublishValidationBanner(shippingSaveErrNew)
+          setLoading(false)
+          window.requestAnimationFrame(() => {
+            document
+              .getElementById("sell-publish-validation-banner")
+              ?.scrollIntoView({ behavior: "smooth", block: "center" })
+          })
+          return
         }
 
         if (listingImpersonation) {

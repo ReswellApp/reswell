@@ -16,6 +16,7 @@ import type { ProfileAddressRow } from "@/lib/profile-address"
 import { prefetchStripeCheckout } from "@/lib/stripe/prefetch-stripe-checkout"
 import { Truck, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { LISTING_RESELL_SHIPPING_UNAVAILABLE_MESSAGE } from "@/lib/services/listingReswellShippability"
 
 export type { CheckoutCopy, CheckoutListing, CheckoutSeller } from "@/components/checkout-types"
 
@@ -61,10 +62,17 @@ export function CheckoutClient({
     ? listings.every((l) => l.local_pickup !== false)
     : primaryListing.local_pickup !== false
 
-  /** Bundles ship as one box only when every board offers shipping. */
+  /** Bundles ship as one box only when every board offers shippable carrier delivery. */
+  const listingCanShipAtCheckout = (l: CheckoutListing) =>
+    l.shipping_quoteable !== undefined ? l.shipping_quoteable : !!l.shipping_available
+
   const canShip = isBundle
-    ? listings.every((l) => !!l.shipping_available)
-    : !!primaryListing.shipping_available
+    ? listings.every(listingCanShipAtCheckout)
+    : listingCanShipAtCheckout(primaryListing)
+
+  const shippingConfiguredButBroken = isBundle
+    ? listings.some((l) => l.shipping_configured_but_broken)
+    : !!primaryListing.shipping_configured_but_broken
 
   const [method, setMethod] = useState<"pickup" | "shipping">(() => {
     if (canPick && !canShip) return "pickup"
@@ -211,7 +219,9 @@ export function CheckoutClient({
   if (!resolved.ok) {
     return (
       <p className="text-sm text-destructive">
-        This order cannot be checked out ({resolved.error}).{" "}
+        {shippingConfiguredButBroken && !canPick
+          ? LISTING_RESELL_SHIPPING_UNAVAILABLE_MESSAGE
+          : `This order cannot be checked out (${resolved.error}).`}{" "}
         <Link href={backHref} className="underline">
           Back to listing
         </Link>
@@ -231,6 +241,45 @@ export function CheckoutClient({
           shipping: resolved.shipping,
           total: resolved.total,
         }
+
+  const shipMethodSubtitle = (() => {
+    if (quoteError) {
+      return quoteError
+    }
+    if (isBundle && !shipQuote) {
+      return "All boards ship together in one box — rate is calculated for your address."
+    }
+    if (shipQuote?.usedReswellQuote) {
+      return displayTotals.shipping > 0
+        ? `Includes about $${displayTotals.shipping.toFixed(2)} carrier shipping (Reswell rate).`
+        : "Reswell carrier rate is included in your total (seller covers shipping)."
+    }
+    if (displayTotals.shipping > 0) {
+      return `Includes $${displayTotals.shipping.toFixed(2)} shipping (set by seller).`
+    }
+    return "Seller offers free shipping."
+  })()
+
+  const shippingInfoCopy = (() => {
+    if (!purchaseDetails.readyToPay) {
+      return "Enter your shipping address above to confirm delivery."
+    }
+    if (quoteError) {
+      return quoteError
+    }
+    if (quoteLoading) {
+      return "Getting live carrier rates for your address…"
+    }
+    if (shipQuote?.usedReswellQuote) {
+      return displayTotals.shipping > 0
+        ? `Reswell recommended shipping (carrier rate) is about $${displayTotals.shipping.toFixed(2)} — included in your total.`
+        : "Reswell carrier rate is included in your total."
+    }
+    if (displayTotals.shipping > 0) {
+      return `Flat $${displayTotals.shipping.toFixed(2)} shipping from the seller — included in your total.`
+    }
+    return "Free shipping from this seller — included in your total."
+  })()
 
   const shippingQuoteReady = !needsShipping || (!!shipQuote && !quoteLoading && !quoteError)
   const paymentBlocked = !purchaseDetails.readyToPay || !shippingQuoteReady
@@ -326,15 +375,7 @@ export function CheckoutClient({
                         Ship to me
                       </span>
                       <p className="mt-1 text-xs leading-relaxed text-neutral-500">
-                        {isBundle && !shipQuote
-                          ? "All boards ship together in one box — rate is calculated for your address."
-                          : shipQuote?.usedReswellQuote
-                            ? displayTotals.shipping > 0
-                              ? `Includes about $${displayTotals.shipping.toFixed(2)} carrier shipping (Reswell rate).`
-                              : "Seller offers free shipping."
-                            : displayTotals.shipping > 0
-                              ? `Includes $${displayTotals.shipping.toFixed(2)} shipping (set by seller).`
-                              : "Seller offers free shipping."}
+                        {shipMethodSubtitle}
                       </p>
                     </div>
                   </label>
@@ -380,17 +421,7 @@ export function CheckoutClient({
                   </p>
                 ) : null}
                 <div className="min-h-[3.5rem] rounded-[8px] border border-neutral-200 bg-neutral-100/80 px-4 py-3.5 text-[13px] leading-relaxed text-neutral-600">
-                  {!purchaseDetails.readyToPay
-                    ? "Enter your shipping address above to confirm delivery."
-                    : quoteLoading
-                      ? "Getting live carrier rates for your address…"
-                      : shipQuote?.usedReswellQuote
-                        ? displayTotals.shipping > 0
-                          ? `Reswell recommended shipping (carrier rate) is about $${displayTotals.shipping.toFixed(2)} — included in your total.`
-                          : "Free shipping from this seller — included in your total."
-                        : displayTotals.shipping > 0
-                          ? `Flat $${displayTotals.shipping.toFixed(2)} shipping from the seller — included in your total.`
-                          : "Free shipping from this seller — included in your total."}
+                  {shippingInfoCopy}
                 </div>
               </div>
             )}

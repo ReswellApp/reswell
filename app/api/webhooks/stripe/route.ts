@@ -30,6 +30,8 @@ export const runtime = "nodejs"
  * 308/301 redirects on webhook POSTs — a redirect causes delivery failures.
  *
  * Completes marketplace orders when the browser cannot call finalize (e.g. session cookie missing after 3DS return).
+ * `payment_intent.succeeded` must be enabled on a live, non-disabled endpoint — otherwise succeeded charges
+ * never create orders when the browser finalize call also fails.
  */
 export async function POST(request: Request) {
   const secretsRaw = process.env.STRIPE_WEBHOOK_SECRET ?? ""

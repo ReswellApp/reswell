@@ -15,6 +15,7 @@ import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sell
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
+import { validateSurfboardListingShippingForSave } from "@/lib/validations/surfboardListingShipping"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -106,6 +107,39 @@ export async function POST(request: NextRequest) {
     slug,
     status: "active" as const,
   }
+
+  const shippingSaveErr = validateSurfboardListingShippingForSave({
+    section:
+      typeof listingData.section === "string" ? listingData.section : null,
+    shipping_available: listingData.shipping_available as boolean | null | undefined,
+    board_shipping_cost_mode: listingData.board_shipping_cost_mode as string | null | undefined,
+    shipping_price: listingData.shipping_price as string | number | null | undefined,
+    dimensions: listingData.dimensions as string | null | undefined,
+    shipping_packed_length_in: listingData.shipping_packed_length_in as
+      | number
+      | string
+      | null
+      | undefined,
+    shipping_packed_width_in: listingData.shipping_packed_width_in as
+      | number
+      | string
+      | null
+      | undefined,
+    shipping_packed_height_in: listingData.shipping_packed_height_in as
+      | number
+      | string
+      | null
+      | undefined,
+    shipping_packed_weight_oz: listingData.shipping_packed_weight_oz as
+      | number
+      | string
+      | null
+      | undefined,
+  })
+  if (shippingSaveErr) {
+    return NextResponse.json({ error: shippingSaveErr }, { status: 400 })
+  }
+
   let { data: listing, error: listingError } = await service
     .from("listings")
     .insert(insertPayload)

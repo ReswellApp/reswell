@@ -33,6 +33,7 @@ import {
 } from "@/lib/services/acceptedOfferCheckout"
 import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
 import type { PeerSurfboardCheckoutListingRow } from "@/lib/services/peerListingShippingQuote"
+import { checkoutListingShippingMeta, getListingCheckoutFulfillmentFlags } from "@/lib/services/listingReswellShippability"
 import { KlaviyoCheckoutStartedTracker } from "@/components/features/checkout/klaviyo-checkout-started-tracker"
 
 export const dynamic = "force-dynamic"
@@ -57,9 +58,14 @@ export async function generateMetadata(props: {
 }
 
 function rowToCheckoutListing(row: Record<string, unknown>): CheckoutListing {
-  return {
+  const base = {
     ...(row as CheckoutListing),
     section: String((row as { section?: string | null }).section ?? "surfboards"),
+  }
+  const shippingMeta = checkoutListingShippingMeta(base)
+  return {
+    ...base,
+    ...shippingMeta,
   }
 }
 
@@ -312,7 +318,7 @@ export default async function CheckoutPage(props: {
 
   const { listing, redirectSlug } = await findListingByParam(supabase, id, {
     select:
-      "id, slug, title, price, user_id, status, section, shipping_available, local_pickup, shipping_price, city, state, listing_images ( url, thumbnail_url, is_primary )",
+      "id, slug, title, price, user_id, status, section, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode, dimensions, shipping_packed_length_in, shipping_packed_width_in, shipping_packed_height_in, shipping_packed_weight_oz, city, state, listing_images ( url, thumbnail_url, is_primary )",
     section: undefined,
   })
 
@@ -342,6 +348,26 @@ export default async function CheckoutPage(props: {
 
   const lp = listing.local_pickup !== false
   const sa = !!listing.shipping_available
+  const checkoutFulfillment = getListingCheckoutFulfillmentFlags({
+    section: listing.section,
+    shipping_available: listing.shipping_available,
+    local_pickup: listing.local_pickup,
+    board_shipping_cost_mode: (listing as { board_shipping_cost_mode?: string | null })
+      .board_shipping_cost_mode,
+    shipping_price: listing.shipping_price,
+    dimensions: (listing as { dimensions?: string | null }).dimensions,
+    shipping_packed_length_in: (listing as { shipping_packed_length_in?: number | string | null })
+      .shipping_packed_length_in,
+    shipping_packed_width_in: (listing as { shipping_packed_width_in?: number | string | null })
+      .shipping_packed_width_in,
+    shipping_packed_height_in: (listing as { shipping_packed_height_in?: number | string | null })
+      .shipping_packed_height_in,
+    shipping_packed_weight_oz: (listing as { shipping_packed_weight_oz?: number | string | null })
+      .shipping_packed_weight_oz,
+  })
+  if (!checkoutFulfillment.canPick && !checkoutFulfillment.canShip) {
+    notFound()
+  }
   if (!lp && !sa) {
     notFound()
   }

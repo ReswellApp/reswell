@@ -26,6 +26,7 @@ import {
 } from "@/components/features/cart/cart-favorites-carousel"
 import { CartOrderSummary } from "@/components/features/cart/cart-order-summary"
 import { cn } from "@/lib/utils"
+import { getListingCheckoutFulfillmentFlags } from "@/lib/services/listingReswellShippability"
 import { FavoriteButton } from "@/components/favorite-button"
 
 function listingAvailable(listing: CartPageItem["listing"]) {
@@ -118,6 +119,24 @@ export function CartPageView({
 
     const checkoutActionsInner: { href: string; label: string }[] = []
     for (const [sellerId, rows] of sellerGroups) {
+      const sellerCanCheckout = rows.every(({ listing }) => {
+        if (!listingAvailable(listing)) return false
+        const flags = getListingCheckoutFulfillmentFlags({
+          section: listing.section,
+          shipping_available: listing.shipping_available,
+          local_pickup: listing.local_pickup,
+          board_shipping_cost_mode: listing.board_shipping_cost_mode,
+          shipping_price: listing.shipping_price,
+          dimensions: listing.dimensions,
+          shipping_packed_length_in: listing.shipping_packed_length_in,
+          shipping_packed_width_in: listing.shipping_packed_width_in,
+          shipping_packed_height_in: listing.shipping_packed_height_in,
+          shipping_packed_weight_oz: listing.shipping_packed_weight_oz,
+        })
+        return flags.canPick || flags.canShip
+      })
+      if (!sellerCanCheckout) continue
+
       const sellerName = getPublicSellerDisplayName(rows[0]!.listing.profiles)
       const n = rows.length
       const label =
@@ -133,12 +152,33 @@ export function CartPageView({
 
     const sellerGroupCount = sellerGroups.size
 
+    const hasBlockedShippingGroup = [...sellerGroups.values()].some((rows) =>
+      rows.some(({ listing }) => {
+        if (!listingAvailable(listing)) return false
+        const flags = getListingCheckoutFulfillmentFlags({
+          section: listing.section,
+          shipping_available: listing.shipping_available,
+          local_pickup: listing.local_pickup,
+          board_shipping_cost_mode: listing.board_shipping_cost_mode,
+          shipping_price: listing.shipping_price,
+          dimensions: listing.dimensions,
+          shipping_packed_length_in: listing.shipping_packed_length_in,
+          shipping_packed_width_in: listing.shipping_packed_width_in,
+          shipping_packed_height_in: listing.shipping_packed_height_in,
+          shipping_packed_weight_oz: listing.shipping_packed_weight_oz,
+        })
+        return flags.shippingConfiguredButBroken
+      }),
+    )
+
     const note =
       sellerGroupCount > 1
         ? "Multiple sellers — checkout each group separately. Boards from one seller can be purchased together in one checkout, shipped in one box or picked up locally."
-        : availRows.length > 0 && availRows.some(({ listing }) => listing.shipping_available)
-          ? "Shipping cost and delivery timing are finalized with the seller at checkout."
-          : "Pickup or shipping details are confirmed with the seller when you check out."
+        : hasBlockedShippingGroup
+          ? "Some items need seller shipping updates before carrier delivery works. Local pickup may still be available — open the listing for details."
+          : availRows.length > 0 && availRows.some(({ listing }) => listing.shipping_available)
+            ? "Shipping cost and delivery timing are finalized with the seller at checkout."
+            : "Pickup or shipping details are confirmed with the seller when you check out."
 
     return {
       availableTotal: total,
@@ -260,6 +300,18 @@ export function CartPageView({
                   dimensions: listing.dimensions,
                 })
                 const favorited = favoritedListingIds.includes(listing.id)
+                const fulfillmentFlags = getListingCheckoutFulfillmentFlags({
+                  section: listing.section,
+                  shipping_available: listing.shipping_available,
+                  local_pickup: listing.local_pickup,
+                  board_shipping_cost_mode: listing.board_shipping_cost_mode,
+                  shipping_price: listing.shipping_price,
+                  dimensions: listing.dimensions,
+                  shipping_packed_length_in: listing.shipping_packed_length_in,
+                  shipping_packed_width_in: listing.shipping_packed_width_in,
+                  shipping_packed_height_in: listing.shipping_packed_height_in,
+                  shipping_packed_weight_oz: listing.shipping_packed_weight_oz,
+                })
 
                 const attrParts: string[] = []
                 if (condition) attrParts.push(`Condition: ${condition}`)
@@ -323,6 +375,13 @@ export function CartPageView({
                             No longer available — remove this item to continue.
                           </p>
                         )}
+                        {available && fulfillmentFlags.shippingConfiguredButBroken ? (
+                          <p className="mt-3 text-[13px] leading-relaxed text-destructive">
+                            {fulfillmentFlags.canPick
+                              ? "Carrier shipping unavailable — local pickup may still work. Seller must update board dimensions."
+                              : "Carrier shipping unavailable — seller must update board dimensions and Reswell shipping."}
+                          </p>
+                        ) : null}
 
                         <div className="mt-4 flex flex-wrap items-center gap-2 sm:justify-end">
                           <div

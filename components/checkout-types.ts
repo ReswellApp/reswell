@@ -14,6 +14,15 @@ export type CheckoutListing = PayableListing & {
   title: string
   user_id: string
   section: string
+  board_shipping_cost_mode?: string | null
+  dimensions?: string | null
+  shipping_packed_length_in?: number | string | null
+  shipping_packed_width_in?: number | string | null
+  shipping_packed_height_in?: number | string | null
+  shipping_packed_weight_oz?: number | string | null
+  /** When false, hide Ship to me even if `shipping_available` is true (broken Reswell parcel). */
+  shipping_quoteable?: boolean
+  shipping_configured_but_broken?: boolean
   /** From /sell location step — Reswell shipping rates prefer this with map pin as fallback */
   city?: string | null
   state?: string | null

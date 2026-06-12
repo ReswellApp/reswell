@@ -22,6 +22,10 @@ export type CartListingRow = {
   /** Seller flat shipping rate when shipping is offered; used for cart summary display. */
   shipping_price: string | number | null
   board_shipping_cost_mode?: string | null
+  shipping_packed_length_in?: number | string | null
+  shipping_packed_width_in?: number | string | null
+  shipping_packed_height_in?: number | string | null
+  shipping_packed_weight_oz?: number | string | null
   condition?: string | null
   board_type?: string | null
   dimensions?: string | null
@@ -271,6 +275,10 @@ export async function getCartPageItems(): Promise<{
         shipping_available,
         shipping_price,
         board_shipping_cost_mode,
+        shipping_packed_length_in,
+        shipping_packed_width_in,
+        shipping_packed_height_in,
+        shipping_packed_weight_oz,
         condition,
         board_type,
         dimensions,

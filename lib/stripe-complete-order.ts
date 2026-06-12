@@ -17,10 +17,16 @@ import {
 } from "@/lib/profile-address"
 import { generatePickupCode } from "@/lib/order-status"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
-import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
+import {
+  trackKlaviyoBuyerOrderConfirmed,
+  trackKlaviyoBuyerOrderConfirmedForOrderId,
+} from "@/lib/klaviyo/track-buyer-order-confirmed"
 import type { KlaviyoBuyerOrderLineItem } from "@/lib/klaviyo/track-buyer-order-confirmed"
 import { trackMetaPurchaseServerEvent } from "@/lib/meta/track-purchase-server-event"
-import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
+import {
+  postPurchaseThreadNotification,
+  postPurchaseThreadNotificationForOrderId,
+} from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
 import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
@@ -130,62 +136,6 @@ async function recoverMissingOrderPendingLedger(
 }
 
 /**
- * Re-send Purchase Successful for an order already stored (idempotent finalize / webhook).
- * Seller Sale Successful Klaviyo fires when earnings are released after fulfillment.
- */
-async function emitPurchaseSuccessfulKlaviyoForOrderId(
-  serviceSupabase: ReturnType<typeof createServiceRoleClient>,
-  orderId: string,
-): Promise<void> {
-  const { data: order } = await serviceSupabase
-    .from("orders")
-    .select(
-      "id, order_num, buyer_id, seller_id, listing_id, amount, fulfillment_method, payment_method, pickup_code",
-    )
-    .eq("id", orderId)
-    .maybeSingle()
-
-  if (!order?.seller_id || !order.listing_id) return
-
-  const { data: listing } = await serviceSupabase
-    .from("listings")
-    .select("id, title, section, slug")
-    .eq("id", order.listing_id)
-    .maybeSingle()
-
-  if (!listing) return
-
-  const buyerEmail = order.buyer_id != null ? await getAuthEmailForUserId(order.buyer_id) : null
-  const rawAmount = order.amount as unknown
-  const amount =
-    typeof rawAmount === "number"
-      ? rawAmount
-      : parseFloat(typeof rawAmount === "string" ? rawAmount : String(rawAmount))
-
-  const fulfillmentMethod =
-    order.fulfillment_method === "pickup" ? "pickup" : "shipping"
-  const paymentMethod =
-    order.payment_method === "reswell_bucks" ? "reswell_bucks" : "stripe"
-
-  await trackKlaviyoBuyerOrderConfirmed({
-    buyerUserId: order.buyer_id ?? undefined,
-    buyerEmail,
-    orderId: order.id,
-    orderNum: (order as { order_num?: string | null }).order_num ?? null,
-    listingId: listing.id,
-    listingTitle: listing.title ?? "",
-    listingSection: listing.section ?? "",
-    listingSlug: listing.slug ?? null,
-    amount: Number.isFinite(amount) ? amount : 0,
-    fulfillmentMethod,
-    pickupCode: (order as { pickup_code?: string | null }).pickup_code ?? null,
-    paymentMethod,
-  })
-
-  // Seller "Sale Successful" Klaviyo fires when earnings are released after fulfillment (see releaseOrderSellerEarningsAfterFulfillment).
-}
-
-/**
  * Creates the marketplace order and side effects for a succeeded PaymentIntent.
  * Idempotent: safe to call from the client finalize route and from Stripe webhooks.
  * Caller must only invoke when `pi.status === "succeeded"` and metadata is trusted (Stripe-signed webhook or session matches buyer_id).
@@ -221,7 +171,8 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       .maybeSingle()
 
     if (pendingLedger?.id) {
-      await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
+      await trackKlaviyoBuyerOrderConfirmedForOrderId(serviceSupabase, existing.id)
+      await postPurchaseThreadNotificationForOrderId(serviceSupabase, existing.id)
       await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, existing.id)
       return { ok: true, orderId: existing.id, alreadyProcessed: true }
     }
@@ -234,7 +185,8 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     if (!recovered.ok) {
       return recovered
     }
-    await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
+    await trackKlaviyoBuyerOrderConfirmedForOrderId(serviceSupabase, existing.id)
+    await postPurchaseThreadNotificationForOrderId(serviceSupabase, existing.id)
     await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, existing.id)
     return { ok: true, orderId: existing.id, alreadyProcessed: true }
   }
@@ -622,9 +574,13 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Could not mark listing sold", status: 500 }
   }
 
-  revalidateBoardsBrowseCatalog()
-  await revalidateSellersAfterListingChange(serviceSupabase, bundleSellerId)
-  revalidateMarketplaceSoldFeedCatalog()
+  try {
+    revalidateBoardsBrowseCatalog()
+    await revalidateSellersAfterListingChange(serviceSupabase, bundleSellerId)
+    revalidateMarketplaceSoldFeedCatalog()
+  } catch (revalidateErr) {
+    console.error("[stripe-complete-order] catalog revalidate (non-fatal):", revalidateErr)
+  }
 
   void completeAcceptedOfferOnPurchase(
     serviceSupabase,

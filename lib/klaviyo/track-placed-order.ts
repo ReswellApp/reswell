@@ -16,10 +16,15 @@ import {
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
-import type { KlaviyoBuyerOrderConfirmedPayload } from "@/lib/klaviyo/track-buyer-order-confirmed"
+import type {
+  KlaviyoBuyerOrderConfirmedPayload,
+  KlaviyoBuyerOrderEventOptions,
+} from "@/lib/klaviyo/track-buyer-order-confirmed"
+import { klaviyoOrderEventUniqueId } from "@/lib/klaviyo/klaviyo-order-event-unique-id"
 
 export async function trackKlaviyoPlacedOrder(
   payload: KlaviyoBuyerOrderConfirmedPayload,
+  options?: KlaviyoBuyerOrderEventOptions,
 ): Promise<void> {
   const amountNum =
     typeof payload.amount === "number" ? payload.amount : Number(payload.amount)
@@ -54,7 +59,7 @@ export async function trackKlaviyoPlacedOrder(
   await sendKlaviyoServerEvent({
     metricName: "Placed Order",
     profile,
-    uniqueId: `placed-order-${payload.orderId}`,
+    uniqueId: klaviyoOrderEventUniqueId("placed-order", payload.orderId, options?.resendKey),
     value: Number.isFinite(amountNum) ? amountNum : undefined,
     valueCurrency: "USD",
     properties: {

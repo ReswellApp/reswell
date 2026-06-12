@@ -40,6 +40,10 @@ import {
 
 import { TranslateableDescription } from "@/components/translateable-description"
 import { boardFulfillmentDetailLabels } from "@/lib/listing-fulfillment"
+import {
+  getListingCheckoutFulfillmentFlags,
+  LISTING_RESELL_SHIPPING_UNAVAILABLE_MESSAGE,
+} from "@/lib/services/listingReswellShippability"
 import { getCachedSoldSurfboardUsedShippingFulfillment } from "@/lib/cache/marketplace-sold-feed"
 import { findListingByParam } from "@/lib/listing-query"
 import {
@@ -213,8 +217,31 @@ export async function SurfboardListingDetailPage({
 
   const metaCatalogEligible = isMetaCatalogEligibleListing(board)
 
-  const pickupOffered = board.local_pickup !== false
-  const shippingOffered = !!board.shipping_available
+  const boardShippingCostMode =
+    (board as { board_shipping_cost_mode?: "reswell" | "flat" | "free" | null })
+      .board_shipping_cost_mode ?? null
+  const shippingFlatRate = Math.max(0, Number.parseFloat(String(board.shipping_price ?? 0)) || 0)
+
+  const checkoutFulfillment = getListingCheckoutFulfillmentFlags({
+    section: "surfboards",
+    shipping_available: board.shipping_available,
+    local_pickup: board.local_pickup,
+    board_shipping_cost_mode: boardShippingCostMode,
+    shipping_price: board.shipping_price,
+    dimensions: (board as { dimensions?: string | null }).dimensions,
+    shipping_packed_length_in: (board as { shipping_packed_length_in?: number | string | null })
+      .shipping_packed_length_in,
+    shipping_packed_width_in: (board as { shipping_packed_width_in?: number | string | null })
+      .shipping_packed_width_in,
+    shipping_packed_height_in: (board as { shipping_packed_height_in?: number | string | null })
+      .shipping_packed_height_in,
+    shipping_packed_weight_oz: (board as { shipping_packed_weight_oz?: number | string | null })
+      .shipping_packed_weight_oz,
+  })
+
+  const pickupOffered = checkoutFulfillment.canPick
+  const shippingOffered = checkoutFulfillment.canShip
+  const shippingConfiguredButBroken = checkoutFulfillment.shippingConfiguredButBroken
 
   const canPeerPurchase =
     !isOwnListing &&
@@ -273,11 +300,6 @@ export async function SurfboardListingDetailPage({
       ? `${board.city}, ${board.state}`
       : board.profiles?.location?.trim() || null
 
-  const boardShippingCostMode =
-    (board as { board_shipping_cost_mode?: "reswell" | "flat" | "free" | null })
-      .board_shipping_cost_mode ?? null
-  const shippingFlatRate = Math.max(0, Number.parseFloat(String(board.shipping_price ?? 0)) || 0)
-
   const fulfillmentLabels = boardFulfillmentDetailLabels(
     board.local_pickup,
     board.shipping_available,
@@ -291,7 +313,11 @@ export async function SurfboardListingDetailPage({
 
   let shippingPriceCaption: string | null = null
   if (!isSold) {
-    if (!shippingOffered && pickupOffered) {
+    if (shippingConfiguredButBroken) {
+      shippingPriceCaption = pickupOffered
+        ? "Local pickup only — shipping unavailable until seller updates listing"
+        : "Shipping unavailable — seller must update board dimensions"
+    } else if (!shippingOffered && pickupOffered) {
       shippingPriceCaption = "Local pickup · shipping not offered"
     } else if (shippingOffered && boardShippingCostMode === "free") {
       shippingPriceCaption = "Free shipping included"
@@ -303,6 +329,11 @@ export async function SurfboardListingDetailPage({
   }
 
   const mobileFulfillmentChips = ((): string[] => {
+    if (shippingConfiguredButBroken) {
+      return pickupOffered
+        ? ["Local pickup", "Shipping unavailable"]
+        : ["Shipping unavailable"]
+    }
     if (!shippingOffered && pickupOffered) return ["Local pickup", "Shipping not offered"]
     if (shippingOffered && !pickupOffered) {
       if (boardShippingCostMode === "free") return ["Free shipping"]
@@ -541,6 +572,15 @@ export async function SurfboardListingDetailPage({
                     Purchase Protection
                   </Link>{" "}
                   on eligible checkout.
+                </p>
+              ) : null}
+              {shippingConfiguredButBroken && !isSold ? (
+                <p className="mt-3 rounded-xl border border-destructive/25 bg-destructive/5 px-3.5 py-3 text-[13px] leading-relaxed text-destructive">
+                  {isOwnListing
+                    ? "Shipping is off until you add board dimensions and Reswell packed size on Edit listing."
+                    : pickupOffered
+                      ? `${LISTING_RESELL_SHIPPING_UNAVAILABLE_MESSAGE} Local pickup is still available.`
+                      : LISTING_RESELL_SHIPPING_UNAVAILABLE_MESSAGE}
                 </p>
               ) : null}
               {canPeerPurchase ? (

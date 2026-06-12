@@ -11,6 +11,7 @@ import {
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
 import { removeListingImageFilesFromStorage } from "@/lib/services/listingStorageCleanup"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
+import { validateSurfboardListingShippingForSave } from "@/lib/validations/surfboardListingShipping"
 
 export async function PUT(request: NextRequest) {
   const supabase = await createClient()
@@ -76,7 +77,9 @@ export async function PUT(request: NextRequest) {
 
   const { data: existingListing, error: existingErr } = await service
     .from("listings")
-    .select("user_id")
+    .select(
+      "user_id, section, shipping_available, board_shipping_cost_mode, shipping_price, dimensions, shipping_packed_length_in, shipping_packed_width_in, shipping_packed_height_in, shipping_packed_weight_oz",
+    )
     .eq("id", listingId)
     .single()
 
@@ -102,6 +105,46 @@ export async function PUT(request: NextRequest) {
     ...listingFields,
     updated_at: new Date().toISOString(),
   }
+
+  const mergedShippingRow = {
+    section:
+      (listingFields.section as string | null | undefined) ??
+      (existingListing as { section?: string | null }).section ??
+      null,
+    shipping_available:
+      (listingFields.shipping_available as boolean | null | undefined) ??
+      (existingListing as { shipping_available?: boolean | null }).shipping_available,
+    board_shipping_cost_mode:
+      (listingFields.board_shipping_cost_mode as string | null | undefined) ??
+      (existingListing as { board_shipping_cost_mode?: string | null }).board_shipping_cost_mode,
+    shipping_price:
+      (listingFields.shipping_price as string | number | null | undefined) ??
+      (existingListing as { shipping_price?: string | number | null }).shipping_price,
+    dimensions:
+      (listingFields.dimensions as string | null | undefined) ??
+      (existingListing as { dimensions?: string | null }).dimensions,
+    shipping_packed_length_in:
+      (listingFields.shipping_packed_length_in as number | string | null | undefined) ??
+      (existingListing as { shipping_packed_length_in?: number | string | null })
+        .shipping_packed_length_in,
+    shipping_packed_width_in:
+      (listingFields.shipping_packed_width_in as number | string | null | undefined) ??
+      (existingListing as { shipping_packed_width_in?: number | string | null })
+        .shipping_packed_width_in,
+    shipping_packed_height_in:
+      (listingFields.shipping_packed_height_in as number | string | null | undefined) ??
+      (existingListing as { shipping_packed_height_in?: number | string | null })
+        .shipping_packed_height_in,
+    shipping_packed_weight_oz:
+      (listingFields.shipping_packed_weight_oz as number | string | null | undefined) ??
+      (existingListing as { shipping_packed_weight_oz?: number | string | null })
+        .shipping_packed_weight_oz,
+  }
+  const shippingSaveErr = validateSurfboardListingShippingForSave(mergedShippingRow)
+  if (shippingSaveErr) {
+    return NextResponse.json({ error: shippingSaveErr }, { status: 400 })
+  }
+
   let { data: updatedRow, error: updateError } = await service
     .from("listings")
     .update(updatePayload)

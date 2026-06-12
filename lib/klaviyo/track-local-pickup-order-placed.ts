@@ -19,10 +19,15 @@ import {
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
-import type { KlaviyoBuyerOrderConfirmedPayload } from "@/lib/klaviyo/track-buyer-order-confirmed"
+import { klaviyoOrderEventUniqueId } from "@/lib/klaviyo/klaviyo-order-event-unique-id"
+import type {
+  KlaviyoBuyerOrderConfirmedPayload,
+  KlaviyoBuyerOrderEventOptions,
+} from "@/lib/klaviyo/track-buyer-order-confirmed"
 
 export async function trackKlaviyoLocalPickupOrderPlaced(
   payload: KlaviyoBuyerOrderConfirmedPayload,
+  options?: KlaviyoBuyerOrderEventOptions,
 ): Promise<void> {
   if (payload.fulfillmentMethod !== "pickup") return
 
@@ -76,7 +81,11 @@ export async function trackKlaviyoLocalPickupOrderPlaced(
   await sendKlaviyoServerEvent({
     metricName: "Local Pickup Order Placed",
     profile,
-    uniqueId: `local-pickup-order-placed-${payload.orderId}`,
+    uniqueId: klaviyoOrderEventUniqueId(
+      "local-pickup-order-placed",
+      payload.orderId,
+      options?.resendKey,
+    ),
     value: Number.isFinite(amountNum) ? amountNum : undefined,
     valueCurrency: "USD",
     properties: {

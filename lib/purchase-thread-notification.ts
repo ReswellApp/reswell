@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 import type { OrderPlacedMessagePayload } from "@/lib/validations/order-placed-message-metadata"
+import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 
 function shippingLines(shipping: Record<string, unknown> | null): string[] {
   if (!shipping) return []
@@ -171,4 +172,89 @@ export async function postPurchaseThreadNotification(
     .from("conversations")
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conversation.id)
+}
+
+/**
+ * Posts the purchase thread message for an existing order when checkout side effects were
+ * interrupted (e.g. webhook disabled, finalize crashed after DB write). Skips if one already exists.
+ */
+export async function postPurchaseThreadNotificationForOrderId(
+  supabase: SupabaseClient,
+  orderId: string,
+): Promise<void> {
+  const trimmedOrderId = orderId.trim()
+  if (!trimmedOrderId) return
+
+  const { data: existingMsg } = await supabase
+    .from("messages")
+    .select("id")
+    .contains("metadata", { kind: "order_placed", orderId: trimmedOrderId })
+    .maybeSingle()
+
+  if (existingMsg?.id) return
+
+  const { data: order } = await supabase
+    .from("orders")
+    .select(
+      "id, order_num, buyer_id, seller_id, listing_id, amount, fulfillment_method, shipping_address, payment_method",
+    )
+    .eq("id", trimmedOrderId)
+    .maybeSingle()
+
+  if (!order?.buyer_id || !order.seller_id || !order.listing_id) return
+
+  const { data: orderItems } = await supabase
+    .from("order_items")
+    .select("listing_id, sort_order")
+    .eq("order_id", trimmedOrderId)
+    .order("sort_order", { ascending: true })
+
+  const listingIds =
+    orderItems && orderItems.length > 0
+      ? orderItems.map((row) => String((row as { listing_id: string }).listing_id))
+      : [order.listing_id]
+
+  const { data: listingRows } = await supabase.from("listings").select("id, title").in("id", listingIds)
+
+  const listingMap = new Map(
+    (listingRows ?? []).map((row) => {
+      const r = row as { id: string; title: string | null }
+      return [r.id, r]
+    }),
+  )
+
+  const listingsOrdered = listingIds
+    .map((id) => listingMap.get(id))
+    .filter((row): row is { id: string; title: string | null } => row != null)
+
+  if (listingsOrdered.length === 0) return
+
+  const listingTitles = listingsOrdered.map((l) => String(l.title ?? ""))
+  const primaryListingId = listingIds[0]!
+  const rawAmount = order.amount as unknown
+  const amount =
+    typeof rawAmount === "number"
+      ? rawAmount
+      : parseFloat(typeof rawAmount === "string" ? rawAmount : String(rawAmount))
+
+  await postPurchaseThreadNotification(supabase, {
+    buyerId: order.buyer_id,
+    sellerId: order.seller_id,
+    primaryListingId,
+    listingIds,
+    listingTitles,
+    listingTitleSummary:
+      listingTitles.length === 1
+        ? listingTitles[0]!
+        : `${listingTitles.length} items — ${listingTitles.map((t) => `"${t}"`).join(", ")}`,
+    orderId: order.id,
+    orderNum: formatOrderNumForCustomer(
+      (order as { order_num?: string | null }).order_num,
+      order.id,
+    ),
+    total: Number.isFinite(amount) ? amount : 0,
+    fulfillment: order.fulfillment_method === "pickup" ? "pickup" : "shipping",
+    shippingAddress: (order.shipping_address as Record<string, unknown> | null) ?? null,
+    paymentMethod: order.payment_method === "reswell_bucks" ? "reswell_bucks" : "card",
+  })
 }
