@@ -3,6 +3,7 @@ import { loadAdminOverviewSnapshot } from '@/lib/services/adminOverviewSnapshot'
 import { loadAdminPlatformPurchaseFees } from '@/lib/services/adminPlatformFees'
 import {
   loadAdminBusinessInsights,
+  loadAdminMomentumMatrix,
   loadAdminMonthlyRevenueBreakdown,
 } from '@/lib/services/adminBusinessInsights'
 import { adminInsightsYearMonthSchema } from '@/lib/utils/adminInsightsPeriod'
@@ -50,12 +51,19 @@ export default async function AdminDashboard({ searchParams }: AdminDashboardPro
     ? loadAdminMonthlyRevenueBreakdown()
     : Promise.resolve(null)
 
-  const [snapshot, feesResult, insightsResult, monthlyResult] = await Promise.all([
-    loadAdminOverviewSnapshot({ includeBrandRequestQueries: isAdmin }),
-    feesPromise,
-    insightsPromise,
-    monthlyPromise,
-  ])
+  type MomentumOutcome = Awaited<ReturnType<typeof loadAdminMomentumMatrix>>
+  const momentumPromise: Promise<MomentumOutcome | null> = isAdmin
+    ? loadAdminMomentumMatrix()
+    : Promise.resolve(null)
+
+  const [snapshot, feesResult, insightsResult, monthlyResult, momentumResult] =
+    await Promise.all([
+      loadAdminOverviewSnapshot({ includeBrandRequestQueries: isAdmin }),
+      feesPromise,
+      insightsPromise,
+      monthlyPromise,
+      momentumPromise,
+    ])
 
   const platformFees = feesResult && feesResult.ok ? feesResult.data : null
   const platformFeesError =
@@ -70,6 +78,10 @@ export default async function AdminDashboard({ searchParams }: AdminDashboardPro
   const monthlyRevenueError =
     isAdmin && monthlyResult && !monthlyResult.ok ? monthlyResult.error : null
 
+  const momentum = momentumResult && momentumResult.ok ? momentumResult.data : null
+  const momentumError =
+    isAdmin && momentumResult && !momentumResult.ok ? momentumResult.error : null
+
   return (
     <AdminOverviewView
       snapshot={snapshot}
@@ -80,6 +92,8 @@ export default async function AdminDashboard({ searchParams }: AdminDashboardPro
       insightsError={insightsError}
       monthlyRevenue={monthlyRevenue}
       monthlyRevenueError={monthlyRevenueError}
+      momentum={momentum}
+      momentumError={momentumError}
       selectedYearMonth={selectedYearMonth}
     />
   )

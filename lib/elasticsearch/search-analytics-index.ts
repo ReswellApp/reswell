@@ -577,6 +577,41 @@ export async function topQueriesInRange(
   }
 }
 
+/**
+ * Total marketplace search events in a time range (rolling-window safe).
+ * Uses `track_total_hits` so it's an exact count, not capped like the
+ * top-queries terms aggregation. Returns 0 when Elasticsearch is unavailable.
+ */
+export async function countMarketplaceSearchesInRange(
+  fromIso: string,
+  toIso: string,
+): Promise<number> {
+  const es = getElasticsearchClient()
+  if (!es) return 0
+
+  try {
+    const res = await es.search({
+      index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
+      size: 0,
+      track_total_hits: true,
+      query: {
+        bool: {
+          filter: [{ range: { occurred_at: { gte: fromIso, lt: toIso } } }, MARKETPLACE_SURFACE_FILTER],
+        },
+      },
+    })
+    const total = res.hits.total
+    if (typeof total === "number") return total
+    return total?.value ?? 0
+  } catch (e) {
+    const status = (e as { meta?: { statusCode?: number } })?.meta?.statusCode
+    if (status === 404) return 0
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] countMarketplaceSearchesInRange failed:", msg)
+    return 0
+  }
+}
+
 export type NavBarMarketplaceKeywordAgg = {
   volumeByDay: { date: string; count: number }[]
   topQueries: { query: string; count: number }[]

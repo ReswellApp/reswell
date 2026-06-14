@@ -43,10 +43,14 @@ import type {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { AdminMomentumMatrix } from '@/components/features/admin/admin-momentum-matrix'
 import { AdminMonthlyRevenueTable } from '@/components/features/admin/admin-monthly-revenue-table'
 import { AdminOverviewPeriodFilter } from '@/components/features/admin/admin-overview-period-filter'
 import { AdminRevenueChart } from '@/components/features/admin/admin-revenue-chart'
-import type { AdminMonthlyRevenueRow } from '@/lib/services/adminBusinessInsights'
+import type {
+  AdminMomentumMatrix as AdminMomentumMatrixData,
+  AdminMonthlyRevenueRow,
+} from '@/lib/services/adminBusinessInsights'
 import { listingDetailHref } from '@/lib/listing-href'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { cn } from '@/lib/utils'
@@ -563,6 +567,8 @@ export interface AdminOverviewViewProps {
   insightsError: string | null
   monthlyRevenue: AdminMonthlyRevenueRow[] | null
   monthlyRevenueError: string | null
+  momentum: AdminMomentumMatrixData | null
+  momentumError: string | null
   selectedYearMonth: string | null
 }
 
@@ -575,6 +581,8 @@ export function AdminOverviewView({
   insightsError,
   monthlyRevenue,
   monthlyRevenueError,
+  momentum,
+  momentumError,
   selectedYearMonth,
 }: AdminOverviewViewProps) {
   const totalListings = snapshot.totals.listings || 1
@@ -652,7 +660,7 @@ export function AdminOverviewView({
         </div>
       </div>
 
-      {snapshot.errors.length > 0 || insightsError || monthlyRevenueError ? (
+      {snapshot.errors.length > 0 || insightsError || monthlyRevenueError || momentumError ? (
         <Card className="border-destructive/40 bg-destructive/[0.06]">
           <CardHeader className="pb-2">
             <CardTitle className="font-headline text-base text-destructive">
@@ -666,6 +674,7 @@ export function AdminOverviewView({
             <ul className="list-inside list-disc text-sm text-muted-foreground">
               {insightsError ? <li>{insightsError}</li> : null}
               {monthlyRevenueError ? <li>{monthlyRevenueError}</li> : null}
+              {momentumError ? <li>{momentumError}</li> : null}
               {snapshot.errors.slice(0, 6).map((e) => (
                 <li key={e}>{e}</li>
               ))}
@@ -715,6 +724,9 @@ export function AdminOverviewView({
               footnote={`${compareFootnote} · ${compactUsd(insights.revenue.aov.previous)} AOV`}
             />
           </div>
+
+          {/* Day-over-day momentum */}
+          {momentum ? <AdminMomentumMatrix matrix={momentum} /> : null}
 
           {/* Revenue trend */}
           <AdminRevenueChart

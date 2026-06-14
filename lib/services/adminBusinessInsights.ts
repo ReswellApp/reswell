@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 import { isHiddenFromAdminOverviewReport } from '@/lib/admin/overview-report-orders'
+import { isElasticsearchConfigured } from '@/lib/elasticsearch/config'
+import { countMarketplaceSearchesInRange } from '@/lib/elasticsearch/search-analytics-index'
 import type {
   AdminOverviewListingPreview,
   AdminOverviewSupportPreview,
@@ -625,6 +627,279 @@ export async function loadAdminBusinessInsights(
       ok: false,
       error:
         'Add SUPABASE_SERVICE_ROLE_KEY on the server to compute marketplace business insights.',
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Day-over-day momentum matrix
+// ---------------------------------------------------------------------------
+
+/**
+ * Trailing comparison windows for the day-over-day momentum matrix. Each metric's
+ * most recent 24h ("today") is compared against the average daily run-rate of the
+ * preceding window. A 1-day window is a literal day-over-day (vs yesterday).
+ */
+export const ADMIN_MOMENTUM_WINDOWS = [1, 3, 7, 10, 30] as const
+
+const DAY_MS = 24 * 60 * 60 * 1000
+const MOMENTUM_ROW_FETCH_CAP = 50000
+
+/** Largest window drives how far back we fetch rows. */
+const MOMENTUM_LOOKBACK_DAYS = Math.max(...ADMIN_MOMENTUM_WINDOWS) + 1
+
+export type MomentumFormat = 'count' | 'usd'
+
+export type MomentumComparison = {
+  /** Size of the trailing baseline window in days. */
+  windowDays: number
+  /** Human label, e.g. "vs yesterday" / "vs 7-day avg". */
+  label: string
+  /** Total over the trailing window (excludes the most recent 24h). */
+  windowTotal: number
+  /** Average per-day run-rate across the trailing window. */
+  baselinePerDay: number
+  /** Today vs the trailing per-day baseline, as a percentage. `null` when baseline is 0. */
+  deltaPct: number | null
+}
+
+export type MomentumMetricKey =
+  | 'newUsers'
+  | 'newListings'
+  | 'paidOrders'
+  | 'searches'
+  | 'gmv'
+  | 'platformRevenue'
+
+export type MomentumMetric = {
+  key: MomentumMetricKey
+  label: string
+  description: string
+  format: MomentumFormat
+  /** Most recent 24h value. */
+  today: number
+  comparisons: MomentumComparison[]
+}
+
+export type AdminMomentumMatrix = {
+  generatedAt: string
+  /** Whether search volume could be measured (Elasticsearch configured). */
+  searchesTracked: boolean
+  windows: number[]
+  metrics: MomentumMetric[]
+}
+
+function momentumWindowLabel(windowDays: number): string {
+  if (windowDays === 1) return 'vs yesterday'
+  if (windowDays === 30) return 'vs 30-day avg'
+  return `vs ${windowDays}-day avg`
+}
+
+/**
+ * Buckets a stream of timestamped events into "today" (last 24h) and trailing
+ * window totals. Each event contributes its `weight` (1 for counts, $ for money).
+ */
+function bucketByMomentumWindows(
+  events: { ageMs: number; weight: number }[],
+): { today: number; windowTotals: Map<number, number> } {
+  let today = 0
+  const windowTotals = new Map<number, number>()
+  for (const w of ADMIN_MOMENTUM_WINDOWS) windowTotals.set(w, 0)
+
+  for (const { ageMs, weight } of events) {
+    if (ageMs < 0) continue
+    if (ageMs < DAY_MS) {
+      today += weight
+      continue
+    }
+    for (const w of ADMIN_MOMENTUM_WINDOWS) {
+      if (ageMs < (w + 1) * DAY_MS) {
+        windowTotals.set(w, (windowTotals.get(w) ?? 0) + weight)
+      }
+    }
+  }
+  return { today, windowTotals }
+}
+
+function buildMomentumComparisons(
+  today: number,
+  windowTotals: Map<number, number>,
+): MomentumComparison[] {
+  return ADMIN_MOMENTUM_WINDOWS.map((windowDays) => {
+    const windowTotal = windowTotals.get(windowDays) ?? 0
+    const baselinePerDay = windowTotal / windowDays
+    const deltaPct =
+      baselinePerDay > 0 ? ((today - baselinePerDay) / baselinePerDay) * 100 : null
+    return {
+      windowDays,
+      label: momentumWindowLabel(windowDays),
+      windowTotal,
+      baselinePerDay,
+      deltaPct,
+    }
+  })
+}
+
+function momentumMetric(
+  key: MomentumMetricKey,
+  label: string,
+  description: string,
+  format: MomentumFormat,
+  events: { ageMs: number; weight: number }[],
+): MomentumMetric {
+  const { today, windowTotals } = bucketByMomentumWindows(events)
+  return { key, label, description, format, today, comparisons: buildMomentumComparisons(today, windowTotals) }
+}
+
+/** Sums up rolling-window search totals from cumulative Elasticsearch counts. */
+async function loadSearchMomentumEvents(
+  now: number,
+): Promise<{ tracked: boolean; events: { ageMs: number; weight: number }[] }> {
+  if (!isElasticsearchConfigured()) return { tracked: false, events: [] }
+
+  // Cumulative search totals from `now` back to each boundary we need.
+  const boundaries = Array.from(
+    new Set([1, ...ADMIN_MOMENTUM_WINDOWS.map((w) => w + 1)]),
+  ).sort((a, b) => a - b)
+  const nowIso = new Date(now).toISOString()
+
+  try {
+    const cumulative = await Promise.all(
+      boundaries.map((days) =>
+        countMarketplaceSearchesInRange(new Date(now - days * DAY_MS).toISOString(), nowIso),
+      ),
+    )
+    const cumulativeByDay = new Map<number, number>()
+    boundaries.forEach((days, i) => cumulativeByDay.set(days, cumulative[i] ?? 0))
+
+    // Re-expand cumulative totals into synthetic events placed at window midpoints
+    // so the generic bucketing logic produces the same totals.
+    const events: { ageMs: number; weight: number }[] = []
+    const today = cumulativeByDay.get(1) ?? 0
+    if (today > 0) events.push({ ageMs: 0.5 * DAY_MS, weight: today })
+    for (const w of ADMIN_MOMENTUM_WINDOWS) {
+      const trailing = (cumulativeByDay.get(w + 1) ?? 0) - today
+      if (w === 1) {
+        if (trailing > 0) events.push({ ageMs: 1.5 * DAY_MS, weight: trailing })
+        continue
+      }
+      // Distribute the trailing total for this window into the day band it newly
+      // covers vs the previous window so every window total stays exact.
+      const prevWindow = ADMIN_MOMENTUM_WINDOWS[ADMIN_MOMENTUM_WINDOWS.indexOf(w) - 1]
+      const prevTrailing = (cumulativeByDay.get(prevWindow + 1) ?? 0) - today
+      const bandTotal = trailing - prevTrailing
+      if (bandTotal > 0) {
+        const ageMs = (prevWindow + 1 + (w - prevWindow) / 2) * DAY_MS
+        events.push({ ageMs, weight: bandTotal })
+      }
+    }
+    return { tracked: true, events }
+  } catch {
+    return { tracked: false, events: [] }
+  }
+}
+
+/**
+ * Day-over-day momentum matrix: the most recent 24h for each core metric compared
+ * against the average daily run-rate over trailing 1/3/7/10/30-day windows.
+ * Service-role aggregation (no staff RLS on `orders`); always omits admin-test
+ * orders and the April low-value report exclusions.
+ */
+export async function loadAdminMomentumMatrix(): Promise<
+  { ok: true; data: AdminMomentumMatrix } | { ok: false; error: string }
+> {
+  try {
+    const db = createServiceRoleClient()
+    const now = Date.now()
+    const sinceIso = new Date(now - MOMENTUM_LOOKBACK_DAYS * DAY_MS).toISOString()
+
+    const [ordersRes, usersRes, listingsRes, searchResult] = await Promise.all([
+      db
+        .from('orders')
+        .select('amount, platform_fee, status, created_at')
+        .eq('is_admin_test', false)
+        .gte('created_at', sinceIso)
+        .order('created_at', { ascending: false })
+        .limit(MOMENTUM_ROW_FETCH_CAP),
+      db
+        .from('profiles')
+        .select('created_at')
+        .gte('created_at', sinceIso)
+        .limit(MOMENTUM_ROW_FETCH_CAP),
+      db
+        .from('listings')
+        .select('created_at')
+        .gte('created_at', sinceIso)
+        .limit(MOMENTUM_ROW_FETCH_CAP),
+      loadSearchMomentumEvents(now),
+    ])
+
+    if (ordersRes.error) {
+      return { ok: false, error: 'Could not load orders for the momentum matrix.' }
+    }
+
+    const orderEvents: { ageMs: number; weight: number }[] = []
+    const gmvEvents: { ageMs: number; weight: number }[] = []
+    const revenueEvents: { ageMs: number; weight: number }[] = []
+    for (const row of ordersRes.data ?? []) {
+      const r = row as Record<string, unknown>
+      const status = String(r.status ?? '')
+      if (status !== 'confirmed') continue
+      const createdAt = String(r.created_at ?? '')
+      if (isHiddenFromAdminOverviewReport({ amount: num(r.amount), status, created_at: createdAt }))
+        continue
+      const ageMs = now - new Date(createdAt).getTime()
+      orderEvents.push({ ageMs, weight: 1 })
+      gmvEvents.push({ ageMs, weight: num(r.amount) })
+      revenueEvents.push({ ageMs, weight: num(r.platform_fee) })
+    }
+
+    const toAgeEvents = (rows: unknown[] | null): { ageMs: number; weight: number }[] =>
+      (rows ?? []).map((row) => {
+        const r = row as Record<string, unknown>
+        return { ageMs: now - new Date(String(r.created_at ?? '')).getTime(), weight: 1 }
+      })
+
+    const metrics: MomentumMetric[] = [
+      momentumMetric('gmv', 'GMV', 'Gross merchandise sales', 'usd', gmvEvents),
+      momentumMetric(
+        'platformRevenue',
+        'Reswell revenue',
+        'Platform fees earned',
+        'usd',
+        revenueEvents,
+      ),
+      momentumMetric('paidOrders', 'Paid orders', 'Confirmed checkouts', 'count', orderEvents),
+      momentumMetric('newUsers', 'New users', 'Profiles created', 'count', toAgeEvents(usersRes.data)),
+      momentumMetric(
+        'newListings',
+        'New listings',
+        'Listings created',
+        'count',
+        toAgeEvents(listingsRes.data),
+      ),
+    ]
+
+    if (searchResult.tracked) {
+      metrics.push(
+        momentumMetric('searches', 'Searches', 'Marketplace searches', 'count', searchResult.events),
+      )
+    }
+
+    return {
+      ok: true,
+      data: {
+        generatedAt: new Date(now).toISOString(),
+        searchesTracked: searchResult.tracked,
+        windows: [...ADMIN_MOMENTUM_WINDOWS],
+        metrics,
+      },
+    }
+  } catch {
+    return {
+      ok: false,
+      error:
+        'Add SUPABASE_SERVICE_ROLE_KEY on the server to compute the day-over-day momentum matrix.',
     }
   }
 }
