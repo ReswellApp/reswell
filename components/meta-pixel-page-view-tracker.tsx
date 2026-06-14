@@ -1,13 +1,18 @@
 'use client'
 
 import { usePathname, useSearchParams } from 'next/navigation'
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
+
+import { useDebouncedEffect } from '@/hooks/use-debounced-effect'
 
 declare global {
   interface Window {
     fbq?: (...args: unknown[]) => void
   }
 }
+
+/** Coalesce rapid client navigations into one PageView call. */
+const PAGE_VIEW_DEBOUNCE_MS = 800
 
 /**
  * Fires Meta Pixel PageView on App Router client navigations. The base snippet in
@@ -19,19 +24,23 @@ export function MetaPixelPageViewTracker(): null {
   const searchString = searchParams?.toString() ?? ''
   const isFirstRender = useRef(true)
 
-  useEffect(() => {
-    if (!pathname || !pathname.startsWith('/')) return
-    if (pathname === '/admin' || pathname.startsWith('/admin/')) return
+  useDebouncedEffect(
+    () => {
+      if (!pathname || !pathname.startsWith('/')) return
+      if (pathname === '/admin' || pathname.startsWith('/admin/')) return
 
-    if (isFirstRender.current) {
-      isFirstRender.current = false
-      return
-    }
+      if (isFirstRender.current) {
+        isFirstRender.current = false
+        return
+      }
 
-    if (typeof window.fbq === 'function') {
-      window.fbq('track', 'PageView')
-    }
-  }, [pathname, searchString])
+      if (typeof window.fbq === 'function') {
+        window.fbq('track', 'PageView')
+      }
+    },
+    [pathname, searchString],
+    PAGE_VIEW_DEBOUNCE_MS,
+  )
 
   return null
 }

@@ -93,12 +93,6 @@ export async function ShopListingDetailPage({
               {listingCategoryLabel ? (
                 <>
                   <BreadcrumbItem>
-                    <BreadcrumbLink asChild className="transition-colors hover:text-foreground">
-                      <Link href="/shop">Shop</Link>
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="text-muted-foreground/70 [&>svg]:stroke-[1.25]" />
-                  <BreadcrumbItem>
                     <span className="font-normal text-muted-foreground">{listingCategoryLabel}</span>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="text-muted-foreground/70 [&>svg]:stroke-[1.25]" />
@@ -109,19 +103,11 @@ export async function ShopListingDetailPage({
                   </BreadcrumbItem>
                 </>
               ) : (
-                <>
-                  <BreadcrumbItem>
-                    <BreadcrumbLink asChild className="transition-colors hover:text-foreground">
-                      <Link href="/shop">Shop</Link>
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="text-muted-foreground/70 [&>svg]:stroke-[1.25]" />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage className="max-w-[min(100%,28rem)] truncate font-normal text-muted-foreground">
-                      {listing.title}
-                    </BreadcrumbPage>
-                  </BreadcrumbItem>
-                </>
+                <BreadcrumbItem>
+                  <BreadcrumbPage className="max-w-[min(100%,28rem)] truncate font-normal text-muted-foreground">
+                    {listing.title}
+                  </BreadcrumbPage>
+                </BreadcrumbItem>
               )}
             </BreadcrumbList>
           </Breadcrumb>

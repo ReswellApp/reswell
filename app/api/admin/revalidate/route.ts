@@ -8,7 +8,6 @@ import { revalidateRequestSchema, type RevalidateTarget } from "@/lib/validation
 /** Public paths refreshed for each target. `all` revalidates the whole root layout tree. */
 const TARGET_PATHS: Record<Exclude<RevalidateTarget, "all">, string[]> = {
   home: ["/"],
-  shop: ["/shop"],
   brands: ["/brands"],
   sellers: ["/sellers"],
   blog: ["/blog"],

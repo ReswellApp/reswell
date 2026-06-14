@@ -437,17 +437,9 @@ export default async function HomePage() {
           <FadeInSection>
           <section className="py-16 bg-offwhite">
             <div className="container mx-auto">
-              <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <h2 className="text-2xl font-bold">New Arrivals</h2>
-                  <p className="text-muted-foreground">Fresh gear from our store</p>
-                </div>
-                <Button variant="outline" asChild>
-                  <Link href="/shop">
-                    Shop All
-                    <ArrowRight className="ml-1 h-4 w-4" />
-                  </Link>
-                </Button>
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold">New Arrivals</h2>
+                <p className="text-muted-foreground">Fresh gear from our store</p>
               </div>
               <HomeListingScrollRow uniformCardHeights>
                 {featuredNew.map(({ listing, stockQuantity, categoryName }) => (

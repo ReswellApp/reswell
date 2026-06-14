@@ -269,7 +269,7 @@ export default function AdminUserDetailPage() {
 
   const getSectionHref = (section: string) => {
     if (section === 'surfboards') return '/boards'
-    if (section === 'new') return '/shop'
+    if (section === 'new') return '/l'
     return '/gear'
   }
 

@@ -252,12 +252,6 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Browse other boards for sale. Find shortboards, longboards, grovelers, and more from local surfers on Reswell.",
     path: "/boards?type=other",
   }, { variationOf: "boards", note: "/boards?type=other" }),
-  page("shop", "marketplace", "Shop (new gear)", {
-    title: "New surf gear — Reswell Shop",
-    description:
-      "Buy new marketplace inventory from sellers on Reswell — checkout, messaging, and buyer protection in one place.",
-    path: "/shop",
-  }),
   page("sold", "marketplace", "Recently sold", {
     title: "Recently sold surfboards | Reswell",
     description:

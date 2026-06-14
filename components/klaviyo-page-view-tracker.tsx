@@ -1,9 +1,14 @@
 "use client"
 
 import { usePathname, useSearchParams } from "next/navigation"
-import React, { useEffect } from "react"
+import React from "react"
+
+import { useDebouncedEffect } from "@/hooks/use-debounced-effect"
+import { hasMarketingConsent } from "@/lib/analytics/marketing-consent"
 
 const STORAGE_KEY = "rw_klaviyo_anon_id"
+/** Coalesce rapid client navigations (filter toggles, back/forward) into one beacon. */
+const PAGE_VIEW_DEBOUNCE_MS = 800
 
 function getOrCreateAnonymousId(): string {
   try {
@@ -31,22 +36,27 @@ export function KlaviyoPageViewTracker(): null {
   const searchParams = useSearchParams()
   const searchString = searchParams?.toString() ?? ""
 
-  useEffect(() => {
-    if (!pathname || !pathname.startsWith("/")) return
-    if (pathname === "/admin" || pathname.startsWith("/admin/")) return
+  useDebouncedEffect(
+    () => {
+      if (!pathname || !pathname.startsWith("/")) return
+      if (pathname === "/admin" || pathname.startsWith("/admin/")) return
+      if (!hasMarketingConsent()) return
 
-    const anonId = getOrCreateAnonymousId()
-    void fetch("/api/integrations/klaviyo/page-view", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      keepalive: true,
-      body: JSON.stringify({
-        pathname,
-        ...(searchString ? { search: searchString } : {}),
-        anonymous_id: anonId,
-      }),
-    }).catch(() => {})
-  }, [pathname, searchString])
+      const anonId = getOrCreateAnonymousId()
+      void fetch("/api/integrations/klaviyo/page-view", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        keepalive: true,
+        body: JSON.stringify({
+          pathname,
+          ...(searchString ? { search: searchString } : {}),
+          anonymous_id: anonId,
+        }),
+      }).catch(() => {})
+    },
+    [pathname, searchString],
+    PAGE_VIEW_DEBOUNCE_MS,
+  )
 
   return null
 }

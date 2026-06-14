@@ -39,7 +39,6 @@ export async function revalidateAfterListingSiteModeration(
   revalidateHomePublicCatalog()
   revalidatePath("/sold")
   revalidatePath("/search")
-  revalidatePath("/shop")
   revalidatePath("/")
 
   if (sellerUserIds.size === 1) {

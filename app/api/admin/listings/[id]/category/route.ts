@@ -96,7 +96,6 @@ export async function PATCH(
   revalidateBoardsBrowseCatalog()
   revalidatePath("/sold")
   revalidatePath("/search")
-  revalidatePath("/shop")
   revalidatePath("/")
   const sellerUserId =
     listingRow && typeof (listingRow as { user_id?: unknown }).user_id === "string"

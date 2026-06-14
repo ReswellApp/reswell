@@ -3,7 +3,6 @@ import { z } from "zod"
 /** Public surfaces an admin can force-revalidate from the Admin tools page. */
 export const REVALIDATE_TARGETS = [
   "home",
-  "shop",
   "brands",
   "sellers",
   "blog",
