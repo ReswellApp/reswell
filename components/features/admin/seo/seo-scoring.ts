@@ -154,7 +154,7 @@ function findDuplicates(
 
 /**
  * Roll every managed page's effective SEO into one site-wide health summary.
- * Pure: callers pass the current items (defaults merged with live drafts/overrides upstream).
+ * Pure: callers pass managed page items (code defaults from lib/seo/managed-pages.ts).
  */
 export function summarizeSeoHealth(items: ManagedPageSeoItem[]): SeoHealthSummary {
   if (items.length === 0) {

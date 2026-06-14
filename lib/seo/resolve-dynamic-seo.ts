@@ -5,7 +5,7 @@ import { applySeoTemplate } from "@/lib/seo/apply-template"
 export interface DynamicSeoResult {
   title: string
   description: string
-  /** Override of the default index/follow flags when set in code templates. */
+  /** Index/follow flags from code templates, when set. */
   robotsIndex: boolean | null
   robotsFollow: boolean | null
   /** OG image URL for the type, if set in code defaults. */

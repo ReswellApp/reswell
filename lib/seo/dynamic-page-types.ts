@@ -12,7 +12,7 @@ export interface DynamicTemplateVar {
 }
 
 export interface DynamicPageType {
-  /** Stable override key (e.g. `type:listing`). */
+  /** Stable type key (e.g. `type:listing`). */
   key: string
   label: string
   note: string

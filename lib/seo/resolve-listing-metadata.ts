@@ -8,8 +8,8 @@ import {
 import { resolveDynamicSeo } from "@/lib/seo/resolve-dynamic-seo"
 
 /**
- * Listing detail metadata with the admin `type:listing` template applied on top of the built-in
- * defaults. Falls back to {@link metadataForListingDetail} when no template is configured.
+ * Listing detail metadata with the code `type:listing` template applied on top of the built-in
+ * defaults. Falls back to {@link metadataForListingDetail} when a rendered value is empty.
  */
 export async function resolveListingDetailMetadata(
   listing: ListingMetaInput,
