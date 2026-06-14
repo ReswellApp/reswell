@@ -12,7 +12,6 @@ interface SeoPageListProps {
   onQueryChange: (value: string) => void
   selectedKey: string | null
   onSelect: (key: string) => void
-  dirtyKeys: Set<string>
 }
 
 export function SeoPageList({
@@ -21,7 +20,6 @@ export function SeoPageList({
   onQueryChange,
   selectedKey,
   onSelect,
-  dirtyKeys,
 }: SeoPageListProps) {
   const q = query.trim().toLowerCase()
   const filtered = q
@@ -56,8 +54,8 @@ export function SeoPageList({
               <ul className="space-y-0.5">
                 {groupItems.map((it) => {
                   const active = it.key === selectedKey
-                  const dirty = dirtyKeys.has(it.key)
-                  const noindex = it.override.robotsIndex === false
+                  const noindex = !it.defaults.robotsIndex
+                  const hasShareImage = Boolean(it.defaults.ogImageUrl)
                   return (
                     <li key={it.key}>
                       <button
@@ -72,18 +70,11 @@ export function SeoPageList({
                         <span
                           className={cn(
                             "h-1.5 w-1.5 shrink-0 rounded-full",
-                            noindex
-                              ? "bg-destructive"
-                              : it.customized
-                                ? "bg-primary"
-                                : "bg-border",
+                            noindex ? "bg-destructive" : hasShareImage ? "bg-primary" : "bg-border",
                           )}
                           aria-hidden
                         />
                         <span className="min-w-0 flex-1 truncate">{it.label}</span>
-                        {dirty ? (
-                          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" aria-label="Unsaved changes" />
-                        ) : null}
                       </button>
                     </li>
                   )

@@ -1,10 +1,10 @@
 /**
  * Registry of the pages that matter for SEO. This is the single source of truth for each
- * page's default title/description/canonical/robots; the admin SEO panel edits *overrides*
- * (stored in `page_seo_overrides`) that are merged on top of these defaults at render time.
+ * page's title, description, canonical, robots, and share images. The admin SEO panel at
+ * `/admin/seo` is a read-only reference — edit these defaults in code (or ask Cursor to).
  *
- * To make a new page editable in the panel: add an entry here, then call
- * `resolvePageMetadata(key)` from its `generateMetadata`.
+ * To add a new page: add an entry here, then call `resolvePageMetadata(key)` from its
+ * `generateMetadata`.
  */
 
 export type ManagedPageGroupId =
@@ -38,10 +38,19 @@ export interface ManagedPageDefaults {
   openGraphType: "website" | "article"
   robotsIndex: boolean
   robotsFollow: boolean
+  keywords?: string[]
+  ogTitle?: string
+  ogDescription?: string
+  ogImageUrl?: string
+  twitterCard?: "summary" | "summary_large_image"
+  twitterTitle?: string
+  twitterDescription?: string
+  twitterImageUrl?: string
+  structuredData?: unknown
 }
 
 export interface ManagedPage {
-  /** Stable key — never change once shipped (it joins to `page_seo_overrides.page_key`). */
+  /** Stable key — never change once shipped (referenced in code and admin SEO panel). */
   key: string
   group: ManagedPageGroupId
   /** Human label shown in the panel. */
@@ -64,6 +73,15 @@ function page(
     openGraphType?: "website" | "article"
     robotsIndex?: boolean
     robotsFollow?: boolean
+    keywords?: string[]
+    ogTitle?: string
+    ogDescription?: string
+    ogImageUrl?: string
+    twitterCard?: "summary" | "summary_large_image"
+    twitterTitle?: string
+    twitterDescription?: string
+    twitterImageUrl?: string
+    structuredData?: unknown
   },
   extra?: { note?: string; variationOf?: string },
 ): ManagedPage {
@@ -80,6 +98,15 @@ function page(
       openGraphType: defaults.openGraphType ?? "website",
       robotsIndex: defaults.robotsIndex ?? true,
       robotsFollow: defaults.robotsFollow ?? true,
+      keywords: defaults.keywords,
+      ogTitle: defaults.ogTitle,
+      ogDescription: defaults.ogDescription,
+      ogImageUrl: defaults.ogImageUrl,
+      twitterCard: defaults.twitterCard,
+      twitterTitle: defaults.twitterTitle,
+      twitterDescription: defaults.twitterDescription,
+      twitterImageUrl: defaults.twitterImageUrl,
+      structuredData: defaults.structuredData,
     },
   }
 }
@@ -87,36 +114,47 @@ function page(
 export const MANAGED_PAGES: ManagedPage[] = [
   // ---- Core ----
   page("home", "core", "Homepage", {
-    title: "Reswell — Buy & sell surfboards",
+    title: "Buy & Sell Used Surfboards | Reswell",
     description:
-      "Peer-to-peer surfboard marketplace: list your board, browse local listings and sellers that offer shipping, and shop new items from verified sellers.",
+      "Peer-to-peer marketplace for surfboards and surf gear. Browse local listings, find boards with shipping, or list your board today.",
     path: "/",
+    ogImageUrl:
+      "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/1260e45d-5bbd-4e3e-9e02-9b7995b2f23e.jpg",
   }),
   page("about", "core", "About", {
-    title: "About Reswell",
+    title: "About Reswell | Peer-to-Peer Surf Marketplace",
     description:
-      "Reswell is the peer to peer marketplace built for surfers. Buy and sell boards and gear with checkout, messaging, shipping tools, and Purchase Protection.",
+      "Learn how Reswell connects surfers to buy and sell surfboards and gear safely. Trusted marketplace with secure checkout and buyer protection.",
     path: "/about",
+    ogImageUrl:
+      "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/e4235355-97b9-4331-b9e0-8cca85c9644b.jpg",
   }),
   page("what-is-reswell", "core", "What is Reswell", {
-    title: "What is Reswell, Reswell",
+    title: "What is Reswell? Surfboard Marketplace | Reswell",
     description:
-      "Reswell is the peer to peer marketplace for surfers: buy and sell surfboards and gear, with checkout, messaging, shipping tools, and Purchase Protection.",
+      "Learn how Reswell connects surfers to buy and sell surfboards and gear safely with messaging, shipping tools, and Purchase Protection.",
     path: "/what-is-reswell",
+    ogTitle: "What is Reswell? The Used Surfboard Marketplace",
+    ogImageUrl:
+      "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/fa694836-fa30-4c2b-bde7-ebf2f16b33f6.jpg",
   }),
   page("contact", "core", "Contact", {
-    title: "Contact — Reswell",
+    title: "Contact Reswell Support | Reswell",
     description:
-      "Reach Reswell support by email or through this page. Quick replies, private handling, and help with your account, purchases, and safety.",
+      "Get help with your surfboard marketplace account, orders, or safety questions. Our support team is here to assist you.",
     path: "/contact",
+    ogImageUrl:
+      "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/834f5712-af90-43f9-acf1-c4ce0e87daea.jpg",
   }),
 
   // ---- Marketplace ----
   page("boards", "marketplace", "Browse boards", {
-    title: "Surfboards For Sale | Reswell",
+    title: "Buy Used Surfboards - Browse Boards | Reswell",
     description:
-      "Browse surfboards for sale. Find shortboards, longboards, grovelers, and more from local surfers on Reswell.",
+      "Shop quality pre-owned surfboards from local surfers and shapers. Find shortboards, longboards, fish, and funboards near you at fair prices.",
     path: "/boards",
+    ogImageUrl:
+      "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/5bd393e4-9e8d-43b5-a653-c9c741a23d04.jpg",
   }, { note: "Main /boards browse hub. Variations below override the filtered views." }),
   page("fins", "marketplace", "Browse fins", {
     title: "Surfboard Fins For Sale | Reswell",
@@ -165,12 +203,16 @@ export const MANAGED_PAGES: ManagedPage[] = [
     description:
       "Browse shortboards for sale. Find shortboards, longboards, grovelers, and more from local surfers on Reswell.",
     path: "/boards?type=shortboard",
+    ogImageUrl:
+      "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/bf2b375b-6705-4c6b-afd6-ddedcbbed885.jpg",
   }, { variationOf: "boards", note: "/boards?type=shortboard" }),
   page("boards:type=longboard", "marketplace", "Boards — Longboards", {
-    title: "Longboards For Sale | Reswell",
+    title: "Used Longboards For Sale | Reswell",
     description:
-      "Browse longboards for sale. Find shortboards, longboards, grovelers, and more from local surfers on Reswell.",
+      "Buy and sell used longboards direct from local surfers. Browse classic logs, single fins, and performance longboards at great prices.",
     path: "/boards?type=longboard",
+    ogImageUrl:
+      "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/e818f8dd-0220-4b80-8cc4-f476e2772d3e.jpg",
   }, { variationOf: "boards", note: "/boards?type=longboard" }),
   page("boards:type=hybrid", "marketplace", "Boards — Hybrid", {
     title: "Hybrid For Sale | Reswell",
@@ -179,10 +221,12 @@ export const MANAGED_PAGES: ManagedPage[] = [
     path: "/boards?type=hybrid",
   }, { variationOf: "boards", note: "/boards?type=hybrid (mid-length, funboard)" }),
   page("boards:type=groveler", "marketplace", "Boards — Grovelers", {
-    title: "Groveler For Sale | Reswell",
+    title: "Groveler Surfboards For Sale | Reswell",
     description:
-      "Browse groveler for sale. Find shortboards, longboards, grovelers, and more from local surfers on Reswell.",
+      "Buy and sell groveler surfboards. Find small wave boards perfect for small days. Browse listings near you or from sellers that offer shipping on Reswell.",
     path: "/boards?type=groveler",
+    ogImageUrl:
+      "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/5183bacb-7f9b-4646-a4d0-467216d1229c.jpg",
   }, { variationOf: "boards", note: "/boards?type=groveler" }),
   page("boards:type=fish", "marketplace", "Boards — Fish", {
     title: "Fish For Sale | Reswell",
@@ -244,23 +288,30 @@ export const MANAGED_PAGES: ManagedPage[] = [
     path: "/sellers",
   }),
   page("surfers", "marketplace", "Surfers directory", {
-    title: "Surfers directory — Reswell",
+    title: "Surfer Profiles & Stories | Reswell",
     description:
-      "Explore surfer profiles on Reswell — stories, bios, and links to discover gear on the marketplace.",
+      "Browse surfer profiles, stories, and gear collections. Connect with the surf community and discover boards for sale.",
     path: "/surfers",
+    ogImageUrl:
+      "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/35b32ec0-e025-4c19-94aa-25b42427db26.jpg",
   }),
 
   // ---- Content & community ----
   page("blog", "content", "Blog index", {
-    title: "Blog — Reswell",
+    title: "Surfboard Guides & Marketplace Tips | Reswell",
     description:
-      "Stories and practical guides from Reswell on gear, culture, and the marketplace, for buyers and sellers.",
+      "Expert guides on buying and selling surfboards, gear reviews, and marketplace tips. Find your perfect board and sell smarter.",
     path: "/blog",
+    ogImageUrl:
+      "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/40d8f792-d432-49e3-9f60-63a3ece41c87.jpg",
   }, { note: "Individual posts manage their own SEO in the Blog CMS." }),
   page("collections", "content", "Collections", {
-    title: "Collections — Reswell",
-    description: "Editorial features, press, and surf stories on Reswell.",
+    title: "Surf Stories & Editorial Features | Reswell",
+    description:
+      "Explore curated surf stories and editorial features from the Reswell community. Discover insights from surfers worldwide.",
     path: "/collections",
+    ogImageUrl:
+      "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/09ed732a-af8d-40fa-ae45-a9c5d0206122.jpg",
   }),
   page("board-talk", "content", "Board Talk forum", {
     title: "Board Talk — Reswell",
@@ -322,9 +373,12 @@ export const MANAGED_PAGES: ManagedPage[] = [
     path: "/privacy",
   }),
   page("cookies", "trust", "Cookie Policy", {
-    title: "Cookie Policy — Reswell",
-    description: "How Reswell uses cookies and similar technologies on the site.",
+    title: "Cookie Policy | Reswell",
+    description:
+      "Learn how Reswell uses cookies to improve your surfboard marketplace experience. View our privacy practices and manage your preferences.",
     path: "/cookies",
+    ogImageUrl:
+      "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/78869381-5245-47a6-9298-bc67cecccff6.jpg",
   }),
   page("faq", "trust", "FAQ", {
     title: "FAQ — Reswell",

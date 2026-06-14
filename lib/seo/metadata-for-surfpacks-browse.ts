@@ -1,18 +1,12 @@
 import "server-only"
 import type { Metadata } from "next"
-import { metadataShareImageUrl } from "@/lib/public-media-display-src"
+import { managedPageBrowseSeo } from "@/lib/seo/managed-page-browse-metadata"
 import { getManagedPage } from "@/lib/seo/managed-pages"
-import { getPageSeoOverride } from "@/lib/seo/resolve-page-seo"
 import {
   surfpacksBrowseIndexableSnapshot,
   type SurfpacksBrowseSearchParams,
 } from "@/lib/surfpacks-browse-metadata"
 
-/**
- * True when extra content filters are applied — those permutations are not
- * individually editable in the SEO panel, so the auto-generated title/description
- * are kept for them.
- */
 function surfpacksBrowseHasContentFilters(sp: SurfpacksBrowseSearchParams): boolean {
   return Boolean(
     (sp.condition && sp.condition !== "all") ||
@@ -24,7 +18,7 @@ function surfpacksBrowseHasContentFilters(sp: SurfpacksBrowseSearchParams): bool
   )
 }
 
-/** Title, description, OG/Twitter, and robots for `/surfpacks` (server-only — uses SEO overrides). */
+/** Title, description, OG/Twitter, and robots for `/surfpacks` (server-only — code defaults). */
 export async function metadataForSurfpacksBrowse(sp: SurfpacksBrowseSearchParams): Promise<Metadata> {
   const { title: baseTitle, description: baseDescription, canonicalUrl } =
     surfpacksBrowseIndexableSnapshot(sp)
@@ -35,16 +29,13 @@ export async function metadataForSurfpacksBrowse(sp: SurfpacksBrowseSearchParams
   let robotsIndex = true
   let robotsFollow = true
 
-  if (!surfpacksBrowseHasContentFilters(sp)) {
-    if (getManagedPage("surfpacks")) {
-      const ov = await getPageSeoOverride("surfpacks")
-      if (ov.title?.trim()) title = ov.title.trim()
-      if (ov.description?.trim()) description = ov.description.trim()
-      const overrideImage = ov.ogImageUrl?.trim()
-      if (overrideImage) shareImageUrl = metadataShareImageUrl(overrideImage)
-      if (typeof ov.robotsIndex === "boolean") robotsIndex = ov.robotsIndex
-      if (typeof ov.robotsFollow === "boolean") robotsFollow = ov.robotsFollow
-    }
+  if (!surfpacksBrowseHasContentFilters(sp) && getManagedPage("surfpacks")) {
+    const seo = managedPageBrowseSeo("surfpacks", { title: baseTitle, description: baseDescription })
+    title = seo.title
+    description = seo.description
+    shareImageUrl = seo.shareImageUrl
+    robotsIndex = seo.robotsIndex
+    robotsFollow = seo.robotsFollow
   }
 
   return {

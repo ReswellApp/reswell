@@ -1,8 +1,7 @@
 import "server-only"
 import type { Metadata } from "next"
-import { metadataShareImageUrl } from "@/lib/public-media-display-src"
+import { managedPageBrowseSeo } from "@/lib/seo/managed-page-browse-metadata"
 import { getManagedPage } from "@/lib/seo/managed-pages"
-import { getPageSeoOverride } from "@/lib/seo/resolve-page-seo"
 import {
   finsBrowseIndexableSnapshot,
   type FinsBrowseSearchParams,
@@ -10,8 +9,7 @@ import {
 
 /**
  * True when extra content filters are applied — those permutations are not
- * individually editable in the SEO panel, so the auto-generated title/description
- * are kept for them.
+ * individually managed in code, so the auto-generated title/description are kept.
  */
 function finsBrowseHasContentFilters(sp: FinsBrowseSearchParams): boolean {
   return Boolean(
@@ -26,7 +24,7 @@ function finsBrowseHasContentFilters(sp: FinsBrowseSearchParams): boolean {
   )
 }
 
-/** Title, description, OG/Twitter, and robots for `/fins` (server-only — uses SEO overrides). */
+/** Title, description, OG/Twitter, and robots for `/fins` (server-only — code defaults). */
 export async function metadataForFinsBrowse(sp: FinsBrowseSearchParams): Promise<Metadata> {
   const { title: baseTitle, description: baseDescription, canonicalUrl } =
     finsBrowseIndexableSnapshot(sp)
@@ -37,16 +35,13 @@ export async function metadataForFinsBrowse(sp: FinsBrowseSearchParams): Promise
   let robotsIndex = true
   let robotsFollow = true
 
-  if (!finsBrowseHasContentFilters(sp)) {
-    if (getManagedPage("fins")) {
-      const ov = await getPageSeoOverride("fins")
-      if (ov.title?.trim()) title = ov.title.trim()
-      if (ov.description?.trim()) description = ov.description.trim()
-      const overrideImage = ov.ogImageUrl?.trim()
-      if (overrideImage) shareImageUrl = metadataShareImageUrl(overrideImage)
-      if (typeof ov.robotsIndex === "boolean") robotsIndex = ov.robotsIndex
-      if (typeof ov.robotsFollow === "boolean") robotsFollow = ov.robotsFollow
-    }
+  if (!finsBrowseHasContentFilters(sp) && getManagedPage("fins")) {
+    const seo = managedPageBrowseSeo("fins", { title: baseTitle, description: baseDescription })
+    title = seo.title
+    description = seo.description
+    shareImageUrl = seo.shareImageUrl
+    robotsIndex = seo.robotsIndex
+    robotsFollow = seo.robotsFollow
   }
 
   return {

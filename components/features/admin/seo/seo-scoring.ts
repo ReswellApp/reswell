@@ -1,4 +1,4 @@
-import { computeEffectivePageSeo, type EffectivePageSeo, type ManagedPageSeoItem } from "@/lib/seo/types"
+import { defaultsToEffectivePageSeo, type EffectivePageSeo, type ManagedPageSeoItem } from "@/lib/seo/types"
 
 /** Recommended character ranges for search snippets (Google truncates near the upper bound). */
 export const SEO_LIMITS = {
@@ -198,7 +198,7 @@ export function summarizeSeoHealth(items: ManagedPageSeoItem[]): SeoHealthSummar
   const dupRows: { key: string; label: string; title: string; description: string; indexable: boolean }[] = []
 
   for (const item of pages) {
-    const eff = computeEffectivePageSeo(item.defaults, item.override)
+    const eff = defaultsToEffectivePageSeo(item.defaults)
     const { score } = scorePageSeo(eff)
     total += score
     scored.push({ key: item.key, label: item.label, score })

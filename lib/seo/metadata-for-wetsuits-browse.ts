@@ -1,18 +1,12 @@
 import "server-only"
 import type { Metadata } from "next"
-import { metadataShareImageUrl } from "@/lib/public-media-display-src"
+import { managedPageBrowseSeo } from "@/lib/seo/managed-page-browse-metadata"
 import { getManagedPage } from "@/lib/seo/managed-pages"
-import { getPageSeoOverride } from "@/lib/seo/resolve-page-seo"
 import {
   wetsuitsBrowseIndexableSnapshot,
   type WetsuitsBrowseSearchParams,
 } from "@/lib/wetsuits-browse-metadata"
 
-/**
- * True when extra content filters are applied — those permutations are not
- * individually editable in the SEO panel, so the auto-generated title/description
- * are kept for them.
- */
 function wetsuitsBrowseHasContentFilters(sp: WetsuitsBrowseSearchParams): boolean {
   return Boolean(
     (sp.condition && sp.condition !== "all") ||
@@ -24,7 +18,7 @@ function wetsuitsBrowseHasContentFilters(sp: WetsuitsBrowseSearchParams): boolea
   )
 }
 
-/** Title, description, OG/Twitter, and robots for `/wetsuits` (server-only — uses SEO overrides). */
+/** Title, description, OG/Twitter, and robots for `/wetsuits` (server-only — code defaults). */
 export async function metadataForWetsuitsBrowse(sp: WetsuitsBrowseSearchParams): Promise<Metadata> {
   const { title: baseTitle, description: baseDescription, canonicalUrl } =
     wetsuitsBrowseIndexableSnapshot(sp)
@@ -35,16 +29,13 @@ export async function metadataForWetsuitsBrowse(sp: WetsuitsBrowseSearchParams):
   let robotsIndex = true
   let robotsFollow = true
 
-  if (!wetsuitsBrowseHasContentFilters(sp)) {
-    if (getManagedPage("wetsuits")) {
-      const ov = await getPageSeoOverride("wetsuits")
-      if (ov.title?.trim()) title = ov.title.trim()
-      if (ov.description?.trim()) description = ov.description.trim()
-      const overrideImage = ov.ogImageUrl?.trim()
-      if (overrideImage) shareImageUrl = metadataShareImageUrl(overrideImage)
-      if (typeof ov.robotsIndex === "boolean") robotsIndex = ov.robotsIndex
-      if (typeof ov.robotsFollow === "boolean") robotsFollow = ov.robotsFollow
-    }
+  if (!wetsuitsBrowseHasContentFilters(sp) && getManagedPage("wetsuits")) {
+    const seo = managedPageBrowseSeo("wetsuits", { title: baseTitle, description: baseDescription })
+    title = seo.title
+    description = seo.description
+    shareImageUrl = seo.shareImageUrl
+    robotsIndex = seo.robotsIndex
+    robotsFollow = seo.robotsFollow
   }
 
   return {

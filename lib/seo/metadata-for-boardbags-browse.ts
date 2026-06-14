@@ -1,18 +1,12 @@
 import "server-only"
 import type { Metadata } from "next"
-import { metadataShareImageUrl } from "@/lib/public-media-display-src"
+import { managedPageBrowseSeo } from "@/lib/seo/managed-page-browse-metadata"
 import { getManagedPage } from "@/lib/seo/managed-pages"
-import { getPageSeoOverride } from "@/lib/seo/resolve-page-seo"
 import {
   boardbagsBrowseIndexableSnapshot,
   type BoardbagsBrowseSearchParams,
 } from "@/lib/boardbags-browse-metadata"
 
-/**
- * True when extra content filters are applied — those permutations are not
- * individually editable in the SEO panel, so the auto-generated title/description
- * are kept for them.
- */
 function boardbagsBrowseHasContentFilters(sp: BoardbagsBrowseSearchParams): boolean {
   return Boolean(
     (sp.condition && sp.condition !== "all") ||
@@ -24,7 +18,7 @@ function boardbagsBrowseHasContentFilters(sp: BoardbagsBrowseSearchParams): bool
   )
 }
 
-/** Title, description, OG/Twitter, and robots for `/boardbags` (server-only — uses SEO overrides). */
+/** Title, description, OG/Twitter, and robots for `/boardbags` (server-only — code defaults). */
 export async function metadataForBoardbagsBrowse(sp: BoardbagsBrowseSearchParams): Promise<Metadata> {
   const { title: baseTitle, description: baseDescription, canonicalUrl } =
     boardbagsBrowseIndexableSnapshot(sp)
@@ -35,16 +29,13 @@ export async function metadataForBoardbagsBrowse(sp: BoardbagsBrowseSearchParams
   let robotsIndex = true
   let robotsFollow = true
 
-  if (!boardbagsBrowseHasContentFilters(sp)) {
-    if (getManagedPage("boardbags")) {
-      const ov = await getPageSeoOverride("boardbags")
-      if (ov.title?.trim()) title = ov.title.trim()
-      if (ov.description?.trim()) description = ov.description.trim()
-      const overrideImage = ov.ogImageUrl?.trim()
-      if (overrideImage) shareImageUrl = metadataShareImageUrl(overrideImage)
-      if (typeof ov.robotsIndex === "boolean") robotsIndex = ov.robotsIndex
-      if (typeof ov.robotsFollow === "boolean") robotsFollow = ov.robotsFollow
-    }
+  if (!boardbagsBrowseHasContentFilters(sp) && getManagedPage("boardbags")) {
+    const seo = managedPageBrowseSeo("boardbags", { title: baseTitle, description: baseDescription })
+    title = seo.title
+    description = seo.description
+    shareImageUrl = seo.shareImageUrl
+    robotsIndex = seo.robotsIndex
+    robotsFollow = seo.robotsFollow
   }
 
   return {

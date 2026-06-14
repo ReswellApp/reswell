@@ -1,18 +1,12 @@
 import "server-only"
 import type { Metadata } from "next"
-import { metadataShareImageUrl } from "@/lib/public-media-display-src"
+import { managedPageBrowseSeo } from "@/lib/seo/managed-page-browse-metadata"
 import { getManagedPage } from "@/lib/seo/managed-pages"
-import { getPageSeoOverride } from "@/lib/seo/resolve-page-seo"
 import {
   apparelBrowseIndexableSnapshot,
   type ApparelBrowseSearchParams,
 } from "@/lib/apparel-browse-metadata"
 
-/**
- * True when extra content filters are applied — those permutations are not
- * individually editable in the SEO panel, so the auto-generated title/description
- * are kept for them.
- */
 function apparelBrowseHasContentFilters(sp: ApparelBrowseSearchParams): boolean {
   return Boolean(
     (sp.condition && sp.condition !== "all") ||
@@ -24,7 +18,7 @@ function apparelBrowseHasContentFilters(sp: ApparelBrowseSearchParams): boolean 
   )
 }
 
-/** Title, description, OG/Twitter, and robots for `/apparel` (server-only — uses SEO overrides). */
+/** Title, description, OG/Twitter, and robots for `/apparel` (server-only — code defaults). */
 export async function metadataForApparelBrowse(sp: ApparelBrowseSearchParams): Promise<Metadata> {
   const { title: baseTitle, description: baseDescription, canonicalUrl } =
     apparelBrowseIndexableSnapshot(sp)
@@ -35,16 +29,13 @@ export async function metadataForApparelBrowse(sp: ApparelBrowseSearchParams): P
   let robotsIndex = true
   let robotsFollow = true
 
-  if (!apparelBrowseHasContentFilters(sp)) {
-    if (getManagedPage("apparel")) {
-      const ov = await getPageSeoOverride("apparel")
-      if (ov.title?.trim()) title = ov.title.trim()
-      if (ov.description?.trim()) description = ov.description.trim()
-      const overrideImage = ov.ogImageUrl?.trim()
-      if (overrideImage) shareImageUrl = metadataShareImageUrl(overrideImage)
-      if (typeof ov.robotsIndex === "boolean") robotsIndex = ov.robotsIndex
-      if (typeof ov.robotsFollow === "boolean") robotsFollow = ov.robotsFollow
-    }
+  if (!apparelBrowseHasContentFilters(sp) && getManagedPage("apparel")) {
+    const seo = managedPageBrowseSeo("apparel", { title: baseTitle, description: baseDescription })
+    title = seo.title
+    description = seo.description
+    shareImageUrl = seo.shareImageUrl
+    robotsIndex = seo.robotsIndex
+    robotsFollow = seo.robotsFollow
   }
 
   return {

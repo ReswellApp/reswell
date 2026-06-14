@@ -1,10 +1,7 @@
 /**
  * Dynamic page *types* — page families with thousands of instances (listings, brand profiles,
- * seller profiles) whose SEO is controlled by a title/description **template** rather than a
- * fixed string. Templates use `{token}` variables filled per-instance at render time.
- *
- * Templates are stored in `page_seo_overrides` under the keys below (same table as static pages);
- * the override `title`/`description` columns hold the template strings.
+ * seller profiles) whose SEO is controlled by title/description **templates** in code.
+ * Templates use `{token}` variables filled per-instance at render time.
  */
 
 export interface DynamicTemplateVar {

@@ -16,8 +16,6 @@ import { MetaPixel } from '@/components/meta-pixel'
 import { MetaPixelPageViewTracker } from '@/components/meta-pixel-page-view-tracker'
 import { JsonLd } from '@/components/seo/json-ld'
 import { organizationSchema, webSiteSchema } from '@/lib/seo/structured-data'
-import { absoluteProxiedSeoMediaUrl } from '@/lib/public-media-display-src'
-import { getCachedSeoSettings } from '@/lib/seo/resolve-seo-settings'
 
 import './globals.css'
 
@@ -42,33 +40,18 @@ const stackSansHeadline = localFont({
 })
 
 /**
- * Site-wide defaults only. Every route should set its own title + description (via `pageSeoMetadata`
- * or `generateMetadata`) so search snippets and link previews are not duplicated.
+ * Site-wide defaults only. Every route should set its own title + description (via
+ * `resolvePageMetadata` or `generateMetadata`) so search snippets and link previews are not duplicated.
  *
- * The favicon / app icon is admin-managed (SEO panel → Crawling tab) and resolved here so it
- * applies across every route. Falls back to no explicit icon (browser default) when unset.
+ * Favicon and apple touch icon are file-based: `app/icon.png` and `app/apple-icon.png`.
  */
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getCachedSeoSettings()
-
-  const favicon = absoluteProxiedSeoMediaUrl(settings.faviconUrl) ?? settings.faviconUrl ?? null
-  const appleIcon = absoluteProxiedSeoMediaUrl(settings.appleIconUrl) ?? settings.appleIconUrl ?? null
-
-  const icons: Metadata["icons"] =
-    favicon || appleIcon
-      ? {
-          ...(favicon ? { icon: [{ url: favicon }], shortcut: [favicon] } : {}),
-          ...(appleIcon ? { apple: [{ url: appleIcon }] } : {}),
-        }
-      : undefined
-
   return {
     metadataBase: new URL(publicSiteOrigin()),
     title: "Reswell",
     description:
       "Buy and sell surfboards and surf gear on Reswell — listings from local surfers and shops.",
     keywords: ["surfing", "surfboard", "marketplace", "sell surfboard", "buy surfboard"],
-    ...(icons ? { icons } : {}),
   }
 }
 

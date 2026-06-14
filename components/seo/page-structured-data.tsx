@@ -3,7 +3,7 @@ import { parseCustomStructuredData } from "@/lib/seo/structured-data"
 import { JsonLd } from "@/components/seo/json-ld"
 
 /**
- * Emits the admin-defined custom JSON-LD for a managed page (from the SEO panel's Advanced tab).
+ * Emits custom JSON-LD for a managed page when set in `lib/seo/managed-pages.ts`.
  * Drop near the top of a managed page's JSX: `<PageStructuredData pageKey="faq" />`.
  * Renders nothing when no structured data is set.
  */

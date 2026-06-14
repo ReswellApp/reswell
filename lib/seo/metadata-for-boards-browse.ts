@@ -1,10 +1,9 @@
 import "server-only"
 import type { Metadata } from "next"
-import { metadataShareImageUrl } from "@/lib/public-media-display-src"
 import { absoluteUrl } from "@/lib/site-metadata"
 import { STANDARD_OG_SIZE } from "@/lib/og/og-size"
 import { getManagedPage } from "@/lib/seo/managed-pages"
-import { getPageSeoOverride } from "@/lib/seo/resolve-page-seo"
+import { managedPageBrowseSeo } from "@/lib/seo/managed-page-browse-metadata"
 import {
   boardsBrowseIndexableSnapshot,
   normalizedBoardsBrowseTypeFromParam,
@@ -24,7 +23,7 @@ const BOARD_TYPE_LABELS: Record<string, string> = {
 
 /**
  * True when extra content filters are applied — those permutations are not individually
- * editable in the SEO panel, so we keep the auto-generated title/description for them.
+ * managed in code, so we keep the auto-generated title/description for them.
  */
 function boardsBrowseHasContentFilters(sp: BoardsBrowseSearchParams): boolean {
   return Boolean(
@@ -46,7 +45,7 @@ function boardsBrowseHasContentFilters(sp: BoardsBrowseSearchParams): boolean {
   )
 }
 
-/** Title, description, OG/Twitter, and robots for `/boards` (server-only — uses SEO overrides). */
+/** Title, description, OG/Twitter, and robots for `/boards` (server-only — code defaults). */
 export async function metadataForBoardsBrowse(sp: BoardsBrowseSearchParams): Promise<Metadata> {
   const { title: baseTitle, description: baseDescription, canonicalUrl } =
     boardsBrowseIndexableSnapshot(sp)
@@ -71,15 +70,14 @@ export async function metadataForBoardsBrowse(sp: BoardsBrowseSearchParams): Pro
   let robotsFollow = true
 
   if (!boardsBrowseHasContentFilters(sp)) {
-    const overrideKey = browseType ? `boards:type=${browseType}` : "boards"
-    if (getManagedPage(overrideKey)) {
-      const ov = await getPageSeoOverride(overrideKey)
-      if (ov.title?.trim()) title = ov.title.trim()
-      if (ov.description?.trim()) description = ov.description.trim()
-      const overrideImage = ov.ogImageUrl?.trim()
-      if (overrideImage) shareImageUrl = metadataShareImageUrl(overrideImage)
-      if (typeof ov.robotsIndex === "boolean") robotsIndex = ov.robotsIndex
-      if (typeof ov.robotsFollow === "boolean") robotsFollow = ov.robotsFollow
+    const pageKey = browseType ? `boards:type=${browseType}` : "boards"
+    if (getManagedPage(pageKey)) {
+      const seo = managedPageBrowseSeo(pageKey, { title: baseTitle, description: baseDescription })
+      title = seo.title
+      description = seo.description
+      if (seo.shareImageUrl) shareImageUrl = seo.shareImageUrl
+      robotsIndex = seo.robotsIndex
+      robotsFollow = seo.robotsFollow
     }
   }
 

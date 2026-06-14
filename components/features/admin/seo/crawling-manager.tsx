@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
-import { SeoFaviconField } from "./seo-favicon-field"
 
 interface SeoSettings {
   discourageAllCrawlers: boolean
@@ -16,8 +15,6 @@ interface SeoSettings {
   extraAllow: string[]
   crawlDelay: number | null
   extraSitemaps: string[]
-  faviconUrl: string | null
-  appleIconUrl: string | null
 }
 
 const SITEMAPS = [
@@ -33,13 +30,7 @@ function linesToList(value: string): string[] {
     .filter(Boolean)
 }
 
-export function CrawlingManager({
-  siteOrigin,
-  onFaviconChange,
-}: {
-  siteOrigin: string
-  onFaviconChange?: (url: string | null) => void
-}) {
+export function CrawlingManager({ siteOrigin }: { siteOrigin: string }) {
   const [settings, setSettings] = useState<SeoSettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -61,7 +52,6 @@ export function CrawlingManager({
           setDisallow(s.extraDisallow.join("\n"))
           setAllow(s.extraAllow.join("\n"))
           setSitemaps(s.extraSitemaps.join("\n"))
-          onFaviconChange?.(s.faviconUrl)
         }
       })
       .catch(() => {})
@@ -69,7 +59,7 @@ export function CrawlingManager({
     return () => {
       active = false
     }
-  }, [onFaviconChange])
+  }, [])
 
   async function save() {
     if (!settings) return
@@ -84,12 +74,9 @@ export function CrawlingManager({
           extraDisallow: linesToList(disallow),
           extraAllow: linesToList(allow),
           extraSitemaps: linesToList(sitemaps),
-          faviconUrl: settings.faviconUrl,
-          appleIconUrl: settings.appleIconUrl,
         }),
       })
       if (!res.ok) throw new Error("Could not save settings")
-      onFaviconChange?.(settings.faviconUrl)
       toast.success("Crawling settings saved")
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not save settings")
@@ -196,25 +183,10 @@ export function CrawlingManager({
         <div className="rounded-lg border border-border bg-card p-4">
           <p className="text-sm font-semibold text-foreground">Site icon / favicon</p>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Shown in browser tabs, bookmarks, and search results. Applies across the whole site.
+            Managed in code: <code className="text-foreground">app/icon.png</code> and{" "}
+            <code className="text-foreground">app/apple-icon.png</code>. Ask Cursor to replace those
+            files when you want a new favicon.
           </p>
-          <div className="mt-3 space-y-4">
-            <SeoFaviconField
-              label="Favicon"
-              helpText="Square PNG, SVG, or ICO. 512×512 PNG recommended."
-              value={settings.faviconUrl ?? ""}
-              onChange={(url) => {
-                setSettings({ ...settings, faviconUrl: url })
-                onFaviconChange?.(url)
-              }}
-            />
-            <SeoFaviconField
-              label="Apple touch icon (optional)"
-              helpText="180×180 PNG, used when saved to an iPhone/iPad home screen."
-              value={settings.appleIconUrl ?? ""}
-              onChange={(url) => setSettings({ ...settings, appleIconUrl: url })}
-            />
-          </div>
         </div>
 
         <div className="rounded-lg border border-border bg-card p-4">
