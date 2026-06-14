@@ -27,14 +27,16 @@ export async function POST(request: NextRequest) {
 
   const result = await createNewsletterPromoSignup(parsed.data.email)
   if (!result.ok) {
-    return NextResponse.json({ error: result.error }, { status: 500, headers: JSON_HEADERS })
+    return NextResponse.json(
+      { error: result.error, alreadySignedUp: result.alreadySignedUp === true },
+      { status: result.alreadySignedUp ? 409 : 500, headers: JSON_HEADERS },
+    )
   }
 
   return NextResponse.json(
     {
       ok: true,
       message: `Check your inbox — your ${NEWSLETTER_PROMO_DISCOUNT_PERCENT}% off code is on the way.`,
-      alreadyHadCode: result.alreadyHadCode,
     },
     { headers: JSON_HEADERS },
   )

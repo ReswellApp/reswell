@@ -67,7 +67,7 @@ export function SiteChromeClient({
         <div className="flex min-h-dvh flex-col">
           <PasswordResetRequiredDialog />
           <ProfileCompletionRequiredDialog />
-          <NewsletterPromoPopup />
+          <NewsletterPromoPopup serverUser={headerAuth.user} />
           <RouteProgressBar />
           <NavigationPageGate>{children}</NavigationPageGate>
         </div>
@@ -78,7 +78,7 @@ export function SiteChromeClient({
     <AuthModalProvider>
       <PasswordResetRequiredDialog />
       <ProfileCompletionRequiredDialog />
-      <NewsletterPromoPopup />
+      <NewsletterPromoPopup serverUser={headerAuth.user} />
       <div
         className={cn(
           "flex flex-col",

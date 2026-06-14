@@ -9,7 +9,7 @@ import {
   NEWSLETTER_PROMO_VALIDITY_DAYS,
 } from "@/lib/constants/newsletter-promo"
 import {
-  fetchActiveNewsletterPromoForEmail,
+  fetchNewsletterPromoForEmail,
   fetchNewsletterPromoByCode,
   insertNewsletterPromoCode,
   type NewsletterPromoCodeRow,
@@ -121,11 +121,12 @@ export async function validateNewsletterPromoForCheckout(params: {
 }
 
 export type CreateNewsletterPromoSignupResult =
-  | { ok: true; alreadyHadCode: boolean }
-  | { ok: false; error: string }
+  | { ok: true }
+  | { ok: false; error: string; alreadySignedUp?: boolean }
 
 /**
- * Subscribe visitor email, issue (or reuse) a one-time promo code, fire Klaviyo **Newsletter** metric.
+ * Subscribe visitor email, issue a one-time promo code, fire Klaviyo **Newsletter** metric.
+ * Each email may only enter this flow once (lifetime).
  */
 export async function createNewsletterPromoSignup(email: string): Promise<CreateNewsletterPromoSignupResult> {
   const normalizedEmail = normalizeNewsletterPromoEmail(email)
@@ -137,42 +138,56 @@ export async function createNewsletterPromoSignup(email: string): Promise<Create
     return { ok: false, error: "Signup is temporarily unavailable." }
   }
 
-  const existing = await fetchActiveNewsletterPromoForEmail(supabase, normalizedEmail)
+  const existing = await fetchNewsletterPromoForEmail(supabase, normalizedEmail)
   if (existing.error) {
-    console.error("[newsletter-promo] fetch active for email:", existing.error)
+    console.error("[newsletter-promo] fetch for email:", existing.error)
     return { ok: false, error: "Could not complete signup." }
   }
 
-  let codeRow = existing.row
-  let createdNew = false
+  if (existing.row) {
+    return {
+      ok: false,
+      alreadySignedUp: true,
+      error: "This email already signed up. Check your inbox for your code.",
+    }
+  }
+
+  const expiresAt = promoExpiryIso()
+  let codeRow: NewsletterPromoCodeRow | null = null
+  let lastInsertError: string | null = null
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = generateNewsletterPromoCode()
+    const inserted = await insertNewsletterPromoCode(supabase, {
+      email: normalizedEmail,
+      code,
+      discountPercent: NEWSLETTER_PROMO_DISCOUNT_PERCENT,
+      expiresAt,
+    })
+    if (inserted.row) {
+      codeRow = inserted.row
+      break
+    }
+    lastInsertError = inserted.error
+    if (
+      inserted.error &&
+      (inserted.error.toLowerCase().includes("duplicate") ||
+        inserted.error.includes("newsletter_promo_codes_email_uidx"))
+    ) {
+      return {
+        ok: false,
+        alreadySignedUp: true,
+        error: "This email already signed up. Check your inbox for your code.",
+      }
+    }
+    if (inserted.error && !inserted.error.toLowerCase().includes("duplicate")) {
+      break
+    }
+  }
 
   if (!codeRow) {
-    const expiresAt = promoExpiryIso()
-    let lastInsertError: string | null = null
-
-    for (let attempt = 0; attempt < 5; attempt++) {
-      const code = generateNewsletterPromoCode()
-      const inserted = await insertNewsletterPromoCode(supabase, {
-        email: normalizedEmail,
-        code,
-        discountPercent: NEWSLETTER_PROMO_DISCOUNT_PERCENT,
-        expiresAt,
-      })
-      if (inserted.row) {
-        codeRow = inserted.row
-        createdNew = true
-        break
-      }
-      lastInsertError = inserted.error
-      if (inserted.error && !inserted.error.toLowerCase().includes("duplicate")) {
-        break
-      }
-    }
-
-    if (!codeRow) {
-      console.error("[newsletter-promo] insert failed:", lastInsertError)
-      return { ok: false, error: "Could not generate your promo code. Try again." }
-    }
+    console.error("[newsletter-promo] insert failed:", lastInsertError)
+    return { ok: false, error: "Could not generate your promo code. Try again." }
   }
 
   await subscribeKlaviyoProfileEmailMarketing({ email: normalizedEmail })
@@ -182,8 +197,8 @@ export async function createNewsletterPromoSignup(email: string): Promise<Create
     promoCode: codeRow.code,
     discountPercent: codeRow.discount_percent,
     expiresAt: codeRow.expires_at,
-    isNewCode: createdNew,
+    isNewCode: true,
   })
 
-  return { ok: true, alreadyHadCode: !createdNew }
+  return { ok: true }
 }

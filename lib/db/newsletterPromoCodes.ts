@@ -30,17 +30,14 @@ export async function fetchNewsletterPromoByCode(
   return { row: (data as NewsletterPromoCodeRow | null) ?? null, error: null }
 }
 
-export async function fetchActiveNewsletterPromoForEmail(
+export async function fetchNewsletterPromoForEmail(
   supabase: SupabaseClient,
   email: string,
 ): Promise<{ row: NewsletterPromoCodeRow | null; error: string | null }> {
-  const now = new Date().toISOString()
   const { data, error } = await supabase
     .from("newsletter_promo_codes")
     .select(SELECT_COLS)
     .eq("email", email)
-    .is("redeemed_at", null)
-    .gt("expires_at", now)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle()

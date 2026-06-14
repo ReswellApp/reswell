@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
+import type { User } from "@supabase/supabase-js"
 import { Loader2, X } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -14,11 +15,13 @@ import {
   shouldShowNewsletterPopup,
 } from "@/lib/newsletter-promo-popup-storage"
 import { cn } from "@/lib/utils"
+import { useNewsletterPromoVisitorAuth } from "@/components/features/marketing/hooks/use-newsletter-promo-visitor-auth"
 
 type PopupPhase = "idle" | "form" | "success"
 
-export function NewsletterPromoPopup() {
+export function NewsletterPromoPopup({ serverUser = null }: { serverUser?: User | null }) {
   const pathname = usePathname()
+  const { authResolved, isLoggedIn } = useNewsletterPromoVisitorAuth(serverUser)
   const [open, setOpen] = useState(false)
   const [phase, setPhase] = useState<PopupPhase>("form")
   const [email, setEmail] = useState("")
@@ -26,6 +29,13 @@ export function NewsletterPromoPopup() {
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
+    if (isLoggedIn) {
+      setOpen(false)
+    }
+  }, [isLoggedIn])
+
+  useEffect(() => {
+    if (!authResolved || isLoggedIn) return
     if (!shouldShowNewsletterPopup(pathname)) return
     if (getNewsletterPopupStorageState()) return
 
@@ -36,7 +46,7 @@ export function NewsletterPromoPopup() {
     }, NEWSLETTER_POPUP_DELAY_MS)
 
     return () => window.clearTimeout(timer)
-  }, [pathname])
+  }, [pathname, isLoggedIn, authResolved])
 
   const dismiss = useCallback(() => {
     setNewsletterPopupStorageState("dismissed")
@@ -60,8 +70,17 @@ export function NewsletterPromoPopup() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: trimmed }),
         })
-        const data = (await res.json()) as { error?: string; message?: string }
+        const data = (await res.json()) as {
+          error?: string
+          message?: string
+          alreadySignedUp?: boolean
+        }
         if (!res.ok) {
+          if (data.alreadySignedUp) {
+            setNewsletterPopupStorageState("subscribed")
+            setError(data.error ?? "This email already signed up.")
+            return
+          }
           setError(data.error ?? "Something went wrong. Try again.")
           return
         }
@@ -91,7 +110,7 @@ export function NewsletterPromoPopup() {
     [dismiss, phase],
   )
 
-  if (!open) return null
+  if (!open || isLoggedIn || !authResolved) return null
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
