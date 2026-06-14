@@ -110,8 +110,12 @@ import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import {
   buildSellListingDraft,
+  clearGuestSellListingDraft,
   clearSellListingDraft,
+  loadGuestSellListingDraft,
   loadSellListingDraft,
+  migrateGuestSellListingDraftToUser,
+  saveGuestSellListingDraft,
   saveSellListingDraft,
   type SellListingDraftFormSnapshot,
 } from "@/lib/sell-listing-draft-idb"
@@ -743,6 +747,57 @@ function sellFormStateFromIdbSnapshot(
   }
 }
 
+function listingPhotoSlotsFromDraftBlobs(
+  blobs: { name: string; type: string; buffer: ArrayBuffer }[],
+): ListingPhotoSlot[] {
+  const slots: ListingPhotoSlot[] = []
+  for (const b of blobs) {
+    try {
+      const file = new File([b.buffer], b.name || "photo.jpg", {
+        type: b.type || "image/jpeg",
+      })
+      assertListingOriginalSize(file)
+      const clientId = crypto.randomUUID()
+      const previewUrl = URL.createObjectURL(file)
+      slots.push({
+        clientId,
+        previewUrl,
+        optimizePhase: "running",
+        uploadPhase: "idle",
+        progressFull: 0,
+        progressThumb: 0,
+        sourceFile: file,
+      })
+    } catch {
+      /* skip oversized / invalid blob */
+    }
+  }
+  return slots
+}
+
+async function persistSellListingDraftSnapshot(args: {
+  listingType: "board"
+  formData: SellListingDraftFormSnapshot
+  images: { file?: File }[]
+  userId: string | null
+}): Promise<void> {
+  const built = await buildSellListingDraft(
+    args.listingType,
+    args.formData,
+    args.images,
+    null,
+    args.userId,
+    { allowGuest: !args.userId },
+  )
+  if (built) {
+    if (args.userId) await saveSellListingDraft(built)
+    else await saveGuestSellListingDraft(built)
+    return
+  }
+  if (args.userId) await clearSellListingDraft(args.userId)
+  else await clearGuestSellListingDraft()
+}
+
 function createInitialSellFormData() {
   return {
     title: "",
@@ -821,6 +876,8 @@ function boardCatalogSnapshotFromSellForm(
 
 /** While set, IndexedDB restore must not run — coordinates with `clearSellListingDraft` after `?new=1`. */
 const SELL_SUPPRESS_IDB_RESTORE_KEY = "reswell.sell.suppressIdbRestoreOnce"
+/** Set when a guest taps Publish — resume submit after sign-in (survives full-page login redirect). */
+const SELL_PENDING_PUBLISH_KEY = "reswell.sell.pendingPublishOnce"
 
 type SellPageContentProps = {
   editId: string | null
@@ -862,6 +919,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const formRef = useRef<HTMLFormElement>(null)
   /** Prevents concurrent publishes (double-tap / stacked submits before `loading` flips). */
   const publishInFlightRef = useRef(false)
+  const pendingPublishHandledRef = useRef(false)
   const uploadToastIdRef = useRef<string | number | null>(null)
   const uploadPhaseLabelsRef = useRef<string[]>([...LISTING_UPLOAD_STEP_LABELS])
   const [uploadPhaseLabels, setUploadPhaseLabels] = useState<string[]>(() => [
@@ -870,6 +928,9 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const [editLoading, setEditLoading] = useState(!!editId)
   const [draftHydrated, setDraftHydrated] = useState(!!editId)
   const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
+  const [signedInUserId, setSignedInUserId] = useState<string | null>(null)
+  /** Guests exit to browse; signed-in sellers to their listings hub (`/listings` → dashboard). */
+  const sellListingsHubHref = signedInUserId ? "/dashboard/listings" : "/boards"
   const listingIsDraft = editListingStatus === "draft"
   /**
    * Published (or non-draft) listing edit: stepper may reflect saved data without forcing
@@ -1214,8 +1275,10 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         data: { user },
       } = await supabase.auth.getUser()
       if (user) await clearSellListingDraft(user.id)
+      await clearGuestSellListingDraft()
       try {
         sessionStorage.removeItem(SELL_SUPPRESS_IDB_RESTORE_KEY)
+        sessionStorage.removeItem(SELL_PENDING_PUBLISH_KEY)
       } catch {
         /* ignore */
       }
@@ -1261,35 +1324,17 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           data: { user },
         } = await supabase.auth.getUser()
         if (!cancelled && user) {
-          const record = await loadSellListingDraft(user.id)
+          await migrateGuestSellListingDraftToUser(user.id)
+        }
+        if (!cancelled) {
+          const record = user
+            ? await loadSellListingDraft(user.id)
+            : await loadGuestSellListingDraft()
           if (record && !cancelled) {
             setFormData(sellFormStateFromIdbSnapshot(record.formData))
             const blobs = Array.isArray(record.imageBlobs) ? record.imageBlobs : []
             if (blobs.length > 0) {
-              const slots: ListingPhotoSlot[] = []
-              for (const b of blobs) {
-                try {
-                  const file = new File(
-                    [b.buffer],
-                    b.name || "photo.jpg",
-                    { type: b.type || "image/jpeg" },
-                  )
-                  assertListingOriginalSize(file)
-                  const clientId = crypto.randomUUID()
-                  const previewUrl = URL.createObjectURL(file)
-                  slots.push({
-                    clientId,
-                    previewUrl,
-                    optimizePhase: "running",
-                    uploadPhase: "idle",
-                    progressFull: 0,
-                    progressThumb: 0,
-                    sourceFile: file,
-                  })
-                } catch {
-                  /* skip oversized / invalid blob */
-                }
-              }
+              const slots = listingPhotoSlotsFromDraftBlobs(blobs)
               if (slots.length > 0) {
                 idbRestoreOptimizeQueueRef.current = slots
                 latestListingPhotoPrepareSeqRef.current.clear()
@@ -1308,10 +1353,23 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   }, [editId, startFresh, supabase])
 
   useEffect(() => {
+    void supabase.auth.getUser().then(({ data: { user } }) => {
+      setSignedInUserId(user?.id ?? null)
+      sellDraftUserIdRef.current = user?.id ?? null
+    })
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      sellDraftUserIdRef.current = session?.user?.id ?? null
+      const uid = session?.user?.id ?? null
+      sellDraftUserIdRef.current = uid
+      setSignedInUserId(uid)
+      if (!uid) return
+      void migrateGuestSellListingDraftToUser(uid)
+      for (const slot of imagesRef.current) {
+        if (!slot.sourceFile) continue
+        if (slot.uploadPhase === "done") continue
+        void optimizeAndUploadSlot(slot)
+      }
     })
     return () => subscription.unsubscribe()
   }, [supabase])
@@ -1324,18 +1382,12 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       void (async () => {
         const r = sellDraftLatestRef.current
         if (r.editId || !r.draftHydrated) return
-        const built = await buildSellListingDraft(
-          r.listingType,
-          r.formData,
-          r.images.map((i) => ({ file: i.sourceFile })),
-          null,
-          sellDraftUserIdRef.current,
-        )
-        if (built) await saveSellListingDraft(built)
-        else {
-          const uid = sellDraftUserIdRef.current
-          if (uid) await clearSellListingDraft(uid)
-        }
+        await persistSellListingDraftSnapshot({
+          listingType: r.listingType,
+          formData: r.formData,
+          images: r.images.map((i) => ({ file: i.sourceFile })),
+          userId: sellDraftUserIdRef.current,
+        })
       })()
     }, 600)
     return () => {
@@ -1348,18 +1400,12 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       const r = sellDraftLatestRef.current
       if (r.editId || !r.draftHydrated) return
       void (async () => {
-        const built = await buildSellListingDraft(
-          r.listingType,
-          r.formData,
-          r.images.map((i) => ({ file: i.sourceFile })),
-          null,
-          sellDraftUserIdRef.current,
-        )
-        if (built) await saveSellListingDraft(built)
-        else {
-          const uid = sellDraftUserIdRef.current
-          if (uid) await clearSellListingDraft(uid)
-        }
+        await persistSellListingDraftSnapshot({
+          listingType: r.listingType,
+          formData: r.formData,
+          images: r.images.map((i) => ({ file: i.sourceFile })),
+          userId: sellDraftUserIdRef.current,
+        })
       })()
     }
     const onVis = () => {
@@ -1384,6 +1430,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         setEditLoading(false)
+        openSignIn(`/sell?edit=${editId}`)
         return
       }
       const imp = getImpersonation()
@@ -1803,6 +1850,58 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     for (const s of q) void optimizeAndUploadSlot(s)
   }, [draftHydrated])
 
+  /** After guest Publish → sign-in, resume submit once photos finish uploading. */
+  useEffect(() => {
+    if (!draftHydrated || editId || pendingPublishHandledRef.current) return
+    let cancelled = false
+
+    void (async () => {
+      let pending = false
+      try {
+        pending = sessionStorage.getItem(SELL_PENDING_PUBLISH_KEY) === "1"
+      } catch {
+        /* ignore */
+      }
+      if (!pending) return
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user || cancelled) return
+
+      pendingPublishHandledRef.current = true
+      try {
+        sessionStorage.removeItem(SELL_PENDING_PUBLISH_KEY)
+      } catch {
+        /* ignore */
+      }
+
+      for (let i = 0; i < 120 && !cancelled; i++) {
+        const imgs = imagesRef.current
+        const workLeft = imgs.some(
+          (im) =>
+            im.sourceFile &&
+            (im.optimizePhase === "running" ||
+              im.uploadPhase === "uploading" ||
+              (im.optimizePhase === "done" &&
+                im.uploadPhase !== "done" &&
+                im.uploadPhase !== "error")),
+        )
+        if (!workLeft) break
+        await new Promise((resolve) => setTimeout(resolve, 500))
+      }
+
+      if (cancelled) return
+      window.requestAnimationFrame(() => {
+        formRef.current?.requestSubmit()
+      })
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [draftHydrated, editId, supabase])
+
   function retryListingPhotoUpload(clientId: string) {
     const live = imagesRef.current.find((s) => s.clientId === clientId)
     if (!live) return
@@ -2213,7 +2312,19 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
+        await persistSellListingDraftSnapshot({
+          listingType: "board",
+          formData: formData as SellListingDraftFormSnapshot,
+          images: images.map((i) => ({ file: i.sourceFile })),
+          userId: null,
+        })
+        try {
+          sessionStorage.setItem(SELL_PENDING_PUBLISH_KEY, "1")
+        } catch {
+          /* quota / private mode */
+        }
         const ret = `/sell${sellSearchParams.toString() ? `?${sellSearchParams}` : ""}`
+        toast.message("Sign in to publish your listing")
         openSignIn(ret)
         return
       }
@@ -2221,7 +2332,19 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       const { data: { session } } = await supabase.auth.getSession()
       const accessToken = session?.access_token
       if (!accessToken) {
+        await persistSellListingDraftSnapshot({
+          listingType: "board",
+          formData: formData as SellListingDraftFormSnapshot,
+          images: images.map((i) => ({ file: i.sourceFile })),
+          userId: null,
+        })
+        try {
+          sessionStorage.setItem(SELL_PENDING_PUBLISH_KEY, "1")
+        } catch {
+          /* quota / private mode */
+        }
         const ret = `/sell${sellSearchParams.toString() ? `?${sellSearchParams}` : ""}`
+        toast.message("Sign in to publish your listing")
         openSignIn(ret)
         return
       }
@@ -2853,7 +2976,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                   <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
                   <BreadcrumbItem>
                     <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                      <Link href="/listings">Listings</Link>
+                      <Link href={sellListingsHubHref}>Listings</Link>
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
@@ -2874,7 +2997,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                         aria-label="Exit listing form"
                         asChild
                       >
-                        <Link href="/listings">
+                        <Link href={sellListingsHubHref}>
                           <X className="h-4 w-4" aria-hidden />
                         </Link>
                       </Button>

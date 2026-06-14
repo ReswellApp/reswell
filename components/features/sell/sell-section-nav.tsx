@@ -28,7 +28,7 @@ export const SELL_FINS_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[] = [
     label: "Fin details",
     shortLabel: "Details",
   },
-  { id: "sell-fins-section-delivery", label: "Pickup & shipping", shortLabel: "Delivery" },
+  { id: "sell-fins-section-delivery", label: "Shipping", shortLabel: "Shipping" },
   {
     id: "sell-fins-section-publish",
     label: "Price & publish",

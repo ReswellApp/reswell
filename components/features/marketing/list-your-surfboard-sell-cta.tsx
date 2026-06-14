@@ -1,16 +1,14 @@
-"use client"
-
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 
-import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { Button, type ButtonProps } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 export const LIST_YOUR_SURFBOARD_SELL_HREF = "/sell?new=1"
 
 type ListYourSurfboardSellCtaProps = {
-  userId: string | null
+  /** @deprecated Auth is no longer required to open /sell; kept for call-site compatibility. */
+  userId?: string | null
   children: React.ReactNode
   size?: ButtonProps["size"]
   variant?: ButtonProps["variant"]
@@ -20,7 +18,6 @@ type ListYourSurfboardSellCtaProps = {
 }
 
 export function ListYourSurfboardSellCta({
-  userId,
   children,
   size = "lg",
   variant = "default",
@@ -28,39 +25,21 @@ export function ListYourSurfboardSellCta({
   showArrow = true,
   tabIndex,
 }: ListYourSurfboardSellCtaProps) {
-  const openSignIn = useSignInGate()
-
   const arrowClassName = cn("h-4 w-4", size === "sm" ? "ml-1" : "ml-2")
 
-  if (userId) {
-    return (
-      <Button size={size} variant={variant} className={className} asChild>
-        <Link href={LIST_YOUR_SURFBOARD_SELL_HREF} tabIndex={tabIndex}>
-          {children}
-          {showArrow ? <ArrowRight className={arrowClassName} aria-hidden /> : null}
-        </Link>
-      </Button>
-    )
-  }
-
   return (
-    <Button
-      size={size}
-      variant={variant}
-      className={className}
-      type="button"
-      tabIndex={tabIndex}
-      onClick={() => openSignIn(LIST_YOUR_SURFBOARD_SELL_HREF)}
-    >
-      {children}
-      {showArrow ? <ArrowRight className={arrowClassName} aria-hidden /> : null}
+    <Button size={size} variant={variant} className={className} asChild>
+      <Link href={LIST_YOUR_SURFBOARD_SELL_HREF} tabIndex={tabIndex}>
+        {children}
+        {showArrow ? <ArrowRight className={arrowClassName} aria-hidden /> : null}
+      </Link>
     </Button>
   )
 }
 
 type ListYourSurfboardSellSectionHeaderProps = {
   title: string
-  userId: string | null
+  userId?: string | null
   ctaLabel?: string
 }
 

@@ -80,9 +80,6 @@ const HeaderSearchOverlay = dynamic(
   { ssr: false, loading: () => null },
 )
 
-/** Post-auth destination when a guest taps “List your board” in the header. */
-const GUEST_SELL_REDIRECT = "/sell"
-
 /** Matches main nav search bar height (`SITE_FILTER_BAR_HEIGHT` / `h-12`). */
 const listYourBoardNavButtonClassName = cn(
   SITE_FILTER_BAR_HEIGHT,
@@ -1073,16 +1070,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 variant="outline"
                 className={cn(listYourBoardNavButtonClassName, "hidden lg:mr-10 lg:inline-flex")}
               >
-                <Link
-                  href={`/auth/login?redirect=${encodeURIComponent(GUEST_SELL_REDIRECT)}`}
-                  onClick={(e) => {
-                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                    e.preventDefault()
-                    openLogin(GUEST_SELL_REDIRECT)
-                  }}
-                >
-                  List your board
-                </Link>
+                <Link href="/sell">List your board</Link>
               </Button>
             ) : null}
 
@@ -1155,16 +1143,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   variant="outline"
                   className={cn(listYourBoardNavButtonClassName, "hidden sm:inline-flex lg:hidden")}
                 >
-                  <Link
-                    href={`/auth/login?redirect=${encodeURIComponent(GUEST_SELL_REDIRECT)}`}
-                    onClick={(e) => {
-                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                      e.preventDefault()
-                      openLogin(GUEST_SELL_REDIRECT)
-                    }}
-                  >
-                    List your board
-                  </Link>
+                  <Link href="/sell">List your board</Link>
                 </Button>
                 <Link
                   href="/auth/login"

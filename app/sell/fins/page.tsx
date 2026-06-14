@@ -3,7 +3,7 @@ import SellFinsFlow from "./sell-fins-client"
 
 const title = "Sell your fins — Reswell"
 const description =
-  "List your surfboard fins on Reswell in minutes: add photos, pick the setup and system, set your price, and choose shipping or local pickup."
+  "List your surfboard fins on Reswell in minutes: add photos, pick the setup and system, set your price, and ship to buyers nationwide."
 
 export const metadata: Metadata = {
   title,

@@ -2,14 +2,16 @@
  * Persists create-listing form + image blobs so mobile Safari/WebKit can recover
  * after the tab is suspended or reloaded when returning from the photo library.
  *
- * Drafts are keyed by authenticated user id so switching accounts never shows
- * another user's local draft.
+ * Drafts are keyed by authenticated user id (or `guest` for anonymous create flows).
+ * Guest snapshots migrate to the signed-in user on auth so login redirects do not wipe progress.
  */
 
 const DB_NAME = "reswell-sell-draft"
 const STORE = "draft"
 /** Legacy single-slot key (pre–user-scoped drafts) — cleared on DB upgrade. */
 const LEGACY_KEY = "current"
+/** Anonymous create-listing snapshot — migrated to the signed-in user on auth. */
+export const GUEST_DRAFT_KEY = "guest"
 
 const DB_VERSION = 2
 
@@ -84,23 +86,53 @@ function openDb(): Promise<IDBDatabase> {
 }
 
 export async function loadSellListingDraft(userId: string): Promise<SellListingDraftRecord | null> {
+  return loadSellListingDraftByKey(userDraftKey(userId), userId)
+}
+
+export async function loadGuestSellListingDraft(): Promise<SellListingDraftRecord | null> {
+  return loadSellListingDraftByKey(GUEST_DRAFT_KEY)
+}
+
+async function loadSellListingDraftByKey(
+  key: string,
+  expectedUserId?: string,
+): Promise<SellListingDraftRecord | null> {
   try {
     const db = await openDb()
     const record = await new Promise<SellListingDraftRecord | undefined>((resolve, reject) => {
       const tx = db.transaction(STORE, "readonly")
       tx.onerror = () => reject(tx.error)
-      const r = tx.objectStore(STORE).get(userDraftKey(userId))
+      const r = tx.objectStore(STORE).get(key)
       r.onsuccess = () => resolve(r.result as SellListingDraftRecord | undefined)
       r.onerror = () => reject(r.error)
     })
     db.close()
     if (!record || (record.v !== SELL_LISTING_DRAFT_VERSION && record.v !== 6)) return null
-    if (record.userId && record.userId !== userId) return null
+    if (expectedUserId && record.userId && record.userId !== expectedUserId) return null
     const blobs = Array.isArray(record.imageBlobs) ? record.imageBlobs : []
     if (blobs.length === 0 && !sellDraftFormLooksFilled(record.formData)) return null
     return { ...record, imageBlobs: blobs }
   } catch {
     return null
+  }
+}
+
+export async function saveGuestSellListingDraft(record: SellListingDraftRecord): Promise<void> {
+  try {
+    const db = await openDb()
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE, "readwrite")
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error)
+      tx.objectStore(STORE).put(record, GUEST_DRAFT_KEY)
+    })
+    db.close()
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "QuotaExceededError") {
+      console.warn("[sell draft] guest storage quota exceeded")
+      return
+    }
+    console.warn("[sell draft] guest save failed", e)
   }
 }
 
@@ -134,6 +166,7 @@ export async function buildSellListingDraft(
   images: { file?: File }[],
   serverListingId?: string | null,
   userId?: string | null,
+  options?: { allowGuest?: boolean },
 ): Promise<SellListingDraftRecord | null> {
   const imageBlobs: SellListingDraftImageBlob[] = []
   for (const im of images) {
@@ -152,14 +185,44 @@ export async function buildSellListingDraft(
       ? serverListingId
       : undefined
   const uid = typeof userId === "string" && userId.trim() ? userId.trim() : undefined
-  if (!uid) return null
+  if (!uid && !options?.allowGuest) return null
   return {
     v: SELL_LISTING_DRAFT_VERSION,
     listingType,
-    userId: uid,
     formData: formSnapshot,
     imageBlobs,
+    ...(uid ? { userId: uid } : {}),
     ...(sid ? { serverListingId: sid } : {}),
+  }
+}
+
+/**
+ * Moves a guest snapshot onto the signed-in user key so a full-page login redirect can restore it.
+ * Returns true when a guest draft existed and was migrated.
+ */
+export async function migrateGuestSellListingDraftToUser(userId: string): Promise<boolean> {
+  const uid = userId.trim()
+  if (!uid) return false
+  const guest = await loadGuestSellListingDraft()
+  if (!guest) return false
+  const migrated: SellListingDraftRecord = { ...guest, userId: uid }
+  await saveSellListingDraft(migrated)
+  await clearGuestSellListingDraft()
+  return true
+}
+
+export async function clearGuestSellListingDraft(): Promise<void> {
+  try {
+    const db = await openDb()
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(STORE, "readwrite")
+      tx.oncomplete = () => resolve()
+      tx.onerror = () => reject(tx.error)
+      tx.objectStore(STORE).delete(GUEST_DRAFT_KEY)
+    })
+    db.close()
+  } catch {
+    /* ignore */
   }
 }
 

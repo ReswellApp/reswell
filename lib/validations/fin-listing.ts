@@ -59,8 +59,8 @@ const finListingBaseSchema = z.object({
   locationLat: z.coerce.number().optional(),
   locationLng: z.coerce.number().optional(),
 
-  shippingAvailable: z.boolean().default(false),
-  localPickup: z.boolean().default(true),
+  shippingAvailable: z.boolean().default(true),
+  localPickup: z.boolean().default(false),
   shippingCostMode: z.enum(["reswell", "flat", "free"]).nullable().optional(),
   shippingPrice: z.coerce.number().nonnegative().nullable().optional(),
   reswellPackageLengthIn: z.string().optional().default(""),
@@ -80,9 +80,9 @@ const finListingBaseSchema = z.object({
 
 function withFinListingRefinements<T extends z.ZodType>(schema: T) {
   return schema
-    .refine((data) => data.shippingAvailable || data.localPickup, {
-      message: "Choose shipping, local pickup, or both",
-      path: ["localPickup"],
+    .refine((data) => data.shippingAvailable && !data.localPickup, {
+      message: "Fin listings must ship — local pickup is not available",
+      path: ["shippingAvailable"],
     })
     .superRefine((data, ctx) => {
       if (!data.shippingAvailable) return

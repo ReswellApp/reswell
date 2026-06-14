@@ -8,7 +8,6 @@ import { toast } from "sonner"
 import { Heart, Loader2, RotateCw, Upload, X, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -154,8 +153,8 @@ const INITIAL_STATE: FinFormState = {
   locationLat: null,
   locationLng: null,
   locationDisplay: "",
-  shippingAvailable: false,
-  localPickup: true,
+  shippingAvailable: true,
+  localPickup: false,
   shippingMode: "reswell",
   shippingPrice: "",
   reswellPackageLengthIn: "",
@@ -309,8 +308,8 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
         locationLat: listing.latitude != null ? Number(listing.latitude) : null,
         locationLng: listing.longitude != null ? Number(listing.longitude) : null,
         locationDisplay: [listing.city, listing.state].filter(Boolean).join(", "),
-        shippingAvailable: Boolean(listing.shipping_available),
-        localPickup: listing.local_pickup !== false,
+        shippingAvailable: true,
+        localPickup: false,
         shippingMode,
         shippingPrice: shippingPriceToFormValue(listing.shipping_price),
         ...loadedReswellPackage,
@@ -669,12 +668,12 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
       scrollFinSellSectionIntoView("sell-fins-section-delivery")
       return
     }
-    if (!form.shippingAvailable && !form.localPickup) {
-      toast.error("Choose shipping, local pickup, or both.")
+    if (!form.shippingAvailable) {
+      toast.error("Fin listings must ship.")
       scrollFinSellSectionIntoView("sell-fins-section-delivery")
       return
     }
-    if (form.shippingAvailable && form.shippingMode === "reswell") {
+    if (form.shippingMode === "reswell") {
       const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
       const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
       const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
@@ -685,7 +684,6 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
       }
     }
     if (
-      form.shippingAvailable &&
       form.shippingMode === "flat" &&
       (form.shippingPrice === "" || Number(form.shippingPrice) < 0)
     ) {
@@ -708,11 +706,11 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
       locationState: form.locationState,
       locationLat: form.locationLat ?? undefined,
       locationLng: form.locationLng ?? undefined,
-      shippingAvailable: form.shippingAvailable,
-      localPickup: form.localPickup,
-      shippingCostMode: form.shippingAvailable ? form.shippingMode : null,
+      shippingAvailable: true,
+      localPickup: false,
+      shippingCostMode: form.shippingMode,
       shippingPrice:
-        form.shippingAvailable && form.shippingMode === "flat"
+        form.shippingMode === "flat"
           ? Number(form.shippingPrice || 0)
           : null,
       reswellPackageLengthIn: form.reswellPackageLengthIn,
@@ -1103,8 +1101,8 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
 
               <SellFormSection
                 sectionId="sell-fins-section-delivery"
-                title="Pickup & shipping"
-                description="Pin where the fins are and choose delivery options."
+                title="Shipping"
+                description="Pin where you're shipping from and choose how shipping works. Fin listings ship only — local pickup isn't available."
               >
                 <div className="space-y-8">
                   <LocationPicker
@@ -1136,96 +1134,19 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
                   />
 
                   <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
-                    <div>
-                      <h3 className="text-sm font-semibold text-foreground">
-                        Delivery options{" "}
-                        <span className="text-destructive" aria-hidden>
-                          *
-                        </span>
-                      </h3>
-                      <p className="mt-1 text-sm text-muted-foreground/45">You can select both options.</p>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          id="sell-fins-delivery-shipping"
-                          checked={form.shippingAvailable}
-                          onCheckedChange={(v) => {
-                            const want = v === true
-                            setForm((prev) => ({
-                              ...prev,
-                              shippingAvailable: want,
-                              localPickup: want || prev.localPickup ? prev.localPickup : true,
-                              ...(want
-                                ? {}
-                                : {
-                                    shippingMode: "reswell" as const,
-                                    shippingPrice: "",
-                                    reswellPackageLengthIn: "",
-                                    reswellPackageWidthIn: "",
-                                    reswellPackageHeightIn: "",
-                                    reswellPackageWeightLb: "",
-                                    reswellPackageWeightOz: "",
-                                  }),
-                            }))
-                          }}
-                          className="mt-0.5"
-                        />
-                        <div className="min-w-0 space-y-0.5">
-                          <Label
-                            htmlFor="sell-fins-delivery-shipping"
-                            className="flex cursor-pointer flex-wrap items-center gap-2 text-sm font-medium leading-snug"
-                          >
-                            Shipping
-                            <Badge
-                              variant="default"
-                              className="h-auto border-0 bg-listingHeart px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white hover:bg-[#2a4170]"
-                            >
-                              Items sell faster
-                            </Badge>
-                          </Label>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          id="sell-fins-delivery-pickup"
-                          checked={form.localPickup}
-                          onCheckedChange={(v) => {
-                            const want = v === true
-                            setForm((prev) => ({
-                              ...prev,
-                              localPickup: want,
-                              shippingAvailable:
-                                want || prev.shippingAvailable ? prev.shippingAvailable : true,
-                            }))
-                          }}
-                          className="mt-0.5"
-                        />
-                        <Label
-                          htmlFor="sell-fins-delivery-pickup"
-                          className="cursor-pointer pt-0.5 text-sm font-medium leading-snug"
-                        >
-                          Local pickup
-                        </Label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {form.shippingAvailable ? (
-                    <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
-                      <h3 className="text-sm font-semibold text-foreground">
-                        Shipping cost in the Continental U.S.{" "}
-                        <span className="text-destructive" aria-hidden>
-                          *
-                        </span>
-                      </h3>
-                      <RadioGroup
-                        value={form.shippingMode}
-                        onValueChange={(value) =>
-                          setField("shippingMode", value as "reswell" | "free" | "flat")
-                        }
-                        className="space-y-3"
-                      >
+                    <h3 className="text-sm font-semibold text-foreground">
+                      Shipping cost in the Continental U.S.{" "}
+                      <span className="text-destructive" aria-hidden>
+                        *
+                      </span>
+                    </h3>
+                    <RadioGroup
+                      value={form.shippingMode}
+                      onValueChange={(value) =>
+                        setField("shippingMode", value as "reswell" | "free" | "flat")
+                      }
+                      className="space-y-3"
+                    >
                         <label
                           htmlFor="sell-fins-ship-mode-reswell"
                           className={cn(
@@ -1340,12 +1261,11 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
                           </div>
                         </div>
                       ) : null}
-                    </div>
-                  ) : null}
+                  </div>
                 </div>
               </SellFormSection>
 
-              {form.shippingAvailable && form.shippingMode === "reswell" ? (
+              {form.shippingMode === "reswell" ? (
                 <SellFormSection
                   sectionId="sell-fins-section-reswell-package"
                   title="Reswell shipping: packed size & weight"

@@ -26,6 +26,7 @@ export function pathnameSkipsAuthSessionRefresh(pathname: string): boolean {
   if (pathname.startsWith("/brands")) return true
   if (pathname === "/privacy" || pathname === "/terms" || pathname === "/cookies") return true
   if (pathname === "/help" || pathname.startsWith("/help/")) return true
+  if (pathname === "/sell" || pathname.startsWith("/sell/")) return true
   if (
     pathname === "/auth/login" ||
     pathname === "/auth/sign-up" ||
