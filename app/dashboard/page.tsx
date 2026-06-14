@@ -1,5 +1,6 @@
 import Link from "next/link"
 import Image from "next/image"
+import { after } from "next/server"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,7 +23,8 @@ import {
   TrendingUp,
 } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
-import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
+import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
+import { persistWalletAggregatesIfNeeded } from "@/lib/services/walletReconcile"
 import {
   listingImageShouldBypassOptimization,
   proxiedListingImageSrc,
@@ -57,7 +59,6 @@ export default async function DashboardPage() {
     pendingOffersReceivedRes,
     walletRes,
     profileRes,
-    followersRes,
     newFollowersRes,
     buyerOrdersRes,
     sellerOrdersRes,
@@ -66,7 +67,7 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     supabase
       .from("listings")
-      .select("*", { count: "exact" })
+      .select("id, status", { count: "exact" })
       .eq("user_id", user.id),
     supabase
       .from("favorites")
@@ -103,8 +104,13 @@ export default async function DashboardPage() {
       .select("id, balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
       .eq("user_id", user.id)
       .single(),
-    supabase.from("profiles").select("*").eq("id", user.id).single(),
-    supabase.from("profiles").select("follower_count").eq("id", user.id).single(),
+    supabase
+      .from("profiles")
+      .select(
+        "is_shop, shop_name, display_name, city, location, seller_slug, avatar_url, shop_logo_url, follower_count",
+      )
+      .eq("id", user.id)
+      .single(),
     supabase
       .from("seller_follows")
       .select("id", { count: "exact", head: true })
@@ -140,7 +146,7 @@ export default async function DashboardPage() {
   const pendingOffersReceived = pendingOffersReceivedRes.count ?? 0
   const walletRow = walletRes.data
   const profile = profileRes.data
-  const followerCount = followersRes.data?.follower_count ?? 0
+  const followerCount = profile?.follower_count ?? 0
   const newFollowersThisMonth = newFollowersRes.count ?? 0
   const buyerOrderCount = buyerOrdersRes.count ?? 0
   const sellerOrderCount = sellerOrdersRes.count ?? 0
@@ -176,16 +182,13 @@ export default async function DashboardPage() {
           : parseFloat(String(earnedRaw))
     allTimeEarned = Number.isFinite(earnedParsed) ? earnedParsed : 0
     if (r.needsPersist) {
-      const s = walletAggregateStrings(r)
-      await supabase
-        .from("wallets")
-        .update({
-          balance: s.balance,
-          pending_balance: s.pending_balance,
-          lifetime_cashed_out: s.lifetime_cashed_out,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", walletRow.id)
+      after(async () => {
+        try {
+          await persistWalletAggregatesIfNeeded(supabase, walletRow)
+        } catch (e) {
+          console.error("[DashboardPage] wallet reconcile persist failed:", e)
+        }
+      })
     }
   }
 
@@ -464,6 +467,8 @@ export default async function DashboardPage() {
                 const primaryImage =
                   listing.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) ||
                   listing.listing_images?.[0]
+                const listingImageSrc =
+                  proxiedListingImageSrc(primaryImage?.url) || "/placeholder.svg"
                 return (
                   <Link
                     key={listing.id}
@@ -473,11 +478,11 @@ export default async function DashboardPage() {
                     <div className="relative aspect-square rounded-lg overflow-hidden bg-muted mb-2">
                       {primaryImage?.url ? (
                         <Image
-                          src={proxiedListingImageSrc(primaryImage.url) || "/placeholder.svg"}
+                          src={listingImageSrc}
                           alt={capitalizeWords(listing.title)}
                           fill
                           className="object-cover object-center group-hover:scale-105 transition-transform"
-                          unoptimized
+                          unoptimized={listingImageShouldBypassOptimization(listingImageSrc)}
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
@@ -530,6 +535,8 @@ export default async function DashboardPage() {
                 const primaryImage =
                   listing.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) ||
                   listing.listing_images?.[0]
+                const listingImageSrc =
+                  proxiedListingImageSrc(primaryImage?.url) || "/placeholder.svg"
                 return (
                   <Link
                     key={listing.id}
@@ -539,11 +546,11 @@ export default async function DashboardPage() {
                     <div className="relative aspect-square rounded-lg overflow-hidden bg-muted mb-2">
                       {primaryImage?.url ? (
                         <Image
-                          src={proxiedListingImageSrc(primaryImage.url) || "/placeholder.svg"}
+                          src={listingImageSrc}
                           alt={capitalizeWords(listing.title)}
                           fill
                           className="object-cover object-center group-hover:scale-105 transition-transform"
-                          unoptimized
+                          unoptimized={listingImageShouldBypassOptimization(listingImageSrc)}
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">

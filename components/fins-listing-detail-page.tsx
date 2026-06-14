@@ -18,9 +18,10 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { formatCondition, capitalizeWords } from "@/lib/listing-labels"
-import { createClient } from "@/lib/supabase/server"
-import { SURFBOARD_LISTING_SELECT } from "@/lib/listing-detail-cache"
-import { findListingByParam } from "@/lib/listing-query"
+import {
+  loadListingDetailPageContext,
+  type ListingDetailPageSharedProps,
+} from "@/lib/listing-detail-page-load"
 import { ShareButton } from "@/components/share-button"
 import { ListingOwnerManageActions } from "@/components/features/listings/listing-owner-manage-actions"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
@@ -86,15 +87,14 @@ function finSetupDisplay(raw: string | null | undefined): string | null {
 
 export async function FinsListingDetailPage({
   listingParam,
-}: {
-  listingParam: string
-}) {
-  const supabase = await createClient()
-
-  const { listing: finRaw } = await findListingByParam(supabase, listingParam, {
-    select: SURFBOARD_LISTING_SELECT,
+  prefetchedListing,
+  viewerUser,
+}: ListingDetailPageSharedProps) {
+  const { supabase, user, listing: finRaw } = await loadListingDetailPageContext({
+    listingParam,
+    prefetchedListing,
+    viewerUser,
     section: FINS_SECTION,
-    includeHiddenListings: true,
   })
   const fin = finRaw as Record<string, any> | null
 
@@ -131,7 +131,6 @@ export async function FinsListingDetailPage({
     sellerReviewPreviewRes,
     reswellPlatformReviewSummaryRes,
     sellerFinsRes,
-    userRes,
     indexBrand,
     [cartHolderCount, listingWatchersCount],
   ] = await Promise.all([
@@ -155,7 +154,6 @@ export async function FinsListingDetailPage({
       .neq("id", fin.id)
       .order("created_at", { ascending: false })
       .limit(SELLER_FINS_PDP_LIMIT),
-    supabase.auth.getUser(),
     brandId ? getBrandById(supabase, brandId) : Promise.resolve(null),
     Promise.all([
       !isSold ? getListingCartHolderCount(supabase, fin.id) : Promise.resolve(0),
@@ -168,7 +166,6 @@ export async function FinsListingDetailPage({
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes
   const sellerFins = sellerFinsRes.data
-  const user = userRes.data.user
 
   const sellerFinIds = (sellerFins ?? []).map((f) => f.id)
   const isOwnListingViewer = user?.id === fin.user_id

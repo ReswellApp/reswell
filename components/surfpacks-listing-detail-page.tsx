@@ -18,9 +18,10 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { formatCondition, capitalizeWords } from "@/lib/listing-labels"
-import { createClient } from "@/lib/supabase/server"
-import { SURFBOARD_LISTING_SELECT } from "@/lib/listing-detail-cache"
-import { findListingByParam } from "@/lib/listing-query"
+import {
+  loadListingDetailPageContext,
+  type ListingDetailPageSharedProps,
+} from "@/lib/listing-detail-page-load"
 import { ShareButton } from "@/components/share-button"
 import { ListingOwnerManageActions } from "@/components/features/listings/listing-owner-manage-actions"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
@@ -78,15 +79,14 @@ const SELLER_SURFPACKS_PDP_LIMIT = 12
 
 export async function SurfpacksListingDetailPage({
   listingParam,
-}: {
-  listingParam: string
-}) {
-  const supabase = await createClient()
-
-  const { listing: surfpackRaw } = await findListingByParam(supabase, listingParam, {
-    select: SURFBOARD_LISTING_SELECT,
+  prefetchedListing,
+  viewerUser,
+}: ListingDetailPageSharedProps) {
+  const { supabase, user, listing: surfpackRaw } = await loadListingDetailPageContext({
+    listingParam,
+    prefetchedListing,
+    viewerUser,
     section: SURFPACKS_SECTION,
-    includeHiddenListings: true,
   })
   const surfpack = surfpackRaw as Record<string, any> | null
 
@@ -124,7 +124,6 @@ export async function SurfpacksListingDetailPage({
     sellerReviewPreviewRes,
     reswellPlatformReviewSummaryRes,
     sellerSurfpacksRes,
-    userRes,
     indexBrand,
     [cartHolderCount, listingWatchersCount],
   ] = await Promise.all([
@@ -148,7 +147,6 @@ export async function SurfpacksListingDetailPage({
       .neq("id", surfpack.id)
       .order("created_at", { ascending: false })
       .limit(SELLER_SURFPACKS_PDP_LIMIT),
-    supabase.auth.getUser(),
     brandId ? getBrandById(supabase, brandId) : Promise.resolve(null),
     Promise.all([
       !isSold ? getListingCartHolderCount(supabase, surfpack.id) : Promise.resolve(0),
@@ -161,7 +159,6 @@ export async function SurfpacksListingDetailPage({
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes
   const sellerSurfpacks = sellerSurfpacksRes.data
-  const user = userRes.data.user
 
   const sellerSurfpackIds = (sellerSurfpacks ?? []).map((f) => f.id)
 

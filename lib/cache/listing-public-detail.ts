@@ -2,8 +2,6 @@ import { cache } from "react"
 import { unstable_cache } from "next/cache"
 import { findListingByParam } from "@/lib/listing-query"
 import {
-  LISTING_META_SELECT,
-  LISTING_ROUTE_SHELL_SELECT,
   SHOP_LISTING_SELECT,
   SURFBOARD_LISTING_SELECT,
 } from "@/lib/listing-detail-cache-selects"
@@ -28,27 +26,10 @@ async function loadPublicListingByParam(
   })
 }
 
-const getCachedPublicListingMetaRow = unstable_cache(
-  (param: string) => loadPublicListingByParam(param, LISTING_META_SELECT),
-  ["listing-public-meta"],
-  {
-    revalidate: LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS,
-    tags: [LISTING_PUBLIC_DETAIL_CACHE_TAG],
-  },
-)
-
-const getCachedPublicListingRouteShellRow = unstable_cache(
-  (param: string) => loadPublicListingByParam(param, LISTING_ROUTE_SHELL_SELECT),
-  ["listing-public-route-shell"],
-  {
-    revalidate: LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS,
-    tags: [LISTING_PUBLIC_DETAIL_CACHE_TAG],
-  },
-)
-
-const getCachedPublicSurfboardListingRow = unstable_cache(
-  (param: string) => loadPublicListingByParam(param, SURFBOARD_LISTING_SELECT, "surfboards"),
-  ["listing-public-surfboard-detail"],
+/** One hourly row per param — metadata, route shell, and peer PDP detail share this entry. */
+const getCachedPublicListingDetailRow = unstable_cache(
+  (param: string) => loadPublicListingByParam(param, SURFBOARD_LISTING_SELECT),
+  ["listing-public-detail"],
   {
     revalidate: LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS,
     tags: [LISTING_PUBLIC_DETAIL_CACHE_TAG],
@@ -66,15 +47,15 @@ const getCachedPublicShopListingRow = unstable_cache(
 
 /** Per-request dedupe across metadata, route shell, and detail in the same RSC tree. */
 export const getCachedPublicListingForMetadata = cache(async (param: string) => {
-  return getCachedPublicListingMetaRow(param)
+  return getCachedPublicListingDetailRow(param)
 })
 
 export const getCachedPublicListingForRoute = cache(async (param: string) => {
-  return getCachedPublicListingRouteShellRow(param)
+  return getCachedPublicListingDetailRow(param)
 })
 
 export const getCachedPublicSurfboardListing = cache(async (param: string) => {
-  return getCachedPublicSurfboardListingRow(param)
+  return getCachedPublicListingDetailRow(param)
 })
 
 export const getCachedPublicShopListing = cache(async (param: string) => {

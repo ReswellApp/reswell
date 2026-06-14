@@ -1,16 +1,16 @@
 import type { Metadata } from "next"
 import { notFound, redirect } from "next/navigation"
 import { pageSeoMetadata } from "@/lib/site-metadata"
-import { createClient } from "@/lib/supabase/server"
 import { findListingByParam } from "@/lib/listing-query"
 import {
   getCachedPublicListingForMetadata,
   getCachedPublicListingForRoute,
-  LISTING_META_SELECT,
-  LISTING_ROUTE_SHELL_SELECT,
+  SURFBOARD_LISTING_SELECT,
 } from "@/lib/listing-detail-cache"
 import { resolveListingDetailMetadata } from "@/lib/seo/resolve-listing-metadata"
 import { canViewHiddenListing } from "@/lib/listing-site-access"
+import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
+import { createClient } from "@/lib/supabase/server"
 import { SurfboardListingDetailPage } from "@/components/surfboard-listing-detail-page"
 import { FinsListingDetailPage } from "@/components/fins-listing-detail-page"
 import { WetsuitsListingDetailPage } from "@/components/wetsuits-listing-detail-page"
@@ -27,6 +27,7 @@ import {
   UNAVAILABLE_LISTING_CONTEXT_SELECT,
   type UnavailableListingContextRow,
 } from "@/lib/db/unavailable-listing-landing"
+import type { ListingDetailPageSharedProps } from "@/lib/listing-detail-page-load"
 
 function unavailableListingMetadata(listingParam: string): Metadata {
   return pageSeoMetadata({
@@ -54,9 +55,9 @@ export async function generateMetadata(props: {
   const { listing: listingParam } = await props.params
   let { listing } = await getCachedPublicListingForMetadata(listingParam)
   if (!listing) {
-    const supabase = await createClient()
+    const { supabase } = await getCachedRequestSession()
     const live = await findListingByParam(supabase, listingParam, {
-      select: LISTING_META_SELECT,
+      select: SURFBOARD_LISTING_SELECT,
       section: undefined,
       includeHiddenListings: true,
     })
@@ -66,8 +67,8 @@ export async function generateMetadata(props: {
     return unavailableListingMetadata(listingParam)
   }
   if (listing.hidden_from_site) {
-    const supabase = await createClient()
-    if (!(await canViewHiddenListing(supabase, listing))) {
+    const { supabase, user } = await getCachedRequestSession()
+    if (!(await canViewHiddenListing(supabase, listing, user))) {
       return unavailableListingMetadata(listingParam)
     }
   }
@@ -83,12 +84,12 @@ export default async function ListingDetailPage(props: {
   params: Promise<{ listing: string }>
 }) {
   const { listing: listingParam } = await props.params
+  const { supabase, user } = await getCachedRequestSession()
   let { listing, redirectSlug } = await getCachedPublicListingForRoute(listingParam)
-  const supabase = await createClient()
 
   if (!listing) {
     const live = await findListingByParam(supabase, listingParam, {
-      select: LISTING_ROUTE_SHELL_SELECT,
+      select: SURFBOARD_LISTING_SELECT,
       section: undefined,
       includeHiddenListings: true,
     })
@@ -101,7 +102,7 @@ export default async function ListingDetailPage(props: {
     return <UnavailableListingLandingPage landing={landing} />
   }
 
-  const canViewHidden = await canViewHiddenListing(supabase, listing)
+  const canViewHidden = await canViewHiddenListing(supabase, listing, user)
   if (!canViewHidden) {
     const context = await loadUnavailableListingContext(supabase, listingParam)
     const landing = await buildUnavailableListingLanding(supabase, listingParam, context)
@@ -112,27 +113,33 @@ export default async function ListingDetailPage(props: {
     redirect(`/l/${redirectSlug}`)
   }
 
+  const sectionProps: ListingDetailPageSharedProps = {
+    listingParam,
+    prefetchedListing: listing.section === "new" ? undefined : listing,
+    viewerUser: user,
+  }
+
   return (
     <>
       <ListingViewTracker listingId={listing.id} />
       {(() => {
         switch (listing.section) {
           case "surfboards":
-            return <SurfboardListingDetailPage listingParam={listingParam} />
+            return <SurfboardListingDetailPage {...sectionProps} />
           case "fins":
-            return <FinsListingDetailPage listingParam={listingParam} />
+            return <FinsListingDetailPage {...sectionProps} />
           case "wetsuits":
-            return <WetsuitsListingDetailPage listingParam={listingParam} />
+            return <WetsuitsListingDetailPage {...sectionProps} />
           case "boardbags":
-            return <BoardbagsListingDetailPage listingParam={listingParam} />
+            return <BoardbagsListingDetailPage {...sectionProps} />
           case "surfpacks":
-            return <SurfpacksListingDetailPage listingParam={listingParam} />
+            return <SurfpacksListingDetailPage {...sectionProps} />
           case "leashes":
-            return <LeashesListingDetailPage listingParam={listingParam} />
+            return <LeashesListingDetailPage {...sectionProps} />
           case "apparel":
-            return <ApparelListingDetailPage listingParam={listingParam} />
+            return <ApparelListingDetailPage {...sectionProps} />
           case "accessories":
-            return <AccessoriesListingDetailPage listingParam={listingParam} />
+            return <AccessoriesListingDetailPage {...sectionProps} />
           case "new":
             return <ShopListingDetailPage listingParam={listingParam} />
           default:

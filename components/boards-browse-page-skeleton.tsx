@@ -1,6 +1,25 @@
 import { ListingTileGridSkeleton } from "@/components/listing-tile-skeleton"
 import { Skeleton } from "@/components/ui/skeleton"
 
+/** Filter toolbar + results skeleton while facet counts load on `/boards`. */
+export function BoardsBrowseFiltersSectionSkeleton() {
+  return (
+    <>
+      <div className="border-b pb-4 w-full min-w-0 px-1 sm:px-2">
+        <Skeleton className="h-10 w-full max-w-3xl" />
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Skeleton className="h-8 w-24 rounded-full" />
+          <Skeleton className="h-8 w-28 rounded-full" />
+          <Skeleton className="h-8 w-20 rounded-full" />
+        </div>
+      </div>
+      <div className="mt-4 px-1 sm:px-2">
+        <ListingTileGridSkeleton count={10} ariaLabel="Loading surfboards" />
+      </div>
+    </>
+  )
+}
+
 /** Route-level skeleton for `/boards` — hero, filters, and listing grid placeholders. */
 export function BoardsBrowsePageSkeleton() {
   return (
@@ -17,17 +36,7 @@ export function BoardsBrowsePageSkeleton() {
 
       <section className="pt-2 pb-4 min-w-0">
         <div className="container mx-auto min-w-0">
-          <div className="border-b py-3 w-full min-w-0 px-1 sm:px-2">
-            <Skeleton className="h-10 w-full max-w-3xl" />
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Skeleton className="h-8 w-24 rounded-full" />
-              <Skeleton className="h-8 w-28 rounded-full" />
-              <Skeleton className="h-8 w-20 rounded-full" />
-            </div>
-          </div>
-          <div className="mt-4 px-1 sm:px-2">
-            <ListingTileGridSkeleton count={10} ariaLabel="Loading surfboards" />
-          </div>
+          <BoardsBrowseFiltersSectionSkeleton />
         </div>
       </section>
     </main>

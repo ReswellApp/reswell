@@ -1,4 +1,4 @@
-import { Suspense } from "react"
+import { Suspense, type ReactNode } from "react"
 import Link from "next/link"
 import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -12,12 +12,15 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { createClient } from "@/lib/supabase/server"
+
+import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { BoardsBrowseClient } from "@/components/boards-browse-client"
 import { BoardsNoResultsRequestPanel } from "@/components/boards-no-results-request-panel"
 import { boardSavedSearchCriteriaFromFilters } from "@/lib/utils/board-saved-search-criteria"
 import { BoardsBrowseJsonLd } from "@/components/features/marketplace/boards-browse-json-ld"
+import { BoardsBrowseFiltersSectionSkeleton } from "@/components/boards-browse-page-skeleton"
 import { getBoardsBrowseCategoryTypePageCached } from "@/lib/cache/boards-browse-catalog"
+import { getBoardsBrowseFacetCountsMapCached } from "@/lib/cache/boards-browse-facet-counts"
 import { Users } from "lucide-react"
 import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
 import { BoardsBrowseAdminCurator } from "@/components/boards-browse-admin-curator"
@@ -45,14 +48,33 @@ import {
 } from "@/lib/marketplace-slug-metadata"
 import { forwardGeocodePlaceForServer } from "@/lib/maps/forward-geocode-server"
 import { boardDimensionBrowseFieldsFromSearchParams } from "@/lib/utils/board-dimension-browse-filter"
-import { facetSelectionsFromParams } from "@/lib/boards-browse-facets"
-import {
-  getBoardsBrowseFacetCounts,
-  facetCountsByParamKey,
-} from "@/lib/services/boardsBrowseFacetCounts"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
 import { isUuidString } from "@/lib/utils/isUuid"
 import { haversineMi } from "@/lib/db/boards-browse-listings"
+import { facetSelectionsFromParams } from "@/lib/boards-browse-facets"
+
+async function BoardsBrowseAdminCuratorGate() {
+  const { supabase, user } = await getCachedRequestSession()
+  if (!user) return null
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", user.id)
+    .maybeSingle()
+  return <BoardsBrowseAdminCurator isAdmin={profile?.is_admin === true} />
+}
+
+async function BoardsBrowseFiltersSection({
+  searchParams: searchParamsPromise,
+  children,
+}: {
+  searchParams: Promise<BoardsBrowseSearchParams>
+  children: ReactNode
+}) {
+  const searchParams = await searchParamsPromise
+  const facetCounts = await getBoardsBrowseFacetCountsMapCached(searchParams)
+  return <BoardsBrowseClient counts={facetCounts}>{children}</BoardsBrowseClient>
+}
 
 async function BoardListings({
   searchParams: searchParamsPromise,
@@ -60,7 +82,7 @@ async function BoardListings({
   searchParams: Promise<BoardsBrowseSearchParams>
 }) {
   const searchParams = await searchParamsPromise
-  const supabase = await createClient()
+  const { supabase, user } = await getCachedRequestSession()
   const page = parseInt(searchParams.page || "1", 10)
   const limit = BOARDS_BROWSE_PAGE_SIZE
   const offset = (page - 1) * limit
@@ -389,9 +411,6 @@ async function BoardListings({
 
   const boardRows = boards as BoardBrowseListingRow[]
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
   let favoritedIds: string[] = []
   if (user && boardRows.length > 0) {
     const { data: favs } = await supabase
@@ -497,38 +516,6 @@ export async function BoardsBrowsePage(props: {
   }
   const typeCrumb = boardsBrowseBoardTypeLabel(searchParams.type)
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  let isAdmin = false
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", user.id)
-      .maybeSingle()
-    isAdmin = profile?.is_admin === true
-  }
-
-  const browseFacetSelections = facetSelectionsFromParams(searchParams)
-  const facetCounts = facetCountsByParamKey(
-    await getBoardsBrowseFacetCounts(
-      supabase,
-      {
-        query: searchParams.q,
-        brand: searchParams.brand,
-        model: searchParams.model,
-        brandId: searchParams.brandId,
-        brandModelId: searchParams.brandModelId,
-        minPrice: searchParams.minPrice ? Number(searchParams.minPrice) : undefined,
-        maxPrice: searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined,
-        location: searchParams.location,
-      },
-      browseFacetSelections,
-    ),
-  )
-
   return (
     <main className="flex-1">
       <BoardsBrowseJsonLd searchParams={searchParams} />
@@ -567,7 +554,9 @@ export async function BoardsBrowsePage(props: {
           </div>
           <div className="flex items-center justify-center gap-2">
             <h1 className="text-3xl font-bold text-center">{typeCrumb ?? surfboardsBrowseRootLabel}</h1>
-            <BoardsBrowseAdminCurator isAdmin={isAdmin} />
+            <Suspense fallback={null}>
+              <BoardsBrowseAdminCuratorGate />
+            </Suspense>
           </div>
           <p className="text-center text-muted-foreground mt-2 max-w-2xl mx-auto text-sm sm:text-base">
             {boardsBrowseHeroSubtext(searchParams.type)}
@@ -577,11 +566,13 @@ export async function BoardsBrowsePage(props: {
 
       <section className="pt-2 pb-4 min-w-0">
         <div className="container mx-auto min-w-0">
-          <BoardsBrowseClient counts={facetCounts}>
-            <Suspense fallback={<ListingTileGridSkeleton count={10} ariaLabel="Loading surfboards" />}>
-              <BoardListings searchParams={props.searchParams} />
-            </Suspense>
-          </BoardsBrowseClient>
+          <Suspense fallback={<BoardsBrowseFiltersSectionSkeleton />}>
+            <BoardsBrowseFiltersSection searchParams={props.searchParams}>
+              <Suspense fallback={<ListingTileGridSkeleton count={10} ariaLabel="Loading surfboards" />}>
+                <BoardListings searchParams={props.searchParams} />
+              </Suspense>
+            </BoardsBrowseFiltersSection>
+          </Suspense>
         </div>
       </section>
     </main>

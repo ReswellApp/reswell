@@ -6,6 +6,7 @@ import dynamic from "next/dynamic"
 import { cn } from "@/lib/utils"
 import { portraitShimmer, squareShimmer } from "@/lib/image-shimmer"
 import {
+  listingImageShouldBypassOptimization,
   proxiedListingImageSrc,
   withListingMediaPdpVariant,
 } from "@/lib/listing-media-proxy-url"
@@ -249,7 +250,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
                 src={heroUrls[i] || "/placeholder.svg"}
                 alt={`${title} - Image ${i + 1}`}
                 fill
-                unoptimized
+                unoptimized={listingImageShouldBypassOptimization(heroUrls[i])}
                 className={cn(
                   "absolute inset-0 object-cover object-center transition-opacity transition-duration-[420ms] ease-in-out",
                   isSelected ? "z-[2] opacity-100" : "z-[1] opacity-0",
@@ -347,7 +348,11 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
                     }
                     alt={`${title} - Thumbnail ${index + 1}`}
                     fill
-                    unoptimized
+                    unoptimized={listingImageShouldBypassOptimization(
+                      proxiedListingImageSrc(
+                        image.thumbnail_url?.trim() || image.url,
+                      ),
+                    )}
                     loading={Math.abs(index - selectedIndex) <= 1 ? "eager" : "lazy"}
                     className="object-cover object-center"
                     sizes="64px"

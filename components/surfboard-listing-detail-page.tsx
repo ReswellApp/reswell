@@ -17,11 +17,10 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { formatCondition, capitalizeWords } from "@/lib/listing-labels"
-import { createClient } from "@/lib/supabase/server"
 import {
-  getCachedPublicSurfboardListing,
-  SURFBOARD_LISTING_SELECT,
-} from "@/lib/listing-detail-cache"
+  loadListingDetailPageContext,
+  type ListingDetailPageSharedProps,
+} from "@/lib/listing-detail-page-load"
 import { ShareButton } from "@/components/share-button"
 import { ListingOwnerManageActions } from "@/components/features/listings/listing-owner-manage-actions"
 import { Hourglass, Flag, ShoppingCart, Truck } from "lucide-react"
@@ -41,7 +40,6 @@ import {
 import { TranslateableDescription } from "@/components/translateable-description"
 import { boardFulfillmentDetailLabels } from "@/lib/listing-fulfillment"
 import { getCachedSoldSurfboardUsedShippingFulfillment } from "@/lib/cache/marketplace-sold-feed"
-import { findListingByParam } from "@/lib/listing-query"
 import {
   ListingAboutSellerSection,
   ListingBuyerProtectionTrustRibbon,
@@ -81,26 +79,24 @@ const SELLER_BOARDS_PDP_LIMIT = 12
 
 export async function SurfboardListingDetailPage({
   listingParam,
-}: {
-  listingParam: string
-}) {
-  const supabase = await createClient()
+  prefetchedListing,
+  viewerUser,
+}: ListingDetailPageSharedProps) {
+  const { supabase, user, listing: boardRaw } = await loadListingDetailPageContext({
+    listingParam,
+    prefetchedListing,
+    viewerUser,
+    section: "surfboards",
+    usePublicCache: true,
+  })
 
-  let { listing: board } = await getCachedPublicSurfboardListing(listingParam)
-  if (!board) {
-    const r = await findListingByParam(supabase, listingParam, {
-      select: SURFBOARD_LISTING_SELECT,
-      section: "surfboards",
-      includeHiddenListings: true,
-    })
-    board = r.listing
-  }
-
-  if (!board) {
+  if (!boardRaw) {
     notFound()
   }
 
-  delete (board as Record<string, unknown>).seller_purchase_price_usd
+  const board = boardRaw as any
+
+  delete board.seller_purchase_price_usd
 
   // Ensure seller profile never contains private data (email, etc.) before sending to client
   const p = board.profiles as Record<string, unknown> | null
@@ -132,7 +128,6 @@ export async function SurfboardListingDetailPage({
     sellerReviewPreviewRes,
     reswellPlatformReviewSummaryRes,
     sellerBoardsRes,
-    userRes,
     soldUsedShipping,
     indexBrand,
     similarBoardsRaw,
@@ -158,7 +153,6 @@ export async function SurfboardListingDetailPage({
       .neq("id", board.id)
       .order("created_at", { ascending: false })
       .limit(SELLER_BOARDS_PDP_LIMIT),
-    supabase.auth.getUser(),
     isSold
       ? getCachedSoldSurfboardUsedShippingFulfillment(board.id)
       : Promise.resolve(false as const),
@@ -179,7 +173,6 @@ export async function SurfboardListingDetailPage({
   const sellerReviewPreviews = sellerReviewPreviewRes.data ?? []
   const reswellPlatformReviewSummary = reswellPlatformReviewSummaryRes
   const sellerBoards = sellerBoardsRes.data
-  const user = userRes.data.user
 
   const sellerBoardIds = (sellerBoards ?? []).map((b) => b.id)
   const similarBoardIds = similarBoardsRaw.map((r) => String(r.id))

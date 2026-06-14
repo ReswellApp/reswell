@@ -5,13 +5,17 @@ import { Suspense } from "react"
 import { createClient } from "@/lib/supabase/server"
 import { CheckoutAccountRequired } from "@/components/checkout-account-required"
 import { CheckoutClient } from "@/components/checkout-client"
-import type { CheckoutCopy, CheckoutListing, CheckoutSeller } from "@/components/checkout-types"
+import type { CheckoutCopy, CheckoutListing } from "@/components/checkout-types"
 import { findListingByParam } from "@/lib/listing-query"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { listingDetailHref } from "@/lib/listing-href"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
-import { getProfileAddresses } from "@/app/actions/addresses"
+import {
+  fetchCheckoutBuyerContext,
+  fetchCheckoutSellerAndBuyerContext,
+  fetchCheckoutSellerProfile,
+} from "@/lib/db/checkout-page"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -100,28 +104,8 @@ export default async function CheckoutPage(props: {
     }
 
     const sellerId = offer.seller_id
-    const { data: sellerRow } = await supabase
-      .from("profiles")
-      .select("display_name, avatar_url, seller_slug, shop_name, is_shop")
-      .eq("id", sellerId)
-      .maybeSingle()
-
-    const seller: CheckoutSeller | null = sellerRow
-      ? {
-          display_name: sellerRow.display_name,
-          avatar_url: sellerRow.avatar_url,
-          seller_slug: sellerRow.seller_slug,
-          shop_name: sellerRow.shop_name,
-          is_shop: sellerRow.is_shop,
-        }
-      : null
-
-    const { addresses: initialAddresses, error: addressesError } = await getProfileAddresses()
-    const { data: profileRow } = await supabase.from("profiles").select("email").eq("id", user.id).maybeSingle()
-    const buyerEmail =
-      user.email?.trim() ||
-      (typeof profileRow?.email === "string" ? profileRow.email.trim() : "") ||
-      null
+    const { seller, buyer } = await fetchCheckoutSellerAndBuyerContext(supabase, sellerId, user)
+    const { addresses: initialAddresses, addressesError, buyerEmail } = buyer
 
     const isBundle = checkoutListings.length > 1
     const copy: CheckoutCopy | undefined = isBundle
@@ -225,39 +209,18 @@ export default async function CheckoutPage(props: {
       redirect("/cart")
     }
 
-    const { data: sellerRow } = await supabase
-      .from("profiles")
-      .select("display_name, avatar_url, seller_slug, shop_name, is_shop")
-      .eq("id", sellerId)
-      .maybeSingle()
-
-    const seller: CheckoutSeller | null = sellerRow
-      ? {
-          display_name: sellerRow.display_name,
-          avatar_url: sellerRow.avatar_url,
-          seller_slug: sellerRow.seller_slug,
-          shop_name: sellerRow.shop_name,
-          is_shop: sellerRow.is_shop,
-        }
-      : null
-
-    const { addresses: initialAddresses, error: addressesError } = await getProfileAddresses()
-
-    const { data: profileRow } = await supabase.from("profiles").select("email").eq("id", user.id).maybeSingle()
-
-    const buyerEmail =
-      user.email?.trim() ||
-      (typeof profileRow?.email === "string" ? profileRow.email.trim() : "") ||
-      null
+    const [{ seller, buyer }, matchedOffer] = await Promise.all([
+      fetchCheckoutSellerAndBuyerContext(supabase, sellerId, user),
+      findAcceptedOfferMatchingListings(
+        supabase,
+        user.id,
+        checkoutListings.map((l) => l.id),
+        sellerId,
+      ),
+    ])
+    const { addresses: initialAddresses, addressesError, buyerEmail } = buyer
 
     const copy: CheckoutCopy | undefined = undefined
-
-    const matchedOffer = await findAcceptedOfferMatchingListings(
-      supabase,
-      user.id,
-      checkoutListings.map((l) => l.id),
-      sellerId,
-    )
 
     return (
       <main className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24">
@@ -348,21 +311,7 @@ export default async function CheckoutPage(props: {
 
   const copy: CheckoutCopy | undefined = undefined
 
-  const { data: sellerRow } = await supabase
-    .from("profiles")
-    .select("display_name, avatar_url, seller_slug, shop_name, is_shop")
-    .eq("id", listing.user_id)
-    .maybeSingle()
-
-  const seller: CheckoutSeller | null = sellerRow
-    ? {
-        display_name: sellerRow.display_name,
-        avatar_url: sellerRow.avatar_url,
-        seller_slug: sellerRow.seller_slug,
-        shop_name: sellerRow.shop_name,
-        is_shop: sellerRow.is_shop,
-      }
-    : null
+  const seller = await fetchCheckoutSellerProfile(supabase, listing.user_id)
 
   const listingTitle = capitalizeWords(listing.title)
 
@@ -461,14 +410,10 @@ export default async function CheckoutPage(props: {
     )
   }
 
-  const { addresses: initialAddresses, error: addressesError } = await getProfileAddresses()
-
-  const { data: profileRow } = await supabase.from("profiles").select("email").eq("id", user.id).maybeSingle()
-
-  const buyerEmail =
-    user.email?.trim() ||
-    (typeof profileRow?.email === "string" ? profileRow.email.trim() : "") ||
-    null
+  const { addresses: initialAddresses, addressesError, buyerEmail } = await fetchCheckoutBuyerContext(
+    supabase,
+    user,
+  )
 
   return (
     <main className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24">

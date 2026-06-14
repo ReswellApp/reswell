@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js"
+import type { SupabaseClient, User } from "@supabase/supabase-js"
 
 import { isAdminSeedListingTitle } from "@/lib/utils/admin-seed-listing"
 
@@ -12,11 +12,18 @@ export async function canViewHiddenListing(
     hidden_from_site?: boolean | null
     archived_at?: string | null
   },
+  viewerUser?: User | null,
 ): Promise<boolean> {
-  if (isAdminSeedListingTitle(listing.title)) {
+  const resolveViewer = async (): Promise<User | null> => {
+    if (viewerUser !== undefined) return viewerUser
     const {
       data: { user },
     } = await supabase.auth.getUser()
+    return user ?? null
+  }
+
+  if (isAdminSeedListingTitle(listing.title)) {
+    const user = await resolveViewer()
     if (!user) return false
     const { data: prof } = await supabase
       .from("profiles")
@@ -40,9 +47,7 @@ export async function canViewHiddenListing(
 
   if (!restrictedFromPublic) return true
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await resolveViewer()
   if (user?.id === listing.user_id) return true
   if (!user) return false
 
