@@ -12,6 +12,7 @@ import { AuthModalProvider } from "@/components/auth/auth-modal-context"
 import { ImpersonationBanner } from "@/components/impersonation-banner"
 import { PasswordResetRequiredDialog } from "@/components/auth/password-reset-required-dialog"
 import { ProfileCompletionRequiredDialog } from "@/components/auth/profile-completion-required-dialog"
+import { NewsletterPromoPopup } from "@/components/features/marketing/newsletter-promo-popup"
 import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
 import { cn } from "@/lib/utils"
 
@@ -66,6 +67,7 @@ export function SiteChromeClient({
         <div className="flex min-h-dvh flex-col">
           <PasswordResetRequiredDialog />
           <ProfileCompletionRequiredDialog />
+          <NewsletterPromoPopup />
           <RouteProgressBar />
           <NavigationPageGate>{children}</NavigationPageGate>
         </div>
@@ -76,6 +78,7 @@ export function SiteChromeClient({
     <AuthModalProvider>
       <PasswordResetRequiredDialog />
       <ProfileCompletionRequiredDialog />
+      <NewsletterPromoPopup />
       <div
         className={cn(
           "flex flex-col",

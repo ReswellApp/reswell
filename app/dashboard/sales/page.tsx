@@ -22,6 +22,7 @@ import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { OrdersListRealtimeRefresh } from "@/components/order-realtime-refresh"
 import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
+import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amounts"
 
 export const metadata = privatePageMetadata({
   title: "Sales — Reswell",
@@ -47,7 +48,10 @@ type SaleRow = {
   id: string
   order_num: string | null
   amount: number | string
+  shipping_amount?: number | string | null
+  platform_fee?: number | string | null
   seller_earnings: number | string
+  promo_discount_usd?: number | string | null
   status: string
   delivery_status: string
   tracking_number: string | null
@@ -126,7 +130,10 @@ export default async function SalesPage() {
       id,
       order_num,
       amount,
+      shipping_amount,
+      platform_fee,
       seller_earnings,
+      promo_discount_usd,
       status,
       delivery_status,
       tracking_number,
@@ -255,6 +262,7 @@ export default async function SalesPage() {
             trackingDetail: trackingDetailByOrderId.get(sale.id) ?? null,
             hasPreparedShippingLabel: preparedLabelOrderIds.has(sale.id),
           })
+          const amounts = resolveSellerOrderDisplayAmounts(sale)
 
           return (
             <Link
@@ -324,7 +332,7 @@ export default async function SalesPage() {
                       <span
                         className={`tabular-nums ${orderStatusIsRefunded(sale.status) ? "line-through" : ""}`}
                       >
-                        ${Number(sale.amount).toFixed(2)}
+                        ${amounts.sellerSaleTotal.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between font-semibold text-foreground pt-1">
@@ -344,7 +352,7 @@ export default async function SalesPage() {
                               : ""
                         }`}
                       >
-                        ${Number(sale.seller_earnings).toFixed(2)}
+                        ${amounts.sellerEarningsAmount.toFixed(2)}
                       </span>
                     </div>
                   </div>
@@ -353,7 +361,7 @@ export default async function SalesPage() {
                     <div className="rounded-lg bg-amber-500/[0.08] border border-amber-500/25 p-2.5 flex items-center gap-2 text-sm">
                       <RotateCcw className="h-3.5 w-3.5 text-amber-800 dark:text-amber-200 shrink-0" />
                       <span className="text-amber-950 dark:text-amber-100 font-medium">
-                        Refund in progress — ${Number(sale.amount).toFixed(2)} returning to buyer via Stripe
+                        Refund in progress — ${amounts.buyerPaidTotal.toFixed(2)} returning to buyer via Stripe
                       </span>
                     </div>
                   )}
@@ -362,7 +370,7 @@ export default async function SalesPage() {
                     <div className="rounded-lg bg-destructive/5 border border-destructive/15 p-2.5 flex items-center gap-2 text-sm">
                       <RotateCcw className="h-3.5 w-3.5 text-destructive shrink-0" />
                       <span className="text-destructive font-medium">
-                        Refund complete — ${Number(sale.amount).toFixed(2)} returned to buyer
+                        Refund complete — ${amounts.buyerPaidTotal.toFixed(2)} returned to buyer
                       </span>
                     </div>
                   )}

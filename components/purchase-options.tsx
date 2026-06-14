@@ -33,6 +33,8 @@ interface PurchaseOptionsProps {
   shippingAddressId?: string | null
   /** When set, server validates against this accepted offer (bundle checkout). */
   offerId?: string | null
+  /** Newsletter welcome promo code (Reswell-funded discount). */
+  promoCode?: string | null
   /** When false, card checkout stays disabled until purchase details are complete. */
   purchaseDetailsReady?: boolean
   /** True when the order ships (includes ship-only listings where fulfillment is undefined). */
@@ -57,6 +59,7 @@ export function PurchaseOptions({
   fulfillment,
   shippingAddressId,
   offerId,
+  promoCode,
   purchaseDetailsReady = true,
   needsShipping = false,
   submitButtonLabel,
@@ -97,6 +100,7 @@ export function PurchaseOptions({
             fulfillment={fulfillment ?? null}
             shippingAddressId={shippingAddressId ?? null}
             offerId={offerId ?? null}
+            promoCode={promoCode ?? null}
             purchaseDetailsReady
             needsShipping={needsShipping}
             submitButtonLabel={submitButtonLabel}

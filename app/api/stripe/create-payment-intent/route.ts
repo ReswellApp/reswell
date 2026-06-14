@@ -13,6 +13,16 @@ import { validateAcceptedOfferForPaymentIntent } from "@/lib/services/acceptedOf
 import { dedupeIdsPreserveOrder } from "@/lib/stripe-marketplace-metadata"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
+import {
+  computeCheckoutTotalWithNewsletterPromo,
+  validateNewsletterPromoForCheckout,
+} from "@/lib/services/newsletterPromo"
+import {
+  reserveNewsletterPromoForPaymentIntent,
+} from "@/lib/db/newsletterPromoCodes"
+import { createServiceRoleClient } from "@/lib/supabase/server"
+import { normalizeNewsletterPromoCodeInput } from "@/lib/utils/newsletter-promo-code"
 
 const JSON_NO_STORE_HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -60,6 +70,7 @@ export async function POST(request: NextRequest) {
     fulfillment?: string | null
     address_id?: string | null
     offer_id?: string | null
+    promo_code?: string | null
   }
 
   const fromArray = Array.isArray(body.listing_ids)
@@ -256,7 +267,55 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: bundle.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })
   }
 
-  const amountCents = Math.round(bundle.totalUsd * 100)
+  const promoCodeRaw = body.promo_code?.trim()
+  const promoCodeNormalized = promoCodeRaw ? normalizeNewsletterPromoCodeInput(promoCodeRaw) : null
+
+  if (promoCodeNormalized && validatedOfferId) {
+    return NextResponse.json(
+      { error: "Promo codes cannot be combined with accepted offer prices." },
+      { status: 400, headers: JSON_NO_STORE_HEADERS },
+    )
+  }
+
+  let promoDiscountUsd = 0
+  let promoCodeId: string | null = null
+  let promoDiscountPercent = 0
+
+  if (promoCodeNormalized) {
+    const buyerEmail = (await getAuthEmailForUserId(user.id)) ?? user.email?.trim() ?? ""
+    if (!buyerEmail) {
+      return NextResponse.json(
+        { error: "Add an email to your account before using a promo code." },
+        { status: 400, headers: JSON_NO_STORE_HEADERS },
+      )
+    }
+
+    const promoCheck = await validateNewsletterPromoForCheckout({
+      code: promoCodeNormalized,
+      buyerEmail,
+      itemSubtotalUsd: bundle.totalItemPriceUsd,
+      shippingUsd: bundle.totalShippingUsd,
+    })
+
+    if (!promoCheck.ok) {
+      return NextResponse.json({ error: promoCheck.error }, { status: 400, headers: JSON_NO_STORE_HEADERS })
+    }
+
+    promoDiscountUsd = promoCheck.discountUsd
+    promoCodeId = promoCheck.promo.id
+    promoDiscountPercent = promoCheck.discountPercent
+  }
+
+  const chargedTotalUsd =
+    promoDiscountUsd > 0
+      ? computeCheckoutTotalWithNewsletterPromo({
+          itemSubtotalUsd: bundle.totalItemPriceUsd,
+          shippingUsd: bundle.totalShippingUsd,
+          discountPercent: promoDiscountPercent,
+        }).totalUsd
+      : bundle.totalUsd
+
+  const amountCents = Math.round(chargedTotalUsd * 100)
   if (amountCents < 50) {
     return NextResponse.json({ error: "Amount is below the minimum charge" }, { status: 400 })
   }
@@ -282,6 +341,12 @@ export async function POST(request: NextRequest) {
         bundle_line_count: String(listingIdsOrdered.length),
         ...(validatedOfferId ? { offer_id: validatedOfferId } : {}),
         ...(addressId ? { address_id: addressId } : {}),
+        ...(promoCodeId
+          ? {
+              promo_code_id: promoCodeId,
+              promo_discount_cents: String(Math.round(promoDiscountUsd * 100)),
+            }
+          : {}),
         ...(bundle.anyUsedReswellQuote
           ? {
               reswell_shipping_cents: String(
@@ -294,6 +359,32 @@ export async function POST(request: NextRequest) {
       },
       description: stripeDescription.slice(0, 1000),
     })
+
+    if (promoCodeId) {
+      let serviceSupabase
+      try {
+        serviceSupabase = createServiceRoleClient()
+      } catch {
+        await stripe.paymentIntents.cancel(paymentIntent.id)
+        return NextResponse.json(
+          { error: "Could not reserve promo code." },
+          { status: 503, headers: JSON_NO_STORE_HEADERS },
+        )
+      }
+
+      const reserved = await reserveNewsletterPromoForPaymentIntent(
+        serviceSupabase,
+        promoCodeId,
+        paymentIntent.id,
+      )
+      if (!reserved.ok) {
+        await stripe.paymentIntents.cancel(paymentIntent.id)
+        return NextResponse.json(
+          { error: reserved.error ?? "This promo code is no longer available." },
+          { status: 409, headers: JSON_NO_STORE_HEADERS },
+        )
+      }
+    }
 
     return NextResponse.json(
       {

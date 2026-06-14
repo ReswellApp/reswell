@@ -29,6 +29,8 @@ import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-bro
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
 import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnPurchase"
+import { redeemNewsletterPromoForOrder } from "@/lib/db/newsletterPromoCodes"
+import { computeCheckoutTotalWithNewsletterPromo } from "@/lib/services/newsletterPromo"
 
 export type StripeCompleteOrderResult =
   | { ok: true; orderId: string; alreadyProcessed?: boolean }
@@ -377,9 +379,43 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: bundle.error, status: 400 }
   }
 
+  const promoCodeId = pi.metadata.promo_code_id?.trim() || null
+  const promoDiscountCentsRaw = pi.metadata.promo_discount_cents?.trim()
+  let promoDiscountUsd = 0
+
+  if (promoCodeId) {
+    if (!promoDiscountCentsRaw || !/^\d+$/.test(promoDiscountCentsRaw)) {
+      return { ok: false, error: "Invalid promo metadata", status: 400 }
+    }
+    promoDiscountUsd = parseInt(promoDiscountCentsRaw, 10) / 100
+    if (!Number.isFinite(promoDiscountUsd) || promoDiscountUsd <= 0) {
+      return { ok: false, error: "Invalid promo metadata", status: 400 }
+    }
+
+    const expectedPromoTotal = computeCheckoutTotalWithNewsletterPromo({
+      itemSubtotalUsd: bundle.totalItemPriceUsd,
+      shippingUsd: bundle.totalShippingUsd,
+      discountPercent: Math.round((promoDiscountUsd / bundle.totalItemPriceUsd) * 100),
+    }).totalUsd
+
+    const expectedPromoCents = Math.round(expectedPromoTotal * 100)
+    const metaCents = hasMetaAmountCents ? parseInt(metaAmountCentsRaw!, 10) : expectedPromoCents
+    if (Math.abs(metaCents - expectedPromoCents) > 1) {
+      return { ok: false, error: "Promo discount does not match order", status: 400 }
+    }
+  }
+
   const expectedCents = hasMetaAmountCents
     ? parseInt(metaAmountCentsRaw!, 10)
-    : Math.round(bundle.totalUsd * 100)
+    : promoCodeId
+      ? Math.round(
+          computeCheckoutTotalWithNewsletterPromo({
+            itemSubtotalUsd: bundle.totalItemPriceUsd,
+            shippingUsd: bundle.totalShippingUsd,
+            discountPercent: Math.round((promoDiscountUsd / bundle.totalItemPriceUsd) * 100),
+          }).totalUsd * 100,
+        )
+      : Math.round(bundle.totalUsd * 100)
 
   if (pi.amount !== expectedCents) {
     return { ok: false, error: "Payment amount does not match listing", status: 400 }
@@ -434,6 +470,26 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   const orderId = randomUUID()
 
+  if (promoCodeId) {
+    const redeemed = await redeemNewsletterPromoForOrder(serviceSupabase, {
+      promoId: promoCodeId,
+      buyerId,
+      orderId,
+      paymentIntentId: piId,
+    })
+    if (!redeemed.ok) {
+      console.error("[stripe-complete-order] promo redeem failed:", redeemed.error, {
+        promoCodeId,
+        piId,
+      })
+      return {
+        ok: false,
+        error: "Could not apply promo code to this order. Contact support if you were charged.",
+        status: 409,
+      }
+    }
+  }
+
   const { data: purchase, error: insertError } = await serviceSupabase
     .from("orders")
     .insert({
@@ -445,6 +501,8 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       shipping_amount: shippingUsd,
       platform_fee: platformFee,
       seller_earnings: sellerEarnings,
+      promo_code_id: promoCodeId,
+      promo_discount_usd: promoDiscountUsd,
       status: "confirmed",
       payment_method: "stripe",
       stripe_checkout_session_id: piId,

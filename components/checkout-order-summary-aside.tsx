@@ -1,7 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import type { ReactNode } from "react"
-import { ImageOff, ShoppingBag } from "lucide-react"
+import { ImageOff, Loader2, ShoppingBag } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingShipFromDisplayLine } from "@/lib/listing-ship-from-display"
@@ -10,7 +10,15 @@ import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import type { CheckoutListing, CheckoutSeller } from "@/components/checkout-types"
+
+export type AppliedNewsletterPromo = {
+  code: string
+  discountUsd: number
+  discountPercent: number
+}
 
 function sellerDisplayName(s: CheckoutSeller) {
   if (s.is_shop && s.shop_name?.trim()) return s.shop_name.trim()
@@ -23,13 +31,28 @@ export function CheckoutOrderSummaryAside({
   needsShipping,
   displayTotals,
   shippingSummaryRight,
+  promoCodeInput = "",
+  onPromoCodeInputChange,
+  onApplyPromo,
+  appliedPromo = null,
+  promoError = null,
+  promoApplying = false,
+  promoDisabled = false,
 }: {
   listings: CheckoutListing[]
   seller?: CheckoutSeller | null
   needsShipping: boolean
-  displayTotals: { itemPrice: number; shipping: number; total: number }
+  displayTotals: { itemPrice: number; shipping: number; total: number; discount?: number }
   shippingSummaryRight: ReactNode
+  promoCodeInput?: string
+  onPromoCodeInputChange?: (value: string) => void
+  onApplyPromo?: () => void
+  appliedPromo?: AppliedNewsletterPromo | null
+  promoError?: string | null
+  promoApplying?: boolean
+  promoDisabled?: boolean
 }) {
+  const promoInteractive = Boolean(onPromoCodeInputChange && onApplyPromo)
   const fulfillmentLabel: "pickup" | "shipping" = needsShipping ? "shipping" : "pickup"
 
   const shipsFromLine =
@@ -127,20 +150,45 @@ export function CheckoutOrderSummaryAside({
 
         <div className="mt-6">
           <div className="flex gap-2">
-            <div
-              className="flex h-11 min-w-0 flex-1 items-center rounded-[6px] border border-neutral-200 bg-white px-3 text-[13px] text-neutral-400"
-              role="status"
+            <Input
+              value={promoCodeInput}
+              onChange={(e) => onPromoCodeInputChange?.(e.target.value)}
+              placeholder="Discount code"
+              disabled={!promoInteractive || promoDisabled || promoApplying || Boolean(appliedPromo)}
+              className="h-11 min-w-0 flex-1 rounded-[6px] border-neutral-200 bg-white text-[13px] uppercase placeholder:normal-case placeholder:text-neutral-400"
+              aria-label="Discount code"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              disabled={
+                !promoInteractive ||
+                promoDisabled ||
+                promoApplying ||
+                Boolean(appliedPromo) ||
+                !promoCodeInput.trim()
+              }
+              onClick={onApplyPromo}
+              className="h-11 shrink-0 rounded-[6px] border-neutral-200 px-4 text-[13px] font-medium"
             >
-              Discount code or gift card
-            </div>
-            <div
-              className="flex h-11 shrink-0 items-center rounded-[6px] border border-neutral-200 bg-neutral-200/70 px-4 text-[13px] font-medium text-neutral-400"
-              aria-hidden
-            >
-              Apply
-            </div>
+              {promoApplying ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : "Apply"}
+            </Button>
           </div>
-          <p className="mt-2 text-[11px] text-neutral-400">Promo codes are not available for peer listings yet.</p>
+          {!promoInteractive ? (
+            <p className="mt-2 text-[11px] text-neutral-400">Sign in to apply your newsletter promo code.</p>
+          ) : appliedPromo ? (
+            <p className="mt-2 text-[12px] font-medium text-[#5574AD]">
+              {appliedPromo.code} applied — {appliedPromo.discountPercent}% off items
+            </p>
+          ) : promoError ? (
+            <p className="mt-2 text-[12px] text-destructive" role="alert">
+              {promoError}
+            </p>
+          ) : (
+            <p className="mt-2 text-[11px] text-neutral-400">
+              Newsletter codes apply to item price only. Reswell covers the discount — sellers are paid in full.
+            </p>
+          )}
         </div>
 
         <div className="mt-8 space-y-2.5 border-t border-neutral-200/90 pt-6 text-[14px]">
@@ -148,6 +196,12 @@ export function CheckoutOrderSummaryAside({
             <span className="text-neutral-600">Subtotal</span>
             <span className="tabular-nums font-medium text-foreground">${displayTotals.itemPrice.toFixed(2)}</span>
           </div>
+          {displayTotals.discount != null && displayTotals.discount > 0 ? (
+            <div className="flex justify-between gap-4 text-[#5574AD]">
+              <span>Newsletter discount</span>
+              <span className="tabular-nums font-medium">−${displayTotals.discount.toFixed(2)}</span>
+            </div>
+          ) : null}
           <div className="flex justify-between gap-4">
             <span className="text-neutral-600">Shipping</span>
             <div className="min-w-[5rem] shrink-0 text-right text-[14px]">{shippingSummaryRight}</div>

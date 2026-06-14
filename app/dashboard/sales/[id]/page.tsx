@@ -47,6 +47,7 @@ import {
 import { ReswellTrackingSection } from "@/components/features/orders/reswell-tracking-section"
 import { getLatestPreparedShippingLabelForOrder } from "@/lib/db/orderShippingLabels"
 import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
+import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amounts"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { orderHasAccessibleShippingLabelPdf } from "@/lib/services/resolveOrderShippingLabelPdf"
 import {
@@ -112,6 +113,7 @@ type SaleDetail = {
   shipping_amount: number | string | null
   platform_fee: number | string | null
   seller_earnings: number | string
+  promo_discount_usd?: number | string | null
   status: string
   created_at: string
   refunded_at: string | null
@@ -189,6 +191,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
       shipping_amount,
       platform_fee,
       seller_earnings,
+      promo_discount_usd,
       status,
       created_at,
       refunded_at,
@@ -293,18 +296,16 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   const isRefunded = orderStatusIsRefunded(sale.status)
   const isRefunding = orderStatusIsRefundInProgress(sale.status)
   const fulfillmentLocked = orderStatusLocksDuringRefund(sale.status)
-  const orderTotal = Number(sale.amount)
-  const shippingAmount = Math.max(0, Number(sale.shipping_amount ?? 0) || 0)
-  const sellerEarningsAmount = Number(sale.seller_earnings)
-  const itemPriceAmount = Math.max(
-    0,
-    Math.round((orderTotal - shippingAmount) * 100) / 100,
-  )
-  const platformFee = (() => {
-    const stored = Number(sale.platform_fee ?? NaN)
-    if (Number.isFinite(stored) && stored >= 0) return stored
-    return Math.max(0, Math.round((itemPriceAmount - sellerEarningsAmount) * 100) / 100)
-  })()
+  const amounts = resolveSellerOrderDisplayAmounts(sale)
+  const {
+    sellerSaleTotal: orderTotal,
+    shippingAmount,
+    itemPriceAmount,
+    platformFee,
+    sellerEarningsAmount,
+    buyerPaidTotal,
+    hadReswellPromo,
+  } = amounts
   const carrierTracking = parseOrderTrackingDetail(trackingDetailRaw)
   const serviceSupabase = createServiceRoleClient()
   const hasPreparedShippingLabel = !!(await getLatestPreparedShippingLabelForOrder(
@@ -453,11 +454,11 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
 
       {/* ── Refund banners (full width, before columns) ── */}
       {isRefunding && (
-        <SellerRefundInProgressBanner amount={Number(sale.amount)} paidWithCard={paidWithCard} />
+        <SellerRefundInProgressBanner amount={buyerPaidTotal} paidWithCard={paidWithCard} />
       )}
       {isRefunded && (
         <SellerRefundedBanner
-          amount={Number(sale.amount)}
+          amount={buyerPaidTotal}
           refundedAt={sale.refunded_at}
         />
       )}
@@ -551,6 +552,12 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                     </span>
                   </div>
                 )}
+                {hadReswellPromo && !isRefunded && !isRefunding ? (
+                  <p className="text-xs text-muted-foreground leading-relaxed rounded-md border border-border/80 bg-muted/30 px-2.5 py-2">
+                    The buyer used a Reswell promo code. Your earnings are based on the full listing
+                    price — the discount is covered by Reswell, not deducted from you.
+                  </p>
+                ) : null}
                 {isRefunding && (
                   <p className="text-xs text-muted-foreground rounded-md border border-amber-500/20 bg-amber-500/[0.04] px-2.5 py-2">
                     Totals stay as recorded until Stripe finishes the refund; your earnings line will mark
@@ -565,7 +572,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                         Refund to buyer (full sale)
                       </span>
                       <span className="text-lg font-bold tabular-nums text-destructive">
-                        ${Number(sale.amount).toFixed(2)}
+                        ${buyerPaidTotal.toFixed(2)}
                       </span>
                     </div>
                   </>

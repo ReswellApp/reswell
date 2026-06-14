@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { CheckoutOrderSummaryAside } from "@/components/checkout-order-summary-aside"
+import {
+  CheckoutOrderSummaryAside,
+  type AppliedNewsletterPromo,
+} from "@/components/checkout-order-summary-aside"
 import { CheckoutPurchaseDetails, type PurchaseDetailsState } from "@/components/checkout-purchase-details"
 import type { CheckoutCopy, CheckoutListing, CheckoutSeller } from "@/components/checkout-types"
 import { PurchaseOptions } from "@/components/purchase-options"
@@ -114,6 +117,17 @@ export function CheckoutClient({
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
 
+  const [promoCodeInput, setPromoCodeInput] = useState("")
+  const [appliedPromo, setAppliedPromo] = useState<AppliedNewsletterPromo | null>(null)
+  const [promoError, setPromoError] = useState<string | null>(null)
+  const [promoApplying, setPromoApplying] = useState(false)
+
+  useEffect(() => {
+    setAppliedPromo(null)
+    setPromoError(null)
+    setPromoCodeInput("")
+  }, [listingIdsKey, impliedFulfillment])
+
   useEffect(() => {
     void prefetchStripeCheckout()
   }, [])
@@ -181,6 +195,60 @@ export function CheckoutClient({
     setPurchaseDetails(state)
   }, [])
 
+  const handleApplyPromo = useCallback(async () => {
+    const code = promoCodeInput.trim()
+    if (!code) return
+
+    setPromoApplying(true)
+    setPromoError(null)
+
+    const itemSubtotal = resolved.ok ? resolved.itemPrice : 0
+    const shippingUsd =
+      needsShipping && shipQuote
+        ? shipQuote.shippingUsd
+        : resolved.ok
+          ? resolved.shipping
+          : 0
+
+    try {
+      const res = await fetch("/api/promo/validate", {
+        method: "POST",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          code,
+          item_subtotal_usd: itemSubtotal,
+          shipping_usd: shippingUsd,
+        }),
+      })
+      const data = (await res.json()) as {
+        error?: string
+        data?: {
+          code: string
+          discountUsd: number
+          discountPercent: number
+        }
+      }
+      if (!res.ok || !data.data) {
+        setAppliedPromo(null)
+        setPromoError(data.error ?? "Could not apply promo code.")
+        return
+      }
+      setAppliedPromo({
+        code: data.data.code,
+        discountUsd: data.data.discountUsd,
+        discountPercent: data.data.discountPercent,
+      })
+      setPromoCodeInput(data.data.code)
+    } catch {
+      setAppliedPromo(null)
+      setPromoError("Could not apply promo code.")
+    } finally {
+      setPromoApplying(false)
+    }
+  }, [promoCodeInput, resolved, needsShipping, shipQuote])
+
   const backHref = listingDetailHref(primaryListing)
 
   const shipFromLocalityLine = useMemo(
@@ -225,12 +293,20 @@ export function CheckoutClient({
           itemPrice: resolved.itemPrice,
           shipping: shipQuote.shippingUsd,
           total: shipQuote.totalUsd,
+          discount: appliedPromo?.discountUsd,
         }
       : {
           itemPrice: resolved.itemPrice,
           shipping: resolved.shipping,
           total: resolved.total,
+          discount: appliedPromo?.discountUsd,
         }
+
+  const payableTotal = useMemo(() => {
+    const baseTotal = displayTotals.total
+    const discount = appliedPromo?.discountUsd ?? 0
+    return Math.max(0, Math.round((baseTotal - discount) * 100) / 100)
+  }, [displayTotals.total, appliedPromo?.discountUsd])
 
   const shippingQuoteReady = !needsShipping || (!!shipQuote && !quoteLoading && !quoteError)
   const paymentBlocked = !purchaseDetails.readyToPay || !shippingQuoteReady
@@ -404,12 +480,13 @@ export function CheckoutClient({
                 <PurchaseOptions
                   listingIds={listingIds}
                   listingTitle={listingSummaryTitle}
-                  price={displayTotals.total}
+                  price={payableTotal}
                   fulfillment={fulfillmentForApi ?? null}
                   shippingAddressId={needsShipping ? purchaseDetails.shippingAddressId : null}
                   purchaseDetailsReady={!paymentBlocked}
                   needsShipping={needsShipping}
                   offerId={offerId}
+                  promoCode={appliedPromo?.code ?? null}
                   submitButtonLabel="Pay now"
                   submitButtonClassName={payButtonClassName}
                   hideStripeFooter
@@ -451,8 +528,18 @@ export function CheckoutClient({
           listings={listings}
           seller={seller}
           needsShipping={needsShipping}
-          displayTotals={displayTotals}
+          displayTotals={{
+            ...displayTotals,
+            total: payableTotal,
+          }}
           shippingSummaryRight={shippingSummaryRight}
+          promoCodeInput={promoCodeInput}
+          onPromoCodeInputChange={setPromoCodeInput}
+          onApplyPromo={() => void handleApplyPromo()}
+          appliedPromo={appliedPromo}
+          promoError={promoError}
+          promoApplying={promoApplying}
+          promoDisabled={Boolean(offerId)}
         />
       </div>
     </div>
