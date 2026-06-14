@@ -2,8 +2,9 @@
  * Client-side listing photo pipeline: decode → resize (long edge cap) → WebP (or JPEG fallback).
  */
 
-import { runImageCpuTask } from "@/lib/client-image-cpu-queue"
+import { runImageCpuTask, runImagePrepareTask } from "@/lib/client-image-cpu-queue"
 import { prepareListingImagePairInWorker } from "@/lib/listing-image-worker"
+import { isAbortError } from "@/lib/utils/is-abort-error"
 
 export const LISTING_IMAGE_MAX_ORIGINAL_BYTES = 20 * 1024 * 1024
 export const LISTING_FULL_MAX_LONG_EDGE = 2000
@@ -32,12 +33,107 @@ export function assertListingOriginalSize(file: File): void {
 }
 
 export async function browserCanDecodeImage(file: File): Promise<boolean> {
+  // Gated: this fully decodes the image just to probe support. Run un-bounded for a batch of large
+  // photos it was a primary contributor to the iOS "operation was aborted" out-of-memory storm.
+  return runImagePrepareTask(async () => {
+    try {
+      const b = await createImageBitmap(file)
+      b.close()
+      return true
+    } catch {
+      return false
+    }
+  })
+}
+
+/** Transient, memory-pressure failures (mobile Safari aborts decode under load) — safe to retry. */
+function isRetryableImageError(err: unknown): boolean {
+  if (isAbortError(err)) return true
+  const message = (err instanceof Error ? err.message : String(err ?? "")).toLowerCase()
+  return (
+    message.includes("out of memory") ||
+    message.includes("memory") ||
+    message.includes("insufficient resources") ||
+    message.includes("allocation")
+  )
+}
+
+const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
+
+/**
+ * Retries an image step a few times when it fails with a transient memory/abort error. Because work
+ * is serialized through {@link runImagePrepareTask}, waiting lets earlier photos release memory so
+ * the retry succeeds instead of permanently failing the tile.
+ */
+async function withTransientImageRetry<T>(task: () => Promise<T>, attempts = 3): Promise<T> {
+  let lastError: unknown
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      return await task()
+    } catch (err) {
+      lastError = err
+      if (!isRetryableImageError(err) || attempt === attempts - 1) throw err
+      await sleep(200 * (attempt + 1))
+    }
+  }
+  throw lastError
+}
+
+type DecodedImageSource = {
+  source: CanvasImageSource
+  width: number
+  height: number
+  release: () => void
+}
+
+/** Decode via an <img> element — a fallback when createImageBitmap rejects (format/EXIF edge cases). */
+function decodeViaImageElement(file: File): Promise<DecodedImageSource> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.decoding = "async"
+    img.onload = () => {
+      const width = img.naturalWidth
+      const height = img.naturalHeight
+      if (!width || !height) {
+        URL.revokeObjectURL(url)
+        reject(new Error("Could not read image dimensions"))
+        return
+      }
+      resolve({
+        source: img,
+        width,
+        height,
+        release: () => URL.revokeObjectURL(url),
+      })
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error("Could not decode image"))
+    }
+    img.src = url
+  })
+}
+
+/** Single source of truth for main-thread decode: prefer createImageBitmap, fall back to <img>. */
+async function decodeImageSource(file: File): Promise<DecodedImageSource> {
   try {
-    const b = await createImageBitmap(file)
-    b.close()
-    return true
-  } catch {
-    return false
+    // `from-image` bakes the EXIF orientation tag into the pixels so camera/iPhone photos (which
+    // store rotation metadata rather than rotated pixels) are not decoded upside down or sideways.
+    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" })
+    return {
+      source: bitmap,
+      width: bitmap.width,
+      height: bitmap.height,
+      release: () => bitmap.close(),
+    }
+  } catch (err) {
+    if (!isRetryableImageError(err)) {
+      // Genuine decode failure (not memory) — try the <img> path which handles some formats/EXIF
+      // cases createImageBitmap rejects. Modern browsers apply EXIF orientation to <img> by default.
+      return decodeViaImageElement(file)
+    }
+    throw err
   }
 }
 
@@ -95,51 +191,52 @@ function canvasToImageBlob(
   })
 }
 
+type Drawable = { source: CanvasImageSource; width: number; height: number }
+
+function drawToCanvas(
+  src: Drawable,
+  outWidth: number,
+  outHeight: number,
+  transform: (ctx: CanvasRenderingContext2D) => void,
+): HTMLCanvasElement {
+  const canvas = document.createElement("canvas")
+  canvas.width = outWidth
+  canvas.height = outHeight
+  const ctx = canvas.getContext("2d")
+  if (!ctx) throw new Error("Canvas not available")
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = "high"
+  transform(ctx)
+  return canvas
+}
+
 /**
  * Listing UIs expect portrait-oriented assets (height ≥ width). Landscape photos are rotated
  * 90° counter-clockwise so the long edge becomes vertical — no user-facing rejection for orientation.
  * Square images are unchanged.
  */
-async function rotateLandscapeToPortraitIfNeeded(bitmap: ImageBitmap): Promise<ImageBitmap> {
-  if (bitmap.height >= bitmap.width) return bitmap
-  const w = bitmap.width
-  const h = bitmap.height
-  const canvas = document.createElement("canvas")
-  canvas.width = h
-  canvas.height = w
-  const ctx = canvas.getContext("2d")
-  if (!ctx) {
-    throw new Error("Canvas not available")
-  }
-  ctx.imageSmoothingEnabled = true
-  ctx.imageSmoothingQuality = "high"
-  ctx.translate(0, w)
-  ctx.rotate(-Math.PI / 2)
-  ctx.drawImage(bitmap, 0, 0)
-  const rotated = await createImageBitmap(canvas)
-  bitmap.close()
-  return rotated
+function rotateLandscapeToPortraitIfNeeded(src: Drawable): Drawable {
+  if (src.height >= src.width) return src
+  const w = src.width
+  const h = src.height
+  const canvas = drawToCanvas(src, h, w, (ctx) => {
+    ctx.translate(0, w)
+    ctx.rotate(-Math.PI / 2)
+    ctx.drawImage(src.source, 0, 0)
+  })
+  return { source: canvas, width: h, height: w }
 }
 
-/** Replaces `bitmap` with an upside-down version (closed after use). */
-async function rotateBitmap180(bitmap: ImageBitmap): Promise<ImageBitmap> {
-  const w = bitmap.width
-  const h = bitmap.height
-  const canvas = document.createElement("canvas")
-  canvas.width = w
-  canvas.height = h
-  const ctx = canvas.getContext("2d")
-  if (!ctx) {
-    throw new Error("Canvas not available")
-  }
-  ctx.imageSmoothingEnabled = true
-  ctx.imageSmoothingQuality = "high"
-  ctx.translate(w, h)
-  ctx.rotate(Math.PI)
-  ctx.drawImage(bitmap, 0, 0)
-  const rotated = await createImageBitmap(canvas)
-  bitmap.close()
-  return rotated
+/** Returns an upside-down copy of `src`. */
+function rotate180(src: Drawable): Drawable {
+  const w = src.width
+  const h = src.height
+  const canvas = drawToCanvas(src, w, h, (ctx) => {
+    ctx.translate(w, h)
+    ctx.rotate(Math.PI)
+    ctx.drawImage(src.source, 0, 0)
+  })
+  return { source: canvas, width: w, height: h }
 }
 
 export type PrepareListingImagePairOptions = {
@@ -148,41 +245,34 @@ export type PrepareListingImagePairOptions = {
 }
 
 async function renderResizedToBlob(
-  bitmap: ImageBitmap,
+  src: Drawable,
   maxLongEdge: number,
   quality: number,
   useWebp: boolean,
 ): Promise<{ blob: Blob; contentType: "image/webp" | "image/jpeg"; ext: "webp" | "jpg" }> {
-  const { width: tw, height: th } = longEdgeDimensions(bitmap.width, bitmap.height, maxLongEdge)
-  const canvas = document.createElement("canvas")
-  canvas.width = tw
-  canvas.height = th
-  const ctx = canvas.getContext("2d")
-  if (!ctx) throw new Error("Canvas not available")
-  ctx.imageSmoothingEnabled = true
-  ctx.imageSmoothingQuality = "high"
-  ctx.drawImage(bitmap, 0, 0, tw, th)
+  const { width: tw, height: th } = longEdgeDimensions(src.width, src.height, maxLongEdge)
+  const canvas = drawToCanvas(src, tw, th, (ctx) => {
+    ctx.drawImage(src.source, 0, 0, tw, th)
+  })
   return canvasToImageBlob(canvas, useWebp, quality)
 }
 
-/** Synchronous main-thread fallback when the OffscreenCanvas worker is unavailable. */
+/** Main-thread fallback when the OffscreenCanvas worker is unavailable or fails mid-flight. */
 async function prepareListingImagePairOnMainThread(
   file: File,
   options?: PrepareListingImagePairOptions,
 ): Promise<PreparedListingImagePair> {
-  // `from-image` bakes the EXIF orientation tag into the pixels so camera/iPhone
-  // photos (which store rotation metadata rather than rotated pixels) are not decoded
-  // upside down or sideways. Default decoding (`none`) ignores EXIF in some browsers.
-  let bitmap = await createImageBitmap(file, { imageOrientation: "from-image" })
+  const decoded = await decodeImageSource(file)
   try {
-    bitmap = await rotateLandscapeToPortraitIfNeeded(bitmap)
+    let drawable: Drawable = decoded
+    drawable = rotateLandscapeToPortraitIfNeeded(drawable)
     if (options?.rotate180) {
-      bitmap = await rotateBitmap180(bitmap)
+      drawable = rotate180(drawable)
     }
     const useWebp = await canvasSupportsWebp()
     const [fullPack, thumbPack] = await Promise.all([
-      renderResizedToBlob(bitmap, LISTING_FULL_MAX_LONG_EDGE, LISTING_WEBP_QUALITY_FULL, useWebp),
-      renderResizedToBlob(bitmap, LISTING_THUMB_MAX_LONG_EDGE, LISTING_WEBP_QUALITY_THUMB, useWebp),
+      renderResizedToBlob(drawable, LISTING_FULL_MAX_LONG_EDGE, LISTING_WEBP_QUALITY_FULL, useWebp),
+      renderResizedToBlob(drawable, LISTING_THUMB_MAX_LONG_EDGE, LISTING_WEBP_QUALITY_THUMB, useWebp),
     ])
     return {
       full: fullPack.blob,
@@ -193,7 +283,7 @@ async function prepareListingImagePairOnMainThread(
       thumbExt: thumbPack.ext,
     }
   } finally {
-    bitmap.close()
+    decoded.release()
   }
 }
 
@@ -207,11 +297,33 @@ export async function prepareListingImagePairFromFile(
   file: File,
   options?: PrepareListingImagePairOptions,
 ): Promise<PreparedListingImagePair> {
-  try {
-    const viaWorker = await prepareListingImagePairInWorker(file, options)
-    if (viaWorker) return viaWorker
-  } catch {
-    /* Worker failed mid-flight — fall back to the main thread below. */
-  }
-  return runImageCpuTask(() => prepareListingImagePairOnMainThread(file, options))
+  // One memory slot per photo across BOTH the worker and main-thread paths so a batch of large
+  // photos is decoded a few at a time — the fix for mobile Safari's out-of-memory aborts.
+  return runImagePrepareTask(() =>
+    withTransientImageRetry(async () => {
+      try {
+        const viaWorker = await prepareListingImagePairInWorker(file, options)
+        if (viaWorker) return viaWorker
+      } catch (err) {
+        // A transient worker memory abort should bubble so the retry wrapper can back off and try
+        // again; only non-transient worker failures fall through to the main-thread pipeline.
+        if (isRetryableImageError(err)) throw err
+      }
+      try {
+        return await runImageCpuTask(() => prepareListingImagePairOnMainThread(file, options))
+      } catch (err) {
+        if (isRetryableImageError(err)) throw err
+        throw new Error(
+          err instanceof Error && err.message
+            ? err.message
+            : "Could not process this photo. Try again or choose a different photo.",
+        )
+      }
+    }),
+  ).catch((err) => {
+    if (isRetryableImageError(err)) {
+      throw new Error("Your device ran low on memory while processing this photo. Tap Retry.")
+    }
+    throw err
+  })
 }
