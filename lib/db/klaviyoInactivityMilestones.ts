@@ -39,18 +39,54 @@ export async function fetchProfilesEligibleForKlaviyoInactivity(
   return { data: typed, error: null }
 }
 
+/**
+ * Record one or more milestones as sent **now** for a user (idempotent upsert).
+ *
+ * Upsert (not insert) so re-entry works: when a user reactivates and later goes
+ * inactive again, the same `(user_id, milestone_days)` row is re-stamped with a
+ * fresh `sent_at`, which the eligibility RPC compares against `last_active_at`.
+ *
+ * Pass every tier that should be suppressed for this send. When we emit the
+ * highest pending tier (e.g. 30d), we also stamp the lower tiers (3d, 15d) so the
+ * user does not also receive those stale lower-tier emails this streak.
+ */
+export async function recordKlaviyoInactivityMilestonesSent(
+  supabase: SupabaseClient,
+  userId: string,
+  milestoneDays: KlaviyoInactivityMilestoneDays[],
+): Promise<{ error: string | null }> {
+  const unique = Array.from(new Set(milestoneDays))
+  if (unique.length === 0) return { error: null }
+
+  const sentAt = new Date().toISOString()
+  const rows = unique.map((d) => ({
+    user_id: userId,
+    milestone_days: d,
+    sent_at: sentAt,
+  }))
+
+  const { error } = await supabase
+    .from("klaviyo_inactivity_milestones")
+    .upsert(rows, { onConflict: "user_id,milestone_days" })
+
+  if (error) return { error: error.message }
+  return { error: null }
+}
+
+/** Record a single milestone as sent now (idempotent upsert). */
 export async function insertKlaviyoInactivityMilestoneSent(
   supabase: SupabaseClient,
   userId: string,
   milestoneDays: KlaviyoInactivityMilestoneDays,
 ): Promise<{ error: string | null }> {
-  const { error } = await supabase.from("klaviyo_inactivity_milestones").insert({
-    user_id: userId,
-    milestone_days: milestoneDays,
-  })
+  return recordKlaviyoInactivityMilestonesSent(supabase, userId, [milestoneDays])
+}
 
-  if (error) return { error: error.message }
-  return { error: null }
+/** Every configured tier at or below `maxDays` (e.g. 30 → [3, 15, 30]). */
+export function inactivityMilestoneTiersUpTo(
+  maxDays: KlaviyoInactivityMilestoneDays,
+): KlaviyoInactivityMilestoneDays[] {
+  return KLAVIYO_INACTIVITY_MILESTONE_DAYS.filter((d) => d <= maxDays)
 }
 
 /** Which inactive-milestone rows already exist for this user (idempotency / admin backfill). */

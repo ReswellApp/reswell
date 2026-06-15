@@ -23,6 +23,7 @@ import { trackMetaPurchaseServerEvent } from "@/lib/meta/track-purchase-server-e
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
+import { touchUserLastActive } from "@/lib/db/userActivity"
 import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
@@ -700,6 +701,12 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   }
 
   void deleteBuyerCartRowsForListings(serviceSupabase, buyerId, listingIdsOrdered)
+
+  // Completing a purchase is the strongest re-engagement signal — reset the
+  // inactivity clock for both parties so they're not swept into winback flows
+  // and any prior milestone re-arms for a future streak.
+  void touchUserLastActive(serviceSupabase, buyerId)
+  void touchUserLastActive(serviceSupabase, bundleSellerId)
 
   const listingTitles = listingsOrdered.map((l) => String(l.title ?? ""))
 

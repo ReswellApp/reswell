@@ -1,5 +1,6 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { processAllKlaviyoInactivityMilestones } from "@/lib/services/klaviyoInactivityMilestones"
+import { sendInactivitySyncReport } from "@/lib/services/klaviyoInactivitySyncReport"
 import { NextResponse } from "next/server"
 
 /**
@@ -25,8 +26,11 @@ export async function GET(request: Request) {
   try {
     const summaries = await processAllKlaviyoInactivityMilestones(supabase, referenceTime)
 
+    const report = await sendInactivitySyncReport(summaries, referenceTime.toISOString())
+
     return NextResponse.json({
       summaries,
+      report,
       reference_time: referenceTime.toISOString(),
     })
   } catch (e) {

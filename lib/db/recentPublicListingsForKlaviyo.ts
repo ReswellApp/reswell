@@ -10,6 +10,7 @@ export type RecentPublicListingRowForKlaviyo = {
   title: string
   price: number | null
   section: string
+  brand: string | null
   city: string | null
   state: string | null
   created_at: string
@@ -23,6 +24,7 @@ const LISTING_SELECT = `
   title,
   price,
   section,
+  brand,
   city,
   state,
   created_at,

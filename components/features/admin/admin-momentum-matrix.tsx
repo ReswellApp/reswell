@@ -21,13 +21,18 @@ import type {
 } from '@/lib/services/adminBusinessInsights'
 import { cn } from '@/lib/utils'
 
-const METRIC_ICON: Record<MomentumMetricKey, LucideIcon> = {
-  gmv: DollarSign,
-  platformRevenue: Coins,
-  paidOrders: ShoppingBag,
-  newUsers: UserPlus,
-  newListings: Package,
-  searches: Search,
+type MetricTheme = {
+  icon: LucideIcon
+  chip: string
+}
+
+const METRIC_THEME: Record<MomentumMetricKey, MetricTheme> = {
+  gmv: { icon: DollarSign, chip: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' },
+  platformRevenue: { icon: Coins, chip: 'bg-sky-500/10 text-sky-600 dark:text-sky-400' },
+  paidOrders: { icon: ShoppingBag, chip: 'bg-violet-500/10 text-violet-600 dark:text-violet-400' },
+  newUsers: { icon: UserPlus, chip: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
+  newListings: { icon: Package, chip: 'bg-teal-500/10 text-teal-600 dark:text-teal-400' },
+  searches: { icon: Search, chip: 'bg-rose-500/10 text-rose-600 dark:text-rose-400' },
 }
 
 function formatUsd(amount: number): string {
@@ -57,70 +62,122 @@ function formatBaseline(value: number, format: MomentumFormat): string {
   return `${new Intl.NumberFormat('en-US').format(rounded)}/day`
 }
 
-function DeltaPill({ comparison }: { comparison: MomentumComparison }) {
-  const pct = comparison.deltaPct
-  if (pct === null) {
-    return (
-      <span className="inline-flex items-center gap-0.5 rounded-full bg-secondary px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
-        <Minus className="h-3 w-3" aria-hidden />
-        —
-      </span>
-    )
-  }
+type DeltaTone = 'neutral' | 'positive' | 'negative'
+
+function deltaTone(pct: number | null): DeltaTone {
+  if (pct === null) return 'neutral'
+  return pct >= 0 ? 'positive' : 'negative'
+}
+
+function deltaText(pct: number): string {
   const positive = pct >= 0
-  const Icon = positive ? TrendingUp : TrendingDown
   const magnitude = Math.abs(pct)
-  const text = `${positive ? '+' : '−'}${magnitude >= 10 ? magnitude.toFixed(0) : magnitude.toFixed(1)}%`
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums',
-        positive
-          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-          : 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
-      )}
-    >
-      <Icon className="h-3 w-3" aria-hidden />
-      {text}
-    </span>
-  )
+  return `${positive ? '+' : '−'}${magnitude >= 10 ? magnitude.toFixed(0) : magnitude.toFixed(1)}%`
 }
 
-function MetricCell({ metric }: { metric: MomentumMetric }) {
-  const Icon = METRIC_ICON[metric.key]
-  return (
-    <div className="flex items-center gap-3">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-foreground">
-        <Icon className="h-[18px] w-[18px]" aria-hidden />
-      </span>
-      <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-foreground">{metric.label}</p>
-        <p className="truncate text-[11px] text-muted-foreground">{metric.description}</p>
-      </div>
-    </div>
-  )
-}
-
-function ComparisonCell({
+/** One trailing-window comparison rendered as a compact, scannable column. */
+function ComparisonChip({
   comparison,
   format,
 }: {
   comparison: MomentumComparison
   format: MomentumFormat
 }) {
+  const tone = deltaTone(comparison.deltaPct)
+  const Icon = tone === 'neutral' ? Minus : tone === 'positive' ? TrendingUp : TrendingDown
+
   return (
-    <div className="flex flex-col items-start gap-1">
-      <DeltaPill comparison={comparison} />
-      <span className="text-[11px] tabular-nums text-muted-foreground">
+    <div className="flex flex-col items-center gap-1.5 rounded-lg bg-muted/40 px-1.5 py-2 text-center">
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {comparison.label}
+      </span>
+      <span
+        className={cn(
+          'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums',
+          tone === 'neutral' && 'bg-secondary text-muted-foreground',
+          tone === 'positive' && 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+          tone === 'negative' && 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+        )}
+      >
+        <Icon className="h-3 w-3" aria-hidden />
+        {comparison.deltaPct === null ? '—' : deltaText(comparison.deltaPct)}
+      </span>
+      <span className="text-[10px] tabular-nums text-muted-foreground">
         {formatBaseline(comparison.baselinePerDay, format)}
       </span>
     </div>
   )
 }
 
-export function AdminMomentumMatrix({ matrix }: { matrix: AdminMomentumMatrix }) {
-  const windows = matrix.metrics[0]?.comparisons.map((c) => c.label) ?? []
+function MomentumTile({ metric }: { metric: MomentumMetric }) {
+  const theme = METRIC_THEME[metric.key]
+  const Icon = theme.icon
+  const yesterday = metric.comparisons[0]
+  const headlineTone = deltaTone(yesterday?.deltaPct ?? null)
 
+  return (
+    <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 transition-all duration-200 hover:border-foreground/15 hover:shadow-md">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span
+            className={cn(
+              'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+              theme.chip,
+            )}
+          >
+            <Icon className="h-5 w-5" aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-foreground">{metric.label}</p>
+            <p className="truncate text-[11px] text-muted-foreground">{metric.description}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-end justify-between gap-2">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Today
+          </p>
+          <p className="mt-0.5 text-2xl font-bold leading-none tabular-nums tracking-tight text-foreground">
+            {formatValue(metric.today, metric.format)}
+          </p>
+        </div>
+        {yesterday ? (
+          <span
+            className={cn(
+              'inline-flex items-center gap-0.5 rounded-full px-2 py-1 text-xs font-semibold tabular-nums',
+              headlineTone === 'neutral' && 'bg-secondary text-muted-foreground',
+              headlineTone === 'positive' && 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+              headlineTone === 'negative' && 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+            )}
+          >
+            {headlineTone === 'neutral' ? (
+              <Minus className="h-3.5 w-3.5" aria-hidden />
+            ) : headlineTone === 'positive' ? (
+              <TrendingUp className="h-3.5 w-3.5" aria-hidden />
+            ) : (
+              <TrendingDown className="h-3.5 w-3.5" aria-hidden />
+            )}
+            {yesterday.deltaPct === null ? '—' : deltaText(yesterday.deltaPct)}
+            <span className="font-normal text-muted-foreground">vs yest.</span>
+          </span>
+        ) : null}
+      </div>
+
+      <div
+        className="grid gap-1.5"
+        style={{ gridTemplateColumns: `repeat(${metric.comparisons.length}, minmax(0, 1fr))` }}
+      >
+        {metric.comparisons.map((comparison) => (
+          <ComparisonChip key={comparison.windowDays} comparison={comparison} format={metric.format} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function AdminMomentumMatrix({ matrix }: { matrix: AdminMomentumMatrix }) {
   return (
     <Card>
       <CardHeader>
@@ -135,49 +192,10 @@ export function AdminMomentumMatrix({ matrix }: { matrix: AdminMomentumMatrix })
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[680px] border-separate border-spacing-0 text-left">
-            <thead>
-              <tr>
-                <th className="sticky left-0 z-10 bg-card pb-3 pr-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Metric
-                </th>
-                <th className="px-4 pb-3 text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Today
-                </th>
-                {windows.map((label) => (
-                  <th
-                    key={label}
-                    className="px-4 pb-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
-                  >
-                    {label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {matrix.metrics.map((metric) => (
-                <tr key={metric.key} className="group">
-                  <td className="sticky left-0 z-10 border-t border-border bg-card py-3 pr-4 transition-colors group-hover:bg-muted/40">
-                    <MetricCell metric={metric} />
-                  </td>
-                  <td className="border-t border-border px-4 py-3 text-right align-middle transition-colors group-hover:bg-muted/40">
-                    <span className="text-base font-bold tabular-nums text-foreground">
-                      {formatValue(metric.today, metric.format)}
-                    </span>
-                  </td>
-                  {metric.comparisons.map((comparison) => (
-                    <td
-                      key={comparison.windowDays}
-                      className="border-t border-border px-4 py-3 align-middle transition-colors group-hover:bg-muted/40"
-                    >
-                      <ComparisonCell comparison={comparison} format={metric.format} />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {matrix.metrics.map((metric) => (
+            <MomentumTile key={metric.key} metric={metric} />
+          ))}
         </div>
       </CardContent>
     </Card>

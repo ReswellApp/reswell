@@ -4,6 +4,7 @@
 
 import type { RecentPublicListingRowForKlaviyo } from "@/lib/db/recentPublicListingsForKlaviyo"
 import { KLAVIYO_INACTIVITY_LISTINGS_CAP } from "@/lib/db/recentPublicListingsForKlaviyo"
+import type { InactiveUserPreferences } from "@/lib/db/inactiveUserPreferences"
 import { resolveListingUrlForEmail } from "@/lib/klaviyo/email-listing-links"
 import { listingDetailPath } from "@/lib/listing-query"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
@@ -52,12 +53,50 @@ function locationLine(city: string | null, state: string | null): string {
 }
 
 /**
- * From the pre-fetched pool, take newest listings excluding the recipient’s own (when possible).
+ * Relevance score for one candidate listing against a user's affinity profile.
+ * Brand match is weighted highest (explicit/behavioral intent), then section,
+ * then price band, then geography. Returns 0 when there is no signal.
+ */
+function scoreListingForPreferences(
+  row: RecentPublicListingRowForKlaviyo,
+  prefs: InactiveUserPreferences,
+): number {
+  if (!prefs.hasSignal) return 0
+
+  let score = 0
+
+  const brand = typeof row.brand === "string" ? row.brand.trim().toLowerCase() : ""
+  if (brand && prefs.brands.has(brand)) score += 4
+
+  const section = typeof row.section === "string" ? row.section.trim().toLowerCase() : ""
+  if (section && prefs.sections.has(section)) score += 2
+
+  if (typeof row.price === "number" && Number.isFinite(row.price)) {
+    const aboveMin = prefs.priceMin == null || row.price >= prefs.priceMin
+    const belowMax = prefs.priceMax == null || row.price <= prefs.priceMax
+    if ((prefs.priceMin != null || prefs.priceMax != null) && aboveMin && belowMax) {
+      score += 1
+    }
+  }
+
+  const state = typeof row.state === "string" ? row.state.trim().toLowerCase() : ""
+  if (state && prefs.state && state === prefs.state) score += 1
+
+  return score
+}
+
+/**
+ * From the pre-fetched pool, select listings for the recipient, excluding their own.
+ *
+ * When `preferences` carry a signal, candidates are ranked by relevance (brand /
+ * section / price band / location) with newest-first as the tiebreak. With no
+ * signal it falls back to plain newest-first (the pool is already ordered).
  */
 export function pickFeaturedListingsForInactiveUser(
   pool: RecentPublicListingRowForKlaviyo[],
   recipientUserId: string,
   cap: number = KLAVIYO_INACTIVITY_LISTINGS_CAP,
+  preferences?: InactiveUserPreferences,
 ): KlaviyoInactiveFeaturedListing[] {
   const trimmedRecipient = recipientUserId.trim()
 
@@ -65,10 +104,20 @@ export function pickFeaturedListingsForInactiveUser(
     ? pool.filter((r) => r.user_id.trim() !== trimmedRecipient)
     : [...pool]
 
+  // Rank by relevance when we have a preference signal. The pool is newest-first,
+  // so a stable sort on score keeps newest-first ordering within equal scores.
+  const ranked =
+    preferences?.hasSignal
+      ? candidates
+          .map((row, index) => ({ row, index, score: scoreListingForPreferences(row, preferences) }))
+          .sort((a, b) => (b.score - a.score) || (a.index - b.index))
+          .map((entry) => entry.row)
+      : candidates
+
   const origin = publicSiteOriginForEmail()
 
   const out: KlaviyoInactiveFeaturedListing[] = []
-  for (const row of candidates) {
+  for (const row of ranked) {
     if (out.length >= cap) break
 
     const path = listingDetailPath({

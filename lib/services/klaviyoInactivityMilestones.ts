@@ -2,9 +2,11 @@ import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { pickFeaturedListingsForInactiveUser } from "@/lib/klaviyo/inactivity-featured-listings"
 import { trackKlaviyoUserInactiveMilestone } from "@/lib/klaviyo/track-user-inactive-milestone"
 import { fetchRecentPublicListingsPoolForKlaviyo } from "@/lib/db/recentPublicListingsForKlaviyo"
+import { fetchInactiveUserPreferences } from "@/lib/db/inactiveUserPreferences"
 import {
   fetchProfilesEligibleForKlaviyoInactivity,
-  insertKlaviyoInactivityMilestoneSent,
+  inactivityMilestoneTiersUpTo,
+  recordKlaviyoInactivityMilestonesSent,
   KLAVIYO_INACTIVITY_MILESTONE_DAYS,
   type KlaviyoInactivityMilestoneDays,
 } from "@/lib/db/klaviyoInactivityMilestones"
@@ -23,7 +25,11 @@ export type ProcessKlaviyoInactivityMilestonesSummary = {
 
 /**
  * For one milestone N: emit **User Inactive N Days** for every profile with
- * `last_active_at < referenceTime - N days` and no prior milestone row.
+ * `last_active_at < referenceTime - N days` that has not been messaged this
+ * inactivity streak. When we emit, we also stamp every lower tier as sent so the
+ * recipient does not receive multiple inactive emails in a single run — the
+ * highest pending tier wins. Processing tiers high→low (see `processAll…`) makes
+ * this the effective "highest pending tier per user per run" behavior.
  */
 export async function processKlaviyoInactivityMilestone(
   supabase: SupabaseClient,
@@ -62,6 +68,9 @@ export async function processKlaviyoInactivityMilestone(
     }
   }
 
+  // Tiers to stamp on a successful send (this tier + every lower one).
+  const tiersToRecord = inactivityMilestoneTiersUpTo(milestoneDays)
+
   const errors: string[] = []
   let emitted = 0
   let failed = 0
@@ -75,17 +84,24 @@ export async function processKlaviyoInactivityMilestone(
           email = await getAuthEmailForUserId(p.id)
         }
 
+        const preferences = await fetchInactiveUserPreferences(supabase, p.id)
+
         const result = await trackKlaviyoUserInactiveMilestone({
           userId: p.id,
           email,
           displayName: p.display_name,
           milestoneDays,
           lastActiveAtIso: p.last_active_at,
-          featuredListings: pickFeaturedListingsForInactiveUser(listingPool, p.id),
+          featuredListings: pickFeaturedListingsForInactiveUser(
+            listingPool,
+            p.id,
+            undefined,
+            preferences,
+          ),
         })
 
         if (result.ok) {
-          const ins = await insertKlaviyoInactivityMilestoneSent(supabase, p.id, milestoneDays)
+          const ins = await recordKlaviyoInactivityMilestonesSent(supabase, p.id, tiersToRecord)
           if (ins.error) {
             return {
               kind: "failed" as const,
@@ -129,8 +145,13 @@ export async function processAllKlaviyoInactivityMilestones(
   supabase: SupabaseClient,
   referenceTime: Date,
 ): Promise<ProcessKlaviyoInactivityMilestonesSummary[]> {
+  // Highest tier first so a deep-inactive user is stamped for the lower tiers and
+  // therefore drops out of those passes — they get one email (the highest tier),
+  // not three. Lower tiers still fire on later runs as a user ages into them.
+  const tiersDescending = [...KLAVIYO_INACTIVITY_MILESTONE_DAYS].sort((a, b) => b - a)
+
   const summaries: ProcessKlaviyoInactivityMilestonesSummary[] = []
-  for (const days of KLAVIYO_INACTIVITY_MILESTONE_DAYS) {
+  for (const days of tiersDescending) {
     summaries.push(await processKlaviyoInactivityMilestone(supabase, days, referenceTime))
   }
   return summaries
