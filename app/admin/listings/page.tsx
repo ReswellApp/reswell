@@ -30,8 +30,10 @@ import {
 } from '@/components/ui/table'
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -49,7 +51,11 @@ import {
   Boxes,
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Columns3,
   DollarSign,
+  Download,
   Eye,
   EyeOff,
   Flag,
@@ -68,6 +74,12 @@ import { format, formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { cn } from '@/lib/utils'
 import { getAdminSession } from '@/app/actions/account'
+import {
+  AdminListingsChart,
+  type MonthlyListingPoint,
+} from '@/components/features/admin/admin-listings-chart'
+
+const LISTING_TREND_MONTHS = 12
 
 function normalizeCategoryId(id: string | undefined | null): string {
   return (id ?? '').trim().toLowerCase()
@@ -98,6 +110,32 @@ function compactNumber(value: number): string {
     notation: value >= 10000 ? 'compact' : 'standard',
     maximumFractionDigits: 1,
   }).format(value)
+}
+
+function buildMonthlyListings(listings: { created_at: string }[]): MonthlyListingPoint[] {
+  const counts = new Map<string, number>()
+  for (const l of listings) {
+    const created = new Date(l.created_at)
+    if (Number.isNaN(created.getTime())) continue
+    const key = `${created.getFullYear()}-${String(created.getMonth() + 1).padStart(2, '0')}`
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+
+  const points: MonthlyListingPoint[] = []
+  const cursor = new Date()
+  cursor.setDate(1)
+  cursor.setHours(0, 0, 0, 0)
+  cursor.setMonth(cursor.getMonth() - (LISTING_TREND_MONTHS - 1))
+  for (let i = 0; i < LISTING_TREND_MONTHS; i += 1) {
+    const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`
+    points.push({
+      month: key,
+      label: format(cursor, 'MMM yyyy'),
+      count: counts.get(key) ?? 0,
+    })
+    cursor.setMonth(cursor.getMonth() + 1)
+  }
+  return points
 }
 
 function sellerInitials(name: string): string {
@@ -243,6 +281,77 @@ function statusMeta(status: string) {
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100]
 
+const TOGGLEABLE_COLUMNS = [
+  { key: 'seller', label: 'Seller' },
+  { key: 'section', label: 'Section' },
+  { key: 'brand', label: 'Brand / model' },
+  { key: 'views', label: 'Views' },
+  { key: 'date', label: 'Date' },
+] as const
+
+type ColumnKey = (typeof TOGGLEABLE_COLUMNS)[number]['key']
+type ColumnVisibility = Record<ColumnKey, boolean>
+
+const DEFAULT_COLUMNS: ColumnVisibility = {
+  seller: true,
+  section: true,
+  brand: true,
+  views: true,
+  date: true,
+}
+
+function csvCell(value: unknown): string {
+  const str = value == null ? '' : String(value)
+  return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str
+}
+
+function downloadListingsCsv(rows: Listing[]): void {
+  const header = [
+    'id',
+    'title',
+    'seller',
+    'email',
+    'section',
+    'category',
+    'brand',
+    'model',
+    'price',
+    'status',
+    'hidden_from_site',
+    'views',
+    'created_at',
+  ]
+  const lines = rows.map((l) =>
+    [
+      l.id,
+      l.title,
+      l.profiles?.display_name ?? '',
+      l.profiles?.email ?? '',
+      l.section,
+      l.categories?.name ?? '',
+      l.brand ?? '',
+      l.model ?? '',
+      Number(l.price) || 0,
+      l.status,
+      l.hidden_from_site ? 'yes' : 'no',
+      Number(l.views) || 0,
+      format(new Date(l.created_at), 'yyyy-MM-dd'),
+    ]
+      .map(csvCell)
+      .join(','),
+  )
+  const csv = [header.join(','), ...lines].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `reswell-listings-${format(new Date(), 'yyyy-MM-dd')}.csv`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
 interface StatTileProps {
   icon: typeof Package
   accent: 'neutral' | 'emerald' | 'amber' | 'sky' | 'violet'
@@ -291,6 +400,7 @@ export default function AdminListingsPage() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [columns, setColumns] = useState<ColumnVisibility>(DEFAULT_COLUMNS)
   const [bulkBusy, setBulkBusy] = useState(false)
   const [isAdminUser, setIsAdminUser] = useState(false)
   const [categoryDialogListing, setCategoryDialogListing] = useState<Listing | null>(null)
@@ -581,6 +691,8 @@ export default function AdminListingsPage() {
     return { total: listings.length, active, sold, hidden, inventoryValue, views }
   }, [listings])
 
+  const monthlyListings = useMemo(() => buildMonthlyListings(listings), [listings])
+
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
     const result = listings.filter((listing) => {
@@ -822,13 +934,17 @@ export default function AdminListingsPage() {
         <StatTile icon={TrendingUp} accent="neutral" label="Total views" value={compactNumber(stats.views)} />
       </div>
 
+      {/* Listing trend */}
+      {loading ? (
+        <div className="h-[360px] animate-pulse rounded-2xl border border-border bg-card" />
+      ) : (
+        <AdminListingsChart data={monthlyListings} />
+      )}
+
       {/* Toolbar */}
       <div className="rounded-2xl border border-border bg-card p-3">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <SiteSearchBar
-            className="flex-1 lg:min-w-0"
-            onSubmit={(e) => e.preventDefault()}
-          >
+        <div className="flex flex-col gap-3">
+          <SiteSearchBar className="w-full" onSubmit={(e) => e.preventDefault()}>
             <Input
               placeholder="Search by title, seller, email, brand, or model…"
               value={searchQuery}
@@ -836,7 +952,7 @@ export default function AdminListingsPage() {
               className={siteSearchInputClassName()}
             />
           </SiteSearchBar>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:flex lg:shrink-0">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:flex md:flex-wrap">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="lg:w-36">
                 <SelectValue placeholder="Status" />
@@ -898,12 +1014,92 @@ export default function AdminListingsPage() {
                 <SelectItem value="title:asc">Title A → Z</SelectItem>
               </SelectContent>
             </Select>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Columns3 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Columns</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {TOGGLEABLE_COLUMNS.map((col) => (
+                  <DropdownMenuCheckboxItem
+                    key={col.key}
+                    checked={columns[col.key]}
+                    onCheckedChange={(checked) =>
+                      setColumns((prev) => ({ ...prev, [col.key]: checked === true }))
+                    }
+                    onSelect={(e) => e.preventDefault()}
+                  >
+                    {col.label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button
+              variant="outline"
+              className="gap-2"
+              disabled={loading || filtered.length === 0}
+              onClick={() => downloadListingsCsv(filtered)}
+            >
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Export</span>
+            </Button>
           </div>
         </div>
-        {!loading && filtered.length !== listings.length ? (
-          <p className="mt-2 px-1 text-xs text-muted-foreground">
-            {filtered.length} match{filtered.length === 1 ? '' : 'es'} of {listings.length} listings
-          </p>
+        {!loading &&
+        (filtered.length !== listings.length ||
+          searchQuery ||
+          statusFilter !== 'all' ||
+          sectionFilter !== 'all' ||
+          visibilityFilter !== 'all') ? (
+          <div className="mt-2 flex flex-wrap items-center gap-2 px-1">
+            <span className="text-xs text-muted-foreground">
+              {filtered.length} match{filtered.length === 1 ? '' : 'es'} of {listings.length} listings
+            </span>
+            {searchQuery ? (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-xs text-foreground transition-colors hover:border-foreground/20"
+              >
+                “{searchQuery}”
+                <X className="h-3 w-3" />
+              </button>
+            ) : null}
+            {statusFilter !== 'all' ? (
+              <button
+                type="button"
+                onClick={() => setStatusFilter('all')}
+                className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-xs capitalize text-foreground transition-colors hover:border-foreground/20"
+              >
+                {statusFilter.replace(/_/g, ' ')}
+                <X className="h-3 w-3" />
+              </button>
+            ) : null}
+            {sectionFilter !== 'all' ? (
+              <button
+                type="button"
+                onClick={() => setSectionFilter('all')}
+                className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-xs text-foreground transition-colors hover:border-foreground/20"
+              >
+                {formatListingSectionLabel(sectionFilter)}
+                <X className="h-3 w-3" />
+              </button>
+            ) : null}
+            {visibilityFilter !== 'all' ? (
+              <button
+                type="button"
+                onClick={() => setVisibilityFilter('all')}
+                className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-xs capitalize text-foreground transition-colors hover:border-foreground/20"
+              >
+                {visibilityFilter}
+                <X className="h-3 w-3" />
+              </button>
+            ) : null}
+          </div>
         ) : null}
       </div>
 
@@ -922,6 +1118,14 @@ export default function AdminListingsPage() {
             </Button>
             <Button variant="outline" size="sm" disabled={bulkBusy} onClick={() => void bulkSetStatus('removed')}>
               <Flag className="mr-1.5 h-4 w-4" /> Remove
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={bulkBusy || selectedListings.length === 0}
+              onClick={() => downloadListingsCsv(selectedListings)}
+            >
+              <Download className="mr-1.5 h-4 w-4" /> Export
             </Button>
             <Button
               variant="outline"
@@ -1082,7 +1286,7 @@ export default function AdminListingsPage() {
             ) : null}
           </div>
         ) : (
-          <Table>
+          <Table className="[&_td]:px-3 [&_td]:py-2.5 [&_th]:px-3">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="w-10 pl-4">
@@ -1096,19 +1300,23 @@ export default function AdminListingsPage() {
                 <TableHead>
                   <SortHeader label="Listing" sortKey="title" />
                 </TableHead>
-                <TableHead>Seller</TableHead>
-                <TableHead>Section</TableHead>
-                <TableHead>Brand / model</TableHead>
+                {columns.seller ? <TableHead className="hidden md:table-cell">Seller</TableHead> : null}
+                {columns.section ? <TableHead className="hidden 2xl:table-cell">Section</TableHead> : null}
+                {columns.brand ? <TableHead className="hidden lg:table-cell">Brand / model</TableHead> : null}
                 <TableHead className="text-right">
                   <SortHeader label="Price" sortKey="price" className="ml-auto" />
                 </TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">
-                  <SortHeader label="Views" sortKey="views" className="ml-auto" />
-                </TableHead>
-                <TableHead>
-                  <SortHeader label="Date" sortKey="created_at" />
-                </TableHead>
+                {columns.views ? (
+                  <TableHead className="hidden text-right sm:table-cell">
+                    <SortHeader label="Views" sortKey="views" className="ml-auto" />
+                  </TableHead>
+                ) : null}
+                {columns.date ? (
+                  <TableHead className="hidden lg:table-cell">
+                    <SortHeader label="Date" sortKey="created_at" />
+                  </TableHead>
+                ) : null}
                 <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
@@ -1129,14 +1337,14 @@ export default function AdminListingsPage() {
                       <div className="flex items-center gap-3">
                         <Link
                           href={getListingViewHref(listing.section, listing.id, listing.slug)}
-                          className="group relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-border"
+                          className="group relative h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-border"
                         >
                           {listing.listing_images?.[0]?.url ? (
                             <Image
                               src={proxiedListingImageSrc(listing.listing_images[0].url) || '/placeholder.svg'}
                               alt=""
                               fill
-                              sizes="48px"
+                              sizes="40px"
                               className="object-cover object-center transition-transform duration-200 group-hover:scale-110"
                               unoptimized
                             />
@@ -1150,7 +1358,7 @@ export default function AdminListingsPage() {
                           <div className="flex items-center gap-1.5">
                             <Link
                               href={getListingViewHref(listing.section, listing.id, listing.slug)}
-                              className="line-clamp-1 max-w-[240px] font-medium text-foreground hover:underline"
+                              className="line-clamp-1 max-w-[150px] font-medium text-foreground hover:underline"
                             >
                               {capitalizeWords(listing.title)}
                             </Link>
@@ -1160,33 +1368,39 @@ export default function AdminListingsPage() {
                               </span>
                             ) : null}
                           </div>
-                          <span className="line-clamp-1 max-w-[240px] text-xs text-muted-foreground">
+                          <span className="line-clamp-1 max-w-[150px] text-xs text-muted-foreground">
                             {listing.categories?.name ?? 'Uncategorized'}
                           </span>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-foreground">
-                          {sellerInitials(listing.profiles?.display_name || '?')}
+                    {columns.seller ? (
+                      <TableCell className="hidden md:table-cell">
+                        <div className="flex items-center gap-2">
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-semibold text-foreground">
+                            {sellerInitials(listing.profiles?.display_name || '?')}
+                          </span>
+                          <span className="line-clamp-1 max-w-[96px] text-sm text-foreground">
+                            {listing.profiles?.display_name || 'Unknown'}
+                          </span>
+                        </div>
+                      </TableCell>
+                    ) : null}
+                    {columns.section ? (
+                      <TableCell className="hidden 2xl:table-cell">
+                        <Badge variant="outline">{formatListingSectionLabel(listing.section)}</Badge>
+                      </TableCell>
+                    ) : null}
+                    {columns.brand ? (
+                      <TableCell className="hidden max-w-[120px] lg:table-cell">
+                        <span className="line-clamp-1 text-sm text-foreground">
+                          {listing.brand?.trim() || '—'}
                         </span>
-                        <span className="line-clamp-1 max-w-[120px] text-sm text-foreground">
-                          {listing.profiles?.display_name || 'Unknown'}
+                        <span className="line-clamp-1 text-xs text-muted-foreground">
+                          {listing.model?.trim() || ''}
                         </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{formatListingSectionLabel(listing.section)}</Badge>
-                    </TableCell>
-                    <TableCell className="max-w-[160px]">
-                      <span className="line-clamp-1 text-sm text-foreground">
-                        {listing.brand?.trim() || '—'}
-                      </span>
-                      <span className="line-clamp-1 text-xs text-muted-foreground">
-                        {listing.model?.trim() || ''}
-                      </span>
-                    </TableCell>
+                      </TableCell>
+                    ) : null}
                     <TableCell className="text-right font-semibold tabular-nums text-foreground">
                       {formatUsd(Number(listing.price) || 0)}
                     </TableCell>
@@ -1201,17 +1415,21 @@ export default function AdminListingsPage() {
                         {meta.label}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right tabular-nums text-muted-foreground">
-                      {compactNumber(Number(listing.views) || 0)}
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-foreground">
-                        {format(new Date(listing.created_at), 'MMM d, yyyy')}
-                      </span>
-                      <span className="block text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(listing.created_at), { addSuffix: true })}
-                      </span>
-                    </TableCell>
+                    {columns.views ? (
+                      <TableCell className="hidden text-right tabular-nums text-muted-foreground sm:table-cell">
+                        {compactNumber(Number(listing.views) || 0)}
+                      </TableCell>
+                    ) : null}
+                    {columns.date ? (
+                      <TableCell className="hidden whitespace-nowrap lg:table-cell">
+                        <span
+                          className="text-sm text-foreground"
+                          title={formatDistanceToNow(new Date(listing.created_at), { addSuffix: true })}
+                        >
+                          {format(new Date(listing.created_at), 'MMM d, yyyy')}
+                        </span>
+                      </TableCell>
+                    ) : null}
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -1320,7 +1538,18 @@ export default function AdminListingsPage() {
                   size="icon"
                   className="h-8 w-8"
                   disabled={currentPage <= 1}
+                  onClick={() => setPage(1)}
+                  aria-label="First page"
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={currentPage <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  aria-label="Previous page"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
@@ -1333,8 +1562,19 @@ export default function AdminListingsPage() {
                   className="h-8 w-8"
                   disabled={currentPage >= totalPages}
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  aria-label="Next page"
                 >
                   <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setPage(totalPages)}
+                  aria-label="Last page"
+                >
+                  <ChevronsRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>
