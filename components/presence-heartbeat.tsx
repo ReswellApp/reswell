@@ -3,14 +3,19 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { updatePresenceHeartbeat } from '@/app/actions/account'
+import { isAbortError, isBenignClientFetchError } from '@/lib/utils/is-abort-error'
 
 const INTERVAL_MS = 60_000
+
+function isBenignPresenceError(err: unknown): boolean {
+  return isAbortError(err) || isBenignClientFetchError(err)
+}
 
 async function ping() {
   try {
     await updatePresenceHeartbeat()
-  } catch {
-    // ignore network errors
+  } catch (err) {
+    if (isBenignPresenceError(err)) return
   }
 }
 
@@ -32,9 +37,13 @@ export function PresenceHeartbeat() {
       } = await supabase.auth.getUser()
       clear()
       if (!user) return
-      void ping()
+      void ping().catch((err) => {
+        if (!isBenignPresenceError(err)) return
+      })
       intervalRef.current = setInterval(() => {
-        void ping()
+        void ping().catch((err) => {
+          if (!isBenignPresenceError(err)) return
+        })
       }, INTERVAL_MS)
     }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import {
   Area,
@@ -19,6 +19,10 @@ import { cn } from '@/lib/utils'
 import type { AdminInsightsDailyPoint } from '@/lib/services/adminBusinessInsights'
 
 type Metric = 'gmv' | 'orders'
+
+const CHART_HEIGHT = 240
+const GRID_STROKE = '#e2e8f0'
+const TICK_FILL = '#64748b'
 
 function formatCompactUsd(value: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -90,6 +94,15 @@ export function AdminRevenueChart({
   totalOrders,
 }: AdminRevenueChartProps) {
   const [metric, setMetric] = useState<Metric>('gmv')
+  const [chartReady, setChartReady] = useState(false)
+  const chartInstanceId = useId().replace(/:/g, '')
+  const gmvFillId = `admin-revenue-gmv-${chartInstanceId}`
+  const ordersFillId = `admin-revenue-orders-${chartInstanceId}`
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setChartReady(true))
+    return () => cancelAnimationFrame(frame)
+  }, [])
 
   const hasData = useMemo(() => data.some((d) => d.gmv > 0 || d.orders > 0), [data])
 
@@ -129,67 +142,77 @@ export function AdminRevenueChart({
         </div>
       </div>
 
-      <div className="mt-4 h-[240px] w-full">
+      <div className="mt-4 h-[240px] w-full min-w-0">
         {!hasData ? (
           <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-border">
             <p className="text-sm text-muted-foreground">No sales in this window yet.</p>
           </div>
+        ) : !chartReady ? (
+          <div className="h-full w-full animate-pulse rounded-lg bg-muted/30" aria-hidden />
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+          <ResponsiveContainer width="100%" height={CHART_HEIGHT} minWidth={0}>
+            <ComposedChart
+              data={data}
+              margin={{ top: 8, right: 12, left: -4, bottom: 0 }}
+            >
               <defs>
-                <linearGradient id="gmvFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(160 84% 39%)" stopOpacity={0.28} />
-                  <stop offset="100%" stopColor="hsl(160 84% 39%)" stopOpacity={0.02} />
+                <linearGradient id={gmvFillId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.28} />
+                  <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
                 </linearGradient>
-                <linearGradient id="ordersFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(199 89% 48%)" stopOpacity={0.28} />
-                  <stop offset="100%" stopColor="hsl(199 89% 48%)" stopOpacity={0.02} />
+                <linearGradient id={ordersFillId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.28} />
+                  <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0.02} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
+              <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
               <XAxis
                 dataKey="date"
                 tickFormatter={(value: string) => safeFormat(value, 'MMM d')}
                 tickLine={false}
                 axisLine={false}
                 minTickGap={28}
-                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 11, fill: TICK_FILL }}
               />
               <YAxis
+                yAxisId="primary"
                 tickFormatter={(value: number) =>
                   metric === 'gmv' ? formatCompactUsd(value) : String(value)
                 }
                 tickLine={false}
                 axisLine={false}
-                width={48}
-                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                width={52}
+                allowDecimals={metric !== 'orders'}
+                tick={{ fontSize: 11, fill: TICK_FILL }}
               />
-              <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'hsl(var(--border))' }} />
+              <Tooltip content={<ChartTooltip />} cursor={{ stroke: GRID_STROKE }} />
               {metric === 'gmv' ? (
                 <>
                   <Area
+                    yAxisId="primary"
                     type="monotone"
                     dataKey="gmv"
-                    stroke="hsl(160 84% 39%)"
+                    stroke="#10b981"
                     strokeWidth={2}
-                    fill="url(#gmvFill)"
+                    fill={`url(#${gmvFillId})`}
                   />
                   <Line
+                    yAxisId="primary"
                     type="monotone"
                     dataKey="fees"
-                    stroke="hsl(199 89% 48%)"
+                    stroke="#0ea5e9"
                     strokeWidth={1.5}
                     dot={false}
                   />
                 </>
               ) : (
                 <Area
+                  yAxisId="primary"
                   type="monotone"
                   dataKey="orders"
-                  stroke="hsl(199 89% 48%)"
+                  stroke="#0ea5e9"
                   strokeWidth={2}
-                  fill="url(#ordersFill)"
+                  fill={`url(#${ordersFillId})`}
                 />
               )}
             </ComposedChart>
