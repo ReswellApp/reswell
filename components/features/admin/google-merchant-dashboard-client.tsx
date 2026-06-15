@@ -578,7 +578,7 @@ export function GoogleMerchantDashboardClient({
             </div>
             <p className="max-w-2xl text-sm text-muted-foreground">
               Ads-first view of Merchant Center: every status, issue, and metric here is scoped to
-              what Reswell is actually doing — running Shopping ads in the US to sell surfboards.
+              what Reswell is actually doing — running Shopping ads in the US to sell surfboards and fins.
             </p>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
               <span className="flex items-center gap-1.5">

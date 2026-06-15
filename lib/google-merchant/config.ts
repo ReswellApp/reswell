@@ -58,9 +58,33 @@ export function getGoogleMerchantContentLanguage(): string {
   return process.env.GOOGLE_MERCHANT_CONTENT_LANGUAGE?.trim() || "en"
 }
 
+/** Peer listing sections synced to the Merchant Center primary feed. */
+export const GOOGLE_MERCHANT_PEER_SECTIONS = ["surfboards", "fins"] as const
+
+export type GoogleMerchantPeerSection = (typeof GOOGLE_MERCHANT_PEER_SECTIONS)[number]
+
+export function isGoogleMerchantPeerSection(section: string): section is GoogleMerchantPeerSection {
+  return (GOOGLE_MERCHANT_PEER_SECTIONS as readonly string[]).includes(section)
+}
+
 /** Google product taxonomy ID — verify in Merchant Center product data spec. */
 export function getGoogleMerchantProductCategory(): string {
   return process.env.GOOGLE_MERCHANT_PRODUCT_CATEGORY?.trim() || "499811"
+}
+
+/** Google taxonomy: Sporting Goods > … > Surfing > Surfboard Fins (3525). */
+export const GOOGLE_MERCHANT_DEFAULT_FINS_PRODUCT_CATEGORY = "3525"
+
+export function getGoogleMerchantFinsProductCategory(): string {
+  return (
+    process.env.GOOGLE_MERCHANT_FINS_PRODUCT_CATEGORY?.trim() ||
+    GOOGLE_MERCHANT_DEFAULT_FINS_PRODUCT_CATEGORY
+  )
+}
+
+export function getGoogleMerchantProductCategoryForSection(section: string): string {
+  if (section === "fins") return getGoogleMerchantFinsProductCategory()
+  return getGoogleMerchantProductCategory()
 }
 
 export function getGoogleMerchantDeveloperEmail(): string | null {
@@ -74,6 +98,9 @@ export function getGoogleMerchantDeveloperEmail(): string | null {
  */
 export const GOOGLE_MERCHANT_DEFAULT_ESTIMATED_SHIPPING_USD = 89
 
+/** Representative USD shipping for Reswell-calculated fin rates in the Merchant feed. */
+export const GOOGLE_MERCHANT_DEFAULT_FINS_ESTIMATED_SHIPPING_USD = 15
+
 /** Representative USD shipping for Reswell-calculated surfboard rates in the Merchant feed. */
 export function getGoogleMerchantEstimatedShippingUsd(): number {
   const raw = process.env.GOOGLE_MERCHANT_ESTIMATED_SHIPPING_USD?.trim()
@@ -84,6 +111,23 @@ export function getGoogleMerchantEstimatedShippingUsd(): number {
     }
   }
   return GOOGLE_MERCHANT_DEFAULT_ESTIMATED_SHIPPING_USD
+}
+
+/** Representative USD shipping for Reswell-calculated fin rates in the Merchant feed. */
+export function getGoogleMerchantFinsEstimatedShippingUsd(): number {
+  const raw = process.env.GOOGLE_MERCHANT_FINS_ESTIMATED_SHIPPING_USD?.trim()
+  if (raw) {
+    const parsed = Number.parseFloat(raw)
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      return Math.round(parsed * 100) / 100
+    }
+  }
+  return GOOGLE_MERCHANT_DEFAULT_FINS_ESTIMATED_SHIPPING_USD
+}
+
+export function getGoogleMerchantEstimatedShippingUsdForSection(section: string): number {
+  if (section === "fins") return getGoogleMerchantFinsEstimatedShippingUsd()
+  return getGoogleMerchantEstimatedShippingUsd()
 }
 
 /** Optional US tax rate (percentage) for feed rows, e.g. `0` or `8.25`. Omit when unset. */

@@ -11,6 +11,7 @@ import {
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
 import { removeListingImageFilesFromStorage } from "@/lib/services/listingStorageCleanup"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
+import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 
 export async function PUT(request: NextRequest) {
   const supabase = await createClient()
@@ -227,6 +228,8 @@ export async function PUT(request: NextRequest) {
   if (String(listingData?.section ?? "") === "fins") {
     revalidatePath("/fins")
   }
+
+  void syncListingToGoogleMerchantBestEffort(service, listingId)
 
   await revalidateSellersAfterListingChange(service, existingListing.user_id)
 

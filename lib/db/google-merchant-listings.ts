@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { GOOGLE_MERCHANT_PEER_SECTIONS } from "@/lib/google-merchant/config"
 import type { GoogleMerchantListingRow } from "@/lib/google-merchant/map-listing-to-product-input"
 
 const GOOGLE_MERCHANT_LISTING_SELECT = `
@@ -41,7 +42,7 @@ export async function listGoogleMerchantListingBatch(
   const { data, error } = await supabase
     .from("listings")
     .select(GOOGLE_MERCHANT_LISTING_SELECT)
-    .eq("section", "surfboards")
+    .in("section", [...GOOGLE_MERCHANT_PEER_SECTIONS])
     .eq("status", "active")
     .eq("hidden_from_site", false)
     .is("archived_at", null)

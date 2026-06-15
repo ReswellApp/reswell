@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { createFinListingSchema, updateFinListingSchema } from "@/lib/validations/fin-listing"
 import { createFinListing, updateFinListing } from "@/lib/services/finListing"
+import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 
 export type CreateFinListingActionResult =
   | { success: true; listingId: string; slug: string }
@@ -37,6 +38,7 @@ export async function createFinListingAction(
 
   try {
     const result = await createFinListing(supabase, user.id, parsed.data)
+    void syncListingToGoogleMerchantBestEffort(supabase, result.listingId)
     revalidatePath("/fins")
     revalidatePath(`/l/${result.slug}`)
     return { success: true, listingId: result.listingId, slug: result.slug }
@@ -69,6 +71,7 @@ export async function updateFinListingAction(
 
   try {
     const result = await updateFinListing(supabase, parsed.data.listingId, user.id, parsed.data)
+    void syncListingToGoogleMerchantBestEffort(supabase, parsed.data.listingId)
     revalidatePath("/fins")
     revalidatePath(`/l/${result.slug}`)
     return { success: true, slug: result.slug }

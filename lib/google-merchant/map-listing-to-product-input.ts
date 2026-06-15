@@ -6,10 +6,11 @@ import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQu
 import {
   GOOGLE_MERCHANT_MAX_ADDITIONAL_IMAGES,
   getGoogleMerchantContentLanguage,
-  getGoogleMerchantEstimatedShippingUsd,
+  getGoogleMerchantEstimatedShippingUsdForSection,
   getGoogleMerchantFeedLabel,
-  getGoogleMerchantProductCategory,
+  getGoogleMerchantProductCategoryForSection,
   getGoogleMerchantUsTaxRate,
+  isGoogleMerchantPeerSection,
 } from "./config"
 
 export type GoogleMerchantListingImage = ListingImageForCard & {
@@ -211,7 +212,7 @@ function mapListingShippingAttributes(
     ]
   }
 
-  const estimatedUsd = getGoogleMerchantEstimatedShippingUsd()
+  const estimatedUsd = getGoogleMerchantEstimatedShippingUsdForSection(listing.section)
 
   return [
     {
@@ -236,7 +237,7 @@ function mapListingTaxAttributes(): GoogleMerchantTax[] | undefined {
 }
 
 export function isGoogleMerchantEligibleListing(listing: GoogleMerchantListingRow): boolean {
-  if (listing.section !== "surfboards") return false
+  if (!isGoogleMerchantPeerSection(listing.section)) return false
   if (listing.status !== "active") return false
   if (listing.archived_at) return false
   if (listing.hidden_from_site === true) return false
@@ -284,7 +285,7 @@ export function mapListingToProductInput(
       brand: identifiers.brand,
       mpn: identifiers.mpn,
       identifierExists: identifiers.identifierExists,
-      googleProductCategory: getGoogleMerchantProductCategory(),
+      googleProductCategory: getGoogleMerchantProductCategoryForSection(listing.section),
       ...(shipping ? { shipping } : {}),
       ...(taxes ? { taxes } : {}),
     },
