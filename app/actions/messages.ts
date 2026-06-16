@@ -7,7 +7,7 @@ import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactM
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
 import { touchUserLastActive } from "@/lib/db/userActivity"
-import { detectMessagePolicyViolation } from "@/lib/utils/detect-message-policy-violation"
+import { getMessagePolicyViolationForSender } from "@/lib/messages/message-policy-enforcement"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 import { MESSAGE_BLOCKED_POLICY_ERROR } from "@/lib/messages/policy-errors"
@@ -316,7 +316,7 @@ export async function sendMarketplaceListingMessage(input: unknown) {
 
   const receiverId = user.id === ctx.buyerId ? ctx.sellerId : ctx.buyerId
 
-  const policyViolation = detectMessagePolicyViolation(body)
+  const policyViolation = await getMessagePolicyViolationForSender(supabase, user.id, body)
   if (policyViolation) {
     await capturePolicyBlockedDmContent({
       conversationId: conversation.id,
@@ -427,7 +427,7 @@ export async function sendListingMessage(input: {
     conversation = ensured
   }
 
-  const policyViolation = detectMessagePolicyViolation(body)
+  const policyViolation = await getMessagePolicyViolationForSender(supabase, user.id, body)
   if (policyViolation) {
     await capturePolicyBlockedDmContent({
       conversationId: conversation.id,
@@ -519,7 +519,7 @@ export async function sendConversationReply(input: {
 
   const receiverId = user.id === conv.buyer_id ? conv.seller_id : conv.buyer_id
 
-  const policyViolation = detectMessagePolicyViolation(body)
+  const policyViolation = await getMessagePolicyViolationForSender(supabase, user.id, body)
   if (policyViolation) {
     await capturePolicyBlockedDmContent({
       conversationId: conv.id,
@@ -665,7 +665,11 @@ export async function sendConversationLocationReply(input: unknown) {
 
   const receiverId = user.id === conv.buyer_id ? conv.seller_id : conv.buyer_id
 
-  const policyViolation = detectMessagePolicyViolation(formattedAddress)
+  const policyViolation = await getMessagePolicyViolationForSender(
+    supabase,
+    user.id,
+    formattedAddress,
+  )
   if (policyViolation) {
     await capturePolicyBlockedDmContent({
       conversationId: conv.id,

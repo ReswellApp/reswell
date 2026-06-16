@@ -2,7 +2,7 @@ import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-m
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
-import { detectMessagePolicyViolation } from "@/lib/utils/detect-message-policy-violation"
+import { getMessagePolicyViolationForSender } from "@/lib/messages/message-policy-enforcement"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 import { MESSAGE_BLOCKED_POLICY_ERROR } from "@/lib/messages/policy-errors"
@@ -86,7 +86,11 @@ export async function sendMarketplaceMediaMessage(input: {
   const content = (trimmedCaption || defaultBody).slice(0, 8000)
 
   if (trimmedCaption) {
-    const policyViolation = detectMessagePolicyViolation(trimmedCaption)
+    const policyViolation = await getMessagePolicyViolationForSender(
+      service,
+      senderId,
+      trimmedCaption,
+    )
     if (policyViolation) {
       const receiverId = senderId === conv.buyer_id ? conv.seller_id : conv.buyer_id
       try {
