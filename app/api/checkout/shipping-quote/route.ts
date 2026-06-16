@@ -10,6 +10,7 @@ import {
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
+import { signCheckoutShippingQuoteToken } from "@/lib/services/checkoutShippingQuoteToken"
 
 export const dynamic = "force-dynamic"
 
@@ -133,6 +134,18 @@ export async function POST(request: Request) {
           shippingUsd: totals.shippingUsd,
           totalUsd: totals.totalUsd,
           usedReswellQuote: totals.usedReswellQuote,
+          quoteToken:
+            totals.usedReswellQuote
+              ? signCheckoutShippingQuoteToken({
+                  buyerId: user.id,
+                  listingIds,
+                  addressId,
+                  itemSubtotalUsd: totals.itemPrice,
+                  shippingUsd: totals.shippingUsd,
+                  totalUsd: totals.totalUsd,
+                  usedReswellQuote: true,
+                })
+              : null,
         },
       },
       { headers: JSON_NO_STORE_HEADERS },
@@ -164,6 +177,17 @@ export async function POST(request: Request) {
         shippingUsd: bundleShipping.shippingUsd,
         totalUsd: Math.round((itemPrice + bundleShipping.shippingUsd) * 100) / 100,
         usedReswellQuote: bundleShipping.usedReswellQuote,
+        quoteToken: bundleShipping.usedReswellQuote
+          ? signCheckoutShippingQuoteToken({
+              buyerId: user.id,
+              listingIds,
+              addressId,
+              itemSubtotalUsd: itemPrice,
+              shippingUsd: bundleShipping.shippingUsd,
+              totalUsd: Math.round((itemPrice + bundleShipping.shippingUsd) * 100) / 100,
+              usedReswellQuote: true,
+            })
+          : null,
       },
     },
     { headers: JSON_NO_STORE_HEADERS },

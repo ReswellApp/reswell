@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Check, Loader2, ShoppingCart } from "lucide-react"
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { addCartItem } from "@/app/actions/cart"
 import { trackMetaAddToCart } from "@/lib/meta/pixel-events"
 import { peerListingCheckoutHref } from "@/lib/listing-href"
+import { prefetchStripeCheckout } from "@/lib/stripe/prefetch-stripe-checkout"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
@@ -58,6 +59,11 @@ export function ListingDetailPeerPurchaseActions({
   const pathname = usePathname()
   const here = pathname || "/"
   const checkoutHref = peerListingCheckoutHref(section, checkoutListingParam)
+
+  useEffect(() => {
+    if (!isLoggedIn) return
+    void prefetchStripeCheckout()
+  }, [isLoggedIn])
 
   async function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault()
@@ -120,7 +126,7 @@ export function ListingDetailPeerPurchaseActions({
           className="min-h-[52px] w-full justify-center rounded-xl border-0 bg-[#5574AD] px-6 text-[15px] font-semibold text-white shadow-none hover:bg-[#5574AD]/90 hover:text-white dark:bg-[#5574AD] dark:hover:bg-[#5574AD]/90"
           asChild
         >
-          <Link href={checkoutHref} prefetch={false}>
+          <Link href={checkoutHref} prefetch>
             Buy it now
           </Link>
         </Button>

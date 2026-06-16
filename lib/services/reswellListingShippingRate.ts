@@ -57,6 +57,22 @@ export type ReswellListingRateResult =
   | { ok: false; error: string }
 
 const DEBUG_ENV_FLAG = "RESWELL_SHIPPING_DEBUG"
+const CARRIER_IDS_CACHE_TTL_MS = 10 * 60 * 1000
+
+let carrierIdsCache: { ids: string[]; fetchedAt: number } | null = null
+
+function readCachedCarrierIds(): string[] | null {
+  if (!carrierIdsCache) return null
+  if (Date.now() - carrierIdsCache.fetchedAt > CARRIER_IDS_CACHE_TTL_MS) {
+    carrierIdsCache = null
+    return null
+  }
+  return carrierIdsCache.ids
+}
+
+function writeCachedCarrierIds(ids: string[]): void {
+  carrierIdsCache = { ids, fetchedAt: Date.now() }
+}
 
 function isDebugEnabled(): boolean {
   const raw = process.env[DEBUG_ENV_FLAG]?.trim()
@@ -74,6 +90,11 @@ async function parseJsonSafe(res: Response): Promise<unknown> {
 }
 
 async function fetchAllConnectedCarrierIds(): Promise<{ ok: true; ids: string[] } | { ok: false; error: string }> {
+  const cached = readCachedCarrierIds()
+  if (cached) {
+    return { ok: true, ids: cached }
+  }
+
   let res: Response
   try {
     res = await shipEngineRequest("/carriers")
@@ -88,7 +109,9 @@ async function fetchAllConnectedCarrierIds(): Promise<{ ok: true; ids: string[] 
     return { ok: false, error: hint || "Could not load carrier accounts." }
   }
   const data = await parseJsonSafe(res)
-  return { ok: true, ids: extractCarrierIdsFromCarriersResponse(data) }
+  const ids = extractCarrierIdsFromCarriersResponse(data)
+  writeCachedCarrierIds(ids)
+  return { ok: true, ids }
 }
 
 /**

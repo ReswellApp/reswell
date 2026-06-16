@@ -157,6 +157,8 @@ export async function computePeerCheckoutTotalsUsd(input: {
   diagnosticTag?: string
   /** Printed on carrier labels as ship-from contact; required when Reswell shipping quote is used. */
   sellerShipFromName?: string
+  /** When set (from a signed checkout quote token), skips a duplicate ShipEngine call. */
+  shippingOverride?: { shippingUsd: number; usedReswellQuote: boolean }
 }): Promise<
   | { ok: true; itemPrice: number; shippingUsd: number; totalUsd: number; usedReswellQuote: boolean }
   | { ok: false; error: string }
@@ -188,6 +190,18 @@ export async function computePeerCheckoutTotalsUsd(input: {
   if (!input.buyerAddress) {
     return { ok: false, error: "Shipping address is required" }
   }
+
+  if (input.shippingOverride) {
+    const ship = input.shippingOverride.shippingUsd
+    return {
+      ok: true,
+      itemPrice,
+      shippingUsd: ship,
+      totalUsd: itemPrice + ship,
+      usedReswellQuote: input.shippingOverride.usedReswellQuote,
+    }
+  }
+
   const sellerLine = input.sellerShipFromName?.trim() || "Seller"
   const q = await quoteReswellPeerShippingUsd({
     listing: input.listing,

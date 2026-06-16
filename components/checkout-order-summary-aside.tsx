@@ -63,7 +63,7 @@ export function CheckoutOrderSummaryAside({
   return (
     <aside
       className={cn(
-        "order-1 border-b border-neutral-200 bg-[#F5F5F5] px-4 py-8 sm:px-8 lg:order-2 lg:w-[min(420px,42%)] lg:shrink-0 lg:border-b-0 lg:border-l lg:border-neutral-200 lg:px-8 lg:py-10",
+        "order-2 border-b border-neutral-200 bg-[#F5F5F5] px-4 py-8 sm:px-8 lg:order-2 lg:w-[min(420px,42%)] lg:shrink-0 lg:border-b-0 lg:border-l lg:border-neutral-200 lg:px-8 lg:py-10",
         "lg:min-h-[calc(100dvh-3.5rem)]",
       )}
     >

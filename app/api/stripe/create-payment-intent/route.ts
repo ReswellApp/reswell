@@ -23,6 +23,7 @@ import {
 } from "@/lib/db/newsletterPromoCodes"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { normalizeNewsletterPromoCodeInput } from "@/lib/utils/newsletter-promo-code"
+import { verifyCheckoutShippingQuoteToken, type CheckoutShippingQuoteTokenPayload } from "@/lib/services/checkoutShippingQuoteToken"
 
 const JSON_NO_STORE_HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
     address_id?: string | null
     offer_id?: string | null
     promo_code?: string | null
+    quote_token?: string | null
   }
 
   const fromArray = Array.isArray(body.listing_ids)
@@ -255,16 +257,55 @@ export async function POST(request: NextRequest) {
     buyerAddress = addr as ProfileAddressRow
   }
 
+  let preverifiedShipping: { shippingUsd: number; usedReswellQuote: boolean } | undefined
+  let verifiedQuotePayload: CheckoutShippingQuoteTokenPayload | null = null
+  const quoteTokenRaw = body.quote_token?.trim()
+  if (impliedFulfillment === "shipping" && quoteTokenRaw && addressId) {
+    const verified = verifyCheckoutShippingQuoteToken(quoteTokenRaw, {
+      buyerId: user.id,
+      listingIds: listingIdsOrdered,
+      addressId,
+    })
+    if (!verified.ok) {
+      return NextResponse.json({ error: verified.error }, { status: 400, headers: JSON_NO_STORE_HEADERS })
+    }
+    if (!verified.payload.usedReswellQuote) {
+      return NextResponse.json({ error: "Invalid shipping quote token." }, { status: 400, headers: JSON_NO_STORE_HEADERS })
+    }
+    verifiedQuotePayload = verified.payload
+    preverifiedShipping = {
+      shippingUsd: verified.payload.shippingCents / 100,
+      usedReswellQuote: true,
+    }
+  }
+
   const bundle = await computePeerMultiCheckoutUsd({
     supabase,
     listingsOrdered: listingsForTotals,
     fulfillment: impliedFulfillment,
     buyerAddress,
     diagnosticTagPrefix: "payment-intent",
+    preverifiedShipping,
   })
 
   if (!bundle.ok) {
     return NextResponse.json({ error: bundle.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })
+  }
+
+  if (verifiedQuotePayload) {
+    const itemCents = Math.round(bundle.totalItemPriceUsd * 100)
+    const shippingCents = Math.round(bundle.totalShippingUsd * 100)
+    const totalCents = Math.round(bundle.totalUsd * 100)
+    if (
+      itemCents !== verifiedQuotePayload.itemSubtotalCents ||
+      shippingCents !== verifiedQuotePayload.shippingCents ||
+      totalCents !== verifiedQuotePayload.totalCents
+    ) {
+      return NextResponse.json(
+        { error: "Shipping quote no longer matches this order — refresh your shipping total." },
+        { status: 409, headers: JSON_NO_STORE_HEADERS },
+      )
+    }
   }
 
   const promoCodeRaw = body.promo_code?.trim()

@@ -32,6 +32,8 @@ export async function computePeerMultiCheckoutUsd(params: {
   fulfillment: "pickup" | "shipping"
   buyerAddress: ProfileAddressRow | null
   diagnosticTagPrefix: string
+  /** Reuse shipping from `/api/checkout/shipping-quote` (signed token) — skips ShipEngine. */
+  preverifiedShipping?: { shippingUsd: number; usedReswellQuote: boolean }
 }): Promise<
   | {
       ok: true
@@ -46,7 +48,8 @@ export async function computePeerMultiCheckoutUsd(params: {
     }
   | { ok: false; error: string }
 > {
-  const { listingsOrdered, fulfillment, buyerAddress, supabase, diagnosticTagPrefix } = params
+  const { listingsOrdered, fulfillment, buyerAddress, supabase, diagnosticTagPrefix, preverifiedShipping } =
+    params
 
   if (listingsOrdered.length === 0) {
     return { ok: false, error: "No listings to checkout" }
@@ -74,7 +77,7 @@ export async function computePeerMultiCheckoutUsd(params: {
   }
 
   const sellerShipFromName =
-    fulfillment === "shipping"
+    fulfillment === "shipping" && !preverifiedShipping
       ? await fetchSellerShipFromLabelName(supabase, sellerId)
       : "Seller"
 
@@ -87,6 +90,9 @@ export async function computePeerMultiCheckoutUsd(params: {
   const perLineFulfillment: "pickup" | "shipping" =
     isMultiLine && fulfillment === "shipping" ? "pickup" : fulfillment
 
+  const singleLineShippingOverride =
+    !isMultiLine && fulfillment === "shipping" && preverifiedShipping ? preverifiedShipping : undefined
+
   for (let i = 0; i < listingsOrdered.length; i++) {
     const listing = listingsOrdered[i]!
     const totals = await computePeerCheckoutTotalsUsd({
@@ -95,6 +101,7 @@ export async function computePeerMultiCheckoutUsd(params: {
       buyerAddress,
       diagnosticTag: `${diagnosticTagPrefix}:${listing.id}:${i}`,
       sellerShipFromName,
+      shippingOverride: singleLineShippingOverride,
     })
     if (!totals.ok) {
       return { ok: false, error: totals.error }
@@ -117,12 +124,18 @@ export async function computePeerMultiCheckoutUsd(params: {
   }
 
   if (isMultiLine && fulfillment === "shipping") {
-    const bundleShipping = await computePeerBundleShippingUsd({
-      listings: listingsOrdered,
-      buyerAddress,
-      diagnosticTag: `${diagnosticTagPrefix}:bundle`,
-      sellerShipFromName,
-    })
+    const bundleShipping = preverifiedShipping
+      ? {
+          ok: true as const,
+          shippingUsd: preverifiedShipping.shippingUsd,
+          usedReswellQuote: preverifiedShipping.usedReswellQuote,
+        }
+      : await computePeerBundleShippingUsd({
+          listings: listingsOrdered,
+          buyerAddress,
+          diagnosticTag: `${diagnosticTagPrefix}:bundle`,
+          sellerShipFromName,
+        })
     if (!bundleShipping.ok) {
       return { ok: false, error: bundleShipping.error }
     }

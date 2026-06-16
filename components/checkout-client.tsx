@@ -17,6 +17,11 @@ import { listingDetailHref } from "@/lib/listing-href"
 import { capitalizeWords } from "@/lib/listing-labels"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { prefetchStripeCheckout } from "@/lib/stripe/prefetch-stripe-checkout"
+import {
+  computeStaticPeerShippingQuoteUsd,
+  listingHasShippingModeFields,
+  peerCheckoutNeedsLiveShippingQuote,
+} from "@/lib/checkout-peer-shipping-client"
 import { Truck, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -114,8 +119,14 @@ export function CheckoutClient({
     totalUsd: number
     usedReswellQuote: boolean
   } | null>(null)
+  const [shipQuoteToken, setShipQuoteToken] = useState<string | null>(null)
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
+
+  const needsLiveShippingQuote = useMemo(
+    () => needsShipping && peerCheckoutNeedsLiveShippingQuote(listings.map(listingHasShippingModeFields)),
+    [needsShipping, listings],
+  )
 
   const [promoCodeInput, setPromoCodeInput] = useState("")
   const [appliedPromo, setAppliedPromo] = useState<AppliedNewsletterPromo | null>(null)
@@ -126,15 +137,17 @@ export function CheckoutClient({
     setAppliedPromo(null)
     setPromoError(null)
     setPromoCodeInput("")
+    setShipQuoteToken(null)
   }, [listingIdsKey, impliedFulfillment])
 
   useEffect(() => {
-    void prefetchStripeCheckout()
+    void prefetchStripeCheckout({ immediate: true })
   }, [])
 
   useEffect(() => {
     if (!needsShipping) {
       setShipQuote(null)
+      setShipQuoteToken(null)
       setQuoteError(null)
       setQuoteLoading(false)
       return
@@ -142,6 +155,22 @@ export function CheckoutClient({
 
     if (!purchaseDetails.shippingAddressId) {
       setShipQuote(null)
+      setShipQuoteToken(null)
+      setQuoteError(null)
+      setQuoteLoading(false)
+      return
+    }
+
+    if (!needsLiveShippingQuote) {
+      if (!resolved.ok) {
+        setShipQuote(null)
+        setShipQuoteToken(null)
+        setQuoteError(resolved.error)
+        setQuoteLoading(false)
+        return
+      }
+      setShipQuote(computeStaticPeerShippingQuoteUsd(listings.map(listingHasShippingModeFields), resolved.itemPrice))
+      setShipQuoteToken(null)
       setQuoteError(null)
       setQuoteLoading(false)
       return
@@ -150,6 +179,7 @@ export function CheckoutClient({
     let cancelled = false
     setQuoteLoading(true)
     setQuoteError(null)
+    setShipQuoteToken(null)
     void (async () => {
       try {
         const res = await fetch("/api/checkout/shipping-quote", {
@@ -164,11 +194,17 @@ export function CheckoutClient({
         })
         const data = (await res.json()) as {
           error?: string
-          data?: { shippingUsd: number; totalUsd: number; usedReswellQuote: boolean }
+          data?: {
+            shippingUsd: number
+            totalUsd: number
+            usedReswellQuote: boolean
+            quoteToken?: string | null
+          }
         }
         if (cancelled) return
         if (!res.ok || !data.data) {
           setShipQuote(null)
+          setShipQuoteToken(null)
           setQuoteError(data.error?.trim() || "Could not calculate shipping for this address.")
           return
         }
@@ -177,9 +213,11 @@ export function CheckoutClient({
           totalUsd: data.data.totalUsd,
           usedReswellQuote: data.data.usedReswellQuote,
         })
+        setShipQuoteToken(data.data.quoteToken?.trim() || null)
       } catch {
         if (!cancelled) {
           setShipQuote(null)
+          setShipQuoteToken(null)
           setQuoteError("Could not calculate shipping for this address.")
         }
       } finally {
@@ -189,7 +227,14 @@ export function CheckoutClient({
     return () => {
       cancelled = true
     }
-  }, [needsShipping, listingIdsKey, purchaseDetails.shippingAddressId])
+  }, [
+    needsShipping,
+    needsLiveShippingQuote,
+    listingIdsKey,
+    listings,
+    purchaseDetails.shippingAddressId,
+    resolved,
+  ])
 
   const handlePurchaseDetailsChange = useCallback((state: PurchaseDetailsState) => {
     setPurchaseDetails(state)
@@ -339,8 +384,8 @@ export function CheckoutClient({
   return (
     <div className="flex min-h-[calc(100dvh-3.5rem)] flex-col lg:min-h-[calc(100dvh-4rem)]">
       <div className="flex w-full flex-1 flex-col lg:flex-row">
-        {/* Left — forms */}
-        <div className="order-2 flex-1 bg-white px-4 py-8 sm:px-8 lg:order-1 lg:max-w-[640px] lg:shrink-0 lg:px-10 lg:py-10 xl:px-14">
+        {/* Left — forms (first on mobile so buyers reach payment without scrolling past summary) */}
+        <div className="order-1 flex-1 bg-white px-4 py-8 sm:px-8 lg:max-w-[640px] lg:shrink-0 lg:px-10 lg:py-10 xl:px-14">
           <div className="mx-auto max-w-[520px] lg:mx-0">
             {isBundle ? (
               <div className="mb-10 rounded-[8px] border border-[#5574AD]/25 bg-[#5574AD]/[0.06] px-4 py-3.5 text-[13px] leading-relaxed text-neutral-700">
@@ -487,6 +532,7 @@ export function CheckoutClient({
                   needsShipping={needsShipping}
                   offerId={offerId}
                   promoCode={appliedPromo?.code ?? null}
+                  shippingQuoteToken={shipQuoteToken}
                   submitButtonLabel="Pay now"
                   submitButtonClassName={payButtonClassName}
                   hideStripeFooter

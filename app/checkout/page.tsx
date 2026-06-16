@@ -275,7 +275,7 @@ export default async function CheckoutPage(props: {
 
   const { listing, redirectSlug } = await findListingByParam(supabase, id, {
     select:
-      "id, slug, title, price, user_id, status, section, shipping_available, local_pickup, shipping_price, city, state, listing_images ( url, thumbnail_url, is_primary )",
+      "id, slug, title, price, user_id, status, section, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode, city, state, listing_images ( url, thumbnail_url, is_primary )",
     section: undefined,
   })
 
@@ -319,18 +319,15 @@ export default async function CheckoutPage(props: {
   let matchedOfferId: string | null = null
 
   if (user && !isAnonymousSupabaseUser(user) && listing.user_id !== user.id) {
-    const priced = await applyAcceptedOfferToPeerCheckoutListings(supabase, user.id, [
-      checkoutListing as unknown as PeerSurfboardCheckoutListingRow,
+    const [priced, matchedOffer] = await Promise.all([
+      applyAcceptedOfferToPeerCheckoutListings(supabase, user.id, [
+        checkoutListing as unknown as PeerSurfboardCheckoutListingRow,
+      ]),
+      findAcceptedOfferMatchingListings(supabase, user.id, [checkoutListing.id], listing.user_id),
     ])
     if (priced[0]) {
       checkoutListing = rowToCheckoutListing(priced[0] as unknown as Record<string, unknown>)
     }
-    const matchedOffer = await findAcceptedOfferMatchingListings(
-      supabase,
-      user.id,
-      [checkoutListing.id],
-      listing.user_id,
-    )
     matchedOfferId = matchedOffer?.id ?? null
   }
 

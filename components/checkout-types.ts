@@ -14,6 +14,8 @@ export type CheckoutListing = PayableListing & {
   title: string
   user_id: string
   section: string
+  /** When `"reswell"`, checkout calls ShipEngine for live carrier rates. */
+  board_shipping_cost_mode?: string | null
   /** From /sell location step — Reswell shipping rates prefer this with map pin as fallback */
   city?: string | null
   state?: string | null
