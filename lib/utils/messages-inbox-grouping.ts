@@ -1,6 +1,7 @@
 import type { ListingImageForCard } from "@/lib/listing-image-display"
 
 export type InboxConversationMessage = {
+  id?: string
   content: string
   is_read: boolean
   sender_id: string

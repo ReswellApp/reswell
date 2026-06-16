@@ -16,9 +16,16 @@ export function MessagesInboxRealtimeRefresh({ userId }: { userId: string }) {
   useEffect(() => {
     const client = supabase.current
     const channels: RealtimeChannel[] = []
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null
 
+    // Debounce: a burst of conversation updates (e.g. several messages landing
+    // at once) should trigger a single server reload, not one per event.
     const refresh = () => {
-      router.refresh()
+      if (refreshTimer) clearTimeout(refreshTimer)
+      refreshTimer = setTimeout(() => {
+        refreshTimer = null
+        router.refresh()
+      }, 400)
     }
 
     const subscribe = (setup: (ch: ReturnType<typeof client.channel>) => RealtimeChannel) => {
@@ -57,6 +64,7 @@ export function MessagesInboxRealtimeRefresh({ userId }: { userId: string }) {
     )
 
     return () => {
+      if (refreshTimer) clearTimeout(refreshTimer)
       for (const ch of channels) {
         void client.removeChannel(ch)
       }
