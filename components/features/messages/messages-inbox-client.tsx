@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils'
 import { MessagesSupportDialog } from '@/components/features/messages/messages-support-dialog'
 import { SellerMakeOfferToBuyerDialog } from '@/components/features/messages/seller-make-offer-to-buyer-dialog'
 import type { MessagesInboxNotification } from '@/lib/db/messagesInbox'
+import { markInboxNotificationsRead, refreshMessagesInbox } from '@/app/actions/messages'
 import {
   groupConversationsByCounterparty,
   counterpartyInboxHref,
@@ -199,57 +200,104 @@ export function MessagesInboxClient({
     [router, searchParams],
   )
 
+  // Mark unread inbox notifications read via a server action (no client-side DB
+  // writes), then nudge the global unread badge.
   useEffect(() => {
     if (!currentUserId) return
+    const hasUnread = notifications.some((n) => !n.is_read)
+    if (!hasUnread) return
 
     let cancelled = false
-
-    void (async () => {
-      try {
-        await fetch('/api/me/offers-sync-threads', { method: 'POST', credentials: 'include' })
-      } catch (err) {
-        if (!isAbortError(err)) {
-          // non-blocking
+    void markInboxNotificationsRead()
+      .then(() => {
+        if (!cancelled && typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('unreadCountRefresh'))
         }
-      }
-      if (!cancelled) {
-        void loadSentSellerOffers(currentUserId, () => !cancelled)
-      }
-    })()
+      })
+      .catch(() => {})
 
     return () => {
       cancelled = true
     }
-  }, [currentUserId, loadSentSellerOffers])
+  }, [currentUserId, notifications])
 
-  useEffect(() => {
-    if (!currentUserId) return
-
-    const unreadIds = notifications.filter((n) => !n.is_read).map((n) => n.id)
-    if (unreadIds.length === 0) return
-
-    let cancelled = false
-
-    void (async () => {
-      await supabase.from('notifications').update({ is_read: true }).in('id', unreadIds)
-      if (!cancelled && typeof window !== 'undefined') {
-        window.setTimeout(() => window.dispatchEvent(new CustomEvent('unreadCountRefresh')), 150)
-      }
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [currentUserId, notifications, supabase])
-
+  // Seller-offer hydration (thread sync + sent-offer map) is only needed by the
+  // Activity tab, so defer it until that tab is opened instead of on every load.
+  const offersSyncedRef = useRef(false)
   useEffect(() => {
     if (tab !== 'activity' || !currentUserId) return
     let active = true
-    void loadSentSellerOffers(currentUserId, () => active)
+
+    void (async () => {
+      if (!offersSyncedRef.current) {
+        offersSyncedRef.current = true
+        try {
+          await fetch('/api/me/offers-sync-threads', { method: 'POST', credentials: 'include' })
+        } catch (err) {
+          if (!isAbortError(err)) {
+            // non-blocking
+          }
+        }
+      }
+      if (active) void loadSentSellerOffers(currentUserId, () => active)
+    })()
+
     return () => {
       active = false
     }
   }, [tab, currentUserId, loadSentSellerOffers])
+
+  // Live inbox: watch the user's own conversation rows (the project convention —
+  // realtime is always scoped to rows the user owns, never an unfiltered table).
+  // A conversation's `last_message_at` bumps on every new message, so a change
+  // signal triggers a debounced, fresh server read that patches previews,
+  // unread counts, and ordering in place — no full-route refresh, no flicker.
+  useEffect(() => {
+    if (!currentUserId) return
+
+    let cancelled = false
+    let refreshTimer: ReturnType<typeof setTimeout> | null = null
+
+    const applyFresh = async () => {
+      const fresh = await refreshMessagesInbox()
+      if (cancelled || 'error' in fresh) return
+      setConversations(fresh.conversations)
+      setNotifications(fresh.notifications)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('unreadCountRefresh'))
+      }
+    }
+
+    const scheduleRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer)
+      refreshTimer = setTimeout(() => {
+        refreshTimer = null
+        void applyFresh().catch(() => {})
+      }, 300)
+    }
+
+    const channels = (['buyer_id', 'seller_id'] as const).map((column) =>
+      supabase
+        .channel(`inbox:${column}:${currentUserId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'conversations',
+            filter: `${column}=eq.${currentUserId}`,
+          },
+          scheduleRefresh,
+        )
+        .subscribe(),
+    )
+
+    return () => {
+      cancelled = true
+      if (refreshTimer) clearTimeout(refreshTimer)
+      for (const channel of channels) void supabase.removeChannel(channel)
+    }
+  }, [currentUserId, supabase])
 
   const searchLower = searchQuery.trim().toLowerCase()
 

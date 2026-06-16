@@ -4,7 +4,6 @@ import { getCachedRequestSession } from '@/lib/auth/cached-request-session'
 import { getCachedMessagesInbox } from '@/lib/cache/messages-inbox'
 import { ensureMarketplaceThread } from '@/app/actions/messages'
 import { MessagesInboxClient } from '@/components/features/messages/messages-inbox-client'
-import { MessagesInboxRealtimeRefresh } from '@/components/features/messages/messages-inbox-realtime-refresh'
 import { MessagesInboxSkeleton } from '@/components/features/messages/messages-page-skeletons'
 
 export default async function MessagesPage({
@@ -39,16 +38,23 @@ export default async function MessagesPage({
     }
   }
 
-  const inbox = await getCachedMessagesInbox(user.id)
-
   return (
     <Suspense fallback={<MessagesInboxSkeleton />}>
-      <MessagesInboxRealtimeRefresh userId={user.id} />
-      <MessagesInboxClient
-        currentUserId={user.id}
-        initialConversations={inbox.conversations}
-        initialNotifications={inbox.notifications}
-      />
+      <MessagesInboxData userId={user.id} />
     </Suspense>
+  )
+}
+
+// Isolated async boundary so the inbox skeleton streams instantly while the
+// (tag-cached) inbox query resolves, instead of blocking the whole route.
+async function MessagesInboxData({ userId }: { userId: string }) {
+  const inbox = await getCachedMessagesInbox(userId)
+
+  return (
+    <MessagesInboxClient
+      currentUserId={userId}
+      initialConversations={inbox.conversations}
+      initialNotifications={inbox.notifications}
+    />
   )
 }

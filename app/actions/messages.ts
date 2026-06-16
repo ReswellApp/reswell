@@ -23,6 +23,11 @@ import {
   loadOtherPartyProfile,
   type OtherPartyProfileSummary,
 } from "@/lib/messages/profile-reviews-loader"
+import {
+  filterConversationsWithMessages,
+  type InboxConversationRow,
+} from "@/lib/utils/messages-inbox-grouping"
+import { loadMessagesInboxForUser, type MessagesInboxPayload } from "@/lib/db/messagesInbox"
 
 const sendConversationLocationReplySchema = z.object({
   conversation_id: z.string().uuid(),
@@ -774,6 +779,166 @@ export async function sendSellerReviewRequest(input: unknown) {
   return { success: true as const, conversation_id: result.conversationId }
 }
 
+/**
+ * Fresh inbox read for live updates. Bypasses the tag cache so a realtime
+ * conversation change can pull the current preview/unread state without a full
+ * route refresh. Scoped to the signed-in user via the verified session.
+ */
+export async function refreshMessagesInbox(): Promise<
+  { error: string } | MessagesInboxPayload
+> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: "Unauthorized" }
+  }
+
+  return loadMessagesInboxForUser(user.id)
+}
+
+export type CounterpartyThreadProfile = {
+  id: string
+  display_name: string
+  avatar_url: string | null
+  shop_verified?: boolean
+}
+
+export type CounterpartyThreadsData = {
+  currentUserId: string
+  otherUser: CounterpartyThreadProfile | null
+  threads: InboxConversationRow[]
+}
+
+const COUNTERPARTY_CONVERSATIONS_SELECT = `
+  id,
+  listing_id,
+  buyer_id,
+  seller_id,
+  last_message_at,
+  listing:listings(id, title, listing_images(url, thumbnail_url, is_primary)),
+  buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url, shop_verified),
+  seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url, shop_verified),
+  messages(id, content, is_read, sender_id, created_at, metadata)
+`
+
+/**
+ * Server loader for the "all threads with one counterparty" view. Resolves the
+ * session server-side (no client `getUser()` round-trip), reads every shared
+ * conversation via the service role, and merges unread incoming messages so
+ * badge counts stay accurate without pulling full history.
+ */
+export async function loadCounterpartyThreads(
+  otherUserId: string,
+): Promise<{ error: string } | CounterpartyThreadsData> {
+  if (typeof otherUserId !== "string" || !z.string().uuid().safeParse(otherUserId).success) {
+    return { error: "Invalid request" }
+  }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: "Unauthorized" }
+  }
+
+  const service = createServiceRoleClient()
+
+  const [{ data: profile }, { data: convData }] = await Promise.all([
+    service
+      .from("profiles")
+      .select("id, display_name, avatar_url, shop_verified")
+      .eq("id", otherUserId)
+      .maybeSingle(),
+    service
+      .from("conversations")
+      .select(COUNTERPARTY_CONVERSATIONS_SELECT)
+      .or(
+        `and(buyer_id.eq.${user.id},seller_id.eq.${otherUserId}),and(buyer_id.eq.${otherUserId},seller_id.eq.${user.id})`,
+      )
+      .order("last_message_at", { ascending: false })
+      .order("created_at", { ascending: false, referencedTable: "messages" })
+      .limit(1, { referencedTable: "messages" }),
+  ])
+
+  const threads = filterConversationsWithMessages(
+    (convData ?? []) as unknown as InboxConversationRow[],
+  )
+
+  const conversationIds = threads.map((t) => t.id)
+  if (conversationIds.length > 0) {
+    const { data: unreadData } = await service
+      .from("messages")
+      .select("id, content, is_read, sender_id, created_at, metadata, conversation_id")
+      .in("conversation_id", conversationIds)
+      .eq("is_read", false)
+      .neq("sender_id", user.id)
+
+    const unreadByConversation = new Map<string, InboxConversationRow["messages"]>()
+    for (const row of (unreadData ?? []) as Array<
+      InboxConversationRow["messages"][number] & { conversation_id: string }
+    >) {
+      const { conversation_id, ...message } = row
+      const bucket = unreadByConversation.get(conversation_id) ?? []
+      bucket.push(message)
+      unreadByConversation.set(conversation_id, bucket)
+    }
+    for (const conv of threads) {
+      const unread = unreadByConversation.get(conv.id)
+      if (!unread?.length) continue
+      const seen = new Set(conv.messages.map((m) => m.id).filter(Boolean))
+      for (const message of unread) {
+        if (message.id && seen.has(message.id)) continue
+        conv.messages.push(message)
+      }
+    }
+  }
+
+  return {
+    currentUserId: user.id,
+    otherUser: (profile as CounterpartyThreadProfile | null) ?? {
+      id: otherUserId,
+      display_name: "Member",
+      avatar_url: null,
+    },
+    threads,
+  }
+}
+
+/**
+ * Marks the signed-in user's unread inbox notifications read. Keeps the
+ * Supabase write server-side (components must not write to the DB directly).
+ */
+export async function markInboxNotificationsRead(): Promise<
+  { ok: true } | { error: string }
+> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: "Unauthorized" }
+  }
+
+  const service = createServiceRoleClient()
+  const { error } = await service
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("user_id", user.id)
+    .eq("is_read", false)
+
+  if (error) {
+    return { error: "Failed to update notifications" }
+  }
+
+  return { ok: true }
+}
+
 const CONVERSATION_THREAD_SELECT = `
   *,
   listing:listings(id, title, price, section, slug, listing_images(url, thumbnail_url, is_primary), minimum_offer_pct),
@@ -819,8 +984,9 @@ export type ConversationThreadData = {
  * Server-side thread loader: resolves the signed-in user from the request session
  * (reliable, unlike a client-side `getUser()`), verifies participation, then reads
  * the conversation, messages, offers, and sibling listing threads via the service
- * role. Also marks the thread read. Returns everything the client needs to render
- * without depending on a browser Supabase session.
+ * role. This is a pure read — marking the thread read is handled separately by
+ * `markConversationThreadRead` after first paint. Returns everything the client
+ * needs to render without depending on a browser Supabase session.
  */
 export async function loadConversationThread(
   conversationId: string,
@@ -934,20 +1100,6 @@ export async function loadConversationThread(
     threadListings = (listingRows ?? []) as Record<string, unknown>[]
   }
 
-  await service
-    .from("messages")
-    .update({ is_read: true })
-    .eq("conversation_id", conversationId)
-    .neq("sender_id", user.id)
-
-  await service
-    .from("notifications")
-    .update({ is_read: true })
-    .eq("user_id", user.id)
-    .eq("is_read", false)
-
-  revalidateMessagesInboxForParticipants(buyerId, sellerId)
-
   return {
     currentUserId: user.id,
     conversation: conv,
@@ -957,4 +1109,68 @@ export async function loadConversationThread(
     threadListings,
     otherPartyProfile,
   }
+}
+
+/**
+ * Marks a thread (and the viewer's related notifications) read, then refreshes
+ * the inbox cache for both participants. Split out of `loadConversationThread`
+ * so opening a thread is a pure read — the write + revalidation runs after the
+ * thread paints, fire-and-forget, instead of blocking first render.
+ */
+export async function markConversationThreadRead(
+  conversationId: string,
+): Promise<{ ok: true } | { error: string }> {
+  if (typeof conversationId !== "string" || !z.string().uuid().safeParse(conversationId).success) {
+    return { error: "Invalid request" }
+  }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: "Unauthorized" }
+  }
+
+  const service = createServiceRoleClient()
+
+  const { data: convData, error: convErr } = await service
+    .from("conversations")
+    .select("buyer_id, seller_id")
+    .eq("id", conversationId)
+    .maybeSingle()
+
+  if (convErr || !convData) {
+    return { error: "Conversation not found" }
+  }
+
+  const buyerId = convData.buyer_id as string
+  const sellerId = convData.seller_id as string
+
+  if (user.id !== buyerId && user.id !== sellerId) {
+    return { error: "Conversation not found" }
+  }
+
+  const [{ error: msgErr }] = await Promise.all([
+    service
+      .from("messages")
+      .update({ is_read: true })
+      .eq("conversation_id", conversationId)
+      .neq("sender_id", user.id)
+      .eq("is_read", false),
+    service
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("user_id", user.id)
+      .eq("is_read", false),
+  ])
+
+  if (msgErr) {
+    return { error: "Failed to mark read" }
+  }
+
+  revalidateMessagesInboxForParticipants(buyerId, sellerId)
+
+  return { ok: true }
 }
