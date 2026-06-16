@@ -11,6 +11,7 @@ const BLOCKED_APP_PATHS = [
   "/api/",
   "/seller/",
   "/sell",
+  "/import/",
   "/auth/",
   "/cart",
   "/checkout",

@@ -1,10 +1,9 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { createClient } from "@/lib/supabase/client"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
@@ -19,22 +18,12 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Plus, MoreVertical, Eye, Edit, Trash2, Package, Archive, CheckCircle2 } from "lucide-react"
+import { Plus, MoreVertical, Eye, Edit, Trash2, Package, Archive } from "lucide-react"
 import { toast } from "sonner"
 import { formatDistanceToNow } from "date-fns"
 import { capitalizeWords } from "@/lib/listing-labels"
-import { cn } from "@/lib/utils"
 import { listingProductCardSolidClassName } from "@/lib/listing-card-styles"
-import { postEndListing } from "@/lib/listing-end-request"
+import { EndListingDialog } from "@/components/end-listing-dialog"
 import type { MyListingRow } from "@/lib/db/my-listings"
 
 interface MyListingsClientProps {
@@ -50,9 +39,6 @@ function listingCardImageSrc(listing: MyListingRow): string | null {
 export function MyListingsClient({ listings, fetchError }: MyListingsClientProps) {
   const router = useRouter()
   const [endListingId, setEndListingId] = useState<string | null>(null)
-  const [endChoice, setEndChoice] = useState<"delete" | "archive" | null>(null)
-  const [endListingLoading, setEndListingLoading] = useState(false)
-  const supabase = useMemo(() => createClient(), [])
 
   async function handleDiscardDraft(id: string) {
     const res = await fetch(`/api/listings/discard-draft?id=${encodeURIComponent(id)}`, {
@@ -64,37 +50,6 @@ export function MyListingsClient({ listings, fetchError }: MyListingsClientProps
       return
     }
     router.refresh()
-  }
-
-  async function handleStatusChange(id: string, newStatus: string) {
-    const { error } = await supabase.from("listings").update({ status: newStatus }).eq("id", id)
-
-    if (!error) {
-      router.refresh()
-    } else {
-      toast.error("Failed to update listing")
-    }
-  }
-
-  async function handleEndListing() {
-    if (!endListingId || !endChoice) return
-    setEndListingLoading(true)
-    try {
-      const result = await postEndListing(endListingId, endChoice)
-      if (!result.ok) {
-        toast.error(result.error)
-        return
-      }
-      if (result.mode === "archive" && result.message) {
-        router.push("/dashboard/listings/archived")
-        return
-      }
-      router.refresh()
-    } finally {
-      setEndListingLoading(false)
-      setEndListingId(null)
-      setEndChoice(null)
-    }
   }
 
   const getStatusColor = (status: string) => {
@@ -213,26 +168,18 @@ export function MyListingsClient({ listings, fetchError }: MyListingsClientProps
                             Edit
                           </Link>
                         </DropdownMenuItem>
-                        {listing.status === "active" && (
-                          <DropdownMenuItem
-                            className="py-2.5"
-                            onClick={() => handleStatusChange(listing.id, "sold")}
-                          >
-                            <CheckCircle2 className="h-4 w-4" />
-                            Mark as Sold
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="py-2.5"
-                          onClick={() => {
-                            setEndListingId(listing.id)
-                            setEndChoice(null)
-                          }}
-                        >
-                          <Archive className="h-4 w-4" />
-                          End listing
-                        </DropdownMenuItem>
+                        {!isDraft && listing.status !== "sold" ? (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="py-2.5"
+                              onClick={() => setEndListingId(listing.id)}
+                            >
+                              <Archive className="h-4 w-4" />
+                              End listing
+                            </DropdownMenuItem>
+                          </>
+                        ) : null}
                       </>
                     )}
                   </DropdownMenuContent>
@@ -329,64 +276,13 @@ export function MyListingsClient({ listings, fetchError }: MyListingsClientProps
         </Tabs>
       )}
 
-      <AlertDialog
+      <EndListingDialog
+        listingId={endListingId}
         open={!!endListingId}
         onOpenChange={(open) => {
-          if (!open) {
-            setEndListingId(null)
-            setEndChoice(null)
-            setEndListingLoading(false)
-          }
+          if (!open) setEndListingId(null)
         }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>End listing</AlertDialogTitle>
-            <AlertDialogDescription>
-              Archive removes your listing from the public site and keeps it under Archived listings for 30 days.
-              Delete removes the database record immediately when allowed; if the listing is linked to an order or
-              payment, we will archive it instead so it stays off the live site. Choose an option:
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex flex-col gap-2 py-2">
-            <Button
-              type="button"
-              variant={endChoice === "archive" ? "default" : "outline"}
-              className="justify-start"
-              onClick={() => setEndChoice("archive")}
-            >
-              Archive listing
-            </Button>
-            <Button
-              type="button"
-              variant={endChoice === "delete" ? "destructive" : "outline"}
-              className={cn("justify-start", endChoice === "delete" && "border-destructive")}
-              onClick={() => setEndChoice("delete")}
-            >
-              Delete listing
-            </Button>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={endListingLoading}>Cancel</AlertDialogCancel>
-            <Button
-              type="button"
-              variant={endChoice === "delete" ? "destructive" : "default"}
-              disabled={!endChoice || endListingLoading}
-              onClick={() => void handleEndListing()}
-            >
-              {endListingLoading
-                ? endChoice === "delete"
-                  ? "Deleting…"
-                  : "Archiving…"
-                : endChoice === "delete"
-                  ? "Delete listing"
-                  : endChoice === "archive"
-                    ? "Archive listing"
-                    : "Continue"}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      />
     </div>
   )
 }
