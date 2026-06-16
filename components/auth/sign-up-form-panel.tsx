@@ -33,6 +33,7 @@ export function SignUpFormPanel({
   redirectTo = "/dashboard",
   footerLogin,
   onSignUpSuccess,
+  googleAutoStart = false,
 }: {
   variant?: "page" | "modal"
   /** Post-signup destination when the user receives a session (email confirmation off in Supabase). */
@@ -41,6 +42,8 @@ export function SignUpFormPanel({
   footerLogin?: ReactNode
   /** Called after successful signup before navigation (e.g. close auth modal). */
   onSignUpSuccess?: () => void
+  /** Full-page sign-up with `?google=1` after escaping an in-app browser. */
+  googleAutoStart?: boolean
 }) {
   const [displayName, setDisplayName] = useState("")
   const [email, setEmail] = useState("")
@@ -149,7 +152,11 @@ export function SignUpFormPanel({
       <CardContent
         className={`flex flex-col gap-6 ${variant === "modal" ? AUTH_MODAL_INNER_CARD_CONTENT_CLASS : ""}`}
       >
-        <GoogleOAuthButton nextPath={redirectTo} />
+        <GoogleOAuthButton
+          nextPath={redirectTo}
+          autoStart={googleAutoStart}
+          handoffMode="sign-up"
+        />
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <Separator />

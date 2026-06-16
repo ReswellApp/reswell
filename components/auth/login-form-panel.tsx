@@ -34,6 +34,7 @@ export function LoginFormPanel({
   variant = "page",
   footerSignUp,
   onForgotPassword,
+  googleAutoStart = false,
 }: {
   redirectTo: string
   /** Called after a successful email/password login (e.g. close modal). Navigation still runs. */
@@ -43,6 +44,8 @@ export function LoginFormPanel({
   footerSignUp?: ReactNode
   /** When set (e.g. auth modal), “Forgot password?” stays in-flow instead of a full-page navigation. */
   onForgotPassword?: () => void
+  /** Full-page login with `?google=1` after escaping an in-app browser. */
+  googleAutoStart?: boolean
 }) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -98,7 +101,7 @@ export function LoginFormPanel({
       <CardContent
         className={`flex flex-col gap-6 ${variant === "modal" ? AUTH_MODAL_INNER_CARD_CONTENT_CLASS : ""}`}
       >
-        <GoogleOAuthButton nextPath={redirectTo} />
+        <GoogleOAuthButton nextPath={redirectTo} autoStart={googleAutoStart} />
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <Separator />

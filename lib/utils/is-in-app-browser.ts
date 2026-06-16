@@ -5,8 +5,8 @@
  * doesn't, the multi-redirect return frequently dies as a native "This page couldn't
  * load" screen that no JS error boundary can catch.
  *
- * Use {@link isInAppBrowser} to steer these users to the system browser (or an
- * in-webview-friendly path like email/password) before they hit that dead end.
+ * Use {@link isInAppBrowser} to hand off Google OAuth to the system browser before
+ * starting PKCE (see {@link openInSystemBrowser} and {@link buildGoogleOAuthHandoffUrl}).
  */
 
 /** Known in-app webview UA tokens (case-insensitive). */

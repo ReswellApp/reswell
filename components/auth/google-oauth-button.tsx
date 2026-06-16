@@ -1,10 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { buildOAuthCallbackUrl } from '@/lib/auth/oauth-callback-url'
+import { buildGoogleOAuthHandoffUrl } from '@/lib/auth/google-oauth-handoff-url'
 import { isInAppBrowserClient } from '@/lib/utils/is-in-app-browser'
+import { openInSystemBrowser } from '@/lib/utils/escape-in-app-browser'
 import { cn } from '@/lib/utils'
 
 /** Standard multicolor Google “G” mark (brand colors). */
@@ -40,20 +42,32 @@ type GoogleOAuthButtonProps = {
   /** Post-login path (same-origin only; see safeRedirectPath). */
   nextPath: string
   className?: string
+  /** When true (full-page auth with `?google=1`), start OAuth after landing in a system browser. */
+  autoStart?: boolean
+  /** Auth page to open when handing off from an in-app browser. */
+  handoffMode?: 'login' | 'sign-up'
 }
 
-export function GoogleOAuthButton({ nextPath, className }: GoogleOAuthButtonProps) {
+function stripGoogleAutoStartParam(): void {
+  if (typeof window === 'undefined') return
+  const url = new URL(window.location.href)
+  if (!url.searchParams.has('google')) return
+  url.searchParams.delete('google')
+  const next = `${url.pathname}${url.search}${url.hash}`
+  window.history.replaceState(window.history.state, '', next)
+}
+
+export function GoogleOAuthButton({
+  nextPath,
+  className,
+  autoStart = false,
+  handoffMode = 'login',
+}: GoogleOAuthButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // Detect after mount so SSR and first client render match (avoids hydration mismatch).
-  const [inApp, setInApp] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const autoStartedRef = useRef(false)
 
-  useEffect(() => {
-    setInApp(isInAppBrowserClient())
-  }, [])
-
-  const startGoogleOAuth = async () => {
+  const startGoogleOAuth = useCallback(async () => {
     const supabase = createClient()
     setIsLoading(true)
     setError(null)
@@ -63,7 +77,6 @@ export function GoogleOAuthButton({ nextPath, className }: GoogleOAuthButtonProp
         provider: 'google',
         options: {
           redirectTo,
-          // Let users pick which Google account to use (shared device / multiple Google logins).
           queryParams: { prompt: 'select_account' },
         },
       })
@@ -72,23 +85,23 @@ export function GoogleOAuthButton({ nextPath, className }: GoogleOAuthButtonProp
       setError(err instanceof Error ? err.message : 'Could not start Google sign-in')
       setIsLoading(false)
     }
-  }
+  }, [nextPath])
 
-  // In-app browsers (Instagram, Facebook, TikTok, Gmail, the Google app, etc.) can't
-  // complete Google OAuth — the return navigation dies as a native "This page couldn't
-  // load". Don't send them down that dead end; help them reopen in the system browser.
-  const handleInAppClick = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href)
-      setCopied(true)
-    } catch {
-      setCopied(false)
-    }
-  }
+  useEffect(() => {
+    if (!autoStart || autoStartedRef.current || isInAppBrowserClient()) return
+    autoStartedRef.current = true
+    stripGoogleAutoStartParam()
+    void startGoogleOAuth()
+  }, [autoStart, startGoogleOAuth])
 
   const handleClick = () => {
-    if (inApp) {
-      void handleInAppClick()
+    if (isInAppBrowserClient()) {
+      const handoffUrl = buildGoogleOAuthHandoffUrl(
+        window.location.origin,
+        nextPath,
+        handoffMode,
+      )
+      openInSystemBrowser(handoffUrl)
       return
     }
     void startGoogleOAuth()
@@ -110,16 +123,6 @@ export function GoogleOAuthButton({ nextPath, className }: GoogleOAuthButtonProp
         <GoogleMark />
         {isLoading ? 'Redirecting…' : 'Continue with Google'}
       </Button>
-      {inApp ? (
-        <p className="text-sm leading-relaxed text-neutral-700">
-          {copied ? 'Link copied — ' : 'Google sign-in needs your full browser. '}
-          Open this page in Safari or Chrome (tap{' '}
-          <span className="font-semibold" aria-hidden>
-            ⋯
-          </span>{' '}
-          then “Open in Browser”) to continue with Google — or just sign up with email below.
-        </p>
-      ) : null}
       {error ? <p className="text-sm text-neutral-700">{error}</p> : null}
     </div>
   )

@@ -12,10 +12,15 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
+import { GOOGLE_OAUTH_AUTO_START_PARAM } from "@/lib/auth/google-oauth-handoff-url"
+
 function SignUpForm() {
   const searchParams = useSearchParams()
   const redirectTo = safeRedirectPath(searchParams.get("redirect"))
-  return <SignUpFormPanel variant="page" redirectTo={redirectTo} />
+  const googleAutoStart = searchParams.get(GOOGLE_OAUTH_AUTO_START_PARAM) === "1"
+  return (
+    <SignUpFormPanel variant="page" redirectTo={redirectTo} googleAutoStart={googleAutoStart} />
+  )
 }
 
 export default function Page() {
