@@ -133,6 +133,8 @@ import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listi
 import { revalidateNavSearchSuggestAfterListingPublished } from "@/app/actions/nav-search-suggest-cache"
 import { saveDefaultListingLocationAction } from "@/app/actions/sell-default-location"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
+import { hasSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
+import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 import {
   validateSellListingForm,
   buildResolvedListingTitle,
@@ -573,9 +575,14 @@ function SellListingPhotoTile({
     image.uploadPhase === "done"
       ? (image.thumbnailUrl?.trim() || image.url?.trim() || "").trim()
       : ""
-  const photoReady = Boolean(remote)
-
-  const thumbSrc = remote ? proxiedListingImageSrc(remote) : ""
+  const localPreview =
+    image.optimizePhase === "done" && image.previewUrl.startsWith("blob:")
+      ? image.previewUrl
+      : ""
+  const thumbSrc = remote
+    ? (proxiedListingImageSrc(remote) ?? remote)
+    : localPreview
+  const photoReady = Boolean(thumbSrc)
 
   const persistedThumbMatches =
     thumbSrc !== "" &&
@@ -592,7 +599,9 @@ function SellListingPhotoTile({
 
   const skeletonVisible =
     !isFailure &&
-    (!photoReady || !thumbLoaded)
+    (image.optimizePhase === "running" ||
+      image.uploadPhase === "uploading" ||
+      (Boolean(thumbSrc) && !thumbLoaded))
 
   const canRotate180 =
     !isFailure &&
@@ -920,6 +929,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   /** Prevents concurrent publishes (double-tap / stacked submits before `loading` flips). */
   const publishInFlightRef = useRef(false)
   const pendingPublishHandledRef = useRef(false)
+  /** Avoid stacking sign-in modals when several photos are added while signed out. */
+  const photoUploadSignInPromptedRef = useRef(false)
   const uploadToastIdRef = useRef<string | number | null>(null)
   const uploadPhaseLabelsRef = useRef<string[]>([...LISTING_UPLOAD_STEP_LABELS])
   const [uploadPhaseLabels, setUploadPhaseLabels] = useState<string[]>(() => [
@@ -1364,6 +1375,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       sellDraftUserIdRef.current = uid
       setSignedInUserId(uid)
       if (!uid) return
+      photoUploadSignInPromptedRef.current = false
       void migrateGuestSellListingDraftToUser(uid)
       for (const slot of imagesRef.current) {
         if (!slot.sourceFile) continue
@@ -1748,32 +1760,35 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
       if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
 
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) {
+      let session = null as Awaited<ReturnType<typeof waitForClientSession>>
+      if (hasSupabaseAuthCookiesClient()) {
+        session = await waitForClientSession({ supabase })
+      } else {
+        const { data } = await supabase.auth.getSession()
+        session = data.session?.access_token ? data.session : null
+      }
+
+      const user = session?.user ?? (await supabase.auth.getUser()).data.user
+      if (!session?.access_token || !user) {
         if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
         setImages((prev) =>
           prev.map((s) =>
             s.clientId === clientId
               ? {
                   ...s,
-                  uploadPhase: "error",
-                  errorMessage: "Sign in to upload photos.",
+                  optimizePhase: "done",
+                  uploadPhase: "idle",
+                  errorMessage: undefined,
                 }
               : s,
           ),
         )
-        return
-      }
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
-        setImages((prev) =>
-          prev.map((s) =>
-            s.clientId === clientId
-              ? { ...s, uploadPhase: "error", errorMessage: "Sign in to upload photos." }
-              : s,
-          ),
-        )
+        if (!photoUploadSignInPromptedRef.current) {
+          photoUploadSignInPromptedRef.current = true
+          const ret = `/sell${sellSearchParams.toString() ? `?${sellSearchParams}` : ""}`
+          toast.message("Sign in to upload photos")
+          openSignIn(ret)
+        }
         return
       }
 
@@ -1903,6 +1918,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   }, [draftHydrated, editId, supabase])
 
   function retryListingPhotoUpload(clientId: string) {
+    photoUploadSignInPromptedRef.current = false
     const live = imagesRef.current.find((s) => s.clientId === clientId)
     if (!live) return
     const nextSeq = (live.prepareSeq ?? 0) + 1
