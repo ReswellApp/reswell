@@ -781,6 +781,16 @@ const CONVERSATION_THREAD_SELECT = `
   seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url, shop_verified)
 `
 
+const CONVERSATION_THREAD_MESSAGE_SELECT =
+  "id, conversation_id, content, sender_id, is_read, created_at, offer_id, metadata"
+
+/**
+ * Upper bound on messages loaded for a thread. Threads rarely exceed this; the
+ * cap protects long-running conversations from a multi-megabyte initial payload
+ * that can stall or fail to load. Most recent messages are kept.
+ */
+const CONVERSATION_THREAD_MESSAGE_LIMIT = 200
+
 const CONVERSATION_THREAD_OFFER_SELECT =
   "id, status, current_amount, initial_amount, buyer_id, seller_id, listing_id, seller_initiated, expires_at, offer_timeline, fulfillment, shipping_amount, line_items"
 
@@ -861,9 +871,10 @@ export async function loadConversationThread(
       .order("last_message_at", { ascending: false }),
     service
       .from("messages")
-      .select("*")
+      .select(CONVERSATION_THREAD_MESSAGE_SELECT)
       .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: true }),
+      .order("created_at", { ascending: false })
+      .limit(CONVERSATION_THREAD_MESSAGE_LIMIT),
     loadOtherPartyProfile(service, otherUserId).catch(() => null),
   ])
 
@@ -884,7 +895,9 @@ export async function loadConversationThread(
       }
     })
 
-  const messages = (msgData ?? []) as Record<string, unknown>[]
+  // Fetched newest-first (so the cap keeps the most recent messages); the client
+  // renders oldest-first, so restore ascending order here.
+  const messages = ((msgData ?? []) as Record<string, unknown>[]).slice().reverse()
 
   const offerIds = [
     ...new Set(messages.map((m) => m.offer_id).filter(Boolean)),

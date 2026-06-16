@@ -100,13 +100,14 @@ export default function CounterpartyThreadsPage({
           listing:listings(id, title, listing_images(url, thumbnail_url, is_primary)),
           buyer:profiles!conversations_buyer_id_fkey(id, display_name, avatar_url, shop_verified),
           seller:profiles!conversations_seller_id_fkey(id, display_name, avatar_url, shop_verified),
-          messages(content, is_read, sender_id, created_at, metadata)
+          messages(id, content, is_read, sender_id, created_at, metadata)
         `)
           .or(
             `and(buyer_id.eq.${user.id},seller_id.eq.${otherUserId}),and(buyer_id.eq.${otherUserId},seller_id.eq.${user.id})`,
           )
           .order("last_message_at", { ascending: false })
-          .order("created_at", { ascending: true, referencedTable: "messages" }),
+          .order("created_at", { ascending: false, referencedTable: "messages" })
+          .limit(1, { referencedTable: "messages" }),
       ])
       if (!isActive()) return
 
@@ -121,6 +122,40 @@ export default function CounterpartyThreadsPage({
       }
 
       const rows = filterConversationsWithMessages((convData ?? []) as unknown as InboxConversationRow[])
+
+      // Only the latest message per thread was loaded above; merge in unread
+      // incoming messages so unread badge counts stay accurate without pulling
+      // each thread's full history.
+      const conversationIds = rows.map((r) => r.id)
+      if (conversationIds.length > 0) {
+        const { data: unreadData } = await supabase
+          .from("messages")
+          .select("id, content, is_read, sender_id, created_at, metadata, conversation_id")
+          .in("conversation_id", conversationIds)
+          .eq("is_read", false)
+          .neq("sender_id", user.id)
+        if (!isActive()) return
+
+        const unreadByConversation = new Map<string, InboxConversationRow["messages"]>()
+        for (const row of (unreadData ?? []) as Array<
+          InboxConversationRow["messages"][number] & { conversation_id: string }
+        >) {
+          const { conversation_id, ...message } = row
+          const bucket = unreadByConversation.get(conversation_id) ?? []
+          bucket.push(message)
+          unreadByConversation.set(conversation_id, bucket)
+        }
+        for (const conv of rows) {
+          const unread = unreadByConversation.get(conv.id)
+          if (!unread?.length) continue
+          const seen = new Set(conv.messages.map((m) => m.id).filter(Boolean))
+          for (const message of unread) {
+            if (message.id && seen.has(message.id)) continue
+            conv.messages.push(message)
+          }
+        }
+      }
+
       const sorted = [...rows].sort(
         (a, b) => getConversationLastActivityMs(b) - getConversationLastActivityMs(a),
       )
