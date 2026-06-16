@@ -226,6 +226,8 @@ export async function POST(request: NextRequest) {
     title: resolvedTitle,
     price: parseFloat(String(price)),
     photoUrl: photoUrl || null,
+    localPickup: local_pickup !== false,
+    shippingAvailable: shipping_available || false,
   })
   void notifyBoardSavedSearchMatchesForListing(listing.id)
 

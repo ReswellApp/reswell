@@ -184,6 +184,8 @@ export async function POST(request: NextRequest) {
         ? listingData.price
         : parseFloat(String(listingData.price)),
     photoUrl,
+    localPickup: listingData.local_pickup,
+    shippingAvailable: listingData.shipping_available,
   })
   void notifyBoardSavedSearchMatchesForListing(listing.id)
   void syncListingToGoogleMerchantBestEffort(service, listing.id)

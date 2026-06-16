@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
   const { data: listing, error: listingError } = await supabase
     .from("listings")
-    .select("id, user_id, title, price")
+    .select("id, user_id, title, price, local_pickup, shipping_available")
     .eq("id", listingId)
     .maybeSingle()
 
@@ -63,6 +63,8 @@ export async function POST(request: NextRequest) {
     title: String(listing.title ?? ""),
     price: typeof listing.price === "number" ? listing.price : Number(listing.price),
     photoUrl,
+    localPickup: listing.local_pickup,
+    shippingAvailable: listing.shipping_available,
   })
 
   void notifyBoardSavedSearchMatchesForListing(listing.id)
