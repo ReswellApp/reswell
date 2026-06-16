@@ -1,6 +1,8 @@
 import { unstable_cache } from "next/cache"
-import { FALLBACK_HOME_HERO_SLIDE_PATHS } from "@/components/hero-slideshow"
-import { normalizeHeroSlideUrl } from "@/lib/home-hero-slide-urls"
+import {
+  FALLBACK_HOME_HERO_SLIDE_PATHS,
+  normalizeHeroSlideUrl,
+} from "@/lib/home-hero-slide-urls"
 import { listHomeHeroCuratedSlideUrls } from "@/lib/db/home-hero-listings"
 import { listHowItWorksBuyerListingImageUrls } from "@/lib/db/home-how-it-works-buyer-images"
 import type { HomeTrendingBrandRow } from "@/lib/db/home-trending-brands"

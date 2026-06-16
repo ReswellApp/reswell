@@ -7,6 +7,18 @@
  * (in DB order). When empty, the eight static fallbacks are used.
  */
 
+/** Default hero art when there are no recent listing images to show. */
+export const FALLBACK_HOME_HERO_SLIDE_PATHS = [
+  "/images/home/hero-slide-1.png",
+  "/images/home/hero-slide-2.png",
+  "/images/home/hero-slide-3.png",
+  "/images/home/hero-slide-4.png",
+  "/images/home/hero-slide-5.png",
+  "/images/home/hero-slide-6.png",
+  "/images/home/hero-slide-7.png",
+  "/images/home/hero-slide-8.png",
+] as const
+
 export function normalizeHeroSlideUrl(u: string): string {
   const s = u.trim()
   if (!s) return s

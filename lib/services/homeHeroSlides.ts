@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { FALLBACK_HOME_HERO_SLIDE_PATHS } from "@/components/hero-slideshow"
-import { normalizeHeroSlideUrl } from "@/lib/home-hero-slide-urls"
+import {
+  FALLBACK_HOME_HERO_SLIDE_PATHS,
+  normalizeHeroSlideUrl,
+} from "@/lib/home-hero-slide-urls"
 import { listHomeHeroCuratedSlideUrls } from "@/lib/db/home-hero-listings"
 import { listingHeroSlideSrc, type ListingImageForCard } from "@/lib/listing-image-display"
 

@@ -78,6 +78,23 @@ export function suppressedBrowseRank(row: BoardBrowseListingRow): number {
   return row.suppressed_on_boards_browse === true ? 1 : 0
 }
 
+/**
+ * Capture the full PostgREST error (code/details/hint), not just `.message`.
+ * A bare `.message` can be a truncated/non-JSON response body (e.g. a query that
+ * timed out mid-stream), which hides the real cause in logs.
+ */
+function describeBrowseQueryError(
+  error: { message?: string; code?: string; details?: string; hint?: string } | null,
+): string {
+  if (!error) return "unknown error"
+  return JSON.stringify({
+    code: error.code ?? null,
+    message: error.message ?? null,
+    details: error.details ?? null,
+    hint: error.hint ?? null,
+  })
+}
+
 export function compareBoardBrowseRows(
   a: BoardBrowseListingRow,
   b: BoardBrowseListingRow,
@@ -151,22 +168,24 @@ async function fetchMatchingTopPickRows(
     ...filters,
     useSuppressionSort,
     restrictToListingIds: curatedIds,
+    withCount: false,
   })) as unknown as SurfboardBrowseListingsQuery
 
   let { data: rawPicks, error } = await picksChain
 
   if (error && useSuppressionSort) {
-    console.error("fetchMatchingTopPickRows (suppression sort):", error.message)
+    console.error("fetchMatchingTopPickRows (suppression sort):", describeBrowseQueryError(error))
     picksChain = (await buildSurfboardBrowseBaseQuery(supabase, {
       ...filters,
       useSuppressionSort: false,
       restrictToListingIds: curatedIds,
+      withCount: false,
     })) as unknown as SurfboardBrowseListingsQuery
     ;({ data: rawPicks, error } = await picksChain)
   }
 
   if (error) {
-    console.error("fetchMatchingTopPickRows:", error.message)
+    console.error("fetchMatchingTopPickRows:", describeBrowseQueryError(error))
     return []
   }
 
@@ -187,24 +206,29 @@ async function fetchNonTopPickBrowsePage(
     excludeListingIds: excludeIds,
     pagedSort: BOARDS_BROWSE_NEWEST_SORT,
     pagedRange: { from: offset, to: offset + limit - 1 },
+    withCount: false,
   })) as unknown as SurfboardBrowseListingsQuery
 
   let { data: rawBoards, count, error } = await listingsChain
 
   if (error && useSuppressionSort) {
-    console.error("fetchNonTopPickBrowsePage (suppression sort):", error.message)
+    console.error(
+      "fetchNonTopPickBrowsePage (suppression sort):",
+      describeBrowseQueryError(error),
+    )
     listingsChain = (await buildSurfboardBrowseBaseQuery(supabase, {
       ...filters,
       useSuppressionSort: false,
       excludeListingIds: excludeIds,
       pagedSort: BOARDS_BROWSE_NEWEST_SORT,
       pagedRange: { from: offset, to: offset + limit - 1 },
+      withCount: false,
     })) as unknown as SurfboardBrowseListingsQuery
     ;({ data: rawBoards, count, error } = await listingsChain)
   }
 
   if (error) {
-    console.error("fetchNonTopPickBrowsePage:", error.message)
+    console.error("fetchNonTopPickBrowsePage:", describeBrowseQueryError(error))
   }
 
   return {
@@ -217,31 +241,20 @@ async function countNonTopPickBrowseMatches(
   supabase: SupabaseClient,
   filters: SurfboardBrowseFilterParams,
   excludeIds: string[],
-  useSuppressionSort: boolean,
 ): Promise<number> {
-  let listingsChain = (await buildSurfboardBrowseBaseQuery(supabase, {
+  // Count-only: a single `id` column, no embedded joins, no sort, no range.
+  // Counts are order-independent, so the suppression-sort branch is unnecessary here.
+  const listingsChain = (await buildSurfboardBrowseBaseQuery(supabase, {
     ...filters,
-    useSuppressionSort,
     excludeListingIds: excludeIds,
-    pagedSort: BOARDS_BROWSE_NEWEST_SORT,
-    pagedRange: { from: 0, to: 0 },
+    headOnly: true,
+    selectColumns: "id",
   })) as unknown as SurfboardBrowseListingsQuery
 
-  let { count, error } = await listingsChain
-
-  if (error && useSuppressionSort) {
-    listingsChain = (await buildSurfboardBrowseBaseQuery(supabase, {
-      ...filters,
-      useSuppressionSort: false,
-      excludeListingIds: excludeIds,
-      pagedSort: BOARDS_BROWSE_NEWEST_SORT,
-      pagedRange: { from: 0, to: 0 },
-    })) as unknown as SurfboardBrowseListingsQuery
-    ;({ count, error } = await listingsChain)
-  }
+  const { count, error } = await listingsChain
 
   if (error) {
-    console.error("countNonTopPickBrowseMatches:", error.message)
+    console.error("countNonTopPickBrowseMatches:", describeBrowseQueryError(error))
     return 0
   }
 
@@ -290,12 +303,7 @@ export async function fetchBoardsBrowseTopPicksPage(
 
   const pickRows = await fetchMatchingTopPickRows(supabase, filters, curatedIds, useSuppressionSort)
   const pickCount = pickRows.length
-  const nonPickCount = await countNonTopPickBrowseMatches(
-    supabase,
-    filters,
-    curatedIds,
-    useSuppressionSort,
-  )
+  const nonPickCount = await countNonTopPickBrowseMatches(supabase, filters, curatedIds)
   const totalItems = pickCount + nonPickCount
   const totalPages = totalItems === 0 ? 0 : Math.max(1, Math.ceil(totalItems / limit))
 
@@ -430,14 +438,25 @@ export async function buildSurfboardBrowseBaseQuery(
     useSuppressionSort?: boolean
     excludeListingIds?: string[]
     restrictToListingIds?: string[]
+    /** Omit the expensive exact `count` when the caller only needs rows. Defaults to true. */
+    withCount?: boolean
+    /** Count-only request (no rows). Pair with a minimal `selectColumns`. */
+    headOnly?: boolean
+    /** Override the heavy joined select (e.g. `"id"` for count-only queries). */
+    selectColumns?: string
   },
 ): Promise<SurfboardBrowseListingsQuery> {
+  const selectClause = params.selectColumns ?? SURFBOARD_BROWSE_LISTING_SELECT
+  const selectOptions: { count?: "exact"; head?: boolean } = {}
+  if (params.withCount !== false) selectOptions.count = "exact"
+  if (params.headOnly) selectOptions.head = true
+
   let dbQuery = supabase
     .from("listings")
-    .select(SURFBOARD_BROWSE_LISTING_SELECT, { count: "exact" })
+    .select(selectClause, selectOptions)
     .eq("status", "active")
     .eq("section", "surfboards")
-    .eq("hidden_from_site", false)
+    .eq("hidden_from_site", false) as unknown as SurfboardBrowseListingsQuery
 
   const facets = params.facets
   const styleDbTypes = Array.from(
@@ -777,7 +796,10 @@ export async function fetchBoardsBrowseCategoryTypePage(
   let { data: rawBoards, count, error } = await listingsChain
 
   if (error && useSuppressionSort) {
-    console.error("fetchBoardsBrowseCategoryTypePage (suppression sort):", error.message)
+    console.error(
+      "fetchBoardsBrowseCategoryTypePage (suppression sort):",
+      describeBrowseQueryError(error),
+    )
     useSuppressionSort = false
     listingsChain = (await buildSurfboardBrowseBaseQuery(supabase, {
       boardType: params.boardType,
@@ -791,7 +813,7 @@ export async function fetchBoardsBrowseCategoryTypePage(
   }
 
   if (error) {
-    console.error("fetchBoardsBrowseCategoryTypePage:", error.message)
+    console.error("fetchBoardsBrowseCategoryTypePage:", describeBrowseQueryError(error))
   }
 
   return {

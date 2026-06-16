@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { HOME_PEER_LISTING_WITH_PROFILE_SELECT } from "@/lib/db/home-peer-listing-feed"
 import { isListingVisibleInPublicSoldFeed } from "@/lib/listing-public-visibility"
+import {
+  isTransientNetworkError,
+  retryOnTransientNetworkError,
+} from "@/lib/utils/transient-network-retry"
 
 /** Matches `/sold` sold-tab listing filters (surfboards + fins). */
 export const MARKETPLACE_SOLD_FEED_SECTIONS = ["surfboards", "fins"] as const
@@ -103,12 +107,20 @@ async function fetchRecentlySoldSurfboardSaleTimesViaLegacyRpc(
   supabase: SupabaseClient,
   limit: number,
 ): Promise<RpcListingSaleTime[]> {
-  const { data, error } = await supabase.rpc("recently_sold_surfboard_listing_sale_times", {
-    p_limit: capRecentlySoldLimit(limit),
-  })
+  const { data, error } = await retryOnTransientNetworkError(() =>
+    supabase.rpc("recently_sold_surfboard_listing_sale_times", {
+      p_limit: capRecentlySoldLimit(limit),
+    }),
+  )
 
   if (error) {
-    console.error("recently_sold_surfboard_listing_sale_times:", error.message)
+    if (isTransientNetworkError(error.message)) {
+      console.warn(
+        `recently_sold_surfboard_listing_sale_times: transient network failure, serving empty strip: ${error.message}`,
+      )
+    } else {
+      console.error("recently_sold_surfboard_listing_sale_times:", error.message)
+    }
     return []
   }
 
@@ -232,17 +244,25 @@ export async function fetchRecentlySoldListingsConfirmedCheckoutOrdering(
   limit: number,
   sections: readonly string[],
 ): Promise<{ orderedListingIds: string[]; confirmedAtIsoByListingId: Map<string, string> }> {
-  const { data, error } = await supabase.rpc("recently_sold_listing_sale_times", {
-    p_limit: capRecentlySoldLimit(limit),
-    p_sections: [...sections],
-  })
+  const { data, error } = await retryOnTransientNetworkError(() =>
+    supabase.rpc("recently_sold_listing_sale_times", {
+      p_limit: capRecentlySoldLimit(limit),
+      p_sections: [...sections],
+    }),
+  )
 
   if (!error) {
     return finalizeRecentSoldOrdering(supabase, (data ?? []) as RpcListingSaleTime[], sections)
   }
 
   if (!isSupabaseRpcMissingError(error)) {
-    console.error("recently_sold_listing_sale_times:", error.message)
+    if (isTransientNetworkError(error.message)) {
+      console.warn(
+        `recently_sold_listing_sale_times: transient network failure, serving empty feed: ${error.message}`,
+      )
+    } else {
+      console.error("recently_sold_listing_sale_times:", error.message)
+    }
     return { orderedListingIds: [], confirmedAtIsoByListingId: new Map() }
   }
 

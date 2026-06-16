@@ -1,3 +1,7 @@
+import {
+  clearSupabaseAuthCookies,
+  isInvalidRefreshTokenError,
+} from '@/lib/auth/clear-supabase-auth-cookies'
 import { hasSupabaseAuthCookies } from '@/lib/auth/has-supabase-auth-cookies'
 import { pathnameRequiresAuthSession } from '@/lib/auth/pathname-requires-auth-session'
 import { pathnameSkipsAuthSessionRefresh } from '@/lib/auth/pathname-skips-auth-session-refresh'
@@ -69,9 +73,31 @@ export async function updateSession(request: NextRequest) {
 
   // IMPORTANT: If you remove getUser() and you use server-side rendering
   // with the Supabase client, your users may be randomly logged out.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  //
+  // When the access token is expired, getUser() auto-refreshes using the
+  // refresh-token cookie. If that token was already rotated/revoked, GoTrue
+  // returns `refresh_token_not_found` and the call may reject. Treat it as a
+  // logged-out user and purge the dead cookies so the browser stops replaying
+  // the same failed refresh on every request.
+  let user: Awaited<ReturnType<typeof supabase.auth.getUser>>['data']['user'] =
+    null
+  try {
+    const { data, error } = await supabase.auth.getUser()
+    if (error) {
+      if (isInvalidRefreshTokenError(error)) {
+        clearSupabaseAuthCookies(request, supabaseResponse)
+      } else {
+        throw error
+      }
+    } else {
+      user = data.user
+    }
+  } catch (error) {
+    if (!isInvalidRefreshTokenError(error)) {
+      throw error
+    }
+    clearSupabaseAuthCookies(request, supabaseResponse)
+  }
 
   /** Legacy / bookmarked URLs — same hub as /dashboard/offers (see app/offers/page.tsx). */
   const isOffersShortcut = pathname === '/offers' || pathname.startsWith('/offers/')

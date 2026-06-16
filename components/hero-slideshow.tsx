@@ -6,18 +6,6 @@ import { wideShimmer } from "@/lib/image-shimmer"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
 
-/** Default hero art when there are no recent listing images to show. */
-export const FALLBACK_HOME_HERO_SLIDE_PATHS = [
-  "/images/home/hero-slide-1.png",
-  "/images/home/hero-slide-2.png",
-  "/images/home/hero-slide-3.png",
-  "/images/home/hero-slide-4.png",
-  "/images/home/hero-slide-5.png",
-  "/images/home/hero-slide-6.png",
-  "/images/home/hero-slide-7.png",
-  "/images/home/hero-slide-8.png",
-] as const
-
 const SECONDS_PER_SLIDE = 14
 
 /**

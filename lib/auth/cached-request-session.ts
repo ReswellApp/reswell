@@ -15,8 +15,15 @@ export type RequestSession = {
  */
 export const getCachedRequestSession = cache(async (): Promise<RequestSession> => {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  return { supabase, user: user ?? null }
+  // A stale/rotated refresh-token cookie makes getUser() reject with
+  // `refresh_token_not_found`. The proxy clears the cookie; here we simply
+  // treat it as a logged-out request instead of letting it crash the RSC tree.
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    return { supabase, user: user ?? null }
+  } catch {
+    return { supabase, user: null }
+  }
 })
