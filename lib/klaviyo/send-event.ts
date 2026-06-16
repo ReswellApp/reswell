@@ -83,6 +83,21 @@ function hasProfileIdentifier(p: KlaviyoProfileIds): boolean {
 export async function sendKlaviyoServerEvent(
   input: SendKlaviyoServerEventInput,
 ): Promise<SendKlaviyoServerEventResult> {
+  const result = await performSendKlaviyoServerEvent(input)
+  // Durable, best-effort log for the admin notifications center. Never blocks the
+  // send result and never throws. Imported lazily to avoid a server-only import cycle.
+  try {
+    const { recordKlaviyoEventLog } = await import("@/lib/db/klaviyoEventLog")
+    await recordKlaviyoEventLog(input, result)
+  } catch (e) {
+    console.error("[klaviyo] event log skipped:", e instanceof Error ? e.message : e)
+  }
+  return result
+}
+
+async function performSendKlaviyoServerEvent(
+  input: SendKlaviyoServerEventInput,
+): Promise<SendKlaviyoServerEventResult> {
   logKlaviyoEnvDebugOnce()
   const apiKey = process.env.KLAVIYO_API_KEY?.trim()
   if (!apiKey) {
