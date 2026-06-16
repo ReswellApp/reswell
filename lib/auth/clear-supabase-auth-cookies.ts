@@ -30,3 +30,20 @@ export function isInvalidRefreshTokenError(error: unknown): boolean {
     code === 'refresh_token_not_found' || code === 'invalid_refresh_token'
   )
 }
+
+/** True when there is no session yet (e.g. OAuth callback before code exchange). */
+export function isAuthSessionMissingError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const name = (error as { name?: unknown }).name
+  return name === 'AuthSessionMissingError'
+}
+
+/**
+ * Errors from `getUser()` that mean "treat as logged out" — not a server failure.
+ * OAuth/email token exchange routes must not throw on these before session cookies exist.
+ */
+export function isBenignAuthSessionError(error: unknown): boolean {
+  return (
+    isInvalidRefreshTokenError(error) || isAuthSessionMissingError(error)
+  )
+}

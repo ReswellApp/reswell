@@ -1,5 +1,6 @@
 import {
   clearSupabaseAuthCookies,
+  isBenignAuthSessionError,
   isInvalidRefreshTokenError,
 } from '@/lib/auth/clear-supabase-auth-cookies'
 import { hasSupabaseAuthCookies } from '@/lib/auth/has-supabase-auth-cookies'
@@ -18,6 +19,17 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = "/auth/callback"
     return NextResponse.redirect(url)
+  }
+
+  // Session cookies are set on the response inside these route handlers. Calling
+  // `getUser()` here fails with AuthSessionMissingError (no JWT yet) and used to
+  // surface as a 500 before OAuth code exchange could run.
+  if (
+    pathname === "/auth/callback" ||
+    pathname === "/auth/confirm" ||
+    pathname === "/auth/recovery"
+  ) {
+    return NextResponse.next({ request })
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -84,8 +96,10 @@ export async function updateSession(request: NextRequest) {
   try {
     const { data, error } = await supabase.auth.getUser()
     if (error) {
-      if (isInvalidRefreshTokenError(error)) {
-        clearSupabaseAuthCookies(request, supabaseResponse)
+      if (isBenignAuthSessionError(error)) {
+        if (isInvalidRefreshTokenError(error)) {
+          clearSupabaseAuthCookies(request, supabaseResponse)
+        }
       } else {
         throw error
       }
@@ -93,10 +107,12 @@ export async function updateSession(request: NextRequest) {
       user = data.user
     }
   } catch (error) {
-    if (!isInvalidRefreshTokenError(error)) {
+    if (!isBenignAuthSessionError(error)) {
       throw error
     }
-    clearSupabaseAuthCookies(request, supabaseResponse)
+    if (isInvalidRefreshTokenError(error)) {
+      clearSupabaseAuthCookies(request, supabaseResponse)
+    }
   }
 
   /** Legacy / bookmarked URLs — same hub as /dashboard/offers (see app/offers/page.tsx). */
