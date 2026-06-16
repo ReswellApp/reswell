@@ -118,6 +118,23 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
     warmHeroSlideNeighbors(galleryUrls, selectedIndex)
   }, [galleryUrlsKey, selectedIndex])
 
+  // Preload the lightbox (and its zoom library chunk) while idle so the first enlarge is instant.
+  useEffect(() => {
+    const preload = () => {
+      void import("@/components/features/listings/listing-image-lightbox")
+    }
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void) => number
+      cancelIdleCallback?: (id: number) => void
+    }
+    if (w.requestIdleCallback) {
+      const id = w.requestIdleCallback(preload)
+      return () => w.cancelIdleCallback?.(id)
+    }
+    const id = window.setTimeout(preload, 1200)
+    return () => window.clearTimeout(id)
+  }, [])
+
   if (images.length === 0) {
     return (
       <div
@@ -252,7 +269,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
                 fill
                 unoptimized={listingImageShouldBypassOptimization(heroUrls[i])}
                 className={cn(
-                  "absolute inset-0 object-cover object-center transition-opacity transition-duration-[420ms] ease-in-out",
+                  "absolute inset-0 object-cover object-center transition-opacity duration-300 ease-in-out",
                   isSelected ? "z-[2] opacity-100" : "z-[1] opacity-0",
                 )}
                 priority={i === 0 && selectedIndex === 0}

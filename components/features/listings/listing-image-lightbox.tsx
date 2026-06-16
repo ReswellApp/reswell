@@ -2,7 +2,7 @@
 
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import Image from "next/image"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Minus, Plus, RotateCcw, X } from "lucide-react"
 import {
   TransformComponent,
@@ -12,6 +12,10 @@ import {
 import { Dialog, DialogClose, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog"
 import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
 import { Button } from "@/components/ui/button"
+import {
+  listingImageShouldBypassOptimization,
+  withListingMediaPdpVariant,
+} from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
 
 const ZOOM_TOLERANCE = 0.015
@@ -51,12 +55,19 @@ export function ListingImageLightbox({
   onIndexChange,
 }: ListingImageLightboxProps) {
   const [scale, setScale] = useState(1)
+  /** Track which full-res src has decoded so we can fade it over the cached low-res underlay. */
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null)
   const pinchRef = useRef<ReactZoomPanPinchContentRef | null>(null)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
   const coarsePointer = usePrefersCoarsePointer()
 
   const count = proxiedUrls.length
   const src = proxiedUrls[index]
+  /** ≤1024px hero variant — already cached from the gallery, so the enlarge feels instant. */
+  const placeholderSrc = useMemo(
+    () => (src && src !== "/placeholder.svg" ? withListingMediaPdpVariant(src) : ""),
+    [src],
+  )
 
   useEffect(() => {
     if (!open) setScale(1)
@@ -189,7 +200,7 @@ export function ListingImageLightbox({
                   <div
                     className={cn(
                       "relative shrink-0 overflow-hidden rounded-xl sm:rounded-2xl",
-                      "max-md:w-full max-md:max-w-[min(calc(100vw-1rem),100%)]",
+                      "max-md:mx-auto max-md:w-fit max-md:max-w-[calc(100vw-1rem)]",
                       "md:aspect-[3/4] md:h-auto md:w-[29rem] md:max-w-[min(29rem,calc(100vw-3rem))] xl:w-[32rem] xl:max-w-[min(32rem,calc(100vw-3rem))]",
                     )}
                   >
@@ -221,6 +232,23 @@ export function ListingImageLightbox({
                       wrapperClass="!h-full !w-full max-md:!h-fit max-md:!w-fit max-md:!max-h-full max-md:!max-w-full"
                       contentClass="!relative !h-full !w-full max-md:!h-fit max-md:!w-fit max-md:!max-h-full max-md:!max-w-full"
                     >
+                      {placeholderSrc ? (
+                        <Image
+                          key={placeholderSrc}
+                          aria-hidden
+                          src={placeholderSrc}
+                          alt=""
+                          fill
+                          unoptimized={listingImageShouldBypassOptimization(placeholderSrc)}
+                          draggable={false}
+                          className={cn(
+                            "pointer-events-none select-none object-contain",
+                            "md:object-cover md:object-center",
+                          )}
+                          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 29rem, 32rem"
+                          priority
+                        />
+                      ) : null}
                       <Image
                         key={src}
                         src={src}
@@ -230,13 +258,15 @@ export function ListingImageLightbox({
                         unoptimized
                         draggable={false}
                         className={cn(
-                          "select-none",
+                          "select-none transition-opacity duration-300 ease-out",
                           "block max-h-[min(88dvh,calc(100dvh-10rem))] w-auto max-w-full object-contain",
                           "md:absolute md:inset-0 md:h-full md:w-full md:max-h-none md:max-w-none md:object-cover md:object-center",
+                          loadedSrc === src ? "opacity-100" : "opacity-0",
                         )}
                         sizes="(max-width: 768px) 100vw, (max-width: 1280px) 29rem, 32rem"
                         priority
                         onLoadingComplete={() => {
+                          setLoadedSrc(src)
                           requestAnimationFrame(() => {
                             pinchRef.current?.centerView(1, 0)
                           })
