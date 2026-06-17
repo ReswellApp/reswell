@@ -2,14 +2,36 @@
 export function isMessageThreadDetailRoute(pathname: string | null): boolean {
   if (!pathname) return false
   const normalized = pathname.replace(/\/$/, "") || "/"
+  if (normalized === "/messages/offers") return false
   if (normalized === "/messages/new") return true
-  return /^\/messages\/[^/]+$/.test(normalized) && normalized !== "/messages/offers"
+  return /^\/messages\/[^/]+$/.test(normalized)
 }
 
-export function scrollPageToMessageThreadBottom(): void {
-  if (typeof window === "undefined") return
+export function isMobileMessageThreadViewport(): boolean {
+  if (typeof window === "undefined") return false
+  return window.matchMedia("(max-width: 1023px)").matches
+}
+
+let scrollBottomGeneration = 0
+
+/** Invalidate pending delayed scroll-to-bottom callbacks (e.g. after route change). */
+export function cancelMessageThreadScrollBottom(): void {
+  scrollBottomGeneration += 1
+}
+
+/**
+ * Scroll the document to the bottom on mobile thread routes.
+ * Returns a cleanup that cancels delayed retries — required on unmount/route change.
+ */
+export function scrollPageToMessageThreadBottom(): () => void {
+  if (typeof window === "undefined") return () => {}
+  if (!isMobileMessageThreadViewport()) return () => {}
+
+  const generation = ++scrollBottomGeneration
 
   const scroll = () => {
+    if (generation !== scrollBottomGeneration) return
+    if (!isMobileMessageThreadViewport()) return
     window.scrollTo({
       top: document.documentElement.scrollHeight,
       left: 0,
@@ -18,7 +40,16 @@ export function scrollPageToMessageThreadBottom(): void {
   }
 
   scroll()
-  requestAnimationFrame(scroll)
-  window.setTimeout(scroll, 0)
-  window.setTimeout(scroll, 120)
+  const raf = requestAnimationFrame(scroll)
+  const t0 = window.setTimeout(scroll, 0)
+  const t120 = window.setTimeout(scroll, 120)
+
+  return () => {
+    if (generation === scrollBottomGeneration) {
+      scrollBottomGeneration += 1
+    }
+    cancelAnimationFrame(raf)
+    window.clearTimeout(t0)
+    window.clearTimeout(t120)
+  }
 }

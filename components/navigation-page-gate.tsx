@@ -3,8 +3,11 @@
 import { usePathname } from "next/navigation"
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react"
 import { forceReleaseBodyScrollLock } from "@/hooks/use-body-scroll-lock"
+import { scrollPageToTop } from "@/lib/utils/scroll-page-to-top"
 import {
+  cancelMessageThreadScrollBottom,
   isMessageThreadDetailRoute,
+  isMobileMessageThreadViewport,
   scrollPageToMessageThreadBottom,
 } from "@/lib/utils/message-thread-routes"
 
@@ -19,20 +22,34 @@ export function NavigationPageGate({ children }: { children: ReactNode }) {
   const [navCount, setNavCount] = useState(0)
 
   useLayoutEffect(() => {
-    if (prevPathRef.current === null) {
+    const isFirstLoad = prevPathRef.current === null
+    if (isFirstLoad) {
       prevPathRef.current = pathname
+    } else if (prevPathRef.current === pathname) {
       return
+    } else {
+      prevPathRef.current = pathname
     }
-    if (prevPathRef.current === pathname) return
-    prevPathRef.current = pathname
 
     forceReleaseBodyScrollLock()
-    if (isMessageThreadDetailRoute(pathname)) {
-      scrollPageToMessageThreadBottom()
+    cancelMessageThreadScrollBottom()
+
+    let cancelScrollBottom: (() => void) | undefined
+
+    if (isMessageThreadDetailRoute(pathname) && isMobileMessageThreadViewport()) {
+      cancelScrollBottom = scrollPageToMessageThreadBottom()
     } else {
-      window.scrollTo({ top: 0, left: 0, behavior: "instant" })
+      scrollPageToTop()
     }
-    setNavCount((c) => c + 1)
+
+    if (!isFirstLoad) {
+      setNavCount((c) => c + 1)
+    }
+
+    return () => {
+      cancelScrollBottom?.()
+      cancelMessageThreadScrollBottom()
+    }
   }, [pathname])
 
   return (

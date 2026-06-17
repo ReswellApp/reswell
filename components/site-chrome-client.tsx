@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useLayoutEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 import { forceReleaseBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { Header } from "@/components/header"
@@ -18,6 +18,7 @@ import { PasswordResetRequiredDialog } from "@/components/auth/password-reset-re
 import { ProfileCompletionRequiredDialog } from "@/components/auth/profile-completion-required-dialog"
 import { NewsletterPromoPopup } from "@/components/features/marketing/newsletter-promo-popup"
 import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
+import { isMessageThreadDetailRoute } from "@/lib/utils/message-thread-routes"
 import { cn } from "@/lib/utils"
 
 function hideSiteChrome(pathname: string | null): boolean {
@@ -48,6 +49,17 @@ export function SiteChromeClient({
   headerAuth: SiteChromeAuthPayload
 }) {
   const pathname = usePathname()
+  const [lockDesktopThreadViewport, setLockDesktopThreadViewport] = useState(false)
+
+  useLayoutEffect(() => {
+    const media = window.matchMedia("(min-width: 1024px)")
+    const sync = () => {
+      setLockDesktopThreadViewport(isMessageThreadDetailRoute(pathname) && media.matches)
+    }
+    sync()
+    media.addEventListener("change", sync)
+    return () => media.removeEventListener("change", sync)
+  }, [pathname])
 
   useEffect(() => {
     forceReleaseBodyScrollLock()
@@ -78,7 +90,12 @@ export function SiteChromeClient({
       <PasswordResetRequiredDialog />
       <ProfileCompletionRequiredDialog />
       <NewsletterPromoPopup serverUser={headerAuth.user} />
-      <div className="flex min-h-dvh flex-col">
+      <div
+        className={cn(
+          "flex flex-col",
+          lockDesktopThreadViewport ? "h-dvh max-h-dvh overflow-hidden" : "min-h-dvh",
+        )}
+      >
         <RouteProgressBar />
         <SiteHeaderShell>
           <ImpersonationBanner />
@@ -86,7 +103,8 @@ export function SiteChromeClient({
         </SiteHeaderShell>
         <div
           className={cn(
-            "flex flex-1 flex-col pt-[var(--site-header-height,4rem)]",
+            "flex min-h-0 flex-1 flex-col pt-[var(--site-header-height,4rem)]",
+            lockDesktopThreadViewport && "overflow-hidden",
             hideFooter(pathname)
               ? "pb-[env(safe-area-inset-bottom)]"
               : "pb-10 sm:pb-12 md:pb-16",

@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils'
 import {
   messageComposerBarClass,
 } from '@/lib/utils/dashboard-display-styles'
-import { scrollPageToMessageThreadBottom } from '@/lib/utils/message-thread-routes'
+import { isMobileMessageThreadViewport, scrollPageToMessageThreadBottom } from '@/lib/utils/message-thread-routes'
 import { MessageThreadMobileComposerDock } from '@/components/features/messages/message-thread-mobile-composer-dock'
 import { ConversationPartyProfile } from '@/components/features/messages/conversation-party-profile'
 import { ConversationThreadHeaderChip } from '@/components/features/messages/conversation-thread-header-chip'
@@ -237,12 +237,12 @@ export function ConversationThreadClient({
       setUseMobileComposerDock(false)
       return
     }
-    const isMobile = window.matchMedia('(max-width: 1023px)').matches
+    const isMobile = isMobileMessageThreadViewport()
     setUseMobileComposerDock(isMobile)
-    if (isMobile) {
-      scrollPageToMessageThreadBottom()
-      scrollThreadToBottom('auto')
-    }
+    if (!isMobile) return
+    const cancelScroll = scrollPageToMessageThreadBottom()
+    scrollThreadToBottom('auto')
+    return cancelScroll
   }, [embedded, id, scrollThreadToBottom])
 
   useEffect(() => {
@@ -263,15 +263,19 @@ export function ConversationThreadClient({
 
   useEffect(() => {
     if (!stickToBottomRef.current) return
+    let cancelScroll: (() => void) | undefined
     const idFrame = requestAnimationFrame(() => {
       // Snap to bottom instantly on first paint; glide for live updates.
       scrollThreadToBottom(initialScrollDoneRef.current ? 'smooth' : 'auto')
       if (embedded && useMobileComposerDock) {
-        scrollPageToMessageThreadBottom()
+        cancelScroll = scrollPageToMessageThreadBottom()
       }
       initialScrollDoneRef.current = true
     })
-    return () => cancelAnimationFrame(idFrame)
+    return () => {
+      cancelAnimationFrame(idFrame)
+      cancelScroll?.()
+    }
   }, [orderedMessages, scrollThreadToBottom, embedded, useMobileComposerDock])
 
   useEffect(() => {
@@ -685,20 +689,20 @@ export function ConversationThreadClient({
   return (
     <main
       className={cn(
-        "flex flex-1 flex-col bg-background",
+        "flex min-h-0 flex-1 flex-col bg-background",
         embedded
-          ? "max-lg:overflow-visible lg:h-full lg:min-h-0 lg:overflow-hidden"
-          : "h-full min-h-0 overflow-hidden",
+          ? "max-lg:overflow-visible lg:overflow-hidden"
+          : "h-full overflow-hidden",
       )}
     >
       <div
         className={cn(
-          "flex flex-1 flex-col",
+          "flex h-full min-h-0 flex-1 flex-col",
           embedded
-            ? "max-lg:overflow-visible max-lg:h-auto lg:h-full lg:min-h-0 lg:overflow-hidden"
-            : "h-full min-h-0 overflow-hidden",
+            ? "max-lg:h-auto max-lg:overflow-visible lg:overflow-hidden"
+            : "overflow-hidden",
           embedded
-            ? "px-0 pb-0 pt-0 max-sm:px-0 max-sm:pt-0 lg:pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+            ? "px-0 pb-2 pt-0 max-sm:px-4 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))] max-sm:pt-2"
             : "container mx-auto max-w-2xl px-4 pb-2 pt-2 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-5 sm:pb-6 sm:pt-3 md:max-w-4xl lg:max-w-5xl",
         )}
       >
@@ -787,14 +791,7 @@ export function ConversationThreadClient({
           </div>
         </header>
 
-        <div
-          className={cn(
-            "relative flex flex-col",
-            embedded
-              ? "max-lg:overflow-visible lg:min-h-0 lg:flex-1 lg:overflow-hidden"
-              : "min-h-0 flex-1 overflow-hidden",
-          )}
-        >
+        <div className="relative flex min-h-0 flex-1 flex-col max-lg:overflow-visible lg:overflow-hidden">
         {listingChromeLoading ? (
           <div
             className={cn(
@@ -857,7 +854,10 @@ export function ConversationThreadClient({
           className={cn(
             "relative flex min-h-0 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25",
             embedded
-              ? "max-lg:h-[min(52dvh,520px)] max-lg:min-h-[min(38dvh,320px)] max-lg:max-h-[calc(100dvh-var(--site-header-height)-5.5rem-env(safe-area-inset-bottom))] max-lg:shrink-0 lg:min-h-0 lg:flex-1 lg:max-h-none"
+              ? cn(
+                  "max-lg:h-[min(52dvh,520px)] max-lg:min-h-[min(38dvh,320px)] max-lg:max-h-[calc(100dvh-var(--site-header-height)-5.5rem-env(safe-area-inset-bottom))] max-lg:shrink-0 max-lg:flex-none",
+                  "lg:min-h-0 lg:flex-1 lg:h-[min(38rem,56svh)] lg:max-h-[min(48rem,72svh)]",
+                )
               : cn(
                   "min-h-0 flex-1 basis-0",
                   "sm:max-h-[min(26rem,52svh)] sm:flex-none sm:h-[min(24rem,45svh)] md:h-[min(34rem,52svh)] md:max-h-[min(42rem,68svh)] lg:h-[min(38rem,56svh)] lg:max-h-[min(48rem,72svh)]",

@@ -26,7 +26,7 @@ import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/loca
 import { cn } from '@/lib/utils'
 import { MessageThreadMobileComposerDock } from '@/components/features/messages/message-thread-mobile-composer-dock'
 import { messageComposerBarClass } from '@/lib/utils/dashboard-display-styles'
-import { scrollPageToMessageThreadBottom } from '@/lib/utils/message-thread-routes'
+import { isMobileMessageThreadViewport, scrollPageToMessageThreadBottom } from '@/lib/utils/message-thread-routes'
 import { isAbortError } from '@/lib/utils/is-abort-error'
 
 type ListingPreview = {
@@ -68,11 +68,10 @@ function NewMessageComposeContent() {
   const [useMobileComposerDock, setUseMobileComposerDock] = useState(false)
 
   useLayoutEffect(() => {
-    const isMobile = window.matchMedia('(max-width: 1023px)').matches
+    const isMobile = isMobileMessageThreadViewport()
     setUseMobileComposerDock(isMobile)
-    if (isMobile) {
-      scrollPageToMessageThreadBottom()
-    }
+    if (!isMobile || loading || !listing || !counterparty) return
+    return scrollPageToMessageThreadBottom()
   }, [loading, listing, counterparty])
 
   const threadListingThumbSrc = useMemo(() => {

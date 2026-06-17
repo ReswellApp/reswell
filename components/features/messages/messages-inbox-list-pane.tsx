@@ -70,7 +70,7 @@ export function MessagesInboxListPane({
         />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:thin]">
         {filteredGroups.length === 0 ? (
           <div className="flex flex-col items-center px-6 py-12 text-center">
             {searchLower && groupedChats.length > 0 ? (
