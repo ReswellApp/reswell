@@ -5,13 +5,9 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { MessageComposerTextarea } from '@/components/features/messages/message-composer-textarea'
-import { ArrowLeft, Send, Loader2 } from 'lucide-react'
+import { MessageComposerBar } from '@/components/features/messages/message-composer-bar'
+import { ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import {
-  messageComposerBarClass,
-} from '@/lib/utils/dashboard-display-styles'
-import { isMobileMessageThreadViewport, scrollPageToMessageThreadBottom } from '@/lib/utils/message-thread-routes'
 import { MessageThreadMobileComposerDock } from '@/components/features/messages/message-thread-mobile-composer-dock'
 import { ConversationPartyProfile } from '@/components/features/messages/conversation-party-profile'
 import { ConversationThreadHeaderChip } from '@/components/features/messages/conversation-thread-header-chip'
@@ -24,7 +20,6 @@ import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listin
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import {
   sendConversationReply,
-  sendConversationLocationReply,
   loadConversationThread,
   markConversationThreadRead,
   type ConversationThreadData,
@@ -45,22 +40,13 @@ import { parseOfferNegotiationMessage } from '@/lib/utils/parse-offer-negotiatio
 import { parseOrderCompletedMessageMetadata } from '@/lib/validations/order-completed-message-metadata'
 import { parseOrderPlacedMessageMetadata } from '@/lib/validations/order-placed-message-metadata'
 import { parseReviewRequestMessageMetadata } from '@/lib/validations/review-request-message-metadata'
-import {
-  composeLocationShareMessageBody,
-  messageLocationMetadataSchema,
-  parseMessageLocationMetadata,
-  type MessageLocationPayload,
-} from '@/lib/validations/message-location-metadata'
+import { parseMessageLocationMetadata } from '@/lib/validations/message-location-metadata'
 import { OrderCompletedMessageCard } from '@/components/features/messages/order-completed-message-card'
 import { OrderPlacedMessageCard } from '@/components/features/messages/order-placed-message-card'
 import { ReviewRequestMessageCard } from '@/components/features/messages/review-request-message-card'
 import { MessageLocationCard } from '@/components/features/messages/message-location-card'
-import type { GoogleFullPlaceResolved } from '@/components/features/checkout/google-places-address-input'
-import { MessageLocationSendPopover } from '@/components/features/messages/message-location-send-popover'
 import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/local-phone-policy-block-bubble'
-import { MessageMediaSendButton } from '@/components/features/messages/message-media-send-button'
 import { MessageMediaAttachmentCard } from '@/components/features/messages/message-media-attachment-card'
-import { MessageSellerOfferButton } from '@/components/features/messages/message-seller-offer-button'
 import { parseMarketplaceMessageAttachment } from '@/lib/validations/marketplace-message-attachment'
 import { effectiveMinimumOfferPct } from '@/lib/utils/offers-minimum-pct'
 import { type ListingThreadOption } from '@/components/features/messages/conversation-listing-switcher'
@@ -169,7 +155,6 @@ export function ConversationThreadClient({
   const messagesScrollRef = useRef<HTMLDivElement>(null)
   const stickToBottomRef = useRef(true)
   const initialScrollDoneRef = useRef(false)
-  const [useMobileComposerDock, setUseMobileComposerDock] = useState(false)
   const supabase = createClient()
 
   const orderedMessages = useMemo(
@@ -233,17 +218,8 @@ export function ConversationThreadClient({
   }, [])
 
   useLayoutEffect(() => {
-    if (!embedded) {
-      setUseMobileComposerDock(false)
-      return
-    }
-    const isMobile = isMobileMessageThreadViewport()
-    setUseMobileComposerDock(isMobile)
-    if (!isMobile) return
-    const cancelScroll = scrollPageToMessageThreadBottom()
     scrollThreadToBottom('auto')
-    return cancelScroll
-  }, [embedded, id, scrollThreadToBottom])
+  }, [id, scrollThreadToBottom])
 
   useEffect(() => {
     setListingBannerImageReady(false)
@@ -263,20 +239,15 @@ export function ConversationThreadClient({
 
   useEffect(() => {
     if (!stickToBottomRef.current) return
-    let cancelScroll: (() => void) | undefined
     const idFrame = requestAnimationFrame(() => {
       // Snap to bottom instantly on first paint; glide for live updates.
       scrollThreadToBottom(initialScrollDoneRef.current ? 'smooth' : 'auto')
-      if (embedded && useMobileComposerDock) {
-        cancelScroll = scrollPageToMessageThreadBottom()
-      }
       initialScrollDoneRef.current = true
     })
     return () => {
       cancelAnimationFrame(idFrame)
-      cancelScroll?.()
     }
-  }, [orderedMessages, scrollThreadToBottom, embedded, useMobileComposerDock])
+  }, [orderedMessages, scrollThreadToBottom])
 
   useEffect(() => {
     if (!displayListing) return
@@ -560,97 +531,6 @@ export function ConversationThreadClient({
     [],
   )
 
-  const sendLocationPin = useCallback(
-    async (place: GoogleFullPlaceResolved): Promise<{ ok: boolean }> => {
-      if (!currentUserId || !conversation) return { ok: false }
-
-      const formattedAddress = place.formattedAddress.trim()
-      if (!formattedAddress) {
-        toast.error('Pick a full address from suggestions before sending.')
-        return { ok: false }
-      }
-
-      let metadata: MessageLocationPayload
-      try {
-        metadata = messageLocationMetadataSchema.parse({
-          kind: 'location_share',
-          formattedAddress,
-          latitude: place.latitude,
-          longitude: place.longitude,
-          placeId: place.placeId,
-        })
-      } catch {
-        toast.error('Invalid location data')
-        return { ok: false }
-      }
-
-      const body = composeLocationShareMessageBody(formattedAddress)
-      setSending(true)
-      stickToBottomRef.current = true
-
-      const tempId = `pending-${Date.now()}`
-      const optimisticMessage: Message = {
-        id: tempId,
-        content: body,
-        sender_id: currentUserId,
-        is_read: true,
-        created_at: new Date().toISOString(),
-        metadata,
-      }
-      setMessages((prev) => [...prev, optimisticMessage])
-
-      try {
-        const result = await raceWithDeadline(
-          sendConversationLocationReply({
-            conversation_id: id,
-            formattedAddress,
-            latitude: place.latitude,
-            longitude: place.longitude,
-            placeId: place.placeId,
-          }),
-          SEND_SERVER_ACTION_MS,
-        )
-
-        if ('error' in result) {
-          setMessages((prev) => {
-            const withoutPending = prev.filter((m) => m.id !== tempId)
-            const policyReason = getPolicyBlockFromSendResult(result)
-            if (policyReason) {
-              return [
-                ...withoutPending,
-                createLocalPolicyBlockMessage({
-                  senderId: currentUserId,
-                  originalContent: formattedAddress,
-                  reasonCode: policyReason,
-                }),
-              ]
-            }
-            return withoutPending
-          })
-          if (!isPolicyBlockedSendResult(result)) {
-            toast.error('Failed to send location')
-          }
-          return { ok: false }
-        }
-
-        const inserted = result.message as Message
-        setMessages((prev) => prev.map((m) => (m.id === tempId ? inserted : m)))
-        return { ok: true }
-      } catch (e) {
-        setMessages((prev) => prev.filter((m) => m.id !== tempId))
-        toast.error(
-          e instanceof PromiseDeadlineError
-            ? 'Location send took too long. Check your connection and try again.'
-            : 'Failed to send location',
-        )
-        return { ok: false }
-      } finally {
-        setSending(false)
-      }
-    },
-    [conversation, currentUserId, id],
-  )
-
   const formatMessageDate = (dateStr: string) => {
     const date = new Date(dateStr)
     if (isToday(date)) return format(date, 'h:mm a')
@@ -676,12 +556,6 @@ export function ConversationThreadClient({
 
   const otherUser = conversation.buyer_id === currentUserId ? conversation.seller : conversation.buyer
   const otherUserId = getOtherUserIdFromConversation(conversation, currentUserId ?? '')
-  const isSellerViewer = currentUserId === conversation.seller_id
-  const canMakeSellerOffer =
-    isSellerViewer &&
-    !!conversation.listing_id &&
-    !!displayListing &&
-    displayListing.section === 'surfboards'
   const backHref =
     listingThreads.length > 1 ? `/messages/with/${otherUserId}` : '/messages'
   const showListingSwitcher = listingThreads.length > 1
@@ -852,7 +726,7 @@ export function ConversationThreadClient({
         {/* Messages — bounded scroll module (internal scroll; page chrome scrolls separately) */}
         <div
           className={cn(
-            "relative flex min-h-0 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25",
+            "relative mb-2 flex min-h-0 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25 sm:mb-3",
             embedded
               ? cn(
                   "max-lg:h-[min(52dvh,520px)] max-lg:min-h-[min(38dvh,320px)] max-lg:max-h-[calc(100dvh-var(--site-header-height)-5.5rem-env(safe-area-inset-bottom))] max-lg:shrink-0 max-lg:flex-none",
@@ -877,7 +751,7 @@ export function ConversationThreadClient({
                 </p>
               </div>
             ) : (
-              <div className="flex min-h-full flex-col justify-end gap-2 px-3 pb-14 pt-4 sm:px-4 sm:pb-16 sm:pt-4">
+              <div className="flex min-h-full flex-col justify-end gap-2 px-3 pb-4 pt-4 sm:px-4 sm:pt-4">
                 {orderedMessages.map((message) => {
                   const isOwn = message.sender_id === currentUserId
                   const offer =
@@ -1092,28 +966,17 @@ export function ConversationThreadClient({
           </div>
         </div>
 
-        <MessageThreadMobileComposerDock portaled={embedded && useMobileComposerDock}>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              void handleSend()
-            }}
-            className={messageComposerBarClass}
-          >
-            <MessageComposerTextarea
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Message"
-              disabled={sending}
-              autoComplete="off"
-              aria-label="Message text"
-            />
-            <MessageMediaSendButton
-              conversationId={id}
-              disabled={sending || !currentUserId || !conversation}
-              caption={newMessage}
-              onSent={handleMediaSent}
-              onBlockedPolicy={(originalContent, reasonCode) => {
+        <MessageThreadMobileComposerDock>
+          <MessageComposerBar
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onSubmit={handleSend}
+            sending={sending}
+            media={{
+              conversationId: id,
+              disabled: !currentUserId || !conversation,
+              onSent: handleMediaSent,
+              onBlockedPolicy: (originalContent, reasonCode) => {
                 if (!currentUserId) return
                 setMessages((prev) => [
                   ...prev,
@@ -1124,44 +987,9 @@ export function ConversationThreadClient({
                   }),
                 ])
                 setNewMessage('')
-              }}
-            />
-            {canMakeSellerOffer && conversation.listing_id ? (
-              <MessageSellerOfferButton
-                conversationId={id}
-                listingId={conversation.listing_id}
-                buyerUserId={conversation.buyer_id}
-                sellerUserId={conversation.seller_id}
-                listingTitle={displayListing?.title ?? ''}
-                listPrice={listPriceNum}
-                primaryImageUrl={threadListingThumbSrc || null}
-                disabled={sending}
-                onOfferSent={loadThread}
-              />
-            ) : null}
-            <MessageLocationSendPopover
-              disabled={sending || !currentUserId || !conversation}
-              onSend={sendLocationPin}
-            />
-            <Button
-              type="submit"
-              size="icon"
-              disabled={sending || !newMessage.trim()}
-              className={cn(
-                'mb-0.5 h-10 w-10 shrink-0 rounded-full',
-                'bg-listingHeart text-white shadow-sm hover:bg-[#2a4170]',
-                'dark:bg-listingHeart dark:text-white dark:hover:bg-[#2a4170]',
-                'focus-visible:ring-white/40 focus-visible:ring-offset-2 focus-visible:ring-offset-listingHeart',
-              )}
-              aria-label="Send message"
-            >
-              {sending ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Send className="h-5 w-5" strokeWidth={2} />
-              )}
-            </Button>
-          </form>
+              },
+            }}
+          />
         </MessageThreadMobileComposerDock>
         </div>
       </div>

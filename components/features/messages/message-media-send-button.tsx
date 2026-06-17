@@ -126,7 +126,10 @@ export function MessageMediaSendButton({
         variant="ghost"
         size="icon"
         disabled={disabled || uploading}
-        className={cn("mb-0.5 h-10 w-10 shrink-0 rounded-full text-muted-foreground", className)}
+        className={cn(
+          "h-10 w-10 shrink-0 rounded-full border-0 bg-transparent text-muted-foreground shadow-none hover:bg-transparent hover:text-foreground",
+          className,
+        )}
         aria-label="Send photo or video"
         onClick={() => inputRef.current?.click()}
       >

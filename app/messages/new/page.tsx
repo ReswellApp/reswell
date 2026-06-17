@@ -1,14 +1,14 @@
 'use client'
 
-import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft, Loader2, Send } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { MessageComposerTextarea } from '@/components/features/messages/message-composer-textarea'
+import { MessageComposerBar } from '@/components/features/messages/message-composer-bar'
 import { ConversationThreadSkeleton } from '@/components/features/messages/messages-page-skeletons'
 import { ConversationPartyProfile } from '@/components/features/messages/conversation-party-profile'
 import {
@@ -25,8 +25,6 @@ import type { MessagePolicyReasonCode } from '@/lib/messages/fraud-reason-codes'
 import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/local-phone-policy-block-bubble'
 import { cn } from '@/lib/utils'
 import { MessageThreadMobileComposerDock } from '@/components/features/messages/message-thread-mobile-composer-dock'
-import { messageComposerBarClass } from '@/lib/utils/dashboard-display-styles'
-import { isMobileMessageThreadViewport, scrollPageToMessageThreadBottom } from '@/lib/utils/message-thread-routes'
 import { isAbortError } from '@/lib/utils/is-abort-error'
 
 type ListingPreview = {
@@ -65,14 +63,6 @@ function NewMessageComposeContent() {
     reasonCode: MessagePolicyReasonCode
   } | null>(null)
   const [listingBannerImageReady, setListingBannerImageReady] = useState(false)
-  const [useMobileComposerDock, setUseMobileComposerDock] = useState(false)
-
-  useLayoutEffect(() => {
-    const isMobile = isMobileMessageThreadViewport()
-    setUseMobileComposerDock(isMobile)
-    if (!isMobile || loading || !listing || !counterparty) return
-    return scrollPageToMessageThreadBottom()
-  }, [loading, listing, counterparty])
 
   const threadListingThumbSrc = useMemo(() => {
     if (!listing) return ''
@@ -282,7 +272,7 @@ function NewMessageComposeContent() {
 
         <div
           className={cn(
-            'flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25',
+            'mb-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25 sm:mb-3',
             'sm:max-h-[min(26rem,52svh)] sm:flex-none sm:h-[min(24rem,45svh)] md:h-[min(34rem,52svh)] md:max-h-[min(42rem,68svh)] lg:h-[min(38rem,56svh)] lg:max-h-[min(48rem,72svh)]',
           )}
         >
@@ -307,43 +297,21 @@ function NewMessageComposeContent() {
           </div>
         </div>
 
-        <MessageThreadMobileComposerDock portaled={useMobileComposerDock}>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              void handleSend()
-            }}
-            className={cn("mt-2 sm:mt-3", messageComposerBarClass)}
-          >
-          <MessageComposerTextarea
+        <MessageThreadMobileComposerDock>
+          <MessageComposerBar
             value={newMessage}
             onChange={(e) => {
               setNewMessage(e.target.value)
               if (blockedPolicyNotice) setBlockedPolicyNotice(null)
             }}
-            placeholder="Message"
-            disabled={sending}
-            autoComplete="off"
-            aria-label="Message text"
+            onSubmit={handleSend}
+            sending={sending}
+            media={{
+              conversationId: null,
+              disabled: true,
+              onSent: () => {},
+            }}
           />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={sending || !newMessage.trim()}
-            className={cn(
-              'mb-0.5 h-10 w-10 shrink-0 rounded-full',
-              'bg-listingHeart text-white shadow-sm hover:bg-[#2a4170]',
-              'dark:bg-listingHeart dark:text-white dark:hover:bg-[#2a4170]',
-            )}
-            aria-label="Send message"
-          >
-            {sending ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Send className="h-5 w-5" strokeWidth={2} />
-            )}
-          </Button>
-        </form>
         </MessageThreadMobileComposerDock>
       </div>
     </main>

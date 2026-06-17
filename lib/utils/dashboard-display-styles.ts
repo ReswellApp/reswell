@@ -9,17 +9,19 @@ export const dashboardPageSubtitleClass =
 export const dashboardMobileSectionTitleClass =
   "text-lg font-semibold tracking-tight text-foreground sm:text-xl"
 
-/** Fixed send bar docked to the viewport bottom on mobile message threads. */
-export const messageThreadMobileComposerDockClass =
-  "max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:z-50 max-lg:border-t max-lg:border-border/60 max-lg:bg-background/95 max-lg:px-3 max-lg:pt-2 max-lg:pb-[max(0.5rem,env(safe-area-inset-bottom))] max-lg:backdrop-blur-sm supports-[backdrop-filter]:max-lg:bg-background/85"
+/** Message composer row: media button + input shell. */
+export const messageComposerFormClass = "flex items-center gap-2"
 
-/** In-flow spacer matching the fixed mobile composer height (keeps page scroll height). */
-export const messageThreadMobileComposerSpacerClass =
-  "max-lg:h-[calc(4.75rem+env(safe-area-inset-bottom))] max-lg:shrink-0 lg:hidden"
+/** Pill-shaped input shell — cerulean outline when the textarea is focused. */
+export const messageComposerInputShellClass =
+  "flex min-w-0 flex-1 items-end gap-1 rounded-[24px] border border-border/70 bg-background/95 px-2 py-1.5 shadow-[0_2px_16px_rgba(17,17,17,0.06)] backdrop-blur-sm transition-[border-color,box-shadow] focus-within:border-cerulean focus-within:ring-2 focus-within:ring-cerulean/20 dark:border-border/80 dark:bg-card/95 dark:shadow-none dark:focus-within:border-cerulean/70"
 
-/** Pill-shaped message composer shell — cerulean outline when the textarea is focused. */
-export const messageComposerBarClass =
-  "flex items-end gap-2 rounded-[24px] border border-border/70 bg-background/95 px-2 py-1.5 shadow-[0_2px_16px_rgba(17,17,17,0.06)] backdrop-blur-sm transition-[border-color,box-shadow] focus-within:border-cerulean focus-within:ring-2 focus-within:ring-cerulean/20 dark:border-border/80 dark:bg-card/95 dark:shadow-none dark:focus-within:border-cerulean/70"
+/** Nested send control inside the composer input shell. */
+export const messageComposerSendButtonClass =
+  "mb-0.5 h-9 shrink-0 rounded-full bg-muted/80 px-4 text-[15px] font-semibold text-muted-foreground hover:bg-muted disabled:pointer-events-none disabled:opacity-40"
+
+/** @deprecated Use messageComposerFormClass + messageComposerInputShellClass */
+export const messageComposerBarClass = messageComposerInputShellClass
 
 export const dashboardSearchInputClass =
   "h-10 rounded-xl border-border/80 bg-muted/70 pl-10 text-[15px] shadow-none"
