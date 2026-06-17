@@ -8,8 +8,9 @@ import { formatDistanceToNow } from "date-fns"
 import { ChevronDown, Heart, MessageSquare, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { NavUnreadCountBadge } from "@/components/nav-unread-count-badge"
-import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
+import { useIsMobile } from "@/hooks/use-mobile"
 import { MessageProfileAvatar } from "@/components/features/messages/message-profile-avatar"
 import { markInboxNotificationsRead, refreshMessagesInbox } from "@/app/actions/messages"
 import type { MessagesInboxNotification } from "@/lib/db/messagesInbox"
@@ -61,6 +62,263 @@ function NavMessagesEmptyState({ tab }: { tab: NavMessagesTab }) {
   )
 }
 
+interface NavMessagesPanelBodyProps {
+  userId: string
+  unreadMessages: number
+  unreadActivityCount: number
+  tab: NavMessagesTab
+  loading: boolean
+  previewActivity: MessagesInboxNotification[]
+  chatGroups: ReturnType<typeof groupConversationsByCounterparty>
+  onTabChange: (tab: NavMessagesTab) => void
+  onClose: () => void
+  onNavigate: (href: string) => void
+  showCloseButton?: boolean
+  scrollClassName?: string
+}
+
+function NavMessagesPanelBody({
+  userId,
+  unreadMessages,
+  unreadActivityCount,
+  tab,
+  loading,
+  previewActivity,
+  chatGroups,
+  onTabChange,
+  onClose,
+  onNavigate,
+  showCloseButton = false,
+  scrollClassName,
+}: NavMessagesPanelBodyProps) {
+  return (
+    <>
+      <div className="flex shrink-0 items-center justify-between border-b border-border/70 px-4 py-3">
+        {showCloseButton ? (
+          <SheetTitle className="text-base font-semibold text-foreground">Messages</SheetTitle>
+        ) : (
+          <h2 className="text-base font-semibold text-foreground">Messages</h2>
+        )}
+        {showCloseButton ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 shrink-0 text-foreground hover:bg-muted"
+            aria-label="Close messages"
+            onClick={onClose}
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        ) : null}
+      </div>
+
+      <div className="shrink-0 px-3 pt-3">
+        <div
+          className="flex w-full gap-1 rounded-xl border border-border/70 bg-muted/60 p-1 shadow-[inset_0_1px_2px_rgba(17,17,17,0.04)]"
+          role="tablist"
+          aria-label="Activity and messages"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "activity"}
+            onClick={() => onTabChange("activity")}
+            className={cn(
+              "flex min-h-9 flex-1 items-center justify-center gap-1 rounded-[9px] px-2 py-2 text-[13px] font-semibold transition-colors",
+              tab === "activity"
+                ? "bg-card text-foreground shadow-sm ring-1 ring-border/50"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <span className="truncate">Activity</span>
+            {unreadActivityCount > 0 ? (
+              <span className="tabular-nums text-[12px] font-medium text-muted-foreground">
+                ({unreadActivityCount > 99 ? "99+" : unreadActivityCount})
+              </span>
+            ) : null}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "messages"}
+            onClick={() => onTabChange("messages")}
+            className={cn(
+              "flex min-h-9 flex-1 items-center justify-center gap-1 rounded-[9px] px-2 py-2 text-[13px] font-semibold transition-colors",
+              tab === "messages"
+                ? "bg-card text-foreground shadow-sm ring-1 ring-border/50"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <span className="truncate">Messages</span>
+            {unreadMessages > 0 ? (
+              <span className="tabular-nums text-[12px] font-medium text-muted-foreground">
+                ({unreadMessages > 99 ? "99+" : unreadMessages})
+              </span>
+            ) : null}
+          </button>
+        </div>
+      </div>
+
+      <div className={cn("min-h-0 overflow-y-auto px-1 py-2", scrollClassName)}>
+        {loading ? (
+          <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+            Loading…
+          </div>
+        ) : tab === "activity" ? (
+          previewActivity.length === 0 ? (
+            <NavMessagesEmptyState tab="activity" />
+          ) : (
+            <ul className="divide-y divide-border/50">
+              {previewActivity.map((n) => {
+                const listing = n.listings
+                const href = inboxActivityNotificationHref(n)
+                const thumb =
+                  listing?.listing_images && listingTitleThumbnailSrc(listing.listing_images)
+                return (
+                  <li key={n.id}>
+                    <button
+                      type="button"
+                      onClick={() => onNavigate(href)}
+                      className={cn(
+                        "flex w-full gap-3 px-3 py-3 text-left transition-colors hover:bg-muted/50",
+                        !n.is_read && "bg-blue-50/40 dark:bg-blue-950/15",
+                      )}
+                    >
+                      <div className="relative aspect-[3/4] w-11 shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-border/35">
+                        {thumb ? (
+                          <Image
+                            src={thumb}
+                            alt=""
+                            fill
+                            sizes="44px"
+                            className="object-cover"
+                            unoptimized={listingImageShouldBypassOptimization(thumb)}
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <Heart className="h-4 w-4 text-muted-foreground/70" strokeWidth={1.5} />
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        {listing?.title ? (
+                          <p className="truncate text-[12px] font-medium text-muted-foreground">
+                            {capitalizeWords(listing.title)}
+                          </p>
+                        ) : null}
+                        <div className="mt-0.5 flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <span className="mr-1.5 inline-flex rounded-full bg-muted/90 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.06em] text-muted-foreground ring-1 ring-border/40">
+                              {activityKindLabel(n.type)}
+                            </span>
+                            <span className="text-[13px] font-medium leading-snug text-foreground">
+                              {n.message || "Someone saved your item"}
+                            </span>
+                          </div>
+                          <time
+                            className="shrink-0 text-[11px] tabular-nums text-muted-foreground"
+                            dateTime={n.created_at}
+                          >
+                            {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                          </time>
+                        </div>
+                      </div>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )
+        ) : chatGroups.length === 0 ? (
+          <NavMessagesEmptyState tab="messages" />
+        ) : (
+          <ul className="divide-y divide-border/50">
+            {chatGroups.map((group) => {
+              const otherUser = group.otherUser
+              const href = counterpartyInboxHref(group)
+              const previewText = formatInboxChatPreviewText(
+                group.latestMessage,
+                group.primaryThread.listing?.title,
+                userId,
+              )
+              return (
+                <li key={group.otherUserId}>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate(href)}
+                    className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-muted/50"
+                  >
+                    <MessageProfileAvatar
+                      avatarUrl={otherUser?.avatar_url}
+                      displayName={otherUser?.display_name}
+                      pending={!otherUser}
+                      size="sm"
+                      className="ring-0"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span
+                          className={cn(
+                            "truncate text-[14px] text-foreground",
+                            group.totalUnread > 0 ? "font-semibold" : "font-medium",
+                          )}
+                        >
+                          {otherUser?.display_name || "Unknown User"}
+                        </span>
+                        {group.latestActivityMs > 0 ? (
+                          <time
+                            className="shrink-0 text-[11px] tabular-nums text-muted-foreground"
+                            dateTime={new Date(group.latestActivityMs).toISOString()}
+                          >
+                            {formatDistanceToNow(new Date(group.latestActivityMs), {
+                              addSuffix: true,
+                            })}
+                          </time>
+                        ) : null}
+                      </div>
+                      <p
+                        className={cn(
+                          "mt-0.5 truncate text-[13px] text-muted-foreground",
+                          group.totalUnread > 0 && "font-medium text-foreground",
+                        )}
+                      >
+                        {previewText}
+                      </p>
+                    </div>
+                    {group.totalUnread > 0 ? (
+                      <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-bold tabular-nums text-background">
+                        {group.totalUnread > 99 ? "99+" : group.totalUnread}
+                      </span>
+                    ) : null}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </div>
+
+      <div className="shrink-0 border-t border-border/70 px-3 py-2.5">
+        {tab === "messages" ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9 w-full justify-between rounded-xl text-[13px] font-medium text-muted-foreground hover:text-foreground"
+            asChild
+            onClick={onClose}
+          >
+            <Link href="/messages">
+              See all messages
+              <ChevronDown className="h-4 w-4 -rotate-90" aria-hidden />
+            </Link>
+          </Button>
+        ) : null}
+      </div>
+    </>
+  )
+}
+
 export function NavMessagesDropdown({
   userId,
   unreadMessages,
@@ -68,8 +326,8 @@ export function NavMessagesDropdown({
   iconClassName,
 }: NavMessagesDropdownProps) {
   const router = useRouter()
+  const isMobile = useIsMobile()
   const [open, setOpen] = useState(false)
-  const [mobileScrollLock, setMobileScrollLock] = useState(false)
   const [tab, setTab] = useState<NavMessagesTab>("messages")
   const [loading, setLoading] = useState(false)
   const [conversations, setConversations] = useState<InboxConversationRow[]>([])
@@ -147,269 +405,70 @@ export function NavMessagesDropdown({
     [router],
   )
 
-  useEffect(() => {
-    if (!open) {
-      setMobileScrollLock(false)
-      return
-    }
+  const panelProps: NavMessagesPanelBodyProps = {
+    userId,
+    unreadMessages,
+    unreadActivityCount,
+    tab,
+    loading,
+    previewActivity,
+    chatGroups,
+    onTabChange: handleTabChange,
+    onClose: () => setOpen(false),
+    onNavigate: navigateAndClose,
+  }
 
-    const syncMobileScrollLock = () => {
-      setMobileScrollLock(window.innerWidth < 768)
-    }
+  const triggerButton = (
+    <Button
+      variant="ghost"
+      size="icon"
+      className={cn("relative text-foreground hover:bg-black/5 md:hover:bg-muted", triggerClassName)}
+      aria-label="Messages and activity"
+      aria-expanded={open}
+      onClick={isMobile ? () => handleOpenChange(true) : undefined}
+    >
+      <MessageSquare className={cn("h-6 w-6", iconClassName)} />
+      <NavUnreadCountBadge count={unreadMessages} overlay />
+    </Button>
+  )
 
-    syncMobileScrollLock()
-    window.addEventListener("resize", syncMobileScrollLock)
-    return () => window.removeEventListener("resize", syncMobileScrollLock)
-  }, [open])
-
-  useBodyScrollLock(mobileScrollLock)
+  if (isMobile) {
+    return (
+      <>
+        {triggerButton}
+        <Sheet open={open} onOpenChange={handleOpenChange}>
+          <SheetContent
+            side="bottom"
+            className={cn(
+              "z-[120] flex h-[100dvh] w-full max-w-none flex-col gap-0 rounded-none border-0 p-0",
+              "inset-x-0 top-0 pb-[env(safe-area-inset-bottom)] pt-[env(safe-area-inset-top)]",
+              "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+              "[&>button.absolute]:hidden",
+            )}
+          >
+            <NavMessagesPanelBody {...panelProps} showCloseButton scrollClassName="flex-1" />
+          </SheetContent>
+        </Sheet>
+      </>
+    )
+  }
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn("relative text-foreground hover:bg-black/5 md:hover:bg-muted", triggerClassName)}
-          aria-label="Messages and activity"
-        >
-          <MessageSquare className={cn("h-6 w-6", iconClassName)} />
-          <NavUnreadCountBadge count={unreadMessages} overlay />
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger asChild>{triggerButton}</PopoverTrigger>
       <PopoverContent
         align="end"
         sideOffset={8}
         avoidCollisions
+        collisionPadding={16}
         className={cn(
-          "z-[120] flex flex-col border border-border/80 bg-popover p-0 shadow-lg",
-          "w-[min(100vw-2rem,380px)] rounded-2xl",
-          "max-md:fixed max-md:inset-0 max-md:z-[120] max-md:h-dvh max-md:w-screen max-md:max-w-none",
-          "max-md:!translate-x-0 max-md:!translate-y-0 max-md:rounded-none max-md:border-0 max-md:shadow-none",
-          "max-md:pt-[env(safe-area-inset-top)] max-md:pb-[env(safe-area-inset-bottom)]",
+          "z-[120] flex w-[min(100vw-2rem,380px)] flex-col rounded-2xl border border-border/80 bg-popover p-0 shadow-lg",
         )}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-border/70 px-4 py-3">
-          <h2 className="text-base font-semibold text-foreground">Messages</h2>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 shrink-0 text-foreground hover:bg-muted md:hidden"
-            aria-label="Close messages"
-            onClick={() => setOpen(false)}
-          >
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-
-        <div className="shrink-0 px-3 pt-3">
-          <div
-            className="flex w-full gap-1 rounded-xl border border-border/70 bg-muted/60 p-1 shadow-[inset_0_1px_2px_rgba(17,17,17,0.04)]"
-            role="tablist"
-            aria-label="Activity and messages"
-          >
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === "activity"}
-              onClick={() => handleTabChange("activity")}
-              className={cn(
-                "flex min-h-9 flex-1 items-center justify-center gap-1 rounded-[9px] px-2 py-2 text-[13px] font-semibold transition-colors",
-                tab === "activity"
-                  ? "bg-card text-foreground shadow-sm ring-1 ring-border/50"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <span className="truncate">Activity</span>
-              {unreadActivityCount > 0 ? (
-                <span className="tabular-nums text-[12px] font-medium text-muted-foreground">
-                  ({unreadActivityCount > 99 ? "99+" : unreadActivityCount})
-                </span>
-              ) : null}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === "messages"}
-              onClick={() => handleTabChange("messages")}
-              className={cn(
-                "flex min-h-9 flex-1 items-center justify-center gap-1 rounded-[9px] px-2 py-2 text-[13px] font-semibold transition-colors",
-                tab === "messages"
-                  ? "bg-card text-foreground shadow-sm ring-1 ring-border/50"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <span className="truncate">Messages</span>
-              {unreadMessages > 0 ? (
-                <span className="tabular-nums text-[12px] font-medium text-muted-foreground">
-                  ({unreadMessages > 99 ? "99+" : unreadMessages})
-                </span>
-              ) : null}
-            </button>
-          </div>
-        </div>
-
-        <div
-          className={cn(
-            "min-h-0 overflow-y-auto px-1 py-2",
-            "max-md:flex-1 md:max-h-[min(60vh,420px)]",
-          )}
-        >
-          {loading ? (
-            <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-              Loading…
-            </div>
-          ) : tab === "activity" ? (
-            previewActivity.length === 0 ? (
-              <NavMessagesEmptyState tab="activity" />
-            ) : (
-              <ul className="divide-y divide-border/50">
-                {previewActivity.map((n) => {
-                  const listing = n.listings
-                  const href = inboxActivityNotificationHref(n)
-                  const thumb =
-                    listing?.listing_images && listingTitleThumbnailSrc(listing.listing_images)
-                  return (
-                    <li key={n.id}>
-                      <button
-                        type="button"
-                        onClick={() => navigateAndClose(href)}
-                        className={cn(
-                          "flex w-full gap-3 px-3 py-3 text-left transition-colors hover:bg-muted/50",
-                          !n.is_read && "bg-blue-50/40 dark:bg-blue-950/15",
-                        )}
-                      >
-                        <div className="relative w-11 shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-border/35 aspect-[3/4]">
-                          {thumb ? (
-                            <Image
-                              src={thumb}
-                              alt=""
-                              fill
-                              sizes="44px"
-                              className="object-cover"
-                              unoptimized={listingImageShouldBypassOptimization(thumb)}
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center">
-                              <Heart className="h-4 w-4 text-muted-foreground/70" strokeWidth={1.5} />
-                            </div>
-                          )}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          {listing?.title ? (
-                            <p className="truncate text-[12px] font-medium text-muted-foreground">
-                              {capitalizeWords(listing.title)}
-                            </p>
-                          ) : null}
-                          <div className="mt-0.5 flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <span className="mr-1.5 inline-flex rounded-full bg-muted/90 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-[0.06em] text-muted-foreground ring-1 ring-border/40">
-                                {activityKindLabel(n.type)}
-                              </span>
-                              <span className="text-[13px] font-medium leading-snug text-foreground">
-                                {n.message || "Someone saved your item"}
-                              </span>
-                            </div>
-                            <time
-                              className="shrink-0 text-[11px] tabular-nums text-muted-foreground"
-                              dateTime={n.created_at}
-                            >
-                              {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
-                            </time>
-                          </div>
-                        </div>
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
-            )
-          ) : chatGroups.length === 0 ? (
-            <NavMessagesEmptyState tab="messages" />
-          ) : (
-            <ul className="divide-y divide-border/50">
-              {chatGroups.map((group) => {
-                const otherUser = group.otherUser
-                const href = counterpartyInboxHref(group)
-                const previewText = formatInboxChatPreviewText(
-                  group.latestMessage,
-                  group.primaryThread.listing?.title,
-                  userId,
-                )
-                return (
-                  <li key={group.otherUserId}>
-                    <button
-                      type="button"
-                      onClick={() => navigateAndClose(href)}
-                      className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-muted/50"
-                    >
-                      <MessageProfileAvatar
-                        avatarUrl={otherUser?.avatar_url}
-                        displayName={otherUser?.display_name}
-                        pending={!otherUser}
-                        size="sm"
-                        className="ring-0"
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-baseline justify-between gap-2">
-                          <span
-                            className={cn(
-                              "truncate text-[14px] text-foreground",
-                              group.totalUnread > 0 ? "font-semibold" : "font-medium",
-                            )}
-                          >
-                            {otherUser?.display_name || "Unknown User"}
-                          </span>
-                          {group.latestActivityMs > 0 ? (
-                            <time
-                              className="shrink-0 text-[11px] tabular-nums text-muted-foreground"
-                              dateTime={new Date(group.latestActivityMs).toISOString()}
-                            >
-                              {formatDistanceToNow(new Date(group.latestActivityMs), {
-                                addSuffix: true,
-                              })}
-                            </time>
-                          ) : null}
-                        </div>
-                        <p
-                          className={cn(
-                            "mt-0.5 truncate text-[13px] text-muted-foreground",
-                            group.totalUnread > 0 && "font-medium text-foreground",
-                          )}
-                        >
-                          {previewText}
-                        </p>
-                      </div>
-                      {group.totalUnread > 0 ? (
-                        <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-bold tabular-nums text-background">
-                          {group.totalUnread > 99 ? "99+" : group.totalUnread}
-                        </span>
-                      ) : null}
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-        </div>
-
-        <div className="shrink-0 border-t border-border/70 px-3 py-2.5">
-          {tab === "messages" ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-9 w-full justify-between rounded-xl text-[13px] font-medium text-muted-foreground hover:text-foreground"
-              asChild
-              onClick={() => setOpen(false)}
-            >
-              <Link href="/messages">
-                See all messages
-                <ChevronDown className="h-4 w-4 -rotate-90" aria-hidden />
-              </Link>
-            </Button>
-          ) : null}
-        </div>
+        <NavMessagesPanelBody
+          {...panelProps}
+          scrollClassName="max-h-[min(60vh,420px)]"
+        />
       </PopoverContent>
     </Popover>
   )
