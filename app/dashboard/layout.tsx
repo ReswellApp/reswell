@@ -36,10 +36,10 @@ export default async function DashboardLayout({
   const shopHref = isShop ? sellerProfileHref(profile) : null
 
   return (
-      <div className="flex-1 container mx-auto py-6 sm:py-8">
+      <div className="flex-1 container mx-auto py-3 sm:py-6 lg:py-8">
         <DashboardMobileNav sellerProfileHref={shopHref} />
 
-        <div className="mt-6 flex flex-col gap-8 lg:mt-0 lg:flex-row lg:gap-12 xl:gap-14">
+        <div className="mt-3 flex flex-col gap-6 lg:mt-0 lg:flex-row lg:gap-12 xl:gap-14">
           {/* Sidebar */}
           <aside className={cn("hidden shrink-0 lg:block", dashboardSidebarWidthClass)}>
             <div className="sticky top-24 space-y-6">

@@ -2,7 +2,6 @@
 
 import type { ReactNode } from "react"
 import { usePathname } from "next/navigation"
-import { MessagesSupportDialog } from "@/components/features/messages/messages-support-dialog"
 import { MessagesInboxListPane } from "@/components/features/messages/messages-inbox-list-pane"
 import { MessagesEmptyPane } from "@/components/features/messages/messages-empty-pane"
 import { cn } from "@/lib/utils"
@@ -26,31 +25,17 @@ export function MessagesChatSplit({
   const isInboxIndex = pathname.replace(/\/$/, "") === "/messages"
 
   return (
-    <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
-      <header className="mb-4 flex shrink-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[28px]">
-            Messages
-          </h1>
-          <p className="mt-1 text-[14px] leading-snug text-muted-foreground sm:text-[15px]">
-            Communicate with buyers and sellers.
-          </p>
-        </div>
-        <MessagesSupportDialog
-          triggerMode="floating"
-          relatedConversationId={activeConversationId}
-          floatingTriggerClassName="shrink-0"
-        />
-      </header>
-
+    <div className={cn("flex min-h-0 flex-1 flex-col", isDetailRoute && "h-full", className)}>
       {isInboxIndex && !isDetailRoute ? (
         <MessagesEmptyPane variant="banner" className="mb-4 lg:hidden" />
       ) : null}
 
       <div
         className={cn(
-          "flex min-h-0 flex-1 overflow-hidden rounded-[20px] border border-border/70 bg-card shadow-[0_1px_2px_rgba(17,17,17,0.04)]",
-          "min-h-[min(72dvh,720px)] lg:min-h-[min(68dvh,680px)]",
+          "flex min-h-0 flex-1 flex-col overflow-hidden rounded-[20px] border border-border/70 bg-card shadow-[0_1px_2px_rgba(17,17,17,0.04)]",
+          isDetailRoute
+            ? "h-full min-h-0 max-lg:rounded-none max-lg:border-0 max-lg:shadow-none"
+            : "min-h-[min(72dvh,720px)] lg:min-h-[min(68dvh,680px)]",
         )}
       >
         <aside
@@ -65,7 +50,7 @@ export function MessagesChatSplit({
         <section
           className={cn(
             "flex min-h-0 min-w-0 flex-1 flex-col",
-            !isDetailRoute ? "hidden lg:flex" : "flex",
+            !isDetailRoute ? "hidden lg:flex" : "flex h-full min-h-0",
           )}
         >
           {children}

@@ -24,10 +24,10 @@ export async function MessagesAccountShell({ children }: { children: React.React
   const shopHref = profile?.is_shop ? sellerProfileHref(profile) : null
 
   return (
-    <div className="container mx-auto flex-1 py-6 sm:py-8">
+    <div className="container mx-auto flex min-h-0 flex-1 flex-col py-3 sm:py-6 lg:py-8">
       <DashboardMobileNav sellerProfileHref={shopHref} />
 
-      <div className="mt-6 flex flex-col gap-8 lg:mt-0 lg:flex-row lg:gap-12 xl:gap-14">
+      <div className="mt-3 flex min-h-0 flex-1 flex-col gap-4 lg:mt-0 lg:flex-row lg:gap-12 xl:gap-14">
         <aside className="hidden shrink-0 lg:block lg:w-64 xl:w-72">
           <div className="sticky top-24 space-y-5">
             <Button asChild className="h-10 w-full lg:h-11 lg:text-[15px]">
@@ -43,7 +43,7 @@ export async function MessagesAccountShell({ children }: { children: React.React
           </div>
         </aside>
 
-        <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
       </div>
     </div>
   )

@@ -63,7 +63,6 @@ import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
 import { CartHeaderLink } from "@/components/cart-header-link"
 import { HeaderAccountMenu } from "@/components/header-account-menu"
 import { SiteWordmarkLink } from "@/components/site-wordmark-link"
-import { HeaderMobileCategoryBar } from "@/components/header-mobile-category-bar"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 
@@ -995,7 +994,6 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   <HeaderNavSearch variant="mobile" />
                 </Suspense>
               </div>
-              <HeaderMobileCategoryBar />
             </>
           ) : (
             <>

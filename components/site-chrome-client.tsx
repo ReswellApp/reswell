@@ -5,6 +5,10 @@ import { usePathname } from "next/navigation"
 import { forceReleaseBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { Header } from "@/components/header"
 import { SiteHeaderShell } from "@/components/site-header-shell"
+import {
+  shouldShowSiteTopCategoryBar,
+  SiteTopCategoryBar,
+} from "@/components/site-top-category-bar"
 import { Footer } from "@/components/footer"
 import { NavigationPageGate } from "@/components/navigation-page-gate"
 import { RouteProgressBar } from "@/components/route-progress-bar"
@@ -102,6 +106,7 @@ export function SiteChromeClient({
               : "pb-10 sm:pb-12 md:pb-16",
           )}
         >
+          {shouldShowSiteTopCategoryBar(pathname) ? <SiteTopCategoryBar /> : null}
           <NavigationPageGate>{children}</NavigationPageGate>
         </div>
         {!hideFooter(pathname) ? <Footer /> : null}

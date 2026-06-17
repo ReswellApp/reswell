@@ -48,10 +48,6 @@ export function MessagesInboxSkeleton({
   if (embedded) {
     return (
       <div className={cn("flex min-h-0 flex-1 flex-col", className)} aria-busy="true" aria-label="Loading messages">
-        <header className="mb-4 space-y-2">
-          <Skeleton className="h-8 w-40" />
-          <Skeleton className="h-4 w-64" />
-        </header>
         <div className={cn("flex min-h-[min(72dvh,720px)] overflow-hidden rounded-[20px] border border-border/70", groupedShellClass)}>
           <div className="hidden w-[min(100%,340px)] border-r border-border/60 lg:block">
             <Skeleton className="m-3 h-10 rounded-xl" />

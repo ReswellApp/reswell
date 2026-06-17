@@ -663,15 +663,14 @@ export function ConversationThreadClient({
   return (
     <main
       className={cn(
-        "flex min-h-0 flex-1 flex-col overflow-hidden bg-background",
-        !embedded && "h-full",
+        "flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background",
       )}
     >
       <div
         className={cn(
           "flex h-full min-h-0 flex-1 flex-col overflow-hidden",
           embedded
-            ? "px-0 pb-2 pt-0 max-sm:px-4 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))] max-sm:pt-2"
+            ? "px-0 pb-2 pt-0 max-sm:px-0 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))] max-sm:pt-0"
             : "container mx-auto max-w-2xl px-4 pb-2 pt-2 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-5 sm:pb-6 sm:pt-3 md:max-w-4xl lg:max-w-5xl",
         )}
       >
@@ -822,6 +821,7 @@ export function ConversationThreadClient({
         <div
           className={cn(
             'relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25',
+            'max-sm:min-h-0 max-sm:flex-1 max-sm:basis-0',
             'sm:max-h-[min(26rem,52svh)] sm:flex-none sm:h-[min(24rem,45svh)] md:h-[min(34rem,52svh)] md:max-h-[min(42rem,68svh)] lg:h-[min(38rem,56svh)] lg:max-h-[min(48rem,72svh)]',
           )}
         >
