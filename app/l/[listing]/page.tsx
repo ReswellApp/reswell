@@ -13,6 +13,7 @@ import { canViewHiddenListing } from "@/lib/listing-site-access"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { createClient } from "@/lib/supabase/server"
 import { isGoogleMerchantLandingPageCrawler } from "@/lib/google-merchant/landing-page-crawler"
+import { isGoogleMerchantPeerSection } from "@/lib/google-merchant/config"
 import {
   isGoogleMerchantEligibleListing,
   type GoogleMerchantListingRow,
@@ -27,6 +28,7 @@ import { ApparelListingDetailPage } from "@/components/apparel-listing-detail-pa
 import { AccessoriesListingDetailPage } from "@/components/accessories-listing-detail-page"
 import { ShopListingDetailPage } from "@/components/shop-listing-detail-page"
 import { ListingViewTracker } from "@/components/features/listings/listing-view-tracker"
+import { ListingPdpProductJsonLd } from "@/components/features/listings/listing-pdp-product-json-ld"
 import { UnavailableListingLandingPage } from "@/components/features/listings/unavailable-listing-landing-page"
 import { buildUnavailableListingLanding } from "@/lib/services/unavailableListingLanding"
 import {
@@ -143,6 +145,9 @@ export default async function ListingDetailPage(props: {
 
   return (
     <>
+      {isGoogleMerchantPeerSection(listing.section) ? (
+        <ListingPdpProductJsonLd listing={listing as GoogleMerchantListingRow} />
+      ) : null}
       <ListingViewTracker listingId={listing.id} />
       {(() => {
         switch (listing.section) {

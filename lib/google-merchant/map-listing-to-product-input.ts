@@ -12,6 +12,7 @@ import {
   getGoogleMerchantUsTaxRate,
   isGoogleMerchantPeerSection,
 } from "./config"
+import { mapListingConditionToGoogleMerchant, type GoogleMerchantCondition } from "./condition"
 
 export type GoogleMerchantListingImage = ListingImageForCard & {
   sort_order?: number | null
@@ -64,7 +65,7 @@ export type GoogleMerchantProductInputPayload = {
     imageLink: string
     additionalImageLinks?: string[]
     availability: "IN_STOCK" | "OUT_OF_STOCK"
-    condition: "NEW" | "USED"
+    condition: GoogleMerchantCondition
     price: GoogleMerchantPrice
     brand?: string
     mpn?: string
@@ -79,11 +80,6 @@ const MAX_MPN_LENGTH = 70
 
 function stripHtml(text: string): string {
   return text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
-}
-
-function mapCondition(condition: string | null | undefined): "NEW" | "USED" {
-  const value = (condition ?? "").trim()
-  return value === "brand_new" || value === "new" ? "NEW" : "USED"
 }
 
 function priceToMicros(amountUsd: number): string {
@@ -276,7 +272,7 @@ export function mapListingToProductInput(
       imageLink,
       ...(additionalImages ? { additionalImageLinks: additionalImages } : {}),
       availability: "IN_STOCK",
-      condition: mapCondition(listing.condition),
+      condition: mapListingConditionToGoogleMerchant(listing.condition),
       price: {
         amountMicros: priceToMicros(listing.price),
         currencyCode: "USD",
