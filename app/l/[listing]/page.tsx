@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { headers } from "next/headers"
 import { notFound, redirect } from "next/navigation"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 import { findListingByParam } from "@/lib/listing-query"
@@ -11,6 +12,11 @@ import { resolveListingDetailMetadata } from "@/lib/seo/resolve-listing-metadata
 import { canViewHiddenListing } from "@/lib/listing-site-access"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { createClient } from "@/lib/supabase/server"
+import { isGoogleMerchantLandingPageCrawler } from "@/lib/google-merchant/landing-page-crawler"
+import {
+  isGoogleMerchantEligibleListing,
+  type GoogleMerchantListingRow,
+} from "@/lib/google-merchant/map-listing-to-product-input"
 import { SurfboardListingDetailPage } from "@/components/surfboard-listing-detail-page"
 import { FinsListingDetailPage } from "@/components/fins-listing-detail-page"
 import { WetsuitsListingDetailPage } from "@/components/wetsuits-listing-detail-page"
@@ -28,6 +34,17 @@ import {
   type UnavailableListingContextRow,
 } from "@/lib/db/unavailable-listing-landing"
 import type { ListingDetailPageSharedProps } from "@/lib/listing-detail-page-load"
+
+/** Merchant Center expects a 404 when the feed product is gone — not a soft "unavailable" page. */
+function rejectMerchantCrawlerLandingPage(
+  listing: GoogleMerchantListingRow | null,
+  userAgent: string | null,
+): void {
+  if (!isGoogleMerchantLandingPageCrawler(userAgent)) return
+  if (!listing || !isGoogleMerchantEligibleListing(listing)) {
+    notFound()
+  }
+}
 
 function unavailableListingMetadata(listingParam: string): Metadata {
   return pageSeoMetadata({
@@ -84,6 +101,7 @@ export default async function ListingDetailPage(props: {
   params: Promise<{ listing: string }>
 }) {
   const { listing: listingParam } = await props.params
+  const userAgent = (await headers()).get("user-agent")
   const { supabase, user } = await getCachedRequestSession()
   let { listing, redirectSlug } = await getCachedPublicListingForRoute(listingParam)
 
@@ -98,16 +116,20 @@ export default async function ListingDetailPage(props: {
   }
 
   if (!listing) {
+    rejectMerchantCrawlerLandingPage(null, userAgent)
     const landing = await buildUnavailableListingLanding(supabase, listingParam)
     return <UnavailableListingLandingPage landing={landing} />
   }
 
   const canViewHidden = await canViewHiddenListing(supabase, listing, user)
   if (!canViewHidden) {
+    rejectMerchantCrawlerLandingPage(listing as GoogleMerchantListingRow, userAgent)
     const context = await loadUnavailableListingContext(supabase, listingParam)
     const landing = await buildUnavailableListingLanding(supabase, listingParam, context)
     return <UnavailableListingLandingPage landing={landing} />
   }
+
+  rejectMerchantCrawlerLandingPage(listing as GoogleMerchantListingRow, userAgent)
 
   if (redirectSlug) {
     redirect(`/l/${redirectSlug}`)

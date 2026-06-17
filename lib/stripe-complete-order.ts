@@ -27,6 +27,7 @@ import { touchUserLastActive } from "@/lib/db/userActivity"
 import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
+import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
 import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnPurchase"
@@ -684,6 +685,10 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   revalidateBoardsBrowseCatalog()
   await revalidateSellersAfterListingChange(serviceSupabase, bundleSellerId)
   revalidateMarketplaceSoldFeedCatalog()
+
+  for (const listing of listingsOrdered) {
+    revalidateListingDetailPage(listing.id, listing.slug ?? null)
+  }
 
   void completeAcceptedOfferOnPurchase(
     serviceSupabase,

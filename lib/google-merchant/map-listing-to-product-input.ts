@@ -1,4 +1,4 @@
-import { listingDetailHref } from "@/lib/listing-href"
+import { googleMerchantProductLink } from "@/lib/google-merchant/product-link"
 import { listingHeroSlideSrc, type ListingImageForCard } from "@/lib/listing-image-display"
 import { absoluteProxiedListingMediaUrl } from "@/lib/listing-media-proxy-url"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
@@ -257,8 +257,7 @@ export function mapListingToProductInput(
   const imageLink = absoluteImageLink(listing, origin)
   if (!imageLink) return null
 
-  const href = listingDetailHref(listing)
-  const link = `${origin}${href}`
+  const link = googleMerchantProductLink(listing, origin)
   const descriptionRaw = stripHtml(listing.description?.trim() || listing.title.trim())
   const description = descriptionRaw || listing.title.trim()
   const identifiers = productIdentifiers(listing)

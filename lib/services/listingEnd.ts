@@ -4,6 +4,7 @@ import {
   syncListingToIndex,
 } from "@/lib/elasticsearch/listings-index"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
+import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { removeListingFromGoogleMerchantFeed } from "@/lib/services/googleMerchantSync"
 import {
@@ -18,6 +19,7 @@ type ListingEndRow = {
   user_id: string
   status: string
   archived_at: string | null
+  slug: string | null
 }
 
 export type EndSellerListingResult =
@@ -83,7 +85,7 @@ async function loadListingForEnd(
 ): Promise<ListingEndRow | null> {
   const { data, error } = await supabase
     .from("listings")
-    .select("id, user_id, status, archived_at")
+    .select("id, user_id, status, archived_at, slug")
     .eq("id", listingId)
     .maybeSingle()
 
@@ -132,6 +134,8 @@ export async function deleteSellerDraftListing(
 
   await removeListingFromGoogleMerchantFeed(listingId)
 
+  revalidateListingDetailPage(listingId, row.slug)
+
   try {
     await removeListingImageFilesFromStorage(supabase, imageUrls)
   } catch {
@@ -174,6 +178,7 @@ export async function endSellerListing(
 
     await removeListingFromGoogleMerchantFeed(listingId)
 
+    revalidateListingDetailPage(listingId, row.slug)
     revalidateBoardsBrowseCatalog()
     await revalidateSellersAfterListingChange(supabase, sellerUserId)
 
@@ -200,6 +205,7 @@ export async function endSellerListing(
         // ES optional
       }
       await removeListingFromGoogleMerchantFeed(listingId)
+      revalidateListingDetailPage(listingId, row.slug)
       revalidateBoardsBrowseCatalog()
       await revalidateSellersAfterListingChange(supabase, sellerUserId)
       return {
@@ -218,6 +224,8 @@ export async function endSellerListing(
   }
 
   await removeListingFromGoogleMerchantFeed(listingId)
+
+  revalidateListingDetailPage(listingId, row.slug)
 
   try {
     await removeListingImageFilesFromStorage(supabase, imageUrls)

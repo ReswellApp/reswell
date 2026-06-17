@@ -6,6 +6,51 @@ import { SERVER_IMAGE_CONVERT_MAX_BYTES } from "@/lib/utils/server-image-convert
 
 export { SERVER_IMAGE_CONVERT_MAX_BYTES }
 
+const DECODABLE_IMAGE_MIMES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+])
+
+function isAppleMobileSafari(): boolean {
+  if (typeof navigator === "undefined") return false
+  const ua = navigator.userAgent
+  return (
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  )
+}
+
+/**
+ * Skip the expensive createImageBitmap probe for formats (and platforms) where the sell pipeline
+ * already decodes successfully. Probing every iPhone photo before prepare caused a second full-res
+ * decode and was a primary trigger for iOS Safari's "operation was aborted" OOM errors.
+ */
+function isLikelyBrowserDecodableWithoutProbe(file: File): boolean {
+  const mime = (file.type || "").toLowerCase()
+  if (mime && DECODABLE_IMAGE_MIMES.has(mime)) return true
+
+  const lowerName = file.name.toLowerCase()
+  if (/\.(jpe?g|png|webp|gif|avif)$/i.test(lowerName)) return true
+
+  if (isAppleMobileSafari()) {
+    if (
+      mime.includes("heic") ||
+      mime.includes("heif") ||
+      lowerName.endsWith(".heic") ||
+      lowerName.endsWith(".heif")
+    ) {
+      return true
+    }
+    // Camera roll picks often omit MIME; trust common photo extensions on iOS.
+    if (!mime && /\.(jpe?g|heic|heif)$/i.test(lowerName)) return true
+  }
+
+  return false
+}
+
 const HEIC_BRAND_RE = /^(heic|heix|hevc|hevx|mif1|msf1|heim|heis|hevm|hevs)$/i
 
 function conversionErrorMessage(err: unknown): string {
@@ -147,6 +192,8 @@ async function convertViaServer(file: File): Promise<File> {
  * HEIC/HEIF is converted in the browser first so large iPhone photos never hit Vercel's ~4.5MB body limit.
  */
 export async function ensureBrowserDecodableImageFile(file: File): Promise<File> {
+  if (isLikelyBrowserDecodableWithoutProbe(file)) return file
+
   if (await browserCanDecodeImage(file)) return file
 
   const heicish = await fileLooksLikeHeic(file)

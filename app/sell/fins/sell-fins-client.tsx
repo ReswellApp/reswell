@@ -39,6 +39,7 @@ import {
   prepareListingImagePairFromFile,
 } from "@/lib/listing-image-pipeline"
 import { ensureBrowserDecodableImageFile } from "@/lib/client-image-decode"
+import { friendlyListingPhotoErrorMessage } from "@/lib/utils/friendly-listing-photo-error"
 import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
 import {
   FIN_LISTING_MAX_PHOTOS,
@@ -442,7 +443,7 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
         if (!photoPrepareSeqInSync(clientId, prepareSeq)) return
         console.error("fin photo upload failed", err)
         updateSlot(clientId, { phase: "error" })
-        toast.error(err instanceof Error ? err.message : "Photo upload failed")
+        toast.error(friendlyListingPhotoErrorMessage(err, "upload"))
       }
     },
     [photoPrepareSeqInSync, signIn, updateSlot],
@@ -464,7 +465,7 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
         try {
           assertListingOriginalSize(file)
         } catch (e) {
-          toast.error(e instanceof Error ? e.message : "That photo is too large.")
+          toast.error(friendlyListingPhotoErrorMessage(e))
           continue
         }
         accepted.push({
@@ -576,7 +577,7 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
           )
           if (nextSlot) void uploadSlot(nextSlot)
         } catch (e) {
-          toast.error(e instanceof Error ? e.message : "Could not rotate photo. Try again.")
+          toast.error(friendlyListingPhotoErrorMessage(e, "rotate"))
           setPhotos((prev) => prev.map((p) => (p.clientId === clientId ? snapshot : p)))
         }
       })()

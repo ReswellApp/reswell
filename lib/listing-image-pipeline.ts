@@ -40,7 +40,10 @@ export async function browserCanDecodeImage(file: File): Promise<boolean> {
       const b = await createImageBitmap(file)
       b.close()
       return true
-    } catch {
+    } catch (err) {
+      // Memory-pressure aborts must propagate — returning false would wrongly route JPEG/PNG into
+      // HEIC/server conversion and still fail with "operation was aborted".
+      if (isRetryableImageError(err)) throw err
       return false
     }
   })
@@ -313,17 +316,8 @@ export async function prepareListingImagePairFromFile(
         return await runImageCpuTask(() => prepareListingImagePairOnMainThread(file, options))
       } catch (err) {
         if (isRetryableImageError(err)) throw err
-        throw new Error(
-          err instanceof Error && err.message
-            ? err.message
-            : "Could not process this photo. Try again or choose a different photo.",
-        )
+        throw err
       }
     }),
-  ).catch((err) => {
-    if (isRetryableImageError(err)) {
-      throw new Error("Your device ran low on memory while processing this photo. Tap Retry.")
-    }
-    throw err
-  })
+  )
 }

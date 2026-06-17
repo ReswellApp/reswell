@@ -119,6 +119,7 @@ import {
   saveSellListingDraft,
   type SellListingDraftFormSnapshot,
 } from "@/lib/sell-listing-draft-idb"
+import { friendlyListingPhotoErrorMessage } from "@/lib/utils/friendly-listing-photo-error"
 import { sellerPurchasePriceToDb } from "@/lib/utils/seller-purchase-price"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { cn } from "@/lib/utils"
@@ -711,7 +712,7 @@ function SellListingPhotoTile({
       {isFailure ? (
         <div className="shrink-0 p-1 bg-destructive/10 border-t border-destructive/20 space-y-1">
           <p className="text-[9px] text-destructive line-clamp-2">
-            {image.errorMessage || "Failed"}
+            {image.errorMessage || "Couldn't add photo"}
           </p>
           <Button
             type="button"
@@ -1838,7 +1839,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         ),
       )
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Photo processing failed"
+      const msg = friendlyListingPhotoErrorMessage(e)
       if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
       setImages((prev) =>
         prev.map((s) => {
@@ -2027,9 +2028,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         )
         if (nextSlot) void optimizeAndUploadSlot(nextSlot)
       } catch (e) {
-        const msg =
-          e instanceof Error ? e.message : "Could not rotate photo. Try again."
-        toast.error(msg)
+        toast.error(friendlyListingPhotoErrorMessage(e, "rotate"))
         setImages((prev) => prev.map((s) => (s.clientId === clientId ? snapshot : s)))
       }
     })()
@@ -2061,7 +2060,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       try {
         assertListingOriginalSize(originalFile)
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "File too large")
+        toast.error(friendlyListingPhotoErrorMessage(err))
         continue
       }
       newSlots.push({
@@ -3174,23 +3173,22 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                     </SortableContext>
                     {images.length < 12 && (
                       <div className="relative aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 transition-colors overflow-hidden">
-                        <label
-                          htmlFor={listingPhotosInputId}
-                          className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer"
+                        <div
+                          className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
+                          aria-hidden
                         >
-                          <span className="sr-only">Add listing photos</span>
-                          <Upload className="h-6 w-6 text-muted-foreground/45 pointer-events-none" aria-hidden />
-                          <span className="text-xs text-muted-foreground/45 mt-1 pointer-events-none" aria-hidden>
-                            Add
-                          </span>
-                        </label>
+                          <Upload className="h-6 w-6 text-muted-foreground/45" />
+                          <span className="mt-1 text-xs text-muted-foreground/45">Add</span>
+                        </div>
                         <input
                           id={listingPhotosInputId}
                           type="file"
                           accept="image/*"
                           multiple
                           onChange={handleImageChange}
-                          className="sr-only"
+                          aria-label="Add listing photos"
+                          className="absolute inset-0 h-full w-full cursor-pointer opacity-0 touch-manipulation"
+                          onPointerDown={(e) => e.stopPropagation()}
                         />
                       </div>
                     )}

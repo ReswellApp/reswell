@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
+import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { trackKlaviyoMarkedAsSold } from "@/lib/klaviyo/track-marked-as-sold"
 import { deleteAllCartRowsForListing } from "@/lib/db/cart-items-server"
@@ -126,6 +127,7 @@ export async function markSellerListingSoldOffPlatform(
 
   await removeListingFromGoogleMerchantFeed(listingId)
 
+  revalidateListingDetailPage(listingId, row.slug)
   revalidateBoardsBrowseCatalog()
   revalidateMarketplaceSoldFeedCatalog()
   await revalidateSellersAfterListingChange(supabase, sellerUserId)

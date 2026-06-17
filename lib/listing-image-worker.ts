@@ -23,7 +23,9 @@ const WORKER_SOURCE = `
 self.onmessage = async function (e) {
   var msg = e.data
   try {
-    var blob = new Blob([msg.buffer], { type: msg.type || "image/jpeg" })
+    var blob = msg.file instanceof Blob
+      ? msg.file
+      : new Blob([msg.buffer], { type: msg.type || "image/jpeg" })
     var bitmap = await createImageBitmap(blob, { imageOrientation: "from-image" })
     var src = bitmap
     var w = bitmap.width
@@ -214,23 +216,19 @@ export async function prepareListingImagePairInWorker(
   const w = getWorker()
   if (!w) return null
 
-  const buffer = await file.arrayBuffer()
   const id = nextRequestId++
 
   return new Promise<PreparedListingImagePair>((resolve, reject) => {
     pending.set(id, { resolve, reject })
-    w.postMessage(
-      {
-        id,
-        buffer,
-        type: file.type || "image/jpeg",
-        rotate180: Boolean(options?.rotate180),
-        fullMax: LISTING_FULL_MAX_LONG_EDGE,
-        thumbMax: LISTING_THUMB_MAX_LONG_EDGE,
-        qFull: LISTING_WEBP_QUALITY_FULL,
-        qThumb: LISTING_WEBP_QUALITY_THUMB,
-      },
-      [buffer],
-    )
+    w.postMessage({
+      id,
+      file,
+      type: file.type || "image/jpeg",
+      rotate180: Boolean(options?.rotate180),
+      fullMax: LISTING_FULL_MAX_LONG_EDGE,
+      thumbMax: LISTING_THUMB_MAX_LONG_EDGE,
+      qFull: LISTING_WEBP_QUALITY_FULL,
+      qThumb: LISTING_WEBP_QUALITY_THUMB,
+    })
   })
 }

@@ -13,6 +13,7 @@ import {
  */
 export const PEER_SURFBOARD_CHECKOUT_LISTING_SELECT = `
   id,
+  slug,
   user_id,
   title,
   price,
@@ -42,6 +43,7 @@ export type PeerListingForShippingQuote = ListingPackedParcelSource &
 /** Row from `listings` + {@link PEER_SURFBOARD_CHECKOUT_LISTING_SELECT}. Assert after runtime filters — Supabase client typings widen rows. */
 export type PeerSurfboardCheckoutListingRow = PeerListingForShippingQuote & {
   id: string
+  slug: string | null
   user_id: string
   price: string | number
   title: string | null
