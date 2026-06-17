@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useLayoutEffect, useState } from "react"
+import { useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { forceReleaseBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { Header } from "@/components/header"
@@ -19,6 +19,7 @@ import { ProfileCompletionRequiredDialog } from "@/components/auth/profile-compl
 import { NewsletterPromoPopup } from "@/components/features/marketing/newsletter-promo-popup"
 import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
 import { isMessageThreadDetailRoute } from "@/lib/utils/message-thread-routes"
+import { useFlatMobileMessagesInbox } from "@/hooks/use-flat-mobile-messages-inbox"
 import { cn } from "@/lib/utils"
 
 function hideSiteChrome(pathname: string | null): boolean {
@@ -49,17 +50,11 @@ export function SiteChromeClient({
   headerAuth: SiteChromeAuthPayload
 }) {
   const pathname = usePathname()
-  const [lockDesktopThreadViewport, setLockDesktopThreadViewport] = useState(false)
-
-  useLayoutEffect(() => {
-    const media = window.matchMedia("(min-width: 1024px)")
-    const sync = () => {
-      setLockDesktopThreadViewport(isMessageThreadDetailRoute(pathname) && media.matches)
-    }
-    sync()
-    media.addEventListener("change", sync)
-    return () => media.removeEventListener("change", sync)
-  }, [pathname])
+  const flatMobileMessagesInbox = useFlatMobileMessagesInbox()
+  // Lock the viewport to a fixed-height app shell on conversation threads at
+  // every breakpoint: the page itself never scrolls, only the message list
+  // does, and the composer pins to the bottom — an app-like, not page-like feel.
+  const lockThreadViewport = isMessageThreadDetailRoute(pathname)
 
   useEffect(() => {
     forceReleaseBodyScrollLock()
@@ -93,7 +88,7 @@ export function SiteChromeClient({
       <div
         className={cn(
           "flex flex-col",
-          lockDesktopThreadViewport ? "h-dvh max-h-dvh overflow-hidden" : "min-h-dvh",
+          lockThreadViewport ? "h-dvh max-h-dvh overflow-hidden" : "min-h-dvh",
         )}
       >
         <RouteProgressBar />
@@ -103,8 +98,9 @@ export function SiteChromeClient({
         </SiteHeaderShell>
         <div
           className={cn(
-            "flex min-h-0 flex-1 flex-col pt-[var(--site-header-height,4rem)]",
-            lockDesktopThreadViewport && "overflow-hidden",
+            "flex flex-col pt-[var(--site-header-height,4rem)]",
+            flatMobileMessagesInbox ? "flex-none" : "min-h-0 flex-1",
+            lockThreadViewport && "overflow-hidden",
             hideFooter(pathname)
               ? "pb-[env(safe-area-inset-bottom)]"
               : "pb-10 sm:pb-12 md:pb-16",

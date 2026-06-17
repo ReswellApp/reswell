@@ -23,9 +23,9 @@ function MessagesTabBarSkeleton() {
   )
 }
 
-function ChatListRowSkeleton() {
+function ChatListRowSkeleton({ flat = false }: { flat?: boolean }) {
   return (
-    <div className="flex items-center gap-4 px-4 py-4 sm:px-5">
+    <div className={cn("flex items-center gap-4 py-4", flat ? "px-0" : "px-4 sm:px-5")}>
       <Skeleton className="h-12 w-12 shrink-0 rounded-full" />
       <div className="min-w-0 flex-1 space-y-2">
         <div className="flex items-center justify-between gap-3">
@@ -47,20 +47,16 @@ export function MessagesInboxSkeleton({
 }) {
   if (embedded) {
     return (
-      <div className={cn("flex min-h-0 flex-1 flex-col", className)} aria-busy="true" aria-label="Loading messages">
-        <div className={cn("flex min-h-[min(72dvh,720px)] overflow-hidden rounded-[20px] border border-border/70 lg:min-h-[min(68dvh,680px)]", groupedShellClass)}>
-          <div className="hidden w-[min(100%,340px)] border-r border-border/60 lg:block">
-            <Skeleton className="m-3 h-10 rounded-xl" />
-            <div className="divide-y divide-border/40">
-              {[1, 2, 3, 4].map((i) => (
-                <ChatListRowSkeleton key={i} />
-              ))}
-            </div>
-          </div>
-          <div className="hidden flex-1 flex-col items-center justify-center lg:flex">
-            <Skeleton className="h-14 w-14 rounded-full" />
-            <Skeleton className="mt-4 h-5 w-44" />
-          </div>
+      <div className={cn("flex flex-col max-lg:flex-none lg:min-h-0 lg:flex-1", className)} aria-busy="true" aria-label="Loading messages">
+        <Skeleton className="mb-3 h-10 w-full shrink-0 rounded-xl max-lg:mx-0 lg:mx-3 lg:mt-3" />
+        <div className="divide-y divide-border/40 max-lg:flex-none lg:min-h-0 lg:flex-1 lg:overflow-hidden lg:rounded-[20px] lg:border lg:border-border/70 lg:bg-card lg:shadow-[0_1px_2px_rgba(17,17,17,0.04)]">
+          {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+            <ChatListRowSkeleton key={i} flat />
+          ))}
+        </div>
+        <div className="hidden min-h-0 flex-1 flex-col items-center justify-center lg:flex">
+          <Skeleton className="h-14 w-14 rounded-full" />
+          <Skeleton className="mt-4 h-5 w-44" />
         </div>
       </div>
     )

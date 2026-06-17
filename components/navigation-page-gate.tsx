@@ -7,9 +7,12 @@ import { scrollPageToTop } from "@/lib/utils/scroll-page-to-top"
 import {
   cancelMessageThreadScrollBottom,
   isMessageThreadDetailRoute,
+  isMessagesInboxIndexRoute,
   isMobileMessageThreadViewport,
   scrollPageToMessageThreadBottom,
 } from "@/lib/utils/message-thread-routes"
+import { useMobileLg } from "@/hooks/use-mobile-lg"
+import { cn } from "@/lib/utils"
 
 /**
  * Scrolls to top and applies a CSS fade+slide entrance animation on client-side
@@ -18,6 +21,8 @@ import {
  */
 export function NavigationPageGate({ children }: { children: ReactNode }) {
   const pathname = usePathname()
+  const isMobileLg = useMobileLg()
+  const flatMobileMessagesInbox = isMobileLg && isMessagesInboxIndexRoute(pathname)
   const prevPathRef = useRef<string | null>(null)
   const [navCount, setNavCount] = useState(0)
 
@@ -53,14 +58,18 @@ export function NavigationPageGate({ children }: { children: ReactNode }) {
   }, [pathname])
 
   return (
-    <div className="relative flex min-h-0 w-full min-w-0 flex-1 flex-col">
+    <div
+      className={cn(
+        "relative flex w-full min-w-0 flex-col",
+        flatMobileMessagesInbox ? "flex-none" : "min-h-0 flex-1",
+      )}
+    >
       <div
         key={navCount}
-        className={
-          navCount > 0
-            ? "page-enter flex w-full min-h-0 min-w-0 flex-1 flex-col"
-            : "flex w-full min-h-0 min-w-0 flex-1 flex-col"
-        }
+        className={cn(
+          flatMobileMessagesInbox ? "flex w-full flex-col" : "flex w-full min-h-0 min-w-0 flex-1 flex-col",
+          navCount > 0 && "page-enter",
+        )}
       >
         {children}
       </div>

@@ -6,7 +6,7 @@ import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { Button } from "@/components/ui/button"
 import { DashboardSidebarNav } from "@/components/features/dashboard/dashboard-sidebar-nav"
-import { DashboardMobilePageChrome } from "@/components/features/dashboard/dashboard-mobile-page-chrome"
+import { MessagesAccountShellClient } from "@/components/features/messages/messages-account-shell-client"
 
 export async function MessagesAccountShell({ children }: { children: React.ReactNode }) {
   const { supabase, user } = await getCachedDashboardSession()
@@ -24,10 +24,7 @@ export async function MessagesAccountShell({ children }: { children: React.React
   const shopHref = profile?.is_shop ? sellerProfileHref(profile) : null
 
   return (
-    <div className="container mx-auto flex min-h-0 flex-1 flex-col py-6 sm:py-8">
-      <DashboardMobilePageChrome sellerProfileHref={shopHref} />
-
-      <div className="mt-6 flex min-h-0 flex-1 flex-col gap-8 lg:mt-0 lg:flex-row lg:gap-12 xl:gap-14">
+    <MessagesAccountShellClient sellerProfileHref={shopHref} sidebar={
         <aside className="hidden shrink-0 lg:block lg:w-64 xl:w-72">
           <div className="sticky top-24 space-y-5">
             <Button asChild className="h-10 w-full lg:h-11 lg:text-[15px]">
@@ -42,9 +39,8 @@ export async function MessagesAccountShell({ children }: { children: React.React
             </Suspense>
           </div>
         </aside>
-
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
-      </div>
-    </div>
+      }>
+      {children}
+    </MessagesAccountShellClient>
   )
 }

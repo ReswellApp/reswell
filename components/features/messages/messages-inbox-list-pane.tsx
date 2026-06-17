@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { formatDistanceToNow } from "date-fns"
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { MessageProfileAvatar } from "@/components/features/messages/message-profile-avatar"
 import { useMessagesInbox } from "@/components/features/messages/messages-inbox-context"
+import { useFlatMobileMessagesInbox } from "@/hooks/use-flat-mobile-messages-inbox"
 import {
   counterpartyInboxHref,
   groupConversationsByCounterparty,
@@ -26,6 +27,7 @@ export function MessagesInboxListPane({
   className,
 }: MessagesInboxListPaneProps) {
   const pathname = usePathname() ?? ""
+  const flatMobileInbox = useFlatMobileMessagesInbox()
   const { currentUserId, conversations } = useMessagesInbox()
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -55,10 +57,18 @@ export function MessagesInboxListPane({
   }
 
   return (
-    <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
-      <div className="relative shrink-0 border-b border-border/60 px-3 py-3">
+    <div className={cn("flex flex-col", flatMobileInbox ? "flex-none" : "min-h-0 flex-1", className)}>
+      <div
+        className={cn(
+          "relative shrink-0 border-b border-border/60 py-3",
+          flatMobileInbox ? "px-0" : "px-3",
+        )}
+      >
         <Search
-          className="pointer-events-none absolute left-6 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+          className={cn(
+            "pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground",
+            flatMobileInbox ? "left-3" : "left-6",
+          )}
           aria-hidden
         />
         <Input
@@ -66,11 +76,14 @@ export function MessagesInboxListPane({
           placeholder="Search chats"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="h-10 rounded-xl border-border/80 bg-muted/70 pl-10 text-[15px] shadow-none"
+          className={cn(
+            "h-10 rounded-xl border-border/80 bg-muted/70 text-[15px] shadow-none",
+            flatMobileInbox ? "pl-10" : "pl-10",
+          )}
         />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:thin]">
+      <div className={cn(flatMobileInbox ? "flex-none" : "min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y [scrollbar-width:thin]")}>
         {filteredGroups.length === 0 ? (
           <div className="flex flex-col items-center px-6 py-12 text-center">
             {searchLower && groupedChats.length > 0 ? (
@@ -110,7 +123,8 @@ export function MessagesInboxListPane({
                   <Link
                     href={href}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-3 transition-colors hover:bg-muted/40",
+                      "flex items-center gap-3 py-3 transition-colors hover:bg-muted/40",
+                      flatMobileInbox ? "px-0" : "px-3",
                       active && "bg-muted/60",
                     )}
                   >

@@ -1,3 +1,9 @@
+/** Inbox list at `/messages` (not a thread, offers tab, or compose). */
+export function isMessagesInboxIndexRoute(pathname: string | null): boolean {
+  if (!pathname) return false
+  return pathname.replace(/\/$/, "") === "/messages"
+}
+
 /** Single conversation thread or new-message compose (mobile dock + scroll targets). */
 export function isMessageThreadDetailRoute(pathname: string | null): boolean {
   if (!pathname) return false
