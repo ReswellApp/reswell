@@ -1,5 +1,5 @@
 import { primaryListingImageUrl } from "@/lib/listing-metadata"
-import { absoluteProxiedListingMediaUrl } from "@/lib/listing-media-proxy-url"
+import { googleMerchantListingImageUrl } from "@/lib/google-merchant/product-image-link"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { googleMerchantProductLink } from "@/lib/google-merchant/product-link"
 import { buildGoogleMerchantProductDescription } from "@/lib/google-merchant/product-description"
@@ -50,7 +50,7 @@ export function googleMerchantListingProductSchema(listing: ListingProductSchema
   if (!Number.isFinite(price) || price <= 0) return null
 
   const imageRaw = primaryListingImageUrl(listing.listing_images ?? null)
-  const image = imageRaw ? absoluteProxiedListingMediaUrl(imageRaw) : undefined
+  const image = imageRaw ? googleMerchantListingImageUrl(imageRaw) : undefined
 
   return productSchema({
     name: capitalizeWords(title),

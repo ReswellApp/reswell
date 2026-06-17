@@ -1,6 +1,6 @@
 import { googleMerchantProductLink } from "@/lib/google-merchant/product-link"
+import { googleMerchantListingImageUrl } from "@/lib/google-merchant/product-image-link"
 import { listingHeroSlideSrc, type ListingImageForCard } from "@/lib/listing-image-display"
-import { absoluteProxiedListingMediaUrl } from "@/lib/listing-media-proxy-url"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import {
@@ -91,14 +91,8 @@ function priceToMicros(amountUsd: number): string {
   return String(Math.round(amountUsd * 1_000_000))
 }
 
-function absoluteImageUrl(raw: string | null | undefined, origin: string): string | null {
-  if (!raw?.trim()) return null
-
-  const proxiedAbsolute = absoluteProxiedListingMediaUrl(raw.trim())
-  if (proxiedAbsolute) return proxiedAbsolute
-
-  if (/^https?:\/\//i.test(raw.trim())) return raw.trim()
-  return `${origin}${raw.trim().startsWith("/") ? "" : "/"}${raw.trim()}`
+function absoluteImageUrl(raw: string | null | undefined): string | null {
+  return googleMerchantListingImageUrl(raw)
 }
 
 function orderedListingImageRaws(listing: GoogleMerchantListingRow): string[] {
@@ -124,28 +118,27 @@ function orderedListingImageRaws(listing: GoogleMerchantListingRow): string[] {
   return urls
 }
 
-function absoluteImageLink(listing: GoogleMerchantListingRow, origin: string): string | null {
+function absoluteImageLink(listing: GoogleMerchantListingRow): string | null {
   const list = listing.listing_images ?? []
   const primary = list.find((i) => i.is_primary) || list[0]
   const raw = primary?.url?.trim() || primary?.thumbnail_url?.trim()
   if (raw) {
-    const resolved = absoluteImageUrl(raw, origin)
+    const resolved = absoluteImageUrl(raw)
     if (resolved) return resolved
   }
 
   const relativeOrAbsolute = listingHeroSlideSrc(listing.listing_images)
   if (!relativeOrAbsolute) return null
-  return absoluteImageUrl(relativeOrAbsolute, origin)
+  return absoluteImageUrl(relativeOrAbsolute)
 }
 
 function additionalImageLinks(
   listing: GoogleMerchantListingRow,
   primary: string,
-  origin: string,
 ): string[] | undefined {
   const maxAdditional = GOOGLE_MERCHANT_MAX_ADDITIONAL_IMAGES
   const extras = orderedListingImageRaws(listing)
-    .map((raw) => absoluteImageUrl(raw, origin))
+    .map((raw) => absoluteImageUrl(raw))
     .filter((url): url is string => Boolean(url) && url !== primary)
 
   const unique = [...new Set(extras)]
@@ -244,8 +237,7 @@ export function isGoogleMerchantEligibleListing(listing: GoogleMerchantListingRo
   if (listing.hidden_from_site === true) return false
   if (!listing.title?.trim()) return false
   if (!Number.isFinite(listing.price) || listing.price <= 0) return false
-  const origin = publicSiteOrigin()
-  if (!absoluteImageLink(listing, origin)) return false
+  if (!absoluteImageLink(listing)) return false
   return true
 }
 
@@ -255,7 +247,7 @@ export function mapListingToProductInput(
   if (!isGoogleMerchantEligibleListing(listing)) return null
 
   const origin = publicSiteOrigin()
-  const imageLink = absoluteImageLink(listing, origin)
+  const imageLink = absoluteImageLink(listing)
   if (!imageLink) return null
 
   const link = googleMerchantProductLink(listing, origin)
@@ -263,7 +255,7 @@ export function mapListingToProductInput(
   const identifiers = productIdentifiers(listing)
   const shipping = mapListingShippingAttributes(listing)
   const taxes = mapListingTaxAttributes()
-  const additionalImages = additionalImageLinks(listing, imageLink, origin)
+  const additionalImages = additionalImageLinks(listing, imageLink)
 
   return {
     offerId: listing.id,
