@@ -849,11 +849,24 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       >
         <div className="container mx-auto flex min-h-[56px] min-w-0 items-center justify-between gap-4 px-4 py-2 sm:min-h-[64px] md:min-h-[80px] sm:px-6">
           <SiteWordmarkLink />
-          <div className="flex shrink-0 items-center justify-end">
+          <div className="flex shrink-0 items-center justify-end gap-0.5 sm:gap-1">
             {!authLoaded ? (
               <Skeleton className="h-9 w-9 shrink-0 rounded-full" aria-hidden />
             ) : user && accountMenu ? (
-              accountMenu
+              <>
+                <Link href="/messages" className="relative inline-flex shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 text-foreground hover:bg-black/5"
+                  >
+                    <MessageSquare className="h-[22px] w-[22px]" />
+                    <NavUnreadCountBadge count={unreadMessages} overlay />
+                    <span className="sr-only">Messages</span>
+                  </Button>
+                </Link>
+                {accountMenu}
+              </>
             ) : authLoaded ? (
               <Button
                 variant="ghost"
