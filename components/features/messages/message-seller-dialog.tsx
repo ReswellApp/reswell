@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { MessageComposerTextarea } from '@/components/features/messages/message-composer-textarea'
 import { VerifiedBadge } from '@/components/verified-badge'
 import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/local-phone-policy-block-bubble'
 import { MessageMediaSendButton } from '@/components/features/messages/message-media-send-button'
@@ -288,8 +288,8 @@ export function MessageSellerDialog({
           }}
           className="shrink-0 space-y-2.5 border-t border-border/60 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3"
         >
-          <div className="flex items-center gap-1 rounded-full bg-muted/70 py-1 pl-1 pr-1.5">
-            <Input
+          <div className="flex items-end gap-1 rounded-full bg-muted/70 py-1 pl-1 pr-1.5">
+            <MessageComposerTextarea
               value={newMessage}
               onChange={(e) => {
                 setNewMessage(e.target.value)
@@ -299,7 +299,7 @@ export function MessageSellerDialog({
               disabled={sending}
               autoComplete="off"
               aria-label="Message text"
-              className="min-h-touch min-w-0 flex-1 border-0 bg-transparent px-3 text-[16px] shadow-none placeholder:text-muted-foreground/80 focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="text-[16px] placeholder:text-muted-foreground/80"
             />
             <MessageMediaSendButton
                 conversationId={conversationId}

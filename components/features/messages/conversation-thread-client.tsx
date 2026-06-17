@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { MessageComposerTextarea } from '@/components/features/messages/message-composer-textarea'
 import { ArrowLeft, Send, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ConversationPartyProfile } from '@/components/features/messages/conversation-party-profile'
@@ -1048,14 +1048,13 @@ export function ConversationThreadClient({
             }}
             className="flex items-end gap-2 rounded-[24px] border border-border/70 bg-background/95 px-2 py-1.5 shadow-[0_2px_16px_rgba(17,17,17,0.06)] backdrop-blur-sm dark:border-border/80 dark:bg-card/95 dark:shadow-none"
           >
-            <Input
+            <MessageComposerTextarea
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="Message"
               disabled={sending}
               autoComplete="off"
               aria-label="Message text"
-              className="min-h-touch min-w-0 flex-1 border-0 bg-transparent px-3 text-[17px] shadow-none placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
             <MessageMediaSendButton
               conversationId={id}
