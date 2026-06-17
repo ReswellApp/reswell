@@ -2,12 +2,14 @@ import { NextResponse } from "next/server"
 import { evaluateListingMediaAccess } from "@/lib/listing-media-crawler-guard"
 import { isValidListingMediaObjectPath } from "@/lib/listing-media-proxy-path-validation"
 import {
+  LISTING_MEDIA_MERCHANT_VARIANT_PARAM,
   LISTING_MEDIA_PDP_VARIANT_PARAM,
   LISTING_MEDIA_TILE_VARIANT_PARAM,
 } from "@/lib/listing-media-proxy-url"
 import { cachedPublicStorageGetResponse } from "@/lib/media/cached-public-storage-get-response"
 import {
   getCachedListingVariantBody,
+  LISTING_MEDIA_MERCHANT_VARIANT,
   listingMediaPathLooksLikeStoredThumb,
   type ListingMediaResizeVariant,
 } from "@/lib/media/listing-tile-variant-resize"
@@ -48,13 +50,24 @@ export async function GET(
       ? LISTING_MEDIA_TILE_VARIANT_PARAM
       : variantParam === LISTING_MEDIA_PDP_VARIANT_PARAM
         ? LISTING_MEDIA_PDP_VARIANT_PARAM
-        : null
+        : variantParam === LISTING_MEDIA_MERCHANT_VARIANT_PARAM
+          ? LISTING_MEDIA_MERCHANT_VARIANT
+          : null
 
-  // Stored thumbs (≤640px) are already smaller than any resize variant — serve as-is.
-  if (!resizeVariant || listingMediaPathLooksLikeStoredThumb(path)) {
+  const objectPath =
+    resizeVariant === LISTING_MEDIA_MERCHANT_VARIANT && listingMediaPathLooksLikeStoredThumb(path)
+      ? path.replace(/-thumb\./, "-full.")
+      : path
+
+  // Stored thumbs (≤640px) are already smaller than tile/pdp — serve as-is unless merchant needs full-res.
+  const serveStoredThumbWithoutResize =
+    listingMediaPathLooksLikeStoredThumb(objectPath) &&
+    resizeVariant !== LISTING_MEDIA_MERCHANT_VARIANT
+
+  if (!resizeVariant || serveStoredThumbWithoutResize) {
     return cachedPublicStorageGetResponse({
       bucket: "listings",
-      objectPath: path,
+      objectPath,
       publicMarker: PUBLIC_LISTINGS_MARKER,
       contentTypeFallback,
     })
@@ -65,13 +78,18 @@ export async function GET(
     return new NextResponse("Server misconfiguration", { status: 500 })
   }
 
-  const encodedPath = path
+  const encodedPath = objectPath
     .split("/")
     .map((p) => encodeURIComponent(p))
     .join("/")
   const upstreamUrl = `${base}${PUBLIC_LISTINGS_MARKER}${encodedPath}`
 
-  const resized = await getCachedListingVariantBody("listings", path, upstreamUrl, resizeVariant)
+  const resized = await getCachedListingVariantBody(
+    "listings",
+    objectPath,
+    upstreamUrl,
+    resizeVariant,
+  )
   if (!resized) {
     return new NextResponse("Not found", { status: 404 })
   }

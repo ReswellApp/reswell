@@ -1,6 +1,9 @@
 import { googleMerchantProductLink } from "@/lib/google-merchant/product-link"
-import { googleMerchantListingImageUrl } from "@/lib/google-merchant/product-image-link"
-import { listingHeroSlideSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import {
+  googleMerchantListingImageSourceUrl,
+  googleMerchantListingImageUrl,
+} from "@/lib/google-merchant/product-image-link"
+import type { ListingImageForCard } from "@/lib/listing-image-display"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import {
@@ -107,13 +110,8 @@ function orderedListingImageRaws(listing: GoogleMerchantListingRow): string[] {
 
   const urls: string[] = []
   for (const img of sorted) {
-    const full = img.url?.trim()
-    if (full) {
-      urls.push(full)
-      continue
-    }
-    const thumb = img.thumbnail_url?.trim()
-    if (thumb) urls.push(thumb)
+    const source = googleMerchantListingImageSourceUrl(img)
+    if (source) urls.push(source)
   }
   return urls
 }
@@ -121,15 +119,22 @@ function orderedListingImageRaws(listing: GoogleMerchantListingRow): string[] {
 function absoluteImageLink(listing: GoogleMerchantListingRow): string | null {
   const list = listing.listing_images ?? []
   const primary = list.find((i) => i.is_primary) || list[0]
-  const raw = primary?.url?.trim() || primary?.thumbnail_url?.trim()
+  if (!primary) return null
+
+  const raw = googleMerchantListingImageSourceUrl(primary)
   if (raw) {
     const resolved = absoluteImageUrl(raw)
     if (resolved) return resolved
   }
 
-  const relativeOrAbsolute = listingHeroSlideSrc(listing.listing_images)
-  if (!relativeOrAbsolute) return null
-  return absoluteImageUrl(relativeOrAbsolute)
+  for (const img of list) {
+    const fallback = googleMerchantListingImageSourceUrl(img)
+    if (!fallback) continue
+    const resolved = absoluteImageUrl(fallback)
+    if (resolved) return resolved
+  }
+
+  return null
 }
 
 function additionalImageLinks(

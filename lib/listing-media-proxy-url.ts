@@ -9,6 +9,9 @@ export const LISTING_MEDIA_TILE_VARIANT_PARAM = "tile" as const
 /** Resize hint for the listing detail hero (≤1024px long edge WebP). */
 export const LISTING_MEDIA_PDP_VARIANT_PARAM = "pdp" as const
 
+/** High-quality WebP for Google Merchant image_link (≤1600px long edge). */
+export const LISTING_MEDIA_MERCHANT_VARIANT_PARAM = "merchant" as const
+
 export function isProxiedListingMediaSrc(src: string | null | undefined): boolean {
   return typeof src === "string" && src.startsWith(LISTING_MEDIA_PROXY_PATH_PREFIX)
 }
@@ -77,6 +80,22 @@ export function withListingMediaTileVariant(src: string): string {
 /** Appends `?variant=pdp` so `/media/listings` serves a cached ≤1024px WebP for the PDP hero. */
 export function withListingMediaPdpVariant(src: string): string {
   return withListingMediaVariant(src, LISTING_MEDIA_PDP_VARIANT_PARAM)
+}
+
+/** Appends `?variant=merchant` for catalog feeds (≤1600px long edge WebP). */
+export function withListingMediaMerchantVariant(src: string): string {
+  return withListingMediaVariant(src, LISTING_MEDIA_MERCHANT_VARIANT_PARAM)
+}
+
+/**
+ * Prefer the full-res storage object when a row only has a `-thumb.` URL.
+ * Pair uploads store `*-full.*` beside `*-thumb.webp`.
+ */
+export function listingFullImageUrlFromRef(url: string | null | undefined): string | null {
+  const t = url?.trim()
+  if (!t) return null
+  if (t.includes("-thumb.")) return t.replace("-thumb.", "-full.")
+  return t
 }
 
 /** Absolute `https://reswell.app/media/listings/...` for OG tags, catalog feeds, and crawlers. */

@@ -12,16 +12,23 @@ import {
 
 export const LISTING_MEDIA_TILE_VARIANT = "tile" as const
 export const LISTING_MEDIA_PDP_VARIANT = "pdp" as const
+/** Google Merchant / catalog crawlers — high-res WebP (≤1600px long edge). */
+export const LISTING_MEDIA_MERCHANT_VARIANT = "merchant" as const
 
 /** PDP hero renders ≤~512 CSS px wide — 1024px covers 2x retina without full-res payloads. */
 export const LISTING_PDP_MAX_LONG_EDGE = 1024
 const LISTING_WEBP_QUALITY_PDP = 0.78
+
+/** Shopping ads — sharper than PDP; stays under upload full-res (2000px) cap. */
+export const LISTING_MERCHANT_MAX_LONG_EDGE = 1600
+const LISTING_WEBP_QUALITY_MERCHANT = 0.88
 
 const TILE_VARIANT_CACHE_TAG_PREFIX = "listing-tile-variant" as const
 
 export type ListingMediaResizeVariant =
   | typeof LISTING_MEDIA_TILE_VARIANT
   | typeof LISTING_MEDIA_PDP_VARIANT
+  | typeof LISTING_MEDIA_MERCHANT_VARIANT
 
 const VARIANT_SPECS: Record<
   ListingMediaResizeVariant,
@@ -34,6 +41,10 @@ const VARIANT_SPECS: Record<
   [LISTING_MEDIA_PDP_VARIANT]: {
     maxLongEdge: LISTING_PDP_MAX_LONG_EDGE,
     quality: LISTING_WEBP_QUALITY_PDP,
+  },
+  [LISTING_MEDIA_MERCHANT_VARIANT]: {
+    maxLongEdge: LISTING_MERCHANT_MAX_LONG_EDGE,
+    quality: LISTING_WEBP_QUALITY_MERCHANT,
   },
 }
 
@@ -98,6 +109,7 @@ async function loadListingVariantBody(
  * On-demand resized variant for listing objects.
  * `tile`: ≤640px long edge WebP (matches the client upload thumb pipeline).
  * `pdp`: ≤1024px long edge WebP for the listing detail hero.
+ * `merchant`: ≤1600px long edge WebP for Google Merchant / catalog feeds.
  */
 export function getCachedListingVariantBody(
   bucket: PublicStorageBucket,

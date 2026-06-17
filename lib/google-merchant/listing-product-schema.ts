@@ -1,6 +1,8 @@
-import { primaryListingImageUrl } from "@/lib/listing-metadata"
-import { googleMerchantListingImageUrl } from "@/lib/google-merchant/product-image-link"
 import { capitalizeWords } from "@/lib/listing-labels"
+import {
+  googleMerchantListingImageSourceUrl,
+  googleMerchantListingImageUrl,
+} from "@/lib/google-merchant/product-image-link"
 import { googleMerchantProductLink } from "@/lib/google-merchant/product-link"
 import { buildGoogleMerchantProductDescription } from "@/lib/google-merchant/product-description"
 import { mapListingConditionToSchemaOrg } from "@/lib/google-merchant/condition"
@@ -49,7 +51,9 @@ export function googleMerchantListingProductSchema(listing: ListingProductSchema
   const price = Number(listing.price)
   if (!Number.isFinite(price) || price <= 0) return null
 
-  const imageRaw = primaryListingImageUrl(listing.listing_images ?? null)
+  const images = listing.listing_images ?? []
+  const primary = images.find((i) => i.is_primary) || images[0]
+  const imageRaw = primary ? googleMerchantListingImageSourceUrl(primary) : null
   const image = imageRaw ? googleMerchantListingImageUrl(imageRaw) : undefined
 
   return productSchema({
