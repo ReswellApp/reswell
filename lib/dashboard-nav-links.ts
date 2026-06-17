@@ -27,10 +27,6 @@ export const DASHBOARD_MESSAGES_NAV: DashboardNavLink = {
   name: "Messages",
   href: "/messages",
   icon: MessageSquare,
-  children: [
-    { name: "Activity", href: "/messages?tab=activity" },
-    { name: "Messages", href: "/messages" },
-  ],
 }
 
 export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [

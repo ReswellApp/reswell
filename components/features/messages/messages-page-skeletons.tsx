@@ -38,7 +38,38 @@ function ChatListRowSkeleton() {
   )
 }
 
-export function MessagesInboxSkeleton({ className }: { className?: string }) {
+export function MessagesInboxSkeleton({
+  className,
+  embedded = false,
+}: {
+  className?: string
+  embedded?: boolean
+}) {
+  if (embedded) {
+    return (
+      <div className={cn("flex min-h-0 flex-1 flex-col", className)} aria-busy="true" aria-label="Loading messages">
+        <header className="mb-4 space-y-2">
+          <Skeleton className="h-8 w-40" />
+          <Skeleton className="h-4 w-64" />
+        </header>
+        <div className={cn("flex min-h-[min(72dvh,720px)] overflow-hidden rounded-[20px] border border-border/70", groupedShellClass)}>
+          <div className="hidden w-[min(100%,340px)] border-r border-border/60 lg:block">
+            <Skeleton className="m-3 h-10 rounded-xl" />
+            <div className="divide-y divide-border/40">
+              {[1, 2, 3, 4].map((i) => (
+                <ChatListRowSkeleton key={i} />
+              ))}
+            </div>
+          </div>
+          <div className="hidden flex-1 flex-col items-center justify-center lg:flex">
+            <Skeleton className="h-14 w-14 rounded-full" />
+            <Skeleton className="mt-4 h-5 w-44" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <main className={cn("flex-1 bg-background", className)} aria-busy="true" aria-label="Loading messages">
       <div className={inboxContainerClass}>
@@ -52,8 +83,6 @@ export function MessagesInboxSkeleton({ className }: { className?: string }) {
 
         <Skeleton className="mb-5 h-12 w-full rounded-2xl" />
 
-        <MessagesTabBarSkeleton />
-
         <div className={cn("divide-y divide-border/60", groupedShellClass)}>
           {[1, 2, 3, 4].map((i) => (
             <ChatListRowSkeleton key={i} />
@@ -61,6 +90,19 @@ export function MessagesInboxSkeleton({ className }: { className?: string }) {
         </div>
       </div>
     </main>
+  )
+}
+
+export function MessagesOffersPageSkeleton({ className }: { className?: string }) {
+  return (
+    <div className={cn("flex min-h-0 flex-1 flex-col", className)} aria-busy="true" aria-label="Loading offers">
+      <header className="mb-4 space-y-2">
+        <Skeleton className="h-8 w-32" />
+        <Skeleton className="h-4 w-72" />
+      </header>
+      <Skeleton className="mb-5 h-12 w-full rounded-2xl" />
+      <MessagesOffersTabSkeleton />
+    </div>
   )
 }
 

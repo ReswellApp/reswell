@@ -89,18 +89,18 @@ export default async function CheckoutPage(props: {
 
     const offer = await fetchAcceptedOfferById(supabase, offerParam)
     if (!offer || offer.buyer_id !== user.id) {
-      redirect("/messages?tab=offers")
+      redirect("/messages/offers")
     }
 
     const loaded = await loadAcceptedOfferCheckoutListings(supabase, offer)
     if (!loaded.ok) {
-      redirect("/messages?tab=offers")
+      redirect("/messages/offers")
     }
 
     const checkoutListings = loaded.listings.map(rowToCheckoutListing)
 
     if (checkoutListings.some((l) => l.user_id === user.id)) {
-      redirect("/messages?tab=offers")
+      redirect("/messages/offers")
     }
 
     const sellerId = offer.seller_id
@@ -135,7 +135,7 @@ export default async function CheckoutPage(props: {
                   <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
                   <BreadcrumbItem>
                     <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                      <Link href="/messages?tab=offers">Offers</Link>
+                      <Link href="/messages/offers">Offers</Link>
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />

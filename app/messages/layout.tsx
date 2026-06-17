@@ -1,5 +1,9 @@
 import type { ReactNode } from "react"
 import { privatePageMetadata } from "@/lib/site-metadata"
+import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
+import { getCachedMessagesInbox } from "@/lib/cache/messages-inbox"
+import { MessagesAccountShell } from "@/components/features/messages/messages-account-shell"
+import { MessagesInboxProvider } from "@/components/features/messages/messages-inbox-context"
 
 export const metadata = privatePageMetadata({
   title: "Messages — Reswell",
@@ -7,6 +11,23 @@ export const metadata = privatePageMetadata({
   path: "/messages",
 })
 
-export default function MessagesLayout({ children }: { children: ReactNode }) {
-  return children
+export default async function MessagesLayout({ children }: { children: ReactNode }) {
+  const { user } = await getCachedRequestSession()
+  const inbox = user ? await getCachedMessagesInbox(user.id) : null
+
+  return (
+    <MessagesAccountShell>
+      {user && inbox ? (
+        <MessagesInboxProvider
+          userId={user.id}
+          initialConversations={inbox.conversations}
+          initialNotifications={inbox.notifications}
+        >
+          {children}
+        </MessagesInboxProvider>
+      ) : (
+        children
+      )}
+    </MessagesAccountShell>
+  )
 }

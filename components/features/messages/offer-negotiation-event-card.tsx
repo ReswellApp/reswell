@@ -163,7 +163,7 @@ export function OfferNegotiationEventCard({
         {showSellerDashboardLink && (
           <p className={cn("text-[12px] leading-snug text-muted-foreground", note && "mt-2")}>
             <Link
-              href="/messages?tab=offers"
+              href="/messages/offers"
               className="font-medium text-foreground underline decoration-foreground/25 underline-offset-2 transition-colors hover:decoration-foreground/60"
             >
               View all offers

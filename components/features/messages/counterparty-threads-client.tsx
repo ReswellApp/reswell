@@ -51,11 +51,13 @@ function formatThreadPreview(
 export interface CounterpartyThreadsClientProps {
   otherUserId: string
   initialData: CounterpartyThreadsData
+  embedded?: boolean
 }
 
 export function CounterpartyThreadsClient({
   otherUserId,
   initialData,
+  embedded = false,
 }: CounterpartyThreadsClientProps) {
   const router = useRouter()
   const supabase = createClient()
@@ -126,10 +128,16 @@ export function CounterpartyThreadsClient({
     "overflow-hidden rounded-[20px] border border-border/70 bg-card shadow-[0_1px_2px_rgba(17,17,17,0.04)] dark:shadow-none dark:border-border"
 
   return (
-    <main className="flex-1 bg-background">
-      <div className="container mx-auto max-w-2xl px-4 pb-16 pt-6 sm:px-5 sm:pt-10 md:max-w-4xl lg:max-w-5xl">
-        <header className="mb-6 flex items-center gap-3">
-          <Link href="/messages" className="shrink-0">
+    <main className={cn("flex min-h-0 flex-1 flex-col bg-background", !embedded && "flex-1")}>
+      <div
+        className={cn(
+          embedded
+            ? "flex min-h-0 flex-1 flex-col px-3 py-3 sm:px-4"
+            : "container mx-auto max-w-2xl px-4 pb-16 pt-6 sm:px-5 sm:pt-10 md:max-w-4xl lg:max-w-5xl",
+        )}
+      >
+        <header className="mb-4 flex items-center gap-3 border-b border-border/60 pb-3">
+          <Link href="/messages" className={cn("shrink-0", embedded && "lg:hidden")}>
             <Button
               variant="ghost"
               size="icon"
@@ -187,7 +195,7 @@ export function CounterpartyThreadsClient({
                   href={`/messages/${thread.id}`}
                   className="flex items-center gap-4 px-4 py-4 transition-colors hover:bg-muted/35 active:bg-muted/55 sm:px-5"
                 >
-                  <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-muted ring-1 ring-border/35">
+                  <div className="relative w-16 shrink-0 overflow-hidden rounded-xl bg-muted ring-1 ring-border/35 aspect-[3/4]">
                     {thumb ? (
                       <Image
                         src={thumb}

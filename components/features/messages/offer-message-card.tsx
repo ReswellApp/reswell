@@ -178,7 +178,7 @@ export function OfferMessageCard({
           {isSeller && (
             <p className={cn("text-[12px] leading-snug text-muted-foreground", display.note && "mt-2")}>
               <Link
-                href="/messages?tab=offers"
+                href="/messages/offers"
                 className="font-medium text-foreground underline decoration-foreground/25 underline-offset-2 transition-colors hover:decoration-foreground/60"
               >
                 View all offers
@@ -272,7 +272,7 @@ export function OfferMessageCard({
                 className="h-10 w-full shrink-0 rounded-xl text-[14px] font-semibold sm:w-auto sm:min-w-[10rem]"
                 asChild
               >
-                <Link href="/messages?tab=offers">View in Offers</Link>
+                <Link href="/messages/offers">View in Offers</Link>
               </Button>
             </div>
           )}

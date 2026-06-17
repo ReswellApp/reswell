@@ -519,7 +519,7 @@ export function SellerMakeOfferToBuyerDialog({
       } else if (returnedConversationId) {
         router.push(`/messages/${returnedConversationId}`)
       } else {
-        router.push("/messages?tab=offers")
+        router.push("/messages/offers")
       }
       router.refresh()
     } finally {

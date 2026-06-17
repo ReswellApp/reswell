@@ -284,6 +284,7 @@ function ListingRow({
 }) {
   const imageSrc = listingRowImageSrc(listing)
   const isDraft = listing.status === "draft"
+  const isSold = listing.status === "sold"
   const cardHref = isDraft
     ? `/sell?edit=${listing.id}`
     : getListingHref(listing.section, listing.id, listing.slug)
@@ -334,7 +335,7 @@ function ListingRow({
         {detailLine ? (
           <p className="mt-0.5 text-sm text-muted-foreground">{detailLine}</p>
         ) : null}
-        {!isDraft && listing.status !== "active" ? (
+        {!isDraft && listing.status !== "active" && !isSold ? (
           <p className="mt-0.5 text-xs capitalize text-muted-foreground">{listing.status}</p>
         ) : null}
       </div>
@@ -344,19 +345,25 @@ function ListingRow({
       </p>
 
       <div className="flex shrink-0 flex-row gap-2 sm:flex-col sm:gap-2">
-        <Button
-          asChild
-          size="sm"
-          className={cn(
-            "min-w-[5.5rem] rounded-full bg-primary/10 text-primary shadow-none hover:bg-primary/15",
-            "dark:bg-primary/15 dark:hover:bg-primary/20",
-          )}
-        >
-          <Link href={`/sell?edit=${listing.id}`}>
-            <Edit className="h-3.5 w-3.5" />
-            Edit
-          </Link>
-        </Button>
+        {isSold ? (
+          <span className="inline-flex min-h-9 min-w-[5.5rem] items-center justify-center rounded-full bg-muted px-4 text-sm font-semibold text-muted-foreground">
+            Sold
+          </span>
+        ) : (
+          <Button
+            asChild
+            size="sm"
+            className={cn(
+              "min-w-[5.5rem] rounded-full bg-primary/10 text-primary shadow-none hover:bg-primary/15",
+              "dark:bg-primary/15 dark:hover:bg-primary/20",
+            )}
+          >
+            <Link href={`/sell?edit=${listing.id}`}>
+              <Edit className="h-3.5 w-3.5" />
+              Edit
+            </Link>
+          </Button>
+        )}
         {isDraft ? (
           <Button
             type="button"

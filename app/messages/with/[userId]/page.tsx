@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { loadCounterpartyThreads } from "@/app/actions/messages"
 import { CounterpartyThreadsClient } from "@/components/features/messages/counterparty-threads-client"
+import { MessagesChatSplit } from "@/components/features/messages/messages-chat-split"
 
 export default async function CounterpartyThreadsPage({
   params,
@@ -17,10 +18,13 @@ export default async function CounterpartyThreadsPage({
     redirect("/messages")
   }
 
-  // Single shared thread: send straight to it instead of an interstitial list.
   if (result.threads.length === 1) {
     redirect(`/messages/${result.threads[0].id}`)
   }
 
-  return <CounterpartyThreadsClient otherUserId={userId} initialData={result} />
+  return (
+    <MessagesChatSplit>
+      <CounterpartyThreadsClient otherUserId={userId} initialData={result} embedded />
+    </MessagesChatSplit>
+  )
 }

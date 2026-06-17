@@ -34,11 +34,11 @@ export default async function DashboardLayout({
       <div className="flex-1 container mx-auto py-6 sm:py-8">
         <DashboardMobileNav sellerProfileHref={shopHref} />
 
-        <div className="mt-6 flex flex-col gap-8 lg:mt-0 lg:flex-row lg:gap-10 xl:gap-12">
+        <div className="mt-6 flex flex-col gap-8 lg:mt-0 lg:flex-row lg:gap-12 xl:gap-14">
           {/* Sidebar */}
-          <aside className="hidden shrink-0 lg:block lg:w-56 xl:w-64">
-            <div className="sticky top-24 space-y-4">
-              <Button asChild className="w-full">
+          <aside className="hidden shrink-0 lg:block lg:w-64 xl:w-72">
+            <div className="sticky top-24 space-y-5">
+              <Button asChild className="h-10 w-full lg:h-11 lg:text-[15px]">
                 <Link href="/sell?new=1">
                   <Plus className="h-4 w-4 mr-2" />
                   Create Listing

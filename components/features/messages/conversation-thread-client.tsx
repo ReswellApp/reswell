@@ -53,7 +53,6 @@ import { MessageLocationCard } from '@/components/features/messages/message-loca
 import type { GoogleFullPlaceResolved } from '@/components/features/checkout/google-places-address-input'
 import { MessageLocationSendPopover } from '@/components/features/messages/message-location-send-popover'
 import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/local-phone-policy-block-bubble'
-import { MessagesSupportDialog } from '@/components/features/messages/messages-support-dialog'
 import { MessageMediaSendButton } from '@/components/features/messages/message-media-send-button'
 import { MessageMediaAttachmentCard } from '@/components/features/messages/message-media-attachment-card'
 import { MessageSellerOfferButton } from '@/components/features/messages/message-seller-offer-button'
@@ -130,11 +129,13 @@ function buildOffersMap(data: ConversationThreadData): Record<string, OfferRowLi
 export interface ConversationThreadClientProps {
   conversationId: string
   initialData: ConversationThreadData
+  embedded?: boolean
 }
 
 export function ConversationThreadClient({
   conversationId: id,
   initialData,
+  embedded = false,
 }: ConversationThreadClientProps) {
   const [conversation, setConversation] = useState<Conversation | null>(
     () => (initialData.conversation as Conversation | null) ?? null,
@@ -660,12 +661,31 @@ export function ConversationThreadClient({
   const showListingSwitcher = listingThreads.length > 1
 
   return (
-    <main className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background">
-      <div className="container mx-auto flex h-full min-h-0 max-w-2xl flex-1 flex-col overflow-hidden px-4 pb-2 pt-2 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-5 sm:pb-6 sm:pt-3 md:max-w-4xl lg:max-w-5xl">
+    <main
+      className={cn(
+        "flex min-h-0 flex-1 flex-col overflow-hidden bg-background",
+        !embedded && "h-full",
+      )}
+    >
+      <div
+        className={cn(
+          "flex h-full min-h-0 flex-1 flex-col overflow-hidden",
+          embedded
+            ? "px-0 pb-2 pt-0 max-sm:px-4 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))] max-sm:pt-2"
+            : "container mx-auto max-w-2xl px-4 pb-2 pt-2 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-5 sm:pb-6 sm:pt-3 md:max-w-4xl lg:max-w-5xl",
+        )}
+      >
         {/* Header */}
-        <header className="relative z-20 shrink-0 -mx-4 mb-2 border-b border-border/60 bg-background px-2 py-2 sm:-mx-5 sm:mb-3 sm:bg-background/85 sm:px-3 sm:backdrop-blur-md supports-[backdrop-filter]:sm:bg-background/70">
+        <header
+          className={cn(
+            "relative z-20 shrink-0 border-b border-border/60 bg-background py-2",
+            embedded
+              ? "px-3 sm:px-4"
+              : "-mx-4 mb-2 px-2 sm:-mx-5 sm:mb-3 sm:bg-background/85 sm:px-3 sm:backdrop-blur-md supports-[backdrop-filter]:sm:bg-background/70",
+          )}
+        >
           <div className="flex items-center gap-1 sm:gap-2">
-            <Link href={backHref} className="shrink-0">
+            <Link href={backHref} className={cn("shrink-0", embedded && "lg:hidden")}>
               <Button
                 variant="ghost"
                 size="icon"
@@ -748,7 +768,7 @@ export function ConversationThreadClient({
               showListingSwitcher ? 'md:flex' : 'sm:flex',
             )}
           >
-            <span className="block h-14 w-14 shrink-0 animate-pulse rounded-xl bg-muted sm:h-[72px] sm:w-[72px] sm:rounded-2xl" />
+            <span className="relative block w-14 shrink-0 animate-pulse rounded-xl bg-muted aspect-[3/4] sm:w-[72px] sm:rounded-2xl" />
             <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 sm:gap-2">
               <span className="block h-4 w-[min(100%,12rem)] animate-pulse rounded bg-muted sm:h-5 sm:w-[min(100%,14rem)]" />
               <span className="block h-5 w-20 animate-pulse rounded bg-muted sm:h-6 sm:w-24" />
@@ -764,7 +784,7 @@ export function ConversationThreadClient({
             )}
           >
             <div className="flex gap-2 p-2 sm:gap-3 sm:p-3">
-              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-muted sm:h-[72px] sm:w-[72px] sm:rounded-2xl">
+              <div className="relative w-14 shrink-0 overflow-hidden rounded-xl bg-muted aspect-[3/4] sm:w-[72px] sm:rounded-2xl">
                 {threadListingThumbSrc ? (
                   <>
                     {!listingBannerImageReady ? (
@@ -1030,13 +1050,6 @@ export function ConversationThreadClient({
                 })}
               </div>
             )}
-          </div>
-          <div className="pointer-events-none absolute bottom-3 right-3 z-10 sm:bottom-4 sm:right-4">
-            <MessagesSupportDialog
-              relatedConversationId={id}
-              triggerMode="floating"
-              floatingTriggerClassName="pointer-events-auto"
-            />
           </div>
         </div>
 

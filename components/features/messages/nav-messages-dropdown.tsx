@@ -239,7 +239,7 @@ export function NavMessagesDropdown({
                           !n.is_read && "bg-blue-50/40 dark:bg-blue-950/15",
                         )}
                       >
-                        <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-border/35">
+                        <div className="relative w-11 shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-border/35 aspect-[3/4]">
                           {thumb ? (
                             <Image
                               src={thumb}
@@ -354,18 +354,20 @@ export function NavMessagesDropdown({
         </div>
 
         <div className="border-t border-border/70 px-3 py-2.5">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-9 w-full justify-between rounded-xl text-[13px] font-medium text-muted-foreground hover:text-foreground"
-            asChild
-            onClick={() => setOpen(false)}
-          >
-            <Link href={tab === "activity" ? "/messages?tab=activity" : "/messages"}>
-              See all {tab === "activity" ? "activity" : "messages"}
-              <ChevronDown className="h-4 w-4 -rotate-90" aria-hidden />
-            </Link>
-          </Button>
+          {tab === "messages" ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 w-full justify-between rounded-xl text-[13px] font-medium text-muted-foreground hover:text-foreground"
+              asChild
+              onClick={() => setOpen(false)}
+            >
+              <Link href="/messages">
+                See all messages
+                <ChevronDown className="h-4 w-4 -rotate-90" aria-hidden />
+              </Link>
+            </Button>
+          ) : null}
         </div>
       </PopoverContent>
     </Popover>
