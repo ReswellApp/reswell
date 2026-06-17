@@ -79,5 +79,6 @@ export function shouldShowSiteTopCategoryBar(pathname: string | null): boolean {
   }
   if (pathname === "/sell" || pathname.startsWith("/sell/")) return false
   if (pathname === "/checkout" || pathname.startsWith("/checkout/")) return false
+  if (pathname === "/messages" || pathname.startsWith("/messages/")) return false
   return true
 }

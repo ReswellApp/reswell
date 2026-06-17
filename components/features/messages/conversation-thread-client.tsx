@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useState, useRef, useMemo, useCallback } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useState, useRef, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
@@ -107,6 +107,28 @@ function buildListingMap(
     if (row?.id) map[row.id] = row
   }
   return map
+}
+
+/**
+ * App-style threading: a new run of bubbles (and a centered time/day label)
+ * starts when the calendar day changes or messages are more than this far apart.
+ */
+const MESSAGE_GROUP_GAP_MS = 45 * 60 * 1000
+
+function isSameCalendarDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  )
+}
+
+function shouldBreakMessageGroup(prevIso: string | null, currentIso: string): boolean {
+  if (!prevIso) return true
+  const prev = new Date(prevIso)
+  const current = new Date(currentIso)
+  if (!isSameCalendarDay(prev, current)) return true
+  return current.getTime() - prev.getTime() > MESSAGE_GROUP_GAP_MS
 }
 
 function buildOffersMap(data: ConversationThreadData): Record<string, OfferRowLite> {
@@ -538,6 +560,27 @@ export function ConversationThreadClient({
     return format(date, 'MMM d, h:mm a')
   }
 
+  // True only for ordinary text bubbles — every special card (offer, order,
+  // review, location, media, negotiation, policy block) breaks a bubble run so
+  // grouping/corner-stacking only applies between consecutive plain messages.
+  const isPlainTextMessage = useCallback(
+    (m: Message): boolean => {
+      const own = m.sender_id === currentUserId
+      if (parseLocalPolicyBlockMetadata(m.metadata) && own) return false
+      if (m.offer_id && offersById[m.offer_id]) return false
+      if (m.offer_id && m.content.trim()) return false
+      if (parseOrderPlacedMessageMetadata(m.metadata)) return false
+      if (parseOrderCompletedMessageMetadata(m.metadata)) return false
+      if (parseReviewRequestMessageMetadata(m.metadata)) return false
+      if (parseMessageLocationMetadata(m.metadata)) return false
+      if (parseMarketplaceMessageAttachment(m.metadata)) return false
+      if (parseOfferNegotiationMessage(m.content)) return false
+      if (m.content.trimStart().startsWith('Offer:') && !m.offer_id) return false
+      return true
+    },
+    [currentUserId, offersById],
+  )
+
   if (!conversation) {
     return (
       <main className="flex flex-1 flex-col bg-background">
@@ -747,8 +790,8 @@ export function ConversationThreadClient({
                 </p>
               </div>
             ) : (
-              <div className="flex min-h-full flex-col justify-end gap-2 px-3 pb-4 pt-4 sm:px-4 sm:pt-4">
-                {orderedMessages.map((message) => {
+              <div className="flex min-h-full flex-col justify-end px-3 pb-4 pt-2 sm:px-4 sm:pt-3">
+                {orderedMessages.map((message, index) => {
                   const isOwn = message.sender_id === currentUserId
                   const offer =
                     message.offer_id && offersById[message.offer_id]
@@ -756,205 +799,227 @@ export function ConversationThreadClient({
                       : undefined
                   const isSeller = currentUserId === conversation.seller_id
 
-                  const policyBlock = parseLocalPolicyBlockMetadata(message.metadata)
-                  if (policyBlock && isOwn) {
-                    return (
-                      <LocalPhonePolicyBlockBubble
-                        key={message.id}
-                        originalContent={policyBlock.originalContent}
-                        reasonCode={policyBlock.reasonCode}
-                        formattedTime={formatMessageDate(message.created_at)}
-                        relatedConversationId={id}
-                      />
-                    )
-                  }
+                  const prev = index > 0 ? orderedMessages[index - 1] : null
+                  const next =
+                    index < orderedMessages.length - 1 ? orderedMessages[index + 1] : null
+                  const separatorBefore = shouldBreakMessageGroup(
+                    prev?.created_at ?? null,
+                    message.created_at,
+                  )
+                  const cardMargin = separatorBefore ? '' : 'mt-2.5'
 
-                  if (offer && message.offer_id) {
-                    return (
-                      <div
-                        key={message.id}
-                        className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
-                      >
-                        <OfferMessageCard
-                          messageContent={message.content}
-                          offer={offer}
-                          isSeller={isSeller}
-                          listingTitle={listingTitleForOffers}
-                          listPrice={listPriceNum}
-                          minOfferAmount={minOfferAmount}
-                          minOfferPct={listingOfferMinPct}
-                          createdAt={message.created_at}
-                          onThreadRefresh={loadThread}
-                        />
-                      </div>
-                    )
-                  }
+                  const body = (() => {
+                    const policyBlock = parseLocalPolicyBlockMetadata(message.metadata)
+                    if (policyBlock && isOwn) {
+                      return (
+                        <div className={cardMargin}>
+                          <LocalPhonePolicyBlockBubble
+                            originalContent={policyBlock.originalContent}
+                            reasonCode={policyBlock.reasonCode}
+                            formattedTime={formatMessageDate(message.created_at)}
+                            relatedConversationId={id}
+                          />
+                        </div>
+                      )
+                    }
 
-                  if (message.offer_id && message.content.trim()) {
-                    return (
-                      <div
-                        key={message.id}
-                        className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
-                      >
-                        <OfferLegacyMirrorCard
-                          content={message.content}
-                          createdAt={message.created_at}
-                        />
-                      </div>
-                    )
-                  }
+                    if (offer && message.offer_id) {
+                      return (
+                        <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
+                          <OfferMessageCard
+                            messageContent={message.content}
+                            offer={offer}
+                            isSeller={isSeller}
+                            listingTitle={listingTitleForOffers}
+                            listPrice={listPriceNum}
+                            minOfferAmount={minOfferAmount}
+                            minOfferPct={listingOfferMinPct}
+                            createdAt={message.created_at}
+                            onThreadRefresh={loadThread}
+                          />
+                        </div>
+                      )
+                    }
 
-                  const orderPlaced = parseOrderPlacedMessageMetadata(message.metadata)
-                  if (orderPlaced) {
-                    return (
-                      <div
-                        key={message.id}
-                        className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
-                      >
-                        <OrderPlacedMessageCard
-                          payload={orderPlaced}
-                          createdAt={message.created_at}
-                          viewerIsSeller={isSeller}
-                        />
-                      </div>
-                    )
-                  }
+                    if (message.offer_id && message.content.trim()) {
+                      return (
+                        <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
+                          <OfferLegacyMirrorCard
+                            content={message.content}
+                            createdAt={message.created_at}
+                          />
+                        </div>
+                      )
+                    }
 
-                  const orderCompleted = parseOrderCompletedMessageMetadata(message.metadata)
-                  if (orderCompleted) {
-                    return (
-                      <div
-                        key={message.id}
-                        className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
-                      >
-                        <OrderCompletedMessageCard
-                          payload={orderCompleted}
-                          createdAt={message.created_at}
-                          viewerIsSeller={isSeller}
-                        />
-                      </div>
-                    )
-                  }
+                    const orderPlaced = parseOrderPlacedMessageMetadata(message.metadata)
+                    if (orderPlaced) {
+                      return (
+                        <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
+                          <OrderPlacedMessageCard
+                            payload={orderPlaced}
+                            createdAt={message.created_at}
+                            viewerIsSeller={isSeller}
+                          />
+                        </div>
+                      )
+                    }
 
-                  const reviewRequested = parseReviewRequestMessageMetadata(message.metadata)
-                  if (reviewRequested) {
-                    const viewerIsBuyer = currentUserId === conversation.buyer_id
-                    const sellerDisplayName =
-                      conversation.seller.display_name?.trim() || 'Seller'
-                    return (
-                      <div
-                        key={message.id}
-                        className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
-                      >
-                        <ReviewRequestMessageCard
-                          payload={reviewRequested}
-                          createdAt={message.created_at}
-                          viewerIsBuyer={viewerIsBuyer}
-                          sellerDisplayName={sellerDisplayName}
-                          onAfterReviewSubmitted={loadThread}
-                        />
-                      </div>
-                    )
-                  }
+                    const orderCompleted = parseOrderCompletedMessageMetadata(message.metadata)
+                    if (orderCompleted) {
+                      return (
+                        <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
+                          <OrderCompletedMessageCard
+                            payload={orderCompleted}
+                            createdAt={message.created_at}
+                            viewerIsSeller={isSeller}
+                          />
+                        </div>
+                      )
+                    }
 
-                  const locationPin = parseMessageLocationMetadata(message.metadata)
-                  if (locationPin) {
-                    const locationThumbSrc =
-                      listingTitleThumbnailSrc(displayListing?.listing_images ?? null) || null
-                    const locationThumbAlt =
-                      (displayListing?.title ? capitalizeWords(displayListing.title) : '') || 'Listing'
-                    return (
-                      <div
-                        key={message.id}
-                        className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
-                      >
-                        <MessageLocationCard
-                          payload={locationPin}
-                          formattedTime={formatMessageDate(message.created_at)}
-                          listingThumbnailSrc={locationThumbSrc}
-                          listingImageAlt={locationThumbAlt}
-                          listingThumbnailPending={listingChromeLoading}
-                        />
-                      </div>
-                    )
-                  }
+                    const reviewRequested = parseReviewRequestMessageMetadata(message.metadata)
+                    if (reviewRequested) {
+                      const viewerIsBuyer = currentUserId === conversation.buyer_id
+                      const sellerDisplayName =
+                        conversation.seller.display_name?.trim() || 'Seller'
+                      return (
+                        <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
+                          <ReviewRequestMessageCard
+                            payload={reviewRequested}
+                            createdAt={message.created_at}
+                            viewerIsBuyer={viewerIsBuyer}
+                            sellerDisplayName={sellerDisplayName}
+                            onAfterReviewSubmitted={loadThread}
+                          />
+                        </div>
+                      )
+                    }
 
-                  const mediaAtt = parseMarketplaceMessageAttachment(message.metadata)
-                  if (mediaAtt) {
-                    return (
-                      <div
-                        key={message.id}
-                        className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
-                      >
-                        <MessageMediaAttachmentCard
-                          messageId={message.id}
-                          metadata={message.metadata}
-                          content={message.content}
-                          isOwn={isOwn}
-                          formattedTime={formatMessageDate(message.created_at)}
-                        />
-                      </div>
-                    )
-                  }
+                    const locationPin = parseMessageLocationMetadata(message.metadata)
+                    if (locationPin) {
+                      const locationThumbSrc =
+                        listingTitleThumbnailSrc(displayListing?.listing_images ?? null) || null
+                      const locationThumbAlt =
+                        (displayListing?.title ? capitalizeWords(displayListing.title) : '') || 'Listing'
+                      return (
+                        <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
+                          <MessageLocationCard
+                            payload={locationPin}
+                            formattedTime={formatMessageDate(message.created_at)}
+                            listingThumbnailSrc={locationThumbSrc}
+                            listingImageAlt={locationThumbAlt}
+                            listingThumbnailPending={listingChromeLoading}
+                          />
+                        </div>
+                      )
+                    }
 
-                  const negotiationKind = parseOfferNegotiationMessage(message.content)
-                  if (negotiationKind) {
-                    return (
-                      <div
-                        key={message.id}
-                        className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
-                      >
-                        <OfferNegotiationEventCard
-                          kind={negotiationKind}
-                          content={message.content}
-                          createdAt={message.created_at}
-                          isOwn={isOwn}
-                          showSellerDashboardLink={isSeller && isOwn}
-                        />
-                      </div>
-                    )
-                  }
+                    const mediaAtt = parseMarketplaceMessageAttachment(message.metadata)
+                    if (mediaAtt) {
+                      return (
+                        <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
+                          <MessageMediaAttachmentCard
+                            messageId={message.id}
+                            metadata={message.metadata}
+                            content={message.content}
+                            isOwn={isOwn}
+                            formattedTime={formatMessageDate(message.created_at)}
+                          />
+                        </div>
+                      )
+                    }
 
-                  if (message.content.trimStart().startsWith('Offer:') && !message.offer_id) {
-                    return (
-                      <div
-                        key={message.id}
-                        className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
-                      >
-                        <OfferLegacyMirrorCard
-                          content={message.content}
-                          createdAt={message.created_at}
-                        />
-                      </div>
-                    )
-                  }
+                    const negotiationKind = parseOfferNegotiationMessage(message.content)
+                    if (negotiationKind) {
+                      return (
+                        <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
+                          <OfferNegotiationEventCard
+                            kind={negotiationKind}
+                            content={message.content}
+                            createdAt={message.created_at}
+                            isOwn={isOwn}
+                            showSellerDashboardLink={isSeller && isOwn}
+                          />
+                        </div>
+                      )
+                    }
 
-                  return (
-                    <div
-                      key={message.id}
-                      className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start')}
-                    >
+                    if (message.content.trimStart().startsWith('Offer:') && !message.offer_id) {
+                      return (
+                        <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
+                          <OfferLegacyMirrorCard
+                            content={message.content}
+                            createdAt={message.created_at}
+                          />
+                        </div>
+                      )
+                    }
+
+                    const groupedWithPrev =
+                      !!prev &&
+                      !separatorBefore &&
+                      prev.sender_id === message.sender_id &&
+                      isPlainTextMessage(prev)
+                    const nextBreaks = next
+                      ? shouldBreakMessageGroup(message.created_at, next.created_at)
+                      : true
+                    const groupedWithNext =
+                      !!next &&
+                      !nextBreaks &&
+                      next.sender_id === message.sender_id &&
+                      isPlainTextMessage(next)
+                    const isTail = !groupedWithNext
+                    const rowMargin = separatorBefore
+                      ? ''
+                      : groupedWithPrev
+                        ? 'mt-0.5'
+                        : 'mt-2.5'
+
+                    return (
                       <div
                         className={cn(
-                          'max-w-[min(100%,18.5rem)] rounded-[20px] px-3.5 py-2 sm:max-w-[min(100%,20rem)] sm:px-4 sm:py-2.5 md:max-w-[min(100%,28rem)]',
-                          isOwn
-                            ? 'rounded-br-[6px] bg-listingHeart text-white shadow-[0_1px_2px_rgba(53,81,133,0.22)]'
-                            : 'rounded-bl-[6px] border border-border/45 bg-card text-foreground shadow-sm',
+                          'flex w-full',
+                          isOwn ? 'justify-end' : 'justify-start',
+                          rowMargin,
                         )}
                       >
-                        <p className="whitespace-pre-wrap break-words text-[17px] leading-[1.35] tracking-[-0.01em]">
-                          {message.content}
-                        </p>
-                        <p
+                        <div
+                          title={format(new Date(message.created_at), 'EEEE, MMM d • h:mm a')}
                           className={cn(
-                            'mt-1 text-[11px] tabular-nums leading-none',
-                            isOwn ? 'text-white/55' : 'text-muted-foreground',
+                            'max-w-[min(100%,18.5rem)] rounded-[20px] px-3.5 py-[7px] sm:max-w-[min(100%,20rem)] sm:px-4 sm:py-2 md:max-w-[min(100%,28rem)]',
+                            isOwn
+                              ? cn(
+                                  'bg-listingHeart text-white shadow-[0_1px_2px_rgba(53,81,133,0.18)]',
+                                  groupedWithPrev && 'rounded-tr-[7px]',
+                                  isTail ? 'rounded-br-[6px]' : 'rounded-br-[7px]',
+                                )
+                              : cn(
+                                  'border border-border/45 bg-card text-foreground shadow-sm',
+                                  groupedWithPrev && 'rounded-tl-[7px]',
+                                  isTail ? 'rounded-bl-[6px]' : 'rounded-bl-[7px]',
+                                ),
                           )}
                         >
-                          {formatMessageDate(message.created_at)}
-                        </p>
+                          <p className="whitespace-pre-wrap break-words text-[15px] leading-[1.4] tracking-[-0.01em]">
+                            {message.content}
+                          </p>
+                        </div>
                       </div>
-                    </div>
+                    )
+                  })()
+
+                  return (
+                    <Fragment key={message.id}>
+                      {separatorBefore ? (
+                        <div className="flex justify-center pb-1.5 pt-3 first:pt-1">
+                          <span className="text-[11px] font-medium tabular-nums text-muted-foreground/70">
+                            {formatMessageDate(message.created_at)}
+                          </span>
+                        </div>
+                      ) : null}
+                      {body}
+                    </Fragment>
                   )
                 })}
               </div>
