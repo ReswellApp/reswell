@@ -37,7 +37,6 @@ import { Switch } from "@/components/ui/switch"
 import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
@@ -168,6 +167,7 @@ import {
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
 import { SellBoardFacetFields } from "@/components/features/sell/sell-board-facet-fields"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
+import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import {
   SellSectionNav,
   SellSectionNavHorizontal,
@@ -3592,58 +3592,13 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                     <Separator className="bg-border" />
 
                     <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="description">
-                    Description *
-                  </Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Describe your board…"
-                    className="min-h-[120px] resize-none placeholder:text-muted-foreground/45"
-                    value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
-                    required
-                  />
-                  <span className="text-xs text-muted-foreground/45">
-                    {formData.description.length} / 1000
-                  </span>
-
-                  <div className="space-y-1.5">
-                        <p className="text-xs text-muted-foreground/45">Quick add:</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {[
-                            "Board is in great shape",
-                            "Only surfed a few times",
-                            "Board surfs great, just looking to try something new",
-                            "Board was a little small for me",
-                            "Board was a little too big for me",
-                            "No dings",
-                            "Dings professionally repaired",
-                          ].map((chip) => (
-                            <button
-                              key={chip}
-                              type="button"
-                              onClick={() => {
-                                setFormData((f) => {
-                                  const desc = f.description.trimEnd()
-                                  const append = desc.endsWith(".")
-                                    ? ` ${chip}.`
-                                    : desc
-                                      ? `, ${chip.toLowerCase()}`
-                                      : chip
-                                  return { ...f, description: desc + append }
-                                })
-                              }}
-                              className="rounded-full border border-border px-2.5 py-0.5 text-xs hover:border-primary/50 hover:bg-muted/50 transition-colors"
-                            >
-                              + {chip}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+                <SellListingDescriptionField
+                  id="description"
+                  value={formData.description}
+                  onChange={(description) => setFormData({ ...formData, description })}
+                  placeholder="Describe your board…"
+                  maxLength={1000}
+                />
                     </div>
                     </div>
                 </SellFormSection>

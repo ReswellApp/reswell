@@ -2,13 +2,34 @@ import { primaryListingImageUrl } from "@/lib/listing-metadata"
 import { absoluteProxiedListingMediaUrl } from "@/lib/listing-media-proxy-url"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { googleMerchantProductLink } from "@/lib/google-merchant/product-link"
+import { buildGoogleMerchantProductDescription } from "@/lib/google-merchant/product-description"
 import { mapListingConditionToSchemaOrg } from "@/lib/google-merchant/condition"
 import { productSchema } from "@/lib/seo/structured-data"
 import type { GoogleMerchantListingRow } from "@/lib/google-merchant/map-listing-to-product-input"
 
 type ListingProductSchemaInput = Pick<
   GoogleMerchantListingRow,
-  "id" | "slug" | "title" | "description" | "price" | "brand" | "condition" | "status" | "listing_images"
+  | "id"
+  | "slug"
+  | "title"
+  | "description"
+  | "price"
+  | "brand"
+  | "condition"
+  | "status"
+  | "section"
+  | "board_type"
+  | "dimensions"
+  | "fins_setup"
+  | "fin_system"
+  | "fin_size"
+  | "city"
+  | "state"
+  | "local_pickup"
+  | "shipping_available"
+  | "shipping_price"
+  | "board_shipping_cost_mode"
+  | "listing_images"
 >
 
 function listingAvailability(
@@ -33,7 +54,7 @@ export function googleMerchantListingProductSchema(listing: ListingProductSchema
 
   return productSchema({
     name: capitalizeWords(title),
-    description: listing.description?.trim() || undefined,
+    description: buildGoogleMerchantProductDescription(listing),
     image,
     brand: listing.brand?.trim() || undefined,
     sku: listing.id,

@@ -13,6 +13,7 @@ import {
   isGoogleMerchantPeerSection,
 } from "./config"
 import { mapListingConditionToGoogleMerchant, type GoogleMerchantCondition } from "./condition"
+import { buildGoogleMerchantProductDescription } from "./product-description"
 
 export type GoogleMerchantListingImage = ListingImageForCard & {
   sort_order?: number | null
@@ -34,6 +35,14 @@ export type GoogleMerchantListingRow = {
   shipping_available?: boolean | null
   shipping_price?: string | number | null
   board_shipping_cost_mode?: string | null
+  board_type?: string | null
+  dimensions?: string | null
+  fins_setup?: string | null
+  fin_system?: string | null
+  fin_size?: string | null
+  city?: string | null
+  state?: string | null
+  local_pickup?: boolean | null
   listing_images?: GoogleMerchantListingImage[] | null
 }
 
@@ -77,10 +86,6 @@ export type GoogleMerchantProductInputPayload = {
 }
 
 const MAX_MPN_LENGTH = 70
-
-function stripHtml(text: string): string {
-  return text.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
-}
 
 function priceToMicros(amountUsd: number): string {
   return String(Math.round(amountUsd * 1_000_000))
@@ -254,8 +259,7 @@ export function mapListingToProductInput(
   if (!imageLink) return null
 
   const link = googleMerchantProductLink(listing, origin)
-  const descriptionRaw = stripHtml(listing.description?.trim() || listing.title.trim())
-  const description = descriptionRaw || listing.title.trim()
+  const description = buildGoogleMerchantProductDescription(listing)
   const identifiers = productIdentifiers(listing)
   const shipping = mapListingShippingAttributes(listing)
   const taxes = mapListingTaxAttributes()

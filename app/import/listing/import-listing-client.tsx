@@ -9,7 +9,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import {
   Select,
   SelectContent,
@@ -468,13 +468,13 @@ export default function ImportListingClient({
                   onChange={(e) => patchForm({ state: e.target.value })}
                 />
               </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="import-description">Description</Label>
-                <Textarea
+              <div className="sm:col-span-2">
+                <SellListingDescriptionField
                   id="import-description"
-                  rows={5}
                   value={form.description}
-                  onChange={(e) => patchForm({ description: e.target.value })}
+                  onChange={(v) => patchForm({ description: v })}
+                  placeholder="Condition, wear, repairs, why you're selling…"
+                  required={false}
                 />
               </div>
             </div>

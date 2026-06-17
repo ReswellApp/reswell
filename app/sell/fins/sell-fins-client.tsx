@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -24,6 +23,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { LocationPicker } from "@/components/location-picker"
 import { SellFormSection } from "@/components/features/sell/sell-form-section"
+import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellFinsFacetFields } from "@/components/features/sell/sell-fins-facet-fields"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
@@ -1085,18 +1085,12 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
 
                   <Separator className="bg-border" />
 
-                  <div className="space-y-2">
-                    <Label htmlFor="fin-description">Description *</Label>
-                    <Textarea
-                      id="fin-description"
-                      value={form.description}
-                      rows={5}
-                      placeholder="Material, ride feel, any wear or repairs, why you're selling…"
-                      className="placeholder:text-muted-foreground/45"
-                      onChange={(e) => setField("description", e.target.value)}
-                      required
-                    />
-                  </div>
+                  <SellListingDescriptionField
+                    id="fin-description"
+                    value={form.description}
+                    onChange={(v) => setField("description", v)}
+                    placeholder="Material, ride feel, any wear or repairs, why you're selling…"
+                  />
                 </div>
               </SellFormSection>
 

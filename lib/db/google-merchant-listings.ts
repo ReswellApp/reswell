@@ -18,6 +18,14 @@ const GOOGLE_MERCHANT_LISTING_SELECT = `
   shipping_available,
   shipping_price,
   board_shipping_cost_mode,
+  board_type,
+  dimensions,
+  fins_setup,
+  fin_system,
+  fin_size,
+  city,
+  state,
+  local_pickup,
   listing_images ( url, thumbnail_url, is_primary, sort_order )
 `
 
