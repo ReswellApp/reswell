@@ -34,8 +34,15 @@ import {
   formatHomePeerListingConditionLine,
 } from "@/lib/listing-labels"
 import { EndListingDialog } from "@/components/end-listing-dialog"
+import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
 import type { MyListingRow, MyListingsDashboardStats } from "@/lib/db/my-listings"
 import { cn } from "@/lib/utils"
+import {
+  dashboardFilterSelectClass,
+  dashboardSearchInputClass,
+  listingPortraitThumbClass,
+  listingPortraitThumbSizes,
+} from "@/lib/utils/dashboard-display-styles"
 
 type SortOption = "recent" | "oldest" | "price_desc" | "price_asc" | "views"
 
@@ -152,30 +159,26 @@ export function MyListingsClient({ listings, stats, fetchError }: MyListingsClie
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            Listings
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Summary of your surfboard inventory and performance.
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
-          <Link
-            href="/dashboard/listings/archived"
-            className="text-sm font-medium text-primary hover:underline"
-          >
-            Archived listings
-          </Link>
-          <Button asChild size="sm" className="rounded-full">
-            <Link href="/sell?new=1">
-              <Plus className="h-4 w-4" />
-              New listing
+      <DashboardPageHeader
+        title="Listings"
+        description="Summary of your surfboard inventory and performance."
+        actions={
+          <>
+            <Link
+              href="/dashboard/listings/archived"
+              className="text-[14px] font-medium text-primary hover:underline sm:text-[15px]"
+            >
+              Archived listings
             </Link>
-          </Button>
-        </div>
-      </div>
+            <Button asChild size="sm" className="rounded-full">
+              <Link href="/sell?new=1">
+                <Plus className="h-4 w-4" />
+                New listing
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard icon={Package} label="Total Listings" value={stats.totalListings} />
@@ -195,15 +198,12 @@ export function MyListingsClient({ listings, stats, fetchError }: MyListingsClie
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search your listings"
-            className="h-11 rounded-full border-muted-foreground/15 bg-muted/40 pl-11 shadow-none"
+            className={dashboardSearchInputClass}
             aria-label="Search your listings"
           />
         </div>
         <Select value={sort} onValueChange={(value) => setSort(value as SortOption)}>
-          <SelectTrigger
-            className="h-11 w-full rounded-full border-muted-foreground/15 bg-muted/40 shadow-none sm:w-[220px]"
-            aria-label="Sort listings"
-          >
+          <SelectTrigger className={dashboardFilterSelectClass} aria-label="Sort listings">
             <SelectValue placeholder="Sort" />
           </SelectTrigger>
           <SelectContent>
@@ -238,7 +238,7 @@ export function MyListingsClient({ listings, stats, fetchError }: MyListingsClie
         </Card>
       ) : (
         <>
-          <p className="text-sm font-semibold text-muted-foreground">{listingCountLabel}</p>
+          <p className="text-[13px] font-medium text-muted-foreground">{listingCountLabel}</p>
 
           {visibleListings.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
@@ -294,18 +294,15 @@ function ListingRow({
   const canEnd = !isDraft && listing.status !== "sold"
 
   return (
-    <article className="flex flex-col gap-4 py-5 sm:flex-row sm:items-center sm:gap-5">
-      <Link
-        href={cardHref}
-        className="relative w-[4.5rem] shrink-0 overflow-hidden rounded-lg bg-muted aspect-[3/4] sm:w-20"
-      >
+    <article className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center lg:gap-4 lg:py-4">
+      <Link href={cardHref} className={listingPortraitThumbClass}>
         {imageSrc ? (
           <Image
             src={imageSrc}
             alt={capitalizeWords(listing.title)}
             fill
             className="object-cover object-center"
-            sizes="80px"
+            sizes={listingPortraitThumbSizes}
             unoptimized={listingImageShouldBypassOptimization(imageSrc)}
           />
         ) : (
@@ -318,14 +315,14 @@ function ListingRow({
       <div className="min-w-0 flex-1">
         <Link
           href={cardHref}
-          className="block truncate font-semibold text-foreground hover:text-primary"
+          className="block truncate text-[15px] font-semibold text-foreground hover:text-primary"
         >
           {capitalizeWords(listing.title)}
         </Link>
         {brandLine ? (
-          <p className="mt-0.5 truncate text-sm text-muted-foreground">{brandLine}</p>
+          <p className="mt-0.5 truncate text-[13px] text-muted-foreground">{brandLine}</p>
         ) : null}
-        <p className="mt-1 text-base font-semibold text-primary tabular-nums">
+        <p className="mt-1 text-[15px] font-semibold text-primary tabular-nums">
           {isDraft ? (
             <span className="font-medium text-muted-foreground">Draft</span>
           ) : (
@@ -333,14 +330,14 @@ function ListingRow({
           )}
         </p>
         {detailLine ? (
-          <p className="mt-0.5 text-sm text-muted-foreground">{detailLine}</p>
+          <p className="mt-0.5 text-[13px] text-muted-foreground">{detailLine}</p>
         ) : null}
         {!isDraft && listing.status !== "active" && !isSold ? (
-          <p className="mt-0.5 text-xs capitalize text-muted-foreground">{listing.status}</p>
+          <p className="mt-0.5 text-[11px] capitalize text-muted-foreground">{listing.status}</p>
         ) : null}
       </div>
 
-      <p className="hidden shrink-0 text-sm text-muted-foreground md:block md:min-w-[8.5rem] md:text-center">
+      <p className="hidden shrink-0 text-[13px] text-muted-foreground md:block md:min-w-[8.5rem] md:text-center">
         Listed: {listedDate}
       </p>
 

@@ -29,6 +29,7 @@ import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { buildPasswordRecoveryCallbackUrl } from "@/lib/auth/password-recovery-callback-url"
 import { ProfileChangePasswordSection } from "@/components/features/dashboard/profile-change-password-section"
+import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
 import type { DashboardProfileRow } from "@/lib/db/dashboard-profile"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 
@@ -335,10 +336,7 @@ export function DashboardProfileSettings({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">{s.title}</h1>
-        <p className="text-muted-foreground">{s.subtitle}</p>
-      </div>
+      <DashboardPageHeader title={s.title} description={s.subtitle} />
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
         <TabsList className="grid w-full max-w-md grid-cols-2">

@@ -7,12 +7,18 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Package, Archive, ArrowLeft } from 'lucide-react'
 import { formatDistanceToNow, format, addDays } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { listingProductCardSolidClassName } from '@/lib/listing-card-styles'
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { listingDetailHref } from '@/lib/listing-href'
+import {
+  dashboardPageSubtitleClass,
+  dashboardPageTitleClass,
+  listingPortraitThumbClass,
+} from '@/lib/utils/dashboard-display-styles'
 
 const ARCHIVE_DAYS = 30
 
@@ -82,8 +88,8 @@ export default function ArchivedListingsPage() {
           >
             <ArrowLeft className="h-4 w-4 mr-1" /> My Listings
           </Link>
-          <h1 className="text-2xl font-bold text-foreground">Archived listings</h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <h1 className={dashboardPageTitleClass}>Archived listings</h1>
+          <p className={dashboardPageSubtitleClass}>
             Ended listings are kept for {ARCHIVE_DAYS} days, then permanently deleted.
           </p>
         </div>
@@ -95,7 +101,9 @@ export default function ArchivedListingsPage() {
             <Card key={i} className="animate-pulse">
               <CardContent className="p-4">
                 <div className="flex gap-4">
-                  <div className="w-24 h-24 bg-muted rounded-lg" />
+                  <div className="w-14 shrink-0 sm:w-[72px] lg:w-[88px]">
+                    <Skeleton className="aspect-[3/4] w-full rounded-xl" />
+                  </div>
                   <div className="flex-1 space-y-2">
                     <div className="h-4 bg-muted rounded w-1/2" />
                     <div className="h-5 bg-muted rounded w-1/4" />
@@ -134,7 +142,7 @@ export default function ArchivedListingsPage() {
                   <div className="flex gap-4">
                     <Link
                       href={listingDetailHref(listing)}
-                      className="relative w-24 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0"
+                      className={listingPortraitThumbClass}
                     >
                       {primaryImage?.url ? (
                         <Image
@@ -153,7 +161,7 @@ export default function ArchivedListingsPage() {
                     <div className="flex-1 min-w-0">
                       <Link
                         href={listingDetailHref(listing)}
-                        className="font-semibold text-foreground hover:text-primary block truncate"
+                        className="block truncate text-[15px] font-semibold text-foreground hover:text-primary"
                       >
                         {capitalizeWords(listing.title)}
                       </Link>

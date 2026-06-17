@@ -6,6 +6,11 @@ import { Button } from "@/components/ui/button"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { DashboardSidebarNav } from "@/components/features/dashboard/dashboard-sidebar-nav"
 import { DashboardMobileNav } from "@/components/features/dashboard/dashboard-mobile-nav"
+import {
+  dashboardSidebarCreateButtonClass,
+  dashboardSidebarWidthClass,
+} from "@/lib/utils/dashboard-display-styles"
+import { cn } from "@/lib/utils"
 import { Plus } from "lucide-react"
 
 export default async function DashboardLayout({
@@ -36,17 +41,17 @@ export default async function DashboardLayout({
 
         <div className="mt-6 flex flex-col gap-8 lg:mt-0 lg:flex-row lg:gap-12 xl:gap-14">
           {/* Sidebar */}
-          <aside className="hidden shrink-0 lg:block lg:w-64 xl:w-72">
-            <div className="sticky top-24 space-y-5">
-              <Button asChild className="h-10 w-full lg:h-11 lg:text-[15px]">
+          <aside className={cn("hidden shrink-0 lg:block", dashboardSidebarWidthClass)}>
+            <div className="sticky top-24 space-y-6">
+              <Button asChild className={dashboardSidebarCreateButtonClass}>
                 <Link href="/sell?new=1">
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="mr-2 h-5 w-5" />
                   Create Listing
                 </Link>
               </Button>
               
               <Suspense fallback={null}>
-                <DashboardSidebarNav sellerProfileHref={shopHref} />
+                <DashboardSidebarNav sellerProfileHref={shopHref} size="large" />
               </Suspense>
             </div>
           </aside>

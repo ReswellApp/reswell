@@ -21,8 +21,10 @@ import { LocalDateTime } from "@/components/ui/local-datetime"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { OrdersListRealtimeRefresh } from "@/components/order-realtime-refresh"
+import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
 import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
 import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amounts"
+import { listingPortraitThumbClass, listingPortraitThumbSizes } from "@/lib/utils/dashboard-display-styles"
 
 export const metadata = privatePageMetadata({
   title: "Sales — Reswell",
@@ -207,13 +209,10 @@ export default async function SalesPage() {
   return (
     <div className="space-y-6">
       <OrdersListRealtimeRefresh role="seller" />
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Sales</h1>
-        <p className="text-muted-foreground mt-1">
-          Card and wallet purchases of your listings. Shipping addresses appear here when the buyer paid
-          with a card and chose delivery.
-        </p>
-      </div>
+      <DashboardPageHeader
+        title="Sales"
+        description="Card and wallet purchases of your listings. Shipping addresses appear here when the buyer paid with a card and chose delivery."
+      />
 
       {error && (
         <div className="space-y-1 text-sm text-destructive">
@@ -308,9 +307,9 @@ export default async function SalesPage() {
                   </div>
 
                   <div className="flex gap-3">
-                    <div className="relative h-16 w-16 flex-shrink-0 rounded-md border bg-muted overflow-hidden">
+                    <div className={listingPortraitThumbClass}>
                       {img ? (
-                        <Image src={img} alt="" fill className="object-cover" sizes="64px" unoptimized={listingImageShouldBypassOptimization(img)} />
+                        <Image src={img} alt="" fill className="object-cover" sizes={listingPortraitThumbSizes} unoptimized={listingImageShouldBypassOptimization(img)} />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center">
                           <Package className="h-6 w-6 text-muted-foreground" />
@@ -318,9 +317,9 @@ export default async function SalesPage() {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-foreground line-clamp-2">{title}</p>
-                      <p className="text-sm text-muted-foreground mt-0.5">Buyer: {buyerName}</p>
-                      <p className="text-xs text-muted-foreground mt-2">
+                      <p className="line-clamp-2 text-[15px] font-semibold text-foreground">{title}</p>
+                      <p className="mt-0.5 text-[13px] text-muted-foreground">Buyer: {buyerName}</p>
+                      <p className="mt-2 text-[11px] text-muted-foreground">
                         Tap for sale details, shipping address, and messages
                       </p>
                     </div>

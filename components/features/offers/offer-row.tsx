@@ -23,6 +23,7 @@ import type {
 } from "@/lib/types/offers-dashboard"
 import { offerFulfillmentLabel } from "@/lib/utils/offer-message-display"
 import { dashboardListingForOffer, offerIsSoldPresentation } from "@/lib/utils/offers-dashboard-display"
+import { listingOfferTileCompactClass } from "@/lib/utils/dashboard-display-styles"
 
 function money(n: unknown): string {
   const v = typeof n === "number" ? n : parseFloat(String(n ?? "0"))
@@ -200,7 +201,7 @@ export function OfferRow({
           href={href}
           className={cn(
             "relative aspect-[3/4] w-full max-w-[13rem] shrink-0 overflow-hidden bg-muted sm:max-w-none",
-            compact ? "sm:w-36" : "sm:w-52",
+            compact ? listingOfferTileCompactClass : "sm:w-52 lg:w-56",
             "mx-auto sm:mx-0",
           )}
           aria-label={listingTitle ? `View listing: ${listingTitle}` : "View listing"}
@@ -228,7 +229,7 @@ export function OfferRow({
             <div className="min-w-0 flex-1">
               <Link
                 href={href}
-                className="line-clamp-2 text-base font-semibold leading-snug tracking-tight text-foreground transition-colors hover:text-foreground/80"
+                className="line-clamp-2 text-[15px] font-semibold leading-snug tracking-tight text-foreground transition-colors hover:text-foreground/80"
               >
                 {capitalizeWords(listingTitle || "Listing")}
               </Link>

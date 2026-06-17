@@ -5,10 +5,11 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { formatDistanceToNow } from "date-fns"
-import { ChevronDown, Heart, MessageSquare } from "lucide-react"
+import { ChevronDown, Heart, MessageSquare, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { NavUnreadCountBadge } from "@/components/nav-unread-count-badge"
+import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { MessageProfileAvatar } from "@/components/features/messages/message-profile-avatar"
 import { markInboxNotificationsRead, refreshMessagesInbox } from "@/app/actions/messages"
 import type { MessagesInboxNotification } from "@/lib/db/messagesInbox"
@@ -68,6 +69,7 @@ export function NavMessagesDropdown({
 }: NavMessagesDropdownProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [mobileScrollLock, setMobileScrollLock] = useState(false)
   const [tab, setTab] = useState<NavMessagesTab>("messages")
   const [loading, setLoading] = useState(false)
   const [conversations, setConversations] = useState<InboxConversationRow[]>([])
@@ -145,6 +147,23 @@ export function NavMessagesDropdown({
     [router],
   )
 
+  useEffect(() => {
+    if (!open) {
+      setMobileScrollLock(false)
+      return
+    }
+
+    const syncMobileScrollLock = () => {
+      setMobileScrollLock(window.innerWidth < 768)
+    }
+
+    syncMobileScrollLock()
+    window.addEventListener("resize", syncMobileScrollLock)
+    return () => window.removeEventListener("resize", syncMobileScrollLock)
+  }, [open])
+
+  useBodyScrollLock(mobileScrollLock)
+
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
@@ -161,13 +180,30 @@ export function NavMessagesDropdown({
       <PopoverContent
         align="end"
         sideOffset={8}
-        className="z-[120] w-[min(100vw-2rem,380px)] rounded-2xl border border-border/80 bg-popover p-0 shadow-lg"
+        avoidCollisions
+        className={cn(
+          "z-[120] flex flex-col border border-border/80 bg-popover p-0 shadow-lg",
+          "w-[min(100vw-2rem,380px)] rounded-2xl",
+          "max-md:fixed max-md:inset-0 max-md:z-[120] max-md:h-dvh max-md:w-screen max-md:max-w-none",
+          "max-md:!translate-x-0 max-md:!translate-y-0 max-md:rounded-none max-md:border-0 max-md:shadow-none",
+          "max-md:pt-[env(safe-area-inset-top)] max-md:pb-[env(safe-area-inset-bottom)]",
+        )}
       >
-        <div className="border-b border-border/70 px-4 py-3">
+        <div className="flex shrink-0 items-center justify-between border-b border-border/70 px-4 py-3">
           <h2 className="text-base font-semibold text-foreground">Messages</h2>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 shrink-0 text-foreground hover:bg-muted md:hidden"
+            aria-label="Close messages"
+            onClick={() => setOpen(false)}
+          >
+            <X className="h-5 w-5" />
+          </Button>
         </div>
 
-        <div className="px-3 pt-3">
+        <div className="shrink-0 px-3 pt-3">
           <div
             className="flex w-full gap-1 rounded-xl border border-border/70 bg-muted/60 p-1 shadow-[inset_0_1px_2px_rgba(17,17,17,0.04)]"
             role="tablist"
@@ -214,7 +250,12 @@ export function NavMessagesDropdown({
           </div>
         </div>
 
-        <div className="max-h-[min(60vh,420px)] overflow-y-auto px-1 py-2">
+        <div
+          className={cn(
+            "min-h-0 overflow-y-auto px-1 py-2",
+            "max-md:flex-1 md:max-h-[min(60vh,420px)]",
+          )}
+        >
           {loading ? (
             <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
               Loading…
@@ -353,7 +394,7 @@ export function NavMessagesDropdown({
           )}
         </div>
 
-        <div className="border-t border-border/70 px-3 py-2.5">
+        <div className="shrink-0 border-t border-border/70 px-3 py-2.5">
           {tab === "messages" ? (
             <Button
               variant="ghost"

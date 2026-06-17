@@ -21,6 +21,8 @@ import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
 import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import { ReviewSellerControls } from "@/components/review-seller-controls"
 import { OrdersListRealtimeRefresh } from "@/components/order-realtime-refresh"
+import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
+import { listingPortraitThumbClass, listingPortraitThumbSizes } from "@/lib/utils/dashboard-display-styles"
 import { REAL_MARKETPLACE_PURCHASES_FILTER } from "@/lib/order-admin-test"
 
 export const metadata = privatePageMetadata({
@@ -180,20 +182,22 @@ export default async function PurchasesPage() {
   return (
     <div className="space-y-6">
       <OrdersListRealtimeRefresh role="buyer" />
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">Purchases</h1>
-        <p className="text-muted-foreground mt-1">
-          Used gear and peer-to-peer buys. Sales you make are under{" "}
-          <Link href="/dashboard/sales" className="text-primary underline underline-offset-2">
-            Sales
-          </Link>
-          ; wallet activity is in{" "}
-          <Link href="/dashboard/wallet" className="text-primary underline underline-offset-2">
-            Wallet
-          </Link>
-          .
-        </p>
-      </div>
+      <DashboardPageHeader
+        title="Purchases"
+        description={
+          <>
+            Used gear and peer-to-peer buys. Sales you make are under{" "}
+            <Link href="/dashboard/sales" className="text-primary underline underline-offset-2">
+              Sales
+            </Link>
+            ; wallet activity is in{" "}
+            <Link href="/dashboard/wallet" className="text-primary underline underline-offset-2">
+              Wallet
+            </Link>
+            .
+          </>
+        }
+      />
 
       {error && (
         <p className="text-sm text-destructive">
@@ -295,9 +299,9 @@ export default async function PurchasesPage() {
                   </div>
 
                   <div className="flex gap-3">
-                    <div className="relative h-16 w-16 flex-shrink-0 rounded-md border bg-muted overflow-hidden">
+                    <div className={listingPortraitThumbClass}>
                       {img ? (
-                        <Image src={img} alt="" fill className="object-cover" sizes="64px" unoptimized={listingImageShouldBypassOptimization(img)} />
+                        <Image src={img} alt="" fill className="object-cover" sizes={listingPortraitThumbSizes} unoptimized={listingImageShouldBypassOptimization(img)} />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center">
                           <Package className="h-6 w-6 text-muted-foreground" />
@@ -305,9 +309,9 @@ export default async function PurchasesPage() {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-foreground line-clamp-2">{title}</p>
-                      <p className="text-sm text-muted-foreground mt-0.5">Seller: {sellerName}</p>
-                      <p className="text-xs text-muted-foreground mt-2">
+                      <p className="line-clamp-2 text-[15px] font-semibold text-foreground">{title}</p>
+                      <p className="mt-0.5 text-[13px] text-muted-foreground">Seller: {sellerName}</p>
+                      <p className="mt-2 text-[11px] text-muted-foreground">
                         Tap for purchase details, tracking, and messages
                       </p>
                     </div>

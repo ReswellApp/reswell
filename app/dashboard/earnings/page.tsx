@@ -10,6 +10,7 @@ import { EarningsLifetimeStats } from "@/components/features/earnings/earnings-l
 import { EarningsActivity } from "@/components/features/earnings/earnings-activity"
 import { EarningsStripePayoutCard } from "@/components/features/earnings/earnings-stripe-payout-card"
 import { EarningsPaymentsOverview } from "@/components/features/earnings/earnings-payments-overview"
+import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
 import type { StripeConnectStatusPayload } from "@/components/features/earnings/stripe-bank-payout-section"
 import type { EarningsTransaction, EarningsWalletSnapshot } from "@/components/features/earnings/earnings-types"
 import type { SellerEarningsDashboardTotals } from "@/lib/db/sellerEarningsTotals"
@@ -314,27 +315,27 @@ export default function EarningsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Earnings</h1>
-          <p className="text-muted-foreground">Your marketplace wallet and payouts.</p>
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={refreshing}
-          aria-busy={refreshing}
-          onClick={() => void fetchData({ showRefreshIndicator: true })}
-          className="text-muted-foreground shrink-0"
-        >
-          <RefreshCw
-            className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? "animate-spin" : ""}`}
-            aria-hidden
-          />
-          Refresh
-        </Button>
-      </div>
+      <DashboardPageHeader
+        title="Earnings"
+        description="Your marketplace wallet and payouts."
+        actions={
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={refreshing}
+            aria-busy={refreshing}
+            onClick={() => void fetchData({ showRefreshIndicator: true })}
+            className="shrink-0 text-muted-foreground"
+          >
+            <RefreshCw
+              className={`mr-1.5 h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`}
+              aria-hidden
+            />
+            Refresh
+          </Button>
+        }
+      />
 
       <div className="mt-6 space-y-8">
         <section className="space-y-4">

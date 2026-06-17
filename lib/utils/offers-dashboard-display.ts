@@ -1,5 +1,13 @@
 import type { DashboardListingEmbed, DashboardOfferRow } from "@/lib/types/offers-dashboard"
 
+export type OffersRoleTab = "seller" | "buyer"
+
+export function parseOffersTab(tab: string | undefined): OffersRoleTab {
+  if (tab === "buyer" || tab === "made") return "buyer"
+  if (tab === "seller" || tab === "received") return "seller"
+  return "seller"
+}
+
 function singleListing(
   row: DashboardOfferRow["listings"],
 ): DashboardListingEmbed | null {
@@ -93,4 +101,23 @@ export function partitionOffersByDirection<T extends DashboardOfferRow>(
   sent.sort(byUpdated)
   received.sort(byUpdated)
   return { sent, received }
+}
+
+/** Split offers by whether the current user is the buyer or seller on the row. */
+export function partitionOffersByRole<T extends DashboardOfferRow>(
+  offers: T[],
+  userId: string,
+): { seller: T[]; buyer: T[] } {
+  const seller: T[] = []
+  const buyer: T[] = []
+  for (const offer of offers) {
+    const role = userParticipationRole(offer, userId)
+    if (role === "seller") seller.push(offer)
+    else if (role === "buyer") buyer.push(offer)
+  }
+  const byUpdated = (a: T, b: T) =>
+    new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+  seller.sort(byUpdated)
+  buyer.sort(byUpdated)
+  return { seller, buyer }
 }

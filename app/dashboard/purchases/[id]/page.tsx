@@ -28,6 +28,7 @@ import {
 } from "@/components/order-actions"
 import { ReswellTrackingSection } from "@/components/features/orders/reswell-tracking-section"
 import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
+import { listingPortraitThumbClass, listingPortraitThumbSizes } from "@/lib/utils/dashboard-display-styles"
 import { BuyerOrderExperience } from "@/components/features/buyer-order/buyer-order-experience"
 import { OrderMessageThread, type OrderThreadMessage } from "@/components/order-message-thread"
 import { canSubmitCancelRequest, canSubmitRefundHelpRequest } from "@/lib/services/orderBuyerSupport"
@@ -395,9 +396,9 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
               const rowHref = listingDetailHref(lineListing)
               return (
                 <div key={lineListing.id} className="flex gap-4">
-                  <div className="relative h-24 w-24 flex-shrink-0 rounded-lg border bg-muted overflow-hidden">
+                  <div className={listingPortraitThumbClass}>
                     {rowImg ? (
-                      <Image src={rowImg} alt="" fill className="object-cover" sizes="96px" unoptimized={listingImageShouldBypassOptimization(rowImg)} />
+                      <Image src={rowImg} alt="" fill className="object-cover" sizes={listingPortraitThumbSizes} unoptimized={listingImageShouldBypassOptimization(rowImg)} />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center">
                         <Package className="h-8 w-8 text-muted-foreground" />

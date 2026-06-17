@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { DashboardOffersView } from "@/components/features/offers/dashboard-offers-view"
+import { parseOffersTab } from "@/lib/utils/offers-dashboard-display"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { fetchDashboardOffersPartitioned } from "@/lib/db/offers-dashboard"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
+import type { DashboardOfferRow } from "@/lib/types/offers-dashboard"
 
 export const metadata = privatePageMetadata({
   title: "Offers — Reswell",
@@ -11,13 +13,23 @@ export const metadata = privatePageMetadata({
   path: "/dashboard/offers",
 })
 
+function mergeOffers(sent: DashboardOfferRow[], received: DashboardOfferRow[]): DashboardOfferRow[] {
+  const byId = new Map<string, DashboardOfferRow>()
+  for (const row of [...sent, ...received]) {
+    byId.set(row.id, row)
+  }
+  return [...byId.values()].sort(
+    (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
+  )
+}
+
 export default async function DashboardOffersPage({
   searchParams,
 }: {
   searchParams: Promise<{ tab?: string }>
 }) {
   const sp = await searchParams
-  const defaultTab = sp.tab === "received" ? "received" : "made"
+  const defaultTab = parseOffersTab(sp.tab)
 
   const { supabase, user } = await getCachedDashboardSession()
   if (!user) {
@@ -27,12 +39,9 @@ export default async function DashboardOffersPage({
   const { sent, received, sellersById, buyersById, fetchError } =
     await fetchDashboardOffersPartitioned(supabase, user.id)
 
-  const listingIds = [
-    ...new Set([
-      ...sent.map((o) => o.listing_id),
-      ...received.map((o) => o.listing_id),
-    ]),
-  ]
+  const offers = mergeOffers(sent, received)
+
+  const listingIds = [...new Set(offers.map((o) => o.listing_id))]
 
   const minPctByListingId: Record<string, number> = {}
   if (listingIds.length > 0) {
@@ -67,23 +76,12 @@ export default async function DashboardOffersPage({
               {msg}
             </p>
           ))}
-          <p className="mt-3 text-[13px] leading-snug text-muted-foreground">
-            Confirm <code className="rounded bg-muted px-1 py-0.5 text-foreground">NEXT_PUBLIC_SUPABASE_URL</code> and{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-foreground">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> in{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-foreground">.env.local</code> match the project that has
-            your data, and that offer tables exist (see{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-foreground">scripts/046_offers.sql</code>). In Supabase →
-            Authentication → URL Configuration, add{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-foreground">http://localhost:3000/**</code> so sign-in
-            works locally.
-          </p>
         </div>
       )}
       <DashboardOffersView
         userId={user.id}
         defaultTab={defaultTab}
-        made={sent}
-        received={received}
+        offers={offers}
         sellersById={sellersById}
         buyersById={buyersById}
         minPctByListingId={minPctByListingId}

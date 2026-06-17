@@ -33,6 +33,7 @@ import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { ORDER_STATUS_LIST } from "@/lib/order-status"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { DashboardOverviewRealtimeRefresh } from "@/components/features/dashboard/dashboard-overview-realtime-refresh"
+import { dashboardPageSubtitleClass, dashboardPageTitleClass } from "@/lib/utils/dashboard-display-styles"
 import { getMySellerEarningsTotals } from "@/lib/db/sellerEarningsTotals"
 import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
 
@@ -264,8 +265,8 @@ export default async function DashboardPage() {
 
       {/* Welcome */}
       <div className="max-w-3xl">
-        <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Welcome back, {welcomeName}</h1>
-        <p className="mt-1 text-sm text-muted-foreground sm:text-base">
+        <h1 className={dashboardPageTitleClass}>Welcome back, {welcomeName}</h1>
+        <p className={dashboardPageSubtitleClass}>
           Here is what is happening with your account — updates in real time.
         </p>
       </div>
@@ -462,7 +463,7 @@ export default async function DashboardPage() {
         </CardHeader>
         <CardContent>
           {publishedListings && publishedListings.length > 0 ? (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 xl:grid-cols-4 xl:gap-5">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-6 xl:grid-cols-3 2xl:grid-cols-4 2xl:gap-5">
               {publishedListings.map((listing) => {
                 const primaryImage =
                   listing.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) ||
@@ -475,7 +476,7 @@ export default async function DashboardPage() {
                     href={`/sell?edit=${listing.id}`}
                     className="group min-w-0"
                   >
-                    <div className="relative aspect-square rounded-lg overflow-hidden bg-muted mb-2">
+                    <div className="relative mb-2 aspect-[3/4] overflow-hidden rounded-xl bg-muted">
                       {primaryImage?.url ? (
                         <Image
                           src={listingImageSrc}
@@ -493,7 +494,7 @@ export default async function DashboardPage() {
                         {listing.status}
                       </Badge>
                     </div>
-                    <h3 className="text-sm font-medium leading-snug line-clamp-2 min-h-[2.75rem] sm:text-base sm:min-h-[3.25rem] group-hover:text-primary transition-colors">
+                    <h3 className="line-clamp-2 min-h-[2.5rem] text-[15px] font-semibold leading-snug group-hover:text-primary transition-colors">
                       {capitalizeWords(listing.title)}
                     </h3>
                     <p className="text-base font-bold tabular-nums text-black dark:text-white">
@@ -530,7 +531,7 @@ export default async function DashboardPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 xl:grid-cols-4 xl:gap-5">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-6 xl:grid-cols-3 2xl:grid-cols-4 2xl:gap-5">
               {draftListings.map((listing) => {
                 const primaryImage =
                   listing.listing_images?.find((img: { is_primary: boolean }) => img.is_primary) ||
@@ -543,7 +544,7 @@ export default async function DashboardPage() {
                     href={`/sell?edit=${listing.id}`}
                     className="group min-w-0"
                   >
-                    <div className="relative aspect-square rounded-lg overflow-hidden bg-muted mb-2">
+                    <div className="relative mb-2 aspect-[3/4] overflow-hidden rounded-xl bg-muted">
                       {primaryImage?.url ? (
                         <Image
                           src={listingImageSrc}
@@ -561,7 +562,7 @@ export default async function DashboardPage() {
                         draft
                       </Badge>
                     </div>
-                    <h3 className="text-sm font-medium leading-snug line-clamp-2 min-h-[2.75rem] sm:text-base sm:min-h-[3.25rem] group-hover:text-primary transition-colors">
+                    <h3 className="line-clamp-2 min-h-[2.5rem] text-[15px] font-semibold leading-snug group-hover:text-primary transition-colors">
                       {capitalizeWords(listing.title)}
                     </h3>
                     <p className="text-base font-bold tabular-nums text-black dark:text-white">

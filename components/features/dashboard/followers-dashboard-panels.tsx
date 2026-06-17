@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { MapPin, Users, TrendingUp, Heart } from "lucide-react"
 import { UnfollowButton } from "@/components/features/dashboard/unfollow-button"
 import { CommunityDashboardTabs } from "@/components/features/dashboard/community-dashboard-tabs"
+import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
@@ -437,12 +438,10 @@ export async function FollowersDashboardPanels() {
 
   return (
     <div className="space-y-8 sm:space-y-10 pb-10 sm:pb-12">
-      <header className="space-y-1">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Following</h1>
-        <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
-          Switch tabs to see sellers you follow and who follows your shop.
-        </p>
-      </header>
+      <DashboardPageHeader
+        title="Following"
+        description="Switch tabs to see sellers you follow and who follows your shop."
+      />
 
       {statStrip}
       <CommunityDashboardTabs followingPanel={shopsYouFollow} followersPanel={peopleFollowingYou} />

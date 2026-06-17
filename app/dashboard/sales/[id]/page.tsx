@@ -55,6 +55,7 @@ import {
   parseOrderTrackingDetail,
 } from "@/lib/shipping/order-tracking-detail"
 import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
+import { listingPortraitThumbClass, listingPortraitThumbSizes } from "@/lib/utils/dashboard-display-styles"
 import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
 import { sellerReviewRequestAlreadySentForOrder } from "@/lib/services/sellerReviewRequest"
@@ -478,9 +479,9 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                   const rowHref = listingDetailHref(lineListing)
                   return (
                     <div key={lineListing.id} className="flex gap-4 p-6">
-                      <div className="relative h-20 w-20 flex-shrink-0 rounded-lg border bg-muted overflow-hidden">
+                      <div className={listingPortraitThumbClass}>
                         {rowImg ? (
-                          <Image src={rowImg} alt={rowTitle} fill className="object-cover" sizes="80px" unoptimized={listingImageShouldBypassOptimization(rowImg)} />
+                          <Image src={rowImg} alt={rowTitle} fill className="object-cover" sizes={listingPortraitThumbSizes} unoptimized={listingImageShouldBypassOptimization(rowImg)} />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center">
                             <Package className="h-6 w-6 text-muted-foreground" />
