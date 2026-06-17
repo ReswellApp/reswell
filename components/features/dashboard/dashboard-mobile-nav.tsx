@@ -14,6 +14,9 @@ function isLinkActive(pathname: string, href: string): boolean {
   if (href === "/dashboard") {
     return normalized === "/dashboard"
   }
+  if (href === "/messages" || href.startsWith("/messages")) {
+    return normalized === "/messages" || normalized.startsWith("/messages/")
+  }
   return normalized === href || normalized.startsWith(`${href}/`)
 }
 

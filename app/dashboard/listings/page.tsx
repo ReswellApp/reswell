@@ -6,7 +6,7 @@ export default async function MyListingsPage() {
   const { supabase, user } = await getCachedDashboardSession()
   if (!user) return null
 
-  const { listings, error } = await fetchMyListings(supabase, user.id)
+  const { listings, stats, error } = await fetchMyListings(supabase, user.id)
 
   if (error) {
     console.error("[dashboard/listings] fetch failed", {
@@ -16,5 +16,5 @@ export default async function MyListingsPage() {
     })
   }
 
-  return <MyListingsClient listings={listings} fetchError={error} />
+  return <MyListingsClient listings={listings} stats={stats} fetchError={error} />
 }

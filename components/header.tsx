@@ -23,12 +23,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { NavUnreadCountBadge } from "@/components/nav-unread-count-badge"
+import { NavMessagesDropdown } from "@/components/features/messages/nav-messages-dropdown"
 import {
   X,
   Menu,
   Search,
-  MessageSquare,
   User,
   Heart,
   Plus,
@@ -854,17 +853,12 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               <Skeleton className="h-9 w-9 shrink-0 rounded-full" aria-hidden />
             ) : user && accountMenu ? (
               <>
-                <Link href="/messages" className="relative inline-flex shrink-0">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-10 w-10 text-foreground hover:bg-black/5"
-                  >
-                    <MessageSquare className="h-[22px] w-[22px]" />
-                    <NavUnreadCountBadge count={unreadMessages} overlay />
-                    <span className="sr-only">Messages</span>
-                  </Button>
-                </Link>
+                <NavMessagesDropdown
+                  userId={user.id}
+                  unreadMessages={unreadMessages}
+                  triggerClassName="h-10 w-10 shrink-0"
+                  iconClassName="h-[22px] w-[22px]"
+                />
                 {accountMenu}
               </>
             ) : authLoaded ? (
@@ -923,17 +917,12 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                           <Heart className="h-[22px] w-[22px]" />
                         </Button>
                       </Link>
-                      <Link href="/messages" className="relative inline-flex shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-10 w-10 text-foreground hover:bg-black/5"
-                        >
-                          <MessageSquare className="h-[22px] w-[22px]" />
-                          <NavUnreadCountBadge count={unreadMessages} overlay />
-                          <span className="sr-only">Messages</span>
-                        </Button>
-                      </Link>
+                      <NavMessagesDropdown
+                        userId={user.id}
+                        unreadMessages={unreadMessages}
+                        triggerClassName="h-10 w-10 shrink-0"
+                        iconClassName="h-[22px] w-[22px]"
+                      />
                       <Button
                         asChild
                         variant="ghost"
@@ -1137,13 +1126,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
             {user ? (
               <div className="flex shrink-0 items-center gap-1 sm:gap-1.5 md:gap-0.5">
                 <CartHeaderLink authResolved={authLoaded} userId={user.id} />
-                <Link href="/messages" className="relative inline-flex shrink-0">
-                  <Button variant="ghost" size="icon" className="text-foreground">
-                    <MessageSquare className="h-6 w-6" />
-                    <NavUnreadCountBadge count={unreadMessages} overlay />
-                    <span className="sr-only">Messages</span>
-                  </Button>
-                </Link>
+                <NavMessagesDropdown userId={user.id} unreadMessages={unreadMessages} />
 
                 <div className="ml-2 shrink-0 sm:ml-3 md:ml-4 max-[360px]:hidden">
                   {accountMenu}

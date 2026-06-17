@@ -1,12 +1,12 @@
-import React from "react"
+import React, { Suspense } from "react"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { Button } from "@/components/ui/button"
 import { sellerProfileHref } from "@/lib/seller-slug"
-import { DASHBOARD_NAV_LINKS } from "@/lib/dashboard-nav-links"
+import { DashboardSidebarNav } from "@/components/features/dashboard/dashboard-sidebar-nav"
 import { DashboardMobileNav } from "@/components/features/dashboard/dashboard-mobile-nav"
-import { Plus, Store } from "lucide-react"
+import { Plus } from "lucide-react"
 
 export default async function DashboardLayout({
   children,
@@ -45,30 +45,9 @@ export default async function DashboardLayout({
                 </Link>
               </Button>
               
-              <nav className="hidden space-y-1 lg:block">
-                {DASHBOARD_NAV_LINKS.map((link) => {
-                  const Icon = link.icon
-                  return (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                    >
-                      <Icon className="h-4 w-4" />
-                      {link.name}
-                    </Link>
-                  )
-                })}
-                {isShop && (
-                  <Link
-                    href={sellerProfileHref(profile)}
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-primary hover:text-primary hover:bg-primary/5 transition-colors"
-                  >
-                    <Store className="h-4 w-4" />
-                    My Seller Profile
-                  </Link>
-                )}
-              </nav>
+              <Suspense fallback={null}>
+                <DashboardSidebarNav sellerProfileHref={shopHref} />
+              </Suspense>
             </div>
           </aside>
 

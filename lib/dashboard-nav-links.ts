@@ -8,12 +8,29 @@ import {
   PackageCheck,
   UserCircle,
   Users,
+  MessageSquare,
 } from "lucide-react"
+
+export interface DashboardNavChildLink {
+  name: string
+  href: string
+}
 
 export interface DashboardNavLink {
   name: string
   href: string
   icon: LucideIcon
+  children?: DashboardNavChildLink[]
+}
+
+export const DASHBOARD_MESSAGES_NAV: DashboardNavLink = {
+  name: "Messages",
+  href: "/messages",
+  icon: MessageSquare,
+  children: [
+    { name: "Activity", href: "/messages?tab=activity" },
+    { name: "Messages", href: "/messages" },
+  ],
 }
 
 export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [
@@ -22,6 +39,7 @@ export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [
   { name: "Earnings", href: "/dashboard/earnings", icon: Banknote },
   { name: "My Listings", href: "/dashboard/listings", icon: Package },
   { name: "Offers", href: "/dashboard/offers", icon: Handshake },
+  DASHBOARD_MESSAGES_NAV,
   { name: "Purchases", href: "/dashboard/purchases", icon: ShoppingBag },
   { name: "Sales", href: "/dashboard/sales", icon: PackageCheck },
   { name: "Following", href: "/dashboard/following", icon: Users },

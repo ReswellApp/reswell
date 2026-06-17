@@ -18,7 +18,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { VerifiedBadge } from '@/components/verified-badge'
 import { formatDistanceToNow } from 'date-fns'
 import { capitalizeWords } from '@/lib/listing-labels'
-import { listingDetailHref } from '@/lib/listing-href'
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from '@/lib/utils'
@@ -31,9 +30,13 @@ import {
   counterpartyInboxHref,
   type InboxConversationRow,
 } from '@/lib/utils/messages-inbox-grouping'
-import { parseReviewRequestMessageMetadata } from '@/lib/validations/review-request-message-metadata'
-import { parseMessageLocationMetadata } from '@/lib/validations/message-location-metadata'
-import { formatMessageMediaPreviewText } from '@/lib/utils/message-media-preview-text'
+import {
+  activityKindLabel,
+  filterInboxActivityNotifications,
+  inboxActivityNotificationHref,
+  isFavoriteActivityType,
+} from '@/lib/utils/messages-inbox-activity'
+import { formatInboxChatPreviewText } from '@/lib/utils/messages-inbox-preview'
 import { isAbortError } from '@/lib/utils/is-abort-error'
 
 type SellerOfferDraft = {
@@ -62,32 +65,15 @@ function sentOfferViewHref(
   return `/messages/new?user=${buyerId}&listing=${listingId}`
 }
 
-function activityKindLabel(type: string | undefined) {
-  const t = (type || '').toLowerCase()
-  if (t.includes('favorite') || t.includes('save') || t === 'listing_saved') return 'Favorite'
-  if (t.includes('follow')) return 'Follow'
-  if (t.startsWith('offer_')) return 'Offer'
-  return 'Activity'
-}
-
-function isFavoriteActivityType(type: string | undefined) {
-  const t = (type || '').toLowerCase()
-  if (t.includes('follow')) return false
-  return t === 'listing_saved' || t.includes('favorite') || t.includes('save')
-}
-
-interface Conversation extends InboxConversationRow {}
 
 type MessagesTab = 'chats' | 'activity' | 'offers'
+
+interface Conversation extends InboxConversationRow {}
 
 function parseMessagesTab(tabParam: string | null): MessagesTab {
   if (tabParam === 'activity') return 'activity'
   if (tabParam === 'offers') return 'offers'
   return 'chats'
-}
-
-function isOfferActivityType(type: string | undefined) {
-  return (type || '').toLowerCase().startsWith('offer_')
 }
 
 export interface MessagesInboxClientProps {
@@ -319,7 +305,7 @@ export function MessagesInboxClient({
 
   const totalUnreadChats = groupedChats.reduce((acc, group) => acc + group.totalUnread, 0)
 
-  const activityNotifications = notifications.filter((n) => !isOfferActivityType(n.type))
+  const activityNotifications = filterInboxActivityNotifications(notifications)
 
   const filteredNotifications = activityNotifications.filter((n) => {
     if (!searchLower) return true
@@ -334,38 +320,7 @@ export function MessagesInboxClient({
     listingTitle: string | undefined,
     currentId: string | null,
   ): string {
-    const listing = listingTitle?.trim() ? capitalizeWords(listingTitle.trim()) : ''
-    const reviewReq = parseReviewRequestMessageMetadata(lastMessage?.metadata)
-    if (reviewReq && lastMessage) {
-      const you = lastMessage.sender_id === currentId
-      const hint = you ? 'You asked for a review' : 'Asked you for a review'
-      if (listing) return `${listing} · ${hint}`
-      return hint
-    }
-    const sharedLoc = parseMessageLocationMetadata(lastMessage?.metadata)
-    if (sharedLoc && lastMessage) {
-      const you = lastMessage.sender_id === currentId
-      const hint = you ? 'You shared a location' : 'Shared a location'
-      if (listing) return `${listing} · ${hint}`
-      return hint
-    }
-    const mediaPreview = formatMessageMediaPreviewText({
-      metadata: lastMessage?.metadata,
-      senderId: lastMessage?.sender_id ?? '',
-      currentUserId: currentId,
-    })
-    if (mediaPreview && lastMessage) {
-      if (listing) return `${listing} · ${mediaPreview}`
-      return mediaPreview
-    }
-    if (!lastMessage?.content?.trim()) {
-      return listing || 'No messages yet'
-    }
-    const body = lastMessage.content.trim()
-    const you = lastMessage.sender_id === currentId
-    const segment = you ? `You · ${body}` : body
-    if (listing) return `${listing} · ${segment}`
-    return segment
+    return formatInboxChatPreviewText(lastMessage, listingTitle, currentId)
   }
 
   const groupedShell =
@@ -710,8 +665,7 @@ export function MessagesInboxClient({
                 <div className={cn('space-y-2.5 sm:space-y-3', activityShell)}>
                   {filteredNotifications.map((n) => {
                       const listing = n.listings
-                      const href =
-                        n.listing_id && listing?.section ? listingDetailHref(listing) : '/favorites'
+                      const href = inboxActivityNotificationHref(n)
                       const thumb =
                         listing?.listing_images &&
                         listingTitleThumbnailSrc(listing.listing_images)

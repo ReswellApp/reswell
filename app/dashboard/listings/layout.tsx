@@ -2,8 +2,8 @@ import type { ReactNode } from "react"
 import { privatePageMetadata } from "@/lib/site-metadata"
 
 export const metadata = privatePageMetadata({
-  title: "My listings — Reswell",
-  description: "Publish, pause, or archive your surfboard listings and track views and messages.",
+  title: "Listings — Reswell",
+  description: "Manage your surfboard listings, track views, saves, and cart activity.",
   path: "/dashboard/listings",
 })
 
