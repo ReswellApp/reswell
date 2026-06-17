@@ -5,6 +5,22 @@ export const dashboardPageTitleClass =
 export const dashboardPageSubtitleClass =
   "mt-1 text-[14px] leading-snug text-muted-foreground sm:text-[15px]"
 
+/** Section heading below the mobile account dropdown (Pango-style). */
+export const dashboardMobileSectionTitleClass =
+  "text-lg font-semibold tracking-tight text-foreground sm:text-xl"
+
+/** Fixed send bar docked to the viewport bottom on mobile message threads. */
+export const messageThreadMobileComposerDockClass =
+  "max-lg:fixed max-lg:inset-x-0 max-lg:bottom-0 max-lg:z-50 max-lg:border-t max-lg:border-border/60 max-lg:bg-background/95 max-lg:px-3 max-lg:pt-2 max-lg:pb-[max(0.5rem,env(safe-area-inset-bottom))] max-lg:backdrop-blur-sm supports-[backdrop-filter]:max-lg:bg-background/85"
+
+/** In-flow spacer matching the fixed mobile composer height (keeps page scroll height). */
+export const messageThreadMobileComposerSpacerClass =
+  "max-lg:h-[calc(4.75rem+env(safe-area-inset-bottom))] max-lg:shrink-0 lg:hidden"
+
+/** Pill-shaped message composer shell — cerulean outline when the textarea is focused. */
+export const messageComposerBarClass =
+  "flex items-end gap-2 rounded-[24px] border border-border/70 bg-background/95 px-2 py-1.5 shadow-[0_2px_16px_rgba(17,17,17,0.06)] backdrop-blur-sm transition-[border-color,box-shadow] focus-within:border-cerulean focus-within:ring-2 focus-within:ring-cerulean/20 dark:border-border/80 dark:bg-card/95 dark:shadow-none dark:focus-within:border-cerulean/70"
+
 export const dashboardSearchInputClass =
   "h-10 rounded-xl border-border/80 bg-muted/70 pl-10 text-[15px] shadow-none"
 

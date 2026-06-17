@@ -25,7 +25,7 @@ export function DashboardPageHeader({
         className,
       )}
     >
-      <div>
+      <div className="hidden lg:block">
         <h1 className={dashboardPageTitleClass}>{title}</h1>
         {description ? <p className={dashboardPageSubtitleClass}>{description}</p> : null}
       </div>

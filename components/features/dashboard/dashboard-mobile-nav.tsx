@@ -50,9 +50,15 @@ function resolveActiveLink(
 
 export interface DashboardMobileNavProps {
   sellerProfileHref: string | null
+  /** Pango-style bordered bar for account pages (e.g. /messages). */
+  variant?: "default" | "account"
 }
 
-export function DashboardMobileNav({ sellerProfileHref }: DashboardMobileNavProps) {
+export function DashboardMobileNav({
+  sellerProfileHref,
+  variant = "default",
+}: DashboardMobileNavProps) {
+  const isAccountVariant = variant === "account"
   const pathname = usePathname() ?? ""
   const [open, setOpen] = useState(false)
 
@@ -85,21 +91,29 @@ export function DashboardMobileNav({ sellerProfileHref }: DashboardMobileNavProp
       <Collapsible open={open} onOpenChange={setOpen}>
         <div
           className={cn(
-            "overflow-hidden rounded-xl border border-primary/45 bg-card",
-            "shadow-[0_4px_18px_rgba(17,17,17,0.08)]",
+            "overflow-hidden bg-background",
+            isAccountVariant
+              ? "rounded-lg border border-border"
+              : "rounded-xl border border-primary/45 bg-card shadow-[0_4px_18px_rgba(17,17,17,0.08)]",
           )}
         >
           <CollapsibleTrigger asChild>
             <button
               type="button"
               className={cn(
-                "flex w-full items-center justify-between gap-3 bg-background px-4 py-3.5 text-left transition-colors",
+                "flex w-full items-center justify-between gap-3 px-4 text-left transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+                isAccountVariant ? "py-3" : "bg-background py-3.5",
                 open && "border-b border-border/50",
               )}
               aria-expanded={open}
             >
-              <span className="truncate text-[15px] font-medium text-foreground/90">
+              <span
+                className={cn(
+                  "truncate text-[15px] text-foreground",
+                  isAccountVariant ? "font-semibold" : "font-medium text-foreground/90",
+                )}
+              >
                 {activeLink.name}
               </span>
               <ChevronDown

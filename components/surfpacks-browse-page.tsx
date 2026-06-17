@@ -115,9 +115,9 @@ export async function SurfpacksBrowsePage(props: {
 
   return (
     <main className="flex-1">
-      <section className="bg-offwhite pt-6 pb-4 sm:pt-8 sm:pb-5">
+      <section className="bg-offwhite pt-1 pb-4 sm:pt-2 sm:pb-5 lg:pt-8 lg:pb-5">
         <div className="container mx-auto">
-          <div className="mb-4 border-t border-neutral-200 pt-4">
+          <div className="mb-4 border-t border-neutral-200 pt-2 lg:pt-4">
             <Breadcrumb>
               <BreadcrumbList className="gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
                 <BreadcrumbItem>

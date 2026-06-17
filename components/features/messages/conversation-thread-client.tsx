@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef, useMemo, useCallback } from 'react'
+import { useEffect, useLayoutEffect, useState, useRef, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
@@ -8,6 +8,11 @@ import { Button } from '@/components/ui/button'
 import { MessageComposerTextarea } from '@/components/features/messages/message-composer-textarea'
 import { ArrowLeft, Send, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import {
+  messageComposerBarClass,
+} from '@/lib/utils/dashboard-display-styles'
+import { scrollPageToMessageThreadBottom } from '@/lib/utils/message-thread-routes'
+import { MessageThreadMobileComposerDock } from '@/components/features/messages/message-thread-mobile-composer-dock'
 import { ConversationPartyProfile } from '@/components/features/messages/conversation-party-profile'
 import { ConversationThreadHeaderChip } from '@/components/features/messages/conversation-thread-header-chip'
 import { type OtherPartyProfileSummary } from '@/lib/messages/profile-reviews-loader'
@@ -164,6 +169,7 @@ export function ConversationThreadClient({
   const messagesScrollRef = useRef<HTMLDivElement>(null)
   const stickToBottomRef = useRef(true)
   const initialScrollDoneRef = useRef(false)
+  const [useMobileComposerDock, setUseMobileComposerDock] = useState(false)
   const supabase = createClient()
 
   const orderedMessages = useMemo(
@@ -226,6 +232,19 @@ export function ConversationThreadClient({
     el.scrollTo({ top: el.scrollHeight, behavior })
   }, [])
 
+  useLayoutEffect(() => {
+    if (!embedded) {
+      setUseMobileComposerDock(false)
+      return
+    }
+    const isMobile = window.matchMedia('(max-width: 1023px)').matches
+    setUseMobileComposerDock(isMobile)
+    if (isMobile) {
+      scrollPageToMessageThreadBottom()
+      scrollThreadToBottom('auto')
+    }
+  }, [embedded, id, scrollThreadToBottom])
+
   useEffect(() => {
     setListingBannerImageReady(false)
   }, [threadListingThumbSrc])
@@ -247,10 +266,13 @@ export function ConversationThreadClient({
     const idFrame = requestAnimationFrame(() => {
       // Snap to bottom instantly on first paint; glide for live updates.
       scrollThreadToBottom(initialScrollDoneRef.current ? 'smooth' : 'auto')
+      if (embedded && useMobileComposerDock) {
+        scrollPageToMessageThreadBottom()
+      }
       initialScrollDoneRef.current = true
     })
     return () => cancelAnimationFrame(idFrame)
-  }, [orderedMessages, scrollThreadToBottom])
+  }, [orderedMessages, scrollThreadToBottom, embedded, useMobileComposerDock])
 
   useEffect(() => {
     if (!displayListing) return
@@ -663,14 +685,20 @@ export function ConversationThreadClient({
   return (
     <main
       className={cn(
-        "flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background",
+        "flex flex-1 flex-col bg-background",
+        embedded
+          ? "max-lg:overflow-visible lg:h-full lg:min-h-0 lg:overflow-hidden"
+          : "h-full min-h-0 overflow-hidden",
       )}
     >
       <div
         className={cn(
-          "flex h-full min-h-0 flex-1 flex-col overflow-hidden",
+          "flex flex-1 flex-col",
           embedded
-            ? "px-0 pb-2 pt-0 max-sm:px-0 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))] max-sm:pt-0"
+            ? "max-lg:overflow-visible max-lg:h-auto lg:h-full lg:min-h-0 lg:overflow-hidden"
+            : "h-full min-h-0 overflow-hidden",
+          embedded
+            ? "px-0 pb-0 pt-0 max-sm:px-0 max-sm:pt-0 lg:pb-[max(0.5rem,env(safe-area-inset-bottom))]"
             : "container mx-auto max-w-2xl px-4 pb-2 pt-2 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-5 sm:pb-6 sm:pt-3 md:max-w-4xl lg:max-w-5xl",
         )}
       >
@@ -759,7 +787,14 @@ export function ConversationThreadClient({
           </div>
         </header>
 
-        <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div
+          className={cn(
+            "relative flex flex-col",
+            embedded
+              ? "max-lg:overflow-visible lg:min-h-0 lg:flex-1 lg:overflow-hidden"
+              : "min-h-0 flex-1 overflow-hidden",
+          )}
+        >
         {listingChromeLoading ? (
           <div
             className={cn(
@@ -817,12 +852,16 @@ export function ConversationThreadClient({
           </Link>
         ) : null}
 
-        {/* Messages — bounded scroll window (thread does not grow with the page) */}
+        {/* Messages — bounded scroll module (internal scroll; page chrome scrolls separately) */}
         <div
           className={cn(
-            'relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25',
-            'max-sm:min-h-0 max-sm:flex-1 max-sm:basis-0',
-            'sm:max-h-[min(26rem,52svh)] sm:flex-none sm:h-[min(24rem,45svh)] md:h-[min(34rem,52svh)] md:max-h-[min(42rem,68svh)] lg:h-[min(38rem,56svh)] lg:max-h-[min(48rem,72svh)]',
+            "relative flex min-h-0 flex-col overflow-hidden rounded-[22px] border border-border/50 bg-muted/40 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:bg-muted/25",
+            embedded
+              ? "max-lg:h-[min(52dvh,520px)] max-lg:min-h-[min(38dvh,320px)] max-lg:max-h-[calc(100dvh-var(--site-header-height)-5.5rem-env(safe-area-inset-bottom))] max-lg:shrink-0 lg:min-h-0 lg:flex-1 lg:max-h-none"
+              : cn(
+                  "min-h-0 flex-1 basis-0",
+                  "sm:max-h-[min(26rem,52svh)] sm:flex-none sm:h-[min(24rem,45svh)] md:h-[min(34rem,52svh)] md:max-h-[min(42rem,68svh)] lg:h-[min(38rem,56svh)] lg:max-h-[min(48rem,72svh)]",
+                ),
           )}
         >
           <div
@@ -1053,13 +1092,13 @@ export function ConversationThreadClient({
           </div>
         </div>
 
-        <div className="relative z-10 mt-1 shrink-0 sm:mt-2">
+        <MessageThreadMobileComposerDock portaled={embedded && useMobileComposerDock}>
           <form
             onSubmit={(e) => {
               e.preventDefault()
               void handleSend()
             }}
-            className="flex items-end gap-2 rounded-[24px] border border-border/70 bg-background/95 px-2 py-1.5 shadow-[0_2px_16px_rgba(17,17,17,0.06)] backdrop-blur-sm dark:border-border/80 dark:bg-card/95 dark:shadow-none"
+            className={messageComposerBarClass}
           >
             <MessageComposerTextarea
               value={newMessage}
@@ -1123,7 +1162,7 @@ export function ConversationThreadClient({
               )}
             </Button>
           </form>
-        </div>
+        </MessageThreadMobileComposerDock>
         </div>
       </div>
     </main>

@@ -88,10 +88,12 @@ export default function ArchivedListingsPage() {
           >
             <ArrowLeft className="h-4 w-4 mr-1" /> My Listings
           </Link>
-          <h1 className={dashboardPageTitleClass}>Archived listings</h1>
-          <p className={dashboardPageSubtitleClass}>
-            Ended listings are kept for {ARCHIVE_DAYS} days, then permanently deleted.
-          </p>
+          <div className="hidden lg:block">
+            <h1 className={dashboardPageTitleClass}>Archived listings</h1>
+            <p className={dashboardPageSubtitleClass}>
+              Ended listings are kept for {ARCHIVE_DAYS} days, then permanently deleted.
+            </p>
+          </div>
         </div>
       </div>
 

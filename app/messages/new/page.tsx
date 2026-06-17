@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -24,6 +24,9 @@ import { getPolicyBlockFromSendResult } from '@/lib/messages/policy-block-client
 import type { MessagePolicyReasonCode } from '@/lib/messages/fraud-reason-codes'
 import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/local-phone-policy-block-bubble'
 import { cn } from '@/lib/utils'
+import { MessageThreadMobileComposerDock } from '@/components/features/messages/message-thread-mobile-composer-dock'
+import { messageComposerBarClass } from '@/lib/utils/dashboard-display-styles'
+import { scrollPageToMessageThreadBottom } from '@/lib/utils/message-thread-routes'
 import { isAbortError } from '@/lib/utils/is-abort-error'
 
 type ListingPreview = {
@@ -62,6 +65,15 @@ function NewMessageComposeContent() {
     reasonCode: MessagePolicyReasonCode
   } | null>(null)
   const [listingBannerImageReady, setListingBannerImageReady] = useState(false)
+  const [useMobileComposerDock, setUseMobileComposerDock] = useState(false)
+
+  useLayoutEffect(() => {
+    const isMobile = window.matchMedia('(max-width: 1023px)').matches
+    setUseMobileComposerDock(isMobile)
+    if (isMobile) {
+      scrollPageToMessageThreadBottom()
+    }
+  }, [loading, listing, counterparty])
 
   const threadListingThumbSrc = useMemo(() => {
     if (!listing) return ''
@@ -204,7 +216,7 @@ function NewMessageComposeContent() {
 
   return (
     <main className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background">
-      <div className="container mx-auto flex h-full min-h-0 max-w-2xl flex-1 flex-col overflow-hidden px-4 pb-2 pt-2 max-sm:pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:px-5 sm:pb-6 sm:pt-3 md:max-w-4xl lg:max-w-5xl">
+      <div className="container mx-auto flex h-full min-h-0 max-w-2xl flex-1 flex-col overflow-hidden px-4 pb-0 pt-2 max-sm:pt-0 sm:px-5 sm:pb-6 sm:pt-3 md:max-w-4xl lg:max-w-5xl lg:pb-[max(0.5rem,env(safe-area-inset-bottom))]">
         <header className="z-10 shrink-0 -mx-4 mb-2 border-b border-border/60 bg-background/85 px-2 py-2 backdrop-blur-md supports-[backdrop-filter]:bg-background/70 sm:-mx-5 sm:mb-3 sm:px-3">
           <div className="flex items-center gap-1 sm:gap-2">
             <Link href="/messages" className="shrink-0">
@@ -296,13 +308,14 @@ function NewMessageComposeContent() {
           </div>
         </div>
 
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            void handleSend()
-          }}
-          className="mt-2 flex shrink-0 items-end gap-2 rounded-[24px] border border-border/70 bg-background/95 px-2 py-1.5 shadow-[0_2px_16px_rgba(17,17,17,0.06)] backdrop-blur-sm dark:border-border/80 dark:bg-card/95 dark:shadow-none sm:mt-3"
-        >
+        <MessageThreadMobileComposerDock portaled={useMobileComposerDock}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              void handleSend()
+            }}
+            className={cn("mt-2 sm:mt-3", messageComposerBarClass)}
+          >
           <MessageComposerTextarea
             value={newMessage}
             onChange={(e) => {
@@ -332,6 +345,7 @@ function NewMessageComposeContent() {
             )}
           </Button>
         </form>
+        </MessageThreadMobileComposerDock>
       </div>
     </main>
   )

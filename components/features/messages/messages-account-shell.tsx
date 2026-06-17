@@ -6,7 +6,7 @@ import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { Button } from "@/components/ui/button"
 import { DashboardSidebarNav } from "@/components/features/dashboard/dashboard-sidebar-nav"
-import { DashboardMobileNav } from "@/components/features/dashboard/dashboard-mobile-nav"
+import { DashboardMobilePageChrome } from "@/components/features/dashboard/dashboard-mobile-page-chrome"
 
 export async function MessagesAccountShell({ children }: { children: React.ReactNode }) {
   const { supabase, user } = await getCachedDashboardSession()
@@ -24,10 +24,10 @@ export async function MessagesAccountShell({ children }: { children: React.React
   const shopHref = profile?.is_shop ? sellerProfileHref(profile) : null
 
   return (
-    <div className="container mx-auto flex min-h-0 flex-1 flex-col py-3 sm:py-6 lg:py-8">
-      <DashboardMobileNav sellerProfileHref={shopHref} />
+    <div className="container mx-auto flex flex-col pb-3 pt-5 sm:pb-6 sm:pt-6 lg:min-h-0 lg:flex-1 lg:py-8">
+      <DashboardMobilePageChrome sellerProfileHref={shopHref} />
 
-      <div className="mt-3 flex min-h-0 flex-1 flex-col gap-4 lg:mt-0 lg:flex-row lg:gap-12 xl:gap-14">
+      <div className="mt-5 flex flex-col gap-4 lg:mt-0 lg:min-h-0 lg:flex-1 lg:flex-row lg:gap-12 xl:gap-14">
         <aside className="hidden shrink-0 lg:block lg:w-64 xl:w-72">
           <div className="sticky top-24 space-y-5">
             <Button asChild className="h-10 w-full lg:h-11 lg:text-[15px]">
@@ -43,7 +43,7 @@ export async function MessagesAccountShell({ children }: { children: React.React
           </div>
         </aside>
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
+        <div className="flex min-w-0 flex-col lg:min-h-0 lg:flex-1">{children}</div>
       </div>
     </div>
   )

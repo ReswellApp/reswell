@@ -264,7 +264,7 @@ export default async function DashboardPage() {
       <DashboardOverviewRealtimeRefresh />
 
       {/* Welcome */}
-      <div className="max-w-3xl">
+      <div className="hidden max-w-3xl lg:block">
         <h1 className={dashboardPageTitleClass}>Welcome back, {welcomeName}</h1>
         <p className={dashboardPageSubtitleClass}>
           Here is what is happening with your account — updates in real time.

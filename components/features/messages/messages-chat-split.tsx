@@ -25,7 +25,13 @@ export function MessagesChatSplit({
   const isInboxIndex = pathname.replace(/\/$/, "") === "/messages"
 
   return (
-    <div className={cn("flex min-h-0 flex-1 flex-col", isDetailRoute && "h-full", className)}>
+    <div
+      className={cn(
+        "flex flex-col lg:min-h-0 lg:flex-1",
+        isDetailRoute && "lg:h-full",
+        className,
+      )}
+    >
       {isInboxIndex && !isDetailRoute ? (
         <MessagesEmptyPane variant="banner" className="mb-4 lg:hidden" />
       ) : null}
@@ -34,7 +40,7 @@ export function MessagesChatSplit({
         className={cn(
           "flex min-h-0 flex-1 flex-col overflow-hidden rounded-[20px] border border-border/70 bg-card shadow-[0_1px_2px_rgba(17,17,17,0.04)]",
           isDetailRoute
-            ? "h-full min-h-0 max-lg:rounded-none max-lg:border-0 max-lg:shadow-none"
+            ? "max-lg:overflow-visible max-lg:rounded-none max-lg:border-0 max-lg:shadow-none lg:h-full lg:min-h-0 lg:overflow-hidden"
             : "min-h-[min(72dvh,720px)] lg:min-h-[min(68dvh,680px)]",
         )}
       >
@@ -50,7 +56,7 @@ export function MessagesChatSplit({
         <section
           className={cn(
             "flex min-h-0 min-w-0 flex-1 flex-col",
-            !isDetailRoute ? "hidden lg:flex" : "flex h-full min-h-0",
+            !isDetailRoute ? "hidden lg:flex" : "flex max-lg:min-h-0 lg:h-full lg:min-h-0",
           )}
         >
           {children}

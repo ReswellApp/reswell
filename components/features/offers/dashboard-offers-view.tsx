@@ -228,11 +228,16 @@ export function DashboardOffersView({
   return (
     <div className="space-y-0">
       <header className="border-b border-border/60 pb-6">
-        <h1 className={dashboardPageTitleClass}>Offers</h1>
-        <p className={cn("max-w-2xl", dashboardPageSubtitleClass)}>{subtitle}</p>
+        <div className="hidden lg:block">
+          <h1 className={dashboardPageTitleClass}>Offers</h1>
+          <p className={cn("max-w-2xl", dashboardPageSubtitleClass)}>{subtitle}</p>
+        </div>
 
         <div
-          className="mt-6 flex w-full gap-1 rounded-xl border border-border/60 bg-muted/50 p-1"
+          className={cn(
+            "flex w-full gap-1 rounded-xl border border-border/60 bg-muted/50 p-1",
+            "lg:mt-6",
+          )}
           role="tablist"
           aria-label="Seller and buyer offers"
         >

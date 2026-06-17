@@ -5,7 +5,7 @@ import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { Button } from "@/components/ui/button"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { DashboardSidebarNav } from "@/components/features/dashboard/dashboard-sidebar-nav"
-import { DashboardMobileNav } from "@/components/features/dashboard/dashboard-mobile-nav"
+import { DashboardMobilePageChrome } from "@/components/features/dashboard/dashboard-mobile-page-chrome"
 import {
   dashboardSidebarCreateButtonClass,
   dashboardSidebarWidthClass,
@@ -36,10 +36,10 @@ export default async function DashboardLayout({
   const shopHref = isShop ? sellerProfileHref(profile) : null
 
   return (
-      <div className="flex-1 container mx-auto py-3 sm:py-6 lg:py-8">
-        <DashboardMobileNav sellerProfileHref={shopHref} />
+      <div className="container mx-auto flex-1 pb-3 pt-5 sm:pb-6 sm:pt-6 lg:py-8">
+        <DashboardMobilePageChrome sellerProfileHref={shopHref} />
 
-        <div className="mt-3 flex flex-col gap-6 lg:mt-0 lg:flex-row lg:gap-12 xl:gap-14">
+        <div className="mt-5 flex flex-col gap-6 lg:mt-0 lg:flex-row lg:gap-12 xl:gap-14">
           {/* Sidebar */}
           <aside className={cn("hidden shrink-0 lg:block", dashboardSidebarWidthClass)}>
             <div className="sticky top-24 space-y-6">

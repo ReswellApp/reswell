@@ -13,7 +13,7 @@ import {
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 
 const chipBase =
-  "inline-flex min-h-10 items-center justify-center whitespace-nowrap rounded-full border px-4 py-2 text-center text-sm font-semibold leading-tight text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:border-cerulean/40 focus-visible:ring-2 focus-visible:ring-cerulean/15 focus-visible:ring-offset-0"
+  "inline-flex min-h-9 items-center justify-center whitespace-nowrap rounded-full border px-3.5 py-1.5 text-center text-[13px] font-semibold leading-tight text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:border-cerulean/40 focus-visible:ring-2 focus-visible:ring-cerulean/15 focus-visible:ring-offset-0"
 
 /**
  * Marketplace category strip — lives below the site header, separate from account nav.
@@ -24,10 +24,10 @@ export function SiteTopCategoryBar() {
   const searchParams = useClientSearchParams()
 
   return (
-    <div className="shrink-0 bg-background lg:hidden">
+    <div className="shrink-0 bg-background pt-9 sm:pt-10 lg:hidden">
       <div className="container mx-auto px-4 sm:px-6">
         <nav aria-label="Browse surfboards, sellers, and community">
-          <ul className="flex items-center gap-2.5 overflow-x-auto py-2.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <ul className="flex items-center gap-2.5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {siteHeaderMainCategoryNavLinks.map((link) => {
               const active = boardBrowseNavItemIsActive(pathname, searchParams, link.href)
               return (
