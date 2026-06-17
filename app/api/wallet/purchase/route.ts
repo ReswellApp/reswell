@@ -18,6 +18,7 @@ import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sell
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
 import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnPurchase"
 import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
+import { applyListingInventoryAfterPurchase } from "@/lib/services/applyListingInventoryAfterPurchase"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
 
   const { data: listing, error: listingError } = await supabase
     .from("listings")
-    .select("id, user_id, title, price, section, shipping_available, local_pickup, shipping_price, status")
+    .select("id, user_id, title, price, section, shipping_available, local_pickup, shipping_price, status, sync_managed, stock_quantity")
     .eq("id", listing_id)
     .eq("status", "active")
     .eq("hidden_from_site", false)
@@ -53,6 +54,10 @@ export async function POST(request: NextRequest) {
 
   if (listingError || !listing) {
     return NextResponse.json({ error: "Listing not found or not available" }, { status: 404 })
+  }
+
+  if (listing.sync_managed === true && (Number(listing.stock_quantity) || 0) <= 0) {
+    return NextResponse.json({ error: "This item is out of stock" }, { status: 409 })
   }
 
   if (listing.user_id === user.id) {
@@ -228,15 +233,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Could not record purchase" }, { status: 500 })
   }
 
-  // Mark sold only — never mutate listings.price (offer discounts stay private).
-  const { error: listingErr } = await serviceSupabase
-    .from("listings")
-    .update({ status: "sold" })
-    .eq("id", listing.id)
-
-  if (listingErr) {
-    console.error("[wallet/purchase] listing update:", listingErr)
-    return NextResponse.json({ error: "Could not mark listing sold" }, { status: 500 })
+  const inventoryResult = await applyListingInventoryAfterPurchase(serviceSupabase, listing.id, 1)
+  if (!inventoryResult.ok) {
+    console.error("[wallet/purchase] listing inventory:", inventoryResult.error)
+    return NextResponse.json({ error: "Could not update listing inventory" }, { status: 500 })
   }
 
   revalidateBoardsBrowseCatalog()

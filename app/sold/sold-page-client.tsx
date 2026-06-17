@@ -24,6 +24,9 @@ import {
 
 export type SoldFeedListing = {
   id: string
+  /** Unique key for React lists — one listing can appear multiple times after inventory sales. */
+  feedKey: string
+  orderId?: string
   slug: string | null
   user_id: string
   title: string
@@ -174,7 +177,7 @@ function SoldFeedGrid({
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
       {listings.map((listing) => (
         <SoldListingCard
-          key={listing.id}
+          key={listing.feedKey}
           listing={listing}
           showShippedLabel={variant === "shipped"}
         />

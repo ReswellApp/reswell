@@ -22,6 +22,8 @@ export const PEER_SURFBOARD_CHECKOUT_LISTING_SELECT = `
   shipping_price,
   board_shipping_cost_mode,
   status,
+  sync_managed,
+  stock_quantity,
   latitude,
   longitude,
   city,
@@ -47,6 +49,8 @@ export type PeerSurfboardCheckoutListingRow = PeerListingForShippingQuote & {
   title: string | null
   section: string | null
   status: string | null
+  sync_managed?: boolean | null
+  stock_quantity?: number | null
   local_pickup: boolean | null
   shipping_available: boolean | null
 }

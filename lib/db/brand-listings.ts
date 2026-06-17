@@ -1,7 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
-import { fetchRecentlySoldSurfboardsConfirmedCheckoutOrdering } from "@/lib/db/home-recently-sold-strip"
+import {
+  dedupeSoldFeedSaleRefsByListing,
+  fetchRecentlySoldSurfboardsConfirmedCheckoutOrdering,
+} from "@/lib/db/home-recently-sold-strip"
 import { isListingVisibleInPublicSoldFeed } from "@/lib/listing-public-visibility"
 
 const BRAND_MARKETPLACE_LISTING_SELECT = `
@@ -130,8 +133,9 @@ export async function listRecentlySoldListingsForBrand(
   const { limit, categoryId = null } = options
   const namePattern = `"%${escapeForOrFilter(brand.name)}%"`
 
-  const { orderedListingIds: confirmedSurfboardIds, confirmedAtIsoByListingId } =
-    await fetchRecentlySoldSurfboardsConfirmedCheckoutOrdering(supabase, 120)
+  const { saleRefs } = await fetchRecentlySoldSurfboardsConfirmedCheckoutOrdering(supabase, 120)
+  const { listingIds: confirmedSurfboardIds, confirmedAtIsoByListingId } =
+    dedupeSoldFeedSaleRefsByListing(saleRefs, 120)
   const confirmedSurfboardSet = new Set(confirmedSurfboardIds)
 
   let q = supabase

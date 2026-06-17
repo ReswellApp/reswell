@@ -15,7 +15,9 @@ import { getSoldFeedStats } from "@/lib/feed-sold-stats"
 import { formatGmv } from "@/lib/format-gmv"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
-import { isListingVisibleInPublicSoldFeed } from "@/lib/listing-public-visibility"
+import { soldFeedEntryKey } from "@/lib/db/sold-feed-sale-times"
+import type { SoldFeedSaleRef } from "@/lib/db/sold-feed-sale-times"
+import { isListingVisibleAsSoldFeedEntry } from "@/lib/listing-public-visibility"
 
 export const MARKETPLACE_SOLD_FEED_LIMIT = 40
 
@@ -47,6 +49,7 @@ export type MarketplaceSoldFeedPayload = {
 function mapSoldRow(
   row: Record<string, unknown>,
   saleConfirmedAtIso: string | null,
+  orderId: string,
 ): SoldFeedListing {
   const dimStr = row.dimensions != null ? String(row.dimensions) : ""
   const boardLength = boardLengthLabelFromDimensionsColumn(dimStr) ?? null
@@ -54,8 +57,12 @@ function mapSoldRow(
   const soldAt = soldAtRaw ? String(soldAtRaw) : new Date().toISOString()
   const listPrice = publicListingListPriceUsd(row.price as string | number | null | undefined)
 
+  const listingId = String(row.id)
+
   return {
-    id: String(row.id),
+    id: listingId,
+    feedKey: soldFeedEntryKey(listingId, orderId),
+    orderId,
     slug: row.slug != null ? String(row.slug) : null,
     user_id: String(row.user_id),
     title: String(row.title ?? ""),
@@ -79,6 +86,7 @@ function mapRecentListingToSoldFeed(listing: RecentListing): SoldFeedListing {
   const soldAt = listing.updated_at?.trim() || new Date().toISOString()
   return {
     id: listing.id,
+    feedKey: listing.id,
     slug: listing.slug,
     user_id: listing.user_id,
     title: listing.title,
@@ -141,28 +149,40 @@ export async function loadMarketplaceSoldFeed(
     }
   }
 
-  const { orderedListingIds, confirmedAtIsoByListingId } = shippedOnly
-    ? await fetchRecentlyShippedSurfboardsConfirmedCheckoutOrdering(
+  let saleRefs: SoldFeedSaleRef[]
+
+  if (shippedOnly) {
+    const { orderedListingIds, confirmedAtIsoByListingId } =
+      await fetchRecentlyShippedSurfboardsConfirmedCheckoutOrdering(
         supabase,
         MARKETPLACE_SOLD_FEED_LIMIT,
       )
-    : await fetchRecentlySoldListingsConfirmedCheckoutOrdering(
-        supabase,
-        MARKETPLACE_SOLD_FEED_LIMIT,
-        MARKETPLACE_SOLD_FEED_SECTIONS,
-      )
+    saleRefs = orderedListingIds.map((listingId) => ({
+      listingId,
+      orderId: listingId,
+      saleConfirmedAt: confirmedAtIsoByListingId.get(listingId) ?? new Date().toISOString(),
+    }))
+  } else {
+    const soldOrdering = await fetchRecentlySoldListingsConfirmedCheckoutOrdering(
+      supabase,
+      MARKETPLACE_SOLD_FEED_LIMIT,
+      MARKETPLACE_SOLD_FEED_SECTIONS,
+    )
+    saleRefs = soldOrdering.saleRefs
+  }
+
+  const listingIds = [...new Set(saleRefs.map((ref) => ref.listingId))]
 
   const [soldRes, stats] = await Promise.all([
-    orderedListingIds.length === 0
+    listingIds.length === 0
       ? Promise.resolve({
           data: [] as Record<string, unknown>[] | null,
           error: null as { message: string } | null,
         })
       : supabase
           .from("listings")
-          .select(`${SOLD_LISTING_SELECT}, hidden_from_site, archived_at`)
-          .in("id", orderedListingIds)
-          .eq("status", "sold"),
+          .select(`${SOLD_LISTING_SELECT}, hidden_from_site, archived_at, sync_managed`)
+          .in("id", listingIds),
     getSoldFeedStats([...MARKETPLACE_SOLD_FEED_SECTIONS]),
   ])
 
@@ -172,22 +192,22 @@ export async function loadMarketplaceSoldFeed(
 
   const soldRows = (soldRes.data ?? []) as Record<string, unknown>[]
   const mapById = new Map(soldRows.map((r) => [String(r.id), r]))
-  const soldListings: SoldFeedListing[] = orderedListingIds
-    .map((id) => {
-      const row = mapById.get(id)
+  const soldListings: SoldFeedListing[] = saleRefs
+    .map((ref) => {
+      const row = mapById.get(ref.listingId)
       if (!row) return null
       if (
-        !isListingVisibleInPublicSoldFeed({
+        !isListingVisibleAsSoldFeedEntry({
           title: String(row.title ?? ""),
-          status: String(row.status ?? "sold"),
+          status: String(row.status ?? ""),
           hidden_from_site: row.hidden_from_site as boolean | null | undefined,
           archived_at: row.archived_at as string | null | undefined,
+          sync_managed: row.sync_managed as boolean | null | undefined,
         })
       ) {
         return null
       }
-      const at = confirmedAtIsoByListingId.get(id) ?? null
-      return mapSoldRow(row, at)
+      return mapSoldRow(row, ref.saleConfirmedAt, ref.orderId)
     })
     .filter((x): x is SoldFeedListing => x != null)
 

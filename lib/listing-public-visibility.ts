@@ -4,6 +4,8 @@ export type ListingPublicVisibilityFields = {
   title?: string | null
   hidden_from_site?: boolean | null
   archived_at?: string | null
+  sync_managed?: boolean | null
+  stock_quantity?: number | null
 }
 
 const PURCHASABLE_STATUSES = new Set(["active", "pending_sale"])
@@ -19,7 +21,11 @@ export function isListingPubliclyVisible(listing: ListingPublicVisibilityFields)
 
 /** Buyer can add to cart or complete checkout. */
 export function isListingPurchasable(listing: ListingPublicVisibilityFields): boolean {
-  return isListingPubliclyVisible(listing)
+  if (!isListingPubliclyVisible(listing)) return false
+  if (listing.sync_managed === true && (Number(listing.stock_quantity) || 0) <= 0) {
+    return false
+  }
+  return true
 }
 
 import { isAdminSeedListingTitle } from "@/lib/utils/admin-seed-listing"
@@ -33,6 +39,21 @@ export function isListingVisibleInPublicSoldFeed(listing: ListingPublicVisibilit
   if (listing.status !== "sold") return false
   if (listing.hidden_from_site && !listing.archived_at) return false
   return true
+}
+
+/**
+ * Whether a listing row can back a /sold feed card for a confirmed checkout.
+ * Sync-managed inventory listings may still be `active` while individual units sell.
+ */
+export function isListingVisibleAsSoldFeedEntry(listing: ListingPublicVisibilityFields): boolean {
+  if (isAdminSeedListingTitle(listing.title)) return false
+  if (listing.hidden_from_site && !listing.archived_at) return false
+
+  if (listing.sync_managed === true) {
+    return listing.status === "active" || listing.status === "removed" || listing.status === "sold"
+  }
+
+  return listing.status === "sold"
 }
 
 /** Saved favorites: keep sold boards with overlay; drop archived, removed, hidden, and drafts. */

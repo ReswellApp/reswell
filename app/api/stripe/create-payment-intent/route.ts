@@ -119,6 +119,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Listing not found or not available" }, { status: 404 })
   }
 
+  if (
+    listingsOrdered.some(
+      (l) => l.sync_managed === true && (Number(l.stock_quantity) || 0) <= 0,
+    )
+  ) {
+    return NextResponse.json({ error: "One or more items are out of stock" }, { status: 409 })
+  }
+
   if (listingsOrdered.some((l) => l.user_id === user.id)) {
     return NextResponse.json({ error: "Cannot purchase your own listing" }, { status: 400 })
   }

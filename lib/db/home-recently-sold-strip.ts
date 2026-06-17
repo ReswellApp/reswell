@@ -1,13 +1,21 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { HOME_PEER_LISTING_WITH_PROFILE_SELECT } from "@/lib/db/home-peer-listing-feed"
-import { isListingVisibleInPublicSoldFeed } from "@/lib/listing-public-visibility"
+import {
+  type SoldFeedSaleRef,
+  soldFeedSaleRefFromRpcRow,
+} from "@/lib/db/sold-feed-sale-times"
+import {
+  isListingVisibleAsSoldFeedEntry,
+  isListingVisibleInPublicSoldFeed,
+} from "@/lib/listing-public-visibility"
+import { PEER_LISTING_SECTIONS } from "@/lib/peer-listing-sections"
 import {
   isTransientNetworkError,
   retryOnTransientNetworkError,
 } from "@/lib/utils/transient-network-retry"
 
-/** Matches `/sold` sold-tab listing filters (surfboards + fins). */
-export const MARKETPLACE_SOLD_FEED_SECTIONS = ["surfboards", "fins"] as const
+/** Matches `/sold` sold-tab listing filters — all peer marketplace sections. */
+export const MARKETPLACE_SOLD_FEED_SECTIONS = PEER_LISTING_SECTIONS
 
 /** Homepage recently sold strip — surfboards only. */
 export const HOME_RECENTLY_SOLD_STRIP_LIMIT = 12
@@ -15,7 +23,11 @@ export const HOME_RECENTLY_SOLD_STRIP_LIMIT = 12
 const RECENTLY_SOLD_RPC_MAX_LIMIT = 120
 const RECENTLY_SOLD_FALLBACK_ORDER_SCAN = 500
 
-type RpcListingSaleTime = { listing_id: string; sale_confirmed_at: string }
+type RpcListingSaleTime = {
+  listing_id: string
+  order_id?: string | null
+  sale_confirmed_at: string
+}
 
 function capRecentlySoldLimit(limit: number): number {
   return Math.min(Math.max(limit, 1), RECENTLY_SOLD_RPC_MAX_LIMIT)
@@ -31,7 +43,48 @@ function isSupabaseRpcMissingError(error: { message?: string; code?: string } | 
   )
 }
 
-/** Drop ids that are no longer sold (e.g. refunded and relisted to active). */
+function listingSoldFeedVisibilityFields(row: Record<string, unknown>) {
+  return {
+    title: row.title as string | null | undefined,
+    status: String(row.status ?? ""),
+    hidden_from_site: row.hidden_from_site as boolean | null | undefined,
+    archived_at: row.archived_at as string | null | undefined,
+    sync_managed: row.sync_managed as boolean | null | undefined,
+  }
+}
+
+/** Drop sale refs whose listing no longer qualifies (e.g. P2P refunded and relisted). */
+export async function filterSoldFeedSaleRefs(
+  supabase: SupabaseClient,
+  saleRefs: readonly SoldFeedSaleRef[],
+  sections: readonly string[],
+): Promise<SoldFeedSaleRef[]> {
+  if (saleRefs.length === 0) return []
+
+  const listingIds = [...new Set(saleRefs.map((ref) => ref.listingId))]
+
+  const { data, error } = await supabase
+    .from("listings")
+    .select("id, title, status, hidden_from_site, archived_at, sync_managed")
+    .in("id", listingIds)
+    .in("section", [...sections])
+
+  if (error) {
+    console.error("filterSoldFeedSaleRefs:", error.message)
+    return []
+  }
+
+  const eligible = new Set(
+    (data ?? [])
+      .filter((row) => isListingVisibleAsSoldFeedEntry(listingSoldFeedVisibilityFields(row)))
+      .map((row) => (row as { id?: string | null }).id)
+      .filter((id): id is string => typeof id === "string" && id.length > 0),
+  )
+
+  return saleRefs.filter((ref) => eligible.has(ref.listingId))
+}
+
+/** Drop ids that are no longer sold (e.g. refunded and relisted to active). Shipped tab only. */
 export async function filterListingIdsStillSoldOnMarketplace(
   supabase: SupabaseClient,
   orderedListingIds: readonly string[],
@@ -68,39 +121,17 @@ export async function filterListingIdsStillSoldOnMarketplace(
   return orderedListingIds.filter((id) => stillSold.has(id))
 }
 
-async function finalizeRecentSoldOrdering(
+async function finalizeSoldFeedSaleRefs(
   supabase: SupabaseClient,
   rows: RpcListingSaleTime[],
   sections: readonly string[],
-): Promise<{ orderedListingIds: string[]; confirmedAtIsoByListingId: Map<string, string> }> {
-  if (rows.length === 0) {
-    return { orderedListingIds: [], confirmedAtIsoByListingId: new Map() }
-  }
+): Promise<{ saleRefs: SoldFeedSaleRef[] }> {
+  const parsed = rows
+    .map((row) => soldFeedSaleRefFromRpcRow(row))
+    .filter((ref): ref is SoldFeedSaleRef => ref != null)
 
-  const rpcOrderedListingIds: string[] = []
-  const confirmedAtIsoByListingId = new Map<string, string>()
-  for (const row of rows) {
-    const id = row.listing_id
-    const at = row.sale_confirmed_at
-    if (typeof id !== "string" || !id) continue
-    if (typeof at === "string" && at.length > 0) {
-      confirmedAtIsoByListingId.set(id, at)
-    }
-    rpcOrderedListingIds.push(id)
-  }
-
-  const orderedListingIds = await filterListingIdsStillSoldOnMarketplace(
-    supabase,
-    rpcOrderedListingIds,
-    sections,
-  )
-  for (const id of [...confirmedAtIsoByListingId.keys()]) {
-    if (!orderedListingIds.includes(id)) {
-      confirmedAtIsoByListingId.delete(id)
-    }
-  }
-
-  return { orderedListingIds, confirmedAtIsoByListingId }
+  const saleRefs = await filterSoldFeedSaleRefs(supabase, parsed, sections)
+  return { saleRefs }
 }
 
 async function fetchRecentlySoldSurfboardSaleTimesViaLegacyRpc(
@@ -129,7 +160,7 @@ async function fetchRecentlySoldSurfboardSaleTimesViaLegacyRpc(
 
 /**
  * App-layer fallback when `recently_sold_listing_sale_times` migration is not applied yet.
- * Mirrors the RPC: confirmed checkout order time per listing, filtered to sold peer sections.
+ * One row per confirmed checkout, filtered to qualifying peer sections.
  */
 async function fetchRecentlySoldListingSaleTimesFallback(
   supabase: SupabaseClient,
@@ -137,16 +168,7 @@ async function fetchRecentlySoldListingSaleTimesFallback(
   sections: readonly string[],
 ): Promise<RpcListingSaleTime[]> {
   const cappedLimit = capRecentlySoldLimit(limit)
-  const saleAtByListingId = new Map<string, string>()
-
-  const recordSale = (listingId: string | null | undefined, createdAt: string | null | undefined) => {
-    if (typeof listingId !== "string" || !listingId) return
-    if (typeof createdAt !== "string" || !createdAt) return
-    const prev = saleAtByListingId.get(listingId)
-    if (!prev || createdAt > prev) {
-      saleAtByListingId.set(listingId, createdAt)
-    }
-  }
+  const saleRows: RpcListingSaleTime[] = []
 
   const { data: orders, error: ordersError } = await supabase
     .from("orders")
@@ -169,11 +191,15 @@ async function fetchRecentlySoldListingSaleTimesFallback(
     const createdAt = (row as { created_at?: string | null }).created_at
     const listingId = (row as { listing_id?: string | null }).listing_id
     if (typeof orderId !== "string" || !orderId) continue
-    if (typeof createdAt === "string" && createdAt) {
-      orderCreatedAt.set(orderId, createdAt)
-    }
+    if (typeof createdAt !== "string" || !createdAt) continue
+    orderCreatedAt.set(orderId, createdAt)
+
     if (typeof listingId === "string" && listingId) {
-      recordSale(listingId, createdAt ?? null)
+      saleRows.push({
+        listing_id: listingId,
+        order_id: orderId,
+        sale_confirmed_at: createdAt,
+      })
     } else {
       orderIdsNeedingItems.push(orderId)
     }
@@ -191,20 +217,27 @@ async function fetchRecentlySoldListingSaleTimesFallback(
       for (const item of items ?? []) {
         const listingId = (item as { listing_id?: string | null }).listing_id
         const orderId = (item as { order_id?: string | null }).order_id
-        recordSale(listingId, typeof orderId === "string" ? orderCreatedAt.get(orderId) : undefined)
+        if (typeof listingId !== "string" || !listingId) continue
+        if (typeof orderId !== "string" || !orderId) continue
+        const saleAt = orderCreatedAt.get(orderId)
+        if (!saleAt) continue
+        saleRows.push({
+          listing_id: listingId,
+          order_id: orderId,
+          sale_confirmed_at: saleAt,
+        })
       }
     }
   }
 
-  const candidateIds = [...saleAtByListingId.keys()]
+  const candidateIds = [...new Set(saleRows.map((row) => row.listing_id))]
   if (candidateIds.length === 0) return []
 
   const { data: listings, error: listingsError } = await supabase
     .from("listings")
-    .select("id, title, status, hidden_from_site, archived_at")
+    .select("id, title, status, hidden_from_site, archived_at, sync_managed")
     .in("id", candidateIds)
     .in("section", [...sections])
-    .eq("status", "sold")
 
   if (listingsError) {
     console.error("[recently-sold-fallback] listings:", listingsError.message)
@@ -213,37 +246,25 @@ async function fetchRecentlySoldListingSaleTimesFallback(
 
   const validIds = new Set(
     (listings ?? [])
-      .filter((row) =>
-        isListingVisibleInPublicSoldFeed({
-          title: (row as { title?: string | null }).title,
-          status: String((row as { status?: string | null }).status ?? "sold"),
-          hidden_from_site: (row as { hidden_from_site?: boolean | null }).hidden_from_site,
-          archived_at: (row as { archived_at?: string | null }).archived_at,
-        }),
-      )
+      .filter((row) => isListingVisibleAsSoldFeedEntry(listingSoldFeedVisibilityFields(row)))
       .map((row) => (row as { id?: string | null }).id)
       .filter((id): id is string => typeof id === "string" && id.length > 0),
   )
 
-  const rows: RpcListingSaleTime[] = []
-  for (const [listingId, saleConfirmedAt] of saleAtByListingId) {
-    if (!validIds.has(listingId)) continue
-    rows.push({ listing_id: listingId, sale_confirmed_at: saleConfirmedAt })
-  }
-
-  rows.sort((a, b) => b.sale_confirmed_at.localeCompare(a.sale_confirmed_at))
-  return rows.slice(0, cappedLimit)
+  const qualifying = saleRows.filter((row) => validIds.has(row.listing_id))
+  qualifying.sort((a, b) => b.sale_confirmed_at.localeCompare(a.sale_confirmed_at))
+  return qualifying.slice(0, cappedLimit)
 }
 
 /**
  * Ordering + confirmation timestamps from confirmed marketplace orders (Stripe card or wallet).
- * Uses the multi-section RPC when migrated; falls back to legacy surfboard RPC or app queries.
+ * Returns one ref per checkout — the same listing may appear multiple times for inventory sales.
  */
 export async function fetchRecentlySoldListingsConfirmedCheckoutOrdering(
   supabase: SupabaseClient,
   limit: number,
   sections: readonly string[],
-): Promise<{ orderedListingIds: string[]; confirmedAtIsoByListingId: Map<string, string> }> {
+): Promise<{ saleRefs: SoldFeedSaleRef[] }> {
   const { data, error } = await retryOnTransientNetworkError(() =>
     supabase.rpc("recently_sold_listing_sale_times", {
       p_limit: capRecentlySoldLimit(limit),
@@ -252,7 +273,7 @@ export async function fetchRecentlySoldListingsConfirmedCheckoutOrdering(
   )
 
   if (!error) {
-    return finalizeRecentSoldOrdering(supabase, (data ?? []) as RpcListingSaleTime[], sections)
+    return finalizeSoldFeedSaleRefs(supabase, (data ?? []) as RpcListingSaleTime[], sections)
   }
 
   if (!isSupabaseRpcMissingError(error)) {
@@ -263,7 +284,7 @@ export async function fetchRecentlySoldListingsConfirmedCheckoutOrdering(
     } else {
       console.error("recently_sold_listing_sale_times:", error.message)
     }
-    return { orderedListingIds: [], confirmedAtIsoByListingId: new Map() }
+    return { saleRefs: [] }
   }
 
   const surfboardsOnly = sections.length === 1 && sections[0] === "surfboards"
@@ -271,33 +292,55 @@ export async function fetchRecentlySoldListingsConfirmedCheckoutOrdering(
     ? await fetchRecentlySoldSurfboardSaleTimesViaLegacyRpc(supabase, limit)
     : await fetchRecentlySoldListingSaleTimesFallback(supabase, limit, sections)
 
-  return finalizeRecentSoldOrdering(supabase, rows, sections)
+  return finalizeSoldFeedSaleRefs(supabase, rows, sections)
 }
 
-/** Surfboards-only variant for the homepage recently sold strip (legacy RPC). */
+/** Surfboards-only variant for the homepage recently sold strip. */
 export async function fetchRecentlySoldSurfboardsConfirmedCheckoutOrdering(
   supabase: SupabaseClient,
   limit: number,
-): Promise<{ orderedListingIds: string[]; confirmedAtIsoByListingId: Map<string, string> }> {
-  const rows = await fetchRecentlySoldSurfboardSaleTimesViaLegacyRpc(supabase, limit)
-  return finalizeRecentSoldOrdering(supabase, rows, ["surfboards"])
+): Promise<{ saleRefs: SoldFeedSaleRef[] }> {
+  return fetchRecentlySoldListingsConfirmedCheckoutOrdering(supabase, limit, ["surfboards"])
+}
+
+/** One listing id per sale ref, preserving newest-first order (homepage strip). */
+export function dedupeSoldFeedSaleRefsByListing(
+  saleRefs: readonly SoldFeedSaleRef[],
+  maxListings: number,
+): { listingIds: string[]; confirmedAtIsoByListingId: Map<string, string> } {
+  const listingIds: string[] = []
+  const confirmedAtIsoByListingId = new Map<string, string>()
+  const seen = new Set<string>()
+
+  for (const ref of saleRefs) {
+    if (seen.has(ref.listingId)) continue
+    seen.add(ref.listingId)
+    listingIds.push(ref.listingId)
+    confirmedAtIsoByListingId.set(ref.listingId, ref.saleConfirmedAt)
+    if (listingIds.length >= maxListings) break
+  }
+
+  return { listingIds, confirmedAtIsoByListingId }
 }
 
 /** Homepage strip: listings with Stripe or wallet checkout in `confirmed` status only. */
 export async function fetchHomeRecentlySoldSurfboardRows(
   supabase: SupabaseClient,
 ): Promise<unknown[]> {
-  const { orderedListingIds } = await fetchRecentlySoldSurfboardsConfirmedCheckoutOrdering(
+  const { saleRefs } = await fetchRecentlySoldSurfboardsConfirmedCheckoutOrdering(
     supabase,
+    HOME_RECENTLY_SOLD_STRIP_LIMIT * 3,
+  )
+  const { listingIds: orderedListingIds } = dedupeSoldFeedSaleRefsByListing(
+    saleRefs,
     HOME_RECENTLY_SOLD_STRIP_LIMIT,
   )
   if (orderedListingIds.length === 0) return []
 
   const { data, error } = await supabase
     .from("listings")
-    .select(`${HOME_PEER_LISTING_WITH_PROFILE_SELECT}, hidden_from_site, archived_at`)
+    .select(`${HOME_PEER_LISTING_WITH_PROFILE_SELECT}, hidden_from_site, archived_at, sync_managed`)
     .in("id", orderedListingIds)
-    .eq("status", "sold")
 
   if (error) {
     console.error("fetchHomeRecentlySoldSurfboardRows:", error.message)
@@ -311,14 +354,7 @@ export async function fetchHomeRecentlySoldSurfboardRows(
   for (const id of orderedListingIds) {
     const row = byId.get(id)
     if (!row) continue
-    if (
-      !isListingVisibleInPublicSoldFeed({
-        title: row.title as string | null | undefined,
-        status: String(row.status ?? "sold"),
-        hidden_from_site: row.hidden_from_site as boolean | null | undefined,
-        archived_at: row.archived_at as string | null | undefined,
-      })
-    ) {
+    if (!isListingVisibleAsSoldFeedEntry(listingSoldFeedVisibilityFields(row))) {
       continue
     }
     ordered.push(row)

@@ -48,7 +48,7 @@ async function assertListingEligibleForCart(
 ): Promise<{ ok: true; listing: PeerListingCartFields } | { ok: false; message: string }> {
   const { data: row, error } = await supabase
     .from("listings")
-    .select("id, user_id, section, status, local_pickup, shipping_available, hidden_from_site, archived_at")
+    .select("id, user_id, section, status, local_pickup, shipping_available, hidden_from_site, archived_at, sync_managed, stock_quantity")
     .eq("id", listingId)
     .maybeSingle()
 

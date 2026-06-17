@@ -26,6 +26,8 @@ import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-m
 import { touchUserLastActive } from "@/lib/db/userActivity"
 import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
+import { applyListingInventoryAfterPurchaseBatch } from "@/lib/services/applyListingInventoryAfterPurchase"
+import { pushReswellOrderToShopifyBestEffort } from "@/lib/services/shopifyOrders"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
@@ -297,6 +299,18 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return {
       ok: false,
       error: "This listing is no longer available. Contact support if you were charged.",
+      status: 409,
+    }
+  }
+
+  if (
+    listingsOrdered.some(
+      (l) => l.sync_managed === true && (Number(l.stock_quantity) || 0) <= 0,
+    )
+  ) {
+    return {
+      ok: false,
+      error: "This item is out of stock. Contact support if you were charged.",
       status: 409,
     }
   }
@@ -667,18 +681,15 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     }
   }
 
-  // Mark sold only — never mutate listings.price (offer discounts stay private; public sold surfaces use list price).
-  const { error: listingErr } = await serviceSupabase
-    .from("listings")
-    .update({ status: "sold" })
-    .in(
-      "id",
-      listingsOrdered.map((l) => l.id),
-    )
+  // Mark sold or decrement stock — never mutate listings.price (offer discounts stay private).
+  const inventoryResult = await applyListingInventoryAfterPurchaseBatch(
+    serviceSupabase,
+    listingsOrdered.map((l) => l.id),
+  )
 
-  if (listingErr) {
-    console.error("[stripe-complete-order] listing update:", listingErr)
-    return { ok: false, error: "Could not mark listing sold", status: 500 }
+  if (!inventoryResult.ok) {
+    console.error("[stripe-complete-order] listing inventory:", inventoryResult)
+    return { ok: false, error: "Could not update listing inventory", status: 500 }
   }
 
   revalidateBoardsBrowseCatalog()
@@ -694,6 +705,19 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   for (const listingId of listingIdsOrdered) {
     void syncListingToGoogleMerchantBestEffort(serviceSupabase, listingId)
+    const listingRow = listingsOrdered.find((l) => l.id === listingId)
+    const line = bundle.lines.find((l) => l.listingId === listingId)
+    if (line && listingRow) {
+      void pushReswellOrderToShopifyBestEffort({
+        serviceSupabase,
+        sellerId: bundleSellerId,
+        listingId,
+        listingTitle: String(listingRow.title ?? ""),
+        itemPriceUsd: line.itemPrice,
+        buyerEmail,
+        reswellOrderId: String(purchase.id),
+      })
+    }
   }
 
   for (const line of bundle.lines) {

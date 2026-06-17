@@ -23,7 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ArrowLeft, MoreVertical, Package, Mail, User, RotateCcw, CheckCircle2, XCircle, Wallet, RefreshCw, Loader2 } from 'lucide-react'
+import { ArrowLeft, MoreVertical, Package, Mail, User, RotateCcw, CheckCircle2, XCircle, Wallet, RefreshCw, Loader2, Plug } from 'lucide-react'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -41,6 +41,7 @@ interface Profile {
   bio: string | null
   is_admin: boolean
   shop_verified: boolean
+  shopify_connect_enabled: boolean
   sales_count: number
   created_at: string
   updated_at: string
@@ -155,6 +156,21 @@ export default function AdminUserDetailPage() {
       router.push('/')
     } else {
       toast.error('Failed to start impersonation')
+    }
+  }
+
+  async function toggleShopifyConnect() {
+    if (!profile) return
+    const next = !profile.shopify_connect_enabled
+    const { error } = await supabase
+      .from('profiles')
+      .update({ shopify_connect_enabled: next, updated_at: new Date().toISOString() })
+      .eq('id', id)
+    if (!error) {
+      setProfile({ ...profile, shopify_connect_enabled: next })
+      toast.success(next ? 'Shopify connect enabled' : 'Shopify connect disabled')
+    } else {
+      toast.error('Failed to update profile')
     }
   }
 
@@ -438,6 +454,40 @@ export default function AdminUserDetailPage() {
               <>
                 <CheckCircle2 className="h-4 w-4 mr-1.5" />
                 Grant Badge
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="p-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <Plug className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
+            <div>
+              <p className="font-medium text-sm">Shopify integration</p>
+              <p className="text-xs text-muted-foreground">
+                {profile.shopify_connect_enabled
+                  ? 'This seller can connect a Shopify store and import products as Reswell listings.'
+                  : 'Allow this seller to connect Shopify and sync their product catalog.'}
+              </p>
+            </div>
+          </div>
+          <Button
+            variant={profile.shopify_connect_enabled ? 'outline' : 'default'}
+            size="sm"
+            onClick={toggleShopifyConnect}
+            className="shrink-0"
+          >
+            {profile.shopify_connect_enabled ? (
+              <>
+                <XCircle className="h-4 w-4 mr-1.5" />
+                Disable
+              </>
+            ) : (
+              <>
+                <Plug className="h-4 w-4 mr-1.5" />
+                Enable
               </>
             )}
           </Button>

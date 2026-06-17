@@ -31,6 +31,8 @@ import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
 import { listingTileFavoriteButtonChromeClassName } from "@/components/favorite-button-card-overlay"
 import { cn } from "@/lib/utils"
+import { listingInventoryFieldsFromRow, peerListingCanPurchase } from "@/lib/listing-inventory"
+import { ListingStockAvailabilityMessage } from "@/components/listing-stock-availability"
 import {
   ListingSoldDetailNotice,
   ListingSoldOwnerNotice,
@@ -196,11 +198,7 @@ export async function BoardbagsListingDetailPage({
   const pickupOffered = boardbag.local_pickup !== false
   const shippingOffered = !!boardbag.shipping_available
 
-  const canPeerPurchase =
-    !isOwnListing &&
-    !isSold &&
-    (boardbag.status === "active" || boardbag.status === "pending_sale") &&
-    (pickupOffered || shippingOffered)
+  const canPeerPurchase = peerListingCanPurchase(listingInventoryFieldsFromRow(boardbag as Record<string, unknown>), { isOwnListing })
 
   const freeBrandLabel = (boardbag.brand as string | null)?.trim() ?? ""
   const specsBrandLabel = (indexBrand?.name ?? freeBrandLabel).trim() || null
@@ -435,11 +433,8 @@ export async function BoardbagsListingDetailPage({
                 </div>
               </div>
             ) : null}
-            {!isSold && !isOwnListing && boardbag.status === "active" ? (
-              <p className="mt-3 flex items-center gap-1.5 text-[14px] text-foreground">
-                <Hourglass className="h-[14px] w-[14px] shrink-0 text-muted-foreground" aria-hidden />
-                <span className="font-medium">Only one available</span>
-              </p>
+            {canPeerPurchase ? (
+              <ListingStockAvailabilityMessage listing={listingInventoryFieldsFromRow(boardbag as Record<string, unknown>)} className="mt-3" />
             ) : null}
             {canPeerPurchase ? (
               <div className="mt-5">
@@ -504,14 +499,8 @@ export async function BoardbagsListingDetailPage({
                   ) : null}
                 </>
               )}
-              {!isSold && !isOwnListing && boardbag.status === "active" ? (
-                <p className="mt-4 flex items-start gap-2 text-[15px] text-foreground">
-                  <Hourglass className="mt-0.5 h-[15px] w-[15px] shrink-0 text-muted-foreground" aria-hidden />
-                  <span>
-                    <span className="font-semibold">Only one available</span>
-                    <span className="text-muted-foreground"> — grab it before it&apos;s gone</span>
-                  </span>
-                </p>
+              {canPeerPurchase ? (
+                <ListingStockAvailabilityMessage listing={listingInventoryFieldsFromRow(boardbag as Record<string, unknown>)} className="mt-4" />
               ) : null}
               {!isSold && !isOwnListing ? (
                 <p className="mt-3 text-[14px] leading-snug text-muted-foreground">
