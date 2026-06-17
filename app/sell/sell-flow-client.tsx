@@ -817,7 +817,7 @@ function createInitialSellFormData() {
     category: "",
     condition: "",
     brand: "",
-    boardFulfillment: "pickup_only" as BoardFulfillmentChoice,
+    boardFulfillment: "pickup_and_shipping" as BoardFulfillmentChoice,
     boardShippingCostMode: "reswell" as BoardShippingCostMode,
     boardShippingPrice: "",
     reswellPackageLengthIn: "",
