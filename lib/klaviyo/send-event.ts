@@ -50,6 +50,8 @@ export type KlaviyoProfileIds = {
   /** Supabase user id (recommended for logged-in users) */
   external_id?: string
   email?: string | null
+  /** E.164 — required for Klaviyo SMS actions on metric-triggered flows */
+  phone_number?: string | null
   /** For anonymous traffic; Klaviyo accepts this as a profile identifier */
   anonymous_id?: string
 }
@@ -76,6 +78,7 @@ function hasProfileIdentifier(p: KlaviyoProfileIds): boolean {
   return Boolean(
     p.external_id?.trim() ||
       p.email?.trim() ||
+      p.phone_number?.trim() ||
       p.anonymous_id?.trim(),
   )
 }
@@ -137,6 +140,9 @@ async function performSendKlaviyoServerEvent(
   }
   if (input.profile.email?.trim()) {
     profileAttributes.email = input.profile.email.trim()
+  }
+  if (input.profile.phone_number?.trim()) {
+    profileAttributes.phone_number = input.profile.phone_number.trim()
   }
   if (input.profile.anonymous_id?.trim()) {
     profileAttributes.anonymous_id = input.profile.anonymous_id.trim()

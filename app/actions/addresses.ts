@@ -1,6 +1,7 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { resolveAddressShippingIdentity } from "@/lib/db/addressShippingIdentity"
 import { profileAddressInputSchema, profileAddressPatchSchema } from "@/lib/address-input"
 import { fetchProfileAddresses } from "@/lib/db/profile-addresses"
 import type { ProfileAddressRow } from "@/lib/profile-address"
@@ -43,18 +44,35 @@ export async function createProfileAddress(
   const input = parsed.data
   const isDefault = input.is_default === true
 
+  const { data: profileRow } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", user.id)
+    .maybeSingle()
+
+  const identity = await resolveAddressShippingIdentity(supabase, user.id, {
+    full_name: input.full_name,
+    phone: input.phone,
+    display_name: profileRow?.display_name,
+  })
+
+  if (!identity.full_name.trim()) {
+    return {
+      address: null,
+      error: "Add your first and last name under Addresses → Personal information before saving an address.",
+    }
+  }
+
   if (isDefault) {
     await supabase.from("addresses").update({ is_default: false }).eq("profile_id", user.id)
   }
-
-  const phoneValue = input.phone?.trim() || null
 
   const { data, error } = await supabase
     .from("addresses")
     .insert({
       profile_id: user.id,
-      full_name: input.full_name,
-      phone: phoneValue,
+      full_name: identity.full_name,
+      phone: identity.phone,
       line1: input.line1,
       line2: input.line2?.trim() || null,
       city: input.city,
@@ -115,8 +133,6 @@ export async function updateProfileAddress(
   }
 
   const update: Record<string, unknown> = {}
-  if (input.full_name !== undefined) update.full_name = input.full_name
-  if (input.phone !== undefined) update.phone = input.phone?.trim() || null
   if (input.line1 !== undefined) update.line1 = input.line1
   if (input.line2 !== undefined) update.line2 = input.line2?.trim() || null
   if (input.city !== undefined) update.city = input.city
@@ -125,6 +141,35 @@ export async function updateProfileAddress(
   if (input.country !== undefined) update.country = input.country
   if (input.label !== undefined) update.label = input.label?.trim() || null
   if (input.is_default !== undefined) update.is_default = input.is_default
+
+  if (input.full_name !== undefined || input.phone !== undefined) {
+    const { data: profileRow } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", user.id)
+      .maybeSingle()
+
+    const identity = await resolveAddressShippingIdentity(supabase, user.id, {
+      full_name: input.full_name,
+      phone: input.phone,
+      display_name: profileRow?.display_name,
+    })
+    if (input.full_name !== undefined) update.full_name = identity.full_name
+    if (input.phone !== undefined) update.phone = identity.phone
+  } else {
+    // Refresh cached name/phone from profile when shipping fields change.
+    const { data: profileRow } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", user.id)
+      .maybeSingle()
+
+    const identity = await resolveAddressShippingIdentity(supabase, user.id, {
+      display_name: profileRow?.display_name,
+    })
+    update.full_name = identity.full_name
+    update.phone = identity.phone
+  }
 
   const { data, error } = await supabase
     .from("addresses")

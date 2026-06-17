@@ -43,6 +43,19 @@ type Translations = {
       save: string
       saving: string
     }
+    personalInfo: {
+      title: string
+      description: string
+      privateBadge: string
+      firstName: string
+      lastName: string
+      phone: string
+      phoneDisclosure: string
+      save: string
+      update: string
+      saving: string
+      saved: string
+    }
     language: {
       title: string
       description: string
@@ -88,8 +101,6 @@ type Translations = {
       deleteDescription: string
       save: string
       cancel: string
-      fullName: string
-      phone: string
       line1: string
       line2: string
       city: string
@@ -99,6 +110,7 @@ type Translations = {
       label: string
       addTitle: string
       editTitle: string
+      shippingOnlyHint: string
     }
   }
 }
@@ -138,6 +150,21 @@ const en: Translations = {
       save: 'Save Changes',
       saving: 'Saving...',
     },
+    personalInfo: {
+      title: 'Personal information',
+      description:
+        'Private account details used for shipping labels, checkout, and text alerts. Never shown on your public profile.',
+      privateBadge: 'Private',
+      firstName: 'First name',
+      lastName: 'Last name',
+      phone: 'Mobile number',
+      phoneDisclosure:
+        'Used on prepaid shipping labels. Phone is required for carrier delivery issues. By providing your phone number, you agree that Reswell and its shipping partners may send automated text messages related to your orders, shipments, labels, delivery issues, and account support. Message and data rates may apply. Reply STOP to opt out.',
+      save: 'Save personal information',
+      update: 'Update personal information',
+      saving: 'Saving...',
+      saved: 'Saved',
+    },
     language: {
       title: 'Language',
       description: 'Choose the language for the site.',
@@ -176,10 +203,11 @@ const en: Translations = {
     },
     addresses: {
       tab: 'Addresses',
-      title: 'Saved addresses',
-      description: 'Use these at checkout for shipping. You can add several and mark one as default.',
+      title: 'Shipping addresses',
+      description:
+        'Where packages ship. Your name and phone are saved in Personal information above.',
       add: 'Add address',
-      empty: 'No saved addresses yet. Add one to speed up checkout.',
+      empty: 'No shipping addresses yet. Add one to speed up checkout.',
       defaultBadge: 'Default',
       setDefault: 'Set as default',
       edit: 'Edit',
@@ -188,17 +216,17 @@ const en: Translations = {
       deleteDescription: 'This cannot be undone. Checkout will ask for a new address if needed.',
       save: 'Save address',
       cancel: 'Cancel',
-      fullName: 'Full name',
-      phone: 'Phone',
-      line1: 'Address line 1',
-      line2: 'Address line 2 (optional)',
+      line1: 'Street address',
+      line2: 'Apt, suite, etc. (optional)',
       city: 'City',
-      state: 'State / region',
-      postal: 'Postal code',
+      state: 'State',
+      postal: 'ZIP code',
       country: 'Country',
-      label: 'Label (optional)',
-      addTitle: 'Add address',
-      editTitle: 'Edit address',
+      label: 'Nickname (optional)',
+      addTitle: 'Add shipping address',
+      editTitle: 'Edit shipping address',
+      shippingOnlyHint:
+        'Shipping location only — update your legal name and phone in Personal information above.',
     },
   },
 }
@@ -238,6 +266,21 @@ const es: Translations = {
       save: 'Guardar cambios',
       saving: 'Guardando...',
     },
+    personalInfo: {
+      title: 'Información personal',
+      description:
+        'Datos privados de la cuenta para etiquetas de envío, checkout y alertas por SMS. No se muestran en tu perfil público.',
+      privateBadge: 'Privado',
+      firstName: 'Nombre',
+      lastName: 'Apellido',
+      phone: 'Teléfono móvil',
+      phoneDisclosure:
+        'Se usa en etiquetas de envío prepagadas. El teléfono es necesario para incidencias de entrega. Al proporcionar tu número, aceptas que Reswell y sus socios de envío puedan enviarte mensajes automatizados sobre pedidos, envíos, etiquetas, incidencias de entrega y soporte de cuenta. Pueden aplicarse tarifas de mensajes y datos. Responde STOP para cancelar.',
+      save: 'Guardar información personal',
+      update: 'Actualizar información personal',
+      saving: 'Guardando...',
+      saved: 'Guardado',
+    },
     language: {
       title: 'Idioma',
       description: 'Elige el idioma del sitio.',
@@ -276,11 +319,11 @@ const es: Translations = {
     },
     addresses: {
       tab: 'Direcciones',
-      title: 'Direcciones guardadas',
+      title: 'Direcciones de envío',
       description:
-        'Úsalas en el checkout para envíos. Puedes añadir varias y marcar una como predeterminada.',
+        'Dónde se envían los paquetes. Tu nombre y teléfono están en Información personal arriba.',
       add: 'Añadir dirección',
-      empty: 'Aún no hay direcciones. Añade una para agilizar el checkout.',
+      empty: 'Aún no hay direcciones de envío. Añade una para agilizar el checkout.',
       defaultBadge: 'Predeterminada',
       setDefault: 'Usar como predeterminada',
       edit: 'Editar',
@@ -289,17 +332,17 @@ const es: Translations = {
       deleteDescription: 'No se puede deshacer. El checkout pedirá una nueva dirección si hace falta.',
       save: 'Guardar dirección',
       cancel: 'Cancelar',
-      fullName: 'Nombre completo',
-      phone: 'Teléfono',
-      line1: 'Línea de dirección 1',
-      line2: 'Línea de dirección 2 (opcional)',
+      line1: 'Calle y número',
+      line2: 'Depto, suite, etc. (opcional)',
       city: 'Ciudad',
-      state: 'Estado / región',
+      state: 'Estado',
       postal: 'Código postal',
       country: 'País',
-      label: 'Etiqueta (opcional)',
-      addTitle: 'Añadir dirección',
-      editTitle: 'Editar dirección',
+      label: 'Apodo (opcional)',
+      addTitle: 'Añadir dirección de envío',
+      editTitle: 'Editar dirección de envío',
+      shippingOnlyHint:
+        'Solo ubicación de envío — actualiza tu nombre legal y teléfono en Información personal arriba.',
     },
   },
 }

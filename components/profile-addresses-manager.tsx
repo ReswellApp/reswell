@@ -23,6 +23,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -30,8 +31,9 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import type { ShippingAddressFormInput } from "@/lib/address-input"
 import type { ProfileAddressRow } from "@/lib/profile-address"
-import { Loader2, Pencil, Plus, Trash2 } from "lucide-react"
+import { Loader2, MapPin, Pencil, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 export type ProfileAddressesCopy = {
@@ -48,8 +50,6 @@ export type ProfileAddressesCopy = {
   deleteDescription: string
   save: string
   cancel: string
-  fullName: string
-  phone: string
   line1: string
   line2: string
   city: string
@@ -59,11 +59,10 @@ export type ProfileAddressesCopy = {
   label: string
   addTitle: string
   editTitle: string
+  shippingOnlyHint: string
 }
 
-const emptyForm = {
-  full_name: "",
-  phone: "",
+const emptyForm: ShippingAddressFormInput = {
   line1: "",
   line2: "",
   city: "",
@@ -72,6 +71,14 @@ const emptyForm = {
   country: "US",
   label: "",
   is_default: false,
+}
+
+function formatShippingLines(a: ProfileAddressRow): string[] {
+  return [
+    [a.line1, a.line2].filter(Boolean).join(", "),
+    [a.city, a.state, a.postal_code].filter(Boolean).join(", "),
+    a.country !== "US" ? a.country : null,
+  ].filter(Boolean) as string[]
 }
 
 export function ProfileAddressesManager({
@@ -87,7 +94,7 @@ export function ProfileAddressesManager({
   const [loading, setLoading] = useState(initialAddresses === undefined)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [form, setForm] = useState(emptyForm)
+  const [form, setForm] = useState<ShippingAddressFormInput>(emptyForm)
   const [saving, setSaving] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -124,8 +131,6 @@ export function ProfileAddressesManager({
   function openEdit(row: ProfileAddressRow) {
     setEditingId(row.id)
     setForm({
-      full_name: row.full_name,
-      phone: row.phone ?? "",
       line1: row.line1,
       line2: row.line2 ?? "",
       city: row.city,
@@ -141,20 +146,19 @@ export function ProfileAddressesManager({
   async function handleSave() {
     setSaving(true)
     try {
-      const payload = {
-        full_name: form.full_name.trim(),
-        phone: form.phone.trim() || null,
+      const payload: ShippingAddressFormInput = {
         line1: form.line1.trim(),
-        line2: form.line2.trim() || null,
+        line2: form.line2?.trim() || null,
         city: form.city.trim(),
-        state: form.state.trim() || null,
+        state: form.state?.trim() || null,
         postal_code: form.postal_code.trim(),
         country: form.country.trim() || "US",
-        label: form.label.trim() || null,
+        label: form.label?.trim() || null,
         is_default: form.is_default,
       }
-      if (!payload.full_name || !payload.line1 || !payload.city || !payload.postal_code) {
-        toast.error("Name, street, city, and postal code are required.")
+
+      if (!payload.line1 || !payload.city || !payload.postal_code) {
+        toast.error("Street, city, and ZIP code are required.")
         setSaving(false)
         return
       }
@@ -205,16 +209,6 @@ export function ProfileAddressesManager({
     }
   }
 
-  function formatBlock(a: ProfileAddressRow) {
-    const lines = [
-      a.full_name,
-      [a.line1, a.line2].filter(Boolean).join(", "),
-      [a.city, a.state, a.postal_code].filter(Boolean).join(", "),
-      a.country,
-    ].filter(Boolean)
-    return lines.join("\n")
-  }
-
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -235,101 +229,99 @@ export function ProfileAddressesManager({
             <CardDescription>{copy.description}</CardDescription>
           </div>
           <Button type="button" size="sm" onClick={openAdd}>
-            <Plus className="h-4 w-4 mr-1" />
+            <Plus className="mr-1 h-4 w-4" aria-hidden />
             {copy.add}
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           {addresses.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-4 text-center border border-dashed rounded-lg">
-              {copy.empty}
-            </p>
+            <div className="flex flex-col items-center rounded-xl border border-dashed bg-muted/20 px-6 py-10 text-center">
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <MapPin className="h-6 w-6 text-muted-foreground" aria-hidden />
+              </div>
+              <p className="text-sm text-muted-foreground">{copy.empty}</p>
+            </div>
           ) : (
-            <ul className="space-y-3">
-              {addresses.map((a) => (
-                <li
-                  key={a.id}
-                  className="flex flex-col gap-3 rounded-lg border bg-card p-4 sm:flex-row sm:items-start sm:justify-between"
-                >
-                  <div className="min-w-0 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {a.label ? (
-                        <span className="font-medium text-foreground">{a.label}</span>
-                      ) : null}
-                      {a.is_default ? (
-                        <Badge variant="secondary" className="text-xs">
-                          {copy.defaultBadge}
-                        </Badge>
-                      ) : null}
+            <ul className="grid gap-3 sm:grid-cols-2">
+              {addresses.map((a) => {
+                const lines = formatShippingLines(a)
+                return (
+                  <li
+                    key={a.id}
+                    className="flex flex-col justify-between gap-4 rounded-xl border bg-card p-4 shadow-sm"
+                  >
+                    <div className="flex gap-3">
+                      <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                        <MapPin className="h-4 w-4 text-muted-foreground" aria-hidden />
+                      </div>
+                      <div className="min-w-0 space-y-1.5">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium text-foreground">
+                            {a.label?.trim() || "Shipping address"}
+                          </span>
+                          {a.is_default ? (
+                            <Badge variant="secondary" className="text-xs">
+                              {copy.defaultBadge}
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <div className="space-y-0.5 text-sm text-muted-foreground">
+                          {lines.map((line) => (
+                            <p key={line}>{line}</p>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                    <pre className="text-sm text-muted-foreground whitespace-pre-wrap font-sans">
-                      {formatBlock(a)}
-                    </pre>
-                  </div>
-                  <div className="flex flex-wrap gap-2 shrink-0">
-                    {!a.is_default && (
-                      <Button type="button" variant="outline" size="sm" onClick={() => handleSetDefault(a.id)}>
-                        {copy.setDefault}
+                    <div className="flex flex-wrap gap-2">
+                      {!a.is_default ? (
+                        <Button type="button" variant="outline" size="sm" onClick={() => handleSetDefault(a.id)}>
+                          {copy.setDefault}
+                        </Button>
+                      ) : null}
+                      <Button type="button" variant="outline" size="sm" onClick={() => openEdit(a)}>
+                        <Pencil className="mr-1 h-3.5 w-3.5" aria-hidden />
+                        {copy.edit}
                       </Button>
-                    )}
-                    <Button type="button" variant="outline" size="sm" onClick={() => openEdit(a)}>
-                      <Pencil className="h-3.5 w-3.5 mr-1" />
-                      {copy.edit}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => setDeleteId(a.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5 mr-1" />
-                      {copy.delete}
-                    </Button>
-                  </div>
-                </li>
-              ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setDeleteId(a.id)}
+                      >
+                        <Trash2 className="mr-1 h-3.5 w-3.5" aria-hidden />
+                        {copy.delete}
+                      </Button>
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
           )}
         </CardContent>
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingId ? copy.editTitle : copy.addTitle}</DialogTitle>
+            <DialogDescription>{copy.shippingOnlyHint}</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-3 sm:grid-cols-2 py-2">
+          <div className="grid gap-3 py-2 sm:grid-cols-2">
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="addr-label">{copy.label}</Label>
               <Input
                 id="addr-label"
-                value={form.label}
+                value={form.label ?? ""}
                 onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
                 placeholder="Home, Work…"
-              />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="addr-fn">{copy.fullName}</Label>
-              <Input
-                id="addr-fn"
-                value={form.full_name}
-                onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="addr-ph">{copy.phone}</Label>
-              <Input
-                id="addr-ph"
-                type="tel"
-                value={form.phone}
-                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
               />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="addr-l1">{copy.line1}</Label>
               <Input
                 id="addr-l1"
+                autoComplete="address-line1"
                 value={form.line1}
                 onChange={(e) => setForm((f) => ({ ...f, line1: e.target.value }))}
               />
@@ -338,7 +330,8 @@ export function ProfileAddressesManager({
               <Label htmlFor="addr-l2">{copy.line2}</Label>
               <Input
                 id="addr-l2"
-                value={form.line2}
+                autoComplete="address-line2"
+                value={form.line2 ?? ""}
                 onChange={(e) => setForm((f) => ({ ...f, line2: e.target.value }))}
               />
             </div>
@@ -346,6 +339,7 @@ export function ProfileAddressesManager({
               <Label htmlFor="addr-city">{copy.city}</Label>
               <Input
                 id="addr-city"
+                autoComplete="address-level2"
                 value={form.city}
                 onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
               />
@@ -354,7 +348,8 @@ export function ProfileAddressesManager({
               <Label htmlFor="addr-st">{copy.state}</Label>
               <Input
                 id="addr-st"
-                value={form.state}
+                autoComplete="address-level1"
+                value={form.state ?? ""}
                 onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))}
               />
             </div>
@@ -362,6 +357,7 @@ export function ProfileAddressesManager({
               <Label htmlFor="addr-zip">{copy.postal}</Label>
               <Input
                 id="addr-zip"
+                autoComplete="postal-code"
                 value={form.postal_code}
                 onChange={(e) => setForm((f) => ({ ...f, postal_code: e.target.value }))}
               />
@@ -370,14 +366,15 @@ export function ProfileAddressesManager({
               <Label htmlFor="addr-ctry">{copy.country}</Label>
               <Input
                 id="addr-ctry"
+                autoComplete="country-name"
                 value={form.country}
                 onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))}
               />
             </div>
-            <div className="flex items-center justify-between gap-2 sm:col-span-2 rounded-lg border p-3">
+            <div className="flex items-center justify-between gap-2 rounded-lg border p-3 sm:col-span-2">
               <span className="text-sm font-medium">{copy.defaultBadge}</span>
               <Switch
-                checked={form.is_default}
+                checked={form.is_default ?? false}
                 onCheckedChange={(c) => setForm((f) => ({ ...f, is_default: c }))}
               />
             </div>
@@ -405,7 +402,7 @@ export function ProfileAddressesManager({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={(e) => {
                 e.preventDefault()
-                confirmDelete()
+                void confirmDelete()
               }}
               disabled={deleting}
             >

@@ -37,6 +37,7 @@ interface CheckoutClientProps {
   listings: CheckoutListing[]
   copy?: CheckoutCopy
   buyerEmail?: string | null
+  legalFullName?: string
   initialAddresses: ProfileAddressRow[]
   seller?: CheckoutSeller | null
   /** When paying an accepted offer bundle, bypasses cart verification at payment. */
@@ -47,6 +48,7 @@ export function CheckoutClient({
   listings,
   copy = SURFBOARD_COPY,
   buyerEmail,
+  legalFullName = "",
   initialAddresses,
   seller,
   offerId = null,
@@ -489,6 +491,7 @@ export function CheckoutClient({
               buyerEmail={buyerEmail ?? null}
               initialAddresses={initialAddresses}
               needsShipping={needsShipping}
+              legalFullName={legalFullName}
               onStateChange={handlePurchaseDetailsChange}
             />
 

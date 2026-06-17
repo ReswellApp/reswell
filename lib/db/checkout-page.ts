@@ -2,6 +2,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js"
 import type { CheckoutSeller } from "@/components/checkout-types"
 import { fetchProfileAddresses } from "@/lib/db/profile-addresses"
 import type { ProfileAddressRow } from "@/lib/profile-address"
+import { formatProfileLegalName } from "@/lib/utils/profile-personal-info"
 
 const CHECKOUT_SELLER_SELECT = "display_name, avatar_url, seller_slug, shop_name, is_shop"
 
@@ -9,6 +10,7 @@ export type CheckoutBuyerContext = {
   addresses: ProfileAddressRow[]
   addressesError: string | null
   buyerEmail: string | null
+  legalFullName: string
 }
 
 export async function fetchCheckoutSellerProfile(
@@ -42,18 +44,27 @@ export async function fetchCheckoutBuyerContext(
 
   const [addressesResult, profileResult] = await Promise.all([
     fetchProfileAddresses(supabase, user.id),
-    authEmail
-      ? Promise.resolve({ data: null as { email: string | null } | null })
-      : supabase.from("profiles").select("email").eq("id", user.id).maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("email, display_name, first_name, last_name")
+      .eq("id", user.id)
+      .maybeSingle(),
   ])
 
   const profileEmail =
     typeof profileResult.data?.email === "string" ? profileResult.data.email.trim() : ""
 
+  const legalFullName = formatProfileLegalName(
+    profileResult.data?.first_name,
+    profileResult.data?.last_name,
+    profileResult.data?.display_name,
+  )
+
   return {
     addresses: addressesResult.addresses,
     addressesError: addressesResult.error ?? null,
     buyerEmail: authEmail || profileEmail || null,
+    legalFullName,
   }
 }
 

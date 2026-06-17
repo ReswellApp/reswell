@@ -18,6 +18,8 @@ interface MessagesInboxContextValue {
   currentUserId: string
   conversations: InboxConversationRow[]
   notifications: MessagesInboxNotification[]
+  messageSmsOptIn: boolean
+  hasSmsPhone: boolean
   refreshInbox: () => Promise<void>
 }
 
@@ -35,6 +37,8 @@ interface MessagesInboxProviderProps {
   userId: string
   initialConversations: InboxConversationRow[]
   initialNotifications: MessagesInboxNotification[]
+  initialMessageSmsOptIn?: boolean
+  initialHasSmsPhone?: boolean
   children: ReactNode
 }
 
@@ -42,6 +46,8 @@ export function MessagesInboxProvider({
   userId,
   initialConversations,
   initialNotifications,
+  initialMessageSmsOptIn = false,
+  initialHasSmsPhone = false,
   children,
 }: MessagesInboxProviderProps) {
   const supabase = useMemo(() => createClient(), [])
@@ -105,9 +111,18 @@ export function MessagesInboxProvider({
       currentUserId: userId,
       conversations,
       notifications,
+      messageSmsOptIn: initialMessageSmsOptIn,
+      hasSmsPhone: initialHasSmsPhone,
       refreshInbox,
     }),
-    [userId, conversations, notifications, refreshInbox],
+    [
+      userId,
+      conversations,
+      notifications,
+      initialMessageSmsOptIn,
+      initialHasSmsPhone,
+      refreshInbox,
+    ],
   )
 
   return (

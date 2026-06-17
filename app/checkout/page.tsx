@@ -105,7 +105,7 @@ export default async function CheckoutPage(props: {
 
     const sellerId = offer.seller_id
     const { seller, buyer } = await fetchCheckoutSellerAndBuyerContext(supabase, sellerId, user)
-    const { addresses: initialAddresses, addressesError, buyerEmail } = buyer
+    const { addresses: initialAddresses, addressesError, buyerEmail, legalFullName } = buyer
 
     const isBundle = checkoutListings.length > 1
     const copy: CheckoutCopy | undefined = isBundle
@@ -151,6 +151,7 @@ export default async function CheckoutPage(props: {
             listings={checkoutListings}
             copy={copy}
             buyerEmail={buyerEmail}
+            legalFullName={legalFullName}
             initialAddresses={addressesError ? [] : initialAddresses}
             seller={seller}
             offerId={offer.id}
@@ -218,7 +219,7 @@ export default async function CheckoutPage(props: {
         sellerId,
       ),
     ])
-    const { addresses: initialAddresses, addressesError, buyerEmail } = buyer
+    const { addresses: initialAddresses, addressesError, buyerEmail, legalFullName } = buyer
 
     const copy: CheckoutCopy | undefined = undefined
 
@@ -257,6 +258,7 @@ export default async function CheckoutPage(props: {
             listings={checkoutListings}
             copy={copy}
             buyerEmail={buyerEmail}
+            legalFullName={legalFullName}
             initialAddresses={addressesError ? [] : initialAddresses}
             seller={seller}
             offerId={matchedOffer?.id ?? null}
@@ -407,7 +409,8 @@ export default async function CheckoutPage(props: {
     )
   }
 
-  const { addresses: initialAddresses, addressesError, buyerEmail } = await fetchCheckoutBuyerContext(
+  const { addresses: initialAddresses, addressesError, buyerEmail, legalFullName } =
+    await fetchCheckoutBuyerContext(
     supabase,
     user,
   )
@@ -455,6 +458,7 @@ export default async function CheckoutPage(props: {
           listings={[checkoutListing]}
           copy={copy}
           buyerEmail={buyerEmail}
+          legalFullName={legalFullName}
           initialAddresses={addressesError ? [] : initialAddresses}
           seller={seller}
           offerId={matchedOfferId}

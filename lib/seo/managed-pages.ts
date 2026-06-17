@@ -374,6 +374,12 @@ export const MANAGED_PAGES: ManagedPage[] = [
     ogImageUrl:
       "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/78869381-5245-47a6-9298-bc67cecccff6.jpg",
   }),
+  page("mobile-terms", "trust", "Mobile Terms of Service", {
+    title: "Mobile Terms of Service — Reswell",
+    description:
+      "Terms for Reswell SMS/text messaging: consent, message types, opt-out (STOP), support (HELP), carrier charges, and privacy.",
+    path: "/mobile-terms",
+  }),
   page("faq", "trust", "FAQ", {
     title: "FAQ — Reswell",
     description:

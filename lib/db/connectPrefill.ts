@@ -1,8 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { formatProfileLegalName } from "@/lib/utils/profile-personal-info"
 
 export interface StripePrefillProfileRow {
   seller_slug: string
   display_name: string | null
+  first_name: string | null
+  last_name: string | null
+  phone: string | null
 }
 
 export interface StripePrefillAddressRow {
@@ -30,7 +34,7 @@ export async function getStripeConnectPrefillData(
     await Promise.all([
       supabase
         .from("profiles")
-        .select("seller_slug, display_name")
+        .select("seller_slug, display_name, first_name, last_name, phone")
         .eq("id", userId)
         .maybeSingle(),
       supabase
@@ -52,6 +56,19 @@ export async function getStripeConnectPrefillData(
 
   return {
     profile: profile as StripePrefillProfileRow | null,
-    address: address as StripePrefillAddressRow | null,
+    address: address
+      ? ({
+          ...address,
+          full_name:
+            formatProfileLegalName(
+              (profile as StripePrefillProfileRow | null)?.first_name,
+              (profile as StripePrefillProfileRow | null)?.last_name,
+              (profile as StripePrefillProfileRow | null)?.display_name,
+            ) || address.full_name,
+          phone:
+            (profile as StripePrefillProfileRow | null)?.phone?.trim() ||
+            address.phone,
+        } as StripePrefillAddressRow)
+      : null,
   }
 }

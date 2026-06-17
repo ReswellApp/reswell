@@ -159,6 +159,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     { url: `${BASE}/cookies`, lastModified: now, changeFrequency: "yearly", priority: 0.15 },
     { url: `${BASE}/terms`, lastModified: now, changeFrequency: "monthly", priority: 0.2 },
     { url: `${BASE}/privacy`, lastModified: now, changeFrequency: "monthly", priority: 0.2 },
+    { url: `${BASE}/mobile-terms`, lastModified: now, changeFrequency: "yearly", priority: 0.15 },
   ]
 
   const pressPages: SitemapUrlEntry[] = pressArticles.map((a) => ({

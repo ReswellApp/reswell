@@ -7,6 +7,7 @@ import { formatDistanceToNow } from "date-fns"
 import { MessageCircle, Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { VerifiedBadge } from "@/components/verified-badge"
+import { MessageSmsNotificationsToggle } from "@/components/features/messages/message-sms-notifications-toggle"
 import { MessageProfileAvatar } from "@/components/features/messages/message-profile-avatar"
 import { useMessagesInbox } from "@/components/features/messages/messages-inbox-context"
 import { useFlatMobileMessagesInbox } from "@/hooks/use-flat-mobile-messages-inbox"
@@ -28,7 +29,7 @@ export function MessagesInboxListPane({
 }: MessagesInboxListPaneProps) {
   const pathname = usePathname() ?? ""
   const flatMobileInbox = useFlatMobileMessagesInbox()
-  const { currentUserId, conversations } = useMessagesInbox()
+  const { currentUserId, conversations, messageSmsOptIn, hasSmsPhone } = useMessagesInbox()
   const [searchQuery, setSearchQuery] = useState("")
 
   const searchLower = searchQuery.trim().toLowerCase()
@@ -82,6 +83,12 @@ export function MessagesInboxListPane({
           )}
         />
       </div>
+
+      <MessageSmsNotificationsToggle
+        initialOptIn={messageSmsOptIn}
+        hasPhone={hasSmsPhone}
+        className={flatMobileInbox ? "px-0" : undefined}
+      />
 
       <div className={cn(flatMobileInbox ? "flex-none" : "min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y [scrollbar-width:thin]")}>
         {filteredGroups.length === 0 ? (

@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import type { ProfileAddressInput } from "@/lib/address-input"
+import type { ShippingAddressFormInput } from "@/lib/address-input"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 
 function formatAddressLine(a: ProfileAddressRow) {
@@ -36,11 +36,14 @@ export function CheckoutPurchaseDetails({
   buyerEmail,
   initialAddresses,
   needsShipping,
+  legalFullName = "",
   onStateChange,
 }: {
   buyerEmail: string | null
   initialAddresses: ProfileAddressRow[]
   needsShipping: boolean
+  /** From private profile personal info — used for pickup and shipping identity. */
+  legalFullName?: string
   onStateChange: (state: PurchaseDetailsState) => void
 }) {
   const [addresses, setAddresses] = useState<ProfileAddressRow[]>(initialAddresses)
@@ -51,10 +54,9 @@ export function CheckoutPurchaseDetails({
   const [showNewForm, setShowNewForm] = useState(() => initialAddresses.length === 0 && needsShipping)
   const prevSelectedRef = useRef<string | null>(selectedId)
 
-  const [pickupName, setPickupName] = useState("")
+  const [pickupName, setPickupName] = useState(legalFullName)
 
-  const [draft, setDraft] = useState<ProfileAddressInput>({
-    full_name: "",
+  const [draft, setDraft] = useState<ShippingAddressFormInput>({
     line1: "",
     line2: "",
     city: "",
@@ -77,6 +79,12 @@ export function CheckoutPurchaseDetails({
   }, [])
 
   useEffect(() => {
+    if (legalFullName.trim() && !pickupName.trim()) {
+      setPickupName(legalFullName.trim())
+    }
+  }, [legalFullName, pickupName])
+
+  useEffect(() => {
     if (!needsShipping) return
     if (addresses.length === 0) {
       setShowNewForm(true)
@@ -92,13 +100,12 @@ export function CheckoutPurchaseDetails({
   }, [needsShipping])
 
   const draftValid = useMemo(() => {
-    const base =
-      draft.full_name.trim().length > 0 &&
+    return (
       draft.line1.trim().length > 0 &&
       draft.city.trim().length > 0 &&
       draft.postal_code.trim().length > 0 &&
       draft.country.trim().length >= 2
-    return base
+    )
   }, [draft])
 
   const computeAndNotify = useCallback(() => {
@@ -149,7 +156,6 @@ export function CheckoutPurchaseDetails({
     setShowNewForm(false)
     setSelectedId(prevSelectedRef.current)
     setDraft({
-      full_name: "",
       line1: "",
       line2: "",
       city: "",
@@ -161,14 +167,12 @@ export function CheckoutPurchaseDetails({
 
   const saveNewAddress = async () => {
     if (!draftValid) {
-      toast.error("Fill in name, street, city, postal code, and country.")
+      toast.error("Fill in street, city, postal code, and country.")
       return
     }
     setSaving(true)
     try {
       const { address, error } = await createProfileAddress({
-        full_name: draft.full_name,
-        phone: null,
         line1: draft.line1,
         line2: draft.line2 || null,
         city: draft.city,
@@ -267,7 +271,8 @@ export function CheckoutPurchaseDetails({
                 <SelectContent>
                   {addresses.map((a) => (
                     <SelectItem key={a.id} value={a.id}>
-                      {a.full_name} — {formatAddressLine(a)}
+                      {a.label?.trim() ? `${a.label} — ` : ""}
+                      {formatAddressLine(a)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -289,21 +294,16 @@ export function CheckoutPurchaseDetails({
               <p className="text-sm font-medium text-foreground">
                 {addresses.length === 0 ? "Add your shipping address" : "New address"}
               </p>
+              {legalFullName.trim() ? (
+                <p className="text-xs text-neutral-500">
+                  Ships to {legalFullName.trim()} — update name and phone under Addresses.
+                </p>
+              ) : (
+                <p className="text-xs text-amber-700">
+                  Add your first and last name under Addresses → Personal information before checkout.
+                </p>
+              )}
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label htmlFor="addr-name" className="text-[13px] font-normal text-neutral-600">
-                    Full name
-                  </Label>
-                  <Input
-                    id="addr-name"
-                    autoComplete="shipping name"
-                    value={draft.full_name}
-                    onChange={(e) => setDraft((d) => ({ ...d, full_name: e.target.value }))}
-                    className={fieldClass}
-                    required
-                    aria-required
-                  />
-                </div>
                 <div className="space-y-1.5 sm:col-span-2">
                   <Label htmlFor="addr-line1" className="text-[13px] font-normal text-neutral-600">
                     Address line 1

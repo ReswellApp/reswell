@@ -29,6 +29,7 @@ export const siteFooterNavLinks: {
     { name: "Privacy Policy", href: "/privacy" },
     { name: "Return Policy", href: "/return-policy" },
     { name: "Terms of Service", href: "/terms" },
+    { name: "Mobile Terms", href: "/mobile-terms" },
     { name: "Cookie Policy", href: "/cookies" },
   ],
 }

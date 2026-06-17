@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { ProfilePersonalInfoSection } from "@/components/features/dashboard/profile-personal-info-section"
 import { ProfileAddressesManager } from "@/components/profile-addresses-manager"
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -574,7 +575,13 @@ export function DashboardProfileSettings({
           </Card>
         </TabsContent>
 
-        <TabsContent value="addresses" className="mt-6">
+        <TabsContent value="addresses" className="mt-6 space-y-6">
+          <ProfilePersonalInfoSection
+            copy={s.personalInfo}
+            initialFirstName={profile.first_name}
+            initialLastName={profile.last_name}
+            initialPhone={profile.phone}
+          />
           <ProfileAddressesManager
             copy={addr}
             initialAddresses={initialAddresses}

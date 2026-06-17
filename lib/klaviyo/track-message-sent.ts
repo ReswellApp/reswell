@@ -8,6 +8,7 @@
  * The Klaviyo **profile** on the event is the **receiver** so flows email them by default.
  */
 
+import { getMessageSmsReceiverContext } from "@/lib/db/messageSmsNotifications"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 
@@ -35,16 +36,22 @@ async function getAuthEmailsForUsers(
   }
 }
 
-async function getReceiverEmail(receiverId: string): Promise<string | null> {
+async function getReceiverAuthUser(receiverId: string): Promise<{
+  email: string | null
+  phone: string | null
+}> {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
-    return null
+    return { email: null, phone: null }
   }
   try {
     const admin = createServiceRoleClient()
     const r = await admin.auth.admin.getUserById(receiverId)
-    return r.data.user?.email?.trim() || null
+    return {
+      email: r.data.user?.email?.trim() || null,
+      phone: r.data.user?.phone?.trim() || null,
+    }
   } catch {
-    return null
+    return { email: null, phone: null }
   }
 }
 
@@ -128,18 +135,42 @@ export async function trackKlaviyoMessageSent(
   let senderDisplayName: string
   let receiverEmail: string | null
 
+  let receiverAuthPhone: string | null = null
+
   if (sessionSender) {
     senderEmail = sessionSender.email?.trim() || null
     senderDisplayName = displayNameFromProfileRow(sessionSender.profile)
-    receiverEmail = await getReceiverEmail(receiverUserId)
+    const receiverAuth = await getReceiverAuthUser(receiverUserId)
+    receiverEmail = receiverAuth.email
+    receiverAuthPhone = receiverAuth.phone
   } else {
-    const [emails, displayFromSr] = await Promise.all([
+    const [emails, displayFromSr, receiverAuth] = await Promise.all([
       getAuthEmailsForUsers(senderUserId, receiverUserId),
       getSenderPublicDisplayName(senderUserId),
+      getReceiverAuthUser(receiverUserId),
     ])
     senderEmail = emails.a
-    receiverEmail = emails.b
+    receiverEmail = receiverAuth.email ?? emails.b
+    receiverAuthPhone = receiverAuth.phone
     senderDisplayName = displayFromSr
+  }
+
+  let receiverSmsOptIn = false
+  let receiverPhoneE164: string | null = null
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
+    try {
+      const admin = createServiceRoleClient()
+      const smsCtx = await getMessageSmsReceiverContext(
+        admin,
+        receiverUserId,
+        receiverEmail,
+        receiverAuthPhone,
+      )
+      receiverSmsOptIn = smsCtx.smsOptIn
+      receiverPhoneE164 = smsCtx.smsOptIn ? smsCtx.phoneE164 : null
+    } catch {
+      // Local dev without service role — SMS context omitted.
+    }
   }
 
   const trimmed =
@@ -152,6 +183,7 @@ export async function trackKlaviyoMessageSent(
     profile: {
       external_id: receiverUserId,
       email: receiverEmail,
+      phone_number: receiverPhoneE164,
     },
     /**
      * Avoid top-level `sender_email` / `receiver_email` strings — Klaviyo may treat scalar
@@ -166,6 +198,7 @@ export async function trackKlaviyoMessageSent(
       listing_id: listingId ?? null,
       message_id: messageId,
       receiver_user_id: receiverUserId,
+      message_sms_opt_in: receiverSmsOptIn,
       message_from: {
         email: senderEmail ?? "",
         display_name: senderDisplayName,
