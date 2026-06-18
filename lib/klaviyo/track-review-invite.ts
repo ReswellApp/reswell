@@ -1,14 +1,14 @@
 /**
- * Server-only: Klaviyo Events API — fires when a seller asks a buyer to leave a review for an order.
+ * Server-only: Klaviyo Events API — automated review invite emails for buyers.
  *
- * **Metric name in Klaviyo:** `Review Requested` — profile is the **buyer** so metric-triggered
- * flows email them. Seller display context lives under `request_from` (nested), not top-level scalars.
+ * **Metric name in Klaviyo:** `Review Invite Sent`
  *
- * **Building the flow:** Flows → Metric → **Review Requested** → email; use e.g.
- * `{{ event.order_num }}`, `{{ event.Title }}`, `{{ event.messages_url }}`, `{{ event.purchase_url }}`,
- * `{{ event.request_from.display_name }}`.
+ * Properties include `phase`:
+ * - `post_purchase` — fired once after checkout completes
+ * - `fulfillment` — fired once after pickup code verified or shipping delivered (skipped if buyer already reviewed)
  *
- * When a review invite token exists, `review_url` points to `/review/[token]` (direct review page).
+ * **Template variables:** `{{ event.review_url }}`, `{{ event.order_num }}`, `{{ event.Title }}`,
+ * `{{ event.purchase_url }}`, `{{ event.request_from.display_name }}`, `{{ event.phase }}`.
  */
 
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
@@ -16,6 +16,7 @@ import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { listingDetailHref } from "@/lib/listing-href"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import type { OrderReviewInvitePhase } from "@/lib/types/order-review-invite"
 import { orderReviewInviteUrl } from "@/lib/utils/order-review-invite-token"
 
 function displayNameFromProfileRow(data: {
@@ -30,20 +31,8 @@ function displayNameFromProfileRow(data: {
   return dn || "Seller"
 }
 
-async function getSellerRequestFromFields(
-  sellerId: string,
-  sessionSeller?: KlaviyoReviewRequestedPayload["sessionSeller"],
-): Promise<{ email: string | null; display_name: string }> {
-  const email =
-    sessionSeller?.email?.trim() ||
-    (await getAuthEmailForUserId(sellerId))
-
-  if (sessionSeller?.profile) {
-    return {
-      email: email ?? null,
-      display_name: displayNameFromProfileRow(sessionSeller.profile),
-    }
-  }
+async function getSellerRequestFromFields(sellerId: string): Promise<{ email: string | null; display_name: string }> {
+  const email = await getAuthEmailForUserId(sellerId)
 
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
     return { email: email ?? null, display_name: "" }
@@ -65,37 +54,22 @@ async function getSellerRequestFromFields(
   }
 }
 
-export type KlaviyoReviewRequestedPayload = {
+export type KlaviyoReviewInvitePayload = {
   orderId: string
   orderNum: string
   listingId: string | null
   listingTitle: string
   buyerUserId: string
   sellerUserId: string
-  conversationId: string
-  messageId: string
+  reviewToken: string
+  phase: OrderReviewInvitePhase
   sentAt: string
-  /** Stable deep link token — included as `review_url` when present. */
-  reviewToken?: string | null
-  /**
-   * From server action session + profiles row — avoids service role for seller display fields.
-   */
-  sessionSeller?: {
-    email: string | null
-    profile: {
-      display_name?: string | null
-      shop_name?: string | null
-      is_shop?: boolean | null
-    } | null
-  }
 }
 
-export async function trackKlaviyoReviewRequested(
-  payload: KlaviyoReviewRequestedPayload,
-): Promise<void> {
+export async function trackKlaviyoReviewInvite(payload: KlaviyoReviewInvitePayload): Promise<void> {
   const [buyerEmail, requestFrom] = await Promise.all([
     getAuthEmailForUserId(payload.buyerUserId),
-    getSellerRequestFromFields(payload.sellerUserId, payload.sessionSeller),
+    getSellerRequestFromFields(payload.sellerUserId),
   ])
 
   let listingSlug: string | null = null
@@ -111,13 +85,13 @@ export async function trackKlaviyoReviewRequested(
         .maybeSingle()
 
       if (error) {
-        console.warn("[klaviyo] Review Requested: listing fetch", error.message)
+        console.warn("[klaviyo] Review Invite Sent: listing fetch", error.message)
       } else {
         listingSlug = typeof data?.slug === "string" ? data.slug : null
         listingSection = typeof data?.section === "string" ? data.section : ""
       }
     } catch (e) {
-      console.error("[klaviyo] Review Requested: listing enrichment failed", e)
+      console.error("[klaviyo] Review Invite Sent: listing enrichment failed", e)
     }
   }
 
@@ -132,20 +106,17 @@ export async function trackKlaviyoReviewRequested(
       : null
   const listingUrl = listingPath != null ? `${origin}${listingPath}` : null
   const purchaseUrl = `${origin}/dashboard/purchases/${payload.orderId}`
-  const messagesUrl = `${origin}/messages/${payload.conversationId}`
-  const reviewUrl =
-    payload.reviewToken?.trim()
-      ? orderReviewInviteUrl(payload.reviewToken.trim(), origin)
-      : purchaseUrl
+  const reviewUrl = orderReviewInviteUrl(payload.reviewToken, origin)
 
   await sendKlaviyoServerEvent({
-    metricName: "Review Requested",
+    metricName: "Review Invite Sent",
     profile: {
       external_id: payload.buyerUserId,
       email: buyerEmail,
     },
     properties: {
       time: payload.sentAt,
+      phase: payload.phase,
       order_id: payload.orderId,
       order_num: payload.orderNum,
       listing_id: payload.listingId,
@@ -153,15 +124,12 @@ export async function trackKlaviyoReviewRequested(
       listing_url: listingUrl,
       purchase_url: purchaseUrl,
       review_url: reviewUrl,
-      messages_url: messagesUrl,
-      conversation_id: payload.conversationId,
-      message_id: payload.messageId,
       request_from: {
         user_id: payload.sellerUserId,
         email: requestFrom.email ?? "",
         display_name: requestFrom.display_name,
       },
     },
-    uniqueId: `review-requested-${payload.orderId}`,
+    uniqueId: `review-invite-${payload.orderId}-${payload.phase}`,
   })
 }

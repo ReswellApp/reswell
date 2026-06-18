@@ -33,6 +33,7 @@ import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-mar
 import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnPurchase"
 import { redeemNewsletterPromoForOrder } from "@/lib/db/newsletterPromoCodes"
 import { computeCheckoutTotalWithNewsletterPromo } from "@/lib/services/newsletterPromo"
+import { sendPostPurchaseReviewInvite } from "@/lib/services/orderReviewInvite"
 
 export type StripeCompleteOrderResult =
   | { ok: true; orderId: string; alreadyProcessed?: boolean }
@@ -226,6 +227,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
     if (pendingLedger?.id) {
       await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
+      void sendPostPurchaseReviewInvite(existing.id)
       await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, existing.id)
       return { ok: true, orderId: existing.id, alreadyProcessed: true }
     }
@@ -239,6 +241,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       return recovered
     }
     await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
+    void sendPostPurchaseReviewInvite(existing.id)
     await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, existing.id)
     return { ok: true, orderId: existing.id, alreadyProcessed: true }
   }
@@ -774,6 +777,8 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     value: chargedUsd,
     contentIds: listingIdsOrdered,
   })
+
+  void sendPostPurchaseReviewInvite(purchase.id)
 
   if (!isPickup && fulfillmentMethod === "shipping") {
     await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, purchase.id)

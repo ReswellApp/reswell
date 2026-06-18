@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { releaseOrderSellerEarningsAfterFulfillment } from "@/lib/services/releaseOrderSellerEarnings"
+import { sendFulfillmentReviewReminder } from "@/lib/services/orderReviewInvite"
 
 export type VerifyPickupResult =
   | {
@@ -60,6 +61,8 @@ export async function verifyOrderPickupForSeller(
     console.error("[verifyOrderPickupForSeller] release seller earnings:", release.error)
     return { ok: false, error: release.error, status: 500 }
   }
+
+  void sendFulfillmentReviewReminder(orderId)
 
   return {
     ok: true,

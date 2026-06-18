@@ -77,7 +77,8 @@ export function AdminListingsChart({ data, className }: AdminListingsChartProps)
         <div>
           <h3 className="font-headline text-base font-semibold text-foreground">Listing trend</h3>
           <p className="text-xs text-muted-foreground">
-            New listings per month over the last {data.length} month{data.length === 1 ? '' : 's'}
+            New listings published per month over the last {data.length} month
+            {data.length === 1 ? '' : 's'} — includes sold, removed, and deleted listings
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -150,7 +151,7 @@ export function AdminListingsChart({ data, className }: AdminListingsChartProps)
       </div>
 
       <p className="mt-3 text-xs text-muted-foreground">
-        {compactNumber(total)} listings created across this window
+        {compactNumber(total)} listings published across this window (drafts excluded)
       </p>
     </div>
   )

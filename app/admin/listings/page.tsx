@@ -79,8 +79,6 @@ import {
   type MonthlyListingPoint,
 } from '@/components/features/admin/admin-listings-chart'
 
-const LISTING_TREND_MONTHS = 12
-
 function normalizeCategoryId(id: string | undefined | null): string {
   return (id ?? '').trim().toLowerCase()
 }
@@ -112,30 +110,17 @@ function compactNumber(value: number): string {
   }).format(value)
 }
 
-function buildMonthlyListings(listings: { created_at: string }[]): MonthlyListingPoint[] {
-  const counts = new Map<string, number>()
-  for (const l of listings) {
-    const created = new Date(l.created_at)
-    if (Number.isNaN(created.getTime())) continue
-    const key = `${created.getFullYear()}-${String(created.getMonth() + 1).padStart(2, '0')}`
-    counts.set(key, (counts.get(key) ?? 0) + 1)
-  }
-
-  const points: MonthlyListingPoint[] = []
-  const cursor = new Date()
-  cursor.setDate(1)
-  cursor.setHours(0, 0, 0, 0)
-  cursor.setMonth(cursor.getMonth() - (LISTING_TREND_MONTHS - 1))
-  for (let i = 0; i < LISTING_TREND_MONTHS; i += 1) {
-    const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`
-    points.push({
-      month: key,
-      label: format(cursor, 'MMM yyyy'),
-      count: counts.get(key) ?? 0,
-    })
-    cursor.setMonth(cursor.getMonth() + 1)
-  }
-  return points
+function mapMonthlyCreatedToChartPoints(
+  rows: { month_key: string; listing_count: number }[],
+): MonthlyListingPoint[] {
+  return rows.map((row) => {
+    const monthDate = new Date(`${row.month_key}-01T00:00:00`)
+    return {
+      month: row.month_key,
+      label: Number.isNaN(monthDate.getTime()) ? row.month_key : format(monthDate, 'MMM yyyy'),
+      count: row.listing_count,
+    }
+  })
 }
 
 function sellerInitials(name: string): string {
@@ -390,6 +375,7 @@ function StatTile({ icon: Icon, accent, label, value, hint }: StatTileProps) {
 export default function AdminListingsPage() {
   const router = useRouter()
   const [listings, setListings] = useState<Listing[]>([])
+  const [monthlyListings, setMonthlyListings] = useState<MonthlyListingPoint[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -498,16 +484,23 @@ export default function AdminListingsPage() {
     setLoading(true)
     try {
       const res = await fetch('/api/admin/listings', { credentials: 'include' })
-      const json = (await res.json()) as { listings?: Listing[]; error?: string }
+      const json = (await res.json()) as {
+        listings?: Listing[]
+        monthlyCreated?: { month_key: string; listing_count: number }[]
+        error?: string
+      }
       if (!res.ok) {
         toast.error(typeof json.error === 'string' ? json.error : 'Failed to load listings')
         setListings([])
+        setMonthlyListings([])
         return
       }
       setListings(json.listings ?? [])
+      setMonthlyListings(mapMonthlyCreatedToChartPoints(json.monthlyCreated ?? []))
     } catch {
       toast.error('Failed to load listings')
       setListings([])
+      setMonthlyListings([])
     } finally {
       setLoading(false)
     }
@@ -690,8 +683,6 @@ export default function AdminListingsPage() {
     }
     return { total: listings.length, active, sold, hidden, inventoryValue, views }
   }, [listings])
-
-  const monthlyListings = useMemo(() => buildMonthlyListings(listings), [listings])
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()

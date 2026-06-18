@@ -5,6 +5,7 @@ import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { trackKlaviyoReviewRequested } from "@/lib/klaviyo/track-review-requested"
+import { getOrCreateReviewInviteTokenForOrder } from "@/lib/services/orderReviewInvite"
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
 import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import type { ReviewRequestMessagePayload } from "@/lib/validations/review-request-message-metadata"
@@ -216,6 +217,8 @@ export async function sendSellerReviewRequestForOrder(
     .eq("id", sellerUserId)
     .maybeSingle()
 
+  const reviewToken = await getOrCreateReviewInviteTokenForOrder(supabase, row.id)
+
   void trackKlaviyoReviewRequested({
     orderId: row.id,
     orderNum,
@@ -226,6 +229,7 @@ export async function sendSellerReviewRequestForOrder(
     conversationId: conversation.id,
     messageId: inserted.id,
     sentAt: inserted.created_at,
+    reviewToken,
     sessionSeller: {
       email: session?.email ?? null,
       profile: senderProfile,

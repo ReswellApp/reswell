@@ -1,4 +1,5 @@
 import { releaseOrderSellerEarningsAfterFulfillment } from "@/lib/services/releaseOrderSellerEarnings"
+import { sendFulfillmentReviewReminder } from "@/lib/services/orderReviewInvite"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 
 export type ShippingDeliveredFinalizeResult =
@@ -145,6 +146,10 @@ export async function markShippingDeliveredAndReleaseSellerEarnings(
   const release = await releaseOrderSellerEarningsAfterFulfillment(orderId)
   if (!release.ok) {
     return { ok: false, error: release.error }
+  }
+
+  if (transitionedToDelivered || order.delivery_status === "delivered") {
+    void sendFulfillmentReviewReminder(orderId)
   }
 
   return { ok: true, transitionedToDelivered, walletReleasedNew: release.released }

@@ -18,6 +18,7 @@ import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sell
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
 import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnPurchase"
 import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
+import { sendPostPurchaseReviewInvite } from "@/lib/services/orderReviewInvite"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -290,6 +291,8 @@ export async function POST(request: NextRequest) {
       contentIds: [listing.id],
       includeBrowserSignals: true,
     })
+
+    void sendPostPurchaseReviewInvite(purchase.id)
 
     if (!isPickup) {
       await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, purchase.id)

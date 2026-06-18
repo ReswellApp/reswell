@@ -5,6 +5,7 @@ import {
   trackingDetailReportsDelivered,
 } from "@/lib/shipping/carrier-delivery-payout-hold"
 import type { OrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
+import { sendFulfillmentReviewReminder } from "@/lib/services/orderReviewInvite"
 
 export type SyncCarrierDeliveryResult = {
   deliveredNewlyRecorded: boolean
@@ -62,6 +63,10 @@ export async function syncCarrierDeliveryFromTracking(
 
     if (Object.keys(patch).length > 1) {
       await supabase.from("orders").update(patch).eq("id", orderId)
+    }
+
+    if (deliveryStatusUpdated) {
+      void sendFulfillmentReviewReminder(orderId)
     }
 
     await supabase

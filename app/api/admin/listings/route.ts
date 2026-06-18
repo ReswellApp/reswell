@@ -19,6 +19,7 @@ import {
   composeListingDimensionsFromSplitListingFields,
   listingDimensionsColumnTrim,
 } from '@/lib/listing-dimensions-storage'
+import { fetchAdminListingsMonthlyCreated, buildAdminListingsMonthlyCreatedFallback } from '@/lib/db/adminListings'
 
 const SUPER_ADMIN_EMAIL = 'haydensbsb@gmail.com'
 
@@ -91,7 +92,14 @@ export async function GET(request: NextRequest) {
     q = q.eq('section', section)
   }
 
-  const { data, error } = await q
+  const [{ data, error }, monthlyCreatedResult] = await Promise.all([
+    q,
+    fetchAdminListingsMonthlyCreated(service, 12),
+  ])
+
+  if (monthlyCreatedResult.error) {
+    console.error('[admin listings GET] monthly created:', monthlyCreatedResult.error)
+  }
 
   if (error) {
     const msg = error.message ?? ''
@@ -115,7 +123,15 @@ export async function GET(request: NextRequest) {
           hidden_from_site: false,
         }),
       )
-      return NextResponse.json({ listings })
+      const monthlyCreated = monthlyCreatedResult.error
+        ? buildAdminListingsMonthlyCreatedFallback(
+            listings as unknown as { created_at: string; status: string }[],
+          )
+        : monthlyCreatedResult.data
+      return NextResponse.json({
+        listings,
+        monthlyCreated,
+      })
     }
 
     console.error('[admin listings GET]:', error)
@@ -125,7 +141,15 @@ export async function GET(request: NextRequest) {
   const listings = (data ?? []).map((row: Record<string, unknown>) =>
     applyCanonicalSurfboardCategoryToListingRow(row),
   )
-  return NextResponse.json({ listings })
+  const monthlyCreated = monthlyCreatedResult.error
+    ? buildAdminListingsMonthlyCreatedFallback(
+        listings as unknown as { created_at: string; status: string }[],
+      )
+    : monthlyCreatedResult.data
+  return NextResponse.json({
+    listings,
+    monthlyCreated,
+  })
 }
 
 export async function POST(request: NextRequest) {

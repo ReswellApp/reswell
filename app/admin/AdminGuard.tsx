@@ -28,7 +28,8 @@ export function AdminGuard({
         pathname === '/admin/shipping' ||
         pathname === '/admin/pnl' ||
         pathname === '/admin/listings/brand-model-autofills' ||
-        pathname === '/admin/orders/test-purchase'
+        pathname === '/admin/orders/test-purchase' ||
+        pathname === '/admin/promo-codes'
       ) {
         router.replace('/admin')
       }

@@ -55,6 +55,7 @@ const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
   '/admin/listings/board-catalog-data',
   '/admin/listings/brand-model-autofills',
   '/admin/orders/test-purchase',
+  '/admin/promo-codes',
 ])
 
 export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
@@ -79,6 +80,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/catalog-overview', label: 'Brand catalog explorer', icon: 'folderTree' },
       { href: '/admin/search-analytics', label: 'Search analytics', icon: 'lineChart' },
       { href: '/admin/notifications', label: 'Notifications center', icon: 'bellRing' },
+      { href: '/admin/promo-codes', label: 'Promo codes', icon: 'tag' },
       { href: '/admin/search-curation', label: 'Search curation', icon: 'wrench' },
       { href: '/admin/reswell-goals', label: 'Reswell goals', icon: 'target' },
       { href: '/admin/listings/brand-model-autofills', label: 'Brand/model autofills', icon: 'tag' },
