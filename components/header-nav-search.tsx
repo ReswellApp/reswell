@@ -5,8 +5,21 @@ import { useClientSearchParams } from "@/hooks/use-client-search-params"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { Clock, X, TrendingUp, Search } from "lucide-react"
+import { X, Search } from "lucide-react"
 import { createPortal } from "react-dom"
+import {
+  getNavSearchPersonalizationAction,
+  recordNavRecentlyViewedBrandAction,
+  recordNavSearchPersonalizationQueryAction,
+  removeNavSearchPersonalizationQueryAction,
+} from "@/app/actions/navSearchPersonalization"
+import {
+  NavSearchTopListingSectionHeader,
+  NavSearchTopListingText,
+  NavSearchTopListingThumb,
+  navSearchTopListingRowClassName,
+  navSearchTopListingThumbClassName,
+} from "@/components/features/search/nav-search-top-listing-row"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import {
   SiteSearchBar,
@@ -18,7 +31,16 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { clearNavSearchQuery, writeNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
+import type {
+  NavSearchPersonalizationBrand,
+  NavSearchPersonalizationListing,
+} from "@/lib/types/nav-search-personalization"
 import type { NavSuggestedSurfboardPoolRow } from "@/lib/types/nav-suggested-surfboards"
+import {
+  pushRecentNavBrand,
+  readRecentNavBrands,
+  type RecentNavBrandEntry,
+} from "@/lib/utils/recent-nav-brands-storage"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
 import { BRANDS_BASE } from "@/lib/brands/routes"
@@ -74,17 +96,142 @@ function removeRecentSearch(term: string) {
   localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(recent))
 }
 
+function NavSearchIdleSectionTitle({ title }: { title: string }) {
+  return (
+    <h3 className="px-4 pt-3 pb-2 text-sm font-bold tracking-tight text-foreground">
+      {title}
+    </h3>
+  )
+}
+
+function localRecentBrandsToDisplay(
+  entries: RecentNavBrandEntry[],
+): NavSearchPersonalizationBrand[] {
+  return entries
+    .filter((entry) => entry.slug?.trim())
+    .map((entry, index) => ({
+      id: entry.slug ?? `local-${index}`,
+      slug: entry.slug!.trim(),
+      name: entry.name,
+      logoUrl: entry.logoUrl,
+    }))
+}
+
+function NavSearchIdleRecentlyViewedBrandTile({
+  brand,
+  onNavigate,
+}: {
+  brand: NavSearchPersonalizationBrand
+  onNavigate: () => void
+}) {
+  if (!brand.slug.trim()) return null
+
+  return (
+    <Link
+      href={`${BRANDS_BASE}/${encodeURIComponent(brand.slug)}`}
+      className="w-12 shrink-0 snap-start sm:w-14"
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={onNavigate}
+    >
+      <div className={navSearchTopListingThumbClassName}>
+        {brand.logoUrl ? (
+          <Image
+            src={brand.logoUrl}
+            alt=""
+            fill
+            className="object-contain p-1"
+            sizes="(max-width:640px) 48px, 56px"
+            unoptimized
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-sm font-bold text-cerulean">
+            {brand.name.slice(0, 1).toUpperCase()}
+          </div>
+        )}
+      </div>
+      <p className="mt-1.5 line-clamp-2 text-[11px] font-semibold leading-snug text-foreground sm:text-xs">
+        {brand.name}
+      </p>
+    </Link>
+  )
+}
+
+function NavSearchIdleRecentlyViewedTile({
+  listing,
+  onNavigate,
+}: {
+  listing: NavSearchPersonalizationListing
+  onNavigate: () => void
+}) {
+  return (
+    <Link
+      href={listingDetailHref({
+        id: listing.id,
+        slug: listing.slug,
+        section: "surfboards",
+      })}
+      className="w-12 shrink-0 snap-start sm:w-14"
+      onMouseDown={(e) => e.preventDefault()}
+      onClick={onNavigate}
+    >
+      <NavSearchTopListingThumb imageUrl={listing.imageUrl} />
+      <p className="mt-1.5 line-clamp-2 text-[11px] font-semibold leading-snug text-foreground sm:text-xs">
+        {capitalizeWords(listing.title)}
+      </p>
+      <p className="mt-0.5 text-[11px] font-semibold text-primary sm:text-xs">
+        ${listing.price.toFixed(2)}
+      </p>
+    </Link>
+  )
+}
+
+function NavSearchPersonalizationSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading search personalization">
+      <NavSearchIdleSectionTitle title="Recent searches" />
+      <ul className="px-4 pb-2" aria-hidden>
+        {[0, 1, 2].map((i) => (
+          <li key={i} className="flex items-center gap-3 py-3">
+            <Skeleton className="h-4 w-4 shrink-0 rounded-full" />
+            <Skeleton className="h-4 w-full max-w-[12rem]" />
+          </li>
+        ))}
+      </ul>
+      <div className="border-t border-border/60">
+        <NavSearchIdleSectionTitle title="Recently viewed listings" />
+        <div className="flex gap-3 overflow-hidden px-4 pb-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="w-12 shrink-0 sm:w-14">
+              <Skeleton className="aspect-square w-full rounded-md sm:rounded-lg" />
+              <Skeleton className="mt-1.5 h-3 w-full" />
+              <Skeleton className="mt-1 h-3 w-8" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="border-t border-border/60">
+        <NavSearchIdleSectionTitle title="Recently viewed brands" />
+        <div className="flex gap-3 overflow-hidden px-4 pb-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="w-12 shrink-0 sm:w-14">
+              <Skeleton className="aspect-square w-full rounded-md sm:rounded-lg" />
+              <Skeleton className="mt-1.5 h-3 w-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function SuggestedSurfboardsSkeleton() {
   return (
-    <div className="py-2" aria-busy="true" aria-label="Loading suggested surfboards">
-      <div className="flex items-center gap-2 px-4 pb-2">
-        <Skeleton className="h-4 w-4 rounded-full" />
-        <Skeleton className="h-3 w-36" />
-      </div>
-      <ul className="space-y-0.5" aria-hidden>
+    <div aria-busy="true" aria-label="Loading suggested surfboards">
+      <NavSearchTopListingSectionHeader title="Suggested surfboards" />
+      <ul className="py-1" aria-hidden>
         {[0, 1, 2].map((i) => (
-          <li key={i} className="mx-1 flex gap-3 rounded-xl px-3 py-2.5">
-            <Skeleton className="h-14 w-14 shrink-0 rounded-lg" />
+          <li key={i} className={navSearchTopListingRowClassName}>
+            <Skeleton className="h-12 w-12 shrink-0 rounded-md sm:h-14 sm:w-14 sm:rounded-lg" />
             <div className="min-w-0 flex-1 space-y-2 pt-0.5">
               <Skeleton className="h-4 w-full max-w-[240px]" />
               <Skeleton className="h-4 w-16" />
@@ -105,9 +252,11 @@ export type HeaderNavSearchVariant = "desktop" | "mobile"
 export function HeaderNavSearch({
   suggestedSurfboardsMode = "popular",
   variant = "desktop",
+  userId = null,
 }: {
   suggestedSurfboardsMode?: HeaderNavSuggestedSurfboardsMode
   variant?: HeaderNavSearchVariant
+  userId?: string | null
 } = {}) {
   const router = useRouter()
   const pathname = usePathname()
@@ -117,6 +266,9 @@ export function HeaderNavSearch({
 
   const [idleOpen, setIdleOpen] = useState(false)
   const [recentSearches, setRecentSearches] = useState<string[]>([])
+  const [recentlyViewed, setRecentlyViewed] = useState<NavSearchPersonalizationListing[]>([])
+  const [recentBrands, setRecentBrands] = useState<NavSearchPersonalizationBrand[]>([])
+  const [personalizationLoaded, setPersonalizationLoaded] = useState(false)
   const [suggestedPool, setSuggestedPool] = useState<NavSuggestedSurfboardPoolRow[]>([])
   const [suggestedLoaded, setSuggestedLoaded] = useState(false)
   const [suggestedRankTick, setSuggestedRankTick] = useState(0)
@@ -141,6 +293,13 @@ export function HeaderNavSearch({
       clearNavSearchQuery()
     }
   }, [pathname])
+
+  useEffect(() => {
+    setPersonalizationLoaded(false)
+    setRecentlyViewed([])
+    setRecentBrands([])
+    setRecentSearches([])
+  }, [userId])
 
   useEffect(() => {
     setSuggestedLoaded(false)
@@ -247,13 +406,60 @@ export function HeaderNavSearch({
     [mergeFetchedListingIntoSuggestedPool, suggestedSurfboardsMode],
   )
 
+  const loadPersonalization = useCallback(async () => {
+    if (!userId) {
+      setRecentSearches(getRecentSearches())
+      setRecentlyViewed([])
+      setRecentBrands(localRecentBrandsToDisplay(readRecentNavBrands()))
+      setPersonalizationLoaded(true)
+      return
+    }
+
+    setPersonalizationLoaded(false)
+    try {
+      const result = await getNavSearchPersonalizationAction()
+      if ("error" in result) {
+        setRecentSearches(getRecentSearches())
+        setRecentlyViewed([])
+        setRecentBrands(localRecentBrandsToDisplay(readRecentNavBrands()))
+      } else {
+        setRecentSearches(result.recentSearches)
+        setRecentlyViewed(result.recentlyViewed)
+        setRecentBrands(result.recentlyViewedBrands)
+      }
+    } catch {
+      setRecentSearches(getRecentSearches())
+      setRecentlyViewed([])
+      setRecentBrands(localRecentBrandsToDisplay(readRecentNavBrands()))
+    } finally {
+      setPersonalizationLoaded(true)
+    }
+  }, [userId])
+
   const handleIdleFocus = useCallback(() => {
     if (query.trim().length > 0) return
-    const recent = getRecentSearches()
-    setRecentSearches(recent)
-    if (recent.length === 0) fetchSuggested()
+    void loadPersonalization()
     setIdleOpen(true)
-  }, [query, fetchSuggested])
+  }, [query, loadPersonalization])
+
+  useEffect(() => {
+    if (!idleOpen || query.trim().length > 0) return
+    if (userId && !personalizationLoaded) return
+    const hasPersonalization =
+      recentSearches.length > 0 ||
+      recentlyViewed.length > 0 ||
+      recentBrands.length > 0
+    if (!hasPersonalization) fetchSuggested()
+  }, [
+    idleOpen,
+    query,
+    userId,
+    personalizationLoaded,
+    recentSearches.length,
+    recentlyViewed.length,
+    recentBrands.length,
+    fetchSuggested,
+  ])
 
   useEffect(() => {
     if (!idleOpen || !formRef.current) {
@@ -290,11 +496,55 @@ export function HeaderNavSearch({
     if (query.trim().length > 0) setIdleOpen(false)
   }, [query])
 
+  const persistRecentBrand = useCallback(
+    (brand: { name: string; slug: string | null; logoUrl: string | null }) => {
+      pushRecentNavBrand({
+        name: brand.name,
+        slug: brand.slug,
+        logoUrl: brand.logoUrl,
+      })
+
+      const slug = brand.slug?.trim()
+      if (slug) {
+        setRecentBrands((prev) => {
+          const next: NavSearchPersonalizationBrand = {
+            id: slug,
+            slug,
+            name: brand.name.trim(),
+            logoUrl: brand.logoUrl,
+          }
+          return [
+            next,
+            ...prev.filter((row) => row.slug.toLowerCase() !== slug.toLowerCase()),
+          ].slice(0, 10)
+        })
+      }
+
+      if (userId) {
+        void recordNavRecentlyViewedBrandAction({
+          name: brand.name,
+          slug: brand.slug,
+        })
+      }
+    },
+    [userId],
+  )
+
+  const persistRecentSearch = useCallback(
+    (term: string) => {
+      saveRecentSearch(term)
+      if (userId) {
+        void recordNavSearchPersonalizationQueryAction(term)
+      }
+    },
+    [userId],
+  )
+
   const runSearch = useCallback(
     (q: string) => {
       const term = q.trim()
       if (!term) return
-      saveRecentSearch(term)
+      persistRecentSearch(term)
       const category = isSearchResultsPath(pathname)
         ? searchParams.get("category")
         : null
@@ -307,7 +557,7 @@ export function HeaderNavSearch({
       router.push(`/search?${params.toString()}`)
       setIdleOpen(false)
     },
-    [router, pathname, searchParams],
+    [router, pathname, searchParams, persistRecentSearch],
   )
 
   const clearSearchAndStorage = useCallback(() => {
@@ -328,13 +578,28 @@ export function HeaderNavSearch({
   }
 
   const handleRemoveRecent = (term: string) => {
-    removeRecentSearch(term)
-    const updated = getRecentSearches()
-    setRecentSearches(updated)
-    if (updated.length === 0) fetchSuggested()
+    if (userId) {
+      void removeNavSearchPersonalizationQueryAction(term).then(() => {
+        setRecentSearches((prev) =>
+          prev.filter((s) => s.toLowerCase() !== term.toLowerCase()),
+        )
+      })
+    } else {
+      removeRecentSearch(term)
+      setRecentSearches(getRecentSearches())
+    }
   }
 
   const showIdleDropdown = idleOpen && query.trim().length === 0
+  const showPersonalization =
+    recentSearches.length > 0 || recentlyViewed.length > 0
+  const showSuggestedFallback =
+    personalizationLoaded &&
+    !showPersonalization &&
+    suggestedLoaded &&
+    suggestedListings.length > 0
+  const showPersonalizationSkeleton =
+    userId && idleOpen && !personalizationLoaded && !showPersonalization
 
   const panelWidth = dropdownRect ? dropdownRect.width : 400
   const panelLeft = dropdownRect ? dropdownRect.left : 0
@@ -353,47 +618,69 @@ export function HeaderNavSearch({
           width: panelWidth,
         }}
       >
-        {recentSearches.length > 0 ? (
-          <div className="py-2">
-            <p className="px-4 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Recent searches
-            </p>
-            <ul>
-              {recentSearches.map((term) => (
-                <li key={term} className="group flex items-center">
-                  <button
-                    type="button"
-                    className="flex flex-1 items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted/60"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => runSearch(term)}
-                  >
-                    <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    {term}
-                  </button>
-                  <button
-                    type="button"
-                    className="mr-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover:opacity-100"
-                    aria-label={`Remove "${term}"`}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => handleRemoveRecent(term)}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+        {showPersonalizationSkeleton ? (
+          <NavSearchPersonalizationSkeleton />
+        ) : showPersonalization ? (
+          <>
+            {recentSearches.length > 0 ? (
+              <>
+                <NavSearchIdleSectionTitle title="Recent searches" />
+                <ul>
+                  {recentSearches.map((term) => (
+                    <li key={term} className="group relative">
+                      <button
+                        type="button"
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition-colors hover:bg-muted/60"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => runSearch(term)}
+                      >
+                        <Search
+                          className="h-4 w-4 shrink-0 text-muted-foreground"
+                          aria-hidden
+                        />
+                        <span className="min-w-0 flex-1 truncate font-medium text-foreground">
+                          {term}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:bg-muted hover:text-foreground group-hover:opacity-100"
+                        aria-label={`Remove "${term}"`}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => handleRemoveRecent(term)}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+            {recentlyViewed.length > 0 ? (
+              <div
+                className={cn(
+                  recentSearches.length > 0 && "border-t border-border/60",
+                )}
+              >
+                <NavSearchIdleSectionTitle title="Recently viewed listings" />
+                <div className="flex gap-3 overflow-x-auto px-4 pb-3 pt-0.5 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {recentlyViewed.map((listing) => (
+                    <NavSearchIdleRecentlyViewedTile
+                      key={listing.id}
+                      listing={listing}
+                      onNavigate={() => setIdleOpen(false)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </>
         ) : !suggestedLoaded ? (
           <SuggestedSurfboardsSkeleton />
-        ) : suggestedListings.length > 0 ? (
-          <div className="py-2">
-            <div className="flex items-center gap-2 px-4 pb-2">
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Suggested surfboards
-              </p>
-            </div>
-            <ul>
+        ) : showSuggestedFallback ? (
+          <>
+            <NavSearchTopListingSectionHeader title="Suggested surfboards" />
+            <ul className="py-1">
               {suggestedListings.map((listing) => (
                 <li key={listing.id}>
                   <Link
@@ -402,42 +689,23 @@ export function HeaderNavSearch({
                       slug: listing.slug,
                       section: "surfboards",
                     })}
-                    className="mx-1 flex gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted/60"
+                    className={navSearchTopListingRowClassName}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => {
                       bumpNavSuggestedListingEngagement(listing.id)
                       setIdleOpen(false)
                     }}
                   >
-                    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
-                      {listing.imageUrl ? (
-                        <Image
-                          src={listing.imageUrl}
-                          alt=""
-                          fill
-                          className="object-cover"
-                          sizes="56px"
-                          unoptimized
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
-                          No photo
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-1 text-sm font-semibold text-foreground">
-                        {capitalizeWords(listing.title)}
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-black dark:text-white">
-                        ${listing.price.toFixed(2)}
-                      </p>
-                    </div>
+                    <NavSearchTopListingThumb imageUrl={listing.imageUrl} />
+                    <NavSearchTopListingText
+                      title={capitalizeWords(listing.title)}
+                      price={listing.price}
+                    />
                   </Link>
                 </li>
               ))}
             </ul>
-          </div>
+          </>
         ) : null}
       </div>,
       document.body,
@@ -450,7 +718,7 @@ export function HeaderNavSearch({
       brandName: string,
       resolved?: { catalogSlug: string } | null,
     ) => {
-      saveRecentSearch(brandName)
+      persistRecentSearch(brandName)
       const category = isSearchResultsPath(pathname)
         ? searchParams.get("category")
         : null
@@ -467,7 +735,7 @@ export function HeaderNavSearch({
       setIdleOpen(false)
     },
     onSelect: (text: string) => {
-      saveRecentSearch(text)
+      persistRecentSearch(text)
       runSearch(text)
     },
     onNavigate: clearSearchAndStorage,

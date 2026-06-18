@@ -991,7 +991,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                     />
                   }
                 >
-                  <HeaderNavSearch variant="mobile" />
+                  <HeaderNavSearch variant="mobile" userId={user?.id ?? null} />
                 </Suspense>
               </div>
             </>
@@ -1009,7 +1009,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 </div>
               }
             >
-              <HeaderNavSearch />
+              <HeaderNavSearch userId={user?.id ?? null} />
             </Suspense>
           ) : null}
 

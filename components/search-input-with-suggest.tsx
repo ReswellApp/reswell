@@ -23,6 +23,12 @@ import { BRANDS_BASE } from "@/lib/brands/routes"
 import { listingDetailHref } from "@/lib/listing-href"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { useSearchSuggestPortalContainer } from "@/components/search-suggest-portal-context"
+import {
+  NavSearchTopListingSectionHeader,
+  NavSearchTopListingText,
+  NavSearchTopListingThumb,
+  navSearchTopListingRowClassName,
+} from "@/components/features/search/nav-search-top-listing-row"
 
 /** Max rows in the combined Suggestions list (titles / categories / brands). */
 const SUGGEST_COMBINED_CAP = 24
@@ -175,6 +181,12 @@ interface SearchInputWithSuggestProps {
     brandDisplayName: string,
     resolved?: { catalogSlug: string } | null,
   ) => void
+  /** Marketplace only: user picked a brand from the Brands strip/row in the typeahead. */
+  onMarketplaceBrandPick?: (brand: {
+    name: string
+    slug: string | null
+    logoUrl: string | null
+  }) => void
   /** Fires when a `brands` search finishes (e.g. show “request brand” when count is 0). */
   onBrandsSearchSettled?: (query: string, resultCount: number) => void
   /** Where this typeahead lives — drives search analytics “dropdown pick” events. */
@@ -348,6 +360,7 @@ export function SearchInputWithSuggest({
   suggestSource = "marketplace",
   onCatalogBrandPicked,
   onBrandStripPick,
+  onMarketplaceBrandPick,
   onBrandsSearchSettled,
   analyticsSurface = "other",
   onMarketplaceTopListingNavigate,
@@ -753,7 +766,13 @@ export function SearchInputWithSuggest({
     brandName: string,
     pickKind: SearchSuggestPickKind,
     catalogSlug?: string | null,
+    logoUrl?: string | null,
   ) => {
+    onMarketplaceBrandPick?.({
+      name: brandName,
+      slug: catalogSlug?.trim() || null,
+      logoUrl: logoUrl ?? null,
+    })
     if (onBrandStripPick && !isBrands) {
       logSuggestAnalytics({ pickKind, selectionLabel: brandName, listingId: null })
       invalidatePendingSuggest()
@@ -947,37 +966,37 @@ export function SearchInputWithSuggest({
               listingsSharePanelWithFooter && "min-h-0 flex-1",
             )}
           >
-            <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-muted/20 px-3 py-2 sm:flex-nowrap sm:gap-3 sm:px-4 sm:py-2.5">
-              <span className="text-xs font-semibold tracking-tight text-foreground sm:text-sm">
-                Top listings
-              </span>
-              <Link
-                href={`/search?q=${encodeURIComponent(value.trim())}`}
-                className="shrink-0 text-xs font-medium text-cerulean hover:text-pacific hover:underline sm:text-sm"
-                onMouseDown={(e) => e.preventDefault()}
-                onMouseEnter={() =>
-                  scheduleSuggestHover("view_all", {
-                    pickKind: "view_all_results",
-                    selectionLabel: valueRef.current.trim() || "view all",
-                    listingId: null,
-                  })
-                }
-                onMouseLeave={() => cancelSuggestHover("view_all")}
-                onClick={(e) => {
-                  e.preventDefault()
-                  logSuggestAnalytics({
-                    pickKind: "view_all_results",
-                    selectionLabel: value.trim() || "view all",
-                    listingId: null,
-                  })
-                  onNavigate?.()
-                  router.push(`/search?q=${encodeURIComponent(value.trim())}`)
-                  dismissForNavigation()
-                }}
-              >
-                View all results
-              </Link>
-            </div>
+            <NavSearchTopListingSectionHeader
+              title="Top listings"
+              action={
+                <Link
+                  href={`/search?q=${encodeURIComponent(value.trim())}`}
+                  className="shrink-0 text-xs font-medium text-cerulean hover:text-pacific hover:underline sm:text-sm"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onMouseEnter={() =>
+                    scheduleSuggestHover("view_all", {
+                      pickKind: "view_all_results",
+                      selectionLabel: valueRef.current.trim() || "view all",
+                      listingId: null,
+                    })
+                  }
+                  onMouseLeave={() => cancelSuggestHover("view_all")}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    logSuggestAnalytics({
+                      pickKind: "view_all_results",
+                      selectionLabel: value.trim() || "view all",
+                      listingId: null,
+                    })
+                    onNavigate?.()
+                    router.push(`/search?q=${encodeURIComponent(value.trim())}`)
+                    dismissForNavigation()
+                  }}
+                >
+                  View all results
+                </Link>
+              }
+            />
             <ul
               className={cn(
                 "min-h-0 overflow-y-auto overscroll-contain py-1",
@@ -1000,7 +1019,7 @@ export function SearchInputWithSuggest({
                   <li key={item.id} role="none">
                     <Link
                       href={listingHref(item)}
-                      className="mx-1 flex gap-2 rounded-lg px-2 py-2 outline-none transition-colors hover:bg-muted/80 focus-visible:bg-muted/80 sm:gap-3 sm:rounded-xl sm:py-2.5"
+                      className={navSearchTopListingRowClassName}
                       onMouseDown={(e) => e.preventDefault()}
                       onMouseEnter={() =>
                         scheduleSuggestHover(`tl:${item.id}`, {
@@ -1023,36 +1042,21 @@ export function SearchInputWithSuggest({
                         dismissForNavigation()
                       }}
                     >
-                      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-muted sm:h-14 sm:w-14 sm:rounded-lg">
-                        {item.imageUrl ? (
-                          <Image
-                            src={proxiedListingImageSrc(item.imageUrl)}
-                            alt=""
-                            fill
-                            className="object-cover"
-                            sizes="(max-width:640px) 48px, 56px"
-                            unoptimized
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
-                            No photo
-                          </div>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground sm:text-base">
-                          {capitalizeWords(item.title)}
-                        </p>
-                        <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground sm:text-xs">
-                          {meta}
-                        </p>
-                        <p className="mt-0.5 text-sm font-semibold text-black dark:text-white sm:mt-1">
-                          ${item.price.toFixed(2)}
-                        </p>
-                      </div>
-                      <span className="hidden shrink-0 self-center text-sm font-medium text-cerulean sm:inline">
-                        View
-                      </span>
+                      <NavSearchTopListingThumb
+                        imageUrl={
+                          item.imageUrl ? proxiedListingImageSrc(item.imageUrl) : null
+                        }
+                      />
+                      <NavSearchTopListingText
+                        title={capitalizeWords(item.title)}
+                        meta={meta}
+                        price={item.price}
+                        trailing={
+                          <span className="hidden shrink-0 self-center text-sm font-medium text-cerulean sm:inline">
+                            View
+                          </span>
+                        }
+                      />
                     </Link>
                   </li>
                 )
@@ -1098,6 +1102,7 @@ export function SearchInputWithSuggest({
                           brand.listingLabel,
                           boardsTitleStyle ? "brand_row" : "brand_strip",
                           brand.slug,
+                          brand.logo_url,
                         )
                       }
                     >
@@ -1143,6 +1148,7 @@ export function SearchInputWithSuggest({
                         brand.listingLabel,
                         boardsTitleStyle ? "brand_row" : "brand_strip",
                         brand.slug,
+                        brand.logo_url,
                       )
                     }
                   >
