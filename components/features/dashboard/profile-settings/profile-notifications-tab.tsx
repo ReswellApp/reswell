@@ -15,13 +15,13 @@ export type ProfileNotificationsTabCopy = {
 interface ProfileNotificationsTabProps {
   copy: ProfileNotificationsTabCopy
   initialMessageSmsOptIn: boolean
-  initialHasPhone: boolean
+  initialPhone?: string | null
 }
 
 export function ProfileNotificationsTab({
   copy,
   initialMessageSmsOptIn,
-  initialHasPhone,
+  initialPhone,
 }: ProfileNotificationsTabProps) {
   return (
     <div className="mx-auto max-w-xl space-y-6 pt-2">
@@ -32,7 +32,7 @@ export function ProfileNotificationsTab({
         <div className={`${profileCardClass} px-5 sm:px-6`}>
           <MessageSmsNotificationsToggle
             initialOptIn={initialMessageSmsOptIn}
-            hasPhone={initialHasPhone}
+            initialPhone={initialPhone}
             className="border-b-0 px-0"
           />
         </div>

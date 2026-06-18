@@ -5,7 +5,6 @@ import {
   updateProfilePersonalInfo,
 } from "@/lib/db/profilePersonalInfo"
 import { subscribeKlaviyoProfileSmsConsent } from "@/lib/klaviyo/subscribe-profile-sms-consent"
-import { subscribeKlaviyoProfileSmsMarketing } from "@/lib/klaviyo/subscribe-profile-sms-marketing"
 import {
   profilePersonalInfoInputSchema,
   profilePersonalPhoneInputSchema,
@@ -160,10 +159,18 @@ export async function saveProfilePersonalPhoneAndSubscribeSms(
     return { ok: false, error: "Enter a valid US phone number.", code: "invalid_phone" }
   }
 
-  void subscribeKlaviyoProfileSmsMarketing({
+  const transactionalSaved = await updateProfilePersonalInfo(supabase, user.id, {
+    transactional_sms_opt_in: true,
+  })
+  if (!transactionalSaved.ok) {
+    return { ok: false, error: transactionalSaved.error, code: transactionalSaved.code }
+  }
+
+  void subscribeKlaviyoProfileSmsConsent({
     phoneNumber: phoneE164,
     email: user.email,
-    consent: "SUBSCRIBED",
+    marketing: "SUBSCRIBED",
+    transactional: "SUBSCRIBED",
   })
 
   return { ok: true, has_phone: true }

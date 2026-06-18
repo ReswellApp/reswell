@@ -29,7 +29,7 @@ export function MessagesInboxListPane({
 }: MessagesInboxListPaneProps) {
   const pathname = usePathname() ?? ""
   const flatMobileInbox = useFlatMobileMessagesInbox()
-  const { currentUserId, conversations, messageSmsOptIn, hasSmsPhone } = useMessagesInbox()
+  const { currentUserId, conversations, messageSmsOptIn, smsPhone } = useMessagesInbox()
   const [searchQuery, setSearchQuery] = useState("")
 
   const searchLower = searchQuery.trim().toLowerCase()
@@ -86,7 +86,7 @@ export function MessagesInboxListPane({
 
       <MessageSmsNotificationsToggle
         initialOptIn={messageSmsOptIn}
-        hasPhone={hasSmsPhone}
+        initialPhone={smsPhone}
         className={flatMobileInbox ? "px-0" : undefined}
       />
 

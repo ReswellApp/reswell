@@ -1,11 +1,11 @@
 'use server'
 
 import {
-  enableMessageSmsNotificationsWithPhone,
   loadMessageSmsNotificationsStateForUser,
+  saveMessageSmsNotificationsWithPhone,
   updateMessageSmsNotificationsOptIn,
-  type EnableMessageSmsWithPhoneResult,
   type MessageSmsNotificationsState,
+  type SaveMessageSmsWithPhoneResult,
   type UpdateMessageSmsNotificationsResult,
 } from "@/lib/services/messageSmsNotifications"
 import { createClient } from "@/lib/supabase/server"
@@ -31,8 +31,9 @@ export async function setMessageSmsNotificationsOptIn(
   return updateMessageSmsNotificationsOptIn({ enabled })
 }
 
-export async function enableMessageSmsNotificationsWithPhoneAction(
-  phone: string,
-): Promise<EnableMessageSmsWithPhoneResult> {
-  return enableMessageSmsNotificationsWithPhone({ phone })
+export async function saveMessageSmsNotificationsWithPhoneAction(input: {
+  phone: string
+  enabled: boolean
+}): Promise<SaveMessageSmsWithPhoneResult> {
+  return saveMessageSmsNotificationsWithPhone(input)
 }

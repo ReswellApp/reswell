@@ -36,6 +36,7 @@ interface DashboardProfileSettingsProps {
   addressesFetchError?: string
   initialMessageSmsOptIn?: boolean
   initialHasSmsPhone?: boolean
+  initialSmsPhone?: string | null
 }
 
 export function DashboardProfileSettings({
@@ -45,6 +46,7 @@ export function DashboardProfileSettings({
   addressesFetchError,
   initialMessageSmsOptIn = false,
   initialHasSmsPhone = false,
+  initialSmsPhone = null,
 }: DashboardProfileSettingsProps) {
   const { t } = useLocale()
   const [activeTab, setActiveTab] = useState<ProfileSettingsTabId>("shop")
@@ -417,7 +419,7 @@ export function DashboardProfileSettings({
         <ProfileNotificationsTab
           copy={s.notifications}
           initialMessageSmsOptIn={initialMessageSmsOptIn}
-          initialHasPhone={initialHasSmsPhone}
+          initialPhone={initialSmsPhone}
         />
       ) : null}
     </div>

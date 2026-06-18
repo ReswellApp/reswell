@@ -28,6 +28,7 @@ export default async function MessagesLayout({ children }: { children: ReactNode
           initialNotifications={inbox.notifications}
           initialMessageSmsOptIn={smsState?.message_sms_opt_in ?? false}
           initialHasSmsPhone={smsState?.has_phone ?? false}
+          initialSmsPhone={smsState?.phone ?? null}
         >
           {children}
         </MessagesInboxProvider>

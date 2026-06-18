@@ -46,6 +46,7 @@ export default async function DashboardProfilePage() {
       addressesFetchError={addressesError}
       initialMessageSmsOptIn={smsState.message_sms_opt_in}
       initialHasSmsPhone={smsState.has_phone}
+      initialSmsPhone={smsState.phone}
     />
   )
 }
