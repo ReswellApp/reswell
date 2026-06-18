@@ -12,11 +12,13 @@ export type SubscribeKlaviyoSmsMarketingResult = SubscribeKlaviyoProfileSmsConse
 export async function subscribeKlaviyoProfileSmsMarketing(input: {
   phoneNumber: string
   email?: string | null
+  externalId?: string | null
   consent: "SUBSCRIBED" | "UNSUBSCRIBED"
 }): Promise<SubscribeKlaviyoSmsMarketingResult> {
   return subscribeKlaviyoProfileSmsConsent({
     phoneNumber: input.phoneNumber,
     email: input.email,
+    externalId: input.externalId,
     marketing: input.consent,
   })
 }

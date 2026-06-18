@@ -157,7 +157,8 @@ export async function trackKlaviyoMessageSent(
 
   let receiverSmsOptIn = false
   let receiverPhoneE164: string | null = null
-  if (process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
+  const hasServiceRole = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim())
+  if (hasServiceRole) {
     try {
       const admin = createServiceRoleClient()
       const smsCtx = await getMessageSmsReceiverContext(
@@ -168,9 +169,20 @@ export async function trackKlaviyoMessageSent(
       )
       receiverSmsOptIn = smsCtx.smsOptIn
       receiverPhoneE164 = smsCtx.smsOptIn ? smsCtx.phoneE164 : null
-    } catch {
-      // Local dev without service role — SMS context omitted.
+    } catch (e) {
+      console.error("[klaviyo] Message Sent SMS context failed:", e)
     }
+  } else {
+    console.warn(
+      "[klaviyo] Message Sent: SUPABASE_SERVICE_ROLE_KEY not set — receiver SMS opt-in and phone omitted from event.",
+    )
+  }
+
+  if (receiverSmsOptIn && !receiverPhoneE164) {
+    console.warn(
+      "[klaviyo] Message Sent: receiver opted in to SMS but no valid phone on profile.",
+      { receiverUserId },
+    )
   }
 
   const trimmed =
@@ -199,6 +211,7 @@ export async function trackKlaviyoMessageSent(
       message_id: messageId,
       receiver_user_id: receiverUserId,
       message_sms_opt_in: receiverSmsOptIn,
+      message_sms_phone: receiverPhoneE164,
       message_from: {
         email: senderEmail ?? "",
         display_name: senderDisplayName,

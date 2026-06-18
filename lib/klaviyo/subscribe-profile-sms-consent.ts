@@ -5,6 +5,7 @@
  */
 
 import "@/lib/klaviyo/bootstrap-env"
+import { ensureKlaviyoProfileForSms } from "@/lib/klaviyo/ensure-profile-for-sms"
 import { KLAVIYO_API_REVISION } from "@/lib/klaviyo/send-event"
 
 const SUBSCRIBE_JOBS_URL =
@@ -26,6 +27,7 @@ export type SubscribeKlaviyoProfileSmsConsentResult = {
 export async function subscribeKlaviyoProfileSmsConsent(input: {
   phoneNumber: string
   email?: string | null
+  externalId?: string | null
   transactional?: SmsConsentStatus
   marketing?: SmsConsentStatus
 }): Promise<SubscribeKlaviyoProfileSmsConsentResult> {
@@ -63,6 +65,29 @@ export async function subscribeKlaviyoProfileSmsConsent(input: {
 
   const listId = process.env.KLAVIYO_SMS_SUBSCRIBE_LIST_ID?.trim()
   const email = input.email?.trim()
+  const externalId = input.externalId?.trim()
+
+  if (input.marketing === "SUBSCRIBED" && !listId) {
+    console.warn(
+      "[klaviyo] KLAVIYO_SMS_SUBSCRIBE_LIST_ID is not set — SMS marketing subscribe uses account default opt-in (often double opt-in). Consent may stay pending until confirmed, and Message Sent SMS flows will not send.",
+    )
+  }
+
+  if (externalId) {
+    const ensured = await ensureKlaviyoProfileForSms({
+      externalId,
+      email,
+      phoneNumber,
+    })
+    if (!ensured.ok && !ensured.skipped) {
+      return {
+        ok: false,
+        status: ensured.status,
+        skipped: false,
+        detail: ensured.detail,
+      }
+    }
+  }
 
   const smsSubscriptions: Record<string, { consent: SmsConsentStatus }> = {}
   if (input.transactional) {

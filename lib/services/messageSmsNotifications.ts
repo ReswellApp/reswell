@@ -113,6 +113,7 @@ export async function saveMessageSmsNotificationsWithPhone(
     void subscribeKlaviyoProfileSmsMarketing({
       phoneNumber: phoneE164,
       email: user.email,
+      externalId: user.id,
       consent: "UNSUBSCRIBED",
     })
   }
@@ -157,6 +158,7 @@ export async function updateMessageSmsNotificationsOptIn(
     void subscribeKlaviyoProfileSmsMarketing({
       phoneNumber: phoneE164,
       email: user.email,
+      externalId: user.id,
       consent: "SUBSCRIBED",
     })
 
@@ -173,6 +175,7 @@ export async function updateMessageSmsNotificationsOptIn(
     void subscribeKlaviyoProfileSmsMarketing({
       phoneNumber: phoneE164,
       email: user.email,
+      externalId: user.id,
       consent: "UNSUBSCRIBED",
     })
   }
