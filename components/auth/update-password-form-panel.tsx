@@ -12,15 +12,18 @@ import {
   UpdatePasswordFormFields,
   UpdatePasswordInvalidSessionActions,
 } from "@/components/auth/update-password-form-fields"
+import { createClient } from "@/lib/supabase/client"
+import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 
 export function UpdatePasswordFormPanel() {
   const [hasSession, setHasSession] = useState<boolean | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setHasSession(!!user)
-    })
+    void (async () => {
+      const session = await waitForClientSession({ supabase })
+      setHasSession(!!session?.user)
+    })()
   }, [])
 
   if (hasSession === null) {

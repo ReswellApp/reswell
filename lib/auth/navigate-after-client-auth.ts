@@ -21,13 +21,17 @@ export async function navigateAfterClientAuth(
   const pathOnly = target.split("?")[0] ?? "/"
   const needsServerSession = pathnameRequiresAuthSession(pathOnly)
 
+  const cookieWaitOptions = needsServerSession
+    ? { maxAttempts: 80, msBetween: 50 }
+    : undefined
+
   if (needsServerSession) {
-    await waitForAuthCookiesOnDocument()
+    await waitForAuthCookiesOnDocument(cookieWaitOptions)
     window.location.assign(target)
     return
   }
 
-  await waitForAuthCookiesOnDocument()
+  await waitForAuthCookiesOnDocument(cookieWaitOptions)
   router.push(target)
   router.refresh()
 }

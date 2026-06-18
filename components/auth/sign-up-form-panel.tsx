@@ -25,6 +25,7 @@ import {
 } from "@/lib/auth/auth-modal-shell-classes"
 import { navigateAfterClientAuth } from "@/lib/auth/navigate-after-client-auth"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
+import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 import { buildEmailSignUpSuccessPath } from "@/lib/google-ads/sign-up-success-path"
 import { validateDisplayName } from "@/lib/display-name-validation"
 
@@ -124,7 +125,7 @@ export function SignUpFormPanel({
         } catch {
           /* Klaviyo must not block signup */
         }
-        await supabase.auth.getSession()
+        await waitForClientSession({ supabase })
         if (typeof window !== "undefined") {
           window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
         }

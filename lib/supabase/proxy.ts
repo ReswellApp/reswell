@@ -1,7 +1,8 @@
 import {
   clearSupabaseAuthCookies,
-  isBenignAuthSessionError,
   isInvalidRefreshTokenError,
+  isNonFatalGetUserError,
+  isTransientAuthNetworkError,
 } from '@/lib/auth/clear-supabase-auth-cookies'
 import { hasSupabaseAuthCookies } from '@/lib/auth/has-supabase-auth-cookies'
 import { pathnameRequiresAuthSession } from '@/lib/auth/pathname-requires-auth-session'
@@ -93,25 +94,45 @@ export async function updateSession(request: NextRequest) {
   // the same failed refresh on every request.
   let user: Awaited<ReturnType<typeof supabase.auth.getUser>>['data']['user'] =
     null
-  try {
-    const { data, error } = await supabase.auth.getUser()
-    if (error) {
-      if (isBenignAuthSessionError(error)) {
+  const getUserAttempts = 3
+  for (let attempt = 0; attempt < getUserAttempts; attempt += 1) {
+    try {
+      const { data, error } = await supabase.auth.getUser()
+      if (error) {
         if (isInvalidRefreshTokenError(error)) {
           clearSupabaseAuthCookies(request, supabaseResponse)
+          break
         }
-      } else {
+        if (isNonFatalGetUserError(error)) {
+          if (
+            isTransientAuthNetworkError(error) &&
+            attempt < getUserAttempts - 1
+          ) {
+            await new Promise((r) => setTimeout(r, 200 * (attempt + 1)))
+            continue
+          }
+          break
+        }
         throw error
       }
-    } else {
       user = data.user
-    }
-  } catch (error) {
-    if (!isBenignAuthSessionError(error)) {
+      break
+    } catch (error) {
+      if (isInvalidRefreshTokenError(error)) {
+        clearSupabaseAuthCookies(request, supabaseResponse)
+        break
+      }
+      if (isNonFatalGetUserError(error)) {
+        if (
+          isTransientAuthNetworkError(error) &&
+          attempt < getUserAttempts - 1
+        ) {
+          await new Promise((r) => setTimeout(r, 200 * (attempt + 1)))
+          continue
+        }
+        break
+      }
       throw error
-    }
-    if (isInvalidRefreshTokenError(error)) {
-      clearSupabaseAuthCookies(request, supabaseResponse)
     }
   }
 

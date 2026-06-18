@@ -79,7 +79,7 @@ export function LoginFormPanel({
         password,
       })
       if (signError) throw signError
-      await supabase.auth.getSession()
+      await waitForClientSession({ supabase })
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
       }

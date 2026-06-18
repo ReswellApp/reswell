@@ -1,4 +1,5 @@
 import type { NextRequest, NextResponse } from 'next/server'
+import { isTransientNetworkError } from '@/lib/utils/transient-network-retry'
 
 /** Matches Supabase SSR auth cookies, including chunked variants (`sb-<ref>-auth-token.0`). */
 function isSupabaseAuthCookie(name: string): boolean {
@@ -46,4 +47,20 @@ export function isBenignAuthSessionError(error: unknown): boolean {
   return (
     isInvalidRefreshTokenError(error) || isAuthSessionMissingError(error)
   )
+}
+
+/** Transient reachability failures (`AuthRetryableFetchError`, undici "fetch failed"). */
+export function isTransientAuthNetworkError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const name = (error as { name?: unknown }).name
+  if (name === 'AuthRetryableFetchError') return true
+  const message = (error as { message?: unknown }).message
+  return typeof message === 'string' && isTransientNetworkError(message)
+}
+
+/**
+ * Session lookup errors that must not 500 middleware — treat as logged-out and continue.
+ */
+export function isNonFatalGetUserError(error: unknown): boolean {
+  return isBenignAuthSessionError(error) || isTransientAuthNetworkError(error)
 }
