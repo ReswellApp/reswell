@@ -13,6 +13,9 @@ type Translations = {
     title: string
     subtitle: string
     profileTab: string
+    shopTab: string
+    signInTab: string
+    notificationsTab: string
     followersTab: string
     profile: {
       title: string
@@ -40,6 +43,10 @@ type Translations = {
       cityPlaceholder: string
       bio: string
       bioPlaceholder: string
+      username: string
+      seeMyStore: string
+      saved: string
+      sellerBannerTitle: string
       save: string
       saving: string
     }
@@ -64,6 +71,14 @@ type Translations = {
     account: {
       title: string
       description: string
+      loginMethods: string
+      signedInWithGoogle: string
+      signedInWithEmail: string
+      emailVerification: string
+      verified: string
+      changeEmailTitle: string
+      newEmail: string
+      updateEmail: string
       resetPassword: string
       resetPasswordDescription: string
       resetPasswordButton: string
@@ -112,6 +127,10 @@ type Translations = {
       editTitle: string
       shippingOnlyHint: string
     }
+    notifications: {
+      intro: string
+      messagesTitle: string
+    }
   }
 }
 
@@ -120,6 +139,9 @@ const en: Translations = {
     title: 'Profile',
     subtitle: 'Manage your account and public profile',
     profileTab: 'Profile',
+    shopTab: 'Shop',
+    signInTab: 'Sign-in',
+    notificationsTab: 'Notifications',
     followersTab: 'Followers',
     profile: {
       title: 'Profile Information',
@@ -146,8 +168,12 @@ const en: Translations = {
       city: 'City',
       cityPlaceholder: 'e.g., San Diego',
       bio: 'Bio',
-      bioPlaceholder: 'Tell other surfers about yourself...',
-      save: 'Save Changes',
+      bioPlaceholder: 'Say something about yourself',
+      username: 'My username',
+      seeMyStore: 'See my store',
+      saved: 'Saved',
+      sellerBannerTitle: 'Shop banner',
+      save: 'Save',
       saving: 'Saving...',
     },
     personalInfo: {
@@ -173,6 +199,14 @@ const en: Translations = {
     account: {
       title: 'Account',
       description: 'Manage your account settings',
+      loginMethods: 'Login methods',
+      signedInWithGoogle: 'You signed in with Google',
+      signedInWithEmail: 'You signed in with email',
+      emailVerification: 'Email verification status',
+      verified: 'Verified',
+      changeEmailTitle: 'Change email address',
+      newEmail: 'New email address',
+      updateEmail: 'Update email',
       resetPassword: 'Reset password',
       resetPasswordDescription:
         "We'll email you a secure link to choose a new password for this account.",
@@ -228,6 +262,10 @@ const en: Translations = {
       shippingOnlyHint:
         'Shipping location only — update your legal name and phone in Personal information above.',
     },
+    notifications: {
+      intro: 'Choose which notifications you want. These apply to your account on the web and in the app.',
+      messagesTitle: 'Messages',
+    },
   },
 }
 
@@ -236,6 +274,9 @@ const es: Translations = {
     title: 'Perfil',
     subtitle: 'Administra tu cuenta y perfil público',
     profileTab: 'Perfil',
+    shopTab: 'Tienda',
+    signInTab: 'Inicio de sesión',
+    notificationsTab: 'Notificaciones',
     followersTab: 'Seguidores',
     profile: {
       title: 'Información del perfil',
@@ -262,8 +303,12 @@ const es: Translations = {
       city: 'Ciudad',
       cityPlaceholder: 'ej., San Diego',
       bio: 'Biografía',
-      bioPlaceholder: 'Cuéntales a otros surfistas sobre ti...',
-      save: 'Guardar cambios',
+      bioPlaceholder: 'Cuéntales algo sobre ti',
+      username: 'Mi nombre de usuario',
+      seeMyStore: 'Ver mi tienda',
+      saved: 'Guardado',
+      sellerBannerTitle: 'Banner de la tienda',
+      save: 'Guardar',
       saving: 'Guardando...',
     },
     personalInfo: {
@@ -289,6 +334,14 @@ const es: Translations = {
     account: {
       title: 'Cuenta',
       description: 'Administra la configuración de tu cuenta',
+      loginMethods: 'Métodos de inicio de sesión',
+      signedInWithGoogle: 'Iniciaste sesión con Google',
+      signedInWithEmail: 'Iniciaste sesión con correo',
+      emailVerification: 'Estado de verificación del correo',
+      verified: 'Verificado',
+      changeEmailTitle: 'Cambiar correo electrónico',
+      newEmail: 'Nuevo correo electrónico',
+      updateEmail: 'Actualizar correo',
       resetPassword: 'Restablecer contraseña',
       resetPasswordDescription:
         'Te enviaremos un enlace seguro por correo para elegir una nueva contraseña.',
@@ -343,6 +396,10 @@ const es: Translations = {
       editTitle: 'Editar dirección de envío',
       shippingOnlyHint:
         'Solo ubicación de envío — actualiza tu nombre legal y teléfono en Información personal arriba.',
+    },
+    notifications: {
+      intro: 'Elige qué notificaciones quieres. Se aplican a tu cuenta en la web y en la app.',
+      messagesTitle: 'Mensajes',
     },
   },
 }

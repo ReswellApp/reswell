@@ -1,0 +1,73 @@
+"use client"
+
+import { cn } from "@/lib/utils"
+
+export type ProfileSettingsTabId = "shop" | "sign-in" | "addresses" | "notifications"
+
+interface ProfileSettingsTabNavProps {
+  activeTab: ProfileSettingsTabId
+  onTabChange: (tab: ProfileSettingsTabId) => void
+  labels: {
+    shop: string
+    signIn: string
+    addresses: string
+    notifications: string
+  }
+}
+
+const TAB_ORDER: ProfileSettingsTabId[] = ["shop", "sign-in", "addresses", "notifications"]
+
+export function ProfileSettingsTabNav({
+  activeTab,
+  onTabChange,
+  labels,
+}: ProfileSettingsTabNavProps) {
+  const labelByTab: Record<ProfileSettingsTabId, string> = {
+    shop: labels.shop,
+    "sign-in": labels.signIn,
+    addresses: labels.addresses,
+    notifications: labels.notifications,
+  }
+
+  return (
+    <nav
+      className="flex gap-6 overflow-x-auto border-b border-neutral-200/80 pb-0 sm:gap-8"
+      aria-label="Profile settings"
+    >
+      {TAB_ORDER.map((tab) => {
+        const active = activeTab === tab
+        return (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => onTabChange(tab)}
+            className={cn(
+              "relative shrink-0 pb-3 text-sm font-medium transition-colors",
+              active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+            )}
+            aria-current={active ? "page" : undefined}
+          >
+            {labelByTab[tab]}
+            {active ? (
+              <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-primary" />
+            ) : null}
+          </button>
+        )
+      })}
+    </nav>
+  )
+}
+
+export function profileSettingsTabFromHash(hash: string): ProfileSettingsTabId {
+  const raw = hash.replace(/^#/, "").trim()
+  if (raw === "addresses") return "addresses"
+  if (raw === "sign-in" || raw === "signin") return "sign-in"
+  if (raw === "notifications") return "notifications"
+  if (raw === "profile" || raw === "shop") return "shop"
+  return "shop"
+}
+
+export function profileSettingsHashForTab(tab: ProfileSettingsTabId): string | null {
+  if (tab === "shop") return null
+  return tab
+}

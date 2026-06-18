@@ -6,10 +6,17 @@ import { toast } from "sonner"
 import { updateProfilePersonalInfoAction } from "@/app/actions/profilePersonalInfo"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
+import {
+  profileCardClass,
+  profileInputClass,
+  profileLabelClass,
+  profilePillButtonClass,
+  profileSectionHintClass,
+  profileSectionTitleClass,
+} from "@/components/features/dashboard/profile-settings/profile-settings-styles"
 
 export type ProfilePersonalInfoCopy = {
   title: string
@@ -89,83 +96,89 @@ export function ProfilePersonalInfoSection({
   const buttonLabel = hasStoredOnce ? copy.update : copy.save
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1">
-            <CardTitle className="flex items-center gap-2">
-              <Lock className="h-4 w-4 text-muted-foreground" aria-hidden />
-              {copy.title}
-            </CardTitle>
-            <CardDescription>{copy.description}</CardDescription>
-          </div>
-          <Badge variant="secondary" className="shrink-0 text-xs font-medium">
-            {copy.privateBadge}
-          </Badge>
+    <section className={`${profileCardClass} space-y-5 p-5 sm:p-6`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h2 className={cn(profileSectionTitleClass, "flex items-center gap-2")}>
+            <Lock className="h-4 w-4 text-muted-foreground" aria-hidden />
+            {copy.title}
+          </h2>
+          <p className={profileSectionHintClass}>{copy.description}</p>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="personal-first-name">{copy.firstName}</Label>
-            <Input
-              id="personal-first-name"
-              autoComplete="given-name"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              placeholder="chicken"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="personal-last-name">{copy.lastName}</Label>
-            <Input
-              id="personal-last-name"
-              autoComplete="family-name"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              placeholder="joe"
-            />
-          </div>
-        </div>
+        <Badge variant="secondary" className="shrink-0 text-xs font-medium">
+          {copy.privateBadge}
+        </Badge>
+      </div>
 
+      <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="personal-phone">{copy.phone}</Label>
+          <Label htmlFor="personal-first-name" className={profileLabelClass}>
+            {copy.firstName}
+          </Label>
           <Input
-            id="personal-phone"
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="(555) 555-5555"
+            id="personal-first-name"
+            autoComplete="given-name"
+            className={profileInputClass}
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            placeholder="chicken"
           />
-          {showPhoneDisclosure ? (
-            <p
-              className={cn(
-                "rounded-lg border border-border/70 bg-muted/40 px-3 py-2.5 text-xs leading-relaxed text-muted-foreground",
-              )}
-            >
-              {copy.phoneDisclosure}
-            </p>
-          ) : null}
         </div>
+        <div className="space-y-2">
+          <Label htmlFor="personal-last-name" className={profileLabelClass}>
+            {copy.lastName}
+          </Label>
+          <Input
+            id="personal-last-name"
+            autoComplete="family-name"
+            className={profileInputClass}
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            placeholder="joe"
+          />
+        </div>
+      </div>
 
-        <Button onClick={() => void handleSave()} disabled={saving || savedFlash}>
-          {saving ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-              {copy.saving}
-            </>
-          ) : savedFlash ? (
-            <>
-              <Check className="mr-2 h-4 w-4" aria-hidden />
-              {copy.saved}
-            </>
-          ) : (
-            buttonLabel
-          )}
-        </Button>
-      </CardContent>
-    </Card>
+      <div className="space-y-2">
+        <Label htmlFor="personal-phone" className={profileLabelClass}>
+          {copy.phone}
+        </Label>
+        <Input
+          id="personal-phone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          className={profileInputClass}
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="(555) 555-5555"
+        />
+        {showPhoneDisclosure ? (
+          <p className="rounded-lg bg-neutral-100 px-3 py-2.5 text-xs italic leading-relaxed text-muted-foreground">
+            {copy.phoneDisclosure}
+          </p>
+        ) : null}
+      </div>
+
+      <Button
+        className={profilePillButtonClass(saving || savedFlash)}
+        onClick={() => void handleSave()}
+        disabled={saving || savedFlash}
+      >
+        {saving ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+            {copy.saving}
+          </>
+        ) : savedFlash ? (
+          <>
+            <Check className="mr-2 h-4 w-4" aria-hidden />
+            {copy.saved}
+          </>
+        ) : (
+          buttonLabel
+        )}
+      </Button>
+    </section>
   )
 }
