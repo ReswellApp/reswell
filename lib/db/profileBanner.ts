@@ -30,11 +30,31 @@ export async function updateProfileShopBannerUrlRow(
   supabase: SupabaseClient,
   userId: string,
   shopBannerUrl: string,
+  focal?: { x: number; y: number },
+): Promise<void> {
+  const patch: Record<string, string | number | null> = {
+    shop_banner_url: shopBannerUrl,
+    updated_at: new Date().toISOString(),
+  }
+  if (focal) {
+    patch.shop_banner_focal_x_pct = focal.x
+    patch.shop_banner_focal_y_pct = focal.y
+  }
+
+  const { error } = await supabase.from("profiles").update(patch).eq("id", userId)
+  if (error) throw error
+}
+
+export async function updateProfileShopBannerFocalRow(
+  supabase: SupabaseClient,
+  userId: string,
+  focal: { x: number; y: number },
 ): Promise<void> {
   const { error } = await supabase
     .from("profiles")
     .update({
-      shop_banner_url: shopBannerUrl,
+      shop_banner_focal_x_pct: focal.x,
+      shop_banner_focal_y_pct: focal.y,
       updated_at: new Date().toISOString(),
     })
     .eq("id", userId)
@@ -49,6 +69,8 @@ export async function clearProfileShopBannerUrlRow(
     .from("profiles")
     .update({
       shop_banner_url: null,
+      shop_banner_focal_x_pct: null,
+      shop_banner_focal_y_pct: null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", userId)

@@ -26,7 +26,7 @@ export const HOME_RECENTLY_SOLD_CACHE_TAG = "home-public-catalog-recently-sold"
 export const HOME_RECENTLY_SOLD_REVALIDATE_SECONDS = 60 * 60
 
 const profilePublicFields =
-  "id, seller_slug, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
+  "id, seller_slug, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_banner_focal_x_pct, shop_banner_focal_y_pct, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
 
 const featuredNewSelect = `
   id,
@@ -52,6 +52,8 @@ export type HomeFeaturedShop = {
   shop_name: string | null
   shop_description: string | null
   shop_banner_url: string | null
+  shop_banner_focal_x_pct: number | null
+  shop_banner_focal_y_pct: number | null
   shop_logo_url: string | null
   shop_verified: boolean | null
   shop_website: string | null

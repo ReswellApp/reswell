@@ -58,6 +58,7 @@ export function DashboardProfileSettings({
   const [uploadingBanner, setUploadingBanner] = useState(false)
   const [removingBanner, setRemovingBanner] = useState(false)
   const [bannerSavedFlash, setBannerSavedFlash] = useState(false)
+  const [bannerCropRequestKey, setBannerCropRequestKey] = useState(0)
   const [resetPasswordSending, setResetPasswordSending] = useState(false)
   const router = useRouter()
   const supabase = createClient()
@@ -147,7 +148,11 @@ export function DashboardProfileSettings({
       const avatarUrl = json.data?.avatarUrl
       if (!avatarUrl) throw new Error("Missing avatar URL")
 
-      setProfile({ ...profile, avatar_url: avatarUrl })
+      setProfile({
+        ...profile,
+        avatar_url: avatarUrl,
+        shop_logo_url: profile.is_shop ? avatarUrl : profile.shop_logo_url,
+      })
       void revalidateListingDetailAfterProfileUpdate()
       window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
       router.refresh()
@@ -177,7 +182,11 @@ export function DashboardProfileSettings({
         throw new Error(json.error || "Remove failed")
       }
 
-      setProfile({ ...profile, avatar_url: null })
+      setProfile({
+        ...profile,
+        avatar_url: null,
+        shop_logo_url: profile.is_shop ? null : profile.shop_logo_url,
+      })
       void revalidateListingDetailAfterProfileUpdate()
       window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
       router.refresh()
@@ -212,7 +221,10 @@ export function DashboardProfileSettings({
         credentials: "include",
       })
 
-      const json = (await res.json()) as { data?: { bannerUrl: string }; error?: string }
+      const json = (await res.json()) as {
+        data?: { bannerUrl: string; focalX?: number; focalY?: number }
+        error?: string
+      }
 
       if (!res.ok) {
         throw new Error(json.error || "Upload failed")
@@ -221,7 +233,13 @@ export function DashboardProfileSettings({
       const bannerUrl = json.data?.bannerUrl
       if (!bannerUrl) throw new Error("Missing banner URL")
 
-      setProfile({ ...profile, shop_banner_url: bannerUrl })
+      setProfile({
+        ...profile,
+        shop_banner_url: bannerUrl,
+        shop_banner_focal_x_pct: json.data?.focalX ?? 50,
+        shop_banner_focal_y_pct: json.data?.focalY ?? 50,
+      })
+      setBannerCropRequestKey((key) => key + 1)
       setBannerSavedFlash(true)
       window.setTimeout(() => setBannerSavedFlash(false), 2000)
       void revalidateListingDetailAfterProfileUpdate()
@@ -252,7 +270,12 @@ export function DashboardProfileSettings({
         throw new Error(json.error || "Remove failed")
       }
 
-      setProfile({ ...profile, shop_banner_url: null })
+      setProfile({
+        ...profile,
+        shop_banner_url: null,
+        shop_banner_focal_x_pct: null,
+        shop_banner_focal_y_pct: null,
+      })
       setBannerSavedFlash(true)
       window.setTimeout(() => setBannerSavedFlash(false), 2000)
       void revalidateListingDetailAfterProfileUpdate()
@@ -353,9 +376,16 @@ export function DashboardProfileSettings({
             banner: p.banner,
             bannerHint: p.bannerHint,
             changeBanner: p.changeBanner,
+            editBanner: p.editBanner,
             removeBanner: p.removeBanner,
             uploading: p.uploading,
             removingBanner: p.removingBanner,
+            editBannerTitle: p.editBannerTitle,
+            editBannerDescription: p.editBannerDescription,
+            editBannerHint: p.editBannerHint,
+            editBannerSave: p.editBannerSave,
+            editBannerSaving: p.editBannerSaving,
+            editBannerCancel: p.editBannerCancel,
             save: p.save,
             saving: p.saving,
             saved: p.saved,
@@ -370,6 +400,7 @@ export function DashboardProfileSettings({
           uploadingBanner={uploadingBanner}
           removingBanner={removingBanner}
           bannerSavedFlash={bannerSavedFlash}
+          bannerCropRequestKey={bannerCropRequestKey}
           onProfileChange={(patch) => setProfile({ ...profile, ...patch })}
           onSave={() => void handleSave()}
           onAvatarUpload={(e) => void handleAvatarUpload(e)}

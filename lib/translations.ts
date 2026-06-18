@@ -29,8 +29,15 @@ type Translations = {
       banner: string
       bannerHint: string
       changeBanner: string
+      editBanner: string
       removeBanner: string
       removingBanner: string
+      editBannerTitle: string
+      editBannerDescription: string
+      editBannerHint: string
+      editBannerSave: string
+      editBannerSaving: string
+      editBannerCancel: string
       bannerDefaultHint: string
       email: string
       emailHint: string
@@ -155,8 +162,15 @@ const en: Translations = {
       banner: 'Profile banner',
       bannerHint: 'Wide image shown at the top of your public seller profile.',
       changeBanner: 'Upload banner',
+      editBanner: 'Edit banner',
       removeBanner: 'Remove banner',
       removingBanner: 'Removing...',
+      editBannerTitle: 'Edit banner',
+      editBannerDescription: 'Drag the image to choose what shows in your banner.',
+      editBannerHint: 'Drag to reposition',
+      editBannerSave: 'Save crop',
+      editBannerSaving: 'Saving…',
+      editBannerCancel: 'Cancel',
       bannerDefaultHint: 'Uses the default Reswell blue when no banner is uploaded.',
       email: 'Email',
       emailHint: 'Your email cannot be changed',
@@ -290,8 +304,15 @@ const es: Translations = {
       banner: 'Banner del perfil',
       bannerHint: 'Imagen ancha en la parte superior de tu perfil público de vendedor.',
       changeBanner: 'Subir banner',
+      editBanner: 'Editar banner',
       removeBanner: 'Quitar banner',
       removingBanner: 'Quitando...',
+      editBannerTitle: 'Editar banner',
+      editBannerDescription: 'Arrastra la imagen para elegir qué se muestra en tu banner.',
+      editBannerHint: 'Arrastra para reposicionar',
+      editBannerSave: 'Guardar recorte',
+      editBannerSaving: 'Guardando…',
+      editBannerCancel: 'Cancelar',
       bannerDefaultHint: 'Se usa el azul predeterminado de Reswell si no subes un banner.',
       email: 'Correo electrónico',
       emailHint: 'Tu correo no se puede cambiar',

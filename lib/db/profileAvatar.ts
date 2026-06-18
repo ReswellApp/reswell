@@ -41,6 +41,21 @@ export async function updateProfileAvatarUrlRow(
   if (error) throw error
 }
 
+export async function updateProfileShopLogoUrlRow(
+  supabase: SupabaseClient,
+  userId: string,
+  shopLogoUrl: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      shop_logo_url: shopLogoUrl,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", userId)
+  if (error) throw error
+}
+
 export async function clearProfileAvatarUrlRow(
   supabase: SupabaseClient,
   userId: string,
@@ -53,6 +68,34 @@ export async function clearProfileAvatarUrlRow(
     })
     .eq("id", userId)
   if (error) throw error
+}
+
+export async function clearProfileShopLogoUrlRow(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      shop_logo_url: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", userId)
+  if (error) throw error
+}
+
+export async function getProfileIsShop(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("is_shop")
+    .eq("id", userId)
+    .maybeSingle()
+
+  if (error) throw error
+  return data?.is_shop === true
 }
 
 /** Best-effort cleanup after profile row no longer references the object. */

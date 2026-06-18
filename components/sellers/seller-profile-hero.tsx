@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { SellersBreadcrumbs } from "@/components/sellers/sellers-breadcrumbs"
 import { SellerProfileBannerEditor } from "@/components/sellers/seller-profile-banner-editor"
+import { SellerProfilePhotoEditor } from "@/components/sellers/seller-profile-photo-editor"
 import { formatDistanceToNow } from "date-fns"
 import { Globe, MapPin, MessageSquare, Phone } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -35,6 +36,8 @@ export type SellerProfileHeroShop = {
   shop_name: string | null
   shop_description: string | null
   shop_banner_url: string | null
+  shop_banner_focal_x_pct?: number | null
+  shop_banner_focal_y_pct?: number | null
   shop_logo_url: string | null
   shop_verified: boolean | null
   shop_website: string | null
@@ -73,6 +76,11 @@ function bannerMonogram(name: string): string {
     words[0] ||
     "S"
   return pick.slice(0, 6).toUpperCase()
+}
+
+function trimUrl(raw: string | null | undefined): string | null {
+  const t = typeof raw === "string" ? raw.trim() : ""
+  return t.length > 0 ? t : null
 }
 
 function formatLastActive(lastActiveAt: string | null | undefined): string | null {
@@ -133,6 +141,8 @@ export function SellerProfileHero({
   soldCount,
   listingImageFallbacks,
 }: SellerProfileHeroProps) {
+  const profilePhotoUrl =
+    trimUrl(shop.shop_logo_url) || trimUrl(shop.avatar_url)
   const avatarSrc = resolveSellerProfileDisplayImageUrl(
     {
       is_shop: isShop,
@@ -157,6 +167,8 @@ export function SellerProfileHero({
       <div className={sellerProfileBannerClassName}>
         <SellerProfileBannerEditor
           initialBannerUrl={shop.shop_banner_url}
+          initialFocalX={shop.shop_banner_focal_x_pct}
+          initialFocalY={shop.shop_banner_focal_y_pct}
           monogram={monogram}
           editable={isOwnProfile}
         />
@@ -164,12 +176,21 @@ export function SellerProfileHero({
 
       <div className={cn(sellerProfileShellClassName, "pt-5 sm:pt-6")}>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5 lg:gap-6">
-          <Avatar className="h-16 w-16 shrink-0 border border-border/80 shadow-sm sm:h-20 sm:w-20 lg:h-24 lg:w-24">
-            <AvatarImage src={avatarSrc} alt="" />
-            <AvatarFallback className="bg-muted text-lg font-semibold text-foreground sm:text-xl">
-              {displayName?.charAt(0).toUpperCase() || "S"}
-            </AvatarFallback>
-          </Avatar>
+          {isOwnProfile ? (
+            <SellerProfilePhotoEditor
+              initialPhotoUrl={profilePhotoUrl}
+              displayName={displayName?.trim() || "Seller"}
+              editable
+              className="pb-3 sm:pb-0"
+            />
+          ) : (
+            <Avatar className="h-16 w-16 shrink-0 border border-border/80 shadow-sm sm:h-20 sm:w-20 lg:h-24 lg:w-24">
+              <AvatarImage src={avatarSrc} alt="" />
+              <AvatarFallback className="bg-muted text-lg font-semibold text-foreground sm:text-xl">
+                {displayName?.charAt(0).toUpperCase() || "S"}
+              </AvatarFallback>
+            </Avatar>
+          )}
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-start justify-between gap-3">

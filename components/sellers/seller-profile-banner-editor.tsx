@@ -1,40 +1,61 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { ImageIcon, Loader2 } from "lucide-react"
+import { Crop, ImageIcon, Loader2 } from "lucide-react"
 import { toast } from "sonner"
-import { wideShimmer } from "@/lib/image-shimmer"
-import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
-import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
+import { ProfileBannerCropDialog } from "@/components/features/dashboard/profile-banner-crop-dialog"
+import { ProfileBannerImage } from "@/components/features/dashboard/profile-banner-image"
 import { sellerProfileBannerImageSizes } from "@/lib/sellers/seller-profile-layout"
 import { PROFILE_BANNER_MAX_INPUT_BYTES } from "@/lib/validations/profileBanner"
+import {
+  PROFILE_BANNER_FOCAL_DEFAULT,
+  resolveProfileBannerFocal,
+  type ProfileBannerFocal,
+} from "@/lib/utils/profile-banner-focal"
 import { revalidateListingDetailAfterProfileUpdate } from "@/app/actions/listing-detail-cache"
 import { cn } from "@/lib/utils"
 
 type SellerProfileBannerEditorProps = {
   initialBannerUrl: string | null
+  initialFocalX?: number | null
+  initialFocalY?: number | null
   monogram: string
   editable?: boolean
 }
 
 export function SellerProfileBannerEditor({
   initialBannerUrl,
+  initialFocalX,
+  initialFocalY,
   monogram,
   editable = false,
 }: SellerProfileBannerEditorProps) {
   const router = useRouter()
   const [bannerUrl, setBannerUrl] = useState(initialBannerUrl)
+  const [focal, setFocal] = useState<ProfileBannerFocal>(() =>
+    resolveProfileBannerFocal(initialFocalX, initialFocalY),
+  )
   const [uploading, setUploading] = useState(false)
   const [removing, setRemoving] = useState(false)
+  const [cropOpen, setCropOpen] = useState(false)
+  const [cropRequestKey, setCropRequestKey] = useState(0)
 
   useEffect(() => {
     setBannerUrl(initialBannerUrl)
   }, [initialBannerUrl])
 
+  useEffect(() => {
+    setFocal(resolveProfileBannerFocal(initialFocalX, initialFocalY))
+  }, [initialFocalX, initialFocalY])
+
+  useEffect(() => {
+    if (cropRequestKey > 0 && bannerUrl?.trim()) {
+      setCropOpen(true)
+    }
+  }, [cropRequestKey, bannerUrl])
+
   const trimmedBanner = bannerUrl?.trim() || null
-  const bannerSrc = trimmedBanner ? profileMediaDisplaySrc(trimmedBanner) : null
   const inputId = "seller-profile-banner-upload"
 
   async function handleUpload(file: File) {
@@ -56,7 +77,10 @@ export function SellerProfileBannerEditor({
         credentials: "include",
       })
 
-      const json = (await res.json()) as { data?: { bannerUrl: string }; error?: string }
+      const json = (await res.json()) as {
+        data?: { bannerUrl: string; focalX?: number; focalY?: number }
+        error?: string
+      }
       if (!res.ok) {
         throw new Error(json.error || "Upload failed")
       }
@@ -65,6 +89,8 @@ export function SellerProfileBannerEditor({
       if (!nextBannerUrl) throw new Error("Missing banner URL")
 
       setBannerUrl(nextBannerUrl)
+      setFocal(resolveProfileBannerFocal(json.data?.focalX, json.data?.focalY))
+      setCropRequestKey((key) => key + 1)
       void revalidateListingDetailAfterProfileUpdate()
       router.refresh()
       toast.success("Banner updated")
@@ -92,6 +118,7 @@ export function SellerProfileBannerEditor({
       }
 
       setBannerUrl(null)
+      setFocal(PROFILE_BANNER_FOCAL_DEFAULT)
       void revalidateListingDetailAfterProfileUpdate()
       router.refresh()
       toast.success("Banner removed")
@@ -110,21 +137,23 @@ export function SellerProfileBannerEditor({
     void handleUpload(file)
   }
 
+  function handleCropSaved(nextFocal: ProfileBannerFocal) {
+    setFocal(nextFocal)
+    void revalidateListingDetailAfterProfileUpdate()
+    router.refresh()
+  }
+
   const busy = uploading || removing
 
   return (
     <>
-      {bannerSrc ? (
-        <Image
-          src={bannerSrc}
-          alt=""
-          fill
+      {trimmedBanner ? (
+        <ProfileBannerImage
+          bannerUrl={trimmedBanner}
+          focal={focal}
           priority
           sizes={sellerProfileBannerImageSizes}
-          className="object-cover"
-          unoptimized={listingImageShouldBypassOptimization(bannerSrc)}
           placeholder="blur"
-          blurDataURL={wideShimmer}
         />
       ) : (
         <div className="flex h-full min-h-[inherit] items-center justify-center px-6">
@@ -164,14 +193,35 @@ export function SellerProfileBannerEditor({
             disabled={busy}
           />
           {trimmedBanner ? (
-            <button
-              type="button"
-              onClick={() => void handleRemove()}
-              disabled={busy}
-              className="absolute bottom-3 right-3 z-10 rounded-full border border-white/30 bg-black/50 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-black/70 disabled:cursor-not-allowed disabled:opacity-60 sm:bottom-4 sm:right-4"
-            >
-              {removing ? "Removing…" : "Remove banner"}
-            </button>
+            <div className="absolute bottom-3 right-3 z-10 flex flex-wrap items-center justify-end gap-2 sm:bottom-4 sm:right-4">
+              <button
+                type="button"
+                onClick={() => setCropOpen(true)}
+                disabled={busy}
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-black/50 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-black/70 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Crop className="h-3.5 w-3.5" aria-hidden />
+                Edit banner
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleRemove()}
+                disabled={busy}
+                className="rounded-full border border-white/30 bg-black/50 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-black/70 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {removing ? "Removing…" : "Remove banner"}
+              </button>
+            </div>
+          ) : null}
+          {trimmedBanner ? (
+            <ProfileBannerCropDialog
+              open={cropOpen}
+              onOpenChange={setCropOpen}
+              bannerUrl={trimmedBanner}
+              initialFocalX={focal.x}
+              initialFocalY={focal.y}
+              onSaved={handleCropSaved}
+            />
           ) : null}
         </>
       ) : null}

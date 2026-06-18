@@ -1,6 +1,5 @@
 import Link from "next/link"
 import Image from "next/image"
-import { wideShimmer } from "@/lib/image-shimmer"
 import { HeroSlideshow } from "@/components/hero-slideshow"
 import { HomeHeroSlideshowAdminBar } from "@/components/home-hero-slideshow-admin-bar"
 import { Button } from "@/components/ui/button"
@@ -13,7 +12,7 @@ import { VerifiedBadge } from "@/components/verified-badge"
 import { listingProductCardSolidClassName } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
 import { sellerProfileHref } from "@/lib/seller-slug"
-import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { ProfileBannerImage } from "@/components/features/dashboard/profile-banner-image"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { FadeInSection } from "@/components/fade-in-section"
@@ -378,17 +377,12 @@ export default async function HomePage() {
                     <Card className={cn(listingProductCardSolidClassName, "h-full")}>
                       <div className="h-20 bg-offwhite relative overflow-hidden">
                         {shop.shop_banner_url && (
-                          <Image
-                            src={profileMediaDisplaySrc(shop.shop_banner_url)}
-                            alt=""
-                            fill
+                          <ProfileBannerImage
+                            bannerUrl={shop.shop_banner_url}
+                            focalX={shop.shop_banner_focal_x_pct}
+                            focalY={shop.shop_banner_focal_y_pct}
                             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                            className="object-cover"
-                            unoptimized={listingImageShouldBypassOptimization(
-                              profileMediaDisplaySrc(shop.shop_banner_url),
-                            )}
                             placeholder="blur"
-                            blurDataURL={wideShimmer}
                           />
                         )}
                       </div>

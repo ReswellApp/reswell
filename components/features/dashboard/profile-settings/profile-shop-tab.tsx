@@ -1,16 +1,18 @@
 "use client"
 
 import Link from "next/link"
-import Image from "next/image"
-import { Check, ExternalLink, ImageIcon, Loader2, Pencil, User } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Check, ExternalLink, Loader2, Pencil, User } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { ProfileBannerCropDialog } from "@/components/features/dashboard/profile-banner-crop-dialog"
+import { ProfileBannerImage } from "@/components/features/dashboard/profile-banner-image"
 import { SELLER_PROFILE_BANNER_DEFAULT } from "@/lib/brand-colors"
-import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
+import type { ProfileBannerFocal } from "@/lib/utils/profile-banner-focal"
 import { cn } from "@/lib/utils"
 import type { DashboardProfileRow } from "@/lib/db/dashboard-profile"
 import {
@@ -35,9 +37,16 @@ export type ProfileShopTabCopy = {
   banner: string
   bannerHint: string
   changeBanner: string
+  editBanner: string
   removeBanner: string
   uploading: string
   removingBanner: string
+  editBannerTitle: string
+  editBannerDescription: string
+  editBannerHint: string
+  editBannerSave: string
+  editBannerSaving: string
+  editBannerCancel: string
   save: string
   saving: string
   saved: string
@@ -56,6 +65,7 @@ interface ProfileShopTabProps {
   uploadingBanner: boolean
   removingBanner: boolean
   bannerSavedFlash: boolean
+  bannerCropRequestKey?: number
   onProfileChange: (patch: Partial<DashboardProfileRow>) => void
   onSave: () => void
   onAvatarUpload: (e: React.ChangeEvent<HTMLInputElement>) => void
@@ -75,6 +85,7 @@ export function ProfileShopTab({
   uploadingBanner,
   removingBanner,
   bannerSavedFlash,
+  bannerCropRequestKey = 0,
   onProfileChange,
   onSave,
   onAvatarUpload,
@@ -83,6 +94,21 @@ export function ProfileShopTab({
   onRemoveBanner,
 }: ProfileShopTabProps) {
   const username = profile.seller_slug?.trim() || "—"
+  const profilePhotoUrl = profile.shop_logo_url || profile.avatar_url
+  const [bannerCropOpen, setBannerCropOpen] = useState(false)
+
+  useEffect(() => {
+    if (bannerCropRequestKey > 0 && profile.shop_banner_url?.trim()) {
+      setBannerCropOpen(true)
+    }
+  }, [bannerCropRequestKey, profile.shop_banner_url])
+
+  function handleBannerCropSaved(focal: ProfileBannerFocal) {
+    onProfileChange({
+      shop_banner_focal_x_pct: focal.x,
+      shop_banner_focal_y_pct: focal.y,
+    })
+  }
 
   return (
     <div className="mx-auto max-w-xl space-y-8 pt-2">
@@ -90,7 +116,7 @@ export function ProfileShopTab({
         <div className="relative">
           <Avatar className="h-24 w-24 border-2 border-neutral-200 bg-neutral-100">
             <AvatarImage
-              src={profile.avatar_url ? profileMediaDisplaySrc(profile.avatar_url) : undefined}
+              src={profilePhotoUrl ? profileMediaDisplaySrc(profilePhotoUrl) : undefined}
               alt={profile.display_name}
             />
             <AvatarFallback className="bg-neutral-100">
@@ -119,7 +145,7 @@ export function ProfileShopTab({
             disabled={uploadingAvatar || removingAvatar}
           />
         </div>
-        {profile.avatar_url ? (
+        {profilePhotoUrl ? (
           <button
             type="button"
             onClick={onRemoveAvatar}
@@ -212,7 +238,7 @@ export function ProfileShopTab({
           <p className={profileSectionTitleClass}>{copy.sellerBannerTitle}</p>
           <p className={cn(profileSectionHintClass, "mt-1")}>{copy.bannerHint}</p>
         </div>
-        <div className="relative overflow-hidden rounded-xl border border-neutral-200">
+        <div className="overflow-hidden rounded-xl">
           <div
             className="relative aspect-[4/1] w-full min-h-[88px]"
             style={
@@ -220,27 +246,13 @@ export function ProfileShopTab({
             }
           >
             {profile.shop_banner_url ? (
-              <Image
-                src={profileMediaDisplaySrc(profile.shop_banner_url)}
-                alt=""
-                fill
+              <ProfileBannerImage
+                bannerUrl={profile.shop_banner_url}
+                focalX={profile.shop_banner_focal_x_pct}
+                focalY={profile.shop_banner_focal_y_pct}
                 sizes="(max-width: 768px) 100vw, 640px"
-                className="object-cover"
-                unoptimized={listingImageShouldBypassOptimization(
-                  profileMediaDisplaySrc(profile.shop_banner_url),
-                )}
               />
             ) : null}
-            <label
-              htmlFor="shop-banner-upload"
-              className="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/40 opacity-0 transition-opacity hover:opacity-100"
-            >
-              {uploadingBanner ? (
-                <Loader2 className="h-6 w-6 animate-spin text-white" aria-hidden />
-              ) : (
-                <ImageIcon className="h-6 w-6 text-white" aria-hidden />
-              )}
-            </label>
             <input
               id="shop-banner-upload"
               type="file"
@@ -263,16 +275,45 @@ export function ProfileShopTab({
             {uploadingBanner ? copy.uploading : copy.changeBanner}
           </label>
           {profile.shop_banner_url ? (
-            <button
-              type="button"
-              onClick={onRemoveBanner}
-              disabled={uploadingBanner || removingBanner}
-              className="font-medium text-muted-foreground hover:text-destructive hover:underline disabled:opacity-60"
-            >
-              {removingBanner ? copy.removingBanner : copy.removeBanner}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setBannerCropOpen(true)}
+                disabled={uploadingBanner || removingBanner}
+                className="font-medium text-primary hover:underline disabled:opacity-60"
+              >
+                {copy.editBanner}
+              </button>
+              <button
+                type="button"
+                onClick={onRemoveBanner}
+                disabled={uploadingBanner || removingBanner}
+                className="font-medium text-muted-foreground hover:text-destructive hover:underline disabled:opacity-60"
+              >
+                {removingBanner ? copy.removingBanner : copy.removeBanner}
+              </button>
+            </>
           ) : null}
         </div>
+
+        {profile.shop_banner_url ? (
+          <ProfileBannerCropDialog
+            open={bannerCropOpen}
+            onOpenChange={setBannerCropOpen}
+            bannerUrl={profile.shop_banner_url}
+            initialFocalX={profile.shop_banner_focal_x_pct}
+            initialFocalY={profile.shop_banner_focal_y_pct}
+            onSaved={handleBannerCropSaved}
+            copy={{
+              title: copy.editBannerTitle,
+              description: copy.editBannerDescription,
+              hint: copy.editBannerHint,
+              cancel: copy.editBannerCancel,
+              save: copy.editBannerSave,
+              saving: copy.editBannerSaving,
+            }}
+          />
+        ) : null}
       </div>
 
       <Button
