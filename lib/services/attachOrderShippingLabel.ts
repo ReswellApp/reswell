@@ -4,6 +4,8 @@ import {
   type OrderShippingLabelOrigin,
 } from "@/lib/db/orderShippingLabels"
 import { resolveOpenOrderShippingLabelFailures } from "@/lib/db/orderShippingLabelFailures"
+import { createServiceRoleClient } from "@/lib/supabase/server"
+import { enqueueShopifyFulfillmentForReswellOrder } from "@/lib/services/shopifyFulfillment"
 
 /**
  * Persists a marketplace shipping label on the order and writes tracking to the order row.
@@ -59,6 +61,20 @@ export async function attachOrderShippingLabel(params: {
   }
 
   void resolveOpenOrderShippingLabelFailures(params.supabase, params.orderId, null)
+
+  // Push tracking to Shopify for any Shopify-sourced lines (best-effort, durable via job queue).
+  if (track) {
+    try {
+      const serviceSupabase = createServiceRoleClient()
+      void enqueueShopifyFulfillmentForReswellOrder(serviceSupabase, {
+        reswellOrderId: params.orderId,
+        trackingNumber: track,
+        trackingCompany: car,
+      })
+    } catch {
+      /* service role unavailable — fulfillment sync is best-effort */
+    }
+  }
 
   return { ok: true }
 }

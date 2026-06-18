@@ -19,6 +19,7 @@ import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-mar
 import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnPurchase"
 import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
 import { applyListingInventoryAfterPurchase } from "@/lib/services/applyListingInventoryAfterPurchase"
+import { pushReswellOrderToShopifyBestEffort } from "@/lib/services/shopifyOrders"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -246,6 +247,16 @@ export async function POST(request: NextRequest) {
   void completeAcceptedOfferOnPurchase(serviceSupabase, user.id, [listing.id], listing.user_id)
 
   void syncListingToGoogleMerchantBestEffort(serviceSupabase, listing.id)
+
+  void pushReswellOrderToShopifyBestEffort({
+    serviceSupabase,
+    sellerId: listing.user_id,
+    listingId: listing.id,
+    listingTitle: String(listing.title ?? ""),
+    itemPriceUsd: itemPriceUsd,
+    buyerEmail: user.email ?? null,
+    reswellOrderId: String(purchase.id),
+  })
 
   void markUserListingBoardModelDataSold(serviceSupabase, listing.id, itemPriceUsd)
 

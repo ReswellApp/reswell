@@ -2,10 +2,18 @@ import { NextRequest, NextResponse } from "next/server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getShopifyConnectionByShopDomain } from "@/lib/db/shopify-connections"
 import { verifyShopifyWebhookHmac } from "@/lib/shopify/crypto"
+import { shopifyRestBase } from "@/lib/shopify/config"
+import { enqueueShopifySyncJob } from "@/lib/db/shopify-sync-jobs"
+import { getShopifyLinkByProductId } from "@/lib/db/shopify-product-links"
 import {
-  archiveShopifyLinkedListing,
-  syncShopifyVariantToListing,
-} from "@/lib/services/shopifySync"
+  getListingVariants,
+  updateListingVariantStockByShopifyId,
+} from "@/lib/db/listing-variants"
+import { productMatchesSyncRules } from "@/lib/services/shopifyCatalog"
+import {
+  handleShopifyComplianceWebhook,
+  isShopifyComplianceTopic,
+} from "@/lib/services/shopifyCompliance"
 import type { ShopifyRestProduct, ShopifyRestVariant } from "@/lib/shopify/types"
 
 export const runtime = "nodejs"
@@ -38,31 +46,44 @@ export async function POST(request: NextRequest) {
   }
 
   const serviceSupabase = createServiceRoleClient()
+
+  // Lifecycle + GDPR topics must be handled even when no active connection exists
+  // (e.g. shop/redact arrives ~48h after uninstall).
+  if (isShopifyComplianceTopic(topic)) {
+    const result = await handleShopifyComplianceWebhook({
+      serviceSupabase,
+      shopDomain,
+      topic,
+      payload,
+    })
+    return NextResponse.json({ received: true, ...result })
+  }
+
   const connection = await getShopifyConnectionByShopDomain(serviceSupabase, shopDomain)
   if (!connection) {
     return NextResponse.json({ received: true, skipped: "unknown_shop" })
   }
+
+  void serviceSupabase
+    .from("shopify_connections")
+    .update({ webhook_last_received_at: new Date().toISOString() })
+    .eq("id", connection.id)
+    .then(undefined, () => {})
 
   try {
     if (topic === "products/delete") {
       const product = payload as { id?: number }
       if (!product.id) return NextResponse.json({ received: true })
 
-      const { data: links } = await serviceSupabase
-        .from("shopify_product_links")
-        .select("shopify_variant_id")
-        .eq("connection_id", connection.id)
-        .eq("shopify_product_id", String(product.id))
+      await enqueueShopifySyncJob(serviceSupabase, {
+        userId: connection.user_id,
+        connectionId: connection.id,
+        jobType: "product_delete",
+        dedupeKey: `product_delete:${connection.id}:${product.id}`,
+        payload: { connectionId: connection.id, productId: String(product.id) },
+      })
 
-      for (const link of links ?? []) {
-        await archiveShopifyLinkedListing({
-          serviceSupabase,
-          connectionId: connection.id,
-          variantId: link.shopify_variant_id,
-        })
-      }
-
-      return NextResponse.json({ received: true, action: "archived" })
+      return NextResponse.json({ received: true, action: "queued_delete" })
     }
 
     if (topic === "products/create" || topic === "products/update") {
@@ -71,31 +92,31 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ received: true, skipped: "invalid_product" })
       }
 
-      for (const variant of product.variants) {
-        const { data: existingLink } = await serviceSupabase
-          .from("shopify_product_links")
-          .select("id")
-          .eq("connection_id", connection.id)
-          .eq("shopify_variant_id", String(variant.id))
-          .maybeSingle()
+      // Sync if already linked, or if it newly matches the seller's auto-sync rules.
+      const existingLink = await getShopifyLinkByProductId(
+        serviceSupabase,
+        connection.id,
+        String(product.id),
+      )
+      const shouldSync = existingLink !== null || productMatchesSyncRules(product, connection)
 
-        if (!existingLink && topic === "products/create") {
-          continue
-        }
-
-        if (existingLink || topic === "products/update") {
-          await syncShopifyVariantToListing({
-            supabase: serviceSupabase,
-            serviceSupabase,
-            connection,
-            productId: String(product.id),
-            variantId: String(variant.id),
-            replaceImages: false,
-          })
-        }
+      if (!shouldSync) {
+        return NextResponse.json({ received: true, skipped: "not_synced_product" })
       }
 
-      return NextResponse.json({ received: true, action: "synced" })
+      await enqueueShopifySyncJob(serviceSupabase, {
+        userId: connection.user_id,
+        connectionId: connection.id,
+        jobType: "product_sync",
+        dedupeKey: `product_sync:${connection.id}:${product.id}`,
+        payload: {
+          connectionId: connection.id,
+          sellerId: connection.user_id,
+          productId: String(product.id),
+        },
+      })
+
+      return NextResponse.json({ received: true, action: "queued_sync" })
     }
 
     if (topic === "inventory_levels/update") {
@@ -109,7 +130,7 @@ export async function POST(request: NextRequest) {
       }
 
       const variantRes = await fetch(
-        `https://${connection.shop_domain}/admin/api/2024-10/variants.json?inventory_item_ids=${inv.inventory_item_id}`,
+        `${shopifyRestBase(connection.shop_domain)}/variants.json?inventory_item_ids=${inv.inventory_item_id}`,
         {
           headers: {
             "X-Shopify-Access-Token": connection.access_token,
@@ -130,23 +151,26 @@ export async function POST(request: NextRequest) {
       }
 
       const stockQuantity = Math.max(0, inv.available ?? variant.inventory_quantity ?? 0)
-      const inStock = stockQuantity > 0
-      const { data: link } = await serviceSupabase
-        .from("shopify_product_links")
-        .select("listing_id")
-        .eq("connection_id", connection.id)
-        .eq("shopify_variant_id", String(variant.id))
-        .maybeSingle()
 
-      if (link?.listing_id) {
+      // Update the specific variant unit, then recompute the parent listing's aggregate stock/status.
+      const updated = await updateListingVariantStockByShopifyId(
+        serviceSupabase,
+        String(variant.id),
+        stockQuantity,
+      )
+
+      if (updated?.listingId) {
+        const variants = await getListingVariants(serviceSupabase, updated.listingId)
+        const totalStock = variants.reduce((sum, v) => sum + v.stock_quantity, 0)
+        const anyInStock = variants.some((v) => v.in_stock)
         await serviceSupabase
           .from("listings")
           .update({
-            stock_quantity: stockQuantity,
-            status: inStock ? "active" : "removed",
+            stock_quantity: totalStock,
+            status: anyInStock ? "active" : "removed",
             updated_at: new Date().toISOString(),
           })
-          .eq("id", link.listing_id)
+          .eq("id", updated.listingId)
       }
 
       return NextResponse.json({ received: true, action: "inventory_updated" })

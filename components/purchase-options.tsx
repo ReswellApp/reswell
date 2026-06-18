@@ -37,6 +37,8 @@ interface PurchaseOptionsProps {
   promoCode?: string | null
   /** Signed token from `/api/checkout/shipping-quote` — skips duplicate ShipEngine on payment intent. */
   shippingQuoteToken?: string | null
+  /** Reswell listing variant id for single-item checkout with options. */
+  variantId?: string | null
   /** When false, card checkout stays disabled until purchase details are complete. */
   purchaseDetailsReady?: boolean
   /** True when the order ships (includes ship-only listings where fulfillment is undefined). */
@@ -63,6 +65,7 @@ export function PurchaseOptions({
   offerId,
   promoCode,
   shippingQuoteToken,
+  variantId,
   purchaseDetailsReady = true,
   needsShipping = false,
   submitButtonLabel,
@@ -105,6 +108,7 @@ export function PurchaseOptions({
             offerId={offerId ?? null}
             promoCode={promoCode ?? null}
             shippingQuoteToken={shippingQuoteToken ?? null}
+            variantId={variantId ?? null}
             purchaseDetailsReady
             needsShipping={needsShipping}
             submitButtonLabel={submitButtonLabel}

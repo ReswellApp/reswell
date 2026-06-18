@@ -41,6 +41,8 @@ interface CheckoutClientProps {
   seller?: CheckoutSeller | null
   /** When paying an accepted offer bundle, bypasses cart verification at payment. */
   offerId?: string | null
+  /** Pre-selected listing variant (Shopify multi-option listings). */
+  initialVariantId?: string | null
 }
 
 export function CheckoutClient({
@@ -50,6 +52,7 @@ export function CheckoutClient({
   initialAddresses,
   seller,
   offerId = null,
+  initialVariantId = null,
 }: CheckoutClientProps) {
   const isBundle = listings.length > 1
 
@@ -533,6 +536,7 @@ export function CheckoutClient({
                   offerId={offerId}
                   promoCode={appliedPromo?.code ?? null}
                   shippingQuoteToken={shipQuoteToken}
+                  variantId={initialVariantId}
                   submitButtonLabel="Pay now"
                   submitButtonClassName={payButtonClassName}
                   hideStripeFooter

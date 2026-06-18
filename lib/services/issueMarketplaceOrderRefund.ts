@@ -5,6 +5,7 @@ import { applyWalletOrderRefund } from "@/lib/services/walletRefund"
 import { relistOrderListingsAfterRefund } from "@/lib/services/listingRelist"
 import { syncMarketplaceOrderFromStripePaymentIntent } from "@/lib/services/stripeRefundWebhook"
 import { applySellerRefundClawback } from "@/lib/split-seller-refund-clawback"
+import { enqueueShopifyCancelForReswellOrder } from "@/lib/services/shopifyFulfillment"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -204,6 +205,8 @@ export async function issueMarketplaceOrderRefund(
     // 4. Re-list every line on the order
     await relistOrderListingsAfterRefund(serviceSupabase, order.id)
 
+    void enqueueShopifyCancelForReswellOrder(serviceSupabase, order.id, "customer")
+
     return {
       ok: true,
       refund_type: "stripe",
@@ -229,6 +232,8 @@ export async function issueMarketplaceOrderRefund(
     if (!result.ok) {
       return { ok: false, error: result.error, status: result.status }
     }
+
+    void enqueueShopifyCancelForReswellOrder(serviceSupabase, order.id, "customer")
 
     return {
       ok: true,

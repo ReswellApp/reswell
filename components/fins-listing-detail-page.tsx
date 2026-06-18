@@ -455,6 +455,7 @@ export async function FinsListingDetailPage({
                   checkoutListingParam={fin.slug ?? fin.id}
                   section="fins"
                   isLoggedIn={!!user}
+                  hasVariants={Boolean((fin as { has_variants?: boolean }).has_variants)}
                   makeOffer={makeOfferConfig}
                   agreedCheckoutItemUsd={buyerAgreedPriceUsd}
                   offerRowTrailingSlot={
@@ -530,6 +531,7 @@ export async function FinsListingDetailPage({
                     checkoutListingParam={fin.slug ?? fin.id}
                     section="fins"
                     isLoggedIn={!!user}
+                    hasVariants={Boolean((fin as { has_variants?: boolean }).has_variants)}
                     makeOffer={makeOfferConfig}
                     agreedCheckoutItemUsd={buyerAgreedPriceUsd}
                     offerRowTrailingSlot={

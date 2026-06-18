@@ -191,6 +191,7 @@ export function StripeCardCheckout({
   offerId,
   promoCode,
   shippingQuoteToken,
+  variantId,
   purchaseDetailsReady = true,
   needsShipping = false,
   submitButtonLabel,
@@ -204,6 +205,7 @@ export function StripeCardCheckout({
   offerId?: string | null
   promoCode?: string | null
   shippingQuoteToken?: string | null
+  variantId?: string | null
   purchaseDetailsReady?: boolean
   needsShipping?: boolean
   /** When set, replaces the default “Pay — $x” label. */
@@ -265,6 +267,7 @@ export function StripeCardCheckout({
             ...(offerId ? { offer_id: offerId } : {}),
             ...(promoCode ? { promo_code: promoCode } : {}),
             ...(shippingQuoteToken ? { quote_token: shippingQuoteToken } : {}),
+            ...(variantId ? { variant_id: variantId } : {}),
           }),
         })
         const data = (await res.json()) as { clientSecret?: string; error?: string }
@@ -301,6 +304,7 @@ export function StripeCardCheckout({
     offerId,
     promoCode,
     shippingQuoteToken,
+    variantId,
     purchaseDetailsReady,
     needsShipping,
     stripePromise,

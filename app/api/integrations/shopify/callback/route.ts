@@ -18,6 +18,7 @@ import {
 } from "@/lib/shopify/admin-api"
 import { normalizeShopDomain } from "@/lib/shopify/config"
 import { verifyShopifyOAuthState } from "@/lib/shopify/crypto"
+import { enqueueShopifySyncJob } from "@/lib/db/shopify-sync-jobs"
 
 /**
  * GET /api/integrations/shopify/callback
@@ -86,6 +87,16 @@ export async function GET(request: NextRequest) {
       accessToken: token.access_token,
       callbackUrl: webhookUrl,
     })
+
+    if (connection.auto_sync_enabled || connection.sync_mode !== "manual") {
+      await enqueueShopifySyncJob(serviceSupabase, {
+        userId: user.id,
+        connectionId: connection.id,
+        jobType: "full_catalog_sync",
+        dedupeKey: `full_catalog_sync:${connection.id}`,
+        payload: { connectionId: connection.id },
+      })
+    }
 
     return NextResponse.redirect(`${dashboardUrl}?connected=1`)
   } catch (error) {

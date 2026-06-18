@@ -17,14 +17,14 @@ export type ShopifyProductPreview = {
   imageUrl: string | null
   variantCount: number
   detectedSection: string | null
-  linkedVariantIds: string[]
+  linked: boolean
   updatedAt: string
 }
 
 function toPreview(
   product: ShopifyRestProduct,
   mappings: Awaited<ReturnType<typeof listShopifySectionMappingsForUser>>,
-  linkedVariantIds: string[],
+  linked: boolean,
 ): ShopifyProductPreview {
   const section = resolveShopifyProductSection({ product, mappings })
   const tags = (product.tags ?? "")
@@ -41,7 +41,7 @@ function toPreview(
     imageUrl: product.images?.[0]?.src ?? null,
     variantCount: product.variants?.length ?? 0,
     detectedSection: section,
-    linkedVariantIds,
+    linked,
     updatedAt: product.updated_at,
   }
 }
@@ -81,15 +81,10 @@ export async function GET(request: NextRequest) {
     listShopifyLinksForUser(supabase, user.id),
   ])
 
-  const linksByProduct = new Map<string, string[]>()
-  for (const link of links) {
-    const arr = linksByProduct.get(link.shopify_product_id) ?? []
-    arr.push(link.shopify_variant_id)
-    linksByProduct.set(link.shopify_product_id, arr)
-  }
+  const linkedProductIds = new Set(links.map((link) => link.shopify_product_id))
 
   const previews = products.map((product) =>
-    toPreview(product, mappings, linksByProduct.get(String(product.id)) ?? []),
+    toPreview(product, mappings, linkedProductIds.has(String(product.id))),
   )
 
   return NextResponse.json({

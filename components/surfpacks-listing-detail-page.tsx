@@ -443,6 +443,7 @@ export async function SurfpacksListingDetailPage({
                   checkoutListingParam={surfpack.slug ?? surfpack.id}
                   section="surfpacks"
                   isLoggedIn={!!user}
+                  hasVariants={Boolean((surfpack as { has_variants?: boolean }).has_variants)}
                   makeOffer={makeOfferConfig}
                   agreedCheckoutItemUsd={buyerAgreedPriceUsd}
                   offerRowTrailingSlot={
@@ -518,6 +519,7 @@ export async function SurfpacksListingDetailPage({
                     checkoutListingParam={surfpack.slug ?? surfpack.id}
                     section="surfpacks"
                     isLoggedIn={!!user}
+                    hasVariants={Boolean((surfpack as { has_variants?: boolean }).has_variants)}
                     makeOffer={makeOfferConfig}
                     agreedCheckoutItemUsd={buyerAgreedPriceUsd}
                     offerRowTrailingSlot={

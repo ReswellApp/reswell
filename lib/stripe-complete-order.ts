@@ -28,6 +28,10 @@ import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPu
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { applyListingInventoryAfterPurchaseBatch } from "@/lib/services/applyListingInventoryAfterPurchase"
 import { pushReswellOrderToShopifyBestEffort } from "@/lib/services/shopifyOrders"
+import {
+  commitCheckoutVariantSelections,
+  parseVariantByListingMetadata,
+} from "@/lib/services/listingVariantCheckout"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
@@ -482,6 +486,12 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   const pickupCode = isPickup ? generatePickupCode() : null
 
   const primaryListingId = listingsOrdered[0]!.id
+  const variantByListing = parseVariantByListingMetadata(pi.metadata.variant_by_listing)
+  const variantSelections = [...variantByListing.entries()].map(([listingId, variantId]) => ({
+    listingId,
+    variantId,
+  }))
+  const variantListingIds = new Set(variantByListing.keys())
 
   const orderId = randomUUID()
 
@@ -582,6 +592,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     shipping_amount: line.shippingUsd,
     platform_fee: line.platformFee,
     seller_earnings: line.sellerEarnings,
+    listing_variant_id: variantByListing.get(line.listingId) ?? null,
   }))
 
   const { error: orderItemsErr } = await serviceSupabase.from("order_items").insert(orderItemsPayload)
@@ -681,15 +692,29 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     }
   }
 
-  // Mark sold or decrement stock — never mutate listings.price (offer discounts stay private).
-  const inventoryResult = await applyListingInventoryAfterPurchaseBatch(
-    serviceSupabase,
-    listingsOrdered.map((l) => l.id),
-  )
+  // Mark sold or decrement stock — variant listings commit reserved units; others use listing RPC.
+  if (variantSelections.length > 0) {
+    const variantCommit = await commitCheckoutVariantSelections(serviceSupabase, variantSelections)
+    if (!variantCommit.ok) {
+      console.error("[stripe-complete-order] variant inventory:", variantCommit)
+      return { ok: false, error: "Could not update listing inventory", status: 500 }
+    }
+  }
 
-  if (!inventoryResult.ok) {
-    console.error("[stripe-complete-order] listing inventory:", inventoryResult)
-    return { ok: false, error: "Could not update listing inventory", status: 500 }
+  const nonVariantListingIds = listingsOrdered
+    .map((l) => l.id)
+    .filter((id) => !variantListingIds.has(id))
+
+  if (nonVariantListingIds.length > 0) {
+    const inventoryResult = await applyListingInventoryAfterPurchaseBatch(
+      serviceSupabase,
+      nonVariantListingIds,
+    )
+
+    if (!inventoryResult.ok) {
+      console.error("[stripe-complete-order] listing inventory:", inventoryResult)
+      return { ok: false, error: "Could not update listing inventory", status: 500 }
+    }
   }
 
   revalidateBoardsBrowseCatalog()
@@ -712,6 +737,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         serviceSupabase,
         sellerId: bundleSellerId,
         listingId,
+        listingVariantId: variantByListing.get(listingId) ?? null,
         listingTitle: String(listingRow.title ?? ""),
         itemPriceUsd: line.itemPrice,
         buyerEmail,

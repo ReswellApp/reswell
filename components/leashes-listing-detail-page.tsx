@@ -443,6 +443,7 @@ export async function LeashesListingDetailPage({
                   checkoutListingParam={leash.slug ?? leash.id}
                   section="leashes"
                   isLoggedIn={!!user}
+                  hasVariants={Boolean((leash as { has_variants?: boolean }).has_variants)}
                   makeOffer={makeOfferConfig}
                   agreedCheckoutItemUsd={buyerAgreedPriceUsd}
                   offerRowTrailingSlot={
@@ -518,6 +519,7 @@ export async function LeashesListingDetailPage({
                     checkoutListingParam={leash.slug ?? leash.id}
                     section="leashes"
                     isLoggedIn={!!user}
+                    hasVariants={Boolean((leash as { has_variants?: boolean }).has_variants)}
                     makeOffer={makeOfferConfig}
                     agreedCheckoutItemUsd={buyerAgreedPriceUsd}
                     offerRowTrailingSlot={

@@ -4,6 +4,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import { trackKlaviyoOrderShipped } from "@/lib/klaviyo/track-order-shipped"
 import { parseOrderShippedMessageMetadata } from "@/lib/validations/order-shipped-message-metadata"
 import type { OrderShippedMessagePayload } from "@/lib/validations/order-shipped-message-metadata"
+import { enqueueShopifyFulfillmentForReswellOrder } from "@/lib/services/shopifyFulfillment"
 
 type OrderShipContext = {
   id: string
@@ -158,6 +159,16 @@ export async function saveOrderTracking(
 
     if (result.ok && result.tracking_number?.trim()) {
       await autoDispatchOrderIfTrackingReady(supabase, orderId, sellerUserId)
+      try {
+        const serviceSupabase = createServiceRoleClient()
+        void enqueueShopifyFulfillmentForReswellOrder(serviceSupabase, {
+          reswellOrderId: orderId,
+          trackingNumber: result.tracking_number.trim(),
+          trackingCompany: carrier,
+        })
+      } catch {
+        /* best-effort Shopify sync */
+      }
       return { ok: true }
     }
 
@@ -240,6 +251,17 @@ export async function saveOrderTracking(
   }
 
   await autoDispatchOrderIfTrackingReady(supabase, orderId, sellerUserId)
+
+  try {
+    const serviceSupabase = createServiceRoleClient()
+    void enqueueShopifyFulfillmentForReswellOrder(serviceSupabase, {
+      reswellOrderId: orderId,
+      trackingNumber: updated.tracking_number.trim(),
+      trackingCompany: carrier,
+    })
+  } catch {
+    /* best-effort Shopify sync */
+  }
 
   return { ok: true }
 }

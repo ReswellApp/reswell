@@ -1,11 +1,23 @@
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 
-export const SHOPIFY_API_VERSION = "2024-10"
+export const SHOPIFY_API_VERSION = "2025-01"
 
+/**
+ * Scopes for the pro channel:
+ *  - read_products / read_inventory: catalog + stock mirror (Shopify → Reswell)
+ *  - write_inventory: decrement Shopify on a Reswell sale (prevents oversell)
+ *  - read_orders / write_orders: create the real Shopify order for the seller
+ *  - read_fulfillments / write_fulfillments: push Reswell shipping tracking back to Shopify
+ *  - read_locations: multi-location inventory adjustments
+ */
 export const SHOPIFY_DEFAULT_SCOPES = [
   "read_products",
   "read_inventory",
+  "write_inventory",
+  "read_orders",
   "write_orders",
+  "read_fulfillments",
+  "write_fulfillments",
   "read_locations",
 ].join(",")
 
@@ -29,6 +41,16 @@ export function shopifyApiSecret(): string {
 
 export function shopifyOAuthRedirectUri(): string {
   return `${publicSiteOrigin()}/api/integrations/shopify/callback`
+}
+
+/** REST Admin API base for a shop, pinned to {@link SHOPIFY_API_VERSION}. */
+export function shopifyRestBase(shopDomain: string): string {
+  return `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}`
+}
+
+/** GraphQL Admin API endpoint — used for bulk operations and efficient catalog reads. */
+export function shopifyGraphqlEndpoint(shopDomain: string): string {
+  return `https://${shopDomain}/admin/api/${SHOPIFY_API_VERSION}/graphql.json`
 }
 
 export function normalizeShopDomain(raw: string): string | null {

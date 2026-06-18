@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Check, Loader2, ShoppingCart } from "lucide-react"
@@ -19,6 +19,10 @@ import {
   MakeOfferDialog,
   MakeOfferTriggerButton,
 } from "@/components/features/listings/make-offer-dialog"
+import {
+  ListingVariantPicker,
+  type ListingVariantOption,
+} from "@/components/features/listings/listing-variant-picker"
 
 export type ListingMakeOfferConfig = {
   listingTitle: string
@@ -36,6 +40,7 @@ export function ListingDetailPeerPurchaseActions({
   checkoutListingParam,
   section,
   isLoggedIn,
+  hasVariants = false,
   makeOffer,
   agreedCheckoutItemUsd,
   offerRowTrailingSlot,
@@ -45,6 +50,8 @@ export function ListingDetailPeerPurchaseActions({
   checkoutListingParam: string
   section: PeerListingSection
   isLoggedIn: boolean
+  /** When true, buyer must pick a variant before checkout. */
+  hasVariants?: boolean
   makeOffer?: ListingMakeOfferConfig
   /** When the buyer has an ACCEPTED offer, checkout uses this item price (listing stays at list price in the gallery). */
   agreedCheckoutItemUsd?: number | null
@@ -54,11 +61,44 @@ export function ListingDetailPeerPurchaseActions({
   const [loading, setLoading] = useState(false)
   const [cartAdded, setCartAdded] = useState(false)
   const [offerOpen, setOfferOpen] = useState(false)
+  const [variants, setVariants] = useState<ListingVariantOption[]>([])
+  const [variantsLoading, setVariantsLoading] = useState(hasVariants)
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null)
   const authModal = useOptionalAuthModal()
   const router = useRouter()
   const pathname = usePathname()
   const here = pathname || "/"
-  const checkoutHref = peerListingCheckoutHref(section, checkoutListingParam)
+
+  useEffect(() => {
+    if (!hasVariants) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch(`/api/listings/${listingId}/variants`)
+        const json = (await res.json()) as { data?: { variants: ListingVariantOption[] } }
+        if (cancelled) return
+        const loaded = json.data?.variants ?? []
+        setVariants(loaded)
+        const inStock = loaded.filter((v) => v.in_stock && v.available > 0)
+        if (inStock.length === 1) setSelectedVariantId(inStock[0]!.id)
+      } finally {
+        if (!cancelled) setVariantsLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [hasVariants, listingId])
+
+  const checkoutHref = useMemo(() => {
+    const base = peerListingCheckoutHref(section, checkoutListingParam)
+    if (!selectedVariantId) return base
+    const sep = base.includes("?") ? "&" : "?"
+    return `${base}${sep}variant_id=${encodeURIComponent(selectedVariantId)}`
+  }, [section, checkoutListingParam, selectedVariantId])
+
+  const needsVariant = hasVariants && variants.filter((v) => v.in_stock && v.available > 0).length > 1
+  const checkoutBlocked = needsVariant && !selectedVariantId
 
   useEffect(() => {
     if (!isLoggedIn) return
@@ -112,6 +152,20 @@ export function ListingDetailPeerPurchaseActions({
 
   return (
     <div className="flex flex-col gap-[10px]">
+      {hasVariants ? (
+        variantsLoading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading options…
+          </div>
+        ) : variants.length > 0 ? (
+          <ListingVariantPicker
+            variants={variants}
+            value={selectedVariantId}
+            onChange={setSelectedVariantId}
+          />
+        ) : null
+      ) : null}
       {agreedCheckoutItemUsd != null &&
       agreedCheckoutItemUsd > 0 &&
       Number.isFinite(agreedCheckoutItemUsd) ? (
@@ -124,13 +178,27 @@ export function ListingDetailPeerPurchaseActions({
         <Button
           size="lg"
           className="min-h-[52px] w-full justify-center rounded-xl border-0 bg-[#5574AD] px-6 text-[15px] font-semibold text-white shadow-none hover:bg-[#5574AD]/90 hover:text-white dark:bg-[#5574AD] dark:hover:bg-[#5574AD]/90"
-          asChild
+          asChild={!checkoutBlocked}
+          disabled={checkoutBlocked}
+          onClick={
+            checkoutBlocked
+              ? () => toast.error("Select an option before checkout")
+              : undefined
+          }
         >
-          <Link href={checkoutHref} prefetch>
-            Buy it now
-          </Link>
+          {checkoutBlocked ? (
+            <span>Buy it now</span>
+          ) : (
+            <Link href={checkoutHref} prefetch>
+              Buy it now
+            </Link>
+          )}
         </Button>
-        {isLoggedIn ? (
+        {hasVariants ? (
+          <p className="text-xs text-muted-foreground">
+            Multi-option items checkout one variant at a time — use Buy it now.
+          </p>
+        ) : isLoggedIn ? (
           <Button
             type="button"
             variant="secondary"

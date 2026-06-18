@@ -10,7 +10,7 @@ export async function checkShopifyConnectAccess(
 ): Promise<ShopifyAccessCheck> {
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("shopify_connect_enabled, is_admin")
+    .select("shopify_connect_enabled, is_admin, is_shop, shop_verified")
     .eq("id", userId)
     .maybeSingle()
 
@@ -19,12 +19,13 @@ export async function checkShopifyConnectAccess(
   }
 
   const isAdmin = profile?.is_admin === true
-  if (isAdmin || profile?.shopify_connect_enabled === true) {
+  const verifiedShop = profile?.is_shop === true && profile?.shop_verified === true
+  if (isAdmin || profile?.shopify_connect_enabled === true || verifiedShop) {
     return { allowed: true, isAdmin }
   }
 
   return {
     allowed: false,
-    reason: "Shopify integration is not enabled for your account. Contact Reswell to get access.",
+    reason: "Connect Shopify from a verified Reswell shop account, or contact us to enable the integration.",
   }
 }

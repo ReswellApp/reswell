@@ -538,6 +538,7 @@ export async function SurfboardListingDetailPage({
                     checkoutListingParam={board.slug ?? board.id}
                     section="surfboards"
                     isLoggedIn={!!user}
+                    hasVariants={Boolean((board as { has_variants?: boolean }).has_variants)}
                     makeOffer={makeOfferConfig}
                     agreedCheckoutItemUsd={buyerAgreedPriceUsd}
                     offerRowTrailingSlot={
@@ -618,6 +619,7 @@ export async function SurfboardListingDetailPage({
                       checkoutListingParam={board.slug ?? board.id}
                       section="surfboards"
                       isLoggedIn={!!user}
+                      hasVariants={Boolean((board as { has_variants?: boolean }).has_variants)}
                       makeOffer={makeOfferConfig}
                       agreedCheckoutItemUsd={buyerAgreedPriceUsd}
                       offerRowTrailingSlot={

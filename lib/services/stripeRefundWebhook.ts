@@ -4,6 +4,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getStripe } from "@/lib/stripe-server"
 import { relistOrderListingsAfterRefund } from "@/lib/services/listingRelist"
 import { applySellerRefundClawback } from "@/lib/split-seller-refund-clawback"
+import { enqueueShopifyCancelForReswellOrder } from "@/lib/services/shopifyFulfillment"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -99,6 +100,9 @@ async function syncOrderAndPayoutsFromStripeRefundState(
     if (payoutCancelErr) {
       console.error("[stripe refund webhook] payouts cancel", payoutCancelErr)
     }
+
+    // Cancel any Shopify orders backing this refunded Reswell order (best-effort, durable).
+    void enqueueShopifyCancelForReswellOrder(supabase, order.id, "customer")
   } else if (sellerCents > 0) {
     const { error: payoutAdjErr } = await supabase
       .from("payouts")

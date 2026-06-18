@@ -443,6 +443,7 @@ export async function ApparelListingDetailPage({
                   checkoutListingParam={apparel.slug ?? apparel.id}
                   section="apparel"
                   isLoggedIn={!!user}
+                  hasVariants={Boolean((apparel as { has_variants?: boolean }).has_variants)}
                   makeOffer={makeOfferConfig}
                   agreedCheckoutItemUsd={buyerAgreedPriceUsd}
                   offerRowTrailingSlot={
@@ -518,6 +519,7 @@ export async function ApparelListingDetailPage({
                     checkoutListingParam={apparel.slug ?? apparel.id}
                     section="apparel"
                     isLoggedIn={!!user}
+                    hasVariants={Boolean((apparel as { has_variants?: boolean }).has_variants)}
                     makeOffer={makeOfferConfig}
                     agreedCheckoutItemUsd={buyerAgreedPriceUsd}
                     offerRowTrailingSlot={

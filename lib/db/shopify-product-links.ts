@@ -112,6 +112,84 @@ export async function upsertShopifyProductLink(
   return data as ShopifyProductLinkRow
 }
 
+export async function getShopifyLinkByProductId(
+  supabase: SupabaseClient,
+  connectionId: string,
+  productId: string,
+): Promise<ShopifyProductLinkRow | null> {
+  const { data, error } = await supabase
+    .from("shopify_product_links")
+    .select(LINK_SELECT)
+    .eq("connection_id", connectionId)
+    .eq("shopify_product_id", productId)
+    .maybeSingle()
+
+  if (error) throw new Error(error.message)
+  return (data as ShopifyProductLinkRow | null) ?? null
+}
+
+/**
+ * Product-level link upsert (one row per Shopify product ↔ Reswell listing).
+ * Variant detail lives in listing_variants.
+ */
+export async function upsertShopifyProductLinkByProduct(
+  supabase: SupabaseClient,
+  row: {
+    userId: string
+    connectionId: string
+    listingId: string
+    shopifyProductId: string
+    reswellSection: PeerListingSection
+    syncStatus: ShopifyProductLinkSyncStatus
+    shopifyUpdatedAt: string | null
+    lastError?: string | null
+  },
+): Promise<ShopifyProductLinkRow> {
+  const now = new Date().toISOString()
+  const existing = await getShopifyLinkByProductId(supabase, row.connectionId, row.shopifyProductId)
+
+  if (existing) {
+    const { data, error } = await supabase
+      .from("shopify_product_links")
+      .update({
+        listing_id: row.listingId,
+        reswell_section: row.reswellSection,
+        sync_status: row.syncStatus,
+        shopify_updated_at: row.shopifyUpdatedAt,
+        last_synced_at: now,
+        last_error: row.lastError ?? null,
+        updated_at: now,
+      })
+      .eq("id", existing.id)
+      .select(LINK_SELECT)
+      .single()
+
+    if (error || !data) throw new Error(error?.message ?? "Failed to update Shopify product link")
+    return data as ShopifyProductLinkRow
+  }
+
+  const { data, error } = await supabase
+    .from("shopify_product_links")
+    .insert({
+      user_id: row.userId,
+      connection_id: row.connectionId,
+      listing_id: row.listingId,
+      shopify_product_id: row.shopifyProductId,
+      shopify_variant_id: null,
+      reswell_section: row.reswellSection,
+      sync_status: row.syncStatus,
+      shopify_updated_at: row.shopifyUpdatedAt,
+      last_synced_at: now,
+      last_error: row.lastError ?? null,
+      updated_at: now,
+    })
+    .select(LINK_SELECT)
+    .single()
+
+  if (error || !data) throw new Error(error?.message ?? "Failed to create Shopify product link")
+  return data as ShopifyProductLinkRow
+}
+
 export async function updateShopifyLinkStatus(
   supabase: SupabaseClient,
   linkId: string,

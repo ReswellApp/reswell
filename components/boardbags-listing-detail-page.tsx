@@ -443,6 +443,7 @@ export async function BoardbagsListingDetailPage({
                   checkoutListingParam={boardbag.slug ?? boardbag.id}
                   section="boardbags"
                   isLoggedIn={!!user}
+                  hasVariants={Boolean((boardbag as { has_variants?: boolean }).has_variants)}
                   makeOffer={makeOfferConfig}
                   agreedCheckoutItemUsd={buyerAgreedPriceUsd}
                   offerRowTrailingSlot={
@@ -518,6 +519,7 @@ export async function BoardbagsListingDetailPage({
                     checkoutListingParam={boardbag.slug ?? boardbag.id}
                     section="boardbags"
                     isLoggedIn={!!user}
+                    hasVariants={Boolean((boardbag as { has_variants?: boolean }).has_variants)}
                     makeOffer={makeOfferConfig}
                     agreedCheckoutItemUsd={buyerAgreedPriceUsd}
                     offerRowTrailingSlot={

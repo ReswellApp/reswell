@@ -136,4 +136,105 @@ export function shopifyVariantInStock(variant: ShopifyRestVariant): boolean {
   return (variant.inventory_quantity ?? 0) > 0
 }
 
+export interface MappedShopifyVariantUnit {
+  shopifyVariantId: string
+  title: string
+  option1: string | null
+  option2: string | null
+  option3: string | null
+  sku: string | null
+  price: number
+  stockQuantity: number
+  inStock: boolean
+  position: number
+}
+
+export interface MappedShopifyProduct {
+  section: PeerListingSection
+  title: string
+  description: string
+  /** Lowest sellable variant price — the listing-level display price. */
+  price: number
+  brand: string | null
+  imageUrls: string[]
+  facetFields: Record<string, string | null>
+  hasVariants: boolean
+  variants: MappedShopifyVariantUnit[]
+}
+
+/**
+ * Product-level mapping: one Reswell listing per Shopify product, with each Shopify variant
+ * becoming a purchasable variant unit. Returns null when the product can't map to a peer section
+ * or has no sellable (priced) variant.
+ */
+export function mapShopifyProductToListing(opts: {
+  product: ShopifyRestProduct
+  mappings: ShopifySectionMappingRow[]
+  collectionTitles?: string[]
+  sectionOverride?: PeerListingSection | null
+}): MappedShopifyProduct | null {
+  const section =
+    opts.sectionOverride ??
+    resolveShopifyProductSection({
+      product: opts.product,
+      mappings: opts.mappings,
+      collectionTitles: opts.collectionTitles,
+    })
+
+  if (!section || !isPeerListingSectionValue(section)) return null
+
+  const sellable = (opts.product.variants ?? [])
+    .map((variant, index) => {
+      const price = parseFloat(variant.price)
+      if (!Number.isFinite(price) || price <= 0) return null
+      const options = variantOptionValues(variant)
+      const stock = Math.max(0, variant.inventory_quantity ?? 0)
+      return {
+        shopifyVariantId: String(variant.id),
+        title:
+          variant.title.trim() && variant.title.trim().toLowerCase() !== "default title"
+            ? variant.title.trim()
+            : opts.product.title.trim(),
+        option1: variant.option1?.trim() || null,
+        option2: variant.option2?.trim() || null,
+        option3: variant.option3?.trim() || null,
+        sku: variant.sku?.trim() || null,
+        price,
+        stockQuantity: stock,
+        inStock: stock > 0,
+        position: index,
+      } satisfies MappedShopifyVariantUnit
+    })
+    .filter((v): v is MappedShopifyVariantUnit => v !== null)
+
+  if (sellable.length === 0) return null
+
+  const description = stripHtml(opts.product.body_html)
+  const imageUrls = [...(opts.product.images ?? [])]
+    .sort((a, b) => a.position - b.position)
+    .map((img) => img.src)
+    .filter(Boolean)
+
+  const firstVariant = opts.product.variants?.[0]
+  const facetFields = firstVariant
+    ? buildFacetFields(section, opts.product, firstVariant)
+    : {}
+
+  const isMultiVariant =
+    sellable.length > 1 ||
+    sellable.some((v) => v.title.toLowerCase() !== opts.product.title.trim().toLowerCase())
+
+  return {
+    section,
+    title: opts.product.title.trim().slice(0, 120),
+    description: description || opts.product.title.trim(),
+    price: Math.min(...sellable.map((v) => v.price)),
+    brand: opts.product.vendor?.trim() || null,
+    imageUrls,
+    facetFields,
+    hasVariants: isMultiVariant,
+    variants: sellable,
+  }
+}
+
 export { stripHtml }

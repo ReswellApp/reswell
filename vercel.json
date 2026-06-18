@@ -43,6 +43,14 @@
     {
       "path": "/api/cron/vercel-error-digest",
       "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/shopify-sync",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/shopify-reconcile",
+      "schedule": "0 4 * * *"
     }
   ]
 }

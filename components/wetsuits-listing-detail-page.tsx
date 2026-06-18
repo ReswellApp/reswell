@@ -443,6 +443,7 @@ export async function WetsuitsListingDetailPage({
                   checkoutListingParam={wetsuit.slug ?? wetsuit.id}
                   section="wetsuits"
                   isLoggedIn={!!user}
+                  hasVariants={Boolean((wetsuit as { has_variants?: boolean }).has_variants)}
                   makeOffer={makeOfferConfig}
                   agreedCheckoutItemUsd={buyerAgreedPriceUsd}
                   offerRowTrailingSlot={
@@ -518,6 +519,7 @@ export async function WetsuitsListingDetailPage({
                     checkoutListingParam={wetsuit.slug ?? wetsuit.id}
                     section="wetsuits"
                     isLoggedIn={!!user}
+                    hasVariants={Boolean((wetsuit as { has_variants?: boolean }).has_variants)}
                     makeOffer={makeOfferConfig}
                     agreedCheckoutItemUsd={buyerAgreedPriceUsd}
                     offerRowTrailingSlot={

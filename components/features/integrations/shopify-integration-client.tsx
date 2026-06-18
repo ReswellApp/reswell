@@ -30,6 +30,8 @@ import {
 import { PEER_LISTING_SECTIONS } from "@/lib/peer-listing-sections"
 import { cn } from "@/lib/utils"
 import type { ShopifyProductPreview } from "@/app/api/integrations/shopify/products/route"
+import { ShopifySettingsCard } from "@/components/features/integrations/shopify/shopify-settings-card"
+import { ShopifyActivityCard } from "@/components/features/integrations/shopify/shopify-activity-card"
 
 type ShopifyConnectionPublic = {
   id: string
@@ -39,6 +41,12 @@ type ShopifyConnectionPublic = {
   connected_at: string
   last_sync_at: string | null
   last_error: string | null
+  sync_mode: string
+  sync_tags: string[]
+  auto_sync_enabled: boolean
+  pricing_mode: string
+  markup_percent: number
+  last_full_sync_at: string | null
 }
 
 type StatusResponse = {
@@ -78,6 +86,7 @@ export function ShopifyIntegrationClient() {
   const [importing, setImporting] = useState(false)
   const [sectionOverride, setSectionOverride] = useState<string>("auto")
   const [disconnecting, setDisconnecting] = useState(false)
+  const [fullSyncing, setFullSyncing] = useState(false)
 
   const loadStatus = useCallback(async () => {
     setLoading(true)
@@ -208,6 +217,21 @@ export function ShopifyIntegrationClient() {
     }
   }
 
+  async function handleFullSync() {
+    setFullSyncing(true)
+    try {
+      const res = await fetch("/api/integrations/shopify/sync", { method: "POST" })
+      const json = (await res.json()) as { message?: string; error?: string }
+      if (!res.ok) {
+        toast.error(json.error ?? "Could not start sync")
+        return
+      }
+      toast.success(json.message ?? "Full sync started")
+    } finally {
+      setFullSyncing(false)
+    }
+  }
+
   function toggleProduct(id: string, checked: boolean) {
     setSelectedProductIds((prev) => {
       const next = new Set(prev)
@@ -237,7 +261,8 @@ export function ShopifyIntegrationClient() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Shopify connect is not enabled on your account yet. Contact Reswell to get access for your shop.
+            Connect your verified Reswell shop to import and sync products from Shopify. Need help? Contact
+            support.
           </p>
         </CardContent>
       </Card>
@@ -300,6 +325,10 @@ export function ShopifyIntegrationClient() {
                   <RefreshCw className={cn("mr-2 h-4 w-4", productsLoading && "animate-spin")} />
                   Refresh products
                 </Button>
+                <Button variant="outline" onClick={() => void handleFullSync()} disabled={fullSyncing}>
+                  <RefreshCw className={cn("mr-2 h-4 w-4", fullSyncing && "animate-spin")} />
+                  Run full sync
+                </Button>
                 <Button variant="destructive" onClick={() => void handleDisconnect()} disabled={disconnecting}>
                   {disconnecting ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -332,6 +361,17 @@ export function ShopifyIntegrationClient() {
 
       {status.connection ? (
         <>
+          <ShopifySettingsCard
+            value={{
+              sync_mode: status.connection.sync_mode,
+              sync_tags: status.connection.sync_tags ?? [],
+              auto_sync_enabled: status.connection.auto_sync_enabled,
+              pricing_mode: status.connection.pricing_mode,
+              markup_percent: status.connection.markup_percent,
+            }}
+            onSaved={() => void loadStatus()}
+          />
+
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Import products</CardTitle>
@@ -382,7 +422,7 @@ export function ShopifyIntegrationClient() {
               ) : (
                 <ul className="divide-y divide-border rounded-lg border">
                   {products.map((product) => {
-                    const linked = product.linkedVariantIds.length > 0
+                    const linked = product.linked
                     const checked = selectedProductIds.has(product.id)
                     return (
                       <li key={product.id} className="flex gap-3 p-3 sm:gap-4 sm:p-4">
@@ -466,6 +506,8 @@ export function ShopifyIntegrationClient() {
               </p>
             </CardContent>
           </Card>
+
+          <ShopifyActivityCard />
         </>
       ) : null}
     </div>

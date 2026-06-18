@@ -24,6 +24,12 @@ import {
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { normalizeNewsletterPromoCodeInput } from "@/lib/utils/newsletter-promo-code"
 import { verifyCheckoutShippingQuoteToken, type CheckoutShippingQuoteTokenPayload } from "@/lib/services/checkoutShippingQuoteToken"
+import {
+  resolveCheckoutVariantSelections,
+  reserveCheckoutVariantSelections,
+  releaseCheckoutVariantSelections,
+  serializeVariantByListingMetadata,
+} from "@/lib/services/listingVariantCheckout"
 
 const JSON_NO_STORE_HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -73,6 +79,10 @@ export async function POST(request: NextRequest) {
     offer_id?: string | null
     promo_code?: string | null
     quote_token?: string | null
+    /** Reswell listing variant id (single-item checkout). */
+    variant_id?: string | null
+    /** Multi-item: `{ listing_id, variant_id }[]` for listings with options. */
+    listing_variants?: Array<{ listing_id?: string; variant_id?: string }> | null
   }
 
   const fromArray = Array.isArray(body.listing_ids)
@@ -369,6 +379,45 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Amount is below the minimum charge" }, { status: 400 })
   }
 
+  const requestedByListing = new Map<string, string>()
+  if (listingIdsOrdered.length === 1 && body.variant_id?.trim()) {
+    requestedByListing.set(listingIdsOrdered[0]!, body.variant_id.trim())
+  }
+  for (const row of body.listing_variants ?? []) {
+    const lid = row.listing_id?.trim()
+    const vid = row.variant_id?.trim()
+    if (lid && vid) requestedByListing.set(lid, vid)
+  }
+
+  const variantResolution = await resolveCheckoutVariantSelections({
+    supabase,
+    listings: listingsOrdered.map((l) => ({ id: l.id, has_variants: l.has_variants })),
+    requestedByListing,
+  })
+  if (!variantResolution.ok) {
+    return NextResponse.json({ error: variantResolution.error }, { status: 409, headers: JSON_NO_STORE_HEADERS })
+  }
+
+  let serviceSupabaseForReserve
+  try {
+    serviceSupabaseForReserve = createServiceRoleClient()
+  } catch {
+    return NextResponse.json({ error: "Could not reserve inventory" }, { status: 503, headers: JSON_NO_STORE_HEADERS })
+  }
+
+  const reserveResult = await reserveCheckoutVariantSelections(
+    serviceSupabaseForReserve,
+    variantResolution.selections,
+  )
+  if (!reserveResult.ok) {
+    return NextResponse.json({ error: reserveResult.error }, { status: 409, headers: JSON_NO_STORE_HEADERS })
+  }
+
+  const variantMetadata =
+    variantResolution.selections.length > 0
+      ? serializeVariantByListingMetadata(variantResolution.selections)
+      : undefined
+
   const primaryTitle = listingsOrdered[0]?.title ?? "listing"
   const stripeDescription =
     listingsOrdered.length > 1
@@ -405,6 +454,7 @@ export async function POST(request: NextRequest) {
               ),
             }
           : {}),
+        ...(variantMetadata ? { variant_by_listing: variantMetadata } : {}),
       },
       description: stripeDescription.slice(0, 1000),
     })
@@ -415,6 +465,7 @@ export async function POST(request: NextRequest) {
         serviceSupabase = createServiceRoleClient()
       } catch {
         await stripe.paymentIntents.cancel(paymentIntent.id)
+        await releaseCheckoutVariantSelections(serviceSupabaseForReserve, variantResolution.selections)
         return NextResponse.json(
           { error: "Could not reserve promo code." },
           { status: 503, headers: JSON_NO_STORE_HEADERS },
@@ -428,6 +479,7 @@ export async function POST(request: NextRequest) {
       )
       if (!reserved.ok) {
         await stripe.paymentIntents.cancel(paymentIntent.id)
+        await releaseCheckoutVariantSelections(serviceSupabaseForReserve, variantResolution.selections)
         return NextResponse.json(
           { error: reserved.error ?? "This promo code is no longer available." },
           { status: 409, headers: JSON_NO_STORE_HEADERS },
@@ -442,6 +494,7 @@ export async function POST(request: NextRequest) {
       { headers: JSON_NO_STORE_HEADERS },
     )
   } catch (err: unknown) {
+    await releaseCheckoutVariantSelections(serviceSupabaseForReserve, variantResolution.selections)
     const logPayload =
       err instanceof Stripe.errors.StripeError
         ? { type: err.type, code: err.code, message: err.message, statusCode: err.statusCode }

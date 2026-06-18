@@ -443,6 +443,7 @@ export async function AccessoriesListingDetailPage({
                   checkoutListingParam={accessory.slug ?? accessory.id}
                   section="accessories"
                   isLoggedIn={!!user}
+                  hasVariants={Boolean((accessory as { has_variants?: boolean }).has_variants)}
                   makeOffer={makeOfferConfig}
                   agreedCheckoutItemUsd={buyerAgreedPriceUsd}
                   offerRowTrailingSlot={
@@ -518,6 +519,7 @@ export async function AccessoriesListingDetailPage({
                     checkoutListingParam={accessory.slug ?? accessory.id}
                     section="accessories"
                     isLoggedIn={!!user}
+                    hasVariants={Boolean((accessory as { has_variants?: boolean }).has_variants)}
                     makeOffer={makeOfferConfig}
                     agreedCheckoutItemUsd={buyerAgreedPriceUsd}
                     offerRowTrailingSlot={
