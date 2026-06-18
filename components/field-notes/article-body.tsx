@@ -1,7 +1,7 @@
 import Image from "next/image"
 import type { ArticleBlock } from "@/lib/field-notes-articles"
 import { InstagramEmbedBlock } from "@/components/field-notes/instagram-embed-block"
-import { proxiedBlogImageSrc } from "@/lib/blog/blog-media-proxy-url"
+import { proxiedBlogImageSrc, blogImageShouldBypassOptimization } from "@/lib/blog/blog-media-proxy-url"
 
 function InlineArticleImage({
   url,
@@ -19,7 +19,14 @@ function InlineArticleImage({
     return (
       <figure className="space-y-3">
         <span className="relative block aspect-[16/10] w-full overflow-hidden rounded-lg bg-muted shadow-sm">
-          <Image src={src} alt={alt} fill sizes="(max-width: 768px) 100vw, 896px" className="object-cover" />
+          <Image
+            src={src}
+            alt={alt}
+            fill
+            unoptimized={blogImageShouldBypassOptimization(src)}
+            sizes="(max-width: 768px) 100vw, 896px"
+            className="object-cover"
+          />
         </span>
         {caption?.trim() ? (
           <figcaption className="text-center text-sm text-muted-foreground">{caption.trim()}</figcaption>
@@ -38,7 +45,14 @@ function InlineArticleImage({
 
     const inner = allowOptimized ? (
       <span className="relative block aspect-[16/10] w-full overflow-hidden rounded-lg bg-muted shadow-sm">
-        <Image src={src} alt={alt} fill sizes="(max-width: 768px) 100vw, 896px" className="object-cover" />
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          quality={92}
+          sizes="(max-width: 768px) 100vw, 896px"
+          className="object-cover"
+        />
       </span>
     ) : (
       // eslint-disable-next-line @next/next/no-img-element

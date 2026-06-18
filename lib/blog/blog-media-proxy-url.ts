@@ -55,3 +55,8 @@ export function proxiedBlogImageSrc(url: string | null | undefined): string {
 
   return `/media/blog/${encoded}`
 }
+
+/** Full-res originals from `/media/blog/` — skip `/_next/image` re-encoding (same pattern as listings). */
+export function blogImageShouldBypassOptimization(src: string | null | undefined): boolean {
+  return typeof src === "string" && src.startsWith("/media/blog/")
+}

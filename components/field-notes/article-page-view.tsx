@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react"
 import { format } from "date-fns"
 import type { FieldNoteArticle } from "@/lib/field-notes-articles"
 import { getFieldNoteCoverSrc } from "@/lib/field-notes-articles"
+import { blogImageShouldBypassOptimization } from "@/lib/blog/blog-media-proxy-url"
 import { BlogListingRow } from "@/components/field-notes/reading-hub"
 import { ArticleBody } from "@/components/field-notes/article-body"
 import { MostRecentHeading } from "@/components/field-notes/most-recent-heading"
@@ -59,6 +60,7 @@ export function ArticlePageView({ article, relatedArticles }: Props) {
               alt={article.title}
               fill
               priority
+              unoptimized={blogImageShouldBypassOptimization(coverSrc)}
               sizes="(max-width: 1024px) 100vw, 1152px"
               className="object-cover"
             />

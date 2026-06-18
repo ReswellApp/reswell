@@ -4,6 +4,7 @@ import { format } from "date-fns"
 import { Clock } from "lucide-react"
 import type { FieldNoteArticle } from "@/lib/field-notes-articles"
 import { getFieldNoteCoverSrc } from "@/lib/field-notes-articles"
+import { blogImageShouldBypassOptimization } from "@/lib/blog/blog-media-proxy-url"
 import { MostRecentHeading } from "@/components/field-notes/most-recent-heading"
 
 type Props = {
@@ -31,6 +32,7 @@ export function BlogListingRow({ article }: { article: FieldNoteArticle }) {
               src={coverSrc}
               alt={article.title}
               fill
+              unoptimized={blogImageShouldBypassOptimization(coverSrc)}
               sizes="(max-width: 768px) 100vw, 42vw"
               className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
             />
