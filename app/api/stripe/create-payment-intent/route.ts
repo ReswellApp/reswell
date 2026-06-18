@@ -16,8 +16,10 @@ import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import {
   computeCheckoutTotalWithNewsletterPromo,
+  releaseAbandonedNewsletterPromoReservation,
   validateNewsletterPromoForCheckout,
 } from "@/lib/services/newsletterPromo"
+import type { NewsletterPromoCodeRow } from "@/lib/db/newsletterPromoCodes"
 import {
   reserveNewsletterPromoForPaymentIntent,
 } from "@/lib/db/newsletterPromoCodes"
@@ -321,6 +323,7 @@ export async function POST(request: NextRequest) {
   let promoDiscountUsd = 0
   let promoCodeId: string | null = null
   let promoDiscountPercent = 0
+  let promoRow: NewsletterPromoCodeRow | null = null
 
   if (promoCodeNormalized) {
     const buyerEmail = (await getAuthEmailForUserId(user.id)) ?? user.email?.trim() ?? ""
@@ -345,6 +348,7 @@ export async function POST(request: NextRequest) {
     promoDiscountUsd = promoCheck.discountUsd
     promoCodeId = promoCheck.promo.id
     promoDiscountPercent = promoCheck.discountPercent
+    promoRow = promoCheck.promo
   }
 
   const chargedTotalUsd =
@@ -369,6 +373,20 @@ export async function POST(request: NextRequest) {
 
   try {
     const stripe = getStripe()
+    let promoServiceSupabase: ReturnType<typeof createServiceRoleClient> | null = null
+
+    if (promoRow) {
+      try {
+        promoServiceSupabase = createServiceRoleClient()
+      } catch {
+        return NextResponse.json(
+          { error: "Could not reserve promo code." },
+          { status: 503, headers: JSON_NO_STORE_HEADERS },
+        )
+      }
+      await releaseAbandonedNewsletterPromoReservation(stripe, promoServiceSupabase, promoRow)
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountCents,
       currency: "usd",
@@ -402,19 +420,20 @@ export async function POST(request: NextRequest) {
     })
 
     if (promoCodeId) {
-      let serviceSupabase
-      try {
-        serviceSupabase = createServiceRoleClient()
-      } catch {
-        await stripe.paymentIntents.cancel(paymentIntent.id)
-        return NextResponse.json(
-          { error: "Could not reserve promo code." },
-          { status: 503, headers: JSON_NO_STORE_HEADERS },
-        )
+      if (!promoServiceSupabase) {
+        try {
+          promoServiceSupabase = createServiceRoleClient()
+        } catch {
+          await stripe.paymentIntents.cancel(paymentIntent.id)
+          return NextResponse.json(
+            { error: "Could not reserve promo code." },
+            { status: 503, headers: JSON_NO_STORE_HEADERS },
+          )
+        }
       }
 
       const reserved = await reserveNewsletterPromoForPaymentIntent(
-        serviceSupabase,
+        promoServiceSupabase,
         promoCodeId,
         paymentIntent.id,
       )

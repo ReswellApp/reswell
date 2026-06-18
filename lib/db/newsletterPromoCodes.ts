@@ -80,14 +80,15 @@ export async function reserveNewsletterPromoForPaymentIntent(
     .update({ reserved_payment_intent_id: paymentIntentId })
     .eq("id", promoId)
     .is("redeemed_at", null)
-    .or(
-      `reserved_payment_intent_id.is.null,reserved_payment_intent_id.eq.${paymentIntentId}`,
-    )
+    .is("reserved_payment_intent_id", null)
     .select("id")
     .maybeSingle()
 
   if (error) return { ok: false, error: error.message }
-  return { ok: Boolean(data?.id), error: null }
+  if (!data?.id) {
+    return { ok: false, error: "This promo code is no longer available." }
+  }
+  return { ok: true, error: null }
 }
 
 export async function redeemNewsletterPromoForOrder(

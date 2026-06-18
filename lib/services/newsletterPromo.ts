@@ -8,7 +8,10 @@ import {
   NEWSLETTER_PROMO_DISCOUNT_PERCENT,
   NEWSLETTER_PROMO_VALIDITY_DAYS,
 } from "@/lib/constants/newsletter-promo"
+import type { SupabaseClient } from "@supabase/supabase-js"
+import type Stripe from "stripe"
 import {
+  clearNewsletterPromoReservation,
   fetchNewsletterPromoForEmail,
   fetchNewsletterPromoByCode,
   insertNewsletterPromoCode,
@@ -64,6 +67,46 @@ function isPromoExpired(row: NewsletterPromoCodeRow, now = new Date()): boolean 
 
 function emailsMatch(promoEmail: string, buyerEmail: string): boolean {
   return normalizeNewsletterPromoEmail(promoEmail) === normalizeNewsletterPromoEmail(buyerEmail)
+}
+
+const ABANDONED_PROMO_PI_STATUSES = new Set<Stripe.PaymentIntent.Status>([
+  "requires_payment_method",
+  "requires_confirmation",
+  "requires_action",
+  "canceled",
+])
+
+/**
+ * Cancels an abandoned checkout PaymentIntent and clears its promo reservation so a new
+ * intent can be created (e.g. after shipping address changes or React remounts checkout).
+ * Leaves reservations tied to succeeded/processing intents untouched.
+ */
+export async function releaseAbandonedNewsletterPromoReservation(
+  stripe: Stripe,
+  supabase: SupabaseClient,
+  promo: Pick<NewsletterPromoCodeRow, "id" | "reserved_payment_intent_id">,
+): Promise<void> {
+  const reservedPiId = promo.reserved_payment_intent_id?.trim()
+  if (!reservedPiId) return
+
+  try {
+    const existingPi = await stripe.paymentIntents.retrieve(reservedPiId)
+    if (existingPi.status === "succeeded" || existingPi.status === "processing") {
+      return
+    }
+    if (!ABANDONED_PROMO_PI_STATUSES.has(existingPi.status)) {
+      return
+    }
+    if (existingPi.status !== "canceled") {
+      await stripe.paymentIntents.cancel(reservedPiId).catch((err) => {
+        console.warn("[newsletter-promo] cancel abandoned PI failed:", reservedPiId, err)
+      })
+    }
+    await clearNewsletterPromoReservation(supabase, promo.id, reservedPiId)
+  } catch (err) {
+    console.warn("[newsletter-promo] retrieve abandoned PI failed:", reservedPiId, err)
+    await clearNewsletterPromoReservation(supabase, promo.id, reservedPiId)
+  }
 }
 
 export async function validateNewsletterPromoForCheckout(params: {

@@ -176,6 +176,10 @@ export function CheckoutOrderSummaryAside({
           </div>
           {!promoInteractive ? (
             <p className="mt-2 text-[11px] text-neutral-400">Sign in to apply your newsletter promo code.</p>
+          ) : promoDisabled ? (
+            <p className="mt-2 text-[11px] text-neutral-400">
+              Promo codes can&apos;t be combined with accepted offer prices.
+            </p>
           ) : appliedPromo ? (
             <p className="mt-2 text-[12px] font-medium text-[#5574AD]">
               {appliedPromo.code} applied — {appliedPromo.discountPercent}% off items
