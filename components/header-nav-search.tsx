@@ -592,7 +592,9 @@ export function HeaderNavSearch({
 
   const showIdleDropdown = idleOpen && query.trim().length === 0
   const showPersonalization =
-    recentSearches.length > 0 || recentlyViewed.length > 0
+    recentSearches.length > 0 ||
+    recentlyViewed.length > 0 ||
+    recentBrands.length > 0
   const showSuggestedFallback =
     personalizationLoaded &&
     !showPersonalization &&
@@ -674,6 +676,25 @@ export function HeaderNavSearch({
                 </div>
               </div>
             ) : null}
+            {recentBrands.length > 0 ? (
+              <div
+                className={cn(
+                  (recentSearches.length > 0 || recentlyViewed.length > 0) &&
+                    "border-t border-border/60",
+                )}
+              >
+                <NavSearchIdleSectionTitle title="Recently viewed brands" />
+                <div className="flex gap-3 overflow-x-auto px-4 pb-3 pt-0.5 snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {recentBrands.map((brand) => (
+                    <NavSearchIdleRecentlyViewedBrandTile
+                      key={brand.id}
+                      brand={brand}
+                      onNavigate={() => setIdleOpen(false)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </>
         ) : !suggestedLoaded ? (
           <SuggestedSurfboardsSkeleton />
@@ -714,6 +735,7 @@ export function HeaderNavSearch({
   const sharedSearchInputProps = {
     value: query,
     onChange: setQuery,
+    onMarketplaceBrandPick: persistRecentBrand,
     onBrandStripPick: (
       brandName: string,
       resolved?: { catalogSlug: string } | null,
