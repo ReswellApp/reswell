@@ -4,6 +4,16 @@ export function isMessagesInboxIndexRoute(pathname: string | null): boolean {
   return pathname.replace(/\/$/, "") === "/messages"
 }
 
+/** Desktop split-view shell (`/messages`, counterparty hub) — not offers or thread detail. */
+export function isMessagesDesktopShellRoute(pathname: string | null): boolean {
+  if (!pathname) return false
+  const normalized = pathname.replace(/\/$/, "") || "/"
+  if (!normalized.startsWith("/messages")) return false
+  if (normalized === "/messages/offers") return false
+  if (isMessageThreadDetailRoute(normalized)) return false
+  return true
+}
+
 /** Single conversation thread or new-message compose (mobile dock + scroll targets). */
 export function isMessageThreadDetailRoute(pathname: string | null): boolean {
   if (!pathname) return false
