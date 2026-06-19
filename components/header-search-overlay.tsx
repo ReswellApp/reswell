@@ -13,24 +13,16 @@ import { SiteSearchBar, siteSearchInputClassName } from "@/components/site-searc
 import { useClientSearchParams } from "@/hooks/use-client-search-params"
 import { clearNavSearchQuery, writeNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
+import {
+  headerNavSearchPlaceholder,
+  headerNavSearchSubmitHref,
+  resolveHeaderNavSearchSection,
+} from "@/lib/header-nav-marketplace-search"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { navigateToBrandProfileFromNavPick } from "@/lib/nav-marketplace-brand-search"
 
 function isSearchResultsPath(p: string) {
   return p === "/search" || p === "/search/recent"
-}
-
-function marketplaceNavSearchHref(
-  rawQuery: string,
-  pathname: string | null,
-  categorySource: Pick<URLSearchParams, "get">,
-): string {
-  const params = new URLSearchParams()
-  params.set("q", rawQuery.trim())
-  params.set("nq", "1")
-  const cat = isSearchResultsPath(pathname ?? "") ? categorySource.get("category") : null
-  if (cat?.trim()) params.set("category", cat.trim())
-  return `/search?${params.toString()}`
 }
 
 interface HeaderSearchOverlayProps {
@@ -50,6 +42,7 @@ export function HeaderSearchOverlay({
   const router = useRouter()
   const pathname = usePathname()
   const headerSearchParams = useClientSearchParams()
+  const navSearchSection = resolveHeaderNavSearchSection(pathname)
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -62,7 +55,7 @@ export function HeaderSearchOverlay({
         await goToCuratedSearchPage(router, pathname, headerSearchParams.toString())
         return
       }
-      const href = marketplaceNavSearchHref(q, pathname, headerSearchParams)
+      const href = headerNavSearchSubmitHref(q, pathname, headerSearchParams)
       onQueryChange(q)
       writeNavSearchQuery(q)
       router.push(href)
@@ -96,7 +89,7 @@ export function HeaderSearchOverlay({
           if (!term) return
           onQueryChange(term)
           writeNavSearchQuery(term)
-          router.push(marketplaceNavSearchHref(term, pathname, headerSearchParams))
+          router.push(headerNavSearchSubmitHref(term, pathname, headerSearchParams))
           onClose()
         }}
         onNavigate={() => {
@@ -104,8 +97,8 @@ export function HeaderSearchOverlay({
           clearNavSearchQuery()
           onClose()
         }}
-        placeholder="Search surfboards…"
-        section=""
+        placeholder={headerNavSearchPlaceholder(navSearchSection)}
+        section={navSearchSection}
         listboxId="nav-search-suggestions-tablet"
         inputClassName={siteSearchInputClassName({ compact: true })}
         className="w-full"

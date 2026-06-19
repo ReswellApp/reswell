@@ -15,9 +15,10 @@ import {
 } from "@/lib/elasticsearch/sellers-index"
 import { getElasticsearchClient } from "@/lib/elasticsearch/client"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
+import { ELASTICSEARCH_INDEXED_LISTING_SECTIONS } from "@/lib/elasticsearch/listing-sections"
 
 /**
- * Full reindex of active surfboard (peer) listings into Elasticsearch.
+ * Full reindex of active indexed peer listings (surfboards + fins) into Elasticsearch.
  * POST /api/search/reindex
  *
  * Auth: either
@@ -121,7 +122,7 @@ export async function POST(request: NextRequest) {
       `,
       )
       .eq("status", "active")
-      .eq("section", "surfboards")
+      .in("section", [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS])
       .order("created_at", { ascending: false })
       .range(from, from + pageSize - 1)
 

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { isElasticsearchIndexedListingSection } from "@/lib/elasticsearch/listing-sections"
 import { isMarketplaceSearchNoiseToken } from "@/lib/utils/marketplace-brand-query"
 import { getElasticsearchClient } from "./client"
 import { ELASTICSEARCH_LISTINGS_INDEX } from "./config"
@@ -504,7 +505,7 @@ export async function syncListingToIndex(
   const doc = await listingRowToSearchDoc(supabase, listingId)
   if (!doc) return
 
-  if (doc.status !== "active" || doc.section !== "surfboards") {
+  if (doc.status !== "active" || !isElasticsearchIndexedListingSection(doc.section)) {
     await deleteListingDocument(listingId)
     return
   }

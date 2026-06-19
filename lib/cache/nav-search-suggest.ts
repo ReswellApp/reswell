@@ -1,8 +1,9 @@
 import { unstable_cache } from "next/cache"
 import type { SearchSuggestResult } from "@/lib/types/marketplace-search-suggest"
+import type { NavSearchSuggestSectionKey } from "@/lib/header-nav-marketplace-search"
+import { navSearchSuggestSectionKey } from "@/lib/header-nav-marketplace-search"
 import {
   normalizeMarketplaceSearchSuggestQuery,
-  normalizeMarketplaceSearchSuggestSection,
   runMarketplaceSearchSuggest,
 } from "@/lib/services/marketplaceSearchSuggest"
 import { createAnonSupabaseClient } from "@/lib/supabase/anon"
@@ -13,7 +14,7 @@ export const NAV_SEARCH_SUGGEST_REVALIDATE_SECONDS = 60 * 60
 
 async function loadNavSearchSuggest(
   qNormalized: string,
-  sectionNormalized: "new" | "surfboards",
+  sectionNormalized: NavSearchSuggestSectionKey,
 ): Promise<SearchSuggestResult> {
   const supabase = createAnonSupabaseClient()
   return runMarketplaceSearchSuggest(supabase, qNormalized, sectionNormalized)
@@ -42,6 +43,6 @@ export async function getNavSearchSuggestCached(
       meta: { listingsBackend: "supabase" },
     }
   }
-  const sectionNormalized = normalizeMarketplaceSearchSuggestSection(section)
+  const sectionNormalized = navSearchSuggestSectionKey(section)
   return getCachedNavSearchSuggest(q.toLowerCase(), sectionNormalized)
 }

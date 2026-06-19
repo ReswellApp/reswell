@@ -31,6 +31,11 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { clearNavSearchQuery, writeNavSearchQuery } from "@/lib/nav-search-storage"
 import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
+import {
+  headerNavSearchPlaceholder,
+  headerNavSearchSubmitHref,
+  resolveHeaderNavSearchSection,
+} from "@/lib/header-nav-marketplace-search"
 import type {
   NavSearchPersonalizationBrand,
   NavSearchPersonalizationListing,
@@ -540,21 +545,17 @@ export function HeaderNavSearch({
     [userId],
   )
 
+  const navSearchSection = resolveHeaderNavSearchSection(pathname)
+
   const runSearch = useCallback(
     (q: string) => {
       const term = q.trim()
       if (!term) return
       persistRecentSearch(term)
-      const category = isSearchResultsPath(pathname)
-        ? searchParams.get("category")
-        : null
-      const params = new URLSearchParams()
-      params.set("q", term)
-      if (category?.trim()) params.set("category", category.trim())
-      params.set("nq", "1")
+      const href = headerNavSearchSubmitHref(term, pathname, searchParams)
       setQuery(term)
       writeNavSearchQuery(term)
-      router.push(`/search?${params.toString()}`)
+      router.push(href)
       setIdleOpen(false)
     },
     [router, pathname, searchParams, persistRecentSearch],
@@ -762,8 +763,8 @@ export function HeaderNavSearch({
     },
     onNavigate: clearSearchAndStorage,
     onFocus: handleIdleFocus,
-    placeholder: "Search surfboards…",
-    section: "",
+    placeholder: headerNavSearchPlaceholder(navSearchSection),
+    section: navSearchSection,
     className: "w-full",
     minLength: 2,
     analyticsSurface: "header_nav" as const,

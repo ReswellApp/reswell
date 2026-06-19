@@ -7,6 +7,7 @@ import type { RecentListing } from "@/components/recent-feed-client"
 import { RecentFeedClient } from "@/components/recent-feed-client"
 import { BoardsNoResultsRequestPanel } from "@/components/boards-no-results-request-panel"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
+import { ELASTICSEARCH_INDEXED_LISTING_SECTIONS } from "@/lib/elasticsearch/listing-sections"
 import {
   meaningfulSearchTerms,
   searchListingIdsFromElasticsearch,
@@ -308,12 +309,14 @@ async function resolveSearchListings(
       const ids = await searchListingIdsFromElasticsearch(rawQuery, LIMIT, {
         categoryName: category?.name ?? null,
         expansions,
+        sections: categoryId ? ["surfboards"] : [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS],
       })
       listings = await hydrateListingsByIds(supabase, ids)
       if (listings.length === 0) {
         const typoIds = await searchListingIdsFromElasticsearch(rawQuery, LIMIT, {
           categoryName: category?.name ?? null,
           typoFallback: true,
+          sections: categoryId ? ["surfboards"] : [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS],
         })
         listings = await hydrateListingsByIds(supabase, typoIds)
       }
@@ -429,7 +432,7 @@ async function buildSearchFromSupabaseTypoFallback(
   if (categoryId) {
     query = query.eq("category_id", categoryId)
   } else {
-    query = query.eq("section", "surfboards")
+    query = query.in("section", [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS])
   }
 
   const { data, error } = await query
@@ -491,7 +494,7 @@ async function buildSearchQuery(
   if (categoryId) {
     query = query.eq("category_id", categoryId)
   } else {
-    query = query.eq("section", "surfboards")
+    query = query.in("section", [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS])
   }
 
   if (rawQuery) {

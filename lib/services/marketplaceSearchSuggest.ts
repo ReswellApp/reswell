@@ -4,6 +4,11 @@ import { listActiveListingsForBrand } from "@/lib/db/brand-listings"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { searchListingIdsFromElasticsearch } from "@/lib/elasticsearch/listings-index"
 import {
+  marketplaceSearchSuggestSections,
+  navSearchSuggestSectionKey,
+  type NavSearchSuggestSectionKey,
+} from "@/lib/header-nav-marketplace-search"
+import {
   hydrateListingBrandLabelsForMarketplaceSuggest,
   resolveInferredBrandForMarketplaceSuggest,
   searchBrandsCatalogSuggestWithClient,
@@ -115,8 +120,10 @@ function catalogRowsToSuggestBrandChips(
   return chips
 }
 
-export function normalizeMarketplaceSearchSuggestSection(section: string): "new" | "surfboards" {
-  return section === "new" ? "new" : "surfboards"
+export function normalizeMarketplaceSearchSuggestSection(
+  section: string,
+): NavSearchSuggestSectionKey {
+  return navSearchSuggestSectionKey(section)
 }
 
 export function normalizeMarketplaceSearchSuggestQuery(qRaw: string): string {
@@ -141,8 +148,7 @@ export async function runMarketplaceSearchSuggest(
 
   const safe = escapeIlikeToken(q)
   const pattern = `"%${safe}%"`
-  const sections =
-    normalizeMarketplaceSearchSuggestSection(section) === "new" ? ["new"] : ["surfboards"]
+  const sections = marketplaceSearchSuggestSections(section)
 
   const catalogBrands = await searchBrandsCatalogSuggestWithClient(supabase, q)
   const inferredBrand = await resolveInferredBrandForMarketplaceSuggest(

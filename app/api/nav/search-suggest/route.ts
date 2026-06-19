@@ -6,7 +6,7 @@ import {
 } from "@/lib/cache/nav-search-suggest"
 import { normalizeMarketplaceSearchSuggestQuery } from "@/lib/services/marketplaceSearchSuggest"
 
-const sectionSchema = z.enum(["", "surfboards", "new"])
+const sectionSchema = z.enum(["", "surfboards", "fins", "new", "marketplace"])
 
 /**
  * GET `/api/nav/search-suggest?q=chan&section=surfboards`
