@@ -1,43 +1,15 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import Link from 'next/link'
+import { AuthErrorRecoveryPanel } from "@/components/auth/auth-error-recovery-panel"
+import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 
 export default async function Page(props: {
-  searchParams: Promise<{ error?: string }>
+  searchParams: Promise<{ error?: string; redirect?: string }>
 }) {
   const params = await props.searchParams
 
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">
-                Sorry, something went wrong.
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {params?.error ? (
-                <p className="text-sm text-muted-foreground">
-                  Code error: {params.error}
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  An unspecified error occurred.
-                </p>
-              )}
-              <div className="flex gap-2 mt-4">
-                <Link href="/auth/login" className="inline-flex items-center justify-center flex-1 rounded-md bg-black px-4 py-2 text-sm font-medium text-white shadow hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200">
-                  Try logging in
-                </Link>
-                <Link href="/" className="inline-flex items-center justify-center flex-1 rounded-md border border-black bg-transparent px-4 py-2 text-sm font-medium text-black shadow-sm hover:bg-neutral-100 dark:border-white dark:text-white dark:hover:bg-white/10">
-                  Go home
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    </div>
+    <AuthErrorRecoveryPanel
+      errorMessage={params?.error}
+      redirectTo={safeRedirectPath(params?.redirect ?? null)}
+    />
   )
 }

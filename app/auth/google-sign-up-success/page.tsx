@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
 import { SignUpWelcomePanel } from "@/components/auth/sign-up-welcome-panel"
+import { GoogleSignUpSuccessSessionFallback } from "@/components/auth/google-sign-up-success-session-fallback"
 import { GoogleSignUpConversionBeacon } from "@/components/google-ads/google-sign-up-conversion-beacon"
 import {
   GOOGLE_NEW_SIGNUP_COOKIE,
@@ -27,9 +28,7 @@ export default async function GoogleSignUpSuccessPage({ searchParams }: PageProp
   const { user } = await getCachedRequestSession()
 
   if (!user) {
-    redirect(
-      `/auth/login?redirect=${encodeURIComponent(buildGoogleSignUpSuccessPath(next))}`,
-    )
+    return <GoogleSignUpSuccessSessionFallback next={next} />
   }
 
   const cookieStore = await cookies()

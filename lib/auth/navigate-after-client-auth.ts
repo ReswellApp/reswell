@@ -1,6 +1,6 @@
 import { pathnameRequiresAuthSession } from "@/lib/auth/pathname-requires-auth-session"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
-import { waitForAuthCookiesOnDocument } from "@/lib/auth/wait-for-auth-cookies-on-document"
+import { waitForServerSessionReady } from "@/lib/auth/wait-for-server-session-ready"
 
 type AppRouter = {
   push: (href: string) => void
@@ -21,17 +21,17 @@ export async function navigateAfterClientAuth(
   const pathOnly = target.split("?")[0] ?? "/"
   const needsServerSession = pathnameRequiresAuthSession(pathOnly)
 
-  const cookieWaitOptions = needsServerSession
-    ? { maxAttempts: 80, msBetween: 50 }
-    : undefined
+  const sessionWaitOptions = needsServerSession
+    ? { maxAttempts: 100, msBetween: 50 }
+    : { maxAttempts: 60, msBetween: 50 }
+
+  await waitForServerSessionReady(sessionWaitOptions)
 
   if (needsServerSession) {
-    await waitForAuthCookiesOnDocument(cookieWaitOptions)
     window.location.assign(target)
     return
   }
 
-  await waitForAuthCookiesOnDocument(cookieWaitOptions)
   router.push(target)
   router.refresh()
 }

@@ -46,7 +46,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  const next = safeRedirectPath(searchParams.get("next"))
   return NextResponse.redirect(
-    `${origin}/auth/error?error=Could+not+confirm+your+email.+Please+try+again.`,
+    `${origin}/auth/error?error=${encodeURIComponent("Could not confirm your email. Please try again.")}&redirect=${encodeURIComponent(next)}`,
   )
 }

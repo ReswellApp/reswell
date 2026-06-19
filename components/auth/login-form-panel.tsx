@@ -23,9 +23,9 @@ import {
   AUTH_MODAL_INNER_CARD_HEADER_CLASS,
   AUTH_MODAL_OR_EMAIL_LABEL_CLASS,
 } from "@/lib/auth/auth-modal-shell-classes"
+import { AuthTransitionShell } from "@/components/auth/auth-transition-shell"
 import { navigateAfterClientAuth } from "@/lib/auth/navigate-after-client-auth"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
-import { documentHasSupabaseAuthCookies } from "@/lib/auth/wait-for-auth-cookies-on-document"
 import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 
 export function LoginFormPanel({
@@ -51,6 +51,7 @@ export function LoginFormPanel({
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [gate, setGate] = useState<"checking" | "ready" | "redirecting">("checking")
   const router = useRouter()
 
   useEffect(() => {
@@ -59,11 +60,14 @@ export function LoginFormPanel({
     void (async () => {
       let session = (await supabase.auth.getSession()).data.session
       if (!session?.user) {
-        session = await waitForClientSession({ supabase })
+        session = await waitForClientSession({ supabase, maxAttempts: 20, msBetween: 50 })
       }
-      if (session?.user && documentHasSupabaseAuthCookies()) {
+      if (session?.user) {
+        setGate("redirecting")
         await navigateAfterClientAuth(dest, router)
+        return
       }
+      setGate("ready")
     })()
   }, [router, redirectTo])
 
@@ -79,6 +83,7 @@ export function LoginFormPanel({
         password,
       })
       if (signError) throw signError
+      setGate("redirecting")
       await waitForClientSession({ supabase })
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
@@ -86,6 +91,7 @@ export function LoginFormPanel({
       onLoggedIn?.()
       await navigateAfterClientAuth(redirectTo, router)
     } catch (err: unknown) {
+      setGate("ready")
       setError(err instanceof Error ? err.message : "An error occurred")
     } finally {
       setIsLoading(false)
@@ -185,6 +191,10 @@ export function LoginFormPanel({
       </CardContent>
     </Card>
   )
+
+  if (gate === "checking" || gate === "redirecting") {
+    return <AuthTransitionShell />
+  }
 
   if (variant === "page") {
     return (
