@@ -25,10 +25,10 @@ export function SiteTopCategoryBar() {
   const searchParams = useClientSearchParams()
 
   return (
-    <div className="shrink-0 bg-background pt-9 sm:pt-10 lg:hidden">
-      <div className="container mx-auto px-4 sm:px-6">
+    <div className="shrink-0 bg-background lg:hidden">
+      <div className="container mx-auto px-4 py-3 sm:px-6 sm:py-3.5">
         <nav aria-label="Browse surfboards, sellers, and community">
-          <ul className="flex items-center gap-2.5 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <ul className="flex items-center gap-2.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {siteHeaderMainCategoryNavLinks.map((link) => {
               const active = boardBrowseNavItemIsActive(pathname, searchParams, link.href)
               return (
