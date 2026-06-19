@@ -9,12 +9,16 @@ import { cn } from "@/lib/utils"
 
 interface MessagesAccountShellClientProps {
   sellerProfileHref: string | null
+  storeHubHref?: string | null
+  storeHubName?: string | null
   sidebar: ReactNode
   children: ReactNode
 }
 
 export function MessagesAccountShellClient({
   sellerProfileHref,
+  storeHubHref,
+  storeHubName,
   sidebar,
   children,
 }: MessagesAccountShellClientProps) {
@@ -33,7 +37,11 @@ export function MessagesAccountShellClient({
         threadDetail && "max-lg:max-w-none max-lg:px-0 max-lg:py-0",
       )}
     >
-      <MessagesAccountMobileChrome sellerProfileHref={sellerProfileHref} />
+      <MessagesAccountMobileChrome
+        sellerProfileHref={sellerProfileHref}
+        storeHubHref={storeHubHref}
+        storeHubName={storeHubName}
+      />
 
       <div
         className={cn(

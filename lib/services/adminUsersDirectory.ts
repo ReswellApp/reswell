@@ -22,6 +22,7 @@ export type AdminUserDirectoryRow = {
   is_employee: boolean
   shop_verified: boolean
   is_reswell_seller: boolean
+  is_consignment_shop: boolean
   created_at: string
   last_active_at: string | null
   listings_count: number
@@ -65,6 +66,7 @@ type ProfileRow = {
   is_employee: boolean | null
   shop_verified: boolean | null
   is_reswell_seller: boolean | null
+  is_consignment_shop: boolean | null
   created_at: string
   last_active_at: string | null
 }
@@ -96,7 +98,7 @@ export async function loadAdminUsersDirectory(): Promise<
         db
           .from('profiles')
           .select(
-            'id, email, display_name, avatar_url, city, is_admin, is_employee, shop_verified, is_reswell_seller, created_at, last_active_at',
+            'id, email, display_name, avatar_url, city, is_admin, is_employee, shop_verified, is_reswell_seller, is_consignment_shop, created_at, last_active_at',
           )
           .order('created_at', { ascending: false })
           .range(from, to),
@@ -141,6 +143,7 @@ export async function loadAdminUsersDirectory(): Promise<
         is_employee: p.is_employee === true,
         shop_verified: p.shop_verified === true,
         is_reswell_seller: p.is_reswell_seller === true,
+        is_consignment_shop: p.is_consignment_shop === true,
         created_at: p.created_at,
         last_active_at: p.last_active_at,
         listings_count: listingAgg?.total ?? 0,

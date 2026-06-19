@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ChevronDown, Store } from "lucide-react"
+import { ChevronDown, Store, Building2 } from "lucide-react"
 import {
   Collapsible,
   CollapsibleContent,
@@ -22,6 +22,9 @@ function isLinkActive(pathname: string, href: string): boolean {
   }
   if (href === "/messages" || href.startsWith("/messages")) {
     return normalized === "/messages" || normalized.startsWith("/messages/")
+  }
+  if (href.startsWith("/stores/")) {
+    return normalized.startsWith("/stores/")
   }
   return normalized === href || normalized.startsWith(`${href}/`)
 }
@@ -50,12 +53,16 @@ function resolveActiveLink(
 
 export interface DashboardMobileNavProps {
   sellerProfileHref: string | null
+  storeHubHref?: string | null
+  storeHubName?: string | null
   /** Pango-style bordered bar for account pages (e.g. /messages). */
   variant?: "default" | "account"
 }
 
 export function DashboardMobileNav({
   sellerProfileHref,
+  storeHubHref,
+  storeHubName,
   variant = "default",
 }: DashboardMobileNavProps) {
   const isAccountVariant = variant === "account"
@@ -63,6 +70,16 @@ export function DashboardMobileNav({
   const [open, setOpen] = useState(false)
 
   const links: (DashboardNavLink & { key: string })[] = useMemo(() => {
+    const storeLink: (DashboardNavLink & { key: string }) | null =
+      storeHubHref
+        ? {
+            key: "store-hub",
+            name: storeHubName ?? "Consignment shop",
+            href: storeHubHref,
+            icon: Building2,
+          }
+        : null
+
     const sellerLink: (DashboardNavLink & { key: string }) | null = sellerProfileHref
       ? {
           key: "seller-profile",
@@ -74,9 +91,10 @@ export function DashboardMobileNav({
 
     return [
       ...DASHBOARD_NAV_LINKS.map((l) => ({ ...l, key: l.href })),
+      ...(storeLink ? [storeLink] : []),
       ...(sellerLink ? [sellerLink] : []),
     ]
-  }, [sellerProfileHref])
+  }, [sellerProfileHref, storeHubHref, storeHubName])
 
   const activeLink = useMemo(() => resolveActiveLink(pathname, links), [links, pathname])
 
@@ -130,8 +148,8 @@ export function DashboardMobileNav({
             <ul>
               {links.map((link) => {
                 const active =
-                  link.key === "seller-profile"
-                    ? pathname.replace(/\/$/, "") === link.href.replace(/\/$/, "")
+                  link.key === "seller-profile" || link.key === "store-hub"
+                    ? isLinkActive(pathname, link.href)
                     : isLinkActive(pathname, link.href)
 
                 return (

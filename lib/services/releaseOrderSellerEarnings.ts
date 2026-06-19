@@ -18,8 +18,21 @@ export async function releaseOrderSellerEarningsAfterFulfillment(
     return { ok: false, error: "Server configuration error" }
   }
 
+  // Consignment orders split earnings across the consignor + shop wallets; they use a dedicated RPC.
+  const { data: channelRow } = await supabase
+    .from("orders")
+    .select("consignment_store_id")
+    .eq("id", orderId)
+    .maybeSingle()
+
+  const isConsignmentOrder = Boolean(
+    (channelRow as { consignment_store_id?: string | null } | null)?.consignment_store_id,
+  )
+
   const { data: didRelease, error: rpcErr } = await supabase.rpc(
-    "release_order_seller_earnings_to_wallet",
+    isConsignmentOrder
+      ? "release_consignment_order_earnings"
+      : "release_order_seller_earnings_to_wallet",
     { p_order_id: orderId },
   )
 
@@ -30,7 +43,9 @@ export async function releaseOrderSellerEarningsAfterFulfillment(
 
   const releasedNew = didRelease === true
 
-  if (releasedNew) {
+  // Seller "Sale Successful" email assumes a single-seller payout amount; shop-specific consignment
+  // messaging is handled separately, so skip the generic seller email for consignment orders.
+  if (releasedNew && !isConsignmentOrder) {
     const { data: order } = await supabase
       .from("orders")
       .select(

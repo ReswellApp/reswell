@@ -186,20 +186,36 @@ export async function issueMarketplaceOrderRefund(
       .update({ status: "cancelled", updated_at: nowIso })
       .eq("order_id", order.id)
 
-    // 3. Immediately claw back seller wallet so /earnings updates on the same page refresh
-    await immediateSellerWalletClawback(serviceSupabase, {
-      orderId: order.id,
-      sellerId: order.seller_id,
-      listingId: order.listing_id,
-      sellerEarnings: Number(order.seller_earnings ?? 0),
-      stripeRefundId: stripeRefund.id,
-      refundAmountCents: stripeRefund.amount,
-      piAmountCents: typeof stripeRefund.payment_intent === "object" && stripeRefund.payment_intent
-        ? (stripeRefund.payment_intent as Stripe.PaymentIntent).amount
-        : stripeRefund.amount,
-      orderTotalUsd: Number(order.amount),
-      nowIso,
-    })
+    // 3. Reverse earnings. Consignment orders split across two wallets — use the split-aware RPC;
+    //    peer orders use the single-seller clawback.
+    const { data: consRow } = await serviceSupabase
+      .from("orders")
+      .select("consignment_store_id")
+      .eq("id", order.id)
+      .maybeSingle()
+
+    if (consRow?.consignment_store_id) {
+      const { error: rpcErr } = await serviceSupabase.rpc("refund_consignment_order", {
+        p_order_id: order.id,
+      })
+      if (rpcErr) {
+        console.error("[issue refund] refund_consignment_order rpc", { orderId: order.id, rpcErr })
+      }
+    } else {
+      await immediateSellerWalletClawback(serviceSupabase, {
+        orderId: order.id,
+        sellerId: order.seller_id,
+        listingId: order.listing_id,
+        sellerEarnings: Number(order.seller_earnings ?? 0),
+        stripeRefundId: stripeRefund.id,
+        refundAmountCents: stripeRefund.amount,
+        piAmountCents: typeof stripeRefund.payment_intent === "object" && stripeRefund.payment_intent
+          ? (stripeRefund.payment_intent as Stripe.PaymentIntent).amount
+          : stripeRefund.amount,
+        orderTotalUsd: Number(order.amount),
+        nowIso,
+      })
+    }
 
     // 4. Re-list every line on the order
     await relistOrderListingsAfterRefund(serviceSupabase, order.id)

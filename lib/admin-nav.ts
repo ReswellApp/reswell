@@ -67,6 +67,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/listings', label: 'Listings', icon: 'package' },
       { href: '/admin/seo', label: 'SEO', icon: 'search' },
       { href: '/admin/users', label: 'Users', icon: 'users' },
+      { href: '/admin/consignment-shops', label: 'Consignment shops', icon: 'store' },
       { href: '/admin/wallets', label: 'Wallet balances', icon: 'wallet' },
     ],
   },
