@@ -1,7 +1,8 @@
 /**
  * Klaviyo Events API — weekly digest of a buyer's purchasable saved listings.
  *
- * **Metric:** `Favorites Digest` — profile is the buyer. **Items** powers dynamic product blocks.
+ * **Metric:** `Favorites Digest` — profile is the buyer.
+ * **Klaviyo email:** Custom HTML block → `{{ event.favorites_items_html }}`
  * Cron: `GET /api/cron/klaviyo-favorites-digest` (Bearer `CRON_SECRET` when set).
  */
 

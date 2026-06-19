@@ -19,6 +19,44 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { type NextRequest, NextResponse, after } from "next/server";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
+async function getUserAfterFailedCodeExchange(
+  supabase: SupabaseClient,
+): Promise<User | null> {
+  const maxAttempts = 5
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    try {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser()
+      if (!error && user) return user
+      if (
+        error &&
+        isTransientAuthNetworkError(error) &&
+        attempt < maxAttempts - 1
+      ) {
+        await new Promise((r) => setTimeout(r, 150 * (attempt + 1)))
+        continue
+      }
+    } catch (error) {
+      if (
+        isTransientAuthNetworkError(error) &&
+        attempt < maxAttempts - 1
+      ) {
+        await new Promise((r) => setTimeout(r, 150 * (attempt + 1)))
+        continue
+      }
+    }
+
+    if (attempt < maxAttempts - 1) {
+      await new Promise((r) => setTimeout(r, 120 * (attempt + 1)))
+    }
+  }
+
+  return null
+}
+
 async function exchangeCodeWithRetry(
   supabase: SupabaseClient,
   code: string,
@@ -135,10 +173,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Code may already have been exchanged (double navigation). Continue if session exists.
-    const {
-      data: { user: existingUser },
-    } = await supabase.auth.getUser();
+    // Code may already have been exchanged (double navigation / parallel tabs).
+    // Retry briefly — cookies from the winning request can land after this exchange fails.
+    const existingUser = await getUserAfterFailedCodeExchange(supabase);
     if (existingUser) {
       return buildOAuthSuccessRedirect(
         origin,

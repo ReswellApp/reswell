@@ -13,6 +13,7 @@ import {
   type KlaviyoListingProductSource,
   parseKlaviyoListingPrice,
 } from "@/lib/klaviyo/catalog-product"
+import { favoritesKlaviyoEmailProperties } from "@/lib/klaviyo/favorites-email-html"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 
 export const LISTING_SAVED_METRIC = "Listing Saved"
@@ -28,6 +29,8 @@ export type KlaviyoFavoritesCommercePayload = {
   item_count: number
   listing_ids: string
   favorites_url: string
+  favorites_items_html: string
+  favorites_items_plain: string
 }
 
 export function buildKlaviyoFavoritesCommercePayload(
@@ -43,12 +46,16 @@ export function buildKlaviyoFavoritesCommercePayload(
     items: commerceItems,
   })
 
+  const favoritesUrl = `${publicSiteOriginForEmail()}/favorites`
+  const emailProps = favoritesKlaviyoEmailProperties(checkoutItems, favoritesUrl)
+
   return {
     ...commerce,
     checkout_items: checkoutItems,
     item_count: listings.length,
     listing_ids: listings.map((listing) => listing.id).join(","),
-    favorites_url: `${publicSiteOriginForEmail()}/favorites`,
+    favorites_url: favoritesUrl,
+    ...emailProps,
   }
 }
 

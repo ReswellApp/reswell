@@ -4,7 +4,9 @@
  * **Metric:** `Listing Saved` — profile is the **buyer** (`external_id` = Supabase user id).
  * Includes **ProductID** + **Items** for Klaviyo dynamic product blocks (catalog `$id` = listing id).
  *
- * **Flow:** Flows → Metric → **Listing Saved** → dynamic product block → products from event.
+ * **Klaviyo email:** Custom HTML block → `{{ event.favorites_items_html }}`
+ * Plain text: `{{ event.favorites_items_plain }}`
+ * Metric appears under Flows → API after the first real save event (no bootstrap needed).
  * Seller notification stays on separate metric **Favorites button**.
  */
 

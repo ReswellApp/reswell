@@ -1,7 +1,8 @@
 /**
  * Klaviyo Events API — a listing the buyer saved dropped in price.
  *
- * **Metric:** `Favorite Price Drop` — profile is the buyer. **Items** = the discounted listing.
+ * **Metric:** `Favorite Price Drop` — profile is the buyer.
+ * **Klaviyo email:** Custom HTML block → `{{ event.favorites_items_html }}` (includes price drop banner).
  */
 
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
@@ -10,6 +11,7 @@ import {
   FAVORITE_PRICE_DROP_METRIC,
   formatFavoritePriceDropDisplay,
 } from "@/lib/klaviyo/favorites-commerce-event"
+import { favoritesKlaviyoEmailProperties } from "@/lib/klaviyo/favorites-email-html"
 import type { KlaviyoListingProductSource } from "@/lib/klaviyo/catalog-product"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 
@@ -59,6 +61,16 @@ export async function trackKlaviyoFavoritePriceDrop(
   const title =
     typeof payload.listing.title === "string" ? payload.listing.title.trim() : "Saved listing"
 
+  const priceDropDisplay = formatFavoritePriceDropDisplay(
+    payload.oldPriceUsd,
+    payload.newPriceUsd,
+  )
+  const emailWithDrop = favoritesKlaviyoEmailProperties(
+    commerce.checkout_items,
+    commerce.favorites_url,
+    { priceDropDisplay },
+  )
+
   return sendKlaviyoServerEvent({
     metricName: FAVORITE_PRICE_DROP_METRIC,
     profile: {
@@ -69,14 +81,12 @@ export async function trackKlaviyoFavoritePriceDrop(
     properties: {
       time: new Date().toISOString(),
       ...commerce,
+      ...emailWithDrop,
       listing_id: payload.listing.id,
       Title: title,
       old_price_usd: payload.oldPriceUsd,
       new_price_usd: payload.newPriceUsd,
-      price_drop_display: formatFavoritePriceDropDisplay(
-        payload.oldPriceUsd,
-        payload.newPriceUsd,
-      ),
+      price_drop_display: priceDropDisplay,
       price_drop_percent: dropPct,
     },
     value: payload.newPriceUsd,

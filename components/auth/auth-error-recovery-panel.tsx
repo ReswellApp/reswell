@@ -30,21 +30,20 @@ export function AuthErrorRecoveryPanel({
     handledRef.current = true
 
     void (async () => {
-      const session = await waitForClientSession({ maxAttempts: 40, msBetween: 75 })
+      const session = await waitForClientSession({ maxAttempts: 60, msBetween: 75 })
       if (session?.user) {
-        const serverReady = await waitForServerSessionReady({
-          maxAttempts: 80,
+        await waitForServerSessionReady({
+          maxAttempts: 120,
           msBetween: 50,
         })
-        if (serverReady || session.access_token) {
-          window.location.replace(destination)
-          return
-        }
+        // Client session is enough — full navigation sends cookies even when the probe lagged.
+        window.location.replace(destination)
+        return
       }
 
       const serverReady = await waitForServerSessionReady({
-        maxAttempts: 40,
-        msBetween: 75,
+        maxAttempts: 120,
+        msBetween: 50,
       })
       if (serverReady) {
         window.location.replace(destination)
