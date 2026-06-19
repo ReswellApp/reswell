@@ -2,8 +2,13 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import {
+  fetchListingForKlaviyoFavoriteEvent,
+  isFavoriteListingEligibleForKlaviyoCommerce,
+} from "@/lib/db/favoritesKlaviyo"
 import { getListingRowForFavoriteNotification } from "@/lib/db/listings"
 import { trackKlaviyoFavoritesButton } from "@/lib/klaviyo/track-favorites-button"
+import { trackKlaviyoListingSaved } from "@/lib/klaviyo/track-listing-saved"
 
 export async function toggleFavoriteListing(listingId: string) {
   const supabase = await createClient()
@@ -68,6 +73,17 @@ export async function toggleFavoriteListing(listingId: string) {
       favoriterProfile,
       favoriteId: inserted.id,
       favoritedAt: inserted.created_at,
+    })
+
+    void fetchListingForKlaviyoFavoriteEvent(supabase, listingId).then((listingRow) => {
+      if (!listingRow || !isFavoriteListingEligibleForKlaviyoCommerce(listingRow)) return
+      void trackKlaviyoListingSaved({
+        buyerUserId: user.id,
+        buyerEmail: user.email?.trim() ?? null,
+        favoriteId: inserted.id,
+        favoritedAt: inserted.created_at,
+        listing: listingRow,
+      })
     })
   }
 

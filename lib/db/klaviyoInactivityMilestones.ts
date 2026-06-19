@@ -111,3 +111,44 @@ export async function fetchSentInactiveMilestoneDaysForUser(
 
   return { days: out, error: null }
 }
+
+/**
+ * Milestones already emitted **during the current inactivity streak** — matches
+ * `profiles_eligible_for_klaviyo_inactivity` (`sent_at > last_active_at`).
+ */
+export async function fetchInactiveMilestoneDaysSentThisStreak(
+  supabase: SupabaseClient,
+  userId: string,
+  lastActiveAtIso: string,
+): Promise<{ days: Set<KlaviyoInactivityMilestoneDays>; error: string | null }> {
+  const lastActiveMs = new Date(lastActiveAtIso).getTime()
+  if (!Number.isFinite(lastActiveMs)) {
+    return { days: new Set(), error: "invalid_last_active_at" }
+  }
+
+  const { data, error } = await supabase
+    .from("klaviyo_inactivity_milestones")
+    .select("milestone_days, sent_at")
+    .eq("user_id", userId)
+
+  if (error) {
+    return { days: new Set(), error: error.message }
+  }
+
+  const out = new Set<KlaviyoInactivityMilestoneDays>()
+  for (const row of data ?? []) {
+    const d = Number((row as { milestone_days?: number }).milestone_days)
+    const sentAtRaw = (row as { sent_at?: string }).sent_at
+    const sentAtMs =
+      typeof sentAtRaw === "string" ? new Date(sentAtRaw).getTime() : Number.NaN
+    if (
+      (d === 3 || d === 15 || d === 30) &&
+      Number.isFinite(sentAtMs) &&
+      sentAtMs > lastActiveMs
+    ) {
+      out.add(d as KlaviyoInactivityMilestoneDays)
+    }
+  }
+
+  return { days: out, error: null }
+}

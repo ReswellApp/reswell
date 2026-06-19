@@ -423,6 +423,7 @@ export default function AdminUsersPage() {
   async function pushInactiveKlaviyoToUser(
     userId: string,
     strategy: 'highest_pending' | 'all_pending',
+    force = false,
   ) {
     setPushingKlaviyoUserId(userId)
     try {
@@ -430,7 +431,7 @@ export default function AdminUsersPage() {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, strategy, force: false }),
+        body: JSON.stringify({ user_id: userId, strategy, force }),
       })
       const payload = await res.json().catch(() => ({}))
       if (!res.ok) {
@@ -442,20 +443,37 @@ export default function AdminUsersPage() {
         return
       }
       const reason = typeof payload.skipped_reason === 'string' ? payload.skipped_reason : ''
+      const detail =
+        typeof payload.skipped_detail === 'string' ? payload.skipped_detail : ''
       const attempted = payload.milestones_attempted as unknown
       const sentArr = payload.sent as
-        | { milestone_days?: number; klaviyo_ok?: boolean }[]
+        | { milestone_days?: number; klaviyo_ok?: boolean; klaviyo_detail?: string }[]
         | undefined
 
       if (reason === 'no_last_active_at') {
-        toast.message('No last active time — presence never recorded for this profile')
+        toast.message(detail || 'No last active time — presence never recorded for this profile')
+        return
+      }
+      if (reason === 'not_inactive_enough') {
+        toast.message(detail || 'Not inactive long enough for 3 / 15 / 30-day tiers')
+        return
+      }
+      if (reason === 'already_sent_this_streak') {
+        toast.message(
+          detail ||
+            'Inactive tier already sent this streak — use “Force resend inactive email” to emit again',
+        )
+        return
+      }
+      if (reason === 'marketing_opt_out') {
+        toast.message(detail || 'User opted out of marketing emails')
         return
       }
       if (reason === 'no_eligible_milestone_or_all_recorded') {
-        toast.message('Not inactive long enough vs 3 / 15 / 30-day tiers, or already recorded')
+        toast.message(detail || 'No eligible inactive milestone for this profile')
         return
       }
-      if (reason) toast.message(reason)
+      if (reason) toast.message(detail ? `${reason}: ${detail}` : reason)
 
       if (Array.isArray(attempted) && attempted.length === 0 && !reason.includes('klaviyo_inactivity')) {
         return
@@ -469,7 +487,12 @@ export default function AdminUsersPage() {
           .join(', ')
         toast.success(`Klaviyo inactive event(s) sent (${names ?? 'ok'})`)
       } else if (Array.isArray(sentArr) && sentArr.length > 0) {
-        toast.error('Klaviyo rejected the event — check server logs / API key')
+        const detail = sentArr[0]?.klaviyo_detail
+        toast.error(
+          detail
+            ? `Klaviyo rejected the event — ${detail.slice(0, 120)}`
+            : 'Klaviyo rejected the event — check server logs / API key',
+        )
       }
     } catch {
       toast.error('Klaviyo push failed')
@@ -1161,6 +1184,23 @@ export default function AdminUsersPage() {
                         >
                           <Mail className="mr-2 h-4 w-4" />
                           Klaviyo: push all pending tiers
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={pushingKlaviyoUserId === user.id}
+                          onClick={() => {
+                            if (
+                              typeof window !== 'undefined' &&
+                              !window.confirm(
+                                'Force-send the highest inactive tier to Klaviyo again (bypasses streak dedupe)? Use for testing or if the first send failed.',
+                              )
+                            ) {
+                              return
+                            }
+                            void pushInactiveKlaviyoToUser(user.id, 'highest_pending', true)
+                          }}
+                        >
+                          <Mail className="mr-2 h-4 w-4" />
+                          Klaviyo: force resend inactive email
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

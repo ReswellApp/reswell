@@ -5,6 +5,7 @@ import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-publ
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { patchListingPriceByOwner } from "@/lib/db/listings"
+import { notifyKlaviyoFavoritePriceDrop } from "@/lib/services/klaviyoFavoritePriceDrop"
 
 const QUICK_PRICE_ALLOWED_STATUSES = ["active", "pending_sale", "pending", "draft"] as const
 
@@ -111,6 +112,14 @@ export async function updateSellerListingQuickPrice(
   revalidateListingDetailPage(listingId, row.slug)
   if (row.section === "surfboards") {
     revalidateBoardsBrowseCatalog()
+  }
+
+  if (nextUsd < currentUsd) {
+    void notifyKlaviyoFavoritePriceDrop(supabase, {
+      listingId,
+      oldPriceUsd: currentUsd,
+      newPriceUsd: nextUsd,
+    })
   }
 
   return { ok: true, priceUsd: nextUsd }
