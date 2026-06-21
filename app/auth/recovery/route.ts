@@ -1,3 +1,4 @@
+import { buildAuthCompletingUrl } from "@/lib/auth/build-auth-completing-url"
 import { passwordResetLandingPath } from "@/lib/auth/password-reset-landing-flag"
 import { isNewOAuthAccount } from "@/lib/auth/is-new-oauth-account"
 import { trackKlaviyoNewAccountCreated } from "@/lib/klaviyo/track-new-account-created"
@@ -43,6 +44,6 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.redirect(
-    `${origin}/auth/error?error=This+password+reset+link+is+invalid+or+has+expired.`,
+    buildAuthCompletingUrl(origin, "/auth/forgot-password"),
   )
 }

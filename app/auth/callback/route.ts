@@ -9,7 +9,8 @@ import { safeRedirectPath } from "@/lib/auth/safe-redirect";
 import {
   isTransientAuthNetworkError,
 } from "@/lib/auth/clear-supabase-auth-cookies";
-import { buildAuthCompletingUrl } from "@/lib/auth/build-auth-completing-url";
+import { buildAuthCompletingPath, buildAuthCompletingUrl } from "@/lib/auth/build-auth-completing-url";
+import { copySupabaseAuthCookies } from "@/lib/auth/copy-supabase-auth-cookies";
 import { isRecoverableOAuthCodeExchangeError } from "@/lib/auth/is-recoverable-oauth-code-exchange-error";
 import { waitForUserAfterOAuthExchange } from "@/lib/auth/wait-for-user-after-oauth-exchange";
 import {
@@ -53,21 +54,7 @@ function copyAuthCookies(
   from: NextResponse,
   to: NextResponse,
 ): void {
-  from.cookies.getAll().forEach((cookie) => {
-    to.cookies.set({
-      name: cookie.name,
-      value: cookie.value,
-      path: cookie.path,
-      domain: cookie.domain,
-      expires: cookie.expires,
-      maxAge: cookie.maxAge,
-      httpOnly: cookie.httpOnly,
-      secure: cookie.secure,
-      sameSite: cookie.sameSite,
-      priority: cookie.priority,
-      partitioned: cookie.partitioned,
-    });
-  });
+  copySupabaseAuthCookies(from, to);
 }
 
 function buildOAuthSuccessRedirect(
@@ -101,7 +88,9 @@ function buildOAuthSuccessRedirect(
     }
   }
 
-  const finalResponse = NextResponse.redirect(`${origin}${redirectPath}`);
+  const finalResponse = NextResponse.redirect(
+    `${origin}${buildAuthCompletingPath(redirectPath)}`,
+  );
   if (isGoogleAuthUser(user) && shouldShowGoogleSignUpWelcome(user)) {
     finalResponse.cookies.set(GOOGLE_NEW_SIGNUP_COOKIE, "1", {
       path: "/",
@@ -204,7 +193,5 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(
-    `${origin}/auth/error?error=${encodeURIComponent("Could not verify your account. Please try again.")}&redirect=${encodeURIComponent(next)}`,
-  );
+  return NextResponse.redirect(buildAuthCompletingUrl(origin, next));
 }

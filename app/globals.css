@@ -596,10 +596,11 @@ html[data-reswell-scroll-lock] body {
       calc(var(--lys-fold-height, var(--lys-fold-height-fallback)) * 0.013);
   }
 
-  .listyoursurfboard-mobile-fold [data-lys-review-avatar] {
+  .listyoursurfboard-mobile-fold [data-lys-review-thumb] {
     height: calc(var(--lys-fold-height, var(--lys-fold-height-fallback)) * 0.041);
     width: calc(var(--lys-fold-height, var(--lys-fold-height-fallback)) * 0.041);
     flex-shrink: 0;
+    aspect-ratio: 1;
   }
 
   .listyoursurfboard-mobile-fold [data-lys-review-name] {

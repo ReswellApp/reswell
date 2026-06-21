@@ -1,13 +1,15 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
+import { ImageOff } from "lucide-react"
 import { SellerRatingStarRow } from "@/components/seller-rating-stars"
 import { Badge } from "@/components/ui/badge"
-import { MessageProfileAvatar } from "@/components/features/messages/message-profile-avatar"
 import type {
   MarketplaceShowcaseReviewRole,
   MarketplaceShowcaseReviewRow,
 } from "@/lib/db/marketplace-reviews-showcase"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { truncateReviewText } from "@/lib/reswell-platform-review-stats"
 import { cn } from "@/lib/utils"
 import { ListYourSurfboardReviewDialog } from "@/components/features/marketing/list-your-surfboard-review-dialog"
@@ -18,6 +20,44 @@ const ROLE_LABEL: Record<MarketplaceShowcaseReviewRole, string> = {
 }
 
 const SCROLL_SPEED_PX = 0.45
+
+function ReviewListingThumb({
+  imageSrc,
+  title,
+  mobileOneScreen = false,
+}: {
+  imageSrc: string | null
+  title: string | null
+  mobileOneScreen?: boolean
+}) {
+  const alt = title?.trim() || "Reviewed listing"
+
+  return (
+    <div
+      data-lys-review-thumb={mobileOneScreen ? true : undefined}
+      className={cn(
+        "relative shrink-0 overflow-hidden rounded-md bg-muted ring-1 ring-border/60",
+        mobileOneScreen ? "h-9 w-9" : "h-11 w-11",
+        mobileOneScreen && "max-lg:aspect-square max-lg:h-auto max-lg:w-auto",
+      )}
+    >
+      {imageSrc ? (
+        <Image
+          src={imageSrc}
+          alt={alt}
+          fill
+          className="object-cover"
+          sizes={mobileOneScreen ? "36px" : "44px"}
+          unoptimized={listingImageShouldBypassOptimization(imageSrc)}
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-muted-foreground">
+          <ImageOff className="h-4 w-4" aria-hidden />
+        </div>
+      )}
+    </div>
+  )
+}
 
 function normalizeMarqueeScroll(el: HTMLDivElement) {
   const loopWidth = el.scrollWidth / 2
@@ -48,15 +88,11 @@ function CompactReviewMarqueeTile({
       )}
       data-lys-review-tile={mobileOneScreen ? true : undefined}
     >
-      <div
-        data-lys-review-avatar={mobileOneScreen ? true : undefined}
-        className="shrink-0"
-      >
-        <MessageProfileAvatar
-          avatarUrl={review.reviewerAvatarUrl}
-          displayName={review.reviewerLabel}
-          size={mobileOneScreen ? "xs" : "sm"}
-          className={cn(mobileOneScreen && "max-lg:!h-full max-lg:!w-full")}
+      <div className="shrink-0">
+        <ReviewListingThumb
+          imageSrc={review.listingImageSrc}
+          title={review.listingTitle}
+          mobileOneScreen={mobileOneScreen}
         />
       </div>
       <div className="min-w-0 flex-1">

@@ -1,3 +1,4 @@
+import { buildAuthCompletingUrl } from "@/lib/auth/build-auth-completing-url"
 import { passwordResetLandingPath } from "@/lib/auth/password-reset-landing-flag"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { buildEmailSignUpSuccessPath } from "@/lib/google-ads/sign-up-success-path"
@@ -47,7 +48,5 @@ export async function GET(request: NextRequest) {
   }
 
   const next = safeRedirectPath(searchParams.get("next"))
-  return NextResponse.redirect(
-    `${origin}/auth/error?error=${encodeURIComponent("Could not confirm your email. Please try again.")}&redirect=${encodeURIComponent(next)}`,
-  )
+  return NextResponse.redirect(buildAuthCompletingUrl(origin, next))
 }

@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
 import { SignUpWelcomePanel } from "@/components/auth/sign-up-welcome-panel"
-import { GoogleSignUpSuccessSessionFallback } from "@/components/auth/google-sign-up-success-session-fallback"
 import { GoogleSignUpConversionBeacon } from "@/components/google-ads/google-sign-up-conversion-beacon"
 import {
   GOOGLE_NEW_SIGNUP_COOKIE,
   shouldShowGoogleSignUpWelcome,
 } from "@/lib/auth/google-sign-up-welcome"
+import { buildAuthCompletingPath } from "@/lib/auth/build-auth-completing-url"
 import { oauthWelcomeFirstName } from "@/lib/auth/oauth-welcome-name"
 import { isGoogleAuthUser } from "@/lib/auth/profile-completion"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
@@ -28,7 +28,7 @@ export default async function GoogleSignUpSuccessPage({ searchParams }: PageProp
   const { user } = await getCachedRequestSession()
 
   if (!user) {
-    return <GoogleSignUpSuccessSessionFallback next={next} />
+    redirect(buildAuthCompletingPath(buildGoogleSignUpSuccessPath(next)))
   }
 
   const cookieStore = await cookies()
