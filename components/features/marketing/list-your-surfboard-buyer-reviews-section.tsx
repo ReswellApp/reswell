@@ -1,7 +1,6 @@
 import { FadeInSection } from "@/components/fade-in-section"
 import { ListYourSurfboardSellCta } from "@/components/features/marketing/list-your-surfboard-sell-cta"
 import { ListYourSurfboardReviewsMarquee } from "@/components/features/marketing/list-your-surfboard-reviews-marquee"
-import { ListYourSurfboardStickyCta } from "@/components/features/marketing/list-your-surfboard-sticky-cta"
 import { ListYourSurfboardMobileFold } from "@/components/features/marketing/list-your-surfboard-mobile-fold"
 import {
   MarketingHeadlineHero,
@@ -50,6 +49,15 @@ export function ListYourSurfboardMarketplaceReviewsSection({
           }
         />
 
+        <section
+          className="shrink-0 px-4 pb-3 pt-2 max-lg:pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:hidden"
+          data-lys-inline-cta
+        >
+          <ListYourSurfboardSellCta className="w-full">
+            List your surfboard
+          </ListYourSurfboardSellCta>
+        </section>
+
         <section className="hidden pb-10 pt-2 sm:block sm:pb-12">
           <div className="container mx-auto flex justify-end px-4 sm:px-6">
             <ListYourSurfboardSellCta size="lg" className="w-full sm:w-auto">
@@ -58,8 +66,6 @@ export function ListYourSurfboardMarketplaceReviewsSection({
           </div>
         </section>
       </ListYourSurfboardMobileFold>
-
-      <ListYourSurfboardStickyCta pinned />
     </FadeInSection>
   )
 }

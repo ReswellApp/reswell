@@ -6,6 +6,11 @@ import { requireAdmin } from "@/lib/brands/admin-server"
 import { listBrands } from "@/lib/brands/server"
 import { isValidBrandSlug } from "@/lib/brands/slug"
 import { BRANDS_BASE } from "@/lib/brands/routes"
+import {
+  parseBrandProductCategorySlugsFromBody,
+  type BrandProductCategorySlug,
+} from "@/lib/brand-product-categories"
+import { syncBrandProductCategories } from "@/lib/db/brand-product-categories"
 
 const MAX_SHORT_DESCRIPTION = 2000
 
@@ -40,6 +45,7 @@ function parseBody(body: unknown): {
   model_count: number
   about_paragraphs: string[]
   brand_request_id: string | null
+  product_categories: BrandProductCategorySlug[]
 } | { error: string } {
   if (!body || typeof body !== "object") return { error: "Invalid JSON" }
   const o = body as Record<string, unknown>
@@ -64,6 +70,9 @@ function parseBody(body: unknown): {
     return { error: "Short description is too long" }
   }
 
+  const parsedCategories = parseBrandProductCategorySlugsFromBody(o.product_categories)
+  if ("error" in parsedCategories) return parsedCategories
+
   return {
     slug,
     name,
@@ -77,6 +86,8 @@ function parseBody(body: unknown): {
     /** Long-form about is retired; column stays empty for new brands. */
     about_paragraphs: [] as string[],
     brand_request_id,
+    product_categories:
+      parsedCategories.length > 0 ? parsedCategories : (["surfboards"] as BrandProductCategorySlug[]),
   }
 }
 
@@ -141,6 +152,16 @@ export async function POST(request: Request) {
     }
     console.error("admin brands POST:", error.message)
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  const categorySync = await syncBrandProductCategories(
+    supabase,
+    data.id,
+    parsed.product_categories,
+  )
+  if (!categorySync.ok) {
+    await supabase.from("brands").delete().eq("id", data.id)
+    return NextResponse.json({ error: categorySync.error }, { status: 500 })
   }
 
   if (parsed.brand_request_id) {

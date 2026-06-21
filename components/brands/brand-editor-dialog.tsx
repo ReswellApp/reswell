@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { slugifyBrandName } from "@/lib/brands/slug"
 import type { BrandRow } from "@/lib/brands/types"
 import { BRANDS_BASE } from "@/lib/brands/routes"
+import type { BrandProductCategorySlug } from "@/lib/brand-product-categories"
 import { uploadBrandLogoFile } from "@/lib/brands/upload-brand-logo-client"
 import { BrandEditorFormFields } from "@/components/brands/brand-editor-form-fields"
 import { Button } from "@/components/ui/button"
@@ -58,6 +59,9 @@ export function BrandEditorDialog({
   const [leadShaperName, setLeadShaperName] = React.useState("")
   const [locationLabel, setLocationLabel] = React.useState("")
   const [modelCount, setModelCount] = React.useState("0")
+  const [productCategories, setProductCategories] = React.useState<BrandProductCategorySlug[]>([
+    "surfboards",
+  ])
   const [sourceBrandRequestId, setSourceBrandRequestId] = React.useState<string | null>(null)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -74,6 +78,7 @@ export function BrandEditorDialog({
       setLeadShaperName(brand.lead_shaper_name ?? "")
       setLocationLabel(brand.location_label ?? "")
       setModelCount(String(brand.model_count ?? 0))
+      setProductCategories(brand.product_categories.length > 0 ? brand.product_categories : ["surfboards"])
     } else if (mode === "create" && createPrefill) {
       setSourceBrandRequestId(createPrefill.brand_request_id)
       setSlug(createPrefill.slug)
@@ -85,6 +90,7 @@ export function BrandEditorDialog({
       setLeadShaperName(createPrefill.lead_shaper_name ?? "")
       setLocationLabel(createPrefill.location_label ?? "")
       setModelCount(String(Math.max(0, createPrefill.model_count ?? 0)))
+      setProductCategories(["surfboards"])
       if (fileInputRef.current) fileInputRef.current.value = ""
     } else if (mode === "create") {
       setSourceBrandRequestId(null)
@@ -97,6 +103,7 @@ export function BrandEditorDialog({
       setLeadShaperName("")
       setLocationLabel("")
       setModelCount("0")
+      setProductCategories(["surfboards"])
       if (fileInputRef.current) fileInputRef.current.value = ""
     }
   }, [open, mode, brand, createPrefill])
@@ -136,6 +143,7 @@ export function BrandEditorDialog({
             location_label: locationLabel.trim() || null,
             model_count: mc,
             about_paragraphs,
+            product_categories: productCategories,
             ...(sourceBrandRequestId ? { brand_request_id: sourceBrandRequestId } : {}),
           }),
         })
@@ -169,6 +177,7 @@ export function BrandEditorDialog({
           location_label: locationLabel.trim() || null,
           model_count: mc,
           about_paragraphs,
+          product_categories: productCategories,
         }),
       })
       const json = await res.json().catch(() => ({}))
@@ -245,6 +254,8 @@ export function BrandEditorDialog({
               onLocationLabelChange={setLocationLabel}
               modelCount={modelCount}
               onModelCountChange={setModelCount}
+              productCategories={productCategories}
+              onProductCategoriesChange={setProductCategories}
             />
           </div>
           <div className="flex shrink-0 items-center justify-end gap-2 border-t border-slate-200 bg-white px-6 py-4">

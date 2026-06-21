@@ -1,9 +1,12 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 import { BrandsDirectorySearch } from "@/components/brands/brands-directory-search"
+import { BrandsCategoryFilter } from "@/components/brands/brands-category-filter"
 import { BrandsExplorer } from "@/components/brands/brands-explorer"
 import { BrandsListAdminBar } from "@/components/brands/brands-list-admin-bar"
 import { createClient } from "@/lib/supabase/server"
 import { listBrands } from "@/lib/brands/server"
+import { parseBrandProductCategorySlugsFromSearchParam } from "@/lib/brand-product-categories"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
 export const revalidate = 3600
@@ -18,15 +21,18 @@ const UUID_RE =
 export default async function BrandsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ brandRequest?: string }>
+  searchParams: Promise<{ brandRequest?: string; category?: string | string[] }>
 }) {
   const sp = await searchParams
   const raw = sp.brandRequest
   const brandRequestImportId =
     typeof raw === "string" && UUID_RE.test(raw.trim()) ? raw.trim() : undefined
+  const categoryFilter = parseBrandProductCategorySlugsFromSearchParam(sp.category)
 
   const supabase = await createClient()
-  const brands = await listBrands(supabase)
+  const brands = await listBrands(supabase, {
+    productCategories: categoryFilter.length > 0 ? categoryFilter : undefined,
+  })
 
   return (
     <main className="flex-1">
@@ -48,7 +54,14 @@ export default async function BrandsPage({
           </div>
         </div>
       </section>
-      <BrandsExplorer brands={brands} />
+      <section className="border-b border-border/80 bg-background">
+        <div className="container mx-auto max-w-6xl px-4 py-6 sm:px-6">
+          <Suspense fallback={null}>
+            <BrandsCategoryFilter />
+          </Suspense>
+        </div>
+      </section>
+      <BrandsExplorer brands={brands} categoryFilter={categoryFilter} />
     </main>
   )
 }

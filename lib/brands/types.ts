@@ -1,3 +1,5 @@
+import type { BrandProductCategorySlug } from "@/lib/brand-product-categories"
+
 export type BrandRow = {
   id: string
   slug: string
@@ -10,6 +12,8 @@ export type BrandRow = {
   lead_shaper_name: string | null
   location_label: string | null
   model_count: number
+  /** Product types this brand manufactures (surfboards, fins, wetsuits, …). */
+  product_categories: BrandProductCategorySlug[]
   /** Legacy DB column; no longer shown or edited — kept optional for typed selects. */
   about_paragraphs?: string[]
 }

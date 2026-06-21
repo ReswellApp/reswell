@@ -3,9 +3,14 @@
 import * as React from "react"
 import { Globe, ImageIcon, Layers, MapPin, Tag, Users } from "lucide-react"
 import { BRANDS_BASE } from "@/lib/brands/routes"
+import {
+  BRAND_PRODUCT_CATEGORY_OPTIONS,
+  type BrandProductCategorySlug,
+} from "@/lib/brand-product-categories"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { cn } from "@/lib/utils"
 
 export type BrandEditorFormFieldsProps = {
   idPrefix: string
@@ -29,6 +34,8 @@ export type BrandEditorFormFieldsProps = {
   onLocationLabelChange: (next: string) => void
   modelCount: string
   onModelCountChange: (next: string) => void
+  productCategories: BrandProductCategorySlug[]
+  onProductCategoriesChange: (next: BrandProductCategorySlug[]) => void
   /** Extra hint under slug (e.g. attach flow auto-fill note). */
   slugExtraHint?: React.ReactNode
 }
@@ -77,8 +84,18 @@ export function BrandEditorFormFields({
   onLocationLabelChange,
   modelCount,
   onModelCountChange,
+  productCategories,
+  onProductCategoriesChange,
   slugExtraHint,
 }: BrandEditorFormFieldsProps) {
+  function toggleProductCategory(slug: BrandProductCategorySlug) {
+    if (productCategories.includes(slug)) {
+      onProductCategoriesChange(productCategories.filter((entry) => entry !== slug))
+      return
+    }
+    onProductCategoriesChange([...productCategories, slug])
+  }
+
   return (
     <div className="space-y-4">
       <FieldSection title="Identity" icon={<Tag className="h-4 w-4" />}>
@@ -196,6 +213,33 @@ export function BrandEditorFormFields({
       </FieldSection>
 
       <FieldSection title="Catalog" icon={<Layers className="h-4 w-4" />}>
+        <div className="space-y-2">
+          <Label>Product categories</Label>
+          <p className="text-xs text-muted-foreground">
+            Tag what this brand manufactures. Used to filter the public brands directory.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {BRAND_PRODUCT_CATEGORY_OPTIONS.map((option) => {
+              const active = productCategories.includes(option.slug)
+              return (
+                <button
+                  key={option.slug}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => toggleProductCategory(option.slug)}
+                  className={cn(
+                    "rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+                    active
+                      ? "border-slate-900 bg-slate-900 text-white"
+                      : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50",
+                  )}
+                >
+                  {option.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
         <div className="space-y-2">
           <Label htmlFor={`${idPrefix}-models`}>Model count</Label>
           <Input

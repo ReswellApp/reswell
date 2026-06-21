@@ -453,8 +453,7 @@ html[data-reswell-scroll-lock] body {
   .listyoursurfboard-mobile-fold {
     --lys-section-gap: 1rem;
     --lys-fold-height-fallback: calc(
-      100svh - var(--site-header-height, 4rem) - 3rem - 4.25rem -
-        env(safe-area-inset-bottom, 0px)
+      100svh - var(--site-header-height, 4rem) - 3rem
     );
     display: flex;
     max-height: var(--lys-fold-height, var(--lys-fold-height-fallback));
@@ -469,6 +468,10 @@ html[data-reswell-scroll-lock] body {
     flex: 0 0 auto;
     padding-top: var(--lys-section-gap);
     padding-bottom: var(--lys-section-gap);
+  }
+
+  .listyoursurfboard-mobile-fold [data-lys-inline-cta] {
+    flex: 0 0 auto;
   }
 
   .listyoursurfboard-mobile-fold [data-lys-hero] {

@@ -63,6 +63,7 @@ import type {
   UserListingBoardModelDataListingImageEmbed,
 } from "@/lib/db/user-listing-board-model-data"
 import { BrandEditorFormFields } from "@/components/brands/brand-editor-form-fields"
+import type { BrandProductCategorySlug } from "@/lib/brand-product-categories"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { slugifyBrandName } from "@/lib/brands/slug"
 import { uploadBrandLogoFile } from "@/lib/brands/upload-brand-logo-client"
@@ -1233,6 +1234,9 @@ function AttachCatalogBrandDialog({
   const [newBrandLeadShaperName, setNewBrandLeadShaperName] = useState("")
   const [newBrandLocationLabel, setNewBrandLocationLabel] = useState("")
   const [newBrandModelCount, setNewBrandModelCount] = useState("0")
+  const [newBrandProductCategories, setNewBrandProductCategories] = useState<
+    BrandProductCategorySlug[]
+  >(["surfboards"])
   const logoFileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -1284,6 +1288,7 @@ function AttachCatalogBrandDialog({
     setNewBrandLeadShaperName("")
     setNewBrandLocationLabel("")
     setNewBrandModelCount("0")
+    setNewBrandProductCategories(["surfboards"])
     if (logoFileInputRef.current) logoFileInputRef.current.value = ""
   }, [open, row.id, row.listings?.brand, row.brands?.name])
 
@@ -1372,6 +1377,7 @@ function AttachCatalogBrandDialog({
           location_label: newBrandLocationLabel.trim() || null,
           model_count: mc,
           about_paragraphs: [],
+          product_categories: newBrandProductCategories,
         }),
       })
       const j = (await res.json().catch(() => ({}))) as {
@@ -1505,6 +1511,8 @@ function AttachCatalogBrandDialog({
             onLocationLabelChange={setNewBrandLocationLabel}
             modelCount={newBrandModelCount}
             onModelCountChange={setNewBrandModelCount}
+            productCategories={newBrandProductCategories}
+            onProductCategoriesChange={setNewBrandProductCategories}
             slugExtraHint="Filled automatically from the name until you edit the slug."
           />
         )}

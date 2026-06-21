@@ -7,14 +7,34 @@ import { BRANDS_BASE } from "@/lib/brands/routes"
 import type { BrandRow } from "@/lib/brands/types"
 import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { BrandProductCategoryBadges } from "@/components/brands/brand-product-category-badges"
+import type { BrandProductCategorySlug } from "@/lib/brand-product-categories"
+import { brandProductCategoryLabel } from "@/lib/brand-product-categories"
 
-export function BrandsExplorer({ brands }: { brands: BrandRow[] }) {
+export function BrandsExplorer({
+  brands,
+  categoryFilter = [],
+}: {
+  brands: BrandRow[]
+  categoryFilter?: readonly BrandProductCategorySlug[]
+}) {
+  const filterLabel =
+    categoryFilter.length > 0
+      ? categoryFilter.map((slug) => brandProductCategoryLabel(slug)).join(", ")
+      : null
+
   return (
     <section className="bg-background" aria-labelledby="brands-grid-heading">
       <div className="container mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
         <h2 id="brands-grid-heading" className="sr-only">
           All brands
         </h2>
+
+        {filterLabel ? (
+          <p className="mb-6 text-sm text-muted-foreground">
+            Showing brands tagged with {filterLabel}.
+          </p>
+        ) : null}
 
         {brands.length > 0 ? (
           <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -65,6 +85,13 @@ export function BrandsExplorer({ brands }: { brands: BrandRow[] }) {
                   ) : (
                     <p className="mt-4 flex-1 text-sm text-muted-foreground/80">Profile in catalog.</p>
                   )}
+                  {entry.product_categories.length > 0 ? (
+                    <BrandProductCategoryBadges
+                      categories={entry.product_categories}
+                      className="mt-4"
+                      size="sm"
+                    />
+                  ) : null}
                   <div className="mt-5 flex items-center justify-between gap-3 border-t border-border/60 pt-4">
                     <span className="text-xs tabular-nums text-muted-foreground">
                       {entry.model_count} {entry.model_count === 1 ? "model" : "models"}
@@ -81,7 +108,9 @@ export function BrandsExplorer({ brands }: { brands: BrandRow[] }) {
         ) : (
           <div className="rounded-2xl border border-dashed border-border/80 bg-muted/20 px-6 py-16 text-center">
             <p className="text-sm text-muted-foreground">
-              No brands in the database yet. After you run the brands migration in Supabase, refresh this page.
+              {filterLabel
+                ? `No brands tagged with ${filterLabel} yet. Try clearing filters or pick another product type.`
+                : "No brands in the database yet. After you run the brands migration in Supabase, refresh this page."}
             </p>
           </div>
         )}

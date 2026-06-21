@@ -4,6 +4,9 @@ import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import { isValidBrandSlug } from "@/lib/brands/slug"
 import { BRANDS_BASE } from "@/lib/brands/routes"
+import { parseBrandProductCategorySlugsFromBody } from "@/lib/brand-product-categories"
+import type { BrandProductCategorySlug } from "@/lib/brand-product-categories"
+import { syncBrandProductCategories } from "@/lib/db/brand-product-categories"
 
 const MAX_PARAGRAPH = 20000
 
@@ -19,6 +22,7 @@ type PatchBody = {
   model_count?: number
   about_paragraphs?: string[]
   about_text?: string
+  product_categories?: string[]
 }
 
 export async function PATCH(request: Request, ctx: { params: Promise<{ slug: string }> }) {
@@ -105,6 +109,15 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ slug: str
     updates.about_paragraphs = paras
   }
 
+  let productCategoriesUpdate: BrandProductCategorySlug[] | undefined
+  if (body.product_categories !== undefined) {
+    const parsedCategories = parseBrandProductCategorySlugsFromBody(body.product_categories)
+    if ("error" in parsedCategories) {
+      return NextResponse.json({ error: parsedCategories.error }, { status: 400 })
+    }
+    productCategoriesUpdate = parsedCategories
+  }
+
   const { data, error } = await supabase
     .from("brands")
     .update(updates)
@@ -121,6 +134,17 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ slug: str
   }
   if (!data) {
     return NextResponse.json({ error: "Brand not found" }, { status: 404 })
+  }
+
+  if (productCategoriesUpdate !== undefined) {
+    const categorySync = await syncBrandProductCategories(
+      supabase,
+      data.id,
+      productCategoriesUpdate,
+    )
+    if (!categorySync.ok) {
+      return NextResponse.json({ error: categorySync.error }, { status: 500 })
+    }
   }
 
   revalidatePath(BRANDS_BASE)

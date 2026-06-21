@@ -11,6 +11,7 @@ import type { BrandRow } from "@/lib/brands/types"
 import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { BrandDetailAdminBar } from "@/components/brands/brand-detail-admin-bar"
+import { BrandProductCategoryBadges } from "@/components/brands/brand-product-category-badges"
 import { Button } from "@/components/ui/button"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { BrandMarketplaceListingsPreview } from "@/components/brands/brand-marketplace-listings-preview"
@@ -85,6 +86,12 @@ export function BrandProfileView({
               <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-[17px]">
                 {brand.short_description}
               </p>
+            ) : null}
+
+            {brand.product_categories.length > 0 ? (
+              <div className="mt-6 flex justify-center">
+                <BrandProductCategoryBadges categories={brand.product_categories} />
+              </div>
             ) : null}
 
             <dl className="mt-8 grid max-w-lg grid-cols-1 gap-6 text-left sm:mx-auto sm:max-w-none sm:grid-cols-3 sm:gap-8 sm:text-center">

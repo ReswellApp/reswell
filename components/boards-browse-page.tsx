@@ -596,7 +596,7 @@ export async function BoardsBrowsePage(props: {
       <section
         className={cn(
           "pb-4 min-w-0",
-          props.showListYourSurfboardCta ? "pt-8 sm:pt-10 max-lg:pb-24" : "pt-2",
+          props.showListYourSurfboardCta ? "pt-8 sm:pt-10" : "pt-2",
         )}
       >
         <div className="container mx-auto min-w-0">
