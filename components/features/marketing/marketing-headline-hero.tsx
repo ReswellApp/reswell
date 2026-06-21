@@ -45,7 +45,7 @@ export function MarketingHeadlineHero({
             ? "pb-8 pt-3 sm:pb-10 sm:pt-4 lg:pb-12"
             : "py-10 sm:py-12 lg:py-14",
           mobileOneScreen &&
-            "max-lg:flex max-lg:min-h-0 max-lg:flex-1 max-lg:flex-col max-lg:px-3 max-lg:pb-0 max-lg:pt-0 lg:pb-4",
+            "max-lg:flex max-lg:min-h-0 max-lg:flex-1 max-lg:flex-col max-lg:px-3 max-lg:pb-0 max-lg:pt-0",
         )}
       >
         <div

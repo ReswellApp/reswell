@@ -19,24 +19,10 @@ export function ListYourSurfboardStickyCta({
 
   useEffect(() => {
     if (pinned) return
-
-    const foldCta = document.querySelector("[data-lys-fold-cta]")
-    if (!foldCta) {
-      const onScroll = () => setVisible(window.scrollY > 520)
-      onScroll()
-      window.addEventListener("scroll", onScroll, { passive: true })
-      return () => window.removeEventListener("scroll", onScroll)
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setVisible(!entry.isIntersecting)
-      },
-      { threshold: 0, rootMargin: "0px 0px -1px 0px" },
-    )
-
-    observer.observe(foldCta)
-    return () => observer.disconnect()
+    const onScroll = () => setVisible(window.scrollY > 520)
+    onScroll()
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
   }, [pinned])
 
   const showBar = pinned || visible

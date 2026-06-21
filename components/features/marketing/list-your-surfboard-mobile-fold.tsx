@@ -9,8 +9,8 @@ type ListYourSurfboardMobileFoldProps = {
 }
 
 /**
- * Locks the list-your-surfboard marketing fold to the viewport below site chrome.
- * The fold includes the in-flow mobile CTA at the bottom.
+ * Locks the list-your-surfboard marketing fold to the space below site chrome
+ * and above the pinned sticky CTA — measured per device so iPhone SE through Pro Max fit.
  */
 export function ListYourSurfboardMobileFold({
   children,
@@ -31,8 +31,10 @@ export function ListYourSurfboardMobileFold({
       }
 
       const top = fold.getBoundingClientRect().top
+      const cta = document.getElementById("listyoursurfboard-sticky-cta")
+      const ctaHeight = cta?.getBoundingClientRect().height ?? 0
       const viewportHeight = window.visualViewport?.height ?? window.innerHeight
-      const height = Math.max(300, Math.round(viewportHeight - top))
+      const height = Math.max(300, Math.round(viewportHeight - top - ctaHeight))
 
       fold.style.setProperty("--lys-fold-height", `${height}px`)
     }
@@ -40,16 +42,18 @@ export function ListYourSurfboardMobileFold({
     syncFoldHeight()
 
     requestAnimationFrame(() => {
+      watchCta()
       syncFoldHeight()
       requestAnimationFrame(syncFoldHeight)
     })
 
     const observers: ResizeObserver[] = []
 
-    const foldCta = fold.querySelector("[data-lys-fold-cta]")
-    if (foldCta instanceof HTMLElement) {
+    const watchCta = () => {
+      const cta = document.getElementById("listyoursurfboard-sticky-cta")
+      if (!cta) return
       const ctaRo = new ResizeObserver(syncFoldHeight)
-      ctaRo.observe(foldCta)
+      ctaRo.observe(cta)
       observers.push(ctaRo)
     }
 
@@ -70,6 +74,8 @@ export function ListYourSurfboardMobileFold({
       categoryRo.observe(categoryBar)
       observers.push(categoryRo)
     }
+
+    watchCta()
 
     window.addEventListener("resize", syncFoldHeight)
     window.visualViewport?.addEventListener("resize", syncFoldHeight)
