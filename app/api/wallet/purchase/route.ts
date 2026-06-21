@@ -19,6 +19,7 @@ import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-mar
 import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnPurchase"
 import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
 import { sendPostPurchaseReviewInvite } from "@/lib/services/orderReviewInvite"
+import { notifySellerOrderCheckoutKlaviyo } from "@/lib/services/notifySellerOrderCheckoutKlaviyo"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -282,6 +283,8 @@ export async function POST(request: NextRequest) {
       pickupCode,
       paymentMethod: "reswell_bucks",
     })
+
+    await notifySellerOrderCheckoutKlaviyo(serviceSupabase, purchase.id)
 
     void trackMetaPurchaseServerEvent({
       orderId: purchase.id,

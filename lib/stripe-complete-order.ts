@@ -46,6 +46,7 @@ import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnP
 import { redeemNewsletterPromoForOrder } from "@/lib/db/newsletterPromoCodes"
 import { computeCheckoutTotalWithNewsletterPromo } from "@/lib/services/newsletterPromo"
 import { sendPostPurchaseReviewInvite } from "@/lib/services/orderReviewInvite"
+import { notifySellerOrderCheckoutKlaviyo } from "@/lib/services/notifySellerOrderCheckoutKlaviyo"
 
 export type StripeCompleteOrderResult =
   | { ok: true; orderId: string; alreadyProcessed?: boolean }
@@ -198,6 +199,8 @@ async function emitPurchaseSuccessfulKlaviyoForOrderId(
     pickupCode: (order as { pickup_code?: string | null }).pickup_code ?? null,
     paymentMethod,
   })
+
+  await notifySellerOrderCheckoutKlaviyo(serviceSupabase, order.id)
 
   // Seller "Sale Successful" Klaviyo fires when earnings are released after fulfillment (see releaseOrderSellerEarningsAfterFulfillment).
 }
@@ -851,6 +854,10 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     pickupCode,
     paymentMethod: "stripe",
   })
+
+  if (!consignment) {
+    await notifySellerOrderCheckoutKlaviyo(serviceSupabase, purchase.id)
+  }
 
   void trackMetaPurchaseServerEvent({
     orderId: purchase.id,

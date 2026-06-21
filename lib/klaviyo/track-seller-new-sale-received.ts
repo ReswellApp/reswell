@@ -1,41 +1,45 @@
 /**
- * Server-only: Klaviyo Events API — fires when seller earnings are released to the wallet (fulfillment complete).
+ * Server-only: Klaviyo Events API — fires when a seller receives a new paid order at checkout.
  *
- * **Metric name in Klaviyo:** `Sale Successful` — use as the flow trigger (Flows → Metric).
+ * **Metric name in Klaviyo:** `New Sale Received` — profile is the **seller**.
+ * Also emits **Shipping Sale Received** or **Local Pickup Sale Received** by fulfillment type.
  *
- * **Building the flow in Klaviyo:** Flows → Create flow → Metric → select **Sale Successful** →
- * add email; in the template use event variables, e.g. `{{ event.order_num }}`, `{{ event.Title }}`,
- * `{{ event.order_url }}`, `{{ event.listing_url }}`, `{{ event.seller_earnings }}`, `{{ event.fulfillment_method }}`,
- * `{{ event.payment_method }}`.
- *
- * Profile on the event is the **seller** (`external_id` + email when available).
+ * Template variables: `{{ event.order_num }}`, `{{ event.Title }}`, `{{ event.sale_url }}`,
+ * `{{ event.order_amount }}`, `{{ event.seller_earnings }}`, `{{ event.fulfillment_method }}`,
+ * `{{ event.payment_method }}`, `{{ event.buyer_display_name }}`.
  */
 
 import { listingDetailHref } from "@/lib/listing-href"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import { trackKlaviyoSellerLocalPickupSaleReceived } from "@/lib/klaviyo/track-seller-local-pickup-sale-received"
+import { trackKlaviyoSellerShippingSaleReceived } from "@/lib/klaviyo/track-seller-shipping-sale-received"
+import type { PeerListingForShippingQuote } from "@/lib/services/peerListingShippingQuote"
 
-export type KlaviyoSellerOrderConfirmedPayload = {
+export type KlaviyoSellerNewSaleReceivedPayload = {
   sellerUserId: string
   sellerEmail: string | null
+  buyerUserId: string
+  buyerDisplayName: string
   orderId: string
-  /** From `orders.order_num` (optional for legacy callers). */
   orderNum?: string | null
   listingId: string
   listingTitle: string
   listingSection: string
   listingSlug?: string | null
-  /** Total order amount (buyer paid). */
   orderAmount: number
   sellerEarnings: number
   platformFee: number
   fulfillmentMethod: "shipping" | "pickup"
   paymentMethod: "stripe" | "reswell_bucks"
+  shippingAddressJson?: Record<string, unknown> | null
+  /** Surfboard/fins listings in the order — used to resolve Reswell vs seller label workflow. */
+  listingsForShipping?: PeerListingForShippingQuote[]
 }
 
-export async function trackKlaviyoSellerOrderConfirmed(
-  payload: KlaviyoSellerOrderConfirmedPayload,
+export async function trackKlaviyoSellerNewSaleReceived(
+  payload: KlaviyoSellerNewSaleReceivedPayload,
 ): Promise<void> {
   const orderAmountNum =
     typeof payload.orderAmount === "number" ? payload.orderAmount : Number(payload.orderAmount)
@@ -53,15 +57,15 @@ export async function trackKlaviyoSellerOrderConfirmed(
     section: payload.listingSection,
   })
   const listingUrl = `${origin}${listingPath}`
-  const orderUrl = `${origin}/dashboard/sales/${payload.orderId}`
+  const saleUrl = `${origin}/dashboard/sales/${payload.orderId}`
 
   await sendKlaviyoServerEvent({
-    metricName: "Sale Successful",
+    metricName: "New Sale Received",
     profile: {
       external_id: payload.sellerUserId,
       email: payload.sellerEmail,
     },
-    uniqueId: `sale-successful-${payload.orderId}`,
+    uniqueId: `new-sale-received-${payload.orderId}`,
     value: Number.isFinite(sellerEarningsNum) ? sellerEarningsNum : undefined,
     valueCurrency: "USD",
     properties: {
@@ -72,11 +76,18 @@ export async function trackKlaviyoSellerOrderConfirmed(
       fulfillment_method: payload.fulfillmentMethod,
       payment_method: payload.paymentMethod,
       listing_url: listingUrl,
-      order_url: orderUrl,
-      sale_url: orderUrl,
+      sale_url: saleUrl,
       order_amount: Number.isFinite(orderAmountNum) ? orderAmountNum : payload.orderAmount,
       seller_earnings: Number.isFinite(sellerEarningsNum) ? sellerEarningsNum : payload.sellerEarnings,
       platform_fee: Number.isFinite(platformFeeNum) ? platformFeeNum : payload.platformFee,
+      buyer_user_id: payload.buyerUserId,
+      buyer_display_name: payload.buyerDisplayName,
     },
   })
+
+  if (payload.fulfillmentMethod === "shipping") {
+    await trackKlaviyoSellerShippingSaleReceived(payload)
+  } else {
+    await trackKlaviyoSellerLocalPickupSaleReceived(payload)
+  }
 }

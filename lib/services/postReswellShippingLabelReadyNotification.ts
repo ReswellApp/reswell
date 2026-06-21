@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
+import { getSellerEmailForKlaviyo } from "@/lib/klaviyo/seller-sale-event-helpers"
+import { trackKlaviyoSellerShippingLabelReady } from "@/lib/klaviyo/track-seller-shipping-label-ready"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 
 const SHIPPING_LABEL_READY_KIND = "shipping_label_ready" as const
@@ -175,6 +177,17 @@ export async function ensureReswellShippingLabelReadyThreadNotification(
     buyerId: order.buyer_id as string,
     sellerId: order.seller_id as string,
     listingId: order.listing_id as string,
+    listingTitle,
+    trackingNumber: (order.tracking_number as string | null) ?? null,
+    trackingCarrier: (order.tracking_carrier as string | null) ?? null,
+  })
+
+  const sellerEmail = await getSellerEmailForKlaviyo(order.seller_id as string)
+  void trackKlaviyoSellerShippingLabelReady({
+    sellerUserId: order.seller_id as string,
+    sellerEmail,
+    orderId: order.id as string,
+    orderNum: (order.order_num as string | null) ?? null,
     listingTitle,
     trackingNumber: (order.tracking_number as string | null) ?? null,
     trackingCarrier: (order.tracking_carrier as string | null) ?? null,
