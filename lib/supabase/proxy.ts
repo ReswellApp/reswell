@@ -26,13 +26,13 @@ export async function updateSession(request: NextRequest) {
   // `getUser()` here fails with AuthSessionMissingError (no JWT yet) and used to
   // surface as a 500 before OAuth code exchange could run.
   //
-  // Also skip `/api/auth/session-ready` and `/auth/error`: probing or recovering a
-  // session must not run stale refresh-token cleanup first — that clears auth cookies
-  // on the response before the route handler runs and breaks post-sign-in recovery.
+  // Also skip session probe / recovery routes: stale refresh-token cleanup must not
+  // run first — it clears auth cookies before the handler runs and breaks post-sign-in.
   if (
     pathname === "/auth/callback" ||
     pathname === "/auth/confirm" ||
     pathname === "/auth/recovery" ||
+    pathname === "/auth/completing" ||
     pathname === "/auth/error" ||
     pathname === "/api/auth/session-ready"
   ) {

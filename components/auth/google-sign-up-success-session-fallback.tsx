@@ -1,6 +1,7 @@
 "use client"
 
 import { AuthServerSessionGate } from "@/components/auth/auth-server-session-gate"
+import { buildAuthCompletingUrl } from "@/lib/auth/build-auth-completing-url"
 import { buildGoogleSignUpSuccessPath } from "@/lib/google-ads/sign-up-success-path"
 
 type GoogleSignUpSuccessSessionFallbackProps = {
@@ -11,11 +12,13 @@ type GoogleSignUpSuccessSessionFallbackProps = {
 export function GoogleSignUpSuccessSessionFallback({
   next,
 }: GoogleSignUpSuccessSessionFallbackProps) {
+  const welcomePath = buildGoogleSignUpSuccessPath(next)
+
   return (
     <AuthServerSessionGate
       onTimeout={() => {
         window.location.replace(
-          `/auth/login?redirect=${encodeURIComponent(buildGoogleSignUpSuccessPath(next))}`,
+          buildAuthCompletingUrl(window.location.origin, welcomePath),
         )
       }}
     />

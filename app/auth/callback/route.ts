@@ -9,6 +9,9 @@ import { safeRedirectPath } from "@/lib/auth/safe-redirect";
 import {
   isTransientAuthNetworkError,
 } from "@/lib/auth/clear-supabase-auth-cookies";
+import { buildAuthCompletingUrl } from "@/lib/auth/build-auth-completing-url";
+import { isRecoverableOAuthCodeExchangeError } from "@/lib/auth/is-recoverable-oauth-code-exchange-error";
+import { waitForUserAfterOAuthExchange } from "@/lib/auth/wait-for-user-after-oauth-exchange";
 import {
   buildEmailSignUpSuccessPath,
   buildGoogleSignUpSuccessPath,
@@ -19,55 +22,20 @@ import { createServiceRoleClient } from "@/lib/supabase/server";
 import { type NextRequest, NextResponse, after } from "next/server";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 
-async function getUserAfterFailedCodeExchange(
-  supabase: SupabaseClient,
-): Promise<User | null> {
-  const maxAttempts = 5
-
-  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    try {
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser()
-      if (!error && user) return user
-      if (
-        error &&
-        isTransientAuthNetworkError(error) &&
-        attempt < maxAttempts - 1
-      ) {
-        await new Promise((r) => setTimeout(r, 150 * (attempt + 1)))
-        continue
-      }
-    } catch (error) {
-      if (
-        isTransientAuthNetworkError(error) &&
-        attempt < maxAttempts - 1
-      ) {
-        await new Promise((r) => setTimeout(r, 150 * (attempt + 1)))
-        continue
-      }
-    }
-
-    if (attempt < maxAttempts - 1) {
-      await new Promise((r) => setTimeout(r, 120 * (attempt + 1)))
-    }
-  }
-
-  return null
-}
-
 async function exchangeCodeWithRetry(
   supabase: SupabaseClient,
   code: string,
 ): Promise<
   Awaited<ReturnType<SupabaseClient["auth"]["exchangeCodeForSession"]>>
 > {
-  const maxAttempts = 3;
+  const maxAttempts = 5;
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const result = await supabase.auth.exchangeCodeForSession(code);
     if (!result.error) return result;
+    if (isRecoverableOAuthCodeExchangeError(result.error)) {
+      return result;
+    }
     if (
       isTransientAuthNetworkError(result.error) &&
       attempt < maxAttempts - 1
@@ -174,8 +142,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Code may already have been exchanged (double navigation / parallel tabs).
-    // Retry briefly — cookies from the winning request can land after this exchange fails.
-    const existingUser = await getUserAfterFailedCodeExchange(supabase);
+    // Poll longer on mobile — cookies from the winning request can land after this fails.
+    const pollAttempts =
+      error && isRecoverableOAuthCodeExchangeError(error) ? 32 : 24;
+    const existingUser = await waitForUserAfterOAuthExchange(supabase, {
+      maxAttempts: pollAttempts,
+      baseDelayMs: 100,
+    });
     if (existingUser) {
       return buildOAuthSuccessRedirect(
         origin,
@@ -184,6 +157,8 @@ export async function GET(request: NextRequest) {
         existingUser,
       );
     }
+
+    return NextResponse.redirect(buildAuthCompletingUrl(origin, next));
   }
 
   // Handle email OTP / magic link flow (token_hash). Recovery emails must land on
