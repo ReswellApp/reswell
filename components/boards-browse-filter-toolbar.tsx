@@ -37,6 +37,8 @@ type Props = {
   desktopFiltersOpen?: boolean
   onToggleDesktopFilters?: () => void
   transitionStart?: (cb: () => void) => void
+  /** Page baseline sort when `sort` is omitted from the URL (e.g. newest on `/listyoursurfboard`). */
+  defaultSort?: string
 }
 
 /** Slim browse toolbar: keyword search, sort, plus the Filter triggers. */
@@ -47,12 +49,14 @@ export function BoardsBrowseFilterToolbar({
   desktopFiltersOpen = false,
   onToggleDesktopFilters,
   transitionStart,
+  defaultSort,
 }: Props) {
   const { navigate, searchParams } = useBoardsBrowseRouter({ transitionStart })
 
   const urlQ = searchParams.get("q") ?? ""
   const [q, setQ] = useState(urlQ)
-  const sort = searchParams.get("sort") ?? BOARDS_BROWSE_DEFAULT_SORT
+  const pageDefaultSort = defaultSort ?? BOARDS_BROWSE_DEFAULT_SORT
+  const sort = searchParams.get("sort") ?? pageDefaultSort
 
   const skipQDebounce = useRef(true)
   const isFocusedRef = useRef(false)
@@ -114,7 +118,7 @@ export function BoardsBrowseFilterToolbar({
       name="sort"
       value={sort}
       onValueChange={(v) =>
-        navigate((p) => (v === BOARDS_BROWSE_DEFAULT_SORT ? p.delete("sort") : p.set("sort", v)))
+        navigate((p) => (v === pageDefaultSort ? p.delete("sort") : p.set("sort", v)))
       }
     >
       <SelectTrigger className={siteFilterSelectTriggerClassName()}>

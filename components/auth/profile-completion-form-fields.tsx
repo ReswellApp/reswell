@@ -215,7 +215,7 @@ export function ProfileCompletionFormFields({
         <Input
           id="profile-completion-username"
           type="text"
-          placeholder="e.g. SurferJoe or Alex"
+          placeholder="e.g. SurferJoe"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           required

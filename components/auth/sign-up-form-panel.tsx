@@ -183,7 +183,7 @@ export function SignUpFormPanel({
               <Input
                 id="signup-display-name"
                 type="text"
-                placeholder="e.g. SurferJoe or Alex"
+                placeholder="e.g. SurferJoe"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 required

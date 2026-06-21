@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { BoardsBrowsePagination } from "@/components/boards-browse-pagination"
 import { ListingTileGridSkeleton } from "@/components/listing-tile-skeleton"
+import { ListYourSurfboardHeroCta } from "@/components/features/marketing/list-your-surfboard-hero-cta"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -66,14 +67,20 @@ async function BoardsBrowseAdminCuratorGate() {
 
 async function BoardsBrowseFiltersSection({
   searchParams: searchParamsPromise,
+  defaultSort,
   children,
 }: {
   searchParams: Promise<BoardsBrowseSearchParams>
+  defaultSort: string
   children: ReactNode
 }) {
   const searchParams = await searchParamsPromise
   const facetCounts = await getBoardsBrowseFacetCountsMapCached(searchParams)
-  return <BoardsBrowseClient counts={facetCounts}>{children}</BoardsBrowseClient>
+  return (
+    <BoardsBrowseClient counts={facetCounts} defaultSort={defaultSort}>
+      {children}
+    </BoardsBrowseClient>
+  )
 }
 
 async function BoardListings({
@@ -468,8 +475,17 @@ async function BoardListings({
 
 export async function BoardsBrowsePage(props: {
   searchParams: Promise<BoardsBrowseSearchParams>
+  showListYourSurfboardCta?: boolean
+  /** When `sort` is omitted from the URL, listings and the sort control use this value. */
+  defaultSort?: string
 }) {
-  const searchParams = await props.searchParams
+  const rawSearchParams = await props.searchParams
+  const pageDefaultSort = props.defaultSort ?? BOARDS_BROWSE_DEFAULT_SORT
+  const searchParams: BoardsBrowseSearchParams = {
+    ...rawSearchParams,
+    sort: rawSearchParams.sort?.trim() || pageDefaultSort,
+  }
+  const searchParamsPromise = Promise.resolve(searchParams)
   if (searchParams.type === "foamie") {
     const next = new URLSearchParams()
     for (const [k, v] of Object.entries(searchParams)) {
@@ -515,6 +531,9 @@ export async function BoardsBrowsePage(props: {
     redirect(`/boards?${next.toString()}`)
   }
   const typeCrumb = boardsBrowseBoardTypeLabel(searchParams.type)
+  const sellHeroAuth = props.showListYourSurfboardCta
+    ? await getCachedRequestSession()
+    : null
 
   return (
     <main className="flex-1">
@@ -552,24 +571,34 @@ export async function BoardsBrowsePage(props: {
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-          <div className="flex items-center justify-center gap-2">
-            <h1 className="text-3xl font-bold text-center">{typeCrumb ?? surfboardsBrowseRootLabel}</h1>
-            <Suspense fallback={null}>
-              <BoardsBrowseAdminCuratorGate />
-            </Suspense>
-          </div>
-          <p className="text-center text-muted-foreground mt-2 max-w-2xl mx-auto text-sm sm:text-base">
-            {boardsBrowseHeroSubtext(searchParams.type)}
-          </p>
+          {!props.showListYourSurfboardCta ? (
+            <>
+              <div className="flex items-center justify-center gap-2">
+                <h1 className="text-3xl font-bold text-center">{typeCrumb ?? surfboardsBrowseRootLabel}</h1>
+                <Suspense fallback={null}>
+                  <BoardsBrowseAdminCuratorGate />
+                </Suspense>
+              </div>
+              <p className="text-center text-muted-foreground mt-2 max-w-2xl mx-auto text-sm sm:text-base">
+                {boardsBrowseHeroSubtext(searchParams.type)}
+              </p>
+            </>
+          ) : null}
+          {props.showListYourSurfboardCta ? (
+            <ListYourSurfboardHeroCta isLoggedIn={Boolean(sellHeroAuth?.user)} />
+          ) : null}
         </div>
       </section>
 
       <section className="pt-2 pb-4 min-w-0">
         <div className="container mx-auto min-w-0">
           <Suspense fallback={<BoardsBrowseFiltersSectionSkeleton />}>
-            <BoardsBrowseFiltersSection searchParams={props.searchParams}>
+            <BoardsBrowseFiltersSection
+              searchParams={searchParamsPromise}
+              defaultSort={pageDefaultSort}
+            >
               <Suspense fallback={<ListingTileGridSkeleton count={10} ariaLabel="Loading surfboards" />}>
-                <BoardListings searchParams={props.searchParams} />
+                <BoardListings searchParams={searchParamsPromise} />
               </Suspense>
             </BoardsBrowseFiltersSection>
           </Suspense>

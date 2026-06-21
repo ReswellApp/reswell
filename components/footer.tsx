@@ -1,6 +1,7 @@
 import Link from "next/link"
-import { Heart, Instagram, ShieldCheck } from "lucide-react"
+import { Instagram, ShieldCheck } from "lucide-react"
 import { SiteWordmarkLink } from "@/components/site-wordmark-link"
+import { MadeWithLoveSantaBarbara } from "@/components/made-with-love-santa-barbara"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { siteFooterNavLinks } from "@/lib/site-footer-nav"
 import { footerCategoryLinks } from "@/lib/site-category-directory"
@@ -117,14 +118,7 @@ export function Footer() {
             <p>
               Copyright {new Date().getFullYear()} Reswell. All rights reserved.
             </p>
-            <p className="inline-flex w-full flex-wrap items-center justify-center gap-1">
-              <span>Made with</span>
-              <Heart
-                className="h-4 w-4 shrink-0 fill-footerHeart text-footerHeart"
-                aria-hidden
-              />
-              <span>in Santa Barbara.</span>
-            </p>
+            <MadeWithLoveSantaBarbara />
           </div>
         </div>
       </div>

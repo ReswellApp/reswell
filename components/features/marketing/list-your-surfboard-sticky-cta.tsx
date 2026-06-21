@@ -33,13 +33,13 @@ export function ListYourSurfboardStickyCta({ userId }: ListYourSurfboardStickyCt
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       aria-hidden={!visible}
     >
-      <div className="border-t border-foreground/10 bg-white/95 px-4 pb-3 pt-3 shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.25)] backdrop-blur">
+      <div className="border-t border-border/60 bg-background/95 px-4 pb-3 pt-3 shadow-[0_-4px_16px_-8px_rgba(0,0,0,0.12)] backdrop-blur">
         <ListYourSurfboardSellCta
           userId={userId}
           className="w-full"
           tabIndex={visible ? undefined : -1}
         >
-          List your surfboard — it&apos;s free
+          List your surfboard
         </ListYourSurfboardSellCta>
       </div>
     </div>

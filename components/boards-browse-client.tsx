@@ -20,11 +20,12 @@ type FacetCountsMap = Record<string, Record<string, number>>
 type BoardsBrowseClientProps = {
   children: ReactNode
   counts: FacetCountsMap
+  defaultSort?: string
 }
 
 type ActiveChip = { id: string; label: string; onRemove: () => void }
 
-export function BoardsBrowseClient({ children, counts }: BoardsBrowseClientProps) {
+export function BoardsBrowseClient({ children, counts, defaultSort }: BoardsBrowseClientProps) {
   const [isPending, startTransition] = useTransition()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [desktopFiltersOpen, setDesktopFiltersOpen] = useState(false)
@@ -102,6 +103,7 @@ export function BoardsBrowseClient({ children, counts }: BoardsBrowseClientProps
           desktopFiltersOpen={desktopFiltersOpen}
           onToggleDesktopFilters={() => setDesktopFiltersOpen((open) => !open)}
           transitionStart={startTransition}
+          defaultSort={defaultSort}
         />
       </div>
 
