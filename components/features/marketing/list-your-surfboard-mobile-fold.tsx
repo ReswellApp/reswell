@@ -9,8 +9,8 @@ type ListYourSurfboardMobileFoldProps = {
 }
 
 /**
- * Locks the list-your-surfboard marketing fold to the viewport below site chrome
- * so iPhone SE through Pro Max fit on one screen (reviews, hero, inline CTA).
+ * Locks the list-your-surfboard marketing fold height once on landing.
+ * Ignores scroll-driven viewport chrome changes (Meta IAB, iOS Safari).
  */
 export function ListYourSurfboardMobileFold({
   children,
@@ -23,9 +23,13 @@ export function ListYourSurfboardMobileFold({
     if (!fold) return
 
     const desktopMq = window.matchMedia("(min-width: 1024px)")
+    let frozen = false
+    let lastInnerWidth = window.innerWidth
 
-    /** Distance from viewport top to fold — must not use live rect.top while scrolled. */
-    let topInsetPx: number | null = null
+    const clearLock = () => {
+      frozen = false
+      fold.style.removeProperty("--lys-fold-height")
+    }
 
     const measureTopInsetFromChrome = () => {
       const headerVar = getComputedStyle(document.documentElement)
@@ -38,69 +42,63 @@ export function ListYourSurfboardMobileFold({
       return Math.round(headerHeight + categoryHeight)
     }
 
-    const calibrateTopInset = () => {
-      if (window.scrollY > 8) return
-      const top = fold.getBoundingClientRect().top
-      if (top > 0) topInsetPx = Math.round(top)
-    }
-
-    const syncFoldHeight = () => {
+    const lockFoldHeight = (options?: { relock?: boolean }) => {
       if (desktopMq.matches) {
-        fold.style.removeProperty("--lys-fold-height")
+        clearLock()
         return
       }
 
-      calibrateTopInset()
-      const topInset = topInsetPx ?? measureTopInsetFromChrome()
+      if (frozen && !options?.relock) return
 
-      const vv = window.visualViewport
-      const viewportHeight = vv?.height ?? window.innerHeight
-      const height = Math.max(300, Math.round(viewportHeight - topInset))
+      const topInset = measureTopInsetFromChrome()
+      const height = Math.max(300, Math.round(window.innerHeight - topInset))
 
       fold.style.setProperty("--lys-fold-height", `${height}px`)
     }
 
-    const syncAfterChromeResize = () => {
-      topInsetPx = measureTopInsetFromChrome()
-      syncFoldHeight()
+    const finalizeLock = () => {
+      lockFoldHeight()
+      frozen = true
     }
 
-    syncFoldHeight()
+    lockFoldHeight()
 
     requestAnimationFrame(() => {
-      syncFoldHeight()
-      requestAnimationFrame(syncFoldHeight)
+      lockFoldHeight()
+      requestAnimationFrame(finalizeLock)
     })
 
-    const observers: ResizeObserver[] = []
-
-    const ro = new ResizeObserver(syncFoldHeight)
-    ro.observe(document.documentElement)
-    observers.push(ro)
-
-    const headerShell = document.querySelector("[data-site-header-shell]")
-    if (headerShell instanceof HTMLElement) {
-      const headerRo = new ResizeObserver(syncAfterChromeResize)
-      headerRo.observe(headerShell)
-      observers.push(headerRo)
+    const onWindowResize = () => {
+      if (window.innerWidth === lastInnerWidth) return
+      lastInnerWidth = window.innerWidth
+      lockFoldHeight({ relock: true })
+      frozen = true
     }
 
-    const categoryBar = document.querySelector("[data-site-top-category-bar]")
-    if (categoryBar instanceof HTMLElement) {
-      const categoryRo = new ResizeObserver(syncAfterChromeResize)
-      categoryRo.observe(categoryBar)
-      observers.push(categoryRo)
+    const onOrientationChange = () => {
+      lastInnerWidth = window.innerWidth
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          lockFoldHeight({ relock: true })
+          frozen = true
+        })
+      })
     }
 
-    window.addEventListener("resize", syncFoldHeight)
-    window.visualViewport?.addEventListener("resize", syncFoldHeight)
-    desktopMq.addEventListener("change", syncFoldHeight)
+    const onDesktopMqChange = () => {
+      frozen = false
+      lockFoldHeight()
+      frozen = true
+    }
+
+    window.addEventListener("resize", onWindowResize)
+    window.addEventListener("orientationchange", onOrientationChange)
+    desktopMq.addEventListener("change", onDesktopMqChange)
 
     return () => {
-      for (const observer of observers) observer.disconnect()
-      window.removeEventListener("resize", syncFoldHeight)
-      window.visualViewport?.removeEventListener("resize", syncFoldHeight)
-      desktopMq.removeEventListener("change", syncFoldHeight)
+      window.removeEventListener("resize", onWindowResize)
+      window.removeEventListener("orientationchange", onOrientationChange)
+      desktopMq.removeEventListener("change", onDesktopMqChange)
     }
   }, [])
 

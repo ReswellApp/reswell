@@ -453,11 +453,13 @@ html[data-reswell-scroll-lock] body {
   .listyoursurfboard-mobile-fold {
     --lys-section-gap: 1rem;
     --lys-fold-height-fallback: calc(
-      100svh - var(--site-header-height, 4rem) - 3rem
+      100vh - var(--site-header-height, 4rem) - 3rem
     );
     display: flex;
-    max-height: var(--lys-fold-height, var(--lys-fold-height-fallback));
     height: var(--lys-fold-height, var(--lys-fold-height-fallback));
+    min-height: var(--lys-fold-height, var(--lys-fold-height-fallback));
+    max-height: var(--lys-fold-height, var(--lys-fold-height-fallback));
+    flex-shrink: 0;
     flex-direction: column;
     overflow: hidden;
   }
