@@ -4,7 +4,8 @@ import { redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { BoardsBrowsePagination } from "@/components/boards-browse-pagination"
 import { ListingTileGridSkeleton } from "@/components/listing-tile-skeleton"
-import { ListYourSurfboardHeroCta } from "@/components/features/marketing/list-your-surfboard-hero-cta"
+import { ListYourSurfboardMarketplaceReviewsSection } from "@/components/features/marketing/list-your-surfboard-buyer-reviews-section"
+import type { MarketplaceShowcaseReviewRow } from "@/lib/db/marketplace-reviews-showcase"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -50,6 +51,7 @@ import {
 import { forwardGeocodePlaceForServer } from "@/lib/maps/forward-geocode-server"
 import { boardDimensionBrowseFieldsFromSearchParams } from "@/lib/utils/board-dimension-browse-filter"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
+import { cn } from "@/lib/utils"
 import { isUuidString } from "@/lib/utils/isUuid"
 import { haversineMi } from "@/lib/db/boards-browse-listings"
 import { facetSelectionsFromParams } from "@/lib/boards-browse-facets"
@@ -478,6 +480,8 @@ export async function BoardsBrowsePage(props: {
   showListYourSurfboardCta?: boolean
   /** When `sort` is omitted from the URL, listings and the sort control use this value. */
   defaultSort?: string
+  topMarketplaceReviews?: MarketplaceShowcaseReviewRow[]
+  heroListingImages?: readonly string[]
 }) {
   const rawSearchParams = await props.searchParams
   const pageDefaultSort = props.defaultSort ?? BOARDS_BROWSE_DEFAULT_SORT
@@ -531,67 +535,76 @@ export async function BoardsBrowsePage(props: {
     redirect(`/boards?${next.toString()}`)
   }
   const typeCrumb = boardsBrowseBoardTypeLabel(searchParams.type)
-  const sellHeroAuth = props.showListYourSurfboardCta
-    ? await getCachedRequestSession()
-    : null
 
   return (
     <main className="flex-1">
       <BoardsBrowseJsonLd searchParams={searchParams} />
-      <section className="bg-offwhite pt-1 pb-4 sm:pt-2 sm:pb-5 lg:pt-8 lg:pb-5">
-        <div className="container mx-auto">
-          <div className="border-t border-neutral-200 mb-4 pt-2 lg:pt-4">
-            <Breadcrumb>
-              <BreadcrumbList className="gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
-                <BreadcrumbItem>
-                  <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                    <Link href="/">Home</Link>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
-                {typeCrumb ? (
-                  <>
-                    <BreadcrumbItem>
-                      <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                        <Link href="/boards">{surfboardsBrowseRootLabel}</Link>
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage className="font-normal text-[#5c6b89]">{typeCrumb}</BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </>
-                ) : (
+      {!props.showListYourSurfboardCta ? (
+        <section className="bg-offwhite pt-1 pb-4 sm:pt-2 sm:pb-5 lg:pt-8 lg:pb-5">
+          <div className="container mx-auto">
+            <div className="border-t border-neutral-200 mb-4 pt-2 lg:pt-4">
+              <Breadcrumb>
+                <BreadcrumbList className="gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
                   <BreadcrumbItem>
-                    <BreadcrumbPage className="font-normal text-[#5c6b89]">
-                      {surfboardsBrowseRootLabel}
-                    </BreadcrumbPage>
+                    <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                      <Link href="/">Home</Link>
+                    </BreadcrumbLink>
                   </BreadcrumbItem>
-                )}
-              </BreadcrumbList>
-            </Breadcrumb>
+                  <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                  {typeCrumb ? (
+                    <>
+                      <BreadcrumbItem>
+                        <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                          <Link href="/boards">{surfboardsBrowseRootLabel}</Link>
+                        </BreadcrumbLink>
+                      </BreadcrumbItem>
+                      <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                      <BreadcrumbItem>
+                        <BreadcrumbPage className="font-normal text-[#5c6b89]">{typeCrumb}</BreadcrumbPage>
+                      </BreadcrumbItem>
+                    </>
+                  ) : (
+                    <BreadcrumbItem>
+                      <BreadcrumbPage className="font-normal text-[#5c6b89]">
+                        {surfboardsBrowseRootLabel}
+                      </BreadcrumbPage>
+                    </BreadcrumbItem>
+                  )}
+                </BreadcrumbList>
+              </Breadcrumb>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <h1 className="text-3xl font-bold text-center">{typeCrumb ?? surfboardsBrowseRootLabel}</h1>
+              <Suspense fallback={null}>
+                <BoardsBrowseAdminCuratorGate />
+              </Suspense>
+            </div>
+            <p className="text-center text-muted-foreground mt-2 max-w-2xl mx-auto text-sm sm:text-base">
+              {boardsBrowseHeroSubtext(searchParams.type)}
+            </p>
           </div>
-          {!props.showListYourSurfboardCta ? (
-            <>
-              <div className="flex items-center justify-center gap-2">
-                <h1 className="text-3xl font-bold text-center">{typeCrumb ?? surfboardsBrowseRootLabel}</h1>
-                <Suspense fallback={null}>
-                  <BoardsBrowseAdminCuratorGate />
-                </Suspense>
-              </div>
-              <p className="text-center text-muted-foreground mt-2 max-w-2xl mx-auto text-sm sm:text-base">
-                {boardsBrowseHeroSubtext(searchParams.type)}
-              </p>
-            </>
-          ) : null}
-          {props.showListYourSurfboardCta ? (
-            <ListYourSurfboardHeroCta isLoggedIn={Boolean(sellHeroAuth?.user)} />
-          ) : null}
-        </div>
-      </section>
+        </section>
+      ) : null}
 
-      <section className="pt-2 pb-4 min-w-0">
+      {props.showListYourSurfboardCta ? (
+        <ListYourSurfboardMarketplaceReviewsSection
+          reviews={props.topMarketplaceReviews ?? []}
+          heroListingImages={props.heroListingImages ?? []}
+        />
+      ) : null}
+
+      <section
+        className={cn(
+          "pb-4 min-w-0",
+          props.showListYourSurfboardCta ? "pt-8 sm:pt-10" : "pt-2",
+        )}
+      >
         <div className="container mx-auto min-w-0">
+          {props.showListYourSurfboardCta ? (
+            <h2 className="mb-4 text-center text-2xl font-bold tracking-tight text-foreground sm:mb-5">
+              Browse all surfboards
+            </h2>
+          ) : null}
           <Suspense fallback={<BoardsBrowseFiltersSectionSkeleton />}>
             <BoardsBrowseFiltersSection
               searchParams={searchParamsPromise}

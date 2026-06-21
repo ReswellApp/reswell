@@ -39,6 +39,7 @@ export function SiteHeaderShell({
   return (
     <div
       ref={shellRef}
+      data-site-header-shell
       className={cn(
         "fixed inset-x-0 top-0 z-[60] isolate w-full bg-background pt-[env(safe-area-inset-top)] shadow-sm",
         className,

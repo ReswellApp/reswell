@@ -137,11 +137,16 @@ const config: Config = {
           '55%': { transform: 'scale(1.1)', opacity: '1', filter: 'brightness(1.12)' },
           '100%': { transform: 'scale(1)', opacity: '1', filter: 'brightness(1)' },
         },
+        'marquee-x': {
+          from: { transform: 'translateX(0)' },
+          to: { transform: 'translateX(-50%)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'review-stars-pop': 'review-stars-pop 0.55s ease-out both',
+        'marquee-x': 'marquee-x var(--marquee-duration, 40s) linear infinite',
       },
     },
   },

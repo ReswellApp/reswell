@@ -23,10 +23,16 @@ const chipBase =
 export function SiteTopCategoryBar() {
   const pathname = usePathname()
   const searchParams = useClientSearchParams()
+  const compact = pathname === "/listyoursurfboard"
 
   return (
-    <div className="shrink-0 bg-background lg:hidden">
-      <div className="container mx-auto px-4 py-3 sm:px-6 sm:py-3.5">
+    <div className="shrink-0 bg-background lg:hidden" data-site-top-category-bar>
+      <div
+        className={cn(
+          "container mx-auto px-4 sm:px-6",
+          compact ? "py-2 sm:py-2" : "py-3 sm:py-3.5",
+        )}
+      >
         <nav aria-label="Browse surfboards, sellers, and community">
           <ul className="flex items-center gap-2.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {siteHeaderMainCategoryNavLinks.map((link) => {
@@ -38,6 +44,7 @@ export function SiteTopCategoryBar() {
                     prefetch={boardsBrowseLinkPrefetch(link.href)}
                     className={cn(
                       chipBase,
+                      compact && "min-h-8 px-3 py-1 text-xs",
                       active
                         ? "border-foreground bg-muted font-semibold"
                         : "border-border bg-background hover:border-midgray/35",
@@ -56,6 +63,7 @@ export function SiteTopCategoryBar() {
                     href={link.href}
                     className={cn(
                       chipBase,
+                      compact && "min-h-8 px-3 py-1 text-xs",
                       active
                         ? "border-foreground bg-muted font-semibold"
                         : "border-border bg-background hover:border-midgray/35",

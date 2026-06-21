@@ -28,7 +28,7 @@ export function ListYourSurfboardHeroCta({ isLoggedIn }: ListYourSurfboardHeroCt
   }
 
   return (
-    <div className="mx-auto mt-2 max-w-xl rounded-2xl border border-border/70 bg-white px-5 py-5 text-center shadow-soft sm:px-6 sm:py-6">
+    <div className="mx-auto max-w-xl rounded-2xl border border-border/70 bg-white px-5 py-5 text-center shadow-soft sm:px-6 sm:py-6">
       <p className="text-balance text-sm text-muted-foreground sm:text-base">
         Our mission is to make buying and selling surfboards simple, trusted, and genuinely
         enjoyable.

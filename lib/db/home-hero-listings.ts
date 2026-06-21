@@ -14,6 +14,7 @@ export interface HomeHeroListingRow {
     slug: string
     title: string
     status: string | null
+    section: string | null
     hidden_from_site: boolean | null
     hidden_from_homepage: boolean | null
     primary_image_url: string | null
@@ -25,6 +26,7 @@ type JoinedListing = {
   slug: string
   title: string
   status: string | null
+  section: string | null
   hidden_from_site: boolean | null
   hidden_from_homepage: boolean | null
   listing_images: ListingImageForCard[] | null
@@ -46,6 +48,7 @@ const CURATION_SELECT = `
     slug,
     title,
     status,
+    section,
     hidden_from_site,
     hidden_from_homepage,
     listing_images (url, thumbnail_url, is_primary)
@@ -69,6 +72,7 @@ function hydrate(row: RawCurationRow): HomeHeroListingRow | null {
       slug: listing.slug,
       title: listing.title,
       status: listing.status,
+      section: listing.section,
       hidden_from_site: listing.hidden_from_site,
       hidden_from_homepage: listing.hidden_from_homepage,
       primary_image_url: listingHeroSlideSrc(listing.listing_images),
@@ -96,18 +100,26 @@ export async function listHomeHeroListingRows(
     .filter((r): r is HomeHeroListingRow => r !== null)
 }
 
+export type ListHomeHeroCuratedSlideUrlsOptions = {
+  /** When set, only curated listings in this marketplace section are included. */
+  section?: string
+}
+
 /**
  * Public-safe hero slide URLs derived from curated listings. Filters out listings that are
  * no longer active or hidden from the site, and listings with no primary image.
  */
 export async function listHomeHeroCuratedSlideUrls(
   supabase: SupabaseClient,
+  options?: ListHomeHeroCuratedSlideUrlsOptions,
 ): Promise<string[]> {
+  const sectionFilter = options?.section?.trim()
   const rows = await listHomeHeroListingRows(supabase)
   const out: string[] = []
   const seen = new Set<string>()
   for (const row of rows) {
     const listing = row.listing
+    if (sectionFilter && listing.section !== sectionFilter) continue
     if (listing.status && listing.status !== "active") continue
     if (listing.hidden_from_site === true) continue
     if (listing.hidden_from_homepage === true) continue

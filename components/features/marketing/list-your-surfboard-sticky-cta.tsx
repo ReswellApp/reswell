@@ -6,38 +6,56 @@ import { cn } from "@/lib/utils"
 import { ListYourSurfboardSellCta } from "@/components/features/marketing/list-your-surfboard-sell-cta"
 
 type ListYourSurfboardStickyCtaProps = {
-  userId: string | null
+  userId?: string | null
+  /** Always show at the bottom on mobile (list-your-surfboard one-screen fold). */
+  pinned?: boolean
 }
 
-/**
- * Mobile-only sticky conversion bar. Stays out of the way until the hero CTA
- * scrolls off-screen, then keeps the primary action one tap away. Hidden on
- * desktop (`lg:hidden`) where the inline CTAs are always reachable.
- */
-export function ListYourSurfboardStickyCta({ userId }: ListYourSurfboardStickyCtaProps) {
-  const [visible, setVisible] = useState(false)
+export function ListYourSurfboardStickyCta({
+  userId,
+  pinned = false,
+}: ListYourSurfboardStickyCtaProps) {
+  const [visible, setVisible] = useState(pinned)
 
   useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > 520)
-    onScroll()
-    window.addEventListener("scroll", onScroll, { passive: true })
-    return () => window.removeEventListener("scroll", onScroll)
-  }, [])
+    if (pinned) return
+
+    const foldCta = document.querySelector("[data-lys-fold-cta]")
+    if (!foldCta) {
+      const onScroll = () => setVisible(window.scrollY > 520)
+      onScroll()
+      window.addEventListener("scroll", onScroll, { passive: true })
+      return () => window.removeEventListener("scroll", onScroll)
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setVisible(!entry.isIntersecting)
+      },
+      { threshold: 0, rootMargin: "0px 0px -1px 0px" },
+    )
+
+    observer.observe(foldCta)
+    return () => observer.disconnect()
+  }, [pinned])
+
+  const showBar = pinned || visible
 
   return (
     <div
+      id="listyoursurfboard-sticky-cta"
       className={cn(
         "fixed inset-x-0 bottom-0 z-40 transform-gpu transition-transform duration-300 ease-out lg:hidden",
-        visible ? "translate-y-0" : "translate-y-full",
+        showBar ? "translate-y-0" : "translate-y-full",
       )}
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
-      aria-hidden={!visible}
+      aria-hidden={!showBar}
     >
-      <div className="border-t border-border/60 bg-background/95 px-4 pb-3 pt-3 shadow-[0_-4px_16px_-8px_rgba(0,0,0,0.12)] backdrop-blur">
+      <div className="border-t border-border/60 bg-background px-4 pb-3 pt-3 shadow-[0_-4px_16px_-8px_rgba(0,0,0,0.12)]">
         <ListYourSurfboardSellCta
           userId={userId}
           className="w-full"
-          tabIndex={visible ? undefined : -1}
+          tabIndex={showBar ? undefined : -1}
         >
           List your surfboard
         </ListYourSurfboardSellCta>

@@ -2,34 +2,12 @@ import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight, ChevronRight } from "lucide-react"
 import { AboutFoundersSection } from "@/components/features/about/about-founders-section"
-import { FALLBACK_HOME_HERO_SLIDE_PATHS } from "@/lib/home-hero-slide-urls"
+import {
+  MarketingHeadlineHero,
+  marketingHeadlineTitleClass,
+} from "@/components/features/marketing/marketing-headline-hero"
 import { Button } from "@/components/ui/button"
-import { portraitShimmer, shimmerDataUrl } from "@/lib/image-shimmer"
-import { cn } from "@/lib/utils"
-
-const HERO_STACK_SIZE = 4
-
-function buildHeroStackImages(listingImages: readonly string[]): string[] {
-  const seen = new Set<string>()
-  const stack: string[] = []
-
-  for (const src of listingImages) {
-    const trimmed = src.trim()
-    if (!trimmed || seen.has(trimmed)) continue
-    seen.add(trimmed)
-    stack.push(trimmed)
-    if (stack.length >= HERO_STACK_SIZE) return stack
-  }
-
-  for (const fallback of FALLBACK_HOME_HERO_SLIDE_PATHS) {
-    if (stack.length >= HERO_STACK_SIZE) break
-    if (seen.has(fallback)) continue
-    seen.add(fallback)
-    stack.push(fallback)
-  }
-
-  return stack
-}
+import { shimmerDataUrl } from "@/lib/image-shimmer"
 
 const WHY_SURFERS_LOVE = [
   {
@@ -84,37 +62,6 @@ type AboutPageContentProps = {
   heroListingImages: readonly string[]
 }
 
-function AboutHeroBoardStack({ images }: { images: readonly string[] }) {
-  const stackImages = buildHeroStackImages(images)
-
-  return (
-    <div className="relative mx-auto flex h-[260px] w-full max-w-xl items-end justify-center sm:h-[300px] sm:max-w-2xl lg:mx-0 lg:max-w-[34rem] lg:justify-end">
-      {stackImages.map((src, index) => (
-        <div
-          key={`${src}-${index}`}
-          className={cn(
-            "absolute overflow-hidden rounded-2xl border border-foreground/10 bg-white shadow-lg shadow-black/10",
-            index === 0 && "bottom-6 left-0 z-10 h-40 w-28 rotate-[-5deg] sm:h-44 sm:w-32",
-            index === 1 && "bottom-10 left-[24%] z-20 h-40 w-28 rotate-[3deg] sm:bottom-8 sm:left-[26%] sm:h-44 sm:w-32",
-            index === 2 && "bottom-8 left-[50%] z-30 h-40 w-28 rotate-[-2deg] sm:bottom-6 sm:left-[52%] sm:h-44 sm:w-32",
-            index === 3 && "bottom-4 right-0 z-40 h-44 w-32 rotate-[4deg] sm:bottom-2 sm:h-48 sm:w-36",
-          )}
-        >
-          <Image
-            src={src}
-            alt=""
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 40vw, 200px"
-            placeholder="blur"
-            blurDataURL={portraitShimmer}
-          />
-        </div>
-      ))}
-    </div>
-  )
-}
-
 function StatCell({ value, label }: { value: string; label: string }) {
   return (
     <div className="text-center">
@@ -129,23 +76,17 @@ function StatCell({ value, label }: { value: string; label: string }) {
 export function AboutPageContent({ stats, heroListingImages }: AboutPageContentProps) {
   return (
     <>
-      <section className="border-b border-border/70 bg-background">
-        <div className="container mx-auto px-4 py-10 sm:px-6 sm:py-12 lg:py-14">
-          <div className="overflow-hidden rounded-[2rem] bg-muted/70 px-6 py-10 sm:px-10 sm:py-12 lg:px-14 lg:py-16">
-            <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-12">
-              <div>
-                <h1 className="font-headline text-[clamp(1.75rem,4vw,2.75rem)] font-bold uppercase leading-[1.05] tracking-tight text-foreground">
-                  We&apos;re creating{" "}
-                  <span className="text-listingHeart">the easiest</span> and{" "}
-                  <span className="text-listingHeart">most enjoyable</span> place to buy and sell
-                  surfboards
-                </h1>
-              </div>
-              <AboutHeroBoardStack images={heroListingImages} />
-            </div>
-          </div>
-        </div>
-      </section>
+      <MarketingHeadlineHero
+        heroListingImages={heroListingImages}
+        headline={
+          <h1 className={marketingHeadlineTitleClass}>
+            We&apos;re creating{" "}
+            <span className="text-listingHeart">the easiest</span> and{" "}
+            <span className="text-listingHeart">most enjoyable</span> place to buy and sell
+            surfboards
+          </h1>
+        }
+      />
 
       <section className="border-b border-border/70 bg-background">
         <div className="container mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 sm:py-16 lg:grid-cols-2 lg:items-center lg:gap-16 lg:py-20">
