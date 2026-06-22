@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import type { BrandProductCategorySlug } from "@/lib/brand-product-categories"
 
 export type BrandModelRow = {
   id: string
@@ -6,6 +7,7 @@ export type BrandModelRow = {
   name: string
   description: string | null
   image_url: string | null
+  product_category_slug: BrandProductCategorySlug
   created_at: string
   updated_at: string
 }
@@ -34,6 +36,7 @@ const LIST_SELECT = `
   name,
   description,
   image_url,
+  product_category_slug,
   created_at,
   updated_at,
   brands:brand_id ( id, name, slug )
@@ -269,6 +272,7 @@ export async function listBrandModelsForAdmin(
       name: row.name,
       description: row.description,
       image_url: row.image_url ?? null,
+      product_category_slug: row.product_category_slug ?? "surfboards",
       created_at: row.created_at,
       updated_at: row.updated_at,
       brand: { id: b.id, name: b.name, slug: b.slug },
@@ -284,6 +288,7 @@ export async function insertBrandModel(
     name: string
     description: string | null
     image_url: string | null
+    product_category_slug?: BrandProductCategorySlug
   },
 ): Promise<{ ok: true; row: BrandModelRow } | { ok: false; error: string; code?: string }> {
   const now = new Date().toISOString()
@@ -294,9 +299,12 @@ export async function insertBrandModel(
       name: input.name.trim(),
       description: input.description?.trim() || null,
       image_url: input.image_url,
+      product_category_slug: input.product_category_slug ?? "surfboards",
       updated_at: now,
     })
-    .select("id, brand_id, name, description, image_url, created_at, updated_at")
+    .select(
+      "id, brand_id, name, description, image_url, product_category_slug, created_at, updated_at",
+    )
     .single()
 
   if (error) {
@@ -320,6 +328,7 @@ export async function updateBrandModel(
     description?: string | null
     brand_id?: string
     image_url?: string | null
+    product_category_slug?: BrandProductCategorySlug
   },
 ): Promise<{ ok: true } | { ok: false; error: string; code?: string }> {
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
@@ -327,6 +336,9 @@ export async function updateBrandModel(
   if (patch.description !== undefined) updates.description = patch.description?.trim() || null
   if (patch.brand_id !== undefined) updates.brand_id = patch.brand_id
   if (patch.image_url !== undefined) updates.image_url = patch.image_url
+  if (patch.product_category_slug !== undefined) {
+    updates.product_category_slug = patch.product_category_slug
+  }
 
   const { error } = await supabase.from("brand_models").update(updates).eq("id", id)
 

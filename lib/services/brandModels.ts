@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import type { BrandProductCategorySlug } from "@/lib/brand-product-categories"
 import {
   deleteBrandModel,
   insertBrandModel,
@@ -29,6 +30,7 @@ export async function createBrandModelService(
     name: string
     description: string | null
     image_url: string | null
+    product_category_slug?: BrandProductCategorySlug
   },
 ): Promise<{ ok: true; row: BrandModelRow } | { ok: false; error: string; status?: number }> {
   const { data: brand, error: brandErr } = await supabase.from("brands").select("id").eq("id", input.brand_id).maybeSingle()
@@ -57,6 +59,7 @@ export async function updateBrandModelService(
     description?: string | null
     brand_id?: string
     image_url?: string | null
+    product_category_slug?: BrandProductCategorySlug
   },
 ): Promise<{ ok: true } | { ok: false; error: string; status?: number }> {
   if (patch.brand_id) {

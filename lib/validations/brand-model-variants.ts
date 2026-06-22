@@ -1,6 +1,9 @@
 import { z } from "zod"
+import { BRAND_PRODUCT_CATEGORY_SLUGS } from "@/lib/brand-product-categories"
 
 const uuid = z.string().trim().uuid()
+
+const variantProductCategorySchema = z.enum(BRAND_PRODUCT_CATEGORY_SLUGS)
 
 /** Admin / snapshot flows: empty labels allowed (stored as trimmed text, may be ""). */
 export const adminOptionalDimLabelSchema = z.string().trim().max(80)
@@ -67,6 +70,47 @@ export const brandModelVariantConditionSchema = z.enum([
 
 export type BrandModelVariantCondition = z.infer<typeof brandModelVariantConditionSchema>
 
+/** Fin size slug — mirrors `listings.fin_size` / `lib/fin-listing-config`. */
+export const finCatalogVariantSizeSchema = z.enum(["xs", "s", "m", "l", "xl", "other"])
+
+export type FinCatalogVariantSize = z.infer<typeof finCatalogVariantSizeSchema>
+
+const optionalFinSize = z
+  .union([finCatalogVariantSizeSchema, z.literal(""), z.null()])
+  .optional()
+  .transform((v) => (v === "" || v == null ? null : v))
+
+const configurationLabelSchema = z.string().trim().max(120)
+
+/** Fin template geometry labels (free text, stored as entered). */
+export const finGeometryLabelSchema = z.string().trim().max(80)
+
+/** Common fin foil profiles for admin selects; free text also allowed. */
+export const FIN_CATALOG_FOIL_OPTIONS = [
+  "Flat",
+  "Inside",
+  "V2",
+  "80/20",
+  "Neutral",
+  "Other",
+] as const
+
+/** Common fin colors for admin selects; free text also allowed. */
+export const FIN_CATALOG_COLOR_OPTIONS = [
+  "Black",
+  "Smoke",
+  "Volcanic",
+  "Sand",
+  "Cream",
+  "White",
+  "Red",
+  "Blue",
+  "Clear",
+  "Other",
+] as const
+
+export const finColorLabelSchema = finGeometryLabelSchema
+
 /** USD amount; empty / omitted / null = no price stored. */
 const optionalPriceUsd = z.preprocess(
   (v: unknown) => {
@@ -114,6 +158,13 @@ export const adminBrandModelVariantCreateBodySchema = z.object({
   fin_boxes: finBoxesSchema.optional(),
   material: brandModelVariantMaterialSchema.optional(),
   condition: brandModelVariantConditionSchema,
+  fin_size: optionalFinSize,
+  configuration_label: configurationLabelSchema.optional().default(""),
+  fin_base_label: finGeometryLabelSchema.optional().default(""),
+  fin_height_label: finGeometryLabelSchema.optional().default(""),
+  fin_foil_label: finGeometryLabelSchema.optional().default(""),
+  fin_color_label: finColorLabelSchema.optional().default(""),
+  product_category_slug: variantProductCategorySchema.optional(),
   price: optionalPriceUsd,
   image_url: optionalImageUrl,
   sort_order: z.number().int().min(0).max(1_000_000).optional(),
@@ -130,6 +181,13 @@ export const adminBrandModelVariantPatchBodySchema = z.object({
   fin_boxes: finBoxesSchema.optional(),
   material: brandModelVariantMaterialSchema.optional(),
   condition: brandModelVariantConditionSchema.optional(),
+  fin_size: optionalFinSize,
+  configuration_label: configurationLabelSchema.optional(),
+  fin_base_label: finGeometryLabelSchema.optional(),
+  fin_height_label: finGeometryLabelSchema.optional(),
+  fin_foil_label: finGeometryLabelSchema.optional(),
+  fin_color_label: finColorLabelSchema.optional(),
+  product_category_slug: variantProductCategorySchema.optional(),
   price: optionalPriceUsd,
   image_url: optionalImageUrl,
   sort_order: z.number().int().min(0).max(1_000_000).optional(),

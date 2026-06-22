@@ -25,6 +25,8 @@ import { LocationPicker } from "@/components/location-picker"
 import { SellFormSection } from "@/components/features/sell/sell-form-section"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellFinsFacetFields } from "@/components/features/sell/sell-fins-facet-fields"
+import { SellFinsCatalogSearch } from "@/components/features/sell/sell-fins-catalog-search"
+import type { FinCatalogSearchSelection } from "@/lib/types/fin-catalog-search"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
 import {
@@ -120,7 +122,9 @@ type FinFormState = {
   finSetup: string
   finSystem: string
   brand: string
+  brandId: string | null
   model: string
+  brandModelId: string | null
   locationCity: string
   locationState: string
   locationLat: number | null
@@ -148,7 +152,9 @@ const INITIAL_STATE: FinFormState = {
   finSetup: "",
   finSystem: "",
   brand: "",
+  brandId: null,
   model: "",
+  brandModelId: null,
   locationCity: "",
   locationState: "",
   locationLat: null,
@@ -183,6 +189,7 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
   const supabaseRef = useRef(createClient())
   const editId = editListingId?.trim() || null
 
+  const [flowStep, setFlowStep] = useState<"search" | "form">(editId ? "form" : "search")
   const [form, setForm] = useState<FinFormState>(INITIAL_STATE)
   const [photos, setPhotos] = useState<PhotoSlot[]>([])
   const [submitting, setSubmitting] = useState(false)
@@ -303,7 +310,9 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
         finSetup: singleFinSetupSlugForForm((listing as { fins_setup?: string | null }).fins_setup),
         finSystem: (listing as { fin_system?: string | null }).fin_system ?? "",
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
+        brandId: (listing as { brand_id?: string | null }).brand_id?.trim() || null,
         model: (listing as { model?: string | null }).model?.trim() ?? "",
+        brandModelId: (listing as { brand_model_id?: string | null }).brand_model_id?.trim() || null,
         locationCity: listing.city ?? "",
         locationState: listing.state ?? "",
         locationLat: listing.latitude != null ? Number(listing.latitude) : null,
@@ -357,6 +366,31 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
 
   const setField = useCallback(<K extends keyof FinFormState>(key: K, value: FinFormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
+  }, [])
+
+  const applyCatalogSelection = useCallback((selection: FinCatalogSearchSelection) => {
+    setForm((prev) => {
+      const next: FinFormState = {
+        ...prev,
+        brand: selection.brandName,
+        brandId: selection.brandId,
+        title: selection.suggestedTitle || prev.title,
+      }
+      if (selection.kind === "model" || selection.kind === "variant") {
+        next.model = selection.modelName
+        next.brandModelId = selection.brandModelId
+      } else {
+        next.model = ""
+        next.brandModelId = null
+      }
+      if (selection.kind === "variant") {
+        next.finSetup = selection.finSetup || prev.finSetup
+        next.finSystem = selection.finSystem || prev.finSystem
+        next.size = selection.finSize || prev.size
+      }
+      return next
+    })
+    setFlowStep("form")
   }, [])
 
   const updateSlot = useCallback((clientId: string, patch: Partial<PhotoSlot>) => {
@@ -702,7 +736,9 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
       finSetup: form.finSetup || null,
       finSystem: form.finSystem || null,
       brand: form.brand,
+      brandId: form.brandId,
       model: form.model,
+      brandModelId: form.brandModelId,
       locationCity: form.locationCity,
       locationState: form.locationState,
       locationLat: form.locationLat ?? undefined,
@@ -836,6 +872,15 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
           <p className="text-sm">Loading listing…</p>
         </div>
       </main>
+    )
+  }
+
+  if (flowStep === "search") {
+    return (
+      <SellFinsCatalogSearch
+        onSelect={applyCatalogSelection}
+        onSkip={() => setFlowStep("form")}
+      />
     )
   }
 

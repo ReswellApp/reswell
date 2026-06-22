@@ -47,6 +47,7 @@ export async function POST(request: Request) {
     name: parsed.data.name,
     description: desc,
     image_url: imageUrl,
+    product_category_slug: parsed.data.product_category_slug,
   })
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status ?? 500 })

@@ -1,9 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import type { BrandProductCategorySlug } from "@/lib/brand-product-categories"
 import type {
   BrandModelVariantCondition,
   BrandModelVariantMaterial,
   FinBoxesType,
   FinBoxType,
+  FinCatalogVariantSize,
 } from "@/lib/validations/brand-model-variants"
 
 export type { FinBoxType, FinBoxesType }
@@ -22,6 +24,16 @@ export type BrandModelVariantRow = {
   fin_boxes: FinBoxesType
   material: BrandModelVariantMaterial
   condition: BrandModelVariantCondition
+  /** Fin size slug for fin catalog rows; null for surfboard variants. */
+  fin_size: FinCatalogVariantSize | null
+  /** Optional fin role label (center, side, set of 3, …). */
+  configuration_label: string
+  fin_base_label: string
+  fin_height_label: string
+  fin_foil_label: string
+  fin_color_label: string
+  /** Aligns with `brand_product_categories.category_slug` — `fins` for fin catalog rows. */
+  product_category_slug: BrandProductCategorySlug
   /** USD; null when unset. Postgres numeric may arrive as string from PostgREST. */
   price: number | null
   image_url: string | null
@@ -38,7 +50,7 @@ function normalizeNullableMoney(v: unknown): number | null {
 }
 
 const ADMIN_SELECT_LIST =
-  "id, brand_id, brand_model_id, length_label, width_label, thickness_label, volume_label, fin_box_type, fin_boxes, material, condition, price, image_url, sort_order, created_at, updated_at"
+  "id, brand_id, brand_model_id, length_label, width_label, thickness_label, volume_label, fin_box_type, fin_boxes, material, condition, fin_size, configuration_label, fin_base_label, fin_height_label, fin_foil_label, fin_color_label, product_category_slug, price, image_url, sort_order, created_at, updated_at"
 
 export async function listBrandModelVariantsForAdmin(
   supabase: SupabaseClient,
@@ -98,6 +110,13 @@ export async function insertBrandModelVariant(
     fin_boxes: FinBoxesType
     material: BrandModelVariantMaterial
     condition: BrandModelVariantCondition
+    fin_size?: FinCatalogVariantSize | null
+    configuration_label?: string
+    fin_base_label?: string
+    fin_height_label?: string
+    fin_foil_label?: string
+    fin_color_label?: string
+    product_category_slug?: BrandProductCategorySlug
     price: number | null
     image_url: string | null
     sort_order: number
@@ -117,13 +136,22 @@ export async function insertBrandModelVariant(
       fin_boxes: input.fin_boxes,
       material: input.material,
       condition: input.condition,
+      fin_size: input.fin_size ?? null,
+      configuration_label: (input.configuration_label ?? "").trim(),
+      fin_base_label: (input.fin_base_label ?? "").trim(),
+      fin_height_label: (input.fin_height_label ?? "").trim(),
+      fin_foil_label: (input.fin_foil_label ?? "").trim(),
+      fin_color_label: (input.fin_color_label ?? "").trim(),
+      ...(input.product_category_slug !== undefined
+        ? { product_category_slug: input.product_category_slug }
+        : {}),
       price: input.price,
       image_url: input.image_url,
       sort_order: input.sort_order,
       updated_at: now,
     })
     .select(
-      "id, brand_id, brand_model_id, length_label, width_label, thickness_label, volume_label, fin_box_type, fin_boxes, material, condition, price, image_url, sort_order, created_at, updated_at",
+      "id, brand_id, brand_model_id, length_label, width_label, thickness_label, volume_label, fin_box_type, fin_boxes, material, condition, fin_size, configuration_label, fin_base_label, fin_height_label, fin_foil_label, fin_color_label, product_category_slug, price, image_url, sort_order, created_at, updated_at",
     )
     .single()
 
@@ -131,7 +159,7 @@ export async function insertBrandModelVariant(
     if (error.code === "23505") {
       return {
         ok: false,
-        error: "This size, plugs, fin layout, foam, and condition already exist for this model",
+        error: "This configuration already exists for this model",
         code: error.code,
       }
     }
@@ -175,6 +203,13 @@ export async function updateBrandModelVariant(
     fin_boxes?: FinBoxesType
     material?: BrandModelVariantMaterial
     condition?: BrandModelVariantCondition
+    fin_size?: FinCatalogVariantSize | null
+    configuration_label?: string
+    fin_base_label?: string
+    fin_height_label?: string
+    fin_foil_label?: string
+    fin_color_label?: string
+    product_category_slug?: BrandProductCategorySlug
     price?: number | null
     image_url?: string | null
     sort_order?: number
@@ -189,6 +224,17 @@ export async function updateBrandModelVariant(
   if (patch.fin_boxes !== undefined) updates.fin_boxes = patch.fin_boxes
   if (patch.material !== undefined) updates.material = patch.material
   if (patch.condition !== undefined) updates.condition = patch.condition
+  if (patch.fin_size !== undefined) updates.fin_size = patch.fin_size
+  if (patch.configuration_label !== undefined) {
+    updates.configuration_label = patch.configuration_label.trim()
+  }
+  if (patch.fin_base_label !== undefined) updates.fin_base_label = patch.fin_base_label.trim()
+  if (patch.fin_height_label !== undefined) updates.fin_height_label = patch.fin_height_label.trim()
+  if (patch.fin_foil_label !== undefined) updates.fin_foil_label = patch.fin_foil_label.trim()
+  if (patch.fin_color_label !== undefined) updates.fin_color_label = patch.fin_color_label.trim()
+  if (patch.product_category_slug !== undefined) {
+    updates.product_category_slug = patch.product_category_slug
+  }
   if (patch.price !== undefined) updates.price = patch.price
   if (patch.image_url !== undefined) updates.image_url = patch.image_url
   if (patch.sort_order !== undefined) updates.sort_order = patch.sort_order
@@ -199,7 +245,7 @@ export async function updateBrandModelVariant(
     if (error.code === "23505") {
       return {
         ok: false,
-        error: "This size, plugs, fin layout, foam, and condition already exist for this model",
+        error: "This configuration already exists for this model",
         code: error.code,
       }
     }

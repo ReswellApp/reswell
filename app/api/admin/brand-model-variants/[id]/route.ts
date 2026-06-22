@@ -41,6 +41,13 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
     body.fin_boxes === undefined &&
     body.material === undefined &&
     body.condition === undefined &&
+    body.fin_size === undefined &&
+    body.configuration_label === undefined &&
+    body.fin_base_label === undefined &&
+    body.fin_height_label === undefined &&
+    body.fin_foil_label === undefined &&
+    body.fin_color_label === undefined &&
+    body.product_category_slug === undefined &&
     body.price === undefined &&
     body.image_url === undefined &&
     body.sort_order === undefined
@@ -57,6 +64,13 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
     fin_boxes: body.fin_boxes,
     material: body.material,
     condition: body.condition,
+    fin_size: body.fin_size,
+    configuration_label: body.configuration_label,
+    fin_base_label: body.fin_base_label,
+    fin_height_label: body.fin_height_label,
+    fin_foil_label: body.fin_foil_label,
+    fin_color_label: body.fin_color_label,
+    product_category_slug: body.product_category_slug,
     price: body.price,
     image_url: body.image_url,
     sort_order: body.sort_order,

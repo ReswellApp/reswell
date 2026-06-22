@@ -1,10 +1,17 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
+import { z } from "zod"
 import { createClient } from "@/lib/supabase/server"
 import { createFinListingSchema, updateFinListingSchema } from "@/lib/validations/fin-listing"
 import { createFinListing, updateFinListing } from "@/lib/services/finListing"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
+import { searchFinCatalogForSell } from "@/lib/services/finCatalogSearch"
+import type { FinCatalogSearchResult } from "@/lib/types/fin-catalog-search"
+
+const finCatalogSearchQuerySchema = z.object({
+  q: z.string().trim().min(1, "Enter a search term").max(200),
+})
 
 export type CreateFinListingActionResult =
   | { success: true; listingId: string; slug: string }
@@ -13,6 +20,30 @@ export type CreateFinListingActionResult =
 export type UpdateFinListingActionResult =
   | { success: true; slug: string }
   | { error: string }
+
+export type SearchFinCatalogForSellActionResult =
+  | { ok: true; data: FinCatalogSearchResult }
+  | { ok: false; error: string }
+
+/** Catalog search for the `/sell/fins` entry step (fin-tagged brands only). */
+export async function searchFinCatalogForSellAction(
+  qRaw: string,
+): Promise<SearchFinCatalogForSellActionResult> {
+  const parsed = finCatalogSearchQuerySchema.safeParse({ q: qRaw })
+  if (!parsed.success) {
+    const first = parsed.error.issues[0]
+    return { ok: false, error: first?.message ?? "Enter a search term." }
+  }
+
+  try {
+    const supabase = await createClient()
+    const data = await searchFinCatalogForSell(supabase, parsed.data.q)
+    return { ok: true, data }
+  } catch (error) {
+    console.error("searchFinCatalogForSellAction:", error instanceof Error ? error.message : error)
+    return { ok: false, error: "Could not search the fin catalog. Please try again." }
+  }
+}
 
 /**
  * Creates a fin listing (a single listings row with section='fins' plus

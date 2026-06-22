@@ -59,6 +59,12 @@ import {
 } from "@/components/ui/select"
 import { BrandCatalogImagePickButton } from "@/components/brands/brand-catalog-image-picker-dialog"
 import { BrandModelVariantsEditor } from "@/components/brands/brand-model-variants-editor"
+import { FinBrandModelVariantsEditor } from "@/components/brands/fin-brand-model-variants-editor"
+import {
+  BRAND_PRODUCT_CATEGORY_OPTIONS,
+  type BrandProductCategorySlug,
+} from "@/lib/brand-product-categories"
+import { isFinCatalogProductCategory } from "@/lib/utils/fin-catalog-variant-label"
 import {
   FIN_BOXES_ADMIN_OPTIONS,
   FIN_BOX_TYPE_ADMIN_OPTIONS,
@@ -78,6 +84,7 @@ type ModelListRow = {
   name: string
   description: string | null
   image_url: string | null
+  product_category_slug: BrandProductCategorySlug
   brand: { id: string; name: string; slug: string }
 }
 
@@ -105,6 +112,11 @@ export function BrandModelEditorDialog({
   brands: BrandOption[]
 }) {
   const [brandId, setBrandId] = React.useState<string>("")
+  const [productCategorySlug, setProductCategorySlug] =
+    React.useState<BrandProductCategorySlug>("surfboards")
+  const [brandProductCategories, setBrandProductCategories] = React.useState<
+    BrandProductCategorySlug[]
+  >([])
   const [modelName, setModelName] = React.useState("")
   const [description, setDescription] = React.useState("")
   const [saving, setSaving] = React.useState(false)
@@ -195,9 +207,46 @@ export function BrandModelEditorDialog({
   const selectedBrandName = brandId ? (brands.find((b) => b.id === brandId)?.name ?? null) : null
 
   React.useEffect(() => {
+    if (!open || !brandId) {
+      setBrandProductCategories([])
+      return
+    }
+    let cancelled = false
+    void (async () => {
+      const supabase = createClient()
+      const { data } = await supabase
+        .from("brand_product_categories")
+        .select("category_slug")
+        .eq("brand_id", brandId)
+      if (cancelled) return
+      const slugs = (data ?? [])
+        .map((row) => row.category_slug)
+        .filter((s): s is BrandProductCategorySlug =>
+          BRAND_PRODUCT_CATEGORY_OPTIONS.some((o) => o.slug === s),
+        )
+      setBrandProductCategories(slugs)
+      if (slugs.includes("fins") && !slugs.includes("surfboards")) {
+        setProductCategorySlug("fins")
+      } else if (slugs.includes("surfboards")) {
+        setProductCategorySlug("surfboards")
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [open, brandId])
+
+  React.useEffect(() => {
     if (!open || !brandId) return
     void loadModels(brandId)
   }, [open, brandId, loadModels])
+
+  const creatableProductCategories = React.useMemo(() => {
+    if (brandProductCategories.length === 0) return BRAND_PRODUCT_CATEGORY_OPTIONS
+    return BRAND_PRODUCT_CATEGORY_OPTIONS.filter((o) => brandProductCategories.includes(o.slug))
+  }, [brandProductCategories])
+
+  const creatingFinModel = isFinCatalogProductCategory(productCategorySlug)
 
   async function uploadModelImageFile(file: File): Promise<string | null> {
     if (file.size > MODEL_IMAGE_MAX) {
@@ -349,6 +398,7 @@ export function BrandModelEditorDialog({
           name,
           description: description.trim() || null,
           image_url: imageUrl,
+          product_category_slug: productCategorySlug,
         }),
       })
       const json = (await res.json().catch(() => ({}))) as {
@@ -601,6 +651,30 @@ export function BrandModelEditorDialog({
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="brand-model-product-category">Product type</Label>
+            <Select
+              value={productCategorySlug}
+              onValueChange={(v) => setProductCategorySlug(v as BrandProductCategorySlug)}
+              disabled={saving || !brandId}
+            >
+              <SelectTrigger id="brand-model-product-category" className="h-10">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {creatableProductCategories.map((opt) => (
+                  <SelectItem key={opt.slug} value={opt.slug}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Fin models use fin-specific variant fields (size, setup, system). Surfboard models use
+              board dimensions.
+            </p>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="brand-model-image">Model image (optional)</Label>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
               <Input
@@ -645,6 +719,12 @@ export function BrandModelEditorDialog({
           </div>
 
           <Separator className="bg-border/60" />
+          {creatingFinModel ? (
+            <div className="rounded-xl border border-border/60 bg-muted/15 p-4 text-xs leading-relaxed text-muted-foreground">
+              After you save this fin model, expand it in the list on the right to add fin variants
+              (size, setup, system, configuration).
+            </div>
+          ) : (
           <div className="space-y-4 rounded-xl border border-border/60 bg-muted/15 p-4">
             <div className="flex items-start gap-3">
               <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-background text-muted-foreground shadow-sm ring-1 ring-border/50">
@@ -896,6 +976,7 @@ export function BrandModelEditorDialog({
               </ul>
             ) : null}
           </div>
+          )}
               </form>
             </div>
             <div className="shrink-0 border-t border-border/60 bg-background/95 px-4 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:px-6">
@@ -1138,16 +1219,29 @@ export function BrandModelEditorDialog({
                         </div>
                         {expanded ? (
                           <div className="border-t border-border/60 bg-muted/20 px-3 py-3 sm:px-4 sm:py-4">
-                            <BrandModelVariantsEditor
-                              brandId={m.brand_id}
-                              brandModelId={m.id}
-                              modelName={m.name}
-                              portalContainer={dialogSurfaceEl}
-                              disabled={deletingId === m.id || imagePatchingId === m.id}
-                              onReload={async () => {
-                                await loadModels(brandId)
-                              }}
-                            />
+                            {isFinCatalogProductCategory(m.product_category_slug) ? (
+                              <FinBrandModelVariantsEditor
+                                brandId={m.brand_id}
+                                brandModelId={m.id}
+                                modelName={m.name}
+                                portalContainer={dialogSurfaceEl}
+                                disabled={deletingId === m.id || imagePatchingId === m.id}
+                                onReload={async () => {
+                                  await loadModels(brandId)
+                                }}
+                              />
+                            ) : (
+                              <BrandModelVariantsEditor
+                                brandId={m.brand_id}
+                                brandModelId={m.id}
+                                modelName={m.name}
+                                portalContainer={dialogSurfaceEl}
+                                disabled={deletingId === m.id || imagePatchingId === m.id}
+                                onReload={async () => {
+                                  await loadModels(brandId)
+                                }}
+                              />
+                            )}
                           </div>
                         ) : null}
                       </li>
