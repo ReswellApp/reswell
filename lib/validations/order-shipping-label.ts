@@ -1,11 +1,31 @@
 import { z } from "zod"
+import {
+  SURFBOARD_LABEL_LIMITS_ERROR,
+  SURFBOARD_LABEL_MAX_LENGTH_IN,
+  SURFBOARD_LABEL_MAX_WEIGHT_LB,
+  validateSurfboardLabelParcelLimits,
+} from "@/lib/shipping/surfboard-label-limits"
 
-export const shippingLabelParcelSchema = z.object({
-  length_in: z.coerce.number().min(6).max(120),
-  width_in: z.coerce.number().min(4).max(48),
-  height_in: z.coerce.number().min(2).max(36),
-  weight_lb: z.coerce.number().min(1).max(80),
-})
+export const shippingLabelParcelSchema = z
+  .object({
+    length_in: z.coerce.number().min(6).max(SURFBOARD_LABEL_MAX_LENGTH_IN),
+    width_in: z.coerce.number().min(4).max(48),
+    height_in: z.coerce.number().min(2).max(36),
+    weight_lb: z.coerce.number().min(1).max(SURFBOARD_LABEL_MAX_WEIGHT_LB),
+  })
+  .superRefine((data, ctx) => {
+    const check = validateSurfboardLabelParcelLimits({
+      lengthIn: data.length_in,
+      weightLb: data.weight_lb,
+    })
+    if (!check.ok) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: SURFBOARD_LABEL_LIMITS_ERROR,
+        path: ["length_in"],
+      })
+    }
+  })
 
 /** When `seller_address_id` or `parcel` is omitted, the server uses the seller default address and listing packed dimensions. */
 export const shippingLabelRatesBodySchema = z.object({

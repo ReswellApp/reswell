@@ -9,6 +9,7 @@ import {
   extractRatesFromApiEnvelope,
   rateMoneyTotal,
 } from "@/lib/shipping/shipengine-rate-helpers"
+import { validateSurfboardLabelParcelLimits } from "@/lib/shipping/surfboard-label-limits"
 
 function asRecord(v: unknown): Record<string, unknown> | null {
   return v != null && typeof v === "object" && !Array.isArray(v)
@@ -97,6 +98,14 @@ export async function fetchShipEngineRatesForSurfboard(params: {
       error: "Label purchasing is not available right now. Contact support.",
       status: 503,
     }
+  }
+
+  const limitCheck = validateSurfboardLabelParcelLimits({
+    lengthIn: params.parcel.lengthIn,
+    weightLb: params.parcel.weightLb,
+  })
+  if (!limitCheck.ok) {
+    return { ok: false, error: limitCheck.error, status: 422 }
   }
 
   const carrierIds = await fetchCarrierIds()

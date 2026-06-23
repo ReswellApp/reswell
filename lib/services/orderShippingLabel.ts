@@ -14,6 +14,10 @@ import {
   type RateQuoteAddressFields,
 } from "@/lib/shipping/rate-address"
 import type { ProfileAddressRow } from "@/lib/profile-address"
+import {
+  SURFBOARD_LABEL_LIMITS_ERROR,
+  validateSurfboardLabelParcelLimits,
+} from "@/lib/shipping/surfboard-label-limits"
 import { shippingLabelParcelSchema } from "@/lib/validations/order-shipping-label"
 
 export type { ShipEngineRateOption }
@@ -37,6 +41,14 @@ export function resolveOrderLabelParcelFromListing(
     return { ok: false, error: r.error }
   }
   const weightLb = Math.max(1, r.weightOz / 16)
+  const limitCheck = validateSurfboardLabelParcelLimits({
+    lengthIn: r.lengthIn,
+    weightLb,
+  })
+  if (!limitCheck.ok) {
+    return limitCheck
+  }
+
   const checked = shippingLabelParcelSchema.safeParse({
     length_in: r.lengthIn,
     width_in: r.widthIn,
@@ -44,6 +56,10 @@ export function resolveOrderLabelParcelFromListing(
     weight_lb: weightLb,
   })
   if (!checked.success) {
+    const limitIssue = checked.error.issues.find((issue) => issue.message === SURFBOARD_LABEL_LIMITS_ERROR)
+    if (limitIssue) {
+      return { ok: false, error: SURFBOARD_LABEL_LIMITS_ERROR }
+    }
     return {
       ok: false,
       error:

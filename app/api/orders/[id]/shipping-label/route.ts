@@ -13,6 +13,7 @@ import { shippingLabelPostBodySchema } from "@/lib/validations/order-shipping-la
 import type { ListingPackedParcelSource } from "@/lib/reswell-packed-parcel-from-listing"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { isSurfboardLabelParcelLimitError } from "@/lib/shipping/surfboard-label-limits"
 
 export const dynamic = "force-dynamic"
 
@@ -90,6 +91,10 @@ export async function GET(
   }
   if (row.fulfillment_method !== "shipping") reasons.push("This order is not shipping fulfillment.")
   if (row.delivery_status !== "pending") reasons.push("Tracking is already set for this order.")
+
+  if (!autoLabelParcel.ok && isSurfboardLabelParcelLimitError(autoLabelParcel.error)) {
+    reasons.push(autoLabelParcel.error)
+  }
 
   if (user) {
     const sellerCtx = await loadSellerShippingLabelOrderContext(supabase, orderId, user.id)

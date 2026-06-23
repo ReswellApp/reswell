@@ -27,6 +27,7 @@ import {
 import { ChevronDown, Loader2, Truck } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { isSurfboardLabelParcelLimitError } from "@/lib/shipping/surfboard-label-limits"
 import { SellerShippingLabelCheckout } from "@/components/seller-shipping-label-checkout"
 
 type SellerAddr = { id: string; label: string; oneLine: string; isDefault: boolean }
@@ -310,6 +311,8 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
   }
 
   const autoOk = overview.autoLabelParcel.ok
+  const parcelLimitError =
+    !autoOk && isSurfboardLabelParcelLimitError(overview.autoLabelParcel.error)
   const singleAddr = overview.sellerAddresses.length === 1
   const preferredAddr = overview.sellerAddresses.find((a) => a.id === sellerAddressId)
 
@@ -392,12 +395,18 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
               </div>
             ) : (
               <Alert variant="destructive" className="border-destructive/40">
-                <AlertTitle>We couldn&apos;t read package details from the listing</AlertTitle>
+                <AlertTitle>
+                  {parcelLimitError
+                    ? "This package is too large for Reswell labels"
+                    : "We couldn&apos;t read package details from the listing"}
+                </AlertTitle>
                 <AlertDescription className="space-y-2">
                   <p>{overview.autoLabelParcel.error}</p>
-                  <p className="text-sm">
-                    Enter packed dimensions below, or update the listing and refresh this page.
-                  </p>
+                  {!parcelLimitError ? (
+                    <p className="text-sm">
+                      Enter packed dimensions below, or update the listing and refresh this page.
+                    </p>
+                  ) : null}
                 </AlertDescription>
               </Alert>
             )}

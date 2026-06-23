@@ -15,6 +15,7 @@ import {
   rateMoneyTotal,
   type ShippingAddressInput,
 } from "@/lib/shipping/shipengine-rate-helpers"
+import { validateSurfboardLabelParcelLimits } from "@/lib/shipping/surfboard-label-limits"
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 
 /** Minimum listing slice required to rate a Reswell-shipped surfboard at checkout. */
@@ -265,6 +266,15 @@ export async function getCheapestReswellRateForListings(input: {
   const parcel = resolveCombinedPackedParcelFromListings(input.listings)
   if (!parcel.ok) {
     return { ok: false, error: parcel.error }
+  }
+
+  const weightLb = Math.max(1, parcel.weightOz / 16)
+  const limitCheck = validateSurfboardLabelParcelLimits({
+    lengthIn: parcel.lengthIn,
+    weightLb,
+  })
+  if (!limitCheck.ok) {
+    return limitCheck
   }
 
   const shipFrom = await resolveListingShipFromAddress(firstListing, input.sellerShipFromName)
