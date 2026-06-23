@@ -3,6 +3,7 @@ import type Stripe from "stripe"
 import { fetchOrderIdsWithPreparedShippingLabels } from "@/lib/db/orderShippingLabels"
 import {
   deductWalletForInternalSpendAtomic,
+  getOrCreateWalletForUser,
   refundWalletInternalSpend,
 } from "@/lib/db/wallets"
 import type { ProfileAddressRow } from "@/lib/profile-address"
@@ -16,16 +17,26 @@ import {
   purchaseLabelWithRateId,
   resolveAddressesForLabel,
 } from "@/lib/services/orderShippingLabel"
-import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
+import {
+  effectiveBoardShippingMode,
+  type PeerListingForShippingQuote,
+} from "@/lib/services/peerListingShippingQuote"
 import { retrieveSucceededPaymentIntent } from "@/lib/stripe-complete-order"
 import { getStripe, getStripeCheckoutKeyConfigError } from "@/lib/stripe-server"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import { getShipEngineRateById } from "@/lib/shipengine/surfboard-label"
 import type { ShipEngineRateOption } from "@/lib/shipengine/surfboard-label"
 import { roundMoney } from "@/lib/utils/stripe-connect-cashout"
+import {
+  computeSellerLabelCardPaymentBreakdown,
+  computeSellerLabelPaymentBreakdown,
+  computeSellerLabelPrepaidAllowanceBreakdown,
+  type SellerLabelPaymentBreakdown,
+} from "@/lib/shipping/seller-label-payment-breakdown"
 
 export const SELLER_SHIPPING_LABEL_PI_PURPOSE = "seller_shipping_label"
 export const SELLER_SHIPPING_LABEL_WALLET_REFERENCE_TYPE = "seller_shipping_label"
+export const SELLER_FLAT_SHIPPING_SURPLUS_REFERENCE_TYPE = "seller_flat_shipping_surplus"
 
 function getClientForPrivilegedWalletWrites(sessionClient: SupabaseClient): SupabaseClient {
   if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
@@ -58,6 +69,83 @@ async function findWalletLabelPurchaseByOrder(
 
   const id = (data as { id?: string } | null)?.id
   return id ? { walletTransactionId: id } : null
+}
+
+async function findFlatShippingSurplusCreditByOrder(
+  supabase: SupabaseClient,
+  orderId: string,
+): Promise<{ walletTransactionId: string } | null> {
+  const { data } = await supabase
+    .from("wallet_transactions")
+    .select("id")
+    .eq("reference_type", SELLER_FLAT_SHIPPING_SURPLUS_REFERENCE_TYPE)
+    .eq("reference_id", orderId)
+    .maybeSingle()
+
+  const id = (data as { id?: string } | null)?.id
+  return id ? { walletTransactionId: id } : null
+}
+
+async function creditSellerFlatShippingSurplus(params: {
+  writeDb: SupabaseClient
+  sellerId: string
+  orderId: string
+  orderDisplayNum: string
+  surplusUsd: number
+}): Promise<{ ok: true; balanceAfter: number } | { ok: false; error: string }> {
+  if (params.surplusUsd <= 0) {
+    const summary = await getSellerBalance(params.writeDb, params.sellerId)
+    return { ok: true, balanceAfter: summary.spendableBucks }
+  }
+
+  const existing = await findFlatShippingSurplusCreditByOrder(params.writeDb, params.orderId)
+  if (existing) {
+    const summary = await getSellerBalance(params.writeDb, params.sellerId)
+    return { ok: true, balanceAfter: summary.spendableBucks }
+  }
+
+  const wallet = await getOrCreateWalletForUser(params.writeDb, params.sellerId)
+  if (!wallet) {
+    return { ok: false, error: "Could not load seller wallet" }
+  }
+
+  const prevBalance = parseFloat(String(wallet.balance ?? 0)) || 0
+  const prevEarned = parseFloat(String(wallet.lifetime_earned ?? 0)) || 0
+  const creditUsd = roundMoney(params.surplusUsd)
+  const balanceAfter = roundMoney(prevBalance + creditUsd)
+  const lifetimeEarnedAfter = roundMoney(prevEarned + creditUsd)
+
+  const { error: walletErr } = await params.writeDb
+    .from("wallets")
+    .update({
+      balance: balanceAfter.toFixed(2),
+      lifetime_earned: lifetimeEarnedAfter.toFixed(2),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", wallet.id)
+
+  if (walletErr) {
+    console.error("[creditSellerFlatShippingSurplus] wallet update:", walletErr)
+    return { ok: false, error: "Could not credit shipping surplus to seller wallet" }
+  }
+
+  const { error: txErr } = await params.writeDb.from("wallet_transactions").insert({
+    wallet_id: wallet.id,
+    user_id: params.sellerId,
+    type: "sale",
+    amount: creditUsd,
+    balance_after: balanceAfter.toFixed(2),
+    description: `Flat shipping surplus — order #${params.orderDisplayNum} ($${creditUsd.toFixed(2)} unused buyer shipping)`,
+    reference_id: params.orderId,
+    reference_type: SELLER_FLAT_SHIPPING_SURPLUS_REFERENCE_TYPE,
+  })
+
+  if (txErr) {
+    console.error("[creditSellerFlatShippingSurplus] wallet tx insert:", txErr)
+    return { ok: false, error: "Could not record shipping surplus credit" }
+  }
+
+  return { ok: true, balanceAfter }
 }
 
 export type SellerLabelPurchasableOrder = {
@@ -146,6 +234,43 @@ export async function listSellerLabelPurchasableOrders(
   return candidates.filter((c) => !prepared.has(c.orderId))
 }
 
+function parseOrderShippingAmountUsd(v: string | number | null | undefined): number {
+  const n = Number(v)
+  return Number.isFinite(n) && n > 0 ? roundMoney(n) : 0
+}
+
+type BuyerPrepaidListingSource = {
+  board_shipping_cost_mode?: string | null
+  shipping_price?: string | number | null
+}
+
+/** Buyer shipping credit for label purchase: order `shipping_amount`, or flat listing rate when missing. */
+export function resolveBuyerPrepaidShippingUsdForOrder(input: {
+  shippingAmount?: string | number | null
+  listing: BuyerPrepaidListingSource
+}): number {
+  const fromOrder = parseOrderShippingAmountUsd(input.shippingAmount)
+  if (fromOrder > 0) return fromOrder
+
+  const mode = effectiveBoardShippingMode(input.listing as PeerListingForShippingQuote)
+  if (mode === "flat") {
+    return roundMoney(Math.max(0, parseFloat(String(input.listing.shipping_price ?? 0)) || 0))
+  }
+  return 0
+}
+
+function buyerPrepaidFromOrderContext(order: SellerLabelOrderRow): number {
+  const listing = Array.isArray(order.listings) ? order.listings[0] : order.listings
+  if (!listing) return parseOrderShippingAmountUsd(order.shipping_amount)
+  return resolveBuyerPrepaidShippingUsdForOrder({
+    shippingAmount: order.shipping_amount,
+    listing,
+  })
+}
+
+export type { SellerLabelPaymentBreakdown } from "@/lib/shipping/seller-label-payment-breakdown"
+export { computeSellerLabelPaymentBreakdown } from "@/lib/shipping/seller-label-payment-breakdown"
+
 type SellerLabelOrderRow = {
   id: string
   order_num: string | null
@@ -154,6 +279,7 @@ type SellerLabelOrderRow = {
   fulfillment_method: string | null
   delivery_status: string
   shipping_address: unknown
+  shipping_amount?: string | number | null
   listings:
     | {
         section: string
@@ -201,6 +327,7 @@ export async function loadSellerShippingLabelOrderContext(
       fulfillment_method,
       delivery_status,
       shipping_address,
+      shipping_amount,
       listings ( section, board_shipping_cost_mode, shipping_price )
     `,
     )
@@ -340,7 +467,14 @@ export async function createSellerShippingLabelPaymentIntent(params: {
   sellerAddressId?: string | null
   parcel?: { length_in: number; width_in: number; height_in: number; weight_lb: number }
 }): Promise<
-  | { ok: true; clientSecret: string; amountUsd: number }
+  | {
+      ok: true
+      clientSecret: string
+      amountUsd: number
+      labelCostUsd: number
+      buyerPrepaidAppliedUsd: number
+      cardChargeUsd: number
+    }
   | { ok: false; error: string; status: number }
 > {
   const keyConfigError = getStripeCheckoutKeyConfigError()
@@ -365,10 +499,37 @@ export async function createSellerShippingLabelPaymentIntent(params: {
   })
   if (!rateResolved.ok) return rateResolved
 
-  const amountCents = Math.round(rateResolved.rate.amount * 100)
-  if (amountCents < 50) {
+  const labelCostUsd = roundMoney(rateResolved.rate.amount)
+  if (labelCostUsd < 0.5) {
     return { ok: false, error: "Label cost is below the minimum charge.", status: 400 }
   }
+
+  const buyerPrepaidAvailableUsd = buyerPrepaidFromOrderContext(ctx.order)
+  const prepaidBreakdown = computeSellerLabelPrepaidAllowanceBreakdown({
+    labelCostUsd,
+    buyerPrepaidAvailableUsd,
+  })
+
+  if (prepaidBreakdown.canPurchaseWithPrepaidAllowance) {
+    return {
+      ok: false,
+      error:
+        "This label is covered by the buyer's prepaid flat shipping on this order. Print the label without card payment.",
+      status: 400,
+    }
+  }
+
+  const cardBreakdown = computeSellerLabelCardPaymentBreakdown({ labelCostUsd })
+  const amountCents = Math.round(cardBreakdown.cardChargeUsd * 100)
+  if (amountCents < 50) {
+    return {
+      ok: false,
+      error: "Label cost is below the minimum charge.",
+      status: 400,
+    }
+  }
+
+  const labelCostCents = Math.round(labelCostUsd * 100)
 
   try {
     const stripe = getStripe()
@@ -382,6 +543,8 @@ export async function createSellerShippingLabelPaymentIntent(params: {
         seller_id: params.sellerId,
         rate_id: rateResolved.rate.rate_id,
         amount_cents: String(amountCents),
+        label_cost_cents: String(labelCostCents),
+        buyer_prepaid_applied_cents: "0",
         carrier_label: rateResolved.rate.carrierLabel.slice(0, 200),
         service_name: rateResolved.rate.serviceName.slice(0, 200),
       },
@@ -399,6 +562,9 @@ export async function createSellerShippingLabelPaymentIntent(params: {
       ok: true,
       clientSecret: paymentIntent.client_secret,
       amountUsd: amountCents / 100,
+      labelCostUsd,
+      buyerPrepaidAppliedUsd: 0,
+      cardChargeUsd: cardBreakdown.cardChargeUsd,
     }
   } catch (e) {
     console.error("[createSellerShippingLabelPaymentIntent] Stripe:", e)
@@ -570,6 +736,8 @@ function validateSellerLabelPaymentIntentMetadata(
   const sellerId = pi.metadata.seller_id?.trim() || ""
   const rateId = pi.metadata.rate_id?.trim() || ""
   const amountCentsRaw = pi.metadata.amount_cents?.trim() || ""
+  const labelCostCentsRaw = pi.metadata.label_cost_cents?.trim() || ""
+  const buyerPrepaidAppliedCentsRaw = pi.metadata.buyer_prepaid_applied_cents?.trim() || ""
 
   if (!orderId || !sellerId || !rateId || !amountCentsRaw) {
     return { ok: false, error: "Payment is missing label metadata" }
@@ -578,6 +746,21 @@ function validateSellerLabelPaymentIntentMetadata(
   const amountCents = parseInt(amountCentsRaw, 10)
   if (!Number.isFinite(amountCents) || amountCents < 50 || pi.amount !== amountCents) {
     return { ok: false, error: "Payment amount does not match the selected label rate" }
+  }
+
+  if (labelCostCentsRaw && buyerPrepaidAppliedCentsRaw) {
+    const labelCostCents = parseInt(labelCostCentsRaw, 10)
+    const buyerPrepaidAppliedCents = parseInt(buyerPrepaidAppliedCentsRaw, 10)
+    if (
+      Number.isFinite(labelCostCents) &&
+      Number.isFinite(buyerPrepaidAppliedCents) &&
+      labelCostCents >= 50 &&
+      buyerPrepaidAppliedCents >= 0 &&
+      buyerPrepaidAppliedCents <= labelCostCents &&
+      amountCents + buyerPrepaidAppliedCents !== labelCostCents
+    ) {
+      return { ok: false, error: "Payment amount does not match the selected label rate" }
+    }
   }
 
   if (expected?.orderId && expected.orderId !== orderId) {
@@ -711,22 +894,21 @@ export function isSellerShippingLabelPaymentIntent(pi: Stripe.PaymentIntent): bo
   return pi.metadata?.purpose === SELLER_SHIPPING_LABEL_PI_PURPOSE
 }
 
-export async function purchaseSellerShippingLabelWithWallet(params: {
+export async function resolveSellerShippingLabelPaymentBreakdown(params: {
   supabase: SupabaseClient
   orderId: string
   sellerId: string
   rateId: string
   sellerAddressId?: string | null
   parcel?: { length_in: number; width_in: number; height_in: number; weight_lb: number }
+  applyWallet: boolean
 }): Promise<
   | {
       ok: true
-      labelUrl: string | null
-      trackingNumber: string
+      breakdown: SellerLabelPaymentBreakdown
+      walletSpendableUsd: number
+      rateId: string
       orderDisplayNum: string
-      alreadyProcessed: boolean
-      amountUsd: number
-      walletBalanceAfter: number
     }
   | { ok: false; error: string; status: number }
 > {
@@ -747,14 +929,111 @@ export async function purchaseSellerShippingLabelWithWallet(params: {
   })
   if (!rateResolved.ok) return rateResolved
 
-  const amountUsd = roundMoney(rateResolved.rate.amount)
-  if (amountUsd < 0.5) {
+  const walletSummary = await getSellerBalance(params.supabase, params.sellerId)
+  const breakdown = computeSellerLabelPaymentBreakdown({
+    labelCostUsd: rateResolved.rate.amount,
+    buyerPrepaidAvailableUsd: buyerPrepaidFromOrderContext(ctx.order),
+    walletSpendableUsd: walletSummary.spendableBucks,
+    applyWallet: params.applyWallet,
+  })
+
+  return {
+    ok: true,
+    breakdown,
+    walletSpendableUsd: walletSummary.spendableBucks,
+    rateId: rateResolved.rate.rate_id,
+    orderDisplayNum: formatOrderNumForCustomer(ctx.order.order_num, ctx.order.id),
+  }
+}
+
+export async function purchaseSellerShippingLabelWithWallet(params: {
+  supabase: SupabaseClient
+  orderId: string
+  sellerId: string
+  rateId: string
+  sellerAddressId?: string | null
+  parcel?: { length_in: number; width_in: number; height_in: number; weight_lb: number }
+  /** When false (default), pay from buyer prepaid flat shipping and credit surplus to seller wallet. */
+  applyWallet?: boolean
+}): Promise<
+  | {
+      ok: true
+      labelUrl: string | null
+      trackingNumber: string
+      orderDisplayNum: string
+      alreadyProcessed: boolean
+      amountUsd: number
+      walletBalanceAfter: number
+      buyerPrepaidAppliedUsd: number
+      walletAppliedUsd: number
+      shippingSurplusCreditUsd: number
+      cardChargeUsd: number
+    }
+  | { ok: false; error: string; status: number }
+> {
+  const usePrepaidAllowance = params.applyWallet !== true
+
+  const ctx = await loadSellerShippingLabelOrderContext(
+    params.supabase,
+    params.orderId,
+    params.sellerId,
+  )
+  if (!ctx.ok) return ctx
+
+  const rateResolved = await resolveSellerShippingLabelRate({
+    supabase: params.supabase,
+    order: ctx.order,
+    sellerId: params.sellerId,
+    rateId: params.rateId,
+    sellerAddressId: params.sellerAddressId,
+    parcel: params.parcel,
+  })
+  if (!rateResolved.ok) return rateResolved
+
+  const labelCostUsd = roundMoney(rateResolved.rate.amount)
+  if (labelCostUsd < 0.5) {
     return { ok: false, error: "Label cost is below the minimum charge.", status: 400 }
+  }
+
+  const buyerPrepaidAvailableUsd = buyerPrepaidFromOrderContext(ctx.order)
+  const orderDisplayNum = formatOrderNumForCustomer(ctx.order.order_num, ctx.order.id)
+
+  const breakdown = usePrepaidAllowance
+    ? computeSellerLabelPrepaidAllowanceBreakdown({ labelCostUsd, buyerPrepaidAvailableUsd })
+    : computeSellerLabelPaymentBreakdown({
+        labelCostUsd,
+        buyerPrepaidAvailableUsd,
+        walletSpendableUsd: (await getSellerBalance(params.supabase, params.sellerId)).spendableBucks,
+        applyWallet: true,
+      })
+
+  if (usePrepaidAllowance) {
+    if (!breakdown.canPurchaseWithPrepaidAllowance) {
+      return {
+        ok: false,
+        error:
+          breakdown.excessOverPrepaidUsd > 0
+            ? `This label costs $${labelCostUsd.toFixed(2)}, but only $${buyerPrepaidAvailableUsd.toFixed(2)} was prepaid for flat shipping. Choose a cheaper rate or pay with card.`
+            : "This order has no buyer prepaid flat shipping for a label purchase.",
+        status: 402,
+      }
+    }
+  } else if (breakdown.cardChargeUsd > 0 || breakdown.walletAppliedUsd <= 0) {
+    const walletSummary = await getSellerBalance(params.supabase, params.sellerId)
+    return {
+      ok: false,
+      error:
+        breakdown.cardChargeUsd > 0
+          ? `This label costs $${labelCostUsd.toFixed(2)}. Pay the $${breakdown.cardChargeUsd.toFixed(2)} remainder with card or choose a cheaper rate.`
+          : `Insufficient wallet balance. Available: $${walletSummary.spendableBucks.toFixed(2)}`,
+      status: 402,
+    }
   }
 
   const serviceClient = await getServiceSupabaseOrError()
   if (!serviceClient.ok) return serviceClient
   const serviceSupabase = serviceClient.client
+  const writeDb = getClientForPrivilegedWalletWrites(params.supabase)
 
   const existingLabel = await findExistingSellerPaidLabelForOrder(serviceSupabase, params.orderId)
   if (existingLabel.ok) {
@@ -765,84 +1044,19 @@ export async function purchaseSellerShippingLabelWithWallet(params: {
       trackingNumber: existingLabel.trackingNumber,
       orderDisplayNum: existingLabel.orderDisplayNum,
       alreadyProcessed: true,
-      amountUsd,
+      amountUsd: labelCostUsd,
       walletBalanceAfter: walletSummary.spendableBucks,
+      buyerPrepaidAppliedUsd: breakdown.buyerPrepaidAppliedUsd,
+      walletAppliedUsd: breakdown.walletAppliedUsd,
+      shippingSurplusCreditUsd: breakdown.shippingSurplusCreditUsd,
+      cardChargeUsd: 0,
     }
   }
 
-  const existingWalletTx = await findWalletLabelPurchaseByOrder(serviceSupabase, params.orderId)
-  if (existingWalletTx) {
-    return {
-      ok: false,
-      error:
-        "Wallet payment was recorded but the label is missing. Contact support with your order number.",
-      status: 500,
-    }
-  }
-
-  const walletSummary = await getSellerBalance(params.supabase, params.sellerId)
-  if (walletSummary.spendableBucks < amountUsd) {
-    return {
-      ok: false,
-      error: `Insufficient wallet balance. Available: $${walletSummary.spendableBucks.toFixed(2)}`,
-      status: 400,
-    }
-  }
-
-  const writeDb = getClientForPrivilegedWalletWrites(params.supabase)
-  let deducted: Awaited<ReturnType<typeof deductWalletForInternalSpendAtomic>>
-  try {
-    deducted = await deductWalletForInternalSpendAtomic(writeDb, params.sellerId, amountUsd)
-  } catch (e) {
-    console.error("[purchaseSellerShippingLabelWithWallet] deduct rpc:", e)
-    return { ok: false, error: "Could not debit wallet balance", status: 500 }
-  }
-
-  if (!deducted) {
-    return {
-      ok: false,
-      error: `Insufficient wallet balance. Available: $${walletSummary.spendableBucks.toFixed(2)}`,
-      status: 400,
-    }
-  }
-
-  const orderDisplayNum = formatOrderNumForCustomer(ctx.order.order_num, ctx.order.id)
-  const carrierLabel = rateResolved.rate.carrierLabel.slice(0, 80)
-  const serviceName = rateResolved.rate.serviceName.slice(0, 80)
-
-  const { error: walletTxErr } = await writeDb.from("wallet_transactions").insert({
-    wallet_id: deducted.walletId,
-    user_id: params.sellerId,
-    type: "purchase",
-    amount: -amountUsd,
-    balance_after: deducted.balanceAfter.toFixed(2),
-    description: `Shipping label — order #${orderDisplayNum} (${carrierLabel} ${serviceName})`,
-    reference_id: params.orderId,
-    reference_type: SELLER_SHIPPING_LABEL_WALLET_REFERENCE_TYPE,
-  })
-
-  if (walletTxErr) {
-    console.error("[purchaseSellerShippingLabelWithWallet] wallet tx insert:", walletTxErr)
-    try {
-      await refundWalletInternalSpend(writeDb, params.sellerId, amountUsd)
-    } catch (refundErr) {
-      console.error("[purchaseSellerShippingLabelWithWallet] CRITICAL refund after tx insert fail", refundErr)
-    }
-    const isDuplicate =
-      walletTxErr.code === "23505" || walletTxErr.message?.includes("wallet_tx_seller_shipping_label_uidx")
-    if (isDuplicate) {
-      const racedLabel = await findExistingSellerPaidLabelForOrder(serviceSupabase, params.orderId)
-      if (racedLabel.ok) {
-        return {
-          ok: true,
-          labelUrl: racedLabel.labelUrl,
-          trackingNumber: racedLabel.trackingNumber,
-          orderDisplayNum: racedLabel.orderDisplayNum,
-          alreadyProcessed: true,
-          amountUsd,
-          walletBalanceAfter: deducted.balanceAfter,
-        }
-      }
+  let deducted: Awaited<ReturnType<typeof deductWalletForInternalSpendAtomic>> | null = null
+  if (!usePrepaidAllowance && breakdown.walletAppliedUsd > 0) {
+    const existingWalletTx = await findWalletLabelPurchaseByOrder(serviceSupabase, params.orderId)
+    if (existingWalletTx) {
       return {
         ok: false,
         error:
@@ -850,23 +1064,67 @@ export async function purchaseSellerShippingLabelWithWallet(params: {
         status: 500,
       }
     }
-    return { ok: false, error: "Could not record wallet payment", status: 500 }
+
+    try {
+      deducted = await deductWalletForInternalSpendAtomic(
+        writeDb,
+        params.sellerId,
+        breakdown.walletAppliedUsd,
+      )
+    } catch (e) {
+      console.error("[purchaseSellerShippingLabelWithWallet] deduct rpc:", e)
+      return { ok: false, error: "Could not debit wallet balance", status: 500 }
+    }
+
+    if (!deducted) {
+      const walletSummary = await getSellerBalance(params.supabase, params.sellerId)
+      return {
+        ok: false,
+        error: `Insufficient wallet balance. Available: $${walletSummary.spendableBucks.toFixed(2)}`,
+        status: 400,
+      }
+    }
+
+    const carrierLabel = rateResolved.rate.carrierLabel.slice(0, 80)
+    const serviceName = rateResolved.rate.serviceName.slice(0, 80)
+    const { error: walletTxErr } = await writeDb.from("wallet_transactions").insert({
+      wallet_id: deducted.walletId,
+      user_id: params.sellerId,
+      type: "purchase",
+      amount: -breakdown.walletAppliedUsd,
+      balance_after: deducted.balanceAfter.toFixed(2),
+      description: `Shipping label — order #${orderDisplayNum} (${carrierLabel} ${serviceName})`,
+      reference_id: params.orderId,
+      reference_type: SELLER_SHIPPING_LABEL_WALLET_REFERENCE_TYPE,
+    })
+
+    if (walletTxErr) {
+      console.error("[purchaseSellerShippingLabelWithWallet] wallet tx insert:", walletTxErr)
+      try {
+        await refundWalletInternalSpend(writeDb, params.sellerId, breakdown.walletAppliedUsd)
+      } catch (refundErr) {
+        console.error("[purchaseSellerShippingLabelWithWallet] CRITICAL refund after tx insert fail", refundErr)
+      }
+      return { ok: false, error: "Could not record wallet payment", status: 500 }
+    }
   }
 
   const purchased = await purchaseLabelWithRateId(rateResolved.rate.rate_id)
   if (!purchased.ok) {
-    try {
-      await refundWalletInternalSpend(writeDb, params.sellerId, amountUsd)
-      await writeDb
-        .from("wallet_transactions")
-        .delete()
-        .eq("reference_type", SELLER_SHIPPING_LABEL_WALLET_REFERENCE_TYPE)
-        .eq("reference_id", params.orderId)
-    } catch (refundErr) {
-      console.error(
-        "[purchaseSellerShippingLabelWithWallet] CRITICAL refund after label purchase fail",
-        refundErr,
-      )
+    if (deducted && breakdown.walletAppliedUsd > 0) {
+      try {
+        await refundWalletInternalSpend(writeDb, params.sellerId, breakdown.walletAppliedUsd)
+        await writeDb
+          .from("wallet_transactions")
+          .delete()
+          .eq("reference_type", SELLER_SHIPPING_LABEL_WALLET_REFERENCE_TYPE)
+          .eq("reference_id", params.orderId)
+      } catch (refundErr) {
+        console.error(
+          "[purchaseSellerShippingLabelWithWallet] CRITICAL refund after label purchase fail",
+          refundErr,
+        )
+      }
     }
     return { ok: false, error: purchased.error, status: purchased.status }
   }
@@ -881,7 +1139,50 @@ export async function purchaseSellerShippingLabelWithWallet(params: {
   })
 
   if (!saved.ok) {
+    if (deducted && breakdown.walletAppliedUsd > 0) {
+      try {
+        await refundWalletInternalSpend(writeDb, params.sellerId, breakdown.walletAppliedUsd)
+        await writeDb
+          .from("wallet_transactions")
+          .delete()
+          .eq("reference_type", SELLER_SHIPPING_LABEL_WALLET_REFERENCE_TYPE)
+          .eq("reference_id", params.orderId)
+      } catch (refundErr) {
+        console.error(
+          "[purchaseSellerShippingLabelWithWallet] CRITICAL refund after label save fail",
+          refundErr,
+        )
+      }
+    }
     return saved
+  }
+
+  let walletBalanceAfter = deducted?.balanceAfter
+  if (usePrepaidAllowance) {
+    const credited = await creditSellerFlatShippingSurplus({
+      writeDb,
+      sellerId: params.sellerId,
+      orderId: params.orderId,
+      orderDisplayNum,
+      surplusUsd: breakdown.shippingSurplusCreditUsd,
+    })
+    if (!credited.ok) {
+      console.error(
+        "[purchaseSellerShippingLabelWithWallet] label saved but surplus credit failed",
+        params.orderId,
+      )
+      return {
+        ok: false,
+        error:
+          "Label purchased and tracking saved, but unused shipping could not be credited to the seller wallet. Contact support.",
+        status: 500,
+      }
+    }
+    walletBalanceAfter = credited.balanceAfter
+  }
+
+  if (walletBalanceAfter == null) {
+    walletBalanceAfter = (await getSellerBalance(params.supabase, params.sellerId)).spendableBucks
   }
 
   return {
@@ -890,7 +1191,11 @@ export async function purchaseSellerShippingLabelWithWallet(params: {
     trackingNumber: saved.trackingNumber,
     orderDisplayNum: saved.orderDisplayNum,
     alreadyProcessed: saved.alreadyProcessed,
-    amountUsd,
-    walletBalanceAfter: deducted.balanceAfter,
+    amountUsd: labelCostUsd,
+    walletBalanceAfter,
+    buyerPrepaidAppliedUsd: breakdown.buyerPrepaidAppliedUsd,
+    walletAppliedUsd: breakdown.walletAppliedUsd,
+    shippingSurplusCreditUsd: breakdown.shippingSurplusCreditUsd,
+    cardChargeUsd: 0,
   }
 }

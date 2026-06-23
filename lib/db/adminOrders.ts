@@ -1,4 +1,43 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js"
+import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
+
+export type AdminOrderShippingAddress = {
+  name?: string | null
+  phone?: string | null
+  email?: string | null
+  address?: {
+    line1?: string | null
+    line2?: string | null
+    city?: string | null
+    state?: string | null
+    postal_code?: string | null
+    country?: string | null
+  } | null
+} | null
+
+export type AdminOrderParticipant = {
+  id: string
+  email: string | null
+  display_name: string | null
+  avatar_url: string | null
+  city: string | null
+  state: string | null
+  bio: string | null
+  created_at: string | null
+  sales_count: number | null
+  shop_name: string | null
+  is_shop: boolean | null
+  shop_verified: boolean | null
+  seller_slug: string | null
+  shop_phone: string | null
+  shop_address: string | null
+}
+
+export type AdminOrderLineItem = {
+  listing_id: string
+  title: string | null
+  sort_order: number | null
+}
 
 export type AdminOrderDetail = {
   id: string
@@ -11,6 +50,7 @@ export type AdminOrderDetail = {
   shipping_amount: number
   platform_fee: number
   seller_earnings: number
+  promo_discount_usd: number
   payment_method: string
   fulfillment_method: string | null
   created_at: string
@@ -19,22 +59,88 @@ export type AdminOrderDetail = {
   seller_id: string
   listing_id: string
   listing_title: string | null
-  buyer_display_name: string | null
-  buyer_email: string | null
-  seller_display_name: string | null
-  seller_email: string | null
+  buyer: AdminOrderParticipant
+  seller: AdminOrderParticipant
+  shipping_address: AdminOrderShippingAddress
+  order_items: AdminOrderLineItem[]
   stripe_checkout_session_id: string | null
   delivery_status: string | null
   tracking_number: string | null
   tracking_carrier: string | null
   carrier_delivered_at: string | null
+  /** Listing-scoped buyer↔seller thread for this order, when one exists. */
+  conversation_id: string | null
+  marketplace_message_count: number
   /** Matching payouts row when present — shipping uses held → pending after carrier delivery + 24h hold. */
   payout: { status: string; hold_reason: string | null; released_at: string | null } | null
 }
 
+const ADMIN_ORDER_PARTICIPANT_SELECT =
+  "id, email, display_name, avatar_url, city, state, bio, created_at, sales_count, shop_name, is_shop, shop_verified, seller_slug, shop_phone, shop_address"
+
 function num(v: string | number | null | undefined): number {
   const n = Number(v)
   return Number.isFinite(n) ? n : 0
+}
+
+function unwrapRelation<T>(raw: T | T[] | null | undefined): T | null {
+  if (raw == null) return null
+  return Array.isArray(raw) ? raw[0] ?? null : raw
+}
+
+function mapAdminOrderParticipant(
+  userId: string,
+  row: Record<string, unknown> | null,
+): AdminOrderParticipant {
+  return {
+    id: userId,
+    email: typeof row?.email === "string" ? row.email : null,
+    display_name: typeof row?.display_name === "string" ? row.display_name : null,
+    avatar_url: typeof row?.avatar_url === "string" ? row.avatar_url : null,
+    city: typeof row?.city === "string" ? row.city : null,
+    state: typeof row?.state === "string" ? row.state : null,
+    bio: typeof row?.bio === "string" ? row.bio : null,
+    created_at: typeof row?.created_at === "string" ? row.created_at : null,
+    sales_count:
+      row?.sales_count == null ? null : num(row.sales_count as string | number),
+    shop_name: typeof row?.shop_name === "string" ? row.shop_name : null,
+    is_shop: typeof row?.is_shop === "boolean" ? row.is_shop : null,
+    shop_verified: typeof row?.shop_verified === "boolean" ? row.shop_verified : null,
+    seller_slug: typeof row?.seller_slug === "string" ? row.seller_slug : null,
+    shop_phone: typeof row?.shop_phone === "string" ? row.shop_phone : null,
+    shop_address: typeof row?.shop_address === "string" ? row.shop_address : null,
+  }
+}
+
+function parseAdminOrderLineItems(raw: unknown): AdminOrderLineItem[] {
+  if (!Array.isArray(raw)) return []
+
+  const items: AdminOrderLineItem[] = []
+  for (const row of raw) {
+    if (!row || typeof row !== "object") continue
+    const record = row as Record<string, unknown>
+    const listingId =
+      typeof record.listing_id === "string"
+        ? record.listing_id
+        : unwrapRelation(record.listings as { id?: string } | { id?: string }[] | null)?.id
+    if (!listingId) continue
+
+    const listing = unwrapRelation(
+      record.listings as { title?: string | null } | { title?: string | null }[] | null,
+    )
+    items.push({
+      listing_id: listingId,
+      title: typeof listing?.title === "string" ? listing.title : null,
+      sort_order: typeof record.sort_order === "number" ? record.sort_order : null,
+    })
+  }
+
+  return items.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+}
+
+function parseAdminOrderShippingAddress(raw: unknown): AdminOrderShippingAddress {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null
+  return raw as AdminOrderShippingAddress
 }
 
 export type AdminOrderStatusCounts = {
@@ -108,7 +214,34 @@ export async function getOrderDetailForAdmin(
   const { data: order, error: orderErr } = await supabase
     .from("orders")
     .select(
-      "id, order_num, status, amount, shipping_amount, platform_fee, seller_earnings, payment_method, fulfillment_method, delivery_status, tracking_number, tracking_carrier, carrier_delivered_at, created_at, refunded_at, buyer_id, seller_id, listing_id, stripe_checkout_session_id",
+      `
+      id,
+      order_num,
+      status,
+      amount,
+      shipping_amount,
+      platform_fee,
+      seller_earnings,
+      promo_discount_usd,
+      payment_method,
+      fulfillment_method,
+      delivery_status,
+      tracking_number,
+      tracking_carrier,
+      carrier_delivered_at,
+      created_at,
+      refunded_at,
+      buyer_id,
+      seller_id,
+      listing_id,
+      stripe_checkout_session_id,
+      shipping_address,
+      order_items (
+        sort_order,
+        listing_id,
+        listings ( title )
+      )
+    `,
     )
     .eq("id", orderId)
     .maybeSingle()
@@ -124,24 +257,48 @@ export async function getOrderDetailForAdmin(
   const buyerId = order.buyer_id as string
   const sellerId = order.seller_id as string
 
-  const [listingRes, buyerRes, sellerRes, payoutRes] = await Promise.all([
+  const [listingRes, buyerRes, sellerRes, payoutRes, conversation] = await Promise.all([
     supabase.from("listings").select("title").eq("id", listingId).maybeSingle(),
-    supabase.from("profiles").select("display_name, email").eq("id", buyerId).maybeSingle(),
-    supabase.from("profiles").select("display_name, email").eq("id", sellerId).maybeSingle(),
+    supabase.from("profiles").select(ADMIN_ORDER_PARTICIPANT_SELECT).eq("id", buyerId).maybeSingle(),
+    supabase.from("profiles").select(ADMIN_ORDER_PARTICIPANT_SELECT).eq("id", sellerId).maybeSingle(),
     supabase.from("payouts").select("status, hold_reason, released_at").eq("order_id", orderId).maybeSingle(),
+    getConversationForBuyerSellerListing(supabase, buyerId, sellerId, listingId),
   ])
+
+  const conversationId = conversation?.id ?? null
+  let marketplaceMessageCount = 0
+  if (conversationId) {
+    const { count } = await supabase
+      .from("messages")
+      .select("*", { count: "exact", head: true })
+      .eq("conversation_id", conversationId)
+    marketplaceMessageCount = count ?? 0
+  }
 
   const listingTitle =
     listingRes.data && typeof (listingRes.data as { title?: string }).title === "string"
       ? (listingRes.data as { title: string }).title
       : null
 
-  const buyer = buyerRes.data as { display_name: string | null; email: string | null } | null
-  const seller = sellerRes.data as { display_name: string | null; email: string | null } | null
+  const buyer = mapAdminOrderParticipant(
+    buyerId,
+    (buyerRes.data as Record<string, unknown> | null) ?? null,
+  )
+  const seller = mapAdminOrderParticipant(
+    sellerId,
+    (sellerRes.data as Record<string, unknown> | null) ?? null,
+  )
 
   const amount = num(order.amount)
   const shippingAmount = num((order as { shipping_amount?: string | number | null }).shipping_amount)
+  const promoDiscountUsd = num(
+    (order as { promo_discount_usd?: string | number | null }).promo_discount_usd,
+  )
   const itemPrice = Math.max(0, Math.round((amount - shippingAmount) * 100) / 100)
+  const orderItems = parseAdminOrderLineItems((order as { order_items?: unknown }).order_items)
+  const shippingAddress = parseAdminOrderShippingAddress(
+    (order as { shipping_address?: unknown }).shipping_address,
+  )
 
   const payoutRow = payoutRes.data as {
     status?: string
@@ -177,6 +334,7 @@ export async function getOrderDetailForAdmin(
       shipping_amount: shippingAmount,
       platform_fee: num(order.platform_fee),
       seller_earnings: num(order.seller_earnings),
+      promo_discount_usd: promoDiscountUsd,
       payment_method: order.payment_method as string,
       fulfillment_method: (order.fulfillment_method as string | null) ?? null,
       delivery_status: (ordMeta.delivery_status as string | null) ?? null,
@@ -193,10 +351,12 @@ export async function getOrderDetailForAdmin(
       seller_id: sellerId,
       listing_id: listingId,
       listing_title: listingTitle,
-      buyer_display_name: buyer?.display_name ?? null,
-      buyer_email: buyer?.email ?? null,
-      seller_display_name: seller?.display_name ?? null,
-      seller_email: seller?.email ?? null,
+      buyer,
+      seller,
+      shipping_address: shippingAddress,
+      order_items: orderItems,
+      conversation_id: conversationId,
+      marketplace_message_count: marketplaceMessageCount,
       stripe_checkout_session_id: (order.stripe_checkout_session_id as string | null) ?? null,
     },
     error: null,

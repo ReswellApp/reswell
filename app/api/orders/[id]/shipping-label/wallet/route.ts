@@ -44,6 +44,7 @@ export async function POST(
     rateId: parsed.data.rate_id,
     sellerAddressId: parsed.data.seller_address_id,
     parcel: parsed.data.parcel,
+    applyWallet: parsed.data.apply_wallet,
   })
 
   if (!result.ok) {
@@ -58,6 +59,10 @@ export async function POST(
       alreadyProcessed: result.alreadyProcessed,
       amountUsd: result.amountUsd,
       walletBalanceAfter: result.walletBalanceAfter,
+      buyerPrepaidAppliedUsd: result.buyerPrepaidAppliedUsd,
+      shippingSurplusCreditUsd: result.shippingSurplusCreditUsd,
+      walletAppliedUsd: result.walletAppliedUsd,
+      cardChargeUsd: result.cardChargeUsd,
     },
   })
 }

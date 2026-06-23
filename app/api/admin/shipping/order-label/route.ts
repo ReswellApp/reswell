@@ -2,9 +2,15 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
+import { getSellerBalance } from "@/lib/getSellerBalance"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { markOrderShippedWithTrackingAsAdmin } from "@/lib/services/markOrderShipped"
 import { attachAdminShippingLabelToOrder } from "@/lib/services/adminOrderShippingLabelNotify"
+import {
+  loadSellerShippingLabelOrderContext,
+  purchaseSellerShippingLabelWithWallet,
+  resolveBuyerPrepaidShippingUsdForOrder,
+} from "@/lib/services/sellerShippingLabelCheckout"
 import {
   effectiveBoardShippingMode,
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
@@ -116,6 +122,49 @@ export async function GET(request: NextRequest) {
       ? effectiveBoardShippingMode(listing as unknown as PeerListingForShippingQuote)
       : "reswell"
 
+  const sellerWalletReasons: string[] = []
+  const sellerCtx = await loadSellerShippingLabelOrderContext(supabase, orderId, row.seller_id)
+  if (!sellerCtx.ok) {
+    sellerWalletReasons.push(sellerCtx.error)
+  }
+
+  const { data: addrRows } = await supabase
+    .from("addresses")
+    .select("*")
+    .eq("profile_id", row.seller_id)
+    .order("is_default", { ascending: false })
+
+  const sellerAddresses = (addrRows ?? []).map((a) => {
+    const ar = a as ProfileAddressRow
+    const one = [ar.line1, [ar.city, ar.state, ar.postal_code].filter(Boolean).join(", ")]
+      .filter(Boolean)
+      .join(" · ")
+    return {
+      id: ar.id,
+      label: ar.label?.trim() || "Address",
+      oneLine: one,
+      isDefault: ar.is_default,
+    }
+  })
+
+  if (sellerAddresses.length === 0 && sellerCtx.ok) {
+    sellerWalletReasons.push("Seller has no ship-from address on file.")
+  }
+
+  const buyerPrepaidShippingUsd =
+    listing && typeof listing === "object"
+      ? resolveBuyerPrepaidShippingUsdForOrder({
+          shippingAmount: row.shipping_amount,
+          listing: listing as PeerListingForShippingQuote,
+        })
+      : buyerPaidShippingUsd
+
+  if (sellerCtx.ok && buyerPrepaidShippingUsd <= 0) {
+    sellerWalletReasons.push("This order has no buyer prepaid shipping credit.")
+  }
+
+  const walletSummary = await getSellerBalance(supabase, row.seller_id)
+
   return NextResponse.json({
     data: {
       eligible,
@@ -137,6 +186,13 @@ export async function GET(request: NextRequest) {
         /** Same parcel + listing ship-from geocode + buyer address as surfboard checkout quotes (cheapest carrier). */
         quoteMethod:
           "Uses the listing’s packed dimensions and seller locality (checkout lane), the buyer’s order address, and the cheapest ShipEngine rate — matching peer checkout when the listing uses Reswell-calculated shipping.",
+      },
+      sellerWalletLane: {
+        eligible: sellerWalletReasons.length === 0,
+        ineligibleReasons: sellerWalletReasons,
+        buyerPrepaidShippingUsd,
+        walletSpendableUsd: walletSummary.spendableBucks,
+        sellerAddresses,
       },
       autoLabelParcel:
         autoLabelParcel.ok === true
@@ -308,6 +364,40 @@ export async function POST(request: NextRequest) {
         carrierLabel: quoted.cheapest.carrierName,
         serviceName: quoted.cheapest.serviceName,
         quoteVsPaidNote,
+      },
+    })
+  }
+
+  if (body.action === "purchase_seller_wallet") {
+    const sellerCtx = await loadSellerShippingLabelOrderContext(supabase, orderId, o.seller_id)
+    if (!sellerCtx.ok) {
+      return NextResponse.json({ error: sellerCtx.error }, { status: sellerCtx.status })
+    }
+
+    const result = await purchaseSellerShippingLabelWithWallet({
+      supabase,
+      orderId,
+      sellerId: o.seller_id,
+      rateId: body.rate_id,
+      sellerAddressId: body.seller_address_id,
+      parcel: body.parcel,
+    })
+
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status })
+    }
+
+    return NextResponse.json({
+      data: {
+        labelUrl: result.labelUrl,
+        trackingNumber: result.trackingNumber,
+        orderDisplayNum: result.orderDisplayNum,
+        alreadyProcessed: result.alreadyProcessed,
+        amountUsd: result.amountUsd,
+        buyerPrepaidAppliedUsd: result.buyerPrepaidAppliedUsd,
+        shippingSurplusCreditUsd: result.shippingSurplusCreditUsd,
+        walletAppliedUsd: result.walletAppliedUsd,
+        walletBalanceAfter: result.walletBalanceAfter,
       },
     })
   }

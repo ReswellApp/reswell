@@ -1,15 +1,16 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { loadStripe } from "@stripe/stripe-js"
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js"
 import type { Appearance } from "@stripe/stripe-js"
 import { useTheme } from "next-themes"
-import { Loader2, Printer, Wallet } from "lucide-react"
+import { Loader2, Printer } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { BRAND_CTA_BLUE } from "@/lib/brand-colors"
 import { stripePublishableKey } from "@/lib/stripe/client-checkout-enabled"
+import { computeSellerLabelPrepaidAllowanceBreakdown } from "@/lib/shipping/seller-label-payment-breakdown"
 
 function formatStripeConfirmError(error: unknown): string {
   if (error == null) return String(error)
@@ -136,7 +137,7 @@ function LabelPaymentForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border bg-muted/20 p-4">
       <p className="text-sm text-muted-foreground">
-        Pay for the selected carrier rate. Reswell purchases the label after payment succeeds.
+        Pay the full label cost with card when it exceeds the buyer&apos;s prepaid flat shipping amount.
       </p>
       {elementLoadError ? <p className="text-sm text-destructive">{elementLoadError}</p> : null}
       <PaymentElement
@@ -173,12 +174,13 @@ export function SellerShippingLabelCheckout({
   orderId,
   checkoutPayload,
   amountUsd,
-  walletSpendableUsd = 0,
+  buyerPrepaidShippingUsd = 0,
   onSuccess,
 }: {
   orderId: string
   checkoutPayload: LabelCheckoutPayload | null
   amountUsd: number
+  buyerPrepaidShippingUsd?: number
   walletSpendableUsd?: number
   onSuccess: (data: {
     labelUrl: string | null
@@ -193,10 +195,22 @@ export function SellerShippingLabelCheckout({
   const [walletBusy, setWalletBusy] = useState(false)
   const stripe = getStripeBrowser()
 
-  const canPayWithWallet =
-    checkoutPayload != null && walletSpendableUsd >= amountUsd && amountUsd >= 0.5
+  const prepaidBreakdown = useMemo(
+    () =>
+      checkoutPayload && amountUsd >= 0.5
+        ? computeSellerLabelPrepaidAllowanceBreakdown({
+            labelCostUsd: amountUsd,
+            buyerPrepaidAvailableUsd: buyerPrepaidShippingUsd,
+          })
+        : null,
+    [checkoutPayload, amountUsd, buyerPrepaidShippingUsd],
+  )
 
-  const purchaseWithWallet = useCallback(async () => {
+  const canPrintWithPrepaidAllowance = prepaidBreakdown?.canPurchaseWithPrepaidAllowance === true
+
+  const needsCard = prepaidBreakdown != null && prepaidBreakdown.excessOverPrepaidUsd >= 0.5
+
+  const purchaseWithPrepaidAllowance = useCallback(async () => {
     if (!checkoutPayload) return
     setWalletBusy(true)
     try {
@@ -206,7 +220,7 @@ export function SellerShippingLabelCheckout({
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(checkoutPayload),
+          body: JSON.stringify({ ...checkoutPayload, apply_wallet: false }),
         },
       )
       const data = (await res.json()) as {
@@ -218,12 +232,12 @@ export function SellerShippingLabelCheckout({
         error?: string
       }
       if (!res.ok || !data.data) {
-        toast.error(data.error ?? "Could not purchase label with wallet balance")
+        toast.error(data.error ?? "Could not purchase label")
         return
       }
       onSuccess(data.data)
     } catch {
-      toast.error("Could not purchase label with wallet balance")
+      toast.error("Could not purchase label")
     } finally {
       setWalletBusy(false)
     }
@@ -238,7 +252,7 @@ export function SellerShippingLabelCheckout({
     : ""
 
   useEffect(() => {
-    if (!stripe || !checkoutPayload) {
+    if (!stripe || !checkoutPayload || !needsCard) {
       setClientSecret(null)
       setError(null)
       setLoading(false)
@@ -279,7 +293,7 @@ export function SellerShippingLabelCheckout({
     return () => {
       cancelled = true
     }
-  }, [orderId, payloadKey, checkoutPayload, stripe])
+  }, [orderId, payloadKey, checkoutPayload, stripe, needsCard])
 
   if (!checkoutPayload) {
     return (
@@ -287,36 +301,59 @@ export function SellerShippingLabelCheckout({
     )
   }
 
-  const walletSection = canPayWithWallet ? (
-    <div className="space-y-3 rounded-lg border bg-muted/20 p-4">
-      <p className="text-sm text-muted-foreground">
-        Use your Reswell wallet balance from past sales (${walletSpendableUsd.toFixed(2)} available).
+  const prepaidInfo =
+    buyerPrepaidShippingUsd > 0 ? (
+      <p className="text-sm text-muted-foreground rounded-lg border bg-muted/20 p-4">
+        The buyer prepaid{" "}
+        <span className="font-medium text-foreground tabular-nums">
+          ${buyerPrepaidShippingUsd.toFixed(2)}
+        </span>{" "}
+        for flat shipping on this order.
+        {prepaidBreakdown && prepaidBreakdown.shippingSurplusCreditUsd > 0
+          ? ` If you choose a $${prepaidBreakdown.buyerPrepaidAppliedUsd.toFixed(2)} label, $${prepaidBreakdown.shippingSurplusCreditUsd.toFixed(2)} is credited to your wallet.`
+          : null}
       </p>
-      <Button type="button" disabled={walletBusy} onClick={() => void purchaseWithWallet()}>
-        {walletBusy ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            Processing…
-          </>
-        ) : (
-          <>
-            <Wallet className="h-4 w-4 mr-2" />
-            Pay ${amountUsd.toFixed(2)} with wallet &amp; print label
-          </>
-        )}
-      </Button>
+    ) : null
+
+  const storedValueSection = (
+    <div className="space-y-3">
+      {prepaidInfo}
+      {canPrintWithPrepaidAllowance && prepaidBreakdown ? (
+        <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Pay ${prepaidBreakdown.buyerPrepaidAppliedUsd.toFixed(2)} from buyer prepaid shipping
+            {prepaidBreakdown.shippingSurplusCreditUsd > 0
+              ? ` — $${prepaidBreakdown.shippingSurplusCreditUsd.toFixed(2)} credited to your wallet`
+              : ""}
+            .
+          </p>
+          <Button type="button" disabled={walletBusy} onClick={() => void purchaseWithPrepaidAllowance()}>
+            {walletBusy ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Processing…
+              </>
+            ) : (
+              <>
+                <Printer className="h-4 w-4 mr-2" />
+                Print label — ${prepaidBreakdown.buyerPrepaidAppliedUsd.toFixed(2)} from buyer shipping
+              </>
+            )}
+          </Button>
+        </div>
+      ) : prepaidBreakdown && prepaidBreakdown.excessOverPrepaidUsd > 0 ? (
+        <p className="text-sm text-muted-foreground rounded-lg border bg-muted/20 p-4">
+          This label is ${prepaidBreakdown.labelCostUsd.toFixed(2)} — more than the $
+          {buyerPrepaidShippingUsd.toFixed(2)} buyer prepaid for flat shipping. Pay the full label cost
+          with card below or choose a cheaper rate.
+        </p>
+      ) : null}
     </div>
-  ) : walletSpendableUsd > 0 && amountUsd >= 0.5 ? (
-    <p className="text-sm text-muted-foreground rounded-lg border bg-muted/20 p-4">
-      Wallet balance: ${walletSpendableUsd.toFixed(2)} — not enough to cover this label (${amountUsd.toFixed(
-        2,
-      )}). Pay with card below or wait for more completed sales to add spendable balance.
-    </p>
-  ) : null
+  )
 
   if (!stripe) {
-    if (canPayWithWallet) {
-      return walletSection
+    if (canPrintWithPrepaidAllowance) {
+      return storedValueSection
     }
     return (
       <p className="text-sm text-muted-foreground">
@@ -338,31 +375,33 @@ export function SellerShippingLabelCheckout({
 
   return (
     <div className="space-y-4">
-      {walletSection}
-      {loading ? (
-        <div className="flex items-center gap-2 rounded-lg border bg-muted/20 p-4 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Preparing secure checkout…
-        </div>
-      ) : error ? (
-        <p className="text-sm text-destructive">{error}</p>
-      ) : !clientSecret ? (
-        <p className="text-sm text-muted-foreground">Payment is unavailable for this rate.</p>
-      ) : (
+      {storedValueSection}
+      {needsCard ? (
         <>
-          {canPayWithWallet ? (
-            <p className="text-sm font-medium text-muted-foreground">Or pay with card</p>
+          {canPrintWithPrepaidAllowance ? (
+            <p className="text-sm font-medium text-muted-foreground">Or pay full label cost with card</p>
           ) : null}
-          <Elements key={clientSecret} stripe={stripe} options={{ clientSecret, appearance }}>
-            <LabelPaymentForm
-              orderId={orderId}
-              clientSecret={clientSecret}
-              amountLabel={`$${amountUsd.toFixed(2)}`}
-              onSuccess={onSuccess}
-            />
-          </Elements>
+          {loading ? (
+            <div className="flex items-center gap-2 rounded-lg border bg-muted/20 p-4 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Preparing secure checkout…
+            </div>
+          ) : error ? (
+            <p className="text-sm text-destructive">{error}</p>
+          ) : !clientSecret ? (
+            <p className="text-sm text-muted-foreground">Payment is unavailable for this rate.</p>
+          ) : (
+            <Elements key={clientSecret} stripe={stripe} options={{ clientSecret, appearance }}>
+              <LabelPaymentForm
+                orderId={orderId}
+                clientSecret={clientSecret}
+                amountLabel={`$${amountUsd.toFixed(2)}`}
+                onSuccess={onSuccess}
+              />
+            </Elements>
+          )}
         </>
-      )}
+      ) : null}
     </div>
   )
 }

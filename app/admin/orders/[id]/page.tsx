@@ -3,7 +3,10 @@
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { ArrowLeft, Loader2, Package, LifeBuoy, CircleDollarSign } from "lucide-react"
+import { ArrowLeft, Loader2, Package, LifeBuoy, CircleDollarSign, MapPin } from "lucide-react"
+import { AdminOrderParticipantCard } from "@/components/features/admin/admin-order-participant-card"
+import { AdminOrderMarketplaceMessagesPanel } from "@/components/features/admin/admin-order-marketplace-messages-panel"
+import type { AdminOrderDetail, AdminOrderShippingAddress } from "@/lib/db/adminOrders"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -14,7 +17,6 @@ import { ReswellTrackingSection } from "@/components/features/orders/reswell-tra
 import { SellerPreparedShippingLabelCard } from "@/components/features/sales/seller-prepared-shipping-label-card"
 import { orderStatusBadgeVariant, orderStatusLabel, deliveryStatusLabel, payoutStatusLabel } from "@/lib/order-status"
 import { carrierDeliveryPayoutEligibleAt } from "@/lib/shipping/carrier-delivery-payout-hold"
-import type { AdminOrderDetail } from "@/lib/db/adminOrders"
 import { createClient } from "@/lib/supabase/client"
 import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
 import { toast } from "sonner"
@@ -42,6 +44,31 @@ function paymentLabel(method: string): string {
   if (method === "stripe") return "Card (Stripe)"
   if (method === "reswell_bucks") return "Wallet"
   return method
+}
+
+function formatShippingAddress(ship: AdminOrderShippingAddress): string | null {
+  if (!ship?.address) return null
+  const addr = ship.address
+  const parts = [
+    ship.name?.trim(),
+    ship.phone?.trim() ? `Phone: ${ship.phone.trim()}` : null,
+    ship.email?.trim(),
+    addr.line1,
+    addr.line2,
+    [addr.city, addr.state, addr.postal_code].filter(Boolean).join(", "),
+    addr.country,
+  ].filter((part) => part && String(part).trim())
+  return parts.length ? parts.join("\n") : null
+}
+
+function participantLabel(
+  participant: AdminOrderDetail["buyer"],
+  fallback: string,
+): string {
+  if (participant.is_shop && participant.shop_name?.trim()) return participant.shop_name.trim()
+  if (participant.display_name?.trim()) return participant.display_name.trim()
+  if (participant.email?.trim()) return participant.email.trim()
+  return fallback
 }
 
 function requestTypeLabel(t: string): string {
@@ -166,6 +193,15 @@ export default function AdminOrderDetailPage() {
     (o.payout.hold_reason === "awaiting_manual_release" ||
       (o.delivery_status === "delivered" && !o.carrier_delivered_at))
   const displayNum = formatOrderNumForCustomer(o.order_num, o.id)
+  const shippingAddressBlock = formatShippingAddress(o.shipping_address)
+  const displayLineItems =
+    o.order_items.length > 0
+      ? o.order_items
+      : o.listing_title
+        ? [{ listing_id: o.listing_id, title: o.listing_title, sort_order: 0 }]
+        : []
+  const buyerName = participantLabel(o.buyer, "Buyer")
+  const sellerName = participantLabel(o.seller, "Seller")
 
   async function releaseShippingSellerEarnings() {
     if (!id) return
@@ -247,10 +283,22 @@ export default function AdminOrderDetailPage() {
               <p className="text-muted-foreground">Seller earnings (net)</p>
               <p className="font-medium tabular-nums">${o.seller_earnings.toFixed(2)}</p>
             </div>
+            {o.promo_discount_usd > 0 ? (
+              <div>
+                <p className="text-muted-foreground">Promo discount</p>
+                <p className="font-medium tabular-nums">-${o.promo_discount_usd.toFixed(2)}</p>
+              </div>
+            ) : null}
             <div>
               <p className="text-muted-foreground">Fulfillment</p>
               <p className="font-medium capitalize">{o.fulfillment_method ?? "—"}</p>
             </div>
+            {o.stripe_checkout_session_id ? (
+              <div className="sm:col-span-2">
+                <p className="text-muted-foreground">Stripe checkout session</p>
+                <p className="font-mono text-xs break-all">{o.stripe_checkout_session_id}</p>
+              </div>
+            ) : null}
             {o.refunded_at && (
               <div>
                 <p className="text-muted-foreground">Refunded at</p>
@@ -268,16 +316,34 @@ export default function AdminOrderDetailPage() {
             </p>
           )}
 
-          <div className="rounded-lg border border-border/60 bg-muted/20 p-4">
-            <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Buyer</p>
-            <p className="font-medium">{o.buyer_display_name ?? o.buyer_email ?? o.buyer_id}</p>
-            {o.buyer_email && <p className="text-muted-foreground text-xs">{o.buyer_email}</p>}
-          </div>
-          <div className="rounded-lg border border-border/60 bg-muted/20 p-4">
-            <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">Seller</p>
-            <p className="font-medium">{o.seller_display_name ?? o.seller_email ?? o.seller_id}</p>
-            {o.seller_email && <p className="text-muted-foreground text-xs">{o.seller_email}</p>}
-          </div>
+          {displayLineItems.length > 0 ? (
+            <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
+              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                {displayLineItems.length > 1 ? "Order items" : "Listing"}
+              </p>
+              <div className="space-y-2">
+                {displayLineItems.map((item) => (
+                  <div
+                    key={item.listing_id}
+                    className="flex flex-wrap items-baseline justify-between gap-2 text-sm"
+                  >
+                    <p className="font-medium">{item.title ?? "Listing removed"}</p>
+                    <p className="font-mono text-xs text-muted-foreground break-all">{item.listing_id}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {shippingAddressBlock ? (
+            <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-2">
+              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5" aria-hidden />
+                Shipping address
+              </p>
+              <p className="whitespace-pre-wrap break-words text-sm">{shippingAddressBlock}</p>
+            </div>
+          ) : null}
 
           {o.fulfillment_method === "shipping" && o.status === "confirmed" && (
             <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
@@ -457,6 +523,20 @@ export default function AdminOrderDetailPage() {
           carrierTrackingFetchPath={`/api/admin/orders/${encodeURIComponent(o.id)}/carrier-tracking`}
         />
       ) : null}
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <AdminOrderParticipantCard role="Buyer" participant={o.buyer} />
+        <AdminOrderParticipantCard role="Seller" participant={o.seller} />
+      </div>
+
+      <AdminOrderMarketplaceMessagesPanel
+        conversationId={o.conversation_id}
+        messageCount={o.marketplace_message_count}
+        buyerId={o.buyer_id}
+        sellerId={o.seller_id}
+        buyerName={buyerName}
+        sellerName={sellerName}
+      />
 
       {/* Support requests for this order */}
       <Card>

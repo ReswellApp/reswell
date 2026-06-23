@@ -64,6 +64,13 @@ export const adminOrderShippingLabelPostBodySchema = z.discriminatedUnion("actio
     action: z.literal("purchase"),
     rate_id: z.string().min(5).max(128),
   }),
+  z.object({
+    order_id: z.string().uuid(),
+    action: z.literal("purchase_seller_wallet"),
+    rate_id: z.string().min(5).max(128),
+    seller_address_id: z.string().uuid().optional(),
+    parcel: shippingLabelParcelSchema.optional(),
+  }),
 ])
 
 export type AdminOrderShippingLabelPostBody = z.infer<typeof adminOrderShippingLabelPostBodySchema>

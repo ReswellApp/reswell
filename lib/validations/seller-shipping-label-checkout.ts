@@ -11,4 +11,7 @@ export const sellerShippingLabelFinalizeBodySchema = z.object({
   payment_intent_id: z.string().min(5).max(128),
 })
 
-export const sellerShippingLabelWalletBodySchema = sellerShippingLabelPaymentIntentBodySchema
+export const sellerShippingLabelWalletBodySchema = sellerShippingLabelPaymentIntentBodySchema.extend({
+  /** When false, only apply buyer prepaid shipping on the order (no wallet debit). Default true. */
+  apply_wallet: z.boolean().optional(),
+})

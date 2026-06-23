@@ -58,6 +58,9 @@ export async function POST(
     data: {
       clientSecret: result.clientSecret,
       amountUsd: result.amountUsd,
+      labelCostUsd: result.labelCostUsd,
+      buyerPrepaidAppliedUsd: result.buyerPrepaidAppliedUsd,
+      cardChargeUsd: result.cardChargeUsd,
     },
   })
 }

@@ -57,6 +57,7 @@ type OverviewResponse = {
     ineligibleReasons: string[]
     shipEngineConfigured: boolean
     walletSpendableUsd: number
+    buyerPrepaidShippingUsd: number
     order: {
       id: string
       orderNum: string | null
@@ -653,13 +654,14 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
                   orderId={orderId}
                   checkoutPayload={checkoutPayload}
                   amountUsd={selectedRate?.amount ?? 0}
+                  buyerPrepaidShippingUsd={overview.buyerPrepaidShippingUsd}
                   walletSpendableUsd={overview.walletSpendableUsd}
                   onSuccess={handleLabelPurchaseSuccess}
                 />
                 <p className="text-xs text-muted-foreground">
                   {needsManualParcel
-                    ? "Rates use the dimensions you entered above. Pay with your Reswell wallet balance (from past sales) or card. After payment, Reswell purchases the label and adds tracking to the order."
-                    : "Pay with your Reswell wallet balance (from past sales) or card. After payment, Reswell purchases the label on your behalf, adds tracking to the order, and notifies the buyer."}
+                    ? "Rates use the dimensions you entered above. Buyer prepaid shipping on this order is applied first, then your wallet balance, then card if needed."
+                    : "Buyer prepaid shipping on this order is applied first, then your wallet balance from past sales, then card if needed. After payment, Reswell purchases the label and adds tracking to the order."}
                 </p>
               </div>
             )}

@@ -2,13 +2,16 @@ import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { getSellerBalance } from "@/lib/getSellerBalance"
-import { PEER_SURFBOARD_CHECKOUT_LISTING_SELECT } from "@/lib/services/peerListingShippingQuote"
+import { PEER_SURFBOARD_CHECKOUT_LISTING_SELECT, type PeerListingForShippingQuote } from "@/lib/services/peerListingShippingQuote"
 import {
   fetchRatesForSurfboardOrder,
   resolveAddressesForLabel,
   resolveOrderLabelParcelFromListing,
 } from "@/lib/services/orderShippingLabel"
-import { loadSellerShippingLabelOrderContext } from "@/lib/services/sellerShippingLabelCheckout"
+import {
+  loadSellerShippingLabelOrderContext,
+  resolveBuyerPrepaidShippingUsdForOrder,
+} from "@/lib/services/sellerShippingLabelCheckout"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import { shippingLabelPostBodySchema } from "@/lib/validations/order-shipping-label"
 import type { ListingPackedParcelSource } from "@/lib/reswell-packed-parcel-from-listing"
@@ -48,6 +51,7 @@ export async function GET(
       fulfillment_method,
       delivery_status,
       shipping_address,
+      shipping_amount,
       listings ( section, title )
     `,
     )
@@ -66,6 +70,7 @@ export async function GET(
     fulfillment_method: string | null
     delivery_status: string
     shipping_address: unknown
+    shipping_amount?: string | number | null
     listings:
       | { section: string; title: string | null }
       | { section: string; title: string | null }[]
@@ -127,6 +132,12 @@ export async function GET(
 
   const displayOrderNum = formatOrderNumForCustomer(row.order_num, row.id)
   const walletSummary = await getSellerBalance(supabase, user.id)
+  const buyerPrepaidShippingUsd = listingForParcel
+    ? resolveBuyerPrepaidShippingUsdForOrder({
+        shippingAmount: row.shipping_amount,
+        listing: listingForParcel as PeerListingForShippingQuote,
+      })
+    : Math.max(0, Number(row.shipping_amount ?? 0) || 0)
 
   return NextResponse.json({
     data: {
@@ -134,6 +145,7 @@ export async function GET(
       ineligibleReasons: reasons,
       shipEngineConfigured: isShipEngineConfigured(),
       walletSpendableUsd: walletSummary.spendableBucks,
+      buyerPrepaidShippingUsd,
       order: {
         id: row.id,
         /** Human reference from `orders.order_num` (same as dashboard). */
