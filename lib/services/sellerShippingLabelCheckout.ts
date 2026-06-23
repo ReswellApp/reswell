@@ -26,6 +26,7 @@ import { getStripe, getStripeCheckoutKeyConfigError } from "@/lib/stripe-server"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import { getShipEngineRateById } from "@/lib/shipengine/surfboard-label"
 import type { ShipEngineRateOption } from "@/lib/shipengine/surfboard-label"
+import { creditOrderPendingEarnings } from "@/lib/services/orderPendingEarnings"
 import { roundMoney } from "@/lib/utils/stripe-connect-cashout"
 import {
   computeSellerLabelCardPaymentBreakdown,
@@ -93,59 +94,32 @@ async function creditSellerFlatShippingSurplus(params: {
   orderDisplayNum: string
   surplusUsd: number
 }): Promise<{ ok: true; balanceAfter: number } | { ok: false; error: string }> {
+  const summary = await getSellerBalance(params.writeDb, params.sellerId)
+
   if (params.surplusUsd <= 0) {
-    const summary = await getSellerBalance(params.writeDb, params.sellerId)
     return { ok: true, balanceAfter: summary.spendableBucks }
   }
 
   const existing = await findFlatShippingSurplusCreditByOrder(params.writeDb, params.orderId)
   if (existing) {
-    const summary = await getSellerBalance(params.writeDb, params.sellerId)
     return { ok: true, balanceAfter: summary.spendableBucks }
   }
 
-  const wallet = await getOrCreateWalletForUser(params.writeDb, params.sellerId)
-  if (!wallet) {
-    return { ok: false, error: "Could not load seller wallet" }
-  }
-
-  const prevBalance = parseFloat(String(wallet.balance ?? 0)) || 0
-  const prevEarned = parseFloat(String(wallet.lifetime_earned ?? 0)) || 0
   const creditUsd = roundMoney(params.surplusUsd)
-  const balanceAfter = roundMoney(prevBalance + creditUsd)
-  const lifetimeEarnedAfter = roundMoney(prevEarned + creditUsd)
+  const credited = await creditOrderPendingEarnings(params.writeDb, {
+    userId: params.sellerId,
+    amountUsd: creditUsd,
+    orderId: params.orderId,
+    description: `Pending — Flat shipping surplus — order #${params.orderDisplayNum} ($${creditUsd.toFixed(2)} unused buyer shipping — available after delivery)`,
+    referenceType: SELLER_FLAT_SHIPPING_SURPLUS_REFERENCE_TYPE,
+  })
 
-  const { error: walletErr } = await params.writeDb
-    .from("wallets")
-    .update({
-      balance: balanceAfter.toFixed(2),
-      lifetime_earned: lifetimeEarnedAfter.toFixed(2),
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", wallet.id)
-
-  if (walletErr) {
-    console.error("[creditSellerFlatShippingSurplus] wallet update:", walletErr)
+  if (!credited.ok) {
+    console.error("[creditSellerFlatShippingSurplus] pending credit:", credited.error)
     return { ok: false, error: "Could not credit shipping surplus to seller wallet" }
   }
 
-  const { error: txErr } = await params.writeDb.from("wallet_transactions").insert({
-    wallet_id: wallet.id,
-    user_id: params.sellerId,
-    type: "sale",
-    amount: creditUsd,
-    balance_after: balanceAfter.toFixed(2),
-    description: `Flat shipping surplus — order #${params.orderDisplayNum} ($${creditUsd.toFixed(2)} unused buyer shipping)`,
-    reference_id: params.orderId,
-    reference_type: SELLER_FLAT_SHIPPING_SURPLUS_REFERENCE_TYPE,
-  })
-
-  if (txErr) {
-    console.error("[creditSellerFlatShippingSurplus] wallet tx insert:", txErr)
-    return { ok: false, error: "Could not record shipping surplus credit" }
-  }
-
-  return { ok: true, balanceAfter }
+  return { ok: true, balanceAfter: summary.spendableBucks }
 }
 
 export type SellerLabelPurchasableOrder = {

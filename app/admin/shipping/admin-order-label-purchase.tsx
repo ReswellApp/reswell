@@ -1032,8 +1032,9 @@ export function AdminOrderLabelPurchase() {
 
                         <p className="text-xs text-muted-foreground">
                           Uses the buyer&apos;s prepaid flat shipping to pay for the carrier label. Any unused
-                          amount is credited to the seller&apos;s wallet (cash-out eligible). No seller wallet
-                          debit is required when the label cost is within the prepaid amount.
+                          amount is credited to the seller&apos;s pending balance and released with the order
+                          payout after delivery. No seller wallet debit is required when the label cost is
+                          within the prepaid amount.
                         </p>
                       </div>
                     ) : null}

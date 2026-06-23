@@ -668,11 +668,14 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     }
   }, [supabase, router, refetchFromClient])
 
-  /** Keep dropdown earnings in sync when `wallets` changes (e.g. admin reset, sales, payouts). */
+  /** Wallet, ledger, and profile — one Realtime channel (fewer DB connections per tab). */
   useEffect(() => {
     if (!user?.id) return
+    const refreshHeader = () => {
+      window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
+    }
     const channel = supabase
-      .channel(`header_wallet_${user.id}`)
+      .channel(`header_realtime_${user.id}`)
       .on(
         "postgres_changes",
         {
@@ -681,22 +684,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           table: "wallets",
           filter: `user_id=eq.${user.id}`,
         },
-        () => {
-          window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
-        },
+        refreshHeader,
       )
-      .subscribe()
-
-    return () => {
-      void supabase.removeChannel(channel)
-    }
-  }, [supabase, user?.id])
-
-  /** Ledger rows (refunds, sales, cash-out) — header should resync even if a `wallets` UPDATE is batched oddly. */
-  useEffect(() => {
-    if (!user?.id) return
-    const channel = supabase
-      .channel(`header_wallet_tx_${user.id}`)
       .on(
         "postgres_changes",
         {
@@ -705,22 +694,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           table: "wallet_transactions",
           filter: `user_id=eq.${user.id}`,
         },
-        () => {
-          window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
-        },
+        refreshHeader,
       )
-      .subscribe()
-
-    return () => {
-      void supabase.removeChannel(channel)
-    }
-  }, [supabase, user?.id])
-
-  /** Avatar, display name, shop logo: stay in sync when `profiles` row updates (any client or API path). */
-  useEffect(() => {
-    if (!user?.id) return
-    const channel = supabase
-      .channel(`header_profile_${user.id}`)
       .on(
         "postgres_changes",
         {
@@ -729,9 +704,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           table: "profiles",
           filter: `id=eq.${user.id}`,
         },
-        () => {
-          window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
-        },
+        refreshHeader,
       )
       .subscribe()
 

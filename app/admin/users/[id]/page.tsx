@@ -39,7 +39,7 @@ interface Profile {
   display_name: string | null
   avatar_url: string | null
   city: string | null
-  state: string | null
+  location: string | null
   bio: string | null
   is_admin: boolean
   shop_verified: boolean
@@ -107,24 +107,40 @@ export default function AdminUserDetailPage() {
   const [selectedPresetMinutes, setSelectedPresetMinutes] = useState<number>(60 * 24)
 
   useEffect(() => {
+    let cancelled = false
     async function load() {
-      const { data: p } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', id)
-        .single()
-      setProfile(p as Profile | null)
-
-      const { data: list } = await supabase
-        .from('listings')
-        .select('id, title, price, section, status, created_at, listing_images(url)')
-        .eq('user_id', id)
-        .order('created_at', { ascending: false })
-      setListings((list as ListingRow[]) || [])
-
-      setLoading(false)
+      if (!id) return
+      setLoading(true)
+      try {
+        const res = await fetch(`/api/admin/users/${id}`, { credentials: 'include' })
+        const body = (await res.json()) as {
+          data?: { profile: Profile; listings: ListingRow[] }
+          error?: string
+        }
+        if (!res.ok) {
+          if (!cancelled) {
+            setProfile(null)
+            setListings([])
+          }
+          return
+        }
+        if (!cancelled && body.data) {
+          setProfile(body.data.profile)
+          setListings(body.data.listings ?? [])
+        }
+      } catch {
+        if (!cancelled) {
+          setProfile(null)
+          setListings([])
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
     }
-    load()
+    void load()
+    return () => {
+      cancelled = true
+    }
   }, [id])
 
   useEffect(() => {
@@ -425,9 +441,9 @@ export default function AdminUserDetailPage() {
                 {profile.email}
               </p>
             )}
-            {(profile.city || profile.state) && (
+            {(profile.city || profile.location) && (
               <p className="text-sm text-muted-foreground">
-                {[profile.city, profile.state].filter(Boolean).join(', ')}
+                {[profile.city, profile.location].filter(Boolean).join(', ')}
               </p>
             )}
             <div className="flex items-center gap-2 pt-1">
