@@ -7,7 +7,12 @@ import {
 } from "@/lib/db/connectPrefill"
 import {
   getStripeConnectAccountByUserId,
+  getStripeConnectTransferById,
+  getStripeConnectTransferByStripeId,
   insertStripeConnectAccount,
+  insertStripeConnectTransferProcessing,
+  markStripeConnectTransferReversed,
+  markStripeConnectTransferSucceeded,
   updateStripeConnectAccountByStripeId,
 } from "@/lib/db/stripeConnect"
 import { getStripe } from "@/lib/stripe-server"
@@ -90,6 +95,54 @@ function userFacingMessageForStripeInstantPayoutError(e: unknown): string {
   return (
     "Stripe couldn’t start an instant payout to your bank. Try standard delivery, or verify your payout account in Stripe."
   )
+}
+
+/**
+ * Restores wallet funds after a failed / reversed Connect cash-out. Idempotent when the transfer row
+ * is already REVERSED (e.g. webhook handled it first).
+ */
+export async function restoreWalletForReversedConnectCashout(
+  supabase: SupabaseClient,
+  params: {
+    transferRowId: string
+    userId: string
+    amountUsd: number
+    failureReason: string
+    fromStatuses?: Array<"PROCESSING" | "SUCCEEDED">
+  },
+): Promise<boolean> {
+  const writeDb = getClientForPrivilegedWalletWrites(supabase)
+  const marked = await markStripeConnectTransferReversed(
+    writeDb,
+    params.transferRowId,
+    params.failureReason,
+    params.fromStatuses ?? ["PROCESSING"],
+  )
+
+  if (marked) {
+    return restoreWalletAfterFailedCashout(supabase, params.userId, params.amountUsd)
+  }
+
+  const existing = await getStripeConnectTransferById(writeDb, params.transferRowId)
+  if (existing?.status === "REVERSED") {
+    return true
+  }
+
+  if (!existing) {
+    console.warn("[stripe connect] reversed cash-out with no transfer row; restoring wallet", {
+      transferRowId: params.transferRowId,
+      userId: params.userId,
+      amountUsd: params.amountUsd,
+    })
+    return restoreWalletAfterFailedCashout(supabase, params.userId, params.amountUsd)
+  }
+
+  console.error("[stripe connect] transfer not in PROCESSING for reversal restore", {
+    transferRowId: params.transferRowId,
+    status: existing.status,
+    userId: params.userId,
+  })
+  return restoreWalletAfterFailedCashout(supabase, params.userId, params.amountUsd)
 }
 
 function pickDefaultBank(
@@ -651,6 +704,7 @@ export async function cashOutToStripeConnectedAccount(
           reswell_connect_transfer_id: transferRowId,
           reswell_user_id: userId,
           reswell_payout_speed: speed,
+          reswell_gross_amount_usd: amountUsd.toFixed(2),
         },
       },
       {
@@ -659,12 +713,38 @@ export async function cashOutToStripeConnectedAccount(
     )
   } catch (e) {
     console.error("[stripe connect] transfers.create", e)
-    await restoreWalletAfterFailedCashout(supabase, userId, amountUsd)
+    const restored = await restoreWalletAfterFailedCashout(supabase, userId, amountUsd)
+    if (!restored) {
+      console.error("[stripe connect] CRITICAL wallet not restored after failed transfer.create", {
+        userId,
+        amountUsd,
+      })
+    }
     return {
       ok: false,
       error: userFacingMessageForStripeTransferError(e),
       status: 502,
     }
+  }
+
+  const processingRowSaved = await insertStripeConnectTransferProcessing(
+    getClientForPrivilegedWalletWrites(supabase),
+    {
+      id: transferRowId,
+      user_id: userId,
+      amount: amountUsd,
+      fee_amount: feeUsd,
+      payout_speed: speed,
+      stripe_transfer_id: transfer.id,
+    },
+  )
+
+  if (!processingRowSaved) {
+    console.error("[stripe connect] failed to persist PROCESSING transfer row", {
+      transferRowId,
+      userId,
+      stripeTransferId: transfer.id,
+    })
   }
 
   let stripePayoutId: string | null = null
@@ -693,7 +773,23 @@ export async function cashOutToStripeConnectedAccount(
       } catch (revErr) {
         console.error("[stripe connect] createReversal after instant payout failure", revErr)
       }
-      await restoreWalletAfterFailedCashout(supabase, userId, amountUsd)
+      const restored = await restoreWalletForReversedConnectCashout(supabase, {
+        transferRowId,
+        userId,
+        amountUsd,
+        failureReason:
+          e instanceof Stripe.errors.StripeError
+            ? (e.message ?? "Instant payout failed")
+            : "Instant payout failed",
+      })
+      if (!restored) {
+        console.error("[stripe connect] CRITICAL wallet not restored after failed instant payout", {
+          userId,
+          amountUsd,
+          transferRowId,
+          stripeTransferId: transfer.id,
+        })
+      }
       return {
         ok: false,
         error: userFacingMessageForStripeInstantPayoutError(e),
@@ -702,24 +798,17 @@ export async function cashOutToStripeConnectedAccount(
     }
   }
 
-  const { error: insertErr } = await supabase.from("stripe_connect_transfers").insert({
-    id: transferRowId,
-    user_id: userId,
-    amount: amountUsd,
-    fee_amount: feeUsd,
-    payout_speed: speed,
-    stripe_transfer_id: transfer.id,
-    stripe_payout_id: stripePayoutId,
-    status: "SUCCEEDED",
-  })
+  const markedSucceeded = await markStripeConnectTransferSucceeded(
+    getClientForPrivilegedWalletWrites(supabase),
+    transferRowId,
+    stripePayoutId,
+  )
 
-  if (insertErr) {
-    console.error("[stripe connect] stripe_connect_transfers insert", insertErr)
-    return {
-      ok: false,
-      error: "Payout recorded in Stripe but not in Reswell. Contact support with your transfer id.",
-      status: 500,
-    }
+  if (!markedSucceeded) {
+    console.error("[stripe connect] failed to mark transfer SUCCEEDED", {
+      transferRowId,
+      stripeTransferId: transfer.id,
+    })
   }
 
   const writeDb = getClientForPrivilegedWalletWrites(supabase)

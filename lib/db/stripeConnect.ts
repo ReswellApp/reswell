@@ -106,3 +106,115 @@ export async function getStripeConnectTransferByStripeId(
   }
   return data as StripeConnectTransferRow | null
 }
+
+export async function getStripeConnectTransferByPayoutId(
+  supabase: SupabaseClient,
+  stripePayoutId: string,
+): Promise<StripeConnectTransferRow | null> {
+  const { data, error } = await supabase
+    .from("stripe_connect_transfers")
+    .select("*")
+    .eq("stripe_payout_id", stripePayoutId)
+    .maybeSingle()
+
+  if (error) {
+    console.error("[stripe connect db] getStripeConnectTransferByPayoutId", error)
+    return null
+  }
+  return data as StripeConnectTransferRow | null
+}
+
+export async function getStripeConnectTransferById(
+  supabase: SupabaseClient,
+  transferRowId: string,
+): Promise<StripeConnectTransferRow | null> {
+  const { data, error } = await supabase
+    .from("stripe_connect_transfers")
+    .select("*")
+    .eq("id", transferRowId)
+    .maybeSingle()
+
+  if (error) {
+    console.error("[stripe connect db] getStripeConnectTransferById", error)
+    return null
+  }
+  return data as StripeConnectTransferRow | null
+}
+
+export async function insertStripeConnectTransferProcessing(
+  supabase: SupabaseClient,
+  row: {
+    id: string
+    user_id: string
+    amount: number
+    fee_amount: number
+    payout_speed: "standard" | "instant"
+    stripe_transfer_id: string
+  },
+): Promise<boolean> {
+  const { error } = await supabase.from("stripe_connect_transfers").insert({
+    id: row.id,
+    user_id: row.user_id,
+    amount: row.amount,
+    fee_amount: row.fee_amount,
+    payout_speed: row.payout_speed,
+    stripe_transfer_id: row.stripe_transfer_id,
+    status: "PROCESSING",
+  })
+
+  if (error) {
+    console.error("[stripe connect db] insertStripeConnectTransferProcessing", error)
+    return false
+  }
+  return true
+}
+
+export async function markStripeConnectTransferSucceeded(
+  supabase: SupabaseClient,
+  transferRowId: string,
+  stripePayoutId: string | null,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("stripe_connect_transfers")
+    .update({
+      status: "SUCCEEDED",
+      stripe_payout_id: stripePayoutId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", transferRowId)
+    .eq("status", "PROCESSING")
+    .select("id")
+    .maybeSingle()
+
+  if (error) {
+    console.error("[stripe connect db] markStripeConnectTransferSucceeded", error)
+    return false
+  }
+  return Boolean(data)
+}
+
+/** Idempotent: only transitions eligible statuses → REVERSED once. */
+export async function markStripeConnectTransferReversed(
+  supabase: SupabaseClient,
+  transferRowId: string,
+  failureReason: string,
+  fromStatuses: Array<"PROCESSING" | "SUCCEEDED"> = ["PROCESSING"],
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("stripe_connect_transfers")
+    .update({
+      status: "REVERSED",
+      failure_reason: failureReason,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", transferRowId)
+    .in("status", fromStatuses)
+    .select("id")
+    .maybeSingle()
+
+  if (error) {
+    console.error("[stripe connect db] markStripeConnectTransferReversed", error)
+    return false
+  }
+  return Boolean(data)
+}

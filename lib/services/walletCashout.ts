@@ -98,11 +98,17 @@ export async function restoreWalletAfterFailedCashout(
   supabase: SupabaseClient,
   userId: string,
   amountUsd: number,
-): Promise<void> {
+): Promise<boolean> {
   const writeDb = getClientForPrivilegedWalletWrites(supabase)
   try {
     await reverseWalletCashoutDeduction(writeDb, userId, amountUsd)
+    return true
   } catch (e) {
-    console.error("[wallet cashout] refund_to_available_balance after failed payout", e)
+    console.error("[wallet cashout] CRITICAL refund_to_available_balance after failed payout", {
+      userId,
+      amountUsd,
+      error: e,
+    })
+    return false
   }
 }

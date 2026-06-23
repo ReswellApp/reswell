@@ -235,6 +235,7 @@ export function StripeBankPayoutSection({
         } else {
           toast.error(err, { duration: 20_000 })
         }
+        await onRefresh()
         return
       }
       const amountUsd = Number(data.amountUsd)
@@ -256,6 +257,7 @@ export function StripeBankPayoutSection({
       await onRefresh()
     } catch {
       toast.error("Something went wrong. Try again.", { duration: 20_000 })
+      await onRefresh()
     } finally {
       setSubmitting(false)
     }
