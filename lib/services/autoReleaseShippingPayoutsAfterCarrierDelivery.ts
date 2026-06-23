@@ -1,4 +1,5 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { carrierDeliveryPayoutHoldElapsed, CARRIER_DELIVERY_PAYOUT_HOLD_MS } from "@/lib/shipping/carrier-delivery-payout-hold"
 import { markShippingDeliveredAndReleaseSellerEarnings } from "@/lib/services/shippingDeliveredFinalize"
 
@@ -18,13 +19,16 @@ export type AutoReleaseCarrierPayoutSummary = {
 export async function tryReleaseShippingPayoutAfterCarrierHold(
   orderId: string,
   referenceTime: Date = new Date(),
+  serviceSupabase?: SupabaseClient,
 ): Promise<{ released: boolean; error?: string }> {
-  let supabase
-  try {
-    supabase = createServiceRoleClient()
-  } catch (e) {
-    console.error("[autoReleaseCarrierPayout] service client:", e)
-    return { released: false, error: "Server configuration error" }
+  let supabase = serviceSupabase
+  if (!supabase) {
+    try {
+      supabase = createServiceRoleClient()
+    } catch (e) {
+      console.error("[autoReleaseCarrierPayout] service client:", e)
+      return { released: false, error: "Server configuration error" }
+    }
   }
 
   const { data: row, error: fetchErr } = await supabase
@@ -100,7 +104,11 @@ export async function autoReleaseShippingPayoutsAfterCarrierDelivery(
   summary.scanned = ids.length
 
   for (const orderId of ids) {
-    const attempt = await tryReleaseShippingPayoutAfterCarrierHold(orderId, referenceTime)
+    const attempt = await tryReleaseShippingPayoutAfterCarrierHold(
+      orderId,
+      referenceTime,
+      supabase,
+    )
     if (attempt.released) {
       summary.released += 1
     } else if (attempt.error) {

@@ -5,7 +5,7 @@ import { loadStripe } from "@stripe/stripe-js"
 import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js"
 import type { Appearance } from "@stripe/stripe-js"
 import { useTheme } from "next-themes"
-import { Loader2, Printer } from "lucide-react"
+import { Loader2, Printer, Wallet } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { BRAND_CTA_BLUE } from "@/lib/brand-colors"
@@ -173,11 +173,13 @@ export function SellerShippingLabelCheckout({
   orderId,
   checkoutPayload,
   amountUsd,
+  walletSpendableUsd = 0,
   onSuccess,
 }: {
   orderId: string
   checkoutPayload: LabelCheckoutPayload | null
   amountUsd: number
+  walletSpendableUsd?: number
   onSuccess: (data: {
     labelUrl: string | null
     trackingNumber: string
@@ -188,7 +190,44 @@ export function SellerShippingLabelCheckout({
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [walletBusy, setWalletBusy] = useState(false)
   const stripe = getStripeBrowser()
+
+  const canPayWithWallet =
+    checkoutPayload != null && walletSpendableUsd >= amountUsd && amountUsd >= 0.5
+
+  const purchaseWithWallet = useCallback(async () => {
+    if (!checkoutPayload) return
+    setWalletBusy(true)
+    try {
+      const res = await fetch(
+        `/api/orders/${encodeURIComponent(orderId)}/shipping-label/wallet`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(checkoutPayload),
+        },
+      )
+      const data = (await res.json()) as {
+        data?: {
+          labelUrl: string | null
+          trackingNumber: string
+          orderDisplayNum: string
+        }
+        error?: string
+      }
+      if (!res.ok || !data.data) {
+        toast.error(data.error ?? "Could not purchase label with wallet balance")
+        return
+      }
+      onSuccess(data.data)
+    } catch {
+      toast.error("Could not purchase label with wallet balance")
+    } finally {
+      setWalletBusy(false)
+    }
+  }, [checkoutPayload, orderId, onSuccess])
 
   const payloadKey = checkoutPayload
     ? JSON.stringify({
@@ -248,29 +287,42 @@ export function SellerShippingLabelCheckout({
     )
   }
 
+  const walletSection = canPayWithWallet ? (
+    <div className="space-y-3 rounded-lg border bg-muted/20 p-4">
+      <p className="text-sm text-muted-foreground">
+        Use your Reswell wallet balance from past sales (${walletSpendableUsd.toFixed(2)} available).
+      </p>
+      <Button type="button" disabled={walletBusy} onClick={() => void purchaseWithWallet()}>
+        {walletBusy ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            Processing…
+          </>
+        ) : (
+          <>
+            <Wallet className="h-4 w-4 mr-2" />
+            Pay ${amountUsd.toFixed(2)} with wallet &amp; print label
+          </>
+        )}
+      </Button>
+    </div>
+  ) : walletSpendableUsd > 0 && amountUsd >= 0.5 ? (
+    <p className="text-sm text-muted-foreground rounded-lg border bg-muted/20 p-4">
+      Wallet balance: ${walletSpendableUsd.toFixed(2)} — not enough to cover this label (${amountUsd.toFixed(
+        2,
+      )}). Pay with card below or wait for more completed sales to add spendable balance.
+    </p>
+  ) : null
+
   if (!stripe) {
+    if (canPayWithWallet) {
+      return walletSection
+    }
     return (
       <p className="text-sm text-muted-foreground">
         Card payments are not configured. Contact support if you need to purchase a label.
       </p>
     )
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center gap-2 rounded-lg border bg-muted/20 p-4 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Preparing secure checkout…
-      </div>
-    )
-  }
-
-  if (error) {
-    return <p className="text-sm text-destructive">{error}</p>
-  }
-
-  if (!clientSecret) {
-    return <p className="text-sm text-muted-foreground">Payment is unavailable for this rate.</p>
   }
 
   const appearance: Appearance =
@@ -285,13 +337,32 @@ export function SellerShippingLabelCheckout({
         }
 
   return (
-    <Elements key={clientSecret} stripe={stripe} options={{ clientSecret, appearance }}>
-      <LabelPaymentForm
-        orderId={orderId}
-        clientSecret={clientSecret}
-        amountLabel={`$${amountUsd.toFixed(2)}`}
-        onSuccess={onSuccess}
-      />
-    </Elements>
+    <div className="space-y-4">
+      {walletSection}
+      {loading ? (
+        <div className="flex items-center gap-2 rounded-lg border bg-muted/20 p-4 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Preparing secure checkout…
+        </div>
+      ) : error ? (
+        <p className="text-sm text-destructive">{error}</p>
+      ) : !clientSecret ? (
+        <p className="text-sm text-muted-foreground">Payment is unavailable for this rate.</p>
+      ) : (
+        <>
+          {canPayWithWallet ? (
+            <p className="text-sm font-medium text-muted-foreground">Or pay with card</p>
+          ) : null}
+          <Elements key={clientSecret} stripe={stripe} options={{ clientSecret, appearance }}>
+            <LabelPaymentForm
+              orderId={orderId}
+              clientSecret={clientSecret}
+              amountLabel={`$${amountUsd.toFixed(2)}`}
+              onSuccess={onSuccess}
+            />
+          </Elements>
+        </>
+      )}
+    </div>
   )
 }

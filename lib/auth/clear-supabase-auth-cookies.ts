@@ -49,6 +49,13 @@ export function isBenignAuthSessionError(error: unknown): boolean {
   )
 }
 
+/** GoTrue 500 when Postgres/auth is degraded (e.g. connection pool exhausted). */
+export function isAuthServiceDegradedError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const code = (error as { code?: unknown }).code
+  return code === 'unexpected_failure'
+}
+
 /** Transient reachability failures (`AuthRetryableFetchError`, undici "fetch failed"). */
 export function isTransientAuthNetworkError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false
@@ -62,5 +69,9 @@ export function isTransientAuthNetworkError(error: unknown): boolean {
  * Session lookup errors that must not 500 middleware — treat as logged-out and continue.
  */
 export function isNonFatalGetUserError(error: unknown): boolean {
-  return isBenignAuthSessionError(error) || isTransientAuthNetworkError(error)
+  return (
+    isBenignAuthSessionError(error) ||
+    isTransientAuthNetworkError(error) ||
+    isAuthServiceDegradedError(error)
+  )
 }

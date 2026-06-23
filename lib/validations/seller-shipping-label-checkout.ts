@@ -10,3 +10,5 @@ export const sellerShippingLabelPaymentIntentBodySchema = z.object({
 export const sellerShippingLabelFinalizeBodySchema = z.object({
   payment_intent_id: z.string().min(5).max(128),
 })
+
+export const sellerShippingLabelWalletBodySchema = sellerShippingLabelPaymentIntentBodySchema

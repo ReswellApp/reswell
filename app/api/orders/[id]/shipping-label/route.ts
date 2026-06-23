@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import { getSellerBalance } from "@/lib/getSellerBalance"
 import { PEER_SURFBOARD_CHECKOUT_LISTING_SELECT } from "@/lib/services/peerListingShippingQuote"
 import {
   fetchRatesForSurfboardOrder,
@@ -125,12 +126,14 @@ export async function GET(
   })
 
   const displayOrderNum = formatOrderNumForCustomer(row.order_num, row.id)
+  const walletSummary = await getSellerBalance(supabase, user.id)
 
   return NextResponse.json({
     data: {
       eligible,
       ineligibleReasons: reasons,
       shipEngineConfigured: isShipEngineConfigured(),
+      walletSpendableUsd: walletSummary.spendableBucks,
       order: {
         id: row.id,
         /** Human reference from `orders.order_num` (same as dashboard). */

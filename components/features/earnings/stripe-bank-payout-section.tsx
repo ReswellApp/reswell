@@ -141,7 +141,11 @@ export function StripeBankPayoutSection({
   /** Selected Stripe `ba_` id for the cash-out dialog (must match a linked bank when sent to the API). */
   const [cashOutDestinationId, setCashOutDestinationId] = useState("")
   /** Full-screen layer inside the cash-out dialog for readable payout errors (replaces easy-to-miss toasts). */
-  const [cashOutError, setCashOutError] = useState<{ title: string; detail: string } | null>(null)
+  const [cashOutError, setCashOutError] = useState<{
+    title: string
+    detail: string
+    errorCode?: string
+  } | null>(null)
 
   const bankRows: StripeConnectBankAccountRow[] = useMemo(() => {
     const fromApi = connectStatus?.bankAccounts
@@ -221,6 +225,7 @@ export function StripeBankPayoutSection({
       const data = (await res.json()) as {
         error?: string
         errorDetail?: string
+        errorCode?: string
         message?: string
         amountUsd?: number
         availableBalanceAfter?: number
@@ -231,7 +236,11 @@ export function StripeBankPayoutSection({
         const err = data.error ?? "Payout failed"
         const detail = data.errorDetail?.trim()
         if (detail) {
-          setCashOutError({ title: err, detail })
+          setCashOutError({
+            title: err,
+            detail,
+            errorCode: data.errorCode,
+          })
         } else {
           toast.error(err, { duration: 20_000 })
         }
@@ -769,20 +778,40 @@ export function StripeBankPayoutSection({
                       </h2>
                       <p
                         id="stripe-cashout-error-desc"
-                        className="max-h-[min(50vh,320px)] overflow-y-auto text-sm leading-relaxed text-muted-foreground"
+                        className="max-h-[min(50vh,320px)] overflow-y-auto whitespace-pre-line text-sm leading-relaxed text-muted-foreground"
                       >
                         {cashOutError.detail}
                       </p>
                     </div>
                   </div>
                   <div className="flex w-full shrink-0 flex-col gap-2">
+                    {cashOutError.errorCode === "instant_payouts_limit_exceeded" ? (
+                      <Button
+                        type="button"
+                        className="w-full rounded-full"
+                        autoFocus
+                        onClick={() => {
+                          setPayoutSpeed("standard")
+                          setCashOutError(null)
+                        }}
+                      >
+                        Use standard delivery (2–3 business days)
+                      </Button>
+                    ) : null}
                     <Button
                       type="button"
                       className="w-full rounded-full"
-                      autoFocus
+                      autoFocus={cashOutError.errorCode !== "instant_payouts_limit_exceeded"}
+                      variant={
+                        cashOutError.errorCode === "instant_payouts_limit_exceeded"
+                          ? "outline"
+                          : "default"
+                      }
                       onClick={() => setCashOutError(null)}
                     >
-                      Back to cash out
+                      {cashOutError.errorCode === "instant_payouts_limit_exceeded"
+                        ? "Stay on instant — try again later"
+                        : "Back to cash out"}
                     </Button>
                     <Button
                       type="button"

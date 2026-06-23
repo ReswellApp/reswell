@@ -70,6 +70,7 @@ export async function POST(req: Request) {
       {
         error: result.error,
         ...(result.errorDetail ? { errorDetail: result.errorDetail } : {}),
+        ...(result.errorCode ? { errorCode: result.errorCode } : {}),
       },
       { status: result.status ?? 400 },
     )

@@ -1,7 +1,7 @@
 /**
- * Public catalog/marketing routes where anonymous traffic can skip Supabase `getUser()`
- * when no session cookies are present. Protected routes always refresh via
- * {@link pathnameRequiresAuthSession}.
+ * Legacy pathname whitelist for skipping middleware session refresh.
+ * Middleware now skips GoTrue for **all** public routes when no auth cookies are present
+ * (see lib/supabase/proxy.ts). Kept for reference if finer-grained control is needed again.
  */
 export function pathnameSkipsAuthSessionRefresh(pathname: string): boolean {
   if (pathname === "/") return true

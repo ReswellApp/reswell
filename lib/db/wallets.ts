@@ -16,6 +16,12 @@ export type WalletCashoutDeductionRow = {
   lifetimeCashedOutAfter: number
 }
 
+export type WalletInternalSpendDeductionRow = {
+  walletId: string
+  balanceAfter: number
+  lifetimeSpentAfter: number
+}
+
 function parseMoney(v: unknown): number {
   const n = typeof v === "number" ? v : parseFloat(String(v ?? ""))
   return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0
@@ -83,6 +89,55 @@ export async function reverseWalletCashoutDeduction(
   amountUsd: number,
 ): Promise<void> {
   const { error } = await supabase.rpc("refund_to_available_balance", {
+    p_user_id: userId,
+    p_amount: amountUsd,
+  })
+
+  if (error) {
+    throw error
+  }
+}
+
+export async function deductWalletForInternalSpendAtomic(
+  supabase: SupabaseClient,
+  userId: string,
+  amountUsd: number,
+): Promise<WalletInternalSpendDeductionRow | null> {
+  const { data, error } = await supabase.rpc("deduct_wallet_for_internal_spend", {
+    p_user_id: userId,
+    p_amount: amountUsd,
+  })
+
+  if (error) {
+    throw error
+  }
+
+  if (!data || typeof data !== "object") {
+    return null
+  }
+
+  const row = data as {
+    wallet_id?: unknown
+    balance_after?: unknown
+    lifetime_spent_after?: unknown
+  }
+
+  const walletId = typeof row.wallet_id === "string" ? row.wallet_id : ""
+  if (!walletId) return null
+
+  return {
+    walletId,
+    balanceAfter: parseMoney(row.balance_after),
+    lifetimeSpentAfter: parseMoney(row.lifetime_spent_after),
+  }
+}
+
+export async function refundWalletInternalSpend(
+  supabase: SupabaseClient,
+  userId: string,
+  amountUsd: number,
+): Promise<void> {
+  const { error } = await supabase.rpc("refund_wallet_internal_spend", {
     p_user_id: userId,
     p_amount: amountUsd,
   })

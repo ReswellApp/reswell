@@ -80,8 +80,27 @@ function userFacingMessageForStripeTransferError(e: unknown): string {
   return "Stripe could not send funds to your connected account. Check your payout setup or try again."
 }
 
+function isInstantPayoutDailyLimitExceededError(e: unknown): boolean {
+  return e instanceof Stripe.errors.StripeError && e.code === "instant_payouts_limit_exceeded"
+}
+
+function instantPayoutDailyLimitUserMessage(): { error: string; errorDetail: string } {
+  return {
+    error: "Instant payout isn’t available right now",
+    errorDetail:
+      "We’ve reached today’s limit for instant bank transfers on our payment network. " +
+      "Your wallet was not charged and nothing has been sent.\n\n" +
+      "Instant transfers typically become available again within about 24 hours. " +
+      "If you’d like to move funds now, choose Standard delivery (2–3 business days) — " +
+      "there’s no instant fee, and we’ll only transfer after you confirm that option.",
+  }
+}
+
 function userFacingMessageForStripeInstantPayoutError(e: unknown): string {
   if (e instanceof Stripe.errors.StripeError) {
+    if (e.code === "instant_payouts_limit_exceeded") {
+      return instantPayoutDailyLimitUserMessage().error
+    }
     if (e.code === "instant_payouts_unsupported") {
       return (
         "Instant payout isn’t available for this payout account yet. Use standard delivery (2–3 business days), " +
@@ -574,7 +593,7 @@ export type ConnectCashOutResult =
       availableBalanceAfter: number
       lifetimeCashedOutAfter: number
     }
-  | { ok: false; error: string; errorDetail?: string; status?: number }
+  | { ok: false; error: string; errorDetail?: string; errorCode?: string; status?: number }
 
 export async function cashOutToStripeConnectedAccount(
   supabase: SupabaseClient,
@@ -790,6 +809,18 @@ export async function cashOutToStripeConnectedAccount(
           stripeTransferId: transfer.id,
         })
       }
+
+      if (isInstantPayoutDailyLimitExceededError(e)) {
+        const limitMsg = instantPayoutDailyLimitUserMessage()
+        return {
+          ok: false,
+          error: limitMsg.error,
+          errorDetail: limitMsg.errorDetail,
+          errorCode: "instant_payouts_limit_exceeded",
+          status: 503,
+        }
+      }
+
       return {
         ok: false,
         error: userFacingMessageForStripeInstantPayoutError(e),

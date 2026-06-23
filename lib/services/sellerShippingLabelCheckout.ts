@@ -1,10 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type Stripe from "stripe"
 import { fetchOrderIdsWithPreparedShippingLabels } from "@/lib/db/orderShippingLabels"
+import {
+  deductWalletForInternalSpendAtomic,
+  refundWalletInternalSpend,
+} from "@/lib/db/wallets"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
+import { getSellerBalance } from "@/lib/getSellerBalance"
 import { autoDispatchOrderIfTrackingReady } from "@/lib/services/markOrderShipped"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
@@ -17,8 +22,43 @@ import { getStripe, getStripeCheckoutKeyConfigError } from "@/lib/stripe-server"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import { getShipEngineRateById } from "@/lib/shipengine/surfboard-label"
 import type { ShipEngineRateOption } from "@/lib/shipengine/surfboard-label"
+import { roundMoney } from "@/lib/utils/stripe-connect-cashout"
 
 export const SELLER_SHIPPING_LABEL_PI_PURPOSE = "seller_shipping_label"
+export const SELLER_SHIPPING_LABEL_WALLET_REFERENCE_TYPE = "seller_shipping_label"
+
+function getClientForPrivilegedWalletWrites(sessionClient: SupabaseClient): SupabaseClient {
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()) {
+    return sessionClient
+  }
+  try {
+    return createServiceRoleClient()
+  } catch (e) {
+    console.error("[sellerShippingLabelCheckout] createServiceRoleClient failed; using session client", e)
+    return sessionClient
+  }
+}
+
+type PurchasedLabelPayload = {
+  labelUrl: string | null
+  trackingNumber: string
+  trackingCarrier: string
+}
+
+async function findWalletLabelPurchaseByOrder(
+  supabase: SupabaseClient,
+  orderId: string,
+): Promise<{ walletTransactionId: string } | null> {
+  const { data } = await supabase
+    .from("wallet_transactions")
+    .select("id")
+    .eq("reference_type", SELLER_SHIPPING_LABEL_WALLET_REFERENCE_TYPE)
+    .eq("reference_id", orderId)
+    .maybeSingle()
+
+  const id = (data as { id?: string } | null)?.id
+  return id ? { walletTransactionId: id } : null
+}
 
 export type SellerLabelPurchasableOrder = {
   orderId: string
@@ -380,6 +420,144 @@ async function findLabelPurchaseByPaymentIntent(
   return orderId ? { orderId } : null
 }
 
+async function getServiceSupabaseOrError(): Promise<
+  { ok: true; client: SupabaseClient } | { ok: false; error: string; status: number }
+> {
+  try {
+    return { ok: true, client: createServiceRoleClient() }
+  } catch (e) {
+    console.error("[sellerShippingLabelCheckout] service role client:", e)
+    return { ok: false, error: "Label purchasing is not configured on the server.", status: 503 }
+  }
+}
+
+async function persistSellerPaidLabelAndTracking(params: {
+  serviceSupabase: SupabaseClient
+  orderId: string
+  sellerId: string
+  orderNum: string | null
+  rateId: string
+  purchased: PurchasedLabelPayload
+  stripePaymentIntentId?: string | null
+}): Promise<
+  | {
+      ok: true
+      alreadyProcessed: boolean
+      labelUrl: string | null
+      trackingNumber: string
+      orderDisplayNum: string
+    }
+  | { ok: false; error: string; status: number }
+> {
+  const { error: labelInsertErr } = await params.serviceSupabase.from("order_shipping_labels").insert({
+    order_id: params.orderId,
+    origin: "seller_paid",
+    label_pdf_url: params.purchased.labelUrl,
+    label_storage_path: null,
+    tracking_number: params.purchased.trackingNumber,
+    tracking_carrier: params.purchased.trackingCarrier,
+    shipengine_rate_id: params.rateId,
+    stripe_payment_intent_id: params.stripePaymentIntentId ?? null,
+  })
+
+  if (labelInsertErr) {
+    const isDuplicate =
+      labelInsertErr.code === "23505" ||
+      labelInsertErr.message?.includes("order_shipping_labels_stripe_pi_uidx")
+    if (isDuplicate && params.stripePaymentIntentId) {
+      const raced = await findLabelPurchaseByPaymentIntent(
+        params.serviceSupabase,
+        params.stripePaymentIntentId,
+      )
+      if (raced) {
+        return {
+          ok: true,
+          alreadyProcessed: true,
+          labelUrl: params.purchased.labelUrl,
+          trackingNumber: params.purchased.trackingNumber,
+          orderDisplayNum: formatOrderNumForCustomer(params.orderNum, params.orderId),
+        }
+      }
+    }
+    console.error("[sellerShippingLabelCheckout] label insert:", labelInsertErr)
+    return { ok: false, error: "Label purchased but could not be saved. Contact support.", status: 500 }
+  }
+
+  const { data: trackedOrder, error: trackErr } = await params.serviceSupabase
+    .from("orders")
+    .update({
+      tracking_number: params.purchased.trackingNumber,
+      tracking_carrier: params.purchased.trackingCarrier,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", params.orderId)
+    .eq("seller_id", params.sellerId)
+    .eq("delivery_status", "pending")
+    .select("id")
+    .maybeSingle()
+
+  if (trackErr || !trackedOrder) {
+    console.error(
+      "[sellerShippingLabelCheckout] save tracking:",
+      trackErr?.message ?? "order not pending or not found",
+    )
+    return {
+      ok: false,
+      error:
+        "Label purchased and paid for, but tracking could not be saved. Contact support with your payment confirmation.",
+      status: 500,
+    }
+  }
+
+  await autoDispatchOrderIfTrackingReady(params.serviceSupabase, params.orderId, params.sellerId)
+
+  return {
+    ok: true,
+    alreadyProcessed: false,
+    labelUrl: params.purchased.labelUrl,
+    trackingNumber: params.purchased.trackingNumber,
+    orderDisplayNum: formatOrderNumForCustomer(params.orderNum, params.orderId),
+  }
+}
+
+async function findExistingSellerPaidLabelForOrder(
+  serviceSupabase: SupabaseClient,
+  orderId: string,
+): Promise<
+  | {
+      ok: true
+      labelUrl: string | null
+      trackingNumber: string
+      orderDisplayNum: string
+    }
+  | { ok: false }
+> {
+  const prepared = await fetchOrderIdsWithPreparedShippingLabels(serviceSupabase, [orderId])
+  if (!prepared.has(orderId)) return { ok: false }
+
+  const { data: orderRow } = await serviceSupabase
+    .from("orders")
+    .select("order_num, tracking_number")
+    .eq("id", orderId)
+    .maybeSingle()
+  const o = orderRow as { order_num: string | null; tracking_number: string | null } | null
+
+  const { data: labelRow } = await serviceSupabase
+    .from("order_shipping_labels")
+    .select("label_pdf_url")
+    .eq("order_id", orderId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  return {
+    ok: true,
+    labelUrl: (labelRow as { label_pdf_url?: string | null } | null)?.label_pdf_url ?? null,
+    trackingNumber: o?.tracking_number?.trim() || "",
+    orderDisplayNum: formatOrderNumForCustomer(o?.order_num ?? null, orderId),
+  }
+}
+
 function validateSellerLabelPaymentIntentMetadata(
   pi: Stripe.PaymentIntent,
   expected?: { orderId?: string; sellerId?: string },
@@ -438,13 +616,9 @@ export async function completeSellerShippingLabelFromPaymentIntent(params: {
 
   // order_shipping_labels has RLS with no user policies — label reads/writes and
   // the tracking update must run with the service role, regardless of the caller.
-  let serviceSupabase: SupabaseClient
-  try {
-    serviceSupabase = createServiceRoleClient()
-  } catch (e) {
-    console.error("[completeSellerShippingLabelFromPaymentIntent] service role client:", e)
-    return { ok: false, error: "Label purchasing is not configured on the server.", status: 503 }
-  }
+  const serviceClient = await getServiceSupabaseOrError()
+  if (!serviceClient.ok) return serviceClient
+  const serviceSupabase = serviceClient.client
 
   const existing = await findLabelPurchaseByPaymentIntent(serviceSupabase, params.paymentIntent.id)
   if (existing) {
@@ -476,75 +650,24 @@ export async function completeSellerShippingLabelFromPaymentIntent(params: {
     return { ok: false, error: purchased.error, status: purchased.status }
   }
 
-  const { error: labelInsertErr } = await serviceSupabase.from("order_shipping_labels").insert({
-    order_id: meta.orderId,
-    origin: "seller_paid",
-    label_pdf_url: purchased.result.labelUrl,
-    label_storage_path: null,
-    tracking_number: purchased.result.trackingNumber,
-    tracking_carrier: purchased.result.trackingCarrier,
-    shipengine_rate_id: meta.rateId,
-    stripe_payment_intent_id: params.paymentIntent.id,
+  const saved = await persistSellerPaidLabelAndTracking({
+    serviceSupabase,
+    orderId: meta.orderId,
+    sellerId: meta.sellerId,
+    orderNum: ctx.order.order_num,
+    rateId: meta.rateId,
+    purchased: purchased.result,
+    stripePaymentIntentId: params.paymentIntent.id,
   })
-
-  if (labelInsertErr) {
-    const isDuplicate =
-      labelInsertErr.code === "23505" ||
-      labelInsertErr.message?.includes("order_shipping_labels_stripe_pi_uidx")
-    if (isDuplicate) {
-      const raced = await findLabelPurchaseByPaymentIntent(serviceSupabase, params.paymentIntent.id)
-      if (raced) {
-        return {
-          ok: true,
-          orderId: raced.orderId,
-          alreadyProcessed: true,
-          labelUrl: purchased.result.labelUrl,
-          trackingNumber: purchased.result.trackingNumber,
-          orderDisplayNum: formatOrderNumForCustomer(ctx.order.order_num, ctx.order.id),
-        }
-      }
-    }
-    console.error("[completeSellerShippingLabelFromPaymentIntent] label insert:", labelInsertErr)
-    return { ok: false, error: "Label purchased but could not be saved. Contact support.", status: 500 }
-  }
-
-  // Direct service-role update (the seller RPC requires auth.uid(), which the
-  // webhook path does not have). Scoped to the seller and pending delivery.
-  const { data: trackedOrder, error: trackErr } = await serviceSupabase
-    .from("orders")
-    .update({
-      tracking_number: purchased.result.trackingNumber,
-      tracking_carrier: purchased.result.trackingCarrier,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", meta.orderId)
-    .eq("seller_id", meta.sellerId)
-    .eq("delivery_status", "pending")
-    .select("id")
-    .maybeSingle()
-
-  if (trackErr || !trackedOrder) {
-    console.error(
-      "[completeSellerShippingLabelFromPaymentIntent] save tracking:",
-      trackErr?.message ?? "order not pending or not found",
-    )
-    return {
-      ok: false,
-      error:
-        "Label purchased and paid for, but tracking could not be saved. Contact support with your payment confirmation.",
-      status: 500,
-    }
-  }
-
-  await autoDispatchOrderIfTrackingReady(serviceSupabase, meta.orderId, meta.sellerId)
+  if (!saved.ok) return saved
 
   return {
     ok: true,
     orderId: meta.orderId,
-    alreadyProcessed: false,
-    labelUrl: purchased.result.labelUrl,
-    trackingNumber: purchased.result.trackingNumber,
-    orderDisplayNum: formatOrderNumForCustomer(ctx.order.order_num, ctx.order.id),
+    alreadyProcessed: saved.alreadyProcessed,
+    labelUrl: saved.labelUrl,
+    trackingNumber: saved.trackingNumber,
+    orderDisplayNum: saved.orderDisplayNum,
   }
 }
 
@@ -586,4 +709,188 @@ export async function finalizeSellerShippingLabelPurchase(params: {
 
 export function isSellerShippingLabelPaymentIntent(pi: Stripe.PaymentIntent): boolean {
   return pi.metadata?.purpose === SELLER_SHIPPING_LABEL_PI_PURPOSE
+}
+
+export async function purchaseSellerShippingLabelWithWallet(params: {
+  supabase: SupabaseClient
+  orderId: string
+  sellerId: string
+  rateId: string
+  sellerAddressId?: string | null
+  parcel?: { length_in: number; width_in: number; height_in: number; weight_lb: number }
+}): Promise<
+  | {
+      ok: true
+      labelUrl: string | null
+      trackingNumber: string
+      orderDisplayNum: string
+      alreadyProcessed: boolean
+      amountUsd: number
+      walletBalanceAfter: number
+    }
+  | { ok: false; error: string; status: number }
+> {
+  const ctx = await loadSellerShippingLabelOrderContext(
+    params.supabase,
+    params.orderId,
+    params.sellerId,
+  )
+  if (!ctx.ok) return ctx
+
+  const rateResolved = await resolveSellerShippingLabelRate({
+    supabase: params.supabase,
+    order: ctx.order,
+    sellerId: params.sellerId,
+    rateId: params.rateId,
+    sellerAddressId: params.sellerAddressId,
+    parcel: params.parcel,
+  })
+  if (!rateResolved.ok) return rateResolved
+
+  const amountUsd = roundMoney(rateResolved.rate.amount)
+  if (amountUsd < 0.5) {
+    return { ok: false, error: "Label cost is below the minimum charge.", status: 400 }
+  }
+
+  const serviceClient = await getServiceSupabaseOrError()
+  if (!serviceClient.ok) return serviceClient
+  const serviceSupabase = serviceClient.client
+
+  const existingLabel = await findExistingSellerPaidLabelForOrder(serviceSupabase, params.orderId)
+  if (existingLabel.ok) {
+    const walletSummary = await getSellerBalance(params.supabase, params.sellerId)
+    return {
+      ok: true,
+      labelUrl: existingLabel.labelUrl,
+      trackingNumber: existingLabel.trackingNumber,
+      orderDisplayNum: existingLabel.orderDisplayNum,
+      alreadyProcessed: true,
+      amountUsd,
+      walletBalanceAfter: walletSummary.spendableBucks,
+    }
+  }
+
+  const existingWalletTx = await findWalletLabelPurchaseByOrder(serviceSupabase, params.orderId)
+  if (existingWalletTx) {
+    return {
+      ok: false,
+      error:
+        "Wallet payment was recorded but the label is missing. Contact support with your order number.",
+      status: 500,
+    }
+  }
+
+  const walletSummary = await getSellerBalance(params.supabase, params.sellerId)
+  if (walletSummary.spendableBucks < amountUsd) {
+    return {
+      ok: false,
+      error: `Insufficient wallet balance. Available: $${walletSummary.spendableBucks.toFixed(2)}`,
+      status: 400,
+    }
+  }
+
+  const writeDb = getClientForPrivilegedWalletWrites(params.supabase)
+  let deducted: Awaited<ReturnType<typeof deductWalletForInternalSpendAtomic>>
+  try {
+    deducted = await deductWalletForInternalSpendAtomic(writeDb, params.sellerId, amountUsd)
+  } catch (e) {
+    console.error("[purchaseSellerShippingLabelWithWallet] deduct rpc:", e)
+    return { ok: false, error: "Could not debit wallet balance", status: 500 }
+  }
+
+  if (!deducted) {
+    return {
+      ok: false,
+      error: `Insufficient wallet balance. Available: $${walletSummary.spendableBucks.toFixed(2)}`,
+      status: 400,
+    }
+  }
+
+  const orderDisplayNum = formatOrderNumForCustomer(ctx.order.order_num, ctx.order.id)
+  const carrierLabel = rateResolved.rate.carrierLabel.slice(0, 80)
+  const serviceName = rateResolved.rate.serviceName.slice(0, 80)
+
+  const { error: walletTxErr } = await writeDb.from("wallet_transactions").insert({
+    wallet_id: deducted.walletId,
+    user_id: params.sellerId,
+    type: "purchase",
+    amount: -amountUsd,
+    balance_after: deducted.balanceAfter.toFixed(2),
+    description: `Shipping label — order #${orderDisplayNum} (${carrierLabel} ${serviceName})`,
+    reference_id: params.orderId,
+    reference_type: SELLER_SHIPPING_LABEL_WALLET_REFERENCE_TYPE,
+  })
+
+  if (walletTxErr) {
+    console.error("[purchaseSellerShippingLabelWithWallet] wallet tx insert:", walletTxErr)
+    try {
+      await refundWalletInternalSpend(writeDb, params.sellerId, amountUsd)
+    } catch (refundErr) {
+      console.error("[purchaseSellerShippingLabelWithWallet] CRITICAL refund after tx insert fail", refundErr)
+    }
+    const isDuplicate =
+      walletTxErr.code === "23505" || walletTxErr.message?.includes("wallet_tx_seller_shipping_label_uidx")
+    if (isDuplicate) {
+      const racedLabel = await findExistingSellerPaidLabelForOrder(serviceSupabase, params.orderId)
+      if (racedLabel.ok) {
+        return {
+          ok: true,
+          labelUrl: racedLabel.labelUrl,
+          trackingNumber: racedLabel.trackingNumber,
+          orderDisplayNum: racedLabel.orderDisplayNum,
+          alreadyProcessed: true,
+          amountUsd,
+          walletBalanceAfter: deducted.balanceAfter,
+        }
+      }
+      return {
+        ok: false,
+        error:
+          "Wallet payment was recorded but the label is missing. Contact support with your order number.",
+        status: 500,
+      }
+    }
+    return { ok: false, error: "Could not record wallet payment", status: 500 }
+  }
+
+  const purchased = await purchaseLabelWithRateId(rateResolved.rate.rate_id)
+  if (!purchased.ok) {
+    try {
+      await refundWalletInternalSpend(writeDb, params.sellerId, amountUsd)
+      await writeDb
+        .from("wallet_transactions")
+        .delete()
+        .eq("reference_type", SELLER_SHIPPING_LABEL_WALLET_REFERENCE_TYPE)
+        .eq("reference_id", params.orderId)
+    } catch (refundErr) {
+      console.error(
+        "[purchaseSellerShippingLabelWithWallet] CRITICAL refund after label purchase fail",
+        refundErr,
+      )
+    }
+    return { ok: false, error: purchased.error, status: purchased.status }
+  }
+
+  const saved = await persistSellerPaidLabelAndTracking({
+    serviceSupabase,
+    orderId: params.orderId,
+    sellerId: params.sellerId,
+    orderNum: ctx.order.order_num,
+    rateId: rateResolved.rate.rate_id,
+    purchased: purchased.result,
+  })
+
+  if (!saved.ok) {
+    return saved
+  }
+
+  return {
+    ok: true,
+    labelUrl: saved.labelUrl,
+    trackingNumber: saved.trackingNumber,
+    orderDisplayNum: saved.orderDisplayNum,
+    alreadyProcessed: saved.alreadyProcessed,
+    amountUsd,
+    walletBalanceAfter: deducted.balanceAfter,
+  }
 }

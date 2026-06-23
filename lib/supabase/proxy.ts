@@ -6,7 +6,6 @@ import {
 } from '@/lib/auth/clear-supabase-auth-cookies'
 import { hasSupabaseAuthCookies } from '@/lib/auth/has-supabase-auth-cookies'
 import { pathnameRequiresAuthSession } from '@/lib/auth/pathname-requires-auth-session'
-import { pathnameSkipsAuthSessionRefresh } from '@/lib/auth/pathname-skips-auth-session-refresh'
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -39,6 +38,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.next({ request })
   }
 
+  // API routes authenticate in their own handlers (cron secret, getUser(), service role).
+  // Skipping middleware session work avoids a GoTrue round-trip on every API hit.
+  if (pathname.startsWith('/api/')) {
+    return NextResponse.next({ request })
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -48,10 +53,9 @@ export async function updateSession(request: NextRequest) {
   }
 
   const requiresAuth = pathnameRequiresAuthSession(pathname)
+  // Public routes with no session cookies: skip GoTrue entirely (SiteChrome does the same).
   const canSkipSessionRefresh =
-    !requiresAuth &&
-    pathnameSkipsAuthSessionRefresh(pathname) &&
-    !hasSupabaseAuthCookies(request.cookies.getAll())
+    !requiresAuth && !hasSupabaseAuthCookies(request.cookies.getAll())
 
   if (canSkipSessionRefresh) {
     return NextResponse.next({ request })

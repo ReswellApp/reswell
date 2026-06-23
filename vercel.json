@@ -26,15 +26,15 @@
     },
     {
       "path": "/api/cron/purge-stale-offers",
-      "schedule": "0 * * * *"
+      "schedule": "5 * * * *"
     },
     {
       "path": "/api/cron/google-merchant-refresh",
-      "schedule": "0 * * * *"
+      "schedule": "20 * * * *"
     },
     {
       "path": "/api/cron/release-carrier-delivered-payouts",
-      "schedule": "0 * * * *"
+      "schedule": "40 * * * *"
     },
     {
       "path": "/api/cron/search-insights-digest",

@@ -56,6 +56,7 @@ type OverviewResponse = {
     eligible: boolean
     ineligibleReasons: string[]
     shipEngineConfigured: boolean
+    walletSpendableUsd: number
     order: {
       id: string
       orderNum: string | null
@@ -549,11 +550,13 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
                   orderId={orderId}
                   checkoutPayload={checkoutPayload}
                   amountUsd={selectedRate?.amount ?? 0}
+                  walletSpendableUsd={overview.walletSpendableUsd}
                   onSuccess={handleLabelPurchaseSuccess}
                 />
                 <p className="text-xs text-muted-foreground">
-                  You pay the carrier rate shown above. After payment, Reswell purchases the label on
-                  your behalf, adds tracking to the order, and notifies the buyer.
+                  Pay with your Reswell wallet balance (from past sales) or card. After payment,
+                  Reswell purchases the label on your behalf, adds tracking to the order, and notifies
+                  the buyer.
                 </p>
               </div>
             )}
