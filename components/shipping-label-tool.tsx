@@ -27,7 +27,7 @@ import {
 import { ChevronDown, Loader2, Truck } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { isSurfboardLabelParcelLimitError } from "@/lib/shipping/surfboard-label-limits"
+import { isSurfboardLabelParcelLimitError, validateSurfboardLabelParcelLimits } from "@/lib/shipping/surfboard-label-limits"
 import { SellerShippingLabelCheckout } from "@/components/seller-shipping-label-checkout"
 
 type SellerAddr = { id: string; label: string; oneLine: string; isDefault: boolean }
@@ -78,6 +78,86 @@ const FALLBACK_MANUAL_PARCEL = {
   weight_lb: "12",
 }
 
+const EMPTY_MANUAL_PARCEL = {
+  length_in: "",
+  width_in: "",
+  height_in: "",
+  weight_lb: "",
+}
+
+function parseManualParcelFields(parcel: typeof EMPTY_MANUAL_PARCEL) {
+  return {
+    lengthIn: Number(parcel.length_in),
+    widthIn: Number(parcel.width_in),
+    heightIn: Number(parcel.height_in),
+    weightLb: Number(parcel.weight_lb),
+  }
+}
+
+function manualParcelFieldsValid(parcel: typeof EMPTY_MANUAL_PARCEL): boolean {
+  const { lengthIn, widthIn, heightIn, weightLb } = parseManualParcelFields(parcel)
+  if (!Number.isFinite(lengthIn) || lengthIn < 6 || lengthIn > 77) return false
+  if (!Number.isFinite(widthIn) || widthIn < 4 || widthIn > 48) return false
+  if (!Number.isFinite(heightIn) || heightIn < 2 || heightIn > 36) return false
+  if (!Number.isFinite(weightLb) || weightLb < 1 || weightLb > 25) return false
+  return validateSurfboardLabelParcelLimits({ lengthIn, weightLb }).ok
+}
+
+function ManualParcelFields({
+  manualParcel,
+  onChange,
+  idPrefix = "",
+}: {
+  manualParcel: typeof EMPTY_MANUAL_PARCEL
+  onChange: (next: typeof EMPTY_MANUAL_PARCEL) => void
+  idPrefix?: string
+}) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}L`}>Length (in)</Label>
+        <Input
+          id={`${idPrefix}L`}
+          inputMode="decimal"
+          placeholder="e.g. 72"
+          value={manualParcel.length_in}
+          onChange={(e) => onChange({ ...manualParcel, length_in: e.target.value })}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}W`}>Width (in)</Label>
+        <Input
+          id={`${idPrefix}W`}
+          inputMode="decimal"
+          placeholder="e.g. 20"
+          value={manualParcel.width_in}
+          onChange={(e) => onChange({ ...manualParcel, width_in: e.target.value })}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}H`}>Height (in)</Label>
+        <Input
+          id={`${idPrefix}H`}
+          inputMode="decimal"
+          placeholder="e.g. 6"
+          value={manualParcel.height_in}
+          onChange={(e) => onChange({ ...manualParcel, height_in: e.target.value })}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={`${idPrefix}Wt`}>Weight (lb)</Label>
+        <Input
+          id={`${idPrefix}Wt`}
+          inputMode="decimal"
+          placeholder="e.g. 12"
+          value={manualParcel.weight_lb}
+          onChange={(e) => onChange({ ...manualParcel, weight_lb: e.target.value })}
+        />
+      </div>
+    </div>
+  )
+}
+
 export function ShippingLabelTool({ orderId }: { orderId: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -117,8 +197,11 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
           weight_lb: String(p.weightLb),
         })
         setAdjustOpen(false)
-      } else {
+      } else if (isSurfboardLabelParcelLimitError(body.data.autoLabelParcel.error)) {
         setManualParcel(FALLBACK_MANUAL_PARCEL)
+        setAdjustOpen(true)
+      } else {
+        setManualParcel(EMPTY_MANUAL_PARCEL)
         setAdjustOpen(true)
       }
       setRates(null)
@@ -141,11 +224,22 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
     return overview.sellerAddresses.length > 0
   }, [overview])
 
-  const requestRates = async (opts: { useManualParcel?: boolean }) => {
+  const requestRates = async (opts?: { useManualParcel?: boolean }) => {
     if (!sellerAddressId && overview && overview.sellerAddresses.length > 1) {
       toast.error("Choose your ship-from address")
       return
     }
+
+    const useManual =
+      opts?.useManualParcel === true ||
+      !overview?.autoLabelParcel.ok ||
+      adjustOpen
+
+    if (useManual && !manualParcelFieldsValid(manualParcel)) {
+      toast.error("Enter valid packed length, width, height, and weight to get carrier rates.")
+      return
+    }
+
     setRatesBusy(true)
     setRates(null)
     setSelectedRateId("")
@@ -154,12 +248,13 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
       if (sellerAddressId) {
         payload.seller_address_id = sellerAddressId
       }
-      if (opts.useManualParcel) {
+      if (useManual) {
+        const p = parseManualParcelFields(manualParcel)
         payload.parcel = {
-          length_in: Number(manualParcel.length_in),
-          width_in: Number(manualParcel.width_in),
-          height_in: Number(manualParcel.height_in),
-          weight_lb: Number(manualParcel.weight_lb),
+          length_in: p.lengthIn,
+          width_in: p.widthIn,
+          height_in: p.heightIn,
+          weight_lb: p.weightLb,
         }
       }
 
@@ -226,11 +321,12 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
       payload.seller_address_id = sellerAddressId
     }
     if (adjustOpen || !overview?.autoLabelParcel.ok) {
+      const p = parseManualParcelFields(manualParcel)
       payload.parcel = {
-        length_in: Number(manualParcel.length_in),
-        width_in: Number(manualParcel.width_in),
-        height_in: Number(manualParcel.height_in),
-        weight_lb: Number(manualParcel.weight_lb),
+        length_in: p.lengthIn,
+        width_in: p.widthIn,
+        height_in: p.heightIn,
+        weight_lb: p.weightLb,
       }
     }
     return payload
@@ -314,6 +410,8 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
   const autoOk = overview.autoLabelParcel.ok
   const parcelLimitError =
     !autoOk && isSurfboardLabelParcelLimitError(overview.autoLabelParcel.error)
+  const needsManualParcel = !autoOk && !parcelLimitError
+  const manualParcelReady = manualParcelFieldsValid(manualParcel)
   const singleAddr = overview.sellerAddresses.length === 1
   const preferredAddr = overview.sellerAddresses.find((a) => a.id === sellerAddressId)
 
@@ -394,6 +492,17 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
                   </p>
                 ) : null}
               </div>
+            ) : needsManualParcel ? (
+              <Alert>
+                <AlertTitle>Add packed dimensions to continue</AlertTitle>
+                <AlertDescription className="space-y-2">
+                  <p>
+                    Your listing does not have package size saved yet (common when you set a flat
+                    shipping rate without board dimensions). Enter the packed box size and weight
+                    below, then get carrier rates and pay with your wallet or card.
+                  </p>
+                </AlertDescription>
+              </Alert>
             ) : (
               <Alert variant="destructive" className="border-destructive/40">
                 <AlertTitle>
@@ -437,71 +546,65 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
               </div>
             )}
 
-            <Collapsible open={adjustOpen} onOpenChange={setAdjustOpen}>
-              <CollapsibleTrigger asChild>
-                <Button type="button" variant="ghost" size="sm" className="gap-1 px-0 text-muted-foreground">
-                  <ChevronDown className={cn("h-4 w-4 transition-transform", adjustOpen && "rotate-180")} />
-                  Different box or weight? Adjust and recalculate
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-3 pt-3">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="L">Length (in)</Label>
-                    <Input
-                      id="L"
-                      inputMode="decimal"
-                      value={manualParcel.length_in}
-                      onChange={(e) => setManualParcel((p) => ({ ...p, length_in: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="W">Width (in)</Label>
-                    <Input
-                      id="W"
-                      inputMode="decimal"
-                      value={manualParcel.width_in}
-                      onChange={(e) => setManualParcel((p) => ({ ...p, width_in: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="H">Height (in)</Label>
-                    <Input
-                      id="H"
-                      inputMode="decimal"
-                      value={manualParcel.height_in}
-                      onChange={(e) => setManualParcel((p) => ({ ...p, height_in: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="Wt">Weight (lb)</Label>
-                    <Input
-                      id="Wt"
-                      inputMode="decimal"
-                      value={manualParcel.weight_lb}
-                      onChange={(e) => setManualParcel((p) => ({ ...p, weight_lb: e.target.value }))}
-                    />
-                  </div>
-                </div>
+            {needsManualParcel ? (
+              <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
+                <p className="text-sm font-medium text-foreground">Packed box dimensions</p>
+                <p className="text-sm text-muted-foreground">
+                  Measure the carton you will ship in — length is the longest side. Max 77″ length
+                  and 25 lb for Reswell labels.
+                </p>
+                <ManualParcelFields
+                  idPrefix="required-"
+                  manualParcel={manualParcel}
+                  onChange={(next) => {
+                    setManualParcel(next)
+                    setRates(null)
+                    setSelectedRateId("")
+                  }}
+                />
                 <Button
                   type="button"
-                  variant="secondary"
-                  size="sm"
-                  disabled={ratesBusy}
+                  variant="default"
+                  disabled={ratesBusy || !manualParcelReady}
                   onClick={() => void requestRates({ useManualParcel: true })}
                 >
                   {ratesBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  Recalculate rates
+                  Get carrier rates
                 </Button>
-              </CollapsibleContent>
-            </Collapsible>
+              </div>
+            ) : null}
 
-            {!autoOk && (
-              <Button type="button" variant="secondary" onClick={() => void requestRates({ useManualParcel: true })} disabled={ratesBusy}>
-                {ratesBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Get carrier rates
-              </Button>
-            )}
+            {autoOk ? (
+              <Collapsible open={adjustOpen} onOpenChange={setAdjustOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button type="button" variant="ghost" size="sm" className="gap-1 px-0 text-muted-foreground">
+                    <ChevronDown className={cn("h-4 w-4 transition-transform", adjustOpen && "rotate-180")} />
+                    Different box or weight? Adjust and recalculate
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-3 pt-3">
+                  <ManualParcelFields
+                    idPrefix="adjust-"
+                    manualParcel={manualParcel}
+                    onChange={(next) => {
+                      setManualParcel(next)
+                      setRates(null)
+                      setSelectedRateId("")
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={ratesBusy || (adjustOpen && !manualParcelReady)}
+                    onClick={() => void requestRates({ useManualParcel: true })}
+                  >
+                    {ratesBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Recalculate rates
+                  </Button>
+                </CollapsibleContent>
+              </Collapsible>
+            ) : null}
 
             {ratesBusy && !rates && (
               <p className="text-sm text-muted-foreground flex items-center gap-2">
@@ -554,9 +657,9 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
                   onSuccess={handleLabelPurchaseSuccess}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Pay with your Reswell wallet balance (from past sales) or card. After payment,
-                  Reswell purchases the label on your behalf, adds tracking to the order, and notifies
-                  the buyer.
+                  {needsManualParcel
+                    ? "Rates use the dimensions you entered above. Pay with your Reswell wallet balance (from past sales) or card. After payment, Reswell purchases the label and adds tracking to the order."
+                    : "Pay with your Reswell wallet balance (from past sales) or card. After payment, Reswell purchases the label on your behalf, adds tracking to the order, and notifies the buyer."}
                 </p>
               </div>
             )}
