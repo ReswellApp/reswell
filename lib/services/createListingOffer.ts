@@ -13,6 +13,7 @@ import { syncOfferThreadIfMissing } from "@/lib/services/syncOfferMessagesThread
 import { formatOfferThreadContent } from "@/lib/utils/format-offer-thread-content"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { evaluateUserMessageSend } from "@/lib/services/accountRestrictions"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -77,6 +78,11 @@ export async function createListingOffer(
 
   if (listing.user_id === buyerId) {
     return { ok: false, status: 400, error: "You can’t make an offer on your own listing." }
+  }
+
+  const sendGuard = await evaluateUserMessageSend(supabase, buyerId, listing.user_id)
+  if (!sendGuard.ok) {
+    return { ok: false, status: 429, error: sendGuard.userMessage }
   }
 
   if (listing.buyer_offers_enabled === false) {

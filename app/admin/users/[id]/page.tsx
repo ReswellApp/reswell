@@ -8,6 +8,8 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { VerifiedBadge, verifiedSellerBadgeClassName } from '@/components/verified-badge'
 import {
   Table,
@@ -23,7 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ArrowLeft, MoreVertical, Package, Mail, User, RotateCcw, CheckCircle2, XCircle, Wallet, RefreshCw, Loader2 } from 'lucide-react'
+import { ArrowLeft, MoreVertical, Package, Mail, User, RotateCcw, CheckCircle2, XCircle, Wallet, RefreshCw, Loader2, Lock, Unlock } from 'lucide-react'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -67,6 +69,25 @@ interface WalletSummary {
   walletId: string | null
 }
 
+interface AccountRestrictionState {
+  restrictedUntil: string | null
+  reason: string | null
+  messageRateLimitedUntil: string | null
+}
+
+const RESTRICTION_PRESETS = [
+  { label: '30 minutes', minutes: 30 },
+  { label: '1 hour', minutes: 60 },
+  { label: '24 hours', minutes: 60 * 24 },
+  { label: '7 days', minutes: 60 * 24 * 7 },
+] as const
+
+function isFutureRestriction(iso: string | null | undefined): boolean {
+  if (!iso) return false
+  const ms = Date.parse(iso)
+  return Number.isFinite(ms) && ms > Date.now()
+}
+
 export default function AdminUserDetailPage() {
   const params = useParams()
   const router = useRouter()
@@ -79,6 +100,11 @@ export default function AdminUserDetailPage() {
   const [walletLoading, setWalletLoading] = useState(true)
   const [walletError, setWalletError] = useState<string | null>(null)
   const [walletResetting, setWalletResetting] = useState(false)
+  const [restriction, setRestriction] = useState<AccountRestrictionState | null>(null)
+  const [restrictionLoading, setRestrictionLoading] = useState(true)
+  const [restrictionSaving, setRestrictionSaving] = useState(false)
+  const [restrictionReason, setRestrictionReason] = useState('')
+  const [selectedPresetMinutes, setSelectedPresetMinutes] = useState<number>(60 * 24)
 
   useEffect(() => {
     async function load() {
@@ -100,6 +126,91 @@ export default function AdminUserDetailPage() {
     }
     load()
   }, [id])
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadRestriction() {
+      setRestrictionLoading(true)
+      try {
+        const res = await fetch(`/api/admin/users/${id}/account-restriction`, {
+          credentials: 'include',
+        })
+        const body = (await res.json()) as {
+          data?: AccountRestrictionState
+          error?: string
+        }
+        if (!res.ok) {
+          if (!cancelled) {
+            setRestriction(null)
+            toast.error(body.error || 'Could not load account restriction')
+          }
+          return
+        }
+        if (!cancelled && body.data) {
+          setRestriction(body.data)
+          setRestrictionReason(body.data.reason ?? '')
+        }
+      } catch {
+        if (!cancelled) {
+          setRestriction(null)
+          toast.error('Could not load account restriction')
+        }
+      } finally {
+        if (!cancelled) setRestrictionLoading(false)
+      }
+    }
+    loadRestriction()
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  async function applyAccountRestriction(restricted: boolean) {
+    setRestrictionSaving(true)
+    try {
+      const res = await fetch(`/api/admin/users/${id}/account-restriction`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          restricted
+            ? {
+                restricted: true,
+                durationMinutes: selectedPresetMinutes,
+                reason: restrictionReason.trim() || null,
+              }
+            : { restricted: false },
+        ),
+      })
+      const body = (await res.json()) as {
+        success?: boolean
+        data?: AccountRestrictionState
+        error?: string
+      }
+      if (!res.ok) {
+        toast.error(body.error || 'Could not update account restriction')
+        return
+      }
+      if (body.data) {
+        setRestriction({
+          restrictedUntil: body.data.restrictedUntil,
+          reason: body.data.reason,
+          messageRateLimitedUntil: restriction?.messageRateLimitedUntil ?? null,
+        })
+      } else if (!restricted) {
+        setRestriction((prev) =>
+          prev
+            ? { ...prev, restrictedUntil: null, reason: null }
+            : { restrictedUntil: null, reason: null, messageRateLimitedUntil: null },
+        )
+      }
+      toast.success(restricted ? 'Account temporarily locked' : 'Account restriction removed')
+    } catch {
+      toast.error('Could not update account restriction')
+    } finally {
+      setRestrictionSaving(false)
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -401,6 +512,121 @@ export default function AdminUserDetailPage() {
             </>
           ) : (
             <p className="text-sm text-muted-foreground">No wallet data.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Lock className="h-5 w-5" />
+            Account restriction
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {restrictionLoading ? (
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading restriction status…
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                {isFutureRestriction(restriction?.restrictedUntil) ? (
+                  <Badge variant="destructive">Locked</Badge>
+                ) : (
+                  <Badge variant="outline">Active</Badge>
+                )}
+                {isFutureRestriction(restriction?.restrictedUntil) && restriction?.restrictedUntil ? (
+                  <span className="text-sm text-muted-foreground">
+                    Until {format(new Date(restriction.restrictedUntil), 'MMM d, yyyy h:mm a')}
+                  </span>
+                ) : restriction?.restrictedUntil ? (
+                  <span className="text-sm text-muted-foreground">Lock expired</span>
+                ) : null}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Locked users can still sign in, but they cannot send messages or complete purchases.
+              </p>
+              {isFutureRestriction(restriction?.messageRateLimitedUntil) &&
+              restriction?.messageRateLimitedUntil ? (
+                <p className="text-xs text-muted-foreground">
+                  Automated messaging cooldown until{' '}
+                  {format(new Date(restriction.messageRateLimitedUntil), 'MMM d, yyyy h:mm a')}
+                </p>
+              ) : null}
+              {!isFutureRestriction(restriction?.restrictedUntil) ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="restriction-duration">Lock duration</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {RESTRICTION_PRESETS.map((preset) => (
+                        <Button
+                          key={preset.minutes}
+                          type="button"
+                          size="sm"
+                          variant={
+                            selectedPresetMinutes === preset.minutes ? 'default' : 'outline'
+                          }
+                          onClick={() => setSelectedPresetMinutes(preset.minutes)}
+                        >
+                          {preset.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="restriction-reason">Internal note (optional)</Label>
+                    <Input
+                      id="restriction-reason"
+                      value={restrictionReason}
+                      onChange={(event) => setRestrictionReason(event.target.value)}
+                      placeholder="Reason for lock"
+                      maxLength={500}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="gap-2"
+                    disabled={restrictionSaving || profile.is_admin}
+                    onClick={() => void applyAccountRestriction(true)}
+                  >
+                    {restrictionSaving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Lock className="h-4 w-4" />
+                    )}
+                    Lock account
+                  </Button>
+                  {profile.is_admin ? (
+                    <p className="text-xs text-muted-foreground">
+                      Admin accounts cannot be locked from this screen.
+                    </p>
+                  ) : null}
+                </>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  disabled={restrictionSaving}
+                  onClick={() => void applyAccountRestriction(false)}
+                >
+                  {restrictionSaving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Unlock className="h-4 w-4" />
+                  )}
+                  Remove lock
+                </Button>
+              )}
+              {restriction?.reason ? (
+                <p className="text-xs text-muted-foreground">Note: {restriction.reason}</p>
+              ) : null}
+            </>
           )}
         </CardContent>
       </Card>

@@ -20,6 +20,7 @@ import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnP
 import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
 import { sendPostPurchaseReviewInvite } from "@/lib/services/orderReviewInvite"
 import { notifySellerOrderCheckoutKlaviyo } from "@/lib/services/notifySellerOrderCheckoutKlaviyo"
+import { evaluateUserPurchase } from "@/lib/services/accountRestrictions"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -34,6 +35,18 @@ export async function POST(request: NextRequest) {
   if (isAnonymousSupabaseUser(user)) {
     return NextResponse.json(
       { error: "Create a Reswell account or sign in to pay with your wallet." },
+      { status: 403 },
+    )
+  }
+
+  const purchaseGuard = await evaluateUserPurchase(supabase, user.id)
+  if (!purchaseGuard.ok) {
+    return NextResponse.json(
+      {
+        error: purchaseGuard.userMessage,
+        code: purchaseGuard.error,
+        restrictedUntil: purchaseGuard.restrictedUntil,
+      },
       { status: 403 },
     )
   }

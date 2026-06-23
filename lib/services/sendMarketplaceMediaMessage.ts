@@ -3,6 +3,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
 import { getMessagePolicyViolationForSender } from "@/lib/messages/message-policy-enforcement"
+import { evaluateUserMessageSend } from "@/lib/services/accountRestrictions"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 import { MESSAGE_BLOCKED_POLICY_ERROR } from "@/lib/messages/policy-errors"
@@ -68,6 +69,16 @@ export async function sendMarketplaceMediaMessage(input: {
 
   if (senderId !== conv.buyer_id && senderId !== conv.seller_id) {
     return { ok: false, error: "Forbidden", status: 403 }
+  }
+
+  const receiverId = senderId === conv.buyer_id ? conv.seller_id : conv.buyer_id
+  const sendGuard = await evaluateUserMessageSend(service, senderId, receiverId)
+  if (!sendGuard.ok) {
+    return {
+      ok: false,
+      error: sendGuard.userMessage,
+      status: 429,
+    }
   }
 
   const objectName = attachment.path.slice(conversationId.length + 1)

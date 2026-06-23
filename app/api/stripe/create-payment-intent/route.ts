@@ -27,6 +27,7 @@ import {
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { normalizeNewsletterPromoCodeInput } from "@/lib/utils/newsletter-promo-code"
 import { verifyCheckoutShippingQuoteToken, type CheckoutShippingQuoteTokenPayload } from "@/lib/services/checkoutShippingQuoteToken"
+import { evaluateUserPurchase } from "@/lib/services/accountRestrictions"
 
 const JSON_NO_STORE_HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -64,6 +65,18 @@ export async function POST(request: NextRequest) {
   if (isAnonymousSupabaseUser(user)) {
     return NextResponse.json(
       { error: "Create a Reswell account or sign in with email or Google to complete payment." },
+      { status: 403 },
+    )
+  }
+
+  const purchaseGuard = await evaluateUserPurchase(supabase, user.id)
+  if (!purchaseGuard.ok) {
+    return NextResponse.json(
+      {
+        error: purchaseGuard.userMessage,
+        code: purchaseGuard.error,
+        restrictedUntil: purchaseGuard.restrictedUntil,
+      },
       { status: 403 },
     )
   }

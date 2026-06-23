@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
+import { evaluateUserPurchase } from "@/lib/services/accountRestrictions"
 import {
   completeMarketplaceOrderFromPaymentIntent,
   retrieveSucceededPaymentIntent,
@@ -30,6 +31,18 @@ export async function POST(request: NextRequest) {
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const purchaseGuard = await evaluateUserPurchase(supabase, user.id)
+  if (!purchaseGuard.ok) {
+    return NextResponse.json(
+      {
+        error: purchaseGuard.userMessage,
+        code: purchaseGuard.error,
+        restrictedUntil: purchaseGuard.restrictedUntil,
+      },
+      { status: 403 },
+    )
   }
 
   const metaBuyer = pi.metadata.buyer_id?.trim()

@@ -12,6 +12,8 @@ import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-t
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 import { MESSAGE_BLOCKED_POLICY_ERROR } from "@/lib/messages/policy-errors"
 import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
+import type { MessageSendRestrictionActionResult } from "@/lib/messages/send-restriction-errors"
+import { evaluateUserMessageSend } from "@/lib/services/accountRestrictions"
 import { sendSellerReviewRequestForOrder } from "@/lib/services/sellerReviewRequest"
 import {
   composeLocationShareMessageBody,
@@ -186,6 +188,16 @@ function policyBlockedSendResult(reasonCode: MessagePolicyReasonCode) {
   return { error: MESSAGE_BLOCKED_POLICY_ERROR, policyReason: reasonCode } as const
 }
 
+function sendRestrictionBlockedResult(
+  guard: Extract<Awaited<ReturnType<typeof evaluateUserMessageSend>>, { ok: false }>,
+): MessageSendRestrictionActionResult {
+  return {
+    error: guard.userMessage,
+    restrictionCode: guard.result.restrictionCode,
+    restrictedUntil: guard.result.restrictedUntil,
+  }
+}
+
 /**
  * Resolves an existing buyer↔seller thread for a listing without creating one.
  * New threads are created only when the user sends the first message.
@@ -316,6 +328,11 @@ export async function sendMarketplaceListingMessage(input: unknown) {
 
   const receiverId = user.id === ctx.buyerId ? ctx.sellerId : ctx.buyerId
 
+  const sendGuard = await evaluateUserMessageSend(supabase, user.id, receiverId)
+  if (!sendGuard.ok) {
+    return sendRestrictionBlockedResult(sendGuard)
+  }
+
   const policyViolation = await getMessagePolicyViolationForSender(supabase, user.id, body)
   if (policyViolation) {
     await capturePolicyBlockedDmContent({
@@ -427,6 +444,11 @@ export async function sendListingMessage(input: {
     conversation = ensured
   }
 
+  const sendGuard = await evaluateUserMessageSend(supabase, user.id, seller_id)
+  if (!sendGuard.ok) {
+    return sendRestrictionBlockedResult(sendGuard)
+  }
+
   const policyViolation = await getMessagePolicyViolationForSender(supabase, user.id, body)
   if (policyViolation) {
     await capturePolicyBlockedDmContent({
@@ -518,6 +540,11 @@ export async function sendConversationReply(input: {
   }
 
   const receiverId = user.id === conv.buyer_id ? conv.seller_id : conv.buyer_id
+
+  const sendGuard = await evaluateUserMessageSend(supabase, user.id, receiverId)
+  if (!sendGuard.ok) {
+    return sendRestrictionBlockedResult(sendGuard)
+  }
 
   const policyViolation = await getMessagePolicyViolationForSender(supabase, user.id, body)
   if (policyViolation) {
@@ -664,6 +691,11 @@ export async function sendConversationLocationReply(input: unknown) {
   }
 
   const receiverId = user.id === conv.buyer_id ? conv.seller_id : conv.buyer_id
+
+  const sendGuard = await evaluateUserMessageSend(supabase, user.id, receiverId)
+  if (!sendGuard.ok) {
+    return sendRestrictionBlockedResult(sendGuard)
+  }
 
   const policyViolation = await getMessagePolicyViolationForSender(
     supabase,
