@@ -111,10 +111,12 @@ export async function redeemNewsletterPromoForOrder(
     .eq("id", input.promoId)
     .is("redeemed_at", null)
 
-  if (input.paymentIntentId?.trim()) {
-    query = query.or(
-      `reserved_payment_intent_id.is.null,reserved_payment_intent_id.eq.${input.paymentIntentId.trim()}`,
-    )
+  // PostgREST rejects `.or()` filters on UPDATE for this column (42703); use eq/is instead.
+  const reservedPiId = input.paymentIntentId?.trim()
+  if (reservedPiId) {
+    query = query.eq("reserved_payment_intent_id", reservedPiId)
+  } else {
+    query = query.is("reserved_payment_intent_id", null)
   }
 
   const { data, error } = await query.select("id").maybeSingle()

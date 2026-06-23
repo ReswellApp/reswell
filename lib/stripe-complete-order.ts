@@ -590,26 +590,6 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   const orderId = randomUUID()
 
-  if (promoCodeId) {
-    const redeemed = await redeemNewsletterPromoForOrder(serviceSupabase, {
-      promoId: promoCodeId,
-      buyerId,
-      orderId,
-      paymentIntentId: piId,
-    })
-    if (!redeemed.ok) {
-      console.error("[stripe-complete-order] promo redeem failed:", redeemed.error, {
-        promoCodeId,
-        piId,
-      })
-      return {
-        ok: false,
-        error: "Could not apply promo code to this order. Contact support if you were charged.",
-        status: 409,
-      }
-    }
-  }
-
   const { data: purchase, error: insertError } = await serviceSupabase
     .from("orders")
     .insert({
@@ -715,6 +695,27 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       }
     }
     return { ok: false, error: "Could not create order lines", status: 500 }
+  }
+
+  if (promoCodeId) {
+    const redeemed = await redeemNewsletterPromoForOrder(serviceSupabase, {
+      promoId: promoCodeId,
+      buyerId,
+      orderId: purchase.id,
+      paymentIntentId: piId,
+    })
+    if (!redeemed.ok) {
+      console.error("[stripe-complete-order] promo redeem failed:", redeemed.error, {
+        promoCodeId,
+        piId,
+        orderId: purchase.id,
+      })
+      return {
+        ok: false,
+        error: "Could not apply promo code to this order. Contact support if you were charged.",
+        status: 409,
+      }
+    }
   }
 
   const walletTitleSummary =
