@@ -103,7 +103,6 @@ export async function sendMarketplaceMediaMessage(input: {
       trimmedCaption,
     )
     if (policyViolation) {
-      const receiverId = senderId === conv.buyer_id ? conv.seller_id : conv.buyer_id
       try {
         await insertFraudMessageCapturedContent(service, {
           conversationId,
@@ -154,7 +153,6 @@ export async function sendMarketplaceMediaMessage(input: {
 
   revalidateMessagesInboxForParticipants(conv.buyer_id as string, conv.seller_id as string)
 
-  const receiverId = senderId === conv.buyer_id ? conv.seller_id : conv.buyer_id
   const { data: senderProfile } = await service
     .from("profiles")
     .select("display_name, shop_name, is_shop")

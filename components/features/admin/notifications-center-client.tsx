@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
+import { Fragment, useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { format, formatDistanceToNow, parseISO } from "date-fns"
 import {
   Area,
@@ -32,6 +32,10 @@ import type {
   NotificationsCenterAnalytics,
   NotificationsCenterRange,
 } from "@/lib/db/klaviyoEventLog"
+import {
+  KlaviyoEventLogExplorer,
+  type KlaviyoEventLogFilters,
+} from "@/components/features/admin/klaviyo-event-log-explorer"
 
 const RANGES: { value: NotificationsCenterRange; label: string }[] = [
   { value: "24h", label: "24h" },
@@ -96,8 +100,22 @@ export function NotificationsCenterClient() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState("flows")
+  const [eventLogFilters, setEventLogFilters] = useState<KlaviyoEventLogFilters>({
+    metric: null,
+    recipient: null,
+    status: "all",
+  })
   const firstLoadRef = useRef(false)
   const chartId = useId().replace(/:/g, "")
+
+  const openEventLog = useCallback(
+    (patch: Partial<KlaviyoEventLogFilters>) => {
+      setEventLogFilters((prev) => ({ ...prev, ...patch }))
+      setActiveTab("event-log")
+    },
+    [],
+  )
 
   const load = useCallback(
     async (nextRange: NotificationsCenterRange, opts?: { silent?: boolean }) => {
@@ -319,9 +337,10 @@ export function NotificationsCenterClient() {
             </CardContent>
           </Card>
 
-          <Tabs defaultValue="flows" className="space-y-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList className="flex-wrap">
               <TabsTrigger value="flows">Email flows</TabsTrigger>
+              <TabsTrigger value="event-log">Event log</TabsTrigger>
               <TabsTrigger value="skipped">Skipped</TabsTrigger>
               <TabsTrigger value="recipients">Recipients</TabsTrigger>
               <TabsTrigger value="internal">In-app</TabsTrigger>
@@ -356,7 +375,15 @@ export function NotificationsCenterClient() {
                       <tbody>
                         {k!.byMetric.map((m) => (
                           <tr key={m.metric} className="border-b border-border/60 last:border-0">
-                            <td className="py-2 pr-4 font-medium">{m.metric}</td>
+                            <td className="py-2 pr-4">
+                              <button
+                                type="button"
+                                className="font-medium text-left hover:underline"
+                                onClick={() => openEventLog({ metric: m.metric })}
+                              >
+                                {m.metric}
+                              </button>
+                            </td>
                             <td className="py-2 pr-4">
                               <Badge variant="secondary" className={cn("capitalize", CATEGORY_STYLES[m.category])}>
                                 {m.category}
@@ -374,6 +401,15 @@ export function NotificationsCenterClient() {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="event-log">
+              <KlaviyoEventLogExplorer
+                range={range}
+                metrics={k?.byMetric ?? []}
+                filters={eventLogFilters}
+                onFiltersChange={setEventLogFilters}
+              />
             </TabsContent>
 
             <TabsContent value="skipped">
@@ -436,7 +472,19 @@ export function NotificationsCenterClient() {
                       <tbody>
                         {k!.topRecipients.map((r) => (
                           <tr key={r.identifier} className="border-b border-border/60 last:border-0">
-                            <td className="py-2 pr-4">{r.email || r.identifier}</td>
+                            <td className="py-2 pr-4">
+                              <button
+                                type="button"
+                                className="text-left hover:underline"
+                                onClick={() =>
+                                  openEventLog({
+                                    recipient: r.email || r.identifier,
+                                  })
+                                }
+                              >
+                                {r.email || r.identifier}
+                              </button>
+                            </td>
                             <td className="py-2 pr-4 text-right tabular-nums">{r.count}</td>
                             <td className="py-2 pr-4 text-right tabular-nums text-emerald-600">{r.sent}</td>
                             <td className="py-2 text-right tabular-nums">{r.metrics}</td>
@@ -537,14 +585,36 @@ export function NotificationsCenterClient() {
                       <tbody>
                         {k!.recent.map((e) => (
                           <tr key={e.id} className="border-b border-border/60 last:border-0">
-                            <td className="py-2 pr-4 font-medium">{e.metric}</td>
+                            <td className="py-2 pr-4">
+                              <button
+                                type="button"
+                                className="font-medium text-left hover:underline"
+                                onClick={() => openEventLog({ metric: e.metric })}
+                              >
+                                {e.metric}
+                              </button>
+                            </td>
                             <td className="py-2 pr-4">
                               <Badge variant="secondary" className={cn("capitalize", STATUS_STYLES[e.status])}>
                                 {e.status}
                               </Badge>
                             </td>
                             <td className="py-2 pr-4 text-muted-foreground">
-                              {e.email || e.externalId || "—"}
+                              {e.email || e.externalId ? (
+                                <button
+                                  type="button"
+                                  className="hover:text-foreground hover:underline"
+                                  onClick={() =>
+                                    openEventLog({
+                                      recipient: e.email || e.externalId || null,
+                                    })
+                                  }
+                                >
+                                  {e.email || e.externalId}
+                                </button>
+                              ) : (
+                                "—"
+                              )}
                             </td>
                             <td className="py-2 pr-4 text-xs text-muted-foreground">
                               {e.skipReason || (e.httpStatus ? `HTTP ${e.httpStatus}` : "—")}
