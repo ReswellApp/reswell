@@ -19,6 +19,7 @@ import { FIN_LISTING_TITLE_MAX_LENGTH } from "@/lib/validations/fin-listing"
 import { searchBrandsCatalogSuggestWithClient } from "@/lib/services/brandDirectorySearch"
 import type { BrandCatalogSuggestRow } from "@/lib/services/brandDirectorySearch"
 import { formatFinCatalogVariantLabel } from "@/lib/utils/fin-catalog-variant-label"
+import { finCatalogThumbImageUrl } from "@/lib/utils/fin-catalog-display-image"
 import type {
   FinCatalogSearchBrandRow,
   FinCatalogSearchModelRow,
@@ -125,7 +126,11 @@ function variantToSearchRow(row: FinCatalogVariantRow): FinCatalogSearchVariantR
     finSystem,
     finSize: row.finSize,
     variantLabel,
-    imageUrl: row.imageUrl ?? row.modelImageUrl,
+    imageUrl: finCatalogThumbImageUrl({
+      variantImageUrl: row.imageUrl,
+      modelImageUrl: row.modelImageUrl,
+      brandLogoUrl: row.brandLogoUrl,
+    }),
     suggestedTitle,
   }
 }

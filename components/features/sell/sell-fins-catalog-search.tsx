@@ -28,6 +28,7 @@ import {
   type FinCatalogSearchVariantRow,
 } from "@/lib/types/fin-catalog-search"
 import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
+import { finCatalogThumbImageUrl } from "@/lib/utils/fin-catalog-display-image"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
 
@@ -48,8 +49,17 @@ export type SellFinsCatalogSearchProps = {
 
 function thumbForRow(row: CatalogResultRow): string | null {
   if (row.kind === "brand") return row.logoUrl
-  if (row.kind === "model") return row.imageUrl ?? row.brandLogoUrl
-  return row.imageUrl ?? row.modelImageUrl ?? row.brandLogoUrl
+  if (row.kind === "model") {
+    return finCatalogThumbImageUrl({
+      modelImageUrl: row.imageUrl,
+      brandLogoUrl: row.brandLogoUrl,
+    })
+  }
+  return finCatalogThumbImageUrl({
+    variantImageUrl: row.imageUrl,
+    modelImageUrl: row.modelImageUrl,
+    brandLogoUrl: row.brandLogoUrl,
+  })
 }
 
 function titleForRow(row: CatalogResultRow): string {
