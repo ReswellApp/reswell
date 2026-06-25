@@ -45,8 +45,10 @@ import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
 import { clearNavSearchQuery, writeNavSearchQuery } from "@/lib/nav-search-storage"
 import {
   boardBrowseNavItemIsActive,
-  siteHeaderMainCategoryNavLinks,
-  siteHeaderSecondaryNavLinks,
+  siteHeaderDesktopCategoryNavLinks,
+  siteHeaderDesktopSecondaryNavLinks,
+  siteHeaderMobileCategoryNavLinks,
+  siteHeaderMobileSecondaryNavLinks,
   siteHeaderSecondaryNavItemIsActive,
 } from "@/lib/site-category-directory"
 import { siteFooterNavLinks } from "@/lib/site-footer-nav"
@@ -196,7 +198,12 @@ function resolveHeaderAvatarUrl(
   return (profileAvatar ? profileMediaDisplaySrc(profileAvatar) : null) || oauth
 }
 
-const boardShapeNav = siteHeaderMainCategoryNavLinks.map((link) => ({
+const desktopCategoryNav = siteHeaderDesktopCategoryNavLinks.map((link) => ({
+  name: link.label,
+  href: link.href,
+}))
+
+const mobileCategoryNav = siteHeaderMobileCategoryNavLinks.map((link) => ({
   name: link.label,
   href: link.href,
 }))
@@ -312,14 +319,14 @@ function HeaderDesktopCategoryBar({
   /** If measurement never resolves (e.g. unusual font timing), show all links rather than skeleton forever. */
   useEffect(() => {
     const id = window.setTimeout(() => {
-      setVisibleCount((v) => (v === null ? boardShapeNav.length : v))
+      setVisibleCount((v) => (v === null ? desktopCategoryNav.length : v))
     }, 2500)
     return () => window.clearTimeout(id)
   }, [])
 
   const layoutReady = visibleCount !== null
-  const visibleNav = layoutReady ? boardShapeNav.slice(0, visibleCount) : []
-  const overflowNav = layoutReady ? boardShapeNav.slice(visibleCount) : []
+  const visibleNav = layoutReady ? desktopCategoryNav.slice(0, visibleCount) : []
+  const overflowNav = layoutReady ? desktopCategoryNav.slice(visibleCount) : []
   const showMore = layoutReady && overflowNav.length > 0
 
   return (
@@ -329,7 +336,7 @@ function HeaderDesktopCategoryBar({
         className="pointer-events-none fixed left-[-10000px] top-0 z-[-1] flex items-center gap-8 whitespace-nowrap opacity-0"
         aria-hidden
       >
-        {boardShapeNav.map((item) => (
+        {desktopCategoryNav.map((item) => (
           <span key={item.href} data-nav-measure="link" className="shrink-0 py-4 text-[15px]">
             {item.name}
           </span>
@@ -347,7 +354,7 @@ function HeaderDesktopCategoryBar({
           aria-busy={!layoutReady}
         >
           {!layoutReady
-            ? boardShapeNav.slice(0, 8).map((item, i) => (
+            ? desktopCategoryNav.slice(0, 8).map((item, i) => (
                 <Skeleton
                   key={item.href}
                   className="h-4 shrink-0 self-center"
@@ -395,7 +402,7 @@ function HeaderDesktopCategoryBar({
           className="ml-6 flex shrink-0 items-center gap-8 border-l border-border pl-8"
           aria-label="Editorial and community"
         >
-          {siteHeaderSecondaryNavLinks.map((item) => {
+          {siteHeaderDesktopSecondaryNavLinks.map((item) => {
             const active = siteHeaderSecondaryNavItemIsActive(pathname, item.href)
             return (
               <Link
@@ -1228,7 +1235,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               </>
             )}
             <nav className="flex flex-col gap-1 mb-6">
-              {boardShapeNav.map((item) => {
+              {mobileCategoryNav.map((item) => {
                 const active = boardBrowseNavItemIsActive(pathname, headerSearchParams, item.href)
                 return (
                   <Link
@@ -1245,7 +1252,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 )
               })}
               <hr className="my-2 border-border" />
-              {siteHeaderSecondaryNavLinks.map((item) => {
+              {siteHeaderMobileSecondaryNavLinks.map((item) => {
                 const active = siteHeaderSecondaryNavItemIsActive(pathname, item.href)
                 return (
                   <Link

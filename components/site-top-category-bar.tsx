@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils"
 import { isMessageThreadDetailRoute } from "@/lib/utils/message-thread-routes"
 import {
   boardBrowseNavItemIsActive,
-  siteHeaderMainCategoryNavLinks,
-  siteHeaderSecondaryNavLinks,
+  siteHeaderMobileCategoryNavLinks,
+  siteHeaderMobileSecondaryNavLinks,
   siteHeaderSecondaryNavItemIsActive,
 } from "@/lib/site-category-directory"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
@@ -35,7 +35,7 @@ export function SiteTopCategoryBar() {
       >
         <nav aria-label="Browse surfboards, sellers, and community">
           <ul className="flex items-center gap-2.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {siteHeaderMainCategoryNavLinks.map((link) => {
+            {siteHeaderMobileCategoryNavLinks.map((link) => {
               const active = boardBrowseNavItemIsActive(pathname, searchParams, link.href)
               return (
                 <li key={link.href} className="flex shrink-0 items-center">
@@ -55,7 +55,7 @@ export function SiteTopCategoryBar() {
                 </li>
               )
             })}
-            {siteHeaderSecondaryNavLinks.map((link) => {
+            {siteHeaderMobileSecondaryNavLinks.map((link) => {
               const active = siteHeaderSecondaryNavItemIsActive(pathname, link.href)
               return (
                 <li key={link.href} className="flex shrink-0 items-center">

@@ -8,7 +8,7 @@ import { BRANDS_BASE } from "@/lib/brands/routes"
 export type CategoryLink = { label: string; href: string }
 
 /** `/boards` root label — matches header nav and browse breadcrumbs. */
-export const surfboardsBrowseRootLabel = "All Surfboards"
+export const surfboardsBrowseRootLabel = "Surfboards"
 
 export const surfboardBrowseLinks: CategoryLink[] = [
   { label: surfboardsBrowseRootLabel, href: "/boards" },
@@ -39,22 +39,28 @@ export const siteHeaderMainPeerProductNavLinks: CategoryLink[] = [
 ]
 
 /**
- * Desktop + mobile main category bar: surfboard shapes and peer gear (Fins).
- * “Other” shape stays on /boards and /categories but is not shown in the main nav.
+ * Full category rail — desktop header only (shapes + Fins at end; “Other” hidden).
  */
-export const siteHeaderMainCategoryNavLinks: CategoryLink[] = [
+export const siteHeaderDesktopCategoryNavLinks: CategoryLink[] = [
   ...surfboardBrowseLinks.filter((link) => link.href !== "/boards?type=other"),
   ...siteHeaderMainPeerProductNavLinks,
 ]
 
+/**
+ * Simplified pill strip — mobile/tablet category bar and hamburger menu.
+ */
+export const siteHeaderMobileCategoryNavLinks: CategoryLink[] = [
+  { label: surfboardsBrowseRootLabel, href: "/boards" },
+  ...siteHeaderMainPeerProductNavLinks,
+]
 /** Header Categories dropdown + /categories page: surfboards only. */
 export const allCategoriesForNav: CategoryLink[] = surfboardBrowseLinks
 
 /**
  * Footer Categories column — mirrors main nav browse links.
- * “All Surfboards” is omitted here (Marketplace column already links to /boards).
+ * “Surfboards” is omitted here (Marketplace column already links to /boards).
  */
-export const footerCategoryLinks: CategoryLink[] = siteHeaderMainCategoryNavLinks.filter(
+export const footerCategoryLinks: CategoryLink[] = siteHeaderMobileCategoryNavLinks.filter(
   (link) => link.href !== "/boards",
 )
 
@@ -162,13 +168,19 @@ export function boardBrowseNavItemIsActive(
   return pathname === path
 }
 
-/** Sellers, Brands, Sold — desktop header rail, mobile strip, hamburger. */
-export const siteHeaderSecondaryNavLinks: CategoryLink[] = [
+/** Desktop header right rail — Sellers, Brands, Sold. */
+export const siteHeaderDesktopSecondaryNavLinks: CategoryLink[] = [
   { label: "Sellers", href: "/sellers" },
   { label: "Brands", href: BRANDS_BASE },
   { label: "Sold", href: "/sold" },
 ]
 
+/** Mobile pill strip + hamburger — Brands, Sellers, Sold. */
+export const siteHeaderMobileSecondaryNavLinks: CategoryLink[] = [
+  { label: "Brands", href: BRANDS_BASE },
+  { label: "Sellers", href: "/sellers" },
+  { label: "Sold", href: "/sold" },
+]
 export function siteHeaderSecondaryNavItemIsActive(pathname: string | null, href: string): boolean {
   if (!pathname) return false
   const q = href.indexOf("?")
