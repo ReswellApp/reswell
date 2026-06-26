@@ -1,10 +1,12 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js"
 import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
+import { ADMIN_TERMINAL_SALES_CHANNEL } from "@/lib/services/adminTerminalSale"
 
 export type AdminOrderShippingAddress = {
   name?: string | null
   phone?: string | null
   email?: string | null
+  admin_terminal?: boolean
   address?: {
     line1?: string | null
     line2?: string | null
@@ -55,7 +57,7 @@ export type AdminOrderDetail = {
   fulfillment_method: string | null
   created_at: string
   refunded_at: string | null
-  buyer_id: string
+  buyer_id: string | null
   seller_id: string
   listing_id: string
   listing_title: string | null
@@ -73,6 +75,7 @@ export type AdminOrderDetail = {
   marketplace_message_count: number
   /** Matching payouts row when present — shipping uses held → pending after carrier delivery + 24h hold. */
   payout: { status: string; hold_reason: string | null; released_at: string | null } | null
+  sales_channel: string | null
 }
 
 const ADMIN_ORDER_PARTICIPANT_SELECT =
@@ -86,6 +89,28 @@ function num(v: string | number | null | undefined): number {
 function unwrapRelation<T>(raw: T | T[] | null | undefined): T | null {
   if (raw == null) return null
   return Array.isArray(raw) ? raw[0] ?? null : raw
+}
+
+function mapGuestBuyerFromShippingAddress(
+  ship: AdminOrderShippingAddress,
+): AdminOrderParticipant {
+  return {
+    id: "guest",
+    email: ship?.email?.trim() || null,
+    display_name: ship?.name?.trim() || "Walk-in customer",
+    avatar_url: null,
+    city: null,
+    state: null,
+    bio: null,
+    created_at: null,
+    sales_count: null,
+    shop_name: null,
+    is_shop: null,
+    shop_verified: null,
+    seller_slug: null,
+    shop_phone: ship?.phone?.trim() || null,
+    shop_address: null,
+  }
 }
 
 function mapAdminOrderParticipant(
@@ -234,6 +259,7 @@ export async function getOrderDetailForAdmin(
       buyer_id,
       seller_id,
       listing_id,
+      sales_channel,
       stripe_checkout_session_id,
       shipping_address,
       order_items (
@@ -254,15 +280,28 @@ export async function getOrderDetailForAdmin(
   }
 
   const listingId = order.listing_id as string
-  const buyerId = order.buyer_id as string
+  const buyerId = (order.buyer_id as string | null) ?? null
   const sellerId = order.seller_id as string
+  const salesChannel =
+    (order as { sales_channel?: string | null }).sales_channel ?? "online"
+  const shippingAddress = parseAdminOrderShippingAddress(
+    (order as { shipping_address?: unknown }).shipping_address,
+  )
+  const isTerminalGuestOrder =
+    salesChannel === ADMIN_TERMINAL_SALES_CHANNEL ||
+    !buyerId ||
+    shippingAddress?.admin_terminal === true
 
   const [listingRes, buyerRes, sellerRes, payoutRes, conversation] = await Promise.all([
     supabase.from("listings").select("title").eq("id", listingId).maybeSingle(),
-    supabase.from("profiles").select(ADMIN_ORDER_PARTICIPANT_SELECT).eq("id", buyerId).maybeSingle(),
+    isTerminalGuestOrder
+      ? Promise.resolve({ data: null, error: null })
+      : supabase.from("profiles").select(ADMIN_ORDER_PARTICIPANT_SELECT).eq("id", buyerId).maybeSingle(),
     supabase.from("profiles").select(ADMIN_ORDER_PARTICIPANT_SELECT).eq("id", sellerId).maybeSingle(),
     supabase.from("payouts").select("status, hold_reason, released_at").eq("order_id", orderId).maybeSingle(),
-    getConversationForBuyerSellerListing(supabase, buyerId, sellerId, listingId),
+    isTerminalGuestOrder
+      ? Promise.resolve(null)
+      : getConversationForBuyerSellerListing(supabase, buyerId, sellerId, listingId),
   ])
 
   const conversationId = conversation?.id ?? null
@@ -280,10 +319,9 @@ export async function getOrderDetailForAdmin(
       ? (listingRes.data as { title: string }).title
       : null
 
-  const buyer = mapAdminOrderParticipant(
-    buyerId,
-    (buyerRes.data as Record<string, unknown> | null) ?? null,
-  )
+  const buyer = isTerminalGuestOrder
+    ? mapGuestBuyerFromShippingAddress(shippingAddress)
+    : mapAdminOrderParticipant(buyerId, (buyerRes.data as Record<string, unknown> | null) ?? null)
   const seller = mapAdminOrderParticipant(
     sellerId,
     (sellerRes.data as Record<string, unknown> | null) ?? null,
@@ -296,9 +334,6 @@ export async function getOrderDetailForAdmin(
   )
   const itemPrice = Math.max(0, Math.round((amount - shippingAmount) * 100) / 100)
   const orderItems = parseAdminOrderLineItems((order as { order_items?: unknown }).order_items)
-  const shippingAddress = parseAdminOrderShippingAddress(
-    (order as { shipping_address?: unknown }).shipping_address,
-  )
 
   const payoutRow = payoutRes.data as {
     status?: string
@@ -358,6 +393,7 @@ export async function getOrderDetailForAdmin(
       conversation_id: conversationId,
       marketplace_message_count: marketplaceMessageCount,
       stripe_checkout_session_id: (order.stripe_checkout_session_id as string | null) ?? null,
+      sales_channel: salesChannel,
     },
     error: null,
   }

@@ -16,6 +16,7 @@ import {
   tryHandleStripeChargeRefundedEvent,
   tryHandleStripeRefundEvent,
 } from "@/lib/services/stripeRefundWebhook"
+import { isAdminTerminalPaymentIntent } from "@/lib/services/adminTerminalSale"
 import type Stripe from "stripe"
 
 export const runtime = "nodejs"
@@ -125,7 +126,9 @@ export async function POST(request: Request) {
     })
   }
 
-  if (!marketplaceListingIdsFromPaymentIntent(pi).length || !pi.metadata?.buyer_id?.trim()) {
+  const listingIds = marketplaceListingIdsFromPaymentIntent(pi)
+  const isAdminTerminal = isAdminTerminalPaymentIntent(pi)
+  if (!listingIds.length || (!pi.metadata?.buyer_id?.trim() && !isAdminTerminal)) {
     console.warn("[stripe webhook] payment_intent.succeeded missing marketplace metadata", pi.id)
     return NextResponse.json({ received: true, skipped: "not_marketplace" })
   }

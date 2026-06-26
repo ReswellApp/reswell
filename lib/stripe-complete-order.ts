@@ -39,6 +39,12 @@ import { redeemNewsletterPromoForOrder } from "@/lib/db/newsletterPromoCodes"
 import { computeCheckoutTotalWithNewsletterPromo } from "@/lib/services/newsletterPromo"
 import { sendPostPurchaseReviewInvite } from "@/lib/services/orderReviewInvite"
 import { notifySellerOrderCheckoutKlaviyo } from "@/lib/services/notifySellerOrderCheckoutKlaviyo"
+import { releaseOrderSellerEarningsAfterFulfillment } from "@/lib/services/releaseOrderSellerEarnings"
+import {
+  ADMIN_TERMINAL_FULFILLMENT,
+  ADMIN_TERMINAL_SALES_CHANNEL,
+  computeAdminTerminalInPersonCheckoutUsd,
+} from "@/lib/services/adminTerminalSale"
 
 export type StripeCompleteOrderResult =
   | { ok: true; orderId: string; alreadyProcessed?: boolean }
@@ -48,6 +54,42 @@ function isUniqueViolation(err: { code?: string; message?: string } | null): boo
   if (!err) return false
   if (err.code === "23505") return true
   return Boolean(err.message?.toLowerCase().includes("duplicate"))
+}
+
+function terminalCustomerContactFromPaymentIntent(
+  pi: Stripe.PaymentIntent,
+): { name: string; email: string; phone: string | null } | null {
+  if (pi.metadata?.sales_channel !== ADMIN_TERMINAL_SALES_CHANNEL) return null
+  const name = pi.metadata.terminal_customer_name?.trim()
+  const email = pi.metadata.terminal_customer_email?.trim()
+  const phone = pi.metadata.terminal_customer_phone?.trim() || null
+  if (!name || !email) return null
+  return { name, email, phone }
+}
+
+function applyTerminalCustomerToOrderShippingJson(
+  pi: Stripe.PaymentIntent,
+  shippingAddressJson: Record<string, unknown> | null,
+): Record<string, unknown> | null {
+  const customer = terminalCustomerContactFromPaymentIntent(pi)
+  if (!customer) return shippingAddressJson
+
+  if (shippingAddressJson) {
+    return {
+      ...shippingAddressJson,
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone,
+      admin_terminal: true,
+    }
+  }
+
+  return {
+    name: customer.name,
+    email: customer.email,
+    phone: customer.phone,
+    admin_terminal: true,
+  }
 }
 
 /** Keep wallet_transactions.description within typical DB limits (long listing titles). */
@@ -78,7 +120,9 @@ async function recoverMissingOrderPendingLedger(
     return { ok: false, error: "Could not load order for recovery", status: 500 }
   }
 
-  if (!buyerIdFromPi.trim() || orderRow.buyer_id !== buyerIdFromPi) {
+  if (!orderRow.buyer_id && !buyerIdFromPi.trim()) {
+    // admin_terminal walk-in — no buyer account
+  } else if (!buyerIdFromPi.trim() || orderRow.buyer_id !== buyerIdFromPi) {
     return { ok: false, error: "Invalid payment", status: 403 }
   }
 
@@ -150,7 +194,7 @@ async function emitPurchaseSuccessfulKlaviyoForOrderId(
   const { data: order } = await serviceSupabase
     .from("orders")
     .select(
-      "id, order_num, buyer_id, seller_id, listing_id, amount, fulfillment_method, payment_method, pickup_code",
+      "id, order_num, buyer_id, seller_id, listing_id, amount, fulfillment_method, payment_method, pickup_code, shipping_address, sales_channel",
     )
     .eq("id", orderId)
     .maybeSingle()
@@ -165,7 +209,15 @@ async function emitPurchaseSuccessfulKlaviyoForOrderId(
 
   if (!listing) return
 
-  const buyerEmail = order.buyer_id != null ? await getAuthEmailForUserId(order.buyer_id) : null
+  let buyerEmail = order.buyer_id != null ? await getAuthEmailForUserId(order.buyer_id) : null
+  if (
+    !buyerEmail &&
+    order.shipping_address &&
+    typeof order.shipping_address === "object"
+  ) {
+    const ship = order.shipping_address as { email?: string | null }
+    buyerEmail = ship.email?.trim() || null
+  }
   const rawAmount = order.amount as unknown
   const amount =
     typeof rawAmount === "number"
@@ -206,6 +258,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   pi: Stripe.PaymentIntent,
 ): Promise<StripeCompleteOrderResult> {
   const piId = pi.id
+  const isAdminTerminalSale = pi.metadata?.sales_channel === ADMIN_TERMINAL_SALES_CHANNEL
 
   let serviceSupabase
   try {
@@ -234,8 +287,10 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
     if (pendingLedger?.id) {
       await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
-      void sendPostPurchaseReviewInvite(existing.id)
-      await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, existing.id)
+      if (!isAdminTerminalSale) {
+        void sendPostPurchaseReviewInvite(existing.id)
+        await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, existing.id)
+      }
       return { ok: true, orderId: existing.id, alreadyProcessed: true }
     }
 
@@ -248,14 +303,22 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       return recovered
     }
     await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
-    void sendPostPurchaseReviewInvite(existing.id)
-    await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, existing.id)
+    if (!isAdminTerminalSale) {
+      void sendPostPurchaseReviewInvite(existing.id)
+      await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, existing.id)
+    }
     return { ok: true, orderId: existing.id, alreadyProcessed: true }
   }
 
   const buyerId = pi.metadata.buyer_id?.trim() || null
-  if (!buyerId) {
+
+  if (!buyerId && !isAdminTerminalSale) {
     return { ok: false, error: "Invalid payment metadata", status: 400 }
+  }
+
+  const terminalCustomer = terminalCustomerContactFromPaymentIntent(pi)
+  if (isAdminTerminalSale && !terminalCustomer) {
+    return { ok: false, error: "Admin terminal payment missing customer info", status: 400 }
   }
 
   const listingIdsOrdered = marketplaceListingIdsFromPaymentIntent(pi)
@@ -263,7 +326,12 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Invalid payment metadata", status: 400 }
   }
 
-  const buyerEmail: string | null = await getAuthEmailForUserId(buyerId)
+  let buyerEmail: string | null = null
+  if (isAdminTerminalSale && terminalCustomer?.email) {
+    buyerEmail = terminalCustomer.email
+  } else if (buyerId) {
+    buyerEmail = await getAuthEmailForUserId(buyerId)
+  }
 
   const { data: listingRows, error: listingsFetchErr } = await serviceSupabase
     .from("listings")
@@ -289,15 +357,17 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Listing not found", status: 404 }
   }
 
-  if (listingsOrdered.some((l) => l.user_id === buyerId)) {
+  if (!isAdminTerminalSale && listingsOrdered.some((l) => l.user_id === buyerId)) {
     return { ok: false, error: "Invalid purchase", status: 400 }
   }
 
-  const listingsForTotals = await applyAcceptedOfferToPeerCheckoutListings(
-    serviceSupabase,
-    buyerId,
-    listingsOrdered,
-  )
+  const listingsForTotals = isAdminTerminalSale
+    ? listingsOrdered
+    : await applyAcceptedOfferToPeerCheckoutListings(
+        serviceSupabase,
+        buyerId!,
+        listingsOrdered,
+      )
 
   const bundleSellerId = listingsForTotals[0]!.user_id
   if (!listingsForTotals.every((l) => l.user_id === bundleSellerId)) {
@@ -315,7 +385,9 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   const fulfillmentMeta = pi.metadata.fulfillment
   let impliedFulfillment: "pickup" | "shipping"
 
-  if (listingsOrdered.length > 1) {
+  if (isAdminTerminalSale) {
+    impliedFulfillment = ADMIN_TERMINAL_FULFILLMENT
+  } else if (listingsOrdered.length > 1) {
     if (fulfillmentMeta !== "pickup" && fulfillmentMeta !== "shipping") {
       return { ok: false, error: "Invalid payment metadata", status: 400 }
     }
@@ -380,13 +452,48 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     metaAmountCentsRaw.length > 0 &&
     /^\d+$/.test(metaAmountCentsRaw)
 
-  const bundle = await computePeerMultiCheckoutUsd({
-    supabase: serviceSupabase,
-    listingsOrdered: listingsForTotals,
-    fulfillment: impliedFulfillment,
-    buyerAddress,
-    diagnosticTagPrefix: "finalize-order",
-  })
+  const bundle = isAdminTerminalSale
+    ? await (async () => {
+        if (listingsOrdered.length > 1) {
+          return { ok: false as const, error: "Admin terminal supports one listing per sale" }
+        }
+        const terminalTotals = await computeAdminTerminalInPersonCheckoutUsd(
+          serviceSupabase,
+          listingsForTotals[0]!,
+        )
+        if (!terminalTotals.ok) {
+          return { ok: false as const, error: terminalTotals.error }
+        }
+        const { itemPrice, totalUsd, platformFee, sellerEarnings } = terminalTotals.totals
+        return {
+          ok: true as const,
+          sellerId: listingsForTotals[0]!.user_id,
+          lines: [
+            {
+              listingId: listingsForTotals[0]!.id,
+              itemPrice,
+              shippingUsd: 0,
+              totalUsd,
+              usedReswellQuote: false,
+              platformFee,
+              sellerEarnings,
+            },
+          ],
+          totalUsd,
+          totalShippingUsd: 0,
+          totalItemPriceUsd: itemPrice,
+          totalPlatformFee: platformFee,
+          totalSellerEarnings: sellerEarnings,
+          anyUsedReswellQuote: false,
+        }
+      })()
+    : await computePeerMultiCheckoutUsd({
+        supabase: serviceSupabase,
+        listingsOrdered: listingsForTotals,
+        fulfillment: impliedFulfillment,
+        buyerAddress,
+        diagnosticTagPrefix: "finalize-order",
+      })
   if (!bundle.ok) {
     return { ok: false, error: bundle.error, status: 400 }
   }
@@ -474,9 +581,15 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     }
   }
 
+  shippingAddressJson = applyTerminalCustomerToOrderShippingJson(pi, shippingAddressJson)
+
   const isPickup = fulfillmentMethod === "pickup"
-  const deliveryStatus = isPickup ? "pickup_ready" : "pending"
-  const pickupCode = isPickup ? generatePickupCode() : null
+  const deliveryStatus = isAdminTerminalSale
+    ? "picked_up"
+    : isPickup
+      ? "pickup_ready"
+      : "pending"
+  const pickupCode = isPickup && !isAdminTerminalSale ? generatePickupCode() : null
 
   const primaryListingId = listingsOrdered[0]!.id
 
@@ -487,7 +600,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     .insert({
       id: orderId,
       listing_id: primaryListingId,
-      buyer_id: buyerId,
+      buyer_id: isAdminTerminalSale ? null : buyerId,
       seller_id: bundleSellerId,
       amount: chargedUsd,
       shipping_amount: shippingUsd,
@@ -501,6 +614,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       fulfillment_method: fulfillmentMethod,
       delivery_status: deliveryStatus,
       pickup_code: pickupCode,
+      sales_channel: isAdminTerminalSale ? "admin_terminal" : "online",
       ...(shippingAddressJson ? { shipping_address: shippingAddressJson } : {}),
     })
     .select()
@@ -580,6 +694,9 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   }
 
   if (promoCodeId) {
+    if (!buyerId) {
+      return { ok: false, error: "Invalid promo metadata", status: 400 }
+    }
     const redeemed = await redeemNewsletterPromoForOrder(serviceSupabase, {
       promoId: promoCodeId,
       buyerId,
@@ -636,12 +753,14 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     revalidateListingDetailPage(listing.id, listing.slug ?? null)
   }
 
-  void completeAcceptedOfferOnPurchase(
-    serviceSupabase,
-    buyerId,
-    listingIdsOrdered,
-    bundleSellerId,
-  )
+  if (!isAdminTerminalSale && buyerId) {
+    void completeAcceptedOfferOnPurchase(
+      serviceSupabase,
+      buyerId,
+      listingIdsOrdered,
+      bundleSellerId,
+    )
+  }
 
   for (const listingId of listingIdsOrdered) {
     void syncListingToGoogleMerchantBestEffort(serviceSupabase, listingId)
@@ -651,17 +770,18 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     void markUserListingBoardModelDataSold(serviceSupabase, line.listingId, line.itemPrice)
   }
 
-  void deleteBuyerCartRowsForListings(serviceSupabase, buyerId, listingIdsOrdered)
+  if (!isAdminTerminalSale && buyerId) {
+    void deleteBuyerCartRowsForListings(serviceSupabase, buyerId, listingIdsOrdered)
+  }
 
-  // Completing a purchase is the strongest re-engagement signal — reset the
-  // inactivity clock for both parties so they're not swept into winback flows
-  // and any prior milestone re-arms for a future streak.
-  void touchUserLastActive(serviceSupabase, buyerId)
   void touchUserLastActive(serviceSupabase, bundleSellerId)
+  if (!isAdminTerminalSale && buyerId) {
+    void touchUserLastActive(serviceSupabase, buyerId)
+  }
 
   const listingTitles = listingsOrdered.map((l) => String(l.title ?? ""))
 
-  if (buyerId) {
+  if (!isAdminTerminalSale && buyerId) {
     void postPurchaseThreadNotification(serviceSupabase, {
       buyerId,
       sellerId: bundleSellerId,
@@ -723,9 +843,13 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     contentIds: listingIdsOrdered,
   })
 
-  void sendPostPurchaseReviewInvite(purchase.id)
+  if (!isAdminTerminalSale && buyerId) {
+    void sendPostPurchaseReviewInvite(purchase.id)
+  }
 
-  if (!isPickup && fulfillmentMethod === "shipping") {
+  if (isAdminTerminalSale) {
+    void releaseOrderSellerEarningsAfterFulfillment(purchase.id)
+  } else if (!isPickup && fulfillmentMethod === "shipping") {
     await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, purchase.id)
   }
 

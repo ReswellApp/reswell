@@ -47,12 +47,20 @@ function paymentLabel(method: string): string {
 }
 
 function formatShippingAddress(ship: AdminOrderShippingAddress): string | null {
-  if (!ship?.address) return null
-  const addr = ship.address
-  const parts = [
+  if (!ship) return null
+  const contactParts = [
     ship.name?.trim(),
     ship.phone?.trim() ? `Phone: ${ship.phone.trim()}` : null,
     ship.email?.trim(),
+  ].filter((part) => part && String(part).trim())
+
+  if (!ship.address) {
+    return contactParts.length > 0 ? contactParts.join("\n") : null
+  }
+
+  const addr = ship.address
+  const parts = [
+    ...contactParts,
     addr.line1,
     addr.line2,
     [addr.city, addr.state, addr.postal_code].filter(Boolean).join(", "),

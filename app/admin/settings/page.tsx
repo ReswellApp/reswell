@@ -104,6 +104,7 @@ const CAPABILITY_GROUPS: CapabilityGroup[] = [
     items: [
       { href: '/admin/orders', label: 'Orders', description: 'All marketplace orders', icon: ShoppingBag },
       { href: '/admin/orders/test-purchase', label: 'Test purchase', description: 'Run a test checkout', icon: ShoppingBag },
+      { href: '/admin/orders/terminal', label: 'Terminal checkout', description: 'In-person tap-to-pay sales', icon: ShoppingBag },
       { href: '/admin/shipping', label: 'Shipping', description: 'Carriers & rates', icon: Truck },
     ],
   },

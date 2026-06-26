@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import {
   getBuyerDisplayNameForKlaviyo,
   getSellerEmailForKlaviyo,
+  parseOrderShippingAddressForKlaviyo,
 } from "@/lib/klaviyo/seller-sale-event-helpers"
 import { trackKlaviyoSellerNewSaleReceived } from "@/lib/klaviyo/track-seller-new-sale-received"
 import type { KlaviyoSellerNewSaleReceivedPayload } from "@/lib/klaviyo/track-seller-new-sale-received"
@@ -13,7 +14,7 @@ import {
 type OrderRowForSellerKlaviyo = {
   id: string
   order_num: string | null
-  buyer_id: string
+  buyer_id: string | null
   seller_id: string
   listing_id: string
   amount: string | number
@@ -78,10 +79,18 @@ export async function notifySellerOrderCheckoutKlaviyo(
     listings: { id: string; title: string | null; section: string | null; slug: string | null } | { id: string; title: string | null; section: string | null; slug: string | null }[] | null
   }
 
-  if (!row.seller_id || !row.buyer_id || row.seller_id === row.buyer_id) return
+  if (!row.seller_id) return
+  if (row.buyer_id && row.seller_id === row.buyer_id) return
 
   const listing = unwrapListing(row.listings)
   if (!listing) return
+
+  const shippingAddressJson =
+    row.shipping_address &&
+    typeof row.shipping_address === "object" &&
+    !Array.isArray(row.shipping_address)
+      ? (row.shipping_address as Record<string, unknown>)
+      : null
 
   const { data: itemRows } = await supabase
     .from("order_items")
@@ -110,24 +119,22 @@ export async function notifySellerOrderCheckoutKlaviyo(
       ? lineListings
       : await loadPrimaryListingForShipping(supabase, row.listing_id)
 
-  const [sellerEmail, buyerDisplayName] = await Promise.all([
+  const [sellerEmail, buyerDisplayNameFromProfile] = await Promise.all([
     getSellerEmailForKlaviyo(row.seller_id),
-    getBuyerDisplayNameForKlaviyo(row.buyer_id),
+    row.buyer_id ? getBuyerDisplayNameForKlaviyo(row.buyer_id) : Promise.resolve(""),
   ])
+  const buyerDisplayName =
+    buyerDisplayNameFromProfile.trim() ||
+    parseOrderShippingAddressForKlaviyo(shippingAddressJson)?.name?.trim() ||
+    "Walk-in customer"
 
   const fulfillmentMethod = row.fulfillment_method === "pickup" ? "pickup" : "shipping"
   const paymentMethod = row.payment_method === "reswell_bucks" ? "reswell_bucks" : "stripe"
-  const shippingAddressJson =
-    row.shipping_address &&
-    typeof row.shipping_address === "object" &&
-    !Array.isArray(row.shipping_address)
-      ? (row.shipping_address as Record<string, unknown>)
-      : null
 
   const payload: KlaviyoSellerNewSaleReceivedPayload = {
     sellerUserId: row.seller_id,
     sellerEmail,
-    buyerUserId: row.buyer_id,
+    buyerUserId: row.buyer_id ?? "",
     buyerDisplayName,
     orderId: row.id,
     orderNum: row.order_num,
