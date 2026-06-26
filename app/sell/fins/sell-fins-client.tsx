@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -35,6 +35,8 @@ import {
   SELL_FINS_FORM_SECTION_NAV_ITEMS,
 } from "@/components/features/sell/sell-section-nav"
 import { createClient } from "@/lib/supabase/client"
+import { hasSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
+import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
   assertListingOriginalSize,
@@ -176,6 +178,40 @@ function newClientId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
 
+const FIN_SELL_FLOW_STEP_KEY = "reswell.sell.fins.flowStep"
+
+function readStoredFinSellFlowStep(): "search" | "form" | null {
+  if (typeof window === "undefined") return null
+  try {
+    const value = sessionStorage.getItem(FIN_SELL_FLOW_STEP_KEY)
+    if (value === "form" || value === "search") return value
+  } catch {
+    /* quota / private mode */
+  }
+  return null
+}
+
+function persistFinSellFlowStep(step: "search" | "form"): void {
+  try {
+    sessionStorage.setItem(FIN_SELL_FLOW_STEP_KEY, step)
+  } catch {
+    /* quota / private mode */
+  }
+}
+
+function clearPersistedFinSellFlowStep(): void {
+  try {
+    sessionStorage.removeItem(FIN_SELL_FLOW_STEP_KEY)
+  } catch {
+    /* quota / private mode */
+  }
+}
+
+function finSellReturnPath(): string {
+  if (typeof window === "undefined") return "/sell/fins"
+  return `${window.location.pathname}${window.location.search}`
+}
+
 function scrollFinSellSectionIntoView(sectionId: string) {
   const el = document.getElementById(sectionId)
   if (!el) return
@@ -184,13 +220,16 @@ function scrollFinSellSectionIntoView(sectionId: string) {
 
 export default function SellFinsFlow({ editListingId = null }: { editListingId?: string | null }) {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const signIn = useSignInGate()
   const fileInputId = useId()
   const supabaseRef = useRef(createClient())
+  const photoUploadSignInPromptedRef = useRef(false)
   const editId = editListingId?.trim() || null
 
-  const [flowStep, setFlowStep] = useState<"search" | "form">(editId ? "form" : "search")
+  const [flowStep, setFlowStep] = useState<"search" | "form">(() => {
+    if (editId) return "form"
+    return readStoredFinSellFlowStep() ?? "search"
+  })
   const [form, setForm] = useState<FinFormState>(INITIAL_STATE)
   const [photos, setPhotos] = useState<PhotoSlot[]>([])
   const [submitting, setSubmitting] = useState(false)
@@ -369,6 +408,11 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
     setForm((prev) => ({ ...prev, [key]: value }))
   }, [])
 
+  const enterFormStep = useCallback(() => {
+    setFlowStep("form")
+    persistFinSellFlowStep("form")
+  }, [])
+
   const applyCatalogSelection = useCallback((selection: FinCatalogSearchSelection) => {
     setForm((prev) => {
       const next: FinFormState = {
@@ -394,8 +438,8 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
       }
       return next
     })
-    setFlowStep("form")
-  }, [])
+    enterFormStep()
+  }, [enterFormStep])
 
   const updateSlot = useCallback((clientId: string, patch: Partial<PhotoSlot>) => {
     setPhotos((prev) => prev.map((p) => (p.clientId === clientId ? { ...p, ...patch } : p)))
@@ -435,16 +479,23 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
         )
 
         const supabase = supabaseRef.current
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
+        let session = null as Awaited<ReturnType<typeof waitForClientSession>>
+        if (hasSupabaseAuthCookiesClient()) {
+          session = await waitForClientSession({ supabase })
+        } else {
+          const { data } = await supabase.auth.getSession()
+          session = data.session?.access_token ? data.session : null
+        }
+
+        const user = session?.user ?? (await supabase.auth.getUser()).data.user
         if (!session?.access_token || !user) {
           if (!photoPrepareSeqInSync(clientId, prepareSeq)) return
-          updateSlot(clientId, { phase: "error" })
-          signIn("/sell/fins")
+          updateSlot(clientId, { phase: "optimizing", progress: 0 })
+          if (!photoUploadSignInPromptedRef.current) {
+            photoUploadSignInPromptedRef.current = true
+            toast.message("Sign in to upload photos")
+            signIn(finSellReturnPath())
+          }
           return
         }
 
@@ -486,6 +537,22 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
     },
     [photoPrepareSeqInSync, signIn, updateSlot],
   )
+
+  useEffect(() => {
+    const supabase = supabaseRef.current
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session?.user) return
+      photoUploadSignInPromptedRef.current = false
+      for (const slot of photosRef.current) {
+        if (!slot.file) continue
+        if (slot.phase === "done") continue
+        void uploadSlot(slot)
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [uploadSlot])
 
   const addFiles = useCallback(
     (files: FileList | File[]) => {
@@ -824,6 +891,7 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
             setSubmitting(false)
             return
           }
+          clearPersistedFinSellFlowStep()
           toast.success("Listing updated")
           router.push(`/l/${data.slug ?? editId}`)
           return
@@ -847,6 +915,7 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
           setSubmitting(false)
           return
         }
+        clearPersistedFinSellFlowStep()
         toast.success("Listing updated")
         router.push(`/l/${result.slug}`)
         return
@@ -859,6 +928,7 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
         return
       }
 
+      clearPersistedFinSellFlowStep()
       toast.success("Your fin is live!")
       router.push(`/l/${result.slug}`)
     } catch (err) {
@@ -883,7 +953,7 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
     return (
       <SellFinsCatalogSearch
         onSelect={applyCatalogSelection}
-        onSkip={() => setFlowStep("form")}
+        onSkip={enterFormStep}
       />
     )
   }
