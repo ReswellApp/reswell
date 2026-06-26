@@ -40,7 +40,6 @@ import {
   ArrowUp,
   ArrowUpDown,
   BadgeCheck,
-  Building2,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -126,7 +125,6 @@ function downloadUsersCsv(rows: User[]): void {
     'city',
     'role',
     'reswell_seller',
-    'consignment_shop',
     'verified',
     'listings',
     'active_listings',
@@ -143,7 +141,6 @@ function downloadUsersCsv(rows: User[]): void {
       u.city ?? '',
       u.is_admin ? 'admin' : u.is_employee ? 'employee' : 'user',
       u.is_reswell_seller ? 'yes' : 'no',
-      u.is_consignment_shop ? 'yes' : 'no',
       u.shop_verified ? 'yes' : 'no',
       u.listings_count,
       u.active_listings_count,
@@ -371,41 +368,6 @@ export default function AdminUsersPage() {
         nextStatus
           ? 'Reswell Seller access granted (0% marketplace fee)'
           : 'Reswell Seller access removed',
-      )
-    } catch {
-      toast.error('Failed to update user')
-    }
-  }
-
-  async function toggleConsignmentShop(userId: string, currentStatus: boolean) {
-    const nextStatus = !currentStatus
-    if (
-      !nextStatus &&
-      typeof window !== 'undefined' &&
-      !window.confirm(
-        'Remove consignment shop access? Any stores they already own will remain — revoke only removes the ability to operate new stores.',
-      )
-    ) {
-      return
-    }
-    try {
-      const res = await fetch('/api/admin/users/consignment-shop', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, grant: nextStatus }),
-      })
-      if (!res.ok) {
-        const json = (await res.json().catch(() => null)) as { error?: string } | null
-        toast.error(json?.error ?? 'Failed to update user')
-        return
-      }
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, is_consignment_shop: nextStatus } : u)),
-      )
-      toast.success(
-        nextStatus
-          ? 'Consignment shop access granted'
-          : 'Consignment shop access removed',
       )
     } catch {
       toast.error('Failed to update user')
@@ -667,64 +629,6 @@ export default function AdminUsersPage() {
     }
   }
 
-  async function bulkSetConsignmentShop(rows: User[], grant: boolean) {
-    const targets = rows.filter((u) => u.is_consignment_shop !== grant)
-    if (targets.length === 0) {
-      toast.message(
-        grant
-          ? 'All selected are already consignment shops'
-          : 'None of the selected are consignment shops',
-      )
-      return
-    }
-    if (
-      !grant &&
-      typeof window !== 'undefined' &&
-      !window.confirm(
-        `Remove consignment shop access for ${targets.length} user${targets.length === 1 ? '' : 's'}? Existing stores are not deleted.`,
-      )
-    ) {
-      return
-    }
-    setBulkRunning(true)
-    try {
-      const results = await Promise.allSettled(
-        targets.map((u) =>
-          fetch('/api/admin/users/consignment-shop', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId: u.id, grant }),
-          }).then((res) => {
-            if (!res.ok) throw new Error('failed')
-            return u.id
-          }),
-        ),
-      )
-      const ok = results.filter((r) => r.status === 'fulfilled').length
-      const failed = results.length - ok
-      const okIds = new Set(
-        results
-          .filter((r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled')
-          .map((r) => r.value),
-      )
-      setUsers((prev) =>
-        prev.map((u) => (okIds.has(u.id) ? { ...u, is_consignment_shop: grant } : u)),
-      )
-      if (ok > 0) {
-        toast.success(
-          `${grant ? 'Granted' : 'Removed'} consignment shop for ${ok} user${ok === 1 ? '' : 's'}` +
-            (failed > 0 ? ` · ${failed} failed` : ''),
-        )
-      } else {
-        toast.error('Bulk consignment shop update failed')
-      }
-    } catch {
-      toast.error('Bulk consignment shop update failed')
-    } finally {
-      setBulkRunning(false)
-    }
-  }
-
   // --- Derived data ------------------------------------------------------
 
   const stats = useMemo(() => {
@@ -735,7 +639,6 @@ export default function AdminUsersPage() {
     let activeSellers = 0
     let staff = 0
     let reswell = 0
-    let consignment = 0
     let verified = 0
     for (const u of users) {
       const createdMs = new Date(u.created_at).getTime()
@@ -744,10 +647,9 @@ export default function AdminUsersPage() {
       if (u.listings_count > 0) activeSellers += 1
       if (u.is_admin || u.is_employee) staff += 1
       if (u.is_reswell_seller) reswell += 1
-      if (u.is_consignment_shop) consignment += 1
       if (u.shop_verified) verified += 1
     }
-    return { total: users.length, newToday, newUsers, activeSellers, staff, reswell, consignment, verified }
+    return { total: users.length, newToday, newUsers, activeSellers, staff, reswell, verified }
   }, [users])
 
   const monthlySignups = useMemo(() => buildMonthlySignups(users), [users])
@@ -765,9 +667,6 @@ export default function AdminUsersPage() {
         case 'reswell':
           if (!u.is_reswell_seller) return false
           break
-        case 'consignment':
-          if (!u.is_consignment_shop) return false
-          break
         case 'verified':
           if (!u.shop_verified) return false
           break
@@ -775,7 +674,7 @@ export default function AdminUsersPage() {
           if (u.listings_count <= 0) return false
           break
         case 'standard':
-          if (u.is_admin || u.is_employee || u.is_reswell_seller || u.is_consignment_shop || u.shop_verified) return false
+          if (u.is_admin || u.is_employee || u.is_reswell_seller || u.shop_verified) return false
           break
         default:
           break
@@ -917,7 +816,6 @@ export default function AdminUsersPage() {
         />
         <StatTile icon={ShieldCheck} accent="sky" label="Staff" value={compactNumber(stats.staff)} hint="Admin + employee" />
         <StatTile icon={DollarSign} accent="amber" label="Reswell sellers" value={compactNumber(stats.reswell)} hint="0% fee" />
-        <StatTile icon={Building2} accent="emerald" label="Consignment shops" value={compactNumber(stats.consignment)} hint="Store operators" />
         <StatTile icon={BadgeCheck} accent="sky" label="Verified" value={compactNumber(stats.verified)} hint="Verified shops" />
       </div>
 
@@ -950,7 +848,6 @@ export default function AdminUsersPage() {
                 <SelectItem value="admin">Admins</SelectItem>
                 <SelectItem value="employee">Employees</SelectItem>
                 <SelectItem value="reswell">Reswell sellers</SelectItem>
-                <SelectItem value="consignment">Consignment shops</SelectItem>
                 <SelectItem value="verified">Verified sellers</SelectItem>
                 <SelectItem value="standard">Standard users</SelectItem>
               </SelectContent>
@@ -1191,7 +1088,6 @@ export default function AdminUsersPage() {
                           <Badge variant="outline">User</Badge>
                         )}
                         {user.is_reswell_seller ? <Badge variant="secondary">Reswell</Badge> : null}
-                        {user.is_consignment_shop ? <Badge variant="secondary">Consignment</Badge> : null}
                         {user.shop_verified ? (
                           <Badge variant="outline" className={verifiedSellerBadgeClassName}>
                             <VerifiedBadge size="sm" className="-ml-0.5 mr-px" />
@@ -1252,12 +1148,6 @@ export default function AdminUsersPage() {
                         <DropdownMenuItem onClick={() => toggleReswellSeller(user.id, user.is_reswell_seller)}>
                           <Store className="mr-2 h-4 w-4" />
                           {user.is_reswell_seller ? 'Remove Reswell Seller' : 'Make Reswell Seller'}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => toggleConsignmentShop(user.id, user.is_consignment_shop)}
-                        >
-                          <Building2 className="mr-2 h-4 w-4" />
-                          {user.is_consignment_shop ? 'Remove Consignment Shop' : 'Make Consignment Shop'}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => toggleVerified(user.id, user.shop_verified)}>
                           {user.shop_verified ? (
@@ -1438,13 +1328,6 @@ export default function AdminUsersPage() {
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => void bulkSetReswell(selectedRows, false)}>
                       <Store className="mr-2 h-4 w-4" /> Remove Reswell sellers
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => void bulkSetConsignmentShop(selectedRows, true)}>
-                      <Building2 className="mr-2 h-4 w-4" /> Make consignment shops
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => void bulkSetConsignmentShop(selectedRows, false)}>
-                      <Building2 className="mr-2 h-4 w-4" /> Remove consignment shops
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

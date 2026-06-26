@@ -5,7 +5,6 @@ import {
   parseStripeWebhookSigningSecrets,
 } from "@/lib/stripe-server"
 import { completeMarketplaceOrderFromPaymentIntent } from "@/lib/stripe-complete-order"
-import { completePosOrderFromPaymentIntent } from "@/lib/services/posSale"
 import { marketplaceListingIdsFromPaymentIntent } from "@/lib/stripe-marketplace-metadata"
 import {
   completeSellerShippingLabelFromPaymentIntent,
@@ -123,23 +122,6 @@ export async function POST(request: Request) {
       orderId: result.orderId,
       sellerLabel: true,
       alreadyProcessed: result.alreadyProcessed,
-    })
-  }
-
-  if (pi.metadata?.sales_channel === "pos") {
-    const posResult = await completePosOrderFromPaymentIntent(pi)
-    if (!posResult.ok) {
-      console.error("[stripe webhook] pos sale settle failed:", posResult.error, { pi: pi.id })
-      if (posResult.status >= 500) {
-        return NextResponse.json({ error: posResult.error }, { status: 500 })
-      }
-      return NextResponse.json({ received: true, skipped: "pos_failed", detail: posResult.error })
-    }
-    return NextResponse.json({
-      received: true,
-      orderId: posResult.orderId,
-      pos: true,
-      alreadyProcessed: posResult.alreadyProcessed,
     })
   }
 

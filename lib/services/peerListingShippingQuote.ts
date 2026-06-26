@@ -31,11 +31,7 @@ export const PEER_SURFBOARD_CHECKOUT_LISTING_SELECT = `
   shipping_packed_width_in,
   shipping_packed_height_in,
   shipping_packed_weight_oz,
-  dimensions,
-  consignment_store_id,
-  consignor_profile_id,
-  floor_price,
-  commission_bps
+  dimensions
 `.trim()
 
 export type PeerListingForShippingQuote = ListingPackedParcelSource &
@@ -55,10 +51,6 @@ export type PeerSurfboardCheckoutListingRow = PeerListingForShippingQuote & {
   status: string | null
   local_pickup: boolean | null
   shipping_available: boolean | null
-  consignment_store_id: string | null
-  consignor_profile_id: string | null
-  floor_price: string | number | null
-  commission_bps: number | null
 }
 
 export function effectiveBoardShippingMode(

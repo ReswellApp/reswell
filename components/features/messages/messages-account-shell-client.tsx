@@ -9,24 +9,17 @@ import { cn } from "@/lib/utils"
 
 interface MessagesAccountShellClientProps {
   sellerProfileHref: string | null
-  storeHubHref?: string | null
-  storeHubName?: string | null
   sidebar: ReactNode
   children: ReactNode
 }
 
 export function MessagesAccountShellClient({
   sellerProfileHref,
-  storeHubHref,
-  storeHubName,
   sidebar,
   children,
 }: MessagesAccountShellClientProps) {
   const flatMobileInbox = useFlatMobileMessagesInbox()
   const pathname = usePathname()
-  // On a conversation thread the mobile layout becomes a full-bleed, full-height
-  // app shell: drop the account container's gutters, vertical padding, and the
-  // chrome gap so the thread fills the locked viewport edge-to-edge.
   const threadDetail = isMessageThreadDetailRoute(pathname)
 
   return (
@@ -37,11 +30,7 @@ export function MessagesAccountShellClient({
         threadDetail && "max-lg:max-w-none max-lg:px-0 max-lg:py-0",
       )}
     >
-      <MessagesAccountMobileChrome
-        sellerProfileHref={sellerProfileHref}
-        storeHubHref={storeHubHref}
-        storeHubName={storeHubName}
-      />
+      <MessagesAccountMobileChrome sellerProfileHref={sellerProfileHref} />
 
       <div
         className={cn(

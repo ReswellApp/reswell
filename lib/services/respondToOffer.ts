@@ -68,7 +68,7 @@ export async function respondToOfferService(
   const { data: listing, error: listErr } = await supabase
     .from("listings")
     .select(
-      "id, price, title, user_id, slug, section, minimum_offer_pct, consignment_store_id, floor_price",
+      "id, price, title, user_id, slug, section, minimum_offer_pct",
     )
     .eq("id", offer.listing_id)
     .maybeSingle()
@@ -81,16 +81,6 @@ export async function respondToOfferService(
   if (!Number.isFinite(listPrice) || listPrice <= 0) {
     return { ok: false, error: "Invalid listing price." }
   }
-
-  // Consignment floor: a shop can't accept/counter below the consignor's approved floor without
-  // their sign-off. Returns the floor when this is a consigned listing with a positive floor.
-  const consignmentFloor = (() => {
-    if (!(listing as { consignment_store_id?: string | null }).consignment_store_id) return null
-    const raw = (listing as { floor_price?: string | number | null }).floor_price
-    if (raw == null) return null
-    const floor = roundMoney(parseFloat(String(raw)))
-    return Number.isFinite(floor) && floor > 0 ? floor : null
-  })()
 
   const minPct = effectiveMinimumOfferPct(listing as { minimum_offer_pct?: number | null })
   const minOffer = roundMoney(listPrice * (minPct / 100))
@@ -158,13 +148,6 @@ export async function respondToOfferService(
   }
 
   if (action === "accept") {
-    if (consignmentFloor !== null && current < consignmentFloor) {
-      return {
-        ok: false,
-        error: `This board’s consignor set a floor of $${consignmentFloor.toFixed(2)}. Call the consignor for approval before accepting $${current.toFixed(2)}.`,
-      }
-    }
-
     const { error: upErr } = await supabase
       .from("offers")
       .update({
@@ -243,13 +226,6 @@ export async function respondToOfferService(
     return {
       ok: false,
       error: `Counter must be higher than the buyer’s current offer ($${current.toFixed(2)}).`,
-    }
-  }
-
-  if (consignmentFloor !== null && amt < consignmentFloor) {
-    return {
-      ok: false,
-      error: `Counter can’t go below the consignor’s floor price of $${consignmentFloor.toFixed(2)}.`,
     }
   }
 

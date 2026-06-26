@@ -158,18 +158,12 @@ export async function syncMarketplaceOrderFromStripePaymentIntent(
 
   const { data: order } = await supabase
     .from("orders")
-    .select("id, seller_id, seller_earnings, listing_id, amount, consignment_store_id")
+    .select("id, seller_id, seller_earnings, listing_id, amount")
     .eq("stripe_checkout_session_id", paymentIntentId)
     .maybeSingle()
 
   if (!order) {
     return { ok: false, reason: "order_not_found" }
-  }
-
-  // Consignment orders settle across two wallets — route to the split-aware reversal.
-  if (order.consignment_store_id) {
-    const fullyRefunded = await applyConsignmentRefundFromStripe(supabase, { id: order.id }, pi, refundsList)
-    return { ok: true, orderId: order.id, fullyRefunded }
   }
 
   const fullyRefunded = await syncOrderAndPayoutsFromStripeRefundState(
@@ -313,40 +307,6 @@ async function reconcileWalletForMissingRefunds(
 }
 
 /**
- * Consignment orders credit two wallets, so they cannot use the single-seller clawback. On a FULL
- * refund we reverse the 3-way split via `refund_consignment_order` (idempotent), then relist. Partial
- * refunds on consignment orders are not supported by the split engine — we sync buyer-visible status
- * only and log, leaving wallets untouched for manual review.
- */
-async function applyConsignmentRefundFromStripe(
-  supabase: SupabaseClient,
-  order: { id: string },
-  pi: Stripe.PaymentIntent,
-  refundsList: Stripe.ApiList<Stripe.Refund>,
-): Promise<boolean> {
-  const totalRefundedCents = refundsList.data
-    .filter((r) => r.status === "succeeded")
-    .reduce((sum, r) => sum + r.amount, 0)
-  const isFullyRefunded = totalRefundedCents >= pi.amount
-
-  if (isFullyRefunded) {
-    const { error } = await supabase.rpc("refund_consignment_order", { p_order_id: order.id })
-    if (error) {
-      console.error("[stripe refund webhook] refund_consignment_order rpc", { orderId: order.id, error })
-    }
-    await relistOrderListingsAfterRefund(supabase, order.id)
-  } else {
-    console.warn(
-      "[stripe refund webhook] partial refund on consignment order — split wallet reversal skipped",
-      { orderId: order.id },
-    )
-    await syncOrderAndPayoutsFromStripeRefundState(supabase, { id: order.id, seller_earnings: null }, pi, refundsList)
-  }
-
-  return isFullyRefunded
-}
-
-/**
  * When Stripe refunds a card payment, reverse the seller's proportional share from `pending_balance`
  * first, then spendable `balance` (same allocation as admin-initiated refunds). Idempotent per Stripe
  * refund id (`re_…`).
@@ -382,17 +342,11 @@ export async function applyMarketplaceStripeRefund(refund: Stripe.Refund): Promi
 
   const { data: order } = await supabase
     .from("orders")
-    .select("id, seller_id, amount, seller_earnings, status, listing_id, consignment_store_id")
+    .select("id, seller_id, amount, seller_earnings, status, listing_id")
     .eq("stripe_checkout_session_id", piId)
     .maybeSingle()
 
   if (!order) {
-    return
-  }
-
-  // Consignment orders settle across two wallets — route to the split-aware reversal.
-  if (order.consignment_store_id) {
-    await applyConsignmentRefundFromStripe(supabase, order, pi, refundsList)
     return
   }
 

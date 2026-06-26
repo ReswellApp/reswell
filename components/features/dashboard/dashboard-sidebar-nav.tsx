@@ -127,16 +127,12 @@ function DashboardNavItem({
 
 export interface DashboardSidebarNavProps {
   sellerProfileHref: string | null
-  storeHubHref?: string | null
-  storeHubName?: string | null
   /** Larger nav for `/dashboard` shell; messages keeps the default compact size. */
   size?: "default" | "large"
 }
 
 export function DashboardSidebarNav({
   sellerProfileHref,
-  storeHubHref,
-  storeHubName,
   size = "default",
 }: DashboardSidebarNavProps) {
   const pathname = usePathname() ?? ""
@@ -156,20 +152,6 @@ export function DashboardSidebarNav({
       {DASHBOARD_NAV_LINKS.map((link) => (
         <DashboardNavItem key={link.href} link={link} size={size} />
       ))}
-      {storeHubHref ? (
-        <Link
-          href={storeHubHref}
-          className={cn(
-            itemClass,
-            pathname.startsWith("/stores/")
-              ? "bg-primary/5 text-primary"
-              : "text-primary hover:bg-primary/5 hover:text-primary",
-          )}
-        >
-          <Store className={iconClass} />
-          {storeHubName ? `${storeHubName}` : "Consignment shop"}
-        </Link>
-      ) : null}
       {sellerProfileHref ? (
         <Link
           href={sellerProfileHref}

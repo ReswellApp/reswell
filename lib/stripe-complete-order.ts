@@ -12,16 +12,8 @@ import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAc
 import { pendingSaleFeeClause } from "@/lib/seller-fees"
 import {
   creditOrderPendingEarnings,
-  walletPendingConsignorDescription,
-  walletPendingShopCommissionDescription,
+  walletPendingSaleDescription,
 } from "@/lib/services/orderPendingEarnings"
-import { notifyConsignorSold } from "@/lib/services/notifyConsignorSold"
-import { getConsignmentStoreById } from "@/lib/db/consignmentStores"
-import {
-  computeConsignmentSplit,
-  findConsignmentFloorViolation,
-  resolveCommissionBps,
-} from "@/lib/services/consignmentSplit"
 import { marketplaceListingIdsFromPaymentIntent } from "@/lib/stripe-marketplace-metadata"
 import {
   profileAddressToOrderShippingJson,
@@ -228,25 +220,15 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   const { data: existing } = await serviceSupabase
     .from("orders")
-    .select("id, consignment_store_id")
+    .select("id")
     .eq("stripe_checkout_session_id", piId)
     .maybeSingle()
 
   if (existing?.id) {
-    const isConsignmentOrder = Boolean(
-      (existing as { consignment_store_id?: string | null }).consignment_store_id,
-    )
-
-    // Consignment orders credit two parties under different ledger reference types; peer orders
-    // use `order_pending_earnings`. Either marker means this PaymentIntent was already settled.
-    const pendingRefTypes = isConsignmentOrder
-      ? ["consignment_order_pending_consignor", "consignment_order_pending_shop"]
-      : ["order_pending_earnings"]
-
     const { data: pendingLedger } = await serviceSupabase
       .from("wallet_transactions")
       .select("id")
-      .in("reference_type", pendingRefTypes)
+      .eq("reference_type", "order_pending_earnings")
       .eq("reference_id", existing.id)
       .maybeSingle()
 
@@ -254,17 +236,6 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
       void sendPostPurchaseReviewInvite(existing.id)
       await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, existing.id)
-      return { ok: true, orderId: existing.id, alreadyProcessed: true }
-    }
-
-    // Recovery of a missing pending ledger only applies to the single-seller peer path. For a
-    // consignment order with a committed row but no ledger (rare partial failure), surface it for
-    // manual reconciliation rather than risking a mis-credit on an untested recovery path.
-    if (isConsignmentOrder) {
-      console.error(
-        "[stripe-complete-order] consignment order missing pending ledger; needs manual reconciliation",
-        { orderId: existing.id, piId },
-      )
       return { ok: true, orderId: existing.id, alreadyProcessed: true }
     }
 
@@ -331,22 +302,6 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   const bundleSellerId = listingsForTotals[0]!.user_id
   if (!listingsForTotals.every((l) => l.user_id === bundleSellerId)) {
     return { ok: false, error: "Invalid purchase", status: 400 }
-  }
-
-  // Defense-in-depth: reject settling a consigned board below its floor (checkout already guards this).
-  const floorViolation = findConsignmentFloorViolation(listingsForTotals)
-  if (floorViolation) {
-    console.error("[stripe-complete-order] consignment floor violation at settlement", {
-      piId,
-      title: floorViolation.title,
-      floorPrice: floorViolation.floorPrice,
-      salePrice: floorViolation.salePrice,
-    })
-    return {
-      ok: false,
-      error: "This consigned board cannot be sold below its floor price. Contact support if you were charged.",
-      status: 409,
-    }
   }
 
   if (listingsOrdered.some((l) => l.status !== "active")) {
@@ -525,69 +480,6 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   const primaryListingId = listingsOrdered[0]!.id
 
-  // Consignment context (guarded): when a listing carries a store id, the order settles three ways
-  // (consignor + shop net + Reswell fee) instead of a single seller payout. Peer listings are
-  // entirely unaffected — `consignment` stays null and every existing code path runs as before.
-  const consignmentListings = listingsForTotals.filter((l) => l.consignment_store_id)
-  const storeAttributionId =
-    consignmentListings.length === 1 ? consignmentListings[0]!.consignment_store_id : null
-  let consignment:
-    | {
-        storeId: string
-        consignorId: string
-        shopCommissionGross: number
-        shopNetEarnings: number
-        consignorEarnings: number
-      }
-    | null = null
-
-  if (consignmentListings.length > 0) {
-    if (consignmentListings.length !== listingsForTotals.length) {
-      return {
-        ok: false,
-        error: "Consignment items must be purchased on their own. Contact support if you were charged.",
-        status: 409,
-      }
-    }
-    if (listingsForTotals.length > 1) {
-      return {
-        ok: false,
-        error: "Consignment items must be purchased one at a time. Contact support if you were charged.",
-        status: 409,
-      }
-    }
-
-    const cl = listingsForTotals[0]!
-    if (cl.consignor_profile_id) {
-      const store = await getConsignmentStoreById(serviceSupabase, cl.consignment_store_id!)
-      if (!store) {
-        return { ok: false, error: "Consignment store not found for this item.", status: 409 }
-      }
-
-      const commissionBps = resolveCommissionBps(cl.commission_bps, store.defaultCommissionBps)
-      if (commissionBps == null) {
-        return { ok: false, error: "Consignment commission is not configured.", status: 409 }
-      }
-
-      const splitRes = computeConsignmentSplit({
-        itemPriceUsd: bundle.totalItemPriceUsd,
-        commissionBps,
-        reswellFeeBps: store.reswellFeeBps,
-      })
-      if (!splitRes.ok) {
-        return { ok: false, error: splitRes.error, status: 409 }
-      }
-
-      consignment = {
-        storeId: store.id,
-        consignorId: cl.consignor_profile_id,
-        shopCommissionGross: splitRes.split.shopCommissionGross,
-        shopNetEarnings: splitRes.split.shopNetEarnings,
-        consignorEarnings: splitRes.split.consignorEarnings,
-      }
-    }
-  }
-
   const orderId = randomUUID()
 
   const { data: purchase, error: insertError } = await serviceSupabase
@@ -609,21 +501,6 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       fulfillment_method: fulfillmentMethod,
       delivery_status: deliveryStatus,
       pickup_code: pickupCode,
-      sales_channel: "online",
-      ...(consignment
-        ? {
-            consignment_store_id: consignment.storeId,
-            consignor_profile_id: consignment.consignorId,
-            shop_commission_gross: consignment.shopCommissionGross,
-            shop_net_earnings: consignment.shopNetEarnings,
-            consignor_earnings: consignment.consignorEarnings,
-          }
-        : storeAttributionId
-          ? {
-              consignment_store_id: storeAttributionId,
-              shop_net_earnings: sellerEarnings,
-            }
-          : {}),
       ...(shippingAddressJson ? { shipping_address: shippingAddressJson } : {}),
     })
     .select()
@@ -728,39 +605,14 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       ? String(listingsOrdered[0]!.title ?? "")
       : `${listingsOrdered.length} boards`
 
-  if (consignment) {
-    // Consignment: split the seller share between the consignor and the shop (commission net of the
-    // Reswell fee). consignorEarnings + shopNetEarnings === sellerEarnings, so totals reconcile.
-    const consignorCredit = await creditOrderPendingEarnings(serviceSupabase, {
-      userId: consignment.consignorId,
-      amountUsd: consignment.consignorEarnings,
-      orderId: purchase.id,
-      description: walletPendingConsignorDescription(walletTitleSummary),
-      referenceType: "consignment_order_pending_consignor",
-    })
-    if (!consignorCredit.ok) return consignorCredit
-
-    const shopCredit = await creditOrderPendingEarnings(serviceSupabase, {
-      userId: bundleSellerId,
-      amountUsd: consignment.shopNetEarnings,
-      orderId: purchase.id,
-      description: walletPendingShopCommissionDescription(walletTitleSummary, platformFee),
-      referenceType: "consignment_order_pending_shop",
-    })
-    if (!shopCredit.ok) return shopCredit
-
-    // Notify the consignor their board sold (best-effort).
-    void notifyConsignorSold(serviceSupabase, purchase.id)
-  } else {
-    const sellerCredit = await creditOrderPendingEarnings(serviceSupabase, {
-      userId: bundleSellerId,
-      amountUsd: sellerEarnings,
-      orderId: purchase.id,
-      description: walletPendingSaleDescription(walletTitleSummary, platformFee),
-      referenceType: "order_pending_earnings",
-    })
-    if (!sellerCredit.ok) return sellerCredit
-  }
+  const sellerCredit = await creditOrderPendingEarnings(serviceSupabase, {
+    userId: bundleSellerId,
+    amountUsd: sellerEarnings,
+    orderId: purchase.id,
+    description: walletPendingSaleDescription(walletTitleSummary, platformFee),
+    referenceType: "order_pending_earnings",
+  })
+  if (!sellerCredit.ok) return sellerCredit
 
   // Mark sold only — never mutate listings.price (offer discounts stay private; public sold surfaces use list price).
   const { error: listingErr } = await serviceSupabase
@@ -861,9 +713,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     paymentMethod: "stripe",
   })
 
-  if (!consignment) {
-    await notifySellerOrderCheckoutKlaviyo(serviceSupabase, purchase.id)
-  }
+  await notifySellerOrderCheckoutKlaviyo(serviceSupabase, purchase.id)
 
   void trackMetaPurchaseServerEvent({
     orderId: purchase.id,

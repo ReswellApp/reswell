@@ -13,7 +13,7 @@ import { validateAcceptedOfferForPaymentIntent } from "@/lib/services/acceptedOf
 import { dedupeIdsPreserveOrder } from "@/lib/stripe-marketplace-metadata"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
-import { findConsignmentFloorViolation } from "@/lib/services/consignmentSplit"
+import { evaluateUserPurchase } from "@/lib/services/accountRestrictions"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import {
   computeCheckoutTotalWithNewsletterPromo,
@@ -27,7 +27,6 @@ import {
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { normalizeNewsletterPromoCodeInput } from "@/lib/utils/newsletter-promo-code"
 import { verifyCheckoutShippingQuoteToken, type CheckoutShippingQuoteTokenPayload } from "@/lib/services/checkoutShippingQuoteToken"
-import { evaluateUserPurchase } from "@/lib/services/accountRestrictions"
 
 const JSON_NO_STORE_HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -147,17 +146,6 @@ export async function POST(request: NextRequest) {
 
   if (listingsOrdered.some((l) => !isPeerListingSection(l.section))) {
     return NextResponse.json({ error: "This listing cannot be purchased here" }, { status: 400 })
-  }
-
-  // Consignment floor: never let a consigned board sell below the consignor's approved floor.
-  const floorViolation = findConsignmentFloorViolation(listingsForTotals)
-  if (floorViolation) {
-    return NextResponse.json(
-      {
-        error: `“${floorViolation.title}” can’t be sold below the consignor’s floor price of $${floorViolation.floorPrice.toFixed(2)}.`,
-      },
-      { status: 409, headers: JSON_NO_STORE_HEADERS },
-    )
   }
 
   /** Multi-board payment intents must pull every listing from this buyer's cart (same seller),

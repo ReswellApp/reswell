@@ -98,21 +98,3 @@ export async function creditOrderPendingEarnings(
 
   return { ok: true }
 }
-
-/** Pending-sale ledger copy for a consignor's share of a consigned board. */
-export function walletPendingConsignorDescription(listingTitle: string): string {
-  const safeTitle = listingTitle.length > 400 ? `${listingTitle.slice(0, 399)}…` : listingTitle
-  const raw = `Pending — Consigned "${safeTitle}" sold (card — available after delivery)`
-  return raw.length > 2000 ? `${raw.slice(0, 1999)}…` : raw
-}
-
-/** Pending-sale ledger copy for a shop's commission on a consigned board. */
-export function walletPendingShopCommissionDescription(
-  listingTitle: string,
-  platformFeeUsd: number,
-): string {
-  const safeTitle = listingTitle.length > 400 ? `${listingTitle.slice(0, 399)}…` : listingTitle
-  const fee = Math.max(0, platformFeeUsd)
-  const raw = `Pending — Commission on "${safeTitle}" (Reswell fee: $${fee.toFixed(2)}, card — available after delivery)`
-  return raw.length > 2000 ? `${raw.slice(0, 1999)}…` : raw
-}

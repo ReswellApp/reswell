@@ -6,12 +6,8 @@ import { isMessageThreadDetailRoute } from "@/lib/utils/message-thread-routes"
 
 export function MessagesAccountMobileChrome({
   sellerProfileHref,
-  storeHubHref,
-  storeHubName,
 }: {
   sellerProfileHref: string | null
-  storeHubHref?: string | null
-  storeHubName?: string | null
 }) {
   const pathname = usePathname() ?? ""
 
@@ -19,11 +15,5 @@ export function MessagesAccountMobileChrome({
     return null
   }
 
-  return (
-    <DashboardMobilePageChrome
-      sellerProfileHref={sellerProfileHref}
-      storeHubHref={storeHubHref}
-      storeHubName={storeHubName}
-    />
-  )
+  return <DashboardMobilePageChrome sellerProfileHref={sellerProfileHref} />
 }

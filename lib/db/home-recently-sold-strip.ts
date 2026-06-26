@@ -131,7 +131,7 @@ async function fetchRecentlySoldSurfboardSaleTimesViaLegacyRpc(
 
 /**
  * App-layer fallback when the recently-sold RPC is unavailable.
- * Confirmed online (Stripe / wallet) and POS orders only — no off-platform seller reports.
+ * Confirmed online (Stripe / wallet) checkout orders only — no off-platform seller reports.
  */
 async function fetchRecentlySoldListingSaleTimesFallback(
   supabase: SupabaseClient,
@@ -152,10 +152,9 @@ async function fetchRecentlySoldListingSaleTimesFallback(
 
   const { data: orders, error: ordersError } = await supabase
     .from("orders")
-    .select("id, listing_id, created_at, sales_channel")
+    .select("id, listing_id, created_at")
     .eq("status", "confirmed")
     .eq("is_admin_test", false)
-    .in("sales_channel", ["online", "pos"])
     .order("created_at", { ascending: false })
     .limit(RECENTLY_SOLD_FALLBACK_ORDER_SCAN)
 

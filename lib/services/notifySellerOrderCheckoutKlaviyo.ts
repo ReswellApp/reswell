@@ -22,7 +22,6 @@ type OrderRowForSellerKlaviyo = {
   fulfillment_method: string | null
   payment_method: string | null
   shipping_address: unknown
-  consignment_store_id: string | null
 }
 
 function unwrapListing<R>(raw: R | R[] | null | undefined): R | null {
@@ -41,7 +40,7 @@ function listingTitleSummary(
 
 /**
  * Emits seller checkout Klaviyo metrics (**New Sale Received** + fulfillment-specific metric).
- * Idempotent per order via event `uniqueId`. Skips consignment orders (shop/consignor use separate flows).
+ * Idempotent per order via event `uniqueId`.
  */
 export async function notifySellerOrderCheckoutKlaviyo(
   supabase: SupabaseClient,
@@ -62,7 +61,6 @@ export async function notifySellerOrderCheckoutKlaviyo(
       fulfillment_method,
       payment_method,
       shipping_address,
-      consignment_store_id,
       listings ( id, title, section, slug )
     `,
     )
@@ -80,7 +78,6 @@ export async function notifySellerOrderCheckoutKlaviyo(
     listings: { id: string; title: string | null; section: string | null; slug: string | null } | { id: string; title: string | null; section: string | null; slug: string | null }[] | null
   }
 
-  if (row.consignment_store_id) return
   if (!row.seller_id || !row.buyer_id || row.seller_id === row.buyer_id) return
 
   const listing = unwrapListing(row.listings)

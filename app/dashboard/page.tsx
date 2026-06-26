@@ -20,8 +20,6 @@ import {
   UserCircle,
   List,
   Plus,
-  CreditCard,
-  Building2,
   TrendingUp,
 } from "lucide-react"
 import { capitalizeWords } from "@/lib/listing-labels"
@@ -37,8 +35,6 @@ import { sellerProfileHref } from "@/lib/seller-slug"
 import { DashboardOverviewRealtimeRefresh } from "@/components/features/dashboard/dashboard-overview-realtime-refresh"
 import { dashboardPageSubtitleClass, dashboardPageTitleClass } from "@/lib/utils/dashboard-display-styles"
 import { getMySellerEarningsTotals } from "@/lib/db/sellerEarningsTotals"
-import { getConsignmentShopOperatorContext } from "@/lib/services/consignmentShopAccess"
-import { storeNavHref } from "@/lib/store-nav-links"
 import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
 
 export const metadata = privatePageMetadata({
@@ -69,8 +65,6 @@ export default async function DashboardPage() {
     sellerOrdersRes,
     followingRes,
     sellerEarningsTotalsRes,
-    myConsignmentsRes,
-    operatorContextRes,
   ] = await Promise.all([
     supabase
       .from("listings")
@@ -139,11 +133,6 @@ export default async function DashboardPage() {
       .select("id", { count: "exact", head: true })
       .eq("follower_id", user.id),
     getMySellerEarningsTotals(supabase),
-    supabase
-      .from("listings")
-      .select("id", { count: "exact", head: true })
-      .eq("consignor_profile_id", user.id),
-    getConsignmentShopOperatorContext(supabase, user.id),
   ])
 
   const listings = listingsAgg.data
@@ -164,10 +153,6 @@ export default async function DashboardPage() {
   const sellerOrderCount = sellerOrdersRes.count ?? 0
   const followingCount = followingRes.count ?? 0
   const sellerEarningsTotals = sellerEarningsTotalsRes
-  const myConsignmentsCount = myConsignmentsRes.count ?? 0
-  const operatorContext = operatorContextRes
-  const primaryStore = operatorContext?.primaryStore ?? null
-  const operatorStoreCount = operatorContext?.stores.length ?? 0
 
   const welcomeName =
     (profile?.is_shop && profile?.shop_name?.trim()) ||
@@ -335,46 +320,6 @@ export default async function DashboardPage() {
           </div>
         </CardContent>
       </Card>
-
-      {primaryStore ? (
-        <Card className="overflow-hidden border-primary/20 bg-primary/5">
-          <CardContent className="p-5 sm:p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex min-w-0 items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Building2 className="h-6 w-6" aria-hidden />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-muted-foreground">Consignment shop</p>
-                  <h2 className="truncate text-lg font-semibold tracking-tight sm:text-xl">
-                    {primaryStore.store.name}
-                  </h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Run the register, approve intakes, manage inventory, and track shop earnings.
-                    {operatorStoreCount > 1
-                      ? ` You have access to ${operatorStoreCount} stores.`
-                      : ""}
-                  </p>
-                </div>
-              </div>
-              <div className="flex shrink-0 flex-wrap gap-2">
-                <Button asChild variant="outline">
-                  <Link href={storeNavHref(primaryStore.store.slug, "/pos")}>
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    Register
-                  </Link>
-                </Button>
-                <Button asChild>
-                  <Link href={storeNavHref(primaryStore.store.slug, "/dashboard")}>
-                    Open shop hub
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
 
       {/* Core metrics — earnings, sales, purchases, listings */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4 xl:gap-4">
@@ -686,14 +631,7 @@ export default async function DashboardPage() {
                 Earnings
               </Link>
             </Button>
-            {myConsignmentsCount > 0 && (
-              <Button variant="outline" className="h-auto py-4 flex-col bg-transparent" asChild>
-                <Link href="/dashboard/consignments">
-                  <Handshake className="h-6 w-6 mb-2" />
-                  Consignments
-                </Link>
-              </Button>
-            )}
+
           </div>
         </CardContent>
       </Card>
