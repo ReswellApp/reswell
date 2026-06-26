@@ -6,6 +6,7 @@ import {
   listFinCatalogModelsForBrandIds,
   searchFinCatalogBrands,
   searchFinCatalogModels,
+  searchFinCatalogModelsBroad,
   searchFinCatalogVariants,
   type FinCatalogModelRow,
   type FinCatalogVariantRow,
@@ -167,7 +168,8 @@ export async function searchFinCatalogForSell(
       models: [],
       variants: [],
       results: [],
-      meta: { backend: "supabase", finBrandCount: 0 },
+      similarResults: [],
+      meta: { backend: "supabase", finBrandCount: 0, matchTier: "none" },
     }
   }
 
@@ -178,7 +180,8 @@ export async function searchFinCatalogForSell(
       models: [],
       variants: [],
       results: [],
-      meta: { backend: "supabase", finBrandCount: 0 },
+      similarResults: [],
+      meta: { backend: "supabase", finBrandCount: 0, matchTier: "none" },
     }
   }
 
@@ -224,13 +227,56 @@ export async function searchFinCatalogForSell(
     ...models,
     ...variants,
   ]
-  const results = rankFinCatalogSearchResults(q, candidateRows, MAX_RANKED_RESULTS)
+  const results = rankFinCatalogSearchResults(q, candidateRows, MAX_RANKED_RESULTS, "strict")
+
+  let similarResults: FinCatalogSearchResultRow[] = []
+  let matchTier: "exact" | "similar" | "none" = results.length > 0 ? "exact" : "none"
+
+  if (results.length === 0) {
+    const [broadModels, brandCatalogModels] = await Promise.all([
+      searchFinCatalogModelsBroad(supabase, finBrandIds, q, MAX_MODELS),
+      matchedBrandIds.length > 0
+        ? listFinCatalogModelsForBrandIds(supabase, finBrandIds, matchedBrandIds, "", MAX_MODELS)
+        : Promise.resolve([]),
+    ])
+
+    const broadModelRows = mergeModelsById([...broadModels, ...brandCatalogModels])
+    const broadModelIds = broadModelRows.map((m) => m.id)
+
+    const broadVariantRows =
+      broadModelIds.length > 0
+        ? await searchFinCatalogVariants(supabase, {
+            finBrandIds,
+            qRaw: q,
+            finSystems,
+            finSetups,
+            finSizes,
+            brandModelIds: broadModelIds,
+            limit: MAX_VARIANTS,
+          })
+        : []
+
+    const fallbackCandidates: FinCatalogSearchResultRow[] = [
+      ...brands,
+      ...broadModelRows,
+      ...broadVariantRows.map(variantToSearchRow),
+    ]
+
+    similarResults = rankFinCatalogSearchResults(
+      q,
+      fallbackCandidates,
+      MAX_RANKED_RESULTS,
+      "relaxed",
+    )
+    if (similarResults.length > 0) matchTier = "similar"
+  }
 
   return {
     brands,
     models,
     variants,
     results,
-    meta: { backend: brandRes.meta.backend, finBrandCount: finBrandIds.length },
+    similarResults,
+    meta: { backend: brandRes.meta.backend, finBrandCount: finBrandIds.length, matchTier },
   }
 }

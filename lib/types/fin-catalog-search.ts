@@ -40,13 +40,21 @@ export type FinCatalogSearchVariantRow = {
   suggestedTitle: string
 }
 
+export type FinCatalogSearchMatchTier = "exact" | "similar" | "none"
+
 export type FinCatalogSearchResult = {
   brands: FinCatalogSearchBrandRow[]
   models: FinCatalogSearchModelRow[]
   variants: FinCatalogSearchVariantRow[]
-  /** Relevance-ranked rows for the sell-flow UI (brand, model, or variant). */
+  /** Relevance-ranked exact matches for the sell-flow UI. */
   results: FinCatalogSearchResultRow[]
-  meta: { backend: "elasticsearch" | "supabase"; finBrandCount: number }
+  /** Closest catalog rows when no exact match (eBay-style fallback). */
+  similarResults: FinCatalogSearchResultRow[]
+  meta: {
+    backend: "elasticsearch" | "supabase"
+    finBrandCount: number
+    matchTier: FinCatalogSearchMatchTier
+  }
 }
 
 export type FinCatalogSearchResultRow =

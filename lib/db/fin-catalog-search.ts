@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { FIN_CATALOG_PRODUCT_CATEGORY } from "@/lib/brand-catalog-fin-variants"
 import { listBrandIdsMatchingProductCategories } from "@/lib/db/brand-product-categories"
 import type { FinBoxesType, FinBoxType, FinCatalogVariantSize } from "@/lib/validations/brand-model-variants"
-import { finCatalogMeaningfulSearchTokens } from "@/lib/utils/fin-catalog-search-rank"
+import { finCatalogMeaningfulSearchTokens, expandFinCatalogSearchTokens } from "@/lib/utils/fin-catalog-search-rank"
 
 export { FIN_CATALOG_PRODUCT_CATEGORY } from "@/lib/brand-catalog-fin-variants"
 
@@ -316,6 +316,45 @@ export async function searchFinCatalogBrands(
   }
 
   return merged
+}
+
+/** Broad OR search — any meaningful token can match (similar-results fallback). */
+export async function searchFinCatalogModelsBroad(
+  supabase: SupabaseClient,
+  finBrandIds: readonly string[],
+  qRaw: string,
+  limit = 20,
+): Promise<FinCatalogModelRow[]> {
+  const q = qRaw.trim()
+  if (q.length < 1 || finBrandIds.length === 0) return []
+
+  const tokens = expandFinCatalogSearchTokens(q).slice(0, 8)
+  if (tokens.length === 0) return []
+
+  const orParts = tokens.flatMap((token) => [
+    `name.ilike.${tokenIlikePattern(token)}`,
+    `description.ilike.${tokenIlikePattern(token)}`,
+  ])
+
+  const { data, error } = await supabase
+    .from("brand_models")
+    .select(MODEL_LIST_SELECT)
+    .in("brand_id", [...finBrandIds])
+    .or(orParts.join(","))
+    .order("name", { ascending: true })
+    .limit(limit)
+
+  if (error) {
+    console.error("searchFinCatalogModelsBroad:", error.message)
+    return []
+  }
+
+  const out: FinCatalogModelRow[] = []
+  for (const row of (data ?? []) as RawBrandModelRow[]) {
+    const mapped = mapModelRow(row)
+    if (mapped) out.push(mapped)
+  }
+  return out
 }
 
 /** Typeahead on `brand_models` limited to fin-tagged brands. */

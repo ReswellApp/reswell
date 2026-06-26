@@ -75,13 +75,12 @@ function rowKey(row: CatalogResultRow): string {
   return `${row.kind}-${row.id}`
 }
 
-function partitionResults(data: FinCatalogSearchResult): {
+function partitionResults(rows: CatalogResultRow[]): {
   topPick: CatalogResultRow | null
   moreMatches: CatalogResultRow[]
 } {
-  const ordered = data.results.length > 0 ? data.results : [...data.variants, ...data.models, ...data.brands]
-  if (ordered.length === 0) return { topPick: null, moreMatches: [] }
-  return { topPick: ordered[0] ?? null, moreMatches: ordered.slice(1) }
+  if (rows.length === 0) return { topPick: null, moreMatches: [] }
+  return { topPick: rows[0] ?? null, moreMatches: rows.slice(1) }
 }
 
 function ResultImage({
@@ -287,14 +286,18 @@ export function SellFinsCatalogSearch({ onSelect, onSkip, className }: SellFinsC
     void runSearch(trimmed, epoch)
   }
 
-  const { topPick, moreMatches } = results
-    ? partitionResults(results)
-    : { topPick: null, moreMatches: [] }
-  const hasResults = topPick != null
+  const matchTier = results?.meta.matchTier ?? "none"
+  const exactPartition = results ? partitionResults(results.results) : { topPick: null, moreMatches: [] }
+  const similarPartition = results ? partitionResults(results.similarResults) : { topPick: null, moreMatches: [] }
+
+  const hasExactResults = exactPartition.topPick != null
+  const hasSimilarResults = similarPartition.topPick != null
+  const hasResults = hasExactResults || hasSimilarResults
 
   const showResultsPanel = hasSearched && query.trim().length >= 1
   const showNoMatches =
     showResultsPanel && searchSettled && !loading && !hasResults && !error
+  const showSimilarFallback = matchTier === "similar" && hasSimilarResults
 
   return (
     <main className={cn("flex-1 w-full bg-background pt-8 pb-16 md:pb-24", className)}>
@@ -417,6 +420,15 @@ export function SellFinsCatalogSearch({ onSelect, onSkip, className }: SellFinsC
               <div className="px-4 py-6 text-sm text-destructive sm:px-6 md:px-8 md:text-base">{error}</div>
             ) : null}
 
+            {showSimilarFallback ? (
+              <div className="mx-auto max-w-2xl border-b border-border/40 px-4 py-4 text-sm sm:px-6 md:px-8 md:text-base">
+                <p className="text-muted-foreground">
+                  No exact match for &ldquo;{query.trim()}&rdquo;. Here are the closest fin catalog
+                  results — pick one to prefill your listing, or continue manually.
+                </p>
+              </div>
+            ) : null}
+
             {showNoMatches ? (
               <div className="mx-auto max-w-2xl space-y-4 px-4 py-6 text-sm sm:px-6 md:py-10 md:text-base">
                 <p className="text-muted-foreground">
@@ -429,21 +441,50 @@ export function SellFinsCatalogSearch({ onSelect, onSkip, className }: SellFinsC
               </div>
             ) : null}
 
-            {hasResults ? (
+            {hasExactResults ? (
               <div className="max-h-[min(65dvh,560px)] overflow-y-auto overscroll-contain md:max-h-none md:overflow-visible">
-                {topPick ? (
+                {exactPartition.topPick ? (
                   <ResultsSection title="Top pick from the fin catalog">
-                    <CatalogMatchRow row={topPick} onSelect={onSelect} emphasized />
+                    <CatalogMatchRow row={exactPartition.topPick} onSelect={onSelect} emphasized />
                   </ResultsSection>
                 ) : null}
 
-                {moreMatches.length > 0 ? (
+                {exactPartition.moreMatches.length > 0 ? (
                   <ResultsSection title="More catalog matches">
-                    {moreMatches.map((row) => (
+                    {exactPartition.moreMatches.map((row) => (
                       <CatalogMatchRow key={rowKey(row)} row={row} onSelect={onSelect} />
                     ))}
                   </ResultsSection>
                 ) : null}
+              </div>
+            ) : null}
+
+            {showSimilarFallback ? (
+              <div className="max-h-[min(65dvh,560px)] overflow-y-auto overscroll-contain md:max-h-none md:overflow-visible">
+                {similarPartition.topPick ? (
+                  <ResultsSection title="Closest catalog match">
+                    <CatalogMatchRow row={similarPartition.topPick} onSelect={onSelect} emphasized />
+                  </ResultsSection>
+                ) : null}
+
+                {similarPartition.moreMatches.length > 0 ? (
+                  <ResultsSection title="Similar catalog results">
+                    {similarPartition.moreMatches.map((row) => (
+                      <CatalogMatchRow key={rowKey(row)} row={row} onSelect={onSelect} />
+                    ))}
+                  </ResultsSection>
+                ) : null}
+
+                <div className="border-t border-border/40 px-4 py-4 sm:px-6 md:px-8">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full min-h-touch md:w-auto"
+                    onClick={onSkip}
+                  >
+                    Continue without a catalog match
+                  </Button>
+                </div>
               </div>
             ) : null}
           </section>
