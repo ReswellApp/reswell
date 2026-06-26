@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import type { ReactNode } from "react"
+import { SellAuthGate } from "@/components/features/sell/sell-auth-gate"
 
 const title = "Sell your surfboard — Reswell"
 const description =
@@ -34,5 +35,5 @@ export const metadata: Metadata = {
 }
 
 export default function SellLayout({ children }: { children: ReactNode }) {
-  return children
+  return <SellAuthGate>{children}</SellAuthGate>
 }
