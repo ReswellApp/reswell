@@ -17,11 +17,11 @@ import { releaseOrderSellerEarningsAfterFulfillment } from "@/lib/services/relea
 import { notifyConsignorSold } from "@/lib/services/notifyConsignorSold"
 import { processPaymentOnReader, cancelReaderAction } from "@/lib/services/stripeTerminal"
 import { captureStoreCustomer } from "@/lib/services/storeCustomers"
-import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
-import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
-import { signPosReceiptToken } from "@/lib/services/posReceiptToken"
-import { trackKlaviyoPosReceipt } from "@/lib/klaviyo/track-pos-receipt"
-import { publicSiteOrigin } from "@/lib/public-site-origin"
+import { sendPosReceiptEmailForOrder } from "@/lib/services/posReceiptEmail"
+import { markListingSoldForCheckout } from "@/lib/services/listingSoldSiteEffects"
+import { ensurePosOrderListingMarkedSold } from "@/lib/services/reconcileListingSoldOrders"
+import { getSellerEarnings } from "@/lib/seller-fees"
+import { isShopOwnedStoreListing } from "@/lib/utils/store-inventory-kind"
 import type { PosSaleStartInput, PosCashSaleInput } from "@/lib/validations/consignment"
 
 const POS_LISTING_SELECT =
@@ -46,7 +46,13 @@ export type StartPosSaleResult =
   | { ok: false; error: string; status: number }
 
 export type CompletePosOrderResult =
-  | { ok: true; orderId: string; alreadyProcessed?: boolean }
+  | {
+      ok: true
+      orderId: string
+      alreadyProcessed?: boolean
+      receiptEmailSent?: boolean
+      customerEmail?: string | null
+    }
   | { ok: false; error: string; status: number }
 
 function isUniqueViolation(err: { code?: string; message?: string } | null): boolean {
@@ -97,22 +103,26 @@ export async function startPosSale(
   const listing = listingRaw as PosListingRow
 
   if (listing.consignment_store_id !== input.storeId) {
-    return { ok: false, error: "This board is not consigned to your store.", status: 403 }
+    return { ok: false, error: "This board is not in your store inventory.", status: 403 }
   }
   if (listing.status !== "active" || listing.hidden_from_site) {
     return { ok: false, error: "This board is not available for sale.", status: 409 }
   }
-  if (!listing.consignor_profile_id) {
-    return { ok: false, error: "Board is missing its consignor.", status: 409 }
-  }
+
+  const shopOwned = isShopOwnedStoreListing(listing)
 
   const itemPrice = round2(parseFloat(String(listing.price)))
   if (!Number.isFinite(itemPrice) || itemPrice <= 0) {
     return { ok: false, error: "Board has an invalid price.", status: 409 }
   }
-  const floor = listing.floor_price == null ? null : round2(parseFloat(String(listing.floor_price)))
-  if (floor != null && itemPrice < floor) {
-    return { ok: false, error: "Board price is below its floor.", status: 409 }
+  if (!shopOwned) {
+    if (!listing.consignor_profile_id) {
+      return { ok: false, error: "Board is missing its consignor.", status: 409 }
+    }
+    const floor = listing.floor_price == null ? null : round2(parseFloat(String(listing.floor_price)))
+    if (floor != null && itemPrice < floor) {
+      return { ok: false, error: "Board price is below its floor.", status: 409 }
+    }
   }
 
   // Optional walk-in customer capture (deduped by store+email).
@@ -139,14 +149,15 @@ export async function startPosSale(
       currency: "usd",
       payment_method_types: ["card_present"],
       capture_method: "automatic",
-      description: `In-store sale — ${listing.title ?? "consigned board"}`,
+      description: `In-store sale — ${listing.title ?? "store item"}`,
       metadata: {
         sales_channel: "pos",
         store_id: input.storeId,
         listing_id: listing.id,
-        consignor_id: listing.consignor_profile_id,
         seller_id: listing.user_id,
         pos_staff_profile_id: staffProfileId,
+        inventory_kind: shopOwned ? "shop_owned" : "consignment",
+        ...(listing.consignor_profile_id ? { consignor_id: listing.consignor_profile_id } : {}),
         ...(storeCustomerId ? { store_customer_id: storeCustomerId } : {}),
       },
     })
@@ -205,6 +216,15 @@ export async function completePosOrderFromPaymentIntent(
     .eq("stripe_checkout_session_id", pi.id)
     .maybeSingle()
   if (existing?.id) {
+    const { data: listingRaw } = await service
+      .from("listings")
+      .select(POS_LISTING_SELECT)
+      .eq("id", listingId)
+      .maybeSingle()
+    if (listingRaw) {
+      const itemPrice = round2((pi.amount_received ?? pi.amount) / 100)
+      await ensurePosOrderListingMarkedSold(service, listingRaw as PosListingRow, itemPrice)
+    }
     return { ok: true, orderId: existing.id, alreadyProcessed: true }
   }
 
@@ -218,7 +238,7 @@ export async function completePosOrderFromPaymentIntent(
   }
   const listing = listingRaw as PosListingRow
 
-  if (listing.consignment_store_id !== storeId || !listing.consignor_profile_id) {
+  if (listing.consignment_store_id !== storeId) {
     return { ok: false, error: "Board / store mismatch on this sale.", status: 409 }
   }
 
@@ -227,12 +247,36 @@ export async function completePosOrderFromPaymentIntent(
     return { ok: false, error: "Store not found for this sale.", status: 409 }
   }
 
+  const itemPrice = round2((pi.amount_received ?? pi.amount) / 100)
+  const storeCustomerId = pi.metadata?.store_customer_id?.trim() || null
+  const posStaffId = pi.metadata?.pos_staff_profile_id?.trim() || null
+
+  if (isShopOwnedStoreListing(listing)) {
+    const { marketplaceFee, sellerEarnings } = getSellerEarnings(itemPrice)
+    return finalizePosSettlement(service, {
+      listing,
+      store,
+      itemPrice,
+      paymentMethod: "stripe",
+      paymentRef: pi.id,
+      storeCustomerId,
+      posStaffId,
+      shopOwned: {
+        platformFee: marketplaceFee,
+        sellerEarnings,
+      },
+    })
+  }
+
+  if (!listing.consignor_profile_id) {
+    return { ok: false, error: "Board is missing its consignor.", status: 409 }
+  }
+
   const commissionBps = resolveCommissionBps(listing.commission_bps, store.defaultCommissionBps)
   if (commissionBps == null) {
     return { ok: false, error: "Commission not configured for this board.", status: 409 }
   }
 
-  const itemPrice = round2((pi.amount_received ?? pi.amount) / 100)
   const floor = listing.floor_price == null ? null : round2(parseFloat(String(listing.floor_price)))
   if (floor != null && itemPrice < floor) {
     console.error("[posSale] floor violation at settlement", { pi: pi.id, itemPrice, floor })
@@ -247,20 +291,16 @@ export async function completePosOrderFromPaymentIntent(
   if (!splitRes.ok) {
     return { ok: false, error: splitRes.error, status: 409 }
   }
-  const split = splitRes.split
-
-  const storeCustomerId = pi.metadata?.store_customer_id?.trim() || null
-  const posStaffId = pi.metadata?.pos_staff_profile_id?.trim() || null
 
   return finalizePosSettlement(service, {
     listing,
     store,
-    split,
     itemPrice,
     paymentMethod: "stripe",
     paymentRef: pi.id,
     storeCustomerId,
     posStaffId,
+    consignment: splitRes.split,
   })
 }
 
@@ -272,31 +312,46 @@ type ConsignmentSplitValues = {
   consignorEarnings: number
 }
 
+type ShopOwnedPosEarnings = {
+  platformFee: number
+  sellerEarnings: number
+}
+
+type FinalizePosSettlementArgs = {
+  listing: PosListingRow
+  store: NonNullable<Awaited<ReturnType<typeof getConsignmentStoreById>>>
+  itemPrice: number
+  paymentMethod: "stripe" | "cash"
+  paymentRef: string | null
+  storeCustomerId: string | null
+  posStaffId: string | null
+} & (
+  | { consignment: ConsignmentSplitValues; shopOwned?: never }
+  | { shopOwned: ShopOwnedPosEarnings; consignment?: never }
+)
+
 /**
- * Shared in-store settlement: inserts the POS order, splits earnings into pending wallets, marks the
- * board sold, releases earnings immediately (pickup), notifies the consignor, and emails the receipt.
- * Used by both the card-present (`paymentMethod: 'stripe'`, `paymentRef: pi.id`) and cash
- * (`paymentMethod: 'cash'`, `paymentRef: null`) tenders.
+ * Shared in-store settlement: inserts the POS order, credits pending wallets, marks the board sold,
+ * releases earnings immediately (pickup), notifies the consignor when applicable, and emails receipt.
  */
 async function finalizePosSettlement(
   service: SupabaseClient,
-  args: {
-    listing: PosListingRow
-    store: NonNullable<Awaited<ReturnType<typeof getConsignmentStoreById>>>
-    split: ConsignmentSplitValues
-    itemPrice: number
-    paymentMethod: "stripe" | "cash"
-    paymentRef: string | null
-    storeCustomerId: string | null
-    posStaffId: string | null
-  },
+  args: FinalizePosSettlementArgs,
 ): Promise<CompletePosOrderResult> {
-  const { listing, store, split, itemPrice, paymentMethod, paymentRef, storeCustomerId, posStaffId } =
-    args
-  const consignorProfileId = listing.consignor_profile_id
-  if (!consignorProfileId) {
+  const { listing, store, itemPrice, paymentMethod, paymentRef, storeCustomerId, posStaffId } = args
+  const shopOwned = "shopOwned" in args && args.shopOwned != null
+  const split = shopOwned ? null : args.consignment
+  if (!shopOwned && !split) {
+    return { ok: false, error: "Settlement split is missing.", status: 500 }
+  }
+
+  const platformFee = shopOwned ? args.shopOwned.platformFee : split!.platformFee
+  const sellerEarnings = shopOwned ? args.shopOwned.sellerEarnings : split!.sellerEarnings
+  const consignorProfileId = shopOwned ? null : listing.consignor_profile_id
+  if (!shopOwned && !consignorProfileId) {
     return { ok: false, error: "Board is missing its consignor.", status: 409 }
   }
+
   const orderId = randomUUID()
 
   const { data: purchase, error: insertError } = await service
@@ -308,8 +363,8 @@ async function finalizePosSettlement(
       seller_id: listing.user_id,
       amount: itemPrice,
       shipping_amount: 0,
-      platform_fee: split.platformFee,
-      seller_earnings: split.sellerEarnings,
+      platform_fee: platformFee,
+      seller_earnings: sellerEarnings,
       status: "confirmed",
       payment_method: paymentMethod,
       stripe_checkout_session_id: paymentRef,
@@ -318,9 +373,9 @@ async function finalizePosSettlement(
       sales_channel: "pos",
       consignment_store_id: store.id,
       consignor_profile_id: consignorProfileId,
-      shop_commission_gross: split.shopCommissionGross,
-      shop_net_earnings: split.shopNetEarnings,
-      consignor_earnings: split.consignorEarnings,
+      shop_commission_gross: shopOwned ? null : split!.shopCommissionGross,
+      shop_net_earnings: shopOwned ? sellerEarnings : split!.shopNetEarnings,
+      consignor_earnings: shopOwned ? null : split!.consignorEarnings,
       store_customer_id: storeCustomerId,
       pos_staff_profile_id: posStaffId,
     })
@@ -335,6 +390,7 @@ async function finalizePosSettlement(
         .eq("stripe_checkout_session_id", paymentRef)
         .maybeSingle()
       if (raced?.id) {
+        await ensurePosOrderListingMarkedSold(service, listing, itemPrice)
         return { ok: true, orderId: raced.id, alreadyProcessed: true }
       }
     }
@@ -348,8 +404,8 @@ async function finalizePosSettlement(
     sort_order: 0,
     item_price: itemPrice,
     shipping_amount: 0,
-    platform_fee: split.platformFee,
-    seller_earnings: split.sellerEarnings,
+    platform_fee: platformFee,
+    seller_earnings: sellerEarnings,
   })
   if (itemErr) {
     console.error("[posSale] order_items insert failed", itemErr)
@@ -358,35 +414,59 @@ async function finalizePosSettlement(
 
   const title = String(listing.title ?? "")
 
-  const consignorCredit = await creditOrderPendingEarnings(service, {
-    userId: consignorProfileId,
-    amountUsd: split.consignorEarnings,
-    orderId: purchase.id,
-    description: walletPendingConsignorDescription(title),
-    referenceType: "consignment_order_pending_consignor",
-  })
-  if (!consignorCredit.ok) return consignorCredit
+  if (shopOwned) {
+    const sellerCredit = await creditOrderPendingEarnings(service, {
+      userId: listing.user_id,
+      amountUsd: sellerEarnings,
+      orderId: purchase.id,
+      description: `Pending sale: ${title}`,
+      referenceType: "order_pending_earnings",
+    })
+    if (!sellerCredit.ok) return sellerCredit
+  } else {
+    const consignorCredit = await creditOrderPendingEarnings(service, {
+      userId: consignorProfileId!,
+      amountUsd: split!.consignorEarnings,
+      orderId: purchase.id,
+      description: walletPendingConsignorDescription(title),
+      referenceType: "consignment_order_pending_consignor",
+    })
+    if (!consignorCredit.ok) return consignorCredit
 
-  const shopCredit = await creditOrderPendingEarnings(service, {
-    userId: listing.user_id,
-    amountUsd: split.shopNetEarnings,
-    orderId: purchase.id,
-    description: walletPendingShopCommissionDescription(title, split.platformFee),
-    referenceType: "consignment_order_pending_shop",
-  })
-  if (!shopCredit.ok) return shopCredit
-
-  const { error: soldErr } = await service
-    .from("listings")
-    .update({ status: "sold" })
-    .eq("id", listing.id)
-  if (soldErr) {
-    console.error("[posSale] mark sold failed", soldErr)
-    return { ok: false, error: "Could not mark the board sold.", status: 500 }
+    const shopCredit = await creditOrderPendingEarnings(service, {
+      userId: listing.user_id,
+      amountUsd: split!.shopNetEarnings,
+      orderId: purchase.id,
+      description: walletPendingShopCommissionDescription(title, split!.platformFee),
+      referenceType: "consignment_order_pending_shop",
+    })
+    if (!shopCredit.ok) return shopCredit
   }
 
-  // In-store handoff is immediate: release pending → available right away (pickup, no shipping gate).
-  // The order is already committed; a release hiccup is logged and can be re-driven, never fails the sale.
+  const marked = await markListingSoldForCheckout(service, {
+    listingId: listing.id,
+    listingSlug: listing.slug,
+    sellerUserId: listing.user_id,
+    soldPriceUsd: itemPrice,
+  })
+  if (!marked.ok) {
+    await ensurePosOrderListingMarkedSold(service, listing, itemPrice)
+    const retry = await markListingSoldForCheckout(service, {
+      listingId: listing.id,
+      listingSlug: listing.slug,
+      sellerUserId: listing.user_id,
+      soldPriceUsd: itemPrice,
+    })
+    if (!retry.ok) {
+      console.error("[posSale] mark sold failed after order insert", {
+        orderId: purchase.id,
+        listingId: listing.id,
+        error: retry.error,
+      })
+      return { ok: false, error: "Could not mark the board sold.", status: 500 }
+    }
+  }
+
   try {
     const released = await releaseOrderSellerEarningsAfterFulfillment(purchase.id)
     if (!released.ok) {
@@ -399,25 +479,21 @@ async function finalizePosSettlement(
     console.error("[posSale] earnings release threw", { orderId: purchase.id, e })
   }
 
-  revalidateBoardsBrowseCatalog()
-  await revalidateSellersAfterListingChange(service, listing.user_id)
-
-  // Notify the consignor their board sold (best-effort).
-  void notifyConsignorSold(service, purchase.id)
-
-  // Receipt: if we captured the walk-in customer, email them their receipt via the existing
-  // Klaviyo pipeline (with a "create your account" CTA). Best-effort, never blocks settlement.
-  if (storeCustomerId) {
-    void sendPosReceipt(service, {
-      orderId: purchase.id,
-      storeCustomerId,
-      storeName: store.name,
-      listingTitle: String(listing.title ?? "your board"),
-      amountUsd: itemPrice,
-    })
+  if (!shopOwned) {
+    void notifyConsignorSold(service, purchase.id)
   }
 
-  return { ok: true, orderId: purchase.id }
+  if (storeCustomerId) {
+    const sent = await sendPosReceiptEmailForOrder(service, purchase.id)
+    return {
+      ok: true,
+      orderId: purchase.id,
+      receiptEmailSent: sent.ok,
+      customerEmail: sent.ok ? sent.customerEmail : null,
+    }
+  }
+
+  return { ok: true, orderId: purchase.id, receiptEmailSent: false, customerEmail: null }
 }
 
 /**
@@ -458,36 +534,26 @@ export async function completePosCashSale(
   const listing = listingRaw as PosListingRow
 
   if (listing.consignment_store_id !== input.storeId) {
-    return { ok: false, error: "This board is not consigned to your store.", status: 403 }
+    return { ok: false, error: "This board is not in your store inventory.", status: 403 }
   }
   if (listing.status !== "active" || listing.hidden_from_site) {
     return { ok: false, error: "This board is not available for sale.", status: 409 }
   }
-  if (!listing.consignor_profile_id) {
-    return { ok: false, error: "Board is missing its consignor.", status: 409 }
-  }
+
+  const shopOwned = isShopOwnedStoreListing(listing)
 
   const itemPrice = round2(parseFloat(String(listing.price)))
   if (!Number.isFinite(itemPrice) || itemPrice <= 0) {
     return { ok: false, error: "Board has an invalid price.", status: 409 }
   }
-  const floor = listing.floor_price == null ? null : round2(parseFloat(String(listing.floor_price)))
-  if (floor != null && itemPrice < floor) {
-    return { ok: false, error: "Board price is below its floor.", status: 409 }
-  }
-
-  const commissionBps = resolveCommissionBps(listing.commission_bps, store.defaultCommissionBps)
-  if (commissionBps == null) {
-    return { ok: false, error: "Commission not configured for this board.", status: 409 }
-  }
-
-  const splitRes = computeConsignmentSplit({
-    itemPriceUsd: itemPrice,
-    commissionBps,
-    reswellFeeBps: store.reswellFeeBps,
-  })
-  if (!splitRes.ok) {
-    return { ok: false, error: splitRes.error, status: 409 }
+  if (!shopOwned) {
+    if (!listing.consignor_profile_id) {
+      return { ok: false, error: "Board is missing its consignor.", status: 409 }
+    }
+    const floor = listing.floor_price == null ? null : round2(parseFloat(String(listing.floor_price)))
+    if (floor != null && itemPrice < floor) {
+      return { ok: false, error: "Board price is below its floor.", status: 409 }
+    }
   }
 
   let storeCustomerId: string | null = null
@@ -505,52 +571,45 @@ export async function completePosCashSale(
     }
   }
 
+  if (shopOwned) {
+    const { marketplaceFee, sellerEarnings } = getSellerEarnings(itemPrice)
+    return finalizePosSettlement(service, {
+      listing,
+      store,
+      itemPrice,
+      paymentMethod: "cash",
+      paymentRef: null,
+      storeCustomerId,
+      posStaffId: staffProfileId,
+      shopOwned: {
+        platformFee: marketplaceFee,
+        sellerEarnings,
+      },
+    })
+  }
+
+  const commissionBps = resolveCommissionBps(listing.commission_bps, store.defaultCommissionBps)
+  if (commissionBps == null) {
+    return { ok: false, error: "Commission not configured for this board.", status: 409 }
+  }
+
+  const splitRes = computeConsignmentSplit({
+    itemPriceUsd: itemPrice,
+    commissionBps,
+    reswellFeeBps: store.reswellFeeBps,
+  })
+  if (!splitRes.ok) {
+    return { ok: false, error: splitRes.error, status: 409 }
+  }
+
   return finalizePosSettlement(service, {
     listing,
     store,
-    split: splitRes.split,
     itemPrice,
     paymentMethod: "cash",
     paymentRef: null,
     storeCustomerId,
     posStaffId: staffProfileId,
+    consignment: splitRes.split,
   })
-}
-
-async function sendPosReceipt(
-  service: SupabaseClient,
-  params: {
-    orderId: string
-    storeCustomerId: string
-    storeName: string
-    listingTitle: string
-    amountUsd: number
-  },
-): Promise<void> {
-  try {
-    const { data: customer } = await service
-      .from("store_customers")
-      .select("email, first_name, last_name")
-      .eq("id", params.storeCustomerId)
-      .maybeSingle()
-    const email = (customer as { email?: string } | null)?.email?.trim()
-    if (!email) return
-
-    const token = signPosReceiptToken(params.orderId)
-    if (!token) return
-    const receiptUrl = `${publicSiteOrigin()}/receipt/${token}`
-
-    await trackKlaviyoPosReceipt({
-      orderId: params.orderId,
-      customerEmail: email,
-      customerFirstName: (customer as { first_name?: string | null } | null)?.first_name ?? null,
-      customerLastName: (customer as { last_name?: string | null } | null)?.last_name ?? null,
-      storeName: params.storeName,
-      listingTitle: params.listingTitle,
-      amountUsd: params.amountUsd,
-      receiptUrl,
-    })
-  } catch (e) {
-    console.error("[posSale] receipt send failed", { orderId: params.orderId, e })
-  }
 }

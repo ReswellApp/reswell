@@ -31,11 +31,13 @@ export default async function SellPage({
     edit?: string | string[]
     new?: string | string[]
     type?: string | string[]
+    store?: string | string[]
   }>
 }) {
   const qs = await searchParams
   const editId = parseEditListingId(qs.edit)
   const type = firstParam(qs.type)
+  const storeSlug = firstParam(qs.store)?.trim()
 
   // Editing an existing listing or explicitly choosing surfboards goes straight
   // to the surfboard flow. A fresh /sell visit shows the product-type chooser
@@ -48,5 +50,5 @@ export default async function SellPage({
     )
   }
 
-  return <SellTypeChooser />
+  return <SellTypeChooser storeSlug={storeSlug} />
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -55,6 +55,7 @@ import { buildFinListingPersistFields } from "@/lib/fin-listing-persist-fields"
 import { computeFinSellSectionCompletion } from "@/lib/fin-sell-section-completion"
 import { sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
+import { finishShopScopedListingPublish } from "@/lib/utils/attach-shop-listing-client"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { singleFinSetupSlugForForm } from "@/lib/listing-fin-setup-tags"
 import {
@@ -184,6 +185,8 @@ function scrollFinSellSectionIntoView(sectionId: string) {
 
 export default function SellFinsFlow({ editListingId = null }: { editListingId?: string | null }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const consignmentStoreSlug = searchParams.get("store")?.trim() ?? ""
   const signIn = useSignInGate()
   const fileInputId = useId()
   const supabaseRef = useRef(createClient())
@@ -859,7 +862,18 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
       }
 
       toast.success("Your fin is live!")
-      router.push(`/l/${result.slug}`)
+      const fallbackPath = `/l/${result.slug}`
+      if (consignmentStoreSlug) {
+        const redirectPath = await finishShopScopedListingPublish({
+          listingId: result.listingId,
+          storeSlug: consignmentStoreSlug,
+          fallbackPath,
+          onError: (message) => toast.error(message),
+        })
+        router.push(redirectPath)
+        return
+      }
+      router.push(fallbackPath)
     } catch (err) {
       console.error("fin listing submit failed", err)
       toast.error(editId ? "Something went wrong saving your listing." : "Something went wrong publishing your listing.")

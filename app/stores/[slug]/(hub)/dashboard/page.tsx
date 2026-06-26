@@ -2,14 +2,19 @@ import Image from "next/image"
 import { getStoreHubContext } from "@/lib/store-hub-access"
 import {
   getStoreSalesSummary,
+  getStoreActiveInventoryCounts,
+  listActiveStoreInventory,
   listStoreCustomers,
   listStoreOrders,
 } from "@/lib/db/consignmentStores"
+import { storeNavHref } from "@/lib/store-nav-links"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
 import { StoreRefundButton } from "@/components/features/consignment/store-refund-button"
 import { StorePageHeader } from "@/components/features/consignment/store-page-header"
+import { reconcileStoreInventorySoldOrders } from "@/lib/services/reconcileListingSoldOrders"
 import { resolveStoreSectionMeta } from "@/lib/store-section-meta"
 
 export const dynamic = "force-dynamic"
@@ -23,11 +28,17 @@ export default async function StoreDashboardPage({
   const { supabase, store } = await getStoreHubContext(slug)
   const { description } = resolveStoreSectionMeta(`/stores/${slug}/dashboard`, slug)
 
-  const [summary, orders, customers] = await Promise.all([
-    getStoreSalesSummary(supabase, store.id),
-    listStoreOrders(supabase, store.id, 25),
-    listStoreCustomers(supabase, store.id, 50),
-  ])
+  await reconcileStoreInventorySoldOrders(store.id)
+
+  const [summary, orders, customers, inventoryCounts, shopPreview, consignmentPreview] =
+    await Promise.all([
+      getStoreSalesSummary(supabase, store.id),
+      listStoreOrders(supabase, store.id, 25),
+      listStoreCustomers(supabase, store.id, 50),
+      getStoreActiveInventoryCounts(supabase, store.id),
+      listActiveStoreInventory(supabase, store.id, { kind: "shop_owned", limit: 4 }),
+      listActiveStoreInventory(supabase, store.id, { kind: "consignment", limit: 4 }),
+    ])
 
   const stats = [
     { name: "Gross sales", value: `$${summary.grossSalesUsd.toFixed(2)}` },
@@ -50,6 +61,97 @@ export default async function StoreDashboardPage({
           </Card>
         ))}
       </div>
+
+      <Card className="mt-6">
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+          <CardTitle className="text-base">Floor inventory</CardTitle>
+          <Link
+            href={storeNavHref(slug, "/inventory")}
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            View all
+          </Link>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-sm font-medium">Shop inventory</p>
+              <Badge variant="secondary">{inventoryCounts.shopOwned} active</Badge>
+            </div>
+            {shopPreview.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No shop-owned items yet.{" "}
+                <Link
+                  href={`/sell?store=${encodeURIComponent(slug)}`}
+                  className="underline underline-offset-2"
+                >
+                  List one
+                </Link>
+              </p>
+            ) : (
+              <ul className="divide-y rounded-lg border">
+                {shopPreview.map((item) => (
+                  <li key={item.listingId} className="flex items-center gap-3 px-3 py-2.5">
+                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
+                      {item.coverUrl ? (
+                        <Image
+                          src={item.coverUrl}
+                          alt={item.title}
+                          fill
+                          sizes="40px"
+                          className="object-cover"
+                        />
+                      ) : null}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm">{item.title}</p>
+                    </div>
+                    <p className="shrink-0 text-sm font-medium tabular-nums">
+                      ${item.price.toFixed(2)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-sm font-medium">Consignment inventory</p>
+              <Badge variant="secondary">{inventoryCounts.consignment} active</Badge>
+            </div>
+            {consignmentPreview.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No consigned boards on the floor yet.
+              </p>
+            ) : (
+              <ul className="divide-y rounded-lg border">
+                {consignmentPreview.map((item) => (
+                  <li key={item.listingId} className="flex items-center gap-3 px-3 py-2.5">
+                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
+                      {item.coverUrl ? (
+                        <Image
+                          src={item.coverUrl}
+                          alt={item.title}
+                          fill
+                          sizes="40px"
+                          className="object-cover"
+                        />
+                      ) : null}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm">{item.title}</p>
+                    </div>
+                    <p className="shrink-0 text-sm font-medium tabular-nums">
+                      ${item.price.toFixed(2)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="mt-6">
         <CardHeader>
@@ -103,8 +205,14 @@ export default async function StoreDashboardPage({
       </Card>
 
       <Card className="mt-6">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
           <CardTitle className="text-base">Customers ({customers.length})</CardTitle>
+          <Link
+            href={storeNavHref(slug, "/customers")}
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            View all
+          </Link>
         </CardHeader>
         <CardContent>
           {customers.length === 0 ? (

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { completePosCashSale } from "@/lib/services/posSale"
+import { signPosReceiptToken } from "@/lib/services/posReceiptToken"
 import { posCashSaleSchema } from "@/lib/validations/consignment"
 
 export async function POST(request: NextRequest) {
@@ -26,5 +27,12 @@ export async function POST(request: NextRequest) {
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status })
   }
-  return NextResponse.json({ data: { orderId: result.orderId } })
+  return NextResponse.json({
+    data: {
+      orderId: result.orderId,
+      receiptToken: signPosReceiptToken(result.orderId),
+      receiptEmailSent: result.receiptEmailSent ?? false,
+      customerEmail: result.customerEmail ?? null,
+    },
+  })
 }

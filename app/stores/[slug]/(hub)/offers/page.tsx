@@ -20,7 +20,7 @@ export default async function StoreOffersPage({
 
   return (
     <>
-      <StorePageHeader title="Offers" description={description} />
+      <StorePageHeader title="Shop offers" description={description} />
 
       {offers.length === 0 ? (
         <p className="rounded-lg border py-12 text-center text-sm text-muted-foreground">

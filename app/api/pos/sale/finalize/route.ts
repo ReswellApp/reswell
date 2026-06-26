@@ -4,6 +4,7 @@ import { getStripe } from "@/lib/stripe-server"
 import { getStoreStaffRole } from "@/lib/db/consignmentStores"
 import { posSaleFinalizeSchema } from "@/lib/validations/consignment"
 import { completePosOrderFromPaymentIntent } from "@/lib/services/posSale"
+import { signPosReceiptToken } from "@/lib/services/posReceiptToken"
 
 /**
  * Polled by the register after the reader collects payment. Returns the live PI status so the UI can
@@ -61,6 +62,13 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({
-    data: { status: "succeeded", settled: true, orderId: result.orderId },
+    data: {
+      status: "succeeded",
+      settled: true,
+      orderId: result.orderId,
+      receiptToken: signPosReceiptToken(result.orderId),
+      receiptEmailSent: result.receiptEmailSent ?? false,
+      customerEmail: result.customerEmail ?? null,
+    },
   })
 }

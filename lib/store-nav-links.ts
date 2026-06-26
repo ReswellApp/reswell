@@ -9,6 +9,13 @@ import {
   MessageSquare,
   Users,
   Settings,
+  Contact,
+  UserCircle,
+  Banknote,
+  Package,
+  Handshake,
+  ShoppingBag,
+  PackageCheck,
 } from "lucide-react"
 import type { ConsignmentStoreStaffRole } from "@/lib/types/consignment"
 
@@ -66,8 +73,24 @@ export function buildStoreNavSections(): StoreNavSection[] {
     {
       label: "Buyers",
       items: [
-        { name: "Offers", path: "/offers", icon: HandCoins, minRole: "clerk" },
-        { name: "Messages", path: "/messages", icon: MessageSquare, minRole: "clerk" },
+        { name: "Customers", path: "/customers", icon: Contact, minRole: "clerk" },
+        { name: "Shop offers", path: "/offers", icon: HandCoins, minRole: "clerk" },
+        { name: "Shop messages", path: "/messages", icon: MessageSquare, minRole: "clerk" },
+      ],
+    },
+    {
+      label: "Account",
+      items: [
+        { name: "Overview", path: "/account", icon: LayoutDashboard, minRole: "clerk" },
+        { name: "Profile", path: "/account/profile", icon: UserCircle, minRole: "clerk" },
+        { name: "Earnings", path: "/account/earnings", icon: Banknote, minRole: "clerk" },
+        { name: "My listings", path: "/account/listings", icon: Package, minRole: "clerk" },
+        { name: "Offers", path: "/account/offers", icon: Handshake, minRole: "clerk" },
+        { name: "Messages", path: "/account/messages", icon: MessageSquare, minRole: "clerk" },
+        { name: "Purchases", path: "/account/purchases", icon: ShoppingBag, minRole: "clerk" },
+        { name: "Sales", path: "/account/sales", icon: PackageCheck, minRole: "clerk" },
+        { name: "Following", path: "/account/following", icon: Users, minRole: "clerk" },
+        { name: "My consignments", path: "/account/consignments", icon: ClipboardList, minRole: "clerk" },
       ],
     },
     {

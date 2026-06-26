@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
-import { fetchRecentlySoldSurfboardsConfirmedCheckoutOrdering } from "@/lib/db/home-recently-sold-strip"
+import { fetchRecentlySoldListingsConfirmedCheckoutOrdering } from "@/lib/db/home-recently-sold-strip"
+import { isPeerListingSection, PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 import { isListingVisibleInPublicSoldFeed } from "@/lib/listing-public-visibility"
 
 const BRAND_MARKETPLACE_LISTING_SELECT = `
@@ -120,7 +121,7 @@ export async function listActiveListingsForBrand(
 
 /**
  * Sold marketplace listings for a directory brand.
- * Surfboards must still be sold with a confirmed checkout; shop (`new`) rows use sold status only.
+ * Peer sections use the public sold feed ordering; shop (`new`) rows use sold status only.
  */
 export async function listRecentlySoldListingsForBrand(
   supabase: SupabaseClient,
@@ -130,9 +131,12 @@ export async function listRecentlySoldListingsForBrand(
   const { limit, categoryId = null } = options
   const namePattern = `"%${escapeForOrFilter(brand.name)}%"`
 
-  const { orderedListingIds: confirmedSurfboardIds, confirmedAtIsoByListingId } =
-    await fetchRecentlySoldSurfboardsConfirmedCheckoutOrdering(supabase, 120)
-  const confirmedSurfboardSet = new Set(confirmedSurfboardIds)
+  const { orderedListingIds, confirmedAtIsoByListingId } =
+    await fetchRecentlySoldListingsConfirmedCheckoutOrdering(
+      supabase,
+      120,
+      PEER_LISTING_SECTIONS_FILTER,
+    )
 
   let q = supabase
     .from("listings")
@@ -142,7 +146,7 @@ export async function listRecentlySoldListingsForBrand(
   if (categoryId) {
     q = q.eq("category_id", categoryId)
   } else {
-    q = q.in("section", ["surfboards", "new"])
+    q = q.in("section", ["surfboards", "new", ...PEER_LISTING_SECTIONS_FILTER])
   }
 
   q = q.or(`brand_id.eq.${brand.id},brand.ilike.${namePattern}`)
@@ -155,23 +159,21 @@ export async function listRecentlySoldListingsForBrand(
   }
   if (!data?.length) return []
 
-  const rows = (data as BrandMarketplaceListingRow[]).filter((row) => {
-    if (!isListingVisibleInPublicSoldFeed(row)) return false
-    if (row.section === "surfboards") {
-      return confirmedSurfboardSet.has(row.id)
-    }
-    return true
-  })
-
-  const surfboardsById = new Map(
-    rows.filter((row) => row.section === "surfboards").map((row) => [row.id, row]),
+  const rows = (data as BrandMarketplaceListingRow[]).filter((row) =>
+    isListingVisibleInPublicSoldFeed(row),
   )
-  const shopRows = rows.filter((row) => row.section !== "surfboards")
+
+  const peerRowsById = new Map(
+    rows
+      .filter((row) => isPeerListingSection(row.section))
+      .map((row) => [row.id, row]),
+  )
+  const shopRows = rows.filter((row) => row.section === "new")
 
   const ordered: RecentListing[] = []
 
-  for (const id of confirmedSurfboardIds) {
-    const row = surfboardsById.get(id)
+  for (const id of orderedListingIds) {
+    const row = peerRowsById.get(id)
     if (!row) continue
     const mapped = mapRowToRecentListing(row)
     const confirmedAt = confirmedAtIsoByListingId.get(id)
@@ -180,6 +182,13 @@ export async function listRecentlySoldListingsForBrand(
   }
 
   for (const row of shopRows) {
+    ordered.push(mapRowToRecentListing(row))
+    if (ordered.length >= limit) return ordered
+  }
+
+  for (const row of rows) {
+    if (ordered.some((item) => item.id === row.id)) continue
+    if (row.section === "new") continue
     ordered.push(mapRowToRecentListing(row))
     if (ordered.length >= limit) return ordered
   }

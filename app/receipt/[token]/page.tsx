@@ -13,11 +13,12 @@ type ReceiptOrder = {
   amount: number | string
   created_at: string
   sales_channel: string | null
+  payment_method: string | null
   listings: {
     title: string | null
     listing_images: { url: string; is_primary: boolean | null; sort_order: number | null }[] | null
   } | null
-  consignment_stores: { name: string } | null
+  consignment_stores: { name: string; slug: string } | null
   store_customers: { first_name: string | null; last_name: string | null; email: string | null } | null
 }
 
@@ -42,7 +43,7 @@ export default async function ReceiptPage({
   const { data, error } = await service
     .from("orders")
     .select(
-      "id, order_num, amount, created_at, sales_channel, listings (title, listing_images (url, is_primary, sort_order)), consignment_stores (name), store_customers (first_name, last_name, email)",
+      "id, order_num, amount, created_at, sales_channel, payment_method, listings (title, listing_images (url, is_primary, sort_order)), consignment_stores (name, slug), store_customers (first_name, last_name, email)",
     )
     .eq("id", verified.orderId)
     .maybeSingle()
@@ -118,9 +119,18 @@ export default async function ReceiptPage({
           ) : null}
           <div className="flex justify-between">
             <dt className="text-muted-foreground">Payment</dt>
-            <dd>In-store card</dd>
+            <dd>{order.payment_method === "cash" ? "Cash" : "In-store card"}</dd>
           </div>
         </dl>
+
+        {order.sales_channel === "pos" && order.consignment_stores?.slug ? (
+          <Link
+            href={`/stores/${order.consignment_stores.slug}/pos`}
+            className="mt-6 block w-full rounded-md border px-4 py-2.5 text-center text-sm font-medium"
+          >
+            Back to register
+          </Link>
+        ) : null}
 
         {customerEmail ? (
           <div className="mt-6 rounded-lg bg-muted/50 p-4 text-center">

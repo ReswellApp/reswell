@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { redirect, notFound } from "next/navigation"
-import { CreditCard } from "lucide-react"
+import { CreditCard, Plus } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { getConsignmentStoreBySlug, getStoreStaffRole } from "@/lib/db/consignmentStores"
 import { profileHasConsignmentShopRole } from "@/lib/services/consignmentShopAccess"
@@ -69,6 +69,12 @@ export default async function StoreLayout({
               <Link href={`/stores/${slug}/pos`}>
                 <CreditCard className="mr-2 h-5 w-5" />
                 Open register
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="hidden w-full lg:inline-flex" size="lg">
+              <Link href="/sell?new=1">
+                <Plus className="mr-2 h-5 w-5" />
+                Create listing
               </Link>
             </Button>
             <StoreSidebarNav

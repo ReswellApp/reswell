@@ -128,6 +128,34 @@ export const posSaleFinalizeSchema = z.object({
   paymentIntentId: z.string().trim().min(1),
 })
 
+/** Link a published listing on the store owner's account to shop floor inventory (not consignment). */
+export const attachShopOwnedListingSchema = z.object({
+  listingId: z.string().uuid(),
+  storeId: z.string().uuid().optional(),
+  storeSlug: z
+    .string()
+    .trim()
+    .min(1)
+    .max(80)
+    .optional(),
+}).superRefine((data, ctx) => {
+  if (!data.storeId && !data.storeSlug) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Provide storeId or storeSlug",
+      path: ["storeId"],
+    })
+  }
+})
+
+/** Email a POS receipt to the customer (optionally capture/update customer details first). */
+export const posEmailReceiptSchema = z.object({
+  firstName: z.string().trim().min(1, "First name is required").max(80).optional(),
+  lastName: z.string().trim().max(80).optional(),
+  email: z.string().trim().email("Valid email required").optional(),
+  phoneE164: z.string().trim().max(20).optional(),
+})
+
 /** POS: settle an in-store sale paid in cash (no card reader / PaymentIntent). */
 export const posCashSaleSchema = z.object({
   storeId: z.string().uuid(),
@@ -139,6 +167,8 @@ export const posCashSaleSchema = z.object({
     .optional(),
 })
 
+export type PosEmailReceiptInput = z.infer<typeof posEmailReceiptSchema>
+export type AttachShopOwnedListingInput = z.infer<typeof attachShopOwnedListingSchema>
 export type ConsignmentIntakeSubmitInput = z.infer<typeof consignmentIntakeSubmitSchema>
 export type ConsignmentIntakeApproveInput = z.infer<typeof consignmentIntakeApproveSchema>
 export type StoreCustomerCaptureInput = z.infer<typeof storeCustomerCaptureSchema>

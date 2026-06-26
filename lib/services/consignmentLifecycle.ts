@@ -3,6 +3,7 @@ import { getStoreStaffRole } from "@/lib/db/consignmentStores"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
 import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
+import { markListingSoldForCheckout } from "@/lib/services/listingSoldSiteEffects"
 
 type LifecycleResult = { ok: true } | { ok: false; error: string; status: number }
 
@@ -10,7 +11,9 @@ type ConsignmentListingRow = {
   id: string
   slug: string | null
   status: string
+  user_id: string
   consignment_store_id: string | null
+  consignor_profile_id: string | null
 }
 
 async function loadStaffConsignmentListing(
@@ -20,7 +23,7 @@ async function loadStaffConsignmentListing(
 ): Promise<{ ok: true; listing: ConsignmentListingRow } | { ok: false; error: string; status: number }> {
   const { data, error } = await service
     .from("listings")
-    .select("id, slug, status, consignment_store_id")
+    .select("id, slug, status, user_id, consignment_store_id, consignor_profile_id")
     .eq("id", listingId)
     .maybeSingle()
 
@@ -58,11 +61,15 @@ export async function withdrawConsignmentListing(input: {
     return { ok: false, error: "Sold boards can't be withdrawn.", status: 409 }
   }
 
+  const shopOwned = Boolean(listing.consignment_store_id) && !listing.consignor_profile_id
+
   const { error: updErr } = await service
     .from("listings")
     .update({
       status: "removed",
-      intake_status: "withdrawn",
+      ...(shopOwned
+        ? { consignment_store_id: null }
+        : { intake_status: "withdrawn" }),
       hidden_from_site: true,
       updated_at: new Date().toISOString(),
     })
@@ -73,11 +80,13 @@ export async function withdrawConsignmentListing(input: {
     return { ok: false, error: "Could not withdraw the board.", status: 500 }
   }
 
-  await service
-    .from("consignment_intakes")
-    .update({ status: "withdrawn", updated_at: new Date().toISOString() })
-    .eq("listing_id", listing.id)
-    .eq("status", "active")
+  if (!shopOwned) {
+    await service
+      .from("consignment_intakes")
+      .update({ status: "withdrawn", updated_at: new Date().toISOString() })
+      .eq("listing_id", listing.id)
+      .eq("status", "active")
+  }
 
   try {
     await syncListingToIndex(service, listing.id)
@@ -115,27 +124,36 @@ export async function recordOffPlatformSale(input: {
     return { ok: false, error: "Only active boards can be recorded as sold.", status: 409 }
   }
 
-  const { error: updErr } = await service
+  const marked = await markListingSoldForCheckout(service, {
+    listingId: listing.id,
+    listingSlug: listing.slug,
+    sellerUserId: listing.user_id,
+    soldPriceUsd: input.salePrice,
+  })
+
+  if (!marked.ok) {
+    console.error("[consignmentLifecycle] off-platform sale failed", {
+      listingId: listing.id,
+      error: marked.error,
+    })
+    return { ok: false, error: "Could not record the sale.", status: 500 }
+  }
+
+  const { error: priceErr } = await service
     .from("listings")
     .update({
-      status: "sold",
       price: input.salePrice,
       updated_at: new Date().toISOString(),
     })
     .eq("id", listing.id)
+    .eq("status", "sold")
 
-  if (updErr) {
-    console.error("[consignmentLifecycle] off-platform sale failed", { listingId: listing.id, updErr })
-    return { ok: false, error: "Could not record the sale.", status: 500 }
+  if (priceErr) {
+    console.error("[consignmentLifecycle] off-platform sale price update failed", {
+      listingId: listing.id,
+      priceErr,
+    })
   }
-
-  try {
-    await syncListingToIndex(service, listing.id)
-  } catch {
-    // ES best-effort.
-  }
-  revalidateBoardsBrowseCatalog()
-  revalidateListingDetailPage(listing.id, listing.slug ?? null)
 
   return { ok: true }
 }

@@ -31,6 +31,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
-  const inventory = await listActiveStoreInventory(supabase, store.id, query)
+  const inventory = await listActiveStoreInventory(supabase, store.id, { query })
   return NextResponse.json({ data: { inventory } })
 }

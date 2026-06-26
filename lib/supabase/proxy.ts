@@ -6,6 +6,8 @@ import {
 } from '@/lib/auth/clear-supabase-auth-cookies'
 import { hasSupabaseAuthCookies } from '@/lib/auth/has-supabase-auth-cookies'
 import { pathnameRequiresAuthSession } from '@/lib/auth/pathname-requires-auth-session'
+import { copySupabaseAuthCookies } from '@/lib/auth/copy-supabase-auth-cookies'
+import { resolveConsignmentOperatorAccountRedirect } from "@/lib/store-account-paths"
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -174,6 +176,29 @@ export async function updateSession(request: NextRequest) {
       const url = request.nextUrl.clone()
       url.pathname = '/'
       return NextResponse.redirect(url)
+    }
+  }
+
+  if (user) {
+    const accountRedirect = await resolveConsignmentOperatorAccountRedirect(
+      supabase,
+      user.id,
+      pathname,
+      `${request.nextUrl.search}`,
+    )
+    if (accountRedirect) {
+      const url = request.nextUrl.clone()
+      const qIndex = accountRedirect.indexOf("?")
+      if (qIndex >= 0) {
+        url.pathname = accountRedirect.slice(0, qIndex)
+        url.search = accountRedirect.slice(qIndex)
+      } else {
+        url.pathname = accountRedirect
+        url.search = ""
+      }
+      const redirectResponse = NextResponse.redirect(url)
+      copySupabaseAuthCookies(supabaseResponse, redirectResponse)
+      return redirectResponse
     }
   }
 

@@ -16,6 +16,7 @@ import { formatGmv } from "@/lib/format-gmv"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
 import { isListingVisibleInPublicSoldFeed } from "@/lib/listing-public-visibility"
+import { reconcileMarketplaceSoldFeedOrders } from "@/lib/services/reconcileListingSoldOrders"
 
 export const MARKETPLACE_SOLD_FEED_LIMIT = 40
 
@@ -103,6 +104,8 @@ export async function loadMarketplaceSoldFeed(
   brandSlug: string | null,
   options?: { shippedOnly?: boolean },
 ): Promise<MarketplaceSoldFeedPayload> {
+  await reconcileMarketplaceSoldFeedOrders()
+
   const shippedOnly = options?.shippedOnly === true
 
   if (brandSlug) {

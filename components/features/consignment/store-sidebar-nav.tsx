@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ArrowLeft, ExternalLink, Store } from "lucide-react"
+import { ExternalLink, Store } from "lucide-react"
 import type { ConsignmentStoreStaffRole } from "@/lib/types/consignment"
 import {
   buildStoreNavSections,
@@ -20,7 +20,11 @@ function isStoreLinkActive(pathname: string, href: string): boolean {
   const normalized = pathname.replace(/\/$/, "") || "/"
   const target = href.replace(/\/$/, "") || "/"
 
-  if (target.endsWith("/messages")) {
+  if (target.endsWith("/dashboard") || target.endsWith("/account")) {
+    return normalized === target
+  }
+
+  if (target.endsWith("/messages") || target.endsWith("/account/messages")) {
     return normalized === target || normalized.startsWith(`${target}/`)
   }
 
@@ -90,16 +94,6 @@ export function StoreSidebarNav({
       </div>
 
       <div className="space-y-1 border-t pt-4">
-        <Link
-          href="/dashboard"
-          className={cn(
-            dashboardSidebarNavItemClass,
-            "text-muted-foreground hover:bg-secondary hover:text-foreground",
-          )}
-        >
-          <ArrowLeft className={dashboardSidebarNavIconClass} />
-          Personal dashboard
-        </Link>
         {sellerProfileHref ? (
           <Link
             href={sellerProfileHref}

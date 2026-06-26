@@ -79,6 +79,7 @@ import {
 } from "lucide-react"
 import { LocationPicker } from "@/components/location-picker"
 import { listingDetailHref } from "@/lib/listing-href"
+import { finishShopScopedListingPublish } from "@/lib/utils/attach-shop-listing-client"
 import {
   boardFulfillmentFromChecks,
   boardFulfillmentFromFlags,
@@ -2864,7 +2865,18 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
               }
             })
           }
+          const consignmentStoreSlug = sellSearchParams.get("store")?.trim()
           retainPublishOverlayUntilNavigation = true
+          if (consignmentStoreSlug && listingId) {
+            const redirectPath = await finishShopScopedListingPublish({
+              listingId,
+              storeSlug: consignmentStoreSlug,
+              fallbackPath: detailPath,
+              onError: (message) => toast.error(message),
+            })
+            router.push(redirectPath)
+            return
+          }
           router.push(detailPath)
           return
         }

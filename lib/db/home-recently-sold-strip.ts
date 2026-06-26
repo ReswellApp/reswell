@@ -1,13 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { HOME_PEER_LISTING_WITH_PROFILE_SELECT } from "@/lib/db/home-peer-listing-feed"
 import { isListingVisibleInPublicSoldFeed } from "@/lib/listing-public-visibility"
+import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 import {
   isTransientNetworkError,
   retryOnTransientNetworkError,
 } from "@/lib/utils/transient-network-retry"
 
-/** Matches `/sold` sold-tab listing filters (surfboards + fins). */
-export const MARKETPLACE_SOLD_FEED_SECTIONS = ["surfboards", "fins"] as const
+/** Matches `/sold` sold-tab listing filters — all peer marketplace sections. */
+export const MARKETPLACE_SOLD_FEED_SECTIONS = PEER_LISTING_SECTIONS_FILTER
 
 /** Homepage recently sold strip — surfboards only. */
 export const HOME_RECENTLY_SOLD_STRIP_LIMIT = 12
@@ -41,9 +42,10 @@ export async function filterListingIdsStillSoldOnMarketplace(
 
   const { data, error } = await supabase
     .from("listings")
-    .select("id, title, status, hidden_from_site, archived_at")
+    .select("id, title, status, hidden_from_site, archived_at, sold_off_platform")
     .in("id", [...orderedListingIds])
     .eq("status", "sold")
+    .eq("sold_off_platform", false)
     .in("section", [...sections])
 
   if (error) {
@@ -128,8 +130,8 @@ async function fetchRecentlySoldSurfboardSaleTimesViaLegacyRpc(
 }
 
 /**
- * App-layer fallback when `recently_sold_listing_sale_times` migration is not applied yet.
- * Mirrors the RPC: confirmed checkout order time per listing, filtered to sold peer sections.
+ * App-layer fallback when the recently-sold RPC is unavailable.
+ * Confirmed online (Stripe / wallet) and POS orders only — no off-platform seller reports.
  */
 async function fetchRecentlySoldListingSaleTimesFallback(
   supabase: SupabaseClient,
@@ -150,9 +152,10 @@ async function fetchRecentlySoldListingSaleTimesFallback(
 
   const { data: orders, error: ordersError } = await supabase
     .from("orders")
-    .select("id, listing_id, created_at")
+    .select("id, listing_id, created_at, sales_channel")
     .eq("status", "confirmed")
     .eq("is_admin_test", false)
+    .in("sales_channel", ["online", "pos"])
     .order("created_at", { ascending: false })
     .limit(RECENTLY_SOLD_FALLBACK_ORDER_SCAN)
 
@@ -201,10 +204,11 @@ async function fetchRecentlySoldListingSaleTimesFallback(
 
   const { data: listings, error: listingsError } = await supabase
     .from("listings")
-    .select("id, title, status, hidden_from_site, archived_at")
+    .select("id, title, status, hidden_from_site, archived_at, sold_off_platform")
     .in("id", candidateIds)
     .in("section", [...sections])
     .eq("status", "sold")
+    .eq("sold_off_platform", false)
 
   if (listingsError) {
     console.error("[recently-sold-fallback] listings:", listingsError.message)
@@ -236,8 +240,8 @@ async function fetchRecentlySoldListingSaleTimesFallback(
 }
 
 /**
- * Ordering + confirmation timestamps from confirmed marketplace orders (Stripe card or wallet).
- * Uses the multi-section RPC when migrated; falls back to legacy surfboard RPC or app queries.
+ * Ordering + confirmation timestamps from confirmed online (Stripe / wallet) and POS orders.
+ * Uses the multi-section RPC when available; falls back to order-based app queries.
  */
 export async function fetchRecentlySoldListingsConfirmedCheckoutOrdering(
   supabase: SupabaseClient,
@@ -258,12 +262,11 @@ export async function fetchRecentlySoldListingsConfirmedCheckoutOrdering(
   if (!isSupabaseRpcMissingError(error)) {
     if (isTransientNetworkError(error.message)) {
       console.warn(
-        `recently_sold_listing_sale_times: transient network failure, serving empty feed: ${error.message}`,
+        `recently_sold_listing_sale_times: transient network failure, using fallback: ${error.message}`,
       )
     } else {
       console.error("recently_sold_listing_sale_times:", error.message)
     }
-    return { orderedListingIds: [], confirmedAtIsoByListingId: new Map() }
   }
 
   const surfboardsOnly = sections.length === 1 && sections[0] === "surfboards"

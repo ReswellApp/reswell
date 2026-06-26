@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 import SellFinsFlow from "./sell-fins-client"
 
 const title = "Sell your fins — Reswell"
@@ -37,5 +38,9 @@ export default async function SellFinsPage({
 }) {
   const qs = await searchParams
   const editId = parseEditListingId(qs.edit)
-  return <SellFinsFlow editListingId={editId} />
+  return (
+    <Suspense fallback={null}>
+      <SellFinsFlow editListingId={editId} />
+    </Suspense>
+  )
 }

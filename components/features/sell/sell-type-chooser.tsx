@@ -11,38 +11,49 @@ type SellTypeOption = {
   imageAlt: string
 }
 
+function withStoreParam(href: string, storeSlug?: string): string {
+  if (!storeSlug?.trim()) return href
+  const sep = href.includes("?") ? "&" : "?"
+  return `${href}${sep}store=${encodeURIComponent(storeSlug.trim())}`
+}
+
 /** Shown on /sell chooser. Other sell flows stay live at their routes until launch. */
-const OPTIONS: readonly SellTypeOption[] = [
-  {
-    href: "/sell?type=surfboard",
-    title: "Surfboard",
-    description: "List a board from your quiver.",
-    imageSrc: "/images/sell/surfboard.jpg",
-    imageAlt: "Surfboard",
-  },
-  {
-    href: "/sell/fins",
-    title: "Fins",
-    description: "List thrusters, quads, twins, or singles.",
-    imageSrc: "/images/sell/fins.jpg",
-    imageAlt: "Surfboard fin",
-  },
-]
+function buildOptions(storeSlug?: string): readonly SellTypeOption[] {
+  return [
+    {
+      href: withStoreParam("/sell?type=surfboard", storeSlug),
+      title: "Surfboard",
+      description: "List a board from your quiver.",
+      imageSrc: "/images/sell/surfboard.jpg",
+      imageAlt: "Surfboard",
+    },
+    {
+      href: withStoreParam("/sell/fins", storeSlug),
+      title: "Fins",
+      description: "List thrusters, quads, twins, or singles.",
+      imageSrc: "/images/sell/fins.jpg",
+      imageAlt: "Surfboard fin",
+    },
+  ]
+}
 
 /** First step of /sell: pick a product type. */
-export function SellTypeChooser() {
+export function SellTypeChooser({ storeSlug }: { storeSlug?: string }) {
+  const options = buildOptions(storeSlug)
   return (
     <main className="flex-1 bg-offwhite">
       <div className="container mx-auto max-w-lg px-4 py-12 sm:py-16">
         <div className="text-center">
           <h1 className="text-3xl font-bold sm:text-4xl">What are you listing?</h1>
           <p className="mx-auto mt-3 max-w-sm text-muted-foreground">
-            Choose surfboard or fins to get started.
+            {storeSlug
+              ? "Choose a product type — it will be added to your shop inventory when published."
+              : "Choose surfboard or fins to get started."}
           </p>
         </div>
 
         <div className="mt-10 space-y-3">
-          {OPTIONS.map((option) => (
+          {options.map((option) => (
             <Link
               key={option.href}
               href={option.href}

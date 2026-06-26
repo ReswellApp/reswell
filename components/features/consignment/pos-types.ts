@@ -7,6 +7,7 @@ export type StoreInventoryItem = {
   floorPrice: number | null
   coverUrl: string | null
   barcode: string | null
+  kind?: "consignment" | "shop_owned"
 }
 
 export type TerminalReaderRef = {

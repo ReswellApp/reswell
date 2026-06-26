@@ -153,6 +153,9 @@ export async function listStoresForStaffMember(
   return [...byId.values()].sort((a, b) => a.store.name.localeCompare(b.store.name))
 }
 
+import type { StoreInventoryKind } from "@/lib/utils/store-inventory-kind"
+import { resolveStoreInventoryKind } from "@/lib/utils/store-inventory-kind"
+
 export type StoreInventoryItem = {
   listingId: string
   title: string
@@ -160,29 +163,40 @@ export type StoreInventoryItem = {
   floorPrice: number | null
   coverUrl: string | null
   barcode: string | null
+  kind: StoreInventoryKind
 }
 
-/** Active, visible consigned boards for a store — the sellable inventory the POS rings up. */
+export type StoreInventoryFilter = StoreInventoryKind | "all"
+
+/** Active floor inventory for a store — consigned boards and shop-owned listings. */
 export async function listActiveStoreInventory(
   supabase: SupabaseClient,
   storeId: string,
-  query?: string,
+  options?: { query?: string; kind?: StoreInventoryFilter; limit?: number },
 ): Promise<StoreInventoryItem[]> {
+  const query = options?.query
+  const kind = options?.kind ?? "all"
+  const limit = options?.limit ?? 60
+
   let q = supabase
     .from("listings")
     .select(
-      "id, title, price, floor_price, barcode, listing_images (url, is_primary, sort_order)",
+      "id, title, price, floor_price, barcode, consignor_profile_id, listing_images (url, is_primary, sort_order)",
     )
     .eq("consignment_store_id", storeId)
     .eq("status", "active")
     .eq("hidden_from_site", false)
     .order("created_at", { ascending: false })
-    .limit(60)
+    .limit(limit)
+
+  if (kind === "consignment") {
+    q = q.not("consignor_profile_id", "is", null)
+  } else if (kind === "shop_owned") {
+    q = q.is("consignor_profile_id", null)
+  }
 
   const trimmed = query?.trim()
   if (trimmed) {
-    // Match title, barcode, or shop SKU so a barcode scanner (which types the code + Enter into the
-    // search box) jumps straight to the board. Strip PostgREST `or` delimiters from the raw scan.
     const safe = trimmed.replace(/[(),*]/g, " ").trim()
     if (safe) {
       q = q.or(`title.ilike.%${safe}%,barcode.ilike.%${safe}%,shop_sku.ilike.%${safe}%`)
@@ -201,6 +215,7 @@ export async function listActiveStoreInventory(
     price: number | string
     floor_price: number | string | null
     barcode: string | null
+    consignor_profile_id: string | null
     listing_images: { url: string; is_primary: boolean | null; sort_order: number | null }[] | null
   }
 
@@ -212,11 +227,105 @@ export async function listActiveStoreInventory(
       null
     return {
       listingId: row.id,
-      title: row.title ?? "Untitled board",
+      title: row.title ?? "Untitled item",
       price: Number(row.price),
       floorPrice: row.floor_price == null ? null : Number(row.floor_price),
       coverUrl: cover?.url ?? null,
       barcode: row.barcode,
+      kind: resolveStoreInventoryKind(row.consignor_profile_id),
+    }
+  })
+}
+
+export type StoreInventoryCounts = {
+  consignment: number
+  shopOwned: number
+}
+
+/** Active inventory counts split by consignment vs shop-owned. */
+export async function getStoreActiveInventoryCounts(
+  supabase: SupabaseClient,
+  storeId: string,
+): Promise<StoreInventoryCounts> {
+  const base = () =>
+    supabase
+      .from("listings")
+      .select("id", { count: "exact", head: true })
+      .eq("consignment_store_id", storeId)
+      .eq("status", "active")
+      .eq("hidden_from_site", false)
+
+  const [consignmentRes, shopOwnedRes] = await Promise.all([
+    base().not("consignor_profile_id", "is", null),
+    base().is("consignor_profile_id", null),
+  ])
+
+  if (consignmentRes.error) {
+    console.error("[consignmentStores] inventory count consignment failed", consignmentRes.error)
+  }
+  if (shopOwnedRes.error) {
+    console.error("[consignmentStores] inventory count shop-owned failed", shopOwnedRes.error)
+  }
+
+  return {
+    consignment: consignmentRes.count ?? 0,
+    shopOwned: shopOwnedRes.count ?? 0,
+  }
+}
+
+export type UnattachedOwnerListing = {
+  listingId: string
+  title: string
+  price: number
+  coverUrl: string | null
+  section: string | null
+}
+
+/** Store owner's active listings not yet linked to this store's shop inventory. */
+export async function listUnattachedOwnerListingsForStore(
+  supabase: SupabaseClient,
+  storeId: string,
+  ownerProfileId: string,
+  limit = 20,
+): Promise<UnattachedOwnerListing[]> {
+  const { data, error } = await supabase
+    .from("listings")
+    .select(
+      "id, title, price, section, listing_images (url, is_primary, sort_order)",
+    )
+    .eq("user_id", ownerProfileId)
+    .is("consignment_store_id", null)
+    .is("consignor_profile_id", null)
+    .eq("status", "active")
+    .eq("hidden_from_site", false)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.error("[consignmentStores] listUnattachedOwnerListings failed", { storeId, error })
+    return []
+  }
+
+  type Row = {
+    id: string
+    title: string | null
+    price: number | string
+    section: string | null
+    listing_images: { url: string; is_primary: boolean | null; sort_order: number | null }[] | null
+  }
+
+  return (data as Row[] | null ?? []).map((row) => {
+    const images = row.listing_images ?? []
+    const cover =
+      images.find((img) => img.is_primary) ??
+      [...images].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0] ??
+      null
+    return {
+      listingId: row.id,
+      title: row.title ?? "Untitled item",
+      price: Number(row.price),
+      coverUrl: cover?.url ?? null,
+      section: row.section,
     }
   })
 }

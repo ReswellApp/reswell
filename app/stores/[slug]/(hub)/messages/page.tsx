@@ -34,7 +34,7 @@ export default async function StoreMessagesPage({
 
   return (
     <>
-      <StorePageHeader title="Messages" description={description} />
+      <StorePageHeader title="Shop messages" description={description} />
 
       {conversations.length === 0 ? (
         <p className="rounded-lg border py-12 text-center text-sm text-muted-foreground">

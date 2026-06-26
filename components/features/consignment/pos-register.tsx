@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Loader2, Search, CheckCircle2, CreditCard, Banknote, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -24,12 +25,13 @@ interface PosRegisterProps {
   initialInventory: StoreInventoryItem[]
 }
 
-type Phase = "browse" | "review" | "charging" | "success"
+type Phase = "browse" | "review" | "charging" | "confirm"
 
 const POLL_INTERVAL_MS = 2500
 const POLL_TIMEOUT_MS = 90_000
 
 export function PosRegister({ storeId, storeSlug, storeName, initialInventory }: PosRegisterProps) {
+  const router = useRouter()
   const [phase, setPhase] = useState<Phase>("browse")
   const [inventory, setInventory] = useState<StoreInventoryItem[]>(initialInventory)
   const [query, setQuery] = useState("")
@@ -45,6 +47,10 @@ export function PosRegister({ storeId, storeSlug, storeName, initialInventory }:
   const [phone, setPhone] = useState("")
 
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null)
+  const [orderId, setOrderId] = useState<string | null>(null)
+  const [receiptToken, setReceiptToken] = useState<string | null>(null)
+  const [receiptEmailSent, setReceiptEmailSent] = useState(false)
+  const [emailSending, setEmailSending] = useState(false)
   const [cashSubmitting, setCashSubmitting] = useState(false)
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pollStartedAt = useRef<number>(0)
@@ -94,6 +100,10 @@ export function PosRegister({ storeId, storeSlug, storeName, initialInventory }:
     setPhase("browse")
     setSelected(null)
     setPaymentIntentId(null)
+    setOrderId(null)
+    setReceiptToken(null)
+    setReceiptEmailSent(false)
+    setEmailSending(false)
     setFirstName("")
     setLastName("")
     setEmail("")
@@ -111,6 +121,69 @@ export function PosRegister({ storeId, storeSlug, storeName, initialInventory }:
           phoneE164: phone.trim() || undefined,
         }
       : undefined
+  }
+
+  function openReceipt(token: string | null | undefined) {
+    if (!token) {
+      toast.error("Receipt isn't available right now.")
+      return
+    }
+    router.push(`/receipt/${token}`)
+  }
+
+  function showPurchaseConfirmed(data: {
+    receiptToken?: string | null
+    orderId?: string | null
+    receiptEmailSent?: boolean
+    customerEmail?: string | null
+  }) {
+    if (data.orderId) setOrderId(data.orderId)
+    setReceiptEmailSent(Boolean(data.receiptEmailSent))
+    if (!data.receiptToken) {
+      toast.error("Sale recorded, but the receipt link couldn't be created.")
+      setPhase("confirm")
+      return
+    }
+    setReceiptToken(data.receiptToken)
+    if (data.receiptEmailSent && data.customerEmail) {
+      toast.success(`Receipt emailed to ${data.customerEmail}`)
+    }
+    setPhase("confirm")
+  }
+
+  async function sendEmailReceipt() {
+    if (!orderId) {
+      toast.error("Missing order — refresh and try again.")
+      return
+    }
+    if (!firstName.trim() || !email.trim()) {
+      toast.error("Enter customer first name and email to send a receipt.")
+      return
+    }
+    setEmailSending(true)
+    try {
+      const res = await fetch(`/api/pos/orders/${orderId}/receipt`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName: firstName.trim(),
+          lastName: lastName.trim() || undefined,
+          email: email.trim(),
+          phoneE164: phone.trim() || undefined,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        toast.error(json?.error ?? "Couldn't email the receipt.")
+        return
+      }
+      setReceiptEmailSent(true)
+      toast.success(`Receipt emailed to ${json?.data?.customerEmail ?? email.trim()}`)
+    } catch {
+      toast.error("Couldn't email the receipt.")
+    } finally {
+      setEmailSending(false)
+    }
   }
 
   async function payCash() {
@@ -132,7 +205,13 @@ export function PosRegister({ storeId, storeSlug, storeName, initialInventory }:
         setCashSubmitting(false)
         return
       }
-      setPhase("success")
+      showPurchaseConfirmed({
+        receiptToken: json?.data?.receiptToken as string | undefined,
+        orderId: json?.data?.orderId as string | undefined,
+        receiptEmailSent: Boolean(json?.data?.receiptEmailSent),
+        customerEmail: (json?.data?.customerEmail as string | null | undefined) ?? null,
+      })
+      setCashSubmitting(false)
     } catch {
       toast.error("Couldn't record the cash sale.")
       setCashSubmitting(false)
@@ -153,7 +232,12 @@ export function PosRegister({ storeId, storeSlug, storeName, initialInventory }:
       })
       const json = await res.json()
       if (res.ok && json?.data?.settled) {
-        setPhase("success")
+        showPurchaseConfirmed({
+        receiptToken: json?.data?.receiptToken as string | undefined,
+        orderId: json?.data?.orderId as string | undefined,
+        receiptEmailSent: Boolean(json?.data?.receiptEmailSent),
+        customerEmail: (json?.data?.customerEmail as string | null | undefined) ?? null,
+      })
         return
       }
       const status = json?.data?.status as string | undefined
@@ -221,15 +305,61 @@ export function PosRegister({ storeId, storeSlug, storeName, initialInventory }:
     resetToBrowse()
   }
 
-  if (phase === "success" && selected) {
+  if (phase === "confirm" && selected) {
     return (
-      <div className="mx-auto flex max-w-md flex-col items-center py-16 text-center">
-        <CheckCircle2 className="h-14 w-14 text-emerald-500" />
-        <h2 className="mt-4 text-xl font-semibold">Sale complete</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {selected.title} — ${selected.price.toFixed(2)}
-        </p>
-        <Button className="mt-8 w-full" onClick={resetToBrowse}>
+      <div className="mx-auto max-w-md space-y-6 py-16">
+        <div className="text-center">
+          <CheckCircle2 className="mx-auto h-14 w-14 text-emerald-500" />
+          <h2 className="mt-4 text-xl font-semibold">Purchase confirmed</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {selected.title} — ${selected.price.toFixed(2)}
+          </p>
+        </div>
+
+        {receiptEmailSent ? (
+          <p className="rounded-lg border bg-muted/40 px-4 py-3 text-center text-sm text-muted-foreground">
+            Receipt emailed to the customer. They&apos;re also saved to your shop customer list.
+          </p>
+        ) : (
+          <div className="space-y-3 rounded-lg border p-4">
+            <p className="text-sm font-medium">Email receipt</p>
+            <p className="text-xs text-muted-foreground">
+              Saves the customer to your shop&apos;s private list and emails their receipt link.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <Input
+                placeholder="First name"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+              <Input
+                placeholder="Last name"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
+            </div>
+            <Input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <Button
+              className="w-full"
+              variant="secondary"
+              disabled={emailSending}
+              onClick={() => void sendEmailReceipt()}
+            >
+              {emailSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Email receipt
+            </Button>
+          </div>
+        )}
+
+        <Button className="w-full" onClick={() => openReceipt(receiptToken)} disabled={!receiptToken}>
+          View receipt
+        </Button>
+        <Button variant="outline" className="w-full" onClick={resetToBrowse}>
           New sale
         </Button>
       </div>
@@ -281,7 +411,10 @@ export function PosRegister({ storeId, storeSlug, storeName, initialInventory }:
         </div>
 
         <div className="space-y-3 rounded-lg border p-4">
-          <p className="text-sm font-medium">Customer (optional — for receipt & customer list)</p>
+          <p className="text-sm font-medium">Customer (optional — saved to your shop only)</p>
+          <p className="text-xs text-muted-foreground">
+            Add name and email to save them as your customer and email a receipt after payment.
+          </p>
           <div className="grid grid-cols-2 gap-3">
             <Input
               placeholder="First name"

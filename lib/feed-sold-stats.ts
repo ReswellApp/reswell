@@ -36,7 +36,7 @@ function parseRpcStatsRow(rows: ConfirmedSurfboardSaleStatsRpcRow[] | null): {
   }
 }
 
-/** Public headline stats from confirmed Stripe / wallet checkout only. */
+/** Public headline stats from confirmed online (Stripe / wallet) and POS checkout only. */
 export async function getSoldFeedStats(
   sections: readonly string[] = DEFAULT_MARKETPLACE_SECTIONS,
 ): Promise<{ soldCount: number; gmvTotal: number }> {

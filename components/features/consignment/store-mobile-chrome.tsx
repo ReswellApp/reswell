@@ -26,7 +26,10 @@ import { cn } from "@/lib/utils"
 function isStoreLinkActive(pathname: string, href: string): boolean {
   const normalized = pathname.replace(/\/$/, "") || "/"
   const target = href.replace(/\/$/, "") || "/"
-  if (target.endsWith("/messages")) {
+  if (target.endsWith("/dashboard") || target.endsWith("/account")) {
+    return normalized === target
+  }
+  if (target.endsWith("/messages") || target.endsWith("/account/messages")) {
     return normalized === target || normalized.startsWith(`${target}/`)
   }
   return normalized === target || normalized.startsWith(`${target}/`)
@@ -102,12 +105,6 @@ export function StoreMobileChrome({ slug, storeName, role }: StoreMobileChromePr
                     </Link>
                   )
                 })}
-                <Link
-                  href="/dashboard"
-                  className="mt-1 flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
-                >
-                  Personal dashboard
-                </Link>
               </div>
             </CollapsibleContent>
           </div>

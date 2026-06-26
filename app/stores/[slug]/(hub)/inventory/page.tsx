@@ -1,12 +1,14 @@
-import Image from "next/image"
 import Link from "next/link"
-import { Printer } from "lucide-react"
+import { Plus } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { getStoreHubContext } from "@/lib/store-hub-access"
-import { listActiveStoreInventory } from "@/lib/db/consignmentStores"
-import { StoreRepriceRow } from "@/components/features/consignment/store-reprice-row"
-import { StoreListingActions } from "@/components/features/consignment/store-listing-actions"
+import { listActiveStoreInventory, listUnattachedOwnerListingsForStore } from "@/lib/db/consignmentStores"
+import { StoreInventoryList } from "@/components/features/consignment/store-inventory-list"
+import { StoreAddExistingInventory } from "@/components/features/consignment/store-add-existing-inventory"
 import { StorePageHeader } from "@/components/features/consignment/store-page-header"
+import { reconcileStoreInventorySoldOrders } from "@/lib/services/reconcileListingSoldOrders"
 import { resolveStoreSectionMeta } from "@/lib/store-section-meta"
+import { storeNavHref } from "@/lib/store-nav-links"
 
 export const dynamic = "force-dynamic"
 
@@ -20,54 +22,79 @@ export default async function StoreInventoryPage({
   const { description } = resolveStoreSectionMeta(`/stores/${slug}/inventory`, slug)
 
   const canReprice = role === "owner" || role === "manager"
-  const inventory = await listActiveStoreInventory(supabase, store.id)
+  const canListShopItems = canReprice
+
+  await reconcileStoreInventorySoldOrders(store.id)
+
+  const [consignmentInventory, shopInventory, unattachedListings] = await Promise.all([
+    listActiveStoreInventory(supabase, store.id, { kind: "consignment" }),
+    listActiveStoreInventory(supabase, store.id, { kind: "shop_owned" }),
+    canListShopItems
+      ? listUnattachedOwnerListingsForStore(supabase, store.id, store.ownerProfileId)
+      : Promise.resolve([]),
+  ])
 
   return (
     <>
       <StorePageHeader title="Inventory" description={description} />
 
-      {inventory.length === 0 ? (
-        <p className="rounded-lg border py-12 text-center text-sm text-muted-foreground">
-          No active boards.
+      {canListShopItems ? (
+        <div className="mb-6 flex flex-wrap items-center justify-end gap-2">
+          <Button asChild size="sm">
+            <Link href={`/sell?store=${encodeURIComponent(slug)}`}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              List shop item
+            </Link>
+          </Button>
+        </div>
+      ) : null}
+
+      {canListShopItems ? (
+        <StoreAddExistingInventory storeSlug={slug} listings={unattachedListings} />
+      ) : null}
+
+      <section className="space-y-3">
+        <div className="flex items-baseline justify-between gap-2">
+          <h2 className="text-sm font-semibold">Shop inventory</h2>
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {shopInventory.length} active
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Items you own and sell directly — boards, fins, and more on your shop account.
         </p>
-      ) : (
-        <ul className="divide-y rounded-lg border">
-          {inventory.map((item) => (
-            <li key={item.listingId} className="flex items-center gap-3 px-4 py-3">
-              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md bg-muted">
-                {item.coverUrl ? (
-                  <Image
-                    src={item.coverUrl}
-                    alt={item.title}
-                    fill
-                    sizes="56px"
-                    className="object-cover"
-                  />
-                ) : null}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{item.title}</p>
-                <Link
-                  href={`/stores/${slug}/inventory/${item.listingId}/label`}
-                  className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  <Printer className="h-3 w-3" />
-                  Label
-                </Link>
-              </div>
-              <StoreRepriceRow
-                listingId={item.listingId}
-                price={item.price}
-                floorPrice={item.floorPrice}
-                canReprice={canReprice}
-              />
-              {canReprice ? (
-                <StoreListingActions listingId={item.listingId} price={item.price} />
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      )}
+        <StoreInventoryList
+          items={shopInventory}
+          storeSlug={slug}
+          canReprice={canReprice}
+          emptyMessage="No shop-owned items yet. List one or add from your seller profile above."
+        />
+      </section>
+
+      <section className="mt-10 space-y-3">
+        <div className="flex items-baseline justify-between gap-2">
+          <h2 className="text-sm font-semibold">Consignment inventory</h2>
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {consignmentInventory.length} active
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Boards consigned by surfers — you sell on their behalf and split proceeds on sale.
+        </p>
+        <StoreInventoryList
+          items={consignmentInventory}
+          storeSlug={slug}
+          canReprice={canReprice}
+          emptyMessage="No consigned boards on the floor. Share your intake QR to accept drop-offs."
+        />
+        {consignmentInventory.length === 0 ? (
+          <p className="text-center text-xs text-muted-foreground">
+            <Link href={storeNavHref(slug, "/qr")} className="underline underline-offset-2">
+              Open intake QR
+            </Link>
+          </p>
+        ) : null}
+      </section>
     </>
   )
 }

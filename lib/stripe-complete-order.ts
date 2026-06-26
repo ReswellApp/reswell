@@ -529,6 +529,8 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   // (consignor + shop net + Reswell fee) instead of a single seller payout. Peer listings are
   // entirely unaffected — `consignment` stays null and every existing code path runs as before.
   const consignmentListings = listingsForTotals.filter((l) => l.consignment_store_id)
+  const storeAttributionId =
+    consignmentListings.length === 1 ? consignmentListings[0]!.consignment_store_id : null
   let consignment:
     | {
         storeId: string
@@ -556,35 +558,33 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     }
 
     const cl = listingsForTotals[0]!
-    if (!cl.consignor_profile_id) {
-      return { ok: false, error: "Consignment item is missing its consignor.", status: 409 }
-    }
+    if (cl.consignor_profile_id) {
+      const store = await getConsignmentStoreById(serviceSupabase, cl.consignment_store_id!)
+      if (!store) {
+        return { ok: false, error: "Consignment store not found for this item.", status: 409 }
+      }
 
-    const store = await getConsignmentStoreById(serviceSupabase, cl.consignment_store_id!)
-    if (!store) {
-      return { ok: false, error: "Consignment store not found for this item.", status: 409 }
-    }
+      const commissionBps = resolveCommissionBps(cl.commission_bps, store.defaultCommissionBps)
+      if (commissionBps == null) {
+        return { ok: false, error: "Consignment commission is not configured.", status: 409 }
+      }
 
-    const commissionBps = resolveCommissionBps(cl.commission_bps, store.defaultCommissionBps)
-    if (commissionBps == null) {
-      return { ok: false, error: "Consignment commission is not configured.", status: 409 }
-    }
+      const splitRes = computeConsignmentSplit({
+        itemPriceUsd: bundle.totalItemPriceUsd,
+        commissionBps,
+        reswellFeeBps: store.reswellFeeBps,
+      })
+      if (!splitRes.ok) {
+        return { ok: false, error: splitRes.error, status: 409 }
+      }
 
-    const splitRes = computeConsignmentSplit({
-      itemPriceUsd: bundle.totalItemPriceUsd,
-      commissionBps,
-      reswellFeeBps: store.reswellFeeBps,
-    })
-    if (!splitRes.ok) {
-      return { ok: false, error: splitRes.error, status: 409 }
-    }
-
-    consignment = {
-      storeId: store.id,
-      consignorId: cl.consignor_profile_id,
-      shopCommissionGross: splitRes.split.shopCommissionGross,
-      shopNetEarnings: splitRes.split.shopNetEarnings,
-      consignorEarnings: splitRes.split.consignorEarnings,
+      consignment = {
+        storeId: store.id,
+        consignorId: cl.consignor_profile_id,
+        shopCommissionGross: splitRes.split.shopCommissionGross,
+        shopNetEarnings: splitRes.split.shopNetEarnings,
+        consignorEarnings: splitRes.split.consignorEarnings,
+      }
     }
   }
 
@@ -618,7 +618,12 @@ export async function completeMarketplaceOrderFromPaymentIntent(
             shop_net_earnings: consignment.shopNetEarnings,
             consignor_earnings: consignment.consignorEarnings,
           }
-        : {}),
+        : storeAttributionId
+          ? {
+              consignment_store_id: storeAttributionId,
+              shop_net_earnings: sellerEarnings,
+            }
+          : {}),
       ...(shippingAddressJson ? { shipping_address: shippingAddressJson } : {}),
     })
     .select()

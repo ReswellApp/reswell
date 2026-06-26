@@ -7,9 +7,10 @@ import { MoreVertical } from "lucide-react"
 interface StoreListingActionsProps {
   listingId: string
   price: number
+  kind?: "consignment" | "shop_owned"
 }
 
-export function StoreListingActions({ listingId, price }: StoreListingActionsProps) {
+export function StoreListingActions({ listingId, price, kind = "consignment" }: StoreListingActionsProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [view, setView] = useState<"menu" | "offPlatform" | "withdraw">("menu")
@@ -84,8 +85,9 @@ export function StoreListingActions({ listingId, price }: StoreListingActionsPro
           {view === "offPlatform" ? (
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground">
-                Records the sale for your books. No Reswell payout is created — settle the
-                consignor&apos;s cut directly.
+                {kind === "shop_owned"
+                  ? "Records the sale for your books. No Reswell payout is created."
+                  : "Records the sale for your books. No Reswell payout is created — settle the consignor's cut directly."}
               </p>
               <div className="flex items-center gap-1.5">
                 <span className="text-sm text-muted-foreground">$</span>
@@ -121,7 +123,9 @@ export function StoreListingActions({ listingId, price }: StoreListingActionsPro
           {view === "withdraw" ? (
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground">
-                Take this board off sale and return it to the consignor? No money moves.
+                {kind === "shop_owned"
+                  ? "Take this item off sale and remove it from shop inventory?"
+                  : "Take this board off sale and return it to the consignor? No money moves."}
               </p>
               <div className="flex gap-2">
                 <button
@@ -130,7 +134,7 @@ export function StoreListingActions({ listingId, price }: StoreListingActionsPro
                   disabled={isPending}
                   className="flex-1 rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground disabled:opacity-50"
                 >
-                  Withdraw
+                  {kind === "shop_owned" ? "Remove" : "Withdraw"}
                 </button>
                 <button
                   type="button"
