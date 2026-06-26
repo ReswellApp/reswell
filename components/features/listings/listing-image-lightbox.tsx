@@ -2,7 +2,7 @@
 
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import Image from "next/image"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Minus, Plus, RotateCcw, X } from "lucide-react"
 import {
   TransformComponent,
@@ -12,13 +12,31 @@ import {
 import { Dialog, DialogClose, DialogOverlay, DialogPortal, DialogTitle } from "@/components/ui/dialog"
 import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
 import { Button } from "@/components/ui/button"
+import { ListingTileShimmer } from "@/components/ui/skeleton"
 import {
   listingImageShouldBypassOptimization,
   withListingMediaPdpVariant,
 } from "@/lib/listing-media-proxy-url"
+import { portraitShimmer } from "@/lib/image-shimmer"
 import { cn } from "@/lib/utils"
 
 const ZOOM_TOLERANCE = 0.015
+
+function useMaxMd() {
+  const [match, setMatch] = useState(() =>
+    typeof window !== "undefined" ? window.matchMedia("(max-width: 767px)").matches : false,
+  )
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)")
+    const sync = () => setMatch(mq.matches)
+    sync()
+    mq.addEventListener("change", sync)
+    return () => mq.removeEventListener("change", sync)
+  }, [])
+
+  return match
+}
 
 function usePrefersCoarsePointer() {
   const [coarse, setCoarse] = useState(() =>
@@ -44,6 +62,8 @@ interface ListingImageLightboxProps {
   /** Index controlled by parent (opening slide). */
   index: number
   onIndexChange: (next: number) => void
+  /** Natural width/height for the active slide — reserves mobile frame before decode. */
+  mobileAspectRatio?: number
 }
 
 export function ListingImageLightbox({
@@ -53,13 +73,16 @@ export function ListingImageLightbox({
   title,
   index,
   onIndexChange,
+  mobileAspectRatio = 3 / 4,
 }: ListingImageLightboxProps) {
   const [scale, setScale] = useState(1)
   /** Track which full-res src has decoded so we can fade it over the cached low-res underlay. */
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null)
+  const [placeholderLoaded, setPlaceholderLoaded] = useState(false)
   const pinchRef = useRef<ReactZoomPanPinchContentRef | null>(null)
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
   const coarsePointer = usePrefersCoarsePointer()
+  const isMaxMd = useMaxMd()
 
   const count = proxiedUrls.length
   const src = proxiedUrls[index]
@@ -76,6 +99,51 @@ export function ListingImageLightbox({
   useEffect(() => {
     setScale(1)
   }, [index])
+
+  useEffect(() => {
+    setLoadedSrc(null)
+    setPlaceholderLoaded(false)
+  }, [src])
+
+  useEffect(() => {
+    if (!open || !placeholderSrc) return
+
+    const img = new window.Image()
+    img.decoding = "async"
+    img.src = placeholderSrc
+    if (img.complete && img.naturalWidth > 0) {
+      setPlaceholderLoaded(true)
+      return
+    }
+
+    const markPlaceholderLoaded = () => setPlaceholderLoaded(true)
+    img.addEventListener("load", markPlaceholderLoaded)
+    return () => img.removeEventListener("load", markPlaceholderLoaded)
+  }, [open, placeholderSrc])
+
+  useEffect(() => {
+    if (!open || !src) return
+
+    const img = new window.Image()
+    img.decoding = "async"
+    img.src = src
+    if (img.complete && img.naturalWidth > 0) {
+      setLoadedSrc(src)
+      requestAnimationFrame(() => {
+        pinchRef.current?.centerView(1, 0)
+      })
+      return
+    }
+
+    const markFullLoaded = () => {
+      setLoadedSrc(src)
+      requestAnimationFrame(() => {
+        pinchRef.current?.centerView(1, 0)
+      })
+    }
+    img.addEventListener("load", markFullLoaded)
+    return () => img.removeEventListener("load", markFullLoaded)
+  }, [open, src])
 
   const handleOpenChange = useCallback(
     (next: boolean) => {
@@ -101,6 +169,17 @@ export function ListingImageLightbox({
   }, [count, index, onIndexChange])
 
   const isZoomedOut = scale <= 1 + ZOOM_TOLERANCE
+  const slideReady = loadedSrc === src || placeholderLoaded
+  const mobileFrameStyle = useMemo(
+    () =>
+      ({
+        aspectRatio: mobileAspectRatio,
+        width: `min(calc(100vw - 1rem), calc(min(88dvh, calc(100dvh - 10rem)) * ${mobileAspectRatio}))`,
+        maxWidth: "calc(100vw - 1rem)",
+        maxHeight: "min(88dvh, calc(100dvh - 10rem))",
+      }) as CSSProperties,
+    [mobileAspectRatio],
+  )
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -151,60 +230,63 @@ export function ListingImageLightbox({
                 touchStartRef.current = null
               }}
             >
-              <div className="relative mx-auto min-w-0 max-w-full">
-                <div className="absolute -top-11 inset-x-0 flex items-center justify-between gap-3 sm:-top-12">
-                  {count > 1 ? (
-                    <p className="min-w-0 truncate text-[15px] font-medium tabular-nums text-foreground/80">
-                      {index + 1} / {count}
-                    </p>
-                  ) : (
-                    <span aria-hidden />
-                  )}
-                  <DialogClose asChild>
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="secondary"
-                      className="h-11 w-11 shrink-0 rounded-full border border-border/55 bg-background/90 text-foreground shadow-sm backdrop-blur-md hover:bg-muted/40 [&_svg]:size-6"
-                    >
-                      <X className="stroke-[2]" />
-                      <span className="sr-only">Close</span>
-                    </Button>
-                  </DialogClose>
-                </div>
+              {src ? (
+                <div className="relative mx-auto flex shrink-0 flex-col gap-2 sm:gap-2.5">
+                  <div className="flex items-center justify-between gap-3">
+                    {count > 1 ? (
+                      <p className="min-w-0 truncate text-[15px] font-medium tabular-nums text-foreground/80">
+                        {index + 1} / {count}
+                      </p>
+                    ) : (
+                      <span aria-hidden />
+                    )}
+                    <DialogClose asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="secondary"
+                        className="h-11 w-11 shrink-0 rounded-full border border-border/55 bg-background/90 text-foreground shadow-sm backdrop-blur-md hover:bg-muted/40 [&_svg]:size-6"
+                      >
+                        <X className="stroke-[2]" />
+                        <span className="sr-only">Close</span>
+                      </Button>
+                    </DialogClose>
+                  </div>
 
-                {count > 1 && (
-                  <>
-                    <div className="absolute top-1/2 z-20 -translate-y-1/2 -left-9 sm:-left-10 md:-left-12">
+                <div
+                  style={isMaxMd ? mobileFrameStyle : undefined}
+                  className={cn(
+                    "relative shrink-0 overflow-hidden rounded-xl bg-muted sm:rounded-2xl",
+                    "md:aspect-[3/4] md:h-auto md:w-[29rem] md:max-w-[min(29rem,calc(100vw-3rem))] xl:w-[32rem] xl:max-w-[min(32rem,calc(100vw-3rem))]",
+                  )}
+                >
+                  {count > 1 ? (
+                    <>
                       <ListingImageCarouselNavButton
                         direction="prev"
                         variant="lightbox"
-                        staticPosition
+                        sideClassName="pointer-events-auto left-3 z-20 sm:left-4 md:left-5"
                         srLabel="Previous photo"
                         onClick={goPrev}
                       />
-                    </div>
-                    <div className="absolute top-1/2 z-20 -translate-y-1/2 -right-9 sm:-right-10 md:-right-12">
                       <ListingImageCarouselNavButton
                         direction="next"
                         variant="lightbox"
-                        staticPosition
+                        sideClassName="pointer-events-auto right-3 z-20 sm:right-4 md:right-5"
                         srLabel="Next photo"
                         onClick={goNext}
                       />
-                    </div>
-                  </>
-                )}
-
-                {src ? (
-                  <div
+                    </>
+                  ) : null}
+                  <ListingTileShimmer
+                    aria-hidden
                     className={cn(
-                      "relative shrink-0 overflow-hidden rounded-xl sm:rounded-2xl",
-                      "max-md:mx-auto max-md:w-fit max-md:max-w-[calc(100vw-1rem)]",
-                      "md:aspect-[3/4] md:h-auto md:w-[29rem] md:max-w-[min(29rem,calc(100vw-3rem))] xl:w-[32rem] xl:max-w-[min(32rem,calc(100vw-3rem))]",
+                      "listing-tile-shimmer-overlay absolute inset-0 z-[1] rounded-xl sm:rounded-2xl",
+                      slideReady && "pointer-events-none opacity-0",
                     )}
-                  >
-                  <TransformWrapper
+                  />
+                  <div className="absolute inset-0">
+                    <TransformWrapper
                     ref={pinchRef}
                     initialScale={1}
                     minScale={1}
@@ -229,8 +311,8 @@ export function ListingImageLightbox({
                     }}
                   >
                     <TransformComponent
-                      wrapperClass="!h-full !w-full max-md:!h-fit max-md:!w-fit max-md:!max-h-full max-md:!max-w-full"
-                      contentClass="!relative !h-full !w-full max-md:!h-fit max-md:!w-fit max-md:!max-h-full max-md:!max-w-full"
+                      wrapperClass="!h-full !w-full"
+                      contentClass="!relative !h-full !w-full"
                     >
                       {placeholderSrc ? (
                         <Image
@@ -241,26 +323,30 @@ export function ListingImageLightbox({
                           fill
                           unoptimized={listingImageShouldBypassOptimization(placeholderSrc)}
                           draggable={false}
+                          placeholder="blur"
+                          blurDataURL={portraitShimmer}
                           className={cn(
-                            "pointer-events-none select-none object-contain",
+                            "pointer-events-none select-none object-contain transition-opacity duration-300 ease-out",
                             "md:object-cover md:object-center",
+                            loadedSrc === src ? "opacity-0" : "opacity-100",
                           )}
                           sizes="(max-width: 768px) 100vw, (max-width: 1280px) 29rem, 32rem"
                           priority
+                          onLoadingComplete={() => {
+                            setPlaceholderLoaded(true)
+                          }}
                         />
                       ) : null}
                       <Image
                         key={src}
                         src={src}
                         alt={`${title} — full size ${index + 1}`}
-                        width={2400}
-                        height={3200}
+                        fill
                         unoptimized
                         draggable={false}
                         className={cn(
-                          "select-none transition-opacity duration-300 ease-out",
-                          "block max-h-[min(88dvh,calc(100dvh-10rem))] w-auto max-w-full object-contain",
-                          "md:absolute md:inset-0 md:h-full md:w-full md:max-h-none md:max-w-none md:object-cover md:object-center",
+                          "select-none object-contain transition-opacity duration-300 ease-out",
+                          "md:object-cover md:object-center",
                           loadedSrc === src ? "opacity-100" : "opacity-0",
                         )}
                         sizes="(max-width: 768px) 100vw, (max-width: 1280px) 29rem, 32rem"
@@ -275,30 +361,20 @@ export function ListingImageLightbox({
                     </TransformComponent>
                   </TransformWrapper>
                   </div>
-                ) : null}
+                </div>
+                </div>
+              ) : null}
 
-                <div className="absolute -bottom-12 inset-x-0 z-20 hidden justify-center sm:-bottom-14 md:flex">
-                  <div className="flex items-center gap-1 rounded-full border border-border/60 bg-background/90 p-1.5 shadow-sm backdrop-blur-md">
-                    <ZoomToolbar
-                      onZoomIn={() => pinchRef.current?.zoomIn(0.18, 200)}
-                      onZoomOut={() => pinchRef.current?.zoomOut(0.18, 200)}
-                      onReset={() => pinchRef.current?.resetTransform(220)}
-                      disableZoomOut={isZoomedOut}
-                    />
-                  </div>
+              <div className="pointer-events-none absolute inset-x-10 bottom-0 z-20 hidden justify-center sm:inset-x-12 md:flex md:inset-x-16">
+                <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-border/60 bg-background/90 p-1.5 shadow-sm backdrop-blur-md">
+                  <ZoomToolbar
+                    onZoomIn={() => pinchRef.current?.zoomIn(0.18, 200)}
+                    onZoomOut={() => pinchRef.current?.zoomOut(0.18, 200)}
+                    onReset={() => pinchRef.current?.resetTransform(220)}
+                    disableZoomOut={isZoomedOut}
+                  />
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div className="flex shrink-0 justify-center px-3 pb-[max(env(safe-area-inset-bottom),1rem)] pt-3 md:hidden">
-            <div className="flex items-center gap-1 rounded-full border border-border/60 bg-background/90 p-1.5 shadow-sm backdrop-blur-md">
-              <ZoomToolbar
-                onZoomIn={() => pinchRef.current?.zoomIn(0.18, 200)}
-                onZoomOut={() => pinchRef.current?.zoomOut(0.18, 200)}
-                onReset={() => pinchRef.current?.resetTransform(220)}
-                disableZoomOut={isZoomedOut}
-              />
             </div>
           </div>
         </DialogPrimitive.Content>

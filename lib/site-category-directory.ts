@@ -57,12 +57,13 @@ export const siteHeaderMobileCategoryNavLinks: CategoryLink[] = [
 export const allCategoriesForNav: CategoryLink[] = surfboardBrowseLinks
 
 /**
- * Footer Categories column — mirrors main nav browse links.
- * “Surfboards” is omitted here (Marketplace column already links to /boards).
+ * Footer Categories column — all surfboard shape browse links plus peer gear.
+ * The `/boards` root is omitted (Marketplace column already links there).
  */
-export const footerCategoryLinks: CategoryLink[] = siteHeaderMobileCategoryNavLinks.filter(
-  (link) => link.href !== "/boards",
-)
+export const footerCategoryLinks: CategoryLink[] = [
+  ...surfboardBrowseLinks.filter((link) => link.href !== "/boards"),
+  ...siteHeaderMainPeerProductNavLinks,
+]
 
 export type CategoryDirectorySection = {
   title: string

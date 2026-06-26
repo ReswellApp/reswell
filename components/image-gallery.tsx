@@ -12,6 +12,30 @@ import {
 } from "@/lib/listing-media-proxy-url"
 import { Maximize2 } from "lucide-react"
 import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
+import { ListingTileShimmer } from "@/components/ui/skeleton"
+
+function ListingImageLightboxLoadingShell() {
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex min-h-0 flex-col bg-background pt-[max(env(safe-area-inset-top),0.75rem)]"
+      aria-hidden
+    >
+      <div className="flex min-h-0 flex-1 items-center justify-center px-10">
+        <div
+          className="relative overflow-hidden rounded-xl bg-muted"
+          style={{
+            aspectRatio: 3 / 4,
+            width: "min(calc(100vw - 1rem), calc(min(88dvh, calc(100dvh - 10rem)) * 0.75))",
+            maxWidth: "calc(100vw - 1rem)",
+            maxHeight: "min(88dvh, calc(100dvh - 10rem))",
+          }}
+        >
+          <ListingTileShimmer className="absolute inset-0 rounded-xl" />
+        </div>
+      </div>
+    </div>
+  )
+}
 
 /** Zoom/pan library only loads once the user first enlarges a photo. */
 const ListingImageLightbox = dynamic(
@@ -19,7 +43,7 @@ const ListingImageLightbox = dynamic(
     import("@/components/features/listings/listing-image-lightbox").then(
       (m) => m.ListingImageLightbox,
     ),
-  { ssr: false },
+  { ssr: false, loading: ListingImageLightboxLoadingShell },
 )
 
 interface ImageGalleryProps {
@@ -183,6 +207,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
           title={title}
           index={lightboxIndex}
           onIndexChange={setLightboxIndex}
+          mobileAspectRatio={imageAspectRatios[lightboxIndex] ?? 3 / 4}
         />
       ) : null}
 
