@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { FIN_CATALOG_PRODUCT_CATEGORY } from "@/lib/brand-catalog-fin-variants"
 import { listBrandIdsMatchingProductCategories } from "@/lib/db/brand-product-categories"
 import type { FinBoxesType, FinBoxType, FinCatalogVariantSize } from "@/lib/validations/brand-model-variants"
+import { finCatalogMeaningfulSearchTokens } from "@/lib/utils/fin-catalog-search-rank"
 
 export { FIN_CATALOG_PRODUCT_CATEGORY } from "@/lib/brand-catalog-fin-variants"
 
@@ -12,6 +13,26 @@ function escapeIlikeToken(q: string): string {
 function ilikePattern(q: string): string {
   const safe = escapeIlikeToken(q.trim())
   return q.trim().length < 4 ? `${safe}%` : `%${safe}%`
+}
+
+function tokenIlikePattern(token: string): string {
+  const safe = escapeIlikeToken(token.trim())
+  return `%${safe}%`
+}
+
+function applyModelNameTokenFilters<T extends { ilike: (col: string, pattern: string) => T }>(
+  query: T,
+  qRaw: string,
+): T {
+  const tokens = finCatalogMeaningfulSearchTokens(qRaw).slice(0, 6)
+  if (tokens.length === 0) {
+    return query.ilike("name", ilikePattern(qRaw))
+  }
+  let next = query
+  for (const token of tokens) {
+    next = next.ilike("name", tokenIlikePattern(token))
+  }
+  return next
 }
 
 const MODEL_LIST_SELECT = `
@@ -61,6 +82,7 @@ export type FinCatalogVariantRow = {
   brandSlug: string
   brandLogoUrl: string | null
   modelName: string
+  modelDescription: string | null
   modelImageUrl: string | null
   lengthLabel: string
   widthLabel: string
@@ -98,6 +120,7 @@ const VARIANT_LIST_SELECT = `
   brand_models:brand_model_id (
     id,
     name,
+    description,
     image_url,
     product_category_slug,
     brands:brand_id ( id, name, slug, logo_url )
@@ -126,6 +149,7 @@ type RawVariantRow = {
     | {
         id: string
         name: string
+        description: string | null
         image_url: string | null
         product_category_slug?: string
         brands:
@@ -136,6 +160,7 @@ type RawVariantRow = {
     | {
         id: string
         name: string
+        description: string | null
         image_url: string | null
         product_category_slug?: string
         brands:
@@ -189,6 +214,7 @@ function mapVariantRow(row: RawVariantRow): FinCatalogVariantRow | null {
     brandSlug: brand.slug.trim(),
     brandLogoUrl: brand.logo_url?.trim() || null,
     modelName: model.name.trim(),
+    modelDescription: model.description?.trim() || null,
     modelImageUrl: model.image_url?.trim() || null,
     lengthLabel: row.length_label.trim(),
     widthLabel: row.width_label.trim(),
@@ -303,25 +329,75 @@ export async function searchFinCatalogModels(
   if (q.length < 1 || finBrandIds.length === 0) return []
 
   const pattern = ilikePattern(q)
-  const { data, error } = await supabase
+  const byId = new Map<string, FinCatalogModelRow>()
+
+  const collect = (rows: RawBrandModelRow[]) => {
+    for (const row of rows) {
+      const mapped = mapModelRow(row)
+      if (mapped) byId.set(mapped.id, mapped)
+    }
+  }
+
+  let byTextQuery = supabase
     .from("brand_models")
     .select(MODEL_LIST_SELECT)
     .in("brand_id", [...finBrandIds])
-    .or(`name.ilike.${pattern},description.ilike.${pattern}`)
+
+  const tokens = finCatalogMeaningfulSearchTokens(q)
+  if (tokens.length >= 1) {
+    byTextQuery = applyModelNameTokenFilters(byTextQuery, q)
+  } else {
+    byTextQuery = byTextQuery.or(`name.ilike.${pattern},description.ilike.${pattern}`)
+  }
+
+  const { data: byText, error } = await byTextQuery
     .order("name", { ascending: true })
     .limit(limit)
 
   if (error) {
     console.error("searchFinCatalogModels:", error.message)
-    return []
+  } else {
+    collect((byText ?? []) as RawBrandModelRow[])
   }
 
-  const out: FinCatalogModelRow[] = []
-  for (const row of (data ?? []) as RawBrandModelRow[]) {
-    const mapped = mapModelRow(row)
-    if (mapped) out.push(mapped)
+  const { data: matchingBrands, error: brandErr } = await supabase
+    .from("brands")
+    .select("id")
+    .in("id", [...finBrandIds])
+    .or(`name.ilike.${pattern},slug.ilike.${pattern}`)
+    .limit(limit)
+
+  if (brandErr) {
+    console.error("searchFinCatalogModels (brand match):", brandErr.message)
+  } else {
+    const brandIds = (matchingBrands ?? []).map((row) => row.id).filter(Boolean)
+    if (brandIds.length > 0) {
+      let byBrandQuery = supabase
+        .from("brand_models")
+        .select(MODEL_LIST_SELECT)
+        .in("brand_id", brandIds)
+
+      if (tokens.length >= 1) {
+        byBrandQuery = applyModelNameTokenFilters(byBrandQuery, q)
+      } else {
+        byBrandQuery = byBrandQuery.or(`name.ilike.${pattern},description.ilike.${pattern}`)
+      }
+
+      const { data: byBrand, error: byBrandErr } = await byBrandQuery
+        .order("name", { ascending: true })
+        .limit(limit)
+
+      if (byBrandErr) {
+        console.error("searchFinCatalogModels (brand models):", byBrandErr.message)
+      } else {
+        collect((byBrand ?? []) as RawBrandModelRow[])
+      }
+    }
   }
-  return out
+
+  return [...byId.values()]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .slice(0, limit)
 }
 
 /** Models for matched fin brands (e.g. user typed a brand name). */
@@ -345,8 +421,13 @@ export async function listFinCatalogModelsForBrandIds(
     .limit(limit)
 
   if (q.length >= 1) {
-    const pattern = ilikePattern(q)
-    query = query.or(`name.ilike.${pattern},description.ilike.${pattern}`)
+    const tokens = finCatalogMeaningfulSearchTokens(q)
+    if (tokens.length >= 1) {
+      query = applyModelNameTokenFilters(query, q)
+    } else {
+      const pattern = ilikePattern(q)
+      query = query.or(`name.ilike.${pattern},description.ilike.${pattern}`)
+    }
   }
 
   const { data, error } = await query
@@ -394,6 +475,35 @@ export async function searchFinCatalogVariants(
     }
   }
 
+  const applyFacetFilters = <T extends { in: (col: string, vals: readonly string[]) => T }>(
+    query: T,
+  ): T => {
+    let next = query
+    if (finSystems.length > 0) next = next.in("fin_box_type", [...finSystems])
+    if (finSetups.length > 0) next = next.in("fin_boxes", [...finSetups])
+    if (finSizes.length > 0) next = next.in("fin_size", [...finSizes])
+    return next
+  }
+
+  if (brandModelIds.length > 0) {
+    let query = supabase
+      .from("brand_model_variants")
+      .select(VARIANT_LIST_SELECT)
+      .in("brand_id", [...finBrandIds])
+      .in("brand_model_id", [...brandModelIds])
+      .order("sort_order", { ascending: true })
+      .limit(limit)
+
+    query = applyFacetFilters(query)
+
+    const { data, error } = await query
+    if (error) {
+      console.error("searchFinCatalogVariants (model ids):", error.message)
+    } else {
+      collect((data ?? []) as RawVariantRow[])
+    }
+  }
+
   if (pattern) {
     const { data, error } = await supabase
       .from("brand_model_variants")
@@ -422,67 +532,54 @@ export async function searchFinCatalogVariants(
     }
   }
 
-  if (brandModelIds.length > 0) {
-    const { data, error } = await supabase
-      .from("brand_model_variants")
-      .select(VARIANT_LIST_SELECT)
-      .in("brand_id", [...finBrandIds])
-      .in("brand_model_id", [...brandModelIds])
-      .order("sort_order", { ascending: true })
-      .limit(limit)
+  // Broad facet browse only when no model-scoped matches were requested.
+  if (brandModelIds.length === 0) {
+    if (finSystems.length > 0) {
+      const { data, error } = await supabase
+        .from("brand_model_variants")
+        .select(VARIANT_LIST_SELECT)
+        .in("brand_id", [...finBrandIds])
+        .in("fin_box_type", [...finSystems])
+        .order("sort_order", { ascending: true })
+        .limit(limit)
 
-    if (error) {
-      console.error("searchFinCatalogVariants (model ids):", error.message)
-    } else {
-      collect((data ?? []) as RawVariantRow[])
+      if (error) {
+        console.error("searchFinCatalogVariants (fin system):", error.message)
+      } else {
+        collect((data ?? []) as RawVariantRow[])
+      }
     }
-  }
 
-  if (finSystems.length > 0) {
-    const { data, error } = await supabase
-      .from("brand_model_variants")
-      .select(VARIANT_LIST_SELECT)
-      .in("brand_id", [...finBrandIds])
-      .in("fin_box_type", [...finSystems])
-      .order("sort_order", { ascending: true })
-      .limit(limit)
+    if (finSetups.length > 0) {
+      const { data, error } = await supabase
+        .from("brand_model_variants")
+        .select(VARIANT_LIST_SELECT)
+        .in("brand_id", [...finBrandIds])
+        .in("fin_boxes", [...finSetups])
+        .order("sort_order", { ascending: true })
+        .limit(limit)
 
-    if (error) {
-      console.error("searchFinCatalogVariants (fin system):", error.message)
-    } else {
-      collect((data ?? []) as RawVariantRow[])
+      if (error) {
+        console.error("searchFinCatalogVariants (fin setup):", error.message)
+      } else {
+        collect((data ?? []) as RawVariantRow[])
+      }
     }
-  }
 
-  if (finSetups.length > 0) {
-    const { data, error } = await supabase
-      .from("brand_model_variants")
-      .select(VARIANT_LIST_SELECT)
-      .in("brand_id", [...finBrandIds])
-      .in("fin_boxes", [...finSetups])
-      .order("sort_order", { ascending: true })
-      .limit(limit)
+    if (finSizes.length > 0) {
+      const { data, error } = await supabase
+        .from("brand_model_variants")
+        .select(VARIANT_LIST_SELECT)
+        .in("brand_id", [...finBrandIds])
+        .in("fin_size", [...finSizes])
+        .order("sort_order", { ascending: true })
+        .limit(limit)
 
-    if (error) {
-      console.error("searchFinCatalogVariants (fin setup):", error.message)
-    } else {
-      collect((data ?? []) as RawVariantRow[])
-    }
-  }
-
-  if (finSizes.length > 0) {
-    const { data, error } = await supabase
-      .from("brand_model_variants")
-      .select(VARIANT_LIST_SELECT)
-      .in("brand_id", [...finBrandIds])
-      .in("fin_size", [...finSizes])
-      .order("sort_order", { ascending: true })
-      .limit(limit)
-
-    if (error) {
-      console.error("searchFinCatalogVariants (fin size):", error.message)
-    } else {
-      collect((data ?? []) as RawVariantRow[])
+      if (error) {
+        console.error("searchFinCatalogVariants (fin size):", error.message)
+      } else {
+        collect((data ?? []) as RawVariantRow[])
+      }
     }
   }
 

@@ -20,10 +20,12 @@ import { searchBrandsCatalogSuggestWithClient } from "@/lib/services/brandDirect
 import type { BrandCatalogSuggestRow } from "@/lib/services/brandDirectorySearch"
 import { formatFinCatalogVariantLabel } from "@/lib/utils/fin-catalog-variant-label"
 import { finCatalogSearchRowThumbUrl } from "@/lib/utils/fin-catalog-display-image"
+import { rankFinCatalogSearchResults } from "@/lib/utils/fin-catalog-search-rank"
 import type {
   FinCatalogSearchBrandRow,
   FinCatalogSearchModelRow,
   FinCatalogSearchResult,
+  FinCatalogSearchResultRow,
   FinCatalogSearchVariantRow,
 } from "@/lib/types/fin-catalog-search"
 import type { FinBoxesType, FinBoxType } from "@/lib/validations/brand-model-variants"
@@ -32,13 +34,15 @@ export type {
   FinCatalogSearchBrandRow,
   FinCatalogSearchModelRow,
   FinCatalogSearchResult,
+  FinCatalogSearchResultRow,
   FinCatalogSearchSelection,
   FinCatalogSearchVariantRow,
 } from "@/lib/types/fin-catalog-search"
 
 const MAX_BRANDS = 8
-const MAX_MODELS = 10
-const MAX_VARIANTS = 12
+const MAX_MODELS = 20
+const MAX_VARIANTS = 24
+const MAX_RANKED_RESULTS = 12
 
 function extractFinFacetMatches(q: string): {
   finSystems: FinBoxType[]
@@ -121,6 +125,7 @@ function variantToSearchRow(row: FinCatalogVariantRow): FinCatalogSearchVariantR
     brandSlug: row.brandSlug,
     brandLogoUrl: row.brandLogoUrl,
     modelName: row.modelName,
+    modelDescription: row.modelDescription,
     modelImageUrl: row.modelImageUrl,
     finSetup,
     finSystem,
@@ -161,6 +166,7 @@ export async function searchFinCatalogForSell(
       brands: [],
       models: [],
       variants: [],
+      results: [],
       meta: { backend: "supabase", finBrandCount: 0 },
     }
   }
@@ -171,6 +177,7 @@ export async function searchFinCatalogForSell(
       brands: [],
       models: [],
       variants: [],
+      results: [],
       meta: { backend: "supabase", finBrandCount: 0 },
     }
   }
@@ -193,7 +200,7 @@ export async function searchFinCatalogForSell(
   const [modelsByText, modelsForBrands] = await Promise.all([
     searchFinCatalogModels(supabase, finBrandIds, q, MAX_MODELS),
     matchedBrandIds.length > 0
-      ? listFinCatalogModelsForBrandIds(supabase, finBrandIds, matchedBrandIds, "", MAX_MODELS)
+      ? listFinCatalogModelsForBrandIds(supabase, finBrandIds, matchedBrandIds, q, MAX_MODELS)
       : Promise.resolve([]),
   ])
 
@@ -212,10 +219,18 @@ export async function searchFinCatalogForSell(
 
   const variants = variantRows.map(variantToSearchRow)
 
+  const candidateRows: FinCatalogSearchResultRow[] = [
+    ...brands,
+    ...models,
+    ...variants,
+  ]
+  const results = rankFinCatalogSearchResults(q, candidateRows, MAX_RANKED_RESULTS)
+
   return {
     brands,
     models,
     variants,
+    results,
     meta: { backend: brandRes.meta.backend, finBrandCount: finBrandIds.length },
   }
 }

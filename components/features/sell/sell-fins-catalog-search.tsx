@@ -75,15 +75,11 @@ function rowKey(row: CatalogResultRow): string {
   return `${row.kind}-${row.id}`
 }
 
-function flattenResults(data: FinCatalogSearchResult): CatalogResultRow[] {
-  return [...data.variants, ...data.models, ...data.brands]
-}
-
 function partitionResults(data: FinCatalogSearchResult): {
   topPick: CatalogResultRow | null
   moreMatches: CatalogResultRow[]
 } {
-  const ordered = flattenResults(data)
+  const ordered = data.results.length > 0 ? data.results : [...data.variants, ...data.models, ...data.brands]
   if (ordered.length === 0) return { topPick: null, moreMatches: [] }
   return { topPick: ordered[0] ?? null, moreMatches: ordered.slice(1) }
 }

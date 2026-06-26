@@ -376,6 +376,9 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
         brandId: selection.brandId,
         title: selection.suggestedTitle || prev.title,
       }
+      if (selection.suggestedDescription) {
+        next.description = selection.suggestedDescription
+      }
       if (selection.kind === "model" || selection.kind === "variant") {
         next.model = selection.modelName
         next.brandModelId = selection.brandModelId

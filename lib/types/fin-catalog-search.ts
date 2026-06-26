@@ -30,6 +30,7 @@ export type FinCatalogSearchVariantRow = {
   brandSlug: string
   brandLogoUrl: string | null
   modelName: string
+  modelDescription: string | null
   modelImageUrl: string | null
   finSetup: string
   finSystem: string
@@ -43,11 +44,24 @@ export type FinCatalogSearchResult = {
   brands: FinCatalogSearchBrandRow[]
   models: FinCatalogSearchModelRow[]
   variants: FinCatalogSearchVariantRow[]
+  /** Relevance-ranked rows for the sell-flow UI (brand, model, or variant). */
+  results: FinCatalogSearchResultRow[]
   meta: { backend: "elasticsearch" | "supabase"; finBrandCount: number }
 }
 
+export type FinCatalogSearchResultRow =
+  | FinCatalogSearchBrandRow
+  | FinCatalogSearchModelRow
+  | FinCatalogSearchVariantRow
+
 export type FinCatalogSearchSelection =
-  | { kind: "brand"; brandId: string; brandName: string; suggestedTitle: string }
+  | {
+      kind: "brand"
+      brandId: string
+      brandName: string
+      suggestedTitle: string
+      suggestedDescription: string | null
+    }
   | {
       kind: "model"
       brandId: string
@@ -55,6 +69,7 @@ export type FinCatalogSearchSelection =
       brandModelId: string
       modelName: string
       suggestedTitle: string
+      suggestedDescription: string | null
     }
   | {
       kind: "variant"
@@ -66,7 +81,13 @@ export type FinCatalogSearchSelection =
       finSystem: string
       finSize: string | null
       suggestedTitle: string
+      suggestedDescription: string | null
     }
+
+function finCatalogListingDescriptionPrefill(raw: string | null | undefined): string | null {
+  const t = raw?.trim() ?? ""
+  return t.length > 0 ? t : null
+}
 
 function capFinCatalogTitle(raw: string): string {
   const t = raw.trim().replace(/\s+/g, " ")
@@ -85,6 +106,7 @@ export function finCatalogSelectionFromRow(
       brandId: row.id,
       brandName: row.name,
       suggestedTitle: capFinCatalogTitle(row.name),
+      suggestedDescription: finCatalogListingDescriptionPrefill(row.shortDescription),
     }
   }
   if (row.kind === "model") {
@@ -95,6 +117,7 @@ export function finCatalogSelectionFromRow(
       brandModelId: row.id,
       modelName: row.name,
       suggestedTitle: capFinCatalogTitle(`${row.brandName} ${row.name}`),
+      suggestedDescription: finCatalogListingDescriptionPrefill(row.description),
     }
   }
   return {
@@ -107,5 +130,6 @@ export function finCatalogSelectionFromRow(
     finSystem: row.finSystem,
     finSize: row.finSize,
     suggestedTitle: row.suggestedTitle,
+    suggestedDescription: finCatalogListingDescriptionPrefill(row.modelDescription),
   }
 }
