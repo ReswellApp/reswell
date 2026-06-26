@@ -12,7 +12,6 @@ import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAc
 import { pendingSaleFeeClause } from "@/lib/seller-fees"
 import {
   creditOrderPendingEarnings,
-  walletPendingSaleDescription,
 } from "@/lib/services/orderPendingEarnings"
 import { marketplaceListingIdsFromPaymentIntent } from "@/lib/stripe-marketplace-metadata"
 import {
