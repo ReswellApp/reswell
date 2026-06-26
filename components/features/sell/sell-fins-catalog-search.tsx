@@ -28,7 +28,7 @@ import {
   type FinCatalogSearchVariantRow,
 } from "@/lib/types/fin-catalog-search"
 import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
-import { finCatalogThumbImageUrl } from "@/lib/utils/fin-catalog-display-image"
+import { finCatalogSearchRowThumbUrl } from "@/lib/utils/fin-catalog-display-image"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
 
@@ -48,46 +48,26 @@ export type SellFinsCatalogSearchProps = {
 }
 
 function thumbForRow(row: CatalogResultRow): string | null {
-  if (row.kind === "brand") return row.logoUrl
-  if (row.kind === "model") {
-    return finCatalogThumbImageUrl({
-      modelImageUrl: row.imageUrl,
-      brandLogoUrl: row.brandLogoUrl,
-    })
-  }
-  return finCatalogThumbImageUrl({
-    variantImageUrl: row.imageUrl,
-    modelImageUrl: row.modelImageUrl,
-    brandLogoUrl: row.brandLogoUrl,
-  })
+  return finCatalogSearchRowThumbUrl(row)
 }
 
 function titleForRow(row: CatalogResultRow): string {
   if (row.kind === "brand") return row.name
-  if (row.kind === "model") return row.name
-  return row.modelName
+  if (row.kind === "model") return `${row.brandName} ${row.name}`
+  return `${row.brandName} ${row.modelName}`
 }
 
 function metaLinesForRow(row: CatalogResultRow): CatalogMetaLine[] {
-  if (row.kind === "brand") {
-    const lines: CatalogMetaLine[] = [{ label: "Brand", value: row.name }]
-    const desc = row.shortDescription?.trim()
-    if (desc) lines.push({ label: "About", value: desc })
-    return lines
-  }
+  if (row.kind === "brand") return []
   if (row.kind === "model") {
-    const lines: CatalogMetaLine[] = [
+    return [
       { label: "Brand", value: row.brandName },
       { label: "Model", value: row.name },
     ]
-    const desc = row.description?.trim()
-    if (desc) lines.push({ label: "Details", value: desc })
-    return lines
   }
   return [
     { label: "Brand", value: row.brandName },
     { label: "Model", value: row.modelName },
-    { label: "Configuration", value: row.variantLabel },
   ]
 }
 
@@ -161,7 +141,9 @@ function CatalogMatchRow({
   const title = titleForRow(row)
   const meta = metaLinesForRow(row)
   const thumb = thumbForRow(row)
-  const isLogo = row.kind === "brand" || (row.kind === "model" && !row.imageUrl)
+  const brandLogo =
+    row.kind === "brand" ? row.logoUrl?.trim() : row.brandLogoUrl?.trim()
+  const isLogo = row.kind === "brand" || Boolean(brandLogo && thumb === brandLogo)
 
   return (
     <li>
@@ -190,16 +172,18 @@ function CatalogMatchRow({
                 : "text-sm font-semibold sm:text-base lg:text-lg",
             )}
           >
-            {row.kind === "variant" ? `${row.brandName} ${row.modelName}` : title}
+            {title}
           </p>
-          <dl className="mt-2 space-y-1 lg:mt-3 lg:space-y-1.5">
-            {meta.map((line) => (
-              <div key={line.label} className="flex flex-wrap gap-x-1.5 text-xs sm:text-sm lg:text-base">
-                <dt className="shrink-0 text-muted-foreground">{line.label}:</dt>
-                <dd className="min-w-0 text-foreground/90">{line.value}</dd>
-              </div>
-            ))}
-          </dl>
+          {meta.length > 0 ? (
+            <dl className="mt-2 space-y-1 lg:mt-3 lg:space-y-1.5">
+              {meta.map((line) => (
+                <div key={line.label} className="flex flex-wrap gap-x-1.5 text-xs sm:text-sm lg:text-base">
+                  <dt className="shrink-0 text-muted-foreground">{line.label}:</dt>
+                  <dd className="min-w-0 text-foreground/90">{line.value}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
         </div>
       </button>
     </li>

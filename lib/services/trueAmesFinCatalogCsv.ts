@@ -150,15 +150,18 @@ function pickImageForColor(fallback: string, color: string, variantUrls: string[
   return fallback
 }
 
-/** Prefer full product photos over Shopify color swatches (`_50x`). */
+/** Prefer full product photos over Shopify color swatches/thumbnails. */
 export function preferFullProductImageUrl(url: string): string {
   const t = url.trim()
   if (!t) return t
   if (/_50x/i.test(t)) {
-    return t.replace(/_50x/gi, "_360x504")
+    return t.replace(/_50x/gi, "_600x")
+  }
+  if (/_grande/i.test(t)) {
+    return t.replace(/_grande/gi, "_600x")
   }
   if (/_360x(?!\d)/i.test(t)) {
-    return t.replace(/_360x(?!\d)/gi, "_360x504")
+    return t.replace(/_360x(?!\d)/gi, "_600x504")
   }
   return t
 }
