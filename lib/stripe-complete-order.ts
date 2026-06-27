@@ -316,7 +316,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   }
 
   const terminalCustomer = terminalCustomerContactFromPaymentIntent(pi)
-  if (isAdminTerminalSale && !terminalCustomer) {
+  if (isAdminTerminalSale && !terminalCustomer && !buyerId) {
     return { ok: false, error: "Admin terminal payment missing customer info", status: 400 }
   }
 
@@ -356,7 +356,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Listing not found", status: 404 }
   }
 
-  if (!isAdminTerminalSale && listingsOrdered.some((l) => l.user_id === buyerId)) {
+  if (buyerId && listingsOrdered.some((l) => l.user_id === buyerId)) {
     return { ok: false, error: "Invalid purchase", status: 400 }
   }
 
@@ -373,7 +373,14 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Invalid purchase", status: 400 }
   }
 
-  if (listingsOrdered.some((l) => l.status !== "active")) {
+  const allowedListingStatuses = isAdminTerminalSale
+    ? (["active", "pending_sale"] as const)
+    : (["active"] as const)
+  if (
+    listingsOrdered.some(
+      (l) => !allowedListingStatuses.includes(l.status as (typeof allowedListingStatuses)[number]),
+    )
+  ) {
     return {
       ok: false,
       error: "This listing is no longer available. Contact support if you were charged.",
@@ -558,6 +565,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   }
 
   const fulfillmentMethod = impliedFulfillment
+  const isTerminalGuestSale = isAdminTerminalSale && !buyerId
 
   let shippingAddressJson: Record<string, unknown> | null = null
   if (fulfillmentMethod === "shipping" && buyerAddress) {
@@ -580,7 +588,9 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     }
   }
 
-  shippingAddressJson = applyTerminalCustomerToOrderShippingJson(pi, shippingAddressJson)
+  shippingAddressJson = isTerminalGuestSale
+    ? applyTerminalCustomerToOrderShippingJson(pi, shippingAddressJson)
+    : shippingAddressJson
 
   const isPickup = fulfillmentMethod === "pickup"
   const deliveryStatus = isAdminTerminalSale
@@ -599,7 +609,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     .insert({
       id: orderId,
       listing_id: primaryListingId,
-      buyer_id: isAdminTerminalSale ? null : buyerId,
+      buyer_id: buyerId,
       seller_id: bundleSellerId,
       amount: chargedUsd,
       shipping_amount: shippingUsd,
@@ -769,18 +779,18 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     void markUserListingBoardModelDataSold(serviceSupabase, line.listingId, line.itemPrice)
   }
 
-  if (!isAdminTerminalSale && buyerId) {
+  if (buyerId) {
     void deleteBuyerCartRowsForListings(serviceSupabase, buyerId, listingIdsOrdered)
   }
 
   void touchUserLastActive(serviceSupabase, bundleSellerId)
-  if (!isAdminTerminalSale && buyerId) {
+  if (buyerId) {
     void touchUserLastActive(serviceSupabase, buyerId)
   }
 
   const listingTitles = listingsOrdered.map((l) => String(l.title ?? ""))
 
-  if (!isAdminTerminalSale && buyerId) {
+  if (buyerId) {
     void postPurchaseThreadNotification(serviceSupabase, {
       buyerId,
       sellerId: bundleSellerId,
@@ -842,7 +852,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     contentIds: listingIdsOrdered,
   })
 
-  if (!isAdminTerminalSale && buyerId) {
+  if (buyerId) {
     void sendPostPurchaseReviewInvite(purchase.id)
   }
 

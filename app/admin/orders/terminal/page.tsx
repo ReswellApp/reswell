@@ -36,8 +36,8 @@ export default async function AdminTerminalCheckoutPage() {
           Terminal checkout
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Search any listing, enter walk-in customer details, and charge list price on your S710.
-          No Reswell account or shipping/pickup choice required.
+          Search any listing, charge list price on your S710, and link the sale to a walk-in guest or
+          an existing member account.
         </p>
       </div>
       <AdminTerminalRegisterClient />

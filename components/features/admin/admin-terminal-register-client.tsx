@@ -10,8 +10,11 @@ import {
   Loader2,
   Search,
   Terminal,
+  User,
   X,
 } from "lucide-react"
+import type { AdminMarketplaceProfilePickerRow } from "@/lib/services/adminStartMarketplaceConversation"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,6 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 
 type TerminalReaderRef = {
@@ -61,13 +65,26 @@ type ListingSearchHit = {
 }
 
 type Phase = "setup" | "charging" | "confirm"
+type CustomerMode = "guest" | "member"
 
 const POLL_INTERVAL_MS = 2500
 const POLL_TIMEOUT_MS = 90_000
 const SEARCH_DEBOUNCE_MS = 250
+const MEMBER_SEARCH_DEBOUNCE_MS = 300
 
 function money(value: number) {
   return `$${value.toFixed(2)}`
+}
+
+function MemberAvatar({ row }: { row: AdminMarketplaceProfilePickerRow }) {
+  return (
+    <Avatar className="h-9 w-9 shrink-0">
+      {row.avatar_url ? <AvatarImage src={row.avatar_url} alt="" /> : null}
+      <AvatarFallback className="text-xs">
+        {(row.display_name ?? row.email ?? "?")[0]?.toUpperCase()}
+      </AvatarFallback>
+    </Avatar>
+  )
 }
 
 export function AdminTerminalRegisterClient() {
@@ -81,6 +98,13 @@ export function AdminTerminalRegisterClient() {
   const [customerLastName, setCustomerLastName] = useState("")
   const [customerEmail, setCustomerEmail] = useState("")
   const [customerPhone, setCustomerPhone] = useState("")
+
+  const [customerMode, setCustomerMode] = useState<CustomerMode>("guest")
+  const [memberSearch, setMemberSearch] = useState("")
+  const [memberSearchDebounced, setMemberSearchDebounced] = useState("")
+  const [memberHits, setMemberHits] = useState<AdminMarketplaceProfilePickerRow[]>([])
+  const [memberSearching, setMemberSearching] = useState(false)
+  const [selectedMember, setSelectedMember] = useState<AdminMarketplaceProfilePickerRow | null>(null)
 
   const [preview, setPreview] = useState<ListingPreview | null>(null)
 
@@ -151,6 +175,49 @@ export function AdminTerminalRegisterClient() {
     return () => clearTimeout(timer)
   }, [searchQuery, phase])
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => setMemberSearchDebounced(memberSearch.trim()), MEMBER_SEARCH_DEBOUNCE_MS)
+    return () => window.clearTimeout(timer)
+  }, [memberSearch])
+
+  useEffect(() => {
+    if (phase === "charging" || customerMode !== "member") return
+    if (memberSearchDebounced.length < 2) {
+      setMemberHits([])
+      setMemberSearching(false)
+      return
+    }
+
+    let cancelled = false
+    setMemberSearching(true)
+    const params = new URLSearchParams()
+    params.set("q", memberSearchDebounced)
+    params.set("limit", "20")
+    void fetch(`/api/admin/terminal/customers/search?${params}`)
+      .then(async (res) => {
+        const body = (await res.json()) as {
+          data?: { hits?: AdminMarketplaceProfilePickerRow[] }
+          error?: string
+        }
+        if (cancelled) return
+        if (!res.ok) {
+          setMemberHits([])
+          return
+        }
+        setMemberHits(body.data?.hits ?? [])
+      })
+      .catch(() => {
+        if (!cancelled) setMemberHits([])
+      })
+      .finally(() => {
+        if (!cancelled) setMemberSearching(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [memberSearchDebounced, customerMode, phase])
+
   const loadListingPreview = useCallback(async (opts: { listingRef?: string; listingId?: string }) => {
     setPreviewBusy(true)
     setPreview(null)
@@ -201,6 +268,25 @@ export function AdminTerminalRegisterClient() {
     setPhase("setup")
     setPaymentIntentId(null)
     setOrderId(null)
+    setSelectedMember(null)
+    setMemberSearch("")
+    setMemberSearchDebounced("")
+    setMemberHits([])
+  }
+
+  function handleCustomerModeChange(mode: CustomerMode) {
+    setCustomerMode(mode)
+    if (mode === "guest") {
+      setSelectedMember(null)
+      setMemberSearch("")
+      setMemberSearchDebounced("")
+      setMemberHits([])
+    } else {
+      setCustomerFirstName("")
+      setCustomerLastName("")
+      setCustomerEmail("")
+      setCustomerPhone("")
+    }
   }
 
   async function pollFinalize(piId: string) {
@@ -245,30 +331,50 @@ export function AdminTerminalRegisterClient() {
       toast.error("Select a card reader")
       return
     }
-    if (!customerFirstName.trim()) {
-      toast.error("Enter the customer's first name")
-      return
-    }
-    if (!customerEmail.trim()) {
-      toast.error("Enter the customer's email")
-      return
+    if (customerMode === "member") {
+      if (!selectedMember) {
+        toast.error("Select a member account")
+        return
+      }
+      if (preview.sellerId === selectedMember.id) {
+        toast.error("The seller cannot be the buyer for this listing")
+        return
+      }
+    } else {
+      if (!customerFirstName.trim()) {
+        toast.error("Enter the customer's first name")
+        return
+      }
+      if (!customerEmail.trim()) {
+        toast.error("Enter the customer's email")
+        return
+      }
     }
 
     setPhase("charging")
     try {
+      const payload =
+        customerMode === "member" && selectedMember
+          ? {
+              listingId: preview.id,
+              readerId,
+              buyerId: selectedMember.id,
+            }
+          : {
+              listingId: preview.id,
+              readerId,
+              customer: {
+                firstName: customerFirstName.trim(),
+                lastName: customerLastName.trim() || undefined,
+                email: customerEmail.trim(),
+                phone: customerPhone.trim() || undefined,
+              },
+            }
+
       const res = await fetch("/api/admin/terminal/sale/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          listingId: preview.id,
-          readerId,
-          customer: {
-            firstName: customerFirstName.trim(),
-            lastName: customerLastName.trim() || undefined,
-            email: customerEmail.trim(),
-            phone: customerPhone.trim() || undefined,
-          },
-        }),
+        body: JSON.stringify(payload),
       })
       const json = await res.json()
       if (!res.ok) {
@@ -493,56 +599,171 @@ export function AdminTerminalRegisterClient() {
         <CardHeader>
           <CardTitle className="text-lg">Customer</CardTitle>
           <CardDescription>
-            Walk-in guest — no Reswell account required. Contact info is stored on the order.
+            Charge a walk-in guest or link the sale to an existing Reswell member account.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="customer-first-name">First name</Label>
-              <Input
-                id="customer-first-name"
-                value={customerFirstName}
-                onChange={(e) => setCustomerFirstName(e.target.value)}
-                placeholder="Alex"
-                disabled={phase === "charging"}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="customer-last-name">Last name</Label>
-              <Input
-                id="customer-last-name"
-                value={customerLastName}
-                onChange={(e) => setCustomerLastName(e.target.value)}
-                placeholder="Rivera"
-                disabled={phase === "charging"}
-              />
-            </div>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="customer-email">Email</Label>
-              <Input
-                id="customer-email"
-                type="email"
-                value={customerEmail}
-                onChange={(e) => setCustomerEmail(e.target.value)}
-                placeholder="customer@example.com"
-                disabled={phase === "charging"}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="customer-phone">Phone</Label>
-              <Input
-                id="customer-phone"
-                type="tel"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                placeholder="555-0100"
-                disabled={phase === "charging"}
-              />
-            </div>
-          </div>
+          <Tabs
+            value={customerMode}
+            onValueChange={(value) => handleCustomerModeChange(value as CustomerMode)}
+          >
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="guest" disabled={phase === "charging"}>
+                Walk-in guest
+              </TabsTrigger>
+              <TabsTrigger value="member" disabled={phase === "charging"}>
+                Existing member
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="guest" className="mt-4 space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="customer-first-name">First name</Label>
+                  <Input
+                    id="customer-first-name"
+                    value={customerFirstName}
+                    onChange={(e) => setCustomerFirstName(e.target.value)}
+                    placeholder="Alex"
+                    disabled={phase === "charging"}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="customer-last-name">Last name</Label>
+                  <Input
+                    id="customer-last-name"
+                    value={customerLastName}
+                    onChange={(e) => setCustomerLastName(e.target.value)}
+                    placeholder="Rivera"
+                    disabled={phase === "charging"}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="customer-email">Email</Label>
+                  <Input
+                    id="customer-email"
+                    type="email"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    placeholder="customer@example.com"
+                    disabled={phase === "charging"}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="customer-phone">Phone</Label>
+                  <Input
+                    id="customer-phone"
+                    type="tel"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="555-0100"
+                    disabled={phase === "charging"}
+                  />
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="member" className="mt-4 space-y-4">
+              {selectedMember ? (
+                <div className="flex items-center gap-3 rounded-lg border p-3">
+                  <MemberAvatar row={selectedMember} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">
+                      {selectedMember.display_name?.trim() || "Unnamed member"}
+                    </p>
+                    {selectedMember.email ? (
+                      <p className="truncate text-sm text-muted-foreground">{selectedMember.email}</p>
+                    ) : null}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={phase === "charging"}
+                    onClick={() => setSelectedMember(null)}
+                  >
+                    Change
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      value={memberSearch}
+                      onChange={(e) => setMemberSearch(e.target.value)}
+                      placeholder="Search by email or name…"
+                      type="search"
+                      autoComplete="off"
+                      inputMode="email"
+                      className="pl-9"
+                      disabled={phase === "charging"}
+                      onKeyDown={(e) => {
+                        if (e.key !== "Enter" || memberHits.length !== 1 || phase === "charging") return
+                        e.preventDefault()
+                        setSelectedMember(memberHits[0]!)
+                        setMemberSearch("")
+                        setMemberSearchDebounced("")
+                        setMemberHits([])
+                      }}
+                    />
+                  </div>
+                  {memberSearchDebounced.length >= 2 ? (
+                    <div className="space-y-2">
+                      {memberSearching ? (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Searching members…
+                        </div>
+                      ) : memberHits.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          No members matched that email or name.
+                        </p>
+                      ) : (
+                        <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border p-1">
+                          {memberHits.map((hit) => (
+                            <button
+                              key={hit.id}
+                              type="button"
+                              disabled={phase === "charging"}
+                              onClick={() => {
+                                setSelectedMember(hit)
+                                setMemberSearch("")
+                                setMemberSearchDebounced("")
+                                setMemberHits([])
+                              }}
+                              className="flex w-full items-center gap-3 rounded-md px-2 py-2 text-left transition hover:bg-muted"
+                            >
+                              <MemberAvatar row={hit} />
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-sm font-medium">
+                                  {hit.display_name?.trim() || "Unnamed member"}
+                                </p>
+                                {hit.email ? (
+                                  <p className="truncate text-xs text-muted-foreground">{hit.email}</p>
+                                ) : null}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Type a name or email (min. 2 characters). Paste a full email address for an exact
+                      match, including accounts where login email isn&apos;t on the public profile.
+                    </p>
+                  )}
+                </>
+              )}
+              <p className="text-xs text-muted-foreground">
+                The order will appear in the member&apos;s purchase history, open a seller thread, and
+                trigger the same post-purchase emails as online checkout.
+              </p>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 
@@ -577,8 +798,9 @@ export function AdminTerminalRegisterClient() {
                 disabled={
                   !preview ||
                   !readerId ||
-                  !customerFirstName.trim() ||
-                  !customerEmail.trim()
+                  (customerMode === "guest"
+                    ? !customerFirstName.trim() || !customerEmail.trim()
+                    : !selectedMember)
                 }
                 onClick={() => void startCharge()}
               >

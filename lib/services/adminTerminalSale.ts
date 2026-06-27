@@ -1,7 +1,9 @@
 import type Stripe from "stripe"
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 import { getStripe } from "@/lib/stripe-server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import {
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerSurfboardCheckoutListingRow,
@@ -264,6 +266,63 @@ async function buildListingPreview(
   }
 }
 
+async function resolveAdminTerminalMemberBuyer(
+  service: SupabaseClient,
+  buyerId: string,
+  sellerId: string,
+): Promise<
+  | { ok: true; buyerId: string; customerName: string; customerEmail: string; customerPhone: string | null }
+  | { ok: false; error: string; status: number }
+> {
+  const { data: authData, error: authErr } = await service.auth.admin.getUserById(buyerId)
+  if (authErr || !authData.user) {
+    return { ok: false, error: "Member account not found", status: 404 }
+  }
+  if (isAnonymousSupabaseUser(authData.user)) {
+    return {
+      ok: false,
+      error: "This account is a guest session — use walk-in guest checkout or have them sign in with email.",
+      status: 400,
+    }
+  }
+  if (authData.user.id === sellerId) {
+    return { ok: false, error: "The seller cannot be the buyer for this listing", status: 400 }
+  }
+
+  const { data: profile, error: profileErr } = await service
+    .from("profiles")
+    .select("id, display_name, email, phone")
+    .eq("id", buyerId)
+    .maybeSingle()
+
+  if (profileErr || !profile) {
+    return { ok: false, error: "Member profile not found", status: 404 }
+  }
+
+  const customerEmail =
+    (await getAuthEmailForUserId(buyerId)) ??
+    (typeof profile.email === "string" ? profile.email.trim() : "") ??
+    ""
+  if (!customerEmail) {
+    return { ok: false, error: "Member account has no email on file", status: 400 }
+  }
+
+  const customerName =
+    (typeof profile.display_name === "string" ? profile.display_name.trim() : "") ||
+    customerEmail.split("@")[0] ||
+    "Reswell member"
+  const customerPhone =
+    typeof profile.phone === "string" && profile.phone.trim() ? profile.phone.trim() : null
+
+  return {
+    ok: true,
+    buyerId,
+    customerName: customerName.slice(0, 500),
+    customerEmail: customerEmail.slice(0, 500),
+    customerPhone: customerPhone ? customerPhone.slice(0, 500) : null,
+  }
+}
+
 export async function startAdminTerminalSale(
   adminUserId: string,
   input: AdminTerminalSaleStartInput,
@@ -321,9 +380,27 @@ export async function startAdminTerminalSale(
     return { ok: false, error: "Amount is below the minimum charge", status: 400 }
   }
 
-  const customerName = [input.customer.firstName.trim(), input.customer.lastName?.trim()]
-    .filter(Boolean)
-    .join(" ")
+  let customerName: string
+  let customerEmail: string
+  let customerPhone: string | null = null
+  let linkedBuyerId: string | undefined
+
+  if (input.buyerId) {
+    const member = await resolveAdminTerminalMemberBuyer(service, input.buyerId, listing.user_id)
+    if (!member.ok) {
+      return { ok: false, error: member.error, status: member.status }
+    }
+    linkedBuyerId = member.buyerId
+    customerName = member.customerName
+    customerEmail = member.customerEmail
+    customerPhone = member.customerPhone
+  } else {
+    customerName = [input.customer!.firstName.trim(), input.customer!.lastName?.trim()]
+      .filter(Boolean)
+      .join(" ")
+    customerEmail = input.customer!.email.trim()
+    customerPhone = input.customer!.phone?.trim() || null
+  }
 
   const stripe = getStripe()
   let pi: Stripe.PaymentIntent
@@ -342,11 +419,10 @@ export async function startAdminTerminalSale(
         amount_cents: String(amountCents),
         bundle_line_count: "1",
         admin_profile_id: adminUserId,
-        terminal_customer_name: customerName.slice(0, 500),
-        terminal_customer_email: input.customer.email.trim().slice(0, 500),
-        ...(input.customer.phone?.trim()
-          ? { terminal_customer_phone: input.customer.phone.trim().slice(0, 500) }
-          : {}),
+        terminal_customer_name: customerName,
+        terminal_customer_email: customerEmail,
+        ...(customerPhone ? { terminal_customer_phone: customerPhone } : {}),
+        ...(linkedBuyerId ? { buyer_id: linkedBuyerId } : {}),
       },
     })
   } catch (e) {

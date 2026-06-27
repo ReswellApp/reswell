@@ -29,11 +29,30 @@ export const adminTerminalCustomerSchema = z.object({
   phone: z.string().trim().optional(),
 })
 
-export const adminTerminalSaleStartSchema = z.object({
-  listingId: z.string().uuid(),
-  readerId: z.string().trim().min(1),
-  customer: adminTerminalCustomerSchema,
-})
+export const adminTerminalSaleStartSchema = z
+  .object({
+    listingId: z.string().uuid(),
+    readerId: z.string().trim().min(1),
+    buyerId: z.string().uuid().optional(),
+    customer: adminTerminalCustomerSchema.optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.buyerId) return
+    if (!data.customer?.firstName?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "First name is required",
+        path: ["customer", "firstName"],
+      })
+    }
+    if (!data.customer?.email?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Customer email is required",
+        path: ["customer", "email"],
+      })
+    }
+  })
 
 export type AdminTerminalSaleStartInput = z.infer<typeof adminTerminalSaleStartSchema>
 

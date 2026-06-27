@@ -1,6 +1,5 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js"
 import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
-import { ADMIN_TERMINAL_SALES_CHANNEL } from "@/lib/services/adminTerminalSale"
 
 export type AdminOrderShippingAddress = {
   name?: string | null
@@ -287,10 +286,7 @@ export async function getOrderDetailForAdmin(
   const shippingAddress = parseAdminOrderShippingAddress(
     (order as { shipping_address?: unknown }).shipping_address,
   )
-  const isTerminalGuestOrder =
-    salesChannel === ADMIN_TERMINAL_SALES_CHANNEL ||
-    !buyerId ||
-    shippingAddress?.admin_terminal === true
+  const isTerminalGuestOrder = !buyerId
 
   const [listingRes, buyerRes, sellerRes, payoutRes, conversation] = await Promise.all([
     supabase.from("listings").select("title").eq("id", listingId).maybeSingle(),
