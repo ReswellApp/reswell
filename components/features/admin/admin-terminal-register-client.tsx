@@ -772,8 +772,8 @@ export function AdminTerminalRegisterClient() {
           <CardHeader>
             <CardTitle className="text-lg">Charge</CardTitle>
             <CardDescription>
-              In-person terminal sales charge the list price only. No pickup vs. shipping choice —
-              the customer pays and takes the item (or you handle logistics separately).
+              In-person terminal sales charge the list price only. The S710 shows the listing title
+              and total on its screen before the customer taps their card.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

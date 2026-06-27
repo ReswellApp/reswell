@@ -9,6 +9,23 @@ export type TerminalReaderSummary = {
   serialNumber: string | null
 }
 
+export type TerminalReaderCartDisplay = {
+  currency?: string
+  lineItems: Array<{ description: string; amountCents: number; quantity?: number }>
+  totalCents: number
+  taxCents?: number
+}
+
+const TERMINAL_CART_LINE_DESCRIPTION_MAX = 100
+
+/** Stripe reader cart line text — keep short for S710 screen width. */
+export function truncateTerminalCartLineDescription(raw: string, maxLen = TERMINAL_CART_LINE_DESCRIPTION_MAX): string {
+  const trimmed = raw.trim().replace(/\s+/g, " ")
+  if (!trimmed) return "Reswell item"
+  if (trimmed.length <= maxLen) return trimmed
+  return `${trimmed.slice(0, maxLen - 1)}…`
+}
+
 function toReaderSummary(reader: Stripe.Terminal.Reader): TerminalReaderSummary {
   return {
     id: reader.id,
@@ -42,6 +59,30 @@ export async function getTerminalReader(readerId: string): Promise<TerminalReade
   } catch {
     return null
   }
+}
+
+/**
+ * Shows line items + total on S710/S700 before payment. Display-only — PaymentIntent amount is charged.
+ * @see https://docs.stripe.com/terminal/features/display
+ */
+export async function setTerminalReaderCartDisplay(
+  readerId: string,
+  cart: TerminalReaderCartDisplay,
+): Promise<Stripe.Terminal.Reader> {
+  const stripe = getStripe()
+  return stripe.terminal.readers.setReaderDisplay(readerId, {
+    type: "cart",
+    cart: {
+      currency: cart.currency ?? "usd",
+      line_items: cart.lineItems.map((item) => ({
+        description: truncateTerminalCartLineDescription(item.description),
+        amount: item.amountCents,
+        quantity: item.quantity ?? 1,
+      })),
+      total: cart.totalCents,
+      ...(cart.taxCents != null ? { tax: cart.taxCents } : {}),
+    },
+  })
 }
 
 /** Hands a PaymentIntent to the physical reader so the customer can tap or insert their card. */

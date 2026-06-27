@@ -16,6 +16,7 @@ import {
   cancelReaderAction,
   getStripeTerminalLocationId,
   processPaymentOnReader,
+  setTerminalReaderCartDisplay,
 } from "@/lib/services/stripeTerminal"
 import type { AdminTerminalSaleStartInput } from "@/lib/validations/adminTerminalSale"
 
@@ -430,10 +431,22 @@ export async function startAdminTerminalSale(
     return { ok: false, error: "Could not start the payment", status: 502 }
   }
 
+  const listingTitle = listing.title?.trim() || "Reswell listing"
+
+  try {
+    await setTerminalReaderCartDisplay(input.readerId, {
+      lineItems: [{ description: listingTitle, amountCents, quantity: 1 }],
+      totalCents: amountCents,
+    })
+  } catch (e) {
+    console.warn("[adminTerminalSale] set reader cart display failed (continuing)", e)
+  }
+
   try {
     await processPaymentOnReader(input.readerId, pi.id)
   } catch (e) {
     console.error("[adminTerminalSale] process on reader failed", e)
+    await cancelReaderAction(input.readerId)
     try {
       await stripe.paymentIntents.cancel(pi.id)
     } catch {
