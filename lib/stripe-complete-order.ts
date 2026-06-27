@@ -29,10 +29,7 @@ import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-m
 import { touchUserLastActive } from "@/lib/db/userActivity"
 import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
-import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
-import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
-import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
-import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
+import { safeRevalidateAfterMarketplaceOrderCommit } from "@/lib/cache/safe-revalidate-after-order"
 import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnPurchase"
 import { redeemNewsletterPromoForOrder } from "@/lib/db/newsletterPromoCodes"
 import { computeCheckoutTotalWithNewsletterPromo } from "@/lib/services/newsletterPromo"
@@ -662,6 +659,8 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       msg.includes("pickup_code") ||
       msg.includes("shipping_amount") ||
       msg.includes("order_items") ||
+      msg.includes("sales_channel") ||
+      msg.includes("buyer_required") ||
       msg.includes("schema cache")
     if (schemaStale) {
       return {
@@ -754,13 +753,11 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Could not mark listing sold", status: 500 }
   }
 
-  revalidateBoardsBrowseCatalog()
-  await revalidateSellersAfterListingChange(serviceSupabase, bundleSellerId)
-  revalidateMarketplaceSoldFeedCatalog()
-
-  for (const listing of listingsOrdered) {
-    revalidateListingDetailPage(listing.id, listing.slug ?? null)
-  }
+  await safeRevalidateAfterMarketplaceOrderCommit(serviceSupabase, {
+    sellerUserId: bundleSellerId,
+    listingIds: listingsOrdered.map((l) => l.id),
+    listingSlugs: listingsOrdered.map((l) => l.slug ?? null),
+  })
 
   if (!isAdminTerminalSale && buyerId) {
     void completeAcceptedOfferOnPurchase(

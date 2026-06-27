@@ -4,6 +4,8 @@ export type ListingPublicVisibilityFields = {
   title?: string | null
   hidden_from_site?: boolean | null
   archived_at?: string | null
+  /** Confirmed admin-terminal checkout — show on /sold even when hidden_from_site. */
+  soldViaAdminTerminal?: boolean
 }
 
 const PURCHASABLE_STATUSES = new Set(["active", "pending_sale"])
@@ -31,7 +33,7 @@ import { isAdminSeedListingTitle } from "@/lib/utils/admin-seed-listing"
 export function isListingVisibleInPublicSoldFeed(listing: ListingPublicVisibilityFields): boolean {
   if (isAdminSeedListingTitle(listing.title)) return false
   if (listing.status !== "sold") return false
-  if (listing.hidden_from_site && !listing.archived_at) return false
+  if (listing.hidden_from_site && !listing.archived_at && !listing.soldViaAdminTerminal) return false
   return true
 }
 

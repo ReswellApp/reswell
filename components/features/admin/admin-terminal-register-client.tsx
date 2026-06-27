@@ -64,7 +64,7 @@ type ListingSearchHit = {
   shippingAvailable: boolean
 }
 
-type Phase = "setup" | "charging" | "confirm"
+type Phase = "setup" | "charging" | "settlement_failed" | "confirm"
 type CustomerMode = "guest" | "member"
 
 const POLL_INTERVAL_MS = 2500
@@ -116,6 +116,7 @@ export function AdminTerminalRegisterClient() {
   const [previewBusy, setPreviewBusy] = useState(false)
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null)
   const [orderId, setOrderId] = useState<string | null>(null)
+  const [settlementError, setSettlementError] = useState<string | null>(null)
 
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pollStartedAt = useRef<number>(0)
@@ -268,6 +269,7 @@ export function AdminTerminalRegisterClient() {
     setPhase("setup")
     setPaymentIntentId(null)
     setOrderId(null)
+    setSettlementError(null)
     setSelectedMember(null)
     setMemberSearch("")
     setMemberSearchDebounced("")
@@ -291,8 +293,11 @@ export function AdminTerminalRegisterClient() {
 
   async function pollFinalize(piId: string) {
     if (Date.now() - pollStartedAt.current > POLL_TIMEOUT_MS) {
-      toast.error("Timed out waiting for the reader. Check the payment in Stripe before retrying.")
-      setPhase("setup")
+      setSettlementError(
+        "Payment may have succeeded on Stripe but order settlement timed out. Retry settlement below.",
+      )
+      setPhase("settlement_failed")
+      toast.error("Timed out waiting for order settlement.")
       return
     }
 
@@ -305,8 +310,15 @@ export function AdminTerminalRegisterClient() {
       const json = await res.json()
       if (res.ok && json?.data?.settled) {
         setOrderId(json.data.orderId as string)
+        setSettlementError(null)
         setPhase("confirm")
         toast.success("Order confirmed")
+        return
+      }
+      if (!res.ok && typeof json?.error === "string" && json.error.trim()) {
+        setSettlementError(json.error.trim())
+        setPhase("settlement_failed")
+        toast.error(json.error.trim())
         return
       }
       const status = json?.data?.status as string | undefined
@@ -320,6 +332,17 @@ export function AdminTerminalRegisterClient() {
     }
 
     pollTimer.current = setTimeout(() => void pollFinalize(piId), POLL_INTERVAL_MS)
+  }
+
+  async function retrySettlement() {
+    if (!paymentIntentId) {
+      toast.error("No payment to settle")
+      return
+    }
+    setSettlementError(null)
+    setPhase("charging")
+    pollStartedAt.current = Date.now()
+    pollTimer.current = setTimeout(() => void pollFinalize(paymentIntentId), POLL_INTERVAL_MS)
   }
 
   async function startCharge() {
@@ -405,6 +428,38 @@ export function AdminTerminalRegisterClient() {
       }
     }
     resetSale()
+  }
+
+  if (phase === "settlement_failed" && preview) {
+    return (
+      <div className="mx-auto max-w-lg space-y-6 py-8">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold">Payment collected — settlement needed</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Stripe may have charged the card, but the Reswell order was not created yet.
+          </p>
+          {settlementError ? (
+            <p className="mt-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+              {settlementError}
+            </p>
+          ) : null}
+          {paymentIntentId ? (
+            <p className="mt-2 text-xs text-muted-foreground break-all">PaymentIntent: {paymentIntentId}</p>
+          ) : null}
+        </div>
+        <Button className="w-full" onClick={() => void retrySettlement()}>
+          Retry order settlement
+        </Button>
+        {orderId ? (
+          <Button asChild variant="secondary" className="w-full">
+            <Link href={`/admin/orders/${orderId}`}>View order in admin</Link>
+          </Button>
+        ) : null}
+        <Button variant="outline" className="w-full" onClick={resetSale}>
+          Back to register
+        </Button>
+      </div>
+    )
   }
 
   if (phase === "confirm" && preview) {

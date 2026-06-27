@@ -23,6 +23,7 @@ import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-
 import { OrdersListRealtimeRefresh } from "@/components/order-realtime-refresh"
 import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
 import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
+import { resolveMarketplaceOrderBuyerLabel } from "@/lib/order-buyer-display"
 import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amounts"
 import { listingPortraitThumbClass, listingPortraitThumbSizes } from "@/lib/utils/dashboard-display-styles"
 
@@ -60,7 +61,7 @@ type SaleRow = {
   created_at: string
   shipping_address: ShippingAddressJson
   fulfillment_method: string | null
-  buyer_id: string
+  buyer_id: string | null
   listing_id: string
   stripe_checkout_session_id: string | null
   listings:
@@ -248,11 +249,12 @@ export default async function SalesPage() {
           const img = primaryImage(listing?.listing_images ?? null)
           const ship = sale.shipping_address
           const addrBlock = ship?.address ? formatAddress(ship.address) : null
-          const buyerDisplay = buyerNameById.get(sale.buyer_id)?.trim()
-          const buyerName =
-            buyerDisplay && buyerDisplay.length > 0
-              ? buyerDisplay
-              : `Buyer ${sale.buyer_id.slice(0, 8)}…`
+          const buyerDisplay = sale.buyer_id ? buyerNameById.get(sale.buyer_id)?.trim() : ""
+          const buyerName = resolveMarketplaceOrderBuyerLabel({
+            buyerId: sale.buyer_id,
+            profileDisplayName: buyerDisplay,
+            shippingAddress: ship,
+          })
           const fulfill = fulfillmentLabel(sale.fulfillment_method, !!addrBlock)
           const statusDisplay = resolveSaleCardStatusDisplay({
             orderStatus: sale.status,

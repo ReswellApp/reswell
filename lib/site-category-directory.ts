@@ -36,10 +36,11 @@ export const siteHeaderPeerProductNavLinks: CategoryLink[] = [
 /** Peer gear shown in the desktop + mobile main category bar (others hidden until launch). */
 export const siteHeaderMainPeerProductNavLinks: CategoryLink[] = [
   { label: "Fins", href: "/fins" },
+  { label: "Wetsuits", href: "/wetsuits" },
 ]
 
 /**
- * Full category rail — desktop header only (shapes + Fins at end; “Other” hidden).
+ * Full category rail — desktop header only (shapes + peer gear at end; “Other” hidden).
  */
 export const siteHeaderDesktopCategoryNavLinks: CategoryLink[] = [
   ...surfboardBrowseLinks.filter((link) => link.href !== "/boards?type=other"),

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { HOME_PEER_LISTING_WITH_PROFILE_SELECT } from "@/lib/db/home-peer-listing-feed"
+import { fetchAdminTerminalSoldListingIds } from "@/lib/db/admin-terminal-sold-feed"
 import { isListingVisibleInPublicSoldFeed } from "@/lib/listing-public-visibility"
 import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 import {
@@ -53,6 +54,8 @@ export async function filterListingIdsStillSoldOnMarketplace(
     return []
   }
 
+  const adminTerminalSoldIds = await fetchAdminTerminalSoldListingIds(supabase, orderedListingIds)
+
   const stillSold = new Set(
     (data ?? [])
       .filter((row) =>
@@ -61,6 +64,7 @@ export async function filterListingIdsStillSoldOnMarketplace(
           status: String((row as { status?: string | null }).status ?? "sold"),
           hidden_from_site: (row as { hidden_from_site?: boolean | null }).hidden_from_site,
           archived_at: (row as { archived_at?: string | null }).archived_at,
+          soldViaAdminTerminal: adminTerminalSoldIds.has(String((row as { id?: string | null }).id)),
         }),
       )
       .map((row) => (row as { id?: string | null }).id)
@@ -214,6 +218,8 @@ async function fetchRecentlySoldListingSaleTimesFallback(
     return []
   }
 
+  const adminTerminalSoldIds = await fetchAdminTerminalSoldListingIds(supabase, candidateIds)
+
   const validIds = new Set(
     (listings ?? [])
       .filter((row) =>
@@ -222,6 +228,7 @@ async function fetchRecentlySoldListingSaleTimesFallback(
           status: String((row as { status?: string | null }).status ?? "sold"),
           hidden_from_site: (row as { hidden_from_site?: boolean | null }).hidden_from_site,
           archived_at: (row as { archived_at?: string | null }).archived_at,
+          soldViaAdminTerminal: adminTerminalSoldIds.has(String((row as { id?: string | null }).id)),
         }),
       )
       .map((row) => (row as { id?: string | null }).id)
@@ -310,6 +317,7 @@ export async function fetchHomeRecentlySoldSurfboardRows(
   const byId = new Map(rows.map((r) => [String(r.id), r]))
 
   const ordered: Record<string, unknown>[] = []
+  const adminTerminalSoldIds = await fetchAdminTerminalSoldListingIds(supabase, orderedListingIds)
   for (const id of orderedListingIds) {
     const row = byId.get(id)
     if (!row) continue
@@ -319,6 +327,7 @@ export async function fetchHomeRecentlySoldSurfboardRows(
         status: String(row.status ?? "sold"),
         hidden_from_site: row.hidden_from_site as boolean | null | undefined,
         archived_at: row.archived_at as string | null | undefined,
+        soldViaAdminTerminal: adminTerminalSoldIds.has(id),
       })
     ) {
       continue

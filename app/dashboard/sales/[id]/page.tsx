@@ -64,6 +64,7 @@ import { SellerPreparedShippingLabelCard } from "@/components/features/sales/sel
 import { ReviewBuyerControls } from "@/components/review-buyer-controls"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { resolveMarketplaceOrderBuyerLabel } from "@/lib/order-buyer-display"
 
 export async function generateMetadata(props: {
   params: Promise<{ id: string }>
@@ -123,7 +124,7 @@ type SaleDetail = {
   delivery_status: string
   tracking_number: string | null
   tracking_carrier: string | null
-  buyer_id: string
+  buyer_id: string | null
   listing_id: string
   payment_method: string | null
   stripe_checkout_session_id: string | null
@@ -278,17 +279,17 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
         ? capitalizeWords(displayListings[0].title)
         : "Item (listing removed)"
 
-  const { data: buyerProfile } = await supabase
-    .from("profiles")
-    .select("id, display_name")
-    .eq("id", sale.buyer_id)
-    .maybeSingle()
-
-  const buyerDisplay = buyerProfile?.display_name?.trim()
-  const buyerName =
-    buyerDisplay && buyerDisplay.length > 0 ? buyerDisplay : `Buyer ${sale.buyer_id.slice(0, 8)}…`
-
   const ship = sale.shipping_address
+
+  const { data: buyerProfile } = sale.buyer_id
+    ? await supabase.from("profiles").select("id, display_name").eq("id", sale.buyer_id).maybeSingle()
+    : { data: null }
+
+  const buyerName = resolveMarketplaceOrderBuyerLabel({
+    buyerId: sale.buyer_id,
+    profileDisplayName: buyerProfile?.display_name,
+    shippingAddress: ship,
+  })
   const addrBlock = ship?.address ? formatAddress(ship.address) : null
   const fulfill = fulfillmentLabel(sale.fulfillment_method, !!addrBlock)
   const paidWithCard = !!sale.stripe_checkout_session_id
@@ -331,12 +332,14 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     hasPreparedShippingLabel: hasPreparedShippingLabel || (isReswellShippingOrder && hasShippingTracking),
   })
 
-  const convRow = await getConversationForBuyerSellerListing(
-    supabase,
-    sale.buyer_id,
-    user.id,
-    sale.listing_id,
-  )
+  const convRow = sale.buyer_id
+    ? await getConversationForBuyerSellerListing(
+        supabase,
+        sale.buyer_id,
+        user.id,
+        sale.listing_id,
+      )
+    : null
   const conversationId = convRow?.id ?? null
 
   let initialMessages: OrderThreadMessage[] = []
@@ -359,11 +362,9 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
 
   const orderNumber = formatOrderNumForCustomer(sale.order_num, sale.id)
 
-  const { data: buyerReviewForOrder } = await getMarketplaceReviewByOrderAndReviewer(
-    supabase,
-    id,
-    sale.buyer_id,
-  )
+  const { data: buyerReviewForOrder } = sale.buyer_id
+    ? await getMarketplaceReviewByOrderAndReviewer(supabase, id, sale.buyer_id)
+    : { data: null }
   const { data: sellerReviewOfBuyer } = await getMarketplaceReviewByOrderAndReviewer(supabase, id, user.id)
   const buyerReviewGate = validateSellerReviewForOrder(
     {
@@ -387,9 +388,16 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     buyerReviewGate.ok && !existingSellerReviewOfBuyer && Boolean(sale.buyer_id)
   const showSellerOwnBuyerReviewUi = !!(existingSellerReviewOfBuyer || canSubmitBuyerReview)
 
-  const reviewRequestAlreadySent = canAskBuyerForReview
-    ? await sellerReviewRequestAlreadySentForOrder(supabase, sale.buyer_id, user.id, id, sale.listing_id)
-    : false
+  const reviewRequestAlreadySent =
+    canAskBuyerForReview && sale.buyer_id
+      ? await sellerReviewRequestAlreadySentForOrder(
+          supabase,
+          sale.buyer_id,
+          user.id,
+          id,
+          sale.listing_id,
+        )
+      : false
 
   return (
     <div className="space-y-6 pb-12">

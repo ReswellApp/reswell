@@ -5,6 +5,7 @@ import {
   fetchRecentlySoldListingsConfirmedCheckoutOrdering,
   MARKETPLACE_SOLD_FEED_SECTIONS,
 } from "@/lib/db/home-recently-sold-strip"
+import { fetchAdminTerminalSoldListingIds } from "@/lib/db/admin-terminal-sold-feed"
 import {
   fetchRecentlyShippedSurfboardsConfirmedCheckoutOrdering,
   fetchSoldSurfboardListingIdsWithShippingFulfillment,
@@ -172,6 +173,7 @@ export async function loadMarketplaceSoldFeed(
 
   const soldRows = (soldRes.data ?? []) as Record<string, unknown>[]
   const mapById = new Map(soldRows.map((r) => [String(r.id), r]))
+  const adminTerminalSoldIds = await fetchAdminTerminalSoldListingIds(supabase, orderedListingIds)
   const soldListings: SoldFeedListing[] = orderedListingIds
     .map((id) => {
       const row = mapById.get(id)
@@ -182,6 +184,7 @@ export async function loadMarketplaceSoldFeed(
           status: String(row.status ?? "sold"),
           hidden_from_site: row.hidden_from_site as boolean | null | undefined,
           archived_at: row.archived_at as string | null | undefined,
+          soldViaAdminTerminal: adminTerminalSoldIds.has(id),
         })
       ) {
         return null
