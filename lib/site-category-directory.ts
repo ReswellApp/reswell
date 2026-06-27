@@ -48,12 +48,10 @@ export const siteHeaderDesktopCategoryNavLinks: CategoryLink[] = [
 ]
 
 /**
- * Simplified pill strip — mobile/tablet category bar and hamburger menu.
+ * Category pill strip — mobile/tablet category bar and hamburger menu.
+ * Includes all surfboard shape browse links (same set as desktop, minus Other).
  */
-export const siteHeaderMobileCategoryNavLinks: CategoryLink[] = [
-  { label: surfboardsBrowseRootLabel, href: "/boards" },
-  ...siteHeaderMainPeerProductNavLinks,
-]
+export const siteHeaderMobileCategoryNavLinks: CategoryLink[] = siteHeaderDesktopCategoryNavLinks
 /** Header Categories dropdown + /categories page: surfboards only. */
 export const allCategoriesForNav: CategoryLink[] = surfboardBrowseLinks
 
