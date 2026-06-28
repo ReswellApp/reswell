@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -27,7 +27,6 @@ import { SellFormSection } from "@/components/features/sell/sell-form-section"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellLeashesFacetFields } from "@/components/features/sell/sell-leashes-facet-fields"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
-import { ListingVacationModeToggle } from "@/components/features/sell/listing-vacation-mode-toggle"
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
 import {
   SellSectionNav,
@@ -72,6 +71,8 @@ import {
   parseReswellParcelWidthHeightRawToCarrierInches,
 } from "@/lib/reswell-parcel-fields"
 import { cn } from "@/lib/utils"
+import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
+import { finalizePeerListingCreate } from "@/lib/utils/admin-peer-listing-create-navigation"
 
 const SELL_LEASHES_FORM_SECTION_NAV_ITEMS = buildSellSectionNavItems("leashes", "Leash details")
 
@@ -173,6 +174,7 @@ function scrollLeashSellSectionIntoView(sectionId: string) {
 
 export default function SellLeashesFlow({ editListingId = null }: { editListingId?: string | null }) {
   const router = useRouter()
+  const bulkSlotId = useSearchParams().get("bulk")?.trim() || null
   const signIn = useSignInGate()
   const fileInputId = useId()
   const supabaseRef = useRef(createClient())
@@ -183,8 +185,6 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
   const [submitting, setSubmitting] = useState(false)
   const [editLoading, setEditLoading] = useState(Boolean(editId))
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
-  const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
-  const [vacationMode, setVacationMode] = useState(false)
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
 
   const photosRef = useRef<PhotoSlot[]>([])
@@ -264,8 +264,6 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
       }
 
       setEditListingOwnerId(listing.user_id as string)
-      setEditListingStatus(String((listing as { status?: string }).status ?? ""))
-      setVacationMode((listing as { hidden_from_site?: boolean | null }).hidden_from_site === true)
       if (imp && imp.userId !== listing.user_id) {
         clearImpersonation()
       }
@@ -681,15 +679,21 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
         return
       }
 
-      const result = await createLeashListingAction(payload)
-      if ("error" in result) {
-        toast.error(result.error)
-        setSubmitting(false)
-        return
-      }
-
-      toast.success("Your leash is live!")
-      router.push(`/l/${result.slug}`)
+      await finalizePeerListingCreate({
+        listingImpersonation,
+        listingFields: buildLeashListingPersistFields(payload),
+        images: payload.images.map((img) => ({
+          url: img.url,
+          thumbnailUrl: img.thumbnailUrl,
+        })),
+        title: payload.title,
+        section: "leashes",
+        bulkSlotId,
+        router,
+        successToast: "Your leash is live!",
+        setSubmitting,
+        directCreate: () => createLeashListingAction(payload),
+      })
     } catch (err) {
       console.error("leash listing submit failed", err)
       toast.error(editId ? "Something went wrong saving your listing." : "Something went wrong publishing your listing.")
@@ -710,6 +714,7 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
 
   return (
     <main className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24">
+      <AdminBulkListingBanner section="leashes" bulkSlotId={bulkSlotId} />
       <div className="container relative mx-auto max-w-2xl min-h-[50vh] lg:max-w-6xl">
         <h1 className="sr-only">{editId ? "Edit leash listing" : "List your leash"}</h1>
 
@@ -1260,13 +1265,6 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
                       </div>
                     }
                   />
-                  {editId && editListingStatus && editListingStatus !== "draft" ? (
-                    <ListingVacationModeToggle
-                      listingId={editId}
-                      initialVacationMode={vacationMode}
-                      onVacationModeChange={setVacationMode}
-                    />
-                  ) : null}
                   <Separator />
                   <Button
                     type="submit"

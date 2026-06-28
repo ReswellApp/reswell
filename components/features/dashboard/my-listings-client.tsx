@@ -34,6 +34,11 @@ import {
   formatHomePeerListingConditionLine,
 } from "@/lib/listing-labels"
 import { EndListingDialog } from "@/components/end-listing-dialog"
+import {
+  ListingVacationModeButton,
+  canUseListingVacationMode,
+} from "@/components/features/sell/listing-vacation-mode-button"
+import { peerListingEditHref } from "@/lib/peer-listing-sections"
 import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
 import type { MyListingRow, MyListingsDashboardStats } from "@/lib/db/my-listings"
 import { cn } from "@/lib/utils"
@@ -253,6 +258,7 @@ export function MyListingsClient({ listings, stats, fetchError }: MyListingsClie
                   getListingHref={getListingHref}
                   onDiscardDraft={handleDiscardDraft}
                   onEndListing={setEndListingId}
+                  onVacationChange={() => router.refresh()}
                 />
               ))}
             </div>
@@ -276,18 +282,20 @@ function ListingRow({
   getListingHref,
   onDiscardDraft,
   onEndListing,
+  onVacationChange,
 }: {
   listing: MyListingRow
   getListingHref: (section: string, id: string, slug?: string | null) => string
   onDiscardDraft: (id: string) => void
   onEndListing: (id: string) => void
+  onVacationChange: () => void
 }) {
   const imageSrc = listingRowImageSrc(listing)
   const isDraft = listing.status === "draft"
   const isSold = listing.status === "sold"
-  const cardHref = isDraft
-    ? `/sell?edit=${listing.id}`
-    : getListingHref(listing.section, listing.id, listing.slug)
+  const showVacation = canUseListingVacationMode(listing.status)
+  const editHref = peerListingEditHref(listing.section, listing.id)
+  const cardHref = isDraft ? editHref : getListingHref(listing.section, listing.id, listing.slug)
   const brandLine = listingBrandLine(listing)
   const detailLine = listingDetailLine(listing)
   const listedDate = format(new Date(listing.created_at), "MMM d, yyyy")
@@ -360,12 +368,19 @@ function ListingRow({
               "dark:bg-primary/15 dark:hover:bg-primary/20",
             )}
           >
-            <Link href={`/sell?edit=${listing.id}`}>
+            <Link href={editHref}>
               <Edit className="h-3.5 w-3.5" />
               Edit
             </Link>
           </Button>
         )}
+        {showVacation ? (
+          <ListingVacationModeButton
+            listingId={listing.id}
+            vacationMode={listing.hidden_from_site === true}
+            onVacationModeChange={() => onVacationChange()}
+          />
+        ) : null}
         {isDraft ? (
           <Button
             type="button"

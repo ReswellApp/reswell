@@ -19,6 +19,7 @@ export function AdminGuard({
   useEffect(() => {
     if (!isAdmin && isEmployee && pathname) {
       if (
+        pathname === '/admin/listings/bulk' ||
         pathname === '/admin/users' ||
         pathname === '/admin/wallets' ||
         pathname === '/admin/settings' ||

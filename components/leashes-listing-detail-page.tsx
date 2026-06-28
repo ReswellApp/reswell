@@ -624,6 +624,8 @@ export async function LeashesListingDetailPage({
                 listingId={leash.id}
                 section="leashes"
                 currentPriceUsd={listPriceNum}
+                listingStatus={String(leash.status ?? "")}
+                hiddenFromSite={leash.hidden_from_site === true}
               />
             ) : null}
           </div>

@@ -624,6 +624,8 @@ export async function BoardbagsListingDetailPage({
                 listingId={boardbag.id}
                 section="boardbags"
                 currentPriceUsd={listPriceNum}
+                listingStatus={String(boardbag.status ?? "")}
+                hiddenFromSite={boardbag.hidden_from_site === true}
               />
             ) : null}
           </div>

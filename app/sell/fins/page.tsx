@@ -31,16 +31,23 @@ function parseEditListingId(value: string | string[] | undefined): string | null
   return null
 }
 
+function parseStartStep(value: string | string[] | undefined): boolean {
+  if (value === "search") return true
+  if (Array.isArray(value)) return value.includes("search")
+  return false
+}
+
 export default async function SellFinsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string | string[] }>
+  searchParams: Promise<{ edit?: string | string[]; step?: string | string[] }>
 }) {
   const qs = await searchParams
   const editId = parseEditListingId(qs.edit)
+  const startAtSearch = parseStartStep(qs.step)
   return (
     <Suspense fallback={null}>
-      <SellFinsFlow editListingId={editId} />
+      <SellFinsFlow editListingId={editId} startAtSearch={startAtSearch} />
     </Suspense>
   )
 }

@@ -127,6 +127,7 @@ import {
   type ListingCatalogRequestVariant,
 } from "@/components/request-brand-model-dialog"
 import { SellFlowFormColumnSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
+import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { SellBoardModelField } from "@/components/sell-board-model-field"
 import { listingDetailPath } from "@/lib/listing-query"
 import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listing-detail-cache"
@@ -167,7 +168,6 @@ import {
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
 import { SellBoardFacetFields } from "@/components/features/sell/sell-board-facet-fields"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
-import { ListingVacationModeToggle } from "@/components/features/sell/listing-vacation-mode-toggle"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import {
   SellSectionNav,
@@ -899,6 +899,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const listingPhotosInputId = useId()
   const router = useRouter()
   const sellSearchParams = useSearchParams()
+  const bulkSlotId = sellSearchParams.get("bulk")?.trim() || null
   const openSignIn = useSignInGate()
   const supabase = useMemo(() => createClient(), [])
 
@@ -941,7 +942,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const [editLoading, setEditLoading] = useState(!!editId)
   const [draftHydrated, setDraftHydrated] = useState(!!editId)
   const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
-  const [vacationMode, setVacationMode] = useState(false)
   const [signedInUserId, setSignedInUserId] = useState<string | null>(null)
   /** Guests exit to browse; signed-in sellers to their listings hub (`/listings` → dashboard). */
   const sellListingsHubHref = signedInUserId ? "/dashboard/listings" : "/boards"
@@ -1494,7 +1494,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       setEditListingOwnerId(listing.user_id as string)
       const st = (listing as { status?: string }).status
       setEditListingStatus(typeof st === "string" ? st : null)
-      setVacationMode((listing as { hidden_from_site?: boolean | null }).hidden_from_site === true)
       if (imp && imp.userId !== listing.user_id) {
         clearImpersonation()
         setImpersonation(null)
@@ -2902,6 +2901,23 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         }
       }
       retainPublishOverlayUntilNavigation = true
+      if (!editId && listingId) {
+        const { resolveAdminBulkListingAfterCreate } = await import(
+          "@/lib/utils/admin-bulk-listing-navigation"
+        )
+        if (
+          resolveAdminBulkListingAfterCreate(router, {
+            bulkSlotId,
+            listingId,
+            slug: listingSlug ?? "",
+            title: resolvedListingTitle,
+            section: "surfboards",
+            defaultDetailPath: detailPath,
+          })
+        ) {
+          return
+        }
+      }
       router.push(detailPath)
     } catch (error: unknown) {
       const msg = submitErrorMessage(error, "Failed to create listing")
@@ -2965,6 +2981,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           !fullscreenSellBlocking && "pt-8 pb-16 md:pb-20 lg:pb-24",
         )}
       >
+        <AdminBulkListingBanner section="surfboards" bulkSlotId={bulkSlotId} />
         <div className="container relative mx-auto max-w-2xl min-h-[50vh] lg:max-w-6xl">
           {loading && publishPreview ? (
             <SellFlowPublishingFullscreenPortal
@@ -4048,13 +4065,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                     }
                   />
                   <Separator />
-                  {editId && !listingIsDraft ? (
-                    <ListingVacationModeToggle
-                      listingId={editId}
-                      initialVacationMode={vacationMode}
-                      onVacationModeChange={setVacationMode}
-                    />
-                  ) : null}
                 {publishPreview && !loading && (
                   <div
                     className={cn(

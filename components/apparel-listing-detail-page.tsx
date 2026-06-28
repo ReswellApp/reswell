@@ -624,6 +624,8 @@ export async function ApparelListingDetailPage({
                 listingId={apparel.id}
                 section="apparel"
                 currentPriceUsd={listPriceNum}
+                listingStatus={String(apparel.status ?? "")}
+                hiddenFromSite={apparel.hidden_from_site === true}
               />
             ) : null}
           </div>

@@ -37,11 +37,16 @@ function notifyUrlSearchSubscribers() {
 
 function patchHistoryForSearchSubscriptions() {
   if (typeof window === 'undefined' || historyPatched) return
-  historyPatched = true
 
   window.addEventListener('popstate', notifyUrlSearchSubscribers)
 
   const { pushState, replaceState } = history
+  if (typeof pushState !== 'function' || typeof replaceState !== 'function') {
+    return
+  }
+
+  historyPatched = true
+
   history.pushState = function (...args) {
     const result = pushState.apply(this, args)
     notifyUrlSearchSubscribers()

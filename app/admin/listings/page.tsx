@@ -881,14 +881,22 @@ export default function AdminListingsPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           {isAdminUser ? (
-            <Button variant="outline" asChild>
-              <Link href="/admin/listings/brand-requests">
-                <Tag className="mr-2 h-4 w-4" />
-                Brand &amp; model requests
-              </Link>
-            </Button>
+            <>
+              <Button variant="outline" asChild>
+                <Link href="/admin/listings/bulk">
+                  <Layers className="mr-2 h-4 w-4" />
+                  Bulk list
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/admin/listings/brand-requests">
+                  <Tag className="mr-2 h-4 w-4" />
+                  Brand &amp; model requests
+                </Link>
+              </Button>
+            </>
           ) : null}
-          <Button asChild>
+          <Button variant="outline" asChild>
             <Link href="/admin/listings/add">
               <Package className="mr-2 h-4 w-4" />
               Add listing (for user)

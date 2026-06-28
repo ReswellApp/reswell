@@ -162,9 +162,13 @@ export default function AdminAddListingPage() {
           <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900">
             <UserCog className="h-4 w-4 mt-0.5 shrink-0" />
             <p>
-              Selecting a user starts <strong>"Act as User"</strong> mode and opens the full listing form.
-              You'll see the amber banner at the top while acting as them.
-              When you're done, click <strong>"Stop Acting as User"</strong> in the header to return to your admin account.
+              Selecting a user starts <strong>&quot;Act as User&quot;</strong> mode and opens the full listing form.
+              You&apos;ll see the amber banner at the top while acting as them.
+              Need many listings at once?{' '}
+              <Link href="/admin/listings/bulk" className="font-medium underline underline-offset-2">
+                Use bulk list
+              </Link>{' '}
+              (up to 25, any product mix).
             </p>
           </div>
         </CardContent>

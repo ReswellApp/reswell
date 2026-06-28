@@ -624,6 +624,8 @@ export async function WetsuitsListingDetailPage({
                 listingId={wetsuit.id}
                 section="wetsuits"
                 currentPriceUsd={listPriceNum}
+                listingStatus={String(wetsuit.status ?? "")}
+                hiddenFromSite={wetsuit.hidden_from_site === true}
               />
             ) : null}
           </div>

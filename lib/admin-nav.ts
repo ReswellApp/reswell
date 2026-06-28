@@ -57,6 +57,7 @@ const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
   '/admin/orders/test-purchase',
   '/admin/orders/terminal',
   '/admin/promo-codes',
+  '/admin/listings/bulk',
 ])
 
 export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [

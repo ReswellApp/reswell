@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -28,7 +28,6 @@ import { SellFinsFacetFields } from "@/components/features/sell/sell-fins-facet-
 import { SellFinsCatalogSearch } from "@/components/features/sell/sell-fins-catalog-search"
 import type { FinCatalogSearchSelection } from "@/lib/types/fin-catalog-search"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
-import { ListingVacationModeToggle } from "@/components/features/sell/listing-vacation-mode-toggle"
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
 import {
   SellSectionNav,
@@ -75,6 +74,8 @@ import {
   parseReswellParcelWidthHeightRawToCarrierInches,
 } from "@/lib/reswell-parcel-fields"
 import { cn } from "@/lib/utils"
+import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
+import { finalizePeerListingCreate } from "@/lib/utils/admin-peer-listing-create-navigation"
 
 type PhotoPhase = "optimizing" | "uploading" | "done" | "error"
 
@@ -219,8 +220,15 @@ function scrollFinSellSectionIntoView(sectionId: string) {
   el.scrollIntoView({ behavior: "smooth", block: "start" })
 }
 
-export default function SellFinsFlow({ editListingId = null }: { editListingId?: string | null }) {
+export default function SellFinsFlow({
+  editListingId = null,
+  startAtSearch = false,
+}: {
+  editListingId?: string | null
+  startAtSearch?: boolean
+}) {
   const router = useRouter()
+  const bulkSlotId = useSearchParams().get("bulk")?.trim() || null
   const signIn = useSignInGate()
   const fileInputId = useId()
   const supabaseRef = useRef(createClient())
@@ -229,6 +237,7 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
 
   const [flowStep, setFlowStep] = useState<"search" | "form">(() => {
     if (editId) return "form"
+    if (startAtSearch) return "search"
     return readStoredFinSellFlowStep() ?? "search"
   })
   const [form, setForm] = useState<FinFormState>(INITIAL_STATE)
@@ -236,13 +245,17 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
   const [submitting, setSubmitting] = useState(false)
   const [editLoading, setEditLoading] = useState(Boolean(editId))
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
-  const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
-  const [vacationMode, setVacationMode] = useState(false)
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
 
   const photosRef = useRef<PhotoSlot[]>([])
   photosRef.current = photos
   const latestPhotoPrepareSeqRef = useRef(new Map<string, number>())
+
+  useEffect(() => {
+    if (!startAtSearch || editId) return
+    setFlowStep("search")
+    persistFinSellFlowStep("search")
+  }, [startAtSearch, editId])
 
   useEffect(() => {
     return () => {
@@ -318,8 +331,6 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
       }
 
       setEditListingOwnerId(listing.user_id as string)
-      setEditListingStatus(String((listing as { status?: string }).status ?? ""))
-      setVacationMode((listing as { hidden_from_site?: boolean | null }).hidden_from_site === true)
       if (imp && imp.userId !== listing.user_id) {
         clearImpersonation()
       }
@@ -416,6 +427,15 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
   const enterFormStep = useCallback(() => {
     setFlowStep("form")
     persistFinSellFlowStep("form")
+  }, [])
+
+  const enterSearchStep = useCallback(() => {
+    setFlowStep("search")
+    persistFinSellFlowStep("search")
+  }, [])
+
+  const exitSellFlow = useCallback(() => {
+    clearPersistedFinSellFlowStep()
   }, [])
 
   const applyCatalogSelection = useCallback((selection: FinCatalogSearchSelection) => {
@@ -926,16 +946,22 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
         return
       }
 
-      const result = await createFinListingAction(payload)
-      if ("error" in result) {
-        toast.error(result.error)
-        setSubmitting(false)
-        return
-      }
-
       clearPersistedFinSellFlowStep()
-      toast.success("Your fin is live!")
-      router.push(`/l/${result.slug}`)
+      await finalizePeerListingCreate({
+        listingImpersonation,
+        listingFields: buildFinListingPersistFields(payload),
+        images: payload.images.map((img) => ({
+          url: img.url,
+          thumbnailUrl: img.thumbnailUrl,
+        })),
+        title: payload.title,
+        section: "fins",
+        bulkSlotId,
+        router,
+        successToast: "Your fin is live!",
+        setSubmitting,
+        directCreate: () => createFinListingAction(payload),
+      })
     } catch (err) {
       console.error("fin listing submit failed", err)
       toast.error(editId ? "Something went wrong saving your listing." : "Something went wrong publishing your listing.")
@@ -959,12 +985,14 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
       <SellFinsCatalogSearch
         onSelect={applyCatalogSelection}
         onSkip={enterFormStep}
+        onExit={exitSellFlow}
       />
     )
   }
 
   return (
     <main className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24">
+      <AdminBulkListingBanner section="fins" bulkSlotId={bulkSlotId} />
       <div className="container relative mx-auto max-w-2xl min-h-[50vh] lg:max-w-6xl">
         <h1 className="sr-only">{editId ? "Edit fin listing" : "List your fins"}</h1>
 
@@ -984,6 +1012,18 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                {!editId ? (
+                  <>
+                    <BreadcrumbItem>
+                      <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
+                        <button type="button" onClick={enterSearchStep}>
+                          Catalog search
+                        </button>
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
+                  </>
+                ) : null}
                 <BreadcrumbItem>
                   <BreadcrumbPage className="font-normal text-[#5c6b89]">
                     {editId ? "Edit fin listing" : "List fins"}
@@ -992,7 +1032,7 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
               </BreadcrumbList>
             </Breadcrumb>
             <Button type="button" variant="ghost" size="icon" aria-label="Exit listing form" asChild>
-              <Link href="/sell">
+              <Link href="/sell" onClick={exitSellFlow}>
                 <X className="h-4 w-4" aria-hidden />
               </Link>
             </Button>
@@ -1468,13 +1508,6 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
                       </div>
                     }
                   />
-                  {editId && editListingStatus && editListingStatus !== "draft" ? (
-                    <ListingVacationModeToggle
-                      listingId={editId}
-                      initialVacationMode={vacationMode}
-                      onVacationModeChange={setVacationMode}
-                    />
-                  ) : null}
                   <Separator />
                   <Button
                     type="submit"

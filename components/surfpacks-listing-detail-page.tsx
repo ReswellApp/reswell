@@ -624,6 +624,8 @@ export async function SurfpacksListingDetailPage({
                 listingId={surfpack.id}
                 section="surfpacks"
                 currentPriceUsd={listPriceNum}
+                listingStatus={String(surfpack.status ?? "")}
+                hiddenFromSite={surfpack.hidden_from_site === true}
               />
             ) : null}
           </div>

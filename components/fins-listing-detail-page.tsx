@@ -636,6 +636,8 @@ export async function FinsListingDetailPage({
                 listingId={fin.id}
                 section="fins"
                 currentPriceUsd={listPriceNum}
+                listingStatus={String(fin.status ?? "")}
+                hiddenFromSite={fin.hidden_from_site === true}
               />
             ) : null}
           </div>

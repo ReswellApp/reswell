@@ -40,6 +40,33 @@ const PEER_SELL_ROUTE_BY_SECTION: Partial<Record<PeerListingSection, string>> = 
   accessories: "/sell/accessories",
 }
 
+export const PEER_LISTING_SECTION_LABELS: Record<PeerListingSection, string> = {
+  surfboards: "Surfboard",
+  fins: "Fins",
+  wetsuits: "Wetsuit",
+  boardbags: "Boardbag",
+  surfpacks: "Surfpack",
+  leashes: "Leash",
+  apparel: "Apparel",
+  accessories: "Accessories",
+}
+
+/** Sell-flow entry URL for admin bulk listing (includes `bulk` slot id). */
+export function peerSellCreateHref(section: PeerListingSection, bulkSlotId: string): string {
+  const bulk = `bulk=${encodeURIComponent(bulkSlotId)}`
+  if (section === "surfboards") {
+    return `/sell?type=surfboard&${bulk}`
+  }
+  const base = PEER_SELL_ROUTE_BY_SECTION[section]
+  if (!base) {
+    return `/sell?type=surfboard&${bulk}`
+  }
+  if (section === "fins") {
+    return `${base}?step=search&${bulk}`
+  }
+  return `${base}?${bulk}`
+}
+
 /** Owner edit URL for a peer listing on the listing detail page. */
 export function peerListingEditHref(
   section: string | null | undefined,

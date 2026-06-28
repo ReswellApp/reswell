@@ -729,6 +729,8 @@ export async function SurfboardListingDetailPage({
                   listingId={board.id}
                   section="surfboards"
                   currentPriceUsd={listPriceNum}
+                  listingStatus={String(board.status ?? "")}
+                  hiddenFromSite={board.hidden_from_site === true}
                 />
               ) : null}
             </div>

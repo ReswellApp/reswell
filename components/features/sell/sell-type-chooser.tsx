@@ -21,7 +21,7 @@ const SELL_TYPE_OPTIONS: readonly SellTypeOption[] = [
     imageAlt: "Surfboard",
   },
   {
-    href: "/sell/fins",
+    href: "/sell/fins?step=search",
     title: "Fins",
     description: "List thrusters, quads, twins, or singles.",
     imageSrc: "/images/sell/fins.jpg",

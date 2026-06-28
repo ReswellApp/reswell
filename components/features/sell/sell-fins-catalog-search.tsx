@@ -44,6 +44,7 @@ type CatalogMetaLine = { label: string; value: string }
 export type SellFinsCatalogSearchProps = {
   onSelect: (selection: FinCatalogSearchSelection) => void
   onSkip: () => void
+  onExit?: () => void
   className?: string
 }
 
@@ -202,7 +203,7 @@ function ResultsSection({
   )
 }
 
-export function SellFinsCatalogSearch({ onSelect, onSkip, className }: SellFinsCatalogSearchProps) {
+export function SellFinsCatalogSearch({ onSelect, onSkip, onExit, className }: SellFinsCatalogSearchProps) {
   const [query, setQuery] = React.useState("")
   const [loading, setLoading] = React.useState(false)
   const [searchSettled, setSearchSettled] = React.useState(false)
@@ -319,12 +320,12 @@ export function SellFinsCatalogSearch({ onSelect, onSkip, className }: SellFinsC
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage className="font-normal text-[#5c6b89]">List fins</BreadcrumbPage>
+                  <BreadcrumbPage className="font-normal text-[#5c6b89]">Catalog search</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
             <Button type="button" variant="ghost" size="icon" aria-label="Exit listing flow" asChild>
-              <Link href="/sell">
+              <Link href="/sell" onClick={onExit}>
                 <X className="h-4 w-4" aria-hidden />
               </Link>
             </Button>
