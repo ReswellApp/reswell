@@ -8,7 +8,7 @@ import { BRANDS_BASE } from "@/lib/brands/routes"
 export type CategoryLink = { label: string; href: string }
 
 /** `/boards` root label — matches header nav and browse breadcrumbs. */
-export const surfboardsBrowseRootLabel = "Surfboards"
+export const surfboardsBrowseRootLabel = "All Surfboards"
 
 export const surfboardBrowseLinks: CategoryLink[] = [
   { label: surfboardsBrowseRootLabel, href: "/boards" },

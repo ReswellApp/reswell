@@ -40,20 +40,21 @@ function patchHistoryForSearchSubscriptions() {
 
   window.addEventListener('popstate', notifyUrlSearchSubscribers)
 
-  const { pushState, replaceState } = history
-  if (typeof pushState !== 'function' || typeof replaceState !== 'function') {
+  const nativePushState = History.prototype.pushState
+  const nativeReplaceState = History.prototype.replaceState
+  if (typeof nativePushState !== 'function' || typeof nativeReplaceState !== 'function') {
     return
   }
 
   historyPatched = true
 
   history.pushState = function (...args) {
-    const result = pushState.apply(this, args)
+    const result = nativePushState.apply(this, args)
     notifyUrlSearchSubscribers()
     return result
   }
   history.replaceState = function (...args) {
-    const result = replaceState.apply(this, args)
+    const result = nativeReplaceState.apply(this, args)
     notifyUrlSearchSubscribers()
     return result
   }

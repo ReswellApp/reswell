@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { SiteSearchBar, siteSearchInputClassName } from '@/components/site-search-bar'
@@ -61,6 +61,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { format, formatDistanceToNow } from 'date-fns'
+import { profileMediaDisplaySrc } from '@/lib/public-media-display-src'
 import { cn } from '@/lib/utils'
 
 type PartyLabel = { display_name: string | null; email: string | null; avatar_url: string | null }
@@ -108,6 +109,15 @@ function compactNumber(value: number): string {
     notation: value >= 10000 ? 'compact' : 'standard',
     maximumFractionDigits: 1,
   }).format(value)
+}
+
+function formatOrderDate(createdAt: string): { relative: string; title: string } | null {
+  const date = new Date(createdAt)
+  if (Number.isNaN(date.getTime())) return null
+  return {
+    relative: formatDistanceToNow(date, { addSuffix: true }),
+    title: format(date, 'PPpp'),
+  }
 }
 
 function userInitials(name: string | null, email: string | null): string {
@@ -198,15 +208,16 @@ function StatTile({ icon: Icon, accent, label, value, hint }: StatTileProps) {
 
 function PartyCell({ party, fallbackId }: { party: PartyLabel | null; fallbackId: string }) {
   const name = party?.display_name || party?.email || `User ${fallbackId.slice(0, 8)}`
+  const avatarSrc = profileMediaDisplaySrc(party?.avatar_url)
+  const initials = userInitials(party?.display_name ?? null, party?.email ?? null)
   return (
     <div className="flex items-center gap-2">
-      <span className="relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary text-[10px] font-semibold text-foreground ring-1 ring-border">
-        {party?.avatar_url ? (
-          <Image src={party.avatar_url} alt="" fill sizes="28px" className="object-cover" />
-        ) : (
-          userInitials(party?.display_name ?? null, party?.email ?? null)
-        )}
-      </span>
+      <Avatar className="h-7 w-7 ring-1 ring-border">
+        {avatarSrc ? <AvatarImage src={avatarSrc} alt="" /> : null}
+        <AvatarFallback className="bg-secondary text-[10px] font-semibold text-foreground">
+          {initials}
+        </AvatarFallback>
+      </Avatar>
       <span className="min-w-0">
         <span className="line-clamp-1 max-w-[150px] text-sm text-foreground">{name}</span>
       </span>
@@ -600,9 +611,15 @@ export default function AdminOrdersPage() {
                     <StatusBadge status={r.status} />
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
-                    <span title={format(new Date(r.created_at), 'PPpp')} className="cursor-default">
-                      {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
-                    </span>
+                    {(() => {
+                      const created = formatOrderDate(r.created_at)
+                      if (!created) return '—'
+                      return (
+                        <span title={created.title} className="cursor-default">
+                          {created.relative}
+                        </span>
+                      )
+                    })()}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
