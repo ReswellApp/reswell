@@ -6,8 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
-import { hasSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
-import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
+import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 
@@ -26,13 +25,13 @@ export function SellAuthGate({ children }: { children: ReactNode }) {
   const supabase = useMemo(() => createClient(), [])
   const [phase, setPhase] = useState<SellAuthPhase>("checking")
   const authPromptedRef = useRef(false)
+  const authedRef = useRef(false)
 
   const returnPath = useMemo(() => sellReturnPath(pathname), [pathname])
 
   useEffect(() => {
     let mounted = true
     authPromptedRef.current = false
-    setPhase("checking")
 
     const openAuthModal = () => {
       if (authPromptedRef.current) return
@@ -45,31 +44,47 @@ export function SellAuthGate({ children }: { children: ReactNode }) {
       }
     }
 
-    void (async () => {
-      let session = null as Awaited<ReturnType<typeof waitForClientSession>>
-      if (hasSupabaseAuthCookiesClient()) {
-        session = await waitForClientSession({ supabase })
-      } else {
-        const { data } = await supabase.auth.getSession()
-        session = data.session?.user ? data.session : null
+    const verifySession = async (): Promise<boolean> => {
+      const session = await resolveClientSessionForMutation(supabase)
+      return Boolean(session?.user)
+    }
+
+    // Navigating between /sell/* routes should not unmount an in-progress listing form.
+    if (authedRef.current) {
+      void verifySession().then((ok) => {
+        if (!mounted) return
+        if (ok) return
+        authedRef.current = false
+        setPhase("blocked")
+        openAuthModal()
+      })
+      return () => {
+        mounted = false
       }
+    }
 
+    setPhase("checking")
+
+    void verifySession().then((ok) => {
       if (!mounted) return
-
-      if (session?.user) {
+      if (ok) {
+        authedRef.current = true
         setPhase("authed")
         return
       }
-
       setPhase("blocked")
       openAuthModal()
-    })()
+    })
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
+        authedRef.current = true
         setPhase("authed")
+      } else if (_event === "SIGNED_OUT") {
+        authedRef.current = false
+        setPhase("blocked")
       }
     })
 

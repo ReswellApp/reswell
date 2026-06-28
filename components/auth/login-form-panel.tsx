@@ -63,6 +63,11 @@ export function LoginFormPanel({
         session = await waitForClientSession({ supabase, maxAttempts: 20, msBetween: 50 })
       }
       if (session?.user) {
+        if (variant === "modal") {
+          onLoggedIn?.()
+          setGate("ready")
+          return
+        }
         setGate("redirecting")
         await navigateAfterClientAuth(dest, router)
         return

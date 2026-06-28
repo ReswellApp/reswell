@@ -17,6 +17,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { purgeListingImageStorageAction } from "@/lib/actions/listingImageStoragePurge"
+import { peerListingEditHref } from "@/lib/peer-listing-sections"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -133,9 +134,8 @@ import { listingDetailPath } from "@/lib/listing-query"
 import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listing-detail-cache"
 import { revalidateNavSearchSuggestAfterListingPublished } from "@/app/actions/nav-search-suggest-cache"
 import { saveDefaultListingLocationAction } from "@/app/actions/sell-default-location"
+import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
-import { hasSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
-import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 import {
   validateSellListingForm,
   buildResolvedListingTitle,
@@ -189,6 +189,10 @@ import {
 } from "@/lib/surfboard-sell-categories"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
+import {
+  SELL_SUPPRESS_IDB_RESTORE_KEY,
+  sellPendingPublishKey,
+} from "@/lib/sell-flow/session-keys"
 
 function scrollSellFormSectionIntoView(sectionId: string) {
   const el = document.getElementById(sectionId)
@@ -885,10 +889,8 @@ function boardCatalogSnapshotFromSellForm(
   }
 }
 
-/** While set, IndexedDB restore must not run — coordinates with `clearSellListingDraft` after `?new=1`. */
-const SELL_SUPPRESS_IDB_RESTORE_KEY = "reswell.sell.suppressIdbRestoreOnce"
 /** Set when a guest taps Publish — resume submit after sign-in (survives full-page login redirect). */
-const SELL_PENDING_PUBLISH_KEY = "reswell.sell.pendingPublishOnce"
+const SELL_PENDING_PUBLISH_KEY = sellPendingPublishKey("board")
 
 type SellPageContentProps = {
   editId: string | null
@@ -1485,9 +1487,9 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         setEditLoading(false)
         return
       }
-      if ((listing as { section?: string }).section !== "surfboards") {
-        toast.error("Only surfboard listings can be edited here.")
-        router.replace("/sell", { scroll: false })
+      const listingSection = (listing as { section?: string }).section
+      if (listingSection !== "surfboards") {
+        router.replace(peerListingEditHref(listingSection, editId), { scroll: false })
         setEditLoading(false)
         return
       }
@@ -1763,15 +1765,13 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
       if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
 
-      let session = null as Awaited<ReturnType<typeof waitForClientSession>>
-      if (hasSupabaseAuthCookiesClient()) {
-        session = await waitForClientSession({ supabase })
-      } else {
-        const { data } = await supabase.auth.getSession()
-        session = data.session?.access_token ? data.session : null
+      let session = await resolveClientSessionForMutation(supabase)
+      let user = session?.user ?? null
+      if (!session?.access_token || !user) {
+        await new Promise((r) => setTimeout(r, 250))
+        session = await resolveClientSessionForMutation(supabase)
+        user = session?.user ?? null
       }
-
-      const user = session?.user ?? (await supabase.auth.getUser()).data.user
       if (!session?.access_token || !user) {
         if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
         setImages((prev) =>

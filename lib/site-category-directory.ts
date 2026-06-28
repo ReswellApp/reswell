@@ -36,7 +36,6 @@ export const siteHeaderPeerProductNavLinks: CategoryLink[] = [
 /** Peer gear shown in the desktop + mobile main category bar (others hidden until launch). */
 export const siteHeaderMainPeerProductNavLinks: CategoryLink[] = [
   { label: "Fins", href: "/fins" },
-  { label: "Wetsuits", href: "/wetsuits" },
 ]
 
 /**
@@ -62,6 +61,7 @@ export const allCategoriesForNav: CategoryLink[] = surfboardBrowseLinks
 export const footerCategoryLinks: CategoryLink[] = [
   ...surfboardBrowseLinks.filter((link) => link.href !== "/boards"),
   ...siteHeaderMainPeerProductNavLinks,
+  { label: "Wetsuits", href: "/wetsuits" },
 ]
 
 export type CategoryDirectorySection = {

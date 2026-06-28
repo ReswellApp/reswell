@@ -1,11 +1,10 @@
 "use client"
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import Image from "next/image"
 import Link from "next/link"
 import { toast } from "sonner"
-import { Heart, Loader2, RotateCw, Upload, X, Zap } from "lucide-react"
+import { Loader2, X, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -34,17 +33,14 @@ import {
   SellSectionNavHorizontal,
   SELL_FINS_FORM_SECTION_NAV_ITEMS,
 } from "@/components/features/sell/sell-section-nav"
+import { SellFlowFormColumnSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
+import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
+import { SellPublishValidationBanner } from "@/components/features/sell/sell-publish-validation-banner"
+import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
+import { useSellListingDraftPersistence } from "@/components/features/sell/hooks/use-sell-listing-draft-persistence"
+import { usePendingPublishResume } from "@/components/features/sell/hooks/use-pending-publish-resume"
 import { createClient } from "@/lib/supabase/client"
-import { hasSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
-import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
-import {
-  assertListingOriginalSize,
-  prepareListingImagePairFromFile,
-} from "@/lib/listing-image-pipeline"
-import { ensureBrowserDecodableImageFile } from "@/lib/client-image-decode"
-import { friendlyListingPhotoErrorMessage } from "@/lib/utils/friendly-listing-photo-error"
-import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
 import {
   FIN_LISTING_MAX_PHOTOS,
   FIN_LISTING_TITLE_MAX_LENGTH,
@@ -69,37 +65,24 @@ import {
   normalizeBoardLengthInput,
   normalizeTapeStyleInchesInput,
 } from "@/lib/board-measurements"
+import { shippingPriceToFormValue } from "@/lib/sell-flow/shipping-price-to-form-value"
+import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
+import { scrollPublishValidationBannerIntoView } from "@/lib/sell-flow/scroll-section-into-view"
+import { validateFinListingForm } from "@/lib/sell-flow/validate-fin-listing-form"
+import { persistListingDraftSnapshot } from "@/lib/sell-flow/persist-listing-draft-snapshot"
 import {
-  parseReswellParcelLengthRawToCarrierInches,
-  parseReswellParcelWidthHeightRawToCarrierInches,
-} from "@/lib/reswell-parcel-fields"
+  clearPendingPublish,
+  markPendingPublish,
+  sellFlowStepSessionKey,
+  SELL_SUPPRESS_IDB_RESTORE_KEY,
+} from "@/lib/sell-flow/session-keys"
+import {
+  clearSellListingDraft,
+  type SellListingDraftFormSnapshot,
+} from "@/lib/sell-listing-draft-idb"
 import { cn } from "@/lib/utils"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { finalizePeerListingCreate } from "@/lib/utils/admin-peer-listing-create-navigation"
-
-type PhotoPhase = "optimizing" | "uploading" | "done" | "error"
-
-type PhotoSlot = {
-  clientId: string
-  previewUrl: string
-  file?: File
-  imageId?: string
-  url?: string
-  thumbnailUrl?: string
-  phase: PhotoPhase
-  progress: number
-  /** True = apply 180° after automatic landscape→portrait step (toggle). */
-  userRotate180?: boolean
-  /** After upload, drop `file` so the next rotation re-downloads from `url`. */
-  dropSourceFileAfterUpload?: boolean
-  prepareSeq?: number
-}
-
-function shippingPriceToFormValue(v: unknown): string {
-  if (v == null || v === "") return ""
-  const n = Number.parseFloat(String(v).replace(/,/g, ""))
-  return Number.isFinite(n) ? String(n) : ""
-}
 
 function finShippingModeFromListing(listing: {
   shipping_available?: boolean | null
@@ -176,16 +159,12 @@ const INITIAL_STATE: FinFormState = {
   buyerOffers: true,
 }
 
-function newClientId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
-}
-
-const FIN_SELL_FLOW_STEP_KEY = "reswell.sell.fins.flowStep"
+const FIN_FLOW_STEP_KEY = sellFlowStepSessionKey("fins") ?? "reswell.sell.fins.flowStep"
 
 function readStoredFinSellFlowStep(): "search" | "form" | null {
   if (typeof window === "undefined") return null
   try {
-    const value = sessionStorage.getItem(FIN_SELL_FLOW_STEP_KEY)
+    const value = sessionStorage.getItem(FIN_FLOW_STEP_KEY)
     if (value === "form" || value === "search") return value
   } catch {
     /* quota / private mode */
@@ -195,7 +174,7 @@ function readStoredFinSellFlowStep(): "search" | "form" | null {
 
 function persistFinSellFlowStep(step: "search" | "form"): void {
   try {
-    sessionStorage.setItem(FIN_SELL_FLOW_STEP_KEY, step)
+    sessionStorage.setItem(FIN_FLOW_STEP_KEY, step)
   } catch {
     /* quota / private mode */
   }
@@ -203,37 +182,29 @@ function persistFinSellFlowStep(step: "search" | "form"): void {
 
 function clearPersistedFinSellFlowStep(): void {
   try {
-    sessionStorage.removeItem(FIN_SELL_FLOW_STEP_KEY)
+    sessionStorage.removeItem(FIN_FLOW_STEP_KEY)
   } catch {
     /* quota / private mode */
   }
 }
 
-function finSellReturnPath(): string {
-  if (typeof window === "undefined") return "/sell/fins"
-  return `${window.location.pathname}${window.location.search}`
-}
-
-function scrollFinSellSectionIntoView(sectionId: string) {
-  const el = document.getElementById(sectionId)
-  if (!el) return
-  el.scrollIntoView({ behavior: "smooth", block: "start" })
-}
-
 export default function SellFinsFlow({
   editListingId = null,
   startAtSearch = false,
+  startFresh = false,
 }: {
   editListingId?: string | null
   startAtSearch?: boolean
+  startFresh?: boolean
 }) {
   const router = useRouter()
   const bulkSlotId = useSearchParams().get("bulk")?.trim() || null
   const signIn = useSignInGate()
   const fileInputId = useId()
+  const formRef = useRef<HTMLFormElement>(null)
   const supabaseRef = useRef(createClient())
-  const photoUploadSignInPromptedRef = useRef(false)
   const editId = editListingId?.trim() || null
+  const draftPhotosPendingRef = useRef<ListingPhotoSlot[] | null>(null)
 
   const [flowStep, setFlowStep] = useState<"search" | "form">(() => {
     if (editId) return "form"
@@ -241,29 +212,128 @@ export default function SellFinsFlow({
     return readStoredFinSellFlowStep() ?? "search"
   })
   const [form, setForm] = useState<FinFormState>(INITIAL_STATE)
-  const [photos, setPhotos] = useState<PhotoSlot[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [editLoading, setEditLoading] = useState(Boolean(editId))
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
-  const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
+  const [draftHydrated, setDraftHydrated] = useState(Boolean(editId))
+  const [signedInUserId, setSignedInUserId] = useState<string | null>(null)
+  const [publishValidationBanner, setPublishValidationBanner] = useState<string | null>(null)
 
-  const photosRef = useRef<PhotoSlot[]>([])
-  photosRef.current = photos
-  const latestPhotoPrepareSeqRef = useRef(new Map<string, number>())
+  const sellListingsHubHref = signedInUserId ? "/dashboard/listings" : "/boards"
+  const finSellReturnPath = useCallback(
+    () =>
+      typeof window === "undefined"
+        ? "/sell/fins"
+        : `${window.location.pathname}${window.location.search}`,
+    [],
+  )
+
+  const photoUpload = useListingPhotoUpload({
+    maxPhotos: FIN_LISTING_MAX_PHOTOS,
+    signInReturnPath: finSellReturnPath,
+    openSignIn: signIn,
+    supabase: supabaseRef.current,
+  })
+
+  const {
+    images,
+    imagesRef,
+    removedImageIds,
+    photosFileDragActive,
+    uploadingCount,
+    imagesUploadReady,
+    readyImages,
+    handleImageInputChange,
+    handlePhotosFileDragEnter,
+    handlePhotosFileDragLeave,
+    handlePhotosFileDragOver,
+    handlePhotosFileDrop,
+    photoDragSensors,
+    handlePhotosDragEnd,
+    handlePhotoTileRemove,
+    handlePhotoTileRetry,
+    handlePhotoTileRotate,
+    idbRestoreOptimizeQueueRef,
+    hydrateExistingImages,
+  } = photoUpload
+
+  const restoreFormFromDraft = useCallback((snapshot: SellListingDraftFormSnapshot) => {
+    setForm((prev) => ({
+      ...prev,
+      ...(snapshot as Partial<FinFormState>),
+      brandId:
+        typeof snapshot.brandId === "string" ? snapshot.brandId : prev.brandId,
+      brandModelId:
+        typeof snapshot.brandModelId === "string" ? snapshot.brandModelId : prev.brandModelId,
+      locationLat:
+        typeof snapshot.locationLat === "number" ? snapshot.locationLat : prev.locationLat,
+      locationLng:
+        typeof snapshot.locationLng === "number" ? snapshot.locationLng : prev.locationLng,
+    }))
+    const storedStep = snapshot.finFlowStep
+    if (storedStep === "form" || storedStep === "search") {
+      setFlowStep(storedStep)
+      persistFinSellFlowStep(storedStep)
+    }
+  }, [])
+
+  useSellListingDraftPersistence({
+    listingType: "fins",
+    editId,
+    startFresh,
+    draftHydrated,
+    setDraftHydrated,
+    formSnapshot: { ...form, finFlowStep: flowStep } as SellListingDraftFormSnapshot,
+    images,
+    onRestoreForm: restoreFormFromDraft,
+    idbRestoreOptimizeQueueRef,
+    draftPhotosPendingRef,
+  })
+
+  usePendingPublishResume({
+    listingKind: "fins",
+    editId,
+    draftHydrated,
+    formRef,
+    imagesRef,
+  })
+
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return
+    if (startFresh) {
+      try {
+        sessionStorage.setItem(SELL_SUPPRESS_IDB_RESTORE_KEY, "1")
+      } catch {
+        /* quota / private mode */
+      }
+      router.replace("/sell/fins", { scroll: false })
+    }
+  }, [router, startFresh])
+
+  useEffect(() => {
+    void supabaseRef.current.auth.getUser().then(({ data: { user } }) => {
+      setSignedInUserId(user?.id ?? null)
+    })
+    const {
+      data: { subscription },
+    } = supabaseRef.current.auth.onAuthStateChange((_event, session) => {
+      setSignedInUserId(session?.user?.id ?? null)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    if (!draftHydrated || editId) return
+    const pending = draftPhotosPendingRef.current
+    if (!pending?.length) return
+    draftPhotosPendingRef.current = null
+  }, [draftHydrated, editId])
 
   useEffect(() => {
     if (!startAtSearch || editId) return
     setFlowStep("search")
     persistFinSellFlowStep("search")
   }, [startAtSearch, editId])
-
-  useEffect(() => {
-    return () => {
-      for (const p of photosRef.current) {
-        if (p.file) URL.revokeObjectURL(p.previewUrl)
-      }
-    }
-  }, [])
 
   useEffect(() => {
     if (!editId) {
@@ -383,7 +453,7 @@ export default function SellFinsFlow({
           (listing as { buyer_offers_enabled?: boolean | null }).buyer_offers_enabled !== false,
       })
 
-      const existingImages = ((listing.listing_images as Array<{
+      const existingImages: ListingPhotoSlot[] = ((listing.listing_images as Array<{
         id: string
         url: string
         thumbnail_url: string | null
@@ -401,24 +471,26 @@ export default function SellFinsFlow({
           const thumb = img.thumbnail_url?.trim() || url
           return {
             clientId: img.id,
-            imageId: img.id,
+            id: img.id,
             previewUrl: proxiedListingImageSrc(thumb) ?? thumb,
             url,
             thumbnailUrl: thumb,
-            phase: "done" as const,
-            progress: 100,
+            optimizePhase: "done" as const,
+            uploadPhase: "done" as const,
+            progressFull: 100,
+            progressThumb: 100,
+            dropSourceFileAfterUpload: true,
           }
         })
 
-      setPhotos(existingImages)
-      setRemovedImageIds([])
+      hydrateExistingImages(existingImages)
       setEditLoading(false)
     })()
 
     return () => {
       mounted = false
     }
-  }, [editId, router, signIn])
+  }, [editId, hydrateExistingImages, router, signIn])
 
   const setField = useCallback(<K extends keyof FinFormState>(key: K, value: FinFormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -466,274 +538,11 @@ export default function SellFinsFlow({
     enterFormStep()
   }, [enterFormStep])
 
-  const updateSlot = useCallback((clientId: string, patch: Partial<PhotoSlot>) => {
-    setPhotos((prev) => prev.map((p) => (p.clientId === clientId ? { ...p, ...patch } : p)))
-  }, [])
-
-  const photoPrepareSeqInSync = useCallback((clientId: string, prepareSeq: number): boolean => {
-    return (latestPhotoPrepareSeqRef.current.get(clientId) ?? 0) === prepareSeq
-  }, [])
-
-  const uploadSlot = useCallback(
-    async (slot: PhotoSlot) => {
-      const clientId = slot.clientId
-      const prepareSeq = slot.prepareSeq ?? 0
-      latestPhotoPrepareSeqRef.current.set(clientId, prepareSeq)
-      const src = slot.file
-      if (!src) return
-
-      try {
-        updateSlot(clientId, { phase: "optimizing", progress: 0 })
-        const decodable = await ensureBrowserDecodableImageFile(src)
-        const prepared = await prepareListingImagePairFromFile(decodable, {
-          rotate180: Boolean(slot.userRotate180),
-        })
-        if (!photoPrepareSeqInSync(clientId, prepareSeq)) return
-
-        setPhotos((prev) =>
-          prev.map((p) => {
-            if (p.clientId !== clientId) return p
-            if (p.previewUrl.startsWith("blob:")) URL.revokeObjectURL(p.previewUrl)
-            return {
-              ...p,
-              previewUrl: URL.createObjectURL(prepared.thumb),
-              phase: "uploading",
-              progress: 5,
-            }
-          }),
-        )
-
-        const supabase = supabaseRef.current
-        let session = null as Awaited<ReturnType<typeof waitForClientSession>>
-        if (hasSupabaseAuthCookiesClient()) {
-          session = await waitForClientSession({ supabase })
-        } else {
-          const { data } = await supabase.auth.getSession()
-          session = data.session?.access_token ? data.session : null
-        }
-
-        const user = session?.user ?? (await supabase.auth.getUser()).data.user
-        if (!session?.access_token || !user) {
-          if (!photoPrepareSeqInSync(clientId, prepareSeq)) return
-          updateSlot(clientId, { phase: "optimizing", progress: 0 })
-          if (!photoUploadSignInPromptedRef.current) {
-            photoUploadSignInPromptedRef.current = true
-            toast.message("Sign in to upload photos")
-            signIn(finSellReturnPath())
-          }
-          return
-        }
-
-        // Coalesce progress to ~10% steps so each upload chunk doesn't re-render the whole form.
-        let lastReportedPct = 5
-        const { fullUrl, thumbUrl } = await uploadListingImagePairToSupabase({
-          supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-          accessToken: session.access_token,
-          anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
-          userId: user.id,
-          clientId: slot.clientId,
-          prepared,
-          onProgressFull: (loaded, total) => {
-            const pct = total > 0 ? Math.round((loaded / total) * 100) : 50
-            if (pct < 100 && pct - lastReportedPct < 10) return
-            lastReportedPct = pct
-            if (!photoPrepareSeqInSync(clientId, prepareSeq)) return
-            updateSlot(clientId, { progress: pct })
-          },
-        })
-
-        if (!photoPrepareSeqInSync(clientId, prepareSeq)) return
-
-        updateSlot(clientId, {
-          phase: "done",
-          progress: 100,
-          url: fullUrl,
-          thumbnailUrl: thumbUrl,
-          ...(slot.dropSourceFileAfterUpload
-            ? { file: undefined, dropSourceFileAfterUpload: undefined }
-            : {}),
-        })
-      } catch (err) {
-        if (!photoPrepareSeqInSync(clientId, prepareSeq)) return
-        console.error("fin photo upload failed", err)
-        updateSlot(clientId, { phase: "error" })
-        toast.error(friendlyListingPhotoErrorMessage(err, "upload"))
-      }
-    },
-    [photoPrepareSeqInSync, signIn, updateSlot],
-  )
-
-  useEffect(() => {
-    const supabase = supabaseRef.current
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session?.user) return
-      photoUploadSignInPromptedRef.current = false
-      for (const slot of photosRef.current) {
-        if (!slot.file) continue
-        if (slot.phase === "done") continue
-        void uploadSlot(slot)
-      }
-    })
-    return () => subscription.unsubscribe()
-  }, [uploadSlot])
-
-  const addFiles = useCallback(
-    (files: FileList | File[]) => {
-      const list = Array.from(files).filter((f) => f.type.startsWith("image/"))
-      if (list.length === 0) return
-
-      const remaining = FIN_LISTING_MAX_PHOTOS - photosRef.current.length
-      if (remaining <= 0) {
-        toast.error(`You can add up to ${FIN_LISTING_MAX_PHOTOS} photos.`)
-        return
-      }
-
-      const accepted: PhotoSlot[] = []
-      for (const file of list.slice(0, remaining)) {
-        try {
-          assertListingOriginalSize(file)
-        } catch (e) {
-          toast.error(friendlyListingPhotoErrorMessage(e))
-          continue
-        }
-        accepted.push({
-          clientId: newClientId(),
-          previewUrl: URL.createObjectURL(file),
-          file,
-          phase: "optimizing",
-          progress: 0,
-        })
-      }
-      if (accepted.length === 0) return
-      setPhotos((prev) => [...prev, ...accepted])
-      for (const slot of accepted) void uploadSlot(slot)
-    },
-    [uploadSlot],
-  )
-
-  const removePhoto = useCallback((clientId: string) => {
-    setPhotos((prev) => {
-      const target = prev.find((p) => p.clientId === clientId)
-      if (target?.imageId) {
-        setRemovedImageIds((ids) =>
-          ids.includes(target.imageId!) ? ids : [...ids, target.imageId!],
-        )
-      }
-      if (target?.previewUrl.startsWith("blob:")) URL.revokeObjectURL(target.previewUrl)
-      return prev.filter((p) => p.clientId !== clientId)
-    })
-  }, [])
-
-  const rotatePhoto180 = useCallback(
-    (clientId: string) => {
-      const live = photosRef.current.find((p) => p.clientId === clientId)
-      if (!live) return
-      if (live.phase === "error") return
-      if (live.phase === "optimizing" || live.phase === "uploading") return
-
-      if (live.file) {
-        let nextSlot: PhotoSlot | null = null
-        setPhotos((prev) =>
-          prev.map((p) => {
-            if (p.clientId !== clientId) return p
-            const src = p.file
-            if (!src) return p
-            if (p.previewUrl.startsWith("blob:")) URL.revokeObjectURL(p.previewUrl)
-            const nextSeq = (p.prepareSeq ?? 0) + 1
-            latestPhotoPrepareSeqRef.current.set(clientId, nextSeq)
-            nextSlot = {
-              ...p,
-              userRotate180: !p.userRotate180,
-              prepareSeq: nextSeq,
-              phase: "optimizing",
-              progress: 0,
-              url: undefined,
-              thumbnailUrl: undefined,
-              previewUrl: URL.createObjectURL(src),
-            }
-            return nextSlot
-          }),
-        )
-        if (nextSlot) void uploadSlot(nextSlot)
-        return
-      }
-
-      const fullUrl = (live.url ?? "").trim()
-      if (!fullUrl || live.phase !== "done") return
-
-      const snapshot = { ...live }
-      setPhotos((prev) =>
-        prev.map((p) =>
-          p.clientId === clientId ? { ...p, phase: "optimizing", progress: 0 } : p,
-        ),
-      )
-
-      void (async () => {
-        try {
-          const res = await fetch(proxiedListingImageSrc(fullUrl))
-          if (!res.ok) {
-            throw new Error("Could not load this photo to rotate it.")
-          }
-          const blob = await res.blob()
-          const file = new File(
-            [blob],
-            "listing-photo.jpg",
-            { type: blob.type && blob.type.startsWith("image/") ? blob.type : "image/jpeg" },
-          )
-
-          let nextSlot: PhotoSlot | null = null
-          setPhotos((prev) =>
-            prev.map((p) => {
-              if (p.clientId !== clientId) return p
-              if (p.previewUrl.startsWith("blob:")) URL.revokeObjectURL(p.previewUrl)
-              const nextSeq = (p.prepareSeq ?? 0) + 1
-              latestPhotoPrepareSeqRef.current.set(clientId, nextSeq)
-              nextSlot = {
-                ...p,
-                userRotate180: !p.userRotate180,
-                prepareSeq: nextSeq,
-                phase: "optimizing",
-                progress: 0,
-                url: undefined,
-                thumbnailUrl: undefined,
-                previewUrl: URL.createObjectURL(file),
-                file,
-                dropSourceFileAfterUpload: true,
-              }
-              return nextSlot
-            }),
-          )
-          if (nextSlot) void uploadSlot(nextSlot)
-        } catch (e) {
-          toast.error(friendlyListingPhotoErrorMessage(e, "rotate"))
-          setPhotos((prev) => prev.map((p) => (p.clientId === clientId ? snapshot : p)))
-        }
-      })()
-    },
-    [uploadSlot],
-  )
-
-  const makePrimary = useCallback((clientId: string) => {
-    setPhotos((prev) => {
-      const idx = prev.findIndex((p) => p.clientId === clientId)
-      if (idx <= 0) return prev
-      const next = [...prev]
-      const [picked] = next.splice(idx, 1)
-      next.unshift(picked)
-      return next
-    })
-  }, [])
-
-  const uploadingCount = photos.filter((p) => p.phase !== "done" && p.phase !== "error").length
-  const readyPhotos = photos.filter((p) => p.phase === "done" && p.url)
-
   const sellSectionCompletion = useMemo(
     () =>
       computeFinSellSectionCompletion({
         title: form.title,
-        readyPhotoCount: readyPhotos.length,
+        readyPhotoCount: readyImages.length,
         condition: form.condition,
         description: form.description,
         locationCity: form.locationCity,
@@ -749,77 +558,64 @@ export default function SellFinsFlow({
         reswellPackageWeightOz: form.reswellPackageWeightOz,
         price: form.price,
       }),
-    [form, readyPhotos.length],
+    [form, readyImages.length],
   )
+
+  const firstIncompleteSellSectionId = useMemo(() => {
+    for (const item of SELL_FINS_FORM_SECTION_NAV_ITEMS) {
+      if (sellSectionCompletion[item.id] !== true) return item.id
+    }
+    return null
+  }, [sellSectionCompletion])
+
+  const firstIncompleteSellSectionLabel = useMemo(() => {
+    if (!firstIncompleteSellSectionId) return null
+    return (
+      SELL_FINS_FORM_SECTION_NAV_ITEMS.find((i) => i.id === firstIncompleteSellSectionId)?.label ??
+      null
+    )
+  }, [firstIncompleteSellSectionId])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (submitting) return
+    setPublishValidationBanner(null)
 
     const supabase = supabaseRef.current
     const {
       data: { user },
     } = await supabase.auth.getUser()
+
+    const persistDraftForSignIn = async () => {
+      await persistListingDraftSnapshot({
+        listingType: "fins",
+        formData: { ...form, finFlowStep: flowStep } as SellListingDraftFormSnapshot,
+        images,
+        userId: null,
+      })
+      markPendingPublish("fins")
+      toast.message("Sign in to publish your listing")
+      signIn(finSellReturnPath())
+    }
+
     if (!user) {
-      signIn("/sell/fins")
+      await persistDraftForSignIn()
       return
     }
 
-    if (readyPhotos.length === 0) {
-      toast.error("Add at least one photo.")
-      scrollFinSellSectionIntoView("sell-fins-section-photos-title")
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      await persistDraftForSignIn()
       return
     }
-    if (uploadingCount > 0) {
-      toast.error("Hang tight — your photos are still uploading.")
-      return
-    }
-    if (!form.title.trim()) {
-      toast.error("Add a title.")
-      scrollFinSellSectionIntoView("sell-fins-section-photos-title")
-      return
-    }
-    if (!form.condition) {
-      toast.error("Choose a condition.")
-      scrollFinSellSectionIntoView("sell-fins-section-details")
-      return
-    }
-    if (!form.description.trim()) {
-      toast.error("Add a description.")
-      scrollFinSellSectionIntoView("sell-fins-section-details")
-      return
-    }
-    if (!form.price.trim() || Number(form.price) <= 0) {
-      toast.error("Enter a price.")
-      scrollFinSellSectionIntoView("sell-fins-section-publish")
-      return
-    }
-    if (!form.locationCity.trim() || !form.locationState.trim()) {
-      toast.error("Confirm where you're listing from.")
-      scrollFinSellSectionIntoView("sell-fins-section-delivery")
-      return
-    }
-    if (!form.shippingAvailable) {
-      toast.error("Fin listings must ship.")
-      scrollFinSellSectionIntoView("sell-fins-section-delivery")
-      return
-    }
-    if (form.shippingMode === "reswell") {
-      const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
-      const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
-      const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
-      if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) {
-        toast.error("Enter packed box dimensions for Reswell shipping.")
-        scrollFinSellSectionIntoView("sell-fins-section-reswell-package")
-        return
-      }
-    }
-    if (
-      form.shippingMode === "flat" &&
-      (form.shippingPrice === "" || Number(form.shippingPrice) < 0)
-    ) {
-      toast.error("Enter a flat shipping rate.")
-      scrollFinSellSectionIntoView("sell-fins-section-delivery")
+
+    const validationMessage = validateFinListingForm(form, {
+      imageCount: images.length,
+      imagesUploadReady,
+    })
+    if (validationMessage) {
+      setPublishValidationBanner(validationMessage)
+      scrollPublishValidationBannerIntoView()
       return
     }
 
@@ -853,8 +649,8 @@ export default function SellFinsFlow({
       reswellPackageWeightOz: form.reswellPackageWeightOz,
       buyerOffers: form.buyerOffers,
       sellerPurchasePrice: form.sellerPurchasePrice ? Number(form.sellerPurchasePrice) : null,
-      images: readyPhotos.map((p, index) => ({
-        id: p.imageId,
+      images: readyImages.map((p, index) => ({
+        id: p.id,
         url: p.url!,
         thumbnailUrl: p.thumbnailUrl ?? null,
         isPrimary: index === 0,
@@ -917,6 +713,8 @@ export default function SellFinsFlow({
             return
           }
           clearPersistedFinSellFlowStep()
+          clearPendingPublish("fins")
+          if (user.id) await clearSellListingDraft(user.id, "fins")
           toast.success("Listing updated")
           router.push(`/l/${data.slug ?? editId}`)
           return
@@ -941,6 +739,8 @@ export default function SellFinsFlow({
           return
         }
         clearPersistedFinSellFlowStep()
+        clearPendingPublish("fins")
+        if (user.id) await clearSellListingDraft(user.id, "fins")
         toast.success("Listing updated")
         router.push(`/l/${result.slug}`)
         return
@@ -960,21 +760,35 @@ export default function SellFinsFlow({
         router,
         successToast: "Your fin is live!",
         setSubmitting,
-        directCreate: () => createFinListingAction(payload),
+        directCreate: async () => {
+          const result = await createFinListingAction(payload)
+          if (!("error" in result)) {
+            clearPendingPublish("fins")
+            if (user.id) await clearSellListingDraft(user.id, "fins")
+          }
+          return result
+        },
       })
     } catch (err) {
       console.error("fin listing submit failed", err)
-      toast.error(editId ? "Something went wrong saving your listing." : "Something went wrong publishing your listing.")
+      toast.error(
+        editId ? "Something went wrong saving your listing." : "Something went wrong publishing your listing.",
+      )
       setSubmitting(false)
     }
   }
 
   if (editLoading) {
     return (
-      <main className="flex flex-1 items-center justify-center bg-background py-24">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
-          <p className="text-sm">Loading listing…</p>
+      <main className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24">
+        <div className="container relative mx-auto max-w-2xl lg:max-w-6xl">
+          <div
+            role="status"
+            aria-label="Loading listing editor"
+            className="rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8"
+          >
+            <SellFlowFormColumnSkeleton />
+          </div>
         </div>
       </main>
     )
@@ -1008,7 +822,7 @@ export default function SellFinsFlow({
                 <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
                 <BreadcrumbItem>
                   <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                    <Link href="/sell">Sell</Link>
+                    <Link href={sellListingsHubHref}>Listings</Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
@@ -1032,12 +846,21 @@ export default function SellFinsFlow({
               </BreadcrumbList>
             </Breadcrumb>
             <Button type="button" variant="ghost" size="icon" aria-label="Exit listing form" asChild>
-              <Link href="/sell" onClick={exitSellFlow}>
+              <Link href={sellListingsHubHref} onClick={exitSellFlow}>
                 <X className="h-4 w-4" aria-hidden />
               </Link>
             </Button>
           </div>
         </div>
+
+        {!editLoading && publishValidationBanner ? (
+          <SellPublishValidationBanner
+            message={publishValidationBanner}
+            firstIncompleteSectionId={firstIncompleteSellSectionId}
+            firstIncompleteSectionLabel={firstIncompleteSellSectionLabel}
+            onDismiss={() => setPublishValidationBanner(null)}
+          />
+        ) : null}
 
         <div className="flex w-full flex-col gap-8 lg:mx-auto lg:w-max lg:max-w-full lg:flex-row lg:items-start lg:gap-10 xl:gap-14">
           <div className="hidden shrink-0 lg:block lg:w-52 xl:w-56">
@@ -1054,7 +877,12 @@ export default function SellFinsFlow({
               className="mb-8 hidden md:block lg:hidden"
             />
 
-            <form onSubmit={handleSubmit} className="space-y-10 lg:space-y-12" aria-busy={submitting}>
+            <form
+              ref={formRef}
+              onSubmit={handleSubmit}
+              className="space-y-10 lg:space-y-12"
+              aria-busy={submitting}
+            >
               <SellFormSection
                 sectionId="sell-fins-section-photos-title"
                 title="Title & photos"
@@ -1090,139 +918,22 @@ export default function SellFinsFlow({
 
                   <Separator className="bg-border" />
 
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-semibold text-foreground">Photos</h3>
-                    <p className="text-xs text-muted-foreground/45">
-                      Add clear photos. The first image is your main photo — tap the star on any
-                      other photo to make it the cover.
-                    </p>
-                    <Label className="sr-only">Listing photos</Label>
-                    <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
-                      {photos.map((photo, index) => {
-                        const canRotate =
-                          photo.phase !== "error" &&
-                          photo.phase !== "optimizing" &&
-                          photo.phase !== "uploading" &&
-                          (Boolean(photo.file) ||
-                            (photo.phase === "done" && Boolean((photo.url ?? "").trim())))
-
-                        return (
-                        <div
-                          key={photo.clientId}
-                          className="relative aspect-square overflow-hidden rounded-lg border border-transparent bg-muted"
-                        >
-                          <Image
-                            src={photo.previewUrl}
-                            alt={`Photo ${index + 1}`}
-                            fill
-                            sizes="120px"
-                            className="object-cover object-center"
-                            unoptimized
-                          />
-                          {photo.phase !== "done" ? (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-background/70 text-xs text-muted-foreground">
-                              {photo.phase === "error" ? (
-                                <span className="text-destructive">Failed</span>
-                              ) : (
-                                <>
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                  {photo.progress > 0 ? `${photo.progress}%` : null}
-                                </>
-                              )}
-                            </div>
-                          ) : null}
-                          {index === 0 && photo.phase === "done" ? (
-                            <span className="absolute bottom-1.5 left-1.5 rounded bg-foreground px-1.5 py-0.5 text-[10px] font-medium text-background">
-                              Main
-                            </span>
-                          ) : null}
-                          <div
-                            className={cn(
-                              "absolute inset-x-1 top-1 flex gap-1",
-                              canRotate ? "justify-between" : "justify-end",
-                            )}
-                          >
-                            {canRotate ? (
-                              <button
-                                type="button"
-                                onClick={() => rotatePhoto180(photo.clientId)}
-                                className="rounded-full bg-background/90 p-1 text-foreground shadow-sm hover:bg-background"
-                                title="Rotate 180°"
-                                aria-label={`Rotate photo ${index + 1} 180 degrees`}
-                              >
-                                <RotateCw className="h-3.5 w-3.5" aria-hidden />
-                              </button>
-                            ) : null}
-                            <div className="flex gap-1">
-                              {index !== 0 && photo.phase === "done" ? (
-                                <button
-                                  type="button"
-                                  onClick={() => makePrimary(photo.clientId)}
-                                  className="rounded-full bg-background/90 p-1 text-foreground shadow-sm hover:bg-background"
-                                  title="Make main photo"
-                                  aria-label="Make main photo"
-                                >
-                                  ★
-                                </button>
-                              ) : null}
-                              <button
-                                type="button"
-                                onClick={() => removePhoto(photo.clientId)}
-                                className="rounded-full bg-background/90 p-1 text-foreground shadow-sm hover:bg-background"
-                                title="Remove photo"
-                                aria-label="Remove photo"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                        )
-                      })}
-                      {photos.length < FIN_LISTING_MAX_PHOTOS ? (
-                        <div className="relative aspect-square overflow-hidden rounded-lg border-2 border-dashed border-border transition-colors hover:border-primary/50">
-                          <label
-                            htmlFor={fileInputId}
-                            className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center"
-                          >
-                            <span className="sr-only">Add listing photos</span>
-                            <Upload
-                              className="pointer-events-none h-6 w-6 text-muted-foreground/45"
-                              aria-hidden
-                            />
-                            <span
-                              className="pointer-events-none mt-1 text-xs text-muted-foreground/45"
-                              aria-hidden
-                            >
-                              Add
-                            </span>
-                          </label>
-                          <input
-                            id={fileInputId}
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            className="sr-only"
-                            onChange={(e) => {
-                              if (e.target.files) addFiles(e.target.files)
-                              e.target.value = ""
-                            }}
-                          />
-                        </div>
-                      ) : null}
-                    </div>
-                    <p className="space-y-1 text-xs text-muted-foreground/45">
-                      <span className="block">Thank you for listing on Reswell.</span>
-                      <span className="inline-flex flex-wrap items-center gap-1">
-                        <span>Made with</span>
-                        <Heart
-                          className="h-4 w-4 shrink-0 fill-listingHeart text-listingHeart"
-                          aria-hidden
-                        />
-                        <span>in Santa Barbara.</span>
-                      </span>
-                    </p>
-                  </div>
+                  <SellListingPhotoGrid
+                    images={images}
+                    maxPhotos={FIN_LISTING_MAX_PHOTOS}
+                    fileInputId={fileInputId}
+                    photosFileDragActive={photosFileDragActive}
+                    onImageInputChange={handleImageInputChange}
+                    onDragEnter={handlePhotosFileDragEnter}
+                    onDragLeave={handlePhotosFileDragLeave}
+                    onDragOver={handlePhotosFileDragOver}
+                    onDrop={handlePhotosFileDrop}
+                    onDragEnd={handlePhotosDragEnd}
+                    onRemove={handlePhotoTileRemove}
+                    onRetry={handlePhotoTileRetry}
+                    onRotate180={handlePhotoTileRotate}
+                    photoDragSensors={photoDragSensors}
+                  />
                 </div>
               </SellFormSection>
 

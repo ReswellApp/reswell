@@ -37,17 +37,24 @@ function parseStartStep(value: string | string[] | undefined): boolean {
   return false
 }
 
+function parseStartFresh(value: string | string[] | undefined): boolean {
+  if (value === "1") return true
+  if (Array.isArray(value)) return value.includes("1")
+  return false
+}
+
 export default async function SellFinsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string | string[]; step?: string | string[] }>
+  searchParams: Promise<{ edit?: string | string[]; step?: string | string[]; new?: string | string[] }>
 }) {
   const qs = await searchParams
   const editId = parseEditListingId(qs.edit)
   const startAtSearch = parseStartStep(qs.step)
+  const startFresh = parseStartFresh(qs.new)
   return (
     <Suspense fallback={null}>
-      <SellFinsFlow editListingId={editId} startAtSearch={startAtSearch} />
+      <SellFinsFlow editListingId={editId} startAtSearch={startAtSearch} startFresh={startFresh} />
     </Suspense>
   )
 }

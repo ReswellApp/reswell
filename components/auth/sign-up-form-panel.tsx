@@ -58,9 +58,14 @@ export function SignUpFormPanel({
     const supabase = createClient()
     const dest = safeRedirectPath(redirectTo)
     supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (user) await navigateAfterClientAuth(dest, router)
+      if (!user) return
+      if (variant === "modal") {
+        onSignUpSuccess?.()
+        return
+      }
+      await navigateAfterClientAuth(dest, router)
     })
-  }, [router, redirectTo])
+  }, [onSignUpSuccess, redirectTo, router, variant])
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()

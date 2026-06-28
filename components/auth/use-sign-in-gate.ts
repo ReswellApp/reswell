@@ -4,7 +4,9 @@ import { useCallback } from "react"
 import { usePathname, useRouter } from "next/navigation"
 
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
+import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
+import { createClient } from "@/lib/supabase/client"
 
 /**
  * Opens the login popup when {@link AuthModalProvider} wraps the shell; otherwise redirects to full-page login.
@@ -17,21 +19,27 @@ export function useSignInGate() {
 
   return useCallback(
     (redirectOverride?: string | null) => {
-      let fullPath: string
-      const raw = redirectOverride != null ? String(redirectOverride).trim() : ""
-      if (raw !== "") {
-        fullPath = safeRedirectPath(raw)
-      } else {
-        const p = pathname != null && pathname !== "" ? pathname : "/"
-        const q = typeof window !== "undefined" ? window.location.search : ""
-        fullPath = safeRedirectPath(p + q)
-      }
+      void (async () => {
+        const supabase = createClient()
+        const session = await resolveClientSessionForMutation(supabase)
+        if (session?.user) return
 
-      if (authModal) {
-        authModal.openLogin(fullPath)
-      } else {
-        router.push(`/auth/login?redirect=${encodeURIComponent(fullPath)}`)
-      }
+        let fullPath: string
+        const raw = redirectOverride != null ? String(redirectOverride).trim() : ""
+        if (raw !== "") {
+          fullPath = safeRedirectPath(raw)
+        } else {
+          const p = pathname != null && pathname !== "" ? pathname : "/"
+          const q = typeof window !== "undefined" ? window.location.search : ""
+          fullPath = safeRedirectPath(p + q)
+        }
+
+        if (authModal) {
+          authModal.openLogin(fullPath)
+        } else {
+          router.push(`/auth/login?redirect=${encodeURIComponent(fullPath)}`)
+        }
+      })()
     },
     [authModal, router, pathname],
   )

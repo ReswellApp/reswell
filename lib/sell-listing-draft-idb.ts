@@ -2,7 +2,7 @@
  * Persists create-listing form + image blobs so mobile Safari/WebKit can recover
  * after the tab is suspended or reloaded when returning from the photo library.
  *
- * Drafts are keyed by authenticated user id (or `guest` for anonymous create flows).
+ * Drafts are keyed by listing kind + authenticated user id (or `guest` for anonymous create flows).
  * Guest snapshots migrate to the signed-in user on auth so login redirects do not wipe progress.
  */
 
@@ -13,9 +13,11 @@ const LEGACY_KEY = "current"
 /** Anonymous create-listing snapshot — migrated to the signed-in user on auth. */
 export const GUEST_DRAFT_KEY = "guest"
 
-const DB_VERSION = 2
+const DB_VERSION = 3
 
 export const SELL_LISTING_DRAFT_VERSION = 7
+
+export type SellListingDraftListingType = "board" | "fins"
 
 export type SellListingDraftFormSnapshot = Record<string, unknown>
 
@@ -27,7 +29,7 @@ export type SellListingDraftImageBlob = {
 
 export type SellListingDraftRecord = {
   v: number
-  listingType: "board"
+  listingType: SellListingDraftListingType
   formData: SellListingDraftFormSnapshot
   imageBlobs: SellListingDraftImageBlob[]
   /** Supabase auth user id — required for new saves; used to reject cross-user loads. */
@@ -36,7 +38,16 @@ export type SellListingDraftRecord = {
   serverListingId?: string
 }
 
-function userDraftKey(userId: string): string {
+function userDraftKey(userId: string, listingType: SellListingDraftListingType): string {
+  return `u:${userId}:${listingType}`
+}
+
+function guestDraftKey(listingType: SellListingDraftListingType): string {
+  return `${GUEST_DRAFT_KEY}:${listingType}`
+}
+
+/** Pre–v3 user-scoped board key — migrated on read. */
+function legacyUserDraftKey(userId: string): string {
   return `u:${userId}`
 }
 
@@ -45,14 +56,7 @@ function str(formData: SellListingDraftFormSnapshot, key: string): string {
   return typeof v === "string" ? v.trim() : ""
 }
 
-/**
- * True when the user entered at least one “substantive” listing field worth persisting drafts.
- * Used for IDB snapshots, Save draft / exit-save, and rejecting empty restores.
- *
- * Only title, description, brand (free text or catalog id), model (typed or catalog slug),
- * or externally supplied photos qualify — dimensions, category, pin-only location, etc. do not.
- */
-export function sellDraftFormLooksFilled(formData: SellListingDraftFormSnapshot): boolean {
+function sellDraftFormLooksFilledForBoard(formData: SellListingDraftFormSnapshot): boolean {
   if (str(formData, "title") || str(formData, "description")) return true
   if (str(formData, "brand")) return true
   if (str(formData, "boardBrandId")) return true
@@ -60,6 +64,27 @@ export function sellDraftFormLooksFilled(formData: SellListingDraftFormSnapshot)
   if (str(formData, "boardModelName")) return true
   if (str(formData, "boardIndexModelSlug")) return true
   return false
+}
+
+function sellDraftFormLooksFilledForFins(formData: SellListingDraftFormSnapshot): boolean {
+  if (str(formData, "title") || str(formData, "description")) return true
+  if (str(formData, "brand")) return true
+  if (str(formData, "brandId")) return true
+  if (str(formData, "model")) return true
+  if (str(formData, "brandModelId")) return true
+  return false
+}
+
+/**
+ * True when the user entered at least one “substantive” listing field worth persisting drafts.
+ */
+export function sellDraftFormLooksFilled(
+  listingType: SellListingDraftListingType,
+  formData: SellListingDraftFormSnapshot,
+): boolean {
+  return listingType === "fins"
+    ? sellDraftFormLooksFilledForFins(formData)
+    : sellDraftFormLooksFilledForBoard(formData)
 }
 
 function openDb(): Promise<IDBDatabase> {
@@ -85,17 +110,49 @@ function openDb(): Promise<IDBDatabase> {
   })
 }
 
-export async function loadSellListingDraft(userId: string): Promise<SellListingDraftRecord | null> {
-  return loadSellListingDraftByKey(userDraftKey(userId), userId)
+export async function loadSellListingDraft(
+  userId: string,
+  listingType: SellListingDraftListingType = "board",
+): Promise<SellListingDraftRecord | null> {
+  const scoped = await loadSellListingDraftByKey(userDraftKey(userId, listingType), userId, listingType)
+  if (scoped) return scoped
+  if (listingType === "board") {
+    const legacy = await loadSellListingDraftByKey(legacyUserDraftKey(userId), userId, "board")
+    if (legacy) {
+      await saveSellListingDraft(legacy)
+      try {
+        const db = await openDb()
+        await new Promise<void>((resolve, reject) => {
+          const tx = db.transaction(STORE, "readwrite")
+          tx.oncomplete = () => resolve()
+          tx.onerror = () => reject(tx.error)
+          tx.objectStore(STORE).delete(legacyUserDraftKey(userId))
+        })
+        db.close()
+      } catch {
+        /* ignore */
+      }
+      return legacy
+    }
+  }
+  return null
 }
 
-export async function loadGuestSellListingDraft(): Promise<SellListingDraftRecord | null> {
-  return loadSellListingDraftByKey(GUEST_DRAFT_KEY)
+export async function loadGuestSellListingDraft(
+  listingType: SellListingDraftListingType = "board",
+): Promise<SellListingDraftRecord | null> {
+  const scoped = await loadSellListingDraftByKey(guestDraftKey(listingType), undefined, listingType)
+  if (scoped) return scoped
+  if (listingType === "board") {
+    return loadSellListingDraftByKey(GUEST_DRAFT_KEY, undefined, "board")
+  }
+  return null
 }
 
 async function loadSellListingDraftByKey(
   key: string,
   expectedUserId?: string,
+  expectedListingType?: SellListingDraftListingType,
 ): Promise<SellListingDraftRecord | null> {
   try {
     const db = await openDb()
@@ -108,10 +165,16 @@ async function loadSellListingDraftByKey(
     })
     db.close()
     if (!record || (record.v !== SELL_LISTING_DRAFT_VERSION && record.v !== 6)) return null
+    if (expectedListingType && record.listingType !== expectedListingType) return null
     if (expectedUserId && record.userId && record.userId !== expectedUserId) return null
     const blobs = Array.isArray(record.imageBlobs) ? record.imageBlobs : []
-    if (blobs.length === 0 && !sellDraftFormLooksFilled(record.formData)) return null
-    return { ...record, imageBlobs: blobs }
+    if (
+      blobs.length === 0 &&
+      !sellDraftFormLooksFilled(record.listingType ?? "board", record.formData)
+    ) {
+      return null
+    }
+    return { ...record, listingType: record.listingType ?? "board", imageBlobs: blobs }
   } catch {
     return null
   }
@@ -124,7 +187,7 @@ export async function saveGuestSellListingDraft(record: SellListingDraftRecord):
       const tx = db.transaction(STORE, "readwrite")
       tx.oncomplete = () => resolve()
       tx.onerror = () => reject(tx.error)
-      tx.objectStore(STORE).put(record, GUEST_DRAFT_KEY)
+      tx.objectStore(STORE).put(record, guestDraftKey(record.listingType))
     })
     db.close()
   } catch (e) {
@@ -148,7 +211,7 @@ export async function saveSellListingDraft(record: SellListingDraftRecord): Prom
       const tx = db.transaction(STORE, "readwrite")
       tx.oncomplete = () => resolve()
       tx.onerror = () => reject(tx.error)
-      tx.objectStore(STORE).put(record, userDraftKey(uid))
+      tx.objectStore(STORE).put(record, userDraftKey(uid, record.listingType))
     })
     db.close()
   } catch (e) {
@@ -161,7 +224,7 @@ export async function saveSellListingDraft(record: SellListingDraftRecord): Prom
 }
 
 export async function buildSellListingDraft(
-  listingType: "board",
+  listingType: SellListingDraftListingType,
   formData: SellListingDraftFormSnapshot,
   images: { file?: File }[],
   serverListingId?: string | null,
@@ -179,7 +242,7 @@ export async function buildSellListingDraft(
     })
   }
   const formSnapshot = JSON.parse(JSON.stringify(formData)) as SellListingDraftFormSnapshot
-  if (imageBlobs.length === 0 && !sellDraftFormLooksFilled(formSnapshot)) return null
+  if (imageBlobs.length === 0 && !sellDraftFormLooksFilled(listingType, formSnapshot)) return null
   const sid =
     typeof serverListingId === "string" && /^[0-9a-f-]{36}$/i.test(serverListingId)
       ? serverListingId
@@ -200,25 +263,33 @@ export async function buildSellListingDraft(
  * Moves a guest snapshot onto the signed-in user key so a full-page login redirect can restore it.
  * Returns true when a guest draft existed and was migrated.
  */
-export async function migrateGuestSellListingDraftToUser(userId: string): Promise<boolean> {
+export async function migrateGuestSellListingDraftToUser(
+  userId: string,
+  listingType: SellListingDraftListingType = "board",
+): Promise<boolean> {
   const uid = userId.trim()
   if (!uid) return false
-  const guest = await loadGuestSellListingDraft()
+  const guest = await loadGuestSellListingDraft(listingType)
   if (!guest) return false
-  const migrated: SellListingDraftRecord = { ...guest, userId: uid }
+  const migrated: SellListingDraftRecord = { ...guest, userId: uid, listingType }
   await saveSellListingDraft(migrated)
-  await clearGuestSellListingDraft()
+  await clearGuestSellListingDraft(listingType)
   return true
 }
 
-export async function clearGuestSellListingDraft(): Promise<void> {
+export async function clearGuestSellListingDraft(
+  listingType: SellListingDraftListingType = "board",
+): Promise<void> {
   try {
     const db = await openDb()
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(STORE, "readwrite")
       tx.oncomplete = () => resolve()
       tx.onerror = () => reject(tx.error)
-      tx.objectStore(STORE).delete(GUEST_DRAFT_KEY)
+      tx.objectStore(STORE).delete(guestDraftKey(listingType))
+      if (listingType === "board") {
+        tx.objectStore(STORE).delete(GUEST_DRAFT_KEY)
+      }
     })
     db.close()
   } catch {
@@ -226,14 +297,20 @@ export async function clearGuestSellListingDraft(): Promise<void> {
   }
 }
 
-export async function clearSellListingDraft(userId: string): Promise<void> {
+export async function clearSellListingDraft(
+  userId: string,
+  listingType: SellListingDraftListingType = "board",
+): Promise<void> {
   try {
     const db = await openDb()
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(STORE, "readwrite")
       tx.oncomplete = () => resolve()
       tx.onerror = () => reject(tx.error)
-      tx.objectStore(STORE).delete(userDraftKey(userId))
+      tx.objectStore(STORE).delete(userDraftKey(userId, listingType))
+      if (listingType === "board") {
+        tx.objectStore(STORE).delete(legacyUserDraftKey(userId))
+      }
     })
     db.close()
   } catch {

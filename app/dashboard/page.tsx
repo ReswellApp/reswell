@@ -36,6 +36,7 @@ import { DashboardOverviewRealtimeRefresh } from "@/components/features/dashboar
 import { dashboardPageSubtitleClass, dashboardPageTitleClass } from "@/lib/utils/dashboard-display-styles"
 import { getMySellerEarningsTotals } from "@/lib/db/sellerEarningsTotals"
 import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
+import { peerListingEditHref } from "@/lib/peer-listing-sections"
 
 export const metadata = privatePageMetadata({
   title: "Dashboard — Reswell",
@@ -473,7 +474,7 @@ export default async function DashboardPage() {
                 return (
                   <Link
                     key={listing.id}
-                    href={`/sell?edit=${listing.id}`}
+                    href={peerListingEditHref(listing.section, listing.id)}
                     className="group min-w-0"
                   >
                     <div className="relative mb-2 aspect-[3/4] overflow-hidden rounded-xl bg-muted">
@@ -541,7 +542,7 @@ export default async function DashboardPage() {
                 return (
                   <Link
                     key={listing.id}
-                    href={`/sell?edit=${listing.id}`}
+                    href={peerListingEditHref(listing.section, listing.id)}
                     className="group min-w-0"
                   >
                     <div className="relative mb-2 aspect-[3/4] overflow-hidden rounded-xl bg-muted">

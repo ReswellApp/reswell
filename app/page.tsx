@@ -114,10 +114,10 @@ export default async function HomePage() {
                 Used surfboard marketplace
               </Badge>
               <h1 className="text-[2.0625rem] font-bold leading-tight tracking-tight text-foreground sm:text-5xl md:text-6xl sm:leading-none text-balance">
-                Buy and Sell Surfboards with the Community
+                Buy and Sell Surfboards
               </h1>
               <p className="mt-5 text-base text-muted-foreground text-pretty sm:text-lg">
-                Find surfboards locally or from sellers that offer shipping, list your own boards with photos and dimensions, and buy straight from the surf community.
+                Find surfboards locally or from sellers that offer shipping, list your own boards with photos and dimensions, and buy straight from surfers.
               </p>
               <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3.5 md:mt-8 md:gap-4">
                 <Button size="lg" asChild>
