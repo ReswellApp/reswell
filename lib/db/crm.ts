@@ -622,6 +622,24 @@ export async function listCrmStaff(supabase: SupabaseClient): Promise<CrmStaffMe
   })
 }
 
+export async function getCrmContactByEmail(
+  supabase: SupabaseClient,
+  email: string,
+): Promise<CrmContactRow | null> {
+  const normalized = email.trim()
+  if (!normalized) return null
+
+  const { data, error } = await supabase
+    .from("crm_contacts")
+    .select(CRM_CONTACT_SELECT)
+    .ilike("email", normalized)
+    .limit(1)
+    .maybeSingle()
+
+  if (error || !data) return null
+  return normalizeCrmContactRow(data as Record<string, unknown>)
+}
+
 export async function getCrmContactByProfileId(
   supabase: SupabaseClient,
   profileId: string,

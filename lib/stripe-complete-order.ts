@@ -41,6 +41,7 @@ import {
   ADMIN_TERMINAL_SALES_CHANNEL,
   computeAdminTerminalInPersonCheckoutUsd,
 } from "@/lib/services/adminTerminalSale"
+import { syncAdminTerminalGuestToCrm } from "@/lib/services/crmAdminTerminalGuest"
 
 export type StripeCompleteOrderResult =
   | { ok: true; orderId: string; alreadyProcessed?: boolean }
@@ -54,13 +55,36 @@ function isUniqueViolation(err: { code?: string; message?: string } | null): boo
 
 function terminalCustomerContactFromPaymentIntent(
   pi: Stripe.PaymentIntent,
-): { name: string; email: string; phone: string | null } | null {
+): {
+  firstName: string
+  lastName: string | null
+  name: string
+  email: string
+  phone: string | null
+} | null {
   if (pi.metadata?.sales_channel !== ADMIN_TERMINAL_SALES_CHANNEL) return null
+  const firstNameFromMeta = pi.metadata.terminal_customer_first_name?.trim()
+  const lastNameFromMeta = pi.metadata.terminal_customer_last_name?.trim() || null
   const name = pi.metadata.terminal_customer_name?.trim()
   const email = pi.metadata.terminal_customer_email?.trim()
   const phone = pi.metadata.terminal_customer_phone?.trim() || null
-  if (!name || !email) return null
-  return { name, email, phone }
+  if (!email) return null
+
+  if (firstNameFromMeta) {
+    return {
+      firstName: firstNameFromMeta,
+      lastName: lastNameFromMeta,
+      name: name || [firstNameFromMeta, lastNameFromMeta].filter(Boolean).join(" "),
+      email,
+      phone,
+    }
+  }
+
+  if (!name) return null
+  const parts = name.split(/\s+/).filter(Boolean)
+  const firstName = parts[0] ?? name
+  const lastName = parts.length > 1 ? parts.slice(1).join(" ") : null
+  return { firstName, lastName, name, email, phone }
 }
 
 function applyTerminalCustomerToOrderShippingJson(
@@ -86,6 +110,52 @@ function applyTerminalCustomerToOrderShippingJson(
     phone: customer.phone,
     admin_terminal: true,
   }
+}
+
+async function maybeSyncAdminTerminalGuestToCrm(
+  serviceSupabase: ReturnType<typeof createServiceRoleClient>,
+  pi: Stripe.PaymentIntent,
+  orderId: string,
+): Promise<void> {
+  const buyerId = pi.metadata.buyer_id?.trim() || null
+  if (buyerId || pi.metadata?.sales_channel !== ADMIN_TERMINAL_SALES_CHANNEL) return
+
+  const customer = terminalCustomerContactFromPaymentIntent(pi)
+  if (!customer?.email) return
+
+  const adminProfileId = pi.metadata.admin_profile_id?.trim()
+  if (!adminProfileId) return
+
+  const { data: order } = await serviceSupabase
+    .from("orders")
+    .select("id, order_num, amount, listing_id")
+    .eq("id", orderId)
+    .maybeSingle()
+  if (!order) return
+
+  let listingTitle = "Reswell listing"
+  if (order.listing_id) {
+    const { data: listing } = await serviceSupabase
+      .from("listings")
+      .select("title")
+      .eq("id", order.listing_id)
+      .maybeSingle()
+    if (listing?.title) listingTitle = String(listing.title)
+  }
+
+  const amountUsd = parseFloat(String(order.amount ?? 0))
+
+  await syncAdminTerminalGuestToCrm(serviceSupabase, {
+    adminProfileId,
+    firstName: customer.firstName,
+    lastName: customer.lastName,
+    email: customer.email,
+    phone: customer.phone,
+    orderId,
+    orderNum: (order as { order_num?: string | null }).order_num ?? null,
+    listingTitle,
+    amountUsd: Number.isFinite(amountUsd) ? amountUsd : 0,
+  })
 }
 
 /** Keep wallet_transactions.description within typical DB limits (long listing titles). */
@@ -287,6 +357,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         void sendPostPurchaseReviewInvite(existing.id)
         await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, existing.id)
       }
+      void maybeSyncAdminTerminalGuestToCrm(serviceSupabase, pi, existing.id)
       return { ok: true, orderId: existing.id, alreadyProcessed: true }
     }
 
@@ -303,6 +374,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       void sendPostPurchaseReviewInvite(existing.id)
       await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, existing.id)
     }
+    void maybeSyncAdminTerminalGuestToCrm(serviceSupabase, pi, existing.id)
     return { ok: true, orderId: existing.id, alreadyProcessed: true }
   }
 
@@ -634,6 +706,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         .eq("stripe_checkout_session_id", piId)
         .maybeSingle()
       if (raced?.id) {
+        void maybeSyncAdminTerminalGuestToCrm(serviceSupabase, pi, raced.id)
         return { ok: true, orderId: raced.id, alreadyProcessed: true }
       }
     }
@@ -858,6 +931,8 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   } else if (!isPickup && fulfillmentMethod === "shipping") {
     await purchaseReswellShippingLabelAfterCheckout(serviceSupabase, purchase.id)
   }
+
+  void maybeSyncAdminTerminalGuestToCrm(serviceSupabase, pi, purchase.id)
 
   return { ok: true, orderId: purchase.id }
 }

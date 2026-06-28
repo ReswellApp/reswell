@@ -93,6 +93,8 @@ export type StartAdminTerminalCardCheckoutResult =
   | { ok: false; error: string; status: number }
 
 type AdminTerminalSaleParties = {
+  customerFirstName: string
+  customerLastName: string | null
   customerName: string
   customerEmail: string
   customerPhone: string | null
@@ -286,7 +288,15 @@ async function resolveAdminTerminalMemberBuyer(
   buyerId: string,
   sellerId: string,
 ): Promise<
-  | { ok: true; buyerId: string; customerName: string; customerEmail: string; customerPhone: string | null }
+  | {
+      ok: true
+      buyerId: string
+      customerFirstName: string
+      customerLastName: string | null
+      customerName: string
+      customerEmail: string
+      customerPhone: string | null
+    }
   | { ok: false; error: string; status: number }
 > {
   const { data: authData, error: authErr } = await service.auth.admin.getUserById(buyerId)
@@ -326,12 +336,17 @@ async function resolveAdminTerminalMemberBuyer(
     (typeof profile.display_name === "string" ? profile.display_name.trim() : "") ||
     customerEmail.split("@")[0] ||
     "Reswell member"
+  const nameParts = customerName.split(/\s+/).filter(Boolean)
+  const customerFirstName = nameParts[0] ?? "Reswell member"
+  const customerLastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : null
   const customerPhone =
     typeof profile.phone === "string" && profile.phone.trim() ? profile.phone.trim() : null
 
   return {
     ok: true,
     buyerId,
+    customerFirstName: customerFirstName.slice(0, 80),
+    customerLastName: customerLastName ? customerLastName.slice(0, 80) : null,
     customerName: customerName.slice(0, 500),
     customerEmail: customerEmail.slice(0, 500),
     customerPhone: customerPhone ? customerPhone.slice(0, 500) : null,
@@ -354,6 +369,8 @@ async function resolveAdminTerminalSaleParties(
     return {
       ok: true,
       parties: {
+        customerFirstName: member.customerFirstName,
+        customerLastName: member.customerLastName,
         customerName: member.customerName,
         customerEmail: member.customerEmail,
         customerPhone: member.customerPhone,
@@ -362,12 +379,14 @@ async function resolveAdminTerminalSaleParties(
     }
   }
 
-  const customerName = [input.customer!.firstName.trim(), input.customer!.lastName?.trim()]
-    .filter(Boolean)
-    .join(" ")
+  const customerFirstName = input.customer!.firstName.trim()
+  const customerLastName = input.customer!.lastName?.trim() || null
+  const customerName = [customerFirstName, customerLastName].filter(Boolean).join(" ")
   return {
     ok: true,
     parties: {
+      customerFirstName,
+      customerLastName,
       customerName,
       customerEmail: input.customer!.email.trim(),
       customerPhone: input.customer!.phone?.trim() || null,
@@ -441,6 +460,8 @@ async function createAdminTerminalPaymentIntent(
         bundle_line_count: "1",
         admin_profile_id: adminUserId,
         terminal_customer_name: parties.customerName,
+        terminal_customer_first_name: parties.customerFirstName,
+        ...(parties.customerLastName ? { terminal_customer_last_name: parties.customerLastName } : {}),
         terminal_customer_email: parties.customerEmail,
         ...(parties.customerPhone ? { terminal_customer_phone: parties.customerPhone } : {}),
         ...(parties.linkedBuyerId ? { buyer_id: parties.linkedBuyerId } : {}),

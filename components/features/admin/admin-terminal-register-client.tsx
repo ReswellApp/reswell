@@ -124,6 +124,7 @@ export function AdminTerminalRegisterClient() {
 
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pollStartedAt = useRef<number>(0)
+  const chargeAbortedRef = useRef(false)
 
   useEffect(() => {
     let active = true
@@ -269,6 +270,7 @@ export function AdminTerminalRegisterClient() {
   }
 
   function resetSale() {
+    chargeAbortedRef.current = true
     if (pollTimer.current) clearTimeout(pollTimer.current)
     setPhase("setup")
     setPaymentIntentId(null)
@@ -351,8 +353,11 @@ export function AdminTerminalRegisterClient() {
         return
       }
       const status = json?.data?.status as string | undefined
-      if (status === "canceled" || status === "requires_payment_method") {
-        toast.error("Payment didn't complete. Try again.")
+      // Terminal PIs stay at requires_payment_method until the card is tapped — not a failure.
+      if (status === "canceled") {
+        if (!chargeAbortedRef.current) {
+          toast.error("Payment didn't complete. Try again.")
+        }
         setPhase("setup")
         return
       }
@@ -368,6 +373,7 @@ export function AdminTerminalRegisterClient() {
       toast.error("No payment to settle")
       return
     }
+    chargeAbortedRef.current = false
     setSettlementError(null)
     setPhase("charging")
     pollStartedAt.current = Date.now()
@@ -403,6 +409,7 @@ export function AdminTerminalRegisterClient() {
       }
     }
 
+    chargeAbortedRef.current = false
     setPhase("charging")
     try {
       const payload =

@@ -10,6 +10,13 @@ const SOCIAL_PREVIEW_CRAWLER_UA_SUBSTRINGS = [
   "bingpreview",
   "googlebot",
   "googlebot-image",
+  /** Search Console URL inspection + Merchant landing-page checks */
+  "google-inspectiontool",
+  "googleother",
+  /** Ads / Shopping quality crawlers that fetch product images */
+  "adsbot-google",
+  "mediapartners-google",
+  "storebot-google",
 ] as const
 
 const BULK_MEDIA_CRAWLER_UA_SUBSTRINGS = [

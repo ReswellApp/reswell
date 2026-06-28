@@ -13,6 +13,29 @@ import {
  */
 const GOOGLE_MERCHANT_UNSUPPORTED_IMAGE_EXT = /\.(heic|heif|avif)$/i
 
+/**
+ * Accepted static image_link formats — must link directly to the file, not a resize script.
+ * @see https://support.google.com/merchants/answer/12157889
+ */
+const GOOGLE_MERCHANT_ACCEPTED_IMAGE_EXT = /\.(jpe?g|png|webp|gif|bmp|tiff?)$/i
+
+function googleMerchantImagePathOnly(raw: string): string {
+  const withoutQuery = raw.split("?")[0] ?? raw
+  try {
+    if (/^https?:\/\//i.test(withoutQuery)) {
+      return new URL(withoutQuery).pathname
+    }
+  } catch {
+    // fall through with path-only string
+  }
+  return withoutQuery
+}
+
+function googleMerchantImageNeedsTranscode(pathOnly: string): boolean {
+  if (GOOGLE_MERCHANT_UNSUPPORTED_IMAGE_EXT.test(pathOnly)) return true
+  return !GOOGLE_MERCHANT_ACCEPTED_IMAGE_EXT.test(pathOnly)
+}
+
 /** Best full-res storage URL for Merchant feeds — never a stored thumb when full exists. */
 export function googleMerchantListingImageSourceUrl(
   img: ListingImageForCard,
@@ -25,8 +48,14 @@ export function googleMerchantListingImageSourceUrl(
 /**
  * Absolute image_link for Google Merchant / Googlebot.
  *
- * Uses `/media/listings/...?variant=merchant` (≤1600px WebP, higher quality than PDP/tile)
- * sourced from the full-res object, not stored thumbs.
+ * Prefers a static `/media/listings/...-full.webp` passthrough (direct image file) so Google
+ * does not hit the on-demand `?variant=merchant` resize route, which can fail as
+ * "Image not processed" when serverless transcoding errors or times out.
+ *
+ * Falls back to `?variant=merchant` only when the stored object needs transcoding
+ * (HEIC/HEIF/AVIF or unknown extension).
+ *
+ * @see https://support.google.com/merchants/answer/12157889
  */
 export function googleMerchantListingImageUrl(
   raw: string | null | undefined,
@@ -34,13 +63,16 @@ export function googleMerchantListingImageUrl(
   if (!raw?.trim()) return null
 
   const trimmed = listingFullImageUrlFromRef(raw.trim()) ?? raw.trim()
+  const pathOnly = googleMerchantImagePathOnly(trimmed)
   const proxied = proxiedListingImageSrc(trimmed)
 
   if (proxied.startsWith(LISTING_MEDIA_PROXY_PATH_PREFIX)) {
-    return absoluteUrl(withListingMediaMerchantVariant(proxied))
+    if (googleMerchantImageNeedsTranscode(pathOnly)) {
+      return absoluteUrl(withListingMediaMerchantVariant(proxied))
+    }
+    return absoluteUrl(proxied)
   }
 
-  const pathOnly = trimmed.split("?")[0] ?? trimmed
   if (GOOGLE_MERCHANT_UNSUPPORTED_IMAGE_EXT.test(pathOnly)) {
     return null
   }
