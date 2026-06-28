@@ -5,12 +5,15 @@ import {
 } from "@/lib/listing-card-styles"
 import { cn } from "@/lib/utils"
 
+/** Fixed width for one homepage scroll tile (`sm:w-52` = 13rem). */
+export const homeScrollTileSmWidthClass = "sm:w-52"
+
 /**
  * Mobile tile width — use `svw` (small viewport) instead of `vw` so rows don’t exceed
  * the paintable layout on iOS / mobile Chrome (raw `100vw` often includes UI chrome).
  */
 const homeScrollTileMobileWidthClass =
-  "w-[calc((100svw-1rem-2.25rem)/2.25)] sm:w-52"
+  `w-[calc((100svw-1rem-2.25rem)/2.25)] ${homeScrollTileSmWidthClass}`
 
 /** ~2 full cards + peek of 3rd on mobile; fixed width from `sm` up. */
 export const homeListingScrollCardClass = cn(
@@ -73,3 +76,34 @@ export const homePeerListingGridCardClass = cn(
 
 export const homePeerListingGridImageSizes =
   "(max-width: 639px) 50vw, (max-width: 1023px) 33vw, (max-width: 1279px) 25vw, 20vw"
+
+/** Uniform 3×3 most-viewed mosaic — hero is the same tile size as the ring (center cell). */
+export const homeMostViewedMosaicDesktopGridClass =
+  "mx-auto hidden w-fit max-w-full grid-cols-3 items-start gap-2 sm:grid sm:[grid-template-columns:repeat(3,10rem)]"
+
+/** Compact most-viewed tiles — narrower than homepage scroll rows (`sm:w-40` vs `sm:w-52`). */
+export const homeMostViewedCompactTileWrapClass = cn(
+  "flex min-h-0 shrink-0 snap-start self-stretch flex-col",
+  "w-[calc((100svw-1rem-2rem)/2.2)] sm:w-40",
+)
+
+export const homeMostViewedCompactBodyClass =
+  "flex min-h-0 min-w-0 flex-1 flex-col px-2 pb-2 pt-2"
+
+export const homeMostViewedCompactTitleClass = cn(
+  listingTileTitleHeadingClassName,
+  "text-xs font-semibold leading-snug tracking-tight text-foreground line-clamp-2 sm:text-[13px]",
+)
+
+export const homeMostViewedCompactSubtitleClass =
+  "mt-0.5 text-[11px] font-normal leading-snug text-foreground/90"
+
+export const homeMostViewedCompactPriceClass =
+  "text-sm font-bold tabular-nums tracking-tight text-foreground"
+
+/** Fills one mosaic grid cell without fixed carousel width (prevents cell overflow). */
+export const homeMostViewedMosaicCellWrapClass = "min-w-0 w-full max-w-full overflow-hidden"
+
+/** Mobile fallback: hero on top, satellites in a 2-column compact grid. */
+export const homeMostViewedMosaicMobileGridClass =
+  "mx-auto grid w-fit max-w-full grid-cols-2 items-start gap-2 sm:hidden"

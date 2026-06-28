@@ -13,12 +13,37 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
-  // Supabase sometimes falls back to Site URL with ?code= on the homepage. Forward to
-  // `/auth/callback` so the server exchanges the PKCE code and can route new Google users
-  // to `/auth/google-sign-up-success`.
-  if (pathname !== "/auth/callback" && request.nextUrl.searchParams.has("code")) {
+  // Supabase sometimes falls back to Site URL with auth params on the homepage. Forward to
+  // the correct handler so server-side exchange / verifyOtp runs before any session probe.
+  const tokenHash = request.nextUrl.searchParams.get("token_hash")
+  const tokenType = request.nextUrl.searchParams.get("type")
+  if (
+    tokenHash &&
+    tokenType &&
+    pathname !== "/auth/callback" &&
+    pathname !== "/auth/confirm" &&
+    pathname !== "/auth/recovery"
+  ) {
     const url = request.nextUrl.clone()
-    url.pathname = "/auth/callback"
+    url.pathname =
+      tokenType === "recovery"
+        ? "/auth/recovery"
+        : tokenType === "email" ||
+            tokenType === "signup" ||
+            tokenType === "invite"
+          ? "/auth/confirm"
+          : "/auth/callback"
+    return NextResponse.redirect(url)
+  }
+
+  if (
+    pathname !== "/auth/callback" &&
+    pathname !== "/auth/recovery" &&
+    request.nextUrl.searchParams.has("code")
+  ) {
+    const url = request.nextUrl.clone()
+    url.pathname =
+      tokenType === "recovery" ? "/auth/recovery" : "/auth/callback"
     return NextResponse.redirect(url)
   }
 

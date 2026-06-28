@@ -23,15 +23,20 @@ export const listingDetailHorizontalStripBleedClassName =
 export function HomeListingScrollRow({
   children,
   uniformCardHeights = true,
+  tileWrapClassName = homeUniformScrollCarouselTileWrapClass,
+  rowGapClassName = "gap-3",
 }: {
   children: ReactNode
   /** Stretch all cards to the row height (surfboards, PDP similar rows, shop strip). */
   uniformCardHeights?: boolean
+  tileWrapClassName?: string
+  rowGapClassName?: string
 }) {
   const inner = (
     <div
       className={cn(
-        "flex w-max gap-3 pr-4 sm:pr-6 lg:pr-8 snap-x snap-proximity sm:snap-none",
+        "flex w-max pr-4 sm:pr-6 lg:pr-8 snap-x snap-proximity sm:snap-none",
+        rowGapClassName,
         uniformCardHeights && "min-h-0 items-stretch",
       )}
     >
@@ -39,7 +44,7 @@ export function HomeListingScrollRow({
         ? Children.map(children, (child, index) => (
             <div
               key={isValidElement(child) && child.key != null ? child.key : index}
-              className={homeUniformScrollCarouselTileWrapClass}
+              className={tileWrapClassName}
             >
               {child}
             </div>

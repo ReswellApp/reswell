@@ -1,4 +1,6 @@
+import { accessTokenIndicatesPasswordRecovery } from "@/lib/auth/access-token-password-recovery";
 import { passwordResetLandingPath } from "@/lib/auth/password-reset-landing-flag";
+import { exchangeAuthCodeWithRetry } from "@/lib/auth/exchange-auth-code-with-retry";
 import { isGoogleAuthUser } from "@/lib/auth/profile-completion";
 import {
   GOOGLE_NEW_SIGNUP_COOKIE,
@@ -6,9 +8,6 @@ import {
   shouldShowGoogleSignUpWelcome,
 } from "@/lib/auth/google-sign-up-welcome";
 import { safeRedirectPath } from "@/lib/auth/safe-redirect";
-import {
-  isTransientAuthNetworkError,
-} from "@/lib/auth/clear-supabase-auth-cookies";
 import { buildAuthCompletingPath, buildAuthCompletingUrl } from "@/lib/auth/build-auth-completing-url";
 import { copySupabaseAuthCookies } from "@/lib/auth/copy-supabase-auth-cookies";
 import { isRecoverableOAuthCodeExchangeError } from "@/lib/auth/is-recoverable-oauth-code-exchange-error";
@@ -21,34 +20,7 @@ import { trackKlaviyoNewAccountCreated } from "@/lib/klaviyo/track-new-account-c
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { type NextRequest, NextResponse, after } from "next/server";
-import type { SupabaseClient, User } from "@supabase/supabase-js";
-
-async function exchangeCodeWithRetry(
-  supabase: SupabaseClient,
-  code: string,
-): Promise<
-  Awaited<ReturnType<SupabaseClient["auth"]["exchangeCodeForSession"]>>
-> {
-  const maxAttempts = 5;
-
-  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const result = await supabase.auth.exchangeCodeForSession(code);
-    if (!result.error) return result;
-    if (isRecoverableOAuthCodeExchangeError(result.error)) {
-      return result;
-    }
-    if (
-      isTransientAuthNetworkError(result.error) &&
-      attempt < maxAttempts - 1
-    ) {
-      await new Promise((r) => setTimeout(r, 200 * (attempt + 1)));
-      continue;
-    }
-    return result;
-  }
-
-  return supabase.auth.exchangeCodeForSession(code);
-}
+import type { User } from "@supabase/supabase-js";
 
 function copyAuthCookies(
   from: NextResponse,
@@ -119,12 +91,17 @@ export async function GET(request: NextRequest) {
       request,
       redirectResponse,
     );
-    const { data, error } = await exchangeCodeWithRetry(supabase, code);
+    const { data, error } = await exchangeAuthCodeWithRetry(supabase, code);
     const sessionUser = data.session?.user;
     if (!error && sessionUser) {
+      const destination = accessTokenIndicatesPasswordRecovery(
+        data.session?.access_token,
+      )
+        ? passwordResetLandingPath()
+        : next;
       return buildOAuthSuccessRedirect(
         origin,
-        next,
+        destination,
         redirectResponse,
         sessionUser,
       );
@@ -139,9 +116,17 @@ export async function GET(request: NextRequest) {
       baseDelayMs: 100,
     });
     if (existingUser) {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      const destination = accessTokenIndicatesPasswordRecovery(
+        session?.access_token,
+      )
+        ? passwordResetLandingPath()
+        : next
       return buildOAuthSuccessRedirect(
         origin,
-        next,
+        destination,
         redirectResponse,
         existingUser,
       );

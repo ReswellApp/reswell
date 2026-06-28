@@ -7,6 +7,9 @@
  * (in DB order). When empty, the eight static fallbacks are used.
  */
 
+/** Static homepage hero backdrop (replaces the rotating slideshow). */
+export const HOME_HERO_BACKDROP_PATH = "/images/home/hero-backdrop.png"
+
 /** Default hero art when there are no recent listing images to show. */
 export const FALLBACK_HOME_HERO_SLIDE_PATHS = [
   "/images/home/hero-slide-1.png",

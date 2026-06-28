@@ -24,6 +24,7 @@ import {
   AUTH_MODAL_OR_EMAIL_LABEL_CLASS,
 } from "@/lib/auth/auth-modal-shell-classes"
 import { AuthTransitionShell } from "@/components/auth/auth-transition-shell"
+import { isEmailNotConfirmedError } from "@/lib/auth/is-email-not-confirmed-error"
 import { navigateAfterClientAuth } from "@/lib/auth/navigate-after-client-auth"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
@@ -50,6 +51,9 @@ export function LoginFormPanel({
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [needsEmailConfirm, setNeedsEmailConfirm] = useState(false)
+  const [resendSent, setResendSent] = useState(false)
+  const [resendLoading, setResendLoading] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [gate, setGate] = useState<"checking" | "ready" | "redirecting">("checking")
   const router = useRouter()
@@ -81,6 +85,8 @@ export function LoginFormPanel({
     const supabase = createClient()
     setIsLoading(true)
     setError(null)
+    setNeedsEmailConfirm(false)
+    setResendSent(false)
 
     try {
       const { error: signError } = await supabase.auth.signInWithPassword({
@@ -97,9 +103,55 @@ export function LoginFormPanel({
       await navigateAfterClientAuth(redirectTo, router)
     } catch (err: unknown) {
       setGate("ready")
+      if (isEmailNotConfirmedError(err)) {
+        setNeedsEmailConfirm(true)
+        setError(
+          "Confirm your email before signing in. Check your inbox for the link from Reswell, or resend it below.",
+        )
+        return
+      }
       setError(err instanceof Error ? err.message : "An error occurred")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleResendConfirmation = async () => {
+    const trimmedEmail = email.trim()
+    if (!trimmedEmail) {
+      setError("Enter your email address first.")
+      return
+    }
+
+    const supabase = createClient()
+    setResendLoading(true)
+    setError(null)
+    try {
+      let siteOrigin = window.location.origin
+      const devOverride = process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL?.trim()
+      if (devOverride && process.env.NODE_ENV === "development") {
+        try {
+          const u = new URL(devOverride.startsWith("http") ? devOverride : `https://${devOverride}`)
+          if (u.hostname === "localhost" || u.hostname === "127.0.0.1") {
+            siteOrigin = `${u.protocol}//${u.host}`
+          }
+        } catch {
+          /* keep window.location.origin */
+        }
+      }
+      const { error: resendError } = await supabase.auth.resend({
+        type: "signup",
+        email: trimmedEmail,
+        options: {
+          emailRedirectTo: `${siteOrigin}/auth/confirm?next=${encodeURIComponent(safeRedirectPath(redirectTo))}`,
+        },
+      })
+      if (resendError) throw resendError
+      setResendSent(true)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Could not resend confirmation email")
+    } finally {
+      setResendLoading(false)
     }
   }
 
@@ -173,6 +225,23 @@ export function LoginFormPanel({
               />
             </div>
             {error && <p className="text-sm text-neutral-700">{error}</p>}
+            {needsEmailConfirm ? (
+              <div className="flex flex-col gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled={resendLoading || resendSent}
+                  onClick={() => void handleResendConfirmation()}
+                >
+                  {resendLoading
+                    ? "Sending…"
+                    : resendSent
+                      ? "Confirmation email sent"
+                      : "Resend confirmation email"}
+                </Button>
+              </div>
+            ) : null}
             <Button
               type="submit"
               className="h-12 w-full rounded-full bg-listingHeart text-white hover:bg-[#2a4170]"

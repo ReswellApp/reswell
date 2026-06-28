@@ -11,6 +11,10 @@ import { computePeerCartPriceAction } from "@/lib/peer-listing-cart"
 import type { ListingImageForCard } from "@/lib/listing-image-display"
 import {
   homeListingScrollImageSizes,
+  homeMostViewedCompactBodyClass,
+  homeMostViewedCompactPriceClass,
+  homeMostViewedCompactSubtitleClass,
+  homeMostViewedCompactTitleClass,
   homePeerListingGridCardClass,
   homePeerListingGridImageSizes,
   homeUniformScrollBodyClass,
@@ -26,6 +30,7 @@ import { cn } from "@/lib/utils"
 
 /** Matches {@link ListingTileAddToCartServerIcon} footprint so every tile row aligns. */
 const homeScrollTileCartSlotClass = "inline-flex h-9 w-9 shrink-0"
+const homeCompactTileCartSlotClass = "inline-flex h-8 w-8 shrink-0"
 
 export type HomePeerScrollListing = {
   id: string
@@ -61,6 +66,7 @@ export function HomePeerListingScrollTile({
   showFavorites = true,
   onFavoritedChange,
   imagePriority = false,
+  compact = false,
 }: {
   listing: HomePeerScrollListing
   userId: string | null
@@ -78,6 +84,8 @@ export function HomePeerListingScrollTile({
   onFavoritedChange?: (favorited: boolean) => void
   /** Forwarded to ListingTile → ListingTileImageMedia — see its JSDoc for usage rules. */
   imagePriority?: boolean
+  /** Narrower tile typography for homepage “most viewed” mosaic / scroll strip. */
+  compact?: boolean
 }) {
   const cart = computePeerCartPriceAction(userId, {
     id: listing.id,
@@ -113,15 +121,19 @@ export function HomePeerListingScrollTile({
       linkLayout="unified"
       linkClassName={homeUniformScrollLinkClass}
       cardClassName={isGrid ? homePeerListingGridCardClass : homeUniformScrollCardClass}
-      cardContentClassName={homeUniformScrollBodyClass}
+      cardContentClassName={compact ? homeMostViewedCompactBodyClass : homeUniformScrollBodyClass}
       titleSlot={
         <div className={homeUniformScrollTitleSlotClass}>
-          <h3 className={homePeerListingTileTitleClass}>{capitalizeWords(listing.title)}</h3>
+          <h3 className={compact ? homeMostViewedCompactTitleClass : homePeerListingTileTitleClass}>
+            {capitalizeWords(listing.title)}
+          </h3>
         </div>
       }
       subtitle={
         conditionLine ? (
-          <p className={homePeerTileSubtitleClass}>{conditionLine}</p>
+          <p className={compact ? homeMostViewedCompactSubtitleClass : homePeerTileSubtitleClass}>
+            {conditionLine}
+          </p>
         ) : null
       }
       statusLabel={statusLabel}
@@ -129,11 +141,16 @@ export function HomePeerListingScrollTile({
       footerSlot={
         <div className={homeUniformScrollMetaFooterClass}>
           <div className="flex min-w-0 items-center justify-between gap-2">
-            <p className={homePeerTilePriceClass}>${Number(listing.price).toFixed(2)}</p>
+            <p className={compact ? homeMostViewedCompactPriceClass : homePeerTilePriceClass}>
+              ${Number(listing.price).toFixed(2)}
+            </p>
             {cart?.type === "addToCartServer" ? (
               <ListingTileAddToCartServerIcon listingId={cart.listingId} isLoggedIn={cart.isLoggedIn} />
             ) : (
-              <span className={cn(homeScrollTileCartSlotClass)} aria-hidden />
+              <span
+                className={cn(compact ? homeCompactTileCartSlotClass : homeScrollTileCartSlotClass)}
+                aria-hidden
+              />
             )}
           </div>
           {footerTrailing ?? null}

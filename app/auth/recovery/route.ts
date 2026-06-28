@@ -1,7 +1,8 @@
 import { buildAuthCompletingUrl } from "@/lib/auth/build-auth-completing-url"
+import { exchangeAuthCodeWithRetry } from "@/lib/auth/exchange-auth-code-with-retry"
+import { isRecoverableOAuthCodeExchangeError } from "@/lib/auth/is-recoverable-oauth-code-exchange-error"
 import { passwordResetLandingPath } from "@/lib/auth/password-reset-landing-flag"
-import { isNewOAuthAccount } from "@/lib/auth/is-new-oauth-account"
-import { trackKlaviyoNewAccountCreated } from "@/lib/klaviyo/track-new-account-created"
+import { waitForUserAfterOAuthExchange } from "@/lib/auth/wait-for-user-after-oauth-exchange"
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client"
 import { type NextRequest, NextResponse } from "next/server"
 
@@ -15,23 +16,31 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code")
   const token_hash = searchParams.get("token_hash")
   const type = searchParams.get("type")
+  const landing = passwordResetLandingPath()
 
   if (code) {
-    const redirectResponse = NextResponse.redirect(`${origin}${passwordResetLandingPath()}`)
+    const redirectResponse = NextResponse.redirect(`${origin}${landing}`)
     const supabase = createRouteHandlerSupabaseClient(request, redirectResponse)
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+    const { data, error } = await exchangeAuthCodeWithRetry(supabase, code)
     if (!error && data.session) {
-      const u = data.session.user
-      if (u && isNewOAuthAccount(u)) {
-        await trackKlaviyoNewAccountCreated(u, { supabaseForProfile: supabase })
-      }
+      redirectResponse.headers.set("Cache-Control", "private, no-store")
+      return redirectResponse
+    }
+
+    const pollAttempts =
+      error && isRecoverableOAuthCodeExchangeError(error) ? 32 : 24
+    const existingUser = await waitForUserAfterOAuthExchange(supabase, {
+      maxAttempts: pollAttempts,
+      baseDelayMs: 100,
+    })
+    if (existingUser) {
       redirectResponse.headers.set("Cache-Control", "private, no-store")
       return redirectResponse
     }
   }
 
   if (token_hash && type === "recovery") {
-    const redirectResponse = NextResponse.redirect(`${origin}${passwordResetLandingPath()}`)
+    const redirectResponse = NextResponse.redirect(`${origin}${landing}`)
     const supabase = createRouteHandlerSupabaseClient(request, redirectResponse)
     const { error } = await supabase.auth.verifyOtp({
       token_hash,
