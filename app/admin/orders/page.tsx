@@ -75,7 +75,7 @@ type OrderRow = {
   fulfillment_method: string | null
   created_at: string
   refunded_at: string | null
-  buyer_id: string
+  buyer_id: string | null
   seller_id: string
   is_admin_test: boolean
   buyer: PartyLabel | null
@@ -206,8 +206,20 @@ function StatTile({ icon: Icon, accent, label, value, hint }: StatTileProps) {
   )
 }
 
-function PartyCell({ party, fallbackId }: { party: PartyLabel | null; fallbackId: string }) {
-  const name = party?.display_name || party?.email || `User ${fallbackId.slice(0, 8)}`
+function PartyCell({
+  party,
+  fallbackId,
+  guestLabel = 'Walk-in customer',
+}: {
+  party: PartyLabel | null
+  fallbackId: string | null
+  guestLabel?: string
+}) {
+  const idHint = fallbackId?.slice(0, 8)
+  const name =
+    party?.display_name ||
+    party?.email ||
+    (idHint ? `User ${idHint}` : guestLabel)
   const avatarSrc = profileMediaDisplaySrc(party?.avatar_url)
   const initials = userInitials(party?.display_name ?? null, party?.email ?? null)
   return (
