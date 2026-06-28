@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   CreditCard,
   Loader2,
+  Monitor,
   Search,
   Terminal,
   User,
@@ -29,6 +30,7 @@ import {
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
+import { AdminTerminalCardCheckout } from "@/components/features/admin/admin-terminal-card-checkout"
 
 type TerminalReaderRef = {
   id: string
@@ -66,6 +68,7 @@ type ListingSearchHit = {
 
 type Phase = "setup" | "charging" | "settlement_failed" | "confirm"
 type CustomerMode = "guest" | "member"
+type PaymentMethod = "terminal" | "card"
 
 const POLL_INTERVAL_MS = 2500
 const POLL_TIMEOUT_MS = 90_000
@@ -100,6 +103,7 @@ export function AdminTerminalRegisterClient() {
   const [customerPhone, setCustomerPhone] = useState("")
 
   const [customerMode, setCustomerMode] = useState<CustomerMode>("guest")
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("terminal")
   const [memberSearch, setMemberSearch] = useState("")
   const [memberSearchDebounced, setMemberSearchDebounced] = useState("")
   const [memberHits, setMemberHits] = useState<AdminMarketplaceProfilePickerRow[]>([])
@@ -275,6 +279,31 @@ export function AdminTerminalRegisterClient() {
     setMemberSearchDebounced("")
     setMemberHits([])
   }
+
+  function handleOrderConfirmed(confirmedOrderId: string) {
+    setOrderId(confirmedOrderId)
+    setSettlementError(null)
+    setPhase("confirm")
+    toast.success("Order confirmed")
+  }
+
+  const checkoutPayload =
+    preview && customerMode === "member" && selectedMember
+      ? { listingId: preview.id, buyerId: selectedMember.id }
+      : preview && customerMode === "guest" && customerFirstName.trim() && customerEmail.trim()
+        ? {
+            listingId: preview.id,
+            customer: {
+              firstName: customerFirstName.trim(),
+              lastName: customerLastName.trim() || undefined,
+              email: customerEmail.trim(),
+              phone: customerPhone.trim() || undefined,
+            },
+          }
+        : null
+
+  const customerDetailsReady =
+    customerMode === "member" ? Boolean(selectedMember) : Boolean(customerFirstName.trim() && customerEmail.trim())
 
   function handleCustomerModeChange(mode: CustomerMode) {
     setCustomerMode(mode)
@@ -489,53 +518,55 @@ export function AdminTerminalRegisterClient() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Terminal className="h-5 w-5" />
-            Stripe Terminal
-          </CardTitle>
-          <CardDescription>
-            Ring up any marketplace listing on your S710 reader. Requires{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-xs">STRIPE_TERMINAL_LOCATION_ID</code>{" "}
-            in env with your reader registered to that location.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {readersError ? (
-            <p className="text-sm text-destructive">{readersError}</p>
-          ) : readers.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Looking for readers…</p>
-          ) : (
-            <div className="space-y-2">
-              <Label>Card reader</Label>
-              <Select
-                value={readerId}
-                onValueChange={setReaderId}
-                disabled={phase === "charging"}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select reader" />
-                </SelectTrigger>
-                <SelectContent>
-                  {readers.map((r) => (
-                    <SelectItem key={r.id} value={r.id}>
-                      {r.label}
-                      {r.deviceType ? ` · ${r.deviceType}` : ""}
-                      {r.status ? ` · ${r.status}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {terminalLocationId ? (
-                <p className="text-xs text-muted-foreground">
-                  Location: <code>{terminalLocationId}</code>
-                </p>
-              ) : null}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {paymentMethod === "terminal" ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Terminal className="h-5 w-5" />
+              Stripe Terminal
+            </CardTitle>
+            <CardDescription>
+              Ring up any marketplace listing on your S710 reader. Requires{" "}
+              <code className="rounded bg-muted px-1 py-0.5 text-xs">STRIPE_TERMINAL_LOCATION_ID</code>{" "}
+              in env with your reader registered to that location.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {readersError ? (
+              <p className="text-sm text-destructive">{readersError}</p>
+            ) : readers.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Looking for readers…</p>
+            ) : (
+              <div className="space-y-2">
+                <Label>Card reader</Label>
+                <Select
+                  value={readerId}
+                  onValueChange={setReaderId}
+                  disabled={phase === "charging"}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select reader" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {readers.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.label}
+                        {r.deviceType ? ` · ${r.deviceType}` : ""}
+                        {r.status ? ` · ${r.status}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {terminalLocationId ? (
+                  <p className="text-xs text-muted-foreground">
+                    Location: <code>{terminalLocationId}</code>
+                  </p>
+                ) : null}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>
@@ -825,43 +856,63 @@ export function AdminTerminalRegisterClient() {
       {preview ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Charge</CardTitle>
+            <CardTitle className="text-lg">Payment</CardTitle>
             <CardDescription>
-              In-person terminal sales charge the list price only. The S710 shows the listing title
-              and total on its screen before the customer taps their card.
+              Charge on your S710 reader or enter card details here. In-person admin sales settle
+              immediately with no pickup code — list price only, no shipping.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <Tabs
+              value={paymentMethod}
+              onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
+            >
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="terminal" disabled={phase === "charging"}>
+                  <Terminal className="mr-2 h-4 w-4" />
+                  Terminal tap
+                </TabsTrigger>
+                <TabsTrigger value="card" disabled={phase === "charging"}>
+                  <Monitor className="mr-2 h-4 w-4" />
+                  Card checkout
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+
             <p className="text-sm text-muted-foreground">
-              Total due on reader: <span className="font-semibold text-foreground">{money(chargeAmount)}</span>
+              Total due: <span className="font-semibold text-foreground">{money(chargeAmount)}</span>
             </p>
 
-            {phase === "charging" ? (
-              <div className="space-y-3">
-                <div className="flex items-center justify-center gap-2 rounded-lg border bg-muted/40 py-4 text-sm">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Follow the prompt on the S710 reader…
+            {paymentMethod === "terminal" ? (
+              phase === "charging" ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-center gap-2 rounded-lg border bg-muted/40 py-4 text-sm">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Follow the prompt on the S710 reader…
+                  </div>
+                  <Button variant="outline" className="w-full" onClick={() => void cancelCharge()}>
+                    <X className="mr-2 h-4 w-4" />
+                    Cancel
+                  </Button>
                 </div>
-                <Button variant="outline" className="w-full" onClick={() => void cancelCharge()}>
-                  <X className="mr-2 h-4 w-4" />
-                  Cancel
+              ) : (
+                <Button
+                  className="w-full"
+                  disabled={!readerId || !customerDetailsReady}
+                  onClick={() => void startCharge()}
+                >
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Charge {money(chargeAmount)} on reader
                 </Button>
-              </div>
+              )
             ) : (
-              <Button
-                className="w-full"
-                disabled={
-                  !preview ||
-                  !readerId ||
-                  (customerMode === "guest"
-                    ? !customerFirstName.trim() || !customerEmail.trim()
-                    : !selectedMember)
-                }
-                onClick={() => void startCharge()}
-              >
-                <CreditCard className="mr-2 h-4 w-4" />
-                Charge {money(chargeAmount)} on reader
-              </Button>
+              <AdminTerminalCardCheckout
+                listingId={preview.id}
+                amountUsd={chargeAmount}
+                checkoutPayload={checkoutPayload}
+                disabled={!customerDetailsReady || phase === "charging"}
+                onOrderConfirmed={handleOrderConfirmed}
+              />
             )}
           </CardContent>
         </Card>

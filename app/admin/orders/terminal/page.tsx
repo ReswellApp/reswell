@@ -4,8 +4,8 @@ import { privatePageMetadata } from "@/lib/site-metadata"
 import { AdminTerminalRegisterClient } from "@/components/features/admin/admin-terminal-register-client"
 
 export const metadata = privatePageMetadata({
-  title: "Terminal checkout — Admin — Reswell",
-  description: "Ring up marketplace listings with Stripe Terminal tap-to-pay.",
+  title: "In-person checkout — Admin — Reswell",
+  description: "Create in-person marketplace orders with Stripe Terminal or card checkout.",
   path: "/admin/orders/terminal",
 })
 
@@ -33,11 +33,11 @@ export default async function AdminTerminalCheckoutPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-headline text-3xl font-bold tracking-tight text-foreground">
-          Terminal checkout
+          In-person checkout
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Search any listing, charge list price on your S710, and link the sale to a walk-in guest or
-          an existing member account.
+          Search any listing, link it to a walk-in guest or existing member, and collect payment on
+          your S710 reader or via card checkout. Orders settle immediately with no pickup code.
         </p>
       </div>
       <AdminTerminalRegisterClient />

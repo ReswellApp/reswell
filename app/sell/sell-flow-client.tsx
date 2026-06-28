@@ -167,6 +167,7 @@ import {
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
 import { SellBoardFacetFields } from "@/components/features/sell/sell-board-facet-fields"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
+import { ListingVacationModeToggle } from "@/components/features/sell/listing-vacation-mode-toggle"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import {
   SellSectionNav,
@@ -940,6 +941,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const [editLoading, setEditLoading] = useState(!!editId)
   const [draftHydrated, setDraftHydrated] = useState(!!editId)
   const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
+  const [vacationMode, setVacationMode] = useState(false)
   const [signedInUserId, setSignedInUserId] = useState<string | null>(null)
   /** Guests exit to browse; signed-in sellers to their listings hub (`/listings` → dashboard). */
   const sellListingsHubHref = signedInUserId ? "/dashboard/listings" : "/boards"
@@ -1492,6 +1494,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       setEditListingOwnerId(listing.user_id as string)
       const st = (listing as { status?: string }).status
       setEditListingStatus(typeof st === "string" ? st : null)
+      setVacationMode((listing as { hidden_from_site?: boolean | null }).hidden_from_site === true)
       if (imp && imp.userId !== listing.user_id) {
         clearImpersonation()
         setImpersonation(null)
@@ -4045,6 +4048,13 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                     }
                   />
                   <Separator />
+                  {editId && !listingIsDraft ? (
+                    <ListingVacationModeToggle
+                      listingId={editId}
+                      initialVacationMode={vacationMode}
+                      onVacationModeChange={setVacationMode}
+                    />
+                  ) : null}
                 {publishPreview && !loading && (
                   <div
                     className={cn(

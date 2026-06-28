@@ -1,7 +1,7 @@
 import type Stripe from "stripe"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
-import { getStripe } from "@/lib/stripe-server"
+import { getStripe, getStripeCheckoutKeyConfigError } from "@/lib/stripe-server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import {
@@ -18,7 +18,10 @@ import {
   processPaymentOnReader,
   setTerminalReaderCartDisplay,
 } from "@/lib/services/stripeTerminal"
-import type { AdminTerminalSaleStartInput } from "@/lib/validations/adminTerminalSale"
+import type {
+  AdminTerminalSaleCheckoutInput,
+  AdminTerminalSaleStartInput,
+} from "@/lib/validations/adminTerminalSale"
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -84,6 +87,17 @@ export type AdminTerminalListingPreview = {
 export type StartAdminTerminalSaleResult =
   | { ok: true; paymentIntentId: string; readerId: string; amountUsd: number }
   | { ok: false; error: string; status: number }
+
+export type StartAdminTerminalCardCheckoutResult =
+  | { ok: true; paymentIntentId: string; clientSecret: string; amountUsd: number }
+  | { ok: false; error: string; status: number }
+
+type AdminTerminalSaleParties = {
+  customerName: string
+  customerEmail: string
+  customerPhone: string | null
+  linkedBuyerId?: string
+}
 
 export type FinalizeAdminTerminalSaleResult =
   | { ok: true; orderId: string; alreadyProcessed?: boolean }
@@ -324,6 +338,120 @@ async function resolveAdminTerminalMemberBuyer(
   }
 }
 
+async function resolveAdminTerminalSaleParties(
+  service: SupabaseClient,
+  input: Pick<AdminTerminalSaleStartInput, "buyerId" | "customer">,
+  sellerId: string,
+): Promise<
+  | { ok: true; parties: AdminTerminalSaleParties }
+  | { ok: false; error: string; status: number }
+> {
+  if (input.buyerId) {
+    const member = await resolveAdminTerminalMemberBuyer(service, input.buyerId, sellerId)
+    if (!member.ok) {
+      return { ok: false, error: member.error, status: member.status }
+    }
+    return {
+      ok: true,
+      parties: {
+        customerName: member.customerName,
+        customerEmail: member.customerEmail,
+        customerPhone: member.customerPhone,
+        linkedBuyerId: member.buyerId,
+      },
+    }
+  }
+
+  const customerName = [input.customer!.firstName.trim(), input.customer!.lastName?.trim()]
+    .filter(Boolean)
+    .join(" ")
+  return {
+    ok: true,
+    parties: {
+      customerName,
+      customerEmail: input.customer!.email.trim(),
+      customerPhone: input.customer!.phone?.trim() || null,
+    },
+  }
+}
+
+async function loadListingForAdminTerminalSale(
+  service: SupabaseClient,
+  listingId: string,
+): Promise<
+  | { ok: true; listing: AdminTerminalListingRow; totalUsd: number; amountCents: number }
+  | { ok: false; error: string; status: number }
+> {
+  const { data: listingRaw, error: listingErr } = await service
+    .from("listings")
+    .select(`${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT}, hidden_from_site, archived_at`)
+    .eq("id", listingId)
+    .maybeSingle()
+
+  if (listingErr || !listingRaw) {
+    return { ok: false, error: "Listing not found", status: 404 }
+  }
+
+  const listing = listingRaw as AdminTerminalListingRow
+  if (listing.archived_at) {
+    return { ok: false, error: "Listing is archived", status: 400 }
+  }
+  if (!["active", "pending_sale"].includes(listing.status)) {
+    return { ok: false, error: "Listing is not available for sale", status: 409 }
+  }
+  if (!isPeerListingSection(listing.section)) {
+    return { ok: false, error: "This listing cannot be sold through marketplace checkout", status: 400 }
+  }
+
+  const checkoutTotals = await computeAdminTerminalInPersonCheckoutUsd(service, listing)
+  if (!checkoutTotals.ok) {
+    return { ok: false, error: checkoutTotals.error, status: 422 }
+  }
+
+  const { totalUsd } = checkoutTotals.totals
+  const amountCents = Math.round(totalUsd * 100)
+  if (amountCents < 50) {
+    return { ok: false, error: "Amount is below the minimum charge", status: 400 }
+  }
+
+  return { ok: true, listing, totalUsd, amountCents }
+}
+
+async function createAdminTerminalPaymentIntent(
+  adminUserId: string,
+  listing: AdminTerminalListingRow,
+  amountCents: number,
+  parties: AdminTerminalSaleParties,
+  paymentMethodTypes: Array<"card" | "card_present">,
+): Promise<Stripe.PaymentIntent | null> {
+  const stripe = getStripe()
+  try {
+    return await stripe.paymentIntents.create({
+      amount: amountCents,
+      currency: "usd",
+      payment_method_types: paymentMethodTypes,
+      capture_method: "automatic",
+      description: `Admin in-person — ${listing.title ?? "listing"}`,
+      metadata: {
+        sales_channel: ADMIN_TERMINAL_SALES_CHANNEL,
+        listing_ids: listing.id,
+        listing_id: listing.id,
+        fulfillment: ADMIN_TERMINAL_FULFILLMENT,
+        amount_cents: String(amountCents),
+        bundle_line_count: "1",
+        admin_profile_id: adminUserId,
+        terminal_customer_name: parties.customerName,
+        terminal_customer_email: parties.customerEmail,
+        ...(parties.customerPhone ? { terminal_customer_phone: parties.customerPhone } : {}),
+        ...(parties.linkedBuyerId ? { buyer_id: parties.linkedBuyerId } : {}),
+      },
+    })
+  } catch (e) {
+    console.error("[adminTerminalSale] create payment intent failed", e)
+    return null
+  }
+}
+
 export async function startAdminTerminalSale(
   adminUserId: string,
   input: AdminTerminalSaleStartInput,
@@ -348,86 +476,24 @@ export async function startAdminTerminalSale(
     return { ok: false, error: "Server configuration error", status: 503 }
   }
 
-  const { data: listingRaw, error: listingErr } = await service
-    .from("listings")
-    .select(`${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT}, hidden_from_site, archived_at`)
-    .eq("id", input.listingId)
-    .maybeSingle()
+  const loaded = await loadListingForAdminTerminalSale(service, input.listingId)
+  if (!loaded.ok) return loaded
 
-  if (listingErr || !listingRaw) {
-    return { ok: false, error: "Listing not found", status: 404 }
+  const { listing, totalUsd, amountCents } = loaded
+
+  const partiesResult = await resolveAdminTerminalSaleParties(service, input, listing.user_id)
+  if (!partiesResult.ok) {
+    return { ok: false, error: partiesResult.error, status: partiesResult.status }
   }
 
-  const listing = listingRaw as AdminTerminalListingRow
-  if (listing.archived_at) {
-    return { ok: false, error: "Listing is archived", status: 400 }
-  }
-  if (!["active", "pending_sale"].includes(listing.status)) {
-    return { ok: false, error: "Listing is not available for sale", status: 409 }
-  }
-  if (!isPeerListingSection(listing.section)) {
-    return { ok: false, error: "This listing cannot be sold through marketplace checkout", status: 400 }
-  }
-
-  const checkoutTotals = await computeAdminTerminalInPersonCheckoutUsd(service, listing)
-  if (!checkoutTotals.ok) {
-    return { ok: false, error: checkoutTotals.error, status: 422 }
-  }
-
-  const { totalUsd } = checkoutTotals.totals
-
-  const amountCents = Math.round(totalUsd * 100)
-  if (amountCents < 50) {
-    return { ok: false, error: "Amount is below the minimum charge", status: 400 }
-  }
-
-  let customerName: string
-  let customerEmail: string
-  let customerPhone: string | null = null
-  let linkedBuyerId: string | undefined
-
-  if (input.buyerId) {
-    const member = await resolveAdminTerminalMemberBuyer(service, input.buyerId, listing.user_id)
-    if (!member.ok) {
-      return { ok: false, error: member.error, status: member.status }
-    }
-    linkedBuyerId = member.buyerId
-    customerName = member.customerName
-    customerEmail = member.customerEmail
-    customerPhone = member.customerPhone
-  } else {
-    customerName = [input.customer!.firstName.trim(), input.customer!.lastName?.trim()]
-      .filter(Boolean)
-      .join(" ")
-    customerEmail = input.customer!.email.trim()
-    customerPhone = input.customer!.phone?.trim() || null
-  }
-
-  const stripe = getStripe()
-  let pi: Stripe.PaymentIntent
-  try {
-    pi = await stripe.paymentIntents.create({
-      amount: amountCents,
-      currency: "usd",
-      payment_method_types: ["card_present"],
-      capture_method: "automatic",
-      description: `Admin terminal — ${listing.title ?? "listing"}`,
-      metadata: {
-        sales_channel: ADMIN_TERMINAL_SALES_CHANNEL,
-        listing_ids: listing.id,
-        listing_id: listing.id,
-        fulfillment: ADMIN_TERMINAL_FULFILLMENT,
-        amount_cents: String(amountCents),
-        bundle_line_count: "1",
-        admin_profile_id: adminUserId,
-        terminal_customer_name: customerName,
-        terminal_customer_email: customerEmail,
-        ...(customerPhone ? { terminal_customer_phone: customerPhone } : {}),
-        ...(linkedBuyerId ? { buyer_id: linkedBuyerId } : {}),
-      },
-    })
-  } catch (e) {
-    console.error("[adminTerminalSale] create payment intent failed", e)
+  const pi = await createAdminTerminalPaymentIntent(
+    adminUserId,
+    listing,
+    amountCents,
+    partiesResult.parties,
+    ["card_present"],
+  )
+  if (!pi) {
     return { ok: false, error: "Could not start the payment", status: 502 }
   }
 
@@ -448,7 +514,7 @@ export async function startAdminTerminalSale(
     console.error("[adminTerminalSale] process on reader failed", e)
     await cancelReaderAction(input.readerId)
     try {
-      await stripe.paymentIntents.cancel(pi.id)
+      await getStripe().paymentIntents.cancel(pi.id)
     } catch {
       // best-effort cleanup
     }
@@ -463,6 +529,55 @@ export async function startAdminTerminalSale(
     ok: true,
     paymentIntentId: pi.id,
     readerId: input.readerId,
+    amountUsd: totalUsd,
+  }
+}
+
+export async function startAdminTerminalCardCheckout(
+  adminUserId: string,
+  input: AdminTerminalSaleCheckoutInput,
+): Promise<StartAdminTerminalCardCheckoutResult> {
+  if (!process.env.STRIPE_SECRET_KEY?.trim()) {
+    return { ok: false, error: "Stripe is not configured", status: 503 }
+  }
+
+  const keyConfigError = getStripeCheckoutKeyConfigError()
+  if (keyConfigError) {
+    return { ok: false, error: keyConfigError, status: 503 }
+  }
+
+  let service: SupabaseClient
+  try {
+    service = createServiceRoleClient()
+  } catch {
+    return { ok: false, error: "Server configuration error", status: 503 }
+  }
+
+  const loaded = await loadListingForAdminTerminalSale(service, input.listingId)
+  if (!loaded.ok) return loaded
+
+  const { listing, totalUsd, amountCents } = loaded
+
+  const partiesResult = await resolveAdminTerminalSaleParties(service, input, listing.user_id)
+  if (!partiesResult.ok) {
+    return { ok: false, error: partiesResult.error, status: partiesResult.status }
+  }
+
+  const pi = await createAdminTerminalPaymentIntent(
+    adminUserId,
+    listing,
+    amountCents,
+    partiesResult.parties,
+    ["card"],
+  )
+  if (!pi?.client_secret) {
+    return { ok: false, error: "Could not start card checkout", status: 502 }
+  }
+
+  return {
+    ok: true,
+    paymentIntentId: pi.id,
+    clientSecret: pi.client_secret,
     amountUsd: totalUsd,
   }
 }

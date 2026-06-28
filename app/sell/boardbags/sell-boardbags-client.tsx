@@ -27,6 +27,7 @@ import { SellFormSection } from "@/components/features/sell/sell-form-section"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellBoardbagsFacetFields } from "@/components/features/sell/sell-boardbags-facet-fields"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
+import { ListingVacationModeToggle } from "@/components/features/sell/listing-vacation-mode-toggle"
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
 import {
   SellSectionNav,
@@ -182,6 +183,8 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
   const [submitting, setSubmitting] = useState(false)
   const [editLoading, setEditLoading] = useState(Boolean(editId))
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
+  const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
+  const [vacationMode, setVacationMode] = useState(false)
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
 
   const photosRef = useRef<PhotoSlot[]>([])
@@ -261,6 +264,8 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
       }
 
       setEditListingOwnerId(listing.user_id as string)
+      setEditListingStatus(String((listing as { status?: string }).status ?? ""))
+      setVacationMode((listing as { hidden_from_site?: boolean | null }).hidden_from_site === true)
       if (imp && imp.userId !== listing.user_id) {
         clearImpersonation()
       }
@@ -1255,6 +1260,13 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
                       </div>
                     }
                   />
+                  {editId && editListingStatus && editListingStatus !== "draft" ? (
+                    <ListingVacationModeToggle
+                      listingId={editId}
+                      initialVacationMode={vacationMode}
+                      onVacationModeChange={setVacationMode}
+                    />
+                  ) : null}
                   <Separator />
                   <Button
                     type="submit"

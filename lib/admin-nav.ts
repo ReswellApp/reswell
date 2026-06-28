@@ -109,7 +109,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     items: [
       { href: '/admin/orders', label: 'Orders', icon: 'shoppingBag' },
       { href: '/admin/orders/test-purchase', label: 'Test purchase', icon: 'shoppingBag' },
-      { href: '/admin/orders/terminal', label: 'Terminal checkout', icon: 'shoppingBag' },
+      { href: '/admin/orders/terminal', label: 'In-person checkout', icon: 'shoppingBag' },
       { href: '/admin/shipping', label: 'Shipping', icon: 'truck' },
     ],
   },

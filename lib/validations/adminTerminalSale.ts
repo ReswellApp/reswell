@@ -56,6 +56,33 @@ export const adminTerminalSaleStartSchema = z
 
 export type AdminTerminalSaleStartInput = z.infer<typeof adminTerminalSaleStartSchema>
 
+/** Card checkout from the admin register — same settlement as terminal, no reader required. */
+export const adminTerminalSaleCheckoutSchema = z
+  .object({
+    listingId: z.string().uuid(),
+    buyerId: z.string().uuid().optional(),
+    customer: adminTerminalCustomerSchema.optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.buyerId) return
+    if (!data.customer?.firstName?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "First name is required",
+        path: ["customer", "firstName"],
+      })
+    }
+    if (!data.customer?.email?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Customer email is required",
+        path: ["customer", "email"],
+      })
+    }
+  })
+
+export type AdminTerminalSaleCheckoutInput = z.infer<typeof adminTerminalSaleCheckoutSchema>
+
 export const adminTerminalSaleFinalizeSchema = z.object({
   paymentIntentId: z.string().trim().min(1),
 })

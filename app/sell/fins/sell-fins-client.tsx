@@ -28,6 +28,7 @@ import { SellFinsFacetFields } from "@/components/features/sell/sell-fins-facet-
 import { SellFinsCatalogSearch } from "@/components/features/sell/sell-fins-catalog-search"
 import type { FinCatalogSearchSelection } from "@/lib/types/fin-catalog-search"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
+import { ListingVacationModeToggle } from "@/components/features/sell/listing-vacation-mode-toggle"
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
 import {
   SellSectionNav,
@@ -235,6 +236,8 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
   const [submitting, setSubmitting] = useState(false)
   const [editLoading, setEditLoading] = useState(Boolean(editId))
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
+  const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
+  const [vacationMode, setVacationMode] = useState(false)
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
 
   const photosRef = useRef<PhotoSlot[]>([])
@@ -315,6 +318,8 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
       }
 
       setEditListingOwnerId(listing.user_id as string)
+      setEditListingStatus(String((listing as { status?: string }).status ?? ""))
+      setVacationMode((listing as { hidden_from_site?: boolean | null }).hidden_from_site === true)
       if (imp && imp.userId !== listing.user_id) {
         clearImpersonation()
       }
@@ -1463,6 +1468,13 @@ export default function SellFinsFlow({ editListingId = null }: { editListingId?:
                       </div>
                     }
                   />
+                  {editId && editListingStatus && editListingStatus !== "draft" ? (
+                    <ListingVacationModeToggle
+                      listingId={editId}
+                      initialVacationMode={vacationMode}
+                      onVacationModeChange={setVacationMode}
+                    />
+                  ) : null}
                   <Separator />
                   <Button
                     type="submit"

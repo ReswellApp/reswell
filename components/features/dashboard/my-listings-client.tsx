@@ -332,6 +332,11 @@ function ListingRow({
         {detailLine ? (
           <p className="mt-0.5 text-[13px] text-muted-foreground">{detailLine}</p>
         ) : null}
+        {listing.hidden_from_site && !isDraft && !isSold ? (
+          <p className="mt-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+            On vacation — hidden from site
+          </p>
+        ) : null}
         {!isDraft && listing.status !== "active" && !isSold ? (
           <p className="mt-0.5 text-[11px] capitalize text-muted-foreground">{listing.status}</p>
         ) : null}

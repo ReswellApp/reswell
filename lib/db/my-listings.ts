@@ -19,6 +19,7 @@ export type MyListingRow = {
   views: number
   created_at: string
   archived_at: string | null
+  hidden_from_site: boolean | null
   listing_images: MyListingImageRow[] | null
 }
 
@@ -36,7 +37,7 @@ export type FetchMyListingsResult = {
 }
 
 const MY_LISTINGS_SELECT =
-  "id, slug, title, price, status, section, condition, brand, model, views, created_at, archived_at, listing_images(url, thumbnail_url, is_primary)"
+  "id, slug, title, price, status, section, condition, brand, model, views, created_at, archived_at, hidden_from_site, listing_images(url, thumbnail_url, is_primary)"
 
 const EMPTY_STATS: MyListingsDashboardStats = {
   totalListings: 0,
