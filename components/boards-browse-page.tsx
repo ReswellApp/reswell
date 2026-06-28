@@ -55,6 +55,10 @@ import { cn } from "@/lib/utils"
 import { isUuidString } from "@/lib/utils/isUuid"
 import { haversineMi } from "@/lib/db/boards-browse-listings"
 import { facetSelectionsFromParams } from "@/lib/boards-browse-facets"
+import {
+  boardsBrowseEffectiveSort,
+  boardsBrowseHasSidebarFilters,
+} from "@/lib/boards-browse-sidebar-filters"
 
 async function BoardsBrowseAdminCuratorGate() {
   const { supabase, user } = await getCachedRequestSession()
@@ -100,7 +104,9 @@ async function BoardListings({
 
   const boardType = searchParams.type || "all"
   const condition = searchParams.condition || "all"
-  const sort = searchParams.sort || BOARDS_BROWSE_DEFAULT_SORT
+  const rawSort = searchParams.sort || BOARDS_BROWSE_DEFAULT_SORT
+  const hasSidebarFilters = boardsBrowseHasSidebarFilters(searchParams)
+  const sort = boardsBrowseEffectiveSort(rawSort, hasSidebarFilters)
   const query = searchParams.q || ""
   const brand = searchParams.brand || ""
   const model = searchParams.model || ""

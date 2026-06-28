@@ -20,6 +20,7 @@ import {
   siteSearchInputClassName,
 } from "@/components/site-search-bar"
 import { BOARDS_BROWSE_DEFAULT_SORT, BOARDS_BROWSE_NEWEST_SORT } from "@/lib/marketplace-slug-metadata"
+import { cn } from "@/lib/utils"
 
 export const boardSortOptions = [
   { value: BOARDS_BROWSE_DEFAULT_SORT, label: "Top Picks" },
@@ -198,7 +199,12 @@ export function BoardsBrowseFilterToolbar({
             </button>
           </div>
 
-          <div className="min-w-0 flex-1 md:order-3 md:w-[150px] md:flex-none md:shrink-0">
+          <div
+            className={cn(
+              "min-w-0 flex-1 md:order-3 md:w-[150px] md:flex-none md:shrink-0",
+              activeFilterCount > 0 && "hidden",
+            )}
+          >
             {sortSelect}
           </div>
         </div>
