@@ -48,8 +48,8 @@ function flattenResults(results: BoardTalkSearchSuggestResult | null): DropdownI
 }
 
 /**
- * Board Talk directory search with typeahead. Shows matching posts and comments in a
- * dropdown; Enter without a highlighted row submits GET `/board-talk?q=…`.
+ * Threads directory search with typeahead. Shows matching posts and comments in a
+ * dropdown; Enter without a highlighted row submits GET `/threads?q=…`.
  */
 export function BoardTalkSearch({
   defaultValue = "",
@@ -174,7 +174,7 @@ export function BoardTalkSearch({
       if (!slug) return
       invalidatePending()
       setOpen(false)
-      router.push(`/board-talk/${encodeURIComponent(slug)}`)
+      router.push(`/threads/${encodeURIComponent(slug)}`)
     },
     [router, invalidatePending],
   )
@@ -185,7 +185,7 @@ export function BoardTalkSearch({
       invalidatePending()
       setOpen(false)
       router.push(
-        `/board-talk/${encodeURIComponent(threadSlug)}#comment-${encodeURIComponent(commentId)}`,
+        `/threads/${encodeURIComponent(threadSlug)}#comment-${encodeURIComponent(commentId)}`,
       )
     },
     [router, invalidatePending],
@@ -197,10 +197,10 @@ export function BoardTalkSearch({
       setOpen(false)
       const t = term.trim()
       if (!t) {
-        router.push("/board-talk")
+        router.push("/threads")
         return
       }
-      router.push(`/board-talk?q=${encodeURIComponent(t)}`)
+      router.push(`/threads?q=${encodeURIComponent(t)}`)
     },
     [router, invalidatePending],
   )
@@ -248,7 +248,7 @@ export function BoardTalkSearch({
         ref={dropdownRef}
         id={listId}
         role="listbox"
-        aria-label="Board Talk matches"
+        aria-label="Threads matches"
         className="fixed z-[100] overflow-hidden rounded-2xl border border-border/80 bg-popover text-popover-foreground shadow-xl shadow-black/10"
         style={{
           top: dropdownRect.top,
@@ -259,7 +259,7 @@ export function BoardTalkSearch({
       >
         <div className="flex items-center justify-between border-b border-border/60 bg-muted/20 px-4 py-2.5">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Board Talk
+            Threads
           </p>
           <p className="text-xs text-muted-foreground">Press Enter to search all results</p>
         </div>
@@ -359,7 +359,7 @@ export function BoardTalkSearch({
       <form onSubmit={handleSubmit}>
         <SiteSearchShell
           actionSlot={
-            <SiteSearchFormSubmitButton type="submit" aria-label="Search Board Talk">
+            <SiteSearchFormSubmitButton type="submit" aria-label="Search Threads">
               Search
             </SiteSearchFormSubmitButton>
           }
@@ -406,7 +406,7 @@ export function BoardTalkSearch({
               }
             }}
             placeholder={placeholder}
-            aria-label="Search Board Talk"
+            aria-label="Search Threads"
             aria-autocomplete="list"
             aria-expanded={showDropdown}
             aria-controls={showDropdown ? listId : undefined}
@@ -429,7 +429,7 @@ export function BoardTalkSearch({
                 setValue("")
                 setResults(null)
                 setOpen(false)
-                router.push("/board-talk")
+                router.push("/threads")
               }}
             >
               <X className="h-4 w-4" />

@@ -20,7 +20,7 @@ export async function submitBoardModelReview(input: SubmitBoardModelReviewInput)
   const result = await submitBoardModelReviewService(supabase, user.id, input)
 
   if ("success" in result && result.success) {
-    revalidatePath("/board-talk/reviews")
+    revalidatePath("/threads/reviews")
     return { success: true as const }
   }
 

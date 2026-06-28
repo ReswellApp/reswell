@@ -11,8 +11,8 @@ export type JamboardsLandingProps = {
 
 export function JamboardsLanding({ threads, userId }: JamboardsLandingProps) {
   const newPostHref = userId
-    ? "/board-talk/new"
-    : `/auth/login?redirect=${encodeURIComponent("/board-talk/new")}`
+    ? "/threads/new"
+    : `/auth/login?redirect=${encodeURIComponent("/threads/new")}`
 
   return (
     <main className="flex-1">
@@ -27,8 +27,8 @@ export function JamboardsLanding({ threads, userId }: JamboardsLandingProps) {
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button size="lg" asChild>
-                <Link href="/board-talk">
-                  Join Reswell Board Talk
+                <Link href="/threads">
+                  Join Reswell Threads
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>

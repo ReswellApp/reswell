@@ -255,7 +255,7 @@ export default function AdminToolsPage() {
             icon={Search}
             accent="emerald"
             title="Reindex search"
-            description="Rebuild the Elasticsearch listing, brand, and seller directory indexes used across search and typeahead."
+            description="Rebuild the Elasticsearch listing, brand, seller, and Threads forum indexes used across search and typeahead."
             result={results.reindex}
           >
             <Button variant="outline" onClick={() => void runReindex()} disabled={running !== null}>

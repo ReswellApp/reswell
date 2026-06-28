@@ -137,8 +137,8 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     // Bare `/search` redirects when empty — canonical bookmark is `/search/recent`.
     { url: `${BASE}/search/recent`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
     { url: `${BASE}/brands`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
-    { url: `${BASE}/board-talk`, lastModified: now, changeFrequency: "daily", priority: 0.5 },
-    { url: `${BASE}/board-talk/reviews`, lastModified: now, changeFrequency: "daily", priority: 0.45 },
+    { url: `${BASE}/threads`, lastModified: now, changeFrequency: "daily", priority: 0.5 },
+    { url: `${BASE}/threads/reviews`, lastModified: now, changeFrequency: "daily", priority: 0.45 },
     { url: `${BASE}/jamboards`, lastModified: now, changeFrequency: "daily", priority: 0.5 },
     { url: `${BASE}/sellers`, lastModified: now, changeFrequency: "weekly", priority: 0.4 },
     { url: `${BASE}/collections`, lastModified: now, changeFrequency: "weekly", priority: 0.45 },

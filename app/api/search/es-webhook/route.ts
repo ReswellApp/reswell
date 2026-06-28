@@ -5,13 +5,17 @@ import {
   syncListingToIndex,
 } from "@/lib/elasticsearch/listings-index"
 import {
+  deleteForumThreadDocument,
+  syncForumThreadToIndex,
+} from "@/lib/elasticsearch/forum-threads-index"
+import {
   deleteSellerDocument,
   syncProfileToSellerIndex,
 } from "@/lib/elasticsearch/sellers-index"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 
-type WebhookRecord = { id?: string; user_id?: string }
+type WebhookRecord = { id?: string; user_id?: string; thread_id?: string }
 
 type WebhookBody = {
   type?: string
@@ -31,6 +35,8 @@ type WebhookBody = {
  *   - `listings` → listings index; also resync the listing owner's sellers doc
  *     (active-listing eligibility changes when a listing flips active/archived/hidden).
  *   - `profiles` → sellers index (shops + sellers with active listings).
+ *   - `forum_threads` → forum threads index (Threads search).
+ *   - `forum_comments` → re-sync parent thread (comment text in index).
  */
 export async function POST(request: NextRequest) {
   const secret = process.env.SUPABASE_ES_WEBHOOK_SECRET
@@ -105,6 +111,39 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ ok: true, ignored: true })
         }
         await syncProfileToSellerIndex(supabase, id)
+        return NextResponse.json({ ok: true, action: "synced" })
+      }
+
+      return NextResponse.json({ ok: true, ignored: true })
+    }
+
+    if (body.table === "forum_threads") {
+      if (body.type === "DELETE") {
+        const id = body.old_record?.id
+        if (id) await deleteForumThreadDocument(id)
+        return NextResponse.json({ ok: true, action: "deleted" })
+      }
+
+      if (body.type === "INSERT" || body.type === "UPDATE") {
+        const id = body.record?.id
+        if (!id) return NextResponse.json({ ok: true, ignored: true })
+        await syncForumThreadToIndex(supabase, id)
+        return NextResponse.json({ ok: true, action: "synced" })
+      }
+
+      return NextResponse.json({ ok: true, ignored: true })
+    }
+
+    if (body.table === "forum_comments") {
+      const threadId = body.record?.thread_id ?? body.old_record?.thread_id ?? null
+
+      if (body.type === "DELETE") {
+        if (threadId) await syncForumThreadToIndex(supabase, threadId)
+        return NextResponse.json({ ok: true, action: "synced" })
+      }
+
+      if (body.type === "INSERT" || body.type === "UPDATE") {
+        if (threadId) await syncForumThreadToIndex(supabase, threadId)
         return NextResponse.json({ ok: true, action: "synced" })
       }
 

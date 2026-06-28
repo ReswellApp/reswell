@@ -516,8 +516,8 @@ export default function AdminSettingsPage() {
               <div>
                 <h3 className="font-semibold text-foreground">Search index (Elasticsearch)</h3>
                 <p className="mt-0.5 max-w-xl text-xs text-muted-foreground">
-                  Rebuild listing search plus the brand &amp; seller directory indexes used by the sell-form and
-                  nav typeahead. Run after deploying Elasticsearch or if results look stale.
+                  Rebuild listing search plus the brand, seller, and Threads forum indexes used by
+                  nav typeahead and /threads search. Run after deploying Elasticsearch or if results look stale.
                 </p>
                 {reindexSummary ? (
                   <div className="mt-3 flex flex-wrap gap-1.5">

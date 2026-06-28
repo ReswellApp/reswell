@@ -16,7 +16,7 @@ const PAGE_SIZE = 1000
 const MAX_URLS = 20_000
 
 /**
- * Board Talk thread URLs (`/board-talk/[slug]`).
+ * Board Talk thread URLs (`/threads/[slug]`).
  */
 export async function fetchForumThreadSitemapEntries(
   supabase: SupabaseClient,
@@ -46,7 +46,7 @@ export async function fetchForumThreadSitemapEntries(
       const slug = row.slug?.trim()
       if (!slug) continue
       entries.push({
-        path: `/board-talk/${slug}`,
+        path: `/threads/${slug}`,
         lastModified: row.updated_at ? new Date(row.updated_at) : new Date(),
       })
     }

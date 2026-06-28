@@ -2,13 +2,17 @@
 
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
-import { createClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import {
   deleteForumCommentWithAuth,
   deleteForumThreadAsModerator,
 } from "@/lib/services/forumModeration"
 import { sendForumCommentMediaMessage } from "@/lib/services/sendForumCommentMedia"
 import { forumCommentAttachmentInputSchema, type SentForumCommentMedia } from "@/lib/validations/forum-comment-attachment"
+import {
+  deleteForumThreadDocument,
+  syncForumThreadToIndex,
+} from "@/lib/elasticsearch/forum-threads-index"
 
 const idSchema = z.string().uuid()
 
@@ -53,8 +57,15 @@ export async function sendForumCommentMediaReply(input: {
     return { error: result.error }
   }
 
-  revalidatePath("/board-talk")
-  revalidatePath(`/board-talk/${parsed.data.thread_slug}`)
+  try {
+    const service = createServiceRoleClient()
+    await syncForumThreadToIndex(service, parsed.data.thread_id)
+  } catch (err) {
+    console.error("[forum] sync thread index after media comment:", err)
+  }
+
+  revalidatePath("/threads")
+  revalidatePath(`/threads/${parsed.data.thread_slug}`)
 
   return { comment: result.comment as SentForumCommentMedia }
 }
@@ -81,7 +92,13 @@ export async function deleteForumThreadAction(
     return { error: result.error }
   }
 
-  revalidatePath("/board-talk")
+  try {
+    await deleteForumThreadDocument(parsed.data)
+  } catch (err) {
+    console.error("[forum] delete thread from index:", err)
+  }
+
+  revalidatePath("/threads")
   return { success: true }
 }
 
@@ -109,7 +126,19 @@ export async function deleteForumCommentAction(
     return { error: result.error }
   }
 
-  revalidatePath("/board-talk")
-  revalidatePath(`/board-talk/${slug}`)
+  try {
+    const service = createServiceRoleClient()
+    const { data: thread } = await service
+      .from("forum_threads")
+      .select("id")
+      .eq("slug", slug)
+      .maybeSingle()
+    if (thread?.id) await syncForumThreadToIndex(service, thread.id)
+  } catch (err) {
+    console.error("[forum] sync thread index after comment delete:", err)
+  }
+
+  revalidatePath("/threads")
+  revalidatePath(`/threads/${slug}`)
   return { success: true }
 }

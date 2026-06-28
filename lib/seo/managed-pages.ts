@@ -307,15 +307,15 @@ export const MANAGED_PAGES: ManagedPage[] = [
     ogImageUrl:
       "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/09ed732a-af8d-40fa-ae45-a9c5d0206122.jpg",
   }),
-  page("board-talk", "content", "Board Talk forum", {
-    title: "Board Talk — Reswell",
+  page("board-talk", "content", "Threads forum", {
+    title: "Threads — Reswell",
     description: "Community posts, Q&A, and surfboard discussions — join the conversation.",
-    path: "/board-talk",
+    path: "/threads",
   }),
   page("board-talk-reviews", "content", "Board reviews", {
-    title: "Board Reviews — Board Talk · Reswell",
+    title: "Board Reviews — Threads · Reswell",
     description: "Community ratings and reviews for surfboard models in the Reswell catalog.",
-    path: "/board-talk/reviews",
+    path: "/threads/reviews",
   }),
   page("jamboards", "content", "Jamboards", {
     title: "Jamboards Alternative — Reswell community",

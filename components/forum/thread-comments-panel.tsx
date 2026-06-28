@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Reply, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -14,8 +14,9 @@ import {
 import { createClient } from "@/lib/supabase/client"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { CommentLikeButton } from "@/components/forum/comment-like-button"
+import { LinkifiedText } from "@/components/forum/linkified-text"
+import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -55,23 +56,18 @@ function displayName(row: ThreadCommentRow) {
   return row.profiles?.display_name?.trim() || "Member"
 }
 
-/** After DOM updates, scroll so the new comment is in view (clears temp scroll-margin after animation). */
-function scrollPostedCommentIntoView(
-  commentId: string,
-  composerBarEl: HTMLElement | null,
-) {
+/** After DOM updates, scroll the new comment into view. */
+function scrollPostedCommentIntoView(commentId: string) {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       const el = document.getElementById(`comment-${commentId}`)
       if (!el) return
-      const barH = composerBarEl ? Math.ceil(composerBarEl.getBoundingClientRect().height) : 0
-      const marginBottom = Math.max(barH + 16, 120)
-      el.style.scrollMarginBottom = `${marginBottom}px`
-      el.style.scrollMarginTop = "72px"
+      el.style.scrollMarginTop = "5rem"
+      el.style.scrollMarginBottom = "1rem"
       el.scrollIntoView({ behavior: "smooth", block: "nearest" })
       window.setTimeout(() => {
-        el.style.scrollMarginBottom = ""
         el.style.scrollMarginTop = ""
+        el.style.scrollMarginBottom = ""
       }, 1800)
     })
   })
@@ -95,18 +91,14 @@ export function ThreadCommentsPanel({
   const [replyingToId, setReplyingToId] = useState<string | null>(null)
   const [replyBody, setReplyBody] = useState("")
   const [replySubmitting, setReplySubmitting] = useState(false)
-  /** Short inline confirmation under the fixed composer (reply UI closes on success, so replies flash here too). */
+  /** Short inline confirmation after posting. */
   const [postedHint, setPostedHint] = useState<string | null>(null)
   const postedHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [composerBarHeight, setComposerBarHeight] = useState(104)
-  /** While true, bar is fixed to the viewport; when the thread card ends on screen, pin to article bottom instead (no overlap with site footer). */
-  const [composerFixedToViewport, setComposerFixedToViewport] = useState(true)
-  /** Fixed mode: pin horizontal geometry to the thread `<article>` so the bar never spans the full viewport. */
-  const [articleDockRect, setArticleDockRect] = useState<{ left: number; width: number } | null>(null)
+
+  const openSignIn = useSignInGate()
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const replyTextareaRef = useRef<HTMLTextAreaElement>(null)
-  const composerBarRef = useRef<HTMLDivElement>(null)
 
   const topLevel = useMemo(() => {
     return comments
@@ -129,37 +121,7 @@ export function ThreadCommentsPanel({
   }, [comments])
 
   const replyCount = comments.length - topLevel.length
-
-  useLayoutEffect(() => {
-    const el = composerBarRef.current
-    if (!el) return
-    const measure = () => setComposerBarHeight(Math.ceil(el.getBoundingClientRect().height))
-    measure()
-    const ro = new ResizeObserver(measure)
-    ro.observe(el)
-    return () => ro.disconnect()
-  }, [isLoggedIn])
-
-  useLayoutEffect(() => {
-    const bar = composerBarRef.current
-    const article = bar?.closest("article")
-    if (!bar || !article) return
-
-    function syncComposerLayout() {
-      const ab = article.getBoundingClientRect()
-      const h = window.innerHeight
-      setArticleDockRect({ left: Math.round(ab.left), width: Math.round(ab.width) })
-      setComposerFixedToViewport(ab.bottom > h - 0.5)
-    }
-
-    syncComposerLayout()
-    window.addEventListener("scroll", syncComposerLayout, { passive: true })
-    window.addEventListener("resize", syncComposerLayout)
-    return () => {
-      window.removeEventListener("scroll", syncComposerLayout)
-      window.removeEventListener("resize", syncComposerLayout)
-    }
-  }, [isLoggedIn, comments.length])
+  const composerFirst = topLevel.length === 0
 
   useEffect(() => {
     if (!replyingToId) return
@@ -225,7 +187,7 @@ export function ThreadCommentsPanel({
       flashPosted("Posted")
     }
 
-    scrollPostedCommentIntoView(comment.id, composerBarRef.current)
+    scrollPostedCommentIntoView(comment.id)
   }
 
   function renderCommentBody(comment: ThreadCommentRow) {
@@ -241,7 +203,7 @@ export function ThreadCommentsPanel({
     }
     return (
       <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-foreground sm:text-[15px]">
-        {comment.body}
+        <LinkifiedText text={comment.body} />
       </p>
     )
   }
@@ -260,7 +222,7 @@ export function ThreadCommentsPanel({
     }
     return (
       <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-        {comment.body}
+        <LinkifiedText text={comment.body} />
       </p>
     )
   }
@@ -309,7 +271,7 @@ export function ThreadCommentsPanel({
         setBody("")
         setSubmitting(false)
         flashPosted(`Posted as ${impersonation.displayName}`)
-        scrollPostedCommentIntoView(newId, composerBarRef.current)
+        scrollPostedCommentIntoView(newId)
         return
       }
     }
@@ -354,7 +316,7 @@ export function ThreadCommentsPanel({
     setBody("")
     setSubmitting(false)
     flashPosted("Posted")
-    scrollPostedCommentIntoView(newId, composerBarRef.current)
+    scrollPostedCommentIntoView(newId)
   }
 
   async function submitReply(parentId: string) {
@@ -406,7 +368,7 @@ export function ThreadCommentsPanel({
         setReplyingToId(null)
         setReplySubmitting(false)
         flashPosted(`Reply posted as ${impersonation.displayName}`)
-        scrollPostedCommentIntoView(newId, composerBarRef.current)
+        scrollPostedCommentIntoView(newId)
         return
       }
     }
@@ -452,7 +414,7 @@ export function ThreadCommentsPanel({
     setReplyingToId(null)
     setReplySubmitting(false)
     flashPosted("Reply posted")
-    scrollPostedCommentIntoView(newId, composerBarRef.current)
+    scrollPostedCommentIntoView(newId)
   }
 
   function onMainTextareaKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -509,323 +471,323 @@ export function ThreadCommentsPanel({
 
   const mainRemaining = MAX_LEN - body.length
   const replyRemaining = MAX_LEN - replyBody.length
-  const bottomPad = Math.max(composerBarHeight, 1)
+
+  function renderComposer() {
+    return (
+      <div
+        id="thread-composer"
+        className="border-t border-border/60 bg-muted/15 px-5 py-5 sm:px-6 sm:py-6"
+        role="region"
+        aria-label="Post a reply"
+      >
+        <div className="mb-3">
+          <h2 className="text-base font-semibold text-foreground">Post a reply</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Share a thought, link, or photo — replies appear below.
+          </p>
+        </div>
+        {isLoggedIn ? (
+          <form onSubmit={(e) => void submitTopLevel(e)} className="space-y-3">
+            <Textarea
+              ref={textareaRef}
+              value={body}
+              onChange={(e) => {
+                setBody(e.target.value.slice(0, MAX_LEN))
+                if (postedHint) {
+                  setPostedHint(null)
+                  if (postedHintTimerRef.current) {
+                    window.clearTimeout(postedHintTimerRef.current)
+                    postedHintTimerRef.current = null
+                  }
+                }
+              }}
+              onKeyDown={onMainTextareaKeyDown}
+              placeholder="Write your reply…"
+              rows={4}
+              className="min-h-[6.5rem] resize-y border-border/80 bg-background text-sm leading-relaxed"
+              maxLength={MAX_LEN}
+              aria-label="Write a reply"
+            />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <span
+                className={cn(
+                  "text-xs tabular-nums text-muted-foreground",
+                  mainRemaining < 200 && "font-medium text-amber-700 dark:text-amber-400",
+                )}
+              >
+                {mainRemaining} characters left
+              </span>
+              <div className="flex items-center gap-2">
+                <ForumCommentMediaSendButton
+                  threadId={threadId}
+                  threadSlug={threadSlug}
+                  caption={body}
+                  disabled={submitting}
+                  onSent={(comment) => void handleMediaSent(comment, null)}
+                />
+                <Button
+                  type="submit"
+                  disabled={submitting || !body.trim()}
+                  className="min-h-touch rounded-md px-6"
+                >
+                  {submitting ? "Posting…" : "Post reply"}
+                </Button>
+              </div>
+            </div>
+            {postedHint ? (
+              <p
+                className="text-xs font-medium text-emerald-600 dark:text-emerald-400"
+                role="status"
+                aria-live="polite"
+              >
+                {postedHint}
+              </p>
+            ) : null}
+          </form>
+        ) : (
+          <div className="flex flex-col gap-3 rounded-lg border border-dashed border-border/70 bg-background/80 px-4 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-muted-foreground">
+              Log in to join the conversation — everyone can read threads for free.
+            </p>
+            <Button type="button" className="shrink-0 rounded-md px-5" onClick={() => openSignIn(null)}>
+              Log in to reply
+            </Button>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  function renderRepliesList() {
+    if (topLevel.length === 0) {
+      if (composerFirst) return null
+      return (
+        <p className="px-5 py-8 text-center text-sm text-muted-foreground sm:px-6">
+          No replies yet — be the first to jump in.
+        </p>
+      )
+    }
+
+    return (
+      <ul className="divide-y divide-border/50">
+        {topLevel.map((c) => {
+          const name = displayName(c)
+          const initial = name.charAt(0).toUpperCase()
+          const mine = currentUserId != null && c.user_id === currentUserId
+          const showDelete = canDeleteComment(c.user_id)
+          const nested = repliesByParent.get(c.id) ?? []
+          return (
+            <li
+              key={c.id}
+              id={`comment-${c.id}`}
+              className="scroll-mt-20 px-5 py-5 sm:px-6"
+            >
+              <div className="flex gap-3 sm:gap-4">
+                <Avatar className="h-9 w-9 shrink-0 ring-2 ring-background sm:h-10 sm:w-10">
+                  <AvatarImage
+                    src={profileMediaDisplaySrc(c.profiles?.avatar_url || "")}
+                    alt=""
+                  />
+                  <AvatarFallback className="text-xs">{initial}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    <span className="text-sm font-semibold text-foreground">{name}</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="cursor-default text-xs text-muted-foreground tabular-nums">
+                          {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="text-xs">
+                        {new Date(c.created_at).toLocaleString()}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  {renderCommentBody(c)}
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <CommentLikeButton
+                      commentId={c.id}
+                      initialCount={likeCount(c)}
+                      initialLiked={likedIds.has(c.id)}
+                      isLoggedIn={isLoggedIn}
+                    />
+                    {isLoggedIn ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-1 rounded-full px-3 text-xs"
+                        onClick={() => openReplyTo(c.id)}
+                        aria-expanded={replyingToId === c.id}
+                      >
+                        <Reply className="h-3.5 w-3.5" aria-hidden />
+                        Reply
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 gap-1 rounded-full px-3 text-xs"
+                        onClick={() => openSignIn(null)}
+                      >
+                        <Reply className="h-3.5 w-3.5" aria-hidden />
+                        Reply
+                      </Button>
+                    )}
+                    {showDelete && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 gap-1 rounded-full px-3 text-xs text-muted-foreground hover:text-destructive"
+                        onClick={() => void deleteComment(c.id, mine)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Delete
+                      </Button>
+                    )}
+                  </div>
+
+                  {replyingToId === c.id && isLoggedIn ? (
+                    <div className="mt-4 rounded-lg border border-border/70 bg-muted/25 p-3 sm:p-4">
+                      <p className="mb-2 text-xs font-medium text-muted-foreground">
+                        Replying to <span className="text-foreground">{name}</span>
+                      </p>
+                      <Textarea
+                        ref={replyTextareaRef}
+                        value={replyBody}
+                        onChange={(e) => setReplyBody(e.target.value.slice(0, MAX_LEN))}
+                        onKeyDown={(e) => onReplyKeyDown(e, c.id)}
+                        placeholder={`Reply to ${name}…`}
+                        className="min-h-[80px] resize-y border-border/80 bg-background text-sm"
+                        maxLength={MAX_LEN}
+                        aria-label="Write a reply"
+                      />
+                      <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
+                        <span
+                          className={cn(
+                            "mr-auto text-xs tabular-nums text-muted-foreground",
+                            replyRemaining < 200 && "font-medium text-amber-700 dark:text-amber-400",
+                          )}
+                        >
+                          {replyRemaining} left
+                        </span>
+                        <ForumCommentMediaSendButton
+                          threadId={threadId}
+                          threadSlug={threadSlug}
+                          parentId={c.id}
+                          caption={replyBody}
+                          disabled={replySubmitting}
+                          onSent={(comment) => void handleMediaSent(comment, c.id)}
+                          className="h-8 w-8"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 rounded-full text-xs"
+                          onClick={() => {
+                            setReplyingToId(null)
+                            setReplyBody("")
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="h-8 rounded-full px-4 text-xs"
+                          disabled={replySubmitting || !replyBody.trim()}
+                          onClick={() => void submitReply(c.id)}
+                        >
+                          {replySubmitting ? "Posting…" : "Post reply"}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {nested.length > 0 ? (
+                    <ul className="mt-4 space-y-3 border-l-2 border-border/60 pl-4 sm:pl-5">
+                      {nested.map((r) => {
+                        const rname = displayName(r)
+                        const rinitial = rname.charAt(0).toUpperCase()
+                        const rmine = currentUserId != null && r.user_id === currentUserId
+                        const showReplyDelete = canDeleteComment(r.user_id)
+                        return (
+                          <li key={r.id} id={`comment-${r.id}`} className="scroll-mt-16">
+                            <div className="flex gap-2.5">
+                              <Avatar className="h-8 w-8 shrink-0">
+                                <AvatarImage
+                                  src={profileMediaDisplaySrc(r.profiles?.avatar_url || "")}
+                                  alt=""
+                                />
+                                <AvatarFallback className="text-[10px]">{rinitial}</AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-baseline gap-x-2">
+                                  <span className="text-sm font-medium text-foreground">{rname}</span>
+                                  <span className="text-xs text-muted-foreground tabular-nums">
+                                    {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
+                                  </span>
+                                </div>
+                                {renderReplyBody(r)}
+                                <div className="mt-2 flex flex-wrap items-center gap-2">
+                                  <CommentLikeButton
+                                    commentId={r.id}
+                                    initialCount={likeCount(r)}
+                                    initialLiked={likedIds.has(r.id)}
+                                    isLoggedIn={isLoggedIn}
+                                    compact
+                                  />
+                                  {showReplyDelete && (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 gap-1 rounded-full px-2 text-xs text-muted-foreground hover:text-destructive"
+                                      onClick={() => void deleteComment(r.id, rmine)}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                      Delete
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  ) : null}
+                </div>
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+    )
+  }
 
   return (
     <TooltipProvider delayDuration={280}>
-      <div>
-        <div
-          className="border-t border-border pt-6"
-          style={{ paddingBottom: bottomPad }}
-        >
-          <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-base font-semibold text-foreground">Comments</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Scroll through the post — add a comment anytime from the bar at the bottom.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <span className="rounded-full border border-border/80 bg-muted/30 px-3 py-1 font-medium tabular-nums text-foreground">
-                {topLevel.length} {topLevel.length === 1 ? "comment" : "comments"}
-              </span>
-              {replyCount > 0 ? (
-                <span className="rounded-full border border-border/60 px-3 py-1 tabular-nums">
-                  {replyCount} {replyCount === 1 ? "reply" : "replies"}
-                </span>
-              ) : null}
-            </div>
-          </div>
-
-          {topLevel.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">No comments yet.</p>
-          ) : (
-            <ul className="list-none space-y-4 sm:space-y-5">
-              {topLevel.map((c) => {
-                const name = displayName(c)
-                const initial = name.charAt(0).toUpperCase()
-                const mine = currentUserId != null && c.user_id === currentUserId
-                const showDelete = canDeleteComment(c.user_id)
-                const nested = repliesByParent.get(c.id) ?? []
-                return (
-                  <li
-                    key={c.id}
-                    id={`comment-${c.id}`}
-                    className="scroll-mt-20 rounded-xl border border-border/80 bg-card/50 px-3 py-4 sm:px-4 sm:py-5"
-                  >
-                    <div className="flex gap-3 sm:gap-4">
-                      <Avatar className="h-9 w-9 shrink-0 ring-2 ring-background sm:h-10 sm:w-10">
-                        <AvatarImage
-                          src={profileMediaDisplaySrc(c.profiles?.avatar_url || "")}
-                          alt=""
-                        />
-                        <AvatarFallback className="text-xs">{initial}</AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                          <span className="text-sm font-semibold text-foreground">{name}</span>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="cursor-default text-xs text-muted-foreground tabular-nums">
-                                {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="text-xs">
-                              {new Date(c.created_at).toLocaleString()}
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                        {renderCommentBody(c)}
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
-                          <CommentLikeButton
-                            commentId={c.id}
-                            initialCount={likeCount(c)}
-                            initialLiked={likedIds.has(c.id)}
-                            isLoggedIn={isLoggedIn}
-                          />
-                          {isLoggedIn && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="h-8 gap-1 rounded-full px-3 text-xs"
-                              onClick={() => openReplyTo(c.id)}
-                              aria-expanded={replyingToId === c.id}
-                            >
-                              <Reply className="h-3.5 w-3.5" aria-hidden />
-                              Reply
-                            </Button>
-                          )}
-                          {showDelete && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 gap-1 rounded-full px-3 text-xs text-muted-foreground hover:text-destructive"
-                              onClick={() => void deleteComment(c.id, mine)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                              Delete
-                            </Button>
-                          )}
-                        </div>
-
-                        {replyingToId === c.id && isLoggedIn ? (
-                          <div className="mt-4 rounded-lg border border-border/70 bg-muted/25 p-3 sm:p-4">
-                            <p className="mb-2 text-xs font-medium text-muted-foreground">
-                              Replying to <span className="text-foreground">{name}</span>
-                            </p>
-                            <Textarea
-                              ref={replyTextareaRef}
-                              value={replyBody}
-                              onChange={(e) => setReplyBody(e.target.value.slice(0, MAX_LEN))}
-                              onKeyDown={(e) => onReplyKeyDown(e, c.id)}
-                              placeholder={`Reply to ${name}…`}
-                              className="min-h-[80px] resize-y border-border/80 bg-background text-sm"
-                              maxLength={MAX_LEN}
-                              aria-label="Write a reply"
-                            />
-                            <div className="mt-2 flex flex-wrap items-center justify-end gap-2">
-                              <span
-                                className={cn(
-                                  "mr-auto text-xs tabular-nums text-muted-foreground",
-                                  replyRemaining < 200 && "font-medium text-amber-700 dark:text-amber-400",
-                                )}
-                              >
-                                {replyRemaining} left
-                              </span>
-                              <ForumCommentMediaSendButton
-                                threadId={threadId}
-                                threadSlug={threadSlug}
-                                parentId={c.id}
-                                caption={replyBody}
-                                disabled={replySubmitting}
-                                onSent={(comment) => void handleMediaSent(comment, c.id)}
-                                className="h-8 w-8"
-                              />
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 rounded-full text-xs"
-                                onClick={() => {
-                                  setReplyingToId(null)
-                                  setReplyBody("")
-                                }}
-                              >
-                                Cancel
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                className="h-8 rounded-full px-4 text-xs"
-                                disabled={replySubmitting || !replyBody.trim()}
-                                onClick={() => void submitReply(c.id)}
-                              >
-                                {replySubmitting ? "Posting…" : "Post reply"}
-                              </Button>
-                            </div>
-                          </div>
-                        ) : null}
-
-                        {nested.length > 0 ? (
-                          <ul className="mt-4 space-y-3 border-l-2 border-border/60 pl-4 sm:pl-5">
-                            {nested.map((r) => {
-                              const rname = displayName(r)
-                              const rinitial = rname.charAt(0).toUpperCase()
-                              const rmine = currentUserId != null && r.user_id === currentUserId
-                              const showReplyDelete = canDeleteComment(r.user_id)
-                              return (
-                                <li key={r.id} id={`comment-${r.id}`} className="scroll-mt-16">
-                                  <div className="flex gap-2.5">
-                                    <Avatar className="h-8 w-8 shrink-0">
-                                      <AvatarImage
-                                        src={profileMediaDisplaySrc(r.profiles?.avatar_url || "")}
-                                        alt=""
-                                      />
-                                      <AvatarFallback className="text-[10px]">{rinitial}</AvatarFallback>
-                                    </Avatar>
-                                    <div className="min-w-0 flex-1">
-                                      <div className="flex flex-wrap items-baseline gap-x-2">
-                                        <span className="text-sm font-medium text-foreground">{rname}</span>
-                                        <span className="text-xs text-muted-foreground tabular-nums">
-                                          {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
-                                        </span>
-                                      </div>
-                                      {renderReplyBody(r)}
-                                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                                        <CommentLikeButton
-                                          commentId={r.id}
-                                          initialCount={likeCount(r)}
-                                          initialLiked={likedIds.has(r.id)}
-                                          isLoggedIn={isLoggedIn}
-                                          compact
-                                        />
-                                        {showReplyDelete && (
-                                          <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-7 gap-1 rounded-full px-2 text-xs text-muted-foreground hover:text-destructive"
-                                            onClick={() => void deleteComment(r.id, rmine)}
-                                          >
-                                            <Trash2 className="h-3 w-3" />
-                                            Delete
-                                          </Button>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </li>
-                              )
-                            })}
-                          </ul>
-                        ) : null}
-                      </div>
-                    </div>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
+      <section className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 px-5 py-4 sm:px-6">
+          <h2 className="text-base font-semibold text-foreground">
+            {topLevel.length} {topLevel.length === 1 ? "Reply" : "Replies"}
+          </h2>
+          {replyCount > 0 ? (
+            <span className="text-sm text-muted-foreground">
+              {replyCount} nested {replyCount === 1 ? "reply" : "replies"}
+            </span>
+          ) : null}
         </div>
 
-        <div
-          ref={composerBarRef}
-          className={cn(
-            "z-40 bg-card/95 backdrop-blur-md supports-[backdrop-filter]:bg-card/90",
-            composerFixedToViewport ? "fixed bottom-0 rounded-b-lg" : "absolute inset-x-0 bottom-0 rounded-b-lg",
-          )}
-          style={
-            composerFixedToViewport && articleDockRect
-              ? {
-                  left: articleDockRect.left,
-                  width: articleDockRect.width,
-                  bottom: 0,
-                }
-              : undefined
-          }
-          role="region"
-          aria-label="Add a comment"
-        >
-          <div className="px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:px-6">
-            {isLoggedIn ? (
-              <form
-                onSubmit={(e) => void submitTopLevel(e)}
-                className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start sm:gap-3"
-              >
-                <div className="min-w-0 flex-1 space-y-1 sm:min-w-[12rem]">
-                  <Textarea
-                    ref={textareaRef}
-                    value={body}
-                    onChange={(e) => {
-                      setBody(e.target.value.slice(0, MAX_LEN))
-                      if (postedHint) {
-                        setPostedHint(null)
-                        if (postedHintTimerRef.current) {
-                          window.clearTimeout(postedHintTimerRef.current)
-                          postedHintTimerRef.current = null
-                        }
-                      }
-                    }}
-                    onKeyDown={onMainTextareaKeyDown}
-                    placeholder="Write a comment…"
-                    rows={2}
-                    className="min-h-[2.75rem] resize-y border-border/80 bg-background text-sm sm:min-h-[3.25rem]"
-                    maxLength={MAX_LEN}
-                    aria-label="Write a comment"
-                  />
-                  <div className="flex items-center justify-between gap-2 px-0.5">
-                    <span
-                      className={cn(
-                        "text-[11px] tabular-nums text-muted-foreground",
-                        mainRemaining < 200 && "font-medium text-amber-700 dark:text-amber-400",
-                      )}
-                    >
-                      {mainRemaining} left
-                    </span>
-                  </div>
-                </div>
-                <div className="flex w-full shrink-0 items-end gap-2 sm:w-auto">
-                  <ForumCommentMediaSendButton
-                    threadId={threadId}
-                    threadSlug={threadSlug}
-                    caption={body}
-                    disabled={submitting}
-                    onSent={(comment) => void handleMediaSent(comment, null)}
-                  />
-                  <Button
-                    type="submit"
-                    disabled={submitting || !body.trim()}
-                    className="h-10 w-full shrink-0 rounded-full px-6 sm:h-10 sm:w-auto"
-                  >
-                    {submitting ? "Posting…" : "Post comment"}
-                  </Button>
-                </div>
-                {postedHint ? (
-                  <p
-                    className="w-full basis-full text-xs font-medium text-emerald-600 dark:text-emerald-400"
-                    role="status"
-                    aria-live="polite"
-                  >
-                    {postedHint}
-                  </p>
-                ) : null}
-              </form>
-            ) : (
-              <p className="py-1 text-center text-sm text-muted-foreground sm:text-left">
-                <Link
-                  href={`/auth/login?redirect=${encodeURIComponent(typeof window !== "undefined" ? window.location.pathname : "/board-talk")}`}
-                  className="font-semibold text-foreground underline-offset-4 hover:underline"
-                >
-                  Log in
-                </Link>{" "}
-                to comment.
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
+        {composerFirst ? renderComposer() : null}
+        {renderRepliesList()}
+        {!composerFirst ? renderComposer() : null}
+      </section>
     </TooltipProvider>
   )
 }

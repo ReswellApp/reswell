@@ -7,14 +7,14 @@ import { cn } from "@/lib/utils"
 export type BoardTalkTab = "forums" | "reviews"
 
 const BOARD_TALK_TABS: { id: BoardTalkTab; label: string; href: string }[] = [
-  { id: "forums", label: "Forums", href: "/board-talk" },
-  { id: "reviews", label: "Board Reviews", href: "/board-talk/reviews" },
+  { id: "forums", label: "Forums", href: "/threads" },
+  { id: "reviews", label: "Board Reviews", href: "/threads/reviews" },
 ]
 
 function tabFromPathname(pathname: string | null): BoardTalkTab | null {
   if (!pathname) return null
-  if (pathname === "/board-talk" || pathname === "/board-talk/") return "forums"
-  if (pathname.startsWith("/board-talk/reviews")) return "reviews"
+  if (pathname === "/threads" || pathname === "/threads/") return "forums"
+  if (pathname.startsWith("/threads/reviews")) return "reviews"
   return null
 }
 
@@ -31,7 +31,7 @@ export function BoardTalkNav({ className }: { className?: string }) {
   const activeTab = tabFromPathname(pathname)
 
   return (
-    <nav aria-label="Board Talk sections" className={cn("flex flex-wrap gap-2", className)}>
+    <nav aria-label="Threads sections" className={cn("flex flex-wrap gap-2", className)}>
       {BOARD_TALK_TABS.map((tab) => {
         const isActive = activeTab === tab.id
         return (

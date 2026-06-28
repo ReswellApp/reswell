@@ -11,7 +11,7 @@ import { createClient } from "@/lib/supabase/client"
 import { pickUniqueThreadSlug } from "@/lib/forum-slug"
 import { getImpersonation } from "@/lib/impersonation"
 
-export function NewThreadForm() {
+export function NewThreadForm({ onCreated }: { onCreated?: () => void }) {
   const router = useRouter()
   const [title, setTitle] = useState("")
   const [body, setBody] = useState("")
@@ -47,8 +47,9 @@ export function NewThreadForm() {
         setSubmitting(false)
         return
       }
-      router.push(`/board-talk/${data.slug}`)
+      router.push(`/threads/${data.slug}`)
       router.refresh()
+      onCreated?.()
       return
     }
 
@@ -80,8 +81,9 @@ export function NewThreadForm() {
       return
     }
 
-    router.push(`/board-talk/${row.slug}`)
+    router.push(`/threads/${row.slug}`)
     router.refresh()
+    onCreated?.()
   }
 
   return (
@@ -117,7 +119,7 @@ export function NewThreadForm() {
           {submitting ? "Creating…" : "Create post"}
         </Button>
         <Button type="button" variant="outline" asChild>
-          <Link href="/board-talk">Cancel</Link>
+          <Link href="/threads">Cancel</Link>
         </Button>
       </div>
     </form>

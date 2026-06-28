@@ -8,11 +8,11 @@ export default async function Image(props: { params: Promise<{ slug: string }> }
   const { slug } = await props.params
   const supabase = await createClient()
   const { data } = await supabase.from("forum_threads").select("title").eq("slug", slug).maybeSingle()
-  const headline = data?.title?.trim() ? data.title.trim() : "Board Talk"
+  const headline = data?.title?.trim() ? data.title.trim() : "Threads"
   return brandShareImageResponse({
     headline,
     subhead: "Community discussion on Reswell",
-    footer: "reswell.app · Board Talk",
+    footer: "reswell.app · Threads",
     tone: "dark",
   })
 }

@@ -4,9 +4,16 @@ export type ForumThreadRow = {
   id: string
   title: string
   slug: string
+  body: string | null
   created_at: string
   updated_at: string
   user_id: string
+}
+
+export type ForumThreadParticipant = {
+  userId: string
+  displayName: string
+  avatarUrl: string | null
 }
 
 export type ForumThreadAuthorProfile = {
@@ -45,7 +52,7 @@ export async function searchForumThreads(
 ): Promise<ForumThreadRow[]> {
   let query = supabase
     .from("forum_threads")
-    .select("id, title, slug, created_at, updated_at, user_id")
+    .select("id, title, slug, body, created_at, updated_at, user_id")
     .order("updated_at", { ascending: false })
 
   const trimmed = q.trim()
@@ -81,7 +88,7 @@ export async function fetchRecentForumThreads(
 ): Promise<ForumThreadRow[]> {
   const { data, error } = await supabase
     .from("forum_threads")
-    .select("id, title, slug, created_at, updated_at, user_id")
+    .select("id, title, slug, body, created_at, updated_at, user_id")
     .order("updated_at", { ascending: false })
     .limit(limit)
 
@@ -131,4 +138,83 @@ export async function fetchForumThreadEngagementByThreadIds(
     ),
     likeCountByThread: countByKey((likeRows ?? []) as { thread_id: string }[]),
   }
+}
+
+const MAX_PARTICIPANTS_PER_THREAD = 5
+
+export async function fetchForumThreadParticipantsByThreadIds(
+  supabase: SupabaseClient,
+  threads: Pick<ForumThreadRow, "id" | "user_id">[],
+): Promise<Record<string, ForumThreadParticipant[]>> {
+  if (threads.length === 0) return {}
+
+  const threadIds = threads.map((t) => t.id)
+  const authorByThread = Object.fromEntries(threads.map((t) => [t.id, t.user_id]))
+
+  const { data: commentRows, error } = await supabase
+    .from("forum_comments")
+    .select("thread_id, user_id")
+    .in("thread_id", threadIds)
+
+  if (error) {
+    console.error("[forum-threads] fetchForumThreadParticipantsByThreadIds:", error.message)
+    return {}
+  }
+
+  const userIdsByThread = new Map<string, string[]>()
+  for (const threadId of threadIds) {
+    const authorId = authorByThread[threadId]
+    const commentUserIds = (commentRows ?? [])
+      .filter((r) => r.thread_id === threadId)
+      .map((r) => r.user_id as string)
+    const seen = new Set<string>()
+    const ordered: string[] = []
+    for (const uid of [authorId, ...commentUserIds]) {
+      if (!uid || seen.has(uid)) continue
+      seen.add(uid)
+      ordered.push(uid)
+      if (ordered.length >= MAX_PARTICIPANTS_PER_THREAD) break
+    }
+    userIdsByThread.set(threadId, ordered)
+  }
+
+  const allUserIds = [...new Set([...userIdsByThread.values()].flat())]
+  if (allUserIds.length === 0) return {}
+
+  const profiles = await fetchForumThreadAuthorProfiles(supabase, allUserIds)
+  const profileById = Object.fromEntries(profiles.map((p) => [p.id, p]))
+
+  const out: Record<string, ForumThreadParticipant[]> = {}
+  for (const [threadId, userIds] of userIdsByThread) {
+    out[threadId] = userIds.map((userId) => {
+      const profile = profileById[userId]
+      return {
+        userId,
+        displayName: profile?.display_name?.trim() || "Member",
+        avatarUrl: profile?.avatar_url ?? null,
+      }
+    })
+  }
+  return out
+}
+
+/** Preserve Elasticsearch result order. */
+export async function fetchForumThreadsByIds(
+  supabase: SupabaseClient,
+  ids: string[],
+): Promise<ForumThreadRow[]> {
+  if (ids.length === 0) return []
+
+  const { data, error } = await supabase
+    .from("forum_threads")
+    .select("id, title, slug, body, created_at, updated_at, user_id")
+    .in("id", ids)
+
+  if (error) {
+    console.error("[forum-threads] fetchForumThreadsByIds:", error.message)
+    return []
+  }
+
+  const byId = Object.fromEntries(((data ?? []) as ForumThreadRow[]).map((t) => [t.id, t]))
+  return ids.map((id) => byId[id]).filter((t): t is ForumThreadRow => Boolean(t))
 }

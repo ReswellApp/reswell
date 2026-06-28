@@ -113,10 +113,10 @@ export function ReadingHub({ title, description, articles, wrapper = "main" }: P
                 Browse boards
               </Link>
               <Link
-                href="/board-talk"
+                href="/threads"
                 className="inline-flex min-h-touch items-center justify-center rounded-full border border-transparent bg-foreground px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-opacity hover:opacity-90"
               >
-                Board Talk
+                Threads
               </Link>
             </div>
           </div>

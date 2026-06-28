@@ -1,14 +1,9 @@
-import Link from "next/link"
 import { notFound } from "next/navigation"
 import type { Metadata } from "next"
 import { createClient } from "@/lib/supabase/server"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ThreadLikeButton } from "@/components/forum/thread-like-button"
-import { ThreadCommentsPanel, type ThreadCommentRow } from "@/components/forum/thread-comments-panel"
-import { capitalizeWords } from "@/lib/listing-labels"
-import { formatDistanceToNow } from "date-fns"
-import { ThreadDeleteButton } from "@/components/forum/thread-delete-button"
-import { AdminThreadEditor } from "@/components/forum/admin-thread-editor"
+import { ThreadDetailView } from "@/components/features/forum/thread-detail-view"
+import { type ThreadCommentRow } from "@/components/forum/thread-comments-panel"
+import { fetchForumThreadParticipantsByThreadIds } from "@/lib/db/forum-threads"
 import { absoluteUrl } from "@/lib/site-metadata"
 
 const RESERVED_THREAD_SLUGS = new Set(["new", "reviews", "whats-new", "forums"])
@@ -47,12 +42,12 @@ export async function generateMetadata(props: { params: Promise<{ slug: string }
     .eq("slug", slug)
     .maybeSingle()
   if (!data?.title) {
-    return { title: "Board Talk — Reswell", description: "Community discussions about surfboards and gear." }
+    return { title: "Threads — Reswell", description: "Community discussions about surfboards and gear." }
   }
   const excerpt = threadExcerpt((data as { body?: string | null }).body)
-  const title = `${data.title} · Board Talk — Reswell`
-  const description = excerpt ?? `Join the conversation: ${data.title} — Board Talk on Reswell.`
-  const path = `/board-talk/${slug}`
+  const title = `${data.title} · Threads — Reswell`
+  const description = excerpt ?? `Join the conversation: ${data.title} — Threads on Reswell.`
+  const path = `/threads/${slug}`
   return {
     title,
     description,
@@ -88,26 +83,9 @@ export default async function ThreadDetailPage(props: { params: Promise<{ slug: 
     .eq("slug", slug)
     .maybeSingle()
 
-  if (error) {
-    return (
-      <>
-        <p className="text-sm text-destructive">
-          Could not load this post. Confirm{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-xs">scripts/032_forum_threads.sql</code> and{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-xs">scripts/036_forum_comment_parent_replies.sql</code>{" "}
-          ran and reload
-          the API schema in Supabase if needed.
-        </p>
-        <p className="mt-2 text-xs text-muted-foreground font-mono break-all">{error.message}</p>
-        <Link href="/board-talk" className="mt-4 inline-block text-sm underline-offset-4 hover:underline">
-          ← Board Talk
-        </Link>
-      </>
-    )
-  }
-
-  if (!thread) {
-    notFound()
+  if (error || !thread) {
+    if (!thread) notFound()
+    throw new Error(error?.message ?? "Could not load thread")
   }
 
   const t = thread as ThreadCore
@@ -131,14 +109,7 @@ export default async function ThreadDetailPage(props: { params: Promise<{ slug: 
     .order("created_at", { ascending: true })
 
   if (commentsError) {
-    return (
-      <>
-        <p className="text-sm text-destructive">Could not load comments: {commentsError.message}</p>
-        <Link href="/board-talk" className="mt-4 inline-block text-sm underline-offset-4 hover:underline">
-          ← Board Talk
-        </Link>
-      </>
-    )
+    throw new Error(commentsError.message)
   }
 
   const commentsBase = commentsRaw ?? []
@@ -197,59 +168,30 @@ export default async function ThreadDetailPage(props: { params: Promise<{ slug: 
     const { data: modProfile } = await supabase.from("profiles").select("is_admin").eq("id", user.id).maybeSingle()
     isAdmin = modProfile?.is_admin === true
   }
-  const canDeleteThread = isAdmin
+
+  const participantsByThread = await fetchForumThreadParticipantsByThreadIds(supabase, [t])
+  const participants = participantsByThread[t.id] ?? []
+  const participantUserIds = new Set([t.user_id, ...commentsBase.map((c) => c.user_id)])
 
   return (
-    <>
-      <Link href="/board-talk" className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline">
-        ← Board Talk
-      </Link>
-
-      <article className="relative mt-6 rounded-lg border border-border bg-card p-5 sm:p-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="flex gap-3 min-w-0">
-              <Avatar className="h-11 w-11 shrink-0">
-                <AvatarImage src={authorProfile?.avatar_url || ""} alt="" />
-                <AvatarFallback>{authorName.charAt(0).toUpperCase()}</AvatarFallback>
-              </Avatar>
-              <div className="min-w-0">
-                <h1 className="text-2xl font-bold text-foreground leading-tight">{capitalizeWords(t.title)}</h1>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  <span className="font-medium text-foreground/80">{authorName}</span>
-                  {" · "}
-                  {formatDistanceToNow(new Date(t.created_at), { addSuffix: true })}
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 shrink-0">
-              <ThreadLikeButton
-                threadId={t.id}
-                initialCount={threadLikeCount}
-                initialLiked={threadLiked}
-                isLoggedIn={!!user}
-              />
-              {isAdmin && (
-                <AdminThreadEditor threadId={t.id} initialTitle={t.title} initialBody={t.body ?? ""} />
-              )}
-              {canDeleteThread && <ThreadDeleteButton threadId={t.id} />}
-            </div>
-          </div>
-          {t.body ? (
-            <div className="mt-6 text-foreground whitespace-pre-wrap text-sm sm:text-base leading-relaxed">{t.body}</div>
-          ) : null}
-
-          <div className="mt-6">
-            <ThreadCommentsPanel
-              threadId={t.id}
-              threadSlug={t.slug}
-              initialComments={comments}
-              currentUserId={user?.id ?? null}
-              isLoggedIn={!!user}
-              isAdmin={isAdmin}
-              likedCommentIds={likedCommentIds}
-            />
-          </div>
-        </article>
-    </>
+    <ThreadDetailView
+      threadId={t.id}
+      threadSlug={t.slug}
+      title={t.title}
+      body={t.body}
+      createdAt={t.created_at}
+      authorName={authorName}
+      authorAvatarUrl={authorProfile?.avatar_url ?? null}
+      threadLikeCount={threadLikeCount}
+      threadLiked={threadLiked}
+      isLoggedIn={!!user}
+      isAdmin={isAdmin}
+      canDeleteThread={isAdmin}
+      comments={comments}
+      currentUserId={user?.id ?? null}
+      likedCommentIds={likedCommentIds}
+      participants={participants}
+      participantCount={participantUserIds.size}
+    />
   )
 }

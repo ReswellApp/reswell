@@ -5,9 +5,9 @@ export const contentType = "image/png"
 
 export default function Image() {
   return brandShareImageResponse({
-    headline: "Board Talk",
+    headline: "Threads",
     subhead: "Community Q&A, gear talk, and surfboard discussions on Reswell.",
-    footer: "reswell.app · Board Talk",
+    footer: "reswell.app · Threads",
     tone: "dark",
   })
 }

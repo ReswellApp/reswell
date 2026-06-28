@@ -1,98 +1,97 @@
 "use client"
 
-import Link from "next/link"
-import { useMemo, useState } from "react"
+import { Suspense, useMemo, useState } from "react"
 import { usePathname } from "next/navigation"
-import { Plus } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import {
-  BoardTalkNav,
-  getBoardTalkTab,
-  isBoardTalkHubPath,
-} from "@/components/features/forum/board-talk-nav"
+import { BoardTalkChrome } from "@/components/features/forum/board-talk-chrome"
+import { BoardTalkPresenceBar } from "@/components/features/forum/board-talk-presence-bar"
+import { NewThreadDialog } from "@/components/features/forum/new-thread-dialog"
 import { BoardTalkPostReviewDialog } from "@/components/features/forum/board-talk-post-review-dialog"
 import { BoardTalkReviewsUiProvider } from "@/components/features/forum/board-talk-reviews-ui-context"
+import { BoardTalkForumsUiProvider } from "@/components/features/forum/board-talk-forums-ui-context"
+import { ThreadsBreadcrumbProvider } from "@/components/features/forum/threads-breadcrumb-provider"
+import { useAuthModal } from "@/components/auth/auth-modal-context"
+import { getBoardTalkTab } from "@/components/features/forum/board-talk-nav"
 import { cn } from "@/lib/utils"
 
 type BoardTalkShellProps = {
   userId: string | null
+  displayName: string | null
+  avatarUrl: string | null
   children: React.ReactNode
 }
 
-export function BoardTalkShell({ userId, children }: BoardTalkShellProps) {
+export function BoardTalkShell({
+  userId,
+  displayName,
+  avatarUrl,
+  children,
+}: BoardTalkShellProps) {
   const pathname = usePathname()
-  const isHub = isBoardTalkHubPath(pathname)
+  const authModal = useAuthModal()
   const activeTab = getBoardTalkTab(pathname)
   const isReviewsTab = activeTab === "reviews"
+  const isForumsHub = activeTab === "forums"
+  const isThreadDetail = pathname.startsWith("/threads/") && !isReviewsTab && pathname !== "/threads/new"
+  const [threadDialogOpen, setThreadDialogOpen] = useState(false)
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
-
-  const newPostHref = userId
-    ? "/board-talk/new"
-    : `/auth/login?redirect=${encodeURIComponent("/board-talk/new")}`
-
-  const postReviewLoginHref = `/auth/login?redirect=${encodeURIComponent("/board-talk/reviews")}`
 
   const reviewsUi = useMemo(
     () => ({
-      openPostReview: () => setReviewDialogOpen(true),
+      openPostReview: () => {
+        if (!userId) {
+          authModal.openLogin("/threads/reviews")
+          return
+        }
+        setReviewDialogOpen(true)
+      },
     }),
-    [],
+    [userId, authModal],
   )
 
+  function openNewThread() {
+    if (!userId) {
+      authModal.openLogin("/threads")
+      return
+    }
+    setThreadDialogOpen(true)
+  }
+
   return (
-    <>
-      <header
+    <div className="relative min-h-dvh bg-[#e9ede6] dark:bg-background">
+      <BoardTalkChrome userId={userId} displayName={displayName} avatarUrl={avatarUrl} />
+
+      <div
         className={cn(
-          "border-b border-border/60",
-          isHub ? "pb-10 sm:pb-12" : "pb-6 sm:pb-8",
+          "mx-auto px-4 pb-16 sm:px-6 sm:pb-20",
+          isForumsHub ? "max-w-6xl pt-6 sm:pt-8" : "max-w-4xl pt-6 sm:pt-8",
+          isThreadDetail && "max-w-3xl",
         )}
       >
-        <div className="flex flex-col gap-6 sm:gap-8">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between sm:gap-10">
-            <div className="min-w-0 space-y-3">
-              <h1 className="text-3xl font-bold text-foreground sm:text-4xl">Board Talk</h1>
-              {isHub ? (
-                <p className="max-w-xl text-muted-foreground leading-relaxed">
-                  Start a conversation, share stoke, and jump into what the community is talking about.
-                </p>
-              ) : null}
+        {isForumsHub ? (
+          <div className="mb-6 space-y-4">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Threads</h1>
+              <p className="mt-1 text-sm text-muted-foreground sm:text-base">
+                Community discussions — read everything, jump in when you&apos;re ready.
+              </p>
             </div>
-            <div className="shrink-0 sm:pt-1">
-              {isReviewsTab ? (
-                userId ? (
-                  <Button
-                    type="button"
-                    className="w-full min-h-touch sm:w-auto"
-                    onClick={() => setReviewDialogOpen(true)}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Post review
-                  </Button>
-                ) : (
-                  <Button asChild variant="outline" className="w-full min-h-touch sm:w-auto">
-                    <Link href={postReviewLoginHref}>Log in to post a review</Link>
-                  </Button>
-                )
-              ) : userId ? (
-                <Button asChild className="w-full min-h-touch sm:w-auto">
-                  <Link href={newPostHref}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    New post
-                  </Link>
-                </Button>
-              ) : (
-                <Button asChild variant="outline" className="w-full min-h-touch sm:w-auto">
-                  <Link href={newPostHref}>Log in to post</Link>
-                </Button>
-              )}
-            </div>
+            <BoardTalkPresenceBar userId={userId} displayName={displayName} />
           </div>
-          <BoardTalkNav />
-        </div>
-      </header>
-      <BoardTalkReviewsUiProvider value={isReviewsTab ? reviewsUi : null}>
-        <div className={cn(isHub ? "mt-10 sm:mt-12" : "mt-8 sm:mt-10")}>{children}</div>
-      </BoardTalkReviewsUiProvider>
+        ) : null}
+
+        <Suspense fallback={null}>
+          <ThreadsBreadcrumbProvider>
+            <BoardTalkForumsUiProvider value={{ openNewThread }}>
+              <BoardTalkReviewsUiProvider value={isReviewsTab ? reviewsUi : null}>
+                {children}
+              </BoardTalkReviewsUiProvider>
+            </BoardTalkForumsUiProvider>
+          </ThreadsBreadcrumbProvider>
+        </Suspense>
+      </div>
+
+      <NewThreadDialog open={threadDialogOpen} onOpenChange={setThreadDialogOpen} />
+
       {isReviewsTab && userId ? (
         <BoardTalkPostReviewDialog
           userId={userId}
@@ -100,6 +99,6 @@ export function BoardTalkShell({ userId, children }: BoardTalkShellProps) {
           onOpenChange={setReviewDialogOpen}
         />
       ) : null}
-    </>
+    </div>
   )
 }

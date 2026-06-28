@@ -11,6 +11,9 @@ export const ELASTICSEARCH_LISTINGS_INDEX =
 export const ELASTICSEARCH_BRANDS_INDEX =
   process.env.ELASTICSEARCH_BRANDS_INDEX || "reswell_brands"
 
+export const ELASTICSEARCH_FORUM_THREADS_INDEX =
+  process.env.ELASTICSEARCH_FORUM_THREADS_INDEX || "reswell_forum_threads"
+
 /** Append-only marketplace search events for admin analytics (trending queries, volume, zero-result rate). */
 export const ELASTICSEARCH_SEARCH_ANALYTICS_INDEX =
   process.env.ELASTICSEARCH_SEARCH_ANALYTICS_INDEX || "reswell_search_analytics"

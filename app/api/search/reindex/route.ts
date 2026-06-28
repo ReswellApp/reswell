@@ -13,6 +13,11 @@ import {
   profileRowToSellerDoc,
   type SellerProfileRow,
 } from "@/lib/elasticsearch/sellers-index"
+import {
+  ensureForumThreadsIndex,
+  forumThreadRowToSearchDoc,
+  indexForumThreadDocument,
+} from "@/lib/elasticsearch/forum-threads-index"
 import { getElasticsearchClient } from "@/lib/elasticsearch/client"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { ELASTICSEARCH_INDEXED_LISTING_SECTIONS } from "@/lib/elasticsearch/listing-sections"
@@ -81,6 +86,7 @@ export async function POST(request: NextRequest) {
     await ensureListingsIndex()
     await ensureBrandsIndex()
     await ensureSellersIndex()
+    await ensureForumThreadsIndex()
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     return NextResponse.json(
@@ -101,6 +107,9 @@ export async function POST(request: NextRequest) {
   let sellersRemoved = 0
   let sellerErrors = 0
   let sellerFrom = 0
+  let forumThreadsIndexed = 0
+  let forumThreadErrors = 0
+  let forumThreadFrom = 0
 
   for (;;) {
     const { data: rows, error } = await supabase
@@ -236,6 +245,35 @@ export async function POST(request: NextRequest) {
     sellerFrom += pageSize
   }
 
+  for (;;) {
+    const { data: threadRows, error: threadListError } = await supabase
+      .from("forum_threads")
+      .select("id")
+      .order("updated_at", { ascending: false })
+      .range(forumThreadFrom, forumThreadFrom + pageSize - 1)
+
+    if (threadListError) {
+      return NextResponse.json({ error: threadListError.message }, { status: 500 })
+    }
+
+    if (!threadRows?.length) break
+
+    for (const row of threadRows) {
+      try {
+        const doc = await forumThreadRowToSearchDoc(supabase, row.id)
+        if (doc) {
+          await indexForumThreadDocument(doc)
+          forumThreadsIndexed++
+        }
+      } catch {
+        forumThreadErrors++
+      }
+    }
+
+    if (threadRows.length < pageSize) break
+    forumThreadFrom += pageSize
+  }
+
   return NextResponse.json({
     ok: true,
     indexed,
@@ -245,5 +283,7 @@ export async function POST(request: NextRequest) {
     sellersIndexed,
     sellersRemoved,
     sellerErrors,
+    forumThreadsIndexed,
+    forumThreadErrors,
   })
 }

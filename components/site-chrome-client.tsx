@@ -25,10 +25,14 @@ import {
 import { useFlatMobileMessagesInbox } from "@/hooks/use-flat-mobile-messages-inbox"
 import { useMobileLg } from "@/hooks/use-mobile-lg"
 import { cn } from "@/lib/utils"
+import { isThreadsRoute } from "@/lib/utils/threads-routes"
 
 function hideSiteChrome(pathname: string | null): boolean {
   if (!pathname) return false
-  return pathname.startsWith("/auth") || pathname === "/help" || pathname.startsWith("/help/")
+  if (pathname.startsWith("/auth") || pathname === "/help" || pathname.startsWith("/help/")) {
+    return true
+  }
+  return isThreadsRoute(pathname)
 }
 
 /** Full-height flows without the marketing footer (messages, sell listing). */

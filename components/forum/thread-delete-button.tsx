@@ -22,7 +22,7 @@ export function ThreadDeleteButton({ threadId }: Props) {
     setLoading(false)
     if ("success" in result && result.success) {
       toast.success("Post deleted")
-      router.push("/board-talk")
+      router.push("/threads")
       router.refresh()
       return
     }

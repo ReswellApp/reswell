@@ -8,21 +8,31 @@ export async function generateMetadata(): Promise<Metadata> {
   return resolvePageMetadata("board-talk")
 }
 
-export default async function BoardTalkForumsPage({
+export default async function ThreadsForumsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>
+  searchParams: Promise<{ q?: string; sort?: string }>
 }) {
-  const { q: rawQ } = await searchParams
+  const { q: rawQ, sort: rawSort } = await searchParams
   const q = rawQ?.trim() ?? ""
+  const sortTop = rawSort === "top"
 
   const supabase = await createClient()
   const [
-    threads,
+    threadsRaw,
     {
       data: { user },
     },
   ] = await Promise.all([getBoardTalkForumThreads(supabase, q), supabase.auth.getUser()])
+
+  const threads = sortTop
+    ? [...threadsRaw].sort(
+        (a, b) =>
+          b.likeCount - a.likeCount ||
+          b.commentCount - a.commentCount ||
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+      )
+    : threadsRaw
 
   return <BoardTalkForumsView threads={threads} searchQuery={q} isLoggedIn={!!user} />
 }
