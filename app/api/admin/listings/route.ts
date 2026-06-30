@@ -19,7 +19,10 @@ import {
   composeListingDimensionsFromSplitListingFields,
   listingDimensionsColumnTrim,
 } from '@/lib/listing-dimensions-storage'
-import { fetchAdminListingsMonthlyCreated, buildAdminListingsMonthlyCreatedFallback } from '@/lib/db/adminListings'
+import {
+  fetchAdminListingsMonthlyCreated,
+  resolveAdminListingsMonthlyCreated,
+} from '@/lib/db/adminListings'
 
 const SUPER_ADMIN_EMAIL = 'haydensbsb@gmail.com'
 
@@ -97,10 +100,6 @@ export async function GET(request: NextRequest) {
     fetchAdminListingsMonthlyCreated(service, 12),
   ])
 
-  if (monthlyCreatedResult.error) {
-    console.error('[admin listings GET] monthly created:', monthlyCreatedResult.error)
-  }
-
   if (error) {
     const msg = error.message ?? ''
     const missingColumn =
@@ -123,11 +122,10 @@ export async function GET(request: NextRequest) {
           hidden_from_site: false,
         }),
       )
-      const monthlyCreated = monthlyCreatedResult.error
-        ? buildAdminListingsMonthlyCreatedFallback(
-            listings as unknown as { created_at: string; status: string }[],
-          )
-        : monthlyCreatedResult.data
+      const monthlyCreated = resolveAdminListingsMonthlyCreated(
+        monthlyCreatedResult,
+        listings as unknown as { created_at: string; status: string }[],
+      )
       return NextResponse.json({
         listings,
         monthlyCreated,
@@ -141,11 +139,10 @@ export async function GET(request: NextRequest) {
   const listings = (data ?? []).map((row: Record<string, unknown>) =>
     applyCanonicalSurfboardCategoryToListingRow(row),
   )
-  const monthlyCreated = monthlyCreatedResult.error
-    ? buildAdminListingsMonthlyCreatedFallback(
-        listings as unknown as { created_at: string; status: string }[],
-      )
-    : monthlyCreatedResult.data
+  const monthlyCreated = resolveAdminListingsMonthlyCreated(
+    monthlyCreatedResult,
+    listings as unknown as { created_at: string; status: string }[],
+  )
   return NextResponse.json({
     listings,
     monthlyCreated,

@@ -11,6 +11,24 @@ export const NAV_RECENTLY_VIEWED_DISPLAY_LIMIT = 10
 export const MAX_USER_RECENTLY_VIEWED_BRANDS = 24
 export const NAV_RECENTLY_VIEWED_BRANDS_DISPLAY_LIMIT = 10
 
+/** PostgREST: relation not exposed / not in schema cache (e.g. migration not applied yet). */
+export function isUserRecentlyViewedBrandsUnavailable(
+  error: { code?: string; message?: string } | null,
+): boolean {
+  if (!error) return false
+  if (error.code === "PGRST205") return true
+  const msg = error.message ?? ""
+  return msg.includes("user_recently_viewed_brands") && msg.includes("schema cache")
+}
+
+function logNavBrandPersonalizationError(
+  context: string,
+  error: { code?: string; message?: string },
+): void {
+  if (isUserRecentlyViewedBrandsUnavailable(error)) return
+  console.error(`[navSearchPersonalization] ${context}:`, error)
+}
+
 function normalizeSearchQuery(query: string): string {
   return query.trim().toLowerCase()
 }
@@ -278,7 +296,7 @@ export async function upsertUserRecentlyViewedBrand(
   )
 
   if (upsertErr) {
-    console.error("[navSearchPersonalization] upsert brand:", upsertErr)
+    logNavBrandPersonalizationError("upsert brand", upsertErr)
     return
   }
 
@@ -288,7 +306,11 @@ export async function upsertUserRecentlyViewedBrand(
     .eq("user_id", userId)
     .order("viewed_at", { ascending: false })
 
-  if (listErr || !rows || rows.length <= MAX_USER_RECENTLY_VIEWED_BRANDS) return
+  if (listErr) {
+    logNavBrandPersonalizationError("list brands for trim", listErr)
+    return
+  }
+  if (!rows || rows.length <= MAX_USER_RECENTLY_VIEWED_BRANDS) return
 
   const staleIds = rows.slice(MAX_USER_RECENTLY_VIEWED_BRANDS).map((row) => row.brand_id as string)
   if (staleIds.length === 0) return
@@ -300,7 +322,7 @@ export async function upsertUserRecentlyViewedBrand(
     .in("brand_id", staleIds)
 
   if (deleteErr) {
-    console.error("[navSearchPersonalization] trim brands:", deleteErr)
+    logNavBrandPersonalizationError("trim brands", deleteErr)
   }
 }
 
@@ -317,7 +339,7 @@ export async function listUserRecentlyViewedBrandIds(
     .limit(limit)
 
   if (error) {
-    console.error("[navSearchPersonalization] list brand ids:", error)
+    logNavBrandPersonalizationError("list brand ids", error)
     return []
   }
 

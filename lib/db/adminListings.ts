@@ -5,6 +5,19 @@ export type AdminListingMonthlyCreatedRow = {
   listing_count: number
 }
 
+/** PostgREST: RPC not exposed / not in schema cache (e.g. migration not applied yet). */
+export function isAdminListingsMonthlyCreatedRpcUnavailable(
+  error: { code?: string; message?: string } | null,
+): boolean {
+  if (!error) return false
+  if (error.code === 'PGRST202') return true
+  const msg = error.message ?? ''
+  return (
+    msg.includes('get_admin_listings_monthly_created') &&
+    (msg.includes('schema cache') || msg.includes('Could not find the function'))
+  )
+}
+
 export async function fetchAdminListingsMonthlyCreated(
   supabase: SupabaseClient,
   months = 12,
@@ -14,6 +27,9 @@ export async function fetchAdminListingsMonthlyCreated(
   })
 
   if (error) {
+    if (!isAdminListingsMonthlyCreatedRpcUnavailable(error)) {
+      console.error('[admin listings] monthly created RPC:', error.message)
+    }
     return { data: [], error: error.message }
   }
 
@@ -25,6 +41,15 @@ export async function fetchAdminListingsMonthlyCreated(
     })),
     error: null,
   }
+}
+
+export function resolveAdminListingsMonthlyCreated(
+  rpcResult: { data: AdminListingMonthlyCreatedRow[]; error: string | null },
+  listings: { created_at: string; status: string }[],
+  months = 12,
+): AdminListingMonthlyCreatedRow[] {
+  if (!rpcResult.error) return rpcResult.data
+  return buildAdminListingsMonthlyCreatedFallback(listings, months)
 }
 
 /** Used when listing_creation_events migration is not applied yet. */
