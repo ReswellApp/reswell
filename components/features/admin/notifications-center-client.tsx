@@ -32,11 +32,11 @@ import type {
   KlaviyoMetricCategory,
   NotificationsCenterAnalytics,
   NotificationsCenterRange,
-} from "@/lib/db/klaviyoEventLog"
+} from "@/lib/klaviyo/event-log-shared"
 import {
   KLAVIYO_METRIC_CATEGORY_FILTERS,
   metricMatchesKlaviyoCategoryFilter,
-} from "@/lib/db/klaviyoEventLog"
+} from "@/lib/klaviyo/event-log-shared"
 import {
   KlaviyoEventLogExplorer,
   type KlaviyoEventLogFilters,

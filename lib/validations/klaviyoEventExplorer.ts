@@ -2,7 +2,7 @@ import { z } from "zod"
 import {
   isKlaviyoMetricCategoryFilter,
   isNotificationsCenterRange,
-} from "@/lib/db/klaviyoEventLog"
+} from "@/lib/klaviyo/event-log-shared"
 
 export const klaviyoEventStatusFilterSchema = z.enum(["all", "sent", "skipped", "failed"])
 

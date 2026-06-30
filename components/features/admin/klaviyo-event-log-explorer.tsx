@@ -30,7 +30,7 @@ import type {
   KlaviyoMetricCategoryFilter,
   KlaviyoMetricRow,
   NotificationsCenterRange,
-} from "@/lib/db/klaviyoEventLog"
+} from "@/lib/klaviyo/event-log-shared"
 import type { KlaviyoEventStatusFilter } from "@/lib/validations/klaviyoEventExplorer"
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100]
