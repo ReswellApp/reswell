@@ -1,7 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
-export const KLAVIYO_INACTIVITY_MILESTONE_DAYS = [3, 15, 30] as const
+export const KLAVIYO_INACTIVITY_MILESTONE_DAYS = [30] as const
 export type KlaviyoInactivityMilestoneDays = (typeof KLAVIYO_INACTIVITY_MILESTONE_DAYS)[number]
+
+export const KLAVIYO_INACTIVITY_MILESTONE_DAYS_VALUE = 30 as const
 
 export type KlaviyoInactivityEligibleProfile = {
   id: string
@@ -11,8 +13,8 @@ export type KlaviyoInactivityEligibleProfile = {
 }
 
 /**
- * Profiles whose `last_active_at` is strictly before `p_cutoff` and who have not yet
- * received this inactivity milestone event.
+ * Profiles whose last auth sign-in is strictly before `p_cutoff` and who have not yet
+ * received this inactivity milestone event during the current streak.
  */
 export async function fetchProfilesEligibleForKlaviyoInactivity(
   supabase: SupabaseClient,
@@ -44,7 +46,7 @@ export async function fetchProfilesEligibleForKlaviyoInactivity(
  *
  * Upsert (not insert) so re-entry works: when a user reactivates and later goes
  * inactive again, the same `(user_id, milestone_days)` row is re-stamped with a
- * fresh `sent_at`, which the eligibility RPC compares against `last_active_at`.
+ * fresh `sent_at`, which the eligibility RPC compares against last sign-in.
  *
  * Pass every tier that should be suppressed for this send. When we emit the
  * highest pending tier (e.g. 30d), we also stamp the lower tiers (3d, 15d) so the
@@ -82,7 +84,7 @@ export async function insertKlaviyoInactivityMilestoneSent(
   return recordKlaviyoInactivityMilestonesSent(supabase, userId, [milestoneDays])
 }
 
-/** Every configured tier at or below `maxDays` (e.g. 30 → [3, 15, 30]). */
+/** The configured inactive tier(s) at or below `maxDays` (always `[30]` today). */
 export function inactivityMilestoneTiersUpTo(
   maxDays: KlaviyoInactivityMilestoneDays,
 ): KlaviyoInactivityMilestoneDays[] {
@@ -106,7 +108,7 @@ export async function fetchSentInactiveMilestoneDaysForUser(
   const out = new Set<KlaviyoInactivityMilestoneDays>()
   for (const row of data ?? []) {
     const d = Number((row as { milestone_days?: number }).milestone_days)
-    if (d === 3 || d === 15 || d === 30) out.add(d as KlaviyoInactivityMilestoneDays)
+    if (d === KLAVIYO_INACTIVITY_MILESTONE_DAYS_VALUE) out.add(d)
   }
 
   return { days: out, error: null }
@@ -114,7 +116,7 @@ export async function fetchSentInactiveMilestoneDaysForUser(
 
 /**
  * Milestones already emitted **during the current inactivity streak** — matches
- * `profiles_eligible_for_klaviyo_inactivity` (`sent_at > last_active_at`).
+ * `profiles_eligible_for_klaviyo_inactivity` (`sent_at > last sign-in anchor`).
  */
 export async function fetchInactiveMilestoneDaysSentThisStreak(
   supabase: SupabaseClient,
@@ -142,11 +144,11 @@ export async function fetchInactiveMilestoneDaysSentThisStreak(
     const sentAtMs =
       typeof sentAtRaw === "string" ? new Date(sentAtRaw).getTime() : Number.NaN
     if (
-      (d === 3 || d === 15 || d === 30) &&
+      d === KLAVIYO_INACTIVITY_MILESTONE_DAYS_VALUE &&
       Number.isFinite(sentAtMs) &&
       sentAtMs > lastActiveMs
     ) {
-      out.add(d as KlaviyoInactivityMilestoneDays)
+      out.add(KLAVIYO_INACTIVITY_MILESTONE_DAYS_VALUE)
     }
   }
 

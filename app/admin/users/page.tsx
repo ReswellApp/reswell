@@ -450,12 +450,12 @@ export default function AdminUsersPage() {
         | { milestone_days?: number; klaviyo_ok?: boolean; klaviyo_detail?: string }[]
         | undefined
 
-      if (reason === 'no_last_active_at') {
-        toast.message(detail || 'No last active time — presence never recorded for this profile')
+      if (reason === 'no_last_sign_in_at' || reason === 'no_last_active_at') {
+        toast.message(detail || 'No sign-in on record — cannot measure inactivity for this user')
         return
       }
       if (reason === 'not_inactive_enough') {
-        toast.message(detail || 'Not inactive long enough for 3 / 15 / 30-day tiers')
+        toast.message(detail || 'Not inactive long enough — need 30+ days since last sign-in')
         return
       }
       if (reason === 'already_sent_this_streak') {
@@ -1166,7 +1166,7 @@ export default function AdminUsersPage() {
                           onClick={() => void pushInactiveKlaviyoToUser(user.id, 'highest_pending')}
                         >
                           <Mail className="mr-2 h-4 w-4" />
-                          Klaviyo: push inactive milestone
+                          Klaviyo: push 30-day inactive email
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           disabled={pushingKlaviyoUserId === user.id}
@@ -1174,24 +1174,7 @@ export default function AdminUsersPage() {
                             if (
                               typeof window !== 'undefined' &&
                               !window.confirm(
-                                'Send every inactive tier they qualify for that is not recorded yet (can be multiple emails)?',
-                              )
-                            ) {
-                              return
-                            }
-                            void pushInactiveKlaviyoToUser(user.id, 'all_pending')
-                          }}
-                        >
-                          <Mail className="mr-2 h-4 w-4" />
-                          Klaviyo: push all pending tiers
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          disabled={pushingKlaviyoUserId === user.id}
-                          onClick={() => {
-                            if (
-                              typeof window !== 'undefined' &&
-                              !window.confirm(
-                                'Force-send the highest inactive tier to Klaviyo again (bypasses streak dedupe)? Use for testing or if the first send failed.',
+                                'Force-send the 30-day inactive email to Klaviyo again (bypasses streak dedupe)? Use for testing or if the first send failed.',
                               )
                             ) {
                               return

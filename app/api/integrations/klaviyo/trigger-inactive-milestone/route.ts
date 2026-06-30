@@ -1,5 +1,9 @@
 import "@/lib/klaviyo/bootstrap-env"
-import { insertKlaviyoInactivityMilestoneSent } from "@/lib/db/klaviyoInactivityMilestones"
+import {
+  inactivityMilestoneTiersUpTo,
+  recordKlaviyoInactivityMilestonesSent,
+} from "@/lib/db/klaviyoInactivityMilestones"
+import { fetchProfileLastSignInAnchor } from "@/lib/db/profileLastSignIn"
 import { fetchRecentPublicListingsPoolForKlaviyo } from "@/lib/db/recentPublicListingsForKlaviyo"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { pickFeaturedListingsForInactiveUser } from "@/lib/klaviyo/inactivity-featured-listings"
@@ -12,7 +16,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import { NextResponse } from "next/server"
 
 /**
- * Manually emit **User Inactive 3 / 15 / 30 Days** for one profile (Klaviyo Events API).
+ * Manually emit **User Inactive 30 Days** for one profile (Klaviyo Events API).
  * Protect with `CRON_SECRET` when set (`Authorization: Bearer …`), same pattern as other cron routes.
  *
  * Testing: send `"dedupe_nonce": "manual-1730000000"` so Klaviyo does not dedupe repeat requests.
@@ -46,7 +50,7 @@ export async function POST(request: Request) {
 
   const { data: profile, error: profileErr } = await supabase
     .from("profiles")
-    .select("id, email, display_name, last_active_at")
+    .select("id, email, display_name")
     .eq("id", user_id)
     .maybeSingle()
 
@@ -68,10 +72,16 @@ export async function POST(request: Request) {
     console.error("[klaviyo] trigger-inactive-milestone: listing pool:", poolRes.error)
   }
 
-  const lastIso =
-    typeof profile.last_active_at === "string" && profile.last_active_at.trim()
-      ? profile.last_active_at.trim()
-      : new Date(0).toISOString()
+  const { iso: lastIso, error: signInErr } = await fetchProfileLastSignInAnchor(
+    supabase,
+    user_id,
+  )
+  if (!lastIso) {
+    return NextResponse.json(
+      { error: signInErr ?? "No sign-in timestamp for user" },
+      { status: 400 },
+    )
+  }
 
   const result = await trackKlaviyoUserInactiveMilestone({
     userId: user_id,
@@ -87,7 +97,11 @@ export async function POST(request: Request) {
   let recordError: string | null = null
 
   if (record_milestone && result.ok) {
-    const ins = await insertKlaviyoInactivityMilestoneSent(supabase, user_id, milestone_days)
+    const ins = await recordKlaviyoInactivityMilestonesSent(
+      supabase,
+      user_id,
+      inactivityMilestoneTiersUpTo(milestone_days),
+    )
     recorded = !ins.error
     recordError = ins.error ?? null
   }

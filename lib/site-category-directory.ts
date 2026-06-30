@@ -39,16 +39,16 @@ export const siteHeaderMainPeerProductNavLinks: CategoryLink[] = [
 ]
 
 /**
- * Full category rail — desktop header only (shapes + peer gear at end; “Other” hidden).
+ * Full category rail — desktop header only (shapes + peer gear at end).
  */
 export const siteHeaderDesktopCategoryNavLinks: CategoryLink[] = [
-  ...surfboardBrowseLinks.filter((link) => link.href !== "/boards?type=other"),
+  ...surfboardBrowseLinks,
   ...siteHeaderMainPeerProductNavLinks,
 ]
 
 /**
  * Category pill strip — mobile/tablet category bar and hamburger menu.
- * Includes all surfboard shape browse links (same set as desktop, minus Other).
+ * Same surfboard shape browse links as desktop.
  */
 export const siteHeaderMobileCategoryNavLinks: CategoryLink[] = siteHeaderDesktopCategoryNavLinks
 /** Header Categories dropdown + /categories page: surfboards only. */

@@ -6,10 +6,12 @@ import {
 } from "@/lib/db/recentPublicListingsForKlaviyo"
 import {
   fetchInactiveMilestoneDaysSentThisStreak,
-  insertKlaviyoInactivityMilestoneSent,
+  inactivityMilestoneTiersUpTo,
   KLAVIYO_INACTIVITY_MILESTONE_DAYS,
+  recordKlaviyoInactivityMilestonesSent,
   type KlaviyoInactivityMilestoneDays,
 } from "@/lib/db/klaviyoInactivityMilestones"
+import { fetchProfileLastSignInAnchor } from "@/lib/db/profileLastSignIn"
 import { trackKlaviyoUserInactiveMilestone } from "@/lib/klaviyo/track-user-inactive-milestone"
 import type { SupabaseClient } from "@supabase/supabase-js"
 
@@ -57,7 +59,7 @@ function pickMilestonesToSend(
 
 export type InactivePushSkipReason =
   | "profile_not_found"
-  | "no_last_active_at"
+  | "no_last_sign_in_at"
   | "marketing_opt_out"
   | "not_inactive_enough"
   | "already_sent_this_streak"
@@ -73,9 +75,8 @@ export function describeInactivePushSkip(params: {
 
   if (!lastActiveAtIso) {
     return {
-      reason: "no_last_active_at",
-      detail:
-        "No last_active_at on profile — presence never recorded. User must sign in at least once.",
+      reason: "no_last_sign_in_at",
+      detail: "No sign-in timestamp on auth account — cannot measure inactivity.",
     }
   }
 
@@ -94,16 +95,15 @@ export function describeInactivePushSkip(params: {
   if (qualifiesByTime.length === 0) {
     return {
       reason: "not_inactive_enough",
-      detail: `Last active ${inactiveDays} day${inactiveDays === 1 ? "" : "s"} ago — need 3+ for the first tier.`,
+      detail: `Last sign-in ${inactiveDays} day${inactiveDays === 1 ? "" : "s"} ago — need 30+ days inactive.`,
     }
   }
 
   const pending = qualifiesByTime.filter((d) => !sentThisStreak.has(d))
   if (pending.length === 0) {
-    const sent = [...sentThisStreak].sort((a, b) => a - b)
     return {
       reason: "already_sent_this_streak",
-      detail: `Inactive ${inactiveDays} days; tier(s) ${sent.join(", ")}d already sent this streak. Use force resend to emit again.`,
+      detail: `Inactive ${inactiveDays} days; 30-day email already sent this streak. Use force resend to emit again.`,
     }
   }
 
@@ -131,9 +131,8 @@ export type PushKlaviyoInactiveForUserResult = {
 }
 
 /**
- * Admin backfill: uses `profiles.last_active_at` (same signal as the users table) to decide
- * which **User Inactive N Days** metrics to send. Default strategy sends only the **highest**
- * qualifying tier not yet recorded this inactivity streak.
+ * Admin backfill: uses auth `last_sign_in_at` (or `created_at` if never signed in) to emit
+ * **User Inactive 30 Days** when the user qualifies and has not been sent this streak.
  */
 export async function pushKlaviyoInactiveMilestonesForUser(
   supabase: SupabaseClient,
@@ -150,7 +149,7 @@ export async function pushKlaviyoInactiveMilestonesForUser(
 
   const { data: profile, error: pErr } = await supabase
     .from("profiles")
-    .select("id, email, display_name, last_active_at, marketing_emails_opt_out")
+    .select("id, email, display_name, marketing_emails_opt_out")
     .eq("id", userId)
     .maybeSingle()
 
@@ -180,10 +179,10 @@ export async function pushKlaviyoInactiveMilestonesForUser(
     }
   }
 
-  const lastIso =
-    typeof profile.last_active_at === "string" && profile.last_active_at.trim()
-      ? profile.last_active_at.trim()
-      : null
+  const { iso: lastIso, error: signInErr } = await fetchProfileLastSignInAnchor(
+    supabase,
+    userId,
+  )
 
   const marketingOptOut = profile.marketing_emails_opt_out === true
 
@@ -202,7 +201,7 @@ export async function pushKlaviyoInactiveMilestonesForUser(
       force,
       milestones_attempted: [],
       sent: [],
-      skipped_reason: skip?.reason ?? "no_last_active_at",
+      skipped_reason: signInErr ?? skip?.reason ?? "no_last_sign_in_at",
       skipped_detail: skip?.detail,
     }
   }
@@ -286,7 +285,11 @@ export async function pushKlaviyoInactiveMilestonesForUser(
     let record_error: string | null = null
 
     if (result.ok) {
-      const ins = await insertKlaviyoInactivityMilestoneSent(supabase, userId, milestoneDays)
+      const ins = await recordKlaviyoInactivityMilestonesSent(
+        supabase,
+        userId,
+        inactivityMilestoneTiersUpTo(milestoneDays),
+      )
       milestone_recorded = !ins.error
       record_error = ins.error ?? null
     }

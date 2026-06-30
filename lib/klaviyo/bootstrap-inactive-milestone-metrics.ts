@@ -1,5 +1,5 @@
 /**
- * Sends one minimal Events API event per inactive-milestone metric so Klaviyo lists them under
+ * Sends one minimal Events API event so **User Inactive 30 Days** appears under
  * **Flows → Your metrics → API** before any real user qualifies for cron.
  *
  * Uses a synthetic `external_id` and `reswell_metric_seed` on events — exclude in flows via
@@ -9,16 +9,14 @@
 import "@/lib/klaviyo/bootstrap-env"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import {
-  INACTIVE_MILESTONE_METRIC_NAMES,
-  type KlaviyoUserInactiveMilestoneDays,
+  KLAVIYO_USER_INACTIVE_MILESTONE_DAYS,
+  USER_INACTIVE_30_DAYS_METRIC,
 } from "@/lib/klaviyo/track-user-inactive-milestone"
 
 const SEED_PROFILE_EXTERNAL_ID = "reswell-metric-seed-inactive"
 
-const DAYS: KlaviyoUserInactiveMilestoneDays[] = [3, 15, 30]
-
 export type BootstrapInactiveMilestoneMetricResult = {
-  milestone_days: KlaviyoUserInactiveMilestoneDays
+  milestone_days: typeof KLAVIYO_USER_INACTIVE_MILESTONE_DAYS
   metric_name: string
   ok: boolean
   skipped: boolean
@@ -31,33 +29,30 @@ export async function bootstrapInactiveMilestoneMetrics(): Promise<{
   results: BootstrapInactiveMilestoneMetricResult[]
 }> {
   const time = new Date().toISOString()
-  const results: BootstrapInactiveMilestoneMetricResult[] = []
+  const r = await sendKlaviyoServerEvent({
+    metricName: USER_INACTIVE_30_DAYS_METRIC,
+    profile: {
+      external_id: SEED_PROFILE_EXTERNAL_ID,
+    },
+    uniqueId: "reswell-seed-inactive-30d",
+    properties: {
+      time,
+      reswell_metric_seed: true,
+      inactive_milestone_days: KLAVIYO_USER_INACTIVE_MILESTONE_DAYS,
+    },
+  })
 
-  for (const days of DAYS) {
-    const metric_name = INACTIVE_MILESTONE_METRIC_NAMES[days]
-    const r = await sendKlaviyoServerEvent({
-      metricName: metric_name,
-      profile: {
-        external_id: SEED_PROFILE_EXTERNAL_ID,
+  return {
+    results: [
+      {
+        milestone_days: KLAVIYO_USER_INACTIVE_MILESTONE_DAYS,
+        metric_name: USER_INACTIVE_30_DAYS_METRIC,
+        ok: r.ok,
+        skipped: r.skipped,
+        status: r.status,
+        skipReason: r.skipReason,
+        detail: r.detail,
       },
-      uniqueId: `reswell-seed-inactive-${days}d`,
-      properties: {
-        time,
-        reswell_metric_seed: true,
-        inactive_milestone_days: days,
-      },
-    })
-
-    results.push({
-      milestone_days: days,
-      metric_name,
-      ok: r.ok,
-      skipped: r.skipped,
-      status: r.status,
-      skipReason: r.skipReason,
-      detail: r.detail,
-    })
+    ],
   }
-
-  return { results }
 }

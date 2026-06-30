@@ -338,7 +338,7 @@ export default function AdminToolsPage() {
             icon={Mail}
             accent="violet"
             title="Run inactive Klaviyo sync"
-            description="Emit inactive-milestone events (3 / 15 / 30 day) to Klaviyo for every eligible account. Sends real emails."
+            description="Emit **User Inactive 30 Days** events to Klaviyo for every eligible account. Sends real emails."
             result={results.klaviyo}
           >
             <Button variant="outline" onClick={() => setKlaviyoConfirm(true)} disabled={running !== null}>
@@ -395,8 +395,9 @@ export default function AdminToolsPage() {
           <DialogHeader>
             <DialogTitle>Run inactive Klaviyo sync?</DialogTitle>
             <DialogDescription>
-              This processes every account against the 3 / 15 / 30-day inactivity tiers and emits Klaviyo events,
-              which can trigger real lifecycle emails. Already-recorded milestones are skipped.
+              This processes every account inactive 30+ days since last sign-in and emits the Klaviyo
+              **User Inactive 30 Days** event, which can trigger real lifecycle emails. Already-recorded
+              milestones are skipped.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

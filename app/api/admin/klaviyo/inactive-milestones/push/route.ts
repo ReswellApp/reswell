@@ -21,8 +21,7 @@ async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) 
 }
 
 /**
- * Backfill **User Inactive N Days** for one user from `profiles.last_active_at` (same as /admin/users).
- * Default `strategy`: **highest_pending** (one metric — the deepest tier they qualify for that is not yet stored).
+ * Backfill **User Inactive 30 Days** for one user from auth last sign-in (same as /admin/users).
  */
 export async function POST(request: Request) {
   const supabase = await createClient()

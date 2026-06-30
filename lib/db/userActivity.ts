@@ -1,13 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 /**
- * Mark a user as active *now* by moving `profiles.last_active_at` forward.
- *
- * Presence heartbeats already cover signed-in users with the site open, but
- * meaningful server-side engagement (sending a message, completing a purchase)
- * should also reset the inactivity clock. Moving `last_active_at` forward is what
- * makes Klaviyo inactive-milestone re-entry work: a fresh timestamp invalidates
- * any previously recorded milestone for the next inactivity streak.
+ * Mark a user as active *now* for admin live stats (`profiles.last_active_at`).
+ * Klaviyo inactive winback uses auth `last_sign_in_at` instead — only a new login resets that clock.
  *
  * Best-effort and non-throwing — callers fire-and-forget (`void`); a failure here
  * must never break the message/order flow.

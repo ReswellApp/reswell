@@ -3,7 +3,7 @@ import { bootstrapInactiveMilestoneMetrics } from "@/lib/klaviyo/bootstrap-inact
 import { NextResponse } from "next/server"
 
 /**
- * One-time (or rare) call so **User Inactive 3 / 15 / 30 Days** appear under
+ * One-time (or rare) call so **User Inactive 30 Days** appears under
  * Flows → Your metrics → API. Klaviyo only surfaces custom API metrics after at least one
  * accepted Events API event per metric name.
  *
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: accepted,
       message:
-        "Seed events sent. Open Klaviyo → Flows → Create flow → Metric — the three “User Inactive …” metrics should appear under API within a few minutes. Seed events use profile external_id reswell-metric-seed-inactive and property reswell_metric_seed — add a flow filter to ignore them if needed.",
+        "Seed event sent. Open Klaviyo → Flows → Create flow → Metric — **User Inactive 30 Days** should appear under API within a few minutes. Seed events use profile external_id reswell-metric-seed-inactive and property reswell_metric_seed — add a flow filter to ignore them if needed.",
       results,
     })
   } catch (e) {

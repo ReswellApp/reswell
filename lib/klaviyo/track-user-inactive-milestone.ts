@@ -1,17 +1,11 @@
 /**
- * Klaviyo Events API — milestones when a user has been inactive (no presence heartbeat).
+ * Klaviyo Events API — **User Inactive 30 Days** when a user has not signed in for 30 days.
  *
- * **Eligibility:** `profiles.last_active_at` is strictly older than N days (`N` ∈ {3, 15, 30}).
- * Users with no `last_active_at` never receive these metrics (presence never ran).
+ * **Eligibility:** `auth.users.last_sign_in_at` is strictly older than 30 days (or `created_at`
+ * if never signed in). Inactivity resets only on a new sign-in — not from presence heartbeats
+ * or server-side activity like messages/orders.
  *
- * **Metrics (Flows → Metric → …):**
- * - **User Inactive 3 Days**
- * - **User Inactive 15 Days**
- * - **User Inactive 30 Days**
- *
- * **Building flows:** One flow per metric, or duplicate steps with conditional branches.
- * Add a conditional split before email: suppress if someone has done X **since metric**
- * using page-view / commerce metrics (e.g. **Viewed Site Page**, **Listing**, **Purchase Successful**).
+ * **Metric (Flows → Metric → …):** **User Inactive 30 Days**
  *
  * **Rendering in Klaviyo:** Email clients do **not** support iframes. Do not print `featured_listings`
  * as a single variable (you get a raw object dump). Either:
@@ -26,27 +20,32 @@
  *
  * Manual test: `POST /api/integrations/klaviyo/trigger-inactive-milestone` (same Bearer when `CRON_SECRET` is set).
  *
- * Metrics only appear under Flows → Your metrics → API after Klaviyo has accepted **at least one event** per name.
+ * Metric appears under Flows → Your metrics → API after Klaviyo accepts **at least one event**.
  * Run once: `POST /api/integrations/klaviyo/bootstrap-inactive-metrics` (Bearer `CRON_SECRET` when set).
  */
 
 import type { KlaviyoInactiveFeaturedListing } from "@/lib/klaviyo/inactivity-featured-listings"
+import {
+  buildInactiveFeaturedListingsEmailHtml,
+  buildInactiveFeaturedListingsPlainText,
+} from "@/lib/klaviyo/inactive-featured-listings-email-html"
 import {
   resolveListingUrlForEmail,
   resolveMarketplaceBoardsUrlForEmail,
 } from "@/lib/klaviyo/email-listing-links"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 
-export type KlaviyoUserInactiveMilestoneDays = 3 | 15 | 30
+export const KLAVIYO_USER_INACTIVE_MILESTONE_DAYS = 30 as const
+export type KlaviyoUserInactiveMilestoneDays = typeof KLAVIYO_USER_INACTIVE_MILESTONE_DAYS
 
-/** Exported so seed/bootstrap and docs stay aligned with Klaviyo’s metric catalog. */
+export const USER_INACTIVE_30_DAYS_METRIC = "User Inactive 30 Days"
+
+/** @deprecated Use `USER_INACTIVE_30_DAYS_METRIC` — kept for bootstrap route compatibility. */
 export const INACTIVE_MILESTONE_METRIC_NAMES: Record<
   KlaviyoUserInactiveMilestoneDays,
   string
 > = {
-  3: "User Inactive 3 Days",
-  15: "User Inactive 15 Days",
-  30: "User Inactive 30 Days",
+  30: USER_INACTIVE_30_DAYS_METRIC,
 }
 
 export type TrackKlaviyoUserInactiveMilestonePayload = {
@@ -54,7 +53,7 @@ export type TrackKlaviyoUserInactiveMilestonePayload = {
   /** Prefer public profile email; Auth email used when null (see caller). */
   email: string | null
   displayName: string | null
-  milestoneDays: KlaviyoUserInactiveMilestoneDays
+  milestoneDays?: KlaviyoUserInactiveMilestoneDays
   lastActiveAtIso: string
   /** Newest listings for email modules (may be empty if catalog is thin). */
   featuredListings: KlaviyoInactiveFeaturedListing[]
@@ -68,8 +67,8 @@ export type TrackKlaviyoUserInactiveMilestonePayload = {
 export async function trackKlaviyoUserInactiveMilestone(
   payload: TrackKlaviyoUserInactiveMilestonePayload,
 ): Promise<Awaited<ReturnType<typeof sendKlaviyoServerEvent>>> {
+  const milestoneDays = payload.milestoneDays ?? KLAVIYO_USER_INACTIVE_MILESTONE_DAYS
   const eventTime = new Date().toISOString()
-  const metricName = INACTIVE_MILESTONE_METRIC_NAMES[payload.milestoneDays]
 
   const featured = payload.featuredListings ?? []
   const marketplace_url = resolveMarketplaceBoardsUrlForEmail()
@@ -77,14 +76,14 @@ export async function trackKlaviyoUserInactiveMilestone(
   const listings_html = buildInactiveFeaturedListingsEmailHtml(featured, marketplace_url)
   const listings_plain = buildInactiveFeaturedListingsPlainText(featured, marketplace_url)
 
-  const baseId = `user-inactive-${payload.milestoneDays}d-${payload.userId}`
+  const baseId = `user-inactive-${milestoneDays}d-${payload.userId}`
   const suffix =
     typeof payload.uniqueIdSuffix === "string" && payload.uniqueIdSuffix.trim()
       ? `-${payload.uniqueIdSuffix.trim()}`
       : ""
 
   return sendKlaviyoServerEvent({
-    metricName,
+    metricName: USER_INACTIVE_30_DAYS_METRIC,
     profile: {
       external_id: payload.userId,
       email: payload.email,
@@ -92,7 +91,8 @@ export async function trackKlaviyoUserInactiveMilestone(
     uniqueId: `${baseId}${suffix}`,
     properties: {
       time: eventTime,
-      inactive_milestone_days: payload.milestoneDays,
+      inactive_milestone_days: milestoneDays,
+      last_signed_in_at: payload.lastActiveAtIso,
       last_active_at: payload.lastActiveAtIso,
       user_id: payload.userId,
       display_name: payload.displayName?.trim() ?? "",

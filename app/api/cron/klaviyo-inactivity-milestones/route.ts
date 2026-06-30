@@ -4,7 +4,7 @@ import { sendInactivitySyncReport } from "@/lib/services/klaviyoInactivitySyncRe
 import { NextResponse } from "next/server"
 
 /**
- * Daily job: emits Klaviyo metrics **User Inactive 3 / 15 / 30 Days** for eligible profiles.
+ * Daily job: emits Klaviyo metric **User Inactive 30 Days** for eligible profiles.
  * Protected with CRON_SECRET (same pattern as purge-archived).
  */
 export async function GET(request: Request) {

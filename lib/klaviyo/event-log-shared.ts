@@ -21,8 +21,6 @@ const METRIC_CATEGORY: Record<string, KlaviyoMetricCategory> = {
   "Order Shipping Update": "transactional",
   Payouts: "transactional",
   "New Account Created": "lifecycle",
-  "User Inactive 3 Days": "lifecycle",
-  "User Inactive 15 Days": "lifecycle",
   "User Inactive 30 Days": "lifecycle",
   "Review Requested": "lifecycle",
   "Checkout Started": "lifecycle",
@@ -45,6 +43,10 @@ const METRIC_CATEGORY: Record<string, KlaviyoMetricCategory> = {
   "Viewed Boards Page": "marketing",
   "Viewed Site Page": "marketing",
   "Search Insights Digest": "marketing",
+  "Platform Error Digest": "marketing",
+  "Inactive Sync Report": "marketing",
+  "Review Invite Sent": "lifecycle",
+  "marked as sold": "engagement",
 }
 
 export const KNOWN_KLAVIYO_METRIC_NAMES = Object.keys(METRIC_CATEGORY)
@@ -116,6 +118,51 @@ export interface KlaviyoMetricRow {
   skipped: number
   failed: number
   uniqueRecipients: number
+}
+
+function emptyKlaviyoMetricRow(metric: string): KlaviyoMetricRow {
+  return {
+    metric,
+    category: categorizeKlaviyoMetric(metric),
+    total: 0,
+    sent: 0,
+    skipped: 0,
+    failed: 0,
+    uniqueRecipients: 0,
+  }
+}
+
+/**
+ * Ensures every known metric appears in admin UI lists even when it had no events
+ * in the selected window. Metrics with activity sort first; zero-count metrics follow.
+ */
+export function mergeKlaviyoMetricRows(
+  byMetric: KlaviyoMetricRow[],
+  category: KlaviyoMetricCategoryFilter,
+): KlaviyoMetricRow[] {
+  const statsByName = new Map(byMetric.map((m) => [m.metric, m]))
+
+  if (category === "other") {
+    return byMetric
+      .filter((m) => m.category === "other")
+      .sort((a, b) => b.total - a.total || a.metric.localeCompare(b.metric))
+  }
+
+  const metricNames = new Set<string>()
+
+  if (category === "all") {
+    for (const name of KNOWN_KLAVIYO_METRIC_NAMES) metricNames.add(name)
+    for (const m of byMetric) metricNames.add(m.metric)
+  } else {
+    for (const name of klaviyoMetricsForCategoryFilter(category) ?? []) metricNames.add(name)
+    for (const m of byMetric) {
+      if (m.category === category) metricNames.add(m.metric)
+    }
+  }
+
+  return [...metricNames]
+    .map((name) => statsByName.get(name) ?? emptyKlaviyoMetricRow(name))
+    .sort((a, b) => b.total - a.total || a.metric.localeCompare(b.metric))
 }
 
 export interface KlaviyoSkipReasonRow {

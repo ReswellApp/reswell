@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS public.klaviyo_inactivity_milestones (
   user_id UUID NOT NULL REFERENCES auth.users (id) ON DELETE CASCADE,
-  milestone_days SMALLINT NOT NULL CHECK (milestone_days IN (3, 15, 30)),
+  milestone_days SMALLINT NOT NULL CHECK (milestone_days = 30),
   sent_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (user_id, milestone_days)
 );

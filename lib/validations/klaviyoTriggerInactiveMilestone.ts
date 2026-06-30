@@ -4,7 +4,7 @@ import { z } from "zod"
 export const klaviyoTriggerInactiveMilestoneBodySchema = z.object({
   /** Supabase `profiles.id` — event profile `external_id`. */
   user_id: z.string().uuid(),
-  milestone_days: z.union([z.literal(3), z.literal(15), z.literal(30)]).optional().default(3),
+  milestone_days: z.literal(30).optional().default(30),
   /**
    * When true, inserts `klaviyo_inactivity_milestones` so cron will not re-send this milestone.
    * Default false for safe template testing.

@@ -7,7 +7,7 @@ import {
   fetchProfilesEligibleForKlaviyoInactivity,
   inactivityMilestoneTiersUpTo,
   recordKlaviyoInactivityMilestonesSent,
-  KLAVIYO_INACTIVITY_MILESTONE_DAYS,
+  KLAVIYO_INACTIVITY_MILESTONE_DAYS_VALUE,
   type KlaviyoInactivityMilestoneDays,
 } from "@/lib/db/klaviyoInactivityMilestones"
 import type { SupabaseClient } from "@supabase/supabase-js"
@@ -24,12 +24,8 @@ export type ProcessKlaviyoInactivityMilestonesSummary = {
 }
 
 /**
- * For one milestone N: emit **User Inactive N Days** for every profile with
- * `last_active_at < referenceTime - N days` that has not been messaged this
- * inactivity streak. When we emit, we also stamp every lower tier as sent so the
- * recipient does not receive multiple inactive emails in a single run — the
- * highest pending tier wins. Processing tiers high→low (see `processAll…`) makes
- * this the effective "highest pending tier per user per run" behavior.
+ * For the 30-day milestone: emit **User Inactive 30 Days** for every profile whose last auth sign-in
+ * is older than 30 days and who has not been messaged this inactivity streak.
  */
 export async function processKlaviyoInactivityMilestone(
   supabase: SupabaseClient,
@@ -145,14 +141,11 @@ export async function processAllKlaviyoInactivityMilestones(
   supabase: SupabaseClient,
   referenceTime: Date,
 ): Promise<ProcessKlaviyoInactivityMilestonesSummary[]> {
-  // Highest tier first so a deep-inactive user is stamped for the lower tiers and
-  // therefore drops out of those passes — they get one email (the highest tier),
-  // not three. Lower tiers still fire on later runs as a user ages into them.
-  const tiersDescending = [...KLAVIYO_INACTIVITY_MILESTONE_DAYS].sort((a, b) => b - a)
-
-  const summaries: ProcessKlaviyoInactivityMilestonesSummary[] = []
-  for (const days of tiersDescending) {
-    summaries.push(await processKlaviyoInactivityMilestone(supabase, days, referenceTime))
-  }
-  return summaries
+  return [
+    await processKlaviyoInactivityMilestone(
+      supabase,
+      KLAVIYO_INACTIVITY_MILESTONE_DAYS_VALUE,
+      referenceTime,
+    ),
+  ]
 }

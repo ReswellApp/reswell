@@ -35,6 +35,7 @@ import type {
 } from "@/lib/klaviyo/event-log-shared"
 import {
   KLAVIYO_METRIC_CATEGORY_FILTERS,
+  mergeKlaviyoMetricRows,
   metricMatchesKlaviyoCategoryFilter,
 } from "@/lib/klaviyo/event-log-shared"
 import {
@@ -197,9 +198,9 @@ export function NotificationsCenterClient() {
   )
   const internal = data?.internal
   const deliveryRate = k ? pct(k.totals.sent, k.totals.total) : "—"
-  const filteredMetrics = useMemo(
-    () => (k?.byMetric ?? []).filter((m) => metricMatchesKlaviyoCategoryFilter(m.metric, categoryFilter)),
-    [k?.byMetric, categoryFilter],
+  const displayMetrics = useMemo(
+    () => mergeKlaviyoMetricRows(data?.klaviyo.byMetric ?? [], categoryFilter),
+    [data?.klaviyo.byMetric, categoryFilter],
   )
   const categoryLabel =
     KLAVIYO_METRIC_CATEGORY_FILTERS.find((c) => c.value === categoryFilter)?.label ?? "All"
@@ -439,7 +440,7 @@ export function NotificationsCenterClient() {
                   </p>
                 </CardHeader>
                 <CardContent className="overflow-x-auto">
-                  {(k?.byMetric.length ?? 0) === 0 ? (
+                  {displayMetrics.length === 0 ? (
                     <p className="py-6 text-center text-sm text-muted-foreground">No events yet.</p>
                   ) : (
                     <table className="w-full text-sm">
@@ -455,7 +456,7 @@ export function NotificationsCenterClient() {
                         </tr>
                       </thead>
                       <tbody>
-                        {k!.byMetric.map((m) => (
+                        {displayMetrics.map((m) => (
                           <tr key={m.metric} className="border-b border-border/60 last:border-0">
                             <td className="py-2 pr-4">
                               <button
@@ -488,7 +489,7 @@ export function NotificationsCenterClient() {
             <TabsContent value="event-log">
               <KlaviyoEventLogExplorer
                 range={range}
-                metrics={filteredMetrics}
+                metrics={displayMetrics}
                 filters={eventLogFilters}
                 onFiltersChange={setEventLogFilters}
               />
