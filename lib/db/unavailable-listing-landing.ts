@@ -6,7 +6,10 @@ import {
   type BoardBrowseListingRow,
 } from "@/lib/db/boards-browse-listings"
 import { isBoardsBrowseSuppressionSortAvailable } from "@/lib/db/boards-browse-suppressed-admin"
-import { BOARDS_BROWSE_NEWEST_SORT } from "@/lib/marketplace-slug-metadata"
+import {
+  BOARDS_BROWSE_NEWEST_SORT,
+  browseTypeParamFromBoardType,
+} from "@/lib/marketplace-slug-metadata"
 
 export const UNAVAILABLE_LISTING_CONTEXT_SELECT =
   "id, slug, title, section, status, hidden_from_site, brand, brand_id, board_type, user_id"
@@ -28,6 +31,49 @@ export type UnavailableListingContextRow = {
 
 export type UnavailableListingRelatedSurfboard = Record<string, unknown>
 
+type RelatedBrowseQueryOpts = {
+  boardTypeParam: string
+  brandId?: string
+  brandLabel?: string
+  excludeListingId?: string
+  limit: number
+  useSuppressionSort: boolean
+}
+
+/** Runs a browse query with optional suppression-sort retry (matches `/boards` db helpers). */
+async function fetchRelatedBrowseRows(
+  supabase: SupabaseClient,
+  opts: RelatedBrowseQueryOpts,
+): Promise<BoardBrowseListingRow[]> {
+  const fetchLimit = opts.limit + (opts.excludeListingId ? 4 : 0)
+  const baseParams = {
+    boardType: opts.boardTypeParam,
+    condition: "all" as const,
+    query: "",
+    brandId: opts.brandId,
+    brand: opts.brandId ? undefined : opts.brandLabel,
+    pagedSort: BOARDS_BROWSE_NEWEST_SORT,
+    pagedRange: { from: 0, to: fetchLimit },
+  }
+
+  let chain = await buildSurfboardBrowseBaseQuery(supabase, {
+    ...baseParams,
+    useSuppressionSort: opts.useSuppressionSort,
+  })
+  let { data, error } = await chain
+
+  if (error && opts.useSuppressionSort) {
+    chain = await buildSurfboardBrowseBaseQuery(supabase, {
+      ...baseParams,
+      useSuppressionSort: false,
+    })
+    ;({ data, error } = await chain)
+  }
+
+  if (error) return []
+  return ((data ?? []) as BoardBrowseListingRow[]).slice(0, fetchLimit)
+}
+
 export async function fetchRelatedSurfboardsForUnavailableListing(
   supabase: SupabaseClient,
   opts: {
@@ -44,68 +90,46 @@ export async function fetchRelatedSurfboardsForUnavailableListing(
   const boardTypeParam = browseTypeParamFromBoardType(opts.boardType) ?? "all"
 
   const useSuppressionSort = await isBoardsBrowseSuppressionSortAvailable(supabase)
-
-  let chain = (await buildSurfboardBrowseBaseQuery(supabase, {
-    boardType: boardTypeParam,
-    condition: "all",
-    query: "",
-    brandId: brandId || undefined,
-    brand: brandId ? undefined : brandLabel,
+  const queryOpts = {
+    boardTypeParam,
+    brandId,
+    brandLabel,
+    excludeListingId: opts.excludeListingId,
+    limit,
     useSuppressionSort,
-    pagedSort: BOARDS_BROWSE_NEWEST_SORT,
-    pagedRange: { from: 0, to: limit + (opts.excludeListingId ? 4 : 0) },
-  })) as Awaited<ReturnType<typeof buildSurfboardBrowseBaseQuery>>
-
-  const { data, error } = await chain
-  if (error) {
-    if (useSuppressionSort) {
-      chain = (await buildSurfboardBrowseBaseQuery(supabase, {
-        boardType: boardTypeParam,
-        condition: "all",
-        query: "",
-        brandId: brandId || undefined,
-        brand: brandId ? undefined : brandLabel,
-        useSuppressionSort: false,
-        pagedSort: BOARDS_BROWSE_NEWEST_SORT,
-        pagedRange: { from: 0, to: limit + (opts.excludeListingId ? 4 : 0) },
-      })) as Awaited<ReturnType<typeof buildSurfboardBrowseBaseQuery>>
-      const retry = await chain
-      if (retry.error) return []
-      return filterUnavailableRelatedRows(retry.data, opts.excludeListingId, limit)
-    }
-    return []
   }
 
-  let rows = filterUnavailableRelatedRows(data, opts.excludeListingId, limit)
+  let rows = filterUnavailableRelatedRows(
+    await fetchRelatedBrowseRows(supabase, queryOpts),
+    opts.excludeListingId,
+    limit,
+  )
   if (rows.length > 0 || (!brandId && !brandLabel)) return rows
 
   /** Brand-only match empty — try board type without brand. */
   if (boardTypeParam === "all") return rows
 
-  chain = (await buildSurfboardBrowseBaseQuery(supabase, {
-    boardType: boardTypeParam,
-    condition: "all",
-    query: "",
-    useSuppressionSort,
-    pagedSort: BOARDS_BROWSE_NEWEST_SORT,
-    pagedRange: { from: 0, to: limit + (opts.excludeListingId ? 4 : 0) },
-  })) as Awaited<ReturnType<typeof buildSurfboardBrowseBaseQuery>>
-
-  const fallback = await chain
-  if (fallback.error) return rows
-  return filterUnavailableRelatedRows(fallback.data, opts.excludeListingId, limit)
+  rows = filterUnavailableRelatedRows(
+    await fetchRelatedBrowseRows(supabase, {
+      ...queryOpts,
+      brandId: undefined,
+      brandLabel: undefined,
+    }),
+    opts.excludeListingId,
+    limit,
+  )
+  return rows
 }
 
 function filterUnavailableRelatedRows(
-  data: BoardBrowseListingRow[] | null,
+  data: BoardBrowseListingRow[],
   excludeListingId: string | undefined,
   limit: number,
 ): UnavailableListingRelatedSurfboard[] {
-  const raw = (data ?? []) as UnavailableListingRelatedSurfboard[]
   const filtered = excludeListingId
-    ? raw.filter((row) => String(row.id) !== excludeListingId)
-    : raw
-  return filtered.slice(0, limit)
+    ? data.filter((row) => row.id !== excludeListingId)
+    : data
+  return filtered.slice(0, limit) as UnavailableListingRelatedSurfboard[]
 }
 
 /** First page of active surfboards — same filters as `/boards` with no query params. */

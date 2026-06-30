@@ -57,6 +57,74 @@ export function categorizeKlaviyoMetric(metricName: string): KlaviyoMetricCatego
   return METRIC_CATEGORY[metricName] ?? "other"
 }
 
+export type KlaviyoMetricCategoryFilter = KlaviyoMetricCategory | "all"
+
+export const KLAVIYO_METRIC_CATEGORY_FILTERS: {
+  value: KlaviyoMetricCategoryFilter
+  label: string
+}[] = [
+  { value: "all", label: "All" },
+  { value: "transactional", label: "Transactional" },
+  { value: "lifecycle", label: "Lifecycle" },
+  { value: "marketing", label: "Marketing" },
+  { value: "engagement", label: "Engagement" },
+  { value: "other", label: "Other" },
+]
+
+const KNOWN_KLAVIYO_METRICS = Object.keys(METRIC_CATEGORY)
+
+export function isKlaviyoMetricCategoryFilter(value: unknown): value is KlaviyoMetricCategoryFilter {
+  return (
+    value === "all" ||
+    value === "transactional" ||
+    value === "lifecycle" ||
+    value === "engagement" ||
+    value === "marketing" ||
+    value === "other"
+  )
+}
+
+export function klaviyoMetricsForCategoryFilter(
+  category: KlaviyoMetricCategoryFilter,
+): string[] | null {
+  if (category === "all" || category === "other") return null
+  return KNOWN_KLAVIYO_METRICS.filter((metric) => METRIC_CATEGORY[metric] === category)
+}
+
+export function metricMatchesKlaviyoCategoryFilter(
+  metricName: string,
+  category: KlaviyoMetricCategoryFilter,
+): boolean {
+  if (category === "all") return true
+  return categorizeKlaviyoMetric(metricName) === category
+}
+
+function quotedMetricInList(metrics: string[]): string {
+  return `(${metrics.map((m) => `"${m.replace(/"/g, '\\"')}"`).join(",")})`
+}
+
+/** Applies category filter to a Supabase query on `klaviyo_event_log.metric_name`. */
+function applyKlaviyoCategoryFilter<
+  T extends {
+    in(column: string, values: string[]): T
+    not(column: string, operator: string, value: string): T
+    eq(column: string, value: string): T
+  },
+>(query: T, category: KlaviyoMetricCategoryFilter): T {
+  if (category === "all") return query
+
+  if (category === "other") {
+    if (KNOWN_KLAVIYO_METRICS.length === 0) return query
+    return query.not("metric_name", "in", quotedMetricInList(KNOWN_KLAVIYO_METRICS))
+  }
+
+  const metrics = klaviyoMetricsForCategoryFilter(category)
+  if (!metrics?.length) {
+    return query.eq("metric_name", "__no_metrics_in_category__")
+  }
+  return query.in("metric_name", metrics)
+}
+
 /**
  * Best-effort, never-throwing insert of one Klaviyo event into the durable log.
  * Uses the service role so it works from cron, webhooks, and anonymous contexts.
@@ -351,6 +419,7 @@ export interface KlaviyoEventLogPageResult {
     metric: string | null
     status: KlaviyoEventStatusFilter
     recipient: string | null
+    category: KlaviyoMetricCategoryFilter
   }
   rows: KlaviyoEventLogRow[]
   total: number
@@ -415,6 +484,7 @@ export async function fetchKlaviyoEventLogPage(
   const metric = query.metric?.trim() || null
   const recipient = query.recipient?.trim() || null
   const status = query.status ?? "all"
+  const category = query.category ?? "all"
   const limit = query.limit ?? 50
   const offset = query.offset ?? 0
 
@@ -425,6 +495,7 @@ export async function fetchKlaviyoEventLogPage(
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1)
 
+  listQuery = applyKlaviyoCategoryFilter(listQuery, category)
   if (metric) listQuery = listQuery.eq("metric_name", metric)
   if (status !== "all") listQuery = listQuery.eq("status", status)
   const recipientOr = recipient ? recipientFilterOrClause(recipient) : null
@@ -448,6 +519,9 @@ export async function fetchKlaviyoEventLogPage(
       .from("klaviyo_event_log")
       .select("id", { count: "exact", head: true })
       .gte("created_at", sinceISO)
+
+    summaryQuery = applyKlaviyoCategoryFilter(summaryQuery, category)
+    countQuery = applyKlaviyoCategoryFilter(countQuery, category)
 
     if (metric) {
       summaryQuery = summaryQuery.eq("metric_name", metric)
@@ -520,7 +594,7 @@ export async function fetchKlaviyoEventLogPage(
   return {
     range,
     since: sinceISO,
-    filters: { metric, status, recipient },
+    filters: { metric, status, recipient, category },
     rows,
     total: listRes.count ?? rows.length,
     limit,

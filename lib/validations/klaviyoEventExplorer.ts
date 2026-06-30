@@ -1,7 +1,15 @@
 import { z } from "zod"
-import { isNotificationsCenterRange } from "@/lib/db/klaviyoEventLog"
+import {
+  isKlaviyoMetricCategoryFilter,
+  isNotificationsCenterRange,
+} from "@/lib/db/klaviyoEventLog"
 
 export const klaviyoEventStatusFilterSchema = z.enum(["all", "sent", "skipped", "failed"])
+
+export const klaviyoMetricCategoryFilterSchema = z
+  .string()
+  .optional()
+  .transform((v) => (isKlaviyoMetricCategoryFilter(v) ? v : "all"))
 
 export const klaviyoEventExplorerQuerySchema = z.object({
   range: z
@@ -10,6 +18,7 @@ export const klaviyoEventExplorerQuerySchema = z.object({
     .transform((v) => (isNotificationsCenterRange(v) ? v : "7d")),
   metric: z.string().trim().optional(),
   status: klaviyoEventStatusFilterSchema.optional().default("all"),
+  category: klaviyoMetricCategoryFilterSchema,
   /** Matches profile_email (partial) or profile_external_id (exact). */
   recipient: z.string().trim().optional(),
   limit: z.coerce.number().int().min(1).max(100).optional().default(50),

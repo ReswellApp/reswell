@@ -27,6 +27,7 @@ import {
 import { cn } from "@/lib/utils"
 import type {
   KlaviyoEventLogPageResult,
+  KlaviyoMetricCategoryFilter,
   KlaviyoMetricRow,
   NotificationsCenterRange,
 } from "@/lib/db/klaviyoEventLog"
@@ -52,6 +53,7 @@ export interface KlaviyoEventLogFilters {
   metric: string | null
   recipient: string | null
   status: KlaviyoEventStatusFilter
+  category: KlaviyoMetricCategoryFilter
 }
 
 interface KlaviyoEventLogExplorerProps {
@@ -109,7 +111,7 @@ export function KlaviyoEventLogExplorer({
 
   useEffect(() => {
     setPage(1)
-  }, [range, filters.metric, filters.recipient, filters.status, pageSize])
+  }, [range, filters.metric, filters.recipient, filters.status, filters.category, pageSize])
 
   const fetchEvents = useCallback(async () => {
     setLoading(true)
@@ -118,6 +120,7 @@ export function KlaviyoEventLogExplorer({
       const params = new URLSearchParams({
         range,
         status: filters.status,
+        category: filters.category,
         limit: String(pageSize),
         offset: String((page - 1) * pageSize),
       })
@@ -138,7 +141,7 @@ export function KlaviyoEventLogExplorer({
     } finally {
       setLoading(false)
     }
-  }, [range, filters.metric, filters.recipient, filters.status, page, pageSize])
+  }, [range, filters.metric, filters.recipient, filters.status, filters.category, page, pageSize])
 
   useEffect(() => {
     void fetchEvents()
@@ -155,6 +158,7 @@ export function KlaviyoEventLogExplorer({
     if (filters.metric) n += 1
     if (filters.recipient) n += 1
     if (filters.status !== "all") n += 1
+    if (filters.category !== "all") n += 1
     return n
   }, [filters])
 
@@ -165,7 +169,7 @@ export function KlaviyoEventLogExplorer({
 
   function clearFilters() {
     setRecipientInput("")
-    onFiltersChange({ metric: null, recipient: null, status: "all" })
+    onFiltersChange({ metric: null, recipient: null, status: "all", category: filters.category })
   }
 
   const summary = data?.recipientSummary

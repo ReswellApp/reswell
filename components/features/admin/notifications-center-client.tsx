@@ -28,9 +28,14 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import type {
+  KlaviyoMetricCategoryFilter,
   KlaviyoMetricCategory,
   NotificationsCenterAnalytics,
   NotificationsCenterRange,
+} from "@/lib/db/klaviyoEventLog"
+import {
+  KLAVIYO_METRIC_CATEGORY_FILTERS,
+  metricMatchesKlaviyoCategoryFilter,
 } from "@/lib/db/klaviyoEventLog"
 import {
   KlaviyoEventLogExplorer,
@@ -61,6 +66,34 @@ const STATUS_STYLES: Record<string, string> = {
 function pct(part: number, whole: number): string {
   if (whole <= 0) return "0%"
   return `${Math.round((part / whole) * 1000) / 10}%`
+}
+
+function filterKlaviyoAnalyticsByCategory(
+  klaviyo: NotificationsCenterAnalytics["klaviyo"],
+  category: KlaviyoMetricCategoryFilter,
+): NotificationsCenterAnalytics["klaviyo"] {
+  if (category === "all") return klaviyo
+
+  const byMetric = klaviyo.byMetric.filter((m) => m.category === category)
+  const recent = klaviyo.recent.filter((e) => metricMatchesKlaviyoCategoryFilter(e.metric, category))
+
+  const totals = byMetric.reduce(
+    (acc, m) => ({
+      total: acc.total + m.total,
+      sent: acc.sent + m.sent,
+      skipped: acc.skipped + m.skipped,
+      failed: acc.failed + m.failed,
+      uniqueRecipients: 0,
+    }),
+    { total: 0, sent: 0, skipped: 0, failed: 0, uniqueRecipients: 0 },
+  )
+
+  return {
+    ...klaviyo,
+    totals,
+    byMetric,
+    recent,
+  }
 }
 
 function safeFormat(value: string, pattern: string): string {
@@ -101,21 +134,28 @@ export function NotificationsCenterClient() {
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("flows")
+  const [categoryFilter, setCategoryFilter] = useState<KlaviyoMetricCategoryFilter>("all")
   const [eventLogFilters, setEventLogFilters] = useState<KlaviyoEventLogFilters>({
     metric: null,
     recipient: null,
     status: "all",
+    category: "all",
   })
   const firstLoadRef = useRef(false)
   const chartId = useId().replace(/:/g, "")
 
   const openEventLog = useCallback(
     (patch: Partial<KlaviyoEventLogFilters>) => {
-      setEventLogFilters((prev) => ({ ...prev, ...patch }))
+      setEventLogFilters((prev) => ({ ...prev, ...patch, category: categoryFilter }))
       setActiveTab("event-log")
     },
-    [],
+    [categoryFilter],
   )
+
+  const setCategoryFilterAll = useCallback((next: KlaviyoMetricCategoryFilter) => {
+    setCategoryFilter(next)
+    setEventLogFilters((prev) => ({ ...prev, category: next }))
+  }, [])
 
   const load = useCallback(
     async (nextRange: NotificationsCenterRange, opts?: { silent?: boolean }) => {
@@ -151,9 +191,18 @@ export function NotificationsCenterClient() {
     void load(range)
   }, [range, load])
 
-  const k = data?.klaviyo
+  const k = useMemo(
+    () => (data?.klaviyo ? filterKlaviyoAnalyticsByCategory(data.klaviyo, categoryFilter) : undefined),
+    [data?.klaviyo, categoryFilter],
+  )
   const internal = data?.internal
   const deliveryRate = k ? pct(k.totals.sent, k.totals.total) : "—"
+  const filteredMetrics = useMemo(
+    () => (k?.byMetric ?? []).filter((m) => metricMatchesKlaviyoCategoryFilter(m.metric, categoryFilter)),
+    [k?.byMetric, categoryFilter],
+  )
+  const categoryLabel =
+    KLAVIYO_METRIC_CATEGORY_FILTERS.find((c) => c.value === categoryFilter)?.label ?? "All"
 
   const timeline = useMemo(
     () =>
@@ -177,37 +226,56 @@ export function NotificationsCenterClient() {
             fire — sent, skipped, or failed — is logged here.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5">
-            {RANGES.map((r) => (
+        <div className="flex flex-col gap-3 sm:items-end">
+          <div className="flex items-center gap-2">
+            <div className="inline-flex rounded-lg border border-border bg-muted/40 p-0.5">
+              {RANGES.map((r) => (
+                <button
+                  key={r.value}
+                  type="button"
+                  onClick={() => setRange(r.value)}
+                  className={cn(
+                    "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+                    range === r.value
+                      ? "bg-card text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void load(range, { silent: false })}
+              disabled={refreshing}
+            >
+              {refreshing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              <span className="ml-2">Refresh</span>
+            </Button>
+          </div>
+          <div className="inline-flex flex-wrap rounded-lg border border-border bg-muted/40 p-0.5">
+            {KLAVIYO_METRIC_CATEGORY_FILTERS.map((c) => (
               <button
-                key={r.value}
+                key={c.value}
                 type="button"
-                onClick={() => setRange(r.value)}
+                onClick={() => setCategoryFilterAll(c.value)}
                 className={cn(
-                  "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
-                  range === r.value
+                  "rounded-md px-2.5 py-1 text-xs font-medium transition-colors capitalize",
+                  categoryFilter === c.value
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                {r.label}
+                {c.label}
               </button>
             ))}
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void load(range, { silent: false })}
-            disabled={refreshing}
-          >
-            {refreshing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            <span className="ml-2">Refresh</span>
-          </Button>
         </div>
       </div>
 
@@ -228,7 +296,11 @@ export function NotificationsCenterClient() {
             <KpiCard
               title="Klaviyo events"
               value={k?.totals.total ?? 0}
-              hint={`${k?.totals.uniqueRecipients ?? 0} unique recipients`}
+              hint={
+                categoryFilter === "all"
+                  ? `${k?.totals.uniqueRecipients ?? 0} unique recipients`
+                  : `${categoryLabel} category`
+              }
               icon={<Mail className="h-4 w-4" />}
             />
             <KpiCard
@@ -258,11 +330,20 @@ export function NotificationsCenterClient() {
             <CardHeader>
               <CardTitle className="text-lg">Event volume</CardTitle>
               <p className="text-xs text-muted-foreground font-normal">
-                Sent vs skipped vs failed over the selected window.
+                {categoryFilter === "all"
+                  ? "Sent vs skipped vs failed over the selected window."
+                  : `${categoryLabel} emails only — switch to All for full volume across categories.`}
               </p>
             </CardHeader>
             <CardContent>
-              {timeline.length === 0 ? (
+              {categoryFilter !== "all" ? (
+                <div className="flex h-[240px] items-center justify-center rounded-lg border border-dashed border-border px-6 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Volume chart shows all categories together. KPIs and tables below reflect{" "}
+                    <span className="font-medium text-foreground">{categoryLabel}</span> only.
+                  </p>
+                </div>
+              ) : timeline.length === 0 ? (
                 <div className="flex h-[240px] items-center justify-center rounded-lg border border-dashed border-border">
                   <p className="text-sm text-muted-foreground">No events in this window yet.</p>
                 </div>
@@ -352,8 +433,9 @@ export function NotificationsCenterClient() {
                 <CardHeader>
                   <CardTitle className="text-lg">Flows by metric</CardTitle>
                   <p className="text-xs text-muted-foreground font-normal">
-                    Each metric is what triggers a Klaviyo flow. Unique recipients ≈ profiles that
-                    entered that flow.
+                    {categoryFilter === "all"
+                      ? "Each metric is what triggers a Klaviyo flow. Unique recipients ≈ profiles that entered that flow."
+                      : `${categoryLabel} flows in the selected window.`}
                   </p>
                 </CardHeader>
                 <CardContent className="overflow-x-auto">
@@ -406,7 +488,7 @@ export function NotificationsCenterClient() {
             <TabsContent value="event-log">
               <KlaviyoEventLogExplorer
                 range={range}
-                metrics={k?.byMetric ?? []}
+                metrics={filteredMetrics}
                 filters={eventLogFilters}
                 onFiltersChange={setEventLogFilters}
               />
@@ -565,6 +647,7 @@ export function NotificationsCenterClient() {
                   {data?.fetchedAt && (
                     <p className="text-xs text-muted-foreground font-normal">
                       Updated {formatDistanceToNow(new Date(data.fetchedAt), { addSuffix: true })}
+                      {categoryFilter !== "all" ? ` · ${categoryLabel} only` : null}
                     </p>
                   )}
                 </CardHeader>
