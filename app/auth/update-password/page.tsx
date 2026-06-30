@@ -1,8 +1,13 @@
 "use client"
 
+import { Suspense } from "react"
 import { UpdatePasswordFormPanel } from "@/components/auth/update-password-form-panel"
+import { AuthTransitionShell } from "@/components/auth/auth-transition-shell"
 
-/** Full-page fallback; successful email links redirect to `/` + dialog via `/auth/recovery`. */
-export default function Page() {
-  return <UpdatePasswordFormPanel />
+export default function UpdatePasswordPage() {
+  return (
+    <Suspense fallback={<AuthTransitionShell ariaLabel="Loading password reset" />}>
+      <UpdatePasswordFormPanel />
+    </Suspense>
+  )
 }

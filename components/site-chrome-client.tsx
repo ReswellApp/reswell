@@ -14,7 +14,6 @@ import { NavigationPageGate } from "@/components/navigation-page-gate"
 import { RouteProgressBar } from "@/components/route-progress-bar"
 import { AuthModalProvider } from "@/components/auth/auth-modal-context"
 import { ImpersonationBanner } from "@/components/impersonation-banner"
-import { PasswordResetRequiredDialog } from "@/components/auth/password-reset-required-dialog"
 import { ProfileCompletionRequiredDialog } from "@/components/auth/profile-completion-required-dialog"
 import { NewsletterPromoPopup } from "@/components/features/marketing/newsletter-promo-popup"
 import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
@@ -84,7 +83,6 @@ export function SiteChromeClient({
     return (
       <AuthModalProvider>
         <div className="flex min-h-dvh flex-col">
-          <PasswordResetRequiredDialog />
           <ProfileCompletionRequiredDialog />
           <NewsletterPromoPopup serverUser={headerAuth.user} />
           <RouteProgressBar />
@@ -95,7 +93,6 @@ export function SiteChromeClient({
   }
   return (
     <AuthModalProvider>
-      <PasswordResetRequiredDialog />
       <ProfileCompletionRequiredDialog />
       <NewsletterPromoPopup serverUser={headerAuth.user} />
       <div

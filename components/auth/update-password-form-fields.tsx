@@ -2,12 +2,13 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+
+const MIN_PASSWORD_LENGTH = 6
 
 export function UpdatePasswordFormFields({
   onSuccess,
@@ -20,7 +21,6 @@ export function UpdatePasswordFormFields({
   const [repeatPassword, setRepeatPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -28,8 +28,8 @@ export function UpdatePasswordFormFields({
     setIsLoading(true)
     setError(null)
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters")
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`)
       setIsLoading(false)
       return
     }
@@ -48,8 +48,6 @@ export function UpdatePasswordFormFields({
         window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
       }
       onSuccess?.()
-      router.push("/dashboard")
-      router.refresh()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Could not update password")
     } finally {
@@ -65,10 +63,15 @@ export function UpdatePasswordFormFields({
           id="new-password"
           type="password"
           required
+          minLength={MIN_PASSWORD_LENGTH}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="new-password"
+          autoFocus
         />
+        <p className="text-xs text-muted-foreground">
+          At least {MIN_PASSWORD_LENGTH} characters.
+        </p>
       </div>
       <div className="grid gap-2">
         <Label htmlFor="confirm-new-password">Confirm password</Label>
@@ -76,6 +79,7 @@ export function UpdatePasswordFormFields({
           id="confirm-new-password"
           type="password"
           required
+          minLength={MIN_PASSWORD_LENGTH}
           value={repeatPassword}
           onChange={(e) => setRepeatPassword(e.target.value)}
           autoComplete="new-password"
@@ -93,7 +97,7 @@ export function UpdatePasswordInvalidSessionActions() {
   return (
     <div className="flex flex-col gap-3">
       <Button asChild>
-        <Link href="/auth/forgot-password">Request reset link</Link>
+        <Link href="/auth/forgot-password">Request a new reset link</Link>
       </Button>
       <Button asChild variant="outline">
         <Link href="/auth/login">Sign in</Link>

@@ -4,6 +4,11 @@ import {
   isNonFatalGetUserError,
   isTransientAuthNetworkError,
 } from '@/lib/auth/clear-supabase-auth-cookies'
+import {
+  PASSWORD_RESET_QUERY_KEY,
+  PASSWORD_RESET_QUERY_VALUE,
+  UPDATE_PASSWORD_PATH,
+} from "@/lib/auth/password-reset-landing-flag"
 import { hasSupabaseAuthCookies } from '@/lib/auth/has-supabase-auth-cookies'
 import { pathnameRequiresAuthSession } from '@/lib/auth/pathname-requires-auth-session'
 import { copySupabaseAuthCookies } from '@/lib/auth/copy-supabase-auth-cookies'
@@ -12,6 +17,17 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname
+
+  // Legacy homepage modal URL → dedicated reset page.
+  if (
+    pathname === "/" &&
+    request.nextUrl.searchParams.get(PASSWORD_RESET_QUERY_KEY) === PASSWORD_RESET_QUERY_VALUE
+  ) {
+    const url = request.nextUrl.clone()
+    url.pathname = UPDATE_PASSWORD_PATH
+    url.searchParams.delete(PASSWORD_RESET_QUERY_KEY)
+    return NextResponse.redirect(url)
+  }
 
   // Supabase sometimes falls back to Site URL with auth params on the homepage. Forward to
   // the correct handler so server-side exchange / verifyOtp runs before any session probe.
@@ -57,6 +73,7 @@ export async function updateSession(request: NextRequest) {
     pathname === "/auth/callback" ||
     pathname === "/auth/confirm" ||
     pathname === "/auth/recovery" ||
+    pathname === "/auth/update-password" ||
     pathname === "/auth/completing" ||
     pathname === "/auth/error" ||
     pathname === "/api/auth/session-ready"
