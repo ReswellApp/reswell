@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic"
 export const metadata = privatePageMetadata({
   title: "Google Analytics — Admin — Reswell",
   description:
-    "Site-wide GA4 sessions, traffic channels, partner embed iframe views, and outbound embed click events.",
+    "PRO GA4 intelligence: period-over-period KPIs, realtime users, acquisition, partner embed CTR, referrers, listing pages, and event analytics.",
   path: "/admin/google-analytics",
 })
 
@@ -21,7 +21,7 @@ export default async function AdminGoogleAnalyticsPage() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Google Analytics</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Site traffic, acquisition channels, and partner embed performance from GA4.
+          Site traffic, acquisition, listing pages, and partner embed performance — with period-over-period deltas and realtime users.
         </p>
       </div>
       <GoogleAnalyticsAdminClient initialData={initialData} />

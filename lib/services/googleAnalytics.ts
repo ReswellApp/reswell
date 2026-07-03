@@ -83,26 +83,69 @@ export interface GoogleAnalyticsEmbedStat {
   sessions: number
   views: number
   clicks: number
+  clickThroughRate: number
+}
+
+export interface GoogleAnalyticsComparisonMetric {
+  current: number
+  prior: number
+  changePercent: number | null
+}
+
+export interface GoogleAnalyticsDimensionRow {
+  label: string
+  sessions: number
+  views: number
+}
+
+export interface GoogleAnalyticsEventRow {
+  eventName: string
+  count: number
+}
+
+export interface GoogleAnalyticsReferrerRow {
+  referrer: string
+  sessions: number
+}
+
+export interface GoogleAnalyticsDashboardComparison {
+  sessions: GoogleAnalyticsComparisonMetric
+  users: GoogleAnalyticsComparisonMetric
+  pageViews: GoogleAnalyticsComparisonMetric
+  conversions: GoogleAnalyticsComparisonMetric
+  embedSessions: GoogleAnalyticsComparisonMetric
+  embedClicks: GoogleAnalyticsComparisonMetric
 }
 
 export interface GoogleAnalyticsDashboardData {
   configured: true
   rangeDays: number
   propertyId: string
+  productPathPrefix: string
   clientMeasurementConfigured: boolean
+  generatedAt: string
+  realtime: { activeUsers: number }
+  comparison: GoogleAnalyticsDashboardComparison
   site: GoogleAnalyticsTraffic
+  productPages: Omit<GoogleAnalyticsTraffic, "configured" | "rangeDays">
   partnerEmbeds: {
     totals: {
       sessions: number
       totalUsers: number
       screenPageViews: number
       clicks: number
+      clickThroughRate: number
     }
     daily: GoogleAnalyticsDaily[]
     clickDaily: { date: string; clicks: number }[]
     byEmbed: GoogleAnalyticsEmbedStat[]
     clicksByLinkType: GoogleAnalyticsEmbedClickBreakdown[]
+    referrers: GoogleAnalyticsReferrerRow[]
   }
+  devices: GoogleAnalyticsDimensionRow[]
+  countries: GoogleAnalyticsDimensionRow[]
+  topEvents: GoogleAnalyticsEventRow[]
+  insights: string[]
 }
 
 export type GoogleAnalyticsDashboardResult =
@@ -120,6 +163,38 @@ function envValue(key: string): string | null {
 
 function propertyId(): string | null {
   return envValue("GA4_PROPERTY_ID")
+}
+
+/** Warn when GA4_PROPERTY_ID is set to a G-* measurement id instead of the numeric property id. */
+function ga4PropertyIdMisconfiguration(): string | null {
+  const id = propertyId()
+  if (!id) return null
+  if (/^G-/i.test(id)) {
+    return (
+      "GA4_PROPERTY_ID is set to a Measurement ID (G-…). Use the numeric Property ID from GA4 Admin → Property settings instead. Keep the G- id in NEXT_PUBLIC_GA4_MEASUREMENT_ID."
+    )
+  }
+  if (!/^\d+$/.test(id)) {
+    return "GA4_PROPERTY_ID must be numeric (e.g. 123456789), not a G- measurement ID."
+  }
+  return null
+}
+
+function formatGa4DataApiError(status: number, detail: string): string {
+  const serviceAccountEmail = process.env.GCP_SERVICE_ACCOUNT_EMAIL?.trim()
+  const accessHint = serviceAccountEmail
+    ? `Add ${serviceAccountEmail} as a Viewer on the GA4 property (Admin → Property access management → + → Add users).`
+    : "Grant your Google service account Viewer access on the GA4 property (Admin → Property access management)."
+
+  if (status === 403) {
+    return `Google Analytics permission denied for property ${propertyId() ?? "(unknown)"}. ${accessHint}`
+  }
+  if (status === 404) {
+    return `GA4 property ${propertyId() ?? "(unknown)"} was not found. Confirm GA4_PROPERTY_ID matches Admin → Property settings → Property ID (numeric, not G-…).`
+  }
+
+  const trimmed = detail.slice(0, 240)
+  return trimmed ? `GA4 Data API ${status}: ${trimmed}` : `GA4 Data API ${status}`
 }
 
 function productPathPrefix(): string {
@@ -150,7 +225,10 @@ const GCP_WIF_KEYS = [
 export function getGoogleAnalyticsConfigGap(): string[] {
   const missing: string[] = []
 
-  if (!propertyId()) {
+  const propertyMisconfig = ga4PropertyIdMisconfiguration()
+  if (propertyMisconfig) {
+    missing.push(propertyMisconfig)
+  } else if (!propertyId()) {
     missing.push(
       isEnvEmpty("GA4_PROPERTY_ID")
         ? "GA4_PROPERTY_ID (set but empty — use the numeric GA4 property id)"
@@ -295,7 +373,7 @@ async function runReport(
   )
   if (!res.ok) {
     const detail = await res.text().catch(() => "")
-    throw new Error(`GA4 Data API ${res.status}: ${detail.slice(0, 200)}`)
+    throw new Error(formatGa4DataApiError(res.status, detail))
   }
   const json = (await res.json()) as GaRunReportResponse
   return json.rows ?? []
@@ -510,6 +588,236 @@ async function queryPartnerEmbedClicks(
   }
 }
 
+function clickThroughRate(clicks: number, sessions: number): number {
+  if (sessions <= 0) return 0
+  return clicks / sessions
+}
+
+function comparisonMetric(current: number, prior: number): GoogleAnalyticsComparisonMetric {
+  const changePercent =
+    prior > 0 ? ((current - prior) / prior) * 100 : current > 0 ? null : 0
+  return { current, prior, changePercent }
+}
+
+function periodBounds(days: number): {
+  current: { startDate: string; endDate: string }
+  prior: { startDate: string; endDate: string }
+} {
+  return {
+    current: { startDate: isoDaysAgo(days), endDate: isoDaysAgo(1) },
+    prior: { startDate: isoDaysAgo(days * 2), endDate: isoDaysAgo(days + 1) },
+  }
+}
+
+async function queryTotalsSnapshot(
+  token: string,
+  property: string,
+  startDate: string,
+  endDate: string,
+  pathPrefix?: string | null,
+): Promise<{
+  sessions: number
+  totalUsers: number
+  screenPageViews: number
+  conversions: number
+}> {
+  const dimensionFilter = pathPrefix ? pathPrefixFilter(pathPrefix) : undefined
+  const rows = await runReport(token, property, {
+    dateRanges: [{ startDate, endDate }],
+    metrics: [
+      { name: "sessions" },
+      { name: "totalUsers" },
+      { name: "screenPageViews" },
+      { name: "conversions" },
+    ],
+    ...(dimensionFilter ? { dimensionFilter } : {}),
+  })
+  const values = rows[0]?.metricValues ?? []
+  return {
+    sessions: toNumber(values[0]?.value),
+    totalUsers: toNumber(values[1]?.value),
+    screenPageViews: toNumber(values[2]?.value),
+    conversions: toNumber(values[3]?.value),
+  }
+}
+
+async function queryEventCount(
+  token: string,
+  property: string,
+  startDate: string,
+  endDate: string,
+  eventName: string,
+): Promise<number> {
+  const rows = await runReport(token, property, {
+    dateRanges: [{ startDate, endDate }],
+    metrics: [{ name: "eventCount" }],
+    dimensionFilter: eventNameFilter(eventName),
+  })
+  return toNumber(rows[0]?.metricValues?.[0]?.value)
+}
+
+async function queryDimensionBreakdown(
+  token: string,
+  property: string,
+  options: {
+    startDate: string
+    endDate: string
+    dimension: string
+    pathPrefix?: string | null
+    limit?: number
+  },
+): Promise<GoogleAnalyticsDimensionRow[]> {
+  const dimensionFilter = options.pathPrefix ? pathPrefixFilter(options.pathPrefix) : undefined
+  const rows = await runReport(token, property, {
+    dateRanges: [{ startDate: options.startDate, endDate: options.endDate }],
+    dimensions: [{ name: options.dimension }],
+    metrics: [{ name: "sessions" }, { name: "screenPageViews" }],
+    ...(dimensionFilter ? { dimensionFilter } : {}),
+    orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+    limit: options.limit ?? 12,
+  })
+
+  return rows
+    .map((row) => ({
+      label: row.dimensionValues?.[0]?.value?.trim() || "(not set)",
+      sessions: toNumber(row.metricValues?.[0]?.value),
+      views: toNumber(row.metricValues?.[1]?.value),
+    }))
+    .filter((row) => row.sessions > 0 || row.views > 0)
+}
+
+async function queryTopEvents(
+  token: string,
+  property: string,
+  startDate: string,
+  endDate: string,
+): Promise<GoogleAnalyticsEventRow[]> {
+  const rows = await runReport(token, property, {
+    dateRanges: [{ startDate, endDate }],
+    dimensions: [{ name: "eventName" }],
+    metrics: [{ name: "eventCount" }],
+    orderBys: [{ metric: { metricName: "eventCount" }, desc: true }],
+    limit: 20,
+  })
+
+  return rows
+    .map((row) => ({
+      eventName: row.dimensionValues?.[0]?.value ?? "(unknown)",
+      count: toNumber(row.metricValues?.[0]?.value),
+    }))
+    .filter((row) => row.count > 0)
+}
+
+async function queryEmbedReferrers(
+  token: string,
+  property: string,
+  startDate: string,
+  endDate: string,
+): Promise<GoogleAnalyticsReferrerRow[]> {
+  const rows = await runReportSafe(token, property, {
+    dateRanges: [{ startDate, endDate }],
+    dimensions: [{ name: "pageReferrer" }],
+    metrics: [{ name: "sessions" }],
+    dimensionFilter: pathPrefixFilter(PARTNER_EMBED_PATH_PREFIX),
+    orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+    limit: 15,
+  })
+
+  return rows
+    .map((row) => ({
+      referrer: row.dimensionValues?.[0]?.value?.trim() || "(direct)",
+      sessions: toNumber(row.metricValues?.[0]?.value),
+    }))
+    .filter((row) => row.sessions > 0)
+}
+
+async function queryRealtimeActiveUsers(token: string, property: string): Promise<number> {
+  try {
+    const res = await fetch(
+      `https://analyticsdata.googleapis.com/v1beta/properties/${encodeURIComponent(property)}:runRealtimeReport`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ metrics: [{ name: "activeUsers" }] }),
+        cache: "no-store",
+      },
+    )
+    if (!res.ok) return 0
+    const json = (await res.json()) as GaRunReportResponse
+    return toNumber(json.rows?.[0]?.metricValues?.[0]?.value)
+  } catch {
+    return 0
+  }
+}
+
+function buildAnalyticsInsights(input: {
+  comparison: GoogleAnalyticsDashboardComparison
+  siteEngagementRate: number
+  embedClickThroughRate: number
+  topChannel: string | null
+  topEmbed: GoogleAnalyticsEmbedStat | null
+  topEvent: GoogleAnalyticsEventRow | null
+}): string[] {
+  const insights: string[] = []
+
+  const sessionDelta = input.comparison.sessions.changePercent
+  if (sessionDelta != null && Math.abs(sessionDelta) >= 8) {
+    insights.push(
+      sessionDelta > 0
+        ? `Site sessions are up ${sessionDelta.toFixed(0)}% vs the prior ${input.comparison.sessions.prior > 0 ? "period" : "window"}.`
+        : `Site sessions are down ${Math.abs(sessionDelta).toFixed(0)}% vs the prior period.`,
+    )
+  }
+
+  const embedClickDelta = input.comparison.embedClicks.changePercent
+  if (embedClickDelta != null && Math.abs(embedClickDelta) >= 10) {
+    insights.push(
+      embedClickDelta > 0
+        ? `Partner embed outbound clicks rose ${embedClickDelta.toFixed(0)}% period-over-period.`
+        : `Partner embed outbound clicks fell ${Math.abs(embedClickDelta).toFixed(0)}% period-over-period.`,
+    )
+  }
+
+  if (input.embedClickThroughRate >= 0.08) {
+    insights.push(
+      `Embed click-through rate is ${(input.embedClickThroughRate * 100).toFixed(1)}% — visitors are engaging with listings and CTAs.`,
+    )
+  } else if (input.comparison.embedSessions.current > 20 && input.embedClickThroughRate < 0.02) {
+    insights.push(
+      "Embed sessions are landing but click-through is low — review creative, listing mix, or CTA placement.",
+    )
+  }
+
+  if (input.siteEngagementRate >= 0.55) {
+    insights.push(`Engagement rate is healthy at ${(input.siteEngagementRate * 100).toFixed(0)}% across the site.`)
+  }
+
+  if (input.topChannel) {
+    insights.push(`Top acquisition channel: ${input.topChannel}.`)
+  }
+
+  if (input.topEmbed && input.topEmbed.sessions > 0) {
+    insights.push(
+      `Leading partner embed: ${input.topEmbed.slug} (${input.topEmbed.sessions.toLocaleString("en-US")} sessions, ${input.topEmbed.clicks.toLocaleString("en-US")} clicks).`,
+    )
+  }
+
+  if (input.topEvent && input.topEvent.eventName === PARTNER_EMBED_CLICK_EVENT) {
+    insights.push(
+      `Custom embed click tracking is active — ${input.topEvent.count.toLocaleString("en-US")} partner_embed_click events recorded.`,
+    )
+  }
+
+  return insights.slice(0, 6)
+}
+
+function withEmbedClickThroughRates(rows: GoogleAnalyticsEmbedStat[]): GoogleAnalyticsEmbedStat[] {
+  return rows.map((row) => ({
+    ...row,
+    clickThroughRate: clickThroughRate(row.clicks, row.sessions),
+  }))
+}
+
 function mergeEmbedStats(
   embedTraffic: Omit<GoogleAnalyticsTraffic, "configured" | "rangeDays">,
   clicksByPath: Map<string, number>,
@@ -531,6 +839,7 @@ function mergeEmbedStats(
       sessions: page.sessions,
       views: page.views,
       clicks: clicksByPath.get(page.path) ?? 0,
+      clickThroughRate: 0,
     })
   }
 
@@ -542,10 +851,12 @@ function mergeEmbedStats(
       existing.clicks = Math.max(existing.clicks, clicks)
       continue
     }
-    bySlug.set(slug, { slug, path, sessions: 0, views: 0, clicks })
+    bySlug.set(slug, { slug, path, sessions: 0, views: 0, clicks, clickThroughRate: 0 })
   }
 
-  return [...bySlug.values()].sort((a, b) => b.sessions - a.sessions || b.clicks - a.clicks)
+  return withEmbedClickThroughRates(
+    [...bySlug.values()].sort((a, b) => b.sessions - a.sessions || b.clicks - a.clicks),
+  )
 }
 
 async function loadGoogleAnalyticsAccessToken(): Promise<
@@ -607,8 +918,7 @@ export async function getGoogleAnalyticsDashboardData(options?: {
   days?: number
 }): Promise<GoogleAnalyticsDashboardResult> {
   const days = options?.days ?? 28
-  const startDate = isoDaysAgo(days)
-  const endDate = isoDaysAgo(1)
+  const { current, prior } = periodBounds(days)
 
   try {
     const access = await loadGoogleAnalyticsAccessToken()
@@ -616,41 +926,130 @@ export async function getGoogleAnalyticsDashboardData(options?: {
       return { configured: false, reason: access.reason }
     }
 
-    const [site, embedTraffic, embedClicks] = await Promise.all([
+    const [
+      site,
+      embedTraffic,
+      embedClicks,
+      productPages,
+      currentSiteTotals,
+      priorSiteTotals,
+      currentEmbedTotals,
+      priorEmbedTotals,
+      priorEmbedClicks,
+      devices,
+      countries,
+      topEvents,
+      embedReferrers,
+      activeUsers,
+    ] = await Promise.all([
       queryGoogleAnalyticsTraffic(access.token, access.property, {
-        startDate,
-        endDate,
-        topPagesLimit: 20,
+        startDate: current.startDate,
+        endDate: current.endDate,
+        topPagesLimit: 25,
       }),
       queryGoogleAnalyticsTraffic(access.token, access.property, {
-        startDate,
-        endDate,
+        startDate: current.startDate,
+        endDate: current.endDate,
         pathPrefix: PARTNER_EMBED_PATH_PREFIX,
         topPagesLimit: 50,
       }),
-      queryPartnerEmbedClicks(access.token, access.property, startDate, endDate),
+      queryPartnerEmbedClicks(access.token, access.property, current.startDate, current.endDate),
+      queryGoogleAnalyticsTraffic(access.token, access.property, {
+        startDate: current.startDate,
+        endDate: current.endDate,
+        pathPrefix: productPathPrefix(),
+        topPagesLimit: 15,
+      }),
+      queryTotalsSnapshot(access.token, access.property, current.startDate, current.endDate),
+      queryTotalsSnapshot(access.token, access.property, prior.startDate, prior.endDate),
+      queryTotalsSnapshot(
+        access.token,
+        access.property,
+        current.startDate,
+        current.endDate,
+        PARTNER_EMBED_PATH_PREFIX,
+      ),
+      queryTotalsSnapshot(
+        access.token,
+        access.property,
+        prior.startDate,
+        prior.endDate,
+        PARTNER_EMBED_PATH_PREFIX,
+      ),
+      queryEventCount(
+        access.token,
+        access.property,
+        prior.startDate,
+        prior.endDate,
+        PARTNER_EMBED_CLICK_EVENT,
+      ),
+      queryDimensionBreakdown(access.token, access.property, {
+        startDate: current.startDate,
+        endDate: current.endDate,
+        dimension: "deviceCategory",
+        limit: 8,
+      }),
+      queryDimensionBreakdown(access.token, access.property, {
+        startDate: current.startDate,
+        endDate: current.endDate,
+        dimension: "country",
+        limit: 12,
+      }),
+      queryTopEvents(access.token, access.property, current.startDate, current.endDate),
+      queryEmbedReferrers(access.token, access.property, current.startDate, current.endDate),
+      queryRealtimeActiveUsers(access.token, access.property),
     ])
 
     const byEmbed = mergeEmbedStats(embedTraffic, embedClicks.clicksByPath)
+    const embedCtr = clickThroughRate(embedClicks.totalClicks, embedTraffic.totals.sessions)
+
+    const comparison: GoogleAnalyticsDashboardComparison = {
+      sessions: comparisonMetric(currentSiteTotals.sessions, priorSiteTotals.sessions),
+      users: comparisonMetric(currentSiteTotals.totalUsers, priorSiteTotals.totalUsers),
+      pageViews: comparisonMetric(currentSiteTotals.screenPageViews, priorSiteTotals.screenPageViews),
+      conversions: comparisonMetric(currentSiteTotals.conversions, priorSiteTotals.conversions),
+      embedSessions: comparisonMetric(currentEmbedTotals.sessions, priorEmbedTotals.sessions),
+      embedClicks: comparisonMetric(embedClicks.totalClicks, priorEmbedClicks),
+    }
+
+    const insights = buildAnalyticsInsights({
+      comparison,
+      siteEngagementRate: site.totals.engagementRate,
+      embedClickThroughRate: embedCtr,
+      topChannel: site.channels[0]?.channel ?? null,
+      topEmbed: byEmbed[0] ?? null,
+      topEvent: topEvents[0] ?? null,
+    })
 
     return {
       configured: true,
       rangeDays: days,
       propertyId: access.property,
+      productPathPrefix: productPathPrefix(),
       clientMeasurementConfigured: isClientGa4MeasurementConfigured(),
+      generatedAt: new Date().toISOString(),
+      realtime: { activeUsers },
+      comparison,
       site: { configured: true, rangeDays: days, ...site },
+      productPages,
       partnerEmbeds: {
         totals: {
           sessions: embedTraffic.totals.sessions,
           totalUsers: embedTraffic.totals.totalUsers,
           screenPageViews: embedTraffic.totals.screenPageViews,
           clicks: embedClicks.totalClicks,
+          clickThroughRate: embedCtr,
         },
         daily: embedTraffic.daily,
         clickDaily: embedClicks.clickDaily,
         byEmbed,
         clicksByLinkType: embedClicks.clicksByLinkType,
+        referrers: embedReferrers,
       },
+      devices,
+      countries,
+      topEvents,
+      insights,
     }
   } catch (e) {
     return {
