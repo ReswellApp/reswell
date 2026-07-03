@@ -100,7 +100,7 @@ function HeaderMobileNavActionsSkeleton() {
       aria-label="Loading navigation"
     >
       <Skeleton className="h-4 w-14 shrink-0 rounded" />
-      <Skeleton className="h-11 w-14 shrink-0 rounded-lg" />
+      <Skeleton className="h-4 w-8 shrink-0 rounded" />
       <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
     </div>
   )
@@ -461,7 +461,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     forceReleaseBodyScrollLock()
   }, [])
 
-  const { openLogin } = useAuthModal()
+  const { openLogin, openSignUp } = useAuthModal()
   const isMobileViewport = useIsMobile()
 
   const resolvedDisplayName = useMemo(
@@ -934,14 +934,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                       >
                         Log in
                       </Link>
-                      <Link href="/sold" className="inline-flex shrink-0" title="Recently sold">
-                        <Button
-                          variant="ghost"
-                          className={cn(recentlySoldNavButtonClassName, "hover:bg-black/5")}
-                          aria-label="Recently sold"
-                        >
-                          <Clock className={recentlySoldNavIconClassName} />
-                        </Button>
+                      <Link
+                        href={authLandingHref("/auth/sign-up", "/sell?new=1")}
+                        className="shrink-0 whitespace-nowrap px-1 py-2 text-[15px] font-medium text-foreground"
+                      >
+                        Sell
                       </Link>
                       <CartHeaderLink
                         showOnNarrowScreens
@@ -1050,11 +1047,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 className={cn(listYourBoardNavButtonClassName, "hidden lg:mr-10 lg:inline-flex")}
               >
                 <Link
-                  href="/sell"
+                  href={authLandingHref("/auth/sign-up", "/sell?new=1")}
                   onClick={(e) => {
                     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                     e.preventDefault()
-                    openLogin("/sell?new=1")
+                    openSignUp("/sell?new=1")
                   }}
                 >
                   List your board
@@ -1126,11 +1123,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   className={cn(listYourBoardNavButtonClassName, "hidden sm:inline-flex lg:hidden")}
                 >
                   <Link
-                    href="/sell"
+                    href={authLandingHref("/auth/sign-up", "/sell?new=1")}
                     onClick={(e) => {
                       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                       e.preventDefault()
-                      openLogin("/sell?new=1")
+                      openSignUp("/sell?new=1")
                     }}
                   >
                     List your board
@@ -1139,19 +1136,20 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 <div className="hidden items-center gap-2 lg:flex">
                   <Button
                     asChild
-                    variant="outline"
+                    variant="ghost"
                     className={cn(
                       listYourBoardNavButtonClassName,
-                      "border-foreground/20 text-foreground hover:bg-muted",
+                      "border-0 bg-transparent text-foreground shadow-none hover:bg-transparent hover:text-cerulean",
                     )}
                   >
                     <Link href={authLandingHref("/auth/sign-up")}>Sign up</Link>
                   </Button>
                   <Button
                     asChild
+                    variant="ghost"
                     className={cn(
                       listYourBoardNavButtonClassName,
-                      "border-0 bg-listingHeart text-white hover:bg-[#2a4170]",
+                      "border-0 bg-transparent text-foreground shadow-none hover:bg-transparent hover:text-cerulean",
                     )}
                   >
                     <Link href={authLandingHref("/auth/login")}>Log in</Link>

@@ -198,7 +198,7 @@ export function LoginFormPanel({
   const isLanding = variant === "landing"
 
   const inner = (
-    <div className={cn("flex flex-col", isLanding ? "gap-10 lg:gap-12" : "gap-8")}>
+    <div className="flex flex-col gap-8">
       {showPageHeader ? (
         <div className={cn(isLanding ? "space-y-3" : "space-y-2")}>
           <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -210,21 +210,15 @@ export function LoginFormPanel({
         </div>
       ) : null}
 
-      <div className={cn(isLanding ? "space-y-4" : "space-y-3")}>
-        <p className="text-sm font-medium text-foreground">Continue with</p>
-        <div className="flex gap-3">
-          <GoogleOAuthButton
-            nextPath={redirectTo}
-            autoStart={googleAutoStart}
-            layout="compact"
-            className="min-w-0 flex-1"
-          />
-        </div>
-      </div>
+      <GoogleOAuthButton
+        nextPath={redirectTo}
+        autoStart={googleAutoStart}
+        layout="full"
+      />
 
-      <AuthFormOrDivider className={isLanding ? "py-3" : undefined} />
+      <AuthFormOrDivider />
 
-      <form onSubmit={handleLogin} className={cn(isLanding ? "space-y-6" : "space-y-5")}>
+      <form onSubmit={handleLogin} className="space-y-5">
         <div className="grid gap-2.5">
           <Label htmlFor="login-email" className="text-sm font-semibold text-foreground">
             Email <RequiredMark />
@@ -285,10 +279,7 @@ export function LoginFormPanel({
         <Button
           type="submit"
           disabled={isLoading}
-          className={cn(
-            "h-12 w-full rounded-full bg-neutral-500 text-base font-semibold text-white hover:bg-neutral-600",
-            isLanding && "mt-1",
-          )}
+          className="h-12 w-full rounded-full bg-neutral-500 text-base font-semibold text-white hover:bg-neutral-600"
         >
           {isLoading ? "Logging in…" : "Log In"}
         </Button>

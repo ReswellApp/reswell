@@ -13,7 +13,7 @@ function LoginLandingForm() {
   const googleAutoStart = searchParams.get(GOOGLE_OAUTH_AUTO_START_PARAM) === "1"
 
   return (
-    <AuthLandingShell mode="login" redirectTo={redirectTo}>
+    <AuthLandingShell>
       <LoginFormPanel
         redirectTo={redirectTo}
         variant="landing"

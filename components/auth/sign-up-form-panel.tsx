@@ -38,12 +38,15 @@ export function SignUpFormPanel({
   footerLogin,
   onSignUpSuccess,
   googleAutoStart = false,
+  initialMarketingOptIn,
 }: {
   variant?: "page" | "modal" | "landing"
   redirectTo?: string
   footerLogin?: ReactNode
   onSignUpSuccess?: () => void
   googleAutoStart?: boolean
+  /** From OAuth handoff URL (`?marketing=1`) when auto-starting Google sign-up. */
+  initialMarketingOptIn?: boolean
 }) {
   const [firstName, setFirstName] = useState("")
   const [lastName, setLastName] = useState("")
@@ -51,7 +54,7 @@ export function SignUpFormPanel({
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [marketingOptIn, setMarketingOptIn] = useState(true)
+  const [marketingOptIn, setMarketingOptIn] = useState(initialMarketingOptIn ?? true)
   const [acceptedTerms, setAcceptedTerms] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -179,7 +182,7 @@ export function SignUpFormPanel({
   const isLanding = variant === "landing"
 
   const inner = (
-    <div className={cn("flex flex-col", isLanding ? "gap-10 lg:gap-12" : "gap-8")}>
+    <div className="flex flex-col gap-8">
       {showPageHeader ? (
         <div className={cn(isLanding ? "space-y-3" : "space-y-2")}>
           <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -191,22 +194,17 @@ export function SignUpFormPanel({
         </div>
       ) : null}
 
-      <div className={cn(isLanding ? "space-y-4" : "space-y-3")}>
-        <p className="text-sm font-medium text-foreground">Continue with</p>
-        <div className="flex gap-3">
-          <GoogleOAuthButton
-            nextPath={redirectTo}
-            autoStart={googleAutoStart}
-            handoffMode="sign-up"
-            layout="compact"
-            className="min-w-0 flex-1"
-          />
-        </div>
-      </div>
+      <GoogleOAuthButton
+        nextPath={redirectTo}
+        autoStart={googleAutoStart}
+        handoffMode="sign-up"
+        layout="full"
+        marketingOptIn={marketingOptIn}
+      />
 
-      <AuthFormOrDivider className={isLanding ? "py-3" : undefined} />
+      <AuthFormOrDivider />
 
-      <form onSubmit={handleSignUp} className={cn(isLanding ? "space-y-6" : "space-y-5")}>
+      <form onSubmit={handleSignUp} className="space-y-5">
         <div className="grid gap-4 sm:grid-cols-2 sm:gap-5">
           <div className="grid gap-2.5">
             <Label htmlFor="signup-first-name" className="text-sm font-semibold text-foreground">
@@ -300,15 +298,12 @@ export function SignUpFormPanel({
         <Button
           type="submit"
           disabled={isLoading}
-          className={cn(
-            "h-12 w-full rounded-full bg-neutral-500 text-base font-semibold text-white hover:bg-neutral-600",
-            isLanding && "mt-1",
-          )}
+          className="h-12 w-full rounded-full bg-neutral-500 text-base font-semibold text-white hover:bg-neutral-600"
         >
           {isLoading ? "Creating account…" : "Sign Up"}
         </Button>
 
-        <div className={cn("space-y-4 pt-1", isLanding && "space-y-5 pt-2")}>
+        <div className="space-y-4 pt-1">
           <label className="flex cursor-pointer items-start gap-3">
             <Checkbox
               checked={marketingOptIn}

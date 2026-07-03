@@ -1,3 +1,7 @@
+import {
+  MARKETING_OPT_IN_PARAM,
+  marketingOptInParamValue,
+} from '@/lib/auth/marketing-email-consent'
 import { safeRedirectPath } from '@/lib/auth/safe-redirect'
 
 /**
@@ -15,11 +19,18 @@ import { safeRedirectPath } from '@/lib/auth/safe-redirect'
  * - `http://127.0.0.1:3000/auth/callback` if you use 127.0.0.1
  * Or use a wildcard pattern the dashboard allows, e.g. `http://localhost:3000/**`
  */
-export function buildOAuthCallbackUrl(nextPath: string, windowOrigin: string): string {
+export function buildOAuthCallbackUrl(
+  nextPath: string,
+  windowOrigin: string,
+  marketingOptIn?: boolean,
+): string {
   const safeNext = safeRedirectPath(nextPath)
   const base = windowOrigin.replace(/\/$/, '')
   const next = encodeURIComponent(safeNext)
-  const redirectTo = `${base}/auth/callback?next=${next}`
+  let redirectTo = `${base}/auth/callback?next=${next}`
+  if (marketingOptIn !== undefined) {
+    redirectTo += `&${MARKETING_OPT_IN_PARAM}=${marketingOptInParamValue(marketingOptIn)}`
+  }
 
   if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
     console.info(

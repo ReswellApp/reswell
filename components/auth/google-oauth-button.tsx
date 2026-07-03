@@ -42,12 +42,15 @@ type GoogleOAuthButtonProps = {
   /** Post-login path (same-origin only; see safeRedirectPath). */
   nextPath: string
   className?: string
+  buttonClassName?: string
   /** When true (full-page auth with `?google=1`), start OAuth after landing in a system browser. */
   autoStart?: boolean
   /** Auth page to open when handing off from an in-app browser. */
   handoffMode?: 'login' | 'sign-up'
   /** Compact provider pill for sign-up social rows. */
   layout?: 'full' | 'compact'
+  /** Sign-up marketing checkbox — forwarded through OAuth callback when set. */
+  marketingOptIn?: boolean
 }
 
 function stripGoogleAutoStartParam(): void {
@@ -62,9 +65,11 @@ function stripGoogleAutoStartParam(): void {
 export function GoogleOAuthButton({
   nextPath,
   className,
+  buttonClassName,
   autoStart = false,
   handoffMode = 'login',
   layout = 'full',
+  marketingOptIn,
 }: GoogleOAuthButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -75,7 +80,11 @@ export function GoogleOAuthButton({
     setIsLoading(true)
     setError(null)
     try {
-      const redirectTo = buildOAuthCallbackUrl(nextPath, window.location.origin)
+      const redirectTo = buildOAuthCallbackUrl(
+        nextPath,
+        window.location.origin,
+        marketingOptIn,
+      )
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -88,7 +97,7 @@ export function GoogleOAuthButton({
       setError(err instanceof Error ? err.message : 'Could not start Google sign-in')
       setIsLoading(false)
     }
-  }, [nextPath])
+  }, [marketingOptIn, nextPath])
 
   useEffect(() => {
     if (!autoStart || autoStartedRef.current || isInAppBrowserClient()) return
@@ -103,6 +112,7 @@ export function GoogleOAuthButton({
         window.location.origin,
         nextPath,
         handoffMode,
+        marketingOptIn,
       )
       openInSystemBrowser(handoffUrl)
       return
@@ -118,8 +128,9 @@ export function GoogleOAuthButton({
         className={cn(
           layout === 'compact'
             ? 'h-11 min-w-0 flex-1 rounded-full border-0 bg-[#f0f2f5] px-3 text-sm font-semibold text-foreground shadow-none hover:bg-[#e8eaed] hover:text-foreground'
-            : 'h-12 w-full rounded-full border-0 bg-[#f0f2f5] text-[15px] font-semibold text-foreground shadow-none hover:bg-[#e8eaed] hover:text-foreground',
+            : 'h-12 w-full rounded-full border-0 bg-[#f0f2f5] text-base font-semibold text-foreground shadow-none hover:bg-[#e8eaed] hover:text-foreground',
           'focus-visible:ring-2 focus-visible:ring-foreground/10 focus-visible:ring-offset-0',
+          buttonClassName,
         )}
         disabled={isLoading}
         onClick={handleClick}

@@ -1,9 +1,11 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js"
 
 import { trackKlaviyoNewAccountCreated } from "@/lib/klaviyo/track-new-account-created"
+import { applyMarketingEmailConsent } from "@/lib/services/marketingEmailConsent"
 import {
   createAnonSupabaseClient,
   createClient,
+  createServiceRoleClient,
   createUserJwtSupabaseClient,
 } from "@/lib/supabase/server"
 import { type NextRequest, NextResponse } from "next/server"
@@ -45,6 +47,21 @@ export async function POST(request: NextRequest) {
       "[klaviyo] new-account-created: unauthorized (no valid Bearer token or session cookie)",
     )
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  try {
+    const serviceRole = createServiceRoleClient()
+    const meta = user.user_metadata as Record<string, unknown> | undefined
+    if (typeof meta?.marketing_opt_in === "boolean") {
+      await applyMarketingEmailConsent({
+        userId: user.id,
+        email: user.email ?? null,
+        optIn: meta.marketing_opt_in,
+        supabase: serviceRole,
+      })
+    }
+  } catch (e) {
+    console.error("[klaviyo] new-account-created: marketing consent failed:", e)
   }
 
   await trackKlaviyoNewAccountCreated(user, {

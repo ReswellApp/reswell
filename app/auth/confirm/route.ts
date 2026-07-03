@@ -3,8 +3,10 @@ import { passwordResetLandingPath } from "@/lib/auth/password-reset-landing-flag
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { buildEmailSignUpSuccessPath } from "@/lib/google-ads/sign-up-success-path"
 import { trackKlaviyoNewAccountCreated } from "@/lib/klaviyo/track-new-account-created"
+import { applyMarketingEmailConsent } from "@/lib/services/marketingEmailConsent"
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client"
-import { type NextRequest, NextResponse } from "next/server"
+import { createServiceRoleClient } from "@/lib/supabase/server"
+import { type NextRequest, NextResponse, after } from "next/server"
 
 // Handles email confirmation links from Supabase.
 // Supabase's {{ .ConfirmationURL }} uses type=email (not signup) for confirm-signup emails.
@@ -38,8 +40,33 @@ export async function GET(request: NextRequest) {
     if (!error) {
       const u = data.user ?? data.session?.user
       if (isSignupConfirmation && u) {
-        await trackKlaviyoNewAccountCreated(u, {
-          supabaseForProfile: supabase,
+        after(async () => {
+          try {
+            const hasServiceRole = Boolean(
+              process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
+            )
+            if (hasServiceRole) {
+              const serviceRole = createServiceRoleClient()
+              const meta = u.user_metadata as Record<string, unknown> | undefined
+              if (typeof meta?.marketing_opt_in === "boolean") {
+                await applyMarketingEmailConsent({
+                  userId: u.id,
+                  email: u.email ?? null,
+                  optIn: meta.marketing_opt_in,
+                  supabase: serviceRole,
+                })
+              }
+              await trackKlaviyoNewAccountCreated(u, {
+                supabaseForProfile: serviceRole,
+              })
+            } else {
+              await trackKlaviyoNewAccountCreated(u, {
+                supabaseForProfile: supabase,
+              })
+            }
+          } catch (e) {
+            console.error("[auth/confirm] Klaviyo new-account failed:", e)
+          }
         })
       }
       redirectResponse.headers.set("Cache-Control", "private, no-store")

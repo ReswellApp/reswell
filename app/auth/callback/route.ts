@@ -1,4 +1,8 @@
 import { accessTokenIndicatesPasswordRecovery } from "@/lib/auth/access-token-password-recovery";
+import {
+  parseMarketingOptInParam,
+  userMarketingOptInFromMetadata,
+} from "@/lib/auth/marketing-email-consent";
 import { passwordResetLandingPath } from "@/lib/auth/password-reset-landing-flag";
 import { exchangeAuthCodeWithRetry } from "@/lib/auth/exchange-auth-code-with-retry";
 import { isGoogleAuthUser } from "@/lib/auth/profile-completion";
@@ -17,6 +21,7 @@ import {
   buildGoogleSignUpSuccessPath,
 } from "@/lib/google-ads/sign-up-success-path";
 import { trackKlaviyoNewAccountCreated } from "@/lib/klaviyo/track-new-account-created";
+import { applyMarketingEmailConsent } from "@/lib/services/marketingEmailConsent";
 import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { type NextRequest, NextResponse, after } from "next/server";
@@ -29,35 +34,65 @@ function copyAuthCookies(
   copySupabaseAuthCookies(from, to);
 }
 
+async function applyOAuthMarketingConsent(
+  user: User,
+  marketingFromCallback: boolean | null,
+): Promise<void> {
+  const explicitOptIn =
+    marketingFromCallback ?? userMarketingOptInFromMetadata(user);
+  if (explicitOptIn === null) return;
+
+  const hasServiceRole = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim());
+  if (!hasServiceRole) {
+    console.warn("[auth/callback] marketing consent skipped: no service role key");
+    return;
+  }
+
+  try {
+    await applyMarketingEmailConsent({
+      userId: user.id,
+      email: user.email ?? null,
+      optIn: explicitOptIn,
+      supabase: createServiceRoleClient(),
+    });
+  } catch (e) {
+    console.error("[auth/callback] marketing consent failed:", e);
+  }
+}
+
 function buildOAuthSuccessRedirect(
   origin: string,
   next: string,
   redirectResponse: NextResponse,
   user: User,
+  marketingFromCallback: boolean | null,
 ): NextResponse {
   let redirectPath = next;
   if (isGoogleAuthUser(user)) {
     redirectPath = buildGoogleSignUpSuccessPath(next);
-    if (shouldShowGoogleSignUpWelcome(user)) {
-      if (isNewOAuthAccount(user)) {
-        after(async () => {
-          try {
-            const hasServiceRole = Boolean(
-              process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
-            );
-            if (hasServiceRole) {
-              await trackKlaviyoNewAccountCreated(user, {
-                supabaseForProfile: createServiceRoleClient(),
-              });
-            } else {
-              await trackKlaviyoNewAccountCreated(user);
-            }
-          } catch (e) {
-            console.error("[auth/callback] Klaviyo new-account (OAuth) failed:", e);
-          }
-        });
+  }
+
+  if (isNewOAuthAccount(user)) {
+    after(async () => {
+      try {
+        await applyOAuthMarketingConsent(user, marketingFromCallback);
+        if (!isGoogleAuthUser(user) || !shouldShowGoogleSignUpWelcome(user)) {
+          return;
+        }
+        const hasServiceRole = Boolean(
+          process.env.SUPABASE_SERVICE_ROLE_KEY?.trim(),
+        );
+        if (hasServiceRole) {
+          await trackKlaviyoNewAccountCreated(user, {
+            supabaseForProfile: createServiceRoleClient(),
+          });
+        } else {
+          await trackKlaviyoNewAccountCreated(user);
+        }
+      } catch (e) {
+        console.error("[auth/callback] OAuth post-signup failed:", e);
       }
-    }
+    });
   }
 
   const finalResponse = NextResponse.redirect(
@@ -83,6 +118,9 @@ export async function GET(request: NextRequest) {
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type");
   const next = safeRedirectPath(searchParams.get("next"));
+  const marketingFromCallback = parseMarketingOptInParam(
+    searchParams.get("marketing"),
+  );
 
   // Handle PKCE flow (OAuth, etc.): session cookies must be set on this response.
   if (code) {
@@ -104,6 +142,7 @@ export async function GET(request: NextRequest) {
         destination,
         redirectResponse,
         sessionUser,
+        marketingFromCallback,
       );
     }
 
@@ -129,6 +168,7 @@ export async function GET(request: NextRequest) {
         destination,
         redirectResponse,
         existingUser,
+        marketingFromCallback,
       );
     }
 

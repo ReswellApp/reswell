@@ -1,6 +1,7 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js"
 
 import { isNewOAuthAccount } from "@/lib/auth/is-new-oauth-account"
+import { userWantsMarketingEmails } from "@/lib/auth/marketing-email-consent"
 import { subscribeKlaviyoProfileEmailMarketing } from "@/lib/klaviyo/subscribe-profile-email-marketing"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 
@@ -152,7 +153,7 @@ export async function trackKlaviyoNewAccountCreated(
     console.warn("[klaviyo] New Account Created skipped:", result.skipReason)
   }
 
-  if (recipientEmail) {
+  if (recipientEmail && userWantsMarketingEmails(user)) {
     void subscribeKlaviyoProfileEmailMarketing({
       email: recipientEmail,
       externalId: user.id,
