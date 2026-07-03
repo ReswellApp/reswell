@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -19,7 +19,10 @@ import { capitalizeWords } from '@/lib/listing-labels'
 import { listingDetailPath } from '@/lib/listing-query'
 import { listingTitleThumbnailSrc, type ListingImageForCard } from '@/lib/listing-image-display'
 import { listingImageShouldBypassOptimization } from '@/lib/listing-media-proxy-url'
-import { sendMarketplaceListingMessage } from '@/app/actions/messages'
+import {
+  ensureMarketplaceListingConversation,
+  sendMarketplaceListingMessage,
+} from '@/app/actions/messages'
 import { getPolicyBlockFromSendResult } from '@/lib/messages/policy-block-client'
 import type { MessagePolicyReasonCode } from '@/lib/messages/fraud-reason-codes'
 import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/local-phone-policy-block-bubble'
@@ -62,6 +65,8 @@ function NewMessageComposeContent() {
     content: string
     reasonCode: MessagePolicyReasonCode
   } | null>(null)
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const conversationIdRef = useRef<string | null>(null)
   const [listingBannerImageReady, setListingBannerImageReady] = useState(false)
 
   const threadListingThumbSrc = useMemo(() => {
@@ -307,9 +312,38 @@ function NewMessageComposeContent() {
             onSubmit={handleSend}
             sending={sending}
             media={{
-              conversationId: null,
-              disabled: true,
-              onSent: () => {},
+              conversationId,
+              disabled: sending || !otherUserId || !listingId || !currentUserId,
+              ensureConversationId: async () => {
+                if (!otherUserId || !listingId) return null
+                const result = await ensureMarketplaceListingConversation({
+                  listing_id: listingId,
+                  other_user_id: otherUserId,
+                })
+                if ('error' in result) {
+                  toast.error(
+                    result.error === 'Unauthorized'
+                      ? 'Sign in again to send photos and videos.'
+                      : result.error,
+                  )
+                  return null
+                }
+                setConversationId(result.conversation_id)
+                conversationIdRef.current = result.conversation_id
+                return result.conversation_id
+              },
+              onSent: () => {
+                setBlockedPolicyNotice(null)
+                setNewMessage('')
+                const targetId = conversationIdRef.current
+                if (targetId) {
+                  router.replace(`/messages/${targetId}`)
+                }
+              },
+              onBlockedPolicy: (originalContent, reasonCode) => {
+                setBlockedPolicyNotice({ content: originalContent, reasonCode })
+                setNewMessage('')
+              },
             }}
           />
         </MessageThreadMobileComposerDock>

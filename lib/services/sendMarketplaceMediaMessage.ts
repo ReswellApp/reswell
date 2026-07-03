@@ -1,5 +1,6 @@
 import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { verifyStorageObjectExists } from "@/lib/supabase/storage-object-exists"
 import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
 import { getMessagePolicyViolationForSender } from "@/lib/messages/message-policy-enforcement"
@@ -81,12 +82,11 @@ export async function sendMarketplaceMediaMessage(input: {
     }
   }
 
-  const objectName = attachment.path.slice(conversationId.length + 1)
-  const { data: listed, error: listErr } = await service.storage
-    .from(MARKETPLACE_MESSAGE_ATTACHMENTS_BUCKET)
-    .list(conversationId, { search: objectName, limit: 1 })
-
-  if (listErr || !listed?.some((item) => item.name === objectName)) {
+  const attachmentExists = await verifyStorageObjectExists(
+    MARKETPLACE_MESSAGE_ATTACHMENTS_BUCKET,
+    attachment.path,
+  )
+  if (!attachmentExists) {
     return { ok: false, error: "Attachment not found in storage", status: 400 }
   }
 

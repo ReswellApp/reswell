@@ -1,4 +1,5 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { verifyStorageObjectExists } from "@/lib/supabase/storage-object-exists"
 import {
   FORUM_ATTACHMENTS_BUCKET,
   composeForumCommentImageBody,
@@ -75,12 +76,11 @@ export async function sendForumCommentMediaMessage(input: {
     }
   }
 
-  const objectName = attachment.path.slice(threadId.length + 1)
-  const { data: listed, error: listErr } = await service.storage
-    .from(FORUM_ATTACHMENTS_BUCKET)
-    .list(threadId, { search: objectName, limit: 1 })
-
-  if (listErr || !listed?.some((item) => item.name === objectName)) {
+  const attachmentExists = await verifyStorageObjectExists(
+    FORUM_ATTACHMENTS_BUCKET,
+    attachment.path,
+  )
+  if (!attachmentExists) {
     return { ok: false, error: "Attachment not found in storage", status: 400 }
   }
 
