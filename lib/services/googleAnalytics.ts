@@ -26,6 +26,8 @@ import { ExternalAccountClient, GoogleAuth } from "google-auth-library"
 
 const ANALYTICS_SCOPE = "https://www.googleapis.com/auth/analytics.readonly"
 const DEFAULT_PRODUCT_PATH_PREFIX = "/l/"
+const PARTNER_EMBED_PATH_PREFIX = "/embed/listings/"
+const PARTNER_EMBED_CLICK_EVENT = "partner_embed_click"
 
 export interface GoogleAnalyticsTopPage {
   path: string
@@ -69,6 +71,43 @@ export interface GoogleAnalyticsUnconfigured {
 }
 
 export type GoogleAnalyticsResult = GoogleAnalyticsTraffic | GoogleAnalyticsUnconfigured
+
+export interface GoogleAnalyticsEmbedClickBreakdown {
+  linkType: string
+  count: number
+}
+
+export interface GoogleAnalyticsEmbedStat {
+  slug: string
+  path: string
+  sessions: number
+  views: number
+  clicks: number
+}
+
+export interface GoogleAnalyticsDashboardData {
+  configured: true
+  rangeDays: number
+  propertyId: string
+  clientMeasurementConfigured: boolean
+  site: GoogleAnalyticsTraffic
+  partnerEmbeds: {
+    totals: {
+      sessions: number
+      totalUsers: number
+      screenPageViews: number
+      clicks: number
+    }
+    daily: GoogleAnalyticsDaily[]
+    clickDaily: { date: string; clicks: number }[]
+    byEmbed: GoogleAnalyticsEmbedStat[]
+    clicksByLinkType: GoogleAnalyticsEmbedClickBreakdown[]
+  }
+}
+
+export type GoogleAnalyticsDashboardResult =
+  | GoogleAnalyticsDashboardData
+  | GoogleAnalyticsUnconfigured
 
 type AccessTokenClient = {
   getAccessToken(): Promise<{ token?: string | null }>
@@ -271,6 +310,264 @@ function pathPrefixFilter(prefix: string): unknown {
   }
 }
 
+function eventNameFilter(eventName: string): unknown {
+  return {
+    filter: {
+      fieldName: "eventName",
+      stringFilter: { matchType: "EXACT", value: eventName },
+    },
+  }
+}
+
+function andFilter(expressions: unknown[]): unknown {
+  return { andGroup: { expressions } }
+}
+
+function parseGaDate(raw: string): string {
+  return raw.length === 8 ? `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}` : raw
+}
+
+function embedSlugFromPath(path: string): string | null {
+  const match = /^\/embed\/listings\/([^/?#]+)/.exec(path)
+  return match?.[1] ?? null
+}
+
+function isClientGa4MeasurementConfigured(): boolean {
+  const raw = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID?.trim()
+  return Boolean(raw && /^G-[A-Z0-9]+$/.test(raw))
+}
+
+async function runReportSafe(
+  token: string,
+  property: string,
+  body: GaRunReportRequest,
+): Promise<GaRow[]> {
+  try {
+    return await runReport(token, property, body)
+  } catch {
+    return []
+  }
+}
+
+async function queryGoogleAnalyticsTraffic(
+  token: string,
+  property: string,
+  options: {
+    startDate: string
+    endDate: string
+    pathPrefix?: string | null
+    topPagesLimit?: number
+  },
+): Promise<Omit<GoogleAnalyticsTraffic, "configured" | "rangeDays">> {
+  const dimensionFilter = options.pathPrefix ? pathPrefixFilter(options.pathPrefix) : undefined
+  const metricNames = [
+    "sessions",
+    "totalUsers",
+    "screenPageViews",
+    "engagedSessions",
+    "engagementRate",
+    "conversions",
+  ]
+
+  const [totalsRows, pageRows, channelRows, dailyRows] = await Promise.all([
+    runReport(token, property, {
+      dateRanges: [{ startDate: options.startDate, endDate: options.endDate }],
+      metrics: metricNames.map((name) => ({ name })),
+      ...(dimensionFilter ? { dimensionFilter } : {}),
+    }),
+    runReport(token, property, {
+      dateRanges: [{ startDate: options.startDate, endDate: options.endDate }],
+      dimensions: [{ name: "pagePath" }, { name: "pageTitle" }],
+      metrics: [{ name: "screenPageViews" }, { name: "sessions" }, { name: "engagementRate" }],
+      ...(dimensionFilter ? { dimensionFilter } : {}),
+      orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
+      limit: options.topPagesLimit ?? 25,
+    }),
+    runReport(token, property, {
+      dateRanges: [{ startDate: options.startDate, endDate: options.endDate }],
+      dimensions: [{ name: "sessionDefaultChannelGroup" }],
+      metrics: [{ name: "sessions" }, { name: "screenPageViews" }],
+      ...(dimensionFilter ? { dimensionFilter } : {}),
+      orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+      limit: 12,
+    }),
+    runReport(token, property, {
+      dateRanges: [{ startDate: options.startDate, endDate: options.endDate }],
+      dimensions: [{ name: "date" }],
+      metrics: [{ name: "sessions" }, { name: "screenPageViews" }],
+      ...(dimensionFilter ? { dimensionFilter } : {}),
+      orderBys: [{ dimension: { dimensionName: "date" } }],
+    }),
+  ])
+
+  const totalsValues = totalsRows[0]?.metricValues ?? []
+  const totals = {
+    sessions: toNumber(totalsValues[0]?.value),
+    totalUsers: toNumber(totalsValues[1]?.value),
+    screenPageViews: toNumber(totalsValues[2]?.value),
+    engagedSessions: toNumber(totalsValues[3]?.value),
+    engagementRate: toNumber(totalsValues[4]?.value),
+    conversions: toNumber(totalsValues[5]?.value),
+  }
+
+  const topPages: GoogleAnalyticsTopPage[] = pageRows.map((row) => ({
+    path: row.dimensionValues?.[0]?.value ?? "",
+    title: row.dimensionValues?.[1]?.value || null,
+    views: toNumber(row.metricValues?.[0]?.value),
+    sessions: toNumber(row.metricValues?.[1]?.value),
+    engagementRate: toNumber(row.metricValues?.[2]?.value),
+  }))
+
+  const channels: GoogleAnalyticsChannel[] = channelRows.map((row) => ({
+    channel: row.dimensionValues?.[0]?.value || "(unknown)",
+    sessions: toNumber(row.metricValues?.[0]?.value),
+    views: toNumber(row.metricValues?.[1]?.value),
+  }))
+
+  const daily: GoogleAnalyticsDaily[] = dailyRows
+    .map((row) => ({
+      date: parseGaDate(row.dimensionValues?.[0]?.value ?? ""),
+      sessions: toNumber(row.metricValues?.[0]?.value),
+      views: toNumber(row.metricValues?.[1]?.value),
+    }))
+    .filter((row) => row.date)
+    .sort((a, b) => a.date.localeCompare(b.date))
+
+  return { totals, topPages, channels, daily }
+}
+
+async function queryPartnerEmbedClicks(
+  token: string,
+  property: string,
+  startDate: string,
+  endDate: string,
+): Promise<{
+  totalClicks: number
+  clickDaily: { date: string; clicks: number }[]
+  clicksByPath: Map<string, number>
+  clicksByLinkType: GoogleAnalyticsEmbedClickBreakdown[]
+}> {
+  const eventFilter = eventNameFilter(PARTNER_EMBED_CLICK_EVENT)
+  const embedEventFilter = andFilter([
+    pathPrefixFilter(PARTNER_EMBED_PATH_PREFIX),
+    eventNameFilter(PARTNER_EMBED_CLICK_EVENT),
+  ])
+
+  const [totalRows, dailyRows, pathRows, linkTypeRows] = await Promise.all([
+    runReport(token, property, {
+      dateRanges: [{ startDate, endDate }],
+      metrics: [{ name: "eventCount" }],
+      dimensionFilter: eventFilter,
+    }),
+    runReport(token, property, {
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: "date" }],
+      metrics: [{ name: "eventCount" }],
+      dimensionFilter: eventFilter,
+      orderBys: [{ dimension: { dimensionName: "date" } }],
+    }),
+    runReport(token, property, {
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: "pagePath" }],
+      metrics: [{ name: "eventCount" }],
+      dimensionFilter: embedEventFilter,
+      orderBys: [{ metric: { metricName: "eventCount" }, desc: true }],
+      limit: 50,
+    }),
+    runReportSafe(token, property, {
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: "customEvent:link_type" }],
+      metrics: [{ name: "eventCount" }],
+      dimensionFilter: eventFilter,
+      orderBys: [{ metric: { metricName: "eventCount" }, desc: true }],
+      limit: 10,
+    }),
+  ])
+
+  const clicksByPath = new Map<string, number>()
+  for (const row of pathRows) {
+    const path = row.dimensionValues?.[0]?.value ?? ""
+    if (!path) continue
+    clicksByPath.set(path, toNumber(row.metricValues?.[0]?.value))
+  }
+
+  return {
+    totalClicks: toNumber(totalRows[0]?.metricValues?.[0]?.value),
+    clickDaily: dailyRows
+      .map((row) => ({
+        date: parseGaDate(row.dimensionValues?.[0]?.value ?? ""),
+        clicks: toNumber(row.metricValues?.[0]?.value),
+      }))
+      .filter((row) => row.date)
+      .sort((a, b) => a.date.localeCompare(b.date)),
+    clicksByPath,
+    clicksByLinkType: linkTypeRows
+      .map((row) => ({
+        linkType: row.dimensionValues?.[0]?.value || "(unknown)",
+        count: toNumber(row.metricValues?.[0]?.value),
+      }))
+      .filter((row) => row.count > 0),
+  }
+}
+
+function mergeEmbedStats(
+  embedTraffic: Omit<GoogleAnalyticsTraffic, "configured" | "rangeDays">,
+  clicksByPath: Map<string, number>,
+): GoogleAnalyticsEmbedStat[] {
+  const bySlug = new Map<string, GoogleAnalyticsEmbedStat>()
+
+  for (const page of embedTraffic.topPages) {
+    const slug = embedSlugFromPath(page.path)
+    if (!slug) continue
+    const existing = bySlug.get(slug)
+    if (existing) {
+      existing.sessions += page.sessions
+      existing.views += page.views
+      continue
+    }
+    bySlug.set(slug, {
+      slug,
+      path: page.path,
+      sessions: page.sessions,
+      views: page.views,
+      clicks: clicksByPath.get(page.path) ?? 0,
+    })
+  }
+
+  for (const [path, clicks] of clicksByPath) {
+    const slug = embedSlugFromPath(path)
+    if (!slug) continue
+    const existing = bySlug.get(slug)
+    if (existing) {
+      existing.clicks = Math.max(existing.clicks, clicks)
+      continue
+    }
+    bySlug.set(slug, { slug, path, sessions: 0, views: 0, clicks })
+  }
+
+  return [...bySlug.values()].sort((a, b) => b.sessions - a.sessions || b.clicks - a.clicks)
+}
+
+async function loadGoogleAnalyticsAccessToken(): Promise<
+  { ok: true; token: string; property: string } | { ok: false; reason: string }
+> {
+  const property = propertyId()
+  if (!isGoogleAnalyticsConfigured() || !property) {
+    return {
+      ok: false,
+      reason: getGoogleAnalyticsSetupHint() || "Google Analytics is not connected.",
+    }
+  }
+
+  const client = await getAuthClient()
+  const { token } = await client.getAccessToken()
+  if (!token) {
+    return { ok: false, reason: "Could not authenticate with Google Analytics." }
+  }
+
+  return { ok: true, token, property }
+}
+
 /**
  * GA4 traffic for product detail pages over the trailing window. Returns `{ configured: false }`
  * (never throws for the unconfigured case) so callers render a setup hint.
@@ -278,111 +575,83 @@ function pathPrefixFilter(prefix: string): unknown {
 export async function getGoogleAnalyticsMerchantTraffic(options?: {
   days?: number
 }): Promise<GoogleAnalyticsResult> {
-  const property = propertyId()
-  if (!isGoogleAnalyticsConfigured() || !property) {
-    return {
-      configured: false,
-      reason: getGoogleAnalyticsSetupHint() || "Google Analytics is not connected.",
-    }
-  }
-
   const days = options?.days ?? 28
   const startDate = isoDaysAgo(days)
   const endDate = isoDaysAgo(1)
-  const prefix = productPathPrefix()
 
   try {
-    const client = await getAuthClient()
-    const { token } = await client.getAccessToken()
-    if (!token) {
-      return { configured: false, reason: "Could not authenticate with Google Analytics." }
+    const access = await loadGoogleAnalyticsAccessToken()
+    if (!access.ok) {
+      return { configured: false, reason: access.reason }
     }
 
-    const filter = pathPrefixFilter(prefix)
-    const metricNames = [
-      "sessions",
-      "totalUsers",
-      "screenPageViews",
-      "engagedSessions",
-      "engagementRate",
-      "conversions",
-    ]
+    const snapshot = await queryGoogleAnalyticsTraffic(access.token, access.property, {
+      startDate,
+      endDate,
+      pathPrefix: productPathPrefix(),
+    })
 
-    const [totalsRows, pageRows, channelRows, dailyRows] = await Promise.all([
-      runReport(token, property, {
-        dateRanges: [{ startDate, endDate }],
-        metrics: metricNames.map((name) => ({ name })),
-        dimensionFilter: filter,
+    return { configured: true, rangeDays: days, ...snapshot }
+  } catch (e) {
+    return {
+      configured: false,
+      reason: e instanceof Error ? e.message : "Could not load Google Analytics data.",
+    }
+  }
+}
+
+/**
+ * Site-wide GA4 traffic plus partner embed views and click events for the admin dashboard.
+ */
+export async function getGoogleAnalyticsDashboardData(options?: {
+  days?: number
+}): Promise<GoogleAnalyticsDashboardResult> {
+  const days = options?.days ?? 28
+  const startDate = isoDaysAgo(days)
+  const endDate = isoDaysAgo(1)
+
+  try {
+    const access = await loadGoogleAnalyticsAccessToken()
+    if (!access.ok) {
+      return { configured: false, reason: access.reason }
+    }
+
+    const [site, embedTraffic, embedClicks] = await Promise.all([
+      queryGoogleAnalyticsTraffic(access.token, access.property, {
+        startDate,
+        endDate,
+        topPagesLimit: 20,
       }),
-      runReport(token, property, {
-        dateRanges: [{ startDate, endDate }],
-        dimensions: [{ name: "pagePath" }, { name: "pageTitle" }],
-        metrics: [
-          { name: "screenPageViews" },
-          { name: "sessions" },
-          { name: "engagementRate" },
-        ],
-        dimensionFilter: filter,
-        orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
-        limit: 25,
+      queryGoogleAnalyticsTraffic(access.token, access.property, {
+        startDate,
+        endDate,
+        pathPrefix: PARTNER_EMBED_PATH_PREFIX,
+        topPagesLimit: 50,
       }),
-      runReport(token, property, {
-        dateRanges: [{ startDate, endDate }],
-        dimensions: [{ name: "sessionDefaultChannelGroup" }],
-        metrics: [{ name: "sessions" }, { name: "screenPageViews" }],
-        dimensionFilter: filter,
-        orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
-        limit: 12,
-      }),
-      runReport(token, property, {
-        dateRanges: [{ startDate, endDate }],
-        dimensions: [{ name: "date" }],
-        metrics: [{ name: "sessions" }, { name: "screenPageViews" }],
-        dimensionFilter: filter,
-        orderBys: [{ dimension: { dimensionName: "date" } }],
-      }),
+      queryPartnerEmbedClicks(access.token, access.property, startDate, endDate),
     ])
 
-    const totalsRow = totalsRows[0]
-    const totalsValues = totalsRow?.metricValues ?? []
-    const totals = {
-      sessions: toNumber(totalsValues[0]?.value),
-      totalUsers: toNumber(totalsValues[1]?.value),
-      screenPageViews: toNumber(totalsValues[2]?.value),
-      engagedSessions: toNumber(totalsValues[3]?.value),
-      engagementRate: toNumber(totalsValues[4]?.value),
-      conversions: toNumber(totalsValues[5]?.value),
+    const byEmbed = mergeEmbedStats(embedTraffic, embedClicks.clicksByPath)
+
+    return {
+      configured: true,
+      rangeDays: days,
+      propertyId: access.property,
+      clientMeasurementConfigured: isClientGa4MeasurementConfigured(),
+      site: { configured: true, rangeDays: days, ...site },
+      partnerEmbeds: {
+        totals: {
+          sessions: embedTraffic.totals.sessions,
+          totalUsers: embedTraffic.totals.totalUsers,
+          screenPageViews: embedTraffic.totals.screenPageViews,
+          clicks: embedClicks.totalClicks,
+        },
+        daily: embedTraffic.daily,
+        clickDaily: embedClicks.clickDaily,
+        byEmbed,
+        clicksByLinkType: embedClicks.clicksByLinkType,
+      },
     }
-
-    const topPages: GoogleAnalyticsTopPage[] = pageRows.map((row) => ({
-      path: row.dimensionValues?.[0]?.value ?? "",
-      title: row.dimensionValues?.[1]?.value || null,
-      views: toNumber(row.metricValues?.[0]?.value),
-      sessions: toNumber(row.metricValues?.[1]?.value),
-      engagementRate: toNumber(row.metricValues?.[2]?.value),
-    }))
-
-    const channels: GoogleAnalyticsChannel[] = channelRows.map((row) => ({
-      channel: row.dimensionValues?.[0]?.value || "(unknown)",
-      sessions: toNumber(row.metricValues?.[0]?.value),
-      views: toNumber(row.metricValues?.[1]?.value),
-    }))
-
-    const daily: GoogleAnalyticsDaily[] = dailyRows
-      .map((row) => {
-        const raw = row.dimensionValues?.[0]?.value ?? ""
-        const date =
-          raw.length === 8 ? `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}` : raw
-        return {
-          date,
-          sessions: toNumber(row.metricValues?.[0]?.value),
-          views: toNumber(row.metricValues?.[1]?.value),
-        }
-      })
-      .filter((row) => row.date)
-      .sort((a, b) => a.date.localeCompare(b.date))
-
-    return { configured: true, rangeDays: days, totals, topPages, channels, daily }
   } catch (e) {
     return {
       configured: false,

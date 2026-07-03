@@ -1,5 +1,7 @@
 import type { Metadata } from "next"
 
+import { GoogleAnalyticsGtag } from "@/components/google-analytics-gtag"
+
 export const metadata: Metadata = {
   title: "Reswell listings",
   robots: { index: false, follow: false },
@@ -10,5 +12,10 @@ export default function PartnerListingEmbedLayout({
 }: {
   children: React.ReactNode
 }) {
-  return <div className="min-h-0 overflow-hidden bg-transparent">{children}</div>
+  return (
+    <>
+      <GoogleAnalyticsGtag />
+      <div className="min-h-0 overflow-hidden bg-transparent">{children}</div>
+    </>
+  )
 }

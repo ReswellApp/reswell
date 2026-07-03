@@ -48,6 +48,7 @@ const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
   '/admin/settings',
   '/admin/seo',
   '/admin/google-merchant',
+  '/admin/google-analytics',
   '/admin/search-curation',
   '/admin/partner-embeds',
   '/admin/shipping',
@@ -81,6 +82,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     items: [
       { href: '/admin/live', label: 'Live', icon: 'activity' },
       { href: '/admin/google-merchant', label: 'Google Merchant', icon: 'shoppingCart' },
+      { href: '/admin/google-analytics', label: 'Google Analytics', icon: 'lineChart' },
       { href: '/admin/used-board-market-dashboard', label: 'Used board market', icon: 'waves' },
       { href: '/admin/catalog-overview', label: 'Brand catalog explorer', icon: 'folderTree' },
       { href: '/admin/search-analytics', label: 'Search analytics', icon: 'lineChart' },

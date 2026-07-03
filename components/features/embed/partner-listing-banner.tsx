@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useRef } from "react"
 import reswellLogoPng from "@/public/images/reswell-logo.png"
 import type { PartnerEmbedPublicPayload } from "@/lib/db/partner-listing-embeds"
+import {
+  trackPartnerEmbedClick,
+  type PartnerEmbedClickType,
+} from "@/lib/google-analytics/embed-events"
 
 const VECTOR_SRC = "/images/reswell-logo.svg"
 const VECTOR_FIRST = process.env.NEXT_PUBLIC_SITE_WORDMARK_USE_VECTOR_SVG === "true"
@@ -10,7 +14,16 @@ const PNG_SRC = typeof reswellLogoPng !== "string" ? reswellLogoPng.src : reswel
 const PNG_WIDTH = typeof reswellLogoPng !== "string" ? reswellLogoPng.width : undefined
 const PNG_HEIGHT = typeof reswellLogoPng !== "string" ? reswellLogoPng.height : undefined
 
-function PartnerEmbedWordmark({ href }: { href: string }) {
+function onEmbedLinkClick(
+  embedSlug: string,
+  linkType: PartnerEmbedClickType,
+  linkUrl: string,
+  listingId?: string,
+) {
+  trackPartnerEmbedClick({ embedSlug, linkType, linkUrl, listingId })
+}
+
+function PartnerEmbedWordmark({ href, embedSlug }: { href: string; embedSlug: string }) {
   const swappedRef = useRef(false)
 
   const onRasterFallback = useCallback((event: { currentTarget: HTMLImageElement }) => {
@@ -29,6 +42,7 @@ function PartnerEmbedWordmark({ href }: { href: string }) {
       rel="noopener sponsored"
       className="inline-flex shrink-0 items-center"
       aria-label="Reswell"
+      onClick={() => onEmbedLinkClick(embedSlug, "logo", href)}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -78,9 +92,11 @@ export function PartnerListingEmbedResize({
 
 export function PartnerListingBannerClient({
   payload,
+  slug,
   containerRef,
 }: {
   payload: PartnerEmbedPublicPayload
+  slug: string
   containerRef: React.RefObject<HTMLDivElement | null>
 }) {
   const listings = payload.listings.slice(0, 4)
@@ -89,7 +105,7 @@ export function PartnerListingBannerClient({
     <div ref={containerRef} className="mx-auto w-full max-w-[920px] px-3 py-3 sm:px-4">
       <div className="flex flex-col gap-3 rounded-sm border border-neutral-300 bg-[#fafafa] p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] sm:flex-row sm:items-stretch sm:gap-4 sm:p-4">
         <div className="min-w-0 flex-1 sm:max-w-[34%]">
-          <PartnerEmbedWordmark href={payload.browse_href} />
+          <PartnerEmbedWordmark href={payload.browse_href} embedSlug={slug} />
           <p className="mt-2 font-headline text-[1.35rem] font-bold leading-tight tracking-[-0.02em] text-neutral-950 sm:mt-2.5 sm:text-[1.5rem]">
             {payload.headline}
           </p>
@@ -110,6 +126,9 @@ export function PartnerListingBannerClient({
                     target="_top"
                     rel="noopener sponsored"
                     className="group block overflow-hidden rounded border border-neutral-200 bg-white transition hover:border-neutral-400"
+                    onClick={() =>
+                      onEmbedLinkClick(slug, "listing", listing.href, listing.id)
+                    }
                   >
                     <div className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-100">
                       {listing.image_url ? (
@@ -139,6 +158,7 @@ export function PartnerListingBannerClient({
             target="_top"
             rel="noopener sponsored"
             className="flex w-full flex-col items-center justify-center rounded-sm bg-[#0b1f3a] px-4 py-3 text-center text-white transition hover:bg-[#102a4d] sm:min-h-[108px]"
+            onClick={() => onEmbedLinkClick(slug, "browse_cta", payload.browse_href)}
           >
             <span className="text-[11px] font-bold uppercase tracking-[0.08em] leading-tight">
               {payload.cta_primary}

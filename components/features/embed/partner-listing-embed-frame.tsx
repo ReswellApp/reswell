@@ -20,7 +20,7 @@ export function PartnerListingEmbedFrame({
 
   return (
     <div className="relative min-h-0 bg-transparent text-foreground">
-      <PartnerListingBannerClient payload={payload} containerRef={containerRef} />
+      <PartnerListingBannerClient payload={payload} slug={slug} containerRef={containerRef} />
       <PartnerListingEmbedResize slug={slug} origin={origin} containerRef={containerRef} />
     </div>
   )
