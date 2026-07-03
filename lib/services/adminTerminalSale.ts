@@ -1,17 +1,32 @@
 import type Stripe from "stripe"
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { randomUUID } from "node:crypto"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 import { getStripe, getStripeCheckoutKeyConfigError } from "@/lib/stripe-server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
+import { deleteBuyerCartRowsForListings } from "@/lib/db/cart-items-server"
 import {
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { fetchSellerFeeWaived } from "@/lib/db/profileSellerFee"
-import { getSellerEarnings } from "@/lib/seller-fees"
+import { getSellerEarnings, pendingSaleFeeClause } from "@/lib/seller-fees"
 import { completeMarketplaceOrderFromPaymentIntent } from "@/lib/stripe-complete-order"
+import { creditOrderPendingEarnings } from "@/lib/services/orderPendingEarnings"
+import { safeRevalidateAfterMarketplaceOrderCommit } from "@/lib/cache/safe-revalidate-after-order"
+import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
+import { touchUserLastActive } from "@/lib/db/userActivity"
+import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
+import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
+import type { KlaviyoBuyerOrderLineItem } from "@/lib/klaviyo/track-buyer-order-confirmed"
+import { notifySellerOrderCheckoutKlaviyo } from "@/lib/services/notifySellerOrderCheckoutKlaviyo"
+import { releaseOrderSellerEarningsAfterFulfillment } from "@/lib/services/releaseOrderSellerEarnings"
+import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
+import { trackMetaPurchaseServerEvent } from "@/lib/meta/track-purchase-server-event"
+import { syncAdminTerminalGuestToCrm } from "@/lib/services/crmAdminTerminalGuest"
 import {
   cancelReaderAction,
   getStripeTerminalLocationId,
@@ -26,6 +41,9 @@ import type {
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export const ADMIN_TERMINAL_SALES_CHANNEL = "admin_terminal"
+
+/** Synthetic orders.stripe_checkout_session_id prefix for admin register cash sales. */
+export const ADMIN_TERMINAL_CASH_REFERENCE_PREFIX = "admin_terminal_cash_"
 
 /** In-person terminal sales always settle as pickup — item price only, no shipping. */
 export const ADMIN_TERMINAL_FULFILLMENT = "pickup" as const
@@ -104,6 +122,32 @@ type AdminTerminalSaleParties = {
 export type FinalizeAdminTerminalSaleResult =
   | { ok: true; orderId: string; alreadyProcessed?: boolean }
   | { ok: false; error: string; status: number }
+
+export type CompleteAdminTerminalCashSaleResult =
+  | { ok: true; orderId: string; alreadyProcessed?: boolean }
+  | { ok: false; error: string; status: number }
+
+function isUniqueViolation(err: { code?: string; message?: string } | null): boolean {
+  if (!err) return false
+  if (err.code === "23505") return true
+  return Boolean(err.message?.toLowerCase().includes("duplicate"))
+}
+
+function walletPendingCashSaleDescription(listingTitle: string, platformFeeUsd: number): string {
+  const safeTitle =
+    listingTitle.length > 400 ? `${listingTitle.slice(0, 399)}…` : listingTitle
+  const raw = `Pending — Sold "${safeTitle}" (${pendingSaleFeeClause(platformFeeUsd)}, cash at register — available after delivery)`
+  return raw.length > 2000 ? `${raw.slice(0, 1999)}…` : raw
+}
+
+function terminalGuestShippingJson(parties: AdminTerminalSaleParties): Record<string, unknown> {
+  return {
+    name: parties.customerName,
+    email: parties.customerEmail,
+    phone: parties.customerPhone,
+    admin_terminal: true,
+  }
+}
 
 function extractListingRefFromInput(raw: string): ListingRef {
   const trimmed = raw.trim()
@@ -632,6 +676,222 @@ export async function finalizeAdminTerminalSale(
     orderId: result.orderId,
     alreadyProcessed: result.alreadyProcessed,
   }
+}
+
+export async function completeAdminTerminalCashSale(
+  adminUserId: string,
+  input: AdminTerminalSaleCheckoutInput,
+): Promise<CompleteAdminTerminalCashSaleResult> {
+  let service: SupabaseClient
+  try {
+    service = createServiceRoleClient()
+  } catch {
+    return { ok: false, error: "Server configuration error", status: 503 }
+  }
+
+  const loaded = await loadListingForAdminTerminalSale(service, input.listingId)
+  if (!loaded.ok) return loaded
+
+  const { listing, totalUsd } = loaded
+  const checkoutTotals = await computeAdminTerminalInPersonCheckoutUsd(service, listing)
+  if (!checkoutTotals.ok) {
+    return { ok: false, error: checkoutTotals.error, status: 422 }
+  }
+
+  const partiesResult = await resolveAdminTerminalSaleParties(service, input, listing.user_id)
+  if (!partiesResult.ok) {
+    return { ok: false, error: partiesResult.error, status: partiesResult.status }
+  }
+
+  const parties = partiesResult.parties
+  const buyerId = parties.linkedBuyerId ?? null
+  const { itemPrice, platformFee, sellerEarnings } = checkoutTotals.totals
+  const sellerId = listing.user_id
+
+  const orderId = randomUUID()
+  const cashReference = `${ADMIN_TERMINAL_CASH_REFERENCE_PREFIX}${orderId}`
+
+  const { data: existing } = await service
+    .from("orders")
+    .select("id")
+    .eq("stripe_checkout_session_id", cashReference)
+    .maybeSingle()
+
+  if (existing?.id) {
+    return { ok: true, orderId: existing.id, alreadyProcessed: true }
+  }
+
+  const shippingAddressJson = buyerId ? null : terminalGuestShippingJson(parties)
+
+  const { data: purchase, error: insertError } = await service
+    .from("orders")
+    .insert({
+      id: orderId,
+      listing_id: listing.id,
+      buyer_id: buyerId,
+      seller_id: sellerId,
+      amount: totalUsd,
+      shipping_amount: 0,
+      platform_fee: platformFee,
+      seller_earnings: sellerEarnings,
+      promo_code_id: null,
+      promo_discount_usd: 0,
+      status: "confirmed",
+      payment_method: "cash",
+      stripe_checkout_session_id: cashReference,
+      fulfillment_method: ADMIN_TERMINAL_FULFILLMENT,
+      delivery_status: "picked_up",
+      pickup_code: null,
+      sales_channel: ADMIN_TERMINAL_SALES_CHANNEL,
+      ...(shippingAddressJson ? { shipping_address: shippingAddressJson } : {}),
+    })
+    .select()
+    .single()
+
+  if (insertError || !purchase) {
+    if (isUniqueViolation(insertError)) {
+      const { data: raced } = await service
+        .from("orders")
+        .select("id")
+        .eq("stripe_checkout_session_id", cashReference)
+        .maybeSingle()
+      if (raced?.id) {
+        return { ok: true, orderId: raced.id, alreadyProcessed: true }
+      }
+    }
+    console.error("[adminTerminalSale] cash order insert:", insertError)
+    return { ok: false, error: "Could not create order", status: 500 }
+  }
+
+  const { error: orderItemsErr } = await service.from("order_items").insert({
+    order_id: purchase.id,
+    listing_id: listing.id,
+    sort_order: 0,
+    item_price: itemPrice,
+    shipping_amount: 0,
+    platform_fee: platformFee,
+    seller_earnings: sellerEarnings,
+  })
+
+  if (orderItemsErr) {
+    console.error("[adminTerminalSale] cash order_items insert:", orderItemsErr)
+    return { ok: false, error: "Could not create order lines", status: 500 }
+  }
+
+  const listingTitle = String(listing.title ?? "")
+  const sellerCredit = await creditOrderPendingEarnings(service, {
+    userId: sellerId,
+    amountUsd: sellerEarnings,
+    orderId: purchase.id,
+    description: walletPendingCashSaleDescription(listingTitle, platformFee),
+    referenceType: "order_pending_earnings",
+  })
+  if (!sellerCredit.ok) return sellerCredit
+
+  const { error: listingErr } = await service
+    .from("listings")
+    .update({ status: "sold" })
+    .eq("id", listing.id)
+
+  if (listingErr) {
+    console.error("[adminTerminalSale] cash listing update:", listingErr)
+    return { ok: false, error: "Could not mark listing sold", status: 500 }
+  }
+
+  await safeRevalidateAfterMarketplaceOrderCommit(service, {
+    sellerUserId: sellerId,
+    listingIds: [listing.id],
+    listingSlugs: [listing.slug ?? null],
+  })
+
+  void syncListingToGoogleMerchantBestEffort(service, listing.id)
+  void markUserListingBoardModelDataSold(service, listing.id, itemPrice)
+
+  if (buyerId) {
+    void deleteBuyerCartRowsForListings(service, buyerId, [listing.id])
+  }
+
+  void touchUserLastActive(service, sellerId)
+  if (buyerId) {
+    void touchUserLastActive(service, buyerId)
+  }
+
+  const buyerEmail = parties.customerEmail
+  const orderNum = formatOrderNumForCustomer(
+    (purchase as { order_num?: string | null }).order_num,
+    purchase.id,
+  )
+
+  if (buyerId) {
+    void postPurchaseThreadNotification(service, {
+      buyerId,
+      sellerId,
+      primaryListingId: listing.id,
+      listingIds: [listing.id],
+      listingTitles: [listingTitle],
+      listingTitleSummary: listingTitle,
+      orderId: purchase.id,
+      orderNum,
+      total: totalUsd,
+      fulfillment: "pickup",
+      shippingAddress: shippingAddressJson,
+      paymentMethod: "cash",
+    })
+  }
+
+  const klaviyoLineItems: KlaviyoBuyerOrderLineItem[] = [
+    {
+      listingId: listing.id,
+      listingTitle,
+      listingSection: String(listing.section ?? ""),
+      price: itemPrice,
+      quantity: 1,
+    },
+  ]
+
+  await trackKlaviyoBuyerOrderConfirmed({
+    buyerUserId: buyerId ?? undefined,
+    buyerEmail,
+    orderId: purchase.id,
+    orderNum: (purchase as { order_num?: string | null }).order_num ?? null,
+    listingId: listing.id,
+    listingTitle: listingTitle.slice(0, 500),
+    listingSection: String(listing.section ?? ""),
+    listingSlug: listing.slug ?? null,
+    lineItems: klaviyoLineItems,
+    amount: totalUsd,
+    fulfillmentMethod: "pickup",
+    pickupCode: null,
+    paymentMethod: "cash",
+  })
+
+  await notifySellerOrderCheckoutKlaviyo(service, purchase.id)
+
+  void trackMetaPurchaseServerEvent({
+    orderId: purchase.id,
+    buyerUserId: buyerId,
+    buyerEmail,
+    value: totalUsd,
+    contentIds: [listing.id],
+  })
+
+  void releaseOrderSellerEarningsAfterFulfillment(purchase.id)
+
+  if (!buyerId) {
+    void syncAdminTerminalGuestToCrm(service, {
+      adminProfileId: adminUserId,
+      firstName: parties.customerFirstName,
+      lastName: parties.customerLastName,
+      email: parties.customerEmail,
+      phone: parties.customerPhone,
+      orderId: purchase.id,
+      orderNum: (purchase as { order_num?: string | null }).order_num ?? null,
+      listingTitle,
+      amountUsd: totalUsd,
+    })
+  }
+
+  return { ok: true, orderId: purchase.id }
 }
 
 export async function cancelAdminTerminalSale(

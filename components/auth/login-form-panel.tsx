@@ -55,7 +55,9 @@ export function LoginFormPanel({
   const [resendSent, setResendSent] = useState(false)
   const [resendLoading, setResendLoading] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [gate, setGate] = useState<"checking" | "ready" | "redirecting">("checking")
+  const [gate, setGate] = useState<"checking" | "ready" | "redirecting">(
+    variant === "modal" ? "ready" : "checking",
+  )
   const router = useRouter()
 
   useEffect(() => {
@@ -94,7 +96,9 @@ export function LoginFormPanel({
         password,
       })
       if (signError) throw signError
-      setGate("redirecting")
+      if (variant !== "modal") {
+        setGate("redirecting")
+      }
       await waitForClientSession({ supabase })
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
@@ -266,7 +270,7 @@ export function LoginFormPanel({
     </Card>
   )
 
-  if (gate === "checking" || gate === "redirecting") {
+  if (variant === "page" && (gate === "checking" || gate === "redirecting")) {
     return <AuthTransitionShell />
   }
 

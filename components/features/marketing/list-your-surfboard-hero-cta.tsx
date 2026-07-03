@@ -34,7 +34,12 @@ export function ListYourSurfboardHeroCta({ isLoggedIn }: ListYourSurfboardHeroCt
         enjoyable.
       </p>
       <div className="mt-4 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
-        <ListYourSurfboardSellCta className="w-full sm:w-auto">List your surfboard</ListYourSurfboardSellCta>
+        <ListYourSurfboardSellCta
+          userId={isLoggedIn ? "authenticated" : null}
+          className="w-full sm:w-auto"
+        >
+          List your surfboard
+        </ListYourSurfboardSellCta>
         {!isLoggedIn ? (
           <Button
             type="button"

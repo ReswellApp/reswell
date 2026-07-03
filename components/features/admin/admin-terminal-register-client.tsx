@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { toast } from "sonner"
 import {
+  Banknote,
   CheckCircle2,
   CreditCard,
   Loader2,
@@ -68,7 +69,7 @@ type ListingSearchHit = {
 
 type Phase = "setup" | "charging" | "settlement_failed" | "confirm"
 type CustomerMode = "guest" | "member"
-type PaymentMethod = "terminal" | "card"
+type PaymentMethod = "terminal" | "card" | "cash"
 
 const POLL_INTERVAL_MS = 2500
 const POLL_TIMEOUT_MS = 90_000
@@ -118,6 +119,7 @@ export function AdminTerminalRegisterClient() {
   const [readerId, setReaderId] = useState("")
 
   const [previewBusy, setPreviewBusy] = useState(false)
+  const [cashBusy, setCashBusy] = useState(false)
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null)
   const [orderId, setOrderId] = useState<string | null>(null)
   const [settlementError, setSettlementError] = useState<string | null>(null)
@@ -378,6 +380,33 @@ export function AdminTerminalRegisterClient() {
     setPhase("charging")
     pollStartedAt.current = Date.now()
     pollTimer.current = setTimeout(() => void pollFinalize(paymentIntentId), POLL_INTERVAL_MS)
+  }
+
+  async function acceptCashAtRegister() {
+    if (!preview || !checkoutPayload) {
+      toast.error("Complete customer details first")
+      return
+    }
+
+    chargeAbortedRef.current = false
+    setCashBusy(true)
+    try {
+      const res = await fetch("/api/admin/terminal/sale/cash", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(checkoutPayload),
+      })
+      const json = (await res.json()) as { data?: { orderId?: string }; error?: string }
+      if (!res.ok || !json.data?.orderId) {
+        toast.error(json.error ?? "Could not record cash sale")
+        return
+      }
+      handleOrderConfirmed(json.data.orderId)
+    } catch {
+      toast.error("Could not record cash sale")
+    } finally {
+      setCashBusy(false)
+    }
   }
 
   async function startCharge() {
@@ -865,8 +894,9 @@ export function AdminTerminalRegisterClient() {
           <CardHeader>
             <CardTitle className="text-lg">Payment</CardTitle>
             <CardDescription>
-              Charge on your S710 reader or enter card details here. In-person admin sales settle
-              immediately with no pickup code — list price only, no shipping.
+              Charge on your S710 reader, enter card details here, or record cash collected at the
+              register. In-person admin sales settle immediately with no pickup code — list price
+              only, no shipping.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -874,14 +904,18 @@ export function AdminTerminalRegisterClient() {
               value={paymentMethod}
               onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
             >
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="terminal" disabled={phase === "charging"}>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="terminal" disabled={phase === "charging" || cashBusy}>
                   <Terminal className="mr-2 h-4 w-4" />
                   Terminal tap
                 </TabsTrigger>
-                <TabsTrigger value="card" disabled={phase === "charging"}>
+                <TabsTrigger value="card" disabled={phase === "charging" || cashBusy}>
                   <Monitor className="mr-2 h-4 w-4" />
                   Card checkout
+                </TabsTrigger>
+                <TabsTrigger value="cash" disabled={phase === "charging" || cashBusy}>
+                  <Banknote className="mr-2 h-4 w-4" />
+                  Cash
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -905,21 +939,44 @@ export function AdminTerminalRegisterClient() {
               ) : (
                 <Button
                   className="w-full"
-                  disabled={!readerId || !customerDetailsReady}
+                  disabled={!readerId || !customerDetailsReady || cashBusy}
                   onClick={() => void startCharge()}
                 >
                   <CreditCard className="mr-2 h-4 w-4" />
                   Charge {money(chargeAmount)} on reader
                 </Button>
               )
-            ) : (
+            ) : paymentMethod === "card" ? (
               <AdminTerminalCardCheckout
                 listingId={preview.id}
                 amountUsd={chargeAmount}
                 checkoutPayload={checkoutPayload}
-                disabled={!customerDetailsReady || phase === "charging"}
+                disabled={!customerDetailsReady || phase === "charging" || cashBusy}
                 onOrderConfirmed={handleOrderConfirmed}
               />
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Confirm after you have collected {money(chargeAmount)} in cash from the customer.
+                </p>
+                <Button
+                  className="w-full"
+                  disabled={!customerDetailsReady || phase === "charging" || cashBusy}
+                  onClick={() => void acceptCashAtRegister()}
+                >
+                  {cashBusy ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Recording sale…
+                    </>
+                  ) : (
+                    <>
+                      <Banknote className="mr-2 h-4 w-4" />
+                      Accepted cash at register
+                    </>
+                  )}
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>

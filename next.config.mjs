@@ -135,7 +135,14 @@ const nextConfig = {
     ],
   },
   async headers() {
+    const staticHeroCacheControl =
+      'public, max-age=31536000, s-maxage=31536000, immutable, stale-while-revalidate=86400'
+
     return [
+      {
+        source: '/images/home/hero-backdrop-rincon.jpg',
+        headers: [{ key: 'Cache-Control', value: staticHeroCacheControl }],
+      },
       {
         source: '/embed/:path*',
         headers: [

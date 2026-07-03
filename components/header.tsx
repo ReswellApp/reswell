@@ -1048,7 +1048,16 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 variant="outline"
                 className={cn(listYourBoardNavButtonClassName, "hidden lg:mr-10 lg:inline-flex")}
               >
-                <Link href="/sell">List your board</Link>
+                <Link
+                  href="/sell"
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                    e.preventDefault()
+                    openLogin("/sell?new=1")
+                  }}
+                >
+                  List your board
+                </Link>
               </Button>
             ) : null}
 
@@ -1115,7 +1124,16 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   variant="outline"
                   className={cn(listYourBoardNavButtonClassName, "hidden sm:inline-flex lg:hidden")}
                 >
-                  <Link href="/sell">List your board</Link>
+                  <Link
+                    href="/sell"
+                    onClick={(e) => {
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                      e.preventDefault()
+                      openLogin("/sell?new=1")
+                    }}
+                  >
+                    List your board
+                  </Link>
                 </Button>
                 <Link
                   href="/auth/login"

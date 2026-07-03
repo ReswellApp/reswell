@@ -4,7 +4,6 @@ import {
   normalizeHeroSlideUrl,
 } from "@/lib/home-hero-slide-urls"
 import { listHomeHeroCuratedSlideUrls } from "@/lib/db/home-hero-listings"
-import { listHowItWorksBuyerListingImageUrls } from "@/lib/db/home-how-it-works-buyer-images"
 import type { HomeTrendingBrandRow } from "@/lib/db/home-trending-brands"
 import { listingHeroSlideSrc, type ListingImageForCard } from "@/lib/listing-image-display"
 import type { HomePeerScrollListing } from "@/components/features/home/home-peer-listing-scroll-tile"
@@ -18,7 +17,7 @@ import { loadHomeRecentlyListedGridRows } from "@/lib/services/homeRecentlyListe
 import { loadHomeRecentlySoldSurfboardRows } from "@/lib/services/homeRecentlySoldStrip"
 import { createAnonSupabaseClient } from "@/lib/supabase/anon"
 
-/** Admin-curated + stable homepage sections (hero, featured rows, shops, brands, how-it-works). */
+/** Admin-curated + stable homepage sections (hero, featured rows, shops, brands). */
 export const HOME_STABLE_CATALOG_CACHE_TAG = "home-public-catalog-stable"
 export const HOME_STABLE_CATALOG_REVALIDATE_SECONDS = 60 * 60 * 24 * 7
 
@@ -90,11 +89,6 @@ export type HomeStableCatalog = {
   featuredBoards: HomePeerScrollListing[] | null
   featuredFins: HomePeerScrollListing[] | null
   featuredNew: HomeFeaturedNewItem[]
-  howItWorksBuyerHighlightImages: {
-    shortboard: string
-    hybrid: string
-    longboard: string
-  }
   featuredListingIds: string[]
 }
 
@@ -156,7 +150,6 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
     surfboardFeaturedRows,
     finFeaturedRows,
     newGearRes,
-    howItWorksBuyerImageUrls,
   ] = await Promise.all([
     listHomeHeroCuratedSlideUrls(supabase),
     listHomeTrendingBrandsForPublicService(supabase),
@@ -179,7 +172,6 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
       .eq("hidden_from_homepage", false)
       .order("created_at", { ascending: false })
       .limit(12),
-    listHowItWorksBuyerListingImageUrls(supabase),
   ])
 
   const useCuratedHeroOnly = curatedHeroUrls.length > 0
@@ -235,11 +227,6 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
     featuredBoards,
     featuredFins,
     featuredNew,
-    howItWorksBuyerHighlightImages: {
-      shortboard: howItWorksBuyerImageUrls.shortboard ?? "/images/home/hero-slide-5.png",
-      hybrid: howItWorksBuyerImageUrls.hybrid ?? "/images/home/hero-slide-6.png",
-      longboard: howItWorksBuyerImageUrls.longboard ?? "/images/home/hero-slide-4.png",
-    },
     featuredListingIds,
   }
 }

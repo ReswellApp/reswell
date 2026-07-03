@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { SavedListContent } from "@/components/saved-list-content"
 import { pageSeoMetadata } from "@/lib/site-metadata"
@@ -15,7 +14,7 @@ export default async function FavoritesPage() {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect(`/auth/login?redirect=${encodeURIComponent("/favorites")}`)
+    return null
   }
 
   return (

@@ -52,7 +52,7 @@ export type KlaviyoBuyerOrderConfirmedPayload = {
   fulfillmentMethod: "shipping" | "pickup"
   /** Six-digit code the buyer shows the seller at pickup (pickup orders only). */
   pickupCode?: string | null
-  paymentMethod: "stripe" | "reswell_bucks"
+  paymentMethod: "stripe" | "reswell_bucks" | "cash"
 }
 
 export async function trackKlaviyoBuyerOrderConfirmed(

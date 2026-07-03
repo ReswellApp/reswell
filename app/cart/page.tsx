@@ -1,5 +1,4 @@
 import type { Metadata } from "next"
-import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getCartPageItems } from "@/app/actions/cart"
 import { getFavoriteListingIds } from "@/app/actions/favorites"
@@ -21,7 +20,7 @@ export default async function CartPage() {
   } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect(`/auth/login?redirect=${encodeURIComponent("/cart")}`)
+    return null
   }
 
   const { items, error } = await getCartPageItems()

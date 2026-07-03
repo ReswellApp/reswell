@@ -9,7 +9,7 @@ export const orderPlacedMessageMetadataSchema = z.object({
   listingIds: z.array(z.string().uuid()).optional(),
   total: z.number(),
   fulfillment: z.enum(["pickup", "shipping"]),
-  paymentMethod: z.enum(["card", "reswell_bucks"]),
+  paymentMethod: z.enum(["card", "reswell_bucks", "cash"]),
 })
 
 export type OrderPlacedMessagePayload = z.infer<typeof orderPlacedMessageMetadataSchema>

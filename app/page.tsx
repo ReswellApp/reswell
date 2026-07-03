@@ -15,7 +15,6 @@ import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { FadeInSection } from "@/components/fade-in-section"
 import {
-  HomeHowItWorksSection,
   HomeListingScrollRow,
   HomePeerListingScrollTile,
   HomeRecentlyListedGrid,
@@ -58,7 +57,6 @@ export default async function HomePage() {
     featuredBoards,
     featuredFins,
     featuredNew,
-    howItWorksBuyerHighlightImages,
   } = stableCatalog
 
   const { featuredRecentlySold } = recentlySoldCatalog
@@ -301,14 +299,7 @@ export default async function HomePage() {
           </FadeInSection>
         )}
 
-        <FadeInSection>
-          <HomeHowItWorksSection
-            buyerHighlightImages={howItWorksBuyerHighlightImages}
-            isAdmin={isHomeHeroAdmin}
-          />
-        </FadeInSection>
-
-        {/* CTA below How it works */}
+        {/* Ready to get started CTA */}
         <section className="pt-8 pb-16 md:pb-20">
           <div className="container mx-auto">
             <div className={marketingCtaBannerPanelClassName}>

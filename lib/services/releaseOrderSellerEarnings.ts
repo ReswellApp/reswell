@@ -65,7 +65,12 @@ export async function releaseOrderSellerEarningsAfterFulfillment(
         sellerEarnings: Number.isFinite(sellerEarnings) ? sellerEarnings : 0,
         platformFee: Number.isFinite(platformFee) ? platformFee : 0,
         fulfillmentMethod: order.fulfillment_method === "pickup" ? "pickup" : "shipping",
-        paymentMethod: order.payment_method === "stripe" ? "stripe" : "reswell_bucks",
+        paymentMethod:
+          order.payment_method === "reswell_bucks"
+            ? "reswell_bucks"
+            : order.payment_method === "cash"
+              ? "cash"
+              : "stripe",
       })
     }
   }

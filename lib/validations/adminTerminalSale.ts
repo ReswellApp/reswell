@@ -83,6 +83,11 @@ export const adminTerminalSaleCheckoutSchema = z
 
 export type AdminTerminalSaleCheckoutInput = z.infer<typeof adminTerminalSaleCheckoutSchema>
 
+/** Cash collected at the admin register — same customer rules as card checkout. */
+export const adminTerminalSaleCashSchema = adminTerminalSaleCheckoutSchema
+
+export type AdminTerminalSaleCashInput = z.infer<typeof adminTerminalSaleCashSchema>
+
 export const adminTerminalSaleFinalizeSchema = z.object({
   paymentIntentId: z.string().trim().min(1),
 })

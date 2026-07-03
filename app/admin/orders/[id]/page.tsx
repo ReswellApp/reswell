@@ -43,6 +43,7 @@ type SupportRequest = {
 function paymentLabel(method: string): string {
   if (method === "stripe") return "Card (Stripe)"
   if (method === "reswell_bucks") return "Wallet"
+  if (method === "cash") return "Cash at register"
   return method
 }
 

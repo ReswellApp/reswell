@@ -31,7 +31,7 @@ export type KlaviyoSellerOrderConfirmedPayload = {
   sellerEarnings: number
   platformFee: number
   fulfillmentMethod: "shipping" | "pickup"
-  paymentMethod: "stripe" | "reswell_bucks"
+  paymentMethod: "stripe" | "reswell_bucks" | "cash"
 }
 
 export async function trackKlaviyoSellerOrderConfirmed(

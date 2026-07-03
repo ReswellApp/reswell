@@ -1,13 +1,16 @@
+"use client"
+
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 
+import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { Button, type ButtonProps } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 export const LIST_YOUR_SURFBOARD_SELL_HREF = "/sell?new=1"
 
 type ListYourSurfboardSellCtaProps = {
-  /** @deprecated Auth is no longer required to open /sell; kept for call-site compatibility. */
+  /** When `null`, intercept navigation and open the sign-in modal instead. */
   userId?: string | null
   children: React.ReactNode
   size?: ButtonProps["size"]
@@ -18,6 +21,7 @@ type ListYourSurfboardSellCtaProps = {
 }
 
 export function ListYourSurfboardSellCta({
+  userId,
   children,
   size = "lg",
   variant = "default",
@@ -25,11 +29,24 @@ export function ListYourSurfboardSellCta({
   showArrow = true,
   tabIndex,
 }: ListYourSurfboardSellCtaProps) {
+  const openSignIn = useSignInGate()
   const arrowClassName = cn("h-4 w-4", size === "sm" ? "ml-1" : "ml-2")
 
   return (
     <Button size={size} variant={variant} className={className} asChild>
-      <Link href={LIST_YOUR_SURFBOARD_SELL_HREF} tabIndex={tabIndex}>
+      <Link
+        href={LIST_YOUR_SURFBOARD_SELL_HREF}
+        tabIndex={tabIndex}
+        onClick={
+          userId === null
+            ? (e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                e.preventDefault()
+                openSignIn(LIST_YOUR_SURFBOARD_SELL_HREF)
+              }
+            : undefined
+        }
+      >
         {children}
         {showArrow ? <ArrowRight className={arrowClassName} aria-hidden /> : null}
       </Link>

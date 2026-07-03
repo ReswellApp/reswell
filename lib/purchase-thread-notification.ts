@@ -31,7 +31,9 @@ function shippingLines(shipping: Record<string, unknown> | null): string[] {
  * so the seller sees the order in Messages without emailing infrastructure.
  */
 function paymentPhrase(method: OrderPlacedMessagePayload["paymentMethod"]): string {
-  return method === "reswell_bucks" ? "wallet" : "card"
+  if (method === "reswell_bucks") return "wallet"
+  if (method === "cash") return "cash"
+  return "card"
 }
 
 function buildPurchaseThreadPlainText(params: {
