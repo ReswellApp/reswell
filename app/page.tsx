@@ -99,7 +99,7 @@ export default async function HomePage() {
         <section className="relative overflow-hidden lg:flex lg:min-h-[max(34rem,min(72svh,42rem))] lg:items-center">
           <HeroBackdrop />
           <div
-            className="absolute inset-x-0 top-0 z-[1] max-lg:h-[42svh] sm:max-lg:h-[46svh] md:max-lg:h-[50svh] max-lg:bg-gradient-to-b max-lg:from-black/5 max-lg:via-transparent max-lg:to-white/25 lg:inset-0 lg:h-full lg:bg-white/40"
+            className="absolute inset-x-0 top-0 z-[1] max-lg:h-[42svh] sm:max-lg:h-[46svh] md:max-lg:h-[50svh] max-lg:bg-gradient-to-b max-lg:from-black/5 max-lg:via-transparent max-lg:to-white/10 lg:inset-0 lg:h-full lg:bg-white/15"
             aria-hidden
           />
           <div className="relative z-10 w-full lg:container lg:mx-auto lg:py-20">

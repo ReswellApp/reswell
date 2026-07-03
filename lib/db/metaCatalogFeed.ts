@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import type { MetaListingProductSource } from "@/lib/meta/catalog-product"
+import {
+  META_CATALOG_PEER_SECTIONS,
+  type MetaListingProductSource,
+} from "@/lib/meta/catalog-product"
 
 export const META_CATALOG_FEED_PAGE_SIZE = 500
 
@@ -23,7 +26,7 @@ export type MetaCatalogFeedPageResult = {
 }
 
 /**
- * Active, site-visible surfboard listings for Meta Commerce catalog sync (newest first).
+ * Active, site-visible peer listings (surfboards + fins) for Meta Commerce catalog sync (newest first).
  */
 export async function fetchMetaCatalogFeedPage(
   supabase: SupabaseClient,
@@ -38,7 +41,7 @@ export async function fetchMetaCatalogFeedPage(
     .select(CATALOG_LISTING_SELECT)
     .eq("status", "active")
     .eq("hidden_from_site", false)
-    .eq("section", "surfboards")
+    .in("section", [...META_CATALOG_PEER_SECTIONS])
     .order("created_at", { ascending: false })
     .range(from, to)
 

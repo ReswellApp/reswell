@@ -15,9 +15,10 @@ export function HeroBackdrop({ src = HOME_HERO_BACKDROP_PATH }: { src?: string }
         fill
         priority
         fetchPriority="high"
-        quality={85}
+        quality={92}
+        unoptimized
         sizes="100vw"
-        className="object-cover object-[center_30%] max-lg:scale-105 max-lg:object-[center_20%] lg:scale-100 lg:object-center"
+        className="object-cover object-[center_30%] max-lg:object-[center_20%] lg:object-center"
         placeholder="blur"
         blurDataURL={wideShimmer}
       />

@@ -47,12 +47,36 @@ export type MetaCatalogFeedItem = {
 const MAX_DESCRIPTION_LENGTH = 5000
 const DEFAULT_GOOGLE_PRODUCT_CATEGORY = "499811"
 
+/** Peer listing sections synced to the Meta Commerce catalog feed. */
+export const META_CATALOG_PEER_SECTIONS = ["surfboards", "fins"] as const
+
+export type MetaCatalogPeerSection = (typeof META_CATALOG_PEER_SECTIONS)[number]
+
+export function isMetaCatalogPeerSection(section: string): section is MetaCatalogPeerSection {
+  return (META_CATALOG_PEER_SECTIONS as readonly string[]).includes(section)
+}
+
+/** Google taxonomy: Sporting Goods > … > Surfing > Surfboard Fins (3525). */
+export const META_CATALOG_DEFAULT_FINS_GOOGLE_PRODUCT_CATEGORY = "3525"
+
 function stripHtml(text: string): string {
   return text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
 }
 
 export function getMetaCatalogGoogleProductCategory(): string {
   return process.env.META_CATALOG_GOOGLE_PRODUCT_CATEGORY?.trim() || DEFAULT_GOOGLE_PRODUCT_CATEGORY
+}
+
+export function getMetaCatalogFinsGoogleProductCategory(): string {
+  return (
+    process.env.META_CATALOG_FINS_GOOGLE_PRODUCT_CATEGORY?.trim() ||
+    META_CATALOG_DEFAULT_FINS_GOOGLE_PRODUCT_CATEGORY
+  )
+}
+
+export function getMetaCatalogGoogleProductCategoryForSection(section: string): string {
+  if (section === "fins") return getMetaCatalogFinsGoogleProductCategory()
+  return getMetaCatalogGoogleProductCategory()
 }
 
 export function parseMetaListingPrice(
@@ -161,7 +185,7 @@ function formatMetaPrice(amount: number): string {
 }
 
 export function isMetaCatalogEligibleListing(listing: MetaListingProductSource): boolean {
-  if (listing.section !== "surfboards") return false
+  if (!listing.section || !isMetaCatalogPeerSection(listing.section)) return false
   if (listing.status !== "active") return false
   if (listing.hidden_from_site === true) return false
   if (!listing.id?.trim()) return false
@@ -194,7 +218,9 @@ export function listingToMetaCatalogFeedItem(
     link: absoluteListingUrl(listing),
     image_link: imageLink,
     brand: brand || undefined,
-    google_product_category: getMetaCatalogGoogleProductCategory(),
+    google_product_category: getMetaCatalogGoogleProductCategoryForSection(
+      listing.section ?? "surfboards",
+    ),
     additional_image_link: additionalImageLinks(listing, imageLink),
     identifier_exists: "no",
   }

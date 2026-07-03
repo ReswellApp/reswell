@@ -47,6 +47,8 @@ import { getBrandById } from "@/lib/brands/server"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
 import { ListingDetailPeerPurchaseActions } from "@/components/listing-detail-peer-purchase-actions"
+import { MetaViewContentTracker } from "@/components/meta/meta-view-content-tracker"
+import { isMetaCatalogEligibleListing } from "@/lib/meta/catalog-product"
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
@@ -220,6 +222,7 @@ export async function FinsListingDetailPage({
   const systemLabel = finSystemLabel(fin.fin_system as string | null)
 
   const listingTitle = capitalizeWords(fin.title as string)
+  const metaCatalogEligible = isMetaCatalogEligibleListing(fin)
 
   const listPriceNum =
     typeof fin.price === "number" ? fin.price : Number.parseFloat(String(fin.price)) || 0
@@ -343,6 +346,13 @@ export async function FinsListingDetailPage({
 
   return (
     <main className="relative flex-1 w-full min-w-0 max-w-full overflow-x-clip bg-background pb-16 pt-5 sm:pb-24 sm:pt-8">
+      {metaCatalogEligible ? (
+        <MetaViewContentTracker
+          listingId={fin.id}
+          value={listPriceNum}
+          contentName={listingTitle}
+        />
+      ) : null}
       <div className="container mx-auto w-full min-w-0 max-w-full px-4 sm:px-6 lg:px-8 lg:!max-w-[min(100%,1320px)] xl:!max-w-[min(100%,1480px)] 2xl:!max-w-[min(100%,1680px)]">
         <div className="mb-3 min-w-0 max-w-full pt-0.5 max-lg:mb-4 lg:mb-8">
           <Breadcrumb>
