@@ -6,7 +6,11 @@ import { createClient } from "@/lib/supabase/server"
 import { createFinListingSchema, updateFinListingSchema } from "@/lib/validations/fin-listing"
 import { createFinListing, updateFinListing } from "@/lib/services/finListing"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
-import { searchFinCatalogForSell } from "@/lib/services/finCatalogSearch"
+import {
+  searchFinBrandsCatalogSuggestWithClient,
+  searchFinCatalogForSell,
+} from "@/lib/services/finCatalogSearch"
+import type { BrandCatalogSuggestResponse } from "@/lib/services/brandDirectorySearch"
 import type { FinCatalogSearchResult } from "@/lib/types/fin-catalog-search"
 
 const finCatalogSearchQuerySchema = z.object({
@@ -24,6 +28,14 @@ export type UpdateFinListingActionResult =
 export type SearchFinCatalogForSellActionResult =
   | { ok: true; data: FinCatalogSearchResult }
   | { ok: false; error: string }
+
+/** Brand directory typeahead for the `/sell/fins` form (fin-tagged brands only). */
+export async function searchFinBrandsCatalogSuggest(
+  qRaw: string,
+): Promise<BrandCatalogSuggestResponse> {
+  const supabase = await createClient()
+  return searchFinBrandsCatalogSuggestWithClient(supabase, qRaw)
+}
 
 /** Catalog search for the `/sell/fins` entry step (fin-tagged brands only). */
 export async function searchFinCatalogForSellAction(

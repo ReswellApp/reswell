@@ -1,7 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { FIN_CATALOG_PRODUCT_CATEGORY } from "@/lib/brand-catalog-fin-variants"
+import type { BrandProductCategorySlug } from "@/lib/brand-product-categories"
+import { listBrandIdsMatchingProductCategories } from "@/lib/db/brand-product-categories"
 import type { BrandMatchRow, ModelMatchRow } from "@/lib/utils/listing-brand-model-match"
 
-/** Active surfboard listing missing a catalog brand and/or model link. */
+/** Peer listing sections the brand/model backfill cron processes. */
+export type ListingBrandModelBackfillSection = "surfboards" | "fins"
+
+/** Active listing missing a catalog brand and/or model link. */
 export type BackfillListingRow = {
   id: string
   title: string | null
@@ -9,21 +15,24 @@ export type BackfillListingRow = {
   brand_id: string | null
   model: string | null
   brand_model_id: string | null
+  section: ListingBrandModelBackfillSection
 }
 
-const BACKFILL_LISTING_SELECT = "id, title, brand, brand_id, model, brand_model_id" as const
+const BACKFILL_LISTING_SELECT = "id, title, brand, brand_id, model, brand_model_id, section" as const
 const LISTING_PAGE_SIZE = 500
 const CATALOG_PAGE_SIZE = 1000
+const BRAND_ID_IN_CHUNK = 200
 
 /**
- * Collect active, on-site surfboard listings that are missing a directory brand
+ * Collect active, on-site listings in `section` that are missing a directory brand
  * (`brand_id`) or catalog model (`brand_model_id`), oldest first, up to `maxListings`.
  *
  * Rows are read in full before any mutation so attaching links mid-run can't shift
  * the paginated window and skip candidates.
  */
-export async function collectActiveSurfboardListingsNeedingBrandOrModel(
+export async function collectActiveListingsNeedingBrandOrModel(
   supabase: SupabaseClient,
+  section: ListingBrandModelBackfillSection,
   maxListings: number,
 ): Promise<{ rows: BackfillListingRow[]; capped: boolean }> {
   const rows: BackfillListingRow[] = []
@@ -40,7 +49,7 @@ export async function collectActiveSurfboardListingsNeedingBrandOrModel(
     const { data, error } = await supabase
       .from("listings")
       .select(BACKFILL_LISTING_SELECT)
-      .eq("section", "surfboards")
+      .eq("section", section)
       .eq("status", "active")
       .eq("hidden_from_site", false)
       .or("brand_id.is.null,brand_model_id.is.null")
@@ -48,7 +57,7 @@ export async function collectActiveSurfboardListingsNeedingBrandOrModel(
       .range(from, from + limit - 1)
 
     if (error) {
-      console.error("collectActiveSurfboardListingsNeedingBrandOrModel:", error.message)
+      console.error("collectActiveListingsNeedingBrandOrModel:", section, error.message)
       break
     }
 
@@ -62,43 +71,116 @@ export async function collectActiveSurfboardListingsNeedingBrandOrModel(
   return { rows, capped }
 }
 
-/** Live coverage counts: how many active surfboard listings still lack a brand/model link. */
-export type ListingBrandModelCoverage = {
-  activeSurfboards: number
+/** @deprecated Use {@link collectActiveListingsNeedingBrandOrModel} with section `surfboards`. */
+export async function collectActiveSurfboardListingsNeedingBrandOrModel(
+  supabase: SupabaseClient,
+  maxListings: number,
+): Promise<{ rows: BackfillListingRow[]; capped: boolean }> {
+  return collectActiveListingsNeedingBrandOrModel(supabase, "surfboards", maxListings)
+}
+
+export type ListingBrandModelSectionCoverage = {
+  activeListings: number
   missingEither: number
   missingBrand: number
   missingModel: number
 }
 
-function activeSurfboardCountQuery(supabase: SupabaseClient) {
+/** Live coverage counts for surfboard and fin listings missing catalog links. */
+export type ListingBrandModelCoverage = {
+  surfboards: ListingBrandModelSectionCoverage
+  fins: ListingBrandModelSectionCoverage
+}
+
+function activeListingCountQuery(
+  supabase: SupabaseClient,
+  section: ListingBrandModelBackfillSection,
+) {
   return supabase
     .from("listings")
     .select("id", { count: "exact", head: true })
-    .eq("section", "surfboards")
+    .eq("section", section)
     .eq("status", "active")
     .eq("hidden_from_site", false)
+}
+
+async function getSectionListingBrandModelCoverage(
+  supabase: SupabaseClient,
+  section: ListingBrandModelBackfillSection,
+): Promise<ListingBrandModelSectionCoverage> {
+  const base = activeListingCountQuery(supabase, section)
+  const [allRes, eitherRes, brandRes, modelRes] = await Promise.all([
+    base,
+    base.or("brand_id.is.null,brand_model_id.is.null"),
+    base.is("brand_id", null),
+    base.is("brand_model_id", null),
+  ])
+
+  for (const res of [allRes, eitherRes, brandRes, modelRes]) {
+    if (res.error) {
+      console.error("getSectionListingBrandModelCoverage:", section, res.error.message)
+    }
+  }
+
+  return {
+    activeListings: allRes.count ?? 0,
+    missingEither: eitherRes.count ?? 0,
+    missingBrand: brandRes.count ?? 0,
+    missingModel: modelRes.count ?? 0,
+  }
 }
 
 export async function getListingBrandModelCoverage(
   supabase: SupabaseClient,
 ): Promise<ListingBrandModelCoverage> {
-  const [allRes, eitherRes, brandRes, modelRes] = await Promise.all([
-    activeSurfboardCountQuery(supabase),
-    activeSurfboardCountQuery(supabase).or("brand_id.is.null,brand_model_id.is.null"),
-    activeSurfboardCountQuery(supabase).is("brand_id", null),
-    activeSurfboardCountQuery(supabase).is("brand_model_id", null),
+  const [surfboards, fins] = await Promise.all([
+    getSectionListingBrandModelCoverage(supabase, "surfboards"),
+    getSectionListingBrandModelCoverage(supabase, "fins"),
   ])
+  return { surfboards, fins }
+}
 
-  for (const res of [allRes, eitherRes, brandRes, modelRes]) {
-    if (res.error) console.error("getListingBrandModelCoverage:", res.error.message)
+/** Directory brands limited to explicit ids (e.g. fin-tagged manufacturers). */
+export async function loadDirectoryBrandsForMatchingByIds(
+  supabase: SupabaseClient,
+  brandIds: readonly string[],
+): Promise<BrandMatchRow[]> {
+  const uniqueIds = [...new Set(brandIds.filter(Boolean))]
+  if (uniqueIds.length === 0) return []
+
+  const out: BrandMatchRow[] = []
+
+  for (let i = 0; i < uniqueIds.length; i += BRAND_ID_IN_CHUNK) {
+    const chunk = uniqueIds.slice(i, i + BRAND_ID_IN_CHUNK)
+    const { data, error } = await supabase
+      .from("brands")
+      .select("id, name, slug")
+      .in("id", chunk)
+      .order("name", { ascending: true })
+
+    if (error) {
+      console.error("loadDirectoryBrandsForMatchingByIds:", error.message)
+      break
+    }
+
+    for (const row of (data ?? []) as Array<{ id: string; name: string | null; slug: string | null }>) {
+      if (!row.id || !row.name?.trim()) continue
+      out.push({ id: row.id, name: row.name.trim(), slug: row.slug?.trim() ?? null })
+    }
   }
 
-  return {
-    activeSurfboards: allRes.count ?? 0,
-    missingEither: eitherRes.count ?? 0,
-    missingBrand: brandRes.count ?? 0,
-    missingModel: modelRes.count ?? 0,
-  }
+  return out.sort((a, b) => a.name.localeCompare(b.name))
+}
+
+/** Fin manufacturers from `brand_product_categories.category_slug = 'fins'`. */
+export async function loadFinDirectoryBrandsForMatching(
+  supabase: SupabaseClient,
+): Promise<BrandMatchRow[]> {
+  const finBrandIds = await listBrandIdsMatchingProductCategories(supabase, [
+    FIN_CATALOG_PRODUCT_CATEGORY,
+  ])
+  if (!finBrandIds?.length) return []
+  return loadDirectoryBrandsForMatchingByIds(supabase, finBrandIds)
 }
 
 /** Every directory brand (id, name, slug) for in-memory title matching. */
@@ -131,6 +213,46 @@ export async function loadDirectoryBrandsForMatching(
   }
 
   return out
+}
+
+/** `brand_models` grouped by `brand_id`, scoped to one product category. */
+export async function loadBrandModelsByBrandIdForProductCategory(
+  supabase: SupabaseClient,
+  productCategorySlug: BrandProductCategorySlug,
+): Promise<Map<string, ModelMatchRow[]>> {
+  const byBrand = new Map<string, ModelMatchRow[]>()
+  let from = 0
+
+  for (;;) {
+    const { data, error } = await supabase
+      .from("brand_models")
+      .select("id, brand_id, name")
+      .eq("product_category_slug", productCategorySlug)
+      .order("name", { ascending: true })
+      .range(from, from + CATALOG_PAGE_SIZE - 1)
+
+    if (error) {
+      console.error("loadBrandModelsByBrandIdForProductCategory:", productCategorySlug, error.message)
+      break
+    }
+
+    const batch = (data ?? []) as Array<{ id: string; brand_id: string | null; name: string | null }>
+    for (const row of batch) {
+      if (!row.id || !row.brand_id || !row.name?.trim()) continue
+      const existing = byBrand.get(row.brand_id)
+      const model: ModelMatchRow = { id: row.id, brand_id: row.brand_id, name: row.name.trim() }
+      if (existing) {
+        existing.push(model)
+      } else {
+        byBrand.set(row.brand_id, [model])
+      }
+    }
+
+    if (batch.length < CATALOG_PAGE_SIZE) break
+    from += CATALOG_PAGE_SIZE
+  }
+
+  return byBrand
 }
 
 /** All `brand_models` grouped by `brand_id` for brand-scoped title matching. */

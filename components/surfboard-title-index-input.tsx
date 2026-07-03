@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import type { IndexBoardModelSelection } from "@/components/index-board-model-combobox"
 import { getBoardModelsCatalogItems, searchBrandsCatalogSuggest } from "@/app/actions/marketplace"
+import { searchFinBrandsCatalogSuggest } from "@/lib/actions/finListingActions"
 import type { BrandCatalogSuggestRow } from "@/lib/services/brandDirectorySearch"
 import { recordSearchSuggestPick } from "@/app/actions/search-suggest-analytics"
 import { LISTING_TITLE_MAX_LENGTH } from "@/lib/sell-form-validation"
@@ -66,6 +67,8 @@ type SurfboardTitleIndexInputProps = {
   committedDirectoryBrandLabel?: string | null
   /** When search returns no rows, optional CTA opens the global “request a brand” flow (caller owns the dialog). */
   onRequestBrand?: () => void
+  /** Limit brand directory matches to brands tagged with the `fins` product category. */
+  finScoped?: boolean
 }
 
 export function SurfboardTitleIndexInput({
@@ -80,6 +83,7 @@ export function SurfboardTitleIndexInput({
   onSelectModel,
   committedDirectoryBrandLabel = null,
   onRequestBrand,
+  finScoped = false,
 }: SurfboardTitleIndexInputProps) {
   const isMobile = useIsMobile()
   const [items, setItems] = React.useState<IndexBoardModelSelection[]>([])
@@ -155,6 +159,7 @@ export function SurfboardTitleIndexInput({
   }, [committedDirectoryBrandLabel, value])
 
   React.useEffect(() => {
+    if (finScoped) return
     let cancelled = false
     getBoardModelsCatalogItems()
       .then((data) => {
@@ -169,11 +174,12 @@ export function SurfboardTitleIndexInput({
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [finScoped])
 
   /**
    * `searchBrandsCatalogSuggest` uses Elasticsearch (when configured) then hydrates from
    * `public.brands`, else Supabase `ilike` — same pipeline as the brand directory search.
+   * When `finScoped`, results are limited to fin-tagged brands.
    */
   React.useEffect(() => {
     if (disabled) return
@@ -196,7 +202,8 @@ export function SurfboardTitleIndexInput({
       const myEpoch = brandSearchEpoch.current
       void (async () => {
         try {
-          const { rows, meta } = await searchBrandsCatalogSuggest(q)
+          const searchBrands = finScoped ? searchFinBrandsCatalogSuggest : searchBrandsCatalogSuggest
+          const { rows, meta } = await searchBrands(q)
           if (myEpoch !== brandSearchEpoch.current) return
           brandSuggestBackendRef.current = meta.backend
           setBrandRows(rows)
@@ -233,7 +240,7 @@ export function SurfboardTitleIndexInput({
         debounceRef.current = null
       }
     }
-  }, [value, disabled])
+  }, [value, disabled, finScoped])
 
   React.useEffect(() => {
     setHighlight(0)
@@ -350,8 +357,9 @@ export function SurfboardTitleIndexInput({
       ) : showNoMatches && !showResultsList ? (
         <div className="px-3 py-4 text-sm">
           <p className="text-muted-foreground">
-            No brand profile in the directory matches that search. You can still type a brand name above —
-            it doesn’t have to be in the list.
+            {finScoped
+              ? "No fin brand profile in the directory matches that search. You can still type a brand name above — it doesn't have to be in the list."
+              : "No brand profile in the directory matches that search. You can still type a brand name above — it doesn't have to be in the list."}
           </p>
           {onRequestBrand ? (
             <Button

@@ -28,6 +28,7 @@ import {
   Wrench,
   DollarSign,
   BellRing,
+  Code,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -70,6 +71,7 @@ const NAV_ICONS: Record<AdminNavIconKey, LucideIcon> = {
   wrench: Wrench,
   dollarSign: DollarSign,
   bellRing: BellRing,
+  code: Code,
 }
 
 function isNavActive(pathname: string, href: string): boolean {

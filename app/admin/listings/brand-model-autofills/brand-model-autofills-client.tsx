@@ -74,11 +74,16 @@ type AutofillSummary = {
   changedSince: number
 }
 
-type Coverage = {
-  activeSurfboards: number
+type SectionCoverage = {
+  activeListings: number
   missingEither: number
   missingBrand: number
   missingModel: number
+}
+
+type Coverage = {
+  surfboards: SectionCoverage
+  fins: SectionCoverage
 }
 
 type UnmatchedRow = {
@@ -199,6 +204,53 @@ function TableSkeleton() {
       ))}
     </div>
   )
+}
+
+function CoverageSectionLine({
+  label,
+  data,
+  maxPerSectionPerDay,
+}: {
+  label: string
+  data: SectionCoverage
+  maxPerSectionPerDay: number
+}) {
+  return (
+    <p>
+      <span className="font-medium text-foreground">{label}:</span>{" "}
+      <span className="font-medium text-foreground tabular-nums">{data.missingEither}</span> of{" "}
+      <span className="tabular-nums">{data.activeListings}</span> active listings still have no
+      catalog link
+      {data.missingEither > 0 ? (
+        <>
+          {" "}
+          (<span className="tabular-nums">{data.missingBrand}</span> missing a brand,{" "}
+          <span className="tabular-nums">{data.missingModel}</span> missing a model). The cron works
+          through these oldest-first, up to{" "}
+          <span className="tabular-nums">{maxPerSectionPerDay}</span> per section per day.
+        </>
+      ) : (
+        <> — every listing is fully linked.</>
+      )}
+    </p>
+  )
+}
+
+function decrementSectionCoverage(
+  coverage: SectionCoverage,
+  row: Pick<UnmatchedRow, "needsBrand" | "needsModel">,
+): SectionCoverage {
+  return {
+    ...coverage,
+    missingEither: Math.max(0, coverage.missingEither - 1),
+    missingBrand: Math.max(0, coverage.missingBrand - (row.needsBrand ? 1 : 0)),
+    missingModel: Math.max(0, coverage.missingModel - (row.needsModel ? 1 : 0)),
+  }
+}
+
+function coverageSectionKey(section: string): keyof Coverage | null {
+  if (section === "surfboards" || section === "fins") return section
+  return null
 }
 
 export function BrandModelAutofillsAdminClient() {
@@ -346,7 +398,8 @@ export function BrandModelAutofillsAdminClient() {
           </h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
             Listings the daily cron matched to a directory brand or catalog model from their
-            title — and titles it couldn’t match, so you know which brands/models to add.
+            title — and titles it couldn’t match, so you know which brands/models to add. Covers
+            surfboards and fins (fin listings use fin-tagged catalog brands/models only).
           </p>
         </div>
         <Button variant="outline" onClick={() => void load()} disabled={loading}>
@@ -355,19 +408,13 @@ export function BrandModelAutofillsAdminClient() {
       </div>
 
       {coverage ? (
-        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-          <span className="font-medium text-foreground tabular-nums">{coverage.missingEither}</span> of{" "}
-          <span className="tabular-nums">{coverage.activeSurfboards}</span> active surfboard listings
-          still have no catalog link
-          {coverage.missingEither > 0 ? (
-            <>
-              {" "}(<span className="tabular-nums">{coverage.missingBrand}</span> missing a brand,{" "}
-              <span className="tabular-nums">{coverage.missingModel}</span> missing a model). The cron
-              works through these oldest-first, up to 500 per day.
-            </>
-          ) : (
-            <> — every listing is fully linked.</>
-          )}
+        <div className="space-y-2 rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+          <CoverageSectionLine
+            label="Surfboards"
+            data={coverage.surfboards}
+            maxPerSectionPerDay={250}
+          />
+          <CoverageSectionLine label="Fins" data={coverage.fins} maxPerSectionPerDay={250} />
         </div>
       ) : null}
 
@@ -834,22 +881,15 @@ export function BrandModelAutofillsAdminClient() {
                                   }
                                 })
                                 if (data.brandId && data.brandModelId) {
-                                  setCoverage((c) =>
-                                    c
-                                      ? {
-                                          ...c,
-                                          missingEither: Math.max(0, c.missingEither - 1),
-                                          missingBrand: Math.max(
-                                            0,
-                                            c.missingBrand - (row.needsBrand ? 1 : 0),
-                                          ),
-                                          missingModel: Math.max(
-                                            0,
-                                            c.missingModel - (row.needsModel ? 1 : 0),
-                                          ),
-                                        }
-                                      : c,
-                                  )
+                                  setCoverage((c) => {
+                                    if (!c) return c
+                                    const key = coverageSectionKey(row.listingSection)
+                                    if (!key) return c
+                                    return {
+                                      ...c,
+                                      [key]: decrementSectionCoverage(c[key], row),
+                                    }
+                                  })
                                 }
                               }}
                             />

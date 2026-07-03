@@ -8,6 +8,7 @@ import {
   searchFinCatalogModels,
   searchFinCatalogModelsBroad,
   searchFinCatalogVariants,
+  type FinCatalogBrandRow,
   type FinCatalogModelRow,
   type FinCatalogVariantRow,
 } from "@/lib/db/fin-catalog-search"
@@ -17,8 +18,11 @@ import {
   FIN_SIZE_OPTIONS,
 } from "@/lib/fin-listing-config"
 import { FIN_LISTING_TITLE_MAX_LENGTH } from "@/lib/validations/fin-listing"
-import { searchBrandsCatalogSuggestWithClient } from "@/lib/services/brandDirectorySearch"
-import type { BrandCatalogSuggestRow } from "@/lib/services/brandDirectorySearch"
+import {
+  searchBrandsCatalogSuggestWithClient,
+  type BrandCatalogSuggestResponse,
+  type BrandCatalogSuggestRow,
+} from "@/lib/services/brandDirectorySearch"
 import { formatFinCatalogVariantLabel } from "@/lib/utils/fin-catalog-variant-label"
 import { finCatalogSearchRowThumbUrl } from "@/lib/utils/fin-catalog-display-image"
 import { rankFinCatalogSearchResults } from "@/lib/utils/fin-catalog-search-rank"
@@ -41,9 +45,72 @@ export type {
 } from "@/lib/types/fin-catalog-search"
 
 const MAX_BRANDS = 8
+const MAX_FIN_BRAND_SUGGEST = 20
 const MAX_MODELS = 20
 const MAX_VARIANTS = 24
 const MAX_RANKED_RESULTS = 12
+
+function finCatalogBrandRowToSuggestRow(row: FinCatalogBrandRow): BrandCatalogSuggestRow {
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    short_description: row.short_description,
+    logo_url: row.logo_url,
+    location_label: row.location_label,
+    lead_shaper_name: row.lead_shaper_name,
+  }
+}
+
+function mergeFinBrandSuggestRows(
+  catalogRows: BrandCatalogSuggestRow[],
+  finScopedRows: FinCatalogBrandRow[],
+  limit = MAX_FIN_BRAND_SUGGEST,
+): BrandCatalogSuggestRow[] {
+  const byId = new Map<string, BrandCatalogSuggestRow>()
+  for (const row of catalogRows) {
+    byId.set(row.id, row)
+  }
+  for (const row of finScopedRows) {
+    if (!byId.has(row.id)) {
+      byId.set(row.id, finCatalogBrandRowToSuggestRow(row))
+    }
+  }
+  return [...byId.values()].slice(0, limit)
+}
+
+/**
+ * Brand directory typeahead for `/sell/fins` — same pipeline as surfboard sell, scoped to
+ * brands tagged with the `fins` product category.
+ */
+export async function searchFinBrandsCatalogSuggestWithClient(
+  supabase: SupabaseClient,
+  qRaw: string,
+): Promise<BrandCatalogSuggestResponse> {
+  const q = (qRaw || "").trim().replace(/%/g, "")
+  if (q.length < 1) {
+    return { rows: [], meta: { backend: "supabase" } }
+  }
+
+  const finBrandIds = await listFinCatalogBrandIds(supabase)
+  if (finBrandIds.length === 0) {
+    return { rows: [], meta: { backend: "supabase" } }
+  }
+
+  const finBrandIdSet = new Set(finBrandIds)
+
+  const [brandRes, finScopedBrands] = await Promise.all([
+    searchBrandsCatalogSuggestWithClient(supabase, q),
+    searchFinCatalogBrands(supabase, finBrandIds, q, MAX_FIN_BRAND_SUGGEST),
+  ])
+
+  const rows = mergeFinBrandSuggestRows(
+    brandRes.rows.filter((row) => finBrandIdSet.has(row.id)),
+    finScopedBrands,
+  )
+
+  return { rows, meta: brandRes.meta }
+}
 
 function extractFinFacetMatches(q: string): {
   finSystems: FinBoxType[]

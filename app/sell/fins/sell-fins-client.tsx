@@ -949,12 +949,37 @@ export default function SellFinsFlow({
                     finSystem={form.finSystem}
                     size={form.size}
                     brand={form.brand}
+                    brandId={form.brandId}
                     model={form.model}
                     onConditionChange={(v) => setField("condition", v)}
                     onFinSetupChange={(v) => setField("finSetup", v)}
                     onFinSystemChange={(v) => setField("finSystem", v)}
                     onSizeChange={(v) => setField("size", v)}
-                    onBrandChange={(v) => setField("brand", v)}
+                    onBrandChange={(v) => {
+                      setForm((prev) => {
+                        const clear =
+                          prev.brandId &&
+                          prev.brand.trim() &&
+                          v.trim() !== prev.brand.trim()
+                        if (!clear) return { ...prev, brand: v }
+                        return {
+                          ...prev,
+                          brand: v,
+                          brandId: null,
+                          brandModelId: null,
+                          model: "",
+                        }
+                      })
+                    }}
+                    onBrandSelect={(opt) => {
+                      setForm((prev) => ({
+                        ...prev,
+                        brandId: opt.brandId,
+                        brand: opt.brandName,
+                        brandModelId: null,
+                        model: "",
+                      }))
+                    }}
                     onModelChange={(v) => setField("model", v)}
                   />
 

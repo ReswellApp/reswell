@@ -134,6 +134,19 @@ const nextConfig = {
       'date-fns',
     ],
   },
+  async headers() {
+    return [
+      {
+        source: '/embed/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: 'frame-ancestors *',
+          },
+        ],
+      },
+    ]
+  },
   async redirects() {
     return [
       { source: "/dashboard/orders", destination: "/dashboard/purchases", permanent: true },

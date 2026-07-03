@@ -27,6 +27,7 @@ export type AdminNavIconKey =
   | 'wrench'
   | 'dollarSign'
   | 'bellRing'
+  | 'code'
 
 export interface AdminNavItemConfig {
   href: string
@@ -48,6 +49,7 @@ const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
   '/admin/seo',
   '/admin/google-merchant',
   '/admin/search-curation',
+  '/admin/partner-embeds',
   '/admin/shipping',
   '/admin/tools',
   '/admin/pnl',
@@ -68,6 +70,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin', label: 'Overview', icon: 'layoutDashboard' },
       { href: '/admin/listings', label: 'Listings', icon: 'package' },
       { href: '/admin/seo', label: 'SEO', icon: 'search' },
+      { href: '/admin/partner-embeds', label: 'Partner embeds', icon: 'code' },
       { href: '/admin/users', label: 'Users', icon: 'users' },
       { href: '/admin/wallets', label: 'Wallet balances', icon: 'wallet' },
     ],

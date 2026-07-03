@@ -5,9 +5,10 @@ import { runListingBrandModelBackfill } from "@/lib/services/listingBrandModelBa
 export const maxDuration = 60
 
 /**
- * Daily: scans active surfboard listings missing a directory brand / catalog model
- * and attaches confident matches found in the listing title (whole-word match against
- * the brand catalog, then that brand's models). Existing links are never overwritten.
+ * Daily: scans active surfboard and fin listings missing a directory brand / catalog
+ * model and attaches confident matches found in the listing title (whole-word match
+ * against the brand catalog, then that brand's models). Fin listings are scoped to
+ * fin-tagged brands and fin catalog models. Existing links are never overwritten.
  * Protected with CRON_SECRET (same pattern as other cron routes).
  */
 export async function GET(request: Request) {

@@ -1,11 +1,11 @@
 /**
- * Pure, deterministic matching of a listing title against the surfboard catalog.
+ * Pure, deterministic matching of a listing title against the brand/model catalog.
  *
  * Used by the daily backfill cron to attach a directory brand / model to active
- * listings that are missing them. Precision is favoured over recall: a candidate
- * only matches when its (normalized) name appears as a whole-word phrase inside
- * the title, so generic token overlap ("the", "6", a shared letter) can never
- * mislabel a listing.
+ * surfboard and fin listings that are missing them. Precision is favoured over
+ * recall: a candidate only matches when its (normalized) name appears as a
+ * whole-word phrase inside the title, so generic token overlap ("the", "6", a
+ * shared letter) can never mislabel a listing.
  */
 
 export type BrandMatchRow = { id: string; name: string; slug: string | null }

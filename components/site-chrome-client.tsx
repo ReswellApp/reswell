@@ -31,7 +31,14 @@ function hideSiteChrome(pathname: string | null): boolean {
   if (pathname.startsWith("/auth") || pathname === "/help" || pathname.startsWith("/help/")) {
     return true
   }
+  if (pathname.startsWith("/embed")) {
+    return true
+  }
   return isThreadsRoute(pathname)
+}
+
+function isPartnerEmbedRoute(pathname: string | null): boolean {
+  return Boolean(pathname?.startsWith("/embed"))
 }
 
 /** Full-height flows without the marketing footer (messages, sell listing). */
@@ -78,6 +85,10 @@ export function SiteChromeClient({
     window.addEventListener("pageshow", onPageShow)
     return () => window.removeEventListener("pageshow", onPageShow)
   }, [])
+
+  if (isPartnerEmbedRoute(pathname)) {
+    return <>{children}</>
+  }
 
   if (hideSiteChrome(pathname)) {
     return (

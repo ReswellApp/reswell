@@ -9,6 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import type { IndexBoardModelSelection } from "@/components/index-board-model-combobox"
+import { SurfboardTitleIndexInput } from "@/components/surfboard-title-index-input"
 import {
   FIN_SETUP_OPTIONS,
   FIN_SYSTEM_OPTIONS_FOR_FINS,
@@ -74,12 +76,14 @@ export type SellFinsFacetFieldsProps = {
   finSystem: string
   size: string
   brand: string
+  brandId: string | null
   model: string
   onConditionChange: (value: string) => void
   onFinSetupChange: (value: string) => void
   onFinSystemChange: (value: string) => void
   onSizeChange: (value: string) => void
   onBrandChange: (value: string) => void
+  onBrandSelect: (selection: IndexBoardModelSelection) => void
   onModelChange: (value: string) => void
 }
 
@@ -89,12 +93,14 @@ export function SellFinsFacetFields({
   finSystem,
   size,
   brand,
+  brandId,
   model,
   onConditionChange,
   onFinSetupChange,
   onFinSystemChange,
   onSizeChange,
   onBrandChange,
+  onBrandSelect,
   onModelChange,
 }: SellFinsFacetFieldsProps) {
   return (
@@ -138,12 +144,17 @@ export function SellFinsFacetFields({
           <Label htmlFor="sell-fin-brand" className="text-xs text-muted-foreground/45">
             Brand
           </Label>
-          <Input
+          <SurfboardTitleIndexInput
             id="sell-fin-brand"
-            value={brand}
+            finScoped
             placeholder="e.g. FCS, Futures, Captain Fin"
-            className="h-10 text-sm placeholder:text-muted-foreground/45"
-            onChange={(e) => onBrandChange(e.target.value)}
+            value={brand}
+            boardLength=""
+            committedDirectoryBrandLabel={
+              brandId ? brand.trim() || null : null
+            }
+            onChange={onBrandChange}
+            onSelectModel={onBrandSelect}
           />
         </div>
         <div className="space-y-1.5">
