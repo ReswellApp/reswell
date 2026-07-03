@@ -67,6 +67,8 @@ export function HomePeerListingScrollTile({
   onFavoritedChange,
   imagePriority = false,
   compact = false,
+  cardContentClassName,
+  metaFooterClassName,
 }: {
   listing: HomePeerScrollListing
   userId: string | null
@@ -86,6 +88,10 @@ export function HomePeerListingScrollTile({
   imagePriority?: boolean
   /** Narrower tile typography for homepage “most viewed” mosaic / scroll strip. */
   compact?: boolean
+  /** Overrides default body inset (e.g. auth landing grid). */
+  cardContentClassName?: string
+  /** Overrides footer spacing below title/subtitle. */
+  metaFooterClassName?: string
 }) {
   const cart = computePeerCartPriceAction(userId, {
     id: listing.id,
@@ -121,7 +127,10 @@ export function HomePeerListingScrollTile({
       linkLayout="unified"
       linkClassName={homeUniformScrollLinkClass}
       cardClassName={isGrid ? homePeerListingGridCardClass : homeUniformScrollCardClass}
-      cardContentClassName={compact ? homeMostViewedCompactBodyClass : homeUniformScrollBodyClass}
+      cardContentClassName={
+        cardContentClassName ??
+        (compact ? homeMostViewedCompactBodyClass : homeUniformScrollBodyClass)
+      }
       titleSlot={
         <div className={homeUniformScrollTitleSlotClass}>
           <h3 className={compact ? homeMostViewedCompactTitleClass : homePeerListingTileTitleClass}>
@@ -139,7 +148,7 @@ export function HomePeerListingScrollTile({
       statusLabel={statusLabel}
       soldOverlay={soldOverlay}
       footerSlot={
-        <div className={homeUniformScrollMetaFooterClass}>
+        <div className={metaFooterClassName ?? homeUniformScrollMetaFooterClass}>
           <div className="flex min-w-0 items-center justify-between gap-2">
             <p className={compact ? homeMostViewedCompactPriceClass : homePeerTilePriceClass}>
               ${Number(listing.price).toFixed(2)}

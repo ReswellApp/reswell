@@ -46,6 +46,8 @@ type GoogleOAuthButtonProps = {
   autoStart?: boolean
   /** Auth page to open when handing off from an in-app browser. */
   handoffMode?: 'login' | 'sign-up'
+  /** Compact provider pill for sign-up social rows. */
+  layout?: 'full' | 'compact'
 }
 
 function stripGoogleAutoStartParam(): void {
@@ -62,6 +64,7 @@ export function GoogleOAuthButton({
   className,
   autoStart = false,
   handoffMode = 'login',
+  layout = 'full',
 }: GoogleOAuthButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -113,15 +116,16 @@ export function GoogleOAuthButton({
         type="button"
         variant="outline"
         className={cn(
-          'h-12 w-full rounded-full border-0 bg-[#f0f2f5] text-[15px] font-semibold text-foreground shadow-none',
-          'hover:bg-[#e8eaed] hover:text-foreground',
+          layout === 'compact'
+            ? 'h-11 min-w-0 flex-1 rounded-full border-0 bg-[#f0f2f5] px-3 text-sm font-semibold text-foreground shadow-none hover:bg-[#e8eaed] hover:text-foreground'
+            : 'h-12 w-full rounded-full border-0 bg-[#f0f2f5] text-[15px] font-semibold text-foreground shadow-none hover:bg-[#e8eaed] hover:text-foreground',
           'focus-visible:ring-2 focus-visible:ring-foreground/10 focus-visible:ring-offset-0',
         )}
         disabled={isLoading}
         onClick={handleClick}
       >
         <GoogleMark />
-        {isLoading ? 'Redirecting…' : 'Continue with Google'}
+        {isLoading ? 'Redirecting…' : layout === 'compact' ? 'Google' : 'Continue with Google'}
       </Button>
       {error ? <p className="text-sm text-neutral-700">{error}</p> : null}
     </div>

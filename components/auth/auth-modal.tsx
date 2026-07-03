@@ -9,6 +9,7 @@ import { LoginFormPanel } from "@/components/auth/login-form-panel"
 import { SignUpFormPanel } from "@/components/auth/sign-up-form-panel"
 import { ForgotPasswordFormPanel } from "@/components/auth/forgot-password-form-panel"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 type Mode = "login" | "sign-up" | "forgot-password"
 
@@ -39,7 +40,10 @@ export function AuthModal({
       <DialogContent
         showCloseButton
         overlayClassName={AUTH_MODAL_OVERLAY_CLASS}
-        className={AUTH_MODAL_CONTENT_CLASS}
+        className={cn(
+          AUTH_MODAL_CONTENT_CLASS,
+          (mode === "sign-up" || mode === "login") && "max-w-lg",
+        )}
       >
         <DialogTitle className="sr-only">{title}</DialogTitle>
         {mode === "login" ? (
@@ -48,14 +52,15 @@ export function AuthModal({
             redirectTo={redirectTo}
             onLoggedIn={onClose}
             onForgotPassword={() => onModeChange("forgot-password")}
+            onSignUp={() => onModeChange("sign-up")}
             footerSignUp={
               <Button
                 type="button"
                 variant="link"
-                className="h-auto p-0 text-base text-listingHeart underline underline-offset-4 hover:text-listingHeart/85"
+                className="h-auto p-0 text-sm font-medium underline underline-offset-4"
                 onClick={() => onModeChange("sign-up")}
               >
-                Sign up
+                Create one today
               </Button>
             }
           />
@@ -71,7 +76,7 @@ export function AuthModal({
                 className="h-auto p-0 text-base underline underline-offset-4"
                 onClick={() => onModeChange("login")}
               >
-                Login
+                Sign in
               </Button>
             }
           />

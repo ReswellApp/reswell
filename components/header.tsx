@@ -63,6 +63,7 @@ import { getAuthUserWithRetry } from "@/lib/auth/get-user-with-retry"
 import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
 import { CartHeaderLink } from "@/components/cart-header-link"
+import { authLandingHref } from "@/lib/auth/auth-landing-href"
 import { HeaderAccountMenu } from "@/components/header-account-menu"
 import { SiteWordmarkLink } from "@/components/site-wordmark-link"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -1135,14 +1136,36 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                     List your board
                   </Link>
                 </Button>
+                <div className="hidden items-center gap-2 lg:flex">
+                  <Button
+                    asChild
+                    variant="outline"
+                    className={cn(
+                      listYourBoardNavButtonClassName,
+                      "border-foreground/20 text-foreground hover:bg-muted",
+                    )}
+                  >
+                    <Link href={authLandingHref("/auth/sign-up")}>Sign up</Link>
+                  </Button>
+                  <Button
+                    asChild
+                    className={cn(
+                      listYourBoardNavButtonClassName,
+                      "border-0 bg-listingHeart text-white hover:bg-[#2a4170]",
+                    )}
+                  >
+                    <Link href={authLandingHref("/auth/login")}>Log in</Link>
+                  </Button>
+                </div>
                 <Link
-                  href="/auth/login"
-                  onClick={(e) => {
-                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                    e.preventDefault()
-                    openLogin()
-                  }}
-                  className="hidden sm:flex text-[15px] font-medium text-foreground/80 hover:text-cerulean transition-colors px-3 py-2"
+                  href={authLandingHref("/auth/login")}
+                  className="hidden sm:flex lg:hidden text-[15px] font-medium text-foreground/80 hover:text-cerulean transition-colors px-3 py-2"
+                >
+                  Log in
+                </Link>
+                <Link
+                  href={authLandingHref("/auth/login")}
+                  className="flex sm:hidden text-[15px] font-medium text-foreground/80 hover:text-cerulean transition-colors px-3 py-2"
                 >
                   Log in
                 </Link>

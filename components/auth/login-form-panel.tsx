@@ -3,31 +3,30 @@
 import { useEffect, useState, type ReactNode } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { Eye, EyeOff } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
+import { AuthFormOrDivider } from "@/components/auth/auth-form-or-divider"
 import { GoogleOAuthButton } from "@/components/auth/google-oauth-button"
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
-import {
-  AUTH_MODAL_INNER_CARD_CLASS,
-  AUTH_MODAL_INNER_CARD_CONTENT_CLASS,
-  AUTH_MODAL_INNER_CARD_HEADER_CLASS,
-  AUTH_MODAL_OR_EMAIL_LABEL_CLASS,
-} from "@/lib/auth/auth-modal-shell-classes"
 import { AuthTransitionShell } from "@/components/auth/auth-transition-shell"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { isEmailNotConfirmedError } from "@/lib/auth/is-email-not-confirmed-error"
 import { navigateAfterClientAuth } from "@/lib/auth/navigate-after-client-auth"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
+import { authLandingHref } from "@/lib/auth/auth-landing-href"
 import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
+import { cn } from "@/lib/utils"
+
+function RequiredMark() {
+  return (
+    <span className="text-destructive" aria-hidden="true">
+      *
+    </span>
+  )
+}
 
 export function LoginFormPanel({
   redirectTo,
@@ -35,21 +34,21 @@ export function LoginFormPanel({
   variant = "page",
   footerSignUp,
   onForgotPassword,
+  onSignUp,
   googleAutoStart = false,
 }: {
   redirectTo: string
-  /** Called after a successful email/password login (e.g. close modal). Navigation still runs. */
   onLoggedIn?: () => void
-  variant?: "page" | "modal"
-  /** Override “Sign up” link (e.g. switch to sign-up in modal). */
+  variant?: "page" | "modal" | "landing"
   footerSignUp?: ReactNode
-  /** When set (e.g. auth modal), “Forgot password?” stays in-flow instead of a full-page navigation. */
   onForgotPassword?: () => void
-  /** Full-page login with `?google=1` after escaping an in-app browser. */
+  onSignUp?: () => void
   googleAutoStart?: boolean
 }) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [staySignedIn, setStaySignedIn] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [needsEmailConfirm, setNeedsEmailConfirm] = useState(false)
   const [resendSent, setResendSent] = useState(false)
@@ -80,7 +79,7 @@ export function LoginFormPanel({
       }
       setGate("ready")
     })()
-  }, [router, redirectTo])
+  }, [onLoggedIn, redirectTo, router, variant])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -159,127 +158,174 @@ export function LoginFormPanel({
     }
   }
 
-  const inner = (
-    <Card className={variant === "modal" ? AUTH_MODAL_INNER_CARD_CLASS : undefined}>
-      <CardHeader className={variant === "modal" ? AUTH_MODAL_INNER_CARD_HEADER_CLASS : undefined}>
-        <CardTitle className="text-2xl">Welcome back</CardTitle>
-        <CardDescription>Sign in to your Reswell account</CardDescription>
-      </CardHeader>
-      <CardContent
-        className={`flex flex-col gap-6 ${variant === "modal" ? AUTH_MODAL_INNER_CARD_CONTENT_CLASS : ""}`}
+  const signUpLink =
+    footerSignUp ??
+    (onSignUp ? (
+      <button
+        type="button"
+        className="font-medium text-foreground underline underline-offset-4 hover:text-cerulean"
+        onClick={onSignUp}
       >
-        <GoogleOAuthButton nextPath={redirectTo} autoStart={googleAutoStart} />
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <Separator />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span
-              className={
-                variant === "modal"
-                  ? AUTH_MODAL_OR_EMAIL_LABEL_CLASS
-                  : "bg-card px-2 text-muted-foreground"
-              }
+        Create one today
+      </button>
+    ) : (
+      <Link
+        href={authLandingHref("/auth/sign-up", redirectTo)}
+        className="font-medium text-foreground underline underline-offset-4 hover:text-cerulean"
+      >
+        Create one today
+      </Link>
+    ))
+
+  const forgotPasswordLink = onForgotPassword ? (
+    <button
+      type="button"
+      className="font-medium text-foreground underline underline-offset-4 hover:text-cerulean"
+      onClick={onForgotPassword}
+    >
+      Reset it
+    </button>
+  ) : (
+    <Link
+      href="/auth/forgot-password"
+      className="font-medium text-foreground underline underline-offset-4 hover:text-cerulean"
+    >
+      Reset it
+    </Link>
+  )
+
+  const showPageHeader = variant !== "modal"
+  const isLanding = variant === "landing"
+
+  const inner = (
+    <div className={cn("flex flex-col", isLanding ? "gap-10 lg:gap-12" : "gap-8")}>
+      {showPageHeader ? (
+        <div className={cn(isLanding ? "space-y-3" : "space-y-2")}>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            Welcome back
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Don&apos;t have an account yet? {signUpLink}
+          </p>
+        </div>
+      ) : null}
+
+      <div className={cn(isLanding ? "space-y-4" : "space-y-3")}>
+        <p className="text-sm font-medium text-foreground">Continue with</p>
+        <div className="flex gap-3">
+          <GoogleOAuthButton
+            nextPath={redirectTo}
+            autoStart={googleAutoStart}
+            layout="compact"
+            className="min-w-0 flex-1"
+          />
+        </div>
+      </div>
+
+      <AuthFormOrDivider className={isLanding ? "py-3" : undefined} />
+
+      <form onSubmit={handleLogin} className={cn(isLanding ? "space-y-6" : "space-y-5")}>
+        <div className="grid gap-2.5">
+          <Label htmlFor="login-email" className="text-sm font-semibold text-foreground">
+            Email <RequiredMark />
+          </Label>
+          <Input
+            id="login-email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+        </div>
+
+        <div className="grid gap-2.5">
+          <Label htmlFor="login-password" className="text-sm font-semibold text-foreground">
+            Password <RequiredMark />
+          </Label>
+          <div className="relative">
+            <Input
+              id="login-password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="pr-11"
+            />
+            <button
+              type="button"
+              className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+              onClick={() => setShowPassword((current) => !current)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
             >
-              Or with email
-            </span>
+              {showPassword ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
+            </button>
           </div>
         </div>
-        <form onSubmit={handleLogin}>
-          <div className="flex flex-col gap-6">
-            <div className="grid gap-2">
-              <Label htmlFor="login-email">Email</Label>
-              <Input
-                id="login-email"
-                type="email"
-                placeholder="m@example.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-              />
-            </div>
-            <div className="grid gap-3">
-              <div className="flex items-center justify-between gap-2">
-                <Label htmlFor="login-password">Password</Label>
-                {onForgotPassword ? (
-                  <button
-                    type="button"
-                    className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
-                    onClick={onForgotPassword}
-                  >
-                    Forgot password?
-                  </button>
-                ) : (
-                  <Link
-                    href="/auth/forgot-password"
-                    className="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
-                  >
-                    Forgot password?
-                  </Link>
-                )}
-              </div>
-              <Input
-                id="login-password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-              />
-            </div>
-            {error && <p className="text-sm text-neutral-700">{error}</p>}
-            {needsEmailConfirm ? (
-              <div className="flex flex-col gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  disabled={resendLoading || resendSent}
-                  onClick={() => void handleResendConfirmation()}
-                >
-                  {resendLoading
-                    ? "Sending…"
-                    : resendSent
-                      ? "Confirmation email sent"
-                      : "Resend confirmation email"}
-                </Button>
-              </div>
-            ) : null}
-            <Button
-              type="submit"
-              className="h-12 w-full rounded-full bg-listingHeart text-white hover:bg-[#2a4170]"
-              disabled={isLoading}
-            >
-              {isLoading ? "Logging in..." : "Login"}
-            </Button>
-          </div>
-          <div className="mt-6 pb-2 text-center text-sm">
-            Don&apos;t have an account?{" "}
-            {footerSignUp ?? (
-              <Link
-                href={`/auth/sign-up?redirect=${encodeURIComponent(safeRedirectPath(redirectTo))}`}
-                className="text-listingHeart underline underline-offset-4 hover:text-listingHeart/85"
-              >
-                Sign up
-              </Link>
-            )}
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+
+        {error ? <p className="text-sm text-neutral-700">{error}</p> : null}
+
+        {needsEmailConfirm ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            disabled={resendLoading || resendSent}
+            onClick={() => void handleResendConfirmation()}
+          >
+            {resendLoading
+              ? "Sending…"
+              : resendSent
+                ? "Confirmation email sent"
+                : "Resend confirmation email"}
+          </Button>
+        ) : null}
+
+        <Button
+          type="submit"
+          disabled={isLoading}
+          className={cn(
+            "h-12 w-full rounded-full bg-neutral-500 text-base font-semibold text-white hover:bg-neutral-600",
+            isLanding && "mt-1",
+          )}
+        >
+          {isLoading ? "Logging in…" : "Log In"}
+        </Button>
+
+        <label className="flex cursor-pointer items-center gap-3">
+          <Checkbox
+            checked={staySignedIn}
+            onCheckedChange={(checked) => setStaySignedIn(checked === true)}
+          />
+          <span className="text-sm text-foreground">Stay signed in</span>
+        </label>
+
+        <p className="text-center text-sm text-muted-foreground">
+          Forgot your password? {forgotPasswordLink}
+        </p>
+
+        {!showPageHeader ? (
+          <p className="text-center text-sm text-muted-foreground">
+            Don&apos;t have an account yet? {signUpLink}
+          </p>
+        ) : null}
+      </form>
+    </div>
   )
 
   if (variant === "page" && (gate === "checking" || gate === "redirecting")) {
     return <AuthTransitionShell />
   }
 
+  if (variant === "landing" && (gate === "checking" || gate === "redirecting")) {
+    return null
+  }
+
   if (variant === "page") {
     return (
       <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-        <div className="w-full max-w-sm">
-          <div className="flex flex-col gap-6">{inner}</div>
-        </div>
+        <div className="w-full max-w-lg">{inner}</div>
       </div>
     )
   }

@@ -147,6 +147,16 @@ export function SignInRequiredGate({
     router.push(`/auth/login?redirect=${encodeURIComponent(returnPath)}`)
   }
 
+  const openSignUp = () => {
+    authPromptedRef.current = false
+    if (authModal) {
+      authModal.openSignUp(returnPath)
+      authPromptedRef.current = true
+      return
+    }
+    router.push(`/auth/sign-up?redirect=${encodeURIComponent(returnPath)}`)
+  }
+
   if (phase === "checking") {
     return null
   }
@@ -159,11 +169,16 @@ export function SignInRequiredGate({
             <h1 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h1>
             <p className="text-sm leading-relaxed text-muted-foreground">{description}</p>
           </div>
-          <div className="flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
-            <Button type="button" size="lg" className="w-full sm:w-auto" onClick={openAuth}>
-              Sign in or create account
-            </Button>
-            <Button type="button" variant="outline" size="lg" className="w-full sm:w-auto" asChild>
+          <div className="flex w-full flex-col gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <Button type="button" variant="outline" size="lg" className="w-full sm:w-auto" onClick={openSignUp}>
+                Sign up
+              </Button>
+              <Button type="button" size="lg" className="w-full sm:w-auto" onClick={openAuth}>
+                Login
+              </Button>
+            </div>
+            <Button type="button" variant="outline" size="lg" className="w-full" asChild>
               <Link href={backHref}>{backLabel}</Link>
             </Button>
           </div>
