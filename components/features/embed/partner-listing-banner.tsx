@@ -96,7 +96,7 @@ export function PartnerListingBannerClient({
           <p className="mt-1 text-sm leading-snug text-neutral-600">{payload.subheadline}</p>
         </div>
 
-        <div className="min-w-0 flex-[1.4]">
+        <div className="flex min-w-0 flex-[1.4] items-center">
           {listings.length === 0 ? (
             <p className="rounded border border-dashed border-neutral-300 bg-white/70 px-3 py-4 text-center text-xs text-neutral-500">
               No active listings in this feed yet.
@@ -109,15 +109,15 @@ export function PartnerListingBannerClient({
                     href={listing.href}
                     target="_top"
                     rel="noopener sponsored"
-                    className="group flex h-full flex-col overflow-hidden rounded border border-neutral-200 bg-white transition hover:border-neutral-400"
+                    className="group block overflow-hidden rounded border border-neutral-200 bg-white transition hover:border-neutral-400"
                   >
-                    <div className="relative aspect-[4/3] w-full bg-neutral-100">
+                    <div className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-100">
                       {listing.image_url ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={listing.image_url}
                           alt=""
-                          className="h-full w-full object-cover"
+                          className="block h-full w-full object-cover"
                           loading="lazy"
                         />
                       ) : (
@@ -125,12 +125,6 @@ export function PartnerListingBannerClient({
                           No photo
                         </div>
                       )}
-                    </div>
-                    <div className="flex min-h-0 flex-1 flex-col px-2 py-1.5">
-                      <p className="line-clamp-2 text-[11px] font-medium leading-tight text-neutral-900 group-hover:text-neutral-700">
-                        {listing.title}
-                      </p>
-                      <p className="mt-0.5 text-xs font-semibold text-neutral-900">{listing.price_display}</p>
                     </div>
                   </a>
                 </li>
