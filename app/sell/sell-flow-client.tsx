@@ -911,7 +911,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const openSignIn = useSignInGate()
   const supabase = useMemo(() => createClient(), [])
 
-  /** Start blank: clear session hint only (no auto-redirect — avoids loading flash). */
+  /** Strip `?new=1` from the URL after blank-listing setup; keep `type=surfboard` so /sell stays on the flow. */
   useLayoutEffect(() => {
     if (typeof window === "undefined") return
     if (startFresh) {
@@ -920,7 +920,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       } catch {
         /* quota / private mode */
       }
-      router.replace("/sell", { scroll: false })
+      router.replace("/sell?type=surfboard", { scroll: false })
     }
   }, [startFresh, router])
 
@@ -1122,7 +1122,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       await clearGuestSellListingDraft()
       toast.message("Starting a new listing — saved drafts stay in your dashboard.")
       if (editId) {
-        router.replace("/sell?new=1", { scroll: false })
+        router.replace("/sell?type=surfboard&new=1", { scroll: false })
       }
     } finally {
       setStartNewListingBusy(false)
