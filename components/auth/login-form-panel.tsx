@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client"
 import { AuthFormOrDivider } from "@/components/auth/auth-form-or-divider"
 import { GoogleOAuthButton } from "@/components/auth/google-oauth-button"
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
-import { AuthTransitionShell } from "@/components/auth/auth-transition-shell"
+import { AuthLandingLoadingIndicator, AuthTransitionShell } from "@/components/auth/auth-transition-shell"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -323,7 +323,11 @@ export function LoginFormPanel({
   }
 
   if (variant === "landing" && (gate === "checking" || gate === "redirecting")) {
-    return null
+    return (
+      <AuthLandingLoadingIndicator
+        ariaLabel={gate === "redirecting" ? "Signing you in" : "Loading sign in"}
+      />
+    )
   }
 
   if (variant === "page") {

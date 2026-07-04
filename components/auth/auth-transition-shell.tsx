@@ -31,3 +31,28 @@ export function AuthTransitionShell({
     </div>
   )
 }
+
+/** Inline loader for auth landing shells (logo header stays visible). */
+export function AuthLandingLoadingIndicator({
+  ariaLabel = "Loading sign in",
+  className,
+}: {
+  ariaLabel?: string
+  className?: string
+}) {
+  return (
+    <div
+      className={cn(
+        "flex min-h-[280px] items-center justify-center",
+        className,
+      )}
+      role="status"
+      aria-label={ariaLabel}
+    >
+      <RefreshCw
+        className="h-5 w-5 animate-spin text-muted-foreground/60"
+        aria-hidden
+      />
+    </div>
+  )
+}

@@ -128,15 +128,21 @@ export function CounterpartyThreadsClient({
     "overflow-hidden rounded-[20px] border border-border/70 bg-card shadow-[0_1px_2px_rgba(17,17,17,0.04)] dark:shadow-none dark:border-border"
 
   return (
-    <main className={cn("flex min-h-0 flex-1 flex-col bg-background", !embedded && "flex-1")}>
+    <main
+      className={cn(
+        "flex min-h-0 flex-1 flex-col bg-background",
+        embedded && "overflow-hidden",
+        !embedded && "flex-1",
+      )}
+    >
       <div
         className={cn(
           embedded
-            ? "flex min-h-0 flex-1 flex-col px-3 py-3 sm:px-4"
+            ? "flex min-h-0 flex-1 flex-col overflow-hidden px-3 py-3 sm:px-4"
             : "container mx-auto max-w-2xl px-4 pb-16 pt-6 sm:px-5 sm:pt-10 md:max-w-4xl lg:max-w-5xl",
         )}
       >
-        <header className="mb-4 flex items-center gap-3 border-b border-border/60 pb-3">
+        <header className="mb-4 flex shrink-0 items-center gap-3 border-b border-border/60 pb-3">
           <Link href="/messages" className={cn("shrink-0", embedded && "lg:hidden")}>
             <Button
               variant="ghost"
@@ -176,7 +182,14 @@ export function CounterpartyThreadsClient({
             </p>
           </div>
         ) : (
-          <div className={cn("divide-y divide-border/40", groupedShell)}>
+          <div
+            className={cn(
+              "divide-y divide-border/40",
+              groupedShell,
+              embedded &&
+                "min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y [scrollbar-width:thin]",
+            )}
+          >
             {threads.map((thread) => {
               const lastMessage = getLatestMessage(thread)
               const unread = getUnreadCountForConversation(thread, currentUserId)
