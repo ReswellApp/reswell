@@ -10,7 +10,7 @@ export const CHANNEL_ISLANDS_BRAND_SLUG = "channel-islands-surfboards"
 
 export const DEFAULT_CHANNEL_ISLANDS_JSON = resolve(
   homedir(),
-  "Downloads/Thunderbit_0b8b19_20260703_205041.json",
+  "Downloads/Thunderbit_0b8b19_20260704_002556.json",
 )
 
 export type ChannelIslandsJsonRow = {

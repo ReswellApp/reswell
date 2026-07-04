@@ -14,9 +14,7 @@ import { insertBrandModel } from "@/lib/db/brand-models"
 import { insertBrandModelVariant, maxSortOrderForBrandModel } from "@/lib/db/brand-model-variants"
 import {
   createBrandCatalogImageMirrorCache,
-  isExternalBrandCatalogImageUrl,
-  isValidHttpImageSource,
-  type BrandCatalogImageKind,
+  resolveMirroredBrandCatalogImageUrl,
 } from "@/lib/services/brandCatalogImageStorage"
 import {
   buildFcsVariantDrafts,
@@ -52,26 +50,6 @@ function loadEnvFile(relativePath: string): void {
   } catch {
     // optional env file
   }
-}
-
-async function resolveMirroredImageUrl(
-  cache: ReturnType<typeof createBrandCatalogImageMirrorCache>,
-  supabase: SupabaseClient,
-  supabaseUrl: string,
-  sourceUrl: string | null,
-  kind: BrandCatalogImageKind,
-): Promise<string | null> {
-  const trimmed = preferFullProductImageUrl(sourceUrl?.trim() ?? "")
-  if (!trimmed) return null
-  if (!isValidHttpImageSource(trimmed)) return null
-  if (!isExternalBrandCatalogImageUrl(trimmed)) return trimmed
-
-  const result = await cache.mirror({ supabase, supabaseUrl, sourceUrl: trimmed, kind })
-  if (!result.ok) {
-    console.warn(`[import fcs] image mirror failed (${kind}): ${result.error}`)
-    return null
-  }
-  return result.publicUrl
 }
 
 async function getBrandModelIdByName(
@@ -129,13 +107,14 @@ async function importCatalog(
       continue
     }
 
-    const modelImageUrl = await resolveMirroredImageUrl(
-      imageCache,
+    const modelImageUrl = await resolveMirroredBrandCatalogImageUrl({
+      cache: imageCache,
       supabase,
       supabaseUrl,
-      row.productImage || null,
-      "model",
-    )
+      sourceUrl: preferFullProductImageUrl(row.productImage?.trim() ?? "") || null,
+      kind: "model",
+      logLabel: "import fcs",
+    })
 
     const modelResult = await insertBrandModel(supabase, {
       brand_id: FCS_BRAND_ID,
@@ -170,13 +149,14 @@ async function importCatalog(
 
     for (const variant of buildFcsVariantDrafts(row)) {
       sortOrder += 1
-      const variantImageUrl = await resolveMirroredImageUrl(
-        imageCache,
+      const variantImageUrl = await resolveMirroredBrandCatalogImageUrl({
+        cache: imageCache,
         supabase,
         supabaseUrl,
-        variant.image_url,
-        "variant",
-      )
+        sourceUrl: preferFullProductImageUrl(variant.image_url?.trim() ?? "") || null,
+        kind: "variant",
+        logLabel: "import fcs",
+      })
       const variantResult = await insertBrandModelVariant(supabase, {
         brand_id: FCS_BRAND_ID,
         brand_model_id: modelId,

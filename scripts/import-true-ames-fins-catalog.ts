@@ -15,9 +15,7 @@ import { insertBrandModel } from "@/lib/db/brand-models"
 import { insertBrandModelVariant, maxSortOrderForBrandModel } from "@/lib/db/brand-model-variants"
 import {
   createBrandCatalogImageMirrorCache,
-  isExternalBrandCatalogImageUrl,
-  isValidHttpImageSource,
-  type BrandCatalogImageKind,
+  resolveMirroredBrandCatalogImageUrl,
 } from "@/lib/services/brandCatalogImageStorage"
 import { preferFullProductImageUrl } from "@/lib/services/trueAmesFinCatalogCsv"
 import type { FinBoxesType, FinBoxType } from "@/lib/validations/brand-model-variants"
@@ -313,26 +311,6 @@ function buildVariantDrafts(row: CsvRow): VariantDraft[] {
   return drafts
 }
 
-async function resolveMirroredImageUrl(
-  cache: ReturnType<typeof createBrandCatalogImageMirrorCache>,
-  supabase: SupabaseClient,
-  supabaseUrl: string,
-  sourceUrl: string | null,
-  kind: BrandCatalogImageKind,
-): Promise<string | null> {
-  const trimmed = preferFullProductImageUrl(sourceUrl?.trim() ?? "")
-  if (!trimmed) return null
-  if (!isValidHttpImageSource(trimmed)) return null
-  if (!isExternalBrandCatalogImageUrl(trimmed)) return trimmed
-
-  const result = await cache.mirror({ supabase, supabaseUrl, sourceUrl: trimmed, kind })
-  if (!result.ok) {
-    console.warn(`[import true ames] image mirror failed (${kind}): ${result.error}`)
-    return null
-  }
-  return result.publicUrl
-}
-
 async function importCatalog(
   supabase: SupabaseClient,
   supabaseUrl: string,
@@ -375,13 +353,14 @@ async function importCatalog(
       continue
     }
 
-    const modelImageUrl = await resolveMirroredImageUrl(
-      imageCache,
+    const modelImageUrl = await resolveMirroredBrandCatalogImageUrl({
+      cache: imageCache,
       supabase,
       supabaseUrl,
-      row.productImage || null,
-      "model",
-    )
+      sourceUrl: preferFullProductImageUrl(row.productImage?.trim() ?? "") || null,
+      kind: "model",
+      logLabel: "import true ames",
+    })
 
     const modelResult = await insertBrandModel(supabase, {
       brand_id: TRUE_AMES_BRAND_ID,
@@ -407,13 +386,14 @@ async function importCatalog(
 
     for (const variant of buildVariantDrafts(row)) {
       sortOrder += 1
-      const variantImageUrl = await resolveMirroredImageUrl(
-        imageCache,
+      const variantImageUrl = await resolveMirroredBrandCatalogImageUrl({
+        cache: imageCache,
         supabase,
         supabaseUrl,
-        variant.image_url,
-        "variant",
-      )
+        sourceUrl: preferFullProductImageUrl(variant.image_url?.trim() ?? "") || null,
+        kind: "variant",
+        logLabel: "import true ames",
+      })
       const variantResult = await insertBrandModelVariant(supabase, {
         brand_id: TRUE_AMES_BRAND_ID,
         brand_model_id: modelId,

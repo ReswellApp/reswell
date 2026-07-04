@@ -12,9 +12,7 @@ import { insertBrandModel } from "@/lib/db/brand-models"
 import { insertBrandModelVariant, maxSortOrderForBrandModel } from "@/lib/db/brand-model-variants"
 import {
   createBrandCatalogImageMirrorCache,
-  isExternalBrandCatalogImageUrl,
-  isValidHttpImageSource,
-  type BrandCatalogImageKind,
+  resolveMirroredBrandCatalogImageUrl,
 } from "@/lib/services/brandCatalogImageStorage"
 import {
   buildHaydenShapesModelDescription,
@@ -64,26 +62,6 @@ async function resolveBrandId(supabase: SupabaseClient): Promise<string> {
   return data.id
 }
 
-async function resolveMirroredImageUrl(
-  cache: ReturnType<typeof createBrandCatalogImageMirrorCache>,
-  supabase: SupabaseClient,
-  supabaseUrl: string,
-  sourceUrl: string | null,
-  kind: BrandCatalogImageKind,
-): Promise<string | null> {
-  const trimmed = sourceUrl?.trim() ?? ""
-  if (!trimmed) return null
-  if (!isValidHttpImageSource(trimmed)) return null
-  if (!isExternalBrandCatalogImageUrl(trimmed)) return trimmed
-
-  const result = await cache.mirror({ supabase, supabaseUrl, sourceUrl: trimmed, kind })
-  if (!result.ok) {
-    console.warn(`[import hayden shapes] image mirror failed (${kind}): ${result.error}`)
-    return trimmed
-  }
-  return result.publicUrl
-}
-
 async function importCatalog(
   supabase: SupabaseClient,
   supabaseUrl: string,
@@ -124,13 +102,14 @@ async function importCatalog(
       continue
     }
 
-    const modelImageUrl = await resolveMirroredImageUrl(
-      imageCache,
+    const modelImageUrl = await resolveMirroredBrandCatalogImageUrl({
+      cache: imageCache,
       supabase,
       supabaseUrl,
-      resolveHaydenShapesModelImage(row.productImage),
-      "model",
-    )
+      sourceUrl: resolveHaydenShapesModelImage(row.productImage),
+      kind: "model",
+      logLabel: "import hayden shapes",
+    })
 
     let modelId: string
 

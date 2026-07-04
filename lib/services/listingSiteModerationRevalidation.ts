@@ -7,11 +7,52 @@ import {
 } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
 import { revalidateHomePublicCatalog } from "@/lib/cache/revalidate-home-public-catalog"
+import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
+import { revalidateNavSearchSuggest } from "@/lib/cache/revalidate-nav-search-suggest"
+import { revalidateNavSuggestedSurfboards } from "@/lib/cache/revalidate-nav-suggested-surfboards"
 
 type ListingModerationRow = {
   id: string
   slug: string | null
   user_id: string
+}
+
+type ListingDeletionRow = ListingModerationRow & {
+  status?: string | null
+}
+
+async function revalidateListingCatalogSurfaces(
+  supabase: SupabaseClient,
+  rows: ListingModerationRow[],
+  options?: { includeSoldFeed?: boolean },
+): Promise<void> {
+  if (rows.length === 0) return
+
+  const sellerUserIds = new Set<string>()
+
+  for (const row of rows) {
+    revalidateListingDetailPage(row.id, row.slug)
+    const sellerUserId = typeof row.user_id === "string" ? row.user_id.trim() : ""
+    if (sellerUserId) sellerUserIds.add(sellerUserId)
+  }
+
+  revalidateBoardsBrowseCatalog()
+  revalidateHomePublicCatalog()
+  revalidateNavSuggestedSurfboards()
+  revalidateNavSearchSuggest()
+  revalidatePath("/sold")
+  revalidatePath("/search")
+  revalidatePath("/")
+
+  if (options?.includeSoldFeed) {
+    revalidateMarketplaceSoldFeedCatalog()
+  }
+
+  if (sellerUserIds.size === 1) {
+    await revalidateSellersAfterListingChange(supabase, [...sellerUserIds][0]!)
+  } else {
+    revalidateSellersDirectoryCatalog()
+  }
 }
 
 /** Invalidate browse, search, seller, and PDP caches after hide/remove/restore. */
@@ -26,26 +67,17 @@ export async function revalidateAfterListingSiteModeration(
     .select("id, slug, user_id")
     .in("id", listingIds)
 
-  const rows = (data ?? []) as ListingModerationRow[]
-  const sellerUserIds = new Set<string>()
+  await revalidateListingCatalogSurfaces(supabase, (data ?? []) as ListingModerationRow[])
+}
 
-  for (const row of rows) {
-    revalidateListingDetailPage(row.id, row.slug)
-    const sellerUserId = typeof row.user_id === "string" ? row.user_id.trim() : ""
-    if (sellerUserId) sellerUserIds.add(sellerUserId)
-  }
-
-  revalidateBoardsBrowseCatalog()
-  revalidateHomePublicCatalog()
-  revalidatePath("/sold")
-  revalidatePath("/search")
-  revalidatePath("/")
-
-  if (sellerUserIds.size === 1) {
-    await revalidateSellersAfterListingChange(supabase, [...sellerUserIds][0]!)
-  } else if (sellerUserIds.size > 1) {
-    revalidateSellersDirectoryCatalog()
-  } else {
-    revalidateSellersDirectoryCatalog()
-  }
+/**
+ * Same catalog invalidation as moderation, but accepts rows captured before a hard delete
+ * (the listing row no longer exists afterward).
+ */
+export async function revalidateAfterListingDeletion(
+  supabase: SupabaseClient,
+  rows: ListingDeletionRow[],
+): Promise<void> {
+  const includeSoldFeed = rows.some((row) => row.status === "sold")
+  await revalidateListingCatalogSurfaces(supabase, rows, { includeSoldFeed })
 }

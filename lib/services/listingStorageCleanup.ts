@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { revalidatePublicStorageObjects } from "@/lib/cache/revalidate-public-storage-object"
+import { revalidateListingMediaVariantCaches } from "@/lib/media/listing-tile-variant-resize"
 
 const BUCKET = "listings" as const
 const PUBLIC_MARKER = `/storage/v1/object/public/${BUCKET}/`
@@ -87,5 +88,6 @@ export async function removeListingImageFilesFromStorage(
 
   if (removedPaths.length > 0) {
     revalidatePublicStorageObjects(BUCKET, removedPaths)
+    revalidateListingMediaVariantCaches(BUCKET, removedPaths)
   }
 }

@@ -213,3 +213,34 @@ export function createBrandCatalogImageMirrorCache(): {
     },
   }
 }
+
+/**
+ * Mirror a remote catalog image into `brand-assets`, or return an already-mirrored URL.
+ * Never returns an external CDN URL when mirroring fails.
+ */
+export async function resolveMirroredBrandCatalogImageUrl(opts: {
+  cache: ReturnType<typeof createBrandCatalogImageMirrorCache>
+  supabase: SupabaseClient
+  supabaseUrl: string
+  sourceUrl: string | null | undefined
+  kind: BrandCatalogImageKind
+  logLabel?: string
+}): Promise<string | null> {
+  const trimmed = extractFirstHttpImageUrl(opts.sourceUrl) ?? opts.sourceUrl?.trim() ?? ""
+  if (!trimmed) return null
+  if (!isValidHttpImageSource(trimmed)) return null
+  if (!isExternalBrandCatalogImageUrl(trimmed)) return trimmed
+
+  const result = await opts.cache.mirror({
+    supabase: opts.supabase,
+    supabaseUrl: opts.supabaseUrl,
+    sourceUrl: trimmed,
+    kind: opts.kind,
+  })
+  if (!result.ok) {
+    const label = opts.logLabel ?? "brand catalog"
+    console.warn(`[${label}] image mirror failed (${opts.kind}): ${result.error}`)
+    return null
+  }
+  return result.publicUrl
+}

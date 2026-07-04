@@ -1,4 +1,4 @@
-import { unstable_cache } from "next/cache"
+import { revalidateTag, unstable_cache } from "next/cache"
 import sharp from "sharp"
 import {
   LISTING_THUMB_MAX_LONG_EDGE,
@@ -145,4 +145,24 @@ export function getCachedListingTileVariantBody(
   upstreamUrl: string,
 ): Promise<{ body: Buffer; contentType: string } | null> {
   return getCachedListingVariantBody(bucket, objectPath, upstreamUrl, LISTING_MEDIA_TILE_VARIANT)
+}
+
+const LISTING_MEDIA_VARIANTS: ListingMediaResizeVariant[] = [
+  LISTING_MEDIA_TILE_VARIANT,
+  LISTING_MEDIA_PDP_VARIANT,
+  LISTING_MEDIA_MERCHANT_VARIANT,
+]
+
+/** Drop proxied `/media/listings/*?variant=…` Data Cache entries after storage removal. */
+export function revalidateListingMediaVariantCaches(
+  bucket: PublicStorageBucket,
+  objectPaths: Iterable<string>,
+): void {
+  for (const objectPath of objectPaths) {
+    const trimmed = objectPath.trim()
+    if (!trimmed) continue
+    for (const variant of LISTING_MEDIA_VARIANTS) {
+      revalidateTag(variantCacheTag(bucket, trimmed, variant), "max")
+    }
+  }
 }

@@ -25,7 +25,7 @@ const AuthModalContext = createContext<AuthModalContextValue | null>(null)
 export function AuthModalProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<Mode>("login")
-  const [redirectTo, setRedirectTo] = useState("/dashboard")
+  const [redirectTo, setRedirectTo] = useState("/")
 
   const openLogin = useCallback((redirect?: string | null) => {
     setMode("login")

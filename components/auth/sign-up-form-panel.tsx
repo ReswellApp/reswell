@@ -34,7 +34,7 @@ function RequiredMark() {
 
 export function SignUpFormPanel({
   variant = "page",
-  redirectTo = "/dashboard",
+  redirectTo = "/",
   footerLogin,
   onSignUpSuccess,
   googleAutoStart = false,

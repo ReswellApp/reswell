@@ -11,9 +11,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 import { insertBrandModel } from "@/lib/db/brand-models"
 import {
   createBrandCatalogImageMirrorCache,
-  isExternalBrandCatalogImageUrl,
-  isValidHttpImageSource,
-  type BrandCatalogImageKind,
+  resolveMirroredBrandCatalogImageUrl,
 } from "@/lib/services/brandCatalogImageStorage"
 import {
   buildChannelIslandsModelDescription,
@@ -62,26 +60,6 @@ async function resolveBrandId(supabase: SupabaseClient): Promise<string> {
   return data.id
 }
 
-async function resolveMirroredImageUrl(
-  cache: ReturnType<typeof createBrandCatalogImageMirrorCache>,
-  supabase: SupabaseClient,
-  supabaseUrl: string,
-  sourceUrl: string | null,
-  kind: BrandCatalogImageKind,
-): Promise<string | null> {
-  const trimmed = sourceUrl?.trim() ?? ""
-  if (!trimmed) return null
-  if (!isValidHttpImageSource(trimmed)) return null
-  if (!isExternalBrandCatalogImageUrl(trimmed)) return trimmed
-
-  const result = await cache.mirror({ supabase, supabaseUrl, sourceUrl: trimmed, kind })
-  if (!result.ok) {
-    console.warn(`[import channel islands] image mirror failed (${kind}): ${result.error}`)
-    return trimmed
-  }
-  return result.publicUrl
-}
-
 async function importCatalog(
   supabase: SupabaseClient,
   supabaseUrl: string,
@@ -119,13 +97,14 @@ async function importCatalog(
       continue
     }
 
-    const modelImageUrl = await resolveMirroredImageUrl(
-      imageCache,
+    const modelImageUrl = await resolveMirroredBrandCatalogImageUrl({
+      cache: imageCache,
       supabase,
       supabaseUrl,
-      resolveChannelIslandsModelImage(row.productImage),
-      "model",
-    )
+      sourceUrl: resolveChannelIslandsModelImage(row.productImage),
+      kind: "model",
+      logLabel: "import channel islands",
+    })
 
     const modelResult = await insertBrandModel(supabase, {
       brand_id: brandId,
