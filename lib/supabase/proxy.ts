@@ -73,6 +73,7 @@ export async function updateSession(request: NextRequest) {
     pathname === "/auth/callback" ||
     pathname === "/auth/confirm" ||
     pathname === "/auth/recovery" ||
+    pathname === "/auth/sign-out" ||
     pathname === "/auth/update-password" ||
     pathname === "/auth/completing" ||
     pathname === "/auth/error" ||

@@ -60,6 +60,7 @@ import {
   type HeaderAuthRefreshDetail,
 } from "@/lib/auth/header-auth-refresh"
 import { getAuthUserWithRetry } from "@/lib/auth/get-user-with-retry"
+import { signOutAndRedirect } from "@/lib/auth/sign-out-and-redirect"
 import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
 import { CartHeaderLink } from "@/components/cart-header-link"
@@ -785,13 +786,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     setAuthLoaded(true)
     setMobileMenuOpen(false)
     forceReleaseBodyScrollLock()
-    try {
-      await supabase.auth.signOut()
-    } catch {
-      // Still leave the account — stale session is worse than a failed revoke.
-    }
-    window.location.assign("/")
-  }, [supabase])
+    signOutAndRedirect()
+  }, [])
 
   const accountMenu =
     user ? (

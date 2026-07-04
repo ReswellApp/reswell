@@ -36,6 +36,7 @@ export function LoginFormPanel({
   onForgotPassword,
   onSignUp,
   googleAutoStart = false,
+  signedOut = false,
 }: {
   redirectTo: string
   onLoggedIn?: () => void
@@ -44,6 +45,8 @@ export function LoginFormPanel({
   onForgotPassword?: () => void
   onSignUp?: () => void
   googleAutoStart?: boolean
+  /** When true, do not auto-redirect an existing session — user chose to sign out. */
+  signedOut?: boolean
 }) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -63,6 +66,16 @@ export function LoginFormPanel({
     const supabase = createClient()
     const dest = safeRedirectPath(redirectTo)
     void (async () => {
+      if (signedOut) {
+        try {
+          await supabase.auth.signOut({ scope: "local" })
+        } catch {
+          /* stale client storage only */
+        }
+        setGate("ready")
+        return
+      }
+
       let session = (await supabase.auth.getSession()).data.session
       if (!session?.user) {
         session = await waitForClientSession({ supabase, maxAttempts: 20, msBetween: 50 })
@@ -79,7 +92,7 @@ export function LoginFormPanel({
       }
       setGate("ready")
     })()
-  }, [onLoggedIn, redirectTo, router, variant])
+  }, [onLoggedIn, redirectTo, router, signedOut, variant])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()

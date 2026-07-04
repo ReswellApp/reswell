@@ -11,6 +11,7 @@ function LoginLandingForm() {
   const searchParams = useSearchParams()
   const redirectTo = safeRedirectPath(searchParams.get("redirect"))
   const googleAutoStart = searchParams.get(GOOGLE_OAUTH_AUTO_START_PARAM) === "1"
+  const signedOut = searchParams.get("signed_out") === "1"
 
   return (
     <AuthLandingShell>
@@ -18,6 +19,7 @@ function LoginLandingForm() {
         redirectTo={redirectTo}
         variant="landing"
         googleAutoStart={googleAutoStart}
+        signedOut={signedOut}
       />
     </AuthLandingShell>
   )

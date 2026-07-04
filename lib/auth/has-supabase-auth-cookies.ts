@@ -15,3 +15,13 @@ export function hasSupabaseAuthCookiesClient(): boolean {
     return name.startsWith("sb-") && name.includes("auth-token")
   })
 }
+
+/** Remove Supabase SSR auth cookies from `document.cookie` (non-httpOnly chunks only). */
+export function clearSupabaseAuthCookiesClient(): void {
+  if (typeof document === "undefined") return
+  for (const part of document.cookie.split(";")) {
+    const name = part.trim().split("=")[0] ?? ""
+    if (!name.startsWith("sb-") || !name.includes("auth-token")) continue
+    document.cookie = `${name}=; path=/; max-age=0`
+  }
+}

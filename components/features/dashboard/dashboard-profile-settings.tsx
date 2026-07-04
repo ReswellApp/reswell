@@ -15,6 +15,7 @@ import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
 import { PROFILE_AVATAR_MAX_INPUT_BYTES } from "@/lib/validations/profileAvatar"
 import { PROFILE_BANNER_MAX_INPUT_BYTES } from "@/lib/validations/profileBanner"
 import { buildPasswordRecoveryCallbackUrl } from "@/lib/auth/password-recovery-callback-url"
+import { signOutAndRedirect } from "@/lib/auth/sign-out-and-redirect"
 import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
 import {
   ProfileSettingsTabNav,
@@ -321,12 +322,7 @@ export function DashboardProfileSettings({
   }
 
   async function handleSignOut() {
-    try {
-      await supabase.auth.signOut()
-    } catch {
-      // Still navigate home so the user is not stuck in an authenticated shell.
-    }
-    window.location.assign("/")
+    signOutAndRedirect()
   }
 
   if (!profile) {
