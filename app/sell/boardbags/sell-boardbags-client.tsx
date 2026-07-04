@@ -34,6 +34,7 @@ import {
   buildSellSectionNavItems,
 } from "@/components/features/sell/sell-section-nav"
 import { createClient } from "@/lib/supabase/client"
+import { resolveSellEditUser } from "@/lib/sell-flow/resolve-sell-edit-user"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
   assertListingOriginalSize,
@@ -209,12 +210,9 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
 
     void (async () => {
       const supabase = supabaseRef.current
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      const user = await resolveSellEditUser(supabase)
       if (!user) {
         if (mounted) {
-          setEditLoading(false)
           signIn(`/sell/boardbags?edit=${editId}`)
         }
         return

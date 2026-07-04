@@ -44,6 +44,7 @@ import {
 } from "@/components/features/sell/hooks/use-sell-server-draft"
 import { usePendingPublishResume } from "@/components/features/sell/hooks/use-pending-publish-resume"
 import { createClient } from "@/lib/supabase/client"
+import { resolveSellEditUser } from "@/lib/sell-flow/resolve-sell-edit-user"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
   FIN_LISTING_MAX_PHOTOS,
@@ -454,12 +455,9 @@ export default function SellFinsFlow({
 
     void (async () => {
       const supabase = supabaseRef.current
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      const user = await resolveSellEditUser(supabase)
       if (!user) {
         if (mounted) {
-          setEditLoading(false)
           signIn(`/sell/fins?edit=${resumeDraftId}`)
         }
         return
@@ -618,6 +616,7 @@ export default function SellFinsFlow({
     resumeDraftId,
     router,
     signIn,
+    signedInUserId,
   ])
 
   const setField = useCallback(<K extends keyof FinFormState>(key: K, value: FinFormState[K]) => {

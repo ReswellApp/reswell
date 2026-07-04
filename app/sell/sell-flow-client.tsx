@@ -140,6 +140,7 @@ import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listi
 import { revalidateNavSearchSuggestAfterListingPublished } from "@/app/actions/nav-search-suggest-cache"
 import { saveDefaultListingLocationAction } from "@/app/actions/sell-default-location"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
+import { resolveSellEditUser } from "@/lib/sell-flow/resolve-sell-edit-user"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
   validateSellListingForm,
@@ -1552,9 +1553,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     }
     let mounted = true
     ;(async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const user = await resolveSellEditUser(supabase)
       if (!user) {
-        setEditLoading(false)
         openSignIn(`/sell?edit=${resumeDraftId}`)
         return
       }
@@ -1575,7 +1575,24 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       if (!imp) {
         query = query.eq("user_id", user.id)
       }
-      const { data: listing, error } = await query.single()
+      let { data: listing, error } = await query.single()
+      if (error || !listing) {
+        let fallbackQuery = supabase
+          .from("listings")
+          .select(
+            `
+            *,
+            listing_images (id, url, thumbnail_url, is_primary, sort_order)
+          `,
+          )
+          .eq("id", resumeDraftId)
+        if (!imp) {
+          fallbackQuery = fallbackQuery.eq("user_id", user.id)
+        }
+        const retry = await fallbackQuery.single()
+        listing = retry.data
+        error = retry.error
+      }
       if (!mounted) return
       if (error || !listing) {
         toast.error("Listing not found or cannot be edited")
@@ -1807,7 +1824,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       setEditLoading(false)
     })()
     return () => { mounted = false }
-  }, [editId, localServerDraftId, resumeDraftId, supabase, router, openSignIn])
+  }, [editId, localServerDraftId, resumeDraftId, signedInUserId, supabase, router, openSignIn])
 
   useEffect(() => {
     if (!draftHydrated || editId) return

@@ -3,6 +3,7 @@
 import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
 import { hasSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
@@ -108,16 +109,23 @@ export function SignInRequiredGate({
       openAuthModal()
     }
 
-    void verifySession().then((ok) => {
-      if (!mounted) return
-      if (ok) {
-        applyAuthed()
-        return
-      }
-      if (!likelyGuest) {
-        applyBlocked()
-      }
-    })
+    void verifySession()
+      .then((ok) => {
+        if (!mounted) return
+        if (ok) {
+          applyAuthed()
+          return
+        }
+        if (!likelyGuest) {
+          applyBlocked()
+        }
+      })
+      .catch(() => {
+        if (!mounted) return
+        if (!likelyGuest) {
+          applyBlocked()
+        }
+      })
 
     const {
       data: { subscription },
@@ -158,7 +166,18 @@ export function SignInRequiredGate({
   }
 
   if (phase === "checking") {
-    return null
+    return (
+      <main
+        className="flex flex-1 items-center justify-center bg-background py-24"
+        role="status"
+        aria-label="Checking sign-in status"
+      >
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
+          <p className="text-sm">Loading…</p>
+        </div>
+      </main>
+    )
   }
 
   if (phase === "blocked") {
