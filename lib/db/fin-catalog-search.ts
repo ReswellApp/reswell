@@ -367,7 +367,6 @@ export async function searchFinCatalogModels(
   const q = qRaw.trim()
   if (q.length < 1 || finBrandIds.length === 0) return []
 
-  const pattern = ilikePattern(q)
   const byId = new Map<string, FinCatalogModelRow>()
 
   const collect = (rows: RawBrandModelRow[]) => {
@@ -377,34 +376,41 @@ export async function searchFinCatalogModels(
     }
   }
 
-  let byTextQuery = supabase
-    .from("brand_models")
-    .select(MODEL_LIST_SELECT)
-    .in("brand_id", [...finBrandIds])
-
   const tokens = finCatalogMeaningfulSearchTokens(q)
-  if (tokens.length >= 1) {
-    byTextQuery = applyModelNameTokenFilters(byTextQuery, q)
-  } else {
-    byTextQuery = byTextQuery.or(`name.ilike.${pattern},description.ilike.${pattern}`)
-  }
+  const pattern = ilikePattern(q)
 
-  const { data: byText, error } = await byTextQuery
-    .order("name", { ascending: true })
+  const byTextPromise = (() => {
+    let byTextQuery = supabase
+      .from("brand_models")
+      .select(MODEL_LIST_SELECT)
+      .in("brand_id", [...finBrandIds])
+
+    if (tokens.length >= 1) {
+      byTextQuery = applyModelNameTokenFilters(byTextQuery, q)
+    } else {
+      byTextQuery = byTextQuery.or(`name.ilike.${pattern},description.ilike.${pattern}`)
+    }
+
+    return byTextQuery.order("name", { ascending: true }).limit(limit)
+  })()
+
+  const matchingBrandsPromise = supabase
+    .from("brands")
+    .select("id")
+    .in("id", [...finBrandIds])
+    .or(`name.ilike.${pattern},slug.ilike.${pattern}`)
     .limit(limit)
+
+  const [{ data: byText, error }, { data: matchingBrands, error: brandErr }] = await Promise.all([
+    byTextPromise,
+    matchingBrandsPromise,
+  ])
 
   if (error) {
     console.error("searchFinCatalogModels:", error.message)
   } else {
     collect((byText ?? []) as RawBrandModelRow[])
   }
-
-  const { data: matchingBrands, error: brandErr } = await supabase
-    .from("brands")
-    .select("id")
-    .in("id", [...finBrandIds])
-    .or(`name.ilike.${pattern},slug.ilike.${pattern}`)
-    .limit(limit)
 
   if (brandErr) {
     console.error("searchFinCatalogModels (brand match):", brandErr.message)
@@ -524,6 +530,8 @@ export async function searchFinCatalogVariants(
     return next
   }
 
+  const variantQueries: Array<Promise<{ data: RawVariantRow[] | null; source: string }>> = []
+
   if (brandModelIds.length > 0) {
     let query = supabase
       .from("brand_model_variants")
@@ -532,94 +540,126 @@ export async function searchFinCatalogVariants(
       .in("brand_model_id", [...brandModelIds])
       .order("sort_order", { ascending: true })
       .limit(limit)
-
     query = applyFacetFilters(query)
-
-    const { data, error } = await query
-    if (error) {
-      console.error("searchFinCatalogVariants (model ids):", error.message)
-    } else {
-      collect((data ?? []) as RawVariantRow[])
-    }
+    variantQueries.push(
+      query.then(({ data, error }) => {
+        if (error) console.error("searchFinCatalogVariants (model ids):", error.message)
+        return { data: (data ?? null) as RawVariantRow[] | null, source: "model-ids" }
+      }),
+    )
   }
 
   if (pattern) {
-    const { data, error } = await supabase
-      .from("brand_model_variants")
-      .select(VARIANT_LIST_SELECT)
-      .in("brand_id", [...finBrandIds])
-      .or(
-        [
-          `length_label.ilike.${pattern}`,
-          `width_label.ilike.${pattern}`,
-          `thickness_label.ilike.${pattern}`,
-          `volume_label.ilike.${pattern}`,
-          `configuration_label.ilike.${pattern}`,
-          `fin_base_label.ilike.${pattern}`,
-          `fin_height_label.ilike.${pattern}`,
-          `fin_foil_label.ilike.${pattern}`,
-          `fin_color_label.ilike.${pattern}`,
-        ].join(","),
-      )
-      .order("sort_order", { ascending: true })
-      .limit(limit)
-
-    if (error) {
-      console.error("searchFinCatalogVariants (labels):", error.message)
-    } else {
-      collect((data ?? []) as RawVariantRow[])
-    }
-  }
-
-  // Broad facet browse only when no model-scoped matches were requested.
-  if (brandModelIds.length === 0) {
-    if (finSystems.length > 0) {
-      const { data, error } = await supabase
+    variantQueries.push(
+      supabase
         .from("brand_model_variants")
         .select(VARIANT_LIST_SELECT)
         .in("brand_id", [...finBrandIds])
-        .in("fin_box_type", [...finSystems])
+        .or(
+          [
+            `length_label.ilike.${pattern}`,
+            `width_label.ilike.${pattern}`,
+            `thickness_label.ilike.${pattern}`,
+            `volume_label.ilike.${pattern}`,
+            `configuration_label.ilike.${pattern}`,
+            `fin_base_label.ilike.${pattern}`,
+            `fin_height_label.ilike.${pattern}`,
+            `fin_foil_label.ilike.${pattern}`,
+            `fin_color_label.ilike.${pattern}`,
+          ].join(","),
+        )
         .order("sort_order", { ascending: true })
         .limit(limit)
+        .then(({ data, error }) => {
+          if (error) console.error("searchFinCatalogVariants (labels):", error.message)
+          return { data: (data ?? null) as RawVariantRow[] | null, source: "labels" }
+        }),
+    )
 
-      if (error) {
-        console.error("searchFinCatalogVariants (fin system):", error.message)
-      } else {
-        collect((data ?? []) as RawVariantRow[])
-      }
+    variantQueries.push(
+      supabase
+        .from("brand_models")
+        .select("id")
+        .in("brand_id", [...finBrandIds])
+        .or(`name.ilike.${pattern},description.ilike.${pattern}`)
+        .order("name", { ascending: true })
+        .limit(limit)
+        .then(async ({ data: modelRows, error: modelErr }) => {
+          if (modelErr) {
+            console.error("searchFinCatalogVariants (model names):", modelErr.message)
+            return { data: null, source: "model-names" }
+          }
+          const ids = (modelRows ?? []).map((row) => row.id).filter(Boolean)
+          if (ids.length === 0) return { data: null, source: "model-names" }
+
+          let query = supabase
+            .from("brand_model_variants")
+            .select(VARIANT_LIST_SELECT)
+            .in("brand_id", [...finBrandIds])
+            .in("brand_model_id", ids)
+            .order("sort_order", { ascending: true })
+            .limit(limit)
+          query = applyFacetFilters(query)
+          const { data, error } = await query
+          if (error) console.error("searchFinCatalogVariants (model name variants):", error.message)
+          return { data: (data ?? null) as RawVariantRow[] | null, source: "model-names" }
+        }),
+    )
+  }
+
+  if (brandModelIds.length === 0) {
+    if (finSystems.length > 0) {
+      variantQueries.push(
+        supabase
+          .from("brand_model_variants")
+          .select(VARIANT_LIST_SELECT)
+          .in("brand_id", [...finBrandIds])
+          .in("fin_box_type", [...finSystems])
+          .order("sort_order", { ascending: true })
+          .limit(limit)
+          .then(({ data, error }) => {
+            if (error) console.error("searchFinCatalogVariants (fin system):", error.message)
+            return { data: (data ?? null) as RawVariantRow[] | null, source: "fin-system" }
+          }),
+      )
     }
 
     if (finSetups.length > 0) {
-      const { data, error } = await supabase
-        .from("brand_model_variants")
-        .select(VARIANT_LIST_SELECT)
-        .in("brand_id", [...finBrandIds])
-        .in("fin_boxes", [...finSetups])
-        .order("sort_order", { ascending: true })
-        .limit(limit)
-
-      if (error) {
-        console.error("searchFinCatalogVariants (fin setup):", error.message)
-      } else {
-        collect((data ?? []) as RawVariantRow[])
-      }
+      variantQueries.push(
+        supabase
+          .from("brand_model_variants")
+          .select(VARIANT_LIST_SELECT)
+          .in("brand_id", [...finBrandIds])
+          .in("fin_boxes", [...finSetups])
+          .order("sort_order", { ascending: true })
+          .limit(limit)
+          .then(({ data, error }) => {
+            if (error) console.error("searchFinCatalogVariants (fin setup):", error.message)
+            return { data: (data ?? null) as RawVariantRow[] | null, source: "fin-setup" }
+          }),
+      )
     }
 
     if (finSizes.length > 0) {
-      const { data, error } = await supabase
-        .from("brand_model_variants")
-        .select(VARIANT_LIST_SELECT)
-        .in("brand_id", [...finBrandIds])
-        .in("fin_size", [...finSizes])
-        .order("sort_order", { ascending: true })
-        .limit(limit)
-
-      if (error) {
-        console.error("searchFinCatalogVariants (fin size):", error.message)
-      } else {
-        collect((data ?? []) as RawVariantRow[])
-      }
+      variantQueries.push(
+        supabase
+          .from("brand_model_variants")
+          .select(VARIANT_LIST_SELECT)
+          .in("brand_id", [...finBrandIds])
+          .in("fin_size", [...finSizes])
+          .order("sort_order", { ascending: true })
+          .limit(limit)
+          .then(({ data, error }) => {
+            if (error) console.error("searchFinCatalogVariants (fin size):", error.message)
+            return { data: (data ?? null) as RawVariantRow[] | null, source: "fin-size" }
+          }),
+      )
     }
+  }
+
+  const batches = await Promise.all(variantQueries)
+  for (const batch of batches) {
+    if (batch.data?.length) collect(batch.data)
   }
 
   return [...byId.values()].slice(0, limit)

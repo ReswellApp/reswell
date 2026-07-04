@@ -5,7 +5,7 @@ import { MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   listingCardImageSrc,
-  listingTileCarouselImageUrls,
+  listingTileCarouselImageCandidateLists,
   type ListingImageForCard,
 } from "@/lib/listing-image-display"
 import { FavoriteButtonCardOverlay } from "@/components/favorite-button-card-overlay"
@@ -179,9 +179,8 @@ export function ListingTile({
   children,
 }: ListingTileProps) {
   const src = resolveSrc(listingImages ?? null, imageUrl ?? null)
-  const carouselProxiedUrls = listingTileCarouselImageUrls(listingImages ?? null)
-  const tileImageUrls =
-    carouselProxiedUrls.length > 0 ? carouselProxiedUrls : src ? [src] : []
+  const slideCandidates = listingTileCarouselImageCandidateLists(listingImages ?? null)
+  const tileSlideCandidates = slideCandidates.length > 0 ? slideCandidates : src ? [[src]] : []
   const aspectClass =
     imageAspect === "square" ? "aspect-square" : "aspect-[3/4]"
 
@@ -197,7 +196,7 @@ export function ListingTile({
 
   const imageBlock = (
     <ListingTileImageMedia
-      urls={tileImageUrls}
+      slideCandidates={tileSlideCandidates}
       imageAlt={imageAlt}
       imageSizes={imageSizes}
       aspectClass={aspectClass}

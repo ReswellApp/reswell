@@ -25,21 +25,51 @@ function derivedListingThumbUrlFromFullUrl(fullUrl: string): string | null {
   return t.replace("-full.", "-thumb.")
 }
 
+function pushUniqueCandidate(out: string[], seen: Set<string>, candidate: string): void {
+  const t = candidate.trim()
+  if (!t || seen.has(t)) return
+  seen.add(t)
+  out.push(t)
+}
+
+/** Ordered fallbacks for one listing photo — try stored thumb, derived thumb, resized full, then raw full. */
+export function listingTileImageSrcCandidatesFromRow(img: ListingImageForCard): string[] {
+  const out: string[] = []
+  const seen = new Set<string>()
+
+  const storedThumb = img.thumbnail_url?.trim()
+  if (storedThumb) {
+    pushUniqueCandidate(out, seen, proxiedListingImageSrc(storedThumb))
+  }
+
+  const full = img.url?.trim()
+  if (!full) return out
+
+  if (!storedThumb) {
+    const derivedThumb = derivedListingThumbUrlFromFullUrl(full)
+    if (derivedThumb) {
+      pushUniqueCandidate(out, seen, proxiedListingImageSrc(derivedThumb))
+    }
+  }
+
+  const proxiedFull = proxiedListingImageSrc(full)
+  if (proxiedFull.startsWith("/media/listings/")) {
+    pushUniqueCandidate(out, seen, withListingMediaTileVariant(proxiedFull))
+  }
+  pushUniqueCandidate(out, seen, proxiedFull)
+  if (!proxiedFull.startsWith("/media/listings/")) {
+    pushUniqueCandidate(out, seen, full)
+  }
+
+  return out
+}
+
 /**
  * Best src for a listing photo in browse grids / carousels — never returns an unscaled full-res
  * proxy unless `?variant=tile` is appended for server-side resize.
  */
 export function listingTileImageSrcFromRow(img: ListingImageForCard): string {
-  const thumb = img.thumbnail_url?.trim()
-  if (thumb) return proxiedListingImageSrc(thumb)
-
-  const full = img.url?.trim()
-  if (!full) return ""
-
-  const derivedThumb = derivedListingThumbUrlFromFullUrl(full)
-  if (derivedThumb) return proxiedListingImageSrc(derivedThumb)
-
-  return withListingMediaTileVariant(proxiedListingImageSrc(full))
+  return listingTileImageSrcCandidatesFromRow(img)[0] ?? ""
 }
 
 export function listingCardImageSrc(
@@ -55,6 +85,13 @@ export function listingCardImageSrc(
 export function listingTileCarouselImageUrls(
   images: ListingImageForCard[] | null | undefined,
 ): string[] {
+  return listingTileCarouselImageCandidateLists(images).map((candidates) => candidates[0] ?? "").filter(Boolean)
+}
+
+/** Per-slide URL fallbacks for carousel tiles (primary photo first). */
+export function listingTileCarouselImageCandidateLists(
+  images: ListingImageForCard[] | null | undefined,
+): string[][] {
   const list = images ?? []
   if (list.length === 0) return []
 
@@ -65,8 +102,8 @@ export function listingTileCarouselImageUrls(
       : [list[primaryIdx]!, ...list.filter((_, i) => i !== primaryIdx)]
 
   return ordered
-    .map((img) => listingTileImageSrcFromRow(img))
-    .filter((url): url is string => url.length > 0)
+    .map((img) => listingTileImageSrcCandidatesFromRow(img))
+    .filter((candidates) => candidates.length > 0)
 }
 
 /**

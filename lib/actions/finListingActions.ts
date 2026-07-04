@@ -6,10 +6,8 @@ import { createClient } from "@/lib/supabase/server"
 import { createFinListingSchema, updateFinListingSchema } from "@/lib/validations/fin-listing"
 import { createFinListing, updateFinListing } from "@/lib/services/finListing"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
-import {
-  searchFinBrandsCatalogSuggestWithClient,
-  searchFinCatalogForSell,
-} from "@/lib/services/finCatalogSearch"
+import { getFinCatalogSearchSellCached } from "@/lib/cache/fin-catalog-search-sell"
+import { searchFinBrandsCatalogSuggestWithClient } from "@/lib/services/finCatalogSearch"
 import type { BrandCatalogSuggestResponse } from "@/lib/services/brandDirectorySearch"
 import type { FinCatalogSearchResult } from "@/lib/types/fin-catalog-search"
 
@@ -48,8 +46,7 @@ export async function searchFinCatalogForSellAction(
   }
 
   try {
-    const supabase = await createClient()
-    const data = await searchFinCatalogForSell(supabase, parsed.data.q)
+    const data = await getFinCatalogSearchSellCached(parsed.data.q)
     return { ok: true, data }
   } catch (error) {
     console.error("searchFinCatalogForSellAction:", error instanceof Error ? error.message : error)

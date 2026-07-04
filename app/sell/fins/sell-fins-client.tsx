@@ -38,6 +38,10 @@ import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-ph
 import { SellPublishValidationBanner } from "@/components/features/sell/sell-publish-validation-banner"
 import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
 import { useSellListingDraftPersistence } from "@/components/features/sell/hooks/use-sell-listing-draft-persistence"
+import {
+  sellFormSnapshotLooksFilled,
+  useSellServerDraft,
+} from "@/components/features/sell/hooks/use-sell-server-draft"
 import { usePendingPublishResume } from "@/components/features/sell/hooks/use-pending-publish-resume"
 import { createClient } from "@/lib/supabase/client"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
@@ -80,6 +84,12 @@ import {
   clearSellListingDraft,
   type SellListingDraftFormSnapshot,
 } from "@/lib/sell-listing-draft-idb"
+import {
+  clearSellServerDraftListingId,
+  getSellServerDraftListingId,
+  replaceSellDraftEditUrl,
+  setSellServerDraftListingId,
+} from "@/lib/sell-draft-local-meta"
 import { cn } from "@/lib/utils"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { finalizePeerListingCreate } from "@/lib/utils/admin-peer-listing-create-navigation"
@@ -198,13 +208,16 @@ export default function SellFinsFlow({
   startFresh?: boolean
 }) {
   const router = useRouter()
-  const bulkSlotId = useSearchParams().get("bulk")?.trim() || null
+  const searchParams = useSearchParams()
+  const bulkSlotId = searchParams.get("bulk")?.trim() || null
+  const wantsBlankListing = startFresh || searchParams.get("new") === "1"
   const signIn = useSignInGate()
   const fileInputId = useId()
   const formRef = useRef<HTMLFormElement>(null)
   const supabaseRef = useRef(createClient())
   const editId = editListingId?.trim() || null
   const draftPhotosPendingRef = useRef<ListingPhotoSlot[] | null>(null)
+  const removedImageIdsRef = useRef<string[]>([])
 
   const [flowStep, setFlowStep] = useState<"search" | "form">(() => {
     if (editId) return "form"
@@ -213,11 +226,19 @@ export default function SellFinsFlow({
   })
   const [form, setForm] = useState<FinFormState>(INITIAL_STATE)
   const [submitting, setSubmitting] = useState(false)
-  const [editLoading, setEditLoading] = useState(Boolean(editId))
+  const [editLoading, setEditLoading] = useState(
+    () =>
+      Boolean(editId) ||
+      (!startFresh &&
+        searchParams.get("new") !== "1" &&
+        Boolean(getSellServerDraftListingId("fins"))),
+  )
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
+  const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
   const [draftHydrated, setDraftHydrated] = useState(Boolean(editId))
   const [signedInUserId, setSignedInUserId] = useState<string | null>(null)
   const [publishValidationBanner, setPublishValidationBanner] = useState<string | null>(null)
+  const [startNewListingBusy, setStartNewListingBusy] = useState(false)
 
   const sellListingsHubHref = signedInUserId ? "/dashboard/listings" : "/boards"
   const finSellReturnPath = useCallback(
@@ -237,6 +258,7 @@ export default function SellFinsFlow({
 
   const {
     images,
+    setImages,
     imagesRef,
     removedImageIds,
     photosFileDragActive,
@@ -256,6 +278,10 @@ export default function SellFinsFlow({
     idbRestoreOptimizeQueueRef,
     hydrateExistingImages,
   } = photoUpload
+
+  useEffect(() => {
+    removedImageIdsRef.current = removedImageIds
+  }, [removedImageIds])
 
   const restoreFormFromDraft = useCallback((snapshot: SellListingDraftFormSnapshot) => {
     setForm((prev) => ({
@@ -306,9 +332,91 @@ export default function SellFinsFlow({
       } catch {
         /* quota / private mode */
       }
+      clearSellServerDraftListingId("fins")
       router.replace("/sell/fins", { scroll: false })
     }
   }, [router, startFresh])
+
+  const handleStartNewListing = useCallback(async () => {
+    setStartNewListingBusy(true)
+    try {
+      for (const im of imagesRef.current) {
+        if (im.previewUrl?.startsWith("blob:")) URL.revokeObjectURL(im.previewUrl)
+      }
+      draftPhotosPendingRef.current = null
+      clearPersistedFinSellFlowStep()
+      setFlowStep("search")
+      setForm(INITIAL_STATE)
+      setImages([])
+      setPublishValidationBanner(null)
+      clearSellServerDraftListingId("fins")
+      const {
+        data: { user },
+      } = await supabaseRef.current.auth.getUser()
+      if (user) await clearSellListingDraft(user.id, "fins")
+      toast.message("Starting a new listing — saved drafts stay in your dashboard.")
+    } finally {
+      setStartNewListingBusy(false)
+    }
+  }, [])
+
+  const buildFinDraftPayload = useCallback(
+    (listingId: string | null) => ({
+      section: "fins" as const,
+      listingId,
+      title: form.title,
+      description: form.description,
+      price: form.price,
+      sellerPurchasePrice: form.sellerPurchasePrice,
+      condition: form.condition,
+      size: form.size || null,
+      finSetup: form.finSetup || null,
+      finSystem: form.finSystem || null,
+      brand: form.brand,
+      brandId: form.brandId,
+      model: form.model,
+      brandModelId: form.brandModelId,
+      locationLat: form.locationLat,
+      locationLng: form.locationLng,
+      locationCity: form.locationCity,
+      locationState: form.locationState,
+      shippingCostMode: form.shippingMode,
+      shippingPrice: form.shippingPrice,
+      reswellPackageLengthIn: form.reswellPackageLengthIn,
+      reswellPackageWidthIn: form.reswellPackageWidthIn,
+      reswellPackageHeightIn: form.reswellPackageHeightIn,
+      reswellPackageWeightLb: form.reswellPackageWeightLb,
+      reswellPackageWeightOz: form.reswellPackageWeightOz,
+      buyerOffers: form.buyerOffers,
+    }),
+    [form],
+  )
+
+  const serverDraft = useSellServerDraft({
+    section: "fins",
+    supabase: supabaseRef.current,
+    editId,
+    editListingStatus,
+    editLoading,
+    draftHydrated,
+    loading: submitting,
+    formLooksFilled: () =>
+      sellFormSnapshotLooksFilled("fins", {
+        ...form,
+        finFlowStep: flowStep,
+      } as SellListingDraftFormSnapshot),
+    buildDraftPayload: buildFinDraftPayload,
+    imagesRef: imagesRef,
+    removedImageIdsRef: removedImageIdsRef,
+    setImages,
+    onStartNewListing: handleStartNewListing,
+    startNewListingBusy,
+    optimizingAny: uploadingCount > 0,
+  })
+
+  const { localServerDraftId, listingIsDraft, draftControls: finDraftControls } = serverDraft
+
+  const resumeDraftId = editId ?? (wantsBlankListing ? null : localServerDraftId)
 
   useEffect(() => {
     void supabaseRef.current.auth.getUser().then(({ data: { user } }) => {
@@ -336,7 +444,7 @@ export default function SellFinsFlow({
   }, [startAtSearch, editId])
 
   useEffect(() => {
-    if (!editId) {
+    if (!resumeDraftId) {
       setEditLoading(false)
       return
     }
@@ -352,7 +460,7 @@ export default function SellFinsFlow({
       if (!user) {
         if (mounted) {
           setEditLoading(false)
-          signIn(`/sell/fins?edit=${editId}`)
+          signIn(`/sell/fins?edit=${resumeDraftId}`)
         }
         return
       }
@@ -366,7 +474,7 @@ export default function SellFinsFlow({
           listing_images (id, url, thumbnail_url, is_primary, sort_order)
         `,
         )
-        .eq("id", editId)
+        .eq("id", resumeDraftId)
       if (!imp) {
         query = query.eq("user_id", user.id)
       }
@@ -376,6 +484,9 @@ export default function SellFinsFlow({
 
       if (error || !listing) {
         toast.error("Listing not found or cannot be edited")
+        if (!editId && localServerDraftId === resumeDraftId) {
+          clearSellServerDraftListingId("fins")
+        }
         router.replace("/sell/fins", { scroll: false })
         setEditLoading(false)
         return
@@ -401,6 +512,14 @@ export default function SellFinsFlow({
       }
 
       setEditListingOwnerId(listing.user_id as string)
+      const st = (listing as { status?: string }).status
+      setEditListingStatus(typeof st === "string" ? st : null)
+      if (st === "draft") {
+        setSellServerDraftListingId("fins", String(listing.id))
+        if (!editId) {
+          replaceSellDraftEditUrl("fins", String(listing.id))
+        }
+      }
       if (imp && imp.userId !== listing.user_id) {
         clearImpersonation()
       }
@@ -423,7 +542,7 @@ export default function SellFinsFlow({
 
       setForm({
         title: listing.title ?? "",
-        description: listing.description ?? "",
+        description: (listing.description ?? "").trim() === "" ? "" : (listing.description ?? ""),
         price: String(listing.price ?? ""),
         sellerPurchasePrice: (() => {
           const v = (listing as { seller_purchase_price_usd?: number | string | null })
@@ -483,6 +602,8 @@ export default function SellFinsFlow({
           }
         })
 
+      setFlowStep("form")
+      persistFinSellFlowStep("form")
       hydrateExistingImages(existingImages)
       setEditLoading(false)
     })()
@@ -490,7 +611,14 @@ export default function SellFinsFlow({
     return () => {
       mounted = false
     }
-  }, [editId, hydrateExistingImages, router, signIn])
+  }, [
+    editId,
+    hydrateExistingImages,
+    localServerDraftId,
+    resumeDraftId,
+    router,
+    signIn,
+  ])
 
   const setField = useCallback(<K extends keyof FinFormState>(key: K, value: FinFormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -677,6 +805,9 @@ export default function SellFinsFlow({
       const listingImpersonation =
         actorIsAdmin && storedImpersonation ? storedImpersonation : null
 
+      const effectiveEditId = editId ?? localServerDraftId
+      const isLocalOnlyServerDraftSubmit = Boolean(localServerDraftId && !editId)
+
       const adminImpersonatesListingOwner = Boolean(
         editId &&
           editListingOwnerId &&
@@ -685,8 +816,16 @@ export default function SellFinsFlow({
           user.id !== editListingOwnerId,
       )
 
-      if (editId) {
-        const ownerEditsOwnListing = user.id === editListingOwnerId
+      if (effectiveEditId) {
+        if (!isLocalOnlyServerDraftSubmit && editId && !editListingOwnerId) {
+          toast.error("Listing is still loading. Try again in a moment.")
+          setSubmitting(false)
+          return
+        }
+
+        const ownerEditsOwnListing =
+          isLocalOnlyServerDraftSubmit || user.id === editListingOwnerId
+
         if (adminImpersonatesListingOwner) {
           const imageOps = payload.images.map((img, index) => ({
             id: img.id,
@@ -730,7 +869,7 @@ export default function SellFinsFlow({
 
         const result = await updateFinListingAction({
           ...payload,
-          listingId: editId,
+          listingId: effectiveEditId,
           removedImageIds,
         })
         if ("error" in result) {
@@ -740,8 +879,11 @@ export default function SellFinsFlow({
         }
         clearPersistedFinSellFlowStep()
         clearPendingPublish("fins")
+        clearSellServerDraftListingId("fins")
         if (user.id) await clearSellListingDraft(user.id, "fins")
-        toast.success("Listing updated")
+        toast.success(
+          listingIsDraft || isLocalOnlyServerDraftSubmit ? "Your fin is live!" : "Listing updated",
+        )
         router.push(`/l/${result.slug}`)
         return
       }
@@ -764,6 +906,7 @@ export default function SellFinsFlow({
           const result = await createFinListingAction(payload)
           if (!("error" in result)) {
             clearPendingPublish("fins")
+            clearSellServerDraftListingId("fins")
             if (user.id) await clearSellListingDraft(user.id, "fins")
           }
           return result
@@ -845,11 +988,24 @@ export default function SellFinsFlow({
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
-            <Button type="button" variant="ghost" size="icon" aria-label="Exit listing form" asChild>
-              <Link href={sellListingsHubHref} onClick={exitSellFlow}>
-                <X className="h-4 w-4" aria-hidden />
-              </Link>
-            </Button>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3 shrink-0">
+              {!editLoading && (!editId || listingIsDraft) && !getImpersonation() ? (
+                <div className="flex items-center gap-3">
+                  {finDraftControls}
+                  <Button type="button" variant="ghost" size="icon" aria-label="Exit listing form" asChild>
+                    <Link href={sellListingsHubHref} onClick={exitSellFlow}>
+                      <X className="h-4 w-4" aria-hidden />
+                    </Link>
+                  </Button>
+                </div>
+              ) : (
+                <Button type="button" variant="ghost" size="icon" aria-label="Exit listing form" asChild>
+                  <Link href={sellListingsHubHref} onClick={exitSellFlow}>
+                    <X className="h-4 w-4" aria-hidden />
+                  </Link>
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -1257,7 +1413,7 @@ export default function SellFinsFlow({
                         {editId ? "Saving…" : "Publishing…"}
                       </>
                     ) : editId ? (
-                      "Save changes"
+                      listingIsDraft ? "Publish listing" : "Save changes"
                     ) : (
                       "Create Listing"
                     )}

@@ -128,6 +128,11 @@ import {
   type ListingCatalogRequestVariant,
 } from "@/components/request-brand-model-dialog"
 import { SellFlowFormColumnSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
+import {
+  sellFormSnapshotLooksFilled,
+  useSellServerDraft,
+} from "@/components/features/sell/hooks/use-sell-server-draft"
+import { clearSellServerDraftListingId, getSellServerDraftListingId, replaceSellDraftEditUrl, setSellServerDraftListingId } from "@/lib/sell-draft-local-meta"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { SellBoardModelField } from "@/components/sell-board-model-field"
 import { listingDetailPath } from "@/lib/listing-query"
@@ -902,6 +907,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const router = useRouter()
   const sellSearchParams = useSearchParams()
   const bulkSlotId = sellSearchParams.get("bulk")?.trim() || null
+  const wantsBlankListing = startFresh || sellSearchParams.get("new") === "1"
   const openSignIn = useSignInGate()
   const supabase = useMemo(() => createClient(), [])
 
@@ -941,7 +947,13 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const [uploadPhaseLabels, setUploadPhaseLabels] = useState<string[]>(() => [
     ...LISTING_UPLOAD_STEP_LABELS,
   ])
-  const [editLoading, setEditLoading] = useState(!!editId)
+  const [editLoading, setEditLoading] = useState(
+    () =>
+      Boolean(editId) ||
+      (!startFresh &&
+        sellSearchParams.get("new") !== "1" &&
+        Boolean(getSellServerDraftListingId("surfboards"))),
+  )
   const [draftHydrated, setDraftHydrated] = useState(!!editId)
   const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
   const [signedInUserId, setSignedInUserId] = useState<string | null>(null)
@@ -964,9 +976,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const [pickupShippingLocationUserCommits, setPickupShippingLocationUserCommits] = useState(0)
   const sellDraftUserIdRef = useRef<string | null>(null)
   const editIdRef = useRef<string | null>(editId)
-
-  const draftRowForImages = editId
-  const treatAsDraftForSync = listingIsDraft
+  const [startNewListingBusy, setStartNewListingBusy] = useState(false)
 
   useEffect(() => {
     editIdRef.current = editId
@@ -1090,6 +1100,103 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     editId,
     draftHydrated,
   }
+
+  const handleStartNewListing = useCallback(async () => {
+    setStartNewListingBusy(true)
+    try {
+      for (const im of imagesRef.current) {
+        if (im.previewUrl?.startsWith("blob:")) URL.revokeObjectURL(im.previewUrl)
+      }
+      draftPhotosPendingRef.current = null
+      setFormData(createInitialSellFormData())
+      sellListingThumbLoadedSrcByClientId.clear()
+      latestListingPhotoPrepareSeqRef.current.clear()
+      setImages([])
+      setRemovedImageIds([])
+      setPublishPreview(null)
+      clearSellServerDraftListingId("surfboards")
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (user) await clearSellListingDraft(user.id)
+      await clearGuestSellListingDraft()
+      toast.message("Starting a new listing — saved drafts stay in your dashboard.")
+      if (editId) {
+        router.replace("/sell?new=1", { scroll: false })
+      }
+    } finally {
+      setStartNewListingBusy(false)
+    }
+  }, [editId, router, supabase])
+
+  const buildBoardDraftPayload = useCallback(
+    (listingId: string | null) => ({
+      section: "surfboards" as const,
+      listingId,
+      title: formData.title,
+      description: formData.description,
+      price: formData.price,
+      sellerPurchasePrice: formData.sellerPurchasePrice,
+      condition: formData.condition,
+      category: formData.category,
+      brand: formData.brand,
+      boardFulfillment: formData.boardFulfillment,
+      boardShippingCostMode: formData.boardShippingCostMode,
+      boardShippingPrice: formData.boardShippingPrice,
+      reswellPackageLengthIn: formData.reswellPackageLengthIn,
+      reswellPackageWidthIn: formData.reswellPackageWidthIn,
+      reswellPackageHeightIn: formData.reswellPackageHeightIn,
+      reswellPackageWeightLb: formData.reswellPackageWeightLb,
+      reswellPackageWeightOz: formData.reswellPackageWeightOz,
+      autoPriceDrop: formData.autoPriceDrop,
+      autoPriceDropFloor: formData.autoPriceDropFloor,
+      buyerOffers: formData.buyerOffers,
+      boardType: formData.boardType,
+      boardLength: formData.boardLength,
+      boardWidthInches: formData.boardWidthInches,
+      boardThicknessInches: formData.boardThicknessInches,
+      boardVolumeL: formData.boardVolumeL,
+      boardFins: formData.boardFins,
+      boardTail: formData.boardTail,
+      boardFinSystem: formData.boardFinSystem,
+      boardConstruction: formData.boardConstruction,
+      boardBrandId: formData.boardBrandId,
+      boardBrandModelId: formData.boardBrandModelId,
+      boardModelName: formData.boardModelName,
+      locationLat: formData.locationLat,
+      locationLng: formData.locationLng,
+      locationCity: formData.locationCity,
+      locationState: formData.locationState,
+    }),
+    [formData],
+  )
+
+  const serverDraft = useSellServerDraft({
+    section: "surfboards",
+    supabase,
+    editId,
+    editListingStatus,
+    editLoading,
+    draftHydrated,
+    loading,
+    formLooksFilled: () =>
+      sellFormSnapshotLooksFilled("board", formData as SellListingDraftFormSnapshot),
+    buildDraftPayload: buildBoardDraftPayload,
+    imagesRef,
+    removedImageIdsRef,
+    setImages,
+    onStartNewListing: handleStartNewListing,
+    startNewListingBusy,
+    optimizingAny: images.some((im) => im.optimizePhase === "running"),
+    extraDisabled: boardCategoryOptions.length === 0,
+  })
+
+  const { localServerDraftId, draftControls: boardDraftControls } = serverDraft
+  const effectiveEditId = editId ?? localServerDraftId
+  const resumeDraftId = editId ?? (wantsBlankListing ? null : localServerDraftId)
+  const draftRowForImages = effectiveEditId
+  const treatAsDraftForSync =
+    listingIsDraft || Boolean(localServerDraftId && !editId)
 
   const boardLengthFormatted = useMemo(
     () => formatBoardLengthForTitle(formData.boardLength),
@@ -1292,6 +1399,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       } = await supabase.auth.getUser()
       if (user) await clearSellListingDraft(user.id)
       await clearGuestSellListingDraft()
+      clearSellServerDraftListingId("surfboards")
       try {
         sessionStorage.removeItem(SELL_SUPPRESS_IDB_RESTORE_KEY)
         sessionStorage.removeItem(SELL_PENDING_PUBLISH_KEY)
@@ -1437,7 +1545,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   }, [])
 
   useEffect(() => {
-    if (!editId) {
+    if (!resumeDraftId) {
       setEditListingOwnerId(null)
       setEditLoading(false)
       return
@@ -1447,7 +1555,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         setEditLoading(false)
-        openSignIn(`/sell?edit=${editId}`)
+        openSignIn(`/sell?edit=${resumeDraftId}`)
         return
       }
       const imp = getImpersonation()
@@ -1463,7 +1571,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           brand_models ( id, name, brands ( slug ) )
         `,
         )
-        .eq("id", editId)
+        .eq("id", resumeDraftId)
       if (!imp) {
         query = query.eq("user_id", user.id)
       }
@@ -1471,6 +1579,9 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       if (!mounted) return
       if (error || !listing) {
         toast.error("Listing not found or cannot be edited")
+        if (!editId && localServerDraftId === resumeDraftId) {
+          clearSellServerDraftListingId("surfboards")
+        }
         router.replace("/sell", { scroll: false })
         setEditLoading(false)
         return
@@ -1489,13 +1600,19 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       }
       const listingSection = (listing as { section?: string }).section
       if (listingSection !== "surfboards") {
-        router.replace(peerListingEditHref(listingSection, editId), { scroll: false })
+        router.replace(peerListingEditHref(listingSection, resumeDraftId), { scroll: false })
         setEditLoading(false)
         return
       }
       setEditListingOwnerId(listing.user_id as string)
       const st = (listing as { status?: string }).status
       setEditListingStatus(typeof st === "string" ? st : null)
+      if (st === "draft") {
+        setSellServerDraftListingId("surfboards", String(listing.id))
+        if (!editId) {
+          replaceSellDraftEditUrl("surfboards", String(listing.id))
+        }
+      }
       if (imp && imp.userId !== listing.user_id) {
         clearImpersonation()
         setImpersonation(null)
@@ -1590,7 +1707,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           : null
       setFormData({
         title: listing.title ?? "",
-        description: listing.description ?? "",
+        description: (listing.description ?? "").trim() === "" ? "" : (listing.description ?? ""),
         price: String(listing.price ?? ""),
         sellerPurchasePrice: (() => {
           const v = (listing as { seller_purchase_price_usd?: number | string | null })
@@ -1690,7 +1807,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       setEditLoading(false)
     })()
     return () => { mounted = false }
-  }, [editId, supabase, router])
+  }, [editId, localServerDraftId, resumeDraftId, supabase, router, openSignIn])
 
   useEffect(() => {
     if (!draftHydrated || editId) return
@@ -2533,9 +2650,10 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         duration: 600_000,
       })
 
-      let listingId: string | null = editId
+      let listingId: string | null = effectiveEditId
       let listingSlug: string | null = null
       let usedImpersonationListingApi = false
+      const isLocalOnlyServerDraftSubmit = Boolean(localServerDraftId && !editId)
 
       // Generate a unique slug from the title
       async function generateUniqueSlug(title: string): Promise<string> {
@@ -2557,15 +2675,17 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         return `${base}-${Date.now()}`
       }
 
-      if (editId) {
-        if (!editListingOwnerId) {
+      if (effectiveEditId) {
+        if (!isLocalOnlyServerDraftSubmit && editId && !editListingOwnerId) {
           dismissUploadProgressToast()
           toast.error("Listing is still loading. Try again in a moment.")
           setLoading(false)
           return
         }
-        const ownerEditsOwnListing = user.id === editListingOwnerId
+        const ownerEditsOwnListing =
+          isLocalOnlyServerDraftSubmit || user.id === editListingOwnerId
         const adminImpersonatesListingOwner =
+          !!editId &&
           !!listingImpersonation &&
           listingImpersonation.userId === editListingOwnerId &&
           user.id !== editListingOwnerId
@@ -2605,7 +2725,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
         if (ownerEditsOwnListing) {
           let publishSlug: string | null = null
-          const publishingFromDraftRow = listingIsDraft
+          const publishingFromDraftRow = listingIsDraft || isLocalOnlyServerDraftSubmit
           if (publishingFromDraftRow) {
             publishSlug = await generateUniqueListingSlug(supabase, resolvedListingTitle)
           }
@@ -2623,7 +2743,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           let { data: updated, error: updateError } = await supabase
             .from("listings")
             .update(updatePayload)
-            .eq("id", editId)
+            .eq("id", effectiveEditId)
             .eq("user_id", user.id)
             .select("slug")
             .single()
@@ -2646,7 +2766,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                     }
                   : {}),
               })
-              .eq("id", editId)
+              .eq("id", effectiveEditId)
               .eq("user_id", user.id)
               .select("slug")
               .single()
@@ -2655,10 +2775,12 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           }
           if (updateError) throw new Error(submitErrorMessage(updateError, "Failed to update listing"))
           listingSlug = updated?.slug ?? null
-          persistBoardCatalogSnapshot(editId, user.id)
-          if (publishingFromDraftRow && editId) {
-            requestKlaviyoListingCreated(editId)
+          listingId = effectiveEditId
+          persistBoardCatalogSnapshot(effectiveEditId, user.id)
+          if (publishingFromDraftRow) {
+            requestKlaviyoListingCreated(effectiveEditId)
           }
+          clearSellServerDraftListingId("surfboards")
         } else if (adminImpersonatesListingOwner) {
           usedImpersonationListingApi = true
           goSubmitStep(0)
@@ -3026,6 +3148,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3 shrink-0">
                 {!editLoading && (!editId || listingIsDraft) && !getImpersonation() && (
                     <div className="flex items-center gap-3">
+                      {boardDraftControls}
                       <Button
                         type="button"
                         variant="ghost"

@@ -14,7 +14,7 @@ import {
 import { listingPhotoSlotsFromDraftBlobs } from "@/lib/sell-flow/listing-photo-slot"
 import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
 import { persistListingDraftSnapshot } from "@/lib/sell-flow/persist-listing-draft-snapshot"
-import { SELL_SUPPRESS_IDB_RESTORE_KEY } from "@/lib/sell-flow/session-keys"
+import { isPendingPublish, SELL_SUPPRESS_IDB_RESTORE_KEY } from "@/lib/sell-flow/session-keys"
 import { getImpersonation } from "@/lib/impersonation"
 
 export type UseSellListingDraftPersistenceOptions = {
@@ -97,7 +97,14 @@ export function useSellListingDraftPersistence({
           }
         })()
 
-      if (!wantsBlankListing && !suppressIdbForNewListing && !getImpersonation()) {
+      const pendingPublishResume = isPendingPublish(listingType === "fins" ? "fins" : "board")
+
+      if (
+        pendingPublishResume &&
+        !wantsBlankListing &&
+        !suppressIdbForNewListing &&
+        !getImpersonation()
+      ) {
         const {
           data: { user },
         } = await supabaseRef.current.auth.getUser()

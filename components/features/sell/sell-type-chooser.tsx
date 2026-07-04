@@ -14,14 +14,14 @@ type SellTypeOption = {
 /** Shown on /sell chooser. Other sell flows stay live at their routes until launch. */
 const SELL_TYPE_OPTIONS: readonly SellTypeOption[] = [
   {
-    href: "/sell?type=surfboard",
+    href: "/sell?type=surfboard&new=1",
     title: "Surfboard",
     description: "List a board from your quiver.",
     imageSrc: "/images/sell/surfboard.jpg",
     imageAlt: "Surfboard",
   },
   {
-    href: "/sell/fins?step=search",
+    href: "/sell/fins?step=search&new=1",
     title: "Fins",
     description: "List thrusters, quads, twins, or singles.",
     imageSrc: "/images/sell/fins.jpg",

@@ -85,6 +85,13 @@ export function listingPhotoSlotsFromDraftBlobs(
   return slots
 }
 
+/** Photos can be written to `listing_images` for a server draft row. */
+export function listingPhotosReadyForDraftSync(slots: ListingPhotoSlot[]): boolean {
+  return (
+    slots.length > 0 && slots.every((im) => im.uploadPhase === "done" && Boolean(im.url?.trim()))
+  )
+}
+
 export function listingPhotosUploadReady(slots: ListingPhotoSlot[]): boolean {
   return !slots.some(
     (im) =>

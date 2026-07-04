@@ -109,10 +109,24 @@ export async function updateFinListing(
     throw new Error("Sold listings cannot be edited")
   }
 
+  const publishingFromDraft = existing.status === "draft"
+  const publishSlug = publishingFromDraft
+    ? await generateUniqueListingSlug(supabase, input.title)
+    : null
+
   const updateFields = buildFinListingPersistFields(input)
   const { data: updated, error: updateError } = await supabase
     .from("listings")
-    .update(updateFields)
+    .update({
+      ...updateFields,
+      ...(publishingFromDraft
+        ? {
+            status: "active" as const,
+            hidden_from_site: false,
+            slug: publishSlug ?? undefined,
+          }
+        : {}),
+    })
     .eq("id", listingId)
     .eq("user_id", userId)
     .select("slug")

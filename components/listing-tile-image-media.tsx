@@ -4,6 +4,7 @@ import Image from "next/image"
 import {
   Fragment,
   useCallback,
+  useEffect,
   useMemo,
   useState,
   type MouseEventHandler,
@@ -25,8 +26,110 @@ function carouselSlideNearActive(i: number, active: number, total: number): bool
   return false
 }
 
+function ListingTileCarouselSlide({
+  candidates,
+  active,
+  imageSizes,
+  imageFit,
+  imageClassName,
+  imagePriority,
+  onLoadedChange,
+  onExhausted,
+}: {
+  candidates: string[]
+  active: boolean
+  imageSizes: string
+  imageFit: "cover" | "contain"
+  imageClassName?: string
+  imagePriority?: boolean
+  onLoadedChange: (loaded: boolean) => void
+  onExhausted: () => void
+}) {
+  const [candidateIndex, setCandidateIndex] = useState(0)
+  const [loaded, setLoaded] = useState(false)
+
+  const candidatesKey = candidates.join("|")
+
+  useEffect(() => {
+    setCandidateIndex(0)
+    setLoaded(false)
+  }, [candidatesKey])
+
+  useEffect(() => {
+    if (active) {
+      onLoadedChange(loaded)
+    }
+  }, [active, loaded, onLoadedChange])
+
+  const src = candidates[candidateIndex] ?? ""
+
+  useEffect(() => {
+    if (!src && candidates.length === 0) {
+      onExhausted()
+    }
+  }, [src, candidates.length, onExhausted])
+
+  const handleLoad = useCallback(
+    (_event: SyntheticEvent<HTMLImageElement>) => {
+      setLoaded(true)
+    },
+    [],
+  )
+
+  const handleError = useCallback(
+    (_event: SyntheticEvent<HTMLImageElement>) => {
+      setLoaded(false)
+      if (candidateIndex + 1 < candidates.length) {
+        setCandidateIndex((index) => index + 1)
+        return
+      }
+      onExhausted()
+    },
+    [candidateIndex, candidates.length, onExhausted],
+  )
+
+  if (!src) return null
+
+  const objectStyle =
+    imageFit === "contain"
+      ? ({ objectFit: "contain" } as const)
+      : ({ objectFit: "cover" } as const)
+
+  return (
+    <Image
+      key={src}
+      src={src}
+      alt=""
+      fill
+      sizes={imageSizes}
+      quality={90}
+      unoptimized={listingImageShouldBypassOptimization(src)}
+      aria-hidden={!active}
+      loading={active ? "eager" : "lazy"}
+      className={cn(
+        "absolute inset-0 transition-opacity duration-[280ms] ease-in-out",
+        active ? "z-[2] opacity-100" : "z-[1] opacity-0",
+        "transition-transform duration-300 group-hover:scale-105",
+        imageFit === "cover" && "object-cover",
+        imageFit === "contain" && "object-contain",
+        imageClassName,
+      )}
+      style={objectStyle}
+      ref={(img) => {
+        if (img?.complete && img.naturalWidth > 0) {
+          setLoaded(true)
+        }
+      }}
+      onLoad={handleLoad}
+      onError={handleError}
+      priority={imagePriority && active}
+    />
+  )
+}
+
 export interface ListingTileImageMediaProps {
-  urls: string[]
+  /** Ordered URL fallbacks per carousel slide (primary photo first). */
+  slideCandidates: string[][]
   imageAlt: string
   imageSizes: string
   aspectClass: string
@@ -35,7 +138,6 @@ export interface ListingTileImageMediaProps {
   imageFit: "cover" | "contain"
   imageClassName?: string
   overlayTopLeft?: ReactNode
-  /** Corner overlay (e.g. favorites). Position comes from the overlay root (top-right on cards). */
   overlayBottomRight?: ReactNode
   overlayFull?: ReactNode
   /**
@@ -48,7 +150,7 @@ export interface ListingTileImageMediaProps {
 
 /** Listing tile imagery — wave shimmer overlay while photos load (default for all {@link ListingTile} usage). */
 export function ListingTileImageMedia({
-  urls,
+  slideCandidates,
   imageAlt,
   imageSizes,
   aspectClass,
@@ -61,9 +163,37 @@ export function ListingTileImageMedia({
   overlayFull,
   imagePriority = false,
 }: ListingTileImageMediaProps) {
-  const count = urls.length
   const [index, setIndex] = useState(0)
-  const [loadedByUrl, setLoadedByUrl] = useState<Record<string, true>>({})
+  const [exhaustedSlides, setExhaustedSlides] = useState<Set<number>>(() => new Set())
+  const [activeLoaded, setActiveLoaded] = useState(false)
+
+  const slidesKey = slideCandidates.map((candidates) => candidates.join("|")).join("||")
+
+  useEffect(() => {
+    setIndex(0)
+    setExhaustedSlides(new Set())
+    setActiveLoaded(false)
+  }, [slidesKey])
+
+  const visibleSlides = useMemo(
+    () =>
+      slideCandidates
+        .map((candidates, slideIndex) => ({ candidates, slideIndex }))
+        .filter(({ slideIndex }) => !exhaustedSlides.has(slideIndex)),
+    [slideCandidates, exhaustedSlides],
+  )
+
+  const count = visibleSlides.length
+
+  useEffect(() => {
+    if (count === 0) {
+      setIndex(0)
+      return
+    }
+    if (index >= count) {
+      setIndex(0)
+    }
+  }, [count, index])
 
   const mountedSlideIndices = useMemo(() => {
     if (count <= 1) return [0]
@@ -74,16 +204,18 @@ export function ListingTileImageMedia({
     return [...indices].sort((a, b) => a - b)
   }, [count, index])
 
-  const markImageLoaded = useCallback((url: string) => {
-    setLoadedByUrl((prev) => (prev[url] ? prev : { ...prev, [url]: true }))
+  const handleActiveLoadedChange = useCallback((loaded: boolean) => {
+    setActiveLoaded(loaded)
   }, [])
 
-  const handleImageLoad = useCallback(
-    (url: string) => (_event: SyntheticEvent<HTMLImageElement>) => {
-      markImageLoaded(url)
-    },
-    [markImageLoaded],
-  )
+  const markSlideExhausted = useCallback((slideIndex: number) => {
+    setExhaustedSlides((prev) => {
+      if (prev.has(slideIndex)) return prev
+      const next = new Set(prev)
+      next.add(slideIndex)
+      return next
+    })
+  }, [])
 
   const goPrev = useCallback<MouseEventHandler<HTMLButtonElement>>(
     (e) => {
@@ -91,6 +223,7 @@ export function ListingTileImageMedia({
       e.stopPropagation()
       if (count <= 1) return
       setIndex((i) => (i === 0 ? count - 1 : i - 1))
+      setActiveLoaded(false)
     },
     [count],
   )
@@ -101,18 +234,13 @@ export function ListingTileImageMedia({
       e.stopPropagation()
       if (count <= 1) return
       setIndex((i) => (i === count - 1 ? 0 : i + 1))
+      setActiveLoaded(false)
     },
     [count],
   )
 
-  const objectStyle =
-    imageFit === "contain"
-      ? ({ objectFit: "contain" } as const)
-      : ({ objectFit: "cover" } as const)
-
   const hasImage = count > 0
-  const activeUrl = urls[index] ?? ""
-  const showImageShimmer = hasImage && !loadedByUrl[activeUrl]
+  const showImageShimmer = hasImage && !activeLoaded
 
   return (
     <div
@@ -122,40 +250,24 @@ export function ListingTileImageMedia({
         imageAspect === "portrait" && linkLayoutUnified && "shrink-0 rounded-t-xl",
         imageAspect === "square" && linkLayoutUnified && "rounded-t-xl",
       )}
+      aria-label={imageAlt}
     >
       {hasImage ? (
-        mountedSlideIndices.map((i) => {
-          const u = urls[i]
-          if (!u) return null
-          const active = i === index
+        mountedSlideIndices.map((visibleIndex) => {
+          const slide = visibleSlides[visibleIndex]
+          if (!slide) return null
+          const active = visibleIndex === index
           return (
-            <Image
-              key={`${u}-${i}`}
-              src={u}
-              alt={`${imageAlt}${count > 1 ? ` (${i + 1} of ${count})` : ""}`}
-              fill
-              sizes={imageSizes}
-              quality={90}
-              unoptimized={listingImageShouldBypassOptimization(u)}
-              aria-hidden={!active}
-              loading={active ? "eager" : "lazy"}
-              className={cn(
-                "absolute inset-0 transition-opacity duration-[280ms] ease-in-out",
-                active ? "z-[2] opacity-100" : "z-[1] opacity-0",
-                "transition-transform duration-300 group-hover:scale-105",
-                imageFit === "cover" && "object-cover",
-                imageFit === "contain" && "object-contain",
-                imageClassName,
-              )}
-              style={objectStyle}
-              ref={(img) => {
-                // Images cached/loaded before hydration never re-fire `load`;
-                // without this the shimmer overlay stays on top forever.
-                if (img?.complete) markImageLoaded(u)
-              }}
-              onLoad={handleImageLoad(u)}
-              onError={handleImageLoad(u)}
-              priority={imagePriority && i === 0 && index === 0}
+            <ListingTileCarouselSlide
+              key={`${slide.slideIndex}-${slide.candidates.join("|")}`}
+              candidates={slide.candidates}
+              active={active}
+              imageSizes={imageSizes}
+              imageFit={imageFit}
+              imageClassName={imageClassName}
+              imagePriority={imagePriority && visibleIndex === 0}
+              onLoadedChange={handleActiveLoadedChange}
+              onExhausted={() => markSlideExhausted(slide.slideIndex)}
             />
           )
         })
@@ -218,7 +330,6 @@ export function ListingTileImageMedia({
           <Fragment key="listing-tile-overlay-full">{overlayFull}</Fragment>
         ) : null,
       ].filter((n) => n != null)}
-
     </div>
   )
 }

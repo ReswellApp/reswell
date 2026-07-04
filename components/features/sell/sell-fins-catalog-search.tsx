@@ -18,7 +18,6 @@ import {
   SiteSearchShell,
   siteSearchInputClassName,
 } from "@/components/site-search-bar"
-import { searchFinCatalogForSellAction } from "@/lib/actions/finListingActions"
 import {
   finCatalogSelectionFromRow,
   type FinCatalogSearchBrandRow,
@@ -219,15 +218,26 @@ export function SellFinsCatalogSearch({ onSelect, onSkip, onExit, className }: S
     setSearchSettled(false)
     setError(null)
     try {
-      const res = await searchFinCatalogForSellAction(q)
+      const res = await fetch(
+        `/api/sell/fins/catalog-search?${new URLSearchParams({ q })}`,
+        { method: "GET", headers: { Accept: "application/json" } },
+      )
       if (epoch !== searchEpochRef.current) return
+
+      const body = (await res.json()) as { data?: FinCatalogSearchResult; error?: string }
       if (!res.ok) {
         setResults(null)
-        setError(res.error)
+        setError(body.error ?? "Could not search the fin catalog. Please try again.")
         setSearchSettled(true)
         return
       }
-      setResults(res.data)
+      if (!body.data) {
+        setResults(null)
+        setError("Could not search the fin catalog. Please try again.")
+        setSearchSettled(true)
+        return
+      }
+      setResults(body.data)
       setSearchSettled(true)
     } catch {
       if (epoch !== searchEpochRef.current) return

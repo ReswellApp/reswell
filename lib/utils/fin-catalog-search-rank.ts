@@ -16,6 +16,9 @@ export type FinCatalogSearchResultRow =
 
 export type FinCatalogSearchRankMode = "strict" | "relaxed"
 
+/** Minimum score to surface in relaxed / similar-results tier. */
+const RELAXED_MIN_SCORE = 55
+
 const FACET_NOISE = new Set<string>()
 for (const opt of FIN_SYSTEM_OPTIONS_FOR_FINS) {
   FACET_NOISE.add(opt.value.toLowerCase())
@@ -126,8 +129,8 @@ function tokenMatchesField(token: string, field: string, fuzzy: boolean): boolea
 
   for (const word of wordsFromHaystack(f)) {
     if (word.startsWith(token)) return true
-    if (token.startsWith(word) && word.length >= 3) return true
-    if (word.length >= 3 && levenshtein(word, token) <= 1) return true
+    if (token.startsWith(word) && word.length >= 4) return true
+    if (word.length >= 4 && token.length >= 4 && levenshtein(word, token) <= 1) return true
   }
   return false
 }
@@ -214,7 +217,7 @@ export function scoreFinCatalogSearchRow(
       if (matchedCount < tokenTotal) return 0
     } else {
       const minRequired =
-        tokenTotal <= 2 ? 1 : Math.max(1, Math.ceil(tokenTotal * 0.5))
+        tokenTotal <= 2 ? 1 : Math.max(2, Math.ceil(tokenTotal * 0.6))
       if (matchedCount < minRequired) return 0
     }
   }
@@ -257,6 +260,7 @@ export function rankFinCatalogSearchResults(
   for (const row of rows) {
     const score = scoreFinCatalogSearchRow(row, q, mode)
     if (score <= 0) continue
+    if (mode === "relaxed" && score < RELAXED_MIN_SCORE) continue
     const key = rowDedupeKey(row)
     const existing = byKey.get(key)
     if (!existing || score > existing.score) {

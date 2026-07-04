@@ -18,13 +18,12 @@ import {
   FIN_SIZE_OPTIONS,
 } from "@/lib/fin-listing-config"
 import { FIN_LISTING_TITLE_MAX_LENGTH } from "@/lib/validations/fin-listing"
+import type { BrandCatalogSuggestResponse } from "@/lib/services/brandDirectorySearch"
 import {
   searchBrandsCatalogSuggestWithClient,
-  type BrandCatalogSuggestResponse,
   type BrandCatalogSuggestRow,
 } from "@/lib/services/brandDirectorySearch"
 import { formatFinCatalogVariantLabel } from "@/lib/utils/fin-catalog-variant-label"
-import { finCatalogSearchRowThumbUrl } from "@/lib/utils/fin-catalog-display-image"
 import { rankFinCatalogSearchResults } from "@/lib/utils/fin-catalog-search-rank"
 import type {
   FinCatalogSearchBrandRow,
@@ -143,18 +142,6 @@ function capTitle(raw: string): string {
     : t.slice(0, FIN_LISTING_TITLE_MAX_LENGTH).trimEnd()
 }
 
-function brandToSearchRow(row: BrandCatalogSuggestRow): FinCatalogSearchBrandRow {
-  return {
-    kind: "brand",
-    id: row.id,
-    name: row.name,
-    slug: row.slug,
-    logoUrl: row.logo_url?.trim() || null,
-    shortDescription: row.short_description?.trim() || null,
-  }
-}
-
-function modelToSearchRow(row: FinCatalogModelRow): FinCatalogSearchModelRow {
   return {
     kind: "model",
     id: row.id,
@@ -204,10 +191,21 @@ function variantToSearchRow(row: FinCatalogVariantRow): FinCatalogSearchVariantR
   }
 }
 
-function mergeBrandsById(rows: BrandCatalogSuggestRow[]): FinCatalogSearchBrandRow[] {
+function finCatalogBrandToSearchRow(row: FinCatalogBrandRow): FinCatalogSearchBrandRow {
+  return {
+    kind: "brand",
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    logoUrl: row.logo_url?.trim() || null,
+    shortDescription: row.short_description?.trim() || null,
+  }
+}
+
+function mergeBrandsById(rows: FinCatalogBrandRow[]): FinCatalogSearchBrandRow[] {
   const byId = new Map<string, FinCatalogSearchBrandRow>()
   for (const row of rows) {
-    byId.set(row.id, brandToSearchRow(row))
+    byId.set(row.id, finCatalogBrandToSearchRow(row))
   }
   return [...byId.values()].slice(0, MAX_BRANDS)
 }
@@ -220,6 +218,11 @@ function mergeModelsById(rows: FinCatalogModelRow[]): FinCatalogSearchModelRow[]
   return [...byId.values()].slice(0, MAX_MODELS)
 }
 
+export type SearchFinCatalogForSellOptions = {
+  /** Preloaded fin-tagged brand IDs (from `getFinCatalogBrandIdsCached`). */
+  finBrandIds?: readonly string[]
+}
+
 /**
  * Search the brand/model/variant catalog for the `/sell/fins` entry step.
  * Results are limited to brands tagged with the `fins` product category slug.
@@ -227,6 +230,7 @@ function mergeModelsById(rows: FinCatalogModelRow[]): FinCatalogSearchModelRow[]
 export async function searchFinCatalogForSell(
   supabase: SupabaseClient,
   qRaw: string,
+  options: SearchFinCatalogForSellOptions = {},
 ): Promise<FinCatalogSearchResult> {
   const q = (qRaw || "").trim().replace(/%/g, "")
   if (q.length < 1) {
@@ -240,7 +244,8 @@ export async function searchFinCatalogForSell(
     }
   }
 
-  const finBrandIds = await listFinCatalogBrandIds(supabase)
+  const finBrandIds =
+    options.finBrandIds ?? (await listFinCatalogBrandIds(supabase))
   if (finBrandIds.length === 0) {
     return {
       brands: [],
@@ -252,42 +257,48 @@ export async function searchFinCatalogForSell(
     }
   }
 
-  const finBrandIdSet = new Set(finBrandIds)
   const { finSystems, finSetups, finSizes } = extractFinFacetMatches(q)
 
-  const [brandRes, finScopedBrands] = await Promise.all([
-    searchBrandsCatalogSuggestWithClient(supabase, q),
+  const [finScopedBrands, modelsByText, variantRows] = await Promise.all([
     searchFinCatalogBrands(supabase, finBrandIds, q, MAX_BRANDS),
+    searchFinCatalogModels(supabase, finBrandIds, q, MAX_MODELS),
+    searchFinCatalogVariants(supabase, {
+      finBrandIds,
+      qRaw: q,
+      finSystems,
+      finSetups,
+      finSizes,
+      limit: MAX_VARIANTS,
+    }),
   ])
 
-  const brands = mergeBrandsById([
-    ...brandRes.rows.filter((row) => finBrandIdSet.has(row.id)),
-    ...finScopedBrands,
-  ])
-
+  const brands = mergeBrandsById(finScopedBrands)
   const matchedBrandIds = brands.map((b) => b.id)
 
-  const [modelsByText, modelsForBrands] = await Promise.all([
-    searchFinCatalogModels(supabase, finBrandIds, q, MAX_MODELS),
+  const modelsForBrands =
     matchedBrandIds.length > 0
-      ? listFinCatalogModelsForBrandIds(supabase, finBrandIds, matchedBrandIds, q, MAX_MODELS)
-      : Promise.resolve([]),
-  ])
+      ? await listFinCatalogModelsForBrandIds(supabase, finBrandIds, matchedBrandIds, q, MAX_MODELS)
+      : []
 
   const models = mergeModelsById([...modelsByText, ...modelsForBrands])
   const modelIds = models.map((m) => m.id)
 
-  const variantRows = await searchFinCatalogVariants(supabase, {
-    finBrandIds,
-    qRaw: q,
-    finSystems,
-    finSetups,
-    finSizes,
-    brandModelIds: modelIds,
-    limit: MAX_VARIANTS,
-  })
-
-  const variants = variantRows.map(variantToSearchRow)
+  const variantRowsForModels =
+    modelIds.length > 0
+      ? await searchFinCatalogVariants(supabase, {
+          finBrandIds,
+          qRaw: q,
+          finSystems,
+          finSetups,
+          finSizes,
+          brandModelIds: modelIds,
+          limit: MAX_VARIANTS,
+        })
+      : []
+  const variants = [...variantRows, ...variantRowsForModels]
+    .filter((row, index, all) => all.findIndex((r) => r.id === row.id) === index)
+    .slice(0, MAX_VARIANTS)
+    .map(variantToSearchRow)
 
   const candidateRows: FinCatalogSearchResultRow[] = [
     ...brands,
@@ -344,6 +355,6 @@ export async function searchFinCatalogForSell(
     variants,
     results,
     similarResults,
-    meta: { backend: brandRes.meta.backend, finBrandCount: finBrandIds.length, matchTier },
+    meta: { backend: "supabase", finBrandCount: finBrandIds.length, matchTier },
   }
 }
