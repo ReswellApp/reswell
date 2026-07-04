@@ -142,6 +142,7 @@ function capTitle(raw: string): string {
     : t.slice(0, FIN_LISTING_TITLE_MAX_LENGTH).trimEnd()
 }
 
+function modelToSearchRow(row: FinCatalogModelRow): FinCatalogSearchModelRow {
   return {
     kind: "model",
     id: row.id,
