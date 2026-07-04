@@ -73,7 +73,7 @@ export default function RootLayout({
     <html
       lang={DEFAULT_LOCALE}
       className="overflow-x-clip"
-      data-scroll-behavior="smooth"
+      data-scroll-behavior="auto"
       suppressHydrationWarning
     >
       <body

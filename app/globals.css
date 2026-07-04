@@ -282,8 +282,17 @@
     overflow-x: clip;
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
-    scroll-behavior: smooth;
+    /* Instant scroll — inherited `smooth` made nested panes feel laggy on touch/wheel. */
+    scroll-behavior: auto;
     background-color: hsl(var(--background));
+  }
+  /* Nested scroll regions: explicit auto + iOS momentum (smooth is opt-in via `.scroll-smooth`). */
+  .overflow-y-auto,
+  .overflow-y-scroll,
+  .overflow-auto,
+  .overflow-scroll {
+    scroll-behavior: auto;
+    -webkit-overflow-scrolling: touch;
   }
   body {
     overflow-x: clip;
