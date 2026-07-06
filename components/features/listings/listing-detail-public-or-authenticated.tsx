@@ -34,7 +34,6 @@ export async function ListingDetailPublicOrAuthenticated({
   const sectionProps: ListingDetailPageSharedProps = {
     listingParam,
     prefetchedListing: listing.section === "new" ? undefined : listing,
-    viewerUser: null,
     anonymousPublicView: true,
   }
 

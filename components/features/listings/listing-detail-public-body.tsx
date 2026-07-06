@@ -32,7 +32,6 @@ export function ListingDetailPublicBody({
   const cachedPublicProps: ListingDetailPageSharedProps = {
     ...sectionProps,
     prefetchedListing: listing.section === "new" ? undefined : listing,
-    viewerUser: sectionProps.viewerUser ?? null,
     anonymousPublicView: sectionProps.anonymousPublicView ?? false,
   }
 

@@ -29,16 +29,16 @@ export async function loadListingDetailPageContext({
   usePublicCache = false,
   anonymousPublicView = false,
 }: LoadListingDetailPageContextOptions) {
-  if (anonymousPublicView && prefetchedListing) {
+  const { supabase, user: sessionUser } = await getCachedRequestSession()
+  const user = viewerUser ?? sessionUser
+
+  if (anonymousPublicView && prefetchedListing && !user) {
     return {
       supabase: createAnonSupabaseClient(),
       user: null as User | null,
       listing: prefetchedListing,
     }
   }
-
-  const { supabase, user: sessionUser } = await getCachedRequestSession()
-  const user = viewerUser !== undefined ? viewerUser : sessionUser
 
   let listing = prefetchedListing ?? null
   if (!listing) {
