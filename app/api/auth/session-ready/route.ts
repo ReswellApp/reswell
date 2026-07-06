@@ -1,5 +1,4 @@
-import { isNonFatalGetUserError } from "@/lib/auth/clear-supabase-auth-cookies"
-import { createRouteHandlerSupabaseClient } from "@/lib/supabase/route-handler-client"
+import { getSafeRouteUser } from "@/lib/auth/get-safe-server-user"
 import { NextResponse, type NextRequest } from "next/server"
 
 /**
@@ -11,44 +10,28 @@ export async function GET(request: NextRequest) {
   const response = new NextResponse(null, { status: 401 })
   response.headers.set("Cache-Control", "private, no-store")
 
-  const supabase = createRouteHandlerSupabaseClient(request, response)
+  const { user } = await getSafeRouteUser(request, response)
 
-  try {
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser()
-
-    if (error) {
-      if (isNonFatalGetUserError(error)) {
-        return response
-      }
-      return response
-    }
-
-    if (!user) {
-      return response
-    }
-
-    const ok = new NextResponse(null, { status: 204 })
-    ok.headers.set("Cache-Control", "private, no-store")
-    response.cookies.getAll().forEach((cookie) => {
-      ok.cookies.set({
-        name: cookie.name,
-        value: cookie.value,
-        path: cookie.path,
-        domain: cookie.domain,
-        expires: cookie.expires,
-        maxAge: cookie.maxAge,
-        httpOnly: cookie.httpOnly,
-        secure: cookie.secure,
-        sameSite: cookie.sameSite,
-        priority: cookie.priority,
-        partitioned: cookie.partitioned,
-      })
-    })
-    return ok
-  } catch {
+  if (!user) {
     return response
   }
+
+  const ok = new NextResponse(null, { status: 204 })
+  ok.headers.set("Cache-Control", "private, no-store")
+  response.cookies.getAll().forEach((cookie) => {
+    ok.cookies.set({
+      name: cookie.name,
+      value: cookie.value,
+      path: cookie.path,
+      domain: cookie.domain,
+      expires: cookie.expires,
+      maxAge: cookie.maxAge,
+      httpOnly: cookie.httpOnly,
+      secure: cookie.secure,
+      sameSite: cookie.sameSite,
+      priority: cookie.priority,
+      partitioned: cookie.partitioned,
+    })
+  })
+  return ok
 }

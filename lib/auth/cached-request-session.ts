@@ -1,5 +1,6 @@
 import { cache } from "react"
 import type { SupabaseClient, User } from "@supabase/supabase-js"
+import { getSafeServerUser } from "@/lib/auth/get-safe-server-user"
 import { createClient } from "@/lib/supabase/server"
 
 export type RequestSession = {
@@ -15,15 +16,6 @@ export type RequestSession = {
  */
 export const getCachedRequestSession = cache(async (): Promise<RequestSession> => {
   const supabase = await createClient()
-  // A stale/rotated refresh-token cookie makes getUser() reject with
-  // `refresh_token_not_found`. The proxy clears the cookie; here we simply
-  // treat it as a logged-out request instead of letting it crash the RSC tree.
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    return { supabase, user: user ?? null }
-  } catch {
-    return { supabase, user: null }
-  }
+  const { user } = await getSafeServerUser(supabase)
+  return { supabase, user }
 })

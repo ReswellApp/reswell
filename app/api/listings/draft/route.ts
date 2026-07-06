@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { resolveServerAuth } from "@/lib/auth/get-safe-server-user"
 import { listingDraftSaveSchema } from "@/lib/validations/listing-draft-save"
 import {
   listSurfboardListingDrafts,
@@ -8,15 +8,12 @@ import {
 import { listFinListingDrafts, upsertFinListingDraft } from "@/lib/services/finListingDraft"
 
 export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+  const { supabase, user } = await resolveServerAuth()
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
 
+  try {
     const sectionParam = request.nextUrl.searchParams.get("section")?.trim()
     if (sectionParam !== "surfboards" && sectionParam !== "fins") {
       return NextResponse.json({ error: "Invalid section" }, { status: 400 })
@@ -34,15 +31,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+  const { supabase, user } = await resolveServerAuth()
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
 
+  try {
     const json: unknown = await request.json()
     const parsed = listingDraftSaveSchema.safeParse(json)
     if (!parsed.success) {

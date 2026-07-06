@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
-import { createClient } from "@/lib/supabase/server"
+import { resolveServerAuth } from "@/lib/auth/get-safe-server-user"
 import { fetchPdpRecentSurfboardListings } from "@/lib/services/pdp-recent-strip-listings"
 
 const idsQuerySchema = z
@@ -27,10 +27,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Invalid or missing ids" }, { status: 400 })
     }
 
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const { supabase, user } = await resolveServerAuth()
 
     const listings = await fetchPdpRecentSurfboardListings(
       supabase,

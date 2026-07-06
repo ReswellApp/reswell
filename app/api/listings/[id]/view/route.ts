@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
-import { createClient } from "@/lib/supabase/server"
+import { resolveServerAuth } from "@/lib/auth/get-safe-server-user"
 import { recordPublicListingView } from "@/lib/services/listingViews"
 
 const listingIdParamSchema = z.string().uuid("Invalid listing id")
@@ -20,10 +20,7 @@ export async function POST(
       return NextResponse.json({ error: "Invalid listing id" }, { status: 400 })
     }
 
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const { supabase, user } = await resolveServerAuth()
     const viewerUserId = user?.id ?? null
 
     const result = await recordPublicListingView(supabase, {

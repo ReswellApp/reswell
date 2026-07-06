@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
+import { createServiceRoleClient } from "@/lib/supabase/server"
+import { resolveServerAuth } from "@/lib/auth/get-safe-server-user"
 import { getPayPalHttpClient, paypalSdk } from "@/lib/paypal"
 import {
   deductWalletBeforeCashout,
@@ -25,10 +26,7 @@ function getClientForPrivilegedWalletWrites(sessionClient: SupabaseClient) {
 }
 
 export async function GET() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { supabase, user } = await resolveServerAuth()
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -61,16 +59,12 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const { supabase, user } = await resolveServerAuth()
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   try {
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const body = (await req.json()) as { amount?: unknown }
     const rawAmount = body.amount
 

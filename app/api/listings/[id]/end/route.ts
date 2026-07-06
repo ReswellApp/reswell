@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
-import { createClient } from "@/lib/supabase/server"
+import { resolveServerAuth } from "@/lib/auth/get-safe-server-user"
 import { endSellerListing } from "@/lib/services/listingEnd"
 import { endListingBodySchema } from "@/lib/validations/end-listing"
 
@@ -10,16 +10,12 @@ export async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
+  const { supabase, user } = await resolveServerAuth()
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   try {
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const { id: rawId } = await context.params
     const idParsed = listingIdParamSchema.safeParse(rawId)
     if (!idParsed.success) {

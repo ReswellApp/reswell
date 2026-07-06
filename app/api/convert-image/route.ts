@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import sharp from "sharp"
-import { createClient } from "@/lib/supabase/server"
+import { resolveServerAuth } from "@/lib/auth/get-safe-server-user"
 import { SERVER_IMAGE_CONVERT_MAX_BYTES } from "@/lib/utils/server-image-convert"
 
 export const maxDuration = 60
@@ -13,16 +13,12 @@ function bufferLooksLikeHeif(buffer: Buffer): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  const { user } = await resolveServerAuth()
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   try {
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const formData = await request.formData()
     const file = formData.get("file") as File | null
     if (!file) {

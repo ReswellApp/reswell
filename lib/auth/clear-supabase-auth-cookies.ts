@@ -6,6 +6,19 @@ function isSupabaseAuthCookie(name: string): boolean {
   return name.startsWith('sb-') && name.includes('auth-token')
 }
 
+type WritableCookieStore = {
+  getAll(): { name: string }[]
+  set(name: string, value: string, options?: { maxAge?: number; path?: string }): void
+}
+
+/** Clears stale Supabase auth cookies from a Next.js `cookies()` store (Route Handlers / Actions). */
+export function clearSupabaseAuthCookiesFromStore(store: WritableCookieStore): void {
+  for (const { name } of store.getAll()) {
+    if (!isSupabaseAuthCookie(name)) continue
+    store.set(name, '', { maxAge: 0, path: '/' })
+  }
+}
+
 /**
  * Removes stale Supabase auth cookies from both the request and the outgoing
  * response. Call this when a refresh token is rejected (`refresh_token_not_found`

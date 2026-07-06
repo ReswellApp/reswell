@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 
-import { createClient } from "@/lib/supabase/server"
+import { resolveServerAuth } from "@/lib/auth/get-safe-server-user"
 import {
   removeProfileBanner,
   updateProfileBannerFocal,
@@ -17,16 +17,12 @@ function errMessage(err: unknown): string {
 }
 
 export async function POST(request: NextRequest) {
+  const { supabase, user } = await resolveServerAuth()
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   try {
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const formData = await request.formData()
     const file = formData.get("file")
 
@@ -60,16 +56,12 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  const { supabase, user } = await resolveServerAuth()
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   try {
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     const body: unknown = await request.json()
     const parsed = profileBannerFocalSchema.safeParse(body)
     if (!parsed.success) {
@@ -102,16 +94,12 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE() {
+  const { supabase, user } = await resolveServerAuth()
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
   try {
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
     await removeProfileBanner({ supabase, userId: user.id })
 
     return NextResponse.json({ data: { removed: true } }, { status: 200 })
