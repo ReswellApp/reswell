@@ -26,6 +26,7 @@ export function SellerProfilePhotoEditor({
 }: SellerProfilePhotoEditorProps) {
   const router = useRouter()
   const [photoUrl, setPhotoUrl] = useState(initialPhotoUrl)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [removing, setRemoving] = useState(false)
 
@@ -33,13 +34,25 @@ export function SellerProfilePhotoEditor({
     setPhotoUrl(initialPhotoUrl)
   }, [initialPhotoUrl])
 
+  useEffect(() => {
+    return () => {
+      if (previewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
+
   const trimmedPhoto = photoUrl?.trim() || null
-  const photoSrc = trimmedPhoto ? profileMediaDisplaySrc(trimmedPhoto) : undefined
+  const photoSrc = previewUrl || (trimmedPhoto ? profileMediaDisplaySrc(trimmedPhoto) : undefined)
   const inputId = "seller-profile-photo-upload"
   const busy = uploading || removing
 
   async function handleUpload(file: File) {
     if (file.size > PROFILE_AVATAR_MAX_INPUT_BYTES) {
+      setPreviewUrl((prev) => {
+        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev)
+        return null
+      })
       toast.error(
         `Image must be under ${Math.round(PROFILE_AVATAR_MAX_INPUT_BYTES / (1024 * 1024))}MB`,
       )
@@ -66,11 +79,19 @@ export function SellerProfilePhotoEditor({
       if (!nextPhotoUrl) throw new Error("Missing photo URL")
 
       setPhotoUrl(nextPhotoUrl)
+      setPreviewUrl((prev) => {
+        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev)
+        return null
+      })
       void revalidateListingDetailAfterProfileUpdate()
       window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
       router.refresh()
       toast.success("Profile photo updated")
     } catch (err: unknown) {
+      setPreviewUrl((prev) => {
+        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev)
+        return null
+      })
       const message = err instanceof Error ? err.message : "Failed to upload photo"
       toast.error(message)
     } finally {
@@ -110,13 +131,19 @@ export function SellerProfilePhotoEditor({
     const file = event.target.files?.[0]
     event.target.value = ""
     if (!file) return
+
+    const localPreview = URL.createObjectURL(file)
+    setPreviewUrl((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev)
+      return localPreview
+    })
     void handleUpload(file)
   }
 
   return (
     <div className={cn("relative shrink-0", className)}>
       <Avatar className="h-16 w-16 border border-border/80 shadow-sm sm:h-20 sm:w-20 lg:h-24 lg:w-24">
-        <AvatarImage src={photoSrc} alt="" />
+        <AvatarImage src={photoSrc} alt="" key={photoSrc ?? "no-photo"} />
         <AvatarFallback className="bg-muted text-lg font-semibold text-foreground sm:text-xl">
           {displayName?.charAt(0).toUpperCase() || "S"}
         </AvatarFallback>

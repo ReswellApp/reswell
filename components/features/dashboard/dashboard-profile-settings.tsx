@@ -56,6 +56,7 @@ export function DashboardProfileSettings({
   const [profileSavedFlash, setProfileSavedFlash] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [removingAvatar, setRemovingAvatar] = useState(false)
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
   const [uploadingBanner, setUploadingBanner] = useState(false)
   const [removingBanner, setRemovingBanner] = useState(false)
   const [bannerSavedFlash, setBannerSavedFlash] = useState(false)
@@ -67,6 +68,14 @@ export function DashboardProfileSettings({
   useEffect(() => {
     setProfile(initialProfile)
   }, [initialProfile])
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreviewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(avatarPreviewUrl)
+      }
+    }
+  }, [avatarPreviewUrl])
 
   useEffect(() => {
     const applyHash = () => {
@@ -120,6 +129,7 @@ export function DashboardProfileSettings({
 
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
+    e.target.value = ""
     if (!file || !profile) return
 
     if (file.size > PROFILE_AVATAR_MAX_INPUT_BYTES) {
@@ -128,6 +138,12 @@ export function DashboardProfileSettings({
       )
       return
     }
+
+    const localPreview = URL.createObjectURL(file)
+    setAvatarPreviewUrl((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev)
+      return localPreview
+    })
 
     setUploadingAvatar(true)
     try {
@@ -154,16 +170,22 @@ export function DashboardProfileSettings({
         avatar_url: avatarUrl,
         shop_logo_url: profile.is_shop ? avatarUrl : profile.shop_logo_url,
       })
+      setAvatarPreviewUrl(null)
+      URL.revokeObjectURL(localPreview)
       void revalidateListingDetailAfterProfileUpdate()
       window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
       router.refresh()
+      toast.success("Profile photo updated")
     } catch (err: unknown) {
+      setAvatarPreviewUrl((prev) => {
+        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev)
+        return null
+      })
       const message = err instanceof Error ? err.message : "Failed to upload photo"
       console.error("Avatar upload error:", message)
       toast.error(message)
     } finally {
       setUploadingAvatar(false)
-      e.target.value = ""
     }
   }
 
@@ -393,6 +415,7 @@ export function DashboardProfileSettings({
           savedFlash={profileSavedFlash}
           uploadingAvatar={uploadingAvatar}
           removingAvatar={removingAvatar}
+          avatarPreviewUrl={avatarPreviewUrl}
           uploadingBanner={uploadingBanner}
           removingBanner={removingBanner}
           bannerSavedFlash={bannerSavedFlash}

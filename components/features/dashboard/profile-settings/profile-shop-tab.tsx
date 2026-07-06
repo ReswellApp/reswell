@@ -62,6 +62,7 @@ interface ProfileShopTabProps {
   savedFlash: boolean
   uploadingAvatar: boolean
   removingAvatar: boolean
+  avatarPreviewUrl?: string | null
   uploadingBanner: boolean
   removingBanner: boolean
   bannerSavedFlash: boolean
@@ -82,6 +83,7 @@ export function ProfileShopTab({
   savedFlash,
   uploadingAvatar,
   removingAvatar,
+  avatarPreviewUrl = null,
   uploadingBanner,
   removingBanner,
   bannerSavedFlash,
@@ -95,6 +97,11 @@ export function ProfileShopTab({
 }: ProfileShopTabProps) {
   const username = profile.seller_slug?.trim() || "—"
   const profilePhotoUrl = profile.shop_logo_url || profile.avatar_url
+  const avatarDisplaySrc = avatarPreviewUrl
+    ? avatarPreviewUrl
+    : profilePhotoUrl
+      ? profileMediaDisplaySrc(profilePhotoUrl)
+      : undefined
   const [bannerCropOpen, setBannerCropOpen] = useState(false)
 
   useEffect(() => {
@@ -116,8 +123,9 @@ export function ProfileShopTab({
         <div className="relative">
           <Avatar className="h-24 w-24 border-2 border-neutral-200 bg-neutral-100">
             <AvatarImage
-              src={profilePhotoUrl ? profileMediaDisplaySrc(profilePhotoUrl) : undefined}
+              src={avatarDisplaySrc}
               alt={profile.display_name}
+              key={avatarDisplaySrc ?? "no-avatar"}
             />
             <AvatarFallback className="bg-neutral-100">
               <User className="h-10 w-10 text-primary/70" aria-hidden />
@@ -140,7 +148,7 @@ export function ProfileShopTab({
             id="shop-avatar-upload"
             type="file"
             accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
-            className="hidden"
+            className="sr-only"
             onChange={onAvatarUpload}
             disabled={uploadingAvatar || removingAvatar}
           />
@@ -257,7 +265,7 @@ export function ProfileShopTab({
               id="shop-banner-upload"
               type="file"
               accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
-              className="hidden"
+              className="sr-only"
               onChange={onBannerUpload}
               disabled={uploadingBanner || removingBanner}
             />

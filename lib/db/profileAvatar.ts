@@ -20,6 +20,8 @@ export async function upsertAvatarWebp(
   })
   if (error) throw error
 
+  revalidatePublicStorageObjects(BUCKET, [path])
+
   const {
     data: { publicUrl },
   } = supabase.storage.from(BUCKET).getPublicUrl(path)

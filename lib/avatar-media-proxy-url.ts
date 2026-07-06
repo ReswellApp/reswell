@@ -8,6 +8,17 @@ export function isProxiedAvatarMediaSrc(src: string | null | undefined): boolean
   return typeof src === "string" && src.startsWith(AVATAR_MEDIA_PROXY_PATH_PREFIX)
 }
 
+function cacheBusterQueryFromUrl(url: string): string {
+  try {
+    const parsed = new URL(url, "https://reswell.local")
+    const t = parsed.searchParams.get("t")
+    return t ? `?t=${encodeURIComponent(t)}` : ""
+  } catch {
+    const match = url.match(/[?&]t=([^&#]+)/)
+    return match?.[1] ? `?t=${encodeURIComponent(match[1])}` : ""
+  }
+}
+
 export function avatarsStorageObjectPathFromUrl(url: string): string | null {
   const raw = url.trim().split(/[?#]/)[0]?.trim()
   if (!raw) return null
@@ -50,5 +61,5 @@ export function proxiedAvatarMediaSrc(url: string | null | undefined): string {
     .map((segment) => encodeURIComponent(segment))
     .join("/")
 
-  return `${AVATAR_MEDIA_PROXY_PATH_PREFIX}${encoded}`
+  return `${AVATAR_MEDIA_PROXY_PATH_PREFIX}${encoded}${cacheBusterQueryFromUrl(t)}`
 }

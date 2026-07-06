@@ -176,7 +176,10 @@ export function ProfileCompletionFormFields({
           </Avatar>
           <button
             type="button"
-            className="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/50 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+            className={cn(
+              "absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/50 opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100",
+              "[@media(pointer:coarse)]:opacity-100",
+            )}
             onClick={() => fileInputRef.current?.click()}
             aria-label="Choose profile photo"
           >
@@ -186,7 +189,7 @@ export function ProfileCompletionFormFields({
             ref={fileInputRef}
             type="file"
             accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
-            className="hidden"
+            className="sr-only"
             onChange={handleAvatarChange}
             disabled={isSubmitting}
           />
