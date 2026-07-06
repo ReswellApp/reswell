@@ -11,7 +11,7 @@ import { toast } from "sonner"
 import { validateDisplayName } from "@/lib/display-name-validation"
 import { useLocale } from "@/components/locale-provider"
 import { revalidateListingDetailAfterProfileUpdate } from "@/app/actions/listing-detail-cache"
-import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
+import { dispatchHeaderAuthRefresh } from "@/lib/auth/header-auth-refresh"
 import { PROFILE_AVATAR_MAX_INPUT_BYTES } from "@/lib/validations/profileAvatar"
 import { PROFILE_BANNER_MAX_INPUT_BYTES } from "@/lib/validations/profileBanner"
 import { buildPasswordRecoveryCallbackUrl } from "@/lib/auth/password-recovery-callback-url"
@@ -120,7 +120,7 @@ export function DashboardProfileSettings({
       setProfileSavedFlash(true)
       window.setTimeout(() => setProfileSavedFlash(false), 2000)
       void revalidateListingDetailAfterProfileUpdate()
-      window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
+      dispatchHeaderAuthRefresh()
       router.refresh()
     } else {
       toast.error("Failed to update profile")
@@ -180,15 +180,9 @@ export function DashboardProfileSettings({
       URL.revokeObjectURL(localPreview)
       setAvatarCropRequestKey((key) => key + 1)
       void revalidateListingDetailAfterProfileUpdate()
-      window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
+      dispatchHeaderAuthRefresh({ avatarUrl })
       router.refresh()
       toast.success("Profile photo updated")
-    } catch (err: unknown) {
-      setAvatarPreviewUrl((prev) => {
-        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev)
-        return null
-      })
-      const message = err instanceof Error ? err.message : "Failed to upload photo"
       console.error("Avatar upload error:", message)
       toast.error(message)
     } finally {
@@ -220,7 +214,7 @@ export function DashboardProfileSettings({
         shop_logo_url: profile.is_shop ? null : profile.shop_logo_url,
       })
       void revalidateListingDetailAfterProfileUpdate()
-      window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
+      dispatchHeaderAuthRefresh({ avatarUrl: null })
       router.refresh()
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Failed to remove photo"

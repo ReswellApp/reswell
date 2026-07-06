@@ -9,7 +9,7 @@ import { ProfileAvatarCropDialog } from "@/components/features/dashboard/profile
 import { ProfileAvatarImage } from "@/components/features/dashboard/profile-avatar-image"
 import { PROFILE_AVATAR_MAX_INPUT_BYTES } from "@/lib/validations/profileAvatar"
 import { revalidateListingDetailAfterProfileUpdate } from "@/app/actions/listing-detail-cache"
-import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
+import { dispatchHeaderAuthRefresh } from "@/lib/auth/header-auth-refresh"
 import type { ProfileBannerFocal } from "@/lib/utils/profile-banner-focal"
 import { cn } from "@/lib/utils"
 
@@ -107,7 +107,7 @@ export function SellerProfilePhotoEditor({
       })
       setCropRequestKey((key) => key + 1)
       void revalidateListingDetailAfterProfileUpdate()
-      window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
+      dispatchHeaderAuthRefresh({ avatarUrl: nextPhotoUrl })
       router.refresh()
       toast.success("Profile photo updated")
     } catch (err: unknown) {
@@ -141,7 +141,7 @@ export function SellerProfilePhotoEditor({
       setFocalX(null)
       setFocalY(null)
       void revalidateListingDetailAfterProfileUpdate()
-      window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
+      dispatchHeaderAuthRefresh({ avatarUrl: null })
       router.refresh()
       toast.success("Profile photo removed")
     } catch (err: unknown) {
@@ -169,7 +169,7 @@ export function SellerProfilePhotoEditor({
     setFocalX(focal.x)
     setFocalY(focal.y)
     void revalidateListingDetailAfterProfileUpdate()
-    window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
+    dispatchHeaderAuthRefresh()
     router.refresh()
   }
 

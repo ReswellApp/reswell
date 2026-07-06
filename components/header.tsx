@@ -59,6 +59,7 @@ import {
   HEADER_AUTH_REFRESH_EVENT,
   type HeaderAuthRefreshDetail,
 } from "@/lib/auth/header-auth-refresh"
+import { getOAuthAvatarUrl } from "@/lib/auth/profile-completion"
 import { getAuthUserWithRetry } from "@/lib/auth/get-user-with-retry"
 import { signOutAndRedirect } from "@/lib/auth/sign-out-and-redirect"
 import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
@@ -180,24 +181,27 @@ function deriveHeaderNavState(payload: SiteChromeAuthPayload): HeaderDerivedNavS
 }
 
 /**
- * Shop logo when `is_shop`; else `profiles.avatar_url`; else Google OAuth `avatar_url` / `picture` in user_metadata.
+ * Shop logo when `is_shop`; else `profiles.avatar_url`.
+ * OAuth picture is only used before the profile row is available — once loaded, a cleared
+ * `avatar_url` means the user removed their photo and should see the initials fallback.
  */
 function resolveHeaderAvatarUrl(
   user: SupabaseUser,
   profile: ProfileAvatarFields | null
 ): string | null {
   const trim = (s: string | null | undefined) => (s?.trim() ? s.trim() : null)
-  const meta = user.user_metadata as Record<string, unknown> | undefined
-  const oauth =
-    (typeof meta?.avatar_url === "string" && meta.avatar_url.trim()) ||
-    (typeof meta?.picture === "string" && meta.picture.trim()) ||
-    null
 
   if (profile?.is_shop && trim(profile.shop_logo_url)) {
     return profileMediaDisplaySrc(trim(profile.shop_logo_url))
   }
   const profileAvatar = trim(profile?.avatar_url)
-  return (profileAvatar ? profileMediaDisplaySrc(profileAvatar) : null) || oauth
+  if (profileAvatar) {
+    return profileMediaDisplaySrc(profileAvatar)
+  }
+  if (profile === null) {
+    return getOAuthAvatarUrl(user)
+  }
+  return null
 }
 
 const desktopCategoryNav = siteHeaderDesktopCategoryNavLinks.map((link) => ({
@@ -618,8 +622,9 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         setProfileDisplayName(detail.displayName.trim())
         setAuthLoaded(true)
       }
-      if (detail?.avatarUrl?.trim()) {
-        setProfileAvatarUrl(detail.avatarUrl.trim())
+      if (detail && Object.prototype.hasOwnProperty.call(detail, "avatarUrl")) {
+        const nextAvatar = detail.avatarUrl?.trim()
+        setProfileAvatarUrl(nextAvatar || null)
         setAuthLoaded(true)
       }
       void refetchFromClient()
