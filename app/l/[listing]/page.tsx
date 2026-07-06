@@ -6,7 +6,6 @@ import { findListingByParam } from "@/lib/listing-query"
 import {
   getCachedPublicListingForMetadata,
   getCachedPublicListingForRoute,
-  LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS,
   SURFBOARD_LISTING_SELECT,
 } from "@/lib/listing-detail-cache"
 import { resolveListingDetailMetadata } from "@/lib/seo/resolve-listing-metadata"
@@ -16,8 +15,8 @@ import { ListingDetailDynamicGate } from "@/components/features/listings/listing
 import { ListingDetailPublicBody, type PublicListingRow } from "@/components/features/listings/listing-detail-public-body"
 import type { ListingDetailPageSharedProps } from "@/lib/listing-detail-page-load"
 
-/** ISR shell — pairs with hourly `unstable_cache` listing rows. */
-export const revalidate = LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS
+/** ISR shell — keep in sync with `LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS`. */
+export const revalidate = 3600
 
 function unavailableListingMetadata(listingParam: string): Metadata {
   return pageSeoMetadata({
