@@ -29,10 +29,7 @@ export async function loadListingDetailPageContext({
   usePublicCache = false,
   anonymousPublicView = false,
 }: LoadListingDetailPageContextOptions) {
-  const useAnonymousPublicView =
-    anonymousPublicView || (prefetchedListing != null && viewerUser === null)
-
-  if (useAnonymousPublicView && prefetchedListing) {
+  if (anonymousPublicView && prefetchedListing) {
     return {
       supabase: createAnonSupabaseClient(),
       user: null as User | null,

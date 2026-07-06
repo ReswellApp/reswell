@@ -14,6 +14,8 @@ import {
   computeBoardsBrowseFacetCounts,
   facetCountsByParamKey,
 } from "@/lib/services/boardsBrowseFacetCounts"
+import { boardsBrowseFacetCountsFromEs } from "@/lib/elasticsearch/boards-browse-search"
+import { isBoardsBrowseEsEnabled } from "@/lib/db/boards-browse-listings-es"
 import { createAnonSupabaseClient } from "@/lib/supabase/anon"
 
 function facetCountContextFromSearchParams(
@@ -56,7 +58,7 @@ async function loadSurfboardFacetCountRows(
 
 const getCachedSurfboardFacetCountRows = unstable_cache(
   loadSurfboardFacetCountRows,
-  ["boards-browse-facet-count-rows"],
+  ["boards-browse-facet-count-rows", "v2"],
   {
     revalidate: BOARDS_BROWSE_REVALIDATE_SECONDS,
     tags: [BOARDS_BROWSE_CACHE_TAG],
@@ -68,6 +70,29 @@ export async function getBoardsBrowseFacetCountsMapCached(
   searchParams: BoardsBrowseSearchParams,
 ): Promise<Record<string, Record<string, number>>> {
   const ctx = facetCountContextFromSearchParams(searchParams)
+  const selections = facetSelectionsFromParams(searchParams)
+
+  if (isBoardsBrowseEsEnabled()) {
+    try {
+      const esCounts = await boardsBrowseFacetCountsFromEs(
+        {
+          query: ctx.query,
+          brand: ctx.brand,
+          model: ctx.model,
+          brandId: ctx.brandId,
+          brandModelId: ctx.brandModelId,
+          minPrice: ctx.minPrice,
+          maxPrice: ctx.maxPrice,
+          locationText: ctx.location,
+        },
+        selections,
+      )
+      if (esCounts) return facetCountsByParamKey(esCounts)
+    } catch (error) {
+      console.error("[boards-browse] ES facet counts failed, falling back to DB:", error)
+    }
+  }
+
   const rows = await getCachedSurfboardFacetCountRows(
     ctx.query?.trim() ?? "",
     ctx.brand?.trim() ?? "",
@@ -78,6 +103,5 @@ export async function getBoardsBrowseFacetCountsMapCached(
     ctx.maxPrice ?? null,
     ctx.location?.trim() ?? "",
   )
-  const selections = facetSelectionsFromParams(searchParams)
   return facetCountsByParamKey(computeBoardsBrowseFacetCounts(rows, selections))
 }

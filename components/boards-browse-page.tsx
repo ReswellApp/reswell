@@ -50,7 +50,14 @@ import {
   type BoardsBrowseSearchParams,
 } from "@/lib/marketplace-slug-metadata"
 import { forwardGeocodePlaceForServer } from "@/lib/maps/forward-geocode-server"
-import { boardDimensionBrowseFieldsFromSearchParams } from "@/lib/utils/board-dimension-browse-filter"
+import {
+  boardDimensionBrowseFieldsFromSearchParams,
+  boardDimensionBrowseIlikeTokens,
+} from "@/lib/utils/board-dimension-browse-filter"
+import {
+  getBoardsBrowseListingsPageViaEs,
+  isBoardsBrowseEsEnabled,
+} from "@/lib/db/boards-browse-listings-es"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
 import { cn } from "@/lib/utils"
 import { isUuidString } from "@/lib/utils/isUuid"
@@ -140,10 +147,48 @@ async function BoardListings({
 
   const isTopPicksSort = isBoardsBrowseTopPicksSort(sort)
 
-  let boards: Awaited<ReturnType<ReturnType<typeof supabase.from>["select"]>>["data"]
-  let totalPages: number
+  let boards: Awaited<ReturnType<ReturnType<typeof supabase.from>["select"]>>["data"] = null
+  let totalPages = 0
+  let handledByEs = false
 
-  if (cachedCategoryPage) {
+  // Elasticsearch: indexed filtering + geo_distance sort. Nav category views stay on the
+  // (cheap, hourly-cached) Postgres path. Empty/errored ES results fall through to Postgres
+  // so the "nearest listings" fallback + no-results panel still run.
+  if (!cachedCategoryPage && isBoardsBrowseEsEnabled()) {
+    try {
+      const esPage = await getBoardsBrowseListingsPageViaEs(supabase, {
+        boardType,
+        condition,
+        query,
+        brand: brandModelIdForQuery ? undefined : brand.trim() || undefined,
+        model: brandModelIdForQuery || brandIdForQuery ? undefined : model.trim() || undefined,
+        brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
+        brandModelId: brandModelIdForQuery,
+        dimensionTokens: boardDimensionBrowseIlikeTokens(dimensionFields),
+        facets,
+        minPrice,
+        maxPrice,
+        locationText: location.trim() && !useGeocodedAnchor ? location : undefined,
+        geo:
+          hasLatLng && (filterByRadius || isNearestSort)
+            ? { lat: lat!, lng: lng!, radiusMi: filterByRadius ? radiusMi : undefined }
+            : undefined,
+        sort,
+        page,
+      })
+      if (esPage) {
+        boards = esPage.boards
+        totalPages = esPage.totalPages
+        handledByEs = true
+      }
+    } catch (e) {
+      console.error("BoardListings ES browse failed, falling back to DB:", e)
+    }
+  }
+
+  if (handledByEs) {
+    // boards + totalPages populated by Elasticsearch above.
+  } else if (cachedCategoryPage) {
     boards = cachedCategoryPage.boards
     totalPages = cachedCategoryPage.totalPages
   } else if (isTopPicksSort && !filterByRadius && !isNearestSort) {

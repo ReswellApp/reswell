@@ -5,6 +5,7 @@ import {
   ensureListingsIndex,
   indexListingDocument,
   listingRowToSearchDocFromRow,
+  LISTING_SEARCH_DOC_SELECT,
 } from "@/lib/elasticsearch/listings-index"
 import {
   deleteSellerDocument,
@@ -114,23 +115,9 @@ export async function POST(request: NextRequest) {
   for (;;) {
     const { data: rows, error } = await supabase
       .from("listings")
-      .select(
-        `
-        id,
-        title,
-        description,
-        section,
-        status,
-        board_type,
-        brand,
-        model,
-        city,
-        state,
-        created_at,
-        categories (name)
-      `,
-      )
+      .select(LISTING_SEARCH_DOC_SELECT)
       .eq("status", "active")
+      .eq("hidden_from_site", false)
       .in("section", [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS])
       .order("created_at", { ascending: false })
       .range(from, from + pageSize - 1)

@@ -8,7 +8,16 @@
  */
 
 import type { KlaviyoInactiveFeaturedListing } from "@/lib/klaviyo/inactivity-featured-listings"
+import {
+  KLAVIYO_EMAIL_BORDER,
+  KLAVIYO_EMAIL_COLORS,
+  KLAVIYO_EMAIL_FONT_HEADLINE,
+  KLAVIYO_EMAIL_FONT_SANS,
+  KLAVIYO_EMAIL_RADIUS,
+} from "@/lib/klaviyo/email-brand-styles"
 import { resolveListingUrlForEmail } from "@/lib/klaviyo/email-listing-links"
+
+const C = KLAVIYO_EMAIL_COLORS
 
 function escapeHtmlAttr(text: string): string {
   return text
@@ -38,7 +47,7 @@ export function buildInactiveFeaturedListingsEmailHtml(
 ): string {
   if (listings.length === 0) {
     const m = allowedUrl(marketplaceUrl) ?? "#"
-    return `<p style="margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:15px;color:#444;">No new listings to show right now — <a href="${escapeHtmlAttr(m)}" style="color:#2563eb;">browse the marketplace</a>.</p>`
+    return `<p style="margin:0;font-family:${KLAVIYO_EMAIL_FONT_SANS};font-size:15px;color:${C.muted};">No new listings to show right now — <a href="${escapeHtmlAttr(m)}" style="color:${C.link};text-decoration:underline;text-underline-offset:2px;">browse the marketplace</a>.</p>`
   }
 
   const rows: string[] = []
@@ -58,7 +67,7 @@ export function buildInactiveFeaturedListingsEmailHtml(
     const linkClose = href ? `</a>` : ""
 
     const imgBlock = img
-      ? `${linkOpen}<img src="${escapeHtmlAttr(img)}" alt="${title}" width="240" height="180" style="display:block;width:240px;max-width:100%;height:auto;border-radius:8px;border:1px solid #e5e7eb;object-fit:cover;" />${linkClose}`
+      ? `${linkOpen}<img src="${escapeHtmlAttr(img)}" alt="${title}" width="240" height="180" style="display:block;width:240px;max-width:100%;height:auto;border-radius:${KLAVIYO_EMAIL_RADIUS};border:1px solid ${KLAVIYO_EMAIL_BORDER};object-fit:cover;" />${linkClose}`
       : ""
 
     rows.push(`<tr>
@@ -66,11 +75,11 @@ export function buildInactiveFeaturedListingsEmailHtml(
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
 <tr>
 <td width="240" style="padding:0 16px 0 0;vertical-align:top;">${imgBlock}</td>
-<td style="vertical-align:top;font-family:system-ui,-apple-system,Segoe UI,sans-serif;">
-${href ? `<a href="${escapeHtmlAttr(href)}" style="font-size:16px;font-weight:600;color:#111827;text-decoration:none;">${title}</a>` : `<span style="font-size:16px;font-weight:600;color:#111827;">${title}</span>`}
-${price ? `<p style="margin:6px 0 0 0;font-size:15px;color:#374151;font-weight:600;">${price}</p>` : ""}
-${loc ? `<p style="margin:4px 0 0 0;font-size:13px;color:#6b7280;">${loc}</p>` : ""}
-${href ? `<p style="margin:10px 0 0 0;"><a href="${escapeHtmlAttr(href)}" style="display:inline-block;font-size:14px;color:#2563eb;font-weight:600;">View listing →</a></p>` : ""}
+<td style="vertical-align:top;font-family:${KLAVIYO_EMAIL_FONT_SANS};color:${C.muted};">
+${href ? `<a href="${escapeHtmlAttr(href)}" style="font-family:${KLAVIYO_EMAIL_FONT_HEADLINE};font-size:16px;font-weight:600;color:${C.foreground};text-decoration:none;letter-spacing:-0.02em;">${title}</a>` : `<span style="font-family:${KLAVIYO_EMAIL_FONT_HEADLINE};font-size:16px;font-weight:600;color:${C.foreground};letter-spacing:-0.02em;">${title}</span>`}
+${price ? `<p style="margin:6px 0 0 0;font-family:${KLAVIYO_EMAIL_FONT_HEADLINE};font-size:15px;color:${C.price};font-weight:600;">${price}</p>` : ""}
+${loc ? `<p style="margin:4px 0 0 0;font-size:13px;color:${C.muted};">${loc}</p>` : ""}
+${href ? `<p style="margin:10px 0 0 0;"><a href="${escapeHtmlAttr(href)}" style="display:inline-block;font-family:${KLAVIYO_EMAIL_FONT_SANS};font-size:14px;color:${C.link};font-weight:400;text-decoration:underline;text-underline-offset:2px;">View listing →</a></p>` : ""}
 </td>
 </tr>
 </table>

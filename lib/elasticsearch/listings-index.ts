@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { isElasticsearchIndexedListingSection } from "@/lib/elasticsearch/listing-sections"
 import { isMarketplaceSearchNoiseToken } from "@/lib/utils/marketplace-brand-query"
+import { parseFinsSetupFromStorage } from "@/lib/listing-fin-setup-tags"
 import { getElasticsearchClient } from "./client"
 import { ELASTICSEARCH_LISTINGS_INDEX } from "./config"
 
@@ -18,6 +19,24 @@ export type ListingSearchDoc = {
   city: string | null
   state: string | null
   created_at: string
+  /* ---- /boards browse faceting + geo (indexed for filter/sort/aggregations) ---- */
+  condition: string | null
+  fin_system: string | null
+  construction: string | null
+  /** Canonical fin-setup slugs (comma list in DB → array here for `terms` membership). */
+  fins_setup: string[]
+  length_total_inches: number | null
+  volume_liters: number | null
+  price: number | null
+  brand_id: string | null
+  brand_model_id: string | null
+  local_pickup: boolean | null
+  shipping_available: boolean | null
+  suppressed_on_boards_browse: boolean | null
+  /** Lowercased `listings.dimensions` for wildcard token filters. */
+  dimensions: string | null
+  /** Geo point for `geo_distance` filter + nearest sort; omitted when lat/lng missing. */
+  location?: { lat: number; lon: number }
 }
 
 const INDEX_SETTINGS = {
@@ -32,30 +51,63 @@ const INDEX_SETTINGS = {
   },
 }
 
-const INDEX_MAPPINGS = {
-  properties: {
-    id: { type: "keyword" as const },
-    title: {
-      type: "text" as const,
-      analyzer: "listing_text",
-      fields: { keyword: { type: "keyword" as const } },
-    },
-    description: { type: "text" as const, analyzer: "listing_text" },
-    section: { type: "keyword" as const },
-    status: { type: "keyword" as const },
-    category_name: { type: "text" as const, analyzer: "listing_text" },
-    board_type: { type: "keyword" as const },
-    brand: { type: "text" as const, analyzer: "listing_text" },
-    model: { type: "text" as const, analyzer: "listing_text" },
-    city: { type: "text" as const },
-    state: { type: "text" as const },
-    created_at: { type: "date" as const },
+/** Original relevance fields — created with the index; never re-sent via `putMapping`. */
+const BASE_INDEX_PROPERTIES = {
+  id: { type: "keyword" as const },
+  title: {
+    type: "text" as const,
+    analyzer: "listing_text",
+    fields: { keyword: { type: "keyword" as const } },
   },
+  description: { type: "text" as const, analyzer: "listing_text" },
+  section: { type: "keyword" as const },
+  status: { type: "keyword" as const },
+  category_name: { type: "text" as const, analyzer: "listing_text" },
+  board_type: { type: "keyword" as const },
+  brand: { type: "text" as const, analyzer: "listing_text" },
+  model: { type: "text" as const, analyzer: "listing_text" },
+  city: { type: "text" as const },
+  state: { type: "text" as const },
+  created_at: { type: "date" as const },
 }
+
+/**
+ * `/boards` browse facet + geo fields. These are new (absent from pre-existing docs), so an
+ * additive `putMapping` on an existing index is safe — unlike the base fields, whose analyzers
+ * can't be changed once created.
+ */
+const BROWSE_INDEX_PROPERTIES = {
+  condition: { type: "keyword" as const },
+  fin_system: { type: "keyword" as const },
+  construction: { type: "keyword" as const },
+  fins_setup: { type: "keyword" as const },
+  length_total_inches: { type: "float" as const },
+  volume_liters: { type: "float" as const },
+  price: { type: "double" as const },
+  brand_id: { type: "keyword" as const },
+  brand_model_id: { type: "keyword" as const },
+  local_pickup: { type: "boolean" as const },
+  shipping_available: { type: "boolean" as const },
+  suppressed_on_boards_browse: { type: "boolean" as const },
+  dimensions: { type: "keyword" as const },
+  location: { type: "geo_point" as const },
+}
+
+const INDEX_MAPPINGS = {
+  properties: { ...BASE_INDEX_PROPERTIES, ...BROWSE_INDEX_PROPERTIES },
+}
+
+/**
+ * Memoized per warm instance: the index is created (or its mapping brought forward
+ * additively via `putMapping`) at most once. Additive field mappings are backward
+ * compatible — existing docs pick up the new fields after a reindex.
+ */
+let listingsIndexReady = false
 
 export async function ensureListingsIndex(): Promise<void> {
   const es = getElasticsearchClient()
   if (!es) return
+  if (listingsIndexReady) return
 
   try {
     const exists = await es.indices.exists({ index: ELASTICSEARCH_LISTINGS_INDEX })
@@ -65,7 +117,14 @@ export async function ensureListingsIndex(): Promise<void> {
         settings: INDEX_SETTINGS,
         mappings: INDEX_MAPPINGS,
       })
+    } else {
+      // Additive mapping update: only the new browse fields (base-field analyzers can't change).
+      await es.indices.putMapping({
+        index: ELASTICSEARCH_LISTINGS_INDEX,
+        properties: BROWSE_INDEX_PROPERTIES,
+      })
     }
+    listingsIndexReady = true
   } catch (e) {
     // Cluster unreachable, bad credentials, TLS, etc. — don’t crash callers; search falls back to DB.
     const msg = e instanceof Error ? e.message : String(e)
@@ -415,9 +474,38 @@ export async function searchListingIdsFromElasticsearch(
   }
 }
 
-/** Load listing + category name from Supabase and build ES document. */
-/** Build ES document from a listing row (e.g. reindex batch — no extra DB round-trip). */
-export function listingRowToSearchDocFromRow(row: {
+/** Columns required to build a full browse-ready listing search doc. */
+export const LISTING_SEARCH_DOC_SELECT = `
+  id,
+  title,
+  description,
+  section,
+  status,
+  board_type,
+  brand,
+  model,
+  city,
+  state,
+  created_at,
+  condition,
+  fin_system,
+  construction,
+  fins_setup,
+  length_total_inches,
+  volume_liters,
+  price,
+  brand_id,
+  brand_model_id,
+  local_pickup,
+  shipping_available,
+  suppressed_on_boards_browse,
+  dimensions,
+  latitude,
+  longitude,
+  categories (name)
+`
+
+export type ListingSearchDocRow = {
   id: string
   title: string | null
   description: string | null
@@ -429,9 +517,36 @@ export function listingRowToSearchDocFromRow(row: {
   city: string | null
   state: string | null
   created_at: string
+  condition?: string | null
+  fin_system?: string | null
+  construction?: string | null
+  fins_setup?: string | null
+  length_total_inches?: number | null
+  volume_liters?: number | null
+  price?: number | string | null
+  brand_id?: string | null
+  brand_model_id?: string | null
+  local_pickup?: boolean | null
+  shipping_available?: boolean | null
+  suppressed_on_boards_browse?: boolean | null
+  dimensions?: string | null
+  latitude?: number | string | null
+  longitude?: number | string | null
   categories: { name: string | null } | null | { name: string | null }[]
-}): ListingSearchDoc {
+}
+
+function toFiniteNumber(value: number | string | null | undefined): number | null {
+  if (value == null) return null
+  const n = typeof value === "number" ? value : Number(value)
+  return Number.isFinite(n) ? n : null
+}
+
+/** Load listing + category name from Supabase and build ES document. */
+/** Build ES document from a listing row (e.g. reindex batch — no extra DB round-trip). */
+export function listingRowToSearchDocFromRow(row: ListingSearchDocRow): ListingSearchDoc {
   const cat = Array.isArray(row.categories) ? row.categories[0] : row.categories
+  const lat = toFiniteNumber(row.latitude)
+  const lon = toFiniteNumber(row.longitude)
   return {
     id: row.id,
     title: row.title ?? "",
@@ -445,6 +560,20 @@ export function listingRowToSearchDocFromRow(row: {
     city: row.city,
     state: row.state,
     created_at: row.created_at,
+    condition: row.condition ?? null,
+    fin_system: row.fin_system ?? null,
+    construction: row.construction ?? null,
+    fins_setup: parseFinsSetupFromStorage(row.fins_setup),
+    length_total_inches: toFiniteNumber(row.length_total_inches),
+    volume_liters: toFiniteNumber(row.volume_liters),
+    price: toFiniteNumber(row.price),
+    brand_id: row.brand_id ?? null,
+    brand_model_id: row.brand_model_id ?? null,
+    local_pickup: row.local_pickup ?? null,
+    shipping_available: row.shipping_available ?? null,
+    suppressed_on_boards_browse: row.suppressed_on_boards_browse ?? null,
+    dimensions: row.dimensions?.trim() ? row.dimensions.trim().toLowerCase() : null,
+    ...(lat != null && lon != null ? { location: { lat, lon } } : {}),
   }
 }
 
@@ -454,30 +583,13 @@ export async function listingRowToSearchDoc(
 ): Promise<ListingSearchDoc | null> {
   const { data, error } = await supabase
     .from("listings")
-    .select(
-      `
-      id,
-      title,
-      description,
-      section,
-      status,
-      board_type,
-      brand,
-      model,
-      city,
-      state,
-      created_at,
-      categories (name)
-    `,
-    )
+    .select(LISTING_SEARCH_DOC_SELECT)
     .eq("id", listingId)
     .maybeSingle()
 
   if (error || !data) return null
 
-  return listingRowToSearchDocFromRow(
-    data as unknown as Parameters<typeof listingRowToSearchDocFromRow>[0],
-  )
+  return listingRowToSearchDocFromRow(data as unknown as ListingSearchDocRow)
 }
 
 export async function syncListingToIndex(

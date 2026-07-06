@@ -1,17 +1,29 @@
 /**
  * Email-client friendly HTML for buyer favorites Klaviyo flows.
  *
- * **Klaviyo:** Add a **custom HTML** block and paste:
- *   {{ event.favorites_items_html }}
+ * **Important:** Klaviyo escapes HTML stored in event properties. Do **not** use
+ * `{{ event.favorites_items_html }}` in a custom HTML block — it prints raw tags.
  *
- * If Klaviyo escapes HTML, use the Liquid loop in the file footer comment instead
- * over `event.checkout_items` (title, url, image_url, price_display).
+ * **Instead:** In Klaviyo → Email → drag **Code** / custom HTML → paste Liquid from
+ * `lib/klaviyo/favorites-email-liquid.ts` (`KLAVIYO_FAVORITE_PRICE_DROP_EMAIL_LIQUID`
+ * or `KLAVIYO_FAVORITES_LISTING_EMAIL_LIQUID`). Those templates loop
+ * `event.checkout_items` (title, url, image_url, price_display) and render real HTML.
  *
- * Plain-text version: {{ event.favorites_items_plain }}
+ * Plain-text version still works: `{{ event.favorites_items_plain }}`
  */
 
 import type { KlaviyoCheckoutEventItem } from "@/lib/klaviyo/catalog-product"
+import {
+  KLAVIYO_EMAIL_BORDER,
+  KLAVIYO_EMAIL_BUTTON_RADIUS,
+  KLAVIYO_EMAIL_COLORS,
+  KLAVIYO_EMAIL_FONT_HEADLINE,
+  KLAVIYO_EMAIL_FONT_SANS,
+  KLAVIYO_EMAIL_RADIUS,
+} from "@/lib/klaviyo/email-brand-styles"
 import { resolveListingUrlForEmail } from "@/lib/klaviyo/email-listing-links"
+
+const C = KLAVIYO_EMAIL_COLORS
 
 function escapeHtmlAttr(text: string): string {
   return text
@@ -59,13 +71,15 @@ export function buildFavoritesItemsEmailHtml(
   const parts: string[] = []
 
   if (priceDrop) {
-    parts.push(`<p style="margin:0 0 16px 0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:16px;font-weight:600;color:#059669;">Now ${escapeHtmlText(priceDrop)}</p>`)
+    parts.push(
+      `<p style="margin:0 0 16px 0;font-family:${KLAVIYO_EMAIL_FONT_HEADLINE};font-size:16px;font-weight:600;color:${C.priceDrop};letter-spacing:-0.02em;">Now ${escapeHtmlText(priceDrop)}</p>`,
+    )
   }
 
   if (items.length === 0) {
     const m = favoritesHref ?? "#"
     parts.push(
-      `<p style="margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:15px;color:#444;">You don&apos;t have any saved boards right now — <a href="${escapeHtmlAttr(m)}" style="color:#2563eb;">browse the marketplace</a>.</p>`,
+      `<p style="margin:0;font-family:${KLAVIYO_EMAIL_FONT_SANS};font-size:15px;color:${C.muted};">You don&apos;t have any saved boards right now — <a href="${escapeHtmlAttr(m)}" style="color:${C.link};text-decoration:underline;text-underline-offset:2px;">browse the marketplace</a>.</p>`,
     )
     return parts.join("\n")
   }
@@ -86,7 +100,7 @@ export function buildFavoritesItemsEmailHtml(
     const linkClose = href ? `</a>` : ""
 
     const imgBlock = img
-      ? `${linkOpen}<img src="${escapeHtmlAttr(img)}" alt="${title}" width="240" height="180" style="display:block;width:240px;max-width:100%;height:auto;border-radius:8px;border:1px solid #e5e7eb;object-fit:cover;" />${linkClose}`
+      ? `${linkOpen}<img src="${escapeHtmlAttr(img)}" alt="${title}" width="240" height="180" style="display:block;width:240px;max-width:100%;height:auto;border-radius:${KLAVIYO_EMAIL_RADIUS};border:1px solid ${KLAVIYO_EMAIL_BORDER};object-fit:cover;" />${linkClose}`
       : ""
 
     rows.push(`<tr>
@@ -94,10 +108,10 @@ export function buildFavoritesItemsEmailHtml(
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
 <tr>
 <td width="240" style="padding:0 16px 0 0;vertical-align:top;">${imgBlock}</td>
-<td style="vertical-align:top;font-family:system-ui,-apple-system,Segoe UI,sans-serif;">
-${href ? `<a href="${escapeHtmlAttr(href)}" style="font-size:16px;font-weight:600;color:#111827;text-decoration:none;">${title}</a>` : `<span style="font-size:16px;font-weight:600;color:#111827;">${title}</span>`}
-${price ? `<p style="margin:6px 0 0 0;font-size:15px;color:#374151;font-weight:600;">${price}</p>` : ""}
-${href ? `<p style="margin:10px 0 0 0;"><a href="${escapeHtmlAttr(href)}" style="display:inline-block;font-size:14px;color:#2563eb;font-weight:600;">View listing →</a></p>` : ""}
+<td style="vertical-align:top;font-family:${KLAVIYO_EMAIL_FONT_SANS};color:${C.muted};">
+${href ? `<a href="${escapeHtmlAttr(href)}" style="font-family:${KLAVIYO_EMAIL_FONT_HEADLINE};font-size:16px;font-weight:600;color:${C.foreground};text-decoration:none;letter-spacing:-0.02em;">${title}</a>` : `<span style="font-family:${KLAVIYO_EMAIL_FONT_HEADLINE};font-size:16px;font-weight:600;color:${C.foreground};letter-spacing:-0.02em;">${title}</span>`}
+${price ? `<p style="margin:6px 0 0 0;font-family:${KLAVIYO_EMAIL_FONT_HEADLINE};font-size:15px;color:${C.price};font-weight:600;">${price}</p>` : ""}
+${href ? `<p style="margin:10px 0 0 0;"><a href="${escapeHtmlAttr(href)}" style="display:inline-block;font-family:${KLAVIYO_EMAIL_FONT_SANS};font-size:14px;color:${C.link};font-weight:400;text-decoration:underline;text-underline-offset:2px;">View listing →</a></p>` : ""}
 </td>
 </tr>
 </table>
@@ -112,13 +126,13 @@ ${rows.join("\n")}
 
   if (primaryHref && primaryLabel) {
     parts.push(
-      `<p style="margin:20px 0 0 0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;"><a href="${escapeHtmlAttr(primaryHref)}" style="display:inline-block;padding:12px 20px;font-size:15px;color:#ffffff;font-weight:600;text-decoration:none;background:#2563eb;border-radius:8px;">${escapeHtmlText(primaryLabel)} →</a></p>`,
+      `<p style="margin:20px 0 0 0;font-family:${KLAVIYO_EMAIL_FONT_SANS};"><a href="${escapeHtmlAttr(primaryHref)}" style="display:inline-block;padding:12px 20px;font-family:${KLAVIYO_EMAIL_FONT_SANS};font-size:15px;color:${C.buttonText};font-weight:600;text-decoration:none;background:${C.buttonBg};border-radius:${KLAVIYO_EMAIL_BUTTON_RADIUS};letter-spacing:-0.02em;">${escapeHtmlText(primaryLabel)} →</a></p>`,
     )
   }
 
   if (favoritesHref && items.length > 1) {
     parts.push(
-      `<p style="margin:20px 0 0 0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;"><a href="${escapeHtmlAttr(favoritesHref)}" style="display:inline-block;font-size:15px;color:#2563eb;font-weight:600;text-decoration:none;">${escapeHtmlText(viewAllLabel)} →</a></p>`,
+      `<p style="margin:20px 0 0 0;font-family:${KLAVIYO_EMAIL_FONT_SANS};"><a href="${escapeHtmlAttr(favoritesHref)}" style="display:inline-block;font-family:${KLAVIYO_EMAIL_FONT_SANS};font-size:15px;color:${C.link};font-weight:400;text-decoration:underline;text-underline-offset:2px;">${escapeHtmlText(viewAllLabel)} →</a></p>`,
     )
   }
 

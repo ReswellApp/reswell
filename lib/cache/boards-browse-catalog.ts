@@ -26,7 +26,8 @@ async function loadBoardsBrowseCategoryTypePage(
 
 const getCachedBoardsBrowseCategoryTypePage = unstable_cache(
   loadBoardsBrowseCategoryTypePage,
-  ["boards-browse-category-type"],
+  // `v2` bump invalidates pages cached at the previous page size (40) so results don't mix.
+  ["boards-browse-category-type", "v2-size30"],
   {
     revalidate: BOARDS_BROWSE_REVALIDATE_SECONDS,
     tags: [BOARDS_BROWSE_CACHE_TAG],

@@ -12,8 +12,8 @@ import { resolveListingDetailMetadata } from "@/lib/seo/resolve-listing-metadata
 import { canViewHiddenListing } from "@/lib/listing-site-access"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { ListingDetailDynamicGate } from "@/components/features/listings/listing-detail-dynamic-gate"
-import { ListingDetailPublicBody, type PublicListingRow } from "@/components/features/listings/listing-detail-public-body"
-import type { ListingDetailPageSharedProps } from "@/lib/listing-detail-page-load"
+import { ListingDetailPublicOrAuthenticated } from "@/components/features/listings/listing-detail-public-or-authenticated"
+import type { PublicListingRow } from "@/components/features/listings/listing-detail-public-body"
 
 /** ISR shell — keep in sync with `LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS`. */
 export const revalidate = 3600
@@ -68,19 +68,14 @@ export default async function ListingDetailPage(props: {
       redirect(`/l/${redirectSlug}`)
     }
 
-    const sectionProps: ListingDetailPageSharedProps = {
-      listingParam,
-      prefetchedListing: listing.section === "new" ? undefined : listing,
-      viewerUser: null,
-      anonymousPublicView: true,
-    }
-
     return (
-      <ListingDetailPublicBody
-        listing={listing as PublicListingRow}
-        listingParam={listingParam}
-        sectionProps={sectionProps}
-      />
+      <Suspense fallback={null}>
+        <ListingDetailPublicOrAuthenticated
+          listingParam={listingParam}
+          listing={listing as PublicListingRow}
+          redirectSlug={redirectSlug}
+        />
+      </Suspense>
     )
   }
 

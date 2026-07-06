@@ -5,14 +5,11 @@
  *
  * **Build the flow in Klaviyo**
  * 1. Flows → Create flow → Metric → **Favorite Price Drop** (API).
- * 2. Email → custom HTML block → `{{ event.favorites_items_html }}` (price banner + listing row).
+ * 2. Email → add an **HTML** block (not Text). Paste `KLAVIYO_FAVORITE_PRICE_DROP_EMAIL_HTML`
+ *    from `lib/klaviyo/favorites-email-liquid.ts` — **no `{% %}` tags** (Klaviyo often prints those as raw text).
+ *    Use Preview & test → pick a profile with a real **Favorite Price Drop** event.
+ *    - `{{ event.primary_cta_url }}` / `{{ event.primary_cta_label }}` — checkout vs saves CTA (set server-side)
  * 3. Optional subject/body personalization:
- *    - `{{ event.price_drop_display }}` — e.g. `$800 → $650`
- *    - `{{ event.in_cart }}` / `{{ event.in_favorites }}` — booleans
- *    - `{{ event.interest_sources }}` — `favorite`, `cart`, or `favorite,cart`
- *    - `{{ event.cart_url }}` — `/cart` when the buyer had it in cart
- *    - `{{ event.checkout_url }}` — direct checkout when in cart
- * 4. Dynamic product block (optional): products from event `Items` / `ProductID`.
  *
  * Fires when a seller lowers list price on a published listing (quick price edit today).
  * One event per buyer per listing per new price (deduped via `unique_id`).
@@ -25,6 +22,10 @@ import {
   FAVORITE_PRICE_DROP_METRIC,
   formatFavoritePriceDropDisplay,
 } from "@/lib/klaviyo/favorites-commerce-event"
+import {
+  absoluteKlaviyoListingImageUrl,
+  formatKlaviyoPriceDisplay,
+} from "@/lib/klaviyo/catalog-product"
 import { favoritesKlaviyoEmailProperties } from "@/lib/klaviyo/favorites-email-html"
 import type { KlaviyoListingProductSource } from "@/lib/klaviyo/catalog-product"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
@@ -127,6 +128,24 @@ export async function trackKlaviyoFavoritePriceDrop(
     slug: payload.listing.slug ?? undefined,
     section: typeof payload.listing.section === "string" ? payload.listing.section : "surfboards",
   })
+  const listingUrl = `${publicSiteOriginForEmail()}${listingPath}`
+  const listingImageUrl = absoluteKlaviyoListingImageUrl(payload.listing)
+  const listingPriceDisplay = formatKlaviyoPriceDisplay(payload.newPriceUsd)
+  const primaryCheckoutItem = commerce.checkout_items[0]
+  const imageUrl =
+    listingImageUrl.trim() ||
+    (typeof primaryCheckoutItem?.image_url === "string"
+      ? primaryCheckoutItem.image_url.trim()
+      : "") ||
+    (typeof commerce.Items[0]?.ImageURL === "string" ? commerce.Items[0].ImageURL.trim() : "")
+  const primaryCtaUrl = inCart ? checkoutUrl : inFavorites ? commerce.favorites_url : listingUrl
+  const primaryCtaLabel = inCart
+    ? "Complete checkout"
+    : inFavorites
+      ? "View all your saves"
+      : "View listing"
+  const buttonCtaUrl = inCart && checkoutUrl.trim() ? checkoutUrl : listingUrl
+  const buttonCtaLabel = inCart ? "Complete checkout" : "View listing"
 
   return sendKlaviyoServerEvent({
     metricName: FAVORITE_PRICE_DROP_METRIC,
@@ -140,8 +159,17 @@ export async function trackKlaviyoFavoritePriceDrop(
       ...commerce,
       ...emailWithDrop,
       listing_id: payload.listing.id,
-      listing_url: `${publicSiteOriginForEmail()}${listingPath}`,
+      listing_url: listingUrl,
+      listing_image_url: imageUrl,
+      photo_url: imageUrl,
+      listing_price_display: listingPriceDisplay,
+      price_display: listingPriceDisplay,
+      primary_cta_url: primaryCtaUrl,
+      primary_cta_label: primaryCtaLabel,
+      button_cta_url: buttonCtaUrl,
+      button_cta_label: buttonCtaLabel,
       Title: title,
+      Price: payload.newPriceUsd,
       old_price_usd: payload.oldPriceUsd,
       new_price_usd: payload.newPriceUsd,
       price_drop_display: priceDropDisplay,

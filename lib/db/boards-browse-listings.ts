@@ -67,9 +67,9 @@ export const SURFBOARD_BROWSE_LISTING_SELECT = `
   profiles!listings_user_id_fkey (display_name, avatar_url, location, shop_verified)
 `
 
-// 40 keeps the last row full on the desktop grid (lg: 4 cols → 10 rows, xl: 5 cols → 8 rows)
-// so results extend down alongside the tall left filter sidebar.
-export const BOARDS_BROWSE_PAGE_SIZE = 40
+// 30 fills full rows on 2/3-col and lg 4-col grids (xl 5-col leaves a short last row),
+// trading a slightly shorter page for ~25% less HTML + image decode per browse page.
+export const BOARDS_BROWSE_PAGE_SIZE = 30
 
 export const LOCATION_FALLBACK_RADIUS_MI = 100
 export const LOCATION_FALLBACK_WIDE_RADIUS_MI = 2200

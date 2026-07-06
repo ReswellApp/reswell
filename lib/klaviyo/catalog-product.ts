@@ -4,10 +4,9 @@
 
 import { listingDetailHref } from "@/lib/listing-href"
 import { primaryListingImageUrl } from "@/lib/listing-metadata"
-import { absoluteProxiedListingMediaUrl } from "@/lib/listing-media-proxy-url"
+import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { resolveListingUrlForEmail } from "@/lib/klaviyo/email-listing-links"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
-import { absoluteUrl } from "@/lib/site-metadata"
 
 export type KlaviyoListingImage = {
   url?: string | null
@@ -116,7 +115,13 @@ function listingImageRaw(listing: KlaviyoListingProductSource): string | null {
 export function absoluteKlaviyoListingPhotoUrl(
   raw: string | null | undefined,
 ): string {
-  return absoluteProxiedListingMediaUrl(raw) ?? absoluteUrl(FALLBACK_IMAGE_PATH)
+  const proxied = proxiedListingImageSrc(raw)
+  const origin = publicSiteOriginForEmail().replace(/\/$/, "")
+  if (!proxied.trim()) {
+    return `${origin}${FALLBACK_IMAGE_PATH.startsWith("/") ? FALLBACK_IMAGE_PATH : `/${FALLBACK_IMAGE_PATH}`}`
+  }
+  if (/^https?:\/\//i.test(proxied)) return proxied
+  return `${origin}${proxied.startsWith("/") ? proxied : `/${proxied}`}`
 }
 
 export function absoluteKlaviyoListingImageUrl(
