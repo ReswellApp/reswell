@@ -4,6 +4,7 @@ import { isListingPurchasable, type ListingPublicVisibilityFields } from "@/lib/
 
 const FAVORITE_LISTING_SELECT = `
   id,
+  user_id,
   slug,
   title,
   description,
@@ -21,7 +22,9 @@ const FAVORITE_LISTING_SELECT = `
 `.trim()
 
 export type KlaviyoFavoriteListingRow = KlaviyoListingProductSource &
-  ListingPublicVisibilityFields
+  ListingPublicVisibilityFields & {
+    user_id?: string | null
+  }
 
 function normalizeFavoriteListingRow(raw: unknown): KlaviyoFavoriteListingRow | null {
   if (!raw || typeof raw !== "object") return null
@@ -31,6 +34,7 @@ function normalizeFavoriteListingRow(raw: unknown): KlaviyoFavoriteListingRow | 
   const status = typeof row.status === "string" ? row.status : ""
   return {
     id,
+    user_id: typeof row.user_id === "string" ? row.user_id : null,
     slug: typeof row.slug === "string" ? row.slug : null,
     title: typeof row.title === "string" ? row.title : null,
     description: typeof row.description === "string" ? row.description : null,

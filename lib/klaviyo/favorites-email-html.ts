@@ -38,6 +38,9 @@ export type BuildFavoritesEmailHtmlOptions = {
   priceDropDisplay?: string
   /** CTA label under the grid */
   viewAllLabel?: string
+  /** Primary button below the listing row (e.g. checkout when item is in cart) */
+  primaryActionUrl?: string
+  primaryActionLabel?: string
 }
 
 /**
@@ -50,6 +53,8 @@ export function buildFavoritesItemsEmailHtml(
   const favoritesHref = allowedUrl(options.favoritesUrl)
   const viewAllLabel = options.viewAllLabel?.trim() || "View all your saves"
   const priceDrop = options.priceDropDisplay?.trim()
+  const primaryHref = allowedUrl(options.primaryActionUrl ?? "")
+  const primaryLabel = options.primaryActionLabel?.trim()
 
   const parts: string[] = []
 
@@ -105,6 +110,12 @@ ${href ? `<p style="margin:10px 0 0 0;"><a href="${escapeHtmlAttr(href)}" style=
 ${rows.join("\n")}
 </table>`.trim())
 
+  if (primaryHref && primaryLabel) {
+    parts.push(
+      `<p style="margin:20px 0 0 0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;"><a href="${escapeHtmlAttr(primaryHref)}" style="display:inline-block;padding:12px 20px;font-size:15px;color:#ffffff;font-weight:600;text-decoration:none;background:#2563eb;border-radius:8px;">${escapeHtmlText(primaryLabel)} →</a></p>`,
+    )
+  }
+
   if (favoritesHref && items.length > 1) {
     parts.push(
       `<p style="margin:20px 0 0 0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;"><a href="${escapeHtmlAttr(favoritesHref)}" style="display:inline-block;font-size:15px;color:#2563eb;font-weight:600;text-decoration:none;">${escapeHtmlText(viewAllLabel)} →</a></p>`,
@@ -118,6 +129,7 @@ export function buildFavoritesItemsPlainText(
   items: KlaviyoCheckoutEventItem[],
   favoritesUrl: string,
   priceDropDisplay?: string,
+  primaryAction?: { url: string; label: string },
 ): string {
   const lines: string[] = []
   if (priceDropDisplay?.trim()) {
@@ -135,6 +147,9 @@ export function buildFavoritesItemsPlainText(
       "",
     )
   }
+  if (primaryAction?.url?.trim() && primaryAction.label?.trim()) {
+    lines.push(`${primaryAction.label.trim()}: ${primaryAction.url.trim()}`, "")
+  }
   lines.push(`View all saves: ${favoritesUrl}`)
   return lines.join("\n")
 }
@@ -142,7 +157,12 @@ export function buildFavoritesItemsPlainText(
 export function favoritesKlaviyoEmailProperties(
   checkoutItems: KlaviyoCheckoutEventItem[],
   favoritesUrl: string,
-  options?: { priceDropDisplay?: string; viewAllLabel?: string },
+  options?: {
+    priceDropDisplay?: string
+    viewAllLabel?: string
+    primaryActionUrl?: string
+    primaryActionLabel?: string
+  },
 ): {
   favorites_items_html: string
   favorites_items_plain: string
@@ -152,11 +172,16 @@ export function favoritesKlaviyoEmailProperties(
       favoritesUrl,
       priceDropDisplay: options?.priceDropDisplay,
       viewAllLabel: options?.viewAllLabel,
+      primaryActionUrl: options?.primaryActionUrl,
+      primaryActionLabel: options?.primaryActionLabel,
     }),
     favorites_items_plain: buildFavoritesItemsPlainText(
       checkoutItems,
       favoritesUrl,
       options?.priceDropDisplay,
+      options?.primaryActionUrl && options?.primaryActionLabel
+        ? { url: options.primaryActionUrl, label: options.primaryActionLabel }
+        : undefined,
     ),
   }
 }
