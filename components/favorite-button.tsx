@@ -51,7 +51,7 @@ export function FavoriteButton({
 
   async function toggleFavorite() {
     if (!isLoggedIn) {
-      openSignIn(redirectPath ?? `/l/${listingId}`)
+      openSignIn(redirectPath ?? `/l/${listingId}`, { skipSessionProbe: true })
       return
     }
 

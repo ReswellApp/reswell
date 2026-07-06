@@ -65,15 +65,18 @@ export function ListingDetailPeerPurchaseActions({
     void prefetchStripeCheckout()
   }, [isLoggedIn])
 
+  function openLoginGate(redirect: string = here) {
+    if (authModal) {
+      authModal.openLogin(redirect)
+    } else {
+      router.push(`/auth/login?redirect=${encodeURIComponent(safeRedirectPath(redirect))}`)
+    }
+  }
+
   async function handleAddToCart(e: React.MouseEvent) {
     e.preventDefault()
     if (!isLoggedIn) {
-      const safe = safeRedirectPath(here)
-      if (authModal) {
-        authModal.openLogin(here)
-      } else {
-        router.push(`/auth/login?redirect=${encodeURIComponent(safe)}`)
-      }
+      openLoginGate(here)
       return
     }
     setLoading(true)
@@ -99,12 +102,7 @@ export function ListingDetailPeerPurchaseActions({
 
   function openMakeOffer() {
     if (!isLoggedIn) {
-      const safe = safeRedirectPath(here)
-      if (authModal) {
-        authModal.openLogin(here)
-      } else {
-        router.push(`/auth/login?redirect=${encodeURIComponent(safe)}`)
-      }
+      openLoginGate(here)
       return
     }
     setOfferOpen(true)
@@ -121,15 +119,26 @@ export function ListingDetailPeerPurchaseActions({
         </p>
       ) : null}
       <div className="flex flex-col gap-[10px]">
-        <Button
-          size="lg"
-          className="min-h-[52px] w-full justify-center rounded-xl border-0 bg-[#5574AD] px-6 text-[15px] font-semibold text-white shadow-none hover:bg-[#5574AD]/90 hover:text-white dark:bg-[#5574AD] dark:hover:bg-[#5574AD]/90"
-          asChild
-        >
-          <Link href={checkoutHref} prefetch>
+        {isLoggedIn ? (
+          <Button
+            size="lg"
+            className="min-h-[52px] w-full justify-center rounded-xl border-0 bg-[#5574AD] px-6 text-[15px] font-semibold text-white shadow-none hover:bg-[#5574AD]/90 hover:text-white dark:bg-[#5574AD] dark:hover:bg-[#5574AD]/90"
+            asChild
+          >
+            <Link href={checkoutHref} prefetch>
+              Buy it now
+            </Link>
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            size="lg"
+            className="min-h-[52px] w-full justify-center rounded-xl border-0 bg-[#5574AD] px-6 text-[15px] font-semibold text-white shadow-none hover:bg-[#5574AD]/90 hover:text-white dark:bg-[#5574AD] dark:hover:bg-[#5574AD]/90"
+            onClick={() => openLoginGate(checkoutHref)}
+          >
             Buy it now
-          </Link>
-        </Button>
+          </Button>
+        )}
         {isLoggedIn ? (
           <Button
             type="button"
@@ -162,7 +171,7 @@ export function ListingDetailPeerPurchaseActions({
                 if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                 if (!authModal) return
                 e.preventDefault()
-                authModal.openLogin(here)
+                openLoginGate(here)
               }}
             >
               <ShoppingCart className="h-5 w-5 shrink-0" aria-hidden />
