@@ -28,7 +28,7 @@ const THUMB_PER_SELLER = 1
 const LISTINGS_FETCH_CAP = 4000
 
 const profilePublicFields =
-  "id, seller_slug, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_banner_focal_x_pct, shop_banner_focal_y_pct, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
+  "id, seller_slug, display_name, avatar_url, avatar_focal_x_pct, avatar_focal_y_pct, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_banner_focal_x_pct, shop_banner_focal_y_pct, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
 
 type ListingDirectoryRow = SellerDirectoryListingThumb &
   SellerListingForTileMeta & {

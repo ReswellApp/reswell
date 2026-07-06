@@ -7,6 +7,7 @@ import { SellerProfilePhotoEditor } from "@/components/sellers/seller-profile-ph
 import { formatDistanceToNow } from "date-fns"
 import { Globe, MapPin, MessageSquare, Phone } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ProfileAvatarImage } from "@/components/features/dashboard/profile-avatar-image"
 import { Button } from "@/components/ui/button"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { FollowButton } from "@/components/follows/follow-button"
@@ -27,6 +28,8 @@ export type SellerProfileHeroShop = {
   seller_slug: string
   display_name: string | null
   avatar_url: string | null
+  avatar_focal_x_pct?: number | null
+  avatar_focal_y_pct?: number | null
   location: string | null
   city: string | null
   bio: string | null
@@ -179,13 +182,24 @@ export function SellerProfileHero({
           {isOwnProfile ? (
             <SellerProfilePhotoEditor
               initialPhotoUrl={profilePhotoUrl}
+              initialFocalX={shop.avatar_focal_x_pct}
+              initialFocalY={shop.avatar_focal_y_pct}
               displayName={displayName?.trim() || "Seller"}
               editable
               className="pb-3 sm:pb-0"
             />
           ) : (
             <Avatar className="h-16 w-16 shrink-0 border border-border/80 shadow-sm sm:h-20 sm:w-20 lg:h-24 lg:w-24">
-              <AvatarImage src={avatarSrc} alt="" />
+              {profilePhotoUrl ? (
+                <ProfileAvatarImage
+                  avatarUrl={profilePhotoUrl}
+                  focalX={shop.avatar_focal_x_pct}
+                  focalY={shop.avatar_focal_y_pct}
+                  alt=""
+                />
+              ) : avatarSrc ? (
+                <AvatarImage src={avatarSrc} alt="" />
+              ) : null}
               <AvatarFallback className="bg-muted text-lg font-semibold text-foreground sm:text-xl">
                 {displayName?.charAt(0).toUpperCase() || "S"}
               </AvatarFallback>

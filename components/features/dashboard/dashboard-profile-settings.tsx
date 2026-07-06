@@ -60,6 +60,7 @@ export function DashboardProfileSettings({
   const [uploadingBanner, setUploadingBanner] = useState(false)
   const [removingBanner, setRemovingBanner] = useState(false)
   const [bannerSavedFlash, setBannerSavedFlash] = useState(false)
+  const [avatarCropRequestKey, setAvatarCropRequestKey] = useState(0)
   const [bannerCropRequestKey, setBannerCropRequestKey] = useState(0)
   const [resetPasswordSending, setResetPasswordSending] = useState(false)
   const router = useRouter()
@@ -156,7 +157,10 @@ export function DashboardProfileSettings({
         credentials: "include",
       })
 
-      const json = (await res.json()) as { data?: { avatarUrl: string }; error?: string }
+      const json = (await res.json()) as {
+        data?: { avatarUrl: string; focalX?: number; focalY?: number }
+        error?: string
+      }
 
       if (!res.ok) {
         throw new Error(json.error || "Upload failed")
@@ -168,10 +172,13 @@ export function DashboardProfileSettings({
       setProfile({
         ...profile,
         avatar_url: avatarUrl,
+        avatar_focal_x_pct: json.data?.focalX ?? 50,
+        avatar_focal_y_pct: json.data?.focalY ?? 50,
         shop_logo_url: profile.is_shop ? avatarUrl : profile.shop_logo_url,
       })
       setAvatarPreviewUrl(null)
       URL.revokeObjectURL(localPreview)
+      setAvatarCropRequestKey((key) => key + 1)
       void revalidateListingDetailAfterProfileUpdate()
       window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
       router.refresh()
@@ -208,6 +215,8 @@ export function DashboardProfileSettings({
       setProfile({
         ...profile,
         avatar_url: null,
+        avatar_focal_x_pct: null,
+        avatar_focal_y_pct: null,
         shop_logo_url: profile.is_shop ? null : profile.shop_logo_url,
       })
       void revalidateListingDetailAfterProfileUpdate()
@@ -391,6 +400,14 @@ export function DashboardProfileSettings({
             locationPlaceholder: p.locationPlaceholder,
             city: p.city,
             cityPlaceholder: p.cityPlaceholder,
+            editPhoto: p.editPhoto,
+            editPhotoTitle: p.editPhotoTitle,
+            editPhotoDescription: p.editPhotoDescription,
+            editPhotoHint: p.editPhotoHint,
+            editPhotoNoPanHint: p.editPhotoNoPanHint,
+            editPhotoSave: p.editPhotoSave,
+            editPhotoSaving: p.editPhotoSaving,
+            editPhotoCancel: p.editPhotoCancel,
             banner: p.banner,
             bannerHint: p.bannerHint,
             changeBanner: p.changeBanner,
@@ -416,6 +433,7 @@ export function DashboardProfileSettings({
           uploadingAvatar={uploadingAvatar}
           removingAvatar={removingAvatar}
           avatarPreviewUrl={avatarPreviewUrl}
+          avatarCropRequestKey={avatarCropRequestKey}
           uploadingBanner={uploadingBanner}
           removingBanner={removingBanner}
           bannerSavedFlash={bannerSavedFlash}

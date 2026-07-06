@@ -34,7 +34,7 @@ export const HOME_RECENTLY_LISTED_GRID_CACHE_TAG = "home-public-catalog-recently
 export const HOME_RECENTLY_LISTED_GRID_REVALIDATE_SECONDS = 60 * 60
 
 const profilePublicFields =
-  "id, seller_slug, display_name, avatar_url, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_banner_focal_x_pct, shop_banner_focal_y_pct, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
+  "id, seller_slug, display_name, avatar_url, avatar_focal_x_pct, avatar_focal_y_pct, location, city, bio, created_at, updated_at, is_shop, shop_name, shop_description, shop_banner_url, shop_banner_focal_x_pct, shop_banner_focal_y_pct, shop_logo_url, shop_verified, shop_website, shop_phone, shop_address, sales_count"
 
 const featuredNewSelect = `
   id,
@@ -51,6 +51,8 @@ export type HomeFeaturedShop = {
   seller_slug: string | null
   display_name: string | null
   avatar_url: string | null
+  avatar_focal_x_pct: number | null
+  avatar_focal_y_pct: number | null
   location: string | null
   city: string | null
   bio: string | null

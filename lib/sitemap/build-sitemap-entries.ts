@@ -28,7 +28,13 @@ async function supabaseForSitemapPublicRead() {
   return createClient()
 }
 
-/** Priority filter combos worth indexing for long-tail SEO. */
+/**
+ * Board browse URLs worth submitting in the sitemap.
+ *
+ * Keep single-dimension filters (type, location) and a short list of high-intent
+ * type+location pairs. Omit condition-only and type+condition URLs — they multiply
+ * near-duplicate pages and dilute crawl budget without meaningful search demand.
+ */
 const BOARD_TYPE_FILTERS = [
   "shortboard",
   "longboard",
@@ -37,9 +43,7 @@ const BOARD_TYPE_FILTERS = [
   "fish",
   "asym",
   "step-up-gun",
-]
-
-const BOARD_CONDITION_FILTERS = ["brand_new", "excellent", "very_good", "good", "fair", "poor"]
+] as const
 
 const TOP_LOCATIONS = [
   "san-diego",
@@ -48,7 +52,20 @@ const TOP_LOCATIONS = [
   "santa-cruz",
   "san-francisco",
   "hawaii",
-]
+] as const
+
+/** Niche board types only need a type-only URL; skip location cross-products. */
+const BOARD_TYPE_LOCATION_COMBOS: Readonly<
+  Record<(typeof BOARD_TYPE_FILTERS)[number], readonly (typeof TOP_LOCATIONS)[number][]>
+> = {
+  shortboard: TOP_LOCATIONS,
+  longboard: TOP_LOCATIONS,
+  fish: ["san-diego", "orange-county", "los-angeles", "hawaii"],
+  hybrid: ["san-diego", "orange-county", "los-angeles", "santa-cruz", "san-francisco"],
+  groveler: ["san-diego", "orange-county", "los-angeles"],
+  asym: [],
+  "step-up-gun": [],
+}
 
 function boardFilterPages(now: Date): SitemapUrlEntry[] {
   const boardTypePages: SitemapUrlEntry[] = BOARD_TYPE_FILTERS.map((type) => ({
@@ -58,22 +75,6 @@ function boardFilterPages(now: Date): SitemapUrlEntry[] {
     priority: 0.8,
   }))
 
-  const boardConditionPages: SitemapUrlEntry[] = BOARD_CONDITION_FILTERS.map((cond) => ({
-    url: `${BASE}/boards?condition=${cond}`,
-    lastModified: now,
-    changeFrequency: "daily" as const,
-    priority: 0.7,
-  }))
-
-  const boardTypePlusCondition: SitemapUrlEntry[] = BOARD_TYPE_FILTERS.flatMap((type) =>
-    ["excellent", "very_good", "good"].map((cond) => ({
-      url: `${BASE}/boards?type=${type}&condition=${cond}`,
-      lastModified: now,
-      changeFrequency: "daily" as const,
-      priority: 0.7,
-    })),
-  )
-
   const boardLocationPages: SitemapUrlEntry[] = TOP_LOCATIONS.map((loc) => ({
     url: `${BASE}/boards?location=${loc}`,
     lastModified: now,
@@ -82,7 +83,7 @@ function boardFilterPages(now: Date): SitemapUrlEntry[] {
   }))
 
   const boardTypeLocationPages: SitemapUrlEntry[] = BOARD_TYPE_FILTERS.flatMap((type) =>
-    TOP_LOCATIONS.map((loc) => ({
+    BOARD_TYPE_LOCATION_COMBOS[type].map((loc) => ({
       url: `${BASE}/boards?type=${type}&location=${loc}`,
       lastModified: now,
       changeFrequency: "weekly",
@@ -90,13 +91,7 @@ function boardFilterPages(now: Date): SitemapUrlEntry[] {
     })),
   )
 
-  return [
-    ...boardTypePages,
-    ...boardConditionPages,
-    ...boardTypePlusCondition,
-    ...boardLocationPages,
-    ...boardTypeLocationPages,
-  ]
+  return [...boardTypePages, ...boardLocationPages, ...boardTypeLocationPages]
 }
 
 /**
@@ -154,12 +149,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
       priority: 0.35,
     },
     { url: `${BASE}/safety`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
-    { url: `${BASE}/return-policy`, lastModified: now, changeFrequency: "monthly", priority: 0.25 },
-    { url: `${BASE}/protection-policy`, lastModified: now, changeFrequency: "monthly", priority: 0.25 },
-    { url: `${BASE}/cookies`, lastModified: now, changeFrequency: "yearly", priority: 0.15 },
-    { url: `${BASE}/terms`, lastModified: now, changeFrequency: "monthly", priority: 0.2 },
-    { url: `${BASE}/privacy`, lastModified: now, changeFrequency: "monthly", priority: 0.2 },
-    { url: `${BASE}/mobile-terms`, lastModified: now, changeFrequency: "yearly", priority: 0.15 },
+    // Policy/legal pages stay indexable via footer links — omit from sitemap to save crawl budget.
   ]
 
   const pressPages: SitemapUrlEntry[] = pressArticles.map((a) => ({

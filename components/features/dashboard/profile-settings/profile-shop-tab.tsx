@@ -3,15 +3,16 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { Check, ExternalLink, Loader2, Pencil, User } from "lucide-react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { ProfileAvatarCropDialog } from "@/components/features/dashboard/profile-avatar-crop-dialog"
+import { ProfileAvatarImage } from "@/components/features/dashboard/profile-avatar-image"
 import { ProfileBannerCropDialog } from "@/components/features/dashboard/profile-banner-crop-dialog"
 import { ProfileBannerImage } from "@/components/features/dashboard/profile-banner-image"
 import { SELLER_PROFILE_BANNER_DEFAULT } from "@/lib/brand-colors"
-import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import type { ProfileBannerFocal } from "@/lib/utils/profile-banner-focal"
 import { cn } from "@/lib/utils"
 import type { DashboardProfileRow } from "@/lib/db/dashboard-profile"
@@ -34,6 +35,14 @@ export type ProfileShopTabCopy = {
   locationPlaceholder: string
   city: string
   cityPlaceholder: string
+  editPhoto: string
+  editPhotoTitle: string
+  editPhotoDescription: string
+  editPhotoHint: string
+  editPhotoNoPanHint: string
+  editPhotoSave: string
+  editPhotoSaving: string
+  editPhotoCancel: string
   banner: string
   bannerHint: string
   changeBanner: string
@@ -63,6 +72,7 @@ interface ProfileShopTabProps {
   uploadingAvatar: boolean
   removingAvatar: boolean
   avatarPreviewUrl?: string | null
+  avatarCropRequestKey?: number
   uploadingBanner: boolean
   removingBanner: boolean
   bannerSavedFlash: boolean
@@ -84,6 +94,7 @@ export function ProfileShopTab({
   uploadingAvatar,
   removingAvatar,
   avatarPreviewUrl = null,
+  avatarCropRequestKey = 0,
   uploadingBanner,
   removingBanner,
   bannerSavedFlash,
@@ -97,18 +108,27 @@ export function ProfileShopTab({
 }: ProfileShopTabProps) {
   const username = profile.seller_slug?.trim() || "—"
   const profilePhotoUrl = profile.shop_logo_url || profile.avatar_url
-  const avatarDisplaySrc = avatarPreviewUrl
-    ? avatarPreviewUrl
-    : profilePhotoUrl
-      ? profileMediaDisplaySrc(profilePhotoUrl)
-      : undefined
+  const [avatarCropOpen, setAvatarCropOpen] = useState(false)
   const [bannerCropOpen, setBannerCropOpen] = useState(false)
+
+  useEffect(() => {
+    if (avatarCropRequestKey > 0 && profilePhotoUrl?.trim()) {
+      setAvatarCropOpen(true)
+    }
+  }, [avatarCropRequestKey, profilePhotoUrl])
 
   useEffect(() => {
     if (bannerCropRequestKey > 0 && profile.shop_banner_url?.trim()) {
       setBannerCropOpen(true)
     }
   }, [bannerCropRequestKey, profile.shop_banner_url])
+
+  function handleAvatarCropSaved(focal: ProfileBannerFocal) {
+    onProfileChange({
+      avatar_focal_x_pct: focal.x,
+      avatar_focal_y_pct: focal.y,
+    })
+  }
 
   function handleBannerCropSaved(focal: ProfileBannerFocal) {
     onProfileChange({
@@ -122,10 +142,12 @@ export function ProfileShopTab({
       <div className="flex flex-col items-center gap-3">
         <div className="relative">
           <Avatar className="h-24 w-24 border-2 border-neutral-200 bg-neutral-100">
-            <AvatarImage
-              src={avatarDisplaySrc}
+            <ProfileAvatarImage
+              avatarUrl={profilePhotoUrl}
+              focalX={profile.avatar_focal_x_pct}
+              focalY={profile.avatar_focal_y_pct}
+              previewSrc={avatarPreviewUrl}
               alt={profile.display_name}
-              key={avatarDisplaySrc ?? "no-avatar"}
             />
             <AvatarFallback className="bg-neutral-100">
               <User className="h-10 w-10 text-primary/70" aria-hidden />
@@ -154,16 +176,46 @@ export function ProfileShopTab({
           />
         </div>
         {profilePhotoUrl ? (
-          <button
-            type="button"
-            onClick={onRemoveAvatar}
-            disabled={uploadingAvatar || removingAvatar}
-            className="text-xs font-medium text-muted-foreground underline-offset-4 hover:text-destructive hover:underline disabled:opacity-60"
-          >
-            {removingAvatar ? "Removing…" : "Remove photo"}
-          </button>
+          <div className="flex flex-wrap items-center justify-center gap-3 text-xs">
+            <button
+              type="button"
+              onClick={() => setAvatarCropOpen(true)}
+              disabled={uploadingAvatar || removingAvatar}
+              className="font-medium text-primary hover:underline disabled:opacity-60"
+            >
+              {copy.editPhoto}
+            </button>
+            <button
+              type="button"
+              onClick={onRemoveAvatar}
+              disabled={uploadingAvatar || removingAvatar}
+              className="font-medium text-muted-foreground underline-offset-4 hover:text-destructive hover:underline disabled:opacity-60"
+            >
+              {removingAvatar ? "Removing…" : "Remove photo"}
+            </button>
+          </div>
         ) : null}
       </div>
+
+      {profilePhotoUrl ? (
+        <ProfileAvatarCropDialog
+          open={avatarCropOpen}
+          onOpenChange={setAvatarCropOpen}
+          avatarUrl={profilePhotoUrl}
+          initialFocalX={profile.avatar_focal_x_pct}
+          initialFocalY={profile.avatar_focal_y_pct}
+          onSaved={handleAvatarCropSaved}
+          copy={{
+            title: copy.editPhotoTitle,
+            description: copy.editPhotoDescription,
+            hint: copy.editPhotoHint,
+            noPanHint: copy.editPhotoNoPanHint,
+            cancel: copy.editPhotoCancel,
+            save: copy.editPhotoSave,
+            saving: copy.editPhotoSaving,
+          }}
+        />
+      ) : null}
 
       <div className="space-y-5">
         <div className="space-y-2">

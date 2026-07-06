@@ -32,11 +32,31 @@ export async function updateProfileAvatarUrlRow(
   supabase: SupabaseClient,
   userId: string,
   avatarUrl: string,
+  opts?: { resetFocal?: boolean },
+): Promise<void> {
+  const patch: Record<string, string | number | null> = {
+    avatar_url: avatarUrl,
+    updated_at: new Date().toISOString(),
+  }
+  if (opts?.resetFocal) {
+    patch.avatar_focal_x_pct = 50
+    patch.avatar_focal_y_pct = 50
+  }
+
+  const { error } = await supabase.from("profiles").update(patch).eq("id", userId)
+  if (error) throw error
+}
+
+export async function updateProfileAvatarFocalRow(
+  supabase: SupabaseClient,
+  userId: string,
+  focal: { x: number; y: number },
 ): Promise<void> {
   const { error } = await supabase
     .from("profiles")
     .update({
-      avatar_url: avatarUrl,
+      avatar_focal_x_pct: focal.x,
+      avatar_focal_y_pct: focal.y,
       updated_at: new Date().toISOString(),
     })
     .eq("id", userId)
@@ -66,6 +86,8 @@ export async function clearProfileAvatarUrlRow(
     .from("profiles")
     .update({
       avatar_url: null,
+      avatar_focal_x_pct: null,
+      avatar_focal_y_pct: null,
       updated_at: new Date().toISOString(),
     })
     .eq("id", userId)

@@ -26,6 +26,14 @@ type Translations = {
       removePhoto: string
       removingPhoto: string
       uploading: string
+      editPhoto: string
+      editPhotoTitle: string
+      editPhotoDescription: string
+      editPhotoHint: string
+      editPhotoNoPanHint: string
+      editPhotoSave: string
+      editPhotoSaving: string
+      editPhotoCancel: string
       banner: string
       bannerHint: string
       changeBanner: string
@@ -159,6 +167,14 @@ const en: Translations = {
       removePhoto: 'Remove photo',
       removingPhoto: 'Removing...',
       uploading: 'Uploading...',
+      editPhoto: 'Edit photo',
+      editPhotoTitle: 'Edit profile photo',
+      editPhotoDescription: 'Drag the image to choose what shows in your profile photo.',
+      editPhotoHint: 'Drag to reposition',
+      editPhotoNoPanHint: 'Re-upload this photo to enable repositioning.',
+      editPhotoSave: 'Save crop',
+      editPhotoSaving: 'Saving…',
+      editPhotoCancel: 'Cancel',
       banner: 'Profile banner',
       bannerHint: 'Wide image shown at the top of your public seller profile.',
       changeBanner: 'Upload banner',
@@ -301,6 +317,14 @@ const es: Translations = {
       removePhoto: 'Quitar foto',
       removingPhoto: 'Quitando...',
       uploading: 'Subiendo...',
+      editPhoto: 'Editar foto',
+      editPhotoTitle: 'Editar foto de perfil',
+      editPhotoDescription: 'Arrastra la imagen para elegir qué se muestra en tu foto de perfil.',
+      editPhotoHint: 'Arrastra para reposicionar',
+      editPhotoNoPanHint: 'Vuelve a subir esta foto para poder reposicionarla.',
+      editPhotoSave: 'Guardar recorte',
+      editPhotoSaving: 'Guardando…',
+      editPhotoCancel: 'Cancelar',
       banner: 'Banner del perfil',
       bannerHint: 'Imagen ancha en la parte superior de tu perfil público de vendedor.',
       changeBanner: 'Subir banner',
