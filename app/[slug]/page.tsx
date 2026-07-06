@@ -3,6 +3,10 @@ import { notFound } from "next/navigation"
 import { BoardsBrowsePage } from "@/components/boards-browse-page"
 import type { BoardsBrowseSearchParams } from "@/lib/marketplace-slug-metadata"
 import { metadataForBoardsBrowse } from "@/lib/seo/metadata-for-boards-browse"
+import { BOARDS_BROWSE_REVALIDATE_SECONDS } from "@/lib/cache/boards-browse-catalog"
+
+/** ISR for `/boards` — listing grid data uses matching hourly `unstable_cache`. */
+export const revalidate = BOARDS_BROWSE_REVALIDATE_SECONDS
 
 function flattenSearchParams(
   sp: Record<string, string | string[] | undefined>,

@@ -4,7 +4,7 @@ import localFont from 'next/font/local'
 import { Analytics } from "@vercel/analytics/next"
 import { Toaster } from '@/components/ui/sonner'
 import { LocaleProvider } from '@/components/locale-provider'
-import { SiteChrome } from '@/components/site-chrome'
+import { SiteChromeShell } from '@/components/site-chrome-shell'
 import { AbortErrorSuppressor } from '@/components/abort-error-suppressor'
 import { PresenceHeartbeatLoader } from '@/components/presence-heartbeat-loader'
 import { DEFAULT_LOCALE } from '@/lib/translations'
@@ -91,7 +91,7 @@ export default function RootLayout({
             <GoogleSignUpWelcomeRedirect />
           </Suspense>
           <PresenceHeartbeatLoader />
-          <SiteChrome>{children}</SiteChrome>
+          <SiteChromeShell>{children}</SiteChromeShell>
           <Toaster />
           <Analytics />
         </LocaleProvider>

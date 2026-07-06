@@ -12,6 +12,7 @@ export {
   getCachedPublicListingForRoute,
   getCachedPublicShopListing,
   getCachedPublicSurfboardListing,
+  LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS,
 } from "@/lib/cache/listing-public-detail"
 
 /** Public catalog rows only (anon, `hidden_from_site = false`). */

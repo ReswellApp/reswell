@@ -5,11 +5,14 @@ import {
   getCachedPublicSurfboardListing,
   SURFBOARD_LISTING_SELECT,
 } from "@/lib/listing-detail-cache"
+import { createAnonSupabaseClient } from "@/lib/supabase/anon"
 
 export type ListingDetailPageSharedProps = {
   listingParam: string
   prefetchedListing?: Record<string, unknown> | null
   viewerUser?: User | null
+  /** Hourly cached public PDP — skip cookie-bound Supabase session probe. */
+  anonymousPublicView?: boolean
 }
 
 type LoadListingDetailPageContextOptions = ListingDetailPageSharedProps & {
@@ -24,7 +27,19 @@ export async function loadListingDetailPageContext({
   viewerUser,
   section,
   usePublicCache = false,
+  anonymousPublicView = false,
 }: LoadListingDetailPageContextOptions) {
+  const useAnonymousPublicView =
+    anonymousPublicView || (prefetchedListing != null && viewerUser === null)
+
+  if (useAnonymousPublicView && prefetchedListing) {
+    return {
+      supabase: createAnonSupabaseClient(),
+      user: null as User | null,
+      listing: prefetchedListing,
+    }
+  }
+
   const { supabase, user: sessionUser } = await getCachedRequestSession()
   const user = viewerUser !== undefined ? viewerUser : sessionUser
 

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/breadcrumb"
 
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
+import { createAnonSupabaseClient } from "@/lib/supabase/anon"
 import { BoardsBrowseClient } from "@/components/boards-browse-client"
 import { BoardsNoResultsRequestPanel } from "@/components/boards-no-results-request-panel"
 import { boardSavedSearchCriteriaFromFilters } from "@/lib/utils/board-saved-search-criteria"
@@ -95,7 +96,7 @@ async function BoardListings({
   searchParams: Promise<BoardsBrowseSearchParams>
 }) {
   const searchParams = await searchParamsPromise
-  const { supabase, user } = await getCachedRequestSession()
+  const supabase = createAnonSupabaseClient()
   const page = parseInt(searchParams.page || "1", 10)
   const limit = BOARDS_BROWSE_PAGE_SIZE
   const offset = (page - 1) * limit
@@ -426,6 +427,79 @@ async function BoardListings({
 
   const boardRows = boards as BoardBrowseListingRow[]
 
+  return (
+    <>
+      {locationFallbackNotice ? (
+        <p
+          className="mb-4 rounded-lg border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground"
+          role="status"
+        >
+          {locationFallbackNotice}
+        </p>
+      ) : null}
+      <Suspense
+        fallback={
+          <BoardListingsTileGrid
+            boardRows={boardRows}
+            favoritedIds={[]}
+            userId={null}
+          />
+        }
+      >
+        <BoardListingsTileGridWithFavorites boardRows={boardRows} />
+      </Suspense>
+
+      <BoardsBrowsePagination page={page} totalPages={totalPages} />
+    </>
+  )
+}
+
+function BoardListingsTileGrid({
+  boardRows,
+  favoritedIds,
+  userId,
+}: {
+  boardRows: BoardBrowseListingRow[]
+  favoritedIds: string[]
+  userId: string | null
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      {boardRows.map((board, tileIdx) => (
+        <HomePeerListingScrollTile
+          key={board.id}
+          layout="grid"
+          userId={userId}
+          isFavorited={favoritedIds.includes(board.id)}
+          imagePriority={tileIdx < 2}
+          listing={{
+            id: board.id,
+            slug: board.slug,
+            user_id: board.user_id,
+            title: board.title,
+            price: board.price,
+            status: board.status,
+            section: "surfboards",
+            local_pickup: board.local_pickup,
+            shipping_available: board.shipping_available,
+            listing_images: board.listing_images,
+            categories: board.categories,
+            board_type: board.board_type,
+            condition: board.condition,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+async function BoardListingsTileGridWithFavorites({
+  boardRows,
+}: {
+  boardRows: BoardBrowseListingRow[]
+}) {
+  const { supabase, user } = await getCachedRequestSession()
+
   let favoritedIds: string[] = []
   if (user && boardRows.length > 0) {
     const { data: favs } = await supabase
@@ -440,44 +514,11 @@ async function BoardListings({
   }
 
   return (
-    <>
-      {locationFallbackNotice ? (
-        <p
-          className="mb-4 rounded-lg border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground"
-          role="status"
-        >
-          {locationFallbackNotice}
-        </p>
-      ) : null}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-        {boardRows.map((board, tileIdx) => (
-          <HomePeerListingScrollTile
-            key={board.id}
-            layout="grid"
-            userId={user?.id ?? null}
-            isFavorited={favoritedIds.includes(board.id)}
-            imagePriority={tileIdx < 2}
-            listing={{
-              id: board.id,
-              slug: board.slug,
-              user_id: board.user_id,
-              title: board.title,
-              price: board.price,
-              status: board.status,
-              section: "surfboards",
-              local_pickup: board.local_pickup,
-              shipping_available: board.shipping_available,
-              listing_images: board.listing_images,
-              categories: board.categories,
-              board_type: board.board_type,
-              condition: board.condition,
-            }}
-          />
-        ))}
-      </div>
-
-      <BoardsBrowsePagination page={page} totalPages={totalPages} />
-    </>
+    <BoardListingsTileGrid
+      boardRows={boardRows}
+      favoritedIds={favoritedIds}
+      userId={user?.id ?? null}
+    />
   )
 }
 

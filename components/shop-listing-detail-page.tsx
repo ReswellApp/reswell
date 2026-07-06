@@ -24,19 +24,25 @@ import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 
 export async function ShopListingDetailPage({
   listingParam,
+  prefetchedListing,
 }: {
   listingParam: string
+  prefetchedListing?: Record<string, unknown> | null
 }) {
-  const supabase = await createClient()
-
-  let { listing } = await getCachedPublicShopListing(listingParam)
+  let listing = prefetchedListing ?? null
   if (!listing) {
-    const r = await findListingByParam(supabase, listingParam, {
+    const cached = await getCachedPublicShopListing(listingParam)
+    listing = cached.listing as Record<string, unknown> | null
+  }
+
+  if (!listing) {
+    const authSupabase = await createClient()
+    const r = await findListingByParam(authSupabase, listingParam, {
       select: SHOP_LISTING_SELECT,
       section: "new",
       includeHiddenListings: true,
     })
-    listing = r.listing
+    listing = r.listing as Record<string, unknown> | null
   }
 
   if (!listing || listing.status !== "active") {

@@ -3,6 +3,8 @@ const SOCIAL_PREVIEW_CRAWLER_UA_SUBSTRINGS = [
   "facebookexternalhit",
   "facebot",
   "meta-externalagent",
+  "meta-externalads",
+  "meta-externalfetcher",
   "twitterbot",
   "linkedinbot",
   "slackbot",
