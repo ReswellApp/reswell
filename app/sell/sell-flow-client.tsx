@@ -185,6 +185,7 @@ import { SurfboardShippingEstimatorDialog } from "@/components/features/sell/sur
 import {
   boardCategoryMap,
   boardTypeFromCategoryId,
+  resolveListingBoardTypeFromCategory,
 } from "@/lib/utils/board-type-from-category-id"
 import {
   orderSurfboardSellCategoryOptions,
@@ -2716,7 +2717,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           price: parseFloat(fd.price),
           condition: fd.condition,
           category_id: fd.category,
-          board_type: fd.boardType,
+          board_type: resolveListingBoardTypeFromCategory(fd.category, fd.boardType),
           dimensions: dimensionsStored,
           fins_setup: finsSetupFieldForDb(fd.boardFins),
           tail_shape: fd.boardTail ? fd.boardTail : null,
@@ -2870,7 +2871,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           condition: fd.condition,
           section: "surfboards" as const,
           category_id: fd.category,
-          board_type: fd.boardType,
+          board_type: resolveListingBoardTypeFromCategory(fd.category, fd.boardType),
           dimensions: dimensionsStoredNew,
           fins_setup: finsSetupFieldForDb(fd.boardFins),
           tail_shape: fd.boardTail ? fd.boardTail : null,

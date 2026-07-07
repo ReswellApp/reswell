@@ -14,6 +14,7 @@ export type ListingSearchDoc = {
   status: string
   category_name: string
   board_type: string | null
+  category_id: string | null
   brand: string | null
   /** Surfboard model label (catalog or free text). */
   model: string | null
@@ -78,6 +79,7 @@ const BASE_INDEX_PROPERTIES = {
  * can't be changed once created.
  */
 const BROWSE_INDEX_PROPERTIES = {
+  category_id: { type: "keyword" as const },
   condition: { type: "keyword" as const },
   fin_system: { type: "keyword" as const },
   construction: { type: "keyword" as const },
@@ -483,6 +485,7 @@ export const LISTING_SEARCH_DOC_SELECT = `
   section,
   status,
   board_type,
+  category_id,
   brand,
   model,
   city,
@@ -513,6 +516,7 @@ export type ListingSearchDocRow = {
   section: string
   status: string
   board_type: string | null
+  category_id: string | null
   brand: string | null
   model: string | null
   city: string | null
@@ -556,6 +560,7 @@ export function listingRowToSearchDocFromRow(row: ListingSearchDocRow): ListingS
     status: row.status,
     category_name: cat?.name ?? "",
     board_type: row.board_type,
+    category_id: row.category_id ?? null,
     brand: row.brand,
     model: row.model,
     city: row.city,

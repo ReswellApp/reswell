@@ -25,10 +25,8 @@ SET board_type = 'step-up-gun'
 WHERE section = 'surfboards'
   AND board_type IN ('step-up', 'gun');
 
-UPDATE public.listings
-SET board_type = 'groveler'
-WHERE section = 'surfboards'
-  AND board_type = 'fish';
+-- Fish is a distinct surfboard shape again (see 20260703120000_surfboard_category_fish.sql);
+-- do not fold `board_type = 'fish'` into groveler here.
 
 -- ---------------------------------------------------------------------------
 -- 2) Condition — sell-flow vocabulary (matches listingConditionFilterRows).

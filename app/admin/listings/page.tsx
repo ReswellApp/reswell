@@ -167,6 +167,7 @@ type AdminListingSection =
   | 'leashes'
   | 'apparel'
   | 'accessories'
+  | 'magazines'
 
 const ADMIN_LISTING_SECTION_VALUES: readonly AdminListingSection[] = [
   'surfboards',
@@ -178,6 +179,7 @@ const ADMIN_LISTING_SECTION_VALUES: readonly AdminListingSection[] = [
   'leashes',
   'apparel',
   'accessories',
+  'magazines',
 ]
 
 /**
@@ -192,6 +194,7 @@ const PEER_SELL_ROUTE_BY_SECTION: Partial<Record<AdminListingSection, string>> =
   leashes: '/sell/leashes',
   apparel: '/sell/apparel',
   accessories: '/sell/accessories',
+  magazines: '/sell/magazines',
 }
 
 const ADMIN_LISTING_SECTION_LABELS: Record<AdminListingSection, string> = {
@@ -204,6 +207,7 @@ const ADMIN_LISTING_SECTION_LABELS: Record<AdminListingSection, string> = {
   leashes: 'Leashes',
   apparel: 'Apparel',
   accessories: 'Accessories',
+  magazines: 'Magazines',
 }
 
 function normalizeListingSection(section: string | undefined | null): AdminListingSection | null {
@@ -980,6 +984,7 @@ export default function AdminListingsPage() {
                 <SelectItem value="leashes">Leashes</SelectItem>
                 <SelectItem value="apparel">Apparel</SelectItem>
                 <SelectItem value="accessories">Accessories</SelectItem>
+                <SelectItem value="magazines">Magazines</SelectItem>
                 <SelectItem value="new">New &amp; retail</SelectItem>
               </SelectContent>
             </Select>
@@ -1177,6 +1182,7 @@ export default function AdminListingsPage() {
                     <SelectItem value="leashes">Leash</SelectItem>
                     <SelectItem value="apparel">Apparel</SelectItem>
                     <SelectItem value="accessories">Accessories</SelectItem>
+                <SelectItem value="magazines">Magazines</SelectItem>
                     <SelectItem value="new">Shop / retail</SelectItem>
                   </SelectContent>
                 </Select>

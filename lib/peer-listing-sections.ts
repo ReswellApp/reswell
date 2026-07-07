@@ -17,6 +17,7 @@ export const PEER_LISTING_SECTIONS = [
   "leashes",
   "apparel",
   "accessories",
+  "magazines",
 ] as const
 
 export type PeerListingSection = (typeof PEER_LISTING_SECTIONS)[number]
@@ -38,6 +39,7 @@ const PEER_SELL_ROUTE_BY_SECTION: Partial<Record<PeerListingSection, string>> = 
   leashes: "/sell/leashes",
   apparel: "/sell/apparel",
   accessories: "/sell/accessories",
+  magazines: "/sell/magazines",
 }
 
 export const PEER_LISTING_SECTION_LABELS: Record<PeerListingSection, string> = {
@@ -49,6 +51,7 @@ export const PEER_LISTING_SECTION_LABELS: Record<PeerListingSection, string> = {
   leashes: "Leash",
   apparel: "Apparel",
   accessories: "Accessories",
+  magazines: "Magazine",
 }
 
 /** Sell-flow entry URL for admin bulk listing (includes `bulk` slot id). */

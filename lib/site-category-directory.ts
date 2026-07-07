@@ -62,6 +62,7 @@ export const footerCategoryLinks: CategoryLink[] = [
   ...surfboardBrowseLinks.filter((link) => link.href !== "/boards"),
   ...siteHeaderMainPeerProductNavLinks,
   { label: "Wetsuits", href: "/wetsuits" },
+  { label: "Magazines", href: "/magazines" },
 ]
 
 export type CategoryDirectorySection = {

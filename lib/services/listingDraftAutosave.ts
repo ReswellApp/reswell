@@ -20,7 +20,7 @@ import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
-import { boardCategoryMap } from "@/lib/utils/board-type-from-category-id"
+import { boardCategoryMap, resolveListingBoardTypeFromCategory } from "@/lib/utils/board-type-from-category-id"
 import { boardBrowseFacetFieldsForDb } from "@/lib/listing-facet-write"
 
 function shippingPriceToDb(
@@ -92,7 +92,7 @@ export function buildSurfboardDraftListingRow(
     condition,
     category_id: categoryId,
     section: "surfboards",
-    board_type: fd.boardType?.trim() || null,
+    board_type: resolveListingBoardTypeFromCategory(categoryId, fd.boardType),
     length_feet: dimDb.length_feet,
     length_inches: dimDb.length_inches,
     width: dimDb.width,

@@ -11,6 +11,42 @@ export const boardCategoryMap: Record<string, string> = {
   other: "c3d4e5f6-a7b8-49c0-b123-456789abcdef",
 }
 
+/** `public.categories.id` for a `/boards?type=` slug (undefined for `all` / unknown). */
+export function categoryIdForBrowseBoardType(
+  type: string | undefined | null,
+): string | undefined {
+  if (!type || type === "all") return undefined
+  const normalized =
+    type === "mid-length" || type === "funboard"
+      ? "hybrid"
+      : type === "step-up" || type === "gun"
+        ? "step-up-gun"
+        : type.trim()
+  return boardCategoryMap[normalized]
+}
+
+/** Category ids for multi-select board-style facet slugs. */
+export function categoryIdsForBrowseBoardTypes(types: string[]): string[] {
+  return Array.from(
+    new Set(
+      types
+        .map((t) => categoryIdForBrowseBoardType(t))
+        .filter((v): v is string => Boolean(v)),
+    ),
+  )
+}
+
+/** Prefer category_id (canonical) with optional legacy board_type fallback. */
+export function resolveListingBoardTypeFromCategory(
+  categoryId: string | undefined | null,
+  boardTypeFallback?: string | null,
+): string | null {
+  const cat = categoryId?.trim()
+  if (cat) return boardTypeFromCategoryId(cat)
+  const fb = boardTypeFallback?.trim()
+  return fb || null
+}
+
 /** Map surfboard category row id → `listings.board_type` (multiple keys can share one UUID). */
 export function boardTypeFromCategoryId(categoryId: string): string {
   const keys = Object.entries(boardCategoryMap)

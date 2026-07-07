@@ -19,6 +19,7 @@ import {
   type BoardDimensionBrowseFields,
 } from "@/lib/utils/board-dimension-browse-filter"
 import { isUuidString } from "@/lib/utils/isUuid"
+import { categoryIdsForBrowseBoardTypes } from "@/lib/utils/board-type-from-category-id"
 import {
   lengthBucketBySlug,
   volumeBucketBySlug,
@@ -411,6 +412,38 @@ function geoBoundingBoxFiltersMiles(lat: number, lng: number, radiusMiles: numbe
   return { minLat: lat - dLat, maxLat: lat + dLat, minLng: lng - dLng, maxLng: lng + dLng }
 }
 
+/** Match board style by `board_type` or surfboard `category_id` (kept in sync; OR covers legacy drift). */
+function applyBoardStyleBrowseFilter(
+  dbQuery: SurfboardBrowseListingsQuery,
+  styleSlugs: string[],
+): SurfboardBrowseListingsQuery {
+  const dbTypes = Array.from(
+    new Set(
+      styleSlugs
+        .map((s) => boardTypeForDbFromBrowseParam(s))
+        .filter((v): v is string => Boolean(v)),
+    ),
+  )
+  const categoryIds = categoryIdsForBrowseBoardTypes(styleSlugs)
+  if (dbTypes.length === 0 && categoryIds.length === 0) return dbQuery
+
+  const parts: string[] = []
+  if (dbTypes.length === 1) parts.push(`board_type.eq.${dbTypes[0]}`)
+  else if (dbTypes.length > 1) parts.push(`board_type.in.(${dbTypes.join(",")})`)
+
+  if (categoryIds.length === 1) parts.push(`category_id.eq.${categoryIds[0]}`)
+  else if (categoryIds.length > 1) parts.push(`category_id.in.(${categoryIds.join(",")})`)
+
+  if (parts.length === 0) return dbQuery
+  if (parts.length === 1 && dbTypes.length === 1 && categoryIds.length === 0) {
+    return dbQuery.eq("board_type", dbTypes[0]!)
+  }
+  if (parts.length === 1 && categoryIds.length === 1 && dbTypes.length === 0) {
+    return dbQuery.eq("category_id", categoryIds[0]!)
+  }
+  return dbQuery.or(parts.join(","))
+}
+
 /** Shared keyword, type, condition, price, sort, location, and pagination filters for /boards. */
 export async function buildSurfboardBrowseBaseQuery(
   supabase: SupabaseClient,
@@ -459,22 +492,15 @@ export async function buildSurfboardBrowseBaseQuery(
     .eq("hidden_from_site", false) as unknown as SurfboardBrowseListingsQuery
 
   const facets = params.facets
-  const styleDbTypes = Array.from(
-    new Set(
-      (facets?.styles ?? [])
-        .map((s) => boardTypeForDbFromBrowseParam(s))
-        .filter((v): v is string => Boolean(v)),
-    ),
-  )
+  const styleSlugs = facets?.styles?.length
+    ? facets.styles
+    : params.boardType !== "all"
+      ? [params.boardType]
+      : []
 
-  if (styleDbTypes.length > 0) {
+  if (styleSlugs.length > 0) {
     // Sidebar multi-select board style takes precedence over the single `type=` nav param.
-    dbQuery = dbQuery.in("board_type", styleDbTypes)
-  } else if (params.boardType !== "all") {
-    const dbBoardType = boardTypeForDbFromBrowseParam(params.boardType)
-    if (dbBoardType) {
-      dbQuery = dbQuery.eq("board_type", dbBoardType)
-    }
+    dbQuery = applyBoardStyleBrowseFilter(dbQuery, styleSlugs)
   }
 
   if (facets?.conditions && facets.conditions.length > 0) {

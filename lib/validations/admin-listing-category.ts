@@ -10,6 +10,7 @@ export const ADMIN_LISTING_SECTIONS = [
   "leashes",
   "apparel",
   "accessories",
+  "magazines",
 ] as const
 
 export type AdminListingSection = (typeof ADMIN_LISTING_SECTIONS)[number]

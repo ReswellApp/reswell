@@ -7,6 +7,7 @@ import { fetchSurfpackListingSitemapEntries } from "@/lib/db/surfpack-listings"
 import { fetchLeashListingSitemapEntries } from "@/lib/db/leash-listings"
 import { fetchApparelListingSitemapEntries } from "@/lib/db/apparel-listings"
 import { fetchAccessoryListingSitemapEntries } from "@/lib/db/accessory-listings"
+import { fetchMagazineListingSitemapEntries } from "@/lib/db/magazine-listings"
 import { fetchBrandSlugRowsForSitemap } from "@/lib/db/sitemap-brands"
 import { fetchSellerProfileSitemapEntries } from "@/lib/db/sitemap-seller-profiles"
 import { fetchForumThreadSitemapEntries } from "@/lib/db/sitemap-forum-threads"
@@ -120,6 +121,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     { url: `${BASE}/leashes`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
     { url: `${BASE}/apparel`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
     { url: `${BASE}/accessories`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
+    { url: `${BASE}/magazines`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
     { url: `${BASE}/categories`, lastModified: now, changeFrequency: "weekly", priority: 0.65 },
     {
       url: `${BASE}/what-is-reswell`,
@@ -235,6 +237,7 @@ export async function buildListingSitemapUrlEntries(): Promise<SitemapUrlEntry[]
     leashEntries,
     apparelEntries,
     accessoryEntries,
+    magazineEntries,
   ] = await Promise.all([
     fetchSurfboardListingSitemapEntries(supabase),
     fetchFinListingSitemapEntries(supabase),
@@ -244,6 +247,7 @@ export async function buildListingSitemapUrlEntries(): Promise<SitemapUrlEntry[]
     fetchLeashListingSitemapEntries(supabase),
     fetchApparelListingSitemapEntries(supabase),
     fetchAccessoryListingSitemapEntries(supabase),
+    fetchMagazineListingSitemapEntries(supabase),
   ])
 
   const peerEntries = [
@@ -254,6 +258,7 @@ export async function buildListingSitemapUrlEntries(): Promise<SitemapUrlEntry[]
     ...leashEntries,
     ...apparelEntries,
     ...accessoryEntries,
+    ...magazineEntries,
   ]
 
   const normalized: { path: string; lastModified: Date }[] = [

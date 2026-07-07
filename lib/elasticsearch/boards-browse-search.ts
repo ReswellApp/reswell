@@ -26,6 +26,7 @@ import {
   boardTypeForDbFromBrowseParam,
   browseTypeParamFromBoardType,
 } from "@/lib/marketplace-slug-metadata"
+import { categoryIdsForBrowseBoardTypes } from "@/lib/utils/board-type-from-category-id"
 import type { BoardsBrowseFacetCounts } from "@/lib/services/boardsBrowseFacetCounts"
 import { isUuidString } from "@/lib/utils/isUuid"
 
@@ -36,6 +37,18 @@ const SEARCH_KEYWORD_FIELDS = [
   "model^2",
   "category_name^2",
 ] as const
+
+/** ES filter for board style slugs — matches `board_type` or surfboard `category_id`. */
+function boardStyleFilterClause(styleSlugs: string[]): object | null {
+  const dbTypes = styleDbTypes(styleSlugs)
+  const categoryIds = categoryIdsForBrowseBoardTypes(styleSlugs)
+  const should: object[] = []
+  if (dbTypes.length > 0) should.push({ terms: { board_type: dbTypes } })
+  if (categoryIds.length > 0) should.push({ terms: { category_id: categoryIds } })
+  if (should.length === 0) return null
+  if (should.length === 1) return should[0]!
+  return { bool: { should, minimum_should_match: 1 } }
+}
 
 /** Distinct, canonical `board_type` DB values for the selected style facet slugs. */
 function styleDbTypes(styles: string[]): string[] {
@@ -76,9 +89,8 @@ type FacetKey = keyof BoardsBrowseFacetCounts
 function facetSelectionClauses(
   sel: BoardsBrowseFacetSelections,
 ): Record<FacetKey, object | null> {
-  const dbTypes = styleDbTypes(sel.styles)
   return {
-    style: dbTypes.length > 0 ? { terms: { board_type: dbTypes } } : null,
+    style: boardStyleFilterClause(sel.styles),
     condition: sel.conditions.length > 0 ? { terms: { condition: sel.conditions } } : null,
     fin: sel.finSetups.length > 0 ? { terms: { fins_setup: sel.finSetups } } : null,
     finSystem: sel.finSystems.length > 0 ? { terms: { fin_system: sel.finSystems } } : null,
@@ -206,13 +218,14 @@ function buildListingsFilters(params: BoardsBrowseEsSearchParams): object[] {
   const filters = baseContextFilters(params)
   const facets = params.facets
 
-  const dbTypes = styleDbTypes(facets?.styles ?? [])
-  if (dbTypes.length > 0) {
-    filters.push({ terms: { board_type: dbTypes } })
-  } else if (params.boardType && params.boardType !== "all") {
-    const dbBoardType = boardTypeForDbFromBrowseParam(params.boardType)
-    if (dbBoardType) filters.push({ term: { board_type: dbBoardType } })
-  }
+  const styleSlugs =
+    (facets?.styles?.length ?? 0) > 0
+      ? (facets?.styles ?? [])
+      : params.boardType && params.boardType !== "all"
+        ? [params.boardType]
+        : []
+  const styleClause = boardStyleFilterClause(styleSlugs)
+  if (styleClause) filters.push(styleClause)
 
   if (facets?.conditions?.length) {
     filters.push({ terms: { condition: facets.conditions } })

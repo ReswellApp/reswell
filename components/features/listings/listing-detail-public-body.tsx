@@ -6,6 +6,7 @@ import { SurfpacksListingDetailPage } from "@/components/surfpacks-listing-detai
 import { LeashesListingDetailPage } from "@/components/leashes-listing-detail-page"
 import { ApparelListingDetailPage } from "@/components/apparel-listing-detail-page"
 import { AccessoriesListingDetailPage } from "@/components/accessories-listing-detail-page"
+import { MagazinesListingDetailPage } from "@/components/magazines-listing-detail-page"
 import { ShopListingDetailPage } from "@/components/shop-listing-detail-page"
 import { ListingViewTracker } from "@/components/features/listings/listing-view-tracker"
 import { ListingPdpProductJsonLd } from "@/components/features/listings/listing-pdp-product-json-ld"
@@ -59,6 +60,8 @@ export function ListingDetailPublicBody({
             return <ApparelListingDetailPage {...cachedPublicProps} />
           case "accessories":
             return <AccessoriesListingDetailPage {...cachedPublicProps} />
+          case "magazines":
+            return <MagazinesListingDetailPage {...cachedPublicProps} />
           case "new":
             return <ShopListingDetailPage listingParam={listingParam} prefetchedListing={listing} />
           default:
