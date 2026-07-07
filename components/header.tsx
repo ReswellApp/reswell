@@ -533,33 +533,57 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     // Soft `router.refresh()` after OAuth can return a guest snapshot before cookies are
     // visible to RSC — do not paint logged-out over a verified client session.
     if (!d.user && user) return
+
+    const isPartialBootstrap = Boolean(d.user && !d.authLoaded)
+
     setUser(d.user)
-    setProfileAvatarUrl(d.profileAvatarUrl)
-    setProfileDisplayName(d.profileDisplayName)
-    setIsAdmin(d.isAdmin)
-    setUnreadMessages(d.unreadMessages)
-    if (d.walletBalance !== null) {
+
+    if (isPartialBootstrap) {
+      // Incomplete server bootstrap (profile/wallet missing) — keep last-known UI until
+      // client refetch restores the full snapshot (avoids OAuth avatar flash + hidden balance).
+      setProfileAvatarUrl((prev) => prev ?? d.profileAvatarUrl)
+      setProfileDisplayName((prev) => prev ?? d.profileDisplayName)
+      setIsAdmin((prev) => (d.isAdmin ? d.isAdmin : prev))
+      setUnreadMessages((prev) => (d.unreadMessages > 0 ? d.unreadMessages : prev))
       setWalletBalance((prev) => {
+        if (prev !== null) return prev
         const clientTotal = clientWalletTotalRef.current
-        if (
-          clientTotal !== null &&
-          Math.abs(d.walletBalance! - clientTotal) > WALLET_TOTAL_EPS
-        ) {
-          return clientTotal
-        }
-        if (
-          clientTotal !== null &&
-          Math.abs(d.walletBalance! - clientTotal) <= WALLET_TOTAL_EPS
-        ) {
-          clientWalletTotalRef.current = null
-        }
+        if (clientTotal !== null) return clientTotal
         return d.walletBalance
       })
     } else {
-      setWalletBalance(d.walletBalance)
+      setProfileAvatarUrl(d.profileAvatarUrl)
+      setProfileDisplayName(d.profileDisplayName)
+      setIsAdmin(d.isAdmin)
+      setUnreadMessages(d.unreadMessages)
+      if (d.walletBalance !== null) {
+        setWalletBalance((prev) => {
+          const clientTotal = clientWalletTotalRef.current
+          if (
+            clientTotal !== null &&
+            Math.abs(d.walletBalance! - clientTotal) > WALLET_TOTAL_EPS
+          ) {
+            return clientTotal
+          }
+          if (
+            clientTotal !== null &&
+            Math.abs(d.walletBalance! - clientTotal) <= WALLET_TOTAL_EPS
+          ) {
+            clientWalletTotalRef.current = null
+          }
+          return d.walletBalance
+        })
+      } else {
+        setWalletBalance(d.walletBalance)
+      }
     }
+
     // Never drop back to skeleton / logged-out chrome while the client session is still valid.
     setAuthLoaded(d.user ? d.authLoaded || Boolean(user) : d.authLoaded)
+
+    if (isPartialBootstrap && user) {
+      void refetchFromClient()
+    }
     // headerAuthDigest is the meaningful identity of the server snapshot for this tree.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [headerAuthDigest])
@@ -655,7 +679,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       }
       if (detail && Object.prototype.hasOwnProperty.call(detail, "avatarUrl")) {
         const nextAvatar = detail.avatarUrl?.trim()
-        setProfileAvatarUrl(nextAvatar || null)
+        setProfileAvatarUrl(nextAvatar ? profileMediaDisplaySrc(nextAvatar) : null)
         setAuthLoaded(true)
       }
       if (
