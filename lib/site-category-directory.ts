@@ -8,7 +8,7 @@ import { BRANDS_BASE } from "@/lib/brands/routes"
 export type CategoryLink = { label: string; href: string }
 
 /** `/boards` root label — matches header nav and browse breadcrumbs. */
-export const surfboardsBrowseRootLabel = "All Surfboards"
+export const surfboardsBrowseRootLabel = "Surfboards"
 
 export const surfboardBrowseLinks: CategoryLink[] = [
   { label: surfboardsBrowseRootLabel, href: "/boards" },
@@ -39,11 +39,12 @@ export const siteHeaderMainPeerProductNavLinks: CategoryLink[] = [
 ]
 
 /**
- * Full category rail — desktop header only (shapes + peer gear at end).
+ * Full category rail — desktop header only (Surfboards root, then Fins, then shapes).
  */
 export const siteHeaderDesktopCategoryNavLinks: CategoryLink[] = [
-  ...surfboardBrowseLinks,
+  surfboardBrowseLinks[0],
   ...siteHeaderMainPeerProductNavLinks,
+  ...surfboardBrowseLinks.slice(1),
 ]
 
 /**
