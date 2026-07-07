@@ -11,6 +11,7 @@ export type NavSearchPersonalizationListing = {
   title: string
   price: number
   imageUrl: string | null
+  imageUrlCandidates?: string[]
 }
 
 export type NavSearchPersonalization = {

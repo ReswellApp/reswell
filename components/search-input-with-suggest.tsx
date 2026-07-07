@@ -1047,6 +1047,9 @@ export function SearchInputWithSuggest({
                         imageUrl={
                           item.imageUrl ? proxiedListingImageSrc(item.imageUrl) : null
                         }
+                        imageCandidates={item.imageUrlCandidates?.map((url) =>
+                          proxiedListingImageSrc(url),
+                        )}
                       />
                       <NavSearchTopListingText
                         title={capitalizeWords(item.title)}

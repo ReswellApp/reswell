@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import {
+  listingTitleThumbnailCandidates,
+  type ListingImageForCard,
+} from "@/lib/listing-image-display"
 import type {
   NavSearchPersonalizationBrand,
   NavSearchPersonalizationListing,
@@ -37,12 +40,14 @@ export function navPersonalizationListingFromRow(
   record: Record<string, unknown>,
 ): NavSearchPersonalizationListing {
   const imgs = (record.listing_images as ListingImageForCard[] | null) ?? []
+  const imageUrlCandidates = listingTitleThumbnailCandidates(imgs)
   return {
     id: String(record.id ?? ""),
     slug: typeof record.slug === "string" ? record.slug : null,
     title: typeof record.title === "string" ? record.title : "",
     price: Number(record.price) || 0,
-    imageUrl: listingTitleThumbnailSrc(imgs) || null,
+    imageUrl: imageUrlCandidates[0] ?? null,
+    imageUrlCandidates,
   }
 }
 

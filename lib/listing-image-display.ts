@@ -106,6 +106,16 @@ export function listingTileCarouselImageCandidateLists(
     .filter((candidates) => candidates.length > 0)
 }
 
+/** Ordered fallbacks for compact listing rows (nav search, cart, checkout). */
+export function listingTitleThumbnailCandidates(
+  images: ListingImageForCard[] | null | undefined,
+): string[] {
+  const list = images ?? []
+  const primary = list.find((i) => i.is_primary) || list[0]
+  if (!primary) return []
+  return listingTileImageSrcCandidatesFromRow(primary)
+}
+
 /**
  * Compact rows (cart, checkout summary, order lists, nav search): prefer stored
  * `thumbnail_url` for bandwidth; fall back to full `url` when missing.
@@ -113,10 +123,7 @@ export function listingTileCarouselImageCandidateLists(
 export function listingTitleThumbnailSrc(
   images: ListingImageForCard[] | null | undefined,
 ): string {
-  const list = images ?? []
-  const primary = list.find((i) => i.is_primary) || list[0]
-  if (!primary) return ""
-  return listingTileImageSrcFromRow(primary)
+  return listingTitleThumbnailCandidates(images)[0] ?? ""
 }
 
 /** Full-size primary image for large backdrops (e.g. homepage hero); skips thumbnails. */

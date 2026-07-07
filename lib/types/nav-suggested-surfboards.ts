@@ -8,4 +8,5 @@ export type NavSuggestedSurfboardPoolRow = {
   views: number | null
   created_at: string
   imageUrl: string | null
+  imageUrlCandidates?: string[]
 }

@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import {
+  listingTitleThumbnailCandidates,
+  type ListingImageForCard,
+} from "@/lib/listing-image-display"
 
 import type {
   NavSuggestedSurfboardPoolRow,
@@ -18,6 +21,7 @@ export function navSuggestedSurfboardRowFromRecord(
   record: Record<string, unknown>,
 ): NavSuggestedSurfboardPoolRow {
   const imgs = (record.listing_images as ListingImageForCard[] | null) ?? []
+  const imageUrlCandidates = listingTitleThumbnailCandidates(imgs)
   return {
     id: record.id as string,
     slug: (record.slug as string | null) ?? null,
@@ -25,7 +29,8 @@ export function navSuggestedSurfboardRowFromRecord(
     price: Number(record.price),
     views: record.views != null ? Number(record.views) : null,
     created_at: record.created_at as string,
-    imageUrl: listingTitleThumbnailSrc(imgs) || null,
+    imageUrl: imageUrlCandidates[0] ?? null,
+    imageUrlCandidates,
   }
 }
 

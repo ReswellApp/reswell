@@ -5,6 +5,7 @@ export type SuggestListing = {
   price: number
   section: string
   imageUrl: string | null
+  imageUrlCandidates?: string[]
   brand: string | null
   city: string | null
   state: string | null

@@ -15,7 +15,7 @@ import {
   type BrandCatalogSuggestRow,
 } from "@/lib/services/brandDirectorySearch"
 import {
-  listingTitleThumbnailSrc,
+  listingTitleThumbnailCandidates,
   type ListingImageForCard,
 } from "@/lib/listing-image-display"
 import type {
@@ -61,14 +61,15 @@ function dedupeListingBrandInputsForSuggest(
 
 function rowToSuggestListing(row: Record<string, unknown>): SuggestListing {
   const imgs = (row.listing_images as ListingImageForCard[] | null) ?? []
-  const thumbSrc = listingTitleThumbnailSrc(imgs)
+  const imageUrlCandidates = listingTitleThumbnailCandidates(imgs)
   return {
     id: row.id as string,
     slug: (row.slug as string | null) ?? null,
     title: (row.title as string) ?? "",
     price: typeof row.price === "number" ? row.price : parseFloat(String(row.price)) || 0,
     section: row.section as string,
-    imageUrl: thumbSrc || null,
+    imageUrl: imageUrlCandidates[0] ?? null,
+    imageUrlCandidates,
     brand: (row.brand as string | null) ?? null,
     city: (row.city as string | null) ?? null,
     state: (row.state as string | null) ?? null,
@@ -77,14 +78,15 @@ function rowToSuggestListing(row: Record<string, unknown>): SuggestListing {
 }
 
 function recentListingToSuggestListing(row: RecentListing): SuggestListing {
-  const thumbSrc = listingTitleThumbnailSrc(row.listing_images)
+  const imageUrlCandidates = listingTitleThumbnailCandidates(row.listing_images)
   return {
     id: row.id,
     slug: row.slug,
     title: row.title,
     price: row.price,
     section: row.section,
-    imageUrl: thumbSrc || null,
+    imageUrl: imageUrlCandidates[0] ?? null,
+    imageUrlCandidates,
     brand: null,
     city: row.city ?? null,
     state: row.state ?? null,

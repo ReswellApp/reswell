@@ -69,6 +69,7 @@ type SuggestedListing = {
   title: string
   price: number
   imageUrl: string | null
+  imageUrlCandidates?: string[]
 }
 
 /** `popular` ranks by `listings.views` and boosts boards opened from this browser via nav suggestions / typeahead. */
@@ -179,7 +180,10 @@ function NavSearchIdleRecentlyViewedTile({
       onMouseDown={(e) => e.preventDefault()}
       onClick={onNavigate}
     >
-      <NavSearchTopListingThumb imageUrl={listing.imageUrl} />
+      <NavSearchTopListingThumb
+        imageUrl={listing.imageUrl}
+        imageCandidates={listing.imageUrlCandidates}
+      />
       <p className="mt-1.5 line-clamp-2 text-[11px] font-semibold leading-snug text-foreground sm:text-xs">
         {capitalizeWords(listing.title)}
       </p>
@@ -321,12 +325,13 @@ export function HeaderNavSearch({
             3,
           )
         : suggestedPool.slice(0, 3)
-    return rows.map(({ id, slug, title, price, imageUrl }) => ({
+    return rows.map(({ id, slug, title, price, imageUrl, imageUrlCandidates }) => ({
       id,
       slug,
       title,
       price,
       imageUrl,
+      imageUrlCandidates,
     }))
     // suggestedRankTick re-reads engagement from localStorage
   }, [suggestedPool, suggestedSurfboardsMode, suggestedRankTick])
@@ -718,7 +723,10 @@ export function HeaderNavSearch({
                       setIdleOpen(false)
                     }}
                   >
-                    <NavSearchTopListingThumb imageUrl={listing.imageUrl} />
+                    <NavSearchTopListingThumb
+        imageUrl={listing.imageUrl}
+        imageCandidates={listing.imageUrlCandidates}
+      />
                     <NavSearchTopListingText
                       title={capitalizeWords(listing.title)}
                       price={listing.price}
