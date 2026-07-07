@@ -3,6 +3,10 @@ import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { removeListingImageFilesFromStorage } from "@/lib/services/listingStorageCleanup"
 import { MAGAZINES_SECTION } from "@/lib/magazine-listing-config"
 import { buildMagazineListingPersistFields } from "@/lib/magazine-listing-persist-fields"
+import {
+  actorCanManageMagazineListings,
+  resolveMagazineListingSellerId,
+} from "@/lib/services/magazineListingSeller"
 import type {
   CreateMagazineListingInput,
   UpdateMagazineListingInput,
@@ -80,9 +84,14 @@ export async function syncMagazineListingImages(
 export async function updateMagazineListing(
   supabase: SupabaseClient,
   listingId: string,
-  userId: string,
+  actorUserId: string,
   input: UpdateMagazineListingInput,
 ): Promise<{ slug: string }> {
+  const canManage = await actorCanManageMagazineListings(supabase, actorUserId)
+  if (!canManage) {
+    throw new Error("You do not have permission to edit magazine listings")
+  }
+
   const { data: existing, error: existingErr } = await supabase
     .from("listings")
     .select("id, user_id, section, status, slug")
@@ -94,9 +103,6 @@ export async function updateMagazineListing(
   }
   if (!existing) {
     throw new Error("Listing not found")
-  }
-  if (existing.user_id !== userId) {
-    throw new Error("You can only edit your own listings")
   }
   if (existing.section !== MAGAZINES_SECTION) {
     throw new Error("Only magazine listings can be edited here")
@@ -110,7 +116,6 @@ export async function updateMagazineListing(
     .from("listings")
     .update(updateFields)
     .eq("id", listingId)
-    .eq("user_id", userId)
     .select("slug")
     .single()
 
@@ -138,9 +143,10 @@ export async function updateMagazineListing(
 
 export async function createMagazineListing(
   supabase: SupabaseClient,
-  userId: string,
+  _actorUserId: string,
   input: CreateMagazineListingInput,
 ): Promise<CreateMagazineListingResult> {
+  const sellerUserId = await resolveMagazineListingSellerId(supabase)
   const slug = await generateUniqueListingSlug(supabase, input.title)
   const persistFields = buildMagazineListingPersistFields(input)
   const { updated_at: _omitUpdatedAt, ...insertFields } = persistFields
@@ -148,7 +154,7 @@ export async function createMagazineListing(
   const { data: inserted, error: listingError } = await supabase
     .from("listings")
     .insert({
-      user_id: userId,
+      user_id: sellerUserId,
       status: "active",
       slug,
       ...insertFields,

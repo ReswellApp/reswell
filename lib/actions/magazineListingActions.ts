@@ -7,6 +7,7 @@ import {
   updateMagazineListingSchema,
 } from "@/lib/validations/magazine-listing"
 import { createMagazineListing, updateMagazineListing } from "@/lib/services/magazineListing"
+import { actorCanManageMagazineListings } from "@/lib/services/magazineListingSeller"
 
 export type CreateMagazineListingActionResult =
   | { success: true; listingId: string; slug: string }
@@ -14,7 +15,7 @@ export type CreateMagazineListingActionResult =
 
 export type UpdateMagazineListingActionResult = { success: true; slug: string } | { error: string }
 
-async function requireMagazineAdminAction(): Promise<
+async function requireMagazineListingManagerAction(): Promise<
   | { ok: true; supabase: Awaited<ReturnType<typeof createClient>>; userId: string }
   | { ok: false; error: string }
 > {
@@ -25,17 +26,9 @@ async function requireMagazineAdminAction(): Promise<
   if (!user) {
     return { ok: false, error: "Please sign in." }
   }
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .maybeSingle()
-  if (error) {
-    console.error("requireMagazineAdminAction profile:", error.message)
-    return { ok: false, error: "Could not verify access." }
-  }
-  if (!profile?.is_admin) {
-    return { ok: false, error: "Admin access required." }
+  const allowed = await actorCanManageMagazineListings(supabase, user.id)
+  if (!allowed) {
+    return { ok: false, error: "You do not have permission to manage magazine listings." }
   }
   return { ok: true, supabase, userId: user.id }
 }
@@ -43,7 +36,7 @@ async function requireMagazineAdminAction(): Promise<
 export async function createMagazineListingAction(
   raw: unknown,
 ): Promise<CreateMagazineListingActionResult> {
-  const auth = await requireMagazineAdminAction()
+  const auth = await requireMagazineListingManagerAction()
   if (!auth.ok) return { error: auth.error }
 
   const parsed = createMagazineListingSchema.safeParse(raw)
@@ -66,7 +59,7 @@ export async function createMagazineListingAction(
 export async function updateMagazineListingAction(
   raw: unknown,
 ): Promise<UpdateMagazineListingActionResult> {
-  const auth = await requireMagazineAdminAction()
+  const auth = await requireMagazineListingManagerAction()
   if (!auth.ok) return { error: auth.error }
 
   const parsed = updateMagazineListingSchema.safeParse(raw)

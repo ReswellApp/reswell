@@ -26,7 +26,7 @@ export type MetaCatalogFeedPageResult = {
 }
 
 /**
- * Active, site-visible peer listings (surfboards + fins) for Meta Commerce catalog sync (newest first).
+ * Active, site-visible peer listings (surfboards, fins, magazines) for Meta Commerce catalog sync (newest first).
  */
 export async function fetchMetaCatalogFeedPage(
   supabase: SupabaseClient,

@@ -22,6 +22,7 @@ export type GoogleMerchantListingDescriptionInput = {
   fins_setup?: string | null
   fin_system?: string | null
   fin_size?: string | null
+  magazine_year?: number | null
   city?: string | null
   state?: string | null
   local_pickup?: boolean | null
@@ -68,6 +69,7 @@ function locationPhrase(city?: string | null, state?: string | null): string | n
 
 function productCategoryLabel(section: string): string {
   if (section === "fins") return "surfboard fins"
+  if (section === "magazines") return "surf magazine"
   return "surfboard"
 }
 
@@ -99,6 +101,19 @@ function finSpecSentences(listing: GoogleMerchantListingDescriptionInput): strin
   if (setup) sentences.push(`Fin setup: ${setup}.`)
   if (system) sentences.push(`Fin system: ${system}.`)
   if (size) sentences.push(`Size: ${size}.`)
+  return sentences
+}
+
+function magazineSpecSentences(listing: GoogleMerchantListingDescriptionInput): string[] {
+  const sentences: string[] = []
+  const brand = listing.brand?.trim()
+  if (brand) sentences.push(`Publisher: ${brand}.`)
+  if (
+    listing.magazine_year != null &&
+    Number.isFinite(Number(listing.magazine_year))
+  ) {
+    sentences.push(`Publication year: ${listing.magazine_year}.`)
+  }
   return sentences
 }
 
@@ -135,13 +150,31 @@ function introParagraph(listing: GoogleMerchantListingDescriptionInput): string 
   )
 }
 
+function marketplaceTail(listing: GoogleMerchantListingDescriptionInput): string {
+  return listing.section === "magazines"
+    ? RESELL_MAGAZINE_MARKETPLACE_TAIL
+    : RESELL_MARKETPLACE_TAIL
+}
+
+function visualDetailTail(listing: GoogleMerchantListingDescriptionInput): string {
+  return listing.section === "magazines" ? MAGAZINE_VISUAL_DETAIL_TAIL : VISUAL_DETAIL_TAIL
+}
+
 const RESELL_MARKETPLACE_TAIL =
   "Shop with confidence on Reswell: every listing includes multiple seller photos so you can review deck, rails, bottom, and hardware before you buy. " +
   "Reswell offers secure checkout and buyer protection on eligible purchases. " +
   "Browse the full photo gallery and listing details on reswell.app."
 
+const RESELL_MAGAZINE_MARKETPLACE_TAIL =
+  "Shop with confidence on Reswell: every magazine listing includes cover and interior photos so you can review condition before you buy. " +
+  "Reswell offers secure checkout and buyer protection on eligible purchases. " +
+  "Browse the full photo gallery and listing details on reswell.app."
+
 const VISUAL_DETAIL_TAIL =
   "Review the listing photos for shape, color, finish, fin boxes, leash plug, and any cosmetic wear described by the seller."
+
+const MAGAZINE_VISUAL_DETAIL_TAIL =
+  "Review the listing photos for cover art, spine wear, page condition, and any flaws described by the seller."
 
 /**
  * Builds a Merchant Center `description` that meets Google's length guidance by
@@ -158,6 +191,8 @@ export function buildGoogleMerchantProductDescription(
 
   if (listing.section === "fins") {
     blocks.push(...finSpecSentences(listing))
+  } else if (listing.section === "magazines") {
+    blocks.push(...magazineSpecSentences(listing))
   } else {
     blocks.push(...surfboardSpecSentences(listing))
   }
@@ -169,12 +204,12 @@ export function buildGoogleMerchantProductDescription(
     blocks.push(ensureEndsWithPunctuation(sellerNotes))
   }
 
-  blocks.push(ensureEndsWithPunctuation(VISUAL_DETAIL_TAIL))
+  blocks.push(ensureEndsWithPunctuation(visualDetailTail(listing)))
 
   let description = blocks.filter(Boolean).join(" ")
 
   if (description.length < GOOGLE_MERCHANT_MIN_DESCRIPTION_LENGTH) {
-    description = `${description} ${ensureEndsWithPunctuation(RESELL_MARKETPLACE_TAIL)}`
+    description = `${description} ${ensureEndsWithPunctuation(marketplaceTail(listing))}`
   }
 
   if (description.length < GOOGLE_MERCHANT_MIN_DESCRIPTION_LENGTH) {

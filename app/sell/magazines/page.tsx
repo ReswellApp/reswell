@@ -2,11 +2,12 @@ import { redirect } from "next/navigation"
 import type { Metadata } from "next"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { createClient } from "@/lib/supabase/server"
+import { actorCanManageMagazineListings } from "@/lib/services/magazineListingSeller"
 import SellMagazinesFlow from "./sell-magazines-client"
 
 export const metadata: Metadata = privatePageMetadata({
-  title: "List a magazine — Admin — Reswell",
-  description: "Admin-only flow to list surf magazines for sale on Reswell.",
+  title: "List a magazine — Reswell",
+  description: "List surf magazines for sale on Reswell.",
   path: "/sell/magazines",
 })
 
@@ -31,13 +32,9 @@ export default async function SellMagazinesPage({
   if (!user) {
     redirect("/auth/login?redirect=/sell/magazines")
   }
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .maybeSingle()
-  if (!profile?.is_admin) {
-    redirect("/admin")
+  const allowed = await actorCanManageMagazineListings(supabase, user.id)
+  if (!allowed) {
+    redirect("/magazines")
   }
 
   const qs = await searchParams

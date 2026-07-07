@@ -198,6 +198,12 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Browse used and pre-owned surf accessories for sale. Find wax, traction, tools, and more from surfers on Reswell.",
     path: "/accessories",
   }, { note: "Main /accessories browse hub." }),
+  page("magazines", "marketplace", "Browse magazines", {
+    title: "Surf Magazines For Sale | Reswell",
+    description:
+      "Browse vintage and collectible surf magazines for sale. Collector issues and classic publications — shipped from Reswell.",
+    path: "/magazines",
+  }, { note: "Main /magazines browse hub." }),
   page("boards:type=shortboard", "marketplace", "Boards — Shortboards", {
     title: "Shortboards For Sale | Reswell",
     description:

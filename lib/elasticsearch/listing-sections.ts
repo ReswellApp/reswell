@@ -1,5 +1,5 @@
 /** Peer listing sections indexed in Elasticsearch for marketplace search. */
-export const ELASTICSEARCH_INDEXED_LISTING_SECTIONS = ["surfboards", "fins"] as const
+export const ELASTICSEARCH_INDEXED_LISTING_SECTIONS = ["surfboards", "fins", "magazines"] as const
 
 export type ElasticsearchIndexedListingSection =
   (typeof ELASTICSEARCH_INDEXED_LISTING_SECTIONS)[number]

@@ -43,6 +43,7 @@ export type GoogleMerchantListingRow = {
   fins_setup?: string | null
   fin_system?: string | null
   fin_size?: string | null
+  magazine_year?: number | null
   city?: string | null
   state?: string | null
   local_pickup?: boolean | null

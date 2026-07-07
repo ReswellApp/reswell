@@ -59,7 +59,7 @@ export function getGoogleMerchantContentLanguage(): string {
 }
 
 /** Peer listing sections synced to the Merchant Center primary feed. */
-export const GOOGLE_MERCHANT_PEER_SECTIONS = ["surfboards", "fins"] as const
+export const GOOGLE_MERCHANT_PEER_SECTIONS = ["surfboards", "fins", "magazines"] as const
 
 export type GoogleMerchantPeerSection = (typeof GOOGLE_MERCHANT_PEER_SECTIONS)[number]
 
@@ -75,6 +75,9 @@ export function getGoogleMerchantProductCategory(): string {
 /** Google taxonomy: Sporting Goods > … > Surfing > Surfboard Fins (3525). */
 export const GOOGLE_MERCHANT_DEFAULT_FINS_PRODUCT_CATEGORY = "3525"
 
+/** Google taxonomy: Media > Magazines & Newspapers > Magazines (784). */
+export const GOOGLE_MERCHANT_DEFAULT_MAGAZINES_PRODUCT_CATEGORY = "784"
+
 export function getGoogleMerchantFinsProductCategory(): string {
   return (
     process.env.GOOGLE_MERCHANT_FINS_PRODUCT_CATEGORY?.trim() ||
@@ -82,8 +85,16 @@ export function getGoogleMerchantFinsProductCategory(): string {
   )
 }
 
+export function getGoogleMerchantMagazinesProductCategory(): string {
+  return (
+    process.env.GOOGLE_MERCHANT_MAGAZINES_PRODUCT_CATEGORY?.trim() ||
+    GOOGLE_MERCHANT_DEFAULT_MAGAZINES_PRODUCT_CATEGORY
+  )
+}
+
 export function getGoogleMerchantProductCategoryForSection(section: string): string {
   if (section === "fins") return getGoogleMerchantFinsProductCategory()
+  if (section === "magazines") return getGoogleMerchantMagazinesProductCategory()
   return getGoogleMerchantProductCategory()
 }
 
@@ -100,6 +111,9 @@ export const GOOGLE_MERCHANT_DEFAULT_ESTIMATED_SHIPPING_USD = 89
 
 /** Representative USD shipping for Reswell-calculated fin rates in the Merchant feed. */
 export const GOOGLE_MERCHANT_DEFAULT_FINS_ESTIMATED_SHIPPING_USD = 15
+
+/** Representative USD shipping for Reswell-calculated magazine rates in the Merchant feed. */
+export const GOOGLE_MERCHANT_DEFAULT_MAGAZINES_ESTIMATED_SHIPPING_USD = 10
 
 /** Representative USD shipping for Reswell-calculated surfboard rates in the Merchant feed. */
 export function getGoogleMerchantEstimatedShippingUsd(): number {
@@ -125,8 +139,20 @@ export function getGoogleMerchantFinsEstimatedShippingUsd(): number {
   return GOOGLE_MERCHANT_DEFAULT_FINS_ESTIMATED_SHIPPING_USD
 }
 
+export function getGoogleMerchantMagazinesEstimatedShippingUsd(): number {
+  const raw = process.env.GOOGLE_MERCHANT_MAGAZINES_ESTIMATED_SHIPPING_USD?.trim()
+  if (raw) {
+    const parsed = Number.parseFloat(raw)
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      return Math.round(parsed * 100) / 100
+    }
+  }
+  return GOOGLE_MERCHANT_DEFAULT_MAGAZINES_ESTIMATED_SHIPPING_USD
+}
+
 export function getGoogleMerchantEstimatedShippingUsdForSection(section: string): number {
   if (section === "fins") return getGoogleMerchantFinsEstimatedShippingUsd()
+  if (section === "magazines") return getGoogleMerchantMagazinesEstimatedShippingUsd()
   return getGoogleMerchantEstimatedShippingUsd()
 }
 

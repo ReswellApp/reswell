@@ -280,12 +280,14 @@ export default function SellMagazinesFlow({
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8 sm:py-12">
       <div className="mb-8 space-y-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Admin only</p>
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Magazine listings
+        </p>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
           {editId ? "Edit magazine listing" : "List a magazine"}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Shipping only — no local pickup. Magazines ship from Reswell.
+          Listings appear on the marketplace under the magazine seller profile. Shipping only — no local pickup.
         </p>
       </div>
 
