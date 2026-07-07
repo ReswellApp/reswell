@@ -1,6 +1,8 @@
 import { Suspense } from "react"
 import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
 import { SellTypeChooser } from "@/components/features/sell/sell-type-chooser"
+import { createClient } from "@/lib/supabase/server"
+import { actorCanManageMagazineListings } from "@/lib/services/magazineListingSeller"
 import SellFlowShell from "./sell-flow-client"
 
 function parseEditListingId(
@@ -48,5 +50,13 @@ export default async function SellPage({
     )
   }
 
-  return <SellTypeChooser />
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const showMagazinesOption = user
+    ? await actorCanManageMagazineListings(supabase, user.id)
+    : false
+
+  return <SellTypeChooser showMagazinesOption={showMagazinesOption} />
 }

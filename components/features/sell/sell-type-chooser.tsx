@@ -11,6 +11,14 @@ type SellTypeOption = {
   imageAlt: string
 }
 
+const MAGAZINES_SELL_OPTION: SellTypeOption = {
+  href: "/sell/magazines",
+  title: "Magazines",
+  description: "List surf magazines for the marketplace.",
+  imageSrc: null,
+  imageAlt: "Magazine",
+}
+
 /** Shown on /sell chooser. Other sell flows stay live at their routes until launch. */
 const SELL_TYPE_OPTIONS: readonly SellTypeOption[] = [
   {
@@ -29,20 +37,30 @@ const SELL_TYPE_OPTIONS: readonly SellTypeOption[] = [
   },
 ]
 
+type SellTypeChooserProps = {
+  showMagazinesOption?: boolean
+}
+
 /** First step of /sell: pick a product type. */
-export function SellTypeChooser() {
+export function SellTypeChooser({ showMagazinesOption = false }: SellTypeChooserProps) {
+  const options = showMagazinesOption
+    ? [...SELL_TYPE_OPTIONS, MAGAZINES_SELL_OPTION]
+    : SELL_TYPE_OPTIONS
+
   return (
     <main className="flex-1 bg-offwhite">
       <div className="container mx-auto max-w-lg px-4 py-12 sm:py-16">
         <div className="text-center">
           <h1 className="text-3xl font-bold sm:text-4xl">What are you listing?</h1>
           <p className="mx-auto mt-3 max-w-sm text-muted-foreground">
-            Choose surfboard or fins to get started.
+            {showMagazinesOption
+              ? "Choose a product type to get started."
+              : "Choose surfboard or fins to get started."}
           </p>
         </div>
 
         <div className="mt-10 space-y-3">
-          {SELL_TYPE_OPTIONS.map((option) => (
+          {options.map((option) => (
             <Link
               key={option.href}
               href={option.href}
