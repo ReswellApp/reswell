@@ -9,6 +9,11 @@ import {
   totalBoardLengthInchesFromCombinedInput,
 } from "@/lib/board-measurements"
 import {
+  resolveLengthTotalInches as resolveLengthTotalInchesFromRow,
+  resolveVolumeLiters as resolveVolumeLitersFromRow,
+  type ListingBrowseFacetMeasurementRow,
+} from "@/lib/listing-browse-facet-measurements"
+import {
   FIN_SYSTEM_OPTIONS,
   CONSTRUCTION_OPTIONS,
 } from "@/lib/boards-browse-facets"
@@ -37,6 +42,16 @@ export type BoardBrowseFacetDbFields = {
 export function finsSetupFieldForDb(boardFins: string | undefined): string | null {
   const slug = boardFins?.trim() ?? ""
   return serializeFinsSetupTags(slug ? [slug] : [])
+}
+
+/** Resolve indexed length for browse filters, falling back to `dimensions` when unset. */
+export function resolveLengthTotalInches(row: ListingBrowseFacetMeasurementRow): number | null {
+  return resolveLengthTotalInchesFromRow(row)
+}
+
+/** Resolve indexed volume for browse filters, falling back to `dimensions` when unset. */
+export function resolveVolumeLiters(row: ListingBrowseFacetMeasurementRow): number | null {
+  return resolveVolumeLitersFromRow(row)
 }
 
 export function boardBrowseFacetFieldsForDb(

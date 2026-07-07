@@ -11,10 +11,12 @@ export type FacetCountRow = {
   construction: string | null
   length_total_inches: number | null
   volume_liters: number | null
+  dimensions: string | null
+  title: string | null
 }
 
 const FACET_COUNT_SELECT =
-  "board_type, condition, fins_setup, fin_system, construction, length_total_inches, volume_liters"
+  "board_type, condition, fins_setup, fin_system, construction, length_total_inches, volume_liters, dimensions, title"
 
 /** Hard cap on rows scanned for in-memory facet counting. */
 const FACET_COUNT_MAX_ROWS = 5000

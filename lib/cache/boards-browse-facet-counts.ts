@@ -3,7 +3,7 @@ import {
   BOARDS_BROWSE_CACHE_TAG,
   BOARDS_BROWSE_REVALIDATE_SECONDS,
 } from "@/lib/cache/boards-browse-catalog"
-import { facetSelectionsFromParams } from "@/lib/boards-browse-facets"
+import { facetSelectionsFromBrowseParams } from "@/lib/boards-browse-facets"
 import {
   fetchSurfboardFacetCountRows,
   type FacetCountContext,
@@ -58,19 +58,36 @@ async function loadSurfboardFacetCountRows(
 
 const getCachedSurfboardFacetCountRows = unstable_cache(
   loadSurfboardFacetCountRows,
-  ["boards-browse-facet-count-rows", "v2"],
+  ["boards-browse-facet-count-rows", "v5"],
   {
     revalidate: BOARDS_BROWSE_REVALIDATE_SECONDS,
     tags: [BOARDS_BROWSE_CACHE_TAG],
   },
 )
 
+async function dbFacetCountsByParamKey(
+  ctx: FacetCountContext,
+  selections: ReturnType<typeof facetSelectionsFromBrowseParams>,
+): Promise<Record<string, Record<string, number>>> {
+  const rows = await getCachedSurfboardFacetCountRows(
+    ctx.query?.trim() ?? "",
+    ctx.brand?.trim() ?? "",
+    ctx.model?.trim() ?? "",
+    ctx.brandId?.trim() ?? "",
+    ctx.brandModelId?.trim() ?? "",
+    ctx.minPrice ?? null,
+    ctx.maxPrice ?? null,
+    ctx.location?.trim() ?? "",
+  )
+  return facetCountsByParamKey(computeBoardsBrowseFacetCounts(rows, selections))
+}
+
 /** Viewer-independent facet counts for the browse filter UI (cached by search context). */
 export async function getBoardsBrowseFacetCountsMapCached(
   searchParams: BoardsBrowseSearchParams,
 ): Promise<Record<string, Record<string, number>>> {
   const ctx = facetCountContextFromSearchParams(searchParams)
-  const selections = facetSelectionsFromParams(searchParams)
+  const selections = facetSelectionsFromBrowseParams(searchParams)
 
   if (isBoardsBrowseEsEnabled()) {
     try {
@@ -87,21 +104,13 @@ export async function getBoardsBrowseFacetCountsMapCached(
         },
         selections,
       )
+      // ES docs index resolved length/volume (listingRowToSearchDocFromRow), so all facet
+      // counts — including range buckets — come from the same source as the search results.
       if (esCounts) return facetCountsByParamKey(esCounts)
     } catch (error) {
       console.error("[boards-browse] ES facet counts failed, falling back to DB:", error)
     }
   }
 
-  const rows = await getCachedSurfboardFacetCountRows(
-    ctx.query?.trim() ?? "",
-    ctx.brand?.trim() ?? "",
-    ctx.model?.trim() ?? "",
-    ctx.brandId?.trim() ?? "",
-    ctx.brandModelId?.trim() ?? "",
-    ctx.minPrice ?? null,
-    ctx.maxPrice ?? null,
-    ctx.location?.trim() ?? "",
-  )
-  return facetCountsByParamKey(computeBoardsBrowseFacetCounts(rows, selections))
+  return dbFacetCountsByParamKey(ctx, selections)
 }

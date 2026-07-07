@@ -41,7 +41,6 @@ import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { forceReleaseBodyScrollLock, useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { useClientSearchParams } from "@/hooks/use-client-search-params"
-import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
 import { clearNavSearchQuery, writeNavSearchQuery } from "@/lib/nav-search-storage"
 import {
   boardBrowseNavItemIsActive,
@@ -59,6 +58,7 @@ import {
   HEADER_AUTH_REFRESH_EVENT,
   type HeaderAuthRefreshDetail,
 } from "@/lib/auth/header-auth-refresh"
+import { walletTotalBalanceUsd } from "@/lib/auth/header-wallet-sync"
 import { getOAuthAvatarUrl } from "@/lib/auth/profile-completion"
 import { getAuthUserWithRetry } from "@/lib/auth/get-user-with-retry"
 import { signOutAndRedirect } from "@/lib/auth/sign-out-and-redirect"
@@ -213,6 +213,8 @@ const mobileCategoryNav = siteHeaderMobileCategoryNavLinks.map((link) => ({
   name: link.label,
   href: link.href,
 }))
+
+const WALLET_TOTAL_EPS = 0.02
 
 function isSearchResultsPath(p: string) {
   return p === "/search" || p === "/search/recent"
@@ -436,6 +438,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
   const [isAdmin, setIsAdmin] = useState(initNav.isAdmin)
   const [unreadMessages, setUnreadMessages] = useState(initNav.unreadMessages)
   const [walletBalance, setWalletBalance] = useState<number | null>(initNav.walletBalance)
+  /** Client-synced total from earnings (or other wallet UI); wins over stale server bootstrap. */
+  const clientWalletTotalRef = useRef<number | null>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileLogoHovered, setMobileLogoHovered] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -534,7 +538,26 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     setProfileDisplayName(d.profileDisplayName)
     setIsAdmin(d.isAdmin)
     setUnreadMessages(d.unreadMessages)
-    setWalletBalance(d.walletBalance)
+    if (d.walletBalance !== null) {
+      setWalletBalance((prev) => {
+        const clientTotal = clientWalletTotalRef.current
+        if (
+          clientTotal !== null &&
+          Math.abs(d.walletBalance! - clientTotal) > WALLET_TOTAL_EPS
+        ) {
+          return clientTotal
+        }
+        if (
+          clientTotal !== null &&
+          Math.abs(d.walletBalance! - clientTotal) <= WALLET_TOTAL_EPS
+        ) {
+          clientWalletTotalRef.current = null
+        }
+        return d.walletBalance
+      })
+    } else {
+      setWalletBalance(d.walletBalance)
+    }
     // Never drop back to skeleton / logged-out chrome while the client session is still valid.
     setAuthLoaded(d.user ? d.authLoaded || Boolean(user) : d.authLoaded)
     // headerAuthDigest is the meaningful identity of the server snapshot for this tree.
@@ -560,6 +583,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         setProfileDisplayName(guest.profileDisplayName)
         setIsAdmin(guest.isAdmin)
         setUnreadMessages(guest.unreadMessages)
+        clientWalletTotalRef.current = null
         setWalletBalance(guest.walletBalance)
         return
       }
@@ -583,7 +607,14 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         .select("balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
         .eq("user_id", resolvedUser.id)
         .single()
-      setWalletBalance(wallet ? reconcileWalletAggregates(wallet).totalBalance : 0)
+      const total = wallet ? walletTotalBalanceUsd(wallet) : 0
+      setWalletBalance(total)
+      if (
+        clientWalletTotalRef.current !== null &&
+        Math.abs(total - clientWalletTotalRef.current) <= WALLET_TOTAL_EPS
+      ) {
+        clientWalletTotalRef.current = null
+      }
     } finally {
       setAuthLoaded(true)
     }
@@ -627,6 +658,13 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         setProfileAvatarUrl(nextAvatar || null)
         setAuthLoaded(true)
       }
+      if (
+        typeof detail?.walletTotalBalance === "number" &&
+        Number.isFinite(detail.walletTotalBalance)
+      ) {
+        clientWalletTotalRef.current = detail.walletTotalBalance
+        setWalletBalance(detail.walletTotalBalance)
+      }
       void refetchFromClient()
     }
     window.addEventListener(HEADER_AUTH_REFRESH_EVENT, onHeaderAuthRefresh)
@@ -659,6 +697,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         setProfileDisplayName(guest.profileDisplayName)
         setIsAdmin(guest.isAdmin)
         setUnreadMessages(guest.unreadMessages)
+        clientWalletTotalRef.current = null
         setWalletBalance(guest.walletBalance)
         setAuthLoaded(true)
         router.refresh()
@@ -738,7 +777,14 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       .single()
       .then(({ data: wallet }) => {
         if (!cancelled && wallet) {
-          setWalletBalance(reconcileWalletAggregates(wallet).totalBalance)
+          const total = walletTotalBalanceUsd(wallet)
+          setWalletBalance(total)
+          if (
+            clientWalletTotalRef.current !== null &&
+            Math.abs(total - clientWalletTotalRef.current) <= WALLET_TOTAL_EPS
+          ) {
+            clientWalletTotalRef.current = null
+          }
         }
       })
     return () => { cancelled = true }

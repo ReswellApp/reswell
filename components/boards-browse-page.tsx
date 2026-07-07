@@ -62,7 +62,7 @@ import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
 import { cn } from "@/lib/utils"
 import { isUuidString } from "@/lib/utils/isUuid"
 import { haversineMi } from "@/lib/db/boards-browse-listings"
-import { facetSelectionsFromParams } from "@/lib/boards-browse-facets"
+import { facetSelectionsFromBrowseParams } from "@/lib/boards-browse-facets"
 import {
   boardsBrowseEffectiveSort,
   boardsBrowseHasSidebarFilters,
@@ -129,7 +129,7 @@ async function BoardListings({
     dimVolume: searchParams.dimVolume,
     legacyDimensions: searchParams.dimensions,
   })
-  const facets = facetSelectionsFromParams(searchParams)
+  const facets = facetSelectionsFromBrowseParams(searchParams)
   const location = searchParams.location || ""
   const minPrice = searchParams.minPrice ? Number(searchParams.minPrice) : undefined
   const maxPrice = searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined

@@ -50,6 +50,7 @@ import {
 } from "@/lib/utils/dashboard-display-styles"
 
 type SortOption = "recent" | "oldest" | "price_desc" | "price_asc" | "views"
+type EngagementFilter = "all" | "in_carts" | "saved"
 
 interface MyListingsClientProps {
   listings: MyListingRow[]
@@ -100,18 +101,68 @@ function StatCard({
   icon: Icon,
   label,
   value,
+  active = false,
+  onClick,
 }: {
   icon: typeof Package
   label: string
   value: number
+  active?: boolean
+  onClick?: () => void
 }) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-xl bg-muted/70 px-4 py-3.5">
+  const className = cn(
+    "flex items-center justify-between gap-3 rounded-xl px-4 py-3.5 text-left transition-colors",
+    active
+      ? "bg-primary/10 ring-1 ring-primary/20"
+      : "bg-muted/70 hover:bg-muted",
+    onClick && "cursor-pointer",
+  )
+
+  const content = (
+    <>
       <div className="flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
         <Icon className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
         <span className="truncate">{label}</span>
       </div>
       <span className="shrink-0 text-lg font-bold tabular-nums tracking-tight text-foreground">
+        {value.toLocaleString()}
+      </span>
+    </>
+  )
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        className={className}
+        onClick={onClick}
+        aria-pressed={active}
+        aria-label={`${label}: ${value.toLocaleString()}${active ? ", filter active" : ", click to filter listings"}`}
+      >
+        {content}
+      </button>
+    )
+  }
+
+  return <div className={className}>{content}</div>
+}
+
+function ListingEngagementBadge({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Eye
+  label: string
+  value: number
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl bg-muted/70 px-3 py-2 min-w-[7.5rem]">
+      <div className="flex min-w-0 items-center gap-1.5 text-[12px] text-muted-foreground">
+        <Icon className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />
+        <span className="truncate">{label}</span>
+      </div>
+      <span className="shrink-0 text-sm font-bold tabular-nums text-foreground">
         {value.toLocaleString()}
       </span>
     </div>
@@ -122,7 +173,12 @@ export function MyListingsClient({ listings, stats, fetchError }: MyListingsClie
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
   const [sort, setSort] = useState<SortOption>("recent")
+  const [engagementFilter, setEngagementFilter] = useState<EngagementFilter>("all")
   const [endListingId, setEndListingId] = useState<string | null>(null)
+
+  function toggleEngagementFilter(next: Exclude<EngagementFilter, "all">) {
+    setEngagementFilter((current) => (current === next ? "all" : next))
+  }
 
   async function handleDiscardDraft(id: string) {
     const res = await fetch(`/api/listings/discard-draft?id=${encodeURIComponent(id)}`, {
@@ -141,23 +197,24 @@ export function MyListingsClient({ listings, stats, fetchError }: MyListingsClie
 
   const visibleListings = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
-    const filtered = q
-      ? listings.filter((listing) => {
-          const haystack = [
-            listing.title,
-            listing.brand,
-            listing.model,
-            listing.status,
-            listing.section,
-          ]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase()
-          return haystack.includes(q)
-        })
-      : listings
+    const filtered = listings.filter((listing) => {
+      if (engagementFilter === "in_carts" && listing.cartCount <= 0) return false
+      if (engagementFilter === "saved" && listing.favoriteCount <= 0) return false
+      if (!q) return true
+      const haystack = [
+        listing.title,
+        listing.brand,
+        listing.model,
+        listing.status,
+        listing.section,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+      return haystack.includes(q)
+    })
     return sortListings(filtered, sort)
-  }, [listings, searchQuery, sort])
+  }, [listings, searchQuery, sort, engagementFilter])
 
   const listingCountLabel =
     visibleListings.length === 1 ? "1 listing" : `${visibleListings.length} listings`
@@ -188,8 +245,20 @@ export function MyListingsClient({ listings, stats, fetchError }: MyListingsClie
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard icon={Package} label="Total Listings" value={stats.totalListings} />
         <StatCard icon={Eye} label="Total Views" value={stats.totalViews} />
-        <StatCard icon={ShoppingCart} label="In Carts" value={stats.inCarts} />
-        <StatCard icon={Heart} label="Saved" value={stats.saved} />
+        <StatCard
+          icon={ShoppingCart}
+          label="In Carts"
+          value={stats.inCarts}
+          active={engagementFilter === "in_carts"}
+          onClick={() => toggleEngagementFilter("in_carts")}
+        />
+        <StatCard
+          icon={Heart}
+          label="Saved"
+          value={stats.saved}
+          active={engagementFilter === "saved"}
+          onClick={() => toggleEngagementFilter("saved")}
+        />
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -247,7 +316,11 @@ export function MyListingsClient({ listings, stats, fetchError }: MyListingsClie
 
           {visibleListings.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
-              No listings match your search.
+              {engagementFilter === "in_carts"
+                ? "No listings are in anyone's cart right now."
+                : engagementFilter === "saved"
+                  ? "No listings have been saved yet."
+                  : "No listings match your search."}
             </p>
           ) : (
             <div className="divide-y divide-border/80">
@@ -300,6 +373,7 @@ function ListingRow({
   const detailLine = listingDetailLine(listing)
   const listedDate = format(new Date(listing.created_at), "MMM d, yyyy")
   const canEnd = !isDraft && listing.status !== "sold"
+  const showSavedBadge = listing.favoriteCount > 0
 
   return (
     <article className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center lg:gap-4 lg:py-4">
@@ -340,6 +414,12 @@ function ListingRow({
         {detailLine ? (
           <p className="mt-0.5 text-[13px] text-muted-foreground">{detailLine}</p>
         ) : null}
+        <div className="mt-2 flex flex-wrap gap-2 md:hidden">
+          <ListingEngagementBadge icon={Eye} label="Views" value={listing.views} />
+          {showSavedBadge ? (
+            <ListingEngagementBadge icon={Heart} label="Saved" value={listing.favoriteCount} />
+          ) : null}
+        </div>
         {listing.hidden_from_site && !isDraft && !isSold ? (
           <p className="mt-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400">
             On vacation — hidden from site
@@ -350,7 +430,17 @@ function ListingRow({
         ) : null}
       </div>
 
-      <p className="hidden shrink-0 text-[13px] text-muted-foreground md:block md:min-w-[8.5rem] md:text-center">
+      <div className="hidden shrink-0 flex-col items-center gap-2 md:flex md:min-w-[9.5rem]">
+        <p className="text-[13px] text-muted-foreground">Listed: {listedDate}</p>
+        <div className="flex w-full flex-col gap-2">
+          <ListingEngagementBadge icon={Eye} label="Views" value={listing.views} />
+          {showSavedBadge ? (
+            <ListingEngagementBadge icon={Heart} label="Saved" value={listing.favoriteCount} />
+          ) : null}
+        </div>
+      </div>
+
+      <p className="shrink-0 text-[13px] text-muted-foreground sm:min-w-[6.5rem] md:hidden">
         Listed: {listedDate}
       </p>
 

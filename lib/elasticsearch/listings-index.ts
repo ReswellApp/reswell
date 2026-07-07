@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { isElasticsearchIndexedListingSection } from "@/lib/elasticsearch/listing-sections"
 import { isMarketplaceSearchNoiseToken } from "@/lib/utils/marketplace-brand-query"
 import { parseFinsSetupFromStorage } from "@/lib/listing-fin-setup-tags"
+import { resolveLengthTotalInches, resolveVolumeLiters } from "@/lib/listing-facet-write"
 import { getElasticsearchClient } from "./client"
 import { ELASTICSEARCH_LISTINGS_INDEX } from "./config"
 
@@ -564,8 +565,8 @@ export function listingRowToSearchDocFromRow(row: ListingSearchDocRow): ListingS
     fin_system: row.fin_system ?? null,
     construction: row.construction ?? null,
     fins_setup: parseFinsSetupFromStorage(row.fins_setup),
-    length_total_inches: toFiniteNumber(row.length_total_inches),
-    volume_liters: toFiniteNumber(row.volume_liters),
+    length_total_inches: resolveLengthTotalInches(row),
+    volume_liters: resolveVolumeLiters(row),
     price: toFiniteNumber(row.price),
     brand_id: row.brand_id ?? null,
     brand_model_id: row.brand_model_id ?? null,

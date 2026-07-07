@@ -5,6 +5,7 @@ import {
   type BoardsBrowseEsSearchParams,
 } from "@/lib/elasticsearch/boards-browse-search"
 import { BOARDS_BROWSE_NEWEST_SORT } from "@/lib/marketplace-slug-metadata"
+import { hasAnyFacetSelection } from "@/lib/boards-browse-facets"
 import {
   BOARDS_BROWSE_PAGE_SIZE,
   isBoardsBrowseTopPicksSort,
@@ -73,7 +74,14 @@ export async function getBoardsBrowseListingsPageViaEs(
     : await standardPageIds(input, offset, limit)
 
   if (ids === null) return null
-  if (ids.orderedIds.length === 0 && ids.total === 0) return null
+  if (ids.orderedIds.length === 0 && ids.total === 0) {
+    // Legitimate empty result for an active facet filter — do not fall back to Postgres
+    // (which would ignore the same sparse indexed fields and show unfiltered rows).
+    if (input.facets && hasAnyFacetSelection(input.facets)) {
+      return { boards: [], totalPages: 0 }
+    }
+    return null
+  }
 
   const boards = await hydrateBoardsBrowseByIds(supabase, ids.orderedIds)
   if (boards.length === 0) return null

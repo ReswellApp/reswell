@@ -13,6 +13,7 @@ import { EarningsPaymentsOverview } from "@/components/features/earnings/earning
 import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
 import type { StripeConnectStatusPayload } from "@/components/features/earnings/stripe-bank-payout-section"
 import type { EarningsTransaction, EarningsWalletSnapshot } from "@/components/features/earnings/earnings-types"
+import { dispatchHeaderWalletSync } from "@/lib/auth/header-wallet-sync"
 import type { SellerEarningsDashboardTotals } from "@/lib/db/sellerEarningsTotals"
 
 interface StripeTransferHistoryItem {
@@ -95,6 +96,7 @@ export default function EarningsPage() {
           }
         }
         setWallet(nextWallet)
+        dispatchHeaderWalletSync(nextWallet)
         setTransactions(earningsData.transactions as EarningsTransaction[])
         setReversedOrderIds(new Set(earningsData.reversedOrderIds ?? []))
         setActivityHasMore(Boolean(earningsData.activityHasMore))
@@ -258,7 +260,12 @@ export default function EarningsPage() {
         lifetime_cashed_out,
         expires: Date.now() + 45_000,
       }
-      setWallet((w) => (w ? { ...w, balance, lifetime_cashed_out } : w))
+      setWallet((w) => {
+        if (!w) return w
+        const next = { ...w, balance, lifetime_cashed_out }
+        dispatchHeaderWalletSync(next)
+        return next
+      })
     },
     [],
   )

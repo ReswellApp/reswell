@@ -24,6 +24,7 @@ import {
   type FacetCountContext,
   type FacetCountRow,
 } from "@/lib/db/boards-browse-facet-counts"
+import { resolveLengthTotalInches, resolveVolumeLiters } from "@/lib/listing-facet-write"
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 export type BoardsBrowseFacetCounts = {
@@ -90,15 +91,17 @@ function matchesConstruction(row: FacetCountRow, values: string[]): boolean {
 
 function matchesLength(row: FacetCountRow, values: string[]): boolean {
   if (values.length === 0) return true
+  const lengthIn = resolveLengthTotalInches(row)
   return LENGTH_BUCKETS.some(
-    (b) => values.includes(b.value) && valueInBucket(row.length_total_inches, b),
+    (b) => values.includes(b.value) && valueInBucket(lengthIn, b),
   )
 }
 
 function matchesVolume(row: FacetCountRow, values: string[]): boolean {
   if (values.length === 0) return true
+  const volumeL = resolveVolumeLiters(row)
   return VOLUME_BUCKETS.some(
-    (b) => values.includes(b.value) && valueInBucket(row.volume_liters, b),
+    (b) => values.includes(b.value) && valueInBucket(volumeL, b),
   )
 }
 
@@ -167,14 +170,14 @@ export function computeBoardsBrowseFacetCounts(
   const lengthBase = baseRows(rows, sel, "length")
   for (const b of LENGTH_BUCKETS) {
     counts.length[b.value] = lengthBase.filter((r) =>
-      valueInBucket(r.length_total_inches, b),
+      valueInBucket(resolveLengthTotalInches(r), b),
     ).length
   }
 
   const volumeBase = baseRows(rows, sel, "volume")
   for (const b of VOLUME_BUCKETS) {
     counts.volume[b.value] = volumeBase.filter((r) =>
-      valueInBucket(r.volume_liters, b),
+      valueInBucket(resolveVolumeLiters(r), b),
     ).length
   }
 

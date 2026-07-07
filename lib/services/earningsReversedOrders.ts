@@ -11,7 +11,8 @@ type WalletTxRef = {
  * Order UUIDs for which seller earnings were reversed (refund / clawback), used to show Activity
  * rows as "Refunded" instead of "Available" after the fact.
  *
- * Sources: `orders.status`, seller `wallet_refund` ledger rows, and Stripe refund ids → PaymentIntent → order.
+ * Sources: `orders.status`, seller `wallet_refund` ledger rows, admin terminal cash wallet corrections,
+ * and Stripe refund ids → PaymentIntent → order.
  */
 export async function resolveReversedSellerOrderIds(
   supabase: SupabaseClient,
@@ -31,6 +32,23 @@ export async function resolveReversedSellerOrderIds(
     // Seller clawback is negative; buyer refund credits use the same reference_type but credit the wallet.
     if (rt === "wallet_refund" && parseFloat(String(t.amount ?? 0)) < 0) {
       reversed.add(rid)
+    }
+  }
+
+  const hasAdminTerminalCashCorrection = txRows.some(
+    (t) => t.reference_type === "admin_terminal_cash_wallet_correction",
+  )
+  if (hasAdminTerminalCashCorrection && orderIdCandidates.size > 0) {
+    const { data: cashOrders } = await supabase
+      .from("orders")
+      .select("id")
+      .eq("seller_id", sellerId)
+      .eq("payment_method", "cash")
+      .eq("sales_channel", "admin_terminal")
+      .in("id", [...orderIdCandidates])
+
+    for (const o of cashOrders ?? []) {
+      reversed.add(o.id)
     }
   }
 

@@ -1,5 +1,9 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js"
-import { reconcileWalletAggregates } from "@/lib/wallet-reconcile"
+import { reconcileWalletAggregates, walletAggregateStrings } from "@/lib/wallet-reconcile"
+import {
+  persistWalletAggregatesIfNeeded,
+  type WalletReconcilePersistRow,
+} from "@/lib/services/walletReconcile"
 
 export type HeaderProfileBootstrap = {
   is_admin: boolean | null
@@ -32,13 +36,26 @@ export async function fetchHeaderSiteBootstrap(
     supabase.rpc("get_unread_message_count", { uid: user.id }),
     supabase
       .from("wallets")
-      .select("balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
+      .select("id, balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
       .eq("user_id", user.id)
       .single(),
   ])
 
   const profile = profileRes.data ?? null
-  const wallet = walletRes.data
+  let wallet = walletRes.data
+  if (wallet?.id) {
+    const agg = reconcileWalletAggregates(wallet)
+    if (agg.needsPersist) {
+      await persistWalletAggregatesIfNeeded(supabase, wallet as WalletReconcilePersistRow)
+      const s = walletAggregateStrings(agg)
+      wallet = {
+        ...wallet,
+        balance: s.balance,
+        pending_balance: s.pending_balance,
+        lifetime_cashed_out: s.lifetime_cashed_out,
+      }
+    }
+  }
   return {
     profile,
     unreadMessages: Number(unreadRes.data ?? 0),

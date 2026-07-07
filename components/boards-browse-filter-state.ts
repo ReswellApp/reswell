@@ -5,15 +5,17 @@ import { useSearchParams } from "next/navigation"
 import { useBoardsBrowseRouter } from "@/hooks/use-boards-browse-router"
 import {
   FACET_PARAM_KEYS,
-  facetSelectionsFromParams,
+  facetSelectionsFromBrowseParams,
   hasAnyFacetSelection,
   type BoardsBrowseFacetSelections,
 } from "@/lib/boards-browse-facets"
+import { normalizedBoardsBrowseTypeFromParam } from "@/lib/marketplace-slug-metadata"
 import { normalizeBoardBrowseRadius } from "@/lib/boards-browse-location"
 
 /** Params owned by the facet sidebar/drawer (reset together on "Clear all"). */
 const FACET_OWNED_KEYS = [
   ...Object.values(FACET_PARAM_KEYS),
+  "type",
   "brand",
   "brandId",
   "model",
@@ -80,7 +82,8 @@ export function useBoardsFilterState(
 
   const selections = useMemo(
     () =>
-      facetSelectionsFromParams({
+      facetSelectionsFromBrowseParams({
+        type: searchParams.get("type") ?? undefined,
         style: searchParams.get(FACET_PARAM_KEYS.style) ?? undefined,
         condition: searchParams.get(FACET_PARAM_KEYS.condition) ?? undefined,
         fin: searchParams.get(FACET_PARAM_KEYS.finSetup) ?? undefined,
@@ -104,6 +107,22 @@ export function useBoardsFilterState(
   const toggleMulti = useCallback(
     (key: string, value: string) => {
       navigate((params) => {
+        if (key === FACET_PARAM_KEYS.style) {
+          const navType = normalizedBoardsBrowseTypeFromParam(params.get("type"))
+          let current = (params.get(key) ?? "")
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+          if (current.length === 0 && navType) current = [navType]
+          const next = current.includes(value)
+            ? current.filter((v) => v !== value)
+            : [...current, value]
+          params.delete("type")
+          if (next.length) params.set(key, next.join(","))
+          else params.delete(key)
+          return
+        }
+
         const current = (params.get(key) ?? "")
           .split(",")
           .map((s) => s.trim())

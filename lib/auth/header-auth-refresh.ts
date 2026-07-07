@@ -4,6 +4,8 @@ export const HEADER_AUTH_REFRESH_EVENT = "reswell:auth-refresh" as const
 export type HeaderAuthRefreshDetail = {
   displayName?: string | null
   avatarUrl?: string | null
+  /** Reconciled wallet total (ready + pending); matches earnings Balance card. */
+  walletTotalBalance?: number
 }
 
 export function dispatchHeaderAuthRefresh(detail?: HeaderAuthRefreshDetail): void {

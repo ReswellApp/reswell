@@ -12,9 +12,8 @@ import {
 } from "@/lib/services/peerListingShippingQuote"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { fetchSellerFeeWaived } from "@/lib/db/profileSellerFee"
-import { getSellerEarnings, pendingSaleFeeClause } from "@/lib/seller-fees"
+import { getSellerEarnings } from "@/lib/seller-fees"
 import { completeMarketplaceOrderFromPaymentIntent } from "@/lib/stripe-complete-order"
-import { creditOrderPendingEarnings } from "@/lib/services/orderPendingEarnings"
 import { safeRevalidateAfterMarketplaceOrderCommit } from "@/lib/cache/safe-revalidate-after-order"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
 import { touchUserLastActive } from "@/lib/db/userActivity"
@@ -23,7 +22,6 @@ import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
 import type { KlaviyoBuyerOrderLineItem } from "@/lib/klaviyo/track-buyer-order-confirmed"
 import { notifySellerOrderCheckoutKlaviyo } from "@/lib/services/notifySellerOrderCheckoutKlaviyo"
-import { releaseOrderSellerEarningsAfterFulfillment } from "@/lib/services/releaseOrderSellerEarnings"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { trackMetaPurchaseServerEvent } from "@/lib/meta/track-purchase-server-event"
 import { syncAdminTerminalGuestToCrm } from "@/lib/services/crmAdminTerminalGuest"
@@ -131,13 +129,6 @@ function isUniqueViolation(err: { code?: string; message?: string } | null): boo
   if (!err) return false
   if (err.code === "23505") return true
   return Boolean(err.message?.toLowerCase().includes("duplicate"))
-}
-
-function walletPendingCashSaleDescription(listingTitle: string, platformFeeUsd: number): string {
-  const safeTitle =
-    listingTitle.length > 400 ? `${listingTitle.slice(0, 399)}…` : listingTitle
-  const raw = `Pending — Sold "${safeTitle}" (${pendingSaleFeeClause(platformFeeUsd)}, cash at register — available after delivery)`
-  return raw.length > 2000 ? `${raw.slice(0, 1999)}…` : raw
 }
 
 function terminalGuestShippingJson(parties: AdminTerminalSaleParties): Record<string, unknown> {
@@ -778,15 +769,9 @@ export async function completeAdminTerminalCashSale(
     return { ok: false, error: "Could not create order lines", status: 500 }
   }
 
+  // Cash at register never flows through Stripe or the marketplace wallet ledger — order only.
+
   const listingTitle = String(listing.title ?? "")
-  const sellerCredit = await creditOrderPendingEarnings(service, {
-    userId: sellerId,
-    amountUsd: sellerEarnings,
-    orderId: purchase.id,
-    description: walletPendingCashSaleDescription(listingTitle, platformFee),
-    referenceType: "order_pending_earnings",
-  })
-  if (!sellerCredit.ok) return sellerCredit
 
   const { error: listingErr } = await service
     .from("listings")
@@ -874,8 +859,6 @@ export async function completeAdminTerminalCashSale(
     value: totalUsd,
     contentIds: [listing.id],
   })
-
-  void releaseOrderSellerEarningsAfterFulfillment(purchase.id)
 
   if (!buyerId) {
     void syncAdminTerminalGuestToCrm(service, {

@@ -17,6 +17,8 @@ export type MyListingRow = {
   brand: string | null
   model: string | null
   views: number
+  cartCount: number
+  favoriteCount: number
   created_at: string
   archived_at: string | null
   hidden_from_site: boolean | null
@@ -51,6 +53,30 @@ function toCount(value: unknown): number {
   return typeof value === "number" ? value : Number(value) || 0
 }
 
+async function fetchMyListingsEngagementCounts(
+  supabase: SupabaseClient,
+): Promise<Map<string, { cartCount: number; favoriteCount: number }>> {
+  const { data, error } = await supabase.rpc("get_my_listings_engagement_counts")
+  if (error) {
+    console.error("[fetchMyListingsEngagementCounts] rpc", error.message)
+    return new Map()
+  }
+
+  const rows = Array.isArray(data) ? data : []
+  const counts = new Map<string, { cartCount: number; favoriteCount: number }>()
+  for (const row of rows) {
+    if (!row || typeof row !== "object") continue
+    const record = row as Record<string, unknown>
+    const listingId = typeof record.listing_id === "string" ? record.listing_id : null
+    if (!listingId) continue
+    counts.set(listingId, {
+      cartCount: toCount(record.cart_count),
+      favoriteCount: toCount(record.favorite_count),
+    })
+  }
+  return counts
+}
+
 export async function fetchMyListingsDashboardStats(
   supabase: SupabaseClient,
 ): Promise<MyListingsDashboardStats> {
@@ -78,7 +104,7 @@ export async function fetchMyListings(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<FetchMyListingsResult> {
-  const [listingsRes, stats] = await Promise.all([
+  const [listingsRes, stats, engagementCounts] = await Promise.all([
     supabase
       .from("listings")
       .select(MY_LISTINGS_SELECT)
@@ -86,11 +112,23 @@ export async function fetchMyListings(
       .is("archived_at", null)
       .order("created_at", { ascending: false }),
     fetchMyListingsDashboardStats(supabase),
+    fetchMyListingsEngagementCounts(supabase),
   ])
 
   if (listingsRes.error) {
     return { listings: [], stats: EMPTY_STATS, error: listingsRes.error.message }
   }
 
-  return { listings: (listingsRes.data ?? []) as MyListingRow[], stats }
+  const listings = ((listingsRes.data ?? []) as Omit<MyListingRow, "cartCount" | "favoriteCount">[]).map(
+    (listing) => {
+      const engagement = engagementCounts.get(listing.id)
+      return {
+        ...listing,
+        cartCount: engagement?.cartCount ?? 0,
+        favoriteCount: engagement?.favoriteCount ?? 0,
+      }
+    },
+  )
+
+  return { listings, stats }
 }

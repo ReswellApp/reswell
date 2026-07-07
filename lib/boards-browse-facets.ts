@@ -10,6 +10,7 @@
 
 import { FIN_SETUP_TAG_OPTIONS } from "@/lib/listing-fin-setup-tags"
 import { listingConditionFilterRows } from "@/lib/listing-labels"
+import { normalizedBoardsBrowseTypeFromParam } from "@/lib/marketplace-slug-metadata"
 
 export type FacetOption = { value: string; label: string }
 
@@ -192,6 +193,27 @@ export function facetSelectionsFromParams(sp: {
     lengthBuckets: parseFacetParam(sp.length, FACET_ALLOWED_VALUES.length),
     volumeBuckets: parseFacetParam(sp.volume, FACET_ALLOWED_VALUES.volume),
   }
+}
+
+/**
+ * Browse-aware facet selections: when the nav `type=` param is set and no explicit `style=`
+ * facet is present, treat the category page as a single board-style selection.
+ */
+export function facetSelectionsFromBrowseParams(sp: {
+  type?: string | null
+  style?: string | string[]
+  condition?: string | string[]
+  fin?: string | string[]
+  finSystem?: string | string[]
+  construction?: string | string[]
+  length?: string | string[]
+  volume?: string | string[]
+}): BoardsBrowseFacetSelections {
+  const sel = facetSelectionsFromParams(sp)
+  if (sel.styles.length > 0) return sel
+  const navType = normalizedBoardsBrowseTypeFromParam(sp.type)
+  if (!navType || !FACET_ALLOWED_VALUES.style.includes(navType)) return sel
+  return { ...sel, styles: [navType] }
 }
 
 export function lengthBucketBySlug(slug: string): RangeBucket | undefined {
