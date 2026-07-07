@@ -1,6 +1,26 @@
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 
-export const ADMIN_BULK_LISTING_MAX = 25
+export const ADMIN_BULK_LISTING_MAX = 50
+
+/** Product types available in admin bulk listing (surfboards, fins, magazines). */
+export const ADMIN_BULK_LISTING_SECTIONS = ["surfboards", "fins", "magazines"] as const
+
+export type AdminBulkListingSection = (typeof ADMIN_BULK_LISTING_SECTIONS)[number]
+
+const ADMIN_BULK_LISTING_SECTION_SET = new Set<string>(ADMIN_BULK_LISTING_SECTIONS)
+
+export function isAdminBulkListingSection(
+  section: string | null | undefined,
+): section is AdminBulkListingSection {
+  return section != null && ADMIN_BULK_LISTING_SECTION_SET.has(section)
+}
+
+export function assertAdminBulkListingSection(section: PeerListingSection): AdminBulkListingSection {
+  if (!isAdminBulkListingSection(section)) {
+    throw new Error(`Bulk listing does not support section: ${section}`)
+  }
+  return section
+}
 
 const STORAGE_KEY = "admin_bulk_listing_session"
 
@@ -39,7 +59,7 @@ export function createBulkListingSession(params: {
   userId: string
   displayName: string
   email: string | null
-  sections: PeerListingSection[]
+  sections: AdminBulkListingSection[]
 }): AdminBulkListingSession {
   const session: AdminBulkListingSession = {
     id: newSessionId(),
@@ -82,7 +102,7 @@ export function clearBulkListingSession(): void {
 
 export function appendBulkListingSlots(
   session: AdminBulkListingSession,
-  sections: PeerListingSection[],
+  sections: AdminBulkListingSection[],
 ): AdminBulkListingSession | null {
   const remaining = ADMIN_BULK_LISTING_MAX - session.slots.length
   if (remaining <= 0) return null

@@ -70,6 +70,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     items: [
       { href: '/admin', label: 'Overview', icon: 'layoutDashboard' },
       { href: '/admin/listings', label: 'Listings', icon: 'package' },
+      { href: '/admin/listings/bulk', label: 'Bulk list', icon: 'layers' },
       { href: '/admin/seo', label: 'SEO', icon: 'search' },
       { href: '/admin/partner-embeds', label: 'Partner embeds', icon: 'code' },
       { href: '/admin/users', label: 'Users', icon: 'users' },

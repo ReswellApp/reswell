@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react"
 
 export const metadata = privatePageMetadata({
   title: "Bulk list listings — Admin — Reswell",
-  description: "Create up to 25 marketplace listings in one admin session.",
+  description: "Create up to 50 surfboard, fin, or magazine listings in one admin session.",
   path: "/admin/listings/bulk",
 })
 

@@ -2,12 +2,17 @@ import "server-only"
 import type { Metadata } from "next"
 import { managedPageBrowseSeo } from "@/lib/seo/managed-page-browse-metadata"
 import { getManagedPage } from "@/lib/seo/managed-pages"
-import { magazinesBrowseIndexableSnapshot } from "@/lib/magazines-browse-metadata"
+import {
+  magazinesBrowseIndexableSnapshot,
+  type MagazinesBrowseSearchParams,
+} from "@/lib/magazines-browse-metadata"
 
 /** Title, description, OG/Twitter, and robots for `/magazines` (server-only — code defaults). */
-export async function metadataForMagazinesBrowse(): Promise<Metadata> {
+export async function metadataForMagazinesBrowse(
+  sp: MagazinesBrowseSearchParams = {},
+): Promise<Metadata> {
   const { title: baseTitle, description: baseDescription, canonicalUrl } =
-    magazinesBrowseIndexableSnapshot()
+    magazinesBrowseIndexableSnapshot(sp)
 
   let title = baseTitle
   let description = baseDescription

@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { MAGAZINES_SECTION } from "@/lib/magazine-listing-config"
+import type { MagazinesBrowseFacetSelections } from "@/lib/magazines-browse-facets"
+import { normalizedMagazinesBrowseSort } from "@/lib/magazines-browse-metadata"
 import { listingDetailHref } from "@/lib/listing-href"
 
 export const MAGAZINES_BROWSE_PAGE_SIZE = 40
@@ -40,23 +42,74 @@ const MAGAZINE_BROWSE_LISTING_SELECT = `
   listing_images ( id, url, thumbnail_url, is_primary, sort_order )
 `
 
+export type MagazinesBrowseQueryInput = {
+  facets: MagazinesBrowseFacetSelections
+  query?: string
+  brand?: string
+  minPrice?: number
+  maxPrice?: number
+  minYear?: number
+  maxYear?: number
+  sort?: string
+  page: number
+  limit?: number
+}
+
 export async function fetchMagazinesBrowsePage(
   supabase: SupabaseClient,
-  input: { page: number; limit?: number },
+  input: MagazinesBrowseQueryInput,
 ): Promise<{ magazines: MagazineBrowseListingRow[]; totalPages: number }> {
   const limit = input.limit ?? MAGAZINES_BROWSE_PAGE_SIZE
   const page = Math.max(1, input.page)
   const offset = (page - 1) * limit
 
-  const { data, count, error } = await supabase
+  let q = supabase
     .from("listings")
     .select(MAGAZINE_BROWSE_LISTING_SELECT, { count: "exact" })
     .eq("section", MAGAZINES_SECTION)
     .eq("status", "active")
     .eq("hidden_from_site", false)
     .is("archived_at", null)
-    .order("created_at", { ascending: false })
-    .range(offset, offset + limit - 1)
+
+  if (input.facets.conditions.length > 0) {
+    q = q.in("condition", input.facets.conditions)
+  }
+
+  const brand = input.brand?.trim()
+  if (brand) {
+    q = q.ilike("brand", `%${brand}%`)
+  }
+
+  const query = input.query?.trim()
+  if (query) {
+    q = q.or(`title.ilike.%${query}%,brand.ilike.%${query}%`)
+  }
+
+  if (input.minPrice != null && Number.isFinite(input.minPrice)) {
+    q = q.gte("price", input.minPrice)
+  }
+  if (input.maxPrice != null && Number.isFinite(input.maxPrice)) {
+    q = q.lte("price", input.maxPrice)
+  }
+  if (input.minYear != null && Number.isFinite(input.minYear)) {
+    q = q.gte("magazine_year", input.minYear)
+  }
+  if (input.maxYear != null && Number.isFinite(input.maxYear)) {
+    q = q.lte("magazine_year", input.maxYear)
+  }
+
+  const sort = normalizedMagazinesBrowseSort(input.sort)
+  if (sort === "price-low") {
+    q = q.order("price", { ascending: true })
+  } else if (sort === "price-high") {
+    q = q.order("price", { ascending: false })
+  } else {
+    q = q.order("created_at", { ascending: false })
+  }
+
+  q = q.range(offset, offset + limit - 1)
+
+  const { data, count, error } = await q
 
   if (error) {
     console.error("fetchMagazinesBrowsePage:", error.message)

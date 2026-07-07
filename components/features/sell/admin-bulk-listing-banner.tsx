@@ -37,7 +37,6 @@ export function AdminBulkListingBanner({
       index: index >= 0 ? index + 1 : completed + 1,
       total,
       completed,
-      displayName: session.displayName,
       sectionLabel: PEER_LISTING_SECTION_LABELS[section],
     }
   }, [bulkSlotId, section])
@@ -56,7 +55,7 @@ export function AdminBulkListingBanner({
         <p>
           <span className="font-medium">Bulk listing</span>{" "}
           <span className="text-sky-800 dark:text-sky-200">
-            {banner.index} of {banner.total} for {banner.displayName}
+            {banner.index} of {banner.total}
           </span>
           {" · "}
           <span>{banner.sectionLabel}</span>

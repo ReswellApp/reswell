@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useId, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
+import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
 import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
@@ -32,6 +33,7 @@ import {
 } from "@/lib/validations/magazine-listing"
 import { LISTING_CONDITION_SELL_OPTIONS, sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
+import { resolveAdminBulkListingAfterCreate } from "@/lib/utils/admin-bulk-listing-navigation"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { reswellPackageFormFromDbRow } from "@/lib/sell-listing-fulfillment-flags"
 import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
@@ -72,6 +74,8 @@ export default function SellMagazinesFlow({
   editListingId?: string | null
 }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const bulkSlotId = searchParams.get("bulk")?.trim() || null
   const signIn = useSignInGate()
   const fileInputId = useId()
   const supabaseRef = useRef(createClient())
@@ -251,17 +255,45 @@ export default function SellMagazinesFlow({
     setSubmitting(true)
     try {
       const payload = buildPayload()
-      const result = editId
-        ? await updateMagazineListingAction({ ...payload, listingId: editId, removedImageIds })
-        : await createMagazineListingAction(payload)
 
+      if (editId) {
+        const result = await updateMagazineListingAction({
+          ...payload,
+          listingId: editId,
+          removedImageIds,
+        })
+        if ("error" in result) {
+          toast.error(result.error)
+          return
+        }
+        toast.success("Magazine listing updated.")
+        router.push(listingDetailHref({ id: editId, slug: result.slug }))
+        router.refresh()
+        return
+      }
+
+      const result = await createMagazineListingAction(payload)
       if ("error" in result) {
         toast.error(result.error)
         return
       }
 
-      toast.success(editId ? "Magazine listing updated." : "Magazine listing published.")
-      router.push(listingDetailHref({ id: editId ?? result.slug, slug: result.slug }))
+      toast.success("Magazine listing published.")
+      if (
+        resolveAdminBulkListingAfterCreate(router, {
+          bulkSlotId,
+          listingId: result.listingId,
+          slug: result.slug,
+          title: form.title.trim(),
+          section: "magazines",
+          defaultDetailPath: listingDetailHref({ id: result.listingId, slug: result.slug }),
+          successMessage: "Magazine listing published.",
+        })
+      ) {
+        return
+      }
+
+      router.push(listingDetailHref({ id: result.listingId, slug: result.slug }))
       router.refresh()
     } finally {
       setSubmitting(false)
@@ -278,7 +310,9 @@ export default function SellMagazinesFlow({
   }
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-8 sm:py-12">
+    <>
+      <AdminBulkListingBanner section="magazines" bulkSlotId={bulkSlotId} />
+      <div className="container mx-auto max-w-2xl px-4 py-8 sm:py-12">
       <div className="mb-8 space-y-2">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Magazine listings
@@ -444,5 +478,6 @@ export default function SellMagazinesFlow({
         </div>
       </form>
     </div>
+    </>
   )
 }

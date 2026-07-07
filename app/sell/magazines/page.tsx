@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation"
+import { Suspense } from "react"
 import type { Metadata } from "next"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { createClient } from "@/lib/supabase/server"
@@ -39,5 +40,9 @@ export default async function SellMagazinesPage({
 
   const qs = await searchParams
   const editId = parseEditListingId(qs.edit)
-  return <SellMagazinesFlow editListingId={editId} />
+  return (
+    <Suspense fallback={null}>
+      <SellMagazinesFlow editListingId={editId} />
+    </Suspense>
+  )
 }
