@@ -87,6 +87,42 @@ export function withListingMediaMerchantVariant(src: string): string {
   return withListingMediaVariant(src, LISTING_MEDIA_MERCHANT_VARIANT_PARAM)
 }
 
+export function listingStorageObjectPathFromProxiedSrc(
+  src: string | null | undefined,
+): string | null {
+  const t = src?.trim()
+  if (!t || !t.startsWith(LISTING_MEDIA_PROXY_PATH_PREFIX)) return null
+  const path = t.slice(LISTING_MEDIA_PROXY_PATH_PREFIX.length).split("?")[0]?.split("#")[0]
+  if (!path || path.includes("..")) return null
+  return path
+}
+
+/** Direct Supabase public URL for a listings-bucket object (bypasses the /media proxy). */
+export function listingPublicStorageObjectUrl(objectPath: string): string | null {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim().replace(/\/$/, "")
+  const path = objectPath.trim()
+  if (!base || !path || path.includes("..")) return null
+  const encoded = path
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/")
+  return `${base}/storage/v1/object/public/listings/${encoded}`
+}
+
+/**
+ * Direct public storage URL when `raw` resolves to a listings-bucket object.
+ * Used by catalog feeds when a static file exists (no on-demand ?variant= resize).
+ */
+export function listingDirectPublicImageUrl(raw: string | null | undefined): string | null {
+  if (!raw?.trim()) return null
+  const trimmed = raw.trim()
+  const objectPath =
+    listingStorageObjectPathFromUrl(trimmed) ??
+    listingStorageObjectPathFromProxiedSrc(proxiedListingImageSrc(trimmed))
+  if (!objectPath) return null
+  return listingPublicStorageObjectUrl(objectPath)
+}
+
 /**
  * Prefer the full-res storage object when a row only has a `-thumb.` URL.
  * Pair uploads store `*-full.*` beside `*-thumb.webp`.

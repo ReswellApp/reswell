@@ -154,6 +154,23 @@ const nextConfig = {
       },
     ]
   },
+  async rewrites() {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "")
+    if (!supabaseUrl) return []
+
+    // Static listing photos: edge-rewrite to Supabase public objects so Google Merchant /
+    // Googlebot-Image fetch a direct image file instead of a serverless resize handler.
+    // Requests with ?variant= still hit app/media/listings/[...path]/route.ts.
+    return {
+      beforeFiles: [
+        {
+          source: "/media/listings/:path*",
+          missing: [{ type: "query", key: "variant" }],
+          destination: `${supabaseUrl}/storage/v1/object/public/listings/:path*`,
+        },
+      ],
+    }
+  },
   async redirects() {
     return [
       { source: "/dashboard/orders", destination: "/dashboard/purchases", permanent: true },

@@ -4,7 +4,6 @@ import { useCallback } from "react"
 import { usePathname, useRouter } from "next/navigation"
 
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
-import { hasSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { createClient } from "@/lib/supabase/client"
@@ -42,7 +41,7 @@ export function useSignInGate() {
         }
       }
 
-      if (options?.skipSessionProbe || !hasSupabaseAuthCookiesClient()) {
+      if (options?.skipSessionProbe) {
         openGate()
         return
       }

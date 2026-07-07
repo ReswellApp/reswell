@@ -48,11 +48,11 @@ export function googleMerchantListingImageSourceUrl(
 /**
  * Absolute image_link for Google Merchant / Googlebot.
  *
- * Prefers a static `/media/listings/...-full.webp` passthrough (direct image file) so Google
- * does not hit the on-demand `?variant=merchant` resize route, which can fail as
- * "Image not processed" when serverless transcoding errors or times out.
+ * Uses same-origin `/media/listings/...-full.webp` static paths. In production, Next.js
+ * rewrites those URLs to Supabase public objects at the edge so Google fetches a direct image
+ * file instead of a serverless handler (avoids image_link_internal_error / _fallback).
  *
- * Falls back to `?variant=merchant` only when the stored object needs transcoding
+ * Falls back to on-demand `?variant=merchant` only when the stored object needs transcoding
  * (HEIC/HEIF/AVIF or unknown extension).
  *
  * @see https://support.google.com/merchants/answer/12157889

@@ -56,6 +56,7 @@ import { cn } from "@/lib/utils"
 import type {
   GoogleMerchantChannelStatus,
   GoogleMerchantInsights,
+  GoogleMerchantItemIssue,
   GoogleMerchantOptimizationImpact,
   GoogleMerchantPerformanceRow,
   GoogleMerchantProductDetail,
@@ -135,6 +136,69 @@ function csvEscape(value: string | number | null | undefined): string {
   const s = value == null ? "" : String(value)
   if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`
   return s
+}
+
+function isAdsBlockingIssue(issue: GoogleMerchantItemIssue): boolean {
+  return issue.severity.toUpperCase() === "DISAPPROVED" && issue.affectsAds
+}
+
+function adsBlockingIssues(issues: GoogleMerchantItemIssue[]): GoogleMerchantItemIssue[] {
+  return issues.filter(isAdsBlockingIssue)
+}
+
+function issueLabel(issue: GoogleMerchantItemIssue): string {
+  return issue.description?.trim() || issue.code
+}
+
+function issueSecondaryText(issue: GoogleMerchantItemIssue): string | null {
+  const detail = issue.detail?.trim()
+  const description = issue.description?.trim()
+  if (detail && detail !== description) return detail
+  if (issue.attribute?.trim()) return issue.attribute.trim()
+  return null
+}
+
+function ProductAdsIssueList({
+  issues,
+  compact,
+}: {
+  issues: GoogleMerchantItemIssue[]
+  compact?: boolean
+}) {
+  const blocking = adsBlockingIssues(issues)
+  if (blocking.length === 0) return null
+
+  return (
+    <ul className={cn("space-y-1", compact ? "mt-1" : "mt-1.5")}>
+      {blocking.map((issue) => {
+        const secondary = issueSecondaryText(issue)
+        return (
+          <li key={`${issue.code}-${issue.attribute ?? ""}-${issue.reportingContext ?? ""}`}>
+            <p className={cn("text-slate-600", compact ? "text-[11px] leading-snug" : "text-xs leading-snug")}>
+              {issueLabel(issue)}
+              {secondary ? (
+                <span className="text-slate-400">
+                  {" "}
+                  · {secondary}
+                </span>
+              ) : null}
+            </p>
+            {issue.documentation ? (
+              <a
+                href={issue.documentation}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-0.5 inline-flex items-center gap-0.5 text-[11px] font-medium text-blue-600 hover:underline"
+              >
+                How to fix
+                <ArrowUpRight className="h-3 w-3" />
+              </a>
+            ) : null}
+          </li>
+        )
+      })}
+    </ul>
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -873,6 +937,7 @@ export function GoogleMerchantDashboardClient({
               tone="rose"
               rows={decisions.disapproved}
               metric={(r) => `${r.errorCount} ads error${r.errorCount === 1 ? "" : "s"}`}
+              showIssueDescriptions
             />
             <DecisionPanel
               title="Shown but never clicked"
@@ -1153,14 +1218,19 @@ export function GoogleMerchantDashboardClient({
                         <td className="px-3 py-2 text-right align-top tabular-nums text-slate-700">
                           {formatUsd(microsToUsd(r.priceMicros))}
                         </td>
-                        <td className="px-3 py-2 text-right align-top tabular-nums">
-                          {r.errorCount > 0 ? (
-                            <Pill tone="rose">{r.errorCount}</Pill>
-                          ) : r.warningCount > 0 ? (
-                            <Pill tone="amber">{r.warningCount}</Pill>
-                          ) : (
-                            <span className="text-slate-300">—</span>
-                          )}
+                        <td className="px-3 py-2 align-top">
+                          <div className="flex flex-col items-end gap-1">
+                            {r.errorCount > 0 ? (
+                              <Pill tone="rose">{r.errorCount}</Pill>
+                            ) : r.warningCount > 0 ? (
+                              <Pill tone="amber">{r.warningCount}</Pill>
+                            ) : (
+                              <span className="text-slate-300">—</span>
+                            )}
+                            {r.errorCount > 0 ? (
+                              <ProductAdsIssueList issues={r.issues} compact />
+                            ) : null}
+                          </div>
                         </td>
                         <td className="px-3 py-2 text-right align-top tabular-nums font-medium text-slate-900">
                           {perfConfigured ? formatNumber(r.clicks) : "—"}
@@ -1228,6 +1298,7 @@ function DecisionPanel({
   rows,
   metric,
   disabled,
+  showIssueDescriptions,
 }: {
   title: string
   description: string
@@ -1236,6 +1307,7 @@ function DecisionPanel({
   rows: MergedRow[]
   metric: (row: MergedRow) => string
   disabled?: boolean
+  showIssueDescriptions?: boolean
 }) {
   return (
     <SectionCard>
@@ -1254,30 +1326,48 @@ function DecisionPanel({
           {rows.slice(0, 8).map((r) => (
             <li
               key={r.offerId}
-              className="flex items-center justify-between gap-3 rounded-lg border border-slate-100 px-3 py-2"
+              className="rounded-lg border border-slate-100 px-3 py-2"
             >
-              <a
-                href={productHref(r)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex min-w-0 items-center gap-2 text-slate-700 hover:text-blue-600"
-              >
-                {r.imageLink ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={r.imageLink}
-                    alt=""
-                    loading="lazy"
-                    className="h-8 w-8 shrink-0 rounded-md border border-slate-200 object-cover"
-                  />
-                ) : (
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-300">
-                    <Package className="h-3.5 w-3.5" />
-                  </span>
-                )}
-                <span className="truncate text-sm font-medium">{r.title ?? shortOffer(r.offerId)}</span>
-              </a>
-              <Pill tone={tone}>{metric(r)}</Pill>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-start gap-2">
+                  <a
+                    href={productHref(r)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex shrink-0 text-slate-700 hover:text-blue-600"
+                  >
+                    {r.imageLink ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={r.imageLink}
+                        alt=""
+                        loading="lazy"
+                        className="h-8 w-8 rounded-md border border-slate-200 object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-300">
+                        <Package className="h-3.5 w-3.5" />
+                      </span>
+                    )}
+                  </a>
+                  <div className="min-w-0">
+                    <a
+                      href={productHref(r)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block truncate text-sm font-medium text-slate-700 hover:text-blue-600"
+                    >
+                      {r.title ?? shortOffer(r.offerId)}
+                    </a>
+                    {showIssueDescriptions ? (
+                      <ProductAdsIssueList issues={r.issues} />
+                    ) : null}
+                  </div>
+                </div>
+                <span className="shrink-0">
+                  <Pill tone={tone}>{metric(r)}</Pill>
+                </span>
+              </div>
             </li>
           ))}
         </ul>
