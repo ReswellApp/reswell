@@ -1,5 +1,8 @@
 import { randomUUID } from "node:crypto"
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
+import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
+import { revalidateSellersDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { fetchSellerFeeWaived } from "@/lib/db/profileSellerFee"
 import { isMetaTestEventCodeConfigured } from "@/lib/meta/conversions-api"
 import { trackMetaPurchaseServerEvent } from "@/lib/meta/track-purchase-server-event"
@@ -263,6 +266,22 @@ export async function createAdminTestPurchase(
     console.error("[adminTestPurchase] order insert:", insertErr.message)
     return { ok: false, error: "Could not create test order", status: 500 }
   }
+
+  const { error: listingSoldErr } = await serviceSupabase
+    .from("listings")
+    .update({ status: "sold", updated_at: new Date().toISOString() })
+    .eq("id", listing.id)
+    .in("status", ["active", "pending_sale"])
+
+  if (listingSoldErr) {
+    console.error("[adminTestPurchase] listing sold update:", listingSoldErr.message)
+    await serviceSupabase.from("orders").delete().eq("id", orderId).eq("is_admin_test", true)
+    return { ok: false, error: "Could not reserve listing for test order", status: 500 }
+  }
+
+  revalidateBoardsBrowseCatalog()
+  revalidateSellersDirectoryCatalog()
+  revalidateMarketplaceSoldFeedCatalog()
 
   // Fire the Meta Conversions API Purchase event so a single test order validates CAPI alongside
   // the browser pixel that fires on /successpage/{orderId} (both share `purchase_{orderId}` and
