@@ -61,17 +61,6 @@ export function SignInRequiredGate({
     let mounted = true
     authPromptedRef.current = false
 
-    const openAuthModal = () => {
-      if (authPromptedRef.current) return
-      authPromptedRef.current = true
-      const dest = currentReturnPath(pathname, fallbackPath)
-      if (authModal) {
-        authModal.openLogin(dest)
-      } else {
-        router.replace(`/auth/login?redirect=${encodeURIComponent(dest)}`)
-      }
-    }
-
     const verifySession = async (): Promise<boolean> => {
       const session = await resolveClientSessionForMutation(supabase)
       return Boolean(session?.user)
@@ -84,7 +73,6 @@ export function SignInRequiredGate({
 
     const applyBlocked = () => {
       setPhase("blocked")
-      openAuthModal()
     }
 
     if (persistSessionAcrossRoutes && authedRef.current) {

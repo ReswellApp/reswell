@@ -4,7 +4,7 @@ import { useCallback } from "react"
 import { usePathname, useRouter } from "next/navigation"
 
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
-import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
+import { resolveSellEditUser } from "@/lib/sell-flow/resolve-sell-edit-user"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { createClient } from "@/lib/supabase/client"
 
@@ -48,8 +48,8 @@ export function useSignInGate() {
 
       void (async () => {
         const supabase = createClient()
-        const session = await resolveClientSessionForMutation(supabase)
-        if (session?.user) return
+        const user = await resolveSellEditUser(supabase)
+        if (user) return
         openGate()
       })()
     },

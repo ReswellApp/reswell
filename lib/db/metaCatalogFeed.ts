@@ -41,6 +41,7 @@ export async function fetchMetaCatalogFeedPage(
     .select(CATALOG_LISTING_SELECT)
     .eq("status", "active")
     .eq("hidden_from_site", false)
+    .is("archived_at", null)
     .in("section", [...META_CATALOG_PEER_SECTIONS])
     .order("created_at", { ascending: false })
     .range(from, to)

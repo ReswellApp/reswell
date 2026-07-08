@@ -140,7 +140,7 @@ import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listi
 import { revalidateNavSearchSuggestAfterListingPublished } from "@/app/actions/nav-search-suggest-cache"
 import { saveDefaultListingLocationAction } from "@/app/actions/sell-default-location"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
-import { resolveSellEditUser } from "@/lib/sell-flow/resolve-sell-edit-user"
+import { fetchOwnedListingForSellEditClient } from "@/lib/sell-flow/fetch-owned-listing-for-edit-client"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
   validateSellListingForm,
@@ -1554,48 +1554,13 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     }
     let mounted = true
     ;(async () => {
-      const user = await resolveSellEditUser(supabase)
-      if (!user) {
-        openSignIn(`/sell?edit=${resumeDraftId}`)
-        return
-      }
-      const imp = getImpersonation()
-      // Use `*` so edit load picks up new listing columns without tight select coupling; see
-      // supabase/migrations/20260815120000_listings_dimensions_column.sql
-      let query = supabase
-        .from("listings")
-        .select(
-          `
-          *,
-          listing_images (id, url, thumbnail_url, is_primary, sort_order),
-          user_listing_board_model_data ( model_name, catalog_model_slug, catalog_brand_slug ),
-          brand_models ( id, name, brands ( slug ) )
-        `,
-        )
-        .eq("id", resumeDraftId)
-      if (!imp) {
-        query = query.eq("user_id", user.id)
-      }
-      let { data: listing, error } = await query.single()
-      if (error || !listing) {
-        let fallbackQuery = supabase
-          .from("listings")
-          .select(
-            `
-            *,
-            listing_images (id, url, thumbnail_url, is_primary, sort_order)
-          `,
-          )
-          .eq("id", resumeDraftId)
-        if (!imp) {
-          fallbackQuery = fallbackQuery.eq("user_id", user.id)
+      const owned = await fetchOwnedListingForSellEditClient(supabase, resumeDraftId)
+      if (!owned.ok) {
+        if (!mounted) return
+        if (owned.reason === "unauthorized") {
+          openSignIn(`/sell?edit=${resumeDraftId}`)
+          return
         }
-        const retry = await fallbackQuery.single()
-        listing = retry.data
-        error = retry.error
-      }
-      if (!mounted) return
-      if (error || !listing) {
         toast.error("Listing not found or cannot be edited")
         if (!editId && localServerDraftId === resumeDraftId) {
           clearSellServerDraftListingId("surfboards")
@@ -1604,6 +1569,10 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         setEditLoading(false)
         return
       }
+
+      const { listing } = owned
+      const imp = getImpersonation()
+      if (!mounted) return
       if ((listing as { status?: string }).status === "sold") {
         toast.message("This listing has sold — it can’t be edited.")
         router.replace(

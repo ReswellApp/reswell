@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import type { ReactNode } from "react"
+import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { SellAuthGate } from "@/components/features/sell/sell-auth-gate"
 
 const title = "Sell your surfboard — Reswell"
@@ -34,6 +35,8 @@ export const metadata: Metadata = {
   },
 }
 
-export default function SellLayout({ children }: { children: ReactNode }) {
+export default async function SellLayout({ children }: { children: ReactNode }) {
+  const { user } = await getCachedRequestSession()
+  if (user) return children
   return <SellAuthGate>{children}</SellAuthGate>
 }
