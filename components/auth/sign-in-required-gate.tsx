@@ -6,7 +6,6 @@ import { usePathname, useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
-import { hasSupabaseAuthCookiesClient } from "@/lib/auth/has-supabase-auth-cookies"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
@@ -47,12 +46,9 @@ export function SignInRequiredGate({
   const pathname = usePathname()
   const authModal = useOptionalAuthModal()
   const supabase = useMemo(() => createClient(), [])
-  const [phase, setPhase] = useState<SignInRequiredPhase>(() => {
-    if (typeof document !== "undefined" && !hasSupabaseAuthCookiesClient()) {
-      return "blocked"
-    }
-    return "checking"
-  })
+  // Always probe the session first — Supabase SSR auth cookies are often httpOnly and
+  // invisible to document.cookie, so a missing client cookie is not proof of signed-out.
+  const [phase, setPhase] = useState<SignInRequiredPhase>("checking")
   const authPromptedRef = useRef(false)
   const authedRef = useRef(false)
 
@@ -103,12 +99,6 @@ export function SignInRequiredGate({
       }
     }
 
-    const likelyGuest = !hasSupabaseAuthCookiesClient()
-    if (likelyGuest) {
-      setPhase("blocked")
-      openAuthModal()
-    }
-
     void verifySession()
       .then((ok) => {
         if (!mounted) return
@@ -116,15 +106,11 @@ export function SignInRequiredGate({
           applyAuthed()
           return
         }
-        if (!likelyGuest) {
-          applyBlocked()
-        }
+        applyBlocked()
       })
       .catch(() => {
         if (!mounted) return
-        if (!likelyGuest) {
-          applyBlocked()
-        }
+        applyBlocked()
       })
 
     const {
