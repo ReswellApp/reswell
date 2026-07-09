@@ -1,4 +1,3 @@
-import Image from "next/image"
 import Link from "next/link"
 import { ExternalLink, MapPin } from "lucide-react"
 import {
@@ -8,8 +7,6 @@ import {
   brandSoldListingsBrowseHref,
 } from "@/lib/brands/routes"
 import type { BrandRow } from "@/lib/brands/types"
-import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
-import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { BrandDetailAdminBar } from "@/components/brands/brand-detail-admin-bar"
 import { BrandProductCategoryBadges } from "@/components/brands/brand-product-category-badges"
 import { Button } from "@/components/ui/button"
@@ -58,22 +55,6 @@ export function BrandProfileView({
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-balance text-foreground sm:text-4xl">
               {brand.name}
             </h1>
-
-            {brand.logo_url ? (
-              <div className="relative mx-auto mt-6 h-16 w-44 overflow-hidden rounded-xl border border-border/80 bg-background px-3 py-2 shadow-soft sm:h-[72px] sm:w-48">
-                <Image
-                  src={brandLogoDisplaySrc(brand.logo_url)}
-                  alt={`${brand.name} logo`}
-                  fill
-                  className="object-contain object-center"
-                  sizes="(max-width: 640px) 176px, 192px"
-                  priority
-                  unoptimized={listingImageShouldBypassOptimization(
-                    brandLogoDisplaySrc(brand.logo_url),
-                  )}
-                />
-              </div>
-            ) : null}
 
             {brand.location_label ? (
               <p className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">

@@ -1,12 +1,9 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
-import { ArrowUpRight, MapPin, Package } from "lucide-react"
+import { ArrowUpRight, MapPin } from "lucide-react"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import type { BrandRow } from "@/lib/brands/types"
-import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
-import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { BrandProductCategoryBadges } from "@/components/brands/brand-product-category-badges"
 import type { BrandProductCategorySlug } from "@/lib/brand-product-categories"
 import { brandProductCategoryLabel } from "@/lib/brand-product-categories"
@@ -44,39 +41,16 @@ export function BrandsExplorer({
                   href={`${BRANDS_BASE}/${entry.slug}`}
                   className="group flex h-full flex-col rounded-2xl border border-border/80 bg-card p-5 shadow-soft transition-colors hover:border-foreground/20 hover:shadow-soft-hover sm:p-6"
                 >
-                  <div className="flex items-start gap-4">
-                    {entry.logo_url ? (
-                      <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-xl border border-border/60 bg-background p-2">
-                        <Image
-                          src={brandLogoDisplaySrc(entry.logo_url)}
-                          alt={`${entry.name} logo`}
-                          fill
-                          className="object-contain object-center"
-                          sizes="72px"
-                          unoptimized={listingImageShouldBypassOptimization(
-                            brandLogoDisplaySrc(entry.logo_url),
-                          )}
-                        />
-                      </div>
-                    ) : (
-                      <div
-                        className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-xl border border-border/60 bg-muted text-muted-foreground"
-                        aria-hidden
-                      >
-                        <Package className="h-8 w-8" />
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1 pt-0.5">
-                      <h3 className="text-lg font-semibold leading-snug tracking-tight text-foreground group-hover:underline">
-                        {entry.name}
-                      </h3>
-                      {entry.location_label ? (
-                        <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted-foreground">
-                          <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                          <span className="line-clamp-2">{entry.location_label}</span>
-                        </p>
-                      ) : null}
-                    </div>
+                  <div>
+                    <h3 className="text-lg font-semibold leading-snug tracking-tight text-foreground group-hover:underline">
+                      {entry.name}
+                    </h3>
+                    {entry.location_label ? (
+                      <p className="mt-1.5 flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                        <span className="line-clamp-2">{entry.location_label}</span>
+                      </p>
+                    ) : null}
                   </div>
                   {entry.short_description ? (
                     <p className="mt-4 line-clamp-3 flex-1 text-sm leading-relaxed text-muted-foreground">

@@ -37,8 +37,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = seo.description
   const path = `/brands/${brand.slug}`
   const url = absoluteUrl(path)
-  const logo = brand.logo_url?.trim()
-
   return {
     title,
     description,
@@ -48,13 +46,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       type: "website",
       url,
-      images: logo ? [{ url: logo, alt: `${brand.name} logo` }] : undefined,
     },
     twitter: {
-      card: logo ? "summary_large_image" : "summary",
+      card: "summary",
       title: brand.name,
       description,
-      images: logo ? [logo] : undefined,
     },
   }
 }
