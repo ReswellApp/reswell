@@ -287,15 +287,6 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Explore surf sellers on Reswell — support fellow surfers and find shops near you or who ship to your area.",
     path: "/sellers",
   }),
-  page("surfers", "marketplace", "Surfers directory", {
-    title: "Surfer Profiles & Stories | Reswell",
-    description:
-      "Browse surfer profiles, stories, and gear collections. Connect with the surf community and discover boards for sale.",
-    path: "/surfers",
-    ogImageUrl:
-      "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/35b32ec0-e025-4c19-94aa-25b42427db26.jpg",
-  }),
-
   // ---- Content & community ----
   page("blog", "content", "Blog index", {
     title: "Surfboard Guides & Marketplace Tips | Reswell",

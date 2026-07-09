@@ -1,7 +1,6 @@
 import { proxiedAvatarMediaSrc } from "@/lib/avatar-media-proxy-url"
 import { brandLogoDisplaySrc, proxiedBrandMediaSrc } from "@/lib/brand-media-proxy-url"
 import { seoMediaDisplaySrc } from "@/lib/seo-media-proxy-url"
-import { surferMediaDisplaySrc } from "@/lib/surfer-media-proxy-url"
 import { absoluteUrl } from "@/lib/site-metadata"
 
 /**
@@ -28,7 +27,7 @@ export function absoluteProxiedProfileMediaUrl(
   return absoluteUrl(proxied)
 }
 
-export { brandLogoDisplaySrc, seoMediaDisplaySrc, surferMediaDisplaySrc }
+export { brandLogoDisplaySrc, seoMediaDisplaySrc }
 
 export function absoluteProxiedSeoMediaUrl(
   url: string | null | undefined,
@@ -64,15 +63,6 @@ export function absoluteProxiedBrandLogoUrl(
   url: string | null | undefined,
 ): string | undefined {
   const proxied = brandLogoDisplaySrc(url)
-  if (!proxied.trim()) return undefined
-  if (/^https?:\/\//i.test(proxied)) return proxied
-  return absoluteUrl(proxied)
-}
-
-export function absoluteProxiedSurferMediaUrl(
-  url: string | null | undefined,
-): string | undefined {
-  const proxied = surferMediaDisplaySrc(url)
   if (!proxied.trim()) return undefined
   if (/^https?:\/\//i.test(proxied)) return proxied
   return absoluteUrl(proxied)

@@ -11,7 +11,6 @@ import { fetchMagazineListingSitemapEntries } from "@/lib/db/magazine-listings"
 import { fetchBrandSlugRowsForSitemap } from "@/lib/db/sitemap-brands"
 import { fetchSellerProfileSitemapEntries } from "@/lib/db/sitemap-seller-profiles"
 import { fetchForumThreadSitemapEntries } from "@/lib/db/sitemap-forum-threads"
-import { fetchSurferSlugPathsForSitemap } from "@/lib/db/sitemap-surfers"
 import { fetchPublishedBlogPostSitemapEntries } from "@/lib/db/sitemap-blog-posts-published"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
@@ -103,11 +102,10 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
   const now = new Date()
   const supabase = await supabaseForSitemapPublicRead()
 
-  const [brandRows, sellerEntries, forumEntries, surferPaths, blogEntries] = await Promise.all([
+  const [brandRows, sellerEntries, forumEntries, blogEntries] = await Promise.all([
     fetchBrandSlugRowsForSitemap(supabase),
     fetchSellerProfileSitemapEntries(supabase),
     fetchForumThreadSitemapEntries(supabase),
-    fetchSurferSlugPathsForSitemap(supabase),
     fetchPublishedBlogPostSitemapEntries(supabase),
   ])
 
@@ -139,7 +137,6 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     { url: `${BASE}/jamboards`, lastModified: now, changeFrequency: "daily", priority: 0.5 },
     { url: `${BASE}/sellers`, lastModified: now, changeFrequency: "weekly", priority: 0.4 },
     { url: `${BASE}/collections`, lastModified: now, changeFrequency: "weekly", priority: 0.45 },
-    { url: `${BASE}/surfers`, lastModified: now, changeFrequency: "weekly", priority: 0.4 },
     { url: `${BASE}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.45 },
     { url: `${BASE}/faq`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
     { url: `${BASE}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.35 },
@@ -182,13 +179,6 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     priority: 0.35,
   }))
 
-  const surferPages: SitemapUrlEntry[] = surferPaths.map((e) => ({
-    url: `${BASE}${e.path}`,
-    lastModified: now,
-    changeFrequency: "monthly",
-    priority: 0.35,
-  }))
-
   const blogPages: SitemapUrlEntry[] = blogEntries.map((e) => ({
     url: `${BASE}${e.path}`,
     lastModified: e.lastModified,
@@ -203,7 +193,6 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     ...brandPages,
     ...sellerPages,
     ...forumPages,
-    ...surferPages,
     ...blogPages,
   ]
 

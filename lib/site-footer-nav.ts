@@ -12,7 +12,6 @@ export const siteFooterNavLinks: {
     { name: "Recently sold", href: "/sold" },
     { name: "Sell your board", href: "/sell" },
     { name: "Sellers", href: "/sellers" },
-    { name: "Surfers", href: "/surfers" },
     { name: "What is Reswell", href: "/what-is-reswell" },
     { name: "Blog", href: "/blog" },
   ],

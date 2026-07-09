@@ -17,7 +17,7 @@ export const helpTopicIndexes: HelpTopicIndex[] = [
         alt: "Buyer reviewing a purchase on Reswell",
       },
       checkout: {
-        src: "/images/home/how-it-works-sell-paid.png",
+        src: "/images/home/how-it-works-sell-list.png",
         alt: "Completing checkout on Reswell",
       },
     },
@@ -97,7 +97,7 @@ export const helpTopicIndexes: HelpTopicIndex[] = [
     allArticlesLabel: "All selling articles",
     categoryImages: {
       "getting-paid": {
-        src: "/images/home/how-it-works-sell-paid.png",
+        src: "/images/home/how-it-works-sell-list.png",
         alt: "Seller receiving payment on Reswell",
       },
       "managing-orders": {
@@ -189,7 +189,7 @@ export const helpTopicIndexes: HelpTopicIndex[] = [
         alt: "Updating your Reswell profile",
       },
       "wallet-and-earnings": {
-        src: "/images/home/how-it-works-sell-paid.png",
+        src: "/images/home/how-it-works-sell-list.png",
         alt: "Viewing earnings in your Reswell wallet",
       },
       "messages-and-security": {

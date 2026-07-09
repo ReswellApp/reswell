@@ -5,8 +5,8 @@ type FounderProfileData = {
   name: string
   role: string
   title?: string
-  imageSrc: string
-  imageAlt: string
+  imageSrc?: string
+  imageAlt?: string
 }
 
 const FOUNDERS: readonly FounderProfileData[] = [
@@ -14,8 +14,6 @@ const FOUNDERS: readonly FounderProfileData[] = [
     name: "Hayden Garfield",
     role: "Co-founder",
     title: "CEO & Full Stack Engineer",
-    imageSrc: "/images/about/hayden-garfield.png",
-    imageAlt: "Hayden Garfield in a wetsuit holding a camera in the ocean",
   },
   {
     name: "David Kalt",
@@ -29,18 +27,20 @@ const FOUNDERS: readonly FounderProfileData[] = [
 function FounderProfile({ name, role, title, imageSrc, imageAlt }: FounderProfileData) {
   return (
     <article className="flex flex-col items-center text-center">
-      <div className="relative h-36 w-36 shrink-0 overflow-hidden rounded-2xl border border-border/80 bg-muted shadow-sm sm:h-40 sm:w-40">
-        <Image
-          src={imageSrc}
-          alt={imageAlt}
-          fill
-          className="object-cover object-center"
-          sizes="(max-width: 640px) 144px, 160px"
-          placeholder="blur"
-          blurDataURL={portraitShimmer}
-        />
-      </div>
-      <div className="mt-5 max-w-xs">
+      {imageSrc && imageAlt ? (
+        <div className="relative h-36 w-36 shrink-0 overflow-hidden rounded-2xl border border-border/80 bg-muted shadow-sm sm:h-40 sm:w-40">
+          <Image
+            src={imageSrc}
+            alt={imageAlt}
+            fill
+            className="object-cover object-center"
+            sizes="(max-width: 640px) 144px, 160px"
+            placeholder="blur"
+            blurDataURL={portraitShimmer}
+          />
+        </div>
+      ) : null}
+      <div className={imageSrc ? "mt-5 max-w-xs" : "max-w-xs"}>
         <h3 className="font-headline text-xl font-bold tracking-tight text-foreground">{name}</h3>
         <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           {role}
@@ -71,7 +71,7 @@ export function AboutFoundersSection() {
 
         <div className="mx-auto mt-10 flex max-w-2xl flex-col items-center gap-10 sm:flex-row sm:justify-center sm:gap-16 lg:gap-20">
           {FOUNDERS.map((founder) => (
-            <FounderProfile key={founder.imageSrc} {...founder} />
+            <FounderProfile key={founder.name} {...founder} />
           ))}
         </div>
       </div>

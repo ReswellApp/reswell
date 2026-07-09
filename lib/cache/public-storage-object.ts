@@ -16,7 +16,6 @@ export type PublicStorageBucket =
   | "blog-images"
   | "avatars"
   | "brand-assets"
-  | "surfer-assets"
   | "brand-request-logos"
   | "seo-assets"
 

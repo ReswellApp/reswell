@@ -22,8 +22,8 @@ const SELLER_STEPS = [
       "Get messages, offers, and questions in one place. When it’s a match, agree on pickup or ship it out. Your call.",
   },
   {
-    imageSrc: "/images/home/how-it-works-sell-paid.png",
-    imageAlt: "Surfer turning on a large green wave with spray",
+    imageSrc: "/images/home/how-it-works-sell-list.png",
+    imageAlt: "Surfer in a wetsuit riding a wave, black and white",
     title: "Get paid directly",
     body:
       "When the sale is done, your earnings are yours. Cash out straight to your bank when you’re ready. Simple and community-first.",
