@@ -22,6 +22,11 @@ import {
   listingHasShippingModeFields,
   peerCheckoutNeedsLiveShippingQuote,
 } from "@/lib/checkout-peer-shipping-client"
+import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
+import {
+  peerCheckoutOffersShippingRateChoice,
+  type PeerCheckoutShippingRateOption,
+} from "@/lib/shipping/peer-checkout-usps-services"
 import { Truck, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -120,10 +125,29 @@ export function CheckoutClient({
     shippingUsd: number
     totalUsd: number
     usedReswellQuote: boolean
+    selectedRate?: {
+      rateId: string
+      serviceCode: string
+      serviceName: string
+      displayName?: string
+    } | null
+    availableShippingRates?: PeerCheckoutShippingRateOption[] | null
   } | null>(null)
+  const [selectedShippingRateId, setSelectedShippingRateId] = useState<string | null>(null)
   const [shipQuoteToken, setShipQuoteToken] = useState<string | null>(null)
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
+
+  const offersShippingRateChoice = useMemo(() => {
+    if (isBundle || !needsShipping) return false
+    if (effectiveBoardShippingMode(primaryListing) !== "reswell") return false
+    return peerCheckoutOffersShippingRateChoice(primaryListing.section)
+  }, [isBundle, needsShipping, primaryListing])
+
+  const isMagazineReswellCheckout = useMemo(() => {
+    if (isBundle || !needsShipping) return false
+    return primaryListing.section === "magazines" && effectiveBoardShippingMode(primaryListing) === "reswell"
+  }, [isBundle, needsShipping, primaryListing])
 
   const needsLiveShippingQuote = useMemo(
     () => needsShipping && peerCheckoutNeedsLiveShippingQuote(listings.map(listingHasShippingModeFields)),
@@ -140,6 +164,7 @@ export function CheckoutClient({
     setPromoError(null)
     setPromoCodeInput("")
     setShipQuoteToken(null)
+    setSelectedShippingRateId(null)
   }, [listingIdsKey, impliedFulfillment])
 
   useEffect(() => {
@@ -160,6 +185,7 @@ export function CheckoutClient({
       setShipQuoteToken(null)
       setQuoteError(null)
       setQuoteLoading(false)
+      setSelectedShippingRateId(null)
       return
     }
 
@@ -192,6 +218,7 @@ export function CheckoutClient({
           body: JSON.stringify({
             listing_ids: listingIdsKey.split(","),
             address_id: purchaseDetails.shippingAddressId,
+            ...(selectedShippingRateId ? { selected_rate_id: selectedShippingRateId } : {}),
           }),
         })
         const data = (await res.json()) as {
@@ -201,6 +228,12 @@ export function CheckoutClient({
             totalUsd: number
             usedReswellQuote: boolean
             quoteToken?: string | null
+            selectedRate?: {
+              rateId: string
+              serviceCode: string
+              serviceName: string
+            } | null
+            availableShippingRates?: PeerCheckoutShippingRateOption[] | null
           }
         }
         if (cancelled) return
@@ -210,10 +243,21 @@ export function CheckoutClient({
           setQuoteError(data.error?.trim() || "Could not calculate shipping for this address.")
           return
         }
+        const selectedRate = data.data.selectedRate
+          ? {
+              ...data.data.selectedRate,
+              displayName:
+                data.data.availableShippingRates?.find(
+                  (rate) => rate.rateId === data.data?.selectedRate?.rateId,
+                )?.displayName ?? data.data.selectedRate.serviceName,
+            }
+          : null
         setShipQuote({
           shippingUsd: data.data.shippingUsd,
           totalUsd: data.data.totalUsd,
           usedReswellQuote: data.data.usedReswellQuote,
+          selectedRate,
+          availableShippingRates: data.data.availableShippingRates ?? null,
         })
         setShipQuoteToken(data.data.quoteToken?.trim() || null)
       } catch {
@@ -236,6 +280,7 @@ export function CheckoutClient({
     listings,
     purchaseDetails.shippingAddressId,
     resolved,
+    selectedShippingRateId,
   ])
 
   const handlePurchaseDetailsChange = useCallback((state: PurchaseDetailsState) => {
@@ -503,19 +548,63 @@ export function CheckoutClient({
                     {quoteError}
                   </p>
                 ) : null}
-                <div className="min-h-[3.5rem] rounded-[8px] border border-neutral-200 bg-neutral-100/80 px-4 py-3.5 text-[13px] leading-relaxed text-neutral-600">
-                  {!purchaseDetails.readyToPay
-                    ? "Enter your shipping address above to confirm delivery."
-                    : quoteLoading
-                      ? "Getting live carrier rates for your address…"
-                      : shipQuote?.usedReswellQuote
-                        ? displayTotals.shipping > 0
-                          ? `Reswell recommended shipping (carrier rate) is about $${displayTotals.shipping.toFixed(2)} — included in your total.`
-                          : "Free shipping from this seller — included in your total."
-                        : displayTotals.shipping > 0
-                          ? `Flat $${displayTotals.shipping.toFixed(2)} shipping from the seller — included in your total.`
-                          : "Free shipping from this seller — included in your total."}
-                </div>
+                {!purchaseDetails.readyToPay ? (
+                  <div className="min-h-[3.5rem] rounded-[8px] border border-neutral-200 bg-neutral-100/80 px-4 py-3.5 text-[13px] leading-relaxed text-neutral-600">
+                    Enter your shipping address above to confirm delivery.
+                  </div>
+                ) : quoteLoading ? (
+                  <div className="min-h-[3.5rem] rounded-[8px] border border-neutral-200 bg-neutral-100/80 px-4 py-3.5 text-[13px] leading-relaxed text-neutral-600">
+                    Getting live carrier rates for your address…
+                  </div>
+                ) : offersShippingRateChoice && shipQuote?.availableShippingRates?.length ? (
+                  <div className="space-y-3 rounded-[8px] border border-neutral-200 bg-white px-4 py-4">
+                    <p className="text-[13px] leading-relaxed text-neutral-600">
+                      Choose USPS shipping for your fins. The amount you select is included in your total.
+                    </p>
+                    <RadioGroup
+                      value={selectedShippingRateId ?? shipQuote.selectedRate?.rateId ?? ""}
+                      onValueChange={(value) => setSelectedShippingRateId(value)}
+                      className="space-y-2"
+                    >
+                      {shipQuote.availableShippingRates.map((rate) => (
+                        <label
+                          key={rate.rateId}
+                          htmlFor={`checkout-shipping-${rate.rateId}`}
+                          className="flex cursor-pointer items-start gap-3 rounded-[8px] border border-neutral-200 px-3.5 py-3 transition-colors has-[[data-state=checked]]:border-[#5574AD]/40 has-[[data-state=checked]]:bg-[#5574AD]/[0.04]"
+                        >
+                          <RadioGroupItem
+                            id={`checkout-shipping-${rate.rateId}`}
+                            value={rate.rateId}
+                            className="mt-0.5"
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-[14px] font-medium text-foreground">{rate.displayName}</span>
+                            <span className="mt-0.5 block text-[12px] text-neutral-500">
+                              {rate.deliveryDays != null
+                                ? `About ${rate.deliveryDays} business day${rate.deliveryDays === 1 ? "" : "s"}`
+                                : "Estimated transit time from USPS"}
+                            </span>
+                          </span>
+                          <span className="shrink-0 text-[14px] font-semibold tabular-nums text-foreground">
+                            ${rate.totalAmount.toFixed(2)}
+                          </span>
+                        </label>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                ) : (
+                  <div className="min-h-[3.5rem] rounded-[8px] border border-neutral-200 bg-neutral-100/80 px-4 py-3.5 text-[13px] leading-relaxed text-neutral-600">
+                    {shipQuote?.usedReswellQuote
+                      ? displayTotals.shipping > 0
+                        ? isMagazineReswellCheckout
+                          ? `USPS Media Mail is $${displayTotals.shipping.toFixed(2)} — included in your total.`
+                          : `Reswell recommended shipping (carrier rate) is about $${displayTotals.shipping.toFixed(2)} — included in your total.`
+                        : "Free shipping from this seller — included in your total."
+                      : displayTotals.shipping > 0
+                        ? `Flat $${displayTotals.shipping.toFixed(2)} shipping from the seller — included in your total.`
+                        : "Free shipping from this seller — included in your total."}
+                  </div>
+                )}
               </div>
             )}
 

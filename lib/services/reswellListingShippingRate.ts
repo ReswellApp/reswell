@@ -16,6 +16,12 @@ import {
   type ShippingAddressInput,
 } from "@/lib/shipping/shipengine-rate-helpers"
 import { validateSurfboardLabelParcelLimits } from "@/lib/shipping/surfboard-label-limits"
+import {
+  filterReswellRatesForPeerSection,
+  peerCheckoutShippingServiceError,
+  type PeerCheckoutShippingRateOption,
+  toPeerCheckoutShippingRateOptions,
+} from "@/lib/shipping/peer-checkout-usps-services"
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 
 /** Minimum listing slice required to rate a Reswell-shipped surfboard at checkout. */
@@ -48,6 +54,8 @@ export type ReswellListingRateOk = {
   ok: true
   cheapest: ReswellListingRateRow
   topRates: ReswellListingRateRow[]
+  /** Section-filtered rates buyers may choose at checkout (fins) or the single allowed service (magazines). */
+  checkoutRateOptions: PeerCheckoutShippingRateOption[]
   payload: ReswellListingRateRequestPayload
   /** "saved" when the rate uses seller-provided packed dims, "heuristic" when it falls back to board-derived guesses. */
   parcelSource: ResolvedPackedParcelSource
@@ -231,6 +239,10 @@ export async function getCheapestReswellRateForListing(input: {
   carrierIds?: string[]
   /** When set, propagated to `RESWELL_SHIPPING_DEBUG` log for traceability. */
   diagnosticTag?: string
+  /** Listing section — restricts USPS services for fins and magazines at checkout. */
+  section?: string | null
+  /** Buyer-selected ShipEngine rate id from checkout (fins). */
+  selectedRateId?: string | null
   /**
    * Ship-from contact name on carrier labels (printed under “Seller” / shipper on the label).
    * Use {@link fetchSellerShipFromLabelName} from the seller’s profile when available.
@@ -247,11 +259,58 @@ export async function getCheapestReswellRateForListing(input: {
  * (see {@link resolveCombinedPackedParcelFromListings}). Ship-from is resolved from the first
  * listing — all listings belong to one seller, so localities match.
  */
+function resolveSelectedCheckoutRate(
+  decorated: ReswellListingRateRow[],
+  section: string | null | undefined,
+  selectedRateId: string | null | undefined,
+): { ok: true; selected: ReswellListingRateRow; checkoutRateOptions: PeerCheckoutShippingRateOption[] } | { ok: false; error: string } {
+  const filtered = filterReswellRatesForPeerSection(decorated, section)
+  const checkoutRateOptions = toPeerCheckoutShippingRateOptions(filtered, section)
+
+  if (section === "fins" || section === "magazines") {
+    if (checkoutRateOptions.length === 0) {
+      return { ok: false, error: peerCheckoutShippingServiceError(section) }
+    }
+  }
+
+  const trimmedSelected = selectedRateId?.trim()
+  if (trimmedSelected) {
+    const selectedOption = checkoutRateOptions.find((option) => option.rateId === trimmedSelected)
+    const selectedRow = filtered.find((row) => row.rate_id === trimmedSelected)
+    if (!selectedOption || !selectedRow?.rate_id) {
+      return { ok: false, error: "Selected shipping option is no longer available — choose another rate." }
+    }
+    return { ok: true, selected: selectedRow, checkoutRateOptions }
+  }
+
+  const defaultOption = checkoutRateOptions[0]
+  const defaultRow = defaultOption
+    ? filtered.find((row) => row.rate_id === defaultOption.rateId)
+    : null
+
+  const purchasable =
+    defaultRow ??
+    (section === "fins" || section === "magazines" ? filtered : decorated).find((row) => row.rate_id != null)
+  if (!purchasable?.rate_id) {
+    return {
+      ok: false,
+      error:
+        section === "fins" || section === "magazines"
+          ? peerCheckoutShippingServiceError(section)
+          : "No carrier returned a label rate for this shipment. Try again or check ShipEngine.",
+    }
+  }
+
+  return { ok: true, selected: purchasable, checkoutRateOptions }
+}
+
 export async function getCheapestReswellRateForListings(input: {
   listings: ReswellRateableListing[]
   shipTo: ShippingAddressInput
   carrierIds?: string[]
   diagnosticTag?: string
+  section?: string | null
+  selectedRateId?: string | null
   sellerShipFromName: string
 }): Promise<ReswellListingRateResult> {
   if (!isShipEngineConfigured()) {
@@ -347,18 +406,33 @@ export async function getCheapestReswellRateForListings(input: {
   }
 
   decorated.sort((a, b) => a.totalAmount - b.totalAmount)
-  const cheapest = decorated.find((row) => row.rate_id != null) ?? null
-  if (!cheapest?.rate_id) {
-    return {
-      ok: false,
-      error: "No carrier returned a label rate for this shipment. Try again or check ShipEngine.",
-    }
+
+  const section =
+    input.section?.trim() ||
+    (input.listings[0] as { section?: string | null } | undefined)?.section?.trim() ||
+    null
+
+  const resolved = resolveSelectedCheckoutRate(decorated, section, input.selectedRateId)
+  if (!resolved.ok) {
+    return resolved
   }
+
+  const cheapest = resolved.selected
 
   if (isDebugEnabled()) {
     console.info(
       "[reswellListingShippingRate] cheapest row:",
-      JSON.stringify({ tag: input.diagnosticTag ?? null, cheapest, top: decorated.slice(0, 5) }, null, 2),
+      JSON.stringify(
+        {
+          tag: input.diagnosticTag ?? null,
+          section,
+          cheapest,
+          checkoutRateOptions: resolved.checkoutRateOptions,
+          top: decorated.slice(0, 5),
+        },
+        null,
+        2,
+      ),
     )
   }
 
@@ -366,5 +440,12 @@ export async function getCheapestReswellRateForListings(input: {
     return { ok: false, error: "Unsupported currency from carrier quote." }
   }
 
-  return { ok: true, cheapest, topRates: decorated, payload, parcelSource: parcel.source }
+  return {
+    ok: true,
+    cheapest,
+    topRates: decorated,
+    checkoutRateOptions: resolved.checkoutRateOptions,
+    payload,
+    parcelSource: parcel.source,
+  }
 }

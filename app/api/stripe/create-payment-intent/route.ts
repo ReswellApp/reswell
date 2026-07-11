@@ -429,6 +429,14 @@ export async function POST(request: NextRequest) {
                   bundle.lines.filter((l) => l.usedReswellQuote).reduce((s, l) => s + l.shippingUsd, 0) * 100,
                 ),
               ),
+              ...(verifiedQuotePayload?.rateId
+                ? {
+                    shipengine_rate_id: verifiedQuotePayload.rateId,
+                    ...(verifiedQuotePayload.serviceCode
+                      ? { shipengine_service_code: verifiedQuotePayload.serviceCode }
+                      : {}),
+                  }
+                : {}),
             }
           : {}),
       },

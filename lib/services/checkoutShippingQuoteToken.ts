@@ -11,6 +11,9 @@ export type CheckoutShippingQuoteTokenPayload = {
   shippingCents: number
   totalCents: number
   usedReswellQuote: boolean
+  /** ShipEngine rate id selected at checkout (fins / magazines). */
+  rateId?: string | null
+  serviceCode?: string | null
   exp: number
 }
 
@@ -36,7 +39,9 @@ function decodePayload(encoded: string): CheckoutShippingQuoteTokenPayload | nul
       typeof parsed.shippingCents !== "number" ||
       typeof parsed.totalCents !== "number" ||
       typeof parsed.usedReswellQuote !== "boolean" ||
-      typeof parsed.exp !== "number"
+      typeof parsed.exp !== "number" ||
+      (parsed.rateId != null && typeof parsed.rateId !== "string") ||
+      (parsed.serviceCode != null && typeof parsed.serviceCode !== "string")
     ) {
       return null
     }
@@ -62,6 +67,8 @@ export function signCheckoutShippingQuoteToken(input: {
   shippingUsd: number
   totalUsd: number
   usedReswellQuote: boolean
+  rateId?: string | null
+  serviceCode?: string | null
 }): string | null {
   const secret = signingSecret()
   if (!secret) return null
@@ -74,6 +81,8 @@ export function signCheckoutShippingQuoteToken(input: {
     shippingCents: Math.round(input.shippingUsd * 100),
     totalCents: Math.round(input.totalUsd * 100),
     usedReswellQuote: input.usedReswellQuote,
+    rateId: input.rateId?.trim() || null,
+    serviceCode: input.serviceCode?.trim() || null,
     exp: Date.now() + CHECKOUT_SHIPPING_QUOTE_TOKEN_TTL_MS,
   }
 

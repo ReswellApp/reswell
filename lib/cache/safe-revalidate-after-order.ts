@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
 import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
+import { revalidateMarketplaceSalesMapCatalog } from "@/lib/cache/revalidate-marketplace-sales-map"
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 
@@ -25,6 +26,7 @@ export async function safeRevalidateAfterMarketplaceOrderCommit(
     revalidateBoardsBrowseCatalog()
     await revalidateSellersAfterListingChange(supabase, params.sellerUserId)
     revalidateMarketplaceSoldFeedCatalog()
+    revalidateMarketplaceSalesMapCatalog()
     for (let i = 0; i < params.listingIds.length; i++) {
       revalidateListingDetailPage(params.listingIds[i]!, params.listingSlugs[i] ?? null)
     }

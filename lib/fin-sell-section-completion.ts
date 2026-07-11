@@ -1,3 +1,8 @@
+import {
+  applyFinReswellPackageDefaults,
+  finReswellPackageDimensionsAllBlank,
+  finReswellPackageHasPartialDimensions,
+} from "@/lib/fin-reswell-shipping-defaults"
 import { FIN_LISTING_TITLE_MAX_LENGTH } from "@/lib/validations/fin-listing"
 import {
   parseReswellParcelLengthRawToCarrierInches,
@@ -24,9 +29,13 @@ export type FinSellSectionCompletionInput = {
 }
 
 function reswellPackageComplete(form: FinSellSectionCompletionInput): boolean {
-  const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
-  const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
-  const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
+  if (finReswellPackageHasPartialDimensions(form)) return false
+  if (finReswellPackageDimensionsAllBlank(form)) return true
+
+  const resolved = applyFinReswellPackageDefaults(form)
+  const L = parseReswellParcelLengthRawToCarrierInches(resolved.reswellPackageLengthIn)
+  const W = parseReswellParcelWidthHeightRawToCarrierInches(resolved.reswellPackageWidthIn)
+  const H = parseReswellParcelWidthHeightRawToCarrierInches(resolved.reswellPackageHeightIn)
   if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) return false
 
   const lbRaw = form.reswellPackageWeightLb?.trim() ?? ""

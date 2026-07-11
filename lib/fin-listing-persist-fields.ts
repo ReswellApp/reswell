@@ -1,3 +1,4 @@
+import { applyFinReswellPackageDefaults } from "@/lib/fin-reswell-shipping-defaults"
 import { finsSetupFieldForDb } from "@/lib/listing-facet-write"
 import {
   FINS_SECTION,
@@ -42,13 +43,26 @@ export function finListingShippingFieldsFor(input: CreateFinListingInput): {
 /** Maps validated sell-form input to `listings` columns for create/update. */
 export function buildFinListingPersistFields(input: CreateFinListingInput): Record<string, unknown> {
   const shipping = finListingShippingFieldsFor(input)
+  const shippingMode = input.shippingCostMode ?? "reswell"
+  const reswellPackage =
+    shippingMode === "reswell"
+      ? applyFinReswellPackageDefaults({
+          reswellPackageLengthIn: input.reswellPackageLengthIn ?? "",
+          reswellPackageWidthIn: input.reswellPackageWidthIn ?? "",
+          reswellPackageHeightIn: input.reswellPackageHeightIn ?? "",
+          reswellPackageWeightLb: input.reswellPackageWeightLb ?? "",
+          reswellPackageWeightOz: input.reswellPackageWeightOz ?? "",
+        })
+      : {
+          reswellPackageLengthIn: input.reswellPackageLengthIn ?? "",
+          reswellPackageWidthIn: input.reswellPackageWidthIn ?? "",
+          reswellPackageHeightIn: input.reswellPackageHeightIn ?? "",
+          reswellPackageWeightLb: input.reswellPackageWeightLb ?? "",
+          reswellPackageWeightOz: input.reswellPackageWeightOz ?? "",
+        }
   const packedRow = reswellPackageFieldsToDb({
-    boardShippingCostMode: input.shippingCostMode ?? "reswell",
-    reswellPackageLengthIn: input.reswellPackageLengthIn,
-    reswellPackageWidthIn: input.reswellPackageWidthIn,
-    reswellPackageHeightIn: input.reswellPackageHeightIn,
-    reswellPackageWeightLb: input.reswellPackageWeightLb,
-    reswellPackageWeightOz: input.reswellPackageWeightOz,
+    boardShippingCostMode: shippingMode,
+    ...reswellPackage,
   })
 
   const brand = input.brand?.trim() || null

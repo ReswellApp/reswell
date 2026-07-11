@@ -11,6 +11,63 @@ import {
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 import { signCheckoutShippingQuoteToken } from "@/lib/services/checkoutShippingQuoteToken"
+import {
+  findPeerCheckoutRateOption,
+} from "@/lib/shipping/peer-checkout-usps-services"
+
+function buildQuoteResponse(input: {
+  itemPrice: number
+  shippingUsd: number
+  totalUsd: number
+  usedReswellQuote: boolean
+  buyerId: string
+  listingIds: string[]
+  addressId: string
+  reswellQuote?: {
+    rateId: string
+    serviceCode: string
+    serviceName: string
+    availableRates: Array<{
+      rateId: string
+      serviceCode: string
+      serviceName: string
+      displayName: string
+      totalAmount: number
+      deliveryDays: number | null
+    }>
+  }
+}) {
+  const selectedRate = input.reswellQuote
+    ? {
+        rateId: input.reswellQuote.rateId,
+        serviceCode: input.reswellQuote.serviceCode,
+        serviceName: input.reswellQuote.serviceName,
+      }
+    : null
+
+  return {
+    itemPrice: input.itemPrice,
+    shippingUsd: input.shippingUsd,
+    totalUsd: input.totalUsd,
+    usedReswellQuote: input.usedReswellQuote,
+    selectedRate,
+    availableShippingRates: input.reswellQuote?.availableRates ?? null,
+    quoteToken:
+      input.usedReswellQuote
+        ? signCheckoutShippingQuoteToken({
+            buyerId: input.buyerId,
+            listingIds: input.listingIds,
+            addressId: input.addressId,
+            itemSubtotalUsd: input.itemPrice,
+            shippingUsd: input.shippingUsd,
+            totalUsd: input.totalUsd,
+            usedReswellQuote: true,
+            rateId: input.reswellQuote?.rateId ?? null,
+            serviceCode: input.reswellQuote?.serviceCode ?? null,
+          })
+        : null,
+  }
+}
 
 export const dynamic = "force-dynamic"
 
@@ -51,6 +108,7 @@ export async function POST(request: Request) {
   const singleId = String(bodyObj.listing_id ?? "").trim()
   const listingIds = [...new Set(fromArray.length > 0 ? fromArray : singleId ? [singleId] : [])]
   const addressId = String(bodyObj.address_id ?? "").trim()
+  const selectedRateId = String(bodyObj.selected_rate_id ?? "").trim() || null
 
   if (listingIds.length === 0 || !addressId) {
     return NextResponse.json(
@@ -121,32 +179,35 @@ export async function POST(request: Request) {
       buyerAddress,
       diagnosticTag: `checkout-quote:${listingRow.id}`,
       sellerShipFromName,
+      selectedRateId,
     })
 
     if (!totals.ok) {
       return NextResponse.json({ error: totals.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })
     }
 
+    if (totals.usedReswellQuote && totals.reswellQuote && selectedRateId) {
+      const selected = findPeerCheckoutRateOption(totals.reswellQuote.availableRates, selectedRateId)
+      if (!selected) {
+        return NextResponse.json(
+          { error: "Selected shipping option is no longer available." },
+          { status: 422, headers: JSON_NO_STORE_HEADERS },
+        )
+      }
+    }
+
     return NextResponse.json(
       {
-        data: {
+        data: buildQuoteResponse({
           itemPrice: totals.itemPrice,
           shippingUsd: totals.shippingUsd,
           totalUsd: totals.totalUsd,
           usedReswellQuote: totals.usedReswellQuote,
-          quoteToken:
-            totals.usedReswellQuote
-              ? signCheckoutShippingQuoteToken({
-                  buyerId: user.id,
-                  listingIds,
-                  addressId,
-                  itemSubtotalUsd: totals.itemPrice,
-                  shippingUsd: totals.shippingUsd,
-                  totalUsd: totals.totalUsd,
-                  usedReswellQuote: true,
-                })
-              : null,
-        },
+          buyerId: user.id,
+          listingIds,
+          addressId,
+          reswellQuote: totals.reswellQuote,
+        }),
       },
       { headers: JSON_NO_STORE_HEADERS },
     )
@@ -164,6 +225,7 @@ export async function POST(request: Request) {
     buyerAddress,
     diagnosticTag: `checkout-quote-bundle:${listingIds.join(",")}`,
     sellerShipFromName,
+    selectedRateId,
   })
 
   if (!bundleShipping.ok) {
@@ -172,23 +234,16 @@ export async function POST(request: Request) {
 
   return NextResponse.json(
     {
-      data: {
+      data: buildQuoteResponse({
         itemPrice,
         shippingUsd: bundleShipping.shippingUsd,
         totalUsd: Math.round((itemPrice + bundleShipping.shippingUsd) * 100) / 100,
         usedReswellQuote: bundleShipping.usedReswellQuote,
-        quoteToken: bundleShipping.usedReswellQuote
-          ? signCheckoutShippingQuoteToken({
-              buyerId: user.id,
-              listingIds,
-              addressId,
-              itemSubtotalUsd: itemPrice,
-              shippingUsd: bundleShipping.shippingUsd,
-              totalUsd: Math.round((itemPrice + bundleShipping.shippingUsd) * 100) / 100,
-              usedReswellQuote: true,
-            })
-          : null,
-      },
+        buyerId: user.id,
+        listingIds,
+        addressId,
+        reswellQuote: bundleShipping.quote,
+      }),
     },
     { headers: JSON_NO_STORE_HEADERS },
   )

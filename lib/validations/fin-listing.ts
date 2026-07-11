@@ -5,6 +5,10 @@ import {
   FIN_SIZE_OPTIONS,
 } from "@/lib/fin-listing-config"
 import {
+  applyFinReswellPackageDefaults,
+  finReswellPackageHasPartialDimensions,
+} from "@/lib/fin-reswell-shipping-defaults"
+import {
   parseReswellParcelLengthRawToCarrierInches,
   parseReswellParcelWidthHeightRawToCarrierInches,
 } from "@/lib/reswell-parcel-fields"
@@ -39,7 +43,7 @@ const finListingImageSchema = z.object({
   sortOrder: z.number().int().nonnegative().optional(),
 })
 
-const finListingBaseSchema = z.object({
+const finListingBaseObject = z.object({
   title: z.string().trim().min(3, "Add a title").max(FIN_LISTING_TITLE_MAX_LENGTH),
   description: z.string().trim().min(1, "Add a description"),
   price: z.coerce.number().positive("Enter a price greater than $0"),
@@ -78,6 +82,22 @@ const finListingBaseSchema = z.object({
     .max(FIN_LISTING_MAX_PHOTOS),
 })
 
+function withFinReswellPackageDefaultsTransform<T extends z.ZodTypeAny>(schema: T) {
+  return schema.transform((data) => {
+    if ((data.shippingCostMode ?? "reswell") !== "reswell") return data
+    return {
+      ...data,
+      ...applyFinReswellPackageDefaults({
+        reswellPackageLengthIn: data.reswellPackageLengthIn ?? "",
+        reswellPackageWidthIn: data.reswellPackageWidthIn ?? "",
+        reswellPackageHeightIn: data.reswellPackageHeightIn ?? "",
+        reswellPackageWeightLb: data.reswellPackageWeightLb ?? "",
+        reswellPackageWeightOz: data.reswellPackageWeightOz ?? "",
+      }),
+    }
+  })
+}
+
 function withFinListingRefinements<T extends z.ZodType>(schema: T) {
   return schema
     .refine((data) => data.shippingAvailable && !data.localPickup, {
@@ -88,6 +108,15 @@ function withFinListingRefinements<T extends z.ZodType>(schema: T) {
       if (!data.shippingAvailable) return
       const mode = data.shippingCostMode ?? "reswell"
       if (mode !== "reswell") return
+
+      if (finReswellPackageHasPartialDimensions(data)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Enter all packed box dimensions, or leave them all blank to use our fin defaults.",
+          path: ["reswellPackageLengthIn"],
+        })
+        return
+      }
 
       const L = parseReswellParcelLengthRawToCarrierInches(data.reswellPackageLengthIn)
       if (L == null || L <= 0) {
@@ -147,15 +176,19 @@ function withFinListingRefinements<T extends z.ZodType>(schema: T) {
     })
 }
 
-export const createFinListingSchema = withFinListingRefinements(finListingBaseSchema)
+export const createFinListingSchema = withFinListingRefinements(
+  withFinReswellPackageDefaultsTransform(finListingBaseObject),
+)
 
 export type CreateFinListingInput = z.infer<typeof createFinListingSchema>
 
 export const updateFinListingSchema = withFinListingRefinements(
-  finListingBaseSchema.extend({
-    listingId: z.string().uuid(),
-    removedImageIds: z.array(z.string().uuid()).optional().default([]),
-  }),
+  withFinReswellPackageDefaultsTransform(
+    finListingBaseObject.extend({
+      listingId: z.string().uuid(),
+      removedImageIds: z.array(z.string().uuid()).optional().default([]),
+    }),
+  ),
 )
 
 export type UpdateFinListingInput = z.infer<typeof updateFinListingSchema>

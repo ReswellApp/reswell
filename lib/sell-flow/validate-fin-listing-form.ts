@@ -1,3 +1,7 @@
+import {
+  applyFinReswellPackageDefaults,
+  finReswellPackageHasPartialDimensions,
+} from "@/lib/fin-reswell-shipping-defaults"
 import { isListingSellableCondition } from "@/lib/listing-labels"
 import {
   parseReswellParcelLengthRawToCarrierInches,
@@ -87,9 +91,13 @@ export function validateFinListingForm(
   }
 
   if (form.shippingMode === "reswell") {
-    const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
-    const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
-    const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
+    if (finReswellPackageHasPartialDimensions(form)) {
+      return "Enter all packed box dimensions, or leave them all blank to use our fin defaults."
+    }
+    const resolved = applyFinReswellPackageDefaults(form)
+    const L = parseReswellParcelLengthRawToCarrierInches(resolved.reswellPackageLengthIn)
+    const W = parseReswellParcelWidthHeightRawToCarrierInches(resolved.reswellPackageWidthIn)
+    const H = parseReswellParcelWidthHeightRawToCarrierInches(resolved.reswellPackageHeightIn)
     if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) {
       return "Enter packed box dimensions for Reswell shipping."
     }

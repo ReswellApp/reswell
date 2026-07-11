@@ -6,6 +6,7 @@ import {
   getCheapestReswellRateForListings,
   type ReswellRateableListing,
 } from "@/lib/services/reswellListingShippingRate"
+import type { PeerCheckoutShippingRateOption } from "@/lib/shipping/peer-checkout-usps-services"
 
 /**
  * Supabase `listings` select fragment for peer surfboard checkout + ShipEngine.
@@ -36,6 +37,7 @@ export const PEER_SURFBOARD_CHECKOUT_LISTING_SELECT = `
 
 export type PeerListingForShippingQuote = ListingPackedParcelSource &
   ReswellRateableListing & {
+    section?: string | null
     board_shipping_cost_mode?: string | null
     shipping_price?: string | number | null
   }
@@ -68,12 +70,21 @@ export function effectiveBoardShippingMode(
  * Delegates entirely to {@link getCheapestReswellRateForListing} so checkout, finalize, and the admin
  * diagnostic endpoint share one rate path (same payload, same cheapest selection, same total math).
  */
+export type PeerReswellShippingQuote = {
+  shippingUsd: number
+  rateId: string
+  serviceCode: string
+  serviceName: string
+  availableRates: PeerCheckoutShippingRateOption[]
+}
+
 export async function quoteReswellPeerShippingUsd(input: {
   listing: PeerListingForShippingQuote
   buyerAddress: ProfileAddressRow
   diagnosticTag?: string
   sellerShipFromName: string
-}): Promise<{ ok: true; shippingUsd: number } | { ok: false; error: string }> {
+  selectedRateId?: string | null
+}): Promise<{ ok: true; quote: PeerReswellShippingQuote } | { ok: false; error: string }> {
   const shipTo = buyerProfileAddressToShipTo(input.buyerAddress)
   if (!shipTo.ok) {
     return { ok: false, error: shipTo.error }
@@ -84,11 +95,22 @@ export async function quoteReswellPeerShippingUsd(input: {
     shipTo: shipTo.address,
     diagnosticTag: input.diagnosticTag ?? "checkout",
     sellerShipFromName: input.sellerShipFromName,
+    section: input.listing.section ?? null,
+    selectedRateId: input.selectedRateId,
   })
   if (!result.ok) {
     return result
   }
-  return { ok: true, shippingUsd: result.cheapest.totalAmount }
+  return {
+    ok: true,
+    quote: {
+      shippingUsd: result.cheapest.totalAmount,
+      rateId: result.cheapest.rate_id!,
+      serviceCode: result.cheapest.serviceCode ?? "",
+      serviceName: result.cheapest.serviceName,
+      availableRates: result.checkoutRateOptions,
+    },
+  }
 }
 
 /**
@@ -106,8 +128,9 @@ export async function computePeerBundleShippingUsd(input: {
   buyerAddress: ProfileAddressRow | null
   diagnosticTag?: string
   sellerShipFromName: string
+  selectedRateId?: string | null
 }): Promise<
-  | { ok: true; shippingUsd: number; usedReswellQuote: boolean }
+  | { ok: true; shippingUsd: number; usedReswellQuote: boolean; quote?: PeerReswellShippingQuote }
   | { ok: false; error: string }
 > {
   if (input.listings.length === 0) {
@@ -142,11 +165,24 @@ export async function computePeerBundleShippingUsd(input: {
     shipTo: shipTo.address,
     diagnosticTag: input.diagnosticTag ?? "checkout-bundle",
     sellerShipFromName: input.sellerShipFromName,
+    section: input.listings[0]?.section ?? null,
+    selectedRateId: input.selectedRateId,
   })
   if (!result.ok) {
     return result
   }
-  return { ok: true, shippingUsd: result.cheapest.totalAmount, usedReswellQuote: true }
+  return {
+    ok: true,
+    shippingUsd: result.cheapest.totalAmount,
+    usedReswellQuote: true,
+    quote: {
+      shippingUsd: result.cheapest.totalAmount,
+      rateId: result.cheapest.rate_id!,
+      serviceCode: result.cheapest.serviceCode ?? "",
+      serviceName: result.cheapest.serviceName,
+      availableRates: result.checkoutRateOptions,
+    },
+  }
 }
 
 /**
@@ -160,9 +196,22 @@ export async function computePeerCheckoutTotalsUsd(input: {
   /** Printed on carrier labels as ship-from contact; required when Reswell shipping quote is used. */
   sellerShipFromName?: string
   /** When set (from a signed checkout quote token), skips a duplicate ShipEngine call. */
-  shippingOverride?: { shippingUsd: number; usedReswellQuote: boolean }
+  shippingOverride?: {
+    shippingUsd: number
+    usedReswellQuote: boolean
+    rateId?: string | null
+    serviceCode?: string | null
+  }
+  selectedRateId?: string | null
 }): Promise<
-  | { ok: true; itemPrice: number; shippingUsd: number; totalUsd: number; usedReswellQuote: boolean }
+  | {
+      ok: true
+      itemPrice: number
+      shippingUsd: number
+      totalUsd: number
+      usedReswellQuote: boolean
+      reswellQuote?: PeerReswellShippingQuote
+    }
   | { ok: false; error: string }
 > {
   const itemPrice = parseFloat(String(input.listing.price))
@@ -210,6 +259,7 @@ export async function computePeerCheckoutTotalsUsd(input: {
     buyerAddress: input.buyerAddress,
     diagnosticTag: input.diagnosticTag,
     sellerShipFromName: sellerLine,
+    selectedRateId: input.selectedRateId,
   })
   if (!q.ok) {
     return q
@@ -217,8 +267,9 @@ export async function computePeerCheckoutTotalsUsd(input: {
   return {
     ok: true,
     itemPrice,
-    shippingUsd: q.shippingUsd,
-    totalUsd: itemPrice + q.shippingUsd,
+    shippingUsd: q.quote.shippingUsd,
+    totalUsd: itemPrice + q.quote.shippingUsd,
     usedReswellQuote: true,
+    reswellQuote: q.quote,
   }
 }

@@ -17,6 +17,7 @@ import {
   type PeerListingForShippingQuote,
 } from "@/lib/services/peerListingShippingQuote"
 import { getCheapestReswellRateForListings } from "@/lib/services/reswellListingShippingRate"
+import { getStripe } from "@/lib/stripe-server"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import {
   orderShippingJsonToRateQuoteAddress,
@@ -138,6 +139,7 @@ export async function autoPurchaseReswellShippingLabelForOrder(
       fulfillment_method,
       delivery_status,
       shipping_address,
+      stripe_checkout_session_id,
       listings (
         ${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT}
       )
@@ -160,6 +162,7 @@ export async function autoPurchaseReswellShippingLabelForOrder(
     fulfillment_method: string | null
     delivery_status: string
     shipping_address: unknown
+    stripe_checkout_session_id: string | null
     listings: Record<string, unknown> | Record<string, unknown>[] | null
     }
 
@@ -168,7 +171,7 @@ export async function autoPurchaseReswellShippingLabelForOrder(
 
     const listing = Array.isArray(o.listings) ? o.listings[0] : o.listings
     const listingSection = (listing as { section?: string } | null)?.section
-    if (!listing || (listingSection !== "surfboards" && listingSection !== "fins")) return
+    if (!listing || (listingSection !== "surfboards" && listingSection !== "fins" && listingSection !== "magazines")) return
 
     /** Multi-item orders ship as one box — pull every line's listing for the combined parcel. */
     let listingsForQuote: PeerListingForShippingQuote[] = [
@@ -205,19 +208,36 @@ export async function autoPurchaseReswellShippingLabelForOrder(
     const shipTo = rateQuoteFieldsToShippingInput(shipToFields)
 
     const sellerShipFromName = await fetchSellerShipFromLabelName(supabase, o.seller_id)
-    const quoted = await getCheapestReswellRateForListings({
-      listings: listingsForQuote,
-      shipTo,
-      diagnosticTag: `auto-reswell-label:${o.id}`,
-      sellerShipFromName,
-    })
 
-    if (!quoted.ok) {
-      await fail("rate_quote", quoted.error)
-      return
+    let rateId: string | null = null
+    const paymentIntentId = o.stripe_checkout_session_id?.trim()
+    if (paymentIntentId) {
+      try {
+        const stripe = getStripe()
+        const pi = await stripe.paymentIntents.retrieve(paymentIntentId)
+        rateId = pi.metadata.shipengine_rate_id?.trim() || null
+      } catch (e) {
+        console.warn(`${tag} could not read payment intent for selected rate:`, e)
+      }
     }
 
-    const rateId = quoted.cheapest.rate_id
+    if (!rateId) {
+      const quoted = await getCheapestReswellRateForListings({
+        listings: listingsForQuote,
+        shipTo,
+        diagnosticTag: `auto-reswell-label:${o.id}`,
+        sellerShipFromName,
+        section: listingSection ?? null,
+      })
+
+      if (!quoted.ok) {
+        await fail("rate_quote", quoted.error)
+        return
+      }
+
+      rateId = quoted.cheapest.rate_id
+    }
+
     if (!rateId) {
       await fail("rate_id", "ShipEngine returned no purchasable rate id for this shipment.")
       return
