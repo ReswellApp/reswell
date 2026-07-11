@@ -1,17 +1,48 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useSyncExternalStore } from "react"
 import { formatDistanceToNow, parseISO } from "date-fns"
 import { ArrowRight, MapPin, Package, TrendingUp } from "lucide-react"
 import type { MarketplaceSalesMapPayload } from "@/lib/types/marketplace-sales-map"
+import { BRAND_CTA_BLUE, BRAND_DARK_BLUE, BRAND_DEEP_BLUE } from "@/lib/brand-colors"
 import { formatGmv } from "@/lib/format-gmv"
 import { cn } from "@/lib/utils"
 import { usStateDisplayName } from "@/lib/utils/us-state-names"
 
-type HoverTarget =
+type MapSelection =
   | { kind: "state"; state: string }
   | { kind: "flow"; sellerState: string; buyerState: string }
   | null
+
+const MOBILE_MAP_QUERY = "(max-width: 639px)"
+
+function subscribeMobileMap(onStoreChange: () => void) {
+  const mql = window.matchMedia(MOBILE_MAP_QUERY)
+  mql.addEventListener("change", onStoreChange)
+  return () => mql.removeEventListener("change", onStoreChange)
+}
+
+function getMobileMapSnapshot() {
+  return window.matchMedia(MOBILE_MAP_QUERY).matches
+}
+
+function getMobileMapServerSnapshot() {
+  return false
+}
+
+function useMobileMapView() {
+  return useSyncExternalStore(subscribeMobileMap, getMobileMapSnapshot, getMobileMapServerSnapshot)
+}
+
+function mapSelectionsMatch(a: MapSelection, b: MapSelection): boolean {
+  if (!a || !b) return false
+  if (a.kind !== b.kind) return false
+  if (a.kind === "state" && b.kind === "state") return a.state === b.state
+  if (a.kind === "flow" && b.kind === "flow") {
+    return a.sellerState === b.sellerState && a.buyerState === b.buyerState
+  }
+  return false
+}
 
 function formatUsd(amount: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -21,14 +52,27 @@ function formatUsd(amount: number): string {
   }).format(amount)
 }
 
+function hexToRgba(hex: string, alpha: number): string {
+  const normalized = hex.replace("#", "")
+  const r = Number.parseInt(normalized.slice(0, 2), 16)
+  const g = Number.parseInt(normalized.slice(2, 4), 16)
+  const b = Number.parseInt(normalized.slice(4, 6), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
 type UsaSalesFlowMapProps = {
   data: MarketplaceSalesMapPayload
   className?: string
 }
 
 export function UsaSalesFlowMap({ data, className }: UsaSalesFlowMapProps) {
-  const [hover, setHover] = useState<HoverTarget>(null)
+  const isMobileView = useMobileMapView()
+  const [selection, setSelection] = useState<MapSelection>(null)
   const { geometry } = data
+
+  function toggleSelection(next: Exclude<MapSelection, null>) {
+    setSelection((current) => (mapSelectionsMatch(current, next) ? null : next))
+  }
 
   const stateStatsByCode = useMemo(() => {
     return new Map(data.stateStats.map((row) => [row.state, row]))
@@ -41,28 +85,38 @@ export function UsaSalesFlowMap({ data, className }: UsaSalesFlowMapProps) {
     )
   }, [data.stateStats])
 
-  const hoverLabel = useMemo(() => {
-    if (!hover) return null
-    if (hover.kind === "state") {
-      const stat = stateStatsByCode.get(hover.state)
-      if (!stat) {
-        return {
-          title: usStateDisplayName(hover.state),
-          lines: ["No mapped sales in this state yet."],
-        }
+  const selectionLabel = useMemo(() => {
+    if (!selection) return null
+    if (selection.kind === "state") {
+      const stat = stateStatsByCode.get(selection.state)
+      const registeredUsers = data.userCountsByState[selection.state] ?? 0
+      const lines: string[] = []
+
+      if (registeredUsers > 0) {
+        lines.push(
+          `${registeredUsers.toLocaleString()} surfer${registeredUsers === 1 ? "" : "s"} from this state using Reswell`,
+        )
       }
-      return {
-        title: stat.stateName,
-        lines: [
+
+      if (stat) {
+        lines.push(
           `${stat.asSeller} sold from here`,
           `${stat.asBuyer} bought here`,
           `${formatUsd(stat.volumeUsd)} volume`,
-        ],
+        )
+      } else if (registeredUsers === 0) {
+        lines.push("No mapped sales or signed-up surfers in this state yet.")
+      }
+
+      return {
+        title: stat?.stateName ?? usStateDisplayName(selection.state),
+        lines,
       }
     }
 
     const flow = data.flows.find(
-      (row) => row.sellerState === hover.sellerState && row.buyerState === hover.buyerState,
+      (row) =>
+        row.sellerState === selection.sellerState && row.buyerState === selection.buyerState,
     )
     if (!flow) return null
     return {
@@ -72,15 +126,16 @@ export function UsaSalesFlowMap({ data, className }: UsaSalesFlowMapProps) {
         `${formatUsd(flow.volumeUsd)} volume`,
       ],
     }
-  }, [hover, stateStatsByCode, data.flows])
+  }, [selection, stateStatsByCode, data.flows, data.userCountsByState])
 
   return (
     <div className={cn("relative", className)}>
-      <div className="overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-b from-muted/30 via-background to-background shadow-sm">
-        <div className="relative aspect-[16/10] w-full min-h-[320px] sm:min-h-[420px] lg:min-h-[520px]">
+      <div className="overflow-hidden rounded-xl border border-border/80 bg-gradient-to-b from-muted/30 via-background to-background shadow-sm sm:rounded-2xl">
+        <div className="relative h-[480px] w-full sm:h-[520px] md:h-[560px] lg:h-[600px]">
           <svg
             viewBox={`0 0 ${geometry.width} ${geometry.height}`}
-            className="h-full w-full"
+            className={cn("h-full w-full", isMobileView && "touch-manipulation")}
+            preserveAspectRatio="xMidYMid meet"
             role="img"
             aria-label="United States map showing Reswell sales flowing from seller states to buyer states"
           >
@@ -102,37 +157,66 @@ export function UsaSalesFlowMap({ data, className }: UsaSalesFlowMapProps) {
               </marker>
             </defs>
 
-            <rect width={geometry.width} height={geometry.height} fill="url(#map-surface)" />
+            <rect
+              width={geometry.width}
+              height={geometry.height}
+              fill="url(#map-surface)"
+              onClick={() => {
+                if (isMobileView) setSelection(null)
+              }}
+            />
 
             {geometry.statePaths.map((state) => {
               const stat = stateStatsByCode.get(state.code)
               const activity = stat ? stat.asSeller + stat.asBuyer : 0
               const intensity = activity / maxStateActivity
-              const fill = stat
-                ? `rgba(15, 23, 42, ${0.04 + intensity * 0.22})`
+              const hasShippingActivity = Boolean(stat && (stat.asSeller > 0 || stat.asBuyer > 0))
+              const fill = hasShippingActivity
+                ? hexToRgba(BRAND_CTA_BLUE, 0.2 + intensity * 0.55)
                 : "rgba(148, 163, 184, 0.08)"
-              const isHovered =
-                hover?.kind === "state" && hover.state === state.code
+              const isSelected =
+                selection?.kind === "state" && selection.state === state.code
 
               return (
                 <path
                   key={state.code}
                   d={state.d}
                   fill={fill}
-                  stroke={isHovered ? "#0f172a" : "rgba(148, 163, 184, 0.45)"}
-                  strokeWidth={isHovered ? 1.4 : 0.7}
-                  className="transition-[fill,stroke,stroke-width] duration-200"
-                  onMouseEnter={() => setHover({ kind: "state", state: state.code })}
-                  onMouseLeave={() => setHover(null)}
+                  stroke={
+                    isSelected
+                      ? BRAND_DEEP_BLUE
+                      : hasShippingActivity
+                        ? hexToRgba(BRAND_DARK_BLUE, 0.55)
+                        : "rgba(148, 163, 184, 0.45)"
+                  }
+                  strokeWidth={isSelected ? 1.4 : 0.7}
+                  className={cn(
+                    "transition-[fill,stroke,stroke-width] duration-200",
+                    isMobileView && "cursor-pointer",
+                  )}
+                  aria-label={state.name}
+                  onMouseEnter={() => {
+                    if (!isMobileView) {
+                      setSelection({ kind: "state", state: state.code })
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    if (!isMobileView) setSelection(null)
+                  }}
+                  onClick={(event) => {
+                    if (!isMobileView) return
+                    event.stopPropagation()
+                    toggleSelection({ kind: "state", state: state.code })
+                  }}
                 />
               )
             })}
 
             {geometry.flowPaths.map((flow) => {
-              const isHovered =
-                hover?.kind === "flow" &&
-                hover.sellerState === flow.sellerState &&
-                hover.buyerState === flow.buyerState
+              const isSelected =
+                selection?.kind === "flow" &&
+                selection.sellerState === flow.sellerState &&
+                selection.buyerState === flow.buyerState
 
               return (
                 <path
@@ -140,33 +224,49 @@ export function UsaSalesFlowMap({ data, className }: UsaSalesFlowMapProps) {
                   d={flow.d}
                   fill="none"
                   stroke="#dc2626"
-                  strokeWidth={isHovered ? flow.width + 1.2 : flow.width}
-                  strokeOpacity={isHovered ? 0.95 : flow.opacity}
+                  strokeWidth={isSelected ? flow.width + 1.2 : flow.width}
+                  strokeOpacity={isSelected ? 0.95 : flow.opacity}
                   markerEnd="url(#flow-arrow)"
-                  className="transition-[stroke-width,stroke-opacity] duration-200"
-                  onMouseEnter={() =>
-                    setHover({
+                  className={cn(
+                    "transition-[stroke-width,stroke-opacity] duration-200",
+                    isMobileView && "cursor-pointer",
+                  )}
+                  onMouseEnter={() => {
+                    if (!isMobileView) {
+                      setSelection({
+                        kind: "flow",
+                        sellerState: flow.sellerState,
+                        buyerState: flow.buyerState,
+                      })
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    if (!isMobileView) setSelection(null)
+                  }}
+                  onClick={(event) => {
+                    if (!isMobileView) return
+                    event.stopPropagation()
+                    toggleSelection({
                       kind: "flow",
                       sellerState: flow.sellerState,
                       buyerState: flow.buyerState,
                     })
-                  }
-                  onMouseLeave={() => setHover(null)}
+                  }}
                 />
               )
             })}
 
             {geometry.stateDots.map((dot) => {
-              const isHovered = hover?.kind === "state" && hover.state === dot.code
+              const isSelected = selection?.kind === "state" && selection.state === dot.code
 
               return (
                 <circle
                   key={`dot-${dot.code}`}
                   cx={dot.cx}
                   cy={dot.cy}
-                  r={isHovered ? dot.radius + 1.5 : dot.radius}
+                  r={isSelected ? dot.radius + 1.5 : dot.radius}
                   fill={dot.fill}
-                  fillOpacity={isHovered ? 0.95 : 0.72}
+                  fillOpacity={isSelected ? 0.95 : 0.72}
                   stroke="white"
                   strokeWidth={1.2}
                   className="pointer-events-none"
@@ -175,34 +275,62 @@ export function UsaSalesFlowMap({ data, className }: UsaSalesFlowMapProps) {
             })}
           </svg>
 
-          {hoverLabel ? (
-            <div className="pointer-events-none absolute left-4 top-4 max-w-xs rounded-xl border border-border/80 bg-background/95 px-4 py-3 shadow-lg backdrop-blur-sm">
-              <p className="text-sm font-semibold text-foreground">{hoverLabel.title}</p>
-              <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
-                {hoverLabel.lines.map((line) => (
+          {selectionLabel && !isMobileView ? (
+            <div className="pointer-events-none absolute left-2 top-2 max-w-[11rem] rounded-lg border border-border/80 bg-background/95 px-2.5 py-2 shadow-lg backdrop-blur-sm sm:left-3 sm:top-3 sm:max-w-xs sm:rounded-xl sm:px-3 sm:py-2.5">
+              <p className="text-xs font-semibold text-foreground sm:text-sm">
+                {selectionLabel.title}
+              </p>
+              <ul className="mt-0.5 space-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
+                {selectionLabel.lines.map((line) => (
                   <li key={line}>{line}</li>
                 ))}
               </ul>
             </div>
           ) : null}
 
-          <div className="pointer-events-none absolute bottom-4 left-4 rounded-xl border border-border/70 bg-background/90 px-3 py-2 text-xs text-muted-foreground shadow-sm backdrop-blur-sm">
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1.5">
-                <span className="h-2.5 w-6 rounded-full bg-[#dc2626]/70" />
-                Seller → buyer flow
+          <div className="pointer-events-none absolute bottom-2 left-2 right-2 rounded-lg border border-border/70 bg-background/90 px-2 py-1.5 shadow-sm backdrop-blur-sm sm:bottom-3 sm:left-3 sm:right-auto sm:rounded-xl sm:px-2.5 sm:py-2">
+            <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[10px] text-muted-foreground sm:justify-start sm:gap-x-3 sm:text-xs">
+              {isMobileView && !selection ? (
+                <span className="w-full text-center font-medium text-foreground/80 sm:w-auto">
+                  Tap a state for stats
+                </span>
+              ) : null}
+              <span className="inline-flex items-center gap-1">
+                <span className="h-2 w-4 rounded-full bg-[#dc2626]/70 sm:h-2.5 sm:w-6" />
+                Flow
               </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-foreground/80" />
-                Listed here
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#dc2626]" />
-                Bought here
+              <span className="inline-flex items-center gap-1">
+                <span
+                  className="h-2 w-2 rounded-full sm:h-2.5 sm:w-2.5"
+                  style={{ backgroundColor: BRAND_CTA_BLUE }}
+                />
+                Active states
               </span>
             </div>
           </div>
         </div>
+
+        {selectionLabel && isMobileView ? (
+          <div className="border-t border-border/80 bg-background px-3 py-3 sm:hidden">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground">{selectionLabel.title}</p>
+                <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                  {selectionLabel.lines.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+              </div>
+              <button
+                type="button"
+                className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                onClick={() => setSelection(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   )
@@ -213,145 +341,65 @@ type SalesMapPageClientProps = {
 }
 
 export function SalesMapPageClient({ data }: SalesMapPageClientProps) {
-  const topFlows = data.flows
-    .filter((flow) => flow.sellerState !== flow.buyerState)
-    .slice(0, 8)
-
   return (
     <main className="flex-1">
-      <section className="border-b border-border bg-background">
-        <div className="container mx-auto py-8 md:py-10">
-          <div className="max-w-3xl">
-            <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+      <section className="container mx-auto px-4 py-4 sm:py-5 md:py-6">
+        <div className="mx-auto max-w-5xl">
+          <div className="max-w-2xl">
+            <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground sm:text-xs">
               Marketplace geography
             </p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+            <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground sm:text-2xl md:text-[1.75rem]">
               Where Reswell orders flow
             </h1>
-            <p className="mt-3 text-base leading-relaxed text-muted-foreground">
-              Every confirmed sale on Reswell, mapped from the seller&apos;s listing state to the
-              buyer&apos;s state. Lines show cross-state movement; dots highlight active buying and
-              selling regions.
+            <p className="mt-1 hidden text-sm leading-snug text-muted-foreground sm:block">
+              Confirmed sales mapped from seller state to buyer state.
             </p>
           </div>
 
-          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-4 lg:grid-cols-4 lg:gap-3">
             <StatCard
               icon={Package}
               label="Mapped sales"
               value={data.totals.mappableSales.toLocaleString()}
-              hint={`${data.totals.confirmedSales.toLocaleString()} confirmed total`}
+              hint={`${data.totals.confirmedSales.toLocaleString()} confirmed`}
             />
             <StatCard
               icon={MapPin}
               label="States selling"
               value={data.totals.statesSelling.toLocaleString()}
-              hint="Where listings sold from"
+              hint="Listing origins"
             />
             <StatCard
               icon={TrendingUp}
-              label="Cross-state trades"
+              label="Cross-state"
               value={data.totals.crossStateSales.toLocaleString()}
               hint={`${data.totals.statesBuying} buyer states`}
             />
             <StatCard
               icon={ArrowRight}
-              label="Marketplace volume"
+              label="Volume"
               value={formatGmv(data.totals.volumeUsd)}
-              hint="Confirmed order gross"
+              hint="Confirmed gross"
             />
           </div>
-        </div>
-      </section>
 
-      <section className="container mx-auto py-6 md:py-8">
-        <UsaSalesFlowMap data={data} />
+          <UsaSalesFlowMap data={data} className="mt-3 sm:mt-4" />
 
-        {data.truncated ? (
-          <p className="mt-3 text-xs text-muted-foreground">
-            Showing the most recent {data.totals.confirmedSales.toLocaleString()} confirmed sales.
-            Older orders are included in totals when within the fetch window.
+          {data.truncated ? (
+            <p className="mt-2 text-[10px] text-muted-foreground sm:text-xs">
+              Showing the most recent {data.totals.confirmedSales.toLocaleString()} confirmed sales.
+            </p>
+          ) : null}
+
+          <p
+            className="mt-3 text-center text-[10px] text-muted-foreground sm:mt-4 sm:text-xs"
+            suppressHydrationWarning
+          >
+            Updated {formatDistanceToNow(parseISO(data.generatedAt), { addSuffix: true })} · New
+            sales added after checkout
           </p>
-        ) : null}
-
-        <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold text-foreground">Top cross-state routes</h2>
-              <span className="text-xs text-muted-foreground">Seller → buyer</span>
-            </div>
-            {topFlows.length === 0 ? (
-              <p className="mt-4 text-sm text-muted-foreground">
-                Cross-state routes will appear as more sales complete with location data.
-              </p>
-            ) : (
-              <ul className="mt-4 space-y-3">
-                {topFlows.map((flow) => (
-                  <li
-                    key={`${flow.sellerState}-${flow.buyerState}`}
-                    className="flex items-center justify-between gap-4 rounded-xl border border-border/60 px-4 py-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-foreground">
-                        {usStateDisplayName(flow.sellerState)}
-                        <span className="mx-2 text-muted-foreground">→</span>
-                        {usStateDisplayName(flow.buyerState)}
-                      </p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {flow.count} order{flow.count === 1 ? "" : "s"} · {formatUsd(flow.volumeUsd)}
-                      </p>
-                    </div>
-                    <div
-                      className="h-2 flex-shrink-0 rounded-full bg-[#dc2626]"
-                      style={{
-                        width: `${Math.max(24, (flow.count / (topFlows[0]?.count ?? 1)) * 96)}px`,
-                        opacity: 0.35 + (flow.count / (topFlows[0]?.count ?? 1)) * 0.65,
-                      }}
-                    />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold text-foreground">Recent mapped sales</h2>
-              <span className="text-xs text-muted-foreground">State-level only</span>
-            </div>
-            <ul className="mt-4 max-h-[28rem] space-y-3 overflow-y-auto pr-1">
-              {data.recentSales.map((sale) => (
-                <li
-                  key={sale.id}
-                  className="rounded-xl border border-border/60 px-4 py-3"
-                >
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {sale.listingTitle?.trim() || "Marketplace sale"}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {usStateDisplayName(sale.sellerState)}
-                    <span className="mx-1.5 text-foreground/50">→</span>
-                    {usStateDisplayName(sale.buyerState)}
-                    <span className="mx-1.5">·</span>
-                    {formatUsd(sale.amountUsd)}
-                  </p>
-                  <p
-                    className="mt-1 text-[11px] text-muted-foreground/80"
-                    suppressHydrationWarning
-                  >
-                    {formatDistanceToNow(parseISO(sale.soldAt), { addSuffix: true })}
-                    {sale.fulfillmentMethod ? ` · ${sale.fulfillmentMethod}` : ""}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
-
-        <p className="mt-6 text-center text-xs text-muted-foreground" suppressHydrationWarning>
-          Updated {formatDistanceToNow(parseISO(data.generatedAt), { addSuffix: true })}. New sales
-          are added automatically after checkout completes.
-        </p>
       </section>
     </main>
   )
@@ -369,13 +417,15 @@ function StatCard({
   hint: string
 }) {
   return (
-    <div className="rounded-2xl border border-border/80 bg-card px-4 py-4 shadow-sm">
-      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-        <Icon className="h-3.5 w-3.5" />
+    <div className="rounded-xl border border-border/80 bg-card px-2.5 py-2 shadow-sm sm:rounded-2xl sm:px-3 sm:py-2.5">
+      <div className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground sm:text-xs">
+        <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
         {label}
       </div>
-      <p className="mt-2 text-2xl font-semibold tracking-tight text-foreground">{value}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{hint}</p>
+      <p className="mt-1 text-lg font-semibold tracking-tight text-foreground sm:mt-1.5 sm:text-xl">
+        {value}
+      </p>
+      <p className="mt-0.5 truncate text-[10px] text-muted-foreground sm:text-xs">{hint}</p>
     </div>
   )
 }

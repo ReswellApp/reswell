@@ -23,7 +23,7 @@ import {
 } from "@/lib/listing-detail-page-load"
 import { ShareButton } from "@/components/share-button"
 import { ListingOwnerManageActions } from "@/components/features/listings/listing-owner-manage-actions"
-import { Hourglass, Flag, ShoppingCart, Truck } from "lucide-react"
+import { Hourglass, Flag, Truck } from "lucide-react"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ImageGallery } from "@/components/image-gallery"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
@@ -49,6 +49,7 @@ import { BRANDS_BASE } from "@/lib/brands/routes"
 import { getBrandById } from "@/lib/brands/server"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
+import { ListingDetailEngagementMetrics } from "@/components/listing-detail-engagement-metrics"
 import { ListingDetailPeerPurchaseActions } from "@/components/listing-detail-peer-purchase-actions"
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 import { ListingBoardDimensionsBlock } from "@/components/listing-board-dimensions-section"
@@ -491,6 +492,13 @@ export async function SurfboardListingDetailPage({
                   ) : null}
                 </div>
               )}
+              <ListingDetailEngagementMetrics
+                views={listingViews}
+                watchers={listingWatchersCount}
+                cartHolderCount={cartHolderCount}
+                isSold={isSold}
+                className="mt-2 lg:hidden"
+              />
               {(mobileProductMetaItems.length > 0 ||
                 (isSold ? soldUsedShipping : mobileFulfillmentChips.length > 0)) ? (
                 <div className="mt-3 space-y-2 border-y border-border/50 py-2.5 text-[14px]">
@@ -653,30 +661,13 @@ export async function SurfboardListingDetailPage({
                     </span>
                   ) : null}
                   {!isSold ? (
-                    <span className="inline-flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                      <span>
-                        Views:{" "}
-                        <span className="font-medium tabular-nums text-foreground/80">
-                          {Number.isFinite(listingViews) ? listingViews : 0}
-                        </span>
-                      </span>
-                      <span>
-                        Watchers:{" "}
-                        <span className="font-medium tabular-nums text-foreground/80">
-                          {Number.isFinite(listingWatchersCount) ? listingWatchersCount : 0}
-                        </span>
-                      </span>
-                      {cartHolderCount > 0 ? (
-                        <span className="inline-flex items-center gap-1">
-                          <ShoppingCart className="h-3 w-3 shrink-0 opacity-80" aria-hidden />
-                          <span className="font-medium text-foreground/80">
-                            {cartHolderCount === 1
-                              ? "In someone’s cart"
-                              : `In ${cartHolderCount} buyers’ carts`}
-                          </span>
-                        </span>
-                      ) : null}
-                    </span>
+                    <ListingDetailEngagementMetrics
+                      views={listingViews}
+                      watchers={listingWatchersCount}
+                      cartHolderCount={cartHolderCount}
+                      isSold={isSold}
+                      className="max-lg:hidden"
+                    />
                   ) : null}
                 </div>
               )}

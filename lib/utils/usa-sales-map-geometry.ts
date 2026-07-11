@@ -2,6 +2,7 @@ import { geoAlbersUsa, geoCentroid, geoPath } from "d3-geo"
 import { feature } from "topojson-client"
 import type { Feature, FeatureCollection, Geometry } from "geojson"
 import usStatesTopology from "@/lib/data/us-states-10m.json"
+import { BRAND_CTA_BLUE } from "@/lib/brand-colors"
 import type { MarketplaceSalesMapPayload } from "@/lib/types/marketplace-sales-map"
 
 export const USA_SALES_MAP_WIDTH = 960
@@ -28,7 +29,7 @@ export type UsaSalesMapStateDot = {
   cx: number
   cy: number
   radius: number
-  fill: "#0f172a" | "#dc2626"
+  fill: string
 }
 
 export type UsaSalesMapGeometry = {
@@ -211,7 +212,7 @@ export function buildUsaSalesMapGeometry(
       cx: centroid[0],
       cy: centroid[1],
       radius: roundCoord(2 + ((stat.asSeller + stat.asBuyer) / maxStateActivity) * 5),
-      fill: stat.asSeller >= stat.asBuyer ? "#0f172a" : "#dc2626",
+      fill: BRAND_CTA_BLUE,
     })
   }
 

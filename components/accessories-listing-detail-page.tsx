@@ -1,7 +1,7 @@
 import type { ComponentProps } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { Flag, Hourglass, ShoppingCart, Truck } from "lucide-react"
+import { Flag, Hourglass, Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Accordion,
@@ -46,6 +46,7 @@ import { BRANDS_BASE } from "@/lib/brands/routes"
 import { getBrandById } from "@/lib/brands/server"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
+import { ListingDetailEngagementMetrics } from "@/components/listing-detail-engagement-metrics"
 import { ListingDetailPeerPurchaseActions } from "@/components/listing-detail-peer-purchase-actions"
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
@@ -426,6 +427,13 @@ export async function AccessoriesListingDetailPage({
                 ) : null}
               </div>
             )}
+            <ListingDetailEngagementMetrics
+              views={listingViews}
+              watchers={listingWatchersCount}
+              cartHolderCount={cartHolderCount}
+              isSold={isSold}
+              className="mt-2 lg:hidden"
+            />
             {mobileProductMetaItems.length > 0 ? (
               <div className="mt-3 space-y-2 border-y border-border/50 py-2.5 text-[14px]">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-foreground">
@@ -553,30 +561,13 @@ export async function AccessoriesListingDetailPage({
                   </span>
                 ) : null}
                 {!isSold ? (
-                  <span className="inline-flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                    <span>
-                      Views:{" "}
-                      <span className="font-medium tabular-nums text-foreground/80">
-                        {Number.isFinite(listingViews) ? listingViews : 0}
-                      </span>
-                    </span>
-                    <span>
-                      Watchers:{" "}
-                      <span className="font-medium tabular-nums text-foreground/80">
-                        {Number.isFinite(listingWatchersCount) ? listingWatchersCount : 0}
-                      </span>
-                    </span>
-                    {cartHolderCount > 0 ? (
-                      <span className="inline-flex items-center gap-1">
-                        <ShoppingCart className="h-3 w-3 shrink-0 opacity-80" aria-hidden />
-                        <span className="font-medium text-foreground/80">
-                          {cartHolderCount === 1
-                            ? "In someone’s cart"
-                            : `In ${cartHolderCount} buyers’ carts`}
-                        </span>
-                      </span>
-                    ) : null}
-                  </span>
+                  <ListingDetailEngagementMetrics
+                    views={listingViews}
+                    watchers={listingWatchersCount}
+                    cartHolderCount={cartHolderCount}
+                    isSold={isSold}
+                    className="max-lg:hidden"
+                  />
                 ) : null}
               </div>
             )}

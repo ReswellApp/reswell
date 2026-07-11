@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import {
   fetchConfirmedMarketplaceSalesForMap,
+  fetchProfileLocalitiesForMap,
+  type MarketplaceMapProfileLocalityRow,
   type MarketplaceSalesMapOrderWithListing,
   type MarketplaceSalesMapProfileRow,
 } from "@/lib/db/marketplaceSalesMap"
@@ -10,6 +12,9 @@ import type {
   MarketplaceSalesMapSale,
   MarketplaceSalesMapStateStat,
 } from "@/lib/types/marketplace-sales-map"
+import {
+  resolveProfileHomeState,
+} from "@/lib/utils/profile-home-state"
 import { toUsStateCode } from "@/lib/utils/us-state-code"
 import { usStateDisplayName } from "@/lib/utils/us-state-names"
 import { buildUsaSalesMapGeometry } from "@/lib/utils/usa-sales-map-geometry"
@@ -27,25 +32,24 @@ function toAmount(value: number | string | null | undefined): number {
   return Number.isFinite(n) && n >= 0 ? n : 0
 }
 
-function parseStateFromLocationText(location: string | null | undefined): string | undefined {
-  if (!location?.trim()) return undefined
-  const parts = location
-    .split(",")
-    .map((part) => part.trim())
-    .filter(Boolean)
-  if (parts.length >= 2) {
-    return toUsStateCode(parts[parts.length - 1])
-  }
-  return toUsStateCode(location)
-}
-
 function resolveProfileState(
   profile: MarketplaceSalesMapProfileRow | undefined,
 ): string | undefined {
-  if (!profile) return undefined
-  const fromDefault = toUsStateCode(profile.default_listing_state)
-  if (fromDefault) return fromDefault
-  return parseStateFromLocationText(profile.location)
+  return resolveProfileHomeState(profile)
+}
+
+function buildUserCountsByState(
+  profiles: MarketplaceMapProfileLocalityRow[],
+): Record<string, number> {
+  const counts: Record<string, number> = {}
+
+  for (const profile of profiles) {
+    const state = resolveProfileHomeState(profile)
+    if (!state) continue
+    counts[state] = (counts[state] ?? 0) + 1
+  }
+
+  return counts
 }
 
 function resolveSellerState(
@@ -86,6 +90,7 @@ function flowKey(sellerState: string, buyerState: string): string {
 export function buildMarketplaceSalesMapPayload(args: {
   orders: MarketplaceSalesMapOrderWithListing[]
   profilesById: Map<string, MarketplaceSalesMapProfileRow>
+  profileLocalities: MarketplaceMapProfileLocalityRow[]
   truncated: boolean
 }): MarketplaceSalesMapPayload {
   const flowBuckets = new Map<string, MarketplaceSalesMapFlow>()
@@ -176,11 +181,13 @@ export function buildMarketplaceSalesMapPayload(args: {
 
   const statesSelling = stateStats.filter((row) => row.asSeller > 0).length
   const statesBuying = stateStats.filter((row) => row.asBuyer > 0).length
+  const userCountsByState = buildUserCountsByState(args.profileLocalities)
 
   return {
     flows,
     stateStats,
     recentSales,
+    userCountsByState,
     totals: {
       confirmedSales: args.orders.length,
       mappableSales,
@@ -198,6 +205,13 @@ export function buildMarketplaceSalesMapPayload(args: {
 export async function loadMarketplaceSalesMap(
   supabase: SupabaseClient,
 ): Promise<MarketplaceSalesMapPayload> {
-  const { orders, profilesById, truncated } = await fetchConfirmedMarketplaceSalesForMap(supabase)
-  return buildMarketplaceSalesMapPayload({ orders, profilesById, truncated })
+  const [salesResult, profileLocalities] = await Promise.all([
+    fetchConfirmedMarketplaceSalesForMap(supabase),
+    fetchProfileLocalitiesForMap(supabase),
+  ])
+
+  return buildMarketplaceSalesMapPayload({
+    ...salesResult,
+    profileLocalities,
+  })
 }

@@ -45,6 +45,8 @@ export type MarketplaceSalesMapPayload = {
   stateStats: MarketplaceSalesMapStateStat[]
   recentSales: MarketplaceSalesMapSale[]
   totals: MarketplaceSalesMapTotals
+  /** Signed-up profiles with a resolvable home state, keyed by two-letter code. */
+  userCountsByState: Record<string, number>
   geometry: UsaSalesMapGeometry
   generatedAt: string
   truncated: boolean

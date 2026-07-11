@@ -58,6 +58,14 @@ export type MarketplaceSalesMapProfileRow = {
   default_listing_state: string | null
 }
 
+export type MarketplaceMapProfileLocalityRow = {
+  id: string
+  location: string | null
+  default_listing_state: string | null
+}
+
+export const MARKETPLACE_MAP_PROFILE_LOCALITY_PAGE_SIZE = 5_000
+
 export type MarketplaceSalesMapListingRow = {
   id: string
   title: string | null
@@ -143,4 +151,38 @@ export async function fetchConfirmedMarketplaceSalesForMap(
   }
 
   return { orders, profilesById, truncated }
+}
+
+export async function fetchProfileLocalitiesForMap(
+  supabase: SupabaseClient,
+): Promise<MarketplaceMapProfileLocalityRow[]> {
+  const rows: MarketplaceMapProfileLocalityRow[] = []
+  let offset = 0
+
+  while (true) {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, location, default_listing_state")
+      .order("id", { ascending: true })
+      .range(offset, offset + MARKETPLACE_MAP_PROFILE_LOCALITY_PAGE_SIZE - 1)
+
+    if (error) {
+      throw new Error(`marketplaceSalesMap profile localities query failed: ${error.message}`)
+    }
+
+    const batch = data ?? []
+    for (const row of batch) {
+      rows.push({
+        id: String(row.id),
+        location: row.location != null ? String(row.location) : null,
+        default_listing_state:
+          row.default_listing_state != null ? String(row.default_listing_state) : null,
+      })
+    }
+
+    if (batch.length < MARKETPLACE_MAP_PROFILE_LOCALITY_PAGE_SIZE) break
+    offset += MARKETPLACE_MAP_PROFILE_LOCALITY_PAGE_SIZE
+  }
+
+  return rows
 }
