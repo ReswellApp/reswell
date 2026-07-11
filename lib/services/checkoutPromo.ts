@@ -17,7 +17,6 @@ import {
 import { validateAdminIssuedPromoForCheckout } from "@/lib/services/adminIssuedPromo"
 import { validateNewsletterPromoForCheckout } from "@/lib/services/newsletterPromo"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import { isAdminIssuedPromoCodePrefix } from "@/lib/utils/admin-issued-promo-code"
 import { normalizeNewsletterPromoCodeInput } from "@/lib/utils/newsletter-promo-code"
 
 export type CheckoutPromoKind = "newsletter" | "admin_issued"
@@ -60,7 +59,19 @@ export async function validateCheckoutPromoForCheckout(params: {
 }): Promise<CheckoutPromoValidationResult> {
   const normalized = normalizeNewsletterPromoCodeInput(params.code)
 
-  if (isAdminIssuedPromoCodePrefix(normalized)) {
+  let supabase
+  try {
+    supabase = createServiceRoleClient()
+  } catch {
+    return { ok: false, error: "Promo codes are temporarily unavailable." }
+  }
+
+  const [{ row: adminRow }, { row: newsletterRow }] = await Promise.all([
+    fetchAdminIssuedPromoByCode(supabase, normalized),
+    fetchNewsletterPromoByCode(supabase, normalized),
+  ])
+
+  if (adminRow) {
     const adminResult = await validateAdminIssuedPromoForCheckout({
       code: normalized,
       itemSubtotalUsd: params.itemSubtotalUsd,
@@ -77,21 +88,25 @@ export async function validateCheckoutPromoForCheckout(params: {
     }
   }
 
-  const newsletterResult = await validateNewsletterPromoForCheckout({
-    code: normalized,
-    buyerEmail: params.buyerEmail,
-    itemSubtotalUsd: params.itemSubtotalUsd,
-    shippingUsd: params.shippingUsd,
-  })
-  if (!newsletterResult.ok) return newsletterResult
-  return {
-    ok: true,
-    kind: "newsletter",
-    promo: newsletterResult.promo,
-    discountPercent: newsletterResult.discountPercent,
-    discountUsd: newsletterResult.discountUsd,
-    totalUsd: newsletterResult.totalUsd,
+  if (newsletterRow) {
+    const newsletterResult = await validateNewsletterPromoForCheckout({
+      code: normalized,
+      buyerEmail: params.buyerEmail,
+      itemSubtotalUsd: params.itemSubtotalUsd,
+      shippingUsd: params.shippingUsd,
+    })
+    if (!newsletterResult.ok) return newsletterResult
+    return {
+      ok: true,
+      kind: "newsletter",
+      promo: newsletterResult.promo,
+      discountPercent: newsletterResult.discountPercent,
+      discountUsd: newsletterResult.discountUsd,
+      totalUsd: newsletterResult.totalUsd,
+    }
   }
+
+  return { ok: false, error: "That promo code is not valid." }
 }
 
 export async function releaseAbandonedCheckoutPromoReservation(
@@ -204,11 +219,12 @@ export async function fetchCheckoutPromoRefByCode(
   }
 
   const normalized = normalizeNewsletterPromoCodeInput(code)
-  if (isAdminIssuedPromoCodePrefix(normalized)) {
-    const { row } = await fetchAdminIssuedPromoByCode(supabase, normalized)
-    return row ? { kind: "admin_issued", promo: row } : null
-  }
+  const [{ row: adminRow }, { row: newsletterRow }] = await Promise.all([
+    fetchAdminIssuedPromoByCode(supabase, normalized),
+    fetchNewsletterPromoByCode(supabase, normalized),
+  ])
 
-  const { row } = await fetchNewsletterPromoByCode(supabase, normalized)
-  return row ? { kind: "newsletter", promo: row } : null
+  if (adminRow) return { kind: "admin_issued", promo: adminRow }
+  if (newsletterRow) return { kind: "newsletter", promo: newsletterRow }
+  return null
 }
