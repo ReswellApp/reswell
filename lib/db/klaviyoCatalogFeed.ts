@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { KlaviyoListingProductSource } from "@/lib/klaviyo/catalog-product"
+import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 
 export const KLAVIYO_CATALOG_FEED_PAGE_SIZE = 500
 
@@ -24,7 +25,7 @@ export type KlaviyoCatalogFeedPageResult = {
 }
 
 /**
- * Active, site-visible surfboard listings for Klaviyo custom catalog sync (newest first).
+ * Active, site-visible peer listings for Klaviyo custom catalog sync (newest first).
  */
 export async function fetchKlaviyoCatalogFeedPage(
   supabase: SupabaseClient,
@@ -39,7 +40,8 @@ export async function fetchKlaviyoCatalogFeedPage(
     .select(CATALOG_LISTING_SELECT)
     .eq("status", "active")
     .eq("hidden_from_site", false)
-    .eq("section", "surfboards")
+    .is("archived_at", null)
+    .in("section", PEER_LISTING_SECTIONS_FILTER)
     .order("created_at", { ascending: false })
     .range(from, to)
 

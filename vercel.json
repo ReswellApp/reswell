@@ -30,6 +30,10 @@
       "schedule": "0 7 * * *"
     },
     {
+      "path": "/api/cron/newsletter-promo-expiration-nudge",
+      "schedule": "0 6 * * *"
+    },
+    {
       "path": "/api/cron/klaviyo-favorites-digest",
       "schedule": "0 10 * * 1"
     },

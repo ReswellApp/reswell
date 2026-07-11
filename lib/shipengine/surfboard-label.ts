@@ -1,6 +1,9 @@
 import { shipEngineRequest } from "@/lib/shipengine/client"
 import { getShipEngineLabelImageId, isShipEngineConfigured } from "@/lib/shipengine/config"
-import { formatShipEngineApiError } from "@/lib/shipengine/errors"
+import {
+  formatShipEngineApiError,
+  isLabelImagesNotSupportedError,
+} from "@/lib/shipengine/errors"
 import {
   buildShipEngineRateShipment,
   type RateQuoteAddressFields,
@@ -297,27 +300,25 @@ function pickTrackingCarrierLabel(label: Record<string, unknown>): string {
   return parts.length ? parts.join(" · ") : "Carrier"
 }
 
-export async function purchaseShipEngineLabel(rateId: string): Promise<
-  | { ok: true; result: PurchasedShipEngineLabelResult }
-  | { ok: false; error: string; status: number }
-> {
-  if (!isShipEngineConfigured()) {
-    return { ok: false, error: "Label printing is not configured.", status: 503 }
+function buildShipEngineLabelPurchaseBody(includeLabelImage: boolean): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    label_format: "pdf",
+    label_download_type: "url",
+    label_layout: "4x6",
   }
+  if (includeLabelImage) {
+    const labelImageId = getShipEngineLabelImageId()
+    if (labelImageId) body.label_image_id = labelImageId
+  }
+  return body
+}
 
-  const trimmed = rateId.trim()
-  const labelImageId = getShipEngineLabelImageId()
-  const res = await shipEngineRequest(`/labels/rates/${encodeURIComponent(trimmed)}`, {
-    method: "POST",
-    body: JSON.stringify({
-      label_format: "pdf",
-      label_download_type: "url",
-      label_layout: "4x6",
-      ...(labelImageId ? { label_image_id: labelImageId } : {}),
-    }),
-  })
-  const data = await parseJsonSafe(res)
-
+function interpretShipEngineLabelPurchaseResponse(
+  res: Response,
+  data: unknown,
+):
+  | { ok: true; result: PurchasedShipEngineLabelResult }
+  | { ok: false; error: string; status: number } {
   const apiErr = formatShipEngineApiError(data)
   if (apiErr) {
     return {
@@ -333,7 +334,11 @@ export async function purchaseShipEngineLabel(rateId: string): Promise<
       typeof data === "object" && data
         ? JSON.stringify(data).slice(0, 800)
         : "Could not purchase label"
-    return { ok: false, error: fallback, status: res.status >= 400 ? res.status : 502 }
+    return {
+      ok: false,
+      error: fallback,
+      status: res.status >= 400 ? res.status : 502,
+    }
   }
 
   const status = typeof label.status === "string" ? label.status.toLowerCase() : ""
@@ -387,5 +392,42 @@ export async function purchaseShipEngineLabel(rateId: string): Promise<
       costAmount: cost.amount,
       costCurrency: cost.currency,
     },
+  }
+}
+
+export async function purchaseShipEngineLabel(rateId: string): Promise<
+  | { ok: true; result: PurchasedShipEngineLabelResult }
+  | { ok: false; error: string; status: number }
+> {
+  if (!isShipEngineConfigured()) {
+    return { ok: false, error: "Label printing is not configured.", status: 503 }
+  }
+
+  const trimmed = rateId.trim()
+  const labelImageId = getShipEngineLabelImageId()
+  let includeLabelImage = Boolean(labelImageId)
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const res = await shipEngineRequest(`/labels/rates/${encodeURIComponent(trimmed)}`, {
+      method: "POST",
+      body: JSON.stringify(buildShipEngineLabelPurchaseBody(includeLabelImage)),
+    })
+    const data = await parseJsonSafe(res)
+
+    if (includeLabelImage && isLabelImagesNotSupportedError(data)) {
+      console.warn(
+        `[purchaseShipEngineLabel] Carrier does not support label_image_id for rate ${trimmed}; retrying without branding.`,
+      )
+      includeLabelImage = false
+      continue
+    }
+
+    return interpretShipEngineLabelPurchaseResponse(res, data)
+  }
+
+  return {
+    ok: false,
+    error: "Could not purchase label without branded image.",
+    status: 502,
   }
 }

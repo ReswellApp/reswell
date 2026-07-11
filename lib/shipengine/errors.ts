@@ -39,6 +39,30 @@ export function formatShipEngineApiError(data: unknown): string {
   return ""
 }
 
+/** Some carriers reject branded label images — caller should retry without `label_image_id`. */
+export function isLabelImagesNotSupportedError(data: unknown): boolean {
+  const r = asRecord(data)
+  if (!r) return false
+
+  const errors = r.errors
+  if (Array.isArray(errors)) {
+    for (const e of errors) {
+      const er = asRecord(e)
+      if (!er) continue
+      const code =
+        typeof er.error_code === "string"
+          ? er.error_code
+          : typeof er.errorCode === "string"
+            ? er.errorCode
+            : null
+      if (code === "label_images_not_supported") return true
+    }
+  }
+
+  const msg = formatShipEngineApiError(data)
+  return /label_images_not_supported/i.test(msg)
+}
+
 /** Carrier billing / account balance issues — surface a clear next step for admins. */
 function appendShipEngineFundsHint(message: string): string {
   if (/insufficient funds|insufficient balance/i.test(message)) {

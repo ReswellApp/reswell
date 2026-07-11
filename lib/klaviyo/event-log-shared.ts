@@ -40,6 +40,7 @@ const METRIC_CATEGORY: Record<string, KlaviyoMetricCategory> = {
   "Support Tickets Response": "engagement",
   "Seller Reviewed Buyer": "engagement",
   Newsletter: "marketing",
+  "Newsletter Promo Expiring": "marketing",
   "Viewed Sell Page": "marketing",
   "Viewed Boards Page": "marketing",
   "Viewed Site Page": "marketing",

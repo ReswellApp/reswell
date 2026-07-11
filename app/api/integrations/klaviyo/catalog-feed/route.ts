@@ -12,6 +12,7 @@ import {
  *   https://reswell.app/api/integrations/klaviyo/catalog-feed?token=YOUR_SECRET
  *
  * When `KLAVIYO_CATALOG_FEED_SECRET` is set, pass it as `?token=` or `Authorization: Bearer`.
+ * Includes active peer listings (surfboards, fins, magazines, wetsuits, and other marketplace sections).
  * Contact Klaviyo support to link metrics (Added to Cart, Checkout Started, Placed Order) with ProductID → catalog $id.
  */
 export async function GET(request: Request) {

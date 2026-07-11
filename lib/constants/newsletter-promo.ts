@@ -5,6 +5,12 @@ export const NEWSLETTER_PROMO_DISCOUNT_PERCENT = 10
 /** Days until a generated code expires. */
 export const NEWSLETTER_PROMO_VALIDITY_DAYS = 30
 
+/** Days before expiry to bump unredeemed codes and send Klaviyo **Newsletter Promo Expiring**. */
+export const NEWSLETTER_PROMO_EXPIRATION_NUDGE_DAYS_BEFORE = 3
+
+/** Discount percent applied when the expiration nudge cron runs (same code, higher offer). */
+export const NEWSLETTER_PROMO_EXPIRATION_BUMP_PERCENT = 15
+
 /** Delay before showing the visitor popup after landing. */
 export const NEWSLETTER_POPUP_DELAY_MS = 4_000
 
