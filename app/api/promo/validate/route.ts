@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
-import { validateNewsletterPromoForCheckout } from "@/lib/services/newsletterPromo"
+import { validateCheckoutPromoForCheckout } from "@/lib/services/checkoutPromo"
 import { createClient } from "@/lib/supabase/server"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 import { newsletterPromoValidateBodySchema } from "@/lib/validations/newsletterPromo"
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const result = await validateNewsletterPromoForCheckout({
+  const result = await validateCheckoutPromoForCheckout({
     code: parsed.data.code,
     buyerEmail,
     itemSubtotalUsd,

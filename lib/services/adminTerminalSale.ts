@@ -726,6 +726,7 @@ export async function completeAdminTerminalCashSale(
       platform_fee: platformFee,
       seller_earnings: sellerEarnings,
       promo_code_id: null,
+      admin_promo_code_id: null,
       promo_discount_usd: 0,
       status: "confirmed",
       payment_method: "cash",

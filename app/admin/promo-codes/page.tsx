@@ -3,7 +3,7 @@ import { AdminPromoCodesClient } from "@/components/features/admin/admin-promo-c
 
 export const metadata = privatePageMetadata({
   title: "Promo codes — Admin — Reswell",
-  description: "Track newsletter promo code issuance, checkout holds, and order redemptions.",
+  description: "Track newsletter and admin promo codes — issuance, checkout holds, and order redemptions.",
   path: "/admin/promo-codes",
 })
 

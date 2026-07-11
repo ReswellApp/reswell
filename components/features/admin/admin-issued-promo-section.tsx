@@ -9,17 +9,18 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
-  Download,
+  Copy,
   Loader2,
+  Plus,
   RefreshCw,
-  Tag,
-  Ticket,
+  Sparkles,
 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -37,26 +38,31 @@ import {
 } from "@/components/ui/table"
 import { SiteSearchBar, siteSearchInputClassName } from "@/components/site-search-bar"
 import { cn } from "@/lib/utils"
-import { AdminIssuedPromoSection } from "@/components/features/admin/admin-issued-promo-section"
+import {
+  ADMIN_ISSUED_PROMO_MAX_PERCENT,
+  ADMIN_ISSUED_PROMO_MIN_PERCENT,
+  ADMIN_ISSUED_PROMO_VALIDITY_DAYS,
+} from "@/lib/constants/admin-issued-promo"
 import type {
-  AdminPromoCodeListRow,
-  AdminPromoCodeSortKey,
-  AdminPromoCodeStats,
-  AdminPromoCodeStatusFilter,
-} from "@/lib/types/admin-promo-codes"
+  AdminIssuedPromoCodeListRow,
+  AdminIssuedPromoCodeSortKey,
+  AdminIssuedPromoCodeStats,
+  AdminIssuedPromoCodeStatusFilter,
+  AdminIssuedPromoGenerateResult,
+} from "@/lib/types/admin-issued-promo-codes"
 
 const PAGE_SIZE_OPTIONS = [25, 50, 100]
 
 type SortDir = "asc" | "desc"
 
-const STATUS_LABEL: Record<AdminPromoCodeListRow["status"], string> = {
+const STATUS_LABEL: Record<AdminIssuedPromoCodeListRow["status"], string> = {
   active: "Active",
   reserved: "In checkout",
   redeemed: "Redeemed",
   expired: "Expired",
 }
 
-const STATUS_BADGE: Record<AdminPromoCodeListRow["status"], string> = {
+const STATUS_BADGE: Record<AdminIssuedPromoCodeListRow["status"], string> = {
   active: "border-emerald-500/30 text-emerald-600 dark:text-emerald-400",
   reserved: "border-amber-500/30 text-amber-600 dark:text-amber-400",
   redeemed: "border-sky-500/30 text-sky-600 dark:text-sky-400",
@@ -109,19 +115,24 @@ function StatTile({ label, value, hint, accent }: StatTileProps) {
   )
 }
 
-export function AdminPromoCodesClient() {
-  const [rows, setRows] = useState<AdminPromoCodeListRow[]>([])
-  const [stats, setStats] = useState<AdminPromoCodeStats | null>(null)
+export function AdminIssuedPromoSection() {
+  const [rows, setRows] = useState<AdminIssuedPromoCodeListRow[]>([])
+  const [stats, setStats] = useState<AdminIssuedPromoCodeStats | null>(null)
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [debouncedQuery, setDebouncedQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState<AdminPromoCodeStatusFilter>("all")
-  const [sortKey, setSortKey] = useState<AdminPromoCodeSortKey>("created_at")
+  const [statusFilter, setStatusFilter] = useState<AdminIssuedPromoCodeStatusFilter>("all")
+  const [sortKey, setSortKey] = useState<AdminIssuedPromoCodeSortKey>("created_at")
   const [sortDir, setSortDir] = useState<SortDir>("desc")
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(50)
+  const [pageSize, setPageSize] = useState(25)
+
+  const [discountPercent, setDiscountPercent] = useState("10")
+  const [note, setNote] = useState("")
+  const [generating, setGenerating] = useState(false)
+  const [generated, setGenerated] = useState<AdminIssuedPromoGenerateResult | null>(null)
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedQuery(searchQuery.trim()), 300)
@@ -145,21 +156,21 @@ export function AdminPromoCodesClient() {
       })
       if (debouncedQuery) params.set("q", debouncedQuery)
 
-      const res = await fetch(`/api/admin/promo-codes?${params.toString()}`, {
+      const res = await fetch(`/api/admin/promo-codes/admin-issued?${params.toString()}`, {
         credentials: "include",
       })
       const body = (await res.json()) as {
-        data?: { rows: AdminPromoCodeListRow[]; total: number; stats: AdminPromoCodeStats }
+        data?: { rows: AdminIssuedPromoCodeListRow[]; total: number; stats: AdminIssuedPromoCodeStats }
         error?: string
       }
       if (!res.ok) {
-        throw new Error(body.error || "Could not load promo codes")
+        throw new Error(body.error || "Could not load admin promo codes")
       }
       setRows(body.data?.rows ?? [])
       setTotal(body.data?.total ?? 0)
       setStats(body.data?.stats ?? null)
     } catch (e) {
-      setLoadError(e instanceof Error ? e.message : "Could not load promo codes")
+      setLoadError(e instanceof Error ? e.message : "Could not load admin promo codes")
       setRows([])
       setTotal(0)
     } finally {
@@ -175,12 +186,12 @@ export function AdminPromoCodesClient() {
   const currentPage = Math.min(page, totalPages)
   const pageStart = (currentPage - 1) * pageSize
 
-  function toggleSort(key: AdminPromoCodeSortKey) {
+  function toggleSort(key: AdminIssuedPromoCodeSortKey) {
     if (sortKey === key) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"))
     } else {
       setSortKey(key)
-      setSortDir(key === "code" || key === "email" ? "asc" : "desc")
+      setSortDir(key === "code" || key === "discount_percent" ? "asc" : "desc")
     }
   }
 
@@ -189,43 +200,51 @@ export function AdminPromoCodesClient() {
     return `${Math.round((stats.redeemed / stats.totalIssued) * 1000) / 10}%`
   }, [stats])
 
-  function exportCsv() {
-    const header = [
-      "Code",
-      "Email",
-      "Status",
-      "Discount %",
-      "Created",
-      "Expires",
-      "Redeemed",
-      "Order #",
-      "Order discount",
-      "Order amount",
-    ]
-    const escape = (v: string) => `"${v.replace(/"/g, '""')}"`
-    const lines = rows.map((r) =>
-      [
-        escape(r.code),
-        escape(r.email),
-        escape(STATUS_LABEL[r.status]),
-        String(r.discountPercent),
-        escape(formatDateTime(r.createdAt)),
-        escape(formatDateTime(r.expiresAt)),
-        escape(formatDateTime(r.redeemedAt)),
-        escape(r.order?.orderNum ?? ""),
-        r.order ? r.order.promoDiscountUsd.toFixed(2) : "",
-        r.order ? r.order.amount.toFixed(2) : "",
-      ].join(","),
-    )
-    const csv = [header.join(","), ...lines].join("\n")
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `reswell-promo-codes-${format(new Date(), "yyyy-MM-dd")}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-    toast.success(`Exported ${rows.length} promo code${rows.length === 1 ? "" : "s"}`)
+  async function handleGenerate(e: React.FormEvent) {
+    e.preventDefault()
+    const parsed = Number.parseInt(discountPercent, 10)
+    if (
+      !Number.isFinite(parsed) ||
+      parsed < ADMIN_ISSUED_PROMO_MIN_PERCENT ||
+      parsed > ADMIN_ISSUED_PROMO_MAX_PERCENT
+    ) {
+      toast.error(`Enter a discount between ${ADMIN_ISSUED_PROMO_MIN_PERCENT}% and ${ADMIN_ISSUED_PROMO_MAX_PERCENT}%.`)
+      return
+    }
+
+    setGenerating(true)
+    try {
+      const res = await fetch("/api/admin/promo-codes/admin-issued", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          discount_percent: parsed,
+          ...(note.trim() ? { note: note.trim() } : {}),
+        }),
+      })
+      const body = (await res.json()) as { data?: AdminIssuedPromoGenerateResult; error?: string }
+      if (!res.ok || !body.data) {
+        throw new Error(body.error || "Could not generate promo code")
+      }
+      setGenerated(body.data)
+      setNote("")
+      toast.success("Promo code generated")
+      void fetchData()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not generate promo code")
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  async function copyCode(code: string) {
+    try {
+      await navigator.clipboard.writeText(code)
+      toast.success("Copied to clipboard")
+    } catch {
+      toast.error("Could not copy to clipboard")
+    }
   }
 
   function SortHeader({
@@ -234,7 +253,7 @@ export function AdminPromoCodesClient() {
     className,
   }: {
     label: string
-    sortKey: AdminPromoCodeSortKey
+    sortKey: AdminIssuedPromoCodeSortKey
     className?: string
   }) {
     const active = sortKey === key
@@ -256,29 +275,80 @@ export function AdminPromoCodesClient() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <h1 className="font-headline text-3xl font-bold tracking-tight text-foreground">Promo codes</h1>
-            <span className="inline-flex items-center rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium tabular-nums text-muted-foreground">
-              {loading ? "Loading…" : `${stats?.totalIssued ?? 0} issued`}
-            </span>
+    <section className="space-y-6 border-t border-border pt-10">
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <h2 className="font-headline text-2xl font-bold tracking-tight text-foreground">Admin promo codes</h2>
+          <span className="inline-flex items-center rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium tabular-nums text-muted-foreground">
+            {loading ? "Loading…" : `${stats?.totalIssued ?? 0} issued`}
+          </span>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          One-time codes for any signed-in buyer — set the discount, share the code, and track redemption.
+          Codes expire after {ADMIN_ISSUED_PROMO_VALIDITY_DAYS} days.
+        </p>
+      </div>
+
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <form onSubmit={(e) => void handleGenerate(e)} className="space-y-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Sparkles className="h-4 w-4 text-muted-foreground" />
+            Generate a code
           </div>
-          <p className="text-sm text-muted-foreground">
-            Newsletter welcome codes — track issuance, checkout holds, and redemptions on orders.
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Button type="button" variant="outline" disabled={loading || rows.length === 0} onClick={exportCsv}>
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
-          <Button type="button" variant="outline" disabled={loading} onClick={() => void fetchData()}>
-            <RefreshCw className={cn("mr-2 h-4 w-4", loading && "animate-spin")} />
-            Refresh
-          </Button>
-        </div>
+          <div className="grid gap-4 sm:grid-cols-[140px_1fr_auto] sm:items-end">
+            <div className="space-y-2">
+              <Label htmlFor="admin-promo-discount">Discount %</Label>
+              <Input
+                id="admin-promo-discount"
+                type="number"
+                min={ADMIN_ISSUED_PROMO_MIN_PERCENT}
+                max={ADMIN_ISSUED_PROMO_MAX_PERCENT}
+                step={1}
+                value={discountPercent}
+                onChange={(e) => setDiscountPercent(e.target.value)}
+                disabled={generating}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="admin-promo-note">Internal note (optional)</Label>
+              <Input
+                id="admin-promo-note"
+                placeholder="e.g. VIP customer, support goodwill…"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                maxLength={200}
+                disabled={generating}
+              />
+            </div>
+            <Button type="submit" disabled={generating}>
+              {generating ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className="mr-2 h-4 w-4" />
+              )}
+              Generate
+            </Button>
+          </div>
+        </form>
+
+        {generated ? (
+          <div className="mt-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+              New code ready
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <span className="font-mono text-lg font-bold tracking-wide text-foreground">{generated.code}</span>
+              <Badge variant="outline">{generated.discountPercent}% off items</Badge>
+              <Button type="button" size="sm" variant="outline" onClick={() => void copyCode(generated.code)}>
+                <Copy className="mr-2 h-3.5 w-3.5" />
+                Copy
+              </Button>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Expires {formatDate(generated.expiresAt)} · Single use · Reswell-funded (sellers unaffected)
+            </p>
+          </div>
+        ) : null}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
@@ -291,7 +361,6 @@ export function AdminPromoCodesClient() {
         <StatTile
           label="In checkout"
           value={String(stats?.reserved ?? "—")}
-          hint="Reserved at payment"
           accent="text-amber-600 dark:text-amber-400"
         />
         <StatTile
@@ -312,7 +381,7 @@ export function AdminPromoCodesClient() {
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <SiteSearchBar className="flex-1 lg:min-w-0" onSubmit={(e) => e.preventDefault()}>
             <Input
-              placeholder="Search code, email, or order #…"
+              placeholder="Search code, note, or order #…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className={siteSearchInputClassName()}
@@ -321,7 +390,7 @@ export function AdminPromoCodesClient() {
           <div className="grid grid-cols-2 gap-2 sm:flex lg:shrink-0">
             <Select
               value={statusFilter}
-              onValueChange={(v) => setStatusFilter(v as AdminPromoCodeStatusFilter)}
+              onValueChange={(v) => setStatusFilter(v as AdminIssuedPromoCodeStatusFilter)}
             >
               <SelectTrigger className="lg:w-44">
                 <SelectValue placeholder="Status" />
@@ -334,47 +403,23 @@ export function AdminPromoCodesClient() {
                 <SelectItem value="expired">Expired</SelectItem>
               </SelectContent>
             </Select>
-            <Select
-              value={`${sortKey}:${sortDir}`}
-              onValueChange={(v) => {
-                const [k, d] = v.split(":") as [AdminPromoCodeSortKey, SortDir]
-                setSortKey(k)
-                setSortDir(d)
-              }}
-            >
-              <SelectTrigger className="lg:w-52">
-                <SelectValue placeholder="Sort" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="created_at:desc">Newest issued</SelectItem>
-                <SelectItem value="created_at:asc">Oldest issued</SelectItem>
-                <SelectItem value="expires_at:asc">Expiring soon</SelectItem>
-                <SelectItem value="redeemed_at:desc">Recently redeemed</SelectItem>
-                <SelectItem value="code:asc">Code A → Z</SelectItem>
-                <SelectItem value="email:asc">Email A → Z</SelectItem>
-              </SelectContent>
-            </Select>
+            <Button type="button" variant="outline" disabled={loading} onClick={() => void fetchData()}>
+              <RefreshCw className={cn("mr-2 h-4 w-4", loading && "animate-spin")} />
+              Refresh
+            </Button>
           </div>
         </div>
-        {!loading && total > 0 ? (
-          <p className="mt-2 px-1 text-xs text-muted-foreground">
-            {total} promo code{total === 1 ? "" : "s"} match
-          </p>
-        ) : null}
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-border bg-card">
         {loading ? (
           <div className="flex items-center justify-center gap-2 px-6 py-16 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
-            Loading promo codes…
+            Loading admin promo codes…
           </div>
         ) : loadError ? (
           <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-500/10">
-              <Ticket className="h-6 w-6 text-rose-600 dark:text-rose-400" />
-            </span>
-            <p className="mt-3 font-medium text-foreground">Couldn&apos;t load promo codes</p>
+            <p className="font-medium text-foreground">Couldn&apos;t load admin promo codes</p>
             <p className="text-sm text-muted-foreground">{loadError}</p>
             <Button variant="outline" size="sm" className="mt-4" onClick={() => void fetchData()}>
               <RefreshCw className="mr-2 h-4 w-4" /> Try again
@@ -382,11 +427,8 @@ export function AdminPromoCodesClient() {
           </div>
         ) : rows.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
-              <Tag className="h-6 w-6 text-muted-foreground" />
-            </span>
-            <p className="mt-3 font-medium text-foreground">No promo codes found</p>
-            <p className="text-sm text-muted-foreground">Try adjusting your search or filters.</p>
+            <p className="font-medium text-foreground">No admin promo codes yet</p>
+            <p className="text-sm text-muted-foreground">Generate a one-time code above.</p>
           </div>
         ) : (
           <Table>
@@ -395,13 +437,13 @@ export function AdminPromoCodesClient() {
                 <TableHead>
                   <SortHeader label="Code" sortKey="code" />
                 </TableHead>
-                <TableHead>
-                  <SortHeader label="Email" sortKey="email" />
-                </TableHead>
+                <TableHead>Note</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Discount</TableHead>
+                <TableHead className="text-right">
+                  <SortHeader label="Discount" sortKey="discount_percent" className="justify-end" />
+                </TableHead>
                 <TableHead>
-                  <SortHeader label="Issued" sortKey="created_at" />
+                  <SortHeader label="Created" sortKey="created_at" />
                 </TableHead>
                 <TableHead>
                   <SortHeader label="Expires" sortKey="expires_at" />
@@ -415,8 +457,25 @@ export function AdminPromoCodesClient() {
             <TableBody>
               {rows.map((row) => (
                 <TableRow key={row.id}>
-                  <TableCell className="font-mono text-sm font-medium">{row.code}</TableCell>
-                  <TableCell className="max-w-[200px] truncate text-sm">{row.email}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm font-medium">{row.code}</span>
+                      {row.status === "active" ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => void copyCode(row.code)}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                      ) : null}
+                    </div>
+                  </TableCell>
+                  <TableCell className="max-w-[180px] truncate text-sm text-muted-foreground">
+                    {row.note ?? "—"}
+                  </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={STATUS_BADGE[row.status]}>
                       {STATUS_LABEL[row.status]}
@@ -502,8 +561,6 @@ export function AdminPromoCodesClient() {
           </div>
         ) : null}
       </div>
-
-      <AdminIssuedPromoSection />
-    </div>
+    </section>
   )
 }

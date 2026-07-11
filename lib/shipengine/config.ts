@@ -21,3 +21,9 @@ export function isShipEngineConfigured(): boolean {
   const key = process.env.SHIPENGINE_API_KEY?.trim()
   return Boolean(key && key.length > 0)
 }
+
+/** Label branding image uploaded in ShipEngine dashboard (Features → Label branding). */
+export function getShipEngineLabelImageId(): string | null {
+  const id = process.env.SHIPENGINE_LABEL_IMAGE_ID?.trim()
+  return id && id.length > 0 ? id : null
+}

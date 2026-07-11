@@ -1,5 +1,5 @@
 import { shipEngineRequest } from "@/lib/shipengine/client"
-import { isShipEngineConfigured } from "@/lib/shipengine/config"
+import { getShipEngineLabelImageId, isShipEngineConfigured } from "@/lib/shipengine/config"
 import { formatShipEngineApiError } from "@/lib/shipengine/errors"
 import {
   buildShipEngineRateShipment,
@@ -306,12 +306,14 @@ export async function purchaseShipEngineLabel(rateId: string): Promise<
   }
 
   const trimmed = rateId.trim()
+  const labelImageId = getShipEngineLabelImageId()
   const res = await shipEngineRequest(`/labels/rates/${encodeURIComponent(trimmed)}`, {
     method: "POST",
     body: JSON.stringify({
       label_format: "pdf",
       label_download_type: "url",
       label_layout: "4x6",
+      ...(labelImageId ? { label_image_id: labelImageId } : {}),
     }),
   })
   const data = await parseJsonSafe(res)

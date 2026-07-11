@@ -15,15 +15,13 @@ import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { evaluateUserPurchase } from "@/lib/services/accountRestrictions"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
+import { computeCheckoutTotalWithNewsletterPromo } from "@/lib/services/newsletterPromo"
 import {
-  computeCheckoutTotalWithNewsletterPromo,
-  releaseAbandonedNewsletterPromoReservation,
-  validateNewsletterPromoForCheckout,
-} from "@/lib/services/newsletterPromo"
-import type { NewsletterPromoCodeRow } from "@/lib/db/newsletterPromoCodes"
-import {
-  reserveNewsletterPromoForPaymentIntent,
-} from "@/lib/db/newsletterPromoCodes"
+  releaseAbandonedCheckoutPromoReservation,
+  reserveCheckoutPromoForPaymentIntent,
+  validateCheckoutPromoForCheckout,
+  type CheckoutPromoRef,
+} from "@/lib/services/checkoutPromo"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { normalizeNewsletterPromoCodeInput } from "@/lib/utils/newsletter-promo-code"
 import { verifyCheckoutShippingQuoteToken, type CheckoutShippingQuoteTokenPayload } from "@/lib/services/checkoutShippingQuoteToken"
@@ -335,8 +333,9 @@ export async function POST(request: NextRequest) {
 
   let promoDiscountUsd = 0
   let promoCodeId: string | null = null
+  let promoKind: CheckoutPromoRef["kind"] | null = null
   let promoDiscountPercent = 0
-  let promoRow: NewsletterPromoCodeRow | null = null
+  let promoRef: CheckoutPromoRef | null = null
 
   if (promoCodeNormalized) {
     const buyerEmail = (await getAuthEmailForUserId(user.id)) ?? user.email?.trim() ?? ""
@@ -347,7 +346,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const promoCheck = await validateNewsletterPromoForCheckout({
+    const promoCheck = await validateCheckoutPromoForCheckout({
       code: promoCodeNormalized,
       buyerEmail,
       itemSubtotalUsd: bundle.totalItemPriceUsd,
@@ -360,9 +359,12 @@ export async function POST(request: NextRequest) {
 
     promoDiscountUsd = promoCheck.discountUsd
     promoCodeId = promoCheck.promo.id
+    promoKind = promoCheck.kind
     promoDiscountPercent = promoCheck.discountPercent
-    promoRow = promoCheck.promo
-  }
+    promoRef =
+      promoCheck.kind === "newsletter"
+        ? { kind: "newsletter", promo: promoCheck.promo }
+        : { kind: "admin_issued", promo: promoCheck.promo }}
 
   const chargedTotalUsd =
     promoDiscountUsd > 0
@@ -388,7 +390,7 @@ export async function POST(request: NextRequest) {
     const stripe = getStripe()
     let promoServiceSupabase: ReturnType<typeof createServiceRoleClient> | null = null
 
-    if (promoRow) {
+    if (promoRef) {
       try {
         promoServiceSupabase = createServiceRoleClient()
       } catch {
@@ -397,7 +399,7 @@ export async function POST(request: NextRequest) {
           { status: 503, headers: JSON_NO_STORE_HEADERS },
         )
       }
-      await releaseAbandonedNewsletterPromoReservation(stripe, promoServiceSupabase, promoRow)
+      await releaseAbandonedCheckoutPromoReservation(stripe, promoServiceSupabase, promoRef)
     }
 
     const paymentIntent = await stripe.paymentIntents.create({
@@ -413,9 +415,10 @@ export async function POST(request: NextRequest) {
         bundle_line_count: String(listingIdsOrdered.length),
         ...(validatedOfferId ? { offer_id: validatedOfferId } : {}),
         ...(addressId ? { address_id: addressId } : {}),
-        ...(promoCodeId
+        ...(promoCodeId && promoKind
           ? {
               promo_code_id: promoCodeId,
+              promo_kind: promoKind,
               promo_discount_cents: String(Math.round(promoDiscountUsd * 100)),
             }
           : {}),
@@ -432,7 +435,7 @@ export async function POST(request: NextRequest) {
       description: stripeDescription.slice(0, 1000),
     })
 
-    if (promoCodeId) {
+    if (promoCodeId && promoRef) {
       if (!promoServiceSupabase) {
         try {
           promoServiceSupabase = createServiceRoleClient()
@@ -445,9 +448,9 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      const reserved = await reserveNewsletterPromoForPaymentIntent(
+      const reserved = await reserveCheckoutPromoForPaymentIntent(
         promoServiceSupabase,
-        promoCodeId,
+        promoRef,
         paymentIntent.id,
       )
       if (!reserved.ok) {

@@ -31,7 +31,11 @@ import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPu
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { safeRevalidateAfterMarketplaceOrderCommit } from "@/lib/cache/safe-revalidate-after-order"
 import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnPurchase"
-import { redeemNewsletterPromoForOrder } from "@/lib/db/newsletterPromoCodes"
+import {
+  inferCheckoutPromoKind,
+  parseCheckoutPromoKind,
+  redeemCheckoutPromoForOrder,
+} from "@/lib/services/checkoutPromo"
 import { computeCheckoutTotalWithNewsletterPromo } from "@/lib/services/newsletterPromo"
 import { sendPostPurchaseReviewInvite } from "@/lib/services/orderReviewInvite"
 import { notifySellerOrderCheckoutKlaviyo } from "@/lib/services/notifySellerOrderCheckoutKlaviyo"
@@ -575,6 +579,9 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   const promoCodeId = pi.metadata.promo_code_id?.trim() || null
   const promoDiscountCentsRaw = pi.metadata.promo_discount_cents?.trim()
+  const promoKind =
+    parseCheckoutPromoKind(pi.metadata.promo_kind) ??
+    (promoCodeId ? await inferCheckoutPromoKind(promoCodeId) : null)
   let promoDiscountUsd = 0
 
   if (promoCodeId) {
@@ -684,7 +691,8 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       shipping_amount: shippingUsd,
       platform_fee: platformFee,
       seller_earnings: sellerEarnings,
-      promo_code_id: promoCodeId,
+      promo_code_id: promoKind === "newsletter" ? promoCodeId : null,
+      admin_promo_code_id: promoKind === "admin_issued" ? promoCodeId : null,
       promo_discount_usd: promoDiscountUsd,
       status: "confirmed",
       payment_method: "stripe",
@@ -774,11 +782,12 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Could not create order lines", status: 500 }
   }
 
-  if (promoCodeId) {
+  if (promoCodeId && promoKind) {
     if (!buyerId) {
       return { ok: false, error: "Invalid promo metadata", status: 400 }
     }
-    const redeemed = await redeemNewsletterPromoForOrder(serviceSupabase, {
+    const redeemed = await redeemCheckoutPromoForOrder(serviceSupabase, {
+      kind: promoKind,
       promoId: promoCodeId,
       buyerId,
       orderId: purchase.id,
