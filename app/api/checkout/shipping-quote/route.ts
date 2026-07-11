@@ -13,6 +13,7 @@ import {
 import { signCheckoutShippingQuoteToken } from "@/lib/services/checkoutShippingQuoteToken"
 import {
   findPeerCheckoutRateOption,
+  findPeerCheckoutRateOptionByServiceCode,
 } from "@/lib/shipping/peer-checkout-usps-services"
 
 function buildQuoteResponse(input: {
@@ -109,6 +110,7 @@ export async function POST(request: Request) {
   const listingIds = [...new Set(fromArray.length > 0 ? fromArray : singleId ? [singleId] : [])]
   const addressId = String(bodyObj.address_id ?? "").trim()
   const selectedRateId = String(bodyObj.selected_rate_id ?? "").trim() || null
+  const selectedServiceCode = String(bodyObj.selected_service_code ?? "").trim() || null
 
   if (listingIds.length === 0 || !addressId) {
     return NextResponse.json(
@@ -180,14 +182,23 @@ export async function POST(request: Request) {
       diagnosticTag: `checkout-quote:${listingRow.id}`,
       sellerShipFromName,
       selectedRateId,
+      selectedServiceCode,
     })
 
     if (!totals.ok) {
       return NextResponse.json({ error: totals.error }, { status: 422, headers: JSON_NO_STORE_HEADERS })
     }
 
-    if (totals.usedReswellQuote && totals.reswellQuote && selectedRateId) {
-      const selected = findPeerCheckoutRateOption(totals.reswellQuote.availableRates, selectedRateId)
+    if (totals.usedReswellQuote && totals.reswellQuote && (selectedRateId || selectedServiceCode)) {
+      const selected =
+        (selectedRateId
+          ? findPeerCheckoutRateOption(totals.reswellQuote.availableRates, selectedRateId)
+          : null) ??
+        findPeerCheckoutRateOptionByServiceCode(
+          totals.reswellQuote.availableRates,
+          selectedServiceCode,
+          listingRow.section,
+        )
       if (!selected) {
         return NextResponse.json(
           { error: "Selected shipping option is no longer available." },
@@ -226,6 +237,7 @@ export async function POST(request: Request) {
     diagnosticTag: `checkout-quote-bundle:${listingIds.join(",")}`,
     sellerShipFromName,
     selectedRateId,
+    selectedServiceCode,
   })
 
   if (!bundleShipping.ok) {

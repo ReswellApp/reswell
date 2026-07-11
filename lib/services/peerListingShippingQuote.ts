@@ -84,6 +84,7 @@ export async function quoteReswellPeerShippingUsd(input: {
   diagnosticTag?: string
   sellerShipFromName: string
   selectedRateId?: string | null
+  selectedServiceCode?: string | null
 }): Promise<{ ok: true; quote: PeerReswellShippingQuote } | { ok: false; error: string }> {
   const shipTo = buyerProfileAddressToShipTo(input.buyerAddress)
   if (!shipTo.ok) {
@@ -97,6 +98,7 @@ export async function quoteReswellPeerShippingUsd(input: {
     sellerShipFromName: input.sellerShipFromName,
     section: input.listing.section ?? null,
     selectedRateId: input.selectedRateId,
+    selectedServiceCode: input.selectedServiceCode,
   })
   if (!result.ok) {
     return result
@@ -129,6 +131,7 @@ export async function computePeerBundleShippingUsd(input: {
   diagnosticTag?: string
   sellerShipFromName: string
   selectedRateId?: string | null
+  selectedServiceCode?: string | null
 }): Promise<
   | { ok: true; shippingUsd: number; usedReswellQuote: boolean; quote?: PeerReswellShippingQuote }
   | { ok: false; error: string }
@@ -167,6 +170,7 @@ export async function computePeerBundleShippingUsd(input: {
     sellerShipFromName: input.sellerShipFromName,
     section: input.listings[0]?.section ?? null,
     selectedRateId: input.selectedRateId,
+    selectedServiceCode: input.selectedServiceCode,
   })
   if (!result.ok) {
     return result
@@ -203,6 +207,7 @@ export async function computePeerCheckoutTotalsUsd(input: {
     serviceCode?: string | null
   }
   selectedRateId?: string | null
+  selectedServiceCode?: string | null
 }): Promise<
   | {
       ok: true
@@ -260,6 +265,7 @@ export async function computePeerCheckoutTotalsUsd(input: {
     diagnosticTag: input.diagnosticTag,
     sellerShipFromName: sellerLine,
     selectedRateId: input.selectedRateId,
+    selectedServiceCode: input.selectedServiceCode,
   })
   if (!q.ok) {
     return q

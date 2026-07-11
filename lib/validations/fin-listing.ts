@@ -12,6 +12,7 @@ import {
   parseReswellParcelLengthRawToCarrierInches,
   parseReswellParcelWidthHeightRawToCarrierInches,
 } from "@/lib/reswell-parcel-fields"
+import { RESWELL_MAX_REASONABLE_SMALL_PARCEL_LENGTH_IN } from "@/lib/surfboard-shipping-estimates"
 
 export const FIN_LISTING_TITLE_MAX_LENGTH = 60
 export const FIN_LISTING_MIN_PHOTOS = 1
@@ -140,6 +141,13 @@ function withFinListingRefinements<T extends z.ZodType>(schema: T) {
           code: z.ZodIssueCode.custom,
           message: "Enter packed box height in inches.",
           path: ["reswellPackageHeightIn"],
+        })
+      }
+      if (L != null && L > RESWELL_MAX_REASONABLE_SMALL_PARCEL_LENGTH_IN) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Packed length for fins must be ${RESWELL_MAX_REASONABLE_SMALL_PARCEL_LENGTH_IN} inches or less.`,
+          path: ["reswellPackageLengthIn"],
         })
       }
 

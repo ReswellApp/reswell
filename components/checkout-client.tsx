@@ -133,7 +133,7 @@ export function CheckoutClient({
     } | null
     availableShippingRates?: PeerCheckoutShippingRateOption[] | null
   } | null>(null)
-  const [selectedShippingRateId, setSelectedShippingRateId] = useState<string | null>(null)
+  const [selectedShippingServiceCode, setSelectedShippingServiceCode] = useState<string | null>(null)
   const [shipQuoteToken, setShipQuoteToken] = useState<string | null>(null)
   const [quoteLoading, setQuoteLoading] = useState(false)
   const [quoteError, setQuoteError] = useState<string | null>(null)
@@ -164,7 +164,7 @@ export function CheckoutClient({
     setPromoError(null)
     setPromoCodeInput("")
     setShipQuoteToken(null)
-    setSelectedShippingRateId(null)
+    setSelectedShippingServiceCode(null)
   }, [listingIdsKey, impliedFulfillment])
 
   useEffect(() => {
@@ -185,7 +185,7 @@ export function CheckoutClient({
       setShipQuoteToken(null)
       setQuoteError(null)
       setQuoteLoading(false)
-      setSelectedShippingRateId(null)
+      setSelectedShippingServiceCode(null)
       return
     }
 
@@ -218,7 +218,9 @@ export function CheckoutClient({
           body: JSON.stringify({
             listing_ids: listingIdsKey.split(","),
             address_id: purchaseDetails.shippingAddressId,
-            ...(selectedShippingRateId ? { selected_rate_id: selectedShippingRateId } : {}),
+            ...(selectedShippingServiceCode
+              ? { selected_service_code: selectedShippingServiceCode }
+              : {}),
           }),
         })
         const data = (await res.json()) as {
@@ -248,7 +250,7 @@ export function CheckoutClient({
               ...data.data.selectedRate,
               displayName:
                 data.data.availableShippingRates?.find(
-                  (rate) => rate.rateId === data.data?.selectedRate?.rateId,
+                  (rate) => rate.serviceCode === data.data?.selectedRate?.serviceCode,
                 )?.displayName ?? data.data.selectedRate.serviceName,
             }
           : null
@@ -280,7 +282,7 @@ export function CheckoutClient({
     listings,
     purchaseDetails.shippingAddressId,
     resolved,
-    selectedShippingRateId,
+    selectedShippingServiceCode,
   ])
 
   const handlePurchaseDetailsChange = useCallback((state: PurchaseDetailsState) => {
@@ -562,19 +564,23 @@ export function CheckoutClient({
                       Choose USPS shipping for your fins. The amount you select is included in your total.
                     </p>
                     <RadioGroup
-                      value={selectedShippingRateId ?? shipQuote.selectedRate?.rateId ?? ""}
-                      onValueChange={(value) => setSelectedShippingRateId(value)}
+                      value={
+                        selectedShippingServiceCode ??
+                        shipQuote.selectedRate?.serviceCode ??
+                        ""
+                      }
+                      onValueChange={(value) => setSelectedShippingServiceCode(value)}
                       className="space-y-2"
                     >
                       {shipQuote.availableShippingRates.map((rate) => (
                         <label
-                          key={rate.rateId}
-                          htmlFor={`checkout-shipping-${rate.rateId}`}
+                          key={rate.serviceCode}
+                          htmlFor={`checkout-shipping-${rate.serviceCode}`}
                           className="flex cursor-pointer items-start gap-3 rounded-[8px] border border-neutral-200 px-3.5 py-3 transition-colors has-[[data-state=checked]]:border-[#5574AD]/40 has-[[data-state=checked]]:bg-[#5574AD]/[0.04]"
                         >
                           <RadioGroupItem
-                            id={`checkout-shipping-${rate.rateId}`}
-                            value={rate.rateId}
+                            id={`checkout-shipping-${rate.serviceCode}`}
+                            value={rate.serviceCode}
                             className="mt-0.5"
                           />
                           <span className="min-w-0 flex-1">
@@ -592,7 +598,7 @@ export function CheckoutClient({
                       ))}
                     </RadioGroup>
                   </div>
-                ) : (
+                ) : quoteError ? null : (
                   <div className="min-h-[3.5rem] rounded-[8px] border border-neutral-200 bg-neutral-100/80 px-4 py-3.5 text-[13px] leading-relaxed text-neutral-600">
                     {shipQuote?.usedReswellQuote
                       ? displayTotals.shipping > 0

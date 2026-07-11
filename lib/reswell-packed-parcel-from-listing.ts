@@ -1,3 +1,12 @@
+import { FINS_SECTION } from "@/lib/fin-listing-config"
+import {
+  applyFinReswellPackageDefaultsPerField,
+  finReswellPackageFormFieldsFromListingRow,
+  FIN_RESWELL_DEFAULT_PACKAGE_HEIGHT_IN_NUM,
+  FIN_RESWELL_DEFAULT_PACKAGE_LENGTH_IN_NUM,
+  FIN_RESWELL_DEFAULT_PACKAGE_WEIGHT_OZ_NUM,
+  FIN_RESWELL_DEFAULT_PACKAGE_WIDTH_IN_NUM,
+} from "@/lib/fin-reswell-shipping-defaults"
 import { parseListingDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import {
   applyReswellShippingAxisBuffer,
@@ -22,6 +31,7 @@ import {
 } from "@/lib/surfboard-shipping-estimates"
 
 export type ListingPackedParcelSource = {
+  section?: string | null
   shipping_packed_length_in?: number | string | null
   shipping_packed_width_in?: number | string | null
   shipping_packed_height_in?: number | string | null
@@ -60,6 +70,79 @@ function storedPackedSurfboardDimsLookUsable(lengthIn: number, widthIn: number, 
   return (
     oz >= RESWELL_MIN_REASONABLE_STORED_PARCEL_WEIGHT_OZ && oz <= RESWELL_MAX_REASONABLE_STORED_PARCEL_WEIGHT_OZ
   )
+}
+
+function finListingUsesDefaultPackedParcel(row: ListingPackedParcelSource): boolean {
+  return row.section?.trim() === FINS_SECTION
+}
+
+function finDefaultPackedParcelResult(): {
+  ok: true
+  source: ResolvedPackedParcelSource
+  weightOz: number
+  lengthIn: number
+  widthIn: number
+  heightIn: number
+} {
+  return {
+    ok: true,
+    source: "heuristic",
+    weightOz: FIN_RESWELL_DEFAULT_PACKAGE_WEIGHT_OZ_NUM,
+    lengthIn: FIN_RESWELL_DEFAULT_PACKAGE_LENGTH_IN_NUM,
+    widthIn: FIN_RESWELL_DEFAULT_PACKAGE_WIDTH_IN_NUM,
+    heightIn: FIN_RESWELL_DEFAULT_PACKAGE_HEIGHT_IN_NUM,
+  }
+}
+
+function finPackedParcelResultFromStoredRow(
+  row: ListingPackedParcelSource,
+): {
+  ok: true
+  source: ResolvedPackedParcelSource
+  weightOz: number
+  lengthIn: number
+  widthIn: number
+  heightIn: number
+} | null {
+  const merged = applyFinReswellPackageDefaultsPerField(finReswellPackageFormFieldsFromListingRow(row))
+  const Ls = num(merged.reswellPackageLengthIn)
+  const Ws = num(merged.reswellPackageWidthIn)
+  const Hs = num(merged.reswellPackageHeightIn)
+  if (!Ls || !Ws || !Hs || !storedPackedSmallParcelDimsLookUsable(Ls, Ws, Hs)) {
+    return null
+  }
+  const lbRaw = merged.reswellPackageWeightLb?.trim() ?? ""
+  const ozRaw = merged.reswellPackageWeightOz?.trim() ?? ""
+  const lb = lbRaw === "" ? 0 : Number.parseFloat(lbRaw.replace(/,/g, ""))
+  const oz = ozRaw === "" ? 0 : Number.parseFloat(ozRaw.replace(/,/g, ""))
+  if (!Number.isFinite(lb) || lb < 0 || !Number.isFinite(oz) || oz < 0 || oz >= 16) {
+    return finDefaultPackedParcelResult()
+  }
+  const totalOz = lb * 16 + oz
+  if (!Number.isFinite(totalOz) || totalOz <= 0) {
+    return finDefaultPackedParcelResult()
+  }
+  return {
+    ok: true,
+    source: "heuristic",
+    weightOz: totalOz,
+    lengthIn: Ls,
+    widthIn: Ws,
+    heightIn: Hs,
+  }
+}
+
+function finFallbackSmallParcelWeightOz(row: ListingPackedParcelSource, storedWeightOz: number | null): number {
+  if (
+    storedWeightOz != null &&
+    storedWeightOz >= 1 &&
+    storedWeightOz <= RESWELL_MAX_REASONABLE_STORED_PARCEL_WEIGHT_OZ
+  ) {
+    return storedWeightOz
+  }
+  return finListingUsesDefaultPackedParcel(row)
+    ? FIN_RESWELL_DEFAULT_PACKAGE_WEIGHT_OZ_NUM
+    : RESWELL_FALLBACK_SMALL_PARCEL_WEIGHT_OZ
 }
 
 function boardLengthFormFromListing(row: ListingPackedParcelSource): string | null {
@@ -243,12 +326,7 @@ export function resolvePackedParcelFromListing(row: ListingPackedParcelSource):
     }
   }
   if (Ls && Ws && Hs && storedPackedSmallParcelDimsLookUsable(Ls, Ws, Hs)) {
-    const weightOz =
-      Woz != null &&
-      Woz >= 1 &&
-      Woz <= RESWELL_MAX_REASONABLE_STORED_PARCEL_WEIGHT_OZ
-        ? Woz
-        : RESWELL_FALLBACK_SMALL_PARCEL_WEIGHT_OZ
+    const weightOz = finFallbackSmallParcelWeightOz(row, Woz)
     return {
       ok: true,
       source: "heuristic",
@@ -257,6 +335,10 @@ export function resolvePackedParcelFromListing(row: ListingPackedParcelSource):
       widthIn: Ws,
       heightIn: Hs,
     }
+  }
+  if (finListingUsesDefaultPackedParcel(row)) {
+    const finParcel = finPackedParcelResultFromStoredRow(row) ?? finDefaultPackedParcelResult()
+    return finParcel
   }
   return {
     ok: false,

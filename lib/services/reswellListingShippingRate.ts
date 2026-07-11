@@ -18,6 +18,7 @@ import {
 import { validateSurfboardLabelParcelLimits } from "@/lib/shipping/surfboard-label-limits"
 import {
   filterReswellRatesForPeerSection,
+  findPeerCheckoutRateOptionByServiceCode,
   peerCheckoutShippingServiceError,
   type PeerCheckoutShippingRateOption,
   toPeerCheckoutShippingRateOptions,
@@ -241,8 +242,10 @@ export async function getCheapestReswellRateForListing(input: {
   diagnosticTag?: string
   /** Listing section — restricts USPS services for fins and magazines at checkout. */
   section?: string | null
-  /** Buyer-selected ShipEngine rate id from checkout (fins). */
+  /** Buyer-selected ShipEngine rate id from checkout (fins). Ephemeral — prefer {@link selectedServiceCode}. */
   selectedRateId?: string | null
+  /** Stable USPS service bucket for fins checkout (e.g. `usps_priority_mail`). */
+  selectedServiceCode?: string | null
   /**
    * Ship-from contact name on carrier labels (printed under “Seller” / shipper on the label).
    * Use {@link fetchSellerShipFromLabelName} from the seller’s profile when available.
@@ -263,6 +266,7 @@ function resolveSelectedCheckoutRate(
   decorated: ReswellListingRateRow[],
   section: string | null | undefined,
   selectedRateId: string | null | undefined,
+  selectedServiceCode?: string | null,
 ): { ok: true; selected: ReswellListingRateRow; checkoutRateOptions: PeerCheckoutShippingRateOption[] } | { ok: false; error: string } {
   const filtered = filterReswellRatesForPeerSection(decorated, section)
   const checkoutRateOptions = toPeerCheckoutShippingRateOptions(filtered, section)
@@ -274,9 +278,27 @@ function resolveSelectedCheckoutRate(
   }
 
   const trimmedSelected = selectedRateId?.trim()
-  if (trimmedSelected) {
-    const selectedOption = checkoutRateOptions.find((option) => option.rateId === trimmedSelected)
-    const selectedRow = filtered.find((row) => row.rate_id === trimmedSelected)
+  const trimmedService = selectedServiceCode?.trim()
+  if (trimmedSelected || trimmedService) {
+    let selectedOption =
+      trimmedSelected != null
+        ? checkoutRateOptions.find((option) => option.rateId === trimmedSelected) ?? null
+        : null
+
+    if (!selectedOption) {
+      selectedOption = findPeerCheckoutRateOptionByServiceCode(
+        checkoutRateOptions,
+        trimmedService,
+        section,
+      )
+    }
+
+    const selectedRow = selectedOption
+      ? filtered.find((row) => row.rate_id === selectedOption.rateId) ?? null
+      : trimmedSelected
+        ? filtered.find((row) => row.rate_id === trimmedSelected) ?? null
+        : null
+
     if (!selectedOption || !selectedRow?.rate_id) {
       return { ok: false, error: "Selected shipping option is no longer available — choose another rate." }
     }
@@ -311,6 +333,7 @@ export async function getCheapestReswellRateForListings(input: {
   diagnosticTag?: string
   section?: string | null
   selectedRateId?: string | null
+  selectedServiceCode?: string | null
   sellerShipFromName: string
 }): Promise<ReswellListingRateResult> {
   if (!isShipEngineConfigured()) {
@@ -412,7 +435,12 @@ export async function getCheapestReswellRateForListings(input: {
     (input.listings[0] as { section?: string | null } | undefined)?.section?.trim() ||
     null
 
-  const resolved = resolveSelectedCheckoutRate(decorated, section, input.selectedRateId)
+  const resolved = resolveSelectedCheckoutRate(
+    decorated,
+    section,
+    input.selectedRateId,
+    input.selectedServiceCode,
+  )
   if (!resolved.ok) {
     return resolved
   }

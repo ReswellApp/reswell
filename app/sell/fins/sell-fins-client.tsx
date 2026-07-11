@@ -1307,6 +1307,7 @@ export default function SellFinsFlow({
                 >
                   <ReswellPackageDimensionsCard
                     showHeading={false}
+                    lengthPlaceholder="e.g. 10"
                     className="rounded-none border-0 bg-transparent p-0 shadow-none"
                     lengthIn={form.reswellPackageLengthIn}
                     widthIn={form.reswellPackageWidthIn}

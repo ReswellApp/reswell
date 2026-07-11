@@ -8,6 +8,8 @@ export interface ReswellPackageDimensionsCardProps {
   className?: string
   /** When false, omit the inner title + intro (e.g. parent section already has a heading). */
   showHeading?: boolean
+  /** Outer packed length placeholder (surfboards use feet/inches; fins use inches). */
+  lengthPlaceholder?: string
   lengthIn: string
   widthIn: string
   heightIn: string
@@ -73,6 +75,7 @@ function SuffixInput({
 export function ReswellPackageDimensionsCard({
   className,
   showHeading = true,
+  lengthPlaceholder = "e.g. 6'1",
   lengthIn,
   widthIn,
   heightIn,
@@ -153,7 +156,7 @@ export function ReswellPackageDimensionsCard({
           value={lengthIn}
           onChange={onLengthInChange}
           inputMode="text"
-          placeholder="e.g. 6'1"
+          placeholder={lengthPlaceholder}
         />
         <SuffixInput
           id="reswell-pkg-width-in"

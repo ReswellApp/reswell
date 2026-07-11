@@ -114,6 +114,24 @@ export function toPeerCheckoutShippingRateOptions(
       if (order !== 0) return order
       return a.totalAmount - b.totalAmount
     })
+
+    const byBucket = new Map<"ground" | "priority", PeerCheckoutShippingRateOption>()
+    for (const option of options) {
+      const bucket: "ground" | "priority" | null = FIN_GROUND_CODES.has(option.serviceCode)
+        ? "ground"
+        : FIN_PRIORITY_CODES.has(option.serviceCode)
+          ? "priority"
+          : null
+      if (!bucket) continue
+      const existing = byBucket.get(bucket)
+      if (!existing || option.totalAmount < existing.totalAmount) {
+        byBucket.set(bucket, option)
+      }
+    }
+
+    return [...byBucket.values()].sort(
+      (a, b) => finServiceSortKey(a.serviceCode) - finServiceSortKey(b.serviceCode),
+    )
   } else {
     options.sort((a, b) => a.totalAmount - b.totalAmount)
   }
@@ -134,6 +152,33 @@ export function findPeerCheckoutRateOption(
   const trimmed = rateId?.trim()
   if (!trimmed) return null
   return options.find((option) => option.rateId === trimmed) ?? null
+}
+
+/**
+ * ShipEngine `rate_id` values expire between `/rates` calls. For fins checkout, buyers
+ * pick a stable USPS service (Ground vs Priority); resolve that bucket on fresh quotes.
+ */
+export function findPeerCheckoutRateOptionByServiceCode(
+  options: PeerCheckoutShippingRateOption[],
+  serviceCode: string | null | undefined,
+  section?: string | null,
+): PeerCheckoutShippingRateOption | null {
+  const normalized = normalizeServiceCode(serviceCode)
+  if (!normalized) return null
+
+  const exact = options.find((option) => normalizeServiceCode(option.serviceCode) === normalized)
+  if (exact) return exact
+
+  if (section === "fins") {
+    if (FIN_GROUND_CODES.has(normalized)) {
+      return options.find((option) => FIN_GROUND_CODES.has(option.serviceCode)) ?? null
+    }
+    if (FIN_PRIORITY_CODES.has(normalized)) {
+      return options.find((option) => FIN_PRIORITY_CODES.has(option.serviceCode)) ?? null
+    }
+  }
+
+  return null
 }
 
 export function peerCheckoutShippingServiceError(section: string | null | undefined): string {

@@ -2,6 +2,7 @@ import {
   applyFinReswellPackageDefaults,
   finReswellPackageHasPartialDimensions,
 } from "@/lib/fin-reswell-shipping-defaults"
+import { RESWELL_MAX_REASONABLE_SMALL_PARCEL_LENGTH_IN } from "@/lib/surfboard-shipping-estimates"
 import { isListingSellableCondition } from "@/lib/listing-labels"
 import {
   parseReswellParcelLengthRawToCarrierInches,
@@ -100,6 +101,9 @@ export function validateFinListingForm(
     const H = parseReswellParcelWidthHeightRawToCarrierInches(resolved.reswellPackageHeightIn)
     if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) {
       return "Enter packed box dimensions for Reswell shipping."
+    }
+    if (L > RESWELL_MAX_REASONABLE_SMALL_PARCEL_LENGTH_IN) {
+      return `Packed length for fins must be ${RESWELL_MAX_REASONABLE_SMALL_PARCEL_LENGTH_IN} inches or less.`
     }
   }
 
