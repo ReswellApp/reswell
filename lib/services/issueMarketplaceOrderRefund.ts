@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import Stripe from "stripe"
 import { getStripe } from "@/lib/stripe-server"
 import { applyWalletOrderRefund } from "@/lib/services/walletRefund"
-import { relistOrderListingsAfterRefund } from "@/lib/services/listingRelist"
+import { applyMarketplaceOrderRefundSideEffects } from "@/lib/services/marketplaceOrderRefundSideEffects"
 import { syncMarketplaceOrderFromStripePaymentIntent } from "@/lib/services/stripeRefundWebhook"
 import { applySellerRefundClawback } from "@/lib/split-seller-refund-clawback"
 
@@ -201,8 +201,8 @@ export async function issueMarketplaceOrderRefund(
       nowIso,
     })
 
-    // 4. Re-list every line on the order
-    await relistOrderListingsAfterRefund(serviceSupabase, order.id)
+    // 4. Re-list every line on the order and notify the seller in /messages
+    await applyMarketplaceOrderRefundSideEffects(serviceSupabase, order.id)
 
     return {
       ok: true,

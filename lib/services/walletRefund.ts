@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { relistOrderListingsAfterRefund } from "@/lib/services/listingRelist"
+import { applyMarketplaceOrderRefundSideEffects } from "@/lib/services/marketplaceOrderRefundSideEffects"
 import { applySellerRefundClawback } from "@/lib/split-seller-refund-clawback"
 
 function roundMoney(n: number): number {
@@ -73,8 +73,8 @@ export async function applyWalletOrderRefund(
     await creditBuyerWallet(supabase, order, orderAmount, nowIso)
   }
 
-  // --- 5. Re-list ---
-  await relistOrderListingsAfterRefund(supabase, order.id)
+  // --- 5. Re-list and notify seller in /messages ---
+  await applyMarketplaceOrderRefundSideEffects(supabase, order.id)
 
   return { ok: true }
 }

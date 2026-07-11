@@ -28,6 +28,7 @@ export type AdminNavIconKey =
   | 'dollarSign'
   | 'bellRing'
   | 'code'
+  | 'rotateCcw'
 
 export interface AdminNavItemConfig {
   href: string
@@ -102,6 +103,11 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/crm', label: 'CRM', icon: 'contactRound' },
       { href: '/admin/contact-messages', label: 'Support inbox', icon: 'messageSquare' },
       { href: '/admin/messages', label: 'Marketplace messages', icon: 'messageSquare' },
+      {
+        href: '/admin/refund-thread-notifications',
+        label: 'Refund notifications',
+        icon: 'rotateCcw',
+      },
       {
         href: '/admin/fraud-messages',
         label: 'Fraud messages',

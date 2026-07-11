@@ -6,6 +6,10 @@ import { listingDetailHref } from "@/lib/listing-href"
 import { primaryListingImageUrl } from "@/lib/listing-metadata"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { resolveListingUrlForEmail } from "@/lib/klaviyo/email-listing-links"
+import {
+  isPeerListingSection,
+  PEER_LISTING_SECTION_LABELS,
+} from "@/lib/peer-listing-sections"
 import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 
 export type KlaviyoListingImage = {
@@ -163,10 +167,19 @@ function catalogDescription(listing: KlaviyoListingProductSource): string {
   return `${title} on Reswell`
 }
 
+function catalogSectionCategory(section: string): string {
+  return isPeerListingSection(section)
+    ? PEER_LISTING_SECTION_LABELS[section]
+    : section
+}
+
 function catalogCategories(listing: KlaviyoListingProductSource): string[] {
   const categories = new Set<string>()
   const section = typeof listing.section === "string" ? listing.section.trim() : ""
-  if (section) categories.add(section)
+  if (section) {
+    categories.add(catalogSectionCategory(section))
+    categories.add(`section_${section}`)
+  }
   const boardType =
     typeof listing.board_type === "string" ? listing.board_type.trim() : ""
   if (boardType) categories.add(boardType)
