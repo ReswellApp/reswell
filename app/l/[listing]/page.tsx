@@ -14,6 +14,7 @@ import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { ListingDetailDynamicGate } from "@/components/features/listings/listing-detail-dynamic-gate"
 import { ListingDetailPublicOrAuthenticated } from "@/components/features/listings/listing-detail-public-or-authenticated"
 import type { PublicListingRow } from "@/components/features/listings/listing-detail-public-body"
+import { ListingDetailRouteSkeleton } from "@/components/listing-detail-page-loading"
 
 /** ISR shell — keep in sync with `LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS`. */
 export const revalidate = 3600
@@ -69,7 +70,7 @@ export default async function ListingDetailPage(props: {
     }
 
     return (
-      <Suspense fallback={null}>
+      <Suspense fallback={<ListingDetailRouteSkeleton />}>
         <ListingDetailPublicOrAuthenticated
           listingParam={listingParam}
           listing={listing as PublicListingRow}
@@ -80,7 +81,7 @@ export default async function ListingDetailPage(props: {
   }
 
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<ListingDetailRouteSkeleton />}>
       <ListingDetailDynamicGate
         listingParam={listingParam}
         prefetchedListing={(listing as Record<string, unknown> | null) ?? null}
