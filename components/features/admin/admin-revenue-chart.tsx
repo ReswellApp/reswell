@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useId, useMemo, useState } from 'react'
-import { format, parseISO } from 'date-fns'
 import {
   Area,
   CartesianGrid,
@@ -15,6 +14,10 @@ import {
 } from 'recharts'
 
 import { cn } from '@/lib/utils'
+import {
+  formatBusinessDayKeyLong,
+  formatBusinessDayKeyShort,
+} from '@/lib/utils/business-timezone'
 
 import type { AdminInsightsDailyPoint } from '@/lib/services/adminBusinessInsights'
 
@@ -41,21 +44,17 @@ function formatUsd(value: number): string {
   }).format(value)
 }
 
-function safeFormat(date: string, pattern: string): string {
-  try {
-    return format(parseISO(date), pattern)
-  } catch {
-    return date
-  }
-}
-
 function ChartTooltip({ active, payload, label }: TooltipProps<number, string>) {
   if (!active || !payload || payload.length === 0) return null
   const point = payload[0]?.payload as AdminInsightsDailyPoint | undefined
   if (!point) return null
+  const dateLabel =
+    typeof label === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(label)
+      ? formatBusinessDayKeyLong(label)
+      : String(label)
   return (
     <div className="rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-md">
-      <p className="mb-1.5 font-medium text-foreground">{safeFormat(String(label), 'EEE, MMM d')}</p>
+      <p className="mb-1.5 font-medium text-foreground">{dateLabel}</p>
       <div className="space-y-1">
         <div className="flex items-center justify-between gap-6">
           <span className="flex items-center gap-1.5 text-muted-foreground">
@@ -168,7 +167,9 @@ export function AdminRevenueChart({
               <CartesianGrid strokeDasharray="3 3" stroke={GRID_STROKE} vertical={false} />
               <XAxis
                 dataKey="date"
-                tickFormatter={(value: string) => safeFormat(value, 'MMM d')}
+                tickFormatter={(value: string) =>
+                  /^\d{4}-\d{2}-\d{2}$/.test(value) ? formatBusinessDayKeyShort(value) : value
+                }
                 tickLine={false}
                 axisLine={false}
                 minTickGap={28}

@@ -53,6 +53,7 @@ import type {
 } from '@/lib/services/adminBusinessInsights'
 import { listingDetailHref } from '@/lib/listing-href'
 import { capitalizeWords } from '@/lib/listing-labels'
+import { BUSINESS_TIMEZONE_LABEL } from '@/lib/utils/business-timezone'
 import { cn } from '@/lib/utils'
 
 function formatUsd(amount: number): string {
@@ -733,8 +734,8 @@ export function AdminOverviewView({
             data={insights.daily}
             chartSubtitle={
               insights.periodMode === 'month'
-                ? `Daily GMV and platform fees in ${insights.periodLabel} (UTC)`
-                : `Daily GMV and platform fees over the last ${insights.periodDays} days`
+                ? `Daily GMV and platform fees in ${insights.periodLabel} (${BUSINESS_TIMEZONE_LABEL})`
+                : `Daily GMV and platform fees over the last ${insights.periodDays} days (${BUSINESS_TIMEZONE_LABEL})`
             }
             totalGmv={insights.revenue.gmv.current}
             totalOrders={insights.revenue.orders.current}

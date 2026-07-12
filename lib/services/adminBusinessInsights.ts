@@ -16,6 +16,7 @@ import {
   utcYearMonthChoices,
   type AdminInsightsPeriodMode,
 } from '@/lib/utils/adminInsightsPeriod'
+import { buildBusinessDayKeys, businessDayKey } from '@/lib/utils/business-timezone'
 
 export { ADMIN_INSIGHTS_PERIOD_DAYS } from '@/lib/utils/adminInsightsPeriod'
 
@@ -30,7 +31,7 @@ export { ADMIN_INSIGHTS_PERIOD_DAYS } from '@/lib/utils/adminInsightsPeriod'
  * Money is treated as USD (no `currency` column on `orders`/`listings`).
  * "GMV" is gross merchandise value = sum of `orders.amount` (item + shipping)
  * for confirmed, non-test orders. "Sale time" is `orders.created_at` (there is
- * no `listings.sold_at`).
+ * no `listings.sold_at`). Daily chart buckets use Pacific Time.
  */
 
 const ORDERS_FETCH_CAP = 20000
@@ -158,10 +159,6 @@ function trend(current: number, previous: number): TrendMetric {
   return { current, previous, deltaPct }
 }
 
-function dayKey(iso: string): string {
-  return iso.slice(0, 10)
-}
-
 function listingSellerName(
   profiles: { display_name: string | null } | { display_name: string | null }[] | null,
 ): string | null {
@@ -221,18 +218,6 @@ function mapRecentSupport(data: unknown[] | null): AdminOverviewSupportPreview[]
     })
   }
   return rows
-}
-
-function buildDayKeys(fromMs: number, toMs: number): string[] {
-  const start = new Date(fromMs)
-  const end = new Date(toMs)
-  const startUtc = Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate())
-  const endUtc = Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate())
-  const keys: string[] = []
-  for (let d = startUtc; d <= endUtc; d += 24 * 60 * 60 * 1000) {
-    keys.push(new Date(d).toISOString().slice(0, 10))
-  }
-  return keys
 }
 
 async function fetchListingMeta(
@@ -423,7 +408,7 @@ export async function loadAdminBusinessInsights(
     let refundedCur = 0
 
     const dailyMap = new Map<string, { gmv: number; fees: number; orders: number }>()
-    for (const key of buildDayKeys(periodStartMs, periodEndMs)) {
+    for (const key of buildBusinessDayKeys(periodStartMs, periodEndMs)) {
       dailyMap.set(key, { gmv: 0, fees: 0, orders: 0 })
     }
 
@@ -444,7 +429,7 @@ export async function loadAdminBusinessInsights(
           feesCur += o.platform_fee
           ordersCur += 1
 
-          const bucket = dailyMap.get(dayKey(o.created_at))
+          const bucket = dailyMap.get(businessDayKey(o.created_at))
           if (bucket) {
             bucket.gmv += o.amount
             bucket.fees += o.platform_fee
