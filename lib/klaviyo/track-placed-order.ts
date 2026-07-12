@@ -15,6 +15,7 @@ import {
 } from "@/lib/klaviyo/catalog-product"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
+import { klaviyoBuyerOrderPriceProperties } from "@/lib/klaviyo/order-charges-for-email"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import type { KlaviyoBuyerOrderConfirmedPayload } from "@/lib/klaviyo/track-buyer-order-confirmed"
 
@@ -49,6 +50,17 @@ export async function trackKlaviyoPlacedOrder(
     listing_images: payload.listingImageUrl
       ? [{ url: payload.listingImageUrl, is_primary: true }]
       : null,
+  })
+
+  const priceProperties = klaviyoBuyerOrderPriceProperties({
+    amount: amountNum,
+    itemSubtotalUsd: payload.itemSubtotalUsd,
+    shippingAmountUsd: payload.shippingAmountUsd,
+    promoDiscountUsd: payload.promoDiscountUsd,
+    promoCode: payload.promoCode,
+    promoKind: payload.promoKind,
+    promoLabel: payload.promoLabel,
+    lineItems: payload.lineItems,
   })
 
   await sendKlaviyoServerEvent({
@@ -86,6 +98,7 @@ export async function trackKlaviyoPlacedOrder(
       payment_method: payload.paymentMethod,
       listing_url: listingUrl,
       order_url: orderUrl,
+      ...priceProperties,
     },
   })
 }

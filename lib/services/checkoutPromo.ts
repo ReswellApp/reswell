@@ -188,6 +188,43 @@ export function parseCheckoutPromoKind(raw: string | null | undefined): Checkout
   return null
 }
 
+/** Resolve the buyer-facing code string from a stored promo row id. */
+export async function fetchCheckoutPromoCodeById(
+  supabase: SupabaseClient,
+  promoId: string,
+  kind?: CheckoutPromoKind | null,
+): Promise<string | null> {
+  const id = promoId.trim()
+  if (!id) return null
+
+  const resolvedKind = kind ?? (await inferCheckoutPromoKind(id))
+  if (resolvedKind === "newsletter") {
+    const { data, error } = await supabase
+      .from("newsletter_promo_codes")
+      .select("code")
+      .eq("id", id)
+      .maybeSingle()
+    if (error) {
+      console.error("[checkout-promo] newsletter code lookup:", error.message)
+      return null
+    }
+    return data?.code?.trim() || null
+  }
+  if (resolvedKind === "admin_issued") {
+    const { data, error } = await supabase
+      .from("admin_issued_promo_codes")
+      .select("code")
+      .eq("id", id)
+      .maybeSingle()
+    if (error) {
+      console.error("[checkout-promo] admin promo code lookup:", error.message)
+      return null
+    }
+    return data?.code?.trim() || null
+  }
+  return null
+}
+
 export async function inferCheckoutPromoKind(
   promoId: string,
 ): Promise<CheckoutPromoKind | null> {

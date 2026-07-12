@@ -7,6 +7,7 @@ import { isListingSellableCondition } from "@/lib/listing-labels"
 import {
   parseReswellParcelLengthRawToCarrierInches,
   parseReswellParcelWidthHeightRawToCarrierInches,
+  validateReswellPackedWeightRequired,
 } from "@/lib/reswell-parcel-fields"
 import {
   FIN_LISTING_MAX_PHOTOS,
@@ -105,6 +106,11 @@ export function validateFinListingForm(
     if (L > RESWELL_MAX_REASONABLE_SMALL_PARCEL_LENGTH_IN) {
       return `Packed length for fins must be ${RESWELL_MAX_REASONABLE_SMALL_PARCEL_LENGTH_IN} inches or less.`
     }
+    const weightErr = validateReswellPackedWeightRequired(
+      form.reswellPackageWeightLb,
+      form.reswellPackageWeightOz,
+    )
+    if (weightErr) return weightErr
   }
 
   return null

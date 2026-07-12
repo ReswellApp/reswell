@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { addReswellPackedWeightZodIssues } from "@/lib/validations/reswell-packed-weight"
 import { WETSUIT_SIZE_OPTIONS } from "@/lib/wetsuit-listing-config"
 import {
   parseReswellParcelLengthRawToCarrierInches,
@@ -106,36 +107,7 @@ function withWetsuitListingRefinements<T extends z.ZodType>(schema: T) {
         })
       }
 
-      const lbRaw = data.reswellPackageWeightLb?.trim() ?? ""
-      const ozRaw = data.reswellPackageWeightOz?.trim() ?? ""
-      const lb = lbRaw === "" ? 0 : parseFloat(lbRaw.replace(/,/g, ""))
-      const oz = ozRaw === "" ? 0 : parseFloat(ozRaw.replace(/,/g, ""))
-      if (!Number.isFinite(lb) || lb < 0 || !Number.isFinite(oz) || oz < 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Enter a valid packed weight, or leave both fields blank.",
-          path: ["reswellPackageWeightLb"],
-        })
-        return
-      }
-      if (oz >= 16) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Ounces must be under 16.",
-          path: ["reswellPackageWeightOz"],
-        })
-        return
-      }
-      if (lbRaw !== "" || ozRaw !== "") {
-        const totalOz = lb * 16 + oz
-        if (!Number.isFinite(totalOz) || totalOz <= 0) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "Enter a positive packed weight, or leave both fields blank.",
-            path: ["reswellPackageWeightLb"],
-          })
-        }
-      }
+      addReswellPackedWeightZodIssues(data.reswellPackageWeightLb, data.reswellPackageWeightOz, ctx)
     })
 }
 

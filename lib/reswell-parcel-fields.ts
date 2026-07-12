@@ -70,3 +70,51 @@ export function parseReswellParcelWidthHeightRawToCarrierInches(
   if (!Number.isFinite(v) || v <= 0) return null
   return v
 }
+
+/** Total ounces from sell-form lb/oz strings; `null` when blank or invalid. */
+export function parseReswellPackedWeightToTotalOz(
+  lbRaw: string | undefined,
+  ozRaw: string | undefined,
+): number | null {
+  const lbTrim = lbRaw?.trim() ?? ""
+  const ozTrim = ozRaw?.trim() ?? ""
+  if (lbTrim === "" && ozTrim === "") return null
+  const lb = lbTrim === "" ? 0 : Number.parseFloat(lbTrim.replace(/,/g, ""))
+  const oz = ozTrim === "" ? 0 : Number.parseFloat(ozTrim.replace(/,/g, ""))
+  if (!Number.isFinite(lb) || lb < 0 || !Number.isFinite(oz) || oz < 0 || oz >= 16) return null
+  const totalOz = lb * 16 + oz
+  if (!Number.isFinite(totalOz) || totalOz <= 0) return null
+  return totalOz
+}
+
+/** User-facing error for required Reswell packed weight on `/sell` flows. */
+export function validateReswellPackedWeightRequired(
+  lbRaw: string | undefined,
+  ozRaw: string | undefined,
+): string | null {
+  const lbTrim = lbRaw?.trim() ?? ""
+  const ozTrim = ozRaw?.trim() ?? ""
+  if (lbTrim === "" && ozTrim === "") {
+    return "Enter packed weight in pounds and ounces."
+  }
+  const lb = lbTrim === "" ? 0 : Number.parseFloat(lbTrim.replace(/,/g, ""))
+  const oz = ozTrim === "" ? 0 : Number.parseFloat(ozTrim.replace(/,/g, ""))
+  if (!Number.isFinite(lb) || lb < 0 || !Number.isFinite(oz) || oz < 0) {
+    return "Enter a valid packed weight in pounds and ounces."
+  }
+  if (oz >= 16) {
+    return "Ounces must be under 16 — add whole pounds in the pounds field instead."
+  }
+  const totalOz = lb * 16 + oz
+  if (!Number.isFinite(totalOz) || totalOz <= 0) {
+    return "Enter a positive packed weight."
+  }
+  return null
+}
+
+export function isReswellPackedWeightComplete(
+  lbRaw: string | undefined,
+  ozRaw: string | undefined,
+): boolean {
+  return validateReswellPackedWeightRequired(lbRaw, ozRaw) === null
+}

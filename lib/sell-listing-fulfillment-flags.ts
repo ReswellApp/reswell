@@ -7,6 +7,8 @@ import type { BoardShippingCostMode } from "@/lib/sell-form-validation"
 import {
   parseReswellParcelLengthRawToCarrierInches,
   parseReswellParcelWidthHeightRawToCarrierInches,
+  parseReswellPackedWeightToTotalOz,
+  isReswellPackedWeightComplete,
 } from "@/lib/reswell-parcel-fields"
 
 /**
@@ -33,9 +35,8 @@ function normalizeBoardFulfillmentMode(m: unknown): BoardFulfillmentChoice {
 
 
 /**
- * Persists packed box + optional weight for Reswell-calculated shipping. Weight may be omitted;
- * rates and labels then use board-based heuristics (`resolvePackedParcelFromListing`).
- * Returns all `null` when L×W×H are invalid (caller should rely on form validation for UX).
+ * Persists packed box + weight for Reswell-calculated shipping.
+ * Returns all `null` when L×W×H or weight are invalid (caller should rely on form validation for UX).
  */
 export function reswellPackageFieldsToDb(fd: SellFulfillmentPersistInput): {
   shipping_packed_length_in: number | null
@@ -55,38 +56,12 @@ export function reswellPackageFieldsToDb(fd: SellFulfillmentPersistInput): {
   const L = parseReswellParcelLengthRawToCarrierInches(fd.reswellPackageLengthIn)
   const W = parseReswellParcelWidthHeightRawToCarrierInches(fd.reswellPackageWidthIn)
   const H = parseReswellParcelWidthHeightRawToCarrierInches(fd.reswellPackageHeightIn)
-  const lbRaw = fd.reswellPackageWeightLb?.trim() ?? ""
-  const ozRaw = fd.reswellPackageWeightOz?.trim() ?? ""
-  const lb = lbRaw === "" ? 0 : parseFloat(lbRaw.replace(/,/g, ""))
-  const oz = ozRaw === "" ? 0 : parseFloat(ozRaw.replace(/,/g, ""))
-  if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) {
+  const totalOz = parseReswellPackedWeightToTotalOz(fd.reswellPackageWeightLb, fd.reswellPackageWeightOz)
+  if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0 || totalOz == null) {
     return {
       shipping_packed_length_in: null,
       shipping_packed_width_in: null,
       shipping_packed_height_in: null,
-      shipping_packed_weight_oz: null,
-    }
-  }
-  if (
-    !Number.isFinite(lb) ||
-    lb < 0 ||
-    !Number.isFinite(oz) ||
-    oz < 0 ||
-    oz >= 16
-  ) {
-    return {
-      shipping_packed_length_in: null,
-      shipping_packed_width_in: null,
-      shipping_packed_height_in: null,
-      shipping_packed_weight_oz: null,
-    }
-  }
-  const totalOz = lb * 16 + oz
-  if (!Number.isFinite(totalOz) || totalOz <= 0) {
-    return {
-      shipping_packed_length_in: L,
-      shipping_packed_width_in: W,
-      shipping_packed_height_in: H,
       shipping_packed_weight_oz: null,
     }
   }
@@ -181,14 +156,7 @@ export function inferSellFormShippingConfigured(fd: SellFulfillmentPersistInput)
   const W = parseReswellParcelWidthHeightRawToCarrierInches(fd.reswellPackageWidthIn)
   const H = parseReswellParcelWidthHeightRawToCarrierInches(fd.reswellPackageHeightIn)
   if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) return false
-  const lbRaw = fd.reswellPackageWeightLb?.trim() ?? ""
-  const ozRaw = fd.reswellPackageWeightOz?.trim() ?? ""
-  const lb = lbRaw === "" ? 0 : parseFloat(lbRaw.replace(/,/g, ""))
-  const oz = ozRaw === "" ? 0 : parseFloat(ozRaw.replace(/,/g, ""))
-  if (!Number.isFinite(lb) || lb < 0 || !Number.isFinite(oz) || oz < 0 || oz >= 16) return false
-  if (lbRaw === "" && ozRaw === "") return true
-  const totalOz = lb * 16 + oz
-  return Number.isFinite(totalOz) && totalOz > 0
+  return isReswellPackedWeightComplete(fd.reswellPackageWeightLb, fd.reswellPackageWeightOz)
 }
 
 /**

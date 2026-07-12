@@ -6,6 +6,7 @@ import { getSellerEarnings, pendingSaleFeeClause } from "@/lib/seller-fees"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { generatePickupCode } from "@/lib/order-status"
 import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
+import { fetchPrimaryListingImageUrlsForKlaviyo } from "@/lib/klaviyo/fetch-primary-listing-image-urls"
 import { trackMetaPurchaseServerEvent } from "@/lib/meta/track-purchase-server-event"
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
@@ -59,7 +60,7 @@ export async function POST(request: NextRequest) {
 
   const { data: listing, error: listingError } = await supabase
     .from("listings")
-    .select("id, user_id, title, price, section, shipping_available, local_pickup, shipping_price, status")
+    .select("id, user_id, title, price, section, slug, shipping_available, local_pickup, shipping_price, status")
     .eq("id", listing_id)
     .eq("status", "active")
     .eq("hidden_from_site", false)
@@ -283,6 +284,11 @@ export async function POST(request: NextRequest) {
   })
 
   if (purchase?.id) {
+    const listingImageUrls = await fetchPrimaryListingImageUrlsForKlaviyo(
+      serviceSupabase,
+      [listing.id],
+    )
+
     await trackKlaviyoBuyerOrderConfirmed({
       buyerUserId: user.id,
       buyerEmail: user.email ?? null,
@@ -291,6 +297,10 @@ export async function POST(request: NextRequest) {
       listingId: listing.id,
       listingTitle: listing.title,
       listingSection: listing.section,
+      listingSlug: (listing as { slug?: string | null }).slug ?? null,
+      listingImageUrl: listingImageUrls.get(listing.id) ?? null,
+      itemSubtotalUsd: itemPriceUsd,
+      shippingAmountUsd: shippingUsd,
       amount: price,
       fulfillmentMethod: isPickup ? "pickup" : "shipping",
       pickupCode,

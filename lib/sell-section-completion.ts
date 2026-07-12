@@ -8,6 +8,7 @@ import { flagsFromBoardFulfillment } from "@/lib/listing-fulfillment"
 import {
   parseReswellParcelLengthRawToCarrierInches,
   parseReswellParcelWidthHeightRawToCarrierInches,
+  isReswellPackedWeightComplete,
 } from "@/lib/reswell-parcel-fields"
 import {
   buildResolvedListingTitle,
@@ -106,16 +107,8 @@ function deliverySectionComplete(form: SellFormValidationInput): boolean {
       const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
       const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
       if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) return false
-
-      const lbRaw = form.reswellPackageWeightLb?.trim() ?? ""
-      const ozRaw = form.reswellPackageWeightOz?.trim() ?? ""
-      const lb = lbRaw === "" ? 0 : parseFloat(lbRaw.replace(/,/g, ""))
-      const oz = ozRaw === "" ? 0 : parseFloat(ozRaw.replace(/,/g, ""))
-      if (!Number.isFinite(lb) || lb < 0 || !Number.isFinite(oz) || oz < 0) return false
-      if (oz >= 16) return false
-      if (lbRaw !== "" || ozRaw !== "") {
-        const totalOz = lb * 16 + oz
-        if (!Number.isFinite(totalOz) || totalOz <= 0) return false
+      if (!isReswellPackedWeightComplete(form.reswellPackageWeightLb, form.reswellPackageWeightOz)) {
+        return false
       }
     }
   }

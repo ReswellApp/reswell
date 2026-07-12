@@ -4,7 +4,7 @@
 
 import { listingDetailHref } from "@/lib/listing-href"
 import { primaryListingImageUrl } from "@/lib/listing-metadata"
-import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { proxiedListingImageSrc, listingDirectPublicImageUrl } from "@/lib/listing-media-proxy-url"
 import { resolveListingUrlForEmail } from "@/lib/klaviyo/email-listing-links"
 import {
   isPeerListingSection,
@@ -115,15 +115,42 @@ function listingImageRaw(listing: KlaviyoListingProductSource): string | null {
   return url || null
 }
 
-/** Same-origin `/media/listings/...` URL for Klaviyo email properties and catalog feeds. */
+/** Absolute HTTPS URL for Klaviyo email / catalog. Prefers direct Supabase public URLs (email-client friendly). */
 export function absoluteKlaviyoListingPhotoUrl(
   raw: string | null | undefined,
 ): string {
+  const direct = listingDirectPublicImageUrl(raw)
+  if (direct?.trim()) return direct
+
   const proxied = proxiedListingImageSrc(raw)
   const origin = publicSiteOriginForEmail().replace(/\/$/, "")
   if (!proxied.trim()) {
     return `${origin}${FALLBACK_IMAGE_PATH.startsWith("/") ? FALLBACK_IMAGE_PATH : `/${FALLBACK_IMAGE_PATH}`}`
   }
+  if (/^https?:\/\//i.test(proxied)) return proxied
+  return `${origin}${proxied.startsWith("/") ? proxied : `/${proxied}`}`
+}
+
+const OPENGRAPH_FALLBACK_MARKER = "opengraph-image"
+
+export function isKlaviyoPlaceholderListingPhotoUrl(url: string | null | undefined): boolean {
+  const t = url?.trim() ?? ""
+  if (!t) return true
+  return t.includes(OPENGRAPH_FALLBACK_MARKER)
+}
+
+/**
+ * Buyer order emails — never fall back to the Reswell opengraph logo.
+ * Returns empty string when the listing has no photo (template should hide the img).
+ */
+export function klaviyoEmailListingPhotoUrl(raw: string | null | undefined): string {
+  const direct = listingDirectPublicImageUrl(raw)
+  if (direct?.trim()) return direct
+
+  const proxied = proxiedListingImageSrc(raw)
+  if (!proxied.trim()) return ""
+
+  const origin = publicSiteOriginForEmail().replace(/\/$/, "")
   if (/^https?:\/\//i.test(proxied)) return proxied
   return `${origin}${proxied.startsWith("/") ? proxied : `/${proxied}`}`
 }

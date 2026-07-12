@@ -418,6 +418,7 @@ export async function POST(request: NextRequest) {
         ...(promoCodeId && promoKind
           ? {
               promo_code_id: promoCodeId,
+              promo_code: promoCodeNormalized,
               promo_kind: promoKind,
               promo_discount_cents: String(Math.round(promoDiscountUsd * 100)),
             }

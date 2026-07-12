@@ -22,6 +22,8 @@ import { generatePickupCode } from "@/lib/order-status"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
 import type { KlaviyoBuyerOrderLineItem } from "@/lib/klaviyo/track-buyer-order-confirmed"
+import { fetchPrimaryListingImageUrlsForKlaviyo } from "@/lib/klaviyo/fetch-primary-listing-image-urls"
+import { reemitPurchaseSuccessfulForOrder } from "@/lib/klaviyo/reemit-purchase-successful-for-order"
 import { trackMetaPurchaseServerEvent } from "@/lib/meta/track-purchase-server-event"
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
@@ -32,6 +34,7 @@ import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerc
 import { safeRevalidateAfterMarketplaceOrderCommit } from "@/lib/cache/safe-revalidate-after-order"
 import { completeAcceptedOfferOnPurchase } from "@/lib/services/completeOfferOnPurchase"
 import {
+  fetchCheckoutPromoCodeById,
   inferCheckoutPromoKind,
   parseCheckoutPromoKind,
   redeemCheckoutPromoForOrder,
@@ -261,62 +264,7 @@ async function emitPurchaseSuccessfulKlaviyoForOrderId(
   serviceSupabase: ReturnType<typeof createServiceRoleClient>,
   orderId: string,
 ): Promise<void> {
-  const { data: order } = await serviceSupabase
-    .from("orders")
-    .select(
-      "id, order_num, buyer_id, seller_id, listing_id, amount, fulfillment_method, payment_method, pickup_code, shipping_address, sales_channel",
-    )
-    .eq("id", orderId)
-    .maybeSingle()
-
-  if (!order?.seller_id || !order.listing_id) return
-
-  const { data: listing } = await serviceSupabase
-    .from("listings")
-    .select("id, title, section, slug")
-    .eq("id", order.listing_id)
-    .maybeSingle()
-
-  if (!listing) return
-
-  let buyerEmail = order.buyer_id != null ? await getAuthEmailForUserId(order.buyer_id) : null
-  if (
-    !buyerEmail &&
-    order.shipping_address &&
-    typeof order.shipping_address === "object"
-  ) {
-    const ship = order.shipping_address as { email?: string | null }
-    buyerEmail = ship.email?.trim() || null
-  }
-  const rawAmount = order.amount as unknown
-  const amount =
-    typeof rawAmount === "number"
-      ? rawAmount
-      : parseFloat(typeof rawAmount === "string" ? rawAmount : String(rawAmount))
-
-  const fulfillmentMethod =
-    order.fulfillment_method === "pickup" ? "pickup" : "shipping"
-  const paymentMethod =
-    order.payment_method === "reswell_bucks" ? "reswell_bucks" : "stripe"
-
-  await trackKlaviyoBuyerOrderConfirmed({
-    buyerUserId: order.buyer_id ?? undefined,
-    buyerEmail,
-    orderId: order.id,
-    orderNum: (order as { order_num?: string | null }).order_num ?? null,
-    listingId: listing.id,
-    listingTitle: listing.title ?? "",
-    listingSection: listing.section ?? "",
-    listingSlug: listing.slug ?? null,
-    amount: Number.isFinite(amount) ? amount : 0,
-    fulfillmentMethod,
-    pickupCode: (order as { pickup_code?: string | null }).pickup_code ?? null,
-    paymentMethod,
-  })
-
-  await notifySellerOrderCheckoutKlaviyo(serviceSupabase, order.id)
-
-  // Seller "Sale Successful" Klaviyo fires when earnings are released after fulfillment (see releaseOrderSellerEarningsAfterFulfillment).
+  await reemitPurchaseSuccessfulForOrder(serviceSupabase, orderId)
 }
 
 /**
@@ -578,6 +526,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   }
 
   const promoCodeId = pi.metadata.promo_code_id?.trim() || null
+  const promoCodeFromMeta = pi.metadata.promo_code?.trim() || null
   const promoDiscountCentsRaw = pi.metadata.promo_discount_cents?.trim()
   const promoKind =
     parseCheckoutPromoKind(pi.metadata.promo_kind) ??
@@ -897,13 +846,26 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       ? String(listingsOrdered[0]!.title ?? "")
       : `${listingsOrdered.length} boards (${listingTitles.slice(0, 3).join(" · ")}${listingTitles.length > 3 ? "…" : ""})`
 
+  const listingImageUrls = await fetchPrimaryListingImageUrlsForKlaviyo(
+    serviceSupabase,
+    listingsForTotals.map((listing) => listing.id),
+  )
+
   const klaviyoLineItems: KlaviyoBuyerOrderLineItem[] = listingsForTotals.map((listing, idx) => ({
     listingId: listing.id,
     listingTitle: String(listing.title ?? ""),
     listingSection: String(listing.section ?? "surfboards"),
+    listingSlug: listing.slug ?? null,
+    listingImageUrl: listingImageUrls.get(listing.id) ?? null,
     price: bundle.lines[idx]?.itemPrice ?? parseFloat(String(listing.price)),
     quantity: 1,
   }))
+
+  const promoCode =
+    promoCodeFromMeta ||
+    (promoCodeId
+      ? await fetchCheckoutPromoCodeById(serviceSupabase, promoCodeId, promoKind)
+      : null)
 
   await trackKlaviyoBuyerOrderConfirmed({
     buyerUserId: buyerId ?? undefined,
@@ -913,7 +875,13 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     listingId: primaryListingId,
     listingTitle: klListingTitle.slice(0, 500),
     listingSection: String(listingsOrdered[0]!.section ?? ""),
-    listingSlug: null,
+    listingSlug: listingsOrdered[0]!.slug ?? null,
+    listingImageUrl: listingImageUrls.get(primaryListingId) ?? null,
+    itemSubtotalUsd: bundle.totalItemPriceUsd,
+    shippingAmountUsd: shippingUsd,
+    promoDiscountUsd,
+    promoCode,
+    promoKind,
     lineItems: klaviyoLineItems,
     amount: chargedUsd,
     fulfillmentMethod: isPickup ? "pickup" : "shipping",
