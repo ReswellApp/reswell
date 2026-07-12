@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import { Loader2 } from "lucide-react"
 import { addCartItem } from "@/app/actions/cart"
 import { trackMetaAddToCart } from "@/lib/meta/pixel-events"
+import { collectMetaClientBrowserSignals } from "@/lib/meta/collect-client-browser-signals"
 import { ListingTileBasketSvg } from "@/components/listing-tile-basket-svg"
 import { cn } from "@/lib/utils"
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
@@ -70,7 +71,14 @@ export function ListingTileAddToCartServerIcon({
     }
     setLoading(true)
     try {
-      const r = await addCartItem(listingId)
+      const browserSignals = await collectMetaClientBrowserSignals().catch(() => ({
+        fbc: null,
+        fbp: null,
+      }))
+      const r = await addCartItem(listingId, {
+        fbc: browserSignals.fbc ?? undefined,
+        fbp: browserSignals.fbp ?? undefined,
+      })
       if (!r.ok) {
         toast.error(r.error ?? "Could not save to cart")
         return

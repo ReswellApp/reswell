@@ -9,6 +9,7 @@ import type * as React from "react"
 import { Button } from "@/components/ui/button"
 import { addCartItem } from "@/app/actions/cart"
 import { trackMetaAddToCart } from "@/lib/meta/pixel-events"
+import { collectMetaClientBrowserSignals } from "@/lib/meta/collect-client-browser-signals"
 import { peerListingCheckoutHref } from "@/lib/listing-href"
 import { prefetchStripeCheckout } from "@/lib/stripe/prefetch-stripe-checkout"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
@@ -81,7 +82,14 @@ export function ListingDetailPeerPurchaseActions({
     }
     setLoading(true)
     try {
-      const r = await addCartItem(listingId)
+      const browserSignals = await collectMetaClientBrowserSignals().catch(() => ({
+        fbc: null,
+        fbp: null,
+      }))
+      const r = await addCartItem(listingId, {
+        fbc: browserSignals.fbc ?? undefined,
+        fbp: browserSignals.fbp ?? undefined,
+      })
       if (!r.ok) {
         toast.error(r.error ?? "Could not add to cart")
         return

@@ -11,6 +11,7 @@ import "server-only"
 
 import { isMetaCapiEnabled, sendMetaServerEvent } from "@/lib/meta/conversions-api"
 import { getMetaBrowserSignals } from "@/lib/meta/server-event-context"
+import type { MetaBrowserSignalsOverride } from "@/lib/meta/resolve-browser-signals"
 import { listingDetailHref } from "@/lib/listing-href"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 
@@ -26,6 +27,8 @@ export type MetaViewContentServerEventInput = {
   eventSourceUrl?: string | null
   viewerUserId?: string | null
   viewerEmail?: string | null
+  /** From the client Parameter Builder — keeps server `fbc`/`fbp` aligned with the browser pixel. */
+  browserSignals?: MetaBrowserSignalsOverride
 }
 
 export async function trackMetaViewContentServerEvent(
@@ -34,7 +37,7 @@ export async function trackMetaViewContentServerEvent(
   if (!isMetaCapiEnabled()) return
   if (!input.eventId?.trim() || !input.listingId?.trim()) return
 
-  const signals = await getMetaBrowserSignals()
+  const signals = await getMetaBrowserSignals(input.browserSignals)
   const fallbackPath = listingDetailHref({
     id: input.listingId,
     slug: input.listingSlug ?? undefined,

@@ -44,6 +44,10 @@ export async function POST(request: NextRequest) {
       eventSourceUrl: parsed.data.source_url ?? null,
       viewerUserId: user?.id ?? null,
       viewerEmail: user?.email ?? null,
+      browserSignals: {
+        fbc: parsed.data.fbc ?? null,
+        fbp: parsed.data.fbp ?? null,
+      },
     })
   } catch (e) {
     console.error("[meta] view-content:", e)

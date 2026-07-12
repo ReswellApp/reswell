@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { trackKlaviyoAddedToCart } from "@/lib/klaviyo/track-added-to-cart"
 import { trackMetaAddToCartServerEvent } from "@/lib/meta/track-add-to-cart-server-event"
+import type { MetaBrowserSignalsInput } from "@/lib/validations/metaBrowserSignals"
 import type { PeerListingCartFields } from "@/lib/peer-listing-cart"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { isListingPurchasable } from "@/lib/listing-public-visibility"
@@ -88,7 +89,10 @@ export type AddCartItemResult = {
   metaEventId?: string
 }
 
-export async function addCartItem(listingId: string): Promise<AddCartItemResult> {
+export async function addCartItem(
+  listingId: string,
+  metaBrowserSignals?: MetaBrowserSignalsInput,
+): Promise<AddCartItemResult> {
   const supabase = await createClient()
   const {
     data: { user },
@@ -119,6 +123,10 @@ export async function addCartItem(listingId: string): Promise<AddCartItemResult>
         listingSection: check.listing.section,
         buyerUserId: user.id,
         buyerEmail: user.email ?? null,
+        browserSignals: {
+          fbc: metaBrowserSignals?.fbc ?? null,
+          fbp: metaBrowserSignals?.fbp ?? null,
+        },
       })
       return { ok: true, error: null, metaEventId }
     }
@@ -171,6 +179,10 @@ export async function addCartItem(listingId: string): Promise<AddCartItemResult>
       value,
       buyerUserId: user.id,
       buyerEmail: user.email ?? null,
+      browserSignals: {
+        fbc: metaBrowserSignals?.fbc ?? null,
+        fbp: metaBrowserSignals?.fbp ?? null,
+      },
     })
     void trackKlaviyoAddedToCart({
       buyerUserId: user.id,

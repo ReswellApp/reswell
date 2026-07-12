@@ -14,6 +14,7 @@ import { GoogleSignUpWelcomeRedirect } from '@/components/auth/google-sign-up-we
 import { KlaviyoOnsite } from '@/components/klaviyo-onsite'
 import { KlaviyoPageViewTracker } from '@/components/klaviyo-page-view-tracker'
 import { MetaPixel } from '@/components/meta-pixel'
+import { MetaCapiParamBootstrap } from '@/components/meta/meta-capi-param-bootstrap'
 import { MetaPixelPageViewTracker } from '@/components/meta-pixel-page-view-tracker'
 import { JsonLd } from '@/components/seo/json-ld'
 import { organizationSchema, webSiteSchema } from '@/lib/seo/structured-data'
@@ -86,6 +87,7 @@ export default function RootLayout({
         <MetaPixel />
         <LocaleProvider>
           <Suspense fallback={null}>
+            <MetaCapiParamBootstrap />
             <KlaviyoPageViewTracker />
             <MetaPixelPageViewTracker />
             <GoogleSignUpWelcomeRedirect />

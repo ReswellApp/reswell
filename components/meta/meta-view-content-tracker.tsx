@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 
 import { trackMetaViewContent } from "@/lib/meta/pixel-events"
+import { collectMetaClientBrowserSignals } from "@/lib/meta/collect-client-browser-signals"
 
 /** Dedup React Strict Mode double effects + fast remounts of the same listing. */
 const lastSentAt = new Map<string, number>()
@@ -38,18 +39,26 @@ export function MetaViewContentTracker({
     trackMetaViewContent({ contentId: listingId, value, currency, contentName, eventId })
 
     const numericValue = typeof value === "number" && Number.isFinite(value) && value > 0 ? value : undefined
-    void fetch("/api/integrations/meta/view-content", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      keepalive: true,
-      body: JSON.stringify({
-        listing_id: listingId,
-        event_id: eventId,
-        value: numericValue,
-        currency: currency?.toUpperCase(),
-        source_url: typeof window !== "undefined" ? window.location.href : undefined,
-      }),
-    }).catch(() => {})
+    void (async () => {
+      const browserSignals = await collectMetaClientBrowserSignals().catch(() => ({
+        fbc: null,
+        fbp: null,
+      }))
+      await fetch("/api/integrations/meta/view-content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        keepalive: true,
+        body: JSON.stringify({
+          listing_id: listingId,
+          event_id: eventId,
+          value: numericValue,
+          currency: currency?.toUpperCase(),
+          source_url: typeof window !== "undefined" ? window.location.href : undefined,
+          fbc: browserSignals.fbc ?? undefined,
+          fbp: browserSignals.fbp ?? undefined,
+        }),
+      }).catch(() => {})
+    })()
   }, [listingId, value, currency, contentName])
 
   return null
