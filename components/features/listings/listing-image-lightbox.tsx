@@ -1,8 +1,16 @@
 "use client"
 
 import * as DialogPrimitive from "@radix-ui/react-dialog"
+import useEmblaCarousel from "embla-carousel-react"
 import Image from "next/image"
-import { type CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react"
 import { Minus, Plus, RotateCcw, X } from "lucide-react"
 import {
   TransformComponent,
@@ -54,6 +62,196 @@ function usePrefersCoarsePointer() {
   return coarse
 }
 
+interface LightboxSlideProps {
+  src: string
+  title: string
+  slideIndex: number
+  isActive: boolean
+  coarsePointer: boolean
+  priority?: boolean
+  onScaleChange: (scale: number) => void
+  registerPinchRef: (index: number, ref: ReactZoomPanPinchContentRef | null) => void
+}
+
+function LightboxSlide({
+  src,
+  title,
+  slideIndex,
+  isActive,
+  coarsePointer,
+  priority = false,
+  onScaleChange,
+  registerPinchRef,
+}: LightboxSlideProps) {
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null)
+  const [placeholderLoaded, setPlaceholderLoaded] = useState(false)
+  const pinchRef = useRef<ReactZoomPanPinchContentRef | null>(null)
+
+  const setPinchRef = useCallback(
+    (node: ReactZoomPanPinchContentRef | null) => {
+      pinchRef.current = node
+      registerPinchRef(slideIndex, node)
+    },
+    [registerPinchRef, slideIndex],
+  )
+
+  const placeholderSrc = useMemo(
+    () => (src && src !== "/placeholder.svg" ? withListingMediaPdpVariant(src) : ""),
+    [src],
+  )
+
+  useEffect(() => {
+    if (!isActive) {
+      pinchRef.current?.resetTransform(0)
+      onScaleChange(1)
+    }
+  }, [isActive, onScaleChange])
+
+  useEffect(() => {
+    setLoadedSrc(null)
+    setPlaceholderLoaded(false)
+  }, [src])
+
+  useEffect(() => {
+    if (!placeholderSrc) return
+
+    const img = new window.Image()
+    img.decoding = "async"
+    img.src = placeholderSrc
+    if (img.complete && img.naturalWidth > 0) {
+      setPlaceholderLoaded(true)
+      return
+    }
+
+    const markPlaceholderLoaded = () => setPlaceholderLoaded(true)
+    img.addEventListener("load", markPlaceholderLoaded)
+    return () => img.removeEventListener("load", markPlaceholderLoaded)
+  }, [placeholderSrc])
+
+  useEffect(() => {
+    if (!src) return
+
+    const img = new window.Image()
+    img.decoding = "async"
+    img.src = src
+    if (img.complete && img.naturalWidth > 0) {
+      setLoadedSrc(src)
+      if (isActive) {
+        requestAnimationFrame(() => {
+          pinchRef.current?.centerView(1, 0)
+        })
+      }
+      return
+    }
+
+    const markFullLoaded = () => {
+      setLoadedSrc(src)
+      if (isActive) {
+        requestAnimationFrame(() => {
+          pinchRef.current?.centerView(1, 0)
+        })
+      }
+    }
+    img.addEventListener("load", markFullLoaded)
+    return () => img.removeEventListener("load", markFullLoaded)
+  }, [isActive, src])
+
+  const slideReady = loadedSrc === src || placeholderLoaded
+  const [scale, setScale] = useState(1)
+  const isZoomedOut = scale <= 1 + ZOOM_TOLERANCE
+
+  return (
+    <>
+      <ListingTileShimmer
+        aria-hidden
+        className={cn(
+          "listing-tile-shimmer-overlay absolute inset-0 z-[1] rounded-xl sm:rounded-2xl",
+          slideReady && "pointer-events-none opacity-0",
+        )}
+      />
+      <TransformWrapper
+        ref={setPinchRef}
+        disabled={!isActive}
+        initialScale={1}
+        minScale={1}
+        maxScale={5}
+        centerOnInit
+        centerZoomedOut
+        limitToBounds
+        smooth
+        wheel={{ step: 0.12, disabled: !isActive }}
+        panning={{
+          disabled: isZoomedOut,
+          allowLeftClickPan: !isZoomedOut,
+          velocityDisabled: coarsePointer,
+        }}
+        pinch={{
+          step: 5,
+          allowPanning: true,
+          disabled: !isActive,
+        }}
+        doubleClick={{ mode: "toggle", step: 2.2, disabled: !isActive }}
+        onTransform={(_ctx, state) => {
+          setScale(state.scale)
+          if (isActive) onScaleChange(state.scale)
+        }}
+      >
+        <TransformComponent
+          wrapperClass="!h-full !w-full"
+          contentClass="!relative !h-full !w-full"
+        >
+          {placeholderSrc ? (
+            <Image
+              key={placeholderSrc}
+              aria-hidden
+              src={placeholderSrc}
+              alt=""
+              fill
+              unoptimized={listingImageShouldBypassOptimization(placeholderSrc)}
+              draggable={false}
+              placeholder="blur"
+              blurDataURL={portraitShimmer}
+              className={cn(
+                "pointer-events-none select-none object-contain transition-opacity duration-300 ease-out",
+                "md:object-cover md:object-center",
+                loadedSrc === src ? "opacity-0" : "opacity-100",
+              )}
+              sizes="(max-width: 768px) 100vw, (max-width: 1280px) 29rem, 32rem"
+              priority={priority}
+              onLoadingComplete={() => {
+                setPlaceholderLoaded(true)
+              }}
+            />
+          ) : null}
+          <Image
+            key={src}
+            src={src}
+            alt={`${title} — full size ${slideIndex + 1}`}
+            fill
+            unoptimized
+            draggable={false}
+            className={cn(
+              "select-none object-contain transition-opacity duration-300 ease-out",
+              "md:object-cover md:object-center",
+              loadedSrc === src ? "opacity-100" : "opacity-0",
+            )}
+            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 29rem, 32rem"
+            priority={priority}
+            onLoadingComplete={() => {
+              setLoadedSrc(src)
+              if (isActive) {
+                requestAnimationFrame(() => {
+                  pinchRef.current?.centerView(1, 0)
+                })
+              }
+            }}
+          />
+        </TransformComponent>
+      </TransformWrapper>
+    </>
+  )
+}
+
 interface ListingImageLightboxProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -76,100 +274,101 @@ export function ListingImageLightbox({
   mobileAspectRatio = 3 / 4,
 }: ListingImageLightboxProps) {
   const [scale, setScale] = useState(1)
-  /** Track which full-res src has decoded so we can fade it over the cached low-res underlay. */
-  const [loadedSrc, setLoadedSrc] = useState<string | null>(null)
-  const [placeholderLoaded, setPlaceholderLoaded] = useState(false)
-  const pinchRef = useRef<ReactZoomPanPinchContentRef | null>(null)
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+  const pinchRefs = useRef<Map<number, ReactZoomPanPinchContentRef | null>>(new Map())
+  const isZoomedOutRef = useRef(true)
   const coarsePointer = usePrefersCoarsePointer()
   const isMaxMd = useMaxMd()
 
   const count = proxiedUrls.length
-  const src = proxiedUrls[index]
-  /** ≤1024px hero variant — already cached from the gallery, so the enlarge feels instant. */
-  const placeholderSrc = useMemo(
-    () => (src && src !== "/placeholder.svg" ? withListingMediaPdpVariant(src) : ""),
-    [src],
+  const isZoomedOut = scale <= 1 + ZOOM_TOLERANCE
+  isZoomedOutRef.current = isZoomedOut
+  const useSwipeCarousel = count > 1
+
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop: count > 1,
+    startIndex: index,
+    align: "center",
+    duration: 28,
+    dragThreshold: 8,
+    watchDrag: () => isZoomedOutRef.current,
+  })
+
+  const registerPinchRef = useCallback(
+    (slideIndex: number, ref: ReactZoomPanPinchContentRef | null) => {
+      if (ref) pinchRefs.current.set(slideIndex, ref)
+      else pinchRefs.current.delete(slideIndex)
+    },
+    [],
   )
+
+  const handleActiveScaleChange = useCallback((nextScale: number) => {
+    setScale(nextScale)
+  }, [])
 
   useEffect(() => {
     if (!open) setScale(1)
   }, [open])
 
   useEffect(() => {
-    setScale(1)
-  }, [index])
+    if (!emblaApi || !open) return
+    emblaApi.scrollTo(index, true)
+  }, [emblaApi, open])
 
   useEffect(() => {
-    setLoadedSrc(null)
-    setPlaceholderLoaded(false)
-  }, [src])
+    if (!emblaApi) return
+    const onSelect = () => {
+      const nextIndex = emblaApi.selectedScrollSnap()
+      if (nextIndex === index) return
+      pinchRefs.current.get(index)?.resetTransform(0)
+      setScale(1)
+      onIndexChange(nextIndex)
+    }
+    emblaApi.on("select", onSelect)
+    return () => {
+      emblaApi.off("select", onSelect)
+    }
+  }, [emblaApi, index, onIndexChange])
 
   useEffect(() => {
-    if (!open || !placeholderSrc) return
-
-    const img = new window.Image()
-    img.decoding = "async"
-    img.src = placeholderSrc
-    if (img.complete && img.naturalWidth > 0) {
-      setPlaceholderLoaded(true)
-      return
+    if (!emblaApi) return
+    if (emblaApi.selectedScrollSnap() !== index) {
+      emblaApi.scrollTo(index)
     }
-
-    const markPlaceholderLoaded = () => setPlaceholderLoaded(true)
-    img.addEventListener("load", markPlaceholderLoaded)
-    return () => img.removeEventListener("load", markPlaceholderLoaded)
-  }, [open, placeholderSrc])
-
-  useEffect(() => {
-    if (!open || !src) return
-
-    const img = new window.Image()
-    img.decoding = "async"
-    img.src = src
-    if (img.complete && img.naturalWidth > 0) {
-      setLoadedSrc(src)
-      requestAnimationFrame(() => {
-        pinchRef.current?.centerView(1, 0)
-      })
-      return
-    }
-
-    const markFullLoaded = () => {
-      setLoadedSrc(src)
-      requestAnimationFrame(() => {
-        pinchRef.current?.centerView(1, 0)
-      })
-    }
-    img.addEventListener("load", markFullLoaded)
-    return () => img.removeEventListener("load", markFullLoaded)
-  }, [open, src])
+  }, [emblaApi, index])
 
   const handleOpenChange = useCallback(
     (next: boolean) => {
       if (!next) {
-        pinchRef.current?.resetTransform(0)
+        pinchRefs.current.get(index)?.resetTransform(0)
         setScale(1)
       }
       onOpenChange(next)
     },
-    [onOpenChange],
+    [index, onOpenChange],
   )
 
   const goPrev = useCallback(() => {
-    pinchRef.current?.resetTransform(0)
+    if (emblaApi && useSwipeCarousel) {
+      emblaApi.scrollPrev()
+      return
+    }
+    pinchRefs.current.get(index)?.resetTransform(0)
     setScale(1)
     onIndexChange(index === 0 ? count - 1 : index - 1)
-  }, [count, index, onIndexChange])
+  }, [count, emblaApi, index, onIndexChange, useSwipeCarousel])
 
   const goNext = useCallback(() => {
-    pinchRef.current?.resetTransform(0)
+    if (emblaApi && useSwipeCarousel) {
+      emblaApi.scrollNext()
+      return
+    }
+    pinchRefs.current.get(index)?.resetTransform(0)
     setScale(1)
     onIndexChange(index === count - 1 ? 0 : index + 1)
-  }, [count, index, onIndexChange])
+  }, [count, emblaApi, index, onIndexChange, useSwipeCarousel])
 
-  const isZoomedOut = scale <= 1 + ZOOM_TOLERANCE
-  const slideReady = loadedSrc === src || placeholderLoaded
+  const activePinchRef = pinchRefs.current.get(index) ?? null
+
   const mobileFrameStyle = useMemo(
     () =>
       ({
@@ -180,6 +379,25 @@ export function ListingImageLightbox({
       }) as CSSProperties,
     [mobileAspectRatio],
   )
+
+  const frameStyle = isMaxMd ? mobileFrameStyle : undefined
+
+  const renderSlide = (slideIndex: number, priority: boolean) => {
+    const src = proxiedUrls[slideIndex]
+    if (!src) return null
+    return (
+      <LightboxSlide
+        src={src}
+        title={title}
+        slideIndex={slideIndex}
+        isActive={slideIndex === index}
+        coarsePointer={coarsePointer}
+        priority={priority}
+        onScaleChange={handleActiveScaleChange}
+        registerPinchRef={registerPinchRef}
+      />
+    )
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -194,7 +412,6 @@ export function ListingImageLightbox({
             if (!isZoomedOut) e.preventDefault()
           }}
           className={cn(
-            // Above `SiteHeaderShell` (z-[60]) so close + overlay cover the marketplace nav on /l
             "fixed inset-0 z-[70] flex min-h-0 min-w-0 flex-col outline-none",
             "duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
@@ -205,32 +422,8 @@ export function ListingImageLightbox({
           </DialogTitle>
 
           <div className="flex min-h-0 min-w-0 flex-1 flex-col pt-[max(env(safe-area-inset-top),0.75rem)]">
-            <div
-              className="relative flex min-h-0 min-w-0 flex-1 items-center justify-center px-10 sm:px-12 md:px-16"
-              onTouchStart={(e) => {
-                if (!isZoomedOut || count <= 1) return
-                const t = e.touches[0]
-                if (!t) return
-                touchStartRef.current = { x: t.clientX, y: t.clientY }
-              }}
-              onTouchEnd={(e) => {
-                const start = touchStartRef.current
-                touchStartRef.current = null
-                if (!start || !isZoomedOut || count <= 1) return
-                const t = e.changedTouches[0]
-                if (!t) return
-                const dx = t.clientX - start.x
-                const dy = t.clientY - start.y
-                if (Math.abs(dx) < 56) return
-                if (Math.abs(dx) <= Math.abs(dy)) return
-                if (dx > 0) goPrev()
-                else goNext()
-              }}
-              onTouchCancel={() => {
-                touchStartRef.current = null
-              }}
-            >
-              {src ? (
+            <div className="relative flex min-h-0 min-w-0 flex-1 items-center justify-center px-10 sm:px-12 md:px-16">
+              {count > 0 ? (
                 <div className="relative mx-auto flex shrink-0 flex-col gap-2 sm:gap-2.5">
                   <div className="flex items-center justify-between gap-3">
                     {count > 1 ? (
@@ -253,124 +446,59 @@ export function ListingImageLightbox({
                     </DialogClose>
                   </div>
 
-                <div
-                  style={isMaxMd ? mobileFrameStyle : undefined}
-                  className={cn(
-                    "relative shrink-0 overflow-hidden rounded-xl bg-muted sm:rounded-2xl",
-                    "md:aspect-[3/4] md:h-auto md:w-[29rem] md:max-w-[min(29rem,calc(100vw-3rem))] xl:w-[32rem] xl:max-w-[min(32rem,calc(100vw-3rem))]",
-                  )}
-                >
-                  {count > 1 ? (
-                    <>
-                      <ListingImageCarouselNavButton
-                        direction="prev"
-                        variant="lightbox"
-                        sideClassName="pointer-events-auto left-3 z-20 sm:left-4 md:left-5"
-                        srLabel="Previous photo"
-                        onClick={goPrev}
-                      />
-                      <ListingImageCarouselNavButton
-                        direction="next"
-                        variant="lightbox"
-                        sideClassName="pointer-events-auto right-3 z-20 sm:right-4 md:right-5"
-                        srLabel="Next photo"
-                        onClick={goNext}
-                      />
-                    </>
-                  ) : null}
-                  <ListingTileShimmer
-                    aria-hidden
+                  <div
+                    style={frameStyle}
                     className={cn(
-                      "listing-tile-shimmer-overlay absolute inset-0 z-[1] rounded-xl sm:rounded-2xl",
-                      slideReady && "pointer-events-none opacity-0",
+                      "relative shrink-0 overflow-hidden rounded-xl bg-muted sm:rounded-2xl",
+                      "md:aspect-[3/4] md:h-auto md:w-[29rem] md:max-w-[min(29rem,calc(100vw-3rem))] xl:w-[32rem] xl:max-w-[min(32rem,calc(100vw-3rem))]",
                     )}
-                  />
-                  <div className="absolute inset-0">
-                    <TransformWrapper
-                    ref={pinchRef}
-                    initialScale={1}
-                    minScale={1}
-                    maxScale={5}
-                    centerOnInit
-                    centerZoomedOut
-                    limitToBounds
-                    smooth
-                    wheel={{ step: 0.12 }}
-                    panning={{
-                      allowLeftClickPan: true,
-                      velocityDisabled: coarsePointer ? true : false,
-                    }}
-                    pinch={{
-                      step: 5,
-                      // Coarse pointers: pinch may translate the image while scaling (natural map-style gestures).
-                      allowPanning: true,
-                    }}
-                    doubleClick={{ mode: "toggle", step: 2.2 }}
-                    onTransform={(_ctx, state) => {
-                      setScale(state.scale)
-                    }}
                   >
-                    <TransformComponent
-                      wrapperClass="!h-full !w-full"
-                      contentClass="!relative !h-full !w-full"
-                    >
-                      {placeholderSrc ? (
-                        <Image
-                          key={placeholderSrc}
-                          aria-hidden
-                          src={placeholderSrc}
-                          alt=""
-                          fill
-                          unoptimized={listingImageShouldBypassOptimization(placeholderSrc)}
-                          draggable={false}
-                          placeholder="blur"
-                          blurDataURL={portraitShimmer}
-                          className={cn(
-                            "pointer-events-none select-none object-contain transition-opacity duration-300 ease-out",
-                            "md:object-cover md:object-center",
-                            loadedSrc === src ? "opacity-0" : "opacity-100",
-                          )}
-                          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 29rem, 32rem"
-                          priority
-                          onLoadingComplete={() => {
-                            setPlaceholderLoaded(true)
-                          }}
+                    {count > 1 ? (
+                      <>
+                        <ListingImageCarouselNavButton
+                          direction="prev"
+                          variant="lightbox"
+                          sideClassName="pointer-events-auto left-3 z-20 sm:left-4 md:left-5"
+                          srLabel="Previous photo"
+                          onClick={goPrev}
                         />
-                      ) : null}
-                      <Image
-                        key={src}
-                        src={src}
-                        alt={`${title} — full size ${index + 1}`}
-                        fill
-                        unoptimized
-                        draggable={false}
-                        className={cn(
-                          "select-none object-contain transition-opacity duration-300 ease-out",
-                          "md:object-cover md:object-center",
-                          loadedSrc === src ? "opacity-100" : "opacity-0",
-                        )}
-                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 29rem, 32rem"
-                        priority
-                        onLoadingComplete={() => {
-                          setLoadedSrc(src)
-                          requestAnimationFrame(() => {
-                            pinchRef.current?.centerView(1, 0)
-                          })
-                        }}
-                      />
-                    </TransformComponent>
-                  </TransformWrapper>
+                        <ListingImageCarouselNavButton
+                          direction="next"
+                          variant="lightbox"
+                          sideClassName="pointer-events-auto right-3 z-20 sm:right-4 md:right-5"
+                          srLabel="Next photo"
+                          onClick={goNext}
+                        />
+                      </>
+                    ) : null}
+
+                    {useSwipeCarousel ? (
+                      <div ref={emblaRef} className="absolute inset-0 overflow-hidden">
+                        <div className="flex h-full touch-pan-y will-change-transform">
+                          {proxiedUrls.map((url, slideIndex) => (
+                            <div
+                              key={`${url}-${slideIndex}`}
+                              className="relative h-full min-w-0 shrink-0 grow-0 basis-full"
+                              aria-hidden={slideIndex !== index}
+                            >
+                              {renderSlide(slideIndex, slideIndex === index)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="absolute inset-0">{renderSlide(0, true)}</div>
+                    )}
                   </div>
-                </div>
                 </div>
               ) : null}
 
               <div className="pointer-events-none absolute inset-x-10 bottom-0 z-20 hidden justify-center sm:inset-x-12 md:flex md:inset-x-16">
                 <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-border/60 bg-background/90 p-1.5 shadow-sm backdrop-blur-md">
                   <ZoomToolbar
-                    onZoomIn={() => pinchRef.current?.zoomIn(0.18, 200)}
-                    onZoomOut={() => pinchRef.current?.zoomOut(0.18, 200)}
-                    onReset={() => pinchRef.current?.resetTransform(220)}
+                    onZoomIn={() => activePinchRef?.zoomIn(0.18, 200)}
+                    onZoomOut={() => activePinchRef?.zoomOut(0.18, 200)}
+                    onReset={() => activePinchRef?.resetTransform(220)}
                     disableZoomOut={isZoomedOut}
                   />
                 </div>
