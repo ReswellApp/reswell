@@ -1014,6 +1014,8 @@ export type ConversationThreadData = {
   offers: Record<string, unknown>[]
   threadListings: Record<string, unknown>[]
   otherPartyProfile: OtherPartyProfileSummary | null
+  /** Inbound unread messages in this thread (for optimistic header badge updates). */
+  unreadInboundCount: number
 }
 
 /**
@@ -1062,23 +1064,30 @@ export async function loadConversationThread(
 
   const otherUserId = user.id === buyerId ? sellerId : buyerId
 
-  const [{ data: siblingRows }, { data: msgData }, otherPartyProfile] = await Promise.all([
-    service
-      .from("conversations")
-      .select(
-        `id, listing_id, last_message_at, listing:listings(id, title, listing_images(url, thumbnail_url, is_primary)), messages(id)`,
-      )
-      .eq("buyer_id", buyerId)
-      .eq("seller_id", sellerId)
-      .order("last_message_at", { ascending: false }),
-    service
-      .from("messages")
-      .select(CONVERSATION_THREAD_MESSAGE_SELECT)
-      .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: false })
-      .limit(CONVERSATION_THREAD_MESSAGE_LIMIT),
-    loadOtherPartyProfile(service, otherUserId).catch(() => null),
-  ])
+  const [{ data: siblingRows }, { data: msgData }, { count: unreadInboundCount }, otherPartyProfile] =
+    await Promise.all([
+      service
+        .from("conversations")
+        .select(
+          `id, listing_id, last_message_at, listing:listings(id, title, listing_images(url, thumbnail_url, is_primary)), messages(id)`,
+        )
+        .eq("buyer_id", buyerId)
+        .eq("seller_id", sellerId)
+        .order("last_message_at", { ascending: false }),
+      service
+        .from("messages")
+        .select(CONVERSATION_THREAD_MESSAGE_SELECT)
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: false })
+        .limit(CONVERSATION_THREAD_MESSAGE_LIMIT),
+      service
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .eq("conversation_id", conversationId)
+        .neq("sender_id", user.id)
+        .eq("is_read", false),
+      loadOtherPartyProfile(service, otherUserId).catch(() => null),
+    ])
 
   const listingThreads: ConversationThreadListingOption[] = (siblingRows ?? [])
     .filter((row) => {
@@ -1144,6 +1153,7 @@ export async function loadConversationThread(
     offers,
     threadListings,
     otherPartyProfile,
+    unreadInboundCount: unreadInboundCount ?? 0,
   }
 }
 

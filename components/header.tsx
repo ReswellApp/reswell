@@ -58,6 +58,11 @@ import {
   HEADER_AUTH_REFRESH_EVENT,
   type HeaderAuthRefreshDetail,
 } from "@/lib/auth/header-auth-refresh"
+import {
+  UNREAD_COUNT_REFRESH_EVENT,
+  UNREAD_MESSAGE_COUNT_ADJUST_EVENT,
+  type UnreadMessageCountAdjustDetail,
+} from "@/lib/utils/unread-message-count-events"
 import { walletTotalBalanceUsd } from "@/lib/auth/header-wallet-sync"
 import { getOAuthAvatarUrl } from "@/lib/auth/profile-completion"
 import { getAuthUserWithRetry } from "@/lib/auth/get-user-with-retry"
@@ -703,7 +708,15 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         .single()
       setUnreadMessages(Number(profile?.unread_message_count ?? 0))
     }
-    window.addEventListener("unreadCountRefresh", refreshUnreadCount)
+
+    function onUnreadCountAdjust(event: Event) {
+      const delta = (event as CustomEvent<UnreadMessageCountAdjustDetail>).detail?.delta
+      if (typeof delta !== "number" || !Number.isFinite(delta) || delta === 0) return
+      setUnreadMessages((prev) => Math.max(0, prev + delta))
+    }
+
+    window.addEventListener(UNREAD_COUNT_REFRESH_EVENT, refreshUnreadCount)
+    window.addEventListener(UNREAD_MESSAGE_COUNT_ADJUST_EVENT, onUnreadCountAdjust)
 
     const {
       data: { subscription },
@@ -742,7 +755,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
 
     return () => {
       window.removeEventListener(HEADER_AUTH_REFRESH_EVENT, onHeaderAuthRefresh)
-      window.removeEventListener("unreadCountRefresh", refreshUnreadCount)
+      window.removeEventListener(UNREAD_COUNT_REFRESH_EVENT, refreshUnreadCount)
+      window.removeEventListener(UNREAD_MESSAGE_COUNT_ADJUST_EVENT, onUnreadCountAdjust)
       subscription.unsubscribe()
     }
   }, [supabase, router, refetchFromClient])

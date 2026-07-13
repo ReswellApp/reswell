@@ -24,6 +24,10 @@ import {
   markConversationThreadRead,
   type ConversationThreadData,
 } from '@/app/actions/messages'
+import {
+  dispatchUnreadCountRefresh,
+  dispatchUnreadMessageCountAdjust,
+} from '@/lib/utils/unread-message-count-events'
 import { getPolicyBlockFromSendResult, isPolicyBlockedSendResult } from '@/lib/messages/policy-block-client'
 import {
   createLocalPolicyBlockMessage,
@@ -175,6 +179,7 @@ export function ConversationThreadClient({
   const [currentUserId, setCurrentUserId] = useState<string | null>(
     () => initialData.currentUserId ?? null,
   )
+  const unreadAdjustRef = useRef(0)
   const [listingBannerImageReady, setListingBannerImageReady] = useState(false)
   const messagesScrollRef = useRef<HTMLDivElement>(null)
   const stickToBottomRef = useRef(true)
@@ -282,17 +287,27 @@ export function ConversationThreadClient({
   // thread is a pure read and never blocks on the write/revalidation.
   useEffect(() => {
     let active = true
+    const unreadInbound = initialData.unreadInboundCount ?? 0
+    if (unreadInbound > 0) {
+      unreadAdjustRef.current = unreadInbound
+      dispatchUnreadMessageCountAdjust(-unreadInbound)
+    }
+
     void markConversationThreadRead(id)
       .then(() => {
-        if (active && typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('unreadCountRefresh'))
-        }
+        if (!active || typeof window === 'undefined') return
+        dispatchUnreadCountRefresh()
       })
-      .catch(() => {})
+      .catch(() => {
+        if (!active || unreadAdjustRef.current <= 0) return
+        dispatchUnreadMessageCountAdjust(unreadAdjustRef.current)
+        unreadAdjustRef.current = 0
+      })
+
     return () => {
       active = false
     }
-  }, [id])
+  }, [id, initialData.unreadInboundCount])
 
   useEffect(() => {
     if (!threadPrimaryListingId) return
@@ -457,7 +472,11 @@ export function ConversationThreadClient({
             fetchOfferForMessage(msg.offer_id, () => active)
           }
           if (currentUserId && msg.sender_id !== currentUserId) {
-            void markConversationThreadRead(id).catch(() => {})
+            void markConversationThreadRead(id)
+              .then(() => {
+                dispatchUnreadCountRefresh()
+              })
+              .catch(() => {})
           }
         },
       )
