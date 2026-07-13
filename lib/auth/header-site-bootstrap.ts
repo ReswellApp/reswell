@@ -11,6 +11,7 @@ export type HeaderProfileBootstrap = {
   display_name: string | null
   shop_logo_url: string | null
   is_shop: boolean | null
+  unread_message_count: number | null
 }
 
 export type HeaderSiteBootstrap = {
@@ -27,13 +28,14 @@ export async function fetchHeaderSiteBootstrap(
   supabase: SupabaseClient,
   user: User,
 ): Promise<HeaderSiteBootstrap> {
-  const [profileRes, unreadRes, walletRes] = await Promise.all([
+  const [profileRes, walletRes] = await Promise.all([
     supabase
       .from("profiles")
-      .select("is_admin, avatar_url, display_name, shop_logo_url, is_shop")
+      .select(
+        "is_admin, avatar_url, display_name, shop_logo_url, is_shop, unread_message_count",
+      )
       .eq("id", user.id)
       .single(),
-    supabase.rpc("get_unread_message_count", { uid: user.id }),
     supabase
       .from("wallets")
       .select("id, balance, pending_balance, lifetime_earned, lifetime_spent, lifetime_cashed_out")
@@ -58,7 +60,7 @@ export async function fetchHeaderSiteBootstrap(
   }
   return {
     profile,
-    unreadMessages: Number(unreadRes.data ?? 0),
+    unreadMessages: Number(profile?.unread_message_count ?? 0),
     walletBalance: wallet ? reconcileWalletAggregates(wallet).totalBalance : 0,
   }
 }

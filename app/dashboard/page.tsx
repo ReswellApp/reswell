@@ -54,7 +54,6 @@ export default async function DashboardPage() {
   const [
     listingsAgg,
     favoritesAgg,
-    unreadMsgRes,
     unreadNotifAgg,
     publishedListingsRes,
     draftListingsRes,
@@ -73,17 +72,16 @@ export default async function DashboardPage() {
       .eq("user_id", user.id),
     supabase
       .from("favorites")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("user_id", user.id),
-    supabase.rpc("get_unread_message_count", { uid: user.id }),
     supabase
       .from("notifications")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("user_id", user.id)
       .eq("is_read", false),
     supabase
       .from("listings")
-      .select("*, listing_images (url, is_primary)")
+      .select("id, title, price, status, section, listing_images (url, is_primary)")
       .eq("user_id", user.id)
       .eq("status", "active")
       .is("archived_at", null)
@@ -91,14 +89,14 @@ export default async function DashboardPage() {
       .limit(4),
     supabase
       .from("listings")
-      .select("*, listing_images (url, is_primary)")
+      .select("id, title, price, status, section, listing_images (url, is_primary)")
       .eq("user_id", user.id)
       .eq("status", "draft")
       .order("updated_at", { ascending: false })
       .limit(4),
     supabase
       .from("offers")
-      .select("*", { count: "exact", head: true })
+      .select("id", { count: "exact", head: true })
       .eq("seller_id", user.id)
       .eq("status", "PENDING"),
     supabase
@@ -109,7 +107,7 @@ export default async function DashboardPage() {
     supabase
       .from("profiles")
       .select(
-        "is_shop, shop_name, display_name, city, location, seller_slug, avatar_url, shop_logo_url, follower_count",
+        "is_shop, shop_name, display_name, city, location, seller_slug, avatar_url, shop_logo_url, follower_count, unread_message_count",
       )
       .eq("id", user.id)
       .single(),
@@ -140,14 +138,14 @@ export default async function DashboardPage() {
   const listingCount = listingsAgg.count
   const activeListings = listings?.filter((l) => l.status === "active").length || 0
   const favoriteCount = favoritesAgg.count
-  const unreadMsgCount = unreadMsgRes.data
   const unreadNotifCount = unreadNotifAgg.count
-  const unreadCount = Number(unreadMsgCount ?? 0) + (unreadNotifCount ?? 0)
   const publishedListings = publishedListingsRes.data
   const draftListings = draftListingsRes.data
   const pendingOffersReceived = pendingOffersReceivedRes.count ?? 0
   const walletRow = walletRes.data
   const profile = profileRes.data
+  const unreadMsgCount = profile?.unread_message_count ?? 0
+  const unreadCount = Number(unreadMsgCount ?? 0) + (unreadNotifCount ?? 0)
   const followerCount = profile?.follower_count ?? 0
   const newFollowersThisMonth = newFollowersRes.count ?? 0
   const buyerOrderCount = buyerOrdersRes.count ?? 0

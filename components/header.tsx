@@ -614,17 +614,15 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("is_admin, avatar_url, display_name, shop_logo_url, is_shop")
+        .select(
+          "is_admin, avatar_url, display_name, shop_logo_url, is_shop, unread_message_count",
+        )
         .eq("id", resolvedUser.id)
         .single()
       setIsAdmin(profile?.is_admin || false)
       setProfileAvatarUrl(resolveHeaderAvatarUrl(resolvedUser, profile))
       setProfileDisplayName(profile?.display_name || null)
-
-      const { data: unreadMsgCount } = await supabase.rpc("get_unread_message_count", {
-        uid: resolvedUser.id,
-      })
-      setUnreadMessages(Number(unreadMsgCount ?? 0))
+      setUnreadMessages(Number(profile?.unread_message_count ?? 0))
 
       const { data: wallet } = await supabase
         .from("wallets")
@@ -698,8 +696,12 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         data: { user: u },
       } = await supabase.auth.getUser()
       if (!u) return
-      const { data: unreadMsgCount } = await supabase.rpc("get_unread_message_count", { uid: u.id })
-      setUnreadMessages(Number(unreadMsgCount ?? 0))
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("unread_message_count")
+        .eq("id", u.id)
+        .single()
+      setUnreadMessages(Number(profile?.unread_message_count ?? 0))
     }
     window.addEventListener("unreadCountRefresh", refreshUnreadCount)
 
