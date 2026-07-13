@@ -7,6 +7,7 @@ import {
   updateWetsuitListingSchema,
 } from "@/lib/validations/wetsuit-listing"
 import { createWetsuitListing, updateWetsuitListing } from "@/lib/services/wetsuitListing"
+import { actorCanManageWetsuitListings } from "@/lib/services/wetsuitListingSeller"
 
 export type CreateWetsuitListingActionResult =
   | { success: true; listingId: string; slug: string }
@@ -16,6 +17,24 @@ export type UpdateWetsuitListingActionResult =
   | { success: true; slug: string }
   | { error: string }
 
+async function requireWetsuitListingManagerAction(): Promise<
+  | { ok: true; supabase: Awaited<ReturnType<typeof createClient>>; userId: string }
+  | { ok: false; error: string }
+> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    return { ok: false, error: "Please sign in." }
+  }
+  const allowed = await actorCanManageWetsuitListings(supabase, user.id)
+  if (!allowed) {
+    return { ok: false, error: "You do not have permission to manage wetsuit listings." }
+  }
+  return { ok: true, supabase, userId: user.id }
+}
+
 /**
  * Creates a wetsuit listing (a single listings row with section='wetsuits' plus
  * listing_images). Photos must already be uploaded to storage client-side; the
@@ -24,22 +43,17 @@ export type UpdateWetsuitListingActionResult =
 export async function createWetsuitListingAction(
   raw: unknown,
 ): Promise<CreateWetsuitListingActionResult> {
+  const auth = await requireWetsuitListingManagerAction()
+  if (!auth.ok) return { error: auth.error }
+
   const parsed = createWetsuitListingSchema.safeParse(raw)
   if (!parsed.success) {
     const first = parsed.error.issues[0]
     return { error: first?.message ?? "Please check the form and try again." }
   }
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    return { error: "Please sign in to list a wetsuit." }
-  }
-
   try {
-    const result = await createWetsuitListing(supabase, user.id, parsed.data)
+    const result = await createWetsuitListing(auth.supabase, auth.userId, parsed.data)
     revalidatePath("/wetsuits")
     revalidatePath(`/l/${result.slug}`)
     return { success: true, listingId: result.listingId, slug: result.slug }
@@ -56,22 +70,22 @@ export async function createWetsuitListingAction(
 export async function updateWetsuitListingAction(
   raw: unknown,
 ): Promise<UpdateWetsuitListingActionResult> {
+  const auth = await requireWetsuitListingManagerAction()
+  if (!auth.ok) return { error: auth.error }
+
   const parsed = updateWetsuitListingSchema.safeParse(raw)
   if (!parsed.success) {
     const first = parsed.error.issues[0]
     return { error: first?.message ?? "Please check the form and try again." }
   }
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    return { error: "Please sign in to edit this listing." }
-  }
-
   try {
-    const result = await updateWetsuitListing(supabase, parsed.data.listingId, user.id, parsed.data)
+    const result = await updateWetsuitListing(
+      auth.supabase,
+      parsed.data.listingId,
+      auth.userId,
+      parsed.data,
+    )
     revalidatePath("/wetsuits")
     revalidatePath(`/l/${result.slug}`)
     return { success: true, slug: result.slug }

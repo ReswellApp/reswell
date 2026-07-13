@@ -17,6 +17,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { createClient } from "@/lib/supabase/client"
+import { threadsDestructiveClassName } from "@/components/features/forum/threads-brand-styles"
+import { cn } from "@/lib/utils"
 
 type Props = {
   threadId: string
@@ -100,7 +102,7 @@ export function AdminThreadEditor({ threadId, initialTitle, initialBody }: Props
               maxLength={12000}
             />
           </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && <p className={cn("text-sm", threadsDestructiveClassName)}>{error}</p>}
         </div>
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={saving}>

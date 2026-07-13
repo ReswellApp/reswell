@@ -1,16 +1,13 @@
 "use client"
 
 import Link from "next/link"
-import { Suspense } from "react"
 import { PenLine } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { BoardTalkSearch } from "@/components/forum/board-talk-search"
-import { ThreadsSubNav } from "@/components/features/forum/threads-sub-nav"
 import {
-  ThreadsHubToolbar,
-  ThreadsLatestPanel,
+  ThreadsMostActivePanel,
   ThreadsTopicTable,
 } from "@/components/features/forum/threads-hub-panels"
+import { ThreadsActivePresencePanel } from "@/components/features/forum/threads-active-presence-panel"
 import { useAuthModal } from "@/components/auth/auth-modal-context"
 import { useBoardTalkForumsUi } from "@/components/features/forum/board-talk-forums-ui-context"
 import type { BoardTalkForumThread } from "@/lib/services/forumThreads"
@@ -19,10 +16,6 @@ type BoardTalkForumsViewProps = {
   threads: BoardTalkForumThread[]
   searchQuery: string
   isLoggedIn: boolean
-}
-
-function SubNavFallback() {
-  return <div className="h-10 rounded-lg bg-[#2d3744]/60 animate-pulse" aria-hidden />
 }
 
 export function BoardTalkForumsView({ threads, searchQuery, isLoggedIn }: BoardTalkForumsViewProps) {
@@ -41,19 +34,6 @@ export function BoardTalkForumsView({ threads, searchQuery, isLoggedIn }: BoardT
 
   return (
     <div className="space-y-5">
-      <Suspense fallback={<SubNavFallback />}>
-        <ThreadsSubNav />
-      </Suspense>
-
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <ThreadsHubToolbar onNewTopic={handleNewTopic} />
-        <BoardTalkSearch
-          defaultValue={q}
-          className="w-full max-w-md rounded-lg border border-border/60 bg-card shadow-sm"
-          placeholder="Search topics and replies…"
-        />
-      </div>
-
       {isSearching ? (
         <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
           <p className="text-muted-foreground">
@@ -89,7 +69,12 @@ export function BoardTalkForumsView({ threads, searchQuery, isLoggedIn }: BoardT
       ) : (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_17.5rem] lg:items-start">
           <ThreadsTopicTable threads={threads} />
-          {!isSearching ? <ThreadsLatestPanel threads={threads} className="lg:sticky lg:top-24" /> : null}
+          {!isSearching ? (
+            <div className="space-y-4 lg:sticky lg:top-24">
+              <ThreadsMostActivePanel threads={threads} />
+              <ThreadsActivePresencePanel />
+            </div>
+          ) : null}
         </div>
       )}
     </div>

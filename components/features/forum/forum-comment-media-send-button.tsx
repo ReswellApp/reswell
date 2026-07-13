@@ -11,12 +11,15 @@ import { sendForumCommentMediaReply } from "@/app/actions/forum"
 import { raceWithDeadline } from "@/lib/utils/race-with-deadline"
 import type { SentForumCommentMedia } from "@/lib/validations/forum-comment-attachment"
 
+const MEDIA_SEND_SERVER_ACTION_MS = 45_000
+
 export function ForumCommentMediaSendButton({
   threadId,
   threadSlug,
   parentId = null,
   disabled,
   caption,
+  openingPost,
   onSent,
   className,
 }: {
@@ -25,6 +28,7 @@ export function ForumCommentMediaSendButton({
   parentId?: string | null
   disabled?: boolean
   caption?: string
+  openingPost?: boolean
   onSent: (comment: SentForumCommentMedia) => void
   className?: string
 }) {
@@ -65,6 +69,7 @@ export function ForumCommentMediaSendButton({
           attachment: uploaded.attachment,
           caption: caption?.trim() || undefined,
           parent_id: parentId,
+          opening_post: openingPost,
         }),
         MEDIA_SEND_SERVER_ACTION_MS,
       )
@@ -98,16 +103,19 @@ export function ForumCommentMediaSendButton({
       <Button
         type="button"
         variant="ghost"
-        size="icon"
+        size="sm"
         disabled={disabled || uploading}
-        className={cn("h-10 w-10 shrink-0 rounded-full text-muted-foreground", className)}
+        className={cn("h-10 shrink-0 gap-1.5 rounded-full px-3 text-muted-foreground sm:px-4", className)}
         aria-label="Add photo"
         onClick={() => inputRef.current?.click()}
       >
         {uploading ? (
           <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
         ) : (
-          <ImagePlus className="h-5 w-5" strokeWidth={2} aria-hidden />
+          <>
+            <ImagePlus className="h-5 w-5" strokeWidth={2} aria-hidden />
+            <span className="hidden text-sm sm:inline">Photo</span>
+          </>
         )}
       </Button>
     </>

@@ -21,6 +21,11 @@ import { formatDistanceToNow } from "date-fns"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
+import {
+  threadsDestructiveClassName,
+  threadsSuccessTextClassName,
+  threadsWarningTextClassName,
+} from "@/components/features/forum/threads-brand-styles"
 import { clearImpersonation, getImpersonation } from "@/lib/impersonation"
 
 export type ThreadCommentRow = {
@@ -512,7 +517,7 @@ export function ThreadCommentsPanel({
               <span
                 className={cn(
                   "text-xs tabular-nums text-muted-foreground",
-                  mainRemaining < 200 && "font-medium text-amber-700 dark:text-amber-400",
+                  mainRemaining < 200 && threadsWarningTextClassName,
                 )}
               >
                 {mainRemaining} characters left
@@ -536,7 +541,7 @@ export function ThreadCommentsPanel({
             </div>
             {postedHint ? (
               <p
-                className="text-xs font-medium text-emerald-600 dark:text-emerald-400"
+                className={threadsSuccessTextClassName}
                 role="status"
                 aria-live="polite"
               >
@@ -641,7 +646,7 @@ export function ThreadCommentsPanel({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="h-8 gap-1 rounded-full px-3 text-xs text-muted-foreground hover:text-destructive"
+                        className={cn("h-8 gap-1 rounded-full px-3 text-xs text-muted-foreground", threadsDestructiveClassName)}
                         onClick={() => void deleteComment(c.id, mine)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -669,7 +674,7 @@ export function ThreadCommentsPanel({
                         <span
                           className={cn(
                             "mr-auto text-xs tabular-nums text-muted-foreground",
-                            replyRemaining < 200 && "font-medium text-amber-700 dark:text-amber-400",
+                            replyRemaining < 200 && threadsWarningTextClassName,
                           )}
                         >
                           {replyRemaining} left
@@ -746,7 +751,7 @@ export function ThreadCommentsPanel({
                                       type="button"
                                       variant="ghost"
                                       size="sm"
-                                      className="h-7 gap-1 rounded-full px-2 text-xs text-muted-foreground hover:text-destructive"
+                                      className={cn("h-7 gap-1 rounded-full px-2 text-xs text-muted-foreground", threadsDestructiveClassName)}
                                       onClick={() => void deleteComment(r.id, rmine)}
                                     >
                                       <Trash2 className="h-3 w-3" />

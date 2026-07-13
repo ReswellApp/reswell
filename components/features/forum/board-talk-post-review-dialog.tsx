@@ -22,7 +22,10 @@ import {
 import { submitBoardModelReview } from "@/app/actions/board-reviews"
 import { uploadBoardReviewMediaFile } from "@/lib/board-review-media-upload-client"
 import { createClient } from "@/lib/supabase/client"
-import { ratingStarEmptyClassName, ratingStarFilledClassName } from "@/lib/rating-star-styles"
+import {
+  threadsStarEmptyClassName,
+  threadsStarFilledClassName,
+} from "@/components/features/forum/threads-brand-styles"
 import type { BoardReviewImageAttachment } from "@/lib/validations/board-review-attachment"
 import { cn } from "@/lib/utils"
 
@@ -187,7 +190,7 @@ export function BoardTalkPostReviewDialog({
                   <Star
                     className={cn(
                       "h-8 w-8",
-                      n <= rating ? ratingStarFilledClassName : ratingStarEmptyClassName,
+                      n <= rating ? threadsStarFilledClassName : threadsStarEmptyClassName,
                     )}
                     strokeWidth={0}
                   />

@@ -17,6 +17,7 @@ export const forumCommentAttachmentSchema = forumCommentImageAttachmentSchema
 
 export const forumCommentAttachmentMetadataSchema = z.object({
   attachment: forumCommentAttachmentSchema,
+  opening_post: z.literal(true).optional(),
 })
 
 export const forumCommentAttachmentInputSchema = forumCommentImageAttachmentSchema.omit({ bucket: true })
@@ -37,6 +38,11 @@ export function parseForumCommentImageAttachment(metadata: unknown): ForumCommen
 
 export function composeForumCommentImageBody(): string {
   return "Photo"
+}
+
+export function isForumCommentOpeningPost(metadata: unknown): boolean {
+  if (!metadata || typeof metadata !== "object") return false
+  return (metadata as { opening_post?: boolean }).opening_post === true
 }
 
 export type SentForumCommentMedia = {

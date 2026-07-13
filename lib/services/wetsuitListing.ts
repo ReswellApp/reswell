@@ -16,6 +16,7 @@ import type {
   CreateWetsuitListingInput,
   UpdateWetsuitListingInput,
 } from "@/lib/validations/wetsuit-listing"
+import { actorCanManageWetsuitListings } from "@/lib/services/wetsuitListingSeller"
 
 export type CreateWetsuitListingResult = { listingId: string; slug: string }
 
@@ -92,6 +93,11 @@ export async function updateWetsuitListing(
   userId: string,
   input: UpdateWetsuitListingInput,
 ): Promise<{ slug: string }> {
+  const canManage = await actorCanManageWetsuitListings(supabase, userId)
+  if (!canManage) {
+    throw new Error("You do not have permission to edit wetsuit listings")
+  }
+
   const { data: existing, error: existingErr } = await supabase
     .from("listings")
     .select("id, user_id, section, status, slug")

@@ -1,25 +1,15 @@
+import { redirect } from "next/navigation"
 import type { Metadata } from "next"
+import { privatePageMetadata } from "@/lib/site-metadata"
+import { createClient } from "@/lib/supabase/server"
+import { actorCanManageWetsuitListings } from "@/lib/services/wetsuitListingSeller"
 import SellWetsuitsFlow from "./sell-wetsuits-client"
 
-const title = "Sell your wetsuit — Reswell"
-const description =
-  "List your wetsuit on Reswell in minutes: add photos, pick the size, set your price, and choose shipping or local pickup."
-
-export const metadata: Metadata = {
-  title,
-  description,
-  keywords: ["sell wetsuit", "list wetsuit", "used wetsuit", "Rip Curl wetsuit", "O'Neill wetsuit", "Reswell"],
-  alternates: { canonical: "/sell/wetsuits" },
-  openGraph: {
-    title,
-    description,
-    url: "/sell/wetsuits",
-    siteName: "Reswell",
-    locale: "en_US",
-    type: "website",
-  },
-  twitter: { card: "summary_large_image", title, description },
-}
+export const metadata: Metadata = privatePageMetadata({
+  title: "List a wetsuit — Reswell",
+  description: "List wetsuits for sale on Reswell.",
+  path: "/sell/wetsuits",
+})
 
 function parseEditListingId(value: string | string[] | undefined): string | null {
   if (typeof value === "string" && value.trim()) return value.trim()
@@ -35,6 +25,18 @@ export default async function SellWetsuitsPage({
 }: {
   searchParams: Promise<{ edit?: string | string[] }>
 }) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    redirect("/auth/login?redirect=/sell/wetsuits")
+  }
+  const allowed = await actorCanManageWetsuitListings(supabase, user.id)
+  if (!allowed) {
+    redirect("/wetsuits")
+  }
+
   const qs = await searchParams
   const editId = parseEditListingId(qs.edit)
   return <SellWetsuitsFlow editListingId={editId} />

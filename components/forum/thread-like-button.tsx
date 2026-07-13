@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "sonner"
+import { threadsLikedClassName } from "@/components/features/forum/threads-brand-styles"
 import { cn } from "@/lib/utils"
 
 type Props = {
@@ -105,7 +106,7 @@ export function ThreadLikeButton({ threadId, initialCount, initialLiked, isLogge
         compact
           ? cn(
               "h-9 w-9 text-muted-foreground hover:text-foreground",
-              liked && "text-rose-600 hover:text-rose-600",
+              liked && threadsLikedClassName,
             )
           : cn(
               "gap-2 rounded-full px-4 shadow-sm transition-all duration-200 active:scale-95",

@@ -20,7 +20,10 @@ import {
 } from "@/components/features/forum/board-talk-reviews-search"
 import { BoardTalkReviewPhoto } from "@/components/features/forum/board-talk-review-photo"
 import { useBoardTalkReviewsUi } from "@/components/features/forum/board-talk-reviews-ui-context"
-import { ratingStarFilledClassName, ratingStarEmptyClassName } from "@/lib/rating-star-styles"
+import {
+  threadsStarEmptyClassName,
+  threadsStarFilledClassName,
+} from "@/components/features/forum/threads-brand-styles"
 import type { BoardTalkReviewItem } from "@/lib/services/boardTalkReviews"
 import { cn } from "@/lib/utils"
 
@@ -38,7 +41,7 @@ function ReviewStars({ rating }: { rating: number }) {
         return (
           <Star
             key={index}
-            className={cn("h-4 w-4", filled ? ratingStarFilledClassName : ratingStarEmptyClassName)}
+            className={cn("h-4 w-4", filled ? threadsStarFilledClassName : threadsStarEmptyClassName)}
             strokeWidth={0}
             aria-hidden
           />

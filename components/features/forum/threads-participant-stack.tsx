@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import type { ForumThreadParticipant } from "@/lib/services/forumThreads"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
+import { threadsAvatarFallbackClassName } from "@/components/features/forum/threads-brand-styles"
 import { cn } from "@/lib/utils"
 
 type ThreadsParticipantStackProps = {
@@ -35,7 +36,7 @@ export function ThreadsParticipantStack({
             title={p.displayName}
           >
             <AvatarImage src={profileMediaDisplaySrc(p.avatarUrl || "")} alt="" />
-            <AvatarFallback className="bg-slate-200 font-semibold text-slate-700">{initial}</AvatarFallback>
+            <AvatarFallback className={threadsAvatarFallbackClassName}>{initial}</AvatarFallback>
           </Avatar>
         )
       })}

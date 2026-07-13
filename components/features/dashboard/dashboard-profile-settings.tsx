@@ -38,6 +38,7 @@ interface DashboardProfileSettingsProps {
   initialMessageSmsOptIn?: boolean
   initialHasSmsPhone?: boolean
   initialSmsPhone?: string | null
+  variant?: "dashboard" | "threads"
 }
 
 export function DashboardProfileSettings({
@@ -48,7 +49,9 @@ export function DashboardProfileSettings({
   initialMessageSmsOptIn = false,
   initialHasSmsPhone = false,
   initialSmsPhone = null,
+  variant = "dashboard",
 }: DashboardProfileSettingsProps) {
+  const isThreads = variant === "threads"
   const { t } = useLocale()
   const [activeTab, setActiveTab] = useState<ProfileSettingsTabId>("shop")
   const [profile, setProfile] = useState<DashboardProfileRow | null>(initialProfile)
@@ -183,6 +186,8 @@ export function DashboardProfileSettings({
       dispatchHeaderAuthRefresh({ avatarUrl })
       router.refresh()
       toast.success("Profile photo updated")
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to upload photo"
       console.error("Avatar upload error:", message)
       toast.error(message)
     } finally {
@@ -347,7 +352,7 @@ export function DashboardProfileSettings({
   }
 
   async function handleSignOut() {
-    signOutAndRedirect()
+    signOutAndRedirect(isThreads ? "/threads" : undefined)
   }
 
   if (!profile) {
@@ -368,13 +373,14 @@ export function DashboardProfileSettings({
 
   return (
     <div className="space-y-6">
-      <DashboardPageHeader title={s.title} description={s.subtitle} />
+      {!isThreads ? <DashboardPageHeader title={s.title} description={s.subtitle} /> : null}
 
       <ProfileSettingsTabNav
         activeTab={activeTab}
         onTabChange={handleTabChange}
+        variant={variant}
         labels={{
-          shop: s.shopTab,
+          shop: isThreads ? "Profile" : s.shopTab,
           signIn: s.signInTab,
           addresses: addr.tab,
           notifications: s.notificationsTab,

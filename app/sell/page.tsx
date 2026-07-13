@@ -3,6 +3,7 @@ import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-rout
 import { SellTypeChooser } from "@/components/features/sell/sell-type-chooser"
 import { createClient } from "@/lib/supabase/server"
 import { actorCanManageMagazineListings } from "@/lib/services/magazineListingSeller"
+import { actorCanManageWetsuitListings } from "@/lib/services/wetsuitListingSeller"
 import SellFlowShell from "./sell-flow-client"
 
 function parseEditListingId(
@@ -57,6 +58,14 @@ export default async function SellPage({
   const showMagazinesOption = user
     ? await actorCanManageMagazineListings(supabase, user.id)
     : false
+  const showWetsuitsOption = user
+    ? await actorCanManageWetsuitListings(supabase, user.id)
+    : false
 
-  return <SellTypeChooser showMagazinesOption={showMagazinesOption} />
+  return (
+    <SellTypeChooser
+      showMagazinesOption={showMagazinesOption}
+      showWetsuitsOption={showWetsuitsOption}
+    />
+  )
 }

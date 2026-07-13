@@ -19,6 +19,14 @@ const MAGAZINES_SELL_OPTION: SellTypeOption = {
   imageAlt: "Magazine",
 }
 
+const WETSUITS_SELL_OPTION: SellTypeOption = {
+  href: "/sell/wetsuits",
+  title: "Wetsuits",
+  description: "List wetsuits for the marketplace.",
+  imageSrc: null,
+  imageAlt: "Wetsuit",
+}
+
 /** Shown on /sell chooser. Other sell flows stay live at their routes until launch. */
 const SELL_TYPE_OPTIONS: readonly SellTypeOption[] = [
   {
@@ -39,13 +47,20 @@ const SELL_TYPE_OPTIONS: readonly SellTypeOption[] = [
 
 type SellTypeChooserProps = {
   showMagazinesOption?: boolean
+  showWetsuitsOption?: boolean
 }
 
 /** First step of /sell: pick a product type. */
-export function SellTypeChooser({ showMagazinesOption = false }: SellTypeChooserProps) {
-  const options = showMagazinesOption
-    ? [...SELL_TYPE_OPTIONS, MAGAZINES_SELL_OPTION]
-    : SELL_TYPE_OPTIONS
+export function SellTypeChooser({
+  showMagazinesOption = false,
+  showWetsuitsOption = false,
+}: SellTypeChooserProps) {
+  const adminOptions: SellTypeOption[] = []
+  if (showWetsuitsOption) adminOptions.push(WETSUITS_SELL_OPTION)
+  if (showMagazinesOption) adminOptions.push(MAGAZINES_SELL_OPTION)
+
+  const options = adminOptions.length > 0 ? [...SELL_TYPE_OPTIONS, ...adminOptions] : SELL_TYPE_OPTIONS
+  const hasAdminOptions = adminOptions.length > 0
 
   return (
     <main className="flex-1 bg-offwhite">
@@ -53,7 +68,7 @@ export function SellTypeChooser({ showMagazinesOption = false }: SellTypeChooser
         <div className="text-center">
           <h1 className="text-3xl font-bold sm:text-4xl">What are you listing?</h1>
           <p className="mx-auto mt-3 max-w-sm text-muted-foreground">
-            {showMagazinesOption
+            {hasAdminOptions
               ? "Choose a product type to get started."
               : "Choose surfboard or fins to get started."}
           </p>

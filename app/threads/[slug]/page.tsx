@@ -3,6 +3,10 @@ import type { Metadata } from "next"
 import { createClient } from "@/lib/supabase/server"
 import { ThreadDetailView } from "@/components/features/forum/thread-detail-view"
 import { type ThreadCommentRow } from "@/components/forum/thread-comments-panel"
+import {
+  isForumCommentOpeningPost,
+  parseForumCommentImageAttachment,
+} from "@/lib/validations/forum-comment-attachment"
 import { fetchForumThreadParticipantsByThreadIds } from "@/lib/db/forum-threads"
 import { absoluteUrl } from "@/lib/site-metadata"
 
@@ -139,6 +143,22 @@ export default async function ThreadDetailPage(props: { params: Promise<{ slug: 
     forum_comment_likes: [{ count: likeCountByComment[c.id] ?? 0 }],
   }))
 
+  const openingPhotoRow = comments.find((c) => isForumCommentOpeningPost(c.metadata))
+  const openingPhotoAttachment = openingPhotoRow
+    ? parseForumCommentImageAttachment(openingPhotoRow.metadata)
+    : null
+  const openingPhoto =
+    openingPhotoRow && openingPhotoAttachment
+      ? {
+          commentId: openingPhotoRow.id,
+          fileName: openingPhotoAttachment.file_name,
+          body: openingPhotoRow.body,
+        }
+      : null
+  const replyComments = openingPhotoRow
+    ? comments.filter((c) => c.id !== openingPhotoRow.id)
+    : comments
+
   let threadLiked = false
   const likedCommentIds: string[] = []
   if (user) {
@@ -179,6 +199,7 @@ export default async function ThreadDetailPage(props: { params: Promise<{ slug: 
       threadSlug={t.slug}
       title={t.title}
       body={t.body}
+      openingPhoto={openingPhoto}
       createdAt={t.created_at}
       authorName={authorName}
       authorAvatarUrl={authorProfile?.avatar_url ?? null}
@@ -187,7 +208,7 @@ export default async function ThreadDetailPage(props: { params: Promise<{ slug: 
       isLoggedIn={!!user}
       isAdmin={isAdmin}
       canDeleteThread={isAdmin}
-      comments={comments}
+      comments={replyComments}
       currentUserId={user?.id ?? null}
       likedCommentIds={likedCommentIds}
       participants={participants}

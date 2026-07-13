@@ -3,6 +3,10 @@
 import { Users } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useBoardTalkPresence } from "@/components/features/forum/hooks/use-board-talk-presence"
+import {
+  threadsPresenceDotClassName,
+  threadsPresencePingClassName,
+} from "@/components/features/forum/threads-brand-styles"
 import { cn } from "@/lib/utils"
 
 type BoardTalkPresenceBarProps = {
@@ -34,8 +38,8 @@ export function BoardTalkPresenceBar({ userId, displayName, className }: BoardTa
     >
       <div className="flex items-center gap-2 text-foreground">
         <span className="relative flex h-2.5 w-2.5 shrink-0">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70 opacity-60" />
-          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+          <span className={cn("absolute inline-flex h-full w-full animate-ping rounded-full opacity-60", threadsPresencePingClassName)} />
+          <span className={cn("relative inline-flex h-2.5 w-2.5 rounded-full", threadsPresenceDotClassName)} />
         </span>
         <Users className="h-4 w-4 text-muted-foreground" aria-hidden />
         <span className="font-medium tabular-nums">

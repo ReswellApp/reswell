@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -10,15 +11,68 @@ import { Label } from "@/components/ui/label"
 import { createClient } from "@/lib/supabase/client"
 import { pickUniqueThreadSlug } from "@/lib/forum-slug"
 import { getImpersonation } from "@/lib/impersonation"
+import { uploadForumCommentMediaFile } from "@/lib/forum-comment-media-upload-client"
+import { sendForumCommentMediaReply } from "@/app/actions/forum"
+import { ForumPhotoPicker } from "@/components/features/forum/forum-photo-picker"
+import { threadsDestructiveClassName } from "@/components/features/forum/threads-brand-styles"
+import { cn } from "@/lib/utils"
 
 export function NewThreadForm({ onCreated }: { onCreated?: () => void }) {
   const router = useRouter()
   const [title, setTitle] = useState("")
   const [body, setBody] = useState("")
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [impersonation, setImpersonation] = useState(() => getImpersonation())
   useEffect(() => { setImpersonation(getImpersonation()) }, [])
+
+  function handlePhotoSelected(file: File) {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Only photos are supported.")
+      return
+    }
+    if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl)
+    setPhotoFile(file)
+    setPhotoPreviewUrl(URL.createObjectURL(file))
+  }
+
+  function clearPhoto() {
+    if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl)
+    setPhotoFile(null)
+    setPhotoPreviewUrl(null)
+  }
+
+  async function uploadOpeningPhoto(threadId: string, threadSlug: string, caption: string) {
+    const supabase = createClient()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      throw new Error("Sign in again to add photos.")
+    }
+
+    const uploaded = await uploadForumCommentMediaFile({
+      file: photoFile!,
+      threadId,
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+      accessToken: session.access_token,
+      anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+    })
+
+    const result = await sendForumCommentMediaReply({
+      thread_id: threadId,
+      thread_slug: threadSlug,
+      attachment: uploaded.attachment,
+      caption: caption || undefined,
+      opening_post: true,
+    })
+
+    if ("error" in result) {
+      throw new Error(result.error)
+    }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -29,8 +83,8 @@ export function NewThreadForm({ onCreated }: { onCreated?: () => void }) {
       setError("Add a title for your post.")
       return
     }
-    if (!b) {
-      setError("Add a description to start your post.")
+    if (!b && !photoFile) {
+      setError("Add a description or attach a photo to start your post.")
       return
     }
     setSubmitting(true)
@@ -72,13 +126,25 @@ export function NewThreadForm({ onCreated }: { onCreated?: () => void }) {
         slug,
         body: b,
       })
-      .select("slug")
+      .select("id, slug")
       .single()
 
     if (insertErr || !row) {
       setError(insertErr?.message || "Could not create post. If this persists, confirm forum tables exist (run scripts/032_forum_threads.sql).")
       setSubmitting(false)
       return
+    }
+
+    if (photoFile) {
+      try {
+        await uploadOpeningPhoto(row.id, row.slug, b)
+      } catch (photoError) {
+        toast.error(
+          photoError instanceof Error
+            ? photoError.message
+            : "Thread created, but the photo could not be uploaded.",
+        )
+      }
     }
 
     router.push(`/threads/${row.slug}`)
@@ -105,15 +171,22 @@ export function NewThreadForm({ onCreated }: { onCreated?: () => void }) {
           id="thread-body"
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          placeholder="Kick off your post with context, photos, or a question…"
+          placeholder="Kick off your post with context, a question, or a caption for your photo…"
           className="min-h-[140px] resize-y"
           maxLength={12000}
-          required
-          aria-required
+          aria-required={!photoFile}
         />
-        <p className="text-xs text-muted-foreground">Required — this is the opening post.</p>
+        <p className="text-xs text-muted-foreground">
+          {photoFile ? "Optional caption for your photo." : "Required unless you attach a photo."}
+        </p>
       </div>
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      <ForumPhotoPicker
+        previewUrl={photoPreviewUrl}
+        disabled={submitting}
+        onSelect={handlePhotoSelected}
+        onClear={clearPhoto}
+      />
+      {error && <p className={cn("text-sm", threadsDestructiveClassName)}>{error}</p>}
       <div className="flex flex-wrap gap-3">
         <Button type="submit" disabled={submitting}>
           {submitting ? "Creating…" : "Create post"}

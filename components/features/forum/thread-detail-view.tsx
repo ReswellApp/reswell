@@ -9,19 +9,29 @@ import { LinkifiedText } from "@/components/forum/linkified-text"
 import { ThreadDeleteButton } from "@/components/forum/thread-delete-button"
 import { AdminThreadEditor } from "@/components/forum/admin-thread-editor"
 import { ThreadPostEngagementFooter } from "@/components/features/forum/thread-post-engagement-footer"
+import { ForumCommentMediaCard } from "@/components/features/forum/forum-comment-media-card"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { useThreadsPageLabel } from "@/components/features/forum/threads-breadcrumb-provider"
 import { capitalizeWords } from "@/lib/listing-labels"
 import type { ForumThreadParticipant } from "@/lib/services/forumThreads"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
+import { threadsMarkerClassName } from "@/components/features/forum/threads-brand-styles"
 import { countUrlsInText } from "@/lib/utils/count-urls-in-text"
+import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+
+type ThreadOpeningPhoto = {
+  commentId: string
+  fileName: string
+  body: string
+}
 
 type ThreadDetailViewProps = {
   threadId: string
   threadSlug: string
   title: string
   body: string | null
+  openingPhoto?: ThreadOpeningPhoto | null
   createdAt: string
   authorName: string
   authorAvatarUrl: string | null
@@ -42,6 +52,7 @@ export function ThreadDetailView({
   threadSlug,
   title,
   body,
+  openingPhoto,
   createdAt,
   authorName,
   authorAvatarUrl,
@@ -98,7 +109,7 @@ export function ThreadDetailView({
     <div className="space-y-4">
       <header className="space-y-2">
         <div className="flex items-center gap-2 text-sm">
-          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-sky-500" aria-hidden />
+          <span className={cn("inline-block h-2.5 w-2.5 rounded-sm", threadsMarkerClassName)} aria-hidden />
           <span className="font-medium text-muted-foreground">Community</span>
         </div>
         <h1 className="text-2xl font-bold leading-tight text-foreground sm:text-3xl">
@@ -120,7 +131,16 @@ export function ThreadDetailView({
                   {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
                 </time>
               </div>
-              {body ? (
+              {openingPhoto ? (
+                <div className="mt-4">
+                  <ForumCommentMediaCard
+                    commentId={openingPhoto.commentId}
+                    fileName={openingPhoto.fileName}
+                    body={openingPhoto.body}
+                  />
+                </div>
+              ) : null}
+              {!openingPhoto && body?.trim() ? (
                 <div className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-foreground sm:text-[15px]">
                   <LinkifiedText text={body} />
                 </div>

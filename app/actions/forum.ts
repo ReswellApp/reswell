@@ -22,6 +22,7 @@ const sendForumCommentMediaSchema = z.object({
   attachment: forumCommentAttachmentInputSchema,
   caption: z.string().max(8000).optional(),
   parent_id: idSchema.nullable().optional(),
+  opening_post: z.boolean().optional(),
 })
 
 export async function sendForumCommentMediaReply(input: {
@@ -30,6 +31,7 @@ export async function sendForumCommentMediaReply(input: {
   attachment: z.infer<typeof forumCommentAttachmentInputSchema>
   caption?: string
   parent_id?: string | null
+  opening_post?: boolean
 }): Promise<{ comment: SentForumCommentMedia } | { error: string }> {
   const parsed = sendForumCommentMediaSchema.safeParse(input)
   if (!parsed.success) {
@@ -51,6 +53,7 @@ export async function sendForumCommentMediaReply(input: {
     attachment: parsed.data.attachment,
     caption: parsed.data.caption,
     parentId: parsed.data.parent_id ?? null,
+    openingPost: parsed.data.opening_post ?? false,
   })
 
   if (!result.ok) {

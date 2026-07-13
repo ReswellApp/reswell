@@ -1,21 +1,35 @@
 "use client"
 
 import Link from "next/link"
-import { Bell, PenSquare } from "lucide-react"
+import { PenSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { capitalizeWords } from "@/lib/listing-labels"
 import type { BoardTalkForumThread } from "@/lib/services/forumThreads"
 import { formatForumActivityTime } from "@/lib/utils/format-forum-activity-time"
 import { ThreadsParticipantStack } from "@/components/features/forum/threads-participant-stack"
+import {
+  threadsAccentTextClassName,
+  threadsCtaClassName,
+  threadsSurfaceClassName,
+} from "@/components/features/forum/threads-brand-styles"
 import { cn } from "@/lib/utils"
 
-type ThreadsLatestPanelProps = {
+type ThreadsMostActivePanelProps = {
   threads: BoardTalkForumThread[]
   className?: string
 }
 
-export function ThreadsLatestPanel({ threads, className }: ThreadsLatestPanelProps) {
-  const latest = threads.slice(0, 10)
+function sortByMostActive(threads: BoardTalkForumThread[]): BoardTalkForumThread[] {
+  return [...threads].sort(
+    (a, b) =>
+      b.commentCount - a.commentCount ||
+      b.likeCount - a.likeCount ||
+      new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+  )
+}
+
+export function ThreadsMostActivePanel({ threads, className }: ThreadsMostActivePanelProps) {
+  const mostActive = sortByMostActive(threads).slice(0, 3)
 
   return (
     <aside
@@ -25,13 +39,13 @@ export function ThreadsLatestPanel({ threads, className }: ThreadsLatestPanelPro
       )}
     >
       <div className="border-b border-border/60 px-4 py-3">
-        <h2 className="text-sm font-semibold text-foreground">Latest</h2>
+        <h2 className="text-sm font-semibold text-foreground">Most active</h2>
       </div>
-      {latest.length === 0 ? (
-        <p className="px-4 py-6 text-sm text-muted-foreground">No recent activity yet.</p>
+      {mostActive.length === 0 ? (
+        <p className="px-4 py-6 text-sm text-muted-foreground">No active threads yet.</p>
       ) : (
         <ul className="divide-y divide-border/50">
-          {latest.map((thread) => (
+          {mostActive.map((thread) => (
             <li key={thread.id}>
               <Link
                 href={`/threads/${thread.slug}`}
@@ -81,28 +95,18 @@ export function ThreadsHubToolbar({ onNewTopic }: ThreadsHubToolbarProps) {
     <div className="flex flex-wrap items-center gap-2">
       <Button
         type="button"
-        className="gap-2 rounded-md bg-[#3d4f63] px-4 shadow-sm hover:bg-[#334456]"
+        className={cn("gap-2 rounded-md px-4", threadsCtaClassName)}
         onClick={onNewTopic}
       >
         <PenSquare className="h-4 w-4" aria-hidden />
         New topic
-      </Button>
-      <Button
-        type="button"
-        variant="outline"
-        size="icon"
-        className="shrink-0 rounded-md border-border/70 bg-card"
-        aria-label="Notifications (coming soon)"
-        disabled
-      >
-        <Bell className="h-4 w-4 text-muted-foreground" />
       </Button>
     </div>
   )
 }
 
 function statClass(value: number, threshold: number): string {
-  return value >= threshold ? "font-semibold text-[#e8622a]" : "text-muted-foreground"
+  return value >= threshold ? threadsAccentTextClassName : "text-muted-foreground"
 }
 
 type ThreadsTopicTableProps = {
@@ -113,7 +117,10 @@ export function ThreadsTopicTable({ threads }: ThreadsTopicTableProps) {
   return (
     <div className="overflow-hidden rounded-xl border border-border/60 bg-card shadow-sm">
       <div
-        className="hidden grid-cols-[minmax(0,1fr)_4.5rem_4.5rem_4.5rem] gap-3 bg-[#3d4f63] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-white sm:grid"
+        className={cn(
+          "hidden grid-cols-[minmax(0,1fr)_4.5rem_4.5rem_4.5rem] gap-3 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-white sm:grid",
+          threadsSurfaceClassName,
+        )}
         aria-hidden
       >
         <span>Topic</span>

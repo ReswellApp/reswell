@@ -3,10 +3,12 @@
 import { cn } from "@/lib/utils"
 
 export type ProfileSettingsTabId = "shop" | "sign-in" | "addresses" | "notifications"
+export type ProfileSettingsVariant = "dashboard" | "threads"
 
 interface ProfileSettingsTabNavProps {
   activeTab: ProfileSettingsTabId
   onTabChange: (tab: ProfileSettingsTabId) => void
+  variant?: ProfileSettingsVariant
   labels: {
     shop: string
     signIn: string
@@ -20,8 +22,10 @@ const TAB_ORDER: ProfileSettingsTabId[] = ["shop", "sign-in", "addresses", "noti
 export function ProfileSettingsTabNav({
   activeTab,
   onTabChange,
+  variant = "dashboard",
   labels,
 }: ProfileSettingsTabNavProps) {
+  const isThreads = variant === "threads"
   const labelByTab: Record<ProfileSettingsTabId, string> = {
     shop: labels.shop,
     "sign-in": labels.signIn,
@@ -31,7 +35,10 @@ export function ProfileSettingsTabNav({
 
   return (
     <nav
-      className="flex gap-6 overflow-x-auto border-b border-neutral-200/80 pb-0 sm:gap-8"
+      className={cn(
+        "flex gap-6 overflow-x-auto pb-0 sm:gap-8",
+        isThreads ? "border-b border-[#355185]/15" : "border-b border-neutral-200/80",
+      )}
       aria-label="Profile settings"
     >
       {TAB_ORDER.map((tab) => {
@@ -43,13 +50,22 @@ export function ProfileSettingsTabNav({
             onClick={() => onTabChange(tab)}
             className={cn(
               "relative shrink-0 pb-3 text-sm font-medium transition-colors",
-              active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+              active
+                ? isThreads
+                  ? "text-[#355185]"
+                  : "text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
             aria-current={active ? "page" : undefined}
           >
             {labelByTab[tab]}
             {active ? (
-              <span className="absolute inset-x-0 -bottom-px h-0.5 rounded-full bg-primary" />
+              <span
+                className={cn(
+                  "absolute inset-x-0 -bottom-px h-0.5 rounded-full",
+                  isThreads ? "bg-[#5574AD]" : "bg-primary",
+                )}
+              />
             ) : null}
           </button>
         )

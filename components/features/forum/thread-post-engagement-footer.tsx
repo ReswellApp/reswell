@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ThreadsParticipantStack } from "@/components/features/forum/threads-participant-stack"
+import { threadsLikeBadgeClassName } from "@/components/features/forum/threads-brand-styles"
 import type { ForumThreadParticipant } from "@/lib/services/forumThreads"
 import { cn } from "@/lib/utils"
 
@@ -52,7 +53,7 @@ export function ThreadPostEngagementFooter({
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           {likeCount > 0 ? (
             <>
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-rose-50 text-base dark:bg-rose-950/40">
+              <span className={cn("inline-flex h-7 w-7 items-center justify-center rounded-full text-base", threadsLikeBadgeClassName)}>
                 ❤️
               </span>
               <span className="font-medium tabular-nums text-foreground">{likeCount}</span>

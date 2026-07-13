@@ -6,6 +6,7 @@ import { ThreadsBreadcrumbs, type ThreadsCrumb } from "@/components/features/for
 import { capitalizeWords } from "@/lib/listing-labels"
 
 type ThreadsBreadcrumbContextValue = {
+  pageLabel: string | null
   setPageLabel: (label: string | null) => void
 }
 
@@ -19,13 +20,16 @@ export function ThreadsBreadcrumbProvider({ children }: { children: ReactNode })
     setPageLabel(null)
   }, [pathname])
 
-  const value = useMemo(() => ({ setPageLabel }), [])
+  const value = useMemo(
+    () => ({
+      pageLabel,
+      setPageLabel,
+    }),
+    [pageLabel],
+  )
 
   return (
-    <ThreadsBreadcrumbContext.Provider value={value}>
-      <ThreadsRouteBreadcrumbs pageLabel={pageLabel} />
-      {children}
-    </ThreadsBreadcrumbContext.Provider>
+    <ThreadsBreadcrumbContext.Provider value={value}>{children}</ThreadsBreadcrumbContext.Provider>
   )
 }
 
@@ -38,9 +42,11 @@ export function useThreadsPageLabel(label: string | null | undefined) {
   }, [ctx, label])
 }
 
-function ThreadsRouteBreadcrumbs({ pageLabel }: { pageLabel: string | null }) {
+export function ThreadsRouteBreadcrumbs() {
+  const ctx = useContext(ThreadsBreadcrumbContext)
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const pageLabel = ctx?.pageLabel ?? null
 
   const items = useMemo((): ThreadsCrumb[] => {
     if (!pathname?.startsWith("/threads")) return []
@@ -65,6 +71,14 @@ function ThreadsRouteBreadcrumbs({ pageLabel }: { pageLabel: string | null }) {
       return [{ label: "Threads", href: "/threads" }, { label: "New topic" }]
     }
 
+    if (pathname === "/threads/profile") {
+      return [{ label: "Threads", href: "/threads" }, { label: "Profile" }]
+    }
+
+    if (pathname === "/threads/messages") {
+      return [{ label: "Threads", href: "/threads" }, { label: "Messages" }]
+    }
+
     if (pathname.startsWith("/threads/")) {
       const slug = pathname.slice("/threads/".length).split("/")[0]
       const fallback = slug ? capitalizeWords(slug.replace(/-/g, " ")) : "Topic"
@@ -79,5 +93,5 @@ function ThreadsRouteBreadcrumbs({ pageLabel }: { pageLabel: string | null }) {
 
   if (items.length === 0) return null
 
-  return <ThreadsBreadcrumbs items={items} />
+  return <ThreadsBreadcrumbs items={items} className="mb-0" />
 }

@@ -3,12 +3,14 @@
 import * as React from "react"
 import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
-import { MessageSquare, X } from "lucide-react"
+import { MessageSquare, Search, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 import {
   SiteSearchFormSubmitButton,
   SiteSearchShell,
   siteSearchInputClassName,
+  siteSearchSubmitButtonClassName,
 } from "@/components/site-search-bar"
 import { cn } from "@/lib/utils"
 import { capitalizeWords } from "@/lib/listing-labels"
@@ -22,6 +24,8 @@ type BoardTalkSearchProps = {
   defaultValue?: string
   className?: string
   placeholder?: string
+  /** Compact styling for embedding inside the Threads sub-nav bar. */
+  embedded?: boolean
 }
 
 type DropdownItem =
@@ -55,6 +59,7 @@ export function BoardTalkSearch({
   defaultValue = "",
   className,
   placeholder = "Search posts and comments…",
+  embedded = false,
 }: BoardTalkSearchProps) {
   const router = useRouter()
   const [value, setValue] = React.useState(defaultValue)
@@ -358,10 +363,25 @@ export function BoardTalkSearch({
     <div className={cn("w-full", className)} ref={containerRef}>
       <form onSubmit={handleSubmit}>
         <SiteSearchShell
+          className={cn(
+            embedded &&
+              "h-9 min-h-0 gap-0.5 rounded-md border-white/20 bg-white/95 py-0 pl-1.5 pr-1 shadow-none focus-within:border-white/40 focus-within:ring-white/20",
+          )}
           actionSlot={
-            <SiteSearchFormSubmitButton type="submit" aria-label="Search Threads">
-              Search
-            </SiteSearchFormSubmitButton>
+            embedded ? (
+              <Button
+                type="submit"
+                size="icon"
+                className={cn(siteSearchSubmitButtonClassName(true), "h-8 w-8 shrink-0 rounded-full p-0")}
+                aria-label="Search Threads"
+              >
+                <Search className="h-4 w-4" aria-hidden />
+              </Button>
+            ) : (
+              <SiteSearchFormSubmitButton type="submit" aria-label="Search Threads">
+                Search
+              </SiteSearchFormSubmitButton>
+            )
           }
         >
           <Input
@@ -412,7 +432,8 @@ export function BoardTalkSearch({
             aria-controls={showDropdown ? listId : undefined}
             autoComplete="off"
             className={cn(
-              siteSearchInputClassName(),
+              siteSearchInputClassName({ compact: embedded }),
+              embedded && "h-8 min-h-0 pl-2 text-sm",
               showClear && "pr-10",
               showClear &&
                 "[&::-webkit-search-cancel-button]:hidden [&::-moz-search-clear]:hidden",

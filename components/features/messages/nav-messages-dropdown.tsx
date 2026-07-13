@@ -5,7 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { formatDistanceToNow } from "date-fns"
-import { ChevronDown, Heart, MessageSquare, X } from "lucide-react"
+import { Bell, ChevronDown, Heart, MessageSquare, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
@@ -40,6 +40,7 @@ interface NavMessagesDropdownProps {
   unreadMessages: number
   triggerClassName?: string
   iconClassName?: string
+  triggerIcon?: "message" | "bell"
 }
 
 function NavMessagesEmptyState({ tab }: { tab: NavMessagesTab }) {
@@ -324,6 +325,7 @@ export function NavMessagesDropdown({
   unreadMessages,
   triggerClassName,
   iconClassName,
+  triggerIcon = "message",
 }: NavMessagesDropdownProps) {
   const router = useRouter()
   const isMobile = useIsMobile()
@@ -418,16 +420,18 @@ export function NavMessagesDropdown({
     onNavigate: navigateAndClose,
   }
 
+  const TriggerIcon = triggerIcon === "bell" ? Bell : MessageSquare
+
   const triggerButton = (
     <Button
       variant="ghost"
       size="icon"
       className={cn("relative text-foreground hover:bg-black/5 md:hover:bg-muted", triggerClassName)}
-      aria-label="Messages and activity"
+      aria-label={triggerIcon === "bell" ? "Notifications" : "Messages and activity"}
       aria-expanded={open}
       onClick={isMobile ? () => handleOpenChange(true) : undefined}
     >
-      <MessageSquare className={cn("h-6 w-6", iconClassName)} />
+      <TriggerIcon className={cn("h-6 w-6", iconClassName)} />
       <NavUnreadCountBadge count={unreadMessages} overlay />
     </Button>
   )

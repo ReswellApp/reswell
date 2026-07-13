@@ -6,6 +6,8 @@ import { Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { deleteForumThreadAction } from "@/app/actions/forum"
+import { cn } from "@/lib/utils"
+import { threadsDestructiveClassName } from "@/components/features/forum/threads-brand-styles"
 
 type Props = {
   threadId: string
@@ -34,7 +36,7 @@ export function ThreadDeleteButton({ threadId }: Props) {
       type="button"
       variant="outline"
       size="sm"
-      className="gap-1.5 text-destructive hover:text-destructive"
+      className={cn("gap-1.5", threadsDestructiveClassName)}
       disabled={loading}
       onClick={() => void remove()}
     >

@@ -33,8 +33,9 @@ export async function sendForumCommentMediaMessage(input: {
   attachment: Omit<ForumCommentAttachment, "bucket">
   caption?: string | null
   parentId?: string | null
+  openingPost?: boolean
 }): Promise<SendForumCommentMediaResult> {
-  const { threadId, senderId, caption, parentId = null } = input
+  const { threadId, senderId, caption, parentId = null, openingPost = false } = input
 
   const attachmentParsed = forumCommentAttachmentSchema.safeParse({
     ...input.attachment,
@@ -88,7 +89,7 @@ export async function sendForumCommentMediaMessage(input: {
   const trimmedCaption = caption?.trim() ?? ""
   const content = (trimmedCaption || defaultBody).slice(0, 8000)
 
-  const metadata = { attachment }
+  const metadata = openingPost ? { attachment, opening_post: true as const } : { attachment }
   const parsedMeta = forumCommentAttachmentMetadataSchema.safeParse(metadata)
   if (!parsedMeta.success) {
     return { ok: false, error: "Invalid metadata", status: 500 }

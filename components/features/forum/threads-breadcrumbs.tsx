@@ -30,7 +30,7 @@ export function ThreadsBreadcrumbs({ items, className }: ThreadsBreadcrumbsProps
       <BreadcrumbList>
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link href="/">Home</Link>
+            <Link href="/threads">Home</Link>
           </BreadcrumbLink>
         </BreadcrumbItem>
         {items.map((item, index) => {
