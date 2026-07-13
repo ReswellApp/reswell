@@ -69,11 +69,31 @@ export function isAuthServiceDegradedError(error: unknown): boolean {
   return code === 'unexpected_failure'
 }
 
+/** GoTrue or edge fetch returned 5xx / rate-limit — retry or degrade, never 500 middleware. */
+export function isAuthUpstreamHttpError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const status = (error as { status?: unknown }).status
+  return typeof status === 'number' && (status >= 500 || status === 429)
+}
+
+/** Supabase auth-js lock contention under burst load (common during upstream outages). */
+export function isAuthLockTimeoutError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  return (error as { isAcquireTimeout?: unknown }).isAcquireTimeout === true
+}
+
+/** Malformed upstream response — treat like transient outage, not a server failure. */
+export function isAuthUnknownError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  return (error as { name?: unknown }).name === 'AuthUnknownError'
+}
+
 /** Transient reachability failures (`AuthRetryableFetchError`, undici "fetch failed"). */
 export function isTransientAuthNetworkError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false
   const name = (error as { name?: unknown }).name
   if (name === 'AuthRetryableFetchError') return true
+  if (isAuthUpstreamHttpError(error)) return true
   const message = (error as { message?: unknown }).message
   return typeof message === 'string' && isTransientNetworkError(message)
 }
@@ -85,6 +105,8 @@ export function isNonFatalGetUserError(error: unknown): boolean {
   return (
     isBenignAuthSessionError(error) ||
     isTransientAuthNetworkError(error) ||
-    isAuthServiceDegradedError(error)
+    isAuthServiceDegradedError(error) ||
+    isAuthLockTimeoutError(error) ||
+    isAuthUnknownError(error)
   )
 }

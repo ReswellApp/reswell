@@ -1,5 +1,6 @@
 import {
   clearSupabaseAuthCookies,
+  isAuthLockTimeoutError,
   isInvalidRefreshTokenError,
   isNonFatalGetUserError,
   isTransientAuthNetworkError,
@@ -11,7 +12,6 @@ import {
 } from "@/lib/auth/password-reset-landing-flag"
 import { hasSupabaseAuthCookies } from '@/lib/auth/has-supabase-auth-cookies'
 import { pathnameRequiresAuthSession } from '@/lib/auth/pathname-requires-auth-session'
-import { copySupabaseAuthCookies } from '@/lib/auth/copy-supabase-auth-cookies'
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -105,6 +105,35 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.next({ request })
   }
 
+  try {
+    return await refreshSupabaseSession(request, {
+      pathname,
+      requiresAuth,
+    })
+  } catch (error) {
+    console.error('[middleware] updateSession failed; passing through', {
+      pathname,
+      message: error instanceof Error ? error.message : String(error),
+    })
+    return NextResponse.next({ request })
+  }
+}
+
+type RefreshSupabaseSessionOptions = {
+  pathname: string
+  requiresAuth: boolean
+}
+
+async function refreshSupabaseSession(
+  request: NextRequest,
+  { pathname, requiresAuth }: RefreshSupabaseSessionOptions,
+): Promise<NextResponse> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -148,7 +177,9 @@ export async function updateSession(request: NextRequest) {
   // the same failed refresh on every request.
   let user: Awaited<ReturnType<typeof supabase.auth.getUser>>['data']['user'] =
     null
-  const getUserAttempts = 3
+  let authLookupFailedUpstream = false
+  const getUserAttempts = 5
+  const getUserRetryDelayMs = 300
   for (let attempt = 0; attempt < getUserAttempts; attempt += 1) {
     try {
       const { data, error } = await supabase.auth.getUser()
@@ -159,11 +190,16 @@ export async function updateSession(request: NextRequest) {
         }
         if (isNonFatalGetUserError(error)) {
           if (
-            isTransientAuthNetworkError(error) &&
-            attempt < getUserAttempts - 1
+            isTransientAuthNetworkError(error) ||
+            isAuthLockTimeoutError(error)
           ) {
-            await new Promise((r) => setTimeout(r, 200 * (attempt + 1)))
-            continue
+            authLookupFailedUpstream = true
+            if (attempt < getUserAttempts - 1) {
+              await new Promise((r) =>
+                setTimeout(r, getUserRetryDelayMs * (attempt + 1)),
+              )
+              continue
+            }
           }
           break
         }
@@ -178,11 +214,16 @@ export async function updateSession(request: NextRequest) {
       }
       if (isNonFatalGetUserError(error)) {
         if (
-          isTransientAuthNetworkError(error) &&
-          attempt < getUserAttempts - 1
+          isTransientAuthNetworkError(error) ||
+          isAuthLockTimeoutError(error)
         ) {
-          await new Promise((r) => setTimeout(r, 200 * (attempt + 1)))
-          continue
+          authLookupFailedUpstream = true
+          if (attempt < getUserAttempts - 1) {
+            await new Promise((r) =>
+              setTimeout(r, getUserRetryDelayMs * (attempt + 1)),
+            )
+            continue
+          }
         }
         break
       }
@@ -194,6 +235,15 @@ export async function updateSession(request: NextRequest) {
   const isOffersShortcut = pathname === '/offers' || pathname.startsWith('/offers/')
 
   if (requiresAuth && !user) {
+    // During a Supabase outage, do not bounce logged-in users to /auth/login when
+    // session cookies are present but GoTrue could not be reached.
+    if (
+      authLookupFailedUpstream &&
+      hasSupabaseAuthCookies(request.cookies.getAll())
+    ) {
+      return supabaseResponse
+    }
+
     const url = request.nextUrl.clone()
     url.pathname = '/auth/login'
     const redirectTarget = isOffersShortcut
@@ -205,19 +255,24 @@ export async function updateSession(request: NextRequest) {
 
   // Admin routes: same rule as app/admin/layout.tsx — staff only (not buyers/sellers).
   if (request.nextUrl.pathname.startsWith('/admin') && user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('is_admin, is_employee')
-      .eq('id', user.id)
-      .single()
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_admin, is_employee')
+        .eq('id', user.id)
+        .single()
 
-    const isStaff =
-      profile?.is_admin === true || profile?.is_employee === true
+      const isStaff =
+        profile?.is_admin === true || profile?.is_employee === true
 
-    if (!isStaff) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/'
-      return NextResponse.redirect(url)
+      if (!isStaff) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/'
+        return NextResponse.redirect(url)
+      }
+    } catch {
+      // Profiles lookup can fail during upstream outages — admin layout re-checks.
+      return supabaseResponse
     }
   }
 
