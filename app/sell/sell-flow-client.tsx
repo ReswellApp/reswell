@@ -1558,6 +1558,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       if (!owned.ok) {
         if (!mounted) return
         if (owned.reason === "unauthorized") {
+          setEditLoading(false)
           openSignIn(`/sell?edit=${resumeDraftId}`)
           return
         }

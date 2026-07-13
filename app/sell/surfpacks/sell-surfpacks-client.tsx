@@ -214,6 +214,7 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
       if (!owned.ok) {
         if (!mounted) return
         if (owned.reason === "unauthorized") {
+          setEditLoading(false)
           signIn(`/sell/surfpacks?edit=${editId}`)
           return
         }

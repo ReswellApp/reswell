@@ -459,6 +459,7 @@ export default function SellFinsFlow({
       if (!owned.ok) {
         if (!mounted) return
         if (owned.reason === "unauthorized") {
+          setEditLoading(false)
           signIn(`/sell/fins?edit=${resumeDraftId}`)
           return
         }

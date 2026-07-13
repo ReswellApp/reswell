@@ -214,6 +214,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       if (!owned.ok) {
         if (!mounted) return
         if (owned.reason === "unauthorized") {
+          setEditLoading(false)
           signIn(`/sell/apparel?edit=${editId}`)
           return
         }
