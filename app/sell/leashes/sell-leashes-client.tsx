@@ -214,6 +214,7 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
       if (!owned.ok) {
         if (!mounted) return
         if (owned.reason === "unauthorized") {
+          setEditLoading(false)
           signIn(`/sell/leashes?edit=${editId}`)
           return
         }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { getSafeRouteUser } from "@/lib/auth/get-safe-server-user"
 import { fetchOwnedListingForEdit } from "@/lib/db/listingEdit"
+import { IMPERSONATION_COOKIE, parseImpersonationCookie } from "@/lib/impersonation"
 
 const listingIdParamSchema = z.string().uuid("Invalid listing id")
 
@@ -24,7 +25,27 @@ export async function GET(
       return NextResponse.json({ error: "Invalid listing id" }, { status: 400 })
     }
 
-    const listing = await fetchOwnedListingForEdit(supabase, idParsed.data, user.id)
+    const impersonationRaw = request.cookies.get(IMPERSONATION_COOKIE)?.value
+    const impersonation = impersonationRaw
+      ? parseImpersonationCookie(impersonationRaw)
+      : null
+
+    let ownerUserId = user.id
+    let listing = await fetchOwnedListingForEdit(supabase, idParsed.data, ownerUserId)
+
+    if (!listing && impersonation) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", user.id)
+        .maybeSingle()
+
+      if (profile?.is_admin === true) {
+        ownerUserId = impersonation.userId
+        listing = await fetchOwnedListingForEdit(supabase, idParsed.data, ownerUserId)
+      }
+    }
+
     if (!listing) {
       return NextResponse.json({ error: "Listing not found" }, { status: 404 })
     }
@@ -32,7 +53,7 @@ export async function GET(
     const ok = NextResponse.json(
       {
         data: {
-          userId: user.id,
+          userId: ownerUserId,
           listing,
         },
       },

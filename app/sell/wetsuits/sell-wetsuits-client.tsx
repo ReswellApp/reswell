@@ -214,6 +214,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
       if (!owned.ok) {
         if (!mounted) return
         if (owned.reason === "unauthorized") {
+          setEditLoading(false)
           signIn(`/sell/wetsuits?edit=${editId}`)
           return
         }

@@ -214,6 +214,7 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
       if (!owned.ok) {
         if (!mounted) return
         if (owned.reason === "unauthorized") {
+          setEditLoading(false)
           signIn(`/sell/accessories?edit=${editId}`)
           return
         }

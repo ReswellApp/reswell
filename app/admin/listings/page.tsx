@@ -597,6 +597,7 @@ export default function AdminListingsPage() {
     const email = listing.profiles?.email || null
     const res = await fetch('/api/admin/impersonate', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: listing.user_id, displayName, email }),
     })

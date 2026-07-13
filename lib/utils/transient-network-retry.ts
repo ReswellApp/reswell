@@ -5,7 +5,7 @@
  */
 export function isTransientNetworkError(message: string | null | undefined): boolean {
   if (!message) return false
-  return /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|socket hang up|network/i.test(
+  return /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|socket hang up|network|service unavailable|\b503\b|\b502\b|\b504\b/i.test(
     message,
   )
 }

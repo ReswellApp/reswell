@@ -35,13 +35,21 @@ export async function proxy(request: NextRequest) {
   const redirect = await resolveSeoRedirect(request)
   if (redirect) return redirect
 
-  const response = await updateSession(request)
+  try {
+    const response = await updateSession(request)
 
-  if (isAdCatalogCrawler(request.headers.get('user-agent'))) {
-    return applyPublicMarketplaceCacheHints(response, pathname)
+    if (isAdCatalogCrawler(request.headers.get('user-agent'))) {
+      return applyPublicMarketplaceCacheHints(response, pathname)
+    }
+
+    return response
+  } catch (error) {
+    console.error('[middleware] proxy failed; passing through', {
+      pathname,
+      message: error instanceof Error ? error.message : String(error),
+    })
+    return NextResponse.next({ request })
   }
-
-  return response
 }
 
 export const config = {

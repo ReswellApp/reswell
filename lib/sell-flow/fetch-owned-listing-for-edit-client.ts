@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
-import { getImpersonation } from "@/lib/impersonation"
+import { getActiveImpersonationClient } from "@/lib/impersonation"
 import { resolveSellEditUser } from "@/lib/sell-flow/resolve-sell-edit-user"
 
 export type OwnedListingForEditClientResult = {
@@ -57,14 +57,12 @@ export async function fetchOwnedListingForSellEditClient(
 
   const user = await resolveSellEditUser(supabase)
   if (user) {
-    const imp = getImpersonation()
+    const imp = getActiveImpersonationClient()
     let query = supabase
       .from("listings")
       .select(OWNED_EDIT_LISTING_SELECT)
       .eq("id", trimmed)
-    if (!imp) {
-      query = query.eq("user_id", user.id)
-    }
+    query = query.eq("user_id", imp?.userId ?? user.id)
 
     const { data: listing, error } = await query.single()
     if (!error && listing?.id) {
