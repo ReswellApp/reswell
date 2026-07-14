@@ -63,7 +63,6 @@ export async function getStripeConnectPrefillData(
             formatProfileLegalName(
               (profile as StripePrefillProfileRow | null)?.first_name,
               (profile as StripePrefillProfileRow | null)?.last_name,
-              (profile as StripePrefillProfileRow | null)?.display_name,
             ) || address.full_name,
           phone:
             (profile as StripePrefillProfileRow | null)?.phone?.trim() ||

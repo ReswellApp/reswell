@@ -22,7 +22,24 @@ import {
 import { cn } from "@/lib/utils"
 import type { SellerEarningsDashboardTotals } from "@/lib/db/sellerEarningsTotals"
 import type { EarningsTransaction, EarningsWalletSnapshot } from "./earnings-types"
-import type { StripeConnectStatusPayload } from "./stripe-bank-payout-section"
+import type { StripeConnectStatusPayload, PayoutSetupStatus } from "@/lib/utils/stripe-connect-status"
+
+function overviewPayoutStatusText(
+  setupStatus: PayoutSetupStatus | undefined,
+  bankLinked: boolean,
+  bankLast4: string | null,
+): string {
+  if (setupStatus === "pending_review") {
+    return "Stripe is reviewing your payout details. Refresh shortly."
+  }
+  if (setupStatus === "restricted") {
+    return "Payouts are paused by Stripe. See Bank transfers below or contact support."
+  }
+  if (setupStatus === "action_required" && bankLinked) {
+    return `Bank ····${bankLast4 ?? "••••"} connected — finish verification in Bank transfers below.`
+  }
+  return "Connect a bank and complete Stripe verification in Bank transfers below."
+}
 
 function msDays(d: number) {
   return d * 24 * 60 * 60 * 1000
@@ -77,7 +94,6 @@ export function EarningsPaymentsOverview({
   connectStatus,
   statusFetchFailed,
   activityHasMore,
-  onScrollToBankPayout,
 }: {
   wallet: EarningsWalletSnapshot | null
   transactions: EarningsTransaction[]
@@ -90,7 +106,6 @@ export function EarningsPaymentsOverview({
   connectStatus: StripeConnectStatusPayload | null
   statusFetchFailed: boolean
   activityHasMore: boolean
-  onScrollToBankPayout: () => void
 }) {
   const [periodValue, setPeriodValue] = useState<string>(PERIOD_OPTIONS[0].value)
   const periodDays =
@@ -128,10 +143,8 @@ export function EarningsPaymentsOverview({
   const displayPending = Number.isFinite(pendingRaw) ? pendingRaw : 0
   const displayTotal = displayAvailable + displayPending
 
-  const bankReady =
-    Boolean(connectStatus?.hasAccount) &&
-    Boolean(connectStatus?.payoutsEnabled) &&
-    Boolean(connectStatus?.detailsSubmitted)
+  const cashOutReady = Boolean(connectStatus?.cashOutReady)
+  const setupStatus = connectStatus?.setupStatus
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -289,7 +302,7 @@ export function EarningsPaymentsOverview({
                   We couldn&apos;t verify your payout setup. Use <span className="font-medium">Refresh</span> at the top
                   of the page, or finish setup in <span className="font-medium">Bank transfers</span> below.
                 </p>
-              ) : bankReady ? (
+              ) : cashOutReady ? (
                 <div className="flex gap-2.5">
                   <CheckCircle2 className="h-4 w-4 text-emerald-300 shrink-0 mt-0.5" aria-hidden />
                   <p className="text-primary-foreground/90 leading-relaxed">
@@ -305,20 +318,13 @@ export function EarningsPaymentsOverview({
                   </p>
                 </div>
               ) : (
-                <div className="space-y-2.5">
-                  <p className="text-primary-foreground/90 leading-relaxed">
-                    Payout details aren&apos;t finished yet. Complete them before earnings can transfer to your bank.
-                  </p>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    className="w-full sm:w-auto font-medium bg-primary-foreground text-primary hover:bg-primary-foreground/90"
-                    onClick={onScrollToBankPayout}
-                  >
-                    Complete payout details
-                  </Button>
-                </div>
+                <p className="text-primary-foreground/90 leading-relaxed">
+                  {overviewPayoutStatusText(
+                    setupStatus,
+                    Boolean(connectStatus?.bankLinked),
+                    connectStatus?.bankLast4 ?? null,
+                  )}
+                </p>
               )}
             </div>
           </CardContent>

@@ -24,6 +24,11 @@ import {
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { toUsStateCode } from "@/lib/utils/us-state-code"
 import {
+  deriveConnectStatusFields,
+  isStripeIdentityIncomplete,
+  type StripeConnectStatusPayload,
+} from "@/lib/utils/stripe-connect-status"
+import {
   instantBankPayoutFeeUsd,
   netUsdAfterInstantBankFee,
   roundMoney,
@@ -193,6 +198,64 @@ function pickDefaultBank(
   return null
 }
 
+export async function getStripeConnectStatusForUser(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<StripeConnectStatusPayload> {
+  const empty = deriveConnectStatusFields({
+    hasAccount: false,
+    payoutsEnabled: false,
+    detailsSubmitted: false,
+    bankLast4: null,
+    bankName: null,
+    defaultExternalAccountId: null,
+    bankAccounts: [],
+    bankAccountsDeletableViaPlatformApi: false,
+  })
+
+  const row = await getStripeConnectAccountByUserId(supabase, userId)
+  if (!row) {
+    return empty
+  }
+
+  let bankAccountsDeletableViaPlatformApi = false
+  let requirements: Stripe.Account.Requirements | undefined
+  let syncedAccount: Stripe.Account | undefined
+  try {
+    syncedAccount = await syncStripeConnectAccountRow(supabase, row.stripe_account_id)
+    bankAccountsDeletableViaPlatformApi = connectBanksDeletableViaPlatformApi(syncedAccount)
+    requirements = syncedAccount.requirements ?? undefined
+  } catch (e) {
+    console.error("[stripe connect] getStripeConnectStatusForUser sync", e)
+  }
+
+  const fresh = await getStripeConnectAccountByUserId(supabase, userId)
+
+  let bankAccounts: ConnectBankAccountSummary[] = []
+  try {
+    bankAccounts = await listExternalBankAccountsForConnectAccount(row.stripe_account_id)
+  } catch (e) {
+    console.error("[stripe connect] getStripeConnectStatusForUser list banks", e)
+  }
+
+  return deriveConnectStatusFields({
+    hasAccount: true,
+    payoutsEnabled: fresh?.payouts_enabled ?? false,
+    detailsSubmitted: fresh?.details_submitted ?? false,
+    bankLast4: fresh?.bank_last4 ?? null,
+    bankName: fresh?.bank_name ?? null,
+    defaultExternalAccountId: fresh?.default_external_account_id ?? null,
+    bankAccounts,
+    bankAccountsDeletableViaPlatformApi,
+    pastDue: requirements?.past_due ?? [],
+    currentlyDue: requirements?.currently_due ?? [],
+    eventuallyDue: requirements?.eventually_due ?? [],
+    pendingVerification: requirements?.pending_verification ?? [],
+    disabledReason: requirements?.disabled_reason ?? null,
+    identityIncomplete: isStripeIdentityIncomplete(syncedAccount?.individual),
+  })
+}
+
 export async function syncStripeConnectAccountRow(
   supabase: SupabaseClient,
   stripeAccountId: string,
@@ -286,9 +349,11 @@ async function loadStripeConnectAccountPrefillParams(
   const businessUrl = marketplaceBusinessProfileUrl(origin, slug ?? null)
 
   const nameFromAddress = splitPersonName(data.address?.full_name)
-  const nameFromProfile = splitPersonName(profile?.display_name)
-  const firstName = nameFromAddress.firstName ?? nameFromProfile.firstName
-  const lastName = nameFromAddress.lastName ?? nameFromProfile.lastName
+  // Use legal profile first/last or address name only — never shop display_name for Stripe identity.
+  const profileFirst = profile?.first_name?.trim()
+  const profileLast = profile?.last_name?.trim()
+  const firstName = profileFirst || nameFromAddress.firstName
+  const lastName = profileLast || nameFromAddress.lastName
 
   const individual: NonNullable<StripeConnectAccountPrefillFields["individual"]> = {}
   const trimmedEmail = email?.trim()
@@ -445,6 +510,12 @@ export async function createConnectAccountSessionClientSecret(
             external_account_collection: true,
           },
         },
+        notification_banner: {
+          enabled: true,
+          features: {
+            external_account_collection: true,
+          },
+        },
       },
     })
     if (!session.client_secret) {
@@ -454,6 +525,34 @@ export async function createConnectAccountSessionClientSecret(
   } catch (e) {
     console.error("[stripe connect] createConnectAccountSessionClientSecret", e)
     return { error: "Could not start the secure bank setup flow." }
+  }
+}
+
+/** Hosted Stripe onboarding — reliable when embedded onboarding has nothing left to show. */
+export async function createConnectHostedOnboardingLink(
+  stripeAccountId: string,
+): Promise<{ url: string } | { error: string }> {
+  const stripe = getStripe()
+  const origin = publicSiteOrigin().replace(/\/$/, "")
+  const returnPath = "/seller/payouts"
+
+  try {
+    const link = await stripe.accountLinks.create({
+      account: stripeAccountId,
+      refresh_url: `${origin}${returnPath}`,
+      return_url: `${origin}${returnPath}`,
+      type: "account_onboarding",
+      collection_options: {
+        fields: "eventually_due",
+      },
+    })
+    if (!link.url) {
+      return { error: "Stripe did not return an onboarding URL" }
+    }
+    return { url: link.url }
+  } catch (e) {
+    console.error("[stripe connect] createConnectHostedOnboardingLink", e)
+    return { error: "Could not open Stripe verification. Try again shortly." }
   }
 }
 
@@ -675,9 +774,12 @@ export async function cashOutToStripeConnectedAccount(
   await syncStripeConnectAccountRow(supabase, connected.id)
 
   if (!connected.payouts_enabled) {
+    const bankLinked = Boolean(pickDefaultBank(connected))
     return {
       ok: false,
-      error: "Complete bank setup and verification before cashing out.",
+      error: bankLinked
+        ? "Stripe hasn’t enabled payouts on your account yet. Open Complete verification in Earnings and finish any identity steps Stripe requests."
+        : "Complete bank setup and verification before cashing out.",
       status: 400,
     }
   }

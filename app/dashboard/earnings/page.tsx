@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { RefreshCw } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Info, RefreshCw } from "lucide-react"
 import { getEarningsWalletData, loadMoreEarningsActivity } from "@/app/actions/wallet"
 import { EARNINGS_ACTIVITY_PAGE_SIZE } from "@/lib/earnings-activity-page-size"
 import { EarningsLifetimeStats } from "@/components/features/earnings/earnings-lifetime-stats"
@@ -11,7 +12,7 @@ import { EarningsActivity } from "@/components/features/earnings/earnings-activi
 import { EarningsStripePayoutCard } from "@/components/features/earnings/earnings-stripe-payout-card"
 import { EarningsPaymentsOverview } from "@/components/features/earnings/earnings-payments-overview"
 import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
-import type { StripeConnectStatusPayload } from "@/components/features/earnings/stripe-bank-payout-section"
+import type { StripeConnectStatusPayload } from "@/lib/utils/stripe-connect-status"
 import type { EarningsTransaction, EarningsWalletSnapshot } from "@/components/features/earnings/earnings-types"
 import { dispatchHeaderWalletSync } from "@/lib/auth/header-wallet-sync"
 import type { SellerEarningsDashboardTotals } from "@/lib/db/sellerEarningsTotals"
@@ -205,11 +206,6 @@ export default function EarningsPage() {
     void fetchData()
   }, [fetchData])
 
-  const scrollToBankPayout = useCallback(() => {
-    window.setTimeout(() => {
-      document.getElementById("earnings-bank-payout")?.scrollIntoView({ behavior: "smooth", block: "start" })
-    }, 100)
-  }, [])
 
   useEffect(() => {
     if (!wallet?.id) return
@@ -344,6 +340,16 @@ export default function EarningsPage() {
         }
       />
 
+      <Alert className="border-sky-200 bg-sky-50 text-sky-950 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-50 [&>svg]:text-sky-700 dark:[&>svg]:text-sky-300">
+        <Info className="h-4 w-4" aria-hidden />
+        <AlertTitle className="text-sm font-semibold">We&apos;re on it</AlertTitle>
+        <AlertDescription className="text-sm leading-snug text-sky-900/90 dark:text-sky-100/90">
+          We&apos;re currently working to resolve issues with Earnings. Reswell is taking care of it —
+          your balance is safe, and you don&apos;t need to re-enter anything. We should have this
+          resolved in the next 24 hours. Thanks for your patience — Hayden, CEO of Reswell
+        </AlertDescription>
+      </Alert>
+
       <div className="mt-6 space-y-8">
         <section className="space-y-4">
           <h2 className="text-base font-semibold text-foreground">Overview</h2>
@@ -358,7 +364,6 @@ export default function EarningsPage() {
             connectStatus={stripeConnectStatus}
             statusFetchFailed={stripeStatusFailed}
             activityHasMore={activityHasMore}
-            onScrollToBankPayout={scrollToBankPayout}
           />
         </section>
 

@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { StripeConnectSetupDialog } from "@/components/features/earnings/stripe-connect-setup-dialog"
+import type { StripeConnectStatusPayload, PayoutSetupStatus } from "@/lib/utils/stripe-connect-status"
 import { AlertCircle, Building2, CheckCircle2, Loader2, Shield, Trash2, Zap } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -43,20 +44,26 @@ export interface StripeConnectBankAccountRow {
   currency: string
 }
 
-export interface StripeConnectStatusPayload {
-  hasAccount: boolean
-  payoutsEnabled: boolean
-  detailsSubmitted: boolean
-  bankLast4: string | null
-  bankName: string | null
-  defaultExternalAccountId: string | null
-  /** Linked US bank accounts on the Stripe Connect account (ACH). */
-  bankAccounts?: StripeConnectBankAccountRow[]
-  /**
-   * When true, the platform may remove banks via API (Custom Connect).
-   * Express accounts use Stripe’s embedded UI only — see `confirmRemoveBank` / Remove flow.
-   */
-  bankAccountsDeletableViaPlatformApi?: boolean
+export type { StripeConnectStatusPayload }
+
+function compactPayoutStatusLine(
+  setupStatus: PayoutSetupStatus | undefined,
+  requirementsChecklist: string[],
+  verificationMessage: string | null,
+): string | null {
+  if (setupStatus === "pending_review") {
+    return "Stripe is reviewing your details. Refresh this page in a few minutes."
+  }
+  if (setupStatus === "restricted") {
+    return verificationMessage ?? "Payouts are paused by Stripe. Contact support if this continues."
+  }
+  if (setupStatus === "action_required") {
+    if (requirementsChecklist.length > 0) {
+      return `Still needed in Stripe: ${requirementsChecklist.join(", ")}.`
+    }
+    return verificationMessage ?? "Finish verification in Stripe to enable cash out."
+  }
+  return null
 }
 
 interface StripeTransferHistoryRow {
@@ -130,7 +137,7 @@ export function StripeBankPayoutSection({
   onCashOutSettled,
 }: StripeBankPayoutSectionProps) {
   const [setupOpen, setSetupOpen] = useState(false)
-  const [setupUseManagement, setSetupUseManagement] = useState(false)
+  const [preferManagementSetup, setPreferManagementSetup] = useState(false)
   const [cashOpen, setCashOpen] = useState(false)
   const [amountStr, setAmountStr] = useState("")
   const [payoutSpeed, setPayoutSpeed] = useState<"standard" | "instant">("standard")
@@ -166,10 +173,15 @@ export function StripeBankPayoutSection({
     return []
   }, [connectStatus])
 
-  const ready =
-    Boolean(connectStatus?.payoutsEnabled) &&
-    bankRows.length > 0 &&
-    Boolean(bankRows.some((b) => b.last4))
+  const bankLinked = Boolean(connectStatus?.bankLinked)
+  const cashOutReady = Boolean(connectStatus?.cashOutReady)
+  const setupStatus = connectStatus?.setupStatus ?? "action_required"
+  const verificationNeeded = setupStatus === "action_required"
+  const pendingReview = setupStatus === "pending_review"
+  const restricted = setupStatus === "restricted"
+  const verificationMessage = connectStatus?.verificationMessage ?? null
+  const requirementsChecklist = connectStatus?.requirementsChecklist ?? []
+  const statusLine = compactPayoutStatusLine(setupStatus, requirementsChecklist, verificationMessage)
 
   const banksWithStripeIds = useMemo(
     () => bankRows.filter((b) => Boolean(b.id?.trim().startsWith("ba_"))),
@@ -296,10 +308,69 @@ export function StripeBankPayoutSection({
     [onRefresh],
   )
 
+  const openPayoutSetup = useCallback(
+    (management: boolean) => {
+      setPreferManagementSetup(management && cashOutReady)
+      setSetupOpen(true)
+    },
+    [cashOutReady],
+  )
+
   const openPayoutManagement = useCallback(() => {
-    setSetupUseManagement(true)
-    setSetupOpen(true)
-  }, [])
+    openPayoutSetup(true)
+  }, [openPayoutSetup])
+
+  const refreshConnectStatusAfterSetup = useCallback(async () => {
+    let lastStatus: StripeConnectStatusPayload | null = null
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      try {
+        const res = await fetch("/api/stripe/connect/sync", { method: "POST", cache: "no-store" })
+        if (res.ok) {
+          lastStatus = (await res.json()) as StripeConnectStatusPayload
+          if (
+            lastStatus.cashOutReady ||
+            lastStatus.setupStatus === "pending_review" ||
+            lastStatus.setupStatus === "restricted" ||
+            (lastStatus.setupStatus === "action_required" &&
+              (lastStatus.requirementsChecklist?.length ?? 0) === 0)
+          ) {
+            break
+          }
+          // Still has collectible fields — keep polling briefly in case Stripe just cleared them.
+          if (attempt >= 4 && lastStatus.setupStatus === "action_required") {
+            break
+          }
+        }
+      } catch {
+        /* retry */
+      }
+      if (attempt < 9) {
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+      }
+    }
+    await onRefresh()
+    if (lastStatus?.cashOutReady) {
+      toast.success("Payout verification complete — you can cash out now.")
+    } else if (lastStatus?.setupStatus === "pending_review") {
+      toast.message("Stripe is reviewing your details", {
+        description: "Refresh this page in a few minutes. You do not need to enter them again.",
+        duration: 12_000,
+      })
+    } else if (lastStatus?.setupStatus === "restricted") {
+      toast.message("Stripe paused payouts on this account", {
+        description: "There is nothing left to submit. Contact support if this continues.",
+        duration: 12_000,
+      })
+    } else if (
+      lastStatus?.setupStatus === "action_required" &&
+      (lastStatus.requirementsChecklist?.length ?? 0) > 0
+    ) {
+      toast.message("Stripe still needs a few details", {
+        description: `${lastStatus.requirementsChecklist.join(", ")}. Open Finish verification again to continue.`,
+        duration: 14_000,
+      })
+    }
+  }, [onRefresh])
 
   const confirmRemoveBank = useCallback(async () => {
     const target = removeTarget
@@ -375,28 +446,10 @@ export function StripeBankPayoutSection({
             <span>Bank details are collected and stored only by Stripe.</span>
           </div>
 
-          {ready ? (
+          {bankLinked ? (
             <div className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                  Payout accounts
-                </p>
-                <div className="flex flex-wrap items-center gap-2 justify-end">
-                  <Button
-                    type="button"
-                    className={cn(
-                      "rounded-full font-medium",
-                      "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white",
-                    )}
-                    onClick={openPayoutManagement}
-                  >
-                    Manage payout banks
-                  </Button>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground leading-snug">
-                Reswell can’t store bank numbers — Manage payout banks opens Stripe’s secure form if you need to update
-                your payout account.
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                Payout accounts
               </p>
               <ul className="space-y-2">
                 {bankRows.map((row) => {
@@ -466,30 +519,78 @@ export function StripeBankPayoutSection({
               type="button"
               variant="default"
               className="w-full sm:w-auto rounded-full font-medium"
-              onClick={() => {
-                setSetupUseManagement(false)
-                setSetupOpen(true)
-              }}
+              onClick={() => openPayoutSetup(false)}
             >
-              Add bank account
+              Connect bank account
             </Button>
           )}
 
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <Button
-              type="button"
+          {!cashOutReady && statusLine ? (
+            <p
               className={cn(
-                "w-full sm:w-auto rounded-full font-medium",
-                "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white",
+                "text-sm leading-snug",
+                pendingReview
+                  ? "text-blue-800 dark:text-blue-200"
+                  : "text-muted-foreground",
               )}
-              disabled={!ready || availableBalance < 10}
-              onClick={openCashOut}
             >
-              {ready ? `Cash out — $${availableBalance.toFixed(2)}` : "Complete bank setup to cash out"}
-            </Button>
-            {ready && availableBalance < 10 && (
-              <p className="text-xs text-muted-foreground">Minimum bank cash out is $10.00.</p>
-            )}
+              {statusLine}
+            </p>
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            {cashOutReady ? (
+              <>
+                <Button
+                  type="button"
+                  className={cn(
+                    "rounded-full font-medium",
+                    "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white",
+                  )}
+                  disabled={availableBalance < 10}
+                  onClick={openCashOut}
+                >
+                  Cash out — ${availableBalance.toFixed(2)}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-full font-medium"
+                  onClick={openPayoutManagement}
+                >
+                  Manage banks
+                </Button>
+                {availableBalance < 10 ? (
+                  <p className="w-full text-xs text-muted-foreground">Minimum bank cash out is $10.00.</p>
+                ) : null}
+              </>
+            ) : verificationNeeded && bankLinked ? (
+              <Button
+                type="button"
+                className={cn(
+                  "rounded-full font-medium",
+                  "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white",
+                )}
+                onClick={() => openPayoutSetup(false)}
+              >
+                Finish verification
+              </Button>
+            ) : restricted ? (
+              <Button type="button" variant="outline" className="rounded-full font-medium" asChild>
+                <Link href="/contact">Contact support</Link>
+              </Button>
+            ) : !bankLinked ? (
+              <Button
+                type="button"
+                className={cn(
+                  "rounded-full font-medium",
+                  "bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white",
+                )}
+                disabled
+              >
+                Connect a bank to cash out
+              </Button>
+            ) : null}
           </div>
 
           <div className="pt-2 border-t border-border/60">
@@ -564,9 +665,10 @@ export function StripeBankPayoutSection({
         open={setupOpen}
         onOpenChange={(o) => {
           setSetupOpen(o)
-          if (!o) void onRefresh()
+          if (!o) void refreshConnectStatusAfterSetup()
         }}
-        useManagement={setupUseManagement}
+        connectStatus={connectStatus}
+        preferManagement={preferManagementSetup}
       />
 
       <Dialog
