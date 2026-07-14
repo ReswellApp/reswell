@@ -12,7 +12,7 @@ export function buildContactTicketDraft(msg: ContactMessageRow): string {
       : null
   const supportThreadLine =
     msg.support_conversation_id != null && msg.support_conversation_id.trim() !== ""
-      ? `- **Support DM:** \`${msg.support_conversation_id}\` (reply in /messages)`
+      ? `- **Support DM:** \`${msg.support_conversation_id}\` (reply in /admin/contact-messages/${msg.id})`
       : null
 
   return [
@@ -33,6 +33,6 @@ export function buildContactTicketDraft(msg: ContactMessageRow): string {
     msg.message.trim(),
     "",
     "---",
-    "_Use **Open in Messages** in admin when a support thread is linked._",
+    "_Use **Open thread** in admin when a support thread is linked._",
   ].join("\n")
 }

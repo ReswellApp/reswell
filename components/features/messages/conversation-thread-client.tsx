@@ -149,12 +149,14 @@ export interface ConversationThreadClientProps {
   conversationId: string
   initialData: ConversationThreadData
   embedded?: boolean
+  backHref?: string
 }
 
 export function ConversationThreadClient({
   conversationId: id,
   initialData,
   embedded = false,
+  backHref: backHrefProp,
 }: ConversationThreadClientProps) {
   const [conversation, setConversation] = useState<Conversation | null>(
     () => (initialData.conversation as Conversation | null) ?? null,
@@ -622,7 +624,8 @@ export function ConversationThreadClient({
   const otherUser = conversation.buyer_id === currentUserId ? conversation.seller : conversation.buyer
   const otherUserId = getOtherUserIdFromConversation(conversation, currentUserId ?? '')
   const backHref =
-    listingThreads.length > 1 ? `/messages/with/${otherUserId}` : '/messages'
+    backHrefProp ??
+    (listingThreads.length > 1 ? `/messages/with/${otherUserId}` : '/messages')
   const showListingSwitcher = listingThreads.length > 1
 
   return (

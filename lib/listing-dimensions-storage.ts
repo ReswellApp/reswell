@@ -18,6 +18,10 @@ import {
   parseVolumeLiters,
   isTapeStyleInchesEntryComplete,
 } from "@/lib/board-measurements"
+import {
+  resolveLengthTotalInches,
+  resolveVolumeLiters,
+} from "@/lib/listing-browse-facet-measurements"
 
 const MAX_DIMENSIONS_COLUMN_LEN = 512
 
@@ -317,6 +321,45 @@ export function parseListingDimensionsColumn(raw: string | null | undefined): {
   }
 
   return null
+}
+
+/** Rehydrate surfboard sell-form dimension fields from persisted listing columns. */
+export function surfboardSellFormDimensionsFromListingRow(row: {
+  dimensions?: string | null
+  length_total_inches?: number | null
+  volume_liters?: number | null
+  title?: string | null
+}): {
+  boardLength: string
+  boardWidthInches: string
+  boardThicknessInches: string
+  boardVolumeL: string
+} {
+  const fromColumn = row.dimensions?.trim() ? parseListingDimensionsColumn(row.dimensions) : null
+  if (fromColumn) return fromColumn
+
+  const boardLength = (() => {
+    const total = resolveLengthTotalInches(row)
+    if (total == null) return ""
+    const ft = Math.floor(total / 12)
+    const inches = total - ft * 12
+    const inchStr =
+      inches === 0 ? "0" : formatDecimalDimension(inches) || String(inches)
+    return formatBoardLengthInputFromParts(String(ft), inchStr)
+  })()
+
+  const boardVolumeL = (() => {
+    const vol = resolveVolumeLiters(row)
+    if (vol == null) return ""
+    return formatDecimalDimension(vol) || String(vol)
+  })()
+
+  return {
+    boardLength,
+    boardWidthInches: "",
+    boardThicknessInches: "",
+    boardVolumeL,
+  }
 }
 
 /** Card / tile subtitle: canonical length label from `dimensions` only. */

@@ -9,6 +9,7 @@ import {
   UserCircle,
   Users,
   MessageSquare,
+  LifeBuoy,
 } from "lucide-react"
 
 export interface DashboardNavChildLink {
@@ -36,6 +37,7 @@ export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [
   { name: "My Listings", href: "/dashboard/listings", icon: Package },
   { name: "Offers", href: "/dashboard/offers", icon: Handshake },
   DASHBOARD_MESSAGES_NAV,
+  { name: "Support", href: "/dashboard/support", icon: LifeBuoy },
   { name: "Purchases", href: "/dashboard/purchases", icon: ShoppingBag },
   { name: "Sales", href: "/dashboard/sales", icon: PackageCheck },
   { name: "Following", href: "/dashboard/following", icon: Users },

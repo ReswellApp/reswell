@@ -1,12 +1,12 @@
 import { insertContactFormMessage } from "@/lib/db/contactMessages"
 import { trackKlaviyoSupportTicketCreated } from "@/lib/klaviyo/track-support-ticket"
-import { createServiceRoleClient } from "@/lib/supabase/server"
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 
 export async function submitContactFormMessageService(input: {
   name: string
   email: string
   message: string
-}): Promise<{ success: true } | { error: string }> {
+}): Promise<{ success: true; ticketId?: string } | { error: string }> {
   const name = typeof input.name === "string" ? input.name.trim() : ""
   const email = typeof input.email === "string" ? input.email.trim() : ""
   const message = typeof input.message === "string" ? input.message.trim() : ""
@@ -19,6 +19,19 @@ export async function submitContactFormMessageService(input: {
     return { error: "Message is too long" }
   }
 
+  let linkedUserId: string | null = null
+  try {
+    const sessionClient = await createClient()
+    const {
+      data: { user },
+    } = await sessionClient.auth.getUser()
+    if (user?.id && (user.email ?? "").trim().toLowerCase() === email.toLowerCase()) {
+      linkedUserId = user.id
+    }
+  } catch {
+    // Anonymous submission — continue without linking.
+  }
+
   let supabase: ReturnType<typeof createServiceRoleClient>
   try {
     supabase = createServiceRoleClient()
@@ -27,7 +40,12 @@ export async function submitContactFormMessageService(input: {
     return { error: "Failed to send message" }
   }
 
-  const inserted = await insertContactFormMessage(supabase, { name, email, message })
+  const inserted = await insertContactFormMessage(supabase, {
+    name,
+    email,
+    message,
+    user_id: linkedUserId,
+  })
   if ("error" in inserted) {
     console.error("Contact form insert error:", inserted.error)
     return { error: "Failed to send message" }
@@ -36,9 +54,10 @@ export async function submitContactFormMessageService(input: {
   await trackKlaviyoSupportTicketCreated({
     supportTicketId: inserted.id,
     email,
+    externalId: linkedUserId,
     source: "contact_form",
     subject: "Website contact",
   })
 
-  return { success: true }
+  return { success: true, ticketId: inserted.id }
 }

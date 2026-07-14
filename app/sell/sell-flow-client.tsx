@@ -164,7 +164,7 @@ import {
 import { singleFinSetupSlugForForm } from "@/lib/listing-fin-setup-tags"
 import {
   listingDimensionsColumnFromSurfboardSellForm,
-  parseListingDimensionsColumn,
+  surfboardSellFormDimensionsFromListingRow,
 } from "@/lib/listing-dimensions-storage"
 import { reswellParcelAutofillStringsFromBoard } from "@/lib/surfboard-shipping-estimates"
 import {
@@ -1689,10 +1689,14 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         loadedReswellPackage.reswellPackageHeightIn.trim() !== "" ||
         loadedReswellPackage.reswellPackageWeightLb.trim() !== "" ||
         loadedReswellPackage.reswellPackageWeightOz.trim() !== ""
-      const parsedDims =
-        (listing as { dimensions?: string | null }).dimensions?.trim()
-          ? parseListingDimensionsColumn((listing as { dimensions?: string | null }).dimensions)
-          : null
+      const parsedDims = surfboardSellFormDimensionsFromListingRow(
+        listing as {
+          dimensions?: string | null
+          length_total_inches?: number | null
+          volume_liters?: number | null
+          title?: string | null
+        },
+      )
       setFormData({
         title: listing.title ?? "",
         description: (listing.description ?? "").trim() === "" ? "" : (listing.description ?? ""),
@@ -1732,10 +1736,10 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         buyerOffers:
           (listing as { buyer_offers_enabled?: boolean | null }).buyer_offers_enabled !== false,
         boardType: listing.board_type ?? "",
-        boardLength: parsedDims?.boardLength ?? "",
-        boardWidthInches: parsedDims?.boardWidthInches ?? "",
-        boardThicknessInches: parsedDims?.boardThicknessInches ?? "",
-        boardVolumeL: parsedDims?.boardVolumeL ?? "",
+        boardLength: parsedDims.boardLength,
+        boardWidthInches: parsedDims.boardWidthInches,
+        boardThicknessInches: parsedDims.boardThicknessInches,
+        boardVolumeL: parsedDims.boardVolumeL,
         boardFins: singleFinSetupSlugForForm(
           (listing as { fins_setup?: string | null }).fins_setup,
         ),
@@ -2816,11 +2820,15 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
               removedImageIds,
               images: imageOps,
               catalog_snapshot: boardCatalogSnapshotFromSellForm(fd),
+              publishFromDraft: listingIsDraft,
             }),
           })
           const data = await res.json()
           if (!res.ok) throw new Error(data.error || "Failed to update listing")
           listingSlug = data.slug
+          if (data.published === true) {
+            setEditListingStatus("active")
+          }
           goSubmitStep(2)
         } else {
           dismissUploadProgressToast()
@@ -3187,6 +3195,17 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                     Dismiss
                   </Button>
                 </div>
+              </AlertDescription>
+            </Alert>
+          ) : null}
+
+          {!editLoading && getImpersonation() && listingIsDraft ? (
+            <Alert className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Seller draft</AlertTitle>
+              <AlertDescription>
+                You are editing this seller&apos;s draft as admin. Finish any missing fields, then
+                use <span className="font-medium">Publish listing</span> to make it live.
               </AlertDescription>
             </Alert>
           ) : null}

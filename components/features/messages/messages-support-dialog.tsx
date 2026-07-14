@@ -157,13 +157,16 @@ export function MessagesSupportDialog({
         return
       }
       if ("success" in res && res.success) {
-        if (res.support_conversation_id) {
-          toast.success("Ticket sent — opening your support chat.")
-          handleOpenChange(false)
+        toast.success(
+          res.support_conversation_id
+            ? "Ticket sent — opening your support request."
+            : "Thanks — we received your message and will get back to you soon.",
+        )
+        handleOpenChange(false)
+        if (res.id) {
+          router.push(`/dashboard/support/${res.id}`)
+        } else if (res.support_conversation_id) {
           router.push(`/messages/${res.support_conversation_id}`)
-        } else {
-          toast.success("Thanks — we received your message and will get back to you soon.")
-          handleOpenChange(false)
         }
       }
     })

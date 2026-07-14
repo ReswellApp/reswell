@@ -65,7 +65,7 @@ export async function updatePresenceHeartbeat() {
 export async function submitContactMessage(input: { name: string; email: string; message: string }) {
   const result = await submitContactFormMessageService(input)
   if ("error" in result) {
-    return { error: result.error as const }
+    return { error: result.error }
   }
-  return { success: true as const }
+  return { success: true as const, ticketId: result.ticketId }
 }

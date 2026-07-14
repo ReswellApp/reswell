@@ -12,6 +12,12 @@ import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listi
 import { removeListingImageFilesFromStorage } from "@/lib/services/listingStorageCleanup"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
+import {
+  applyPublishedListingSideEffects,
+  validateListingDraftPublishable,
+} from "@/lib/services/publishListingDraft"
+import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
+import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
 
 export async function PUT(request: NextRequest) {
   const supabase = await createClient()
@@ -57,6 +63,7 @@ export async function PUT(request: NextRequest) {
     removedImageIds = [],
     images = [],
     catalog_snapshot,
+    publishFromDraft = false,
   } = body as {
     listingId: string
     listing: Record<string, unknown>
@@ -69,6 +76,7 @@ export async function PUT(request: NextRequest) {
       sort_order: number
     }[]
     catalog_snapshot?: SellFormBoardCatalogSlice
+    publishFromDraft?: boolean
   }
 
   if (!listingId || !listingData) {
@@ -77,7 +85,9 @@ export async function PUT(request: NextRequest) {
 
   const { data: existingListing, error: existingErr } = await service
     .from("listings")
-    .select("user_id")
+    .select(
+      "user_id, status, title, description, price, city, state, latitude, longitude, slug, local_pickup, shipping_available",
+    )
     .eq("id", listingId)
     .single()
 
@@ -99,9 +109,59 @@ export async function PUT(request: NextRequest) {
     slug?: unknown
   }
 
+  const publishingFromDraft =
+    existingListing.status === "draft" && publishFromDraft === true
+
+  if (publishingFromDraft) {
+    const mergedForValidation = {
+      status: "draft" as const,
+      price:
+        typeof listingFields.price === "number"
+          ? listingFields.price
+          : existingListing.price,
+      description:
+        typeof listingFields.description === "string"
+          ? listingFields.description
+          : existingListing.description,
+      city:
+        typeof listingFields.city === "string" ? listingFields.city : existingListing.city,
+      state:
+        typeof listingFields.state === "string" ? listingFields.state : existingListing.state,
+      latitude:
+        typeof listingFields.latitude === "number"
+          ? listingFields.latitude
+          : existingListing.latitude,
+      longitude:
+        typeof listingFields.longitude === "number"
+          ? listingFields.longitude
+          : existingListing.longitude,
+      imageCount: images.length,
+    }
+    const validationError = validateListingDraftPublishable(mergedForValidation)
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 })
+    }
+  }
+
+  const publishSlug = publishingFromDraft
+    ? await generateUniqueListingSlug(
+        service,
+        typeof listingFields.title === "string" && listingFields.title.trim()
+          ? listingFields.title.trim()
+          : String(existingListing.title ?? "listing"),
+      )
+    : null
+
   const updatePayload = {
     ...listingFields,
     updated_at: new Date().toISOString(),
+    ...(publishingFromDraft
+      ? {
+          status: "active" as const,
+          hidden_from_site: false,
+          slug: publishSlug ?? undefined,
+        }
+      : {}),
   }
   let { data: updatedRow, error: updateError } = await service
     .from("listings")
@@ -137,7 +197,9 @@ export async function PUT(request: NextRequest) {
   const slugTrim =
     updatedRow && typeof (updatedRow as { slug?: string }).slug === "string"
       ? String((updatedRow as { slug: string }).slug).trim()
-      : ""
+      : publishingFromDraft
+        ? (publishSlug ?? "")
+        : ""
 
   if (removedImageIds.length > 0) {
     const { data: removedRows } = await service
@@ -229,9 +291,41 @@ export async function PUT(request: NextRequest) {
     revalidatePath("/fins")
   }
 
-  void syncListingToGoogleMerchantBestEffort(service, listingId)
+  if (publishingFromDraft) {
+    const primary = images.find((img) => img.url?.trim())
+    void trackKlaviyoListingCreated({
+      sellerUserId: existingListing.user_id,
+      sellerEmail: impersonation.email,
+      listingId,
+      title:
+        typeof listingFields.title === "string" && listingFields.title.trim()
+          ? listingFields.title.trim()
+          : String(existingListing.title ?? "Listing"),
+      price: Number(
+        typeof listingFields.price === "number"
+          ? listingFields.price
+          : existingListing.price ?? 0,
+      ),
+      photoUrl: primary?.url?.trim() ?? null,
+      localPickup:
+        typeof listingFields.local_pickup === "boolean"
+          ? listingFields.local_pickup
+          : existingListing.local_pickup,
+      shippingAvailable:
+        typeof listingFields.shipping_available === "boolean"
+          ? listingFields.shipping_available
+          : existingListing.shipping_available,
+    })
+    await applyPublishedListingSideEffects(service, listingId, existingListing.user_id)
+  } else {
+    void syncListingToGoogleMerchantBestEffort(service, listingId)
+    await revalidateSellersAfterListingChange(service, existingListing.user_id)
+  }
 
-  await revalidateSellersAfterListingChange(service, existingListing.user_id)
-
-  return NextResponse.json({ success: true, slug, seller_display_name: sellerDisplayName })
+  return NextResponse.json({
+    success: true,
+    slug,
+    published: publishingFromDraft,
+    seller_display_name: sellerDisplayName,
+  })
 }

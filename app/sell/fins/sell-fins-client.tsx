@@ -828,9 +828,14 @@ export default function SellFinsFlow({
               listing: buildFinListingPersistFields(payload),
               removedImageIds,
               images: imageOps,
+              publishFromDraft: listingIsDraft,
             }),
           })
-          const data = (await res.json().catch(() => ({}))) as { error?: string; slug?: string }
+          const data = (await res.json().catch(() => ({}))) as {
+            error?: string
+            slug?: string
+            published?: boolean
+          }
           if (!res.ok) {
             toast.error(typeof data.error === "string" ? data.error : "Failed to update listing")
             setSubmitting(false)
@@ -839,7 +844,11 @@ export default function SellFinsFlow({
           clearPersistedFinSellFlowStep()
           clearPendingPublish("fins")
           if (user.id) await clearSellListingDraft(user.id, "fins")
-          toast.success("Listing updated")
+          toast.success(
+            data.published === true || listingIsDraft || isLocalOnlyServerDraftSubmit
+              ? "Your fin is live!"
+              : "Listing updated",
+          )
           router.push(`/l/${data.slug ?? editId}`)
           return
         }

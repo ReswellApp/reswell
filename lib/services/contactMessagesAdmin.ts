@@ -164,6 +164,15 @@ export async function bulkUpdateContactMessagesAdminService(
   return { success: true }
 }
 
+function adminSupportRoutingError(resolved: { ok: false; error: string }): string {
+  const hasId = Boolean(process.env.MESSAGES_DIRECT_SUPPORT_USER_ID?.trim())
+  const hasEmail = Boolean(process.env.MESSAGES_DIRECT_SUPPORT_EMAIL?.trim())
+  if (!hasId && !hasEmail) {
+    return "Support routing isn’t configured. Set MESSAGES_DIRECT_SUPPORT_USER_ID (preferred) or MESSAGES_DIRECT_SUPPORT_EMAIL in your environment (see .env.example), then restart the dev server."
+  }
+  return `Support routing failed: ${resolved.error}`
+}
+
 function formatLinkedSupportThreadIntro(args: { ticketId: string; topic: string | null }): string {
   const topicLabel = args.topic?.trim() || "Support request"
   return [
@@ -245,7 +254,7 @@ export async function ensureSupportTicketThreadAdminService(
 
   const resolvedSupport = await resolveSupportRecipientUserId()
   if (!resolvedSupport.ok) {
-    return { error: "Support teammate routing isn’t configured (support user id/email)." }
+    return { error: adminSupportRoutingError(resolvedSupport) }
   }
 
   const memberId = row.user_id
@@ -317,7 +326,7 @@ export async function sendSupportTicketAdminReplyService(
 
   const resolvedSupport = await resolveSupportRecipientUserId()
   if (!resolvedSupport.ok) {
-    return { error: "Support teammate routing isn’t configured (support user id/email)." }
+    return { error: adminSupportRoutingError(resolvedSupport) }
   }
 
   const memberId = row.user_id

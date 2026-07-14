@@ -13,6 +13,7 @@ import { submitContactMessage } from "@/app/actions/account"
 
 export function ContactForm() {
   const [submitted, setSubmitted] = useState(false)
+  const [ticketId, setTicketId] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
@@ -27,6 +28,7 @@ export function ContactForm() {
         toast.error(data.error ?? "Failed to send message")
         return
       }
+      setTicketId(data.ticketId ?? null)
       setSubmitted(true)
     } catch {
       toast.error("Failed to send message")
@@ -47,7 +49,21 @@ export function ContactForm() {
               <p className="text-lg font-semibold tracking-tight text-foreground">Message received</p>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 Thanks for reaching out. We’ve logged your note and will follow up within 1–2 business days when a
-                reply is needed. For quick answers, the{" "}
+                reply is needed.
+                {ticketId ? (
+                  <>
+                    {" "}
+                    Track this request anytime in{" "}
+                    <Link
+                      href={`/dashboard/support/${ticketId}`}
+                      className="font-medium text-foreground underline underline-offset-4 hover:text-primary"
+                    >
+                      Dashboard → Support
+                    </Link>
+                    .
+                  </>
+                ) : null}{" "}
+                For quick answers, the{" "}
                 <Link href="/faq" className="font-medium text-foreground underline underline-offset-4 hover:text-primary">
                   FAQ
                 </Link>{" "}

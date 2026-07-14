@@ -58,6 +58,7 @@ import {
   Download,
   Eye,
   EyeOff,
+  Globe,
   Flag,
   Layers,
   MoreVertical,
@@ -508,6 +509,47 @@ export default function AdminListingsPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  async function publishDraftListing(listing: Listing) {
+    const title = listing.title?.trim() || 'Untitled draft'
+    if (
+      !confirm(
+        `Publish "${title}" live? The listing must already have a price, description, location, and at least one photo.`,
+      )
+    ) {
+      return
+    }
+    const res = await fetch(`/api/admin/listings/${encodeURIComponent(listing.id)}/publish`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+    const json = (await res.json().catch(() => ({}))) as {
+      data?: { slug?: string }
+      error?: unknown
+    }
+    if (!res.ok) {
+      const errMsg =
+        typeof json.error === 'string'
+          ? json.error
+          : 'Failed to publish draft'
+      toast.error(errMsg)
+      return
+    }
+    const slug = typeof json.data?.slug === 'string' ? json.data.slug : null
+    setListings((prev) =>
+      prev.map((l) =>
+        l.id === listing.id
+          ? {
+              ...l,
+              status: 'active',
+              hidden_from_site: false,
+              slug: slug ?? l.slug,
+            }
+          : l,
+      ),
+    )
+    toast.success('Draft published')
   }
 
   async function updateListingStatus(id: string, newStatus: string) {
@@ -1452,6 +1494,11 @@ export default function AdminListingsPage() {
                           <DropdownMenuItem onClick={() => editListing(listing)}>
                             <Pencil className="mr-2 h-4 w-4" /> Edit listing
                           </DropdownMenuItem>
+                          {listing.status === 'draft' ? (
+                            <DropdownMenuItem onClick={() => publishDraftListing(listing)}>
+                              <Globe className="mr-2 h-4 w-4" /> Publish draft
+                            </DropdownMenuItem>
+                          ) : null}
                           <DropdownMenuItem
                             onClick={() => {
                               setSectionPick(normalizeListingSection(listing.section) ?? 'surfboards')

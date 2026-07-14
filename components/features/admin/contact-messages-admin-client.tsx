@@ -430,9 +430,9 @@ export function ContactMessagesAdminClient() {
             <h1 className="text-2xl font-bold tracking-tight text-foreground">Support inbox</h1>
           </div>
           <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Triage website contact and in-app Messages tickets. Replies in this drawer post to the member’s{" "}
-            <strong>Messages</strong> thread from your configured support teammate; workflow changes notify them
-            automatically when a thread is linked.
+            Triage website contact and in-app Messages tickets. Open a ticket to chat in the same thread the
+            member sees under <strong>Dashboard → Support</strong>; workflow changes notify them automatically
+            when a thread is linked.
           </p>
         </div>
         <TabsList className="h-auto w-full shrink-0 flex-wrap justify-start gap-1 p-1 sm:w-auto">
@@ -691,18 +691,34 @@ export function ContactMessagesAdminClient() {
                             <p className="line-clamp-2 text-sm text-muted-foreground">{r.message}</p>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="text-primary"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setActive(r)
-                              }}
-                            >
-                              Review
-                            </Button>
+                            <div className="flex items-center justify-end gap-1">
+                              {r.user_id ? (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-primary"
+                                  asChild
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Link href={`/admin/contact-messages/${r.id}`}>
+                                    {r.support_conversation_id ? "Open thread" : "Start thread"}
+                                  </Link>
+                                </Button>
+                              ) : null}
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="text-muted-foreground"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setActive(r)
+                                }}
+                              >
+                                Review
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       )
@@ -776,9 +792,20 @@ export function ContactMessagesAdminClient() {
                         </p>
                         <p className="mt-1 text-sm text-muted-foreground">
                           Sends from your configured support teammate — the member reads it under{" "}
-                          <strong>Messages</strong> like any other DM. Sending also links a thread if this ticket did
+                          <strong>Dashboard → Support</strong>. Sending also links a thread if this ticket did
                           not have one yet.
                         </p>
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          className="mt-1 h-auto px-0 text-primary"
+                          asChild
+                        >
+                          <Link href={`/admin/contact-messages/${active.id}`}>
+                            Open full support thread
+                          </Link>
+                        </Button>
                         {!active.support_conversation_id ? (
                           <p className="mt-2 text-sm text-amber-700 dark:text-amber-500/90">
                             No support thread linked yet. Send a reply below, or use &quot;Open support thread&quot; to
@@ -837,7 +864,7 @@ export function ContactMessagesAdminClient() {
                           ) : null}
                           {active.support_conversation_id ? (
                             <Button type="button" variant="secondary" size="sm" className="gap-1.5 rounded-full" asChild>
-                              <Link href={`/messages/${active.support_conversation_id}`}>
+                              <Link href={`/admin/contact-messages/${active.id}`}>
                                 <ExternalLink className="h-4 w-4" aria-hidden />
                                 Open thread
                               </Link>
@@ -859,8 +886,10 @@ export function ContactMessagesAdminClient() {
                     </div>
                   ) : (
                     <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
-                      This visitor did not submit the form while logged in. There is no in-app Messages thread —
-                      continue by email ({active.email}) or escalate manually.
+                      This visitor did not submit the form while logged in. An hourly job links tickets
+                      when the email matches a member account — then inbox replies and Dashboard →
+                      Support unlock. Until then, continue by email ({active.email}) or escalate
+                      manually.
                     </div>
                   )}
 

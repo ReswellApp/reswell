@@ -24,6 +24,12 @@ export type ContactMessageRow = {
 export const CONTACT_MESSAGE_ADMIN_SELECT =
   "id, name, email, subject, message, created_at, support_status, internal_notes, updated_at, source, user_id, related_conversation_id, support_conversation_id"
 
+/** Member portal — never expose internal_notes. */
+export const CONTACT_MESSAGE_USER_SELECT =
+  "id, name, email, subject, message, created_at, support_status, updated_at, source, user_id, related_conversation_id, support_conversation_id"
+
+export type ContactMessageUserRow = Omit<ContactMessageRow, "internal_notes">
+
 export function normalizeContactMessageRow(raw: Record<string, unknown>): ContactMessageRow {
   const source =
     raw.source === "messages_support" ? "messages_support" : "contact_form"
@@ -46,10 +52,16 @@ export function normalizeContactMessageRow(raw: Record<string, unknown>): Contac
   }
 }
 
+function normalizeContactMessageUserRow(raw: Record<string, unknown>): ContactMessageUserRow {
+  const row = normalizeContactMessageRow(raw)
+  const { internal_notes: _ignored, ...userRow } = row
+  return userRow
+}
+
 /** Website /contact form row — server-only (service role); never trust client for source/user_id. */
 export async function insertContactFormMessage(
   supabase: SupabaseClient,
-  row: { name: string; email: string; message: string },
+  row: { name: string; email: string; message: string; user_id?: string | null },
 ): Promise<{ id: string } | { error: Error }> {
   const { data, error } = await supabase
     .from("contact_messages")
@@ -58,7 +70,7 @@ export async function insertContactFormMessage(
       email: row.email,
       message: row.message,
       source: "contact_form",
-      user_id: null,
+      user_id: row.user_id ?? null,
     })
     .select("id")
     .single()
@@ -144,4 +156,121 @@ export async function bulkUpdateContactMessageRows(
     .update({ support_status: patch.support_status })
     .in("id", ids)
   return { error: error?.message ?? null }
+}
+
+export type UserSupportTicketFilter = "all" | "open" | "resolved"
+
+export async function listContactMessagesForUser(
+  supabase: SupabaseClient,
+  userId: string,
+  filter: UserSupportTicketFilter = "all",
+): Promise<ContactMessageUserRow[]> {
+  let query = supabase
+    .from("contact_messages")
+    .select(CONTACT_MESSAGE_USER_SELECT)
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false })
+    .limit(100)
+
+  if (filter === "open") {
+    query = query.neq("support_status", "resolved")
+  } else if (filter === "resolved") {
+    query = query.eq("support_status", "resolved")
+  }
+
+  const { data, error } = await query
+  if (error) {
+    console.error("listContactMessagesForUser", error)
+    return []
+  }
+
+  return (data ?? []).map((row) =>
+    normalizeContactMessageUserRow(row as Record<string, unknown>),
+  )
+}
+
+export async function getContactMessageForUser(
+  supabase: SupabaseClient,
+  userId: string,
+  ticketId: string,
+): Promise<ContactMessageUserRow | null> {
+  const { data, error } = await supabase
+    .from("contact_messages")
+    .select(CONTACT_MESSAGE_USER_SELECT)
+    .eq("id", ticketId)
+    .eq("user_id", userId)
+    .maybeSingle()
+
+  if (error || !data) {
+    return null
+  }
+  return normalizeContactMessageUserRow(data as Record<string, unknown>)
+}
+
+export async function countOpenContactMessagesForUser(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<number> {
+  const { count, error } = await supabase
+    .from("contact_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .neq("support_status", "resolved")
+
+  if (error) {
+    console.error("countOpenContactMessagesForUser", error)
+    return 0
+  }
+  return count ?? 0
+}
+
+export type UnlinkedContactMessageRow = Pick<
+  ContactMessageRow,
+  "id" | "email" | "subject" | "message" | "source" | "support_conversation_id"
+>
+
+/** Guest submissions (contact form / pre-login) awaiting account match — service role. */
+export async function listUnlinkedContactMessages(
+  supabase: SupabaseClient,
+  limit = 100,
+): Promise<UnlinkedContactMessageRow[]> {
+  const { data, error } = await supabase
+    .from("contact_messages")
+    .select("id, email, subject, message, source, support_conversation_id")
+    .is("user_id", null)
+    .not("email", "is", null)
+    .order("created_at", { ascending: true })
+    .limit(limit)
+
+  if (error) {
+    console.error("listUnlinkedContactMessages", error)
+    return []
+  }
+
+  return (data ?? []).map((row) => ({
+    id: String(row.id),
+    email: String(row.email ?? "").trim(),
+    subject: row.subject == null || row.subject === "" ? null : String(row.subject),
+    message: String(row.message ?? ""),
+    source: row.source === "messages_support" ? "messages_support" : "contact_form",
+    support_conversation_id:
+      row.support_conversation_id == null ? null : String(row.support_conversation_id),
+  }))
+}
+
+export async function linkContactMessageToUser(
+  supabase: SupabaseClient,
+  ticketId: string,
+  userId: string,
+): Promise<{ error: Error | null }> {
+  const { error } = await supabase
+    .from("contact_messages")
+    .update({ user_id: userId })
+    .eq("id", ticketId)
+    .is("user_id", null)
+
+  if (error) {
+    return { error: new Error(error.message) }
+  }
+  return { error: null }
 }

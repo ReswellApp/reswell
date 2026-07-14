@@ -55,6 +55,19 @@ export async function fetchOwnedListingForSellEditClient(
   const trimmed = listingId.trim()
   if (!trimmed) return { ok: false, reason: "not_found" }
 
+  /** Admin impersonation uses the authenticated owned-edit API (RLS blocks cross-user drafts). */
+  const imp = getActiveImpersonationClient()
+  if (imp) {
+    const apiResult = await fetchOwnedListingViaApi(trimmed)
+    if (apiResult === "unauthorized") return { ok: false, reason: "unauthorized" }
+    if (apiResult === "not_found") return { ok: false, reason: "not_found" }
+    return {
+      ok: true,
+      userId: apiResult.userId,
+      listing: apiResult.listing,
+    }
+  }
+
   const user = await resolveSellEditUser(supabase)
   if (user) {
     const imp = getActiveImpersonationClient()
