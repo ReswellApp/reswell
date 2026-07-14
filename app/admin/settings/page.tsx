@@ -113,6 +113,7 @@ const CAPABILITY_GROUPS: CapabilityGroup[] = [
     label: 'Admin tools',
     items: [
       { href: '/admin/tools', label: 'Admin tools', description: 'Search, cache & lifecycle jobs', icon: Wrench },
+      { href: '/admin/site-assets', label: 'Site assets', description: 'Visual inventory of site imagery', icon: Layers },
     ],
   },
 ]

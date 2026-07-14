@@ -7,12 +7,6 @@ const OUT_DIR = path.join(process.cwd(), "public/images/help-center")
 
 const shots = [
   {
-    file: "help-center-home.png",
-    path: "/help",
-    waitFor: "text=Hello, how can we help you?",
-    fullPage: false,
-  },
-  {
     file: "browse-boards.png",
     path: "/boards",
     waitFor: "text=Surfboards",

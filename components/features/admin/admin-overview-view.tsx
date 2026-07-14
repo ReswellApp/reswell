@@ -54,6 +54,7 @@ import type {
 import { listingDetailHref } from '@/lib/listing-href'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { BUSINESS_TIMEZONE_LABEL } from '@/lib/utils/business-timezone'
+import { formatCompactUsd } from '@/lib/utils/format-compact-usd'
 import { cn } from '@/lib/utils'
 
 function formatUsd(amount: number): string {
@@ -65,13 +66,8 @@ function formatUsd(amount: number): string {
 }
 
 function compactUsd(amount: number): string {
-  if (Math.abs(amount) >= 10000) {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      notation: 'compact',
-      maximumFractionDigits: 1,
-    }).format(amount)
+  if (Math.abs(amount) >= 10_000) {
+    return formatCompactUsd(amount)
   }
   return formatUsd(amount)
 }

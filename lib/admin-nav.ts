@@ -54,6 +54,7 @@ const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
   '/admin/partner-embeds',
   '/admin/shipping',
   '/admin/tools',
+  '/admin/site-assets',
   '/admin/pnl',
   '/admin/listings/brand-requests',
   '/admin/listings/board-catalog-data',
@@ -134,6 +135,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     items: [
       { href: '/admin/pnl', label: 'P&L Tracker', icon: 'dollarSign' },
       { href: '/admin/tools', label: 'Admin tools', icon: 'wrench' },
+      { href: '/admin/site-assets', label: 'Site assets', icon: 'layers' },
       { href: '/admin/settings', label: 'Settings', icon: 'settings' },
     ],
   },

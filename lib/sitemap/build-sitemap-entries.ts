@@ -1,4 +1,3 @@
-import { pressArticles } from "@/lib/press-articles"
 import { fetchSurfboardListingSitemapEntries } from "@/lib/db/sitemap-surfboard-listings"
 import { fetchFinListingSitemapEntries } from "@/lib/db/fin-listings"
 import { fetchWetsuitListingSitemapEntries } from "@/lib/db/wetsuit-listings"
@@ -136,7 +135,6 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     { url: `${BASE}/threads/reviews`, lastModified: now, changeFrequency: "daily", priority: 0.45 },
     { url: `${BASE}/jamboards`, lastModified: now, changeFrequency: "daily", priority: 0.5 },
     { url: `${BASE}/sellers`, lastModified: now, changeFrequency: "weekly", priority: 0.4 },
-    { url: `${BASE}/collections`, lastModified: now, changeFrequency: "weekly", priority: 0.45 },
     { url: `${BASE}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.45 },
     { url: `${BASE}/faq`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
     { url: `${BASE}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.35 },
@@ -150,13 +148,6 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     { url: `${BASE}/safety`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
     // Policy/legal pages stay indexable via footer links — omit from sitemap to save crawl budget.
   ]
-
-  const pressPages: SitemapUrlEntry[] = pressArticles.map((a) => ({
-    url: `${BASE}/collections/press/${a.slug}`,
-    lastModified: now,
-    changeFrequency: "monthly" as const,
-    priority: 0.35,
-  }))
 
   const brandPages: SitemapUrlEntry[] = brandRows.map((b) => ({
     url: `${BASE}/brands/${b.slug}`,
@@ -189,7 +180,6 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
   const merged = [
     ...staticPages,
     ...boardFilterPages(now),
-    ...pressPages,
     ...brandPages,
     ...sellerPages,
     ...forumPages,

@@ -302,14 +302,6 @@ export const MANAGED_PAGES: ManagedPage[] = [
     ogImageUrl:
       "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/40d8f792-d432-49e3-9f60-63a3ece41c87.jpg",
   }, { note: "Individual posts manage their own SEO in the Blog CMS." }),
-  page("collections", "content", "Collections", {
-    title: "Surf Stories & Editorial Features | Reswell",
-    description:
-      "Explore curated surf stories and editorial features from the Reswell community. Discover insights from surfers worldwide.",
-    path: "/collections",
-    ogImageUrl:
-      "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/09ed732a-af8d-40fa-ae45-a9c5d0206122.jpg",
-  }),
   page("board-talk", "content", "Threads forum", {
     title: "Threads — Reswell",
     description: "Community posts, Q&A, and surfboard discussions — join the conversation.",

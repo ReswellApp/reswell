@@ -14,6 +14,7 @@ import {
 } from 'recharts'
 
 import { cn } from '@/lib/utils'
+import { formatCompactUsd } from '@/lib/utils/format-compact-usd'
 import {
   formatBusinessDayKeyLong,
   formatBusinessDayKeyShort,
@@ -26,15 +27,6 @@ type Metric = 'gmv' | 'orders'
 const CHART_HEIGHT = 240
 const GRID_STROKE = '#e2e8f0'
 const TICK_FILL = '#64748b'
-
-function formatCompactUsd(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    notation: 'compact',
-    maximumFractionDigits: 1,
-  }).format(value)
-}
 
 function formatUsd(value: number): string {
   return new Intl.NumberFormat('en-US', {

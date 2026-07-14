@@ -1,0 +1,7 @@
+-- Legacy hero-backdrop.png: removed from public/images in repo.
+-- Live homepage uses /images/home/hero-backdrop-rincon.jpg.
+-- DB tables home_hero_slides + public.images were dropped in 20260618140000_drop_legacy_hero_tables.sql.
+--
+-- If a copy exists in Storage (site-assets bucket), delete it in:
+--   Dashboard → Storage → site-assets
+-- SQL Editor often cannot DELETE FROM storage.objects (role restriction).
