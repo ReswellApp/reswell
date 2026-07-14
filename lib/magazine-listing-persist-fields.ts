@@ -1,39 +1,23 @@
 import {
   MAGAZINES_SECTION,
   MAGAZINE_LISTING_DEFAULT_LOCATION,
+  magazineListingFixedReswellPackageFormFields,
   USED_MAGAZINES_CATEGORY_ID,
 } from "@/lib/magazine-listing-config"
 import { reswellPackageFieldsToDb } from "@/lib/sell-listing-fulfillment-flags"
 import type { CreateMagazineListingInput } from "@/lib/validations/magazine-listing"
 
-function magazineListingShippingFieldsFor(input: CreateMagazineListingInput): {
+function magazineListingShippingFieldsFor(_input: CreateMagazineListingInput): {
   shipping_available: boolean
   local_pickup: boolean
   shipping_price: number | null
   board_shipping_cost_mode: string | null
 } {
-  const mode = input.shippingCostMode ?? "reswell"
-  if (mode === "free") {
-    return {
-      shipping_available: true,
-      local_pickup: false,
-      shipping_price: 0,
-      board_shipping_cost_mode: "free",
-    }
-  }
-  if (mode === "reswell") {
-    return {
-      shipping_available: true,
-      local_pickup: false,
-      shipping_price: 0,
-      board_shipping_cost_mode: "reswell",
-    }
-  }
   return {
     shipping_available: true,
     local_pickup: false,
-    shipping_price: input.shippingPrice ?? 0,
-    board_shipping_cost_mode: "flat",
+    shipping_price: 0,
+    board_shipping_cost_mode: "reswell",
   }
 }
 
@@ -43,12 +27,8 @@ export function buildMagazineListingPersistFields(
 ): Record<string, unknown> {
   const shipping = magazineListingShippingFieldsFor(input)
   const packedRow = reswellPackageFieldsToDb({
-    boardShippingCostMode: input.shippingCostMode ?? "reswell",
-    reswellPackageLengthIn: input.reswellPackageLengthIn,
-    reswellPackageWidthIn: input.reswellPackageWidthIn,
-    reswellPackageHeightIn: input.reswellPackageHeightIn,
-    reswellPackageWeightLb: input.reswellPackageWeightLb,
-    reswellPackageWeightOz: input.reswellPackageWeightOz,
+    boardShippingCostMode: "reswell",
+    ...magazineListingFixedReswellPackageFormFields(),
   })
 
   const brand = input.brand.trim()

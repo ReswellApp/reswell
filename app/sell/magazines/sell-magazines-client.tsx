@@ -20,9 +20,13 @@ import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-li
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
 import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
-import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
 import { createClient } from "@/lib/supabase/client"
-import { MAGAZINES_SECTION } from "@/lib/magazine-listing-config"
+import {
+  MAGAZINES_SECTION,
+  MAGAZINE_STANDARD_PACKAGE_INCHES,
+  MAGAZINE_STANDARD_PACKAGE_WEIGHT_LB,
+  magazineListingFixedReswellPackageFormFields,
+} from "@/lib/magazine-listing-config"
 import {
   createMagazineListingAction,
   updateMagazineListingAction,
@@ -35,7 +39,6 @@ import { LISTING_CONDITION_SELL_OPTIONS, sellFormConditionValue } from "@/lib/li
 import { listingDetailHref } from "@/lib/listing-href"
 import { resolveAdminBulkListingAfterCreate } from "@/lib/utils/admin-bulk-listing-navigation"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
-import { reswellPackageFormFromDbRow } from "@/lib/sell-listing-fulfillment-flags"
 import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
 
 type MagazineFormState = {
@@ -45,11 +48,6 @@ type MagazineFormState = {
   condition: string
   brand: string
   year: string
-  reswellPackageLengthIn: string
-  reswellPackageWidthIn: string
-  reswellPackageHeightIn: string
-  reswellPackageWeightLb: string
-  reswellPackageWeightOz: string
 }
 
 const INITIAL_STATE: MagazineFormState = {
@@ -59,11 +57,6 @@ const INITIAL_STATE: MagazineFormState = {
   condition: "",
   brand: "",
   year: "",
-  reswellPackageLengthIn: "",
-  reswellPackageWidthIn: "",
-  reswellPackageHeightIn: "",
-  reswellPackageWeightLb: "",
-  reswellPackageWeightOz: "",
 }
 
 const CONDITION_UNSELECTED = "__magazine_condition_unselected__"
@@ -142,11 +135,6 @@ export default function SellMagazinesFlow({
           condition,
           brand,
           magazine_year,
-          board_shipping_cost_mode,
-          shipping_packed_length_in,
-          shipping_packed_width_in,
-          shipping_packed_height_in,
-          shipping_packed_weight_oz,
           listing_images (id, url, thumbnail_url, is_primary, sort_order)
         `,
         )
@@ -165,7 +153,6 @@ export default function SellMagazinesFlow({
         return
       }
 
-      const pkg = reswellPackageFormFromDbRow(listing)
       setForm({
         title: listing.title?.trim() ?? "",
         description: listing.description?.trim() ?? "",
@@ -176,11 +163,6 @@ export default function SellMagazinesFlow({
           listing.magazine_year != null && Number.isFinite(Number(listing.magazine_year))
             ? String(listing.magazine_year)
             : "",
-        reswellPackageLengthIn: pkg.reswellPackageLengthIn,
-        reswellPackageWidthIn: pkg.reswellPackageWidthIn,
-        reswellPackageHeightIn: pkg.reswellPackageHeightIn,
-        reswellPackageWeightLb: pkg.reswellPackageWeightLb,
-        reswellPackageWeightOz: pkg.reswellPackageWeightOz,
       })
 
       const existingImages = ((listing.listing_images as Array<{
@@ -226,11 +208,7 @@ export default function SellMagazinesFlow({
     brand: form.brand,
     year: form.year,
     shippingCostMode: "reswell" as const,
-    reswellPackageLengthIn: form.reswellPackageLengthIn,
-    reswellPackageWidthIn: form.reswellPackageWidthIn,
-    reswellPackageHeightIn: form.reswellPackageHeightIn,
-    reswellPackageWeightLb: form.reswellPackageWeightLb,
-    reswellPackageWeightOz: form.reswellPackageWeightOz,
+    ...magazineListingFixedReswellPackageFormFields(),
     images: readyImages.map((photo, index) => ({
       id: photo.id,
       url: photo.url!,
@@ -321,7 +299,7 @@ export default function SellMagazinesFlow({
           {editId ? "Edit magazine listing" : "List a magazine"}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Listings appear on the marketplace under the magazine seller profile. Shipping only — no local pickup.
+          List vintage and collectible surf magazines on the marketplace. Reswell shipping only — no local pickup.
         </p>
       </div>
 
@@ -441,22 +419,25 @@ export default function SellMagazinesFlow({
           <div>
             <h2 className="text-base font-semibold">Shipping</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Magazines ship via Reswell — enter packed dimensions for the rate at checkout.
+              Each listing ships one copy at a time via Reswell. Package size and weight are
+              standardized for all magazine listings.
             </p>
           </div>
-          <ReswellPackageDimensionsCard
-            showHeading={false}
-            lengthIn={form.reswellPackageLengthIn}
-            widthIn={form.reswellPackageWidthIn}
-            heightIn={form.reswellPackageHeightIn}
-            weightLb={form.reswellPackageWeightLb}
-            weightOz={form.reswellPackageWeightOz}
-            onLengthInChange={(v) => setField("reswellPackageLengthIn", v)}
-            onWidthInChange={(v) => setField("reswellPackageWidthIn", v)}
-            onHeightInChange={(v) => setField("reswellPackageHeightIn", v)}
-            onWeightLbChange={(v) => setField("reswellPackageWeightLb", v)}
-            onWeightOzChange={(v) => setField("reswellPackageWeightOz", v)}
-          />
+          <dl className="grid gap-4 text-sm sm:grid-cols-2">
+            <div className="rounded-lg border border-border/80 bg-muted/30 px-4 py-3">
+              <dt className="text-muted-foreground">Packed dimensions</dt>
+              <dd className="mt-1 font-medium tabular-nums">
+                {MAGAZINE_STANDARD_PACKAGE_INCHES.length} × {MAGAZINE_STANDARD_PACKAGE_INCHES.width}{" "}
+                × {MAGAZINE_STANDARD_PACKAGE_INCHES.height} in
+              </dd>
+            </div>
+            <div className="rounded-lg border border-border/80 bg-muted/30 px-4 py-3">
+              <dt className="text-muted-foreground">Weight (one copy)</dt>
+              <dd className="mt-1 font-medium tabular-nums">
+                {MAGAZINE_STANDARD_PACKAGE_WEIGHT_LB} lb
+              </dd>
+            </div>
+          </dl>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 pt-2">

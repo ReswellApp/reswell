@@ -1,16 +1,33 @@
-import { redirect } from "next/navigation"
 import { Suspense } from "react"
 import type { Metadata } from "next"
-import { privatePageMetadata } from "@/lib/site-metadata"
-import { createClient } from "@/lib/supabase/server"
-import { actorCanManageMagazineListings } from "@/lib/services/magazineListingSeller"
 import SellMagazinesFlow from "./sell-magazines-client"
 
-export const metadata: Metadata = privatePageMetadata({
-  title: "List a magazine — Reswell",
-  description: "List surf magazines for sale on Reswell.",
-  path: "/sell/magazines",
-})
+const title = "Sell your magazines — Reswell"
+const description =
+  "List vintage and collectible surf magazines on Reswell in minutes: add photos, set your price, and ship to buyers nationwide."
+
+export const metadata: Metadata = {
+  title,
+  description,
+  keywords: [
+    "sell magazines",
+    "list surf magazines",
+    "used surf magazines",
+    "vintage surf magazines",
+    "Surfer's Journal",
+    "Reswell",
+  ],
+  alternates: { canonical: "/sell/magazines" },
+  openGraph: {
+    title,
+    description,
+    url: "/sell/magazines",
+    siteName: "Reswell",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: { card: "summary_large_image", title, description },
+}
 
 function parseEditListingId(value: string | string[] | undefined): string | null {
   if (typeof value === "string" && value.trim()) return value.trim()
@@ -26,18 +43,6 @@ export default async function SellMagazinesPage({
 }: {
   searchParams: Promise<{ edit?: string | string[] }>
 }) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    redirect("/auth/login?redirect=/sell/magazines")
-  }
-  const allowed = await actorCanManageMagazineListings(supabase, user.id)
-  if (!allowed) {
-    redirect("/magazines")
-  }
-
   const qs = await searchParams
   const editId = parseEditListingId(qs.edit)
   return (

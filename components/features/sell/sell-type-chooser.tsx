@@ -11,14 +11,6 @@ type SellTypeOption = {
   imageAlt: string
 }
 
-const MAGAZINES_SELL_OPTION: SellTypeOption = {
-  href: "/sell/magazines",
-  title: "Magazines",
-  description: "List surf magazines for the marketplace.",
-  imageSrc: null,
-  imageAlt: "Magazine",
-}
-
 const WETSUITS_SELL_OPTION: SellTypeOption = {
   href: "/sell/wetsuits",
   title: "Wetsuits",
@@ -43,21 +35,25 @@ const SELL_TYPE_OPTIONS: readonly SellTypeOption[] = [
     imageSrc: "/images/sell/fins.jpg",
     imageAlt: "Surfboard fin",
   },
+  {
+    href: "/sell/magazines",
+    title: "Magazines",
+    description: "List vintage and collectible surf magazines.",
+    imageSrc: "/images/sell/magazines.jpg",
+    imageAlt: "Surf magazine",
+  },
 ]
 
 type SellTypeChooserProps = {
-  showMagazinesOption?: boolean
   showWetsuitsOption?: boolean
 }
 
 /** First step of /sell: pick a product type. */
 export function SellTypeChooser({
-  showMagazinesOption = false,
   showWetsuitsOption = false,
 }: SellTypeChooserProps) {
   const adminOptions: SellTypeOption[] = []
   if (showWetsuitsOption) adminOptions.push(WETSUITS_SELL_OPTION)
-  if (showMagazinesOption) adminOptions.push(MAGAZINES_SELL_OPTION)
 
   const options = adminOptions.length > 0 ? [...SELL_TYPE_OPTIONS, ...adminOptions] : SELL_TYPE_OPTIONS
   const hasAdminOptions = adminOptions.length > 0
@@ -70,7 +66,7 @@ export function SellTypeChooser({
           <p className="mx-auto mt-3 max-w-sm text-muted-foreground">
             {hasAdminOptions
               ? "Choose a product type to get started."
-              : "Choose surfboard or fins to get started."}
+              : "Choose surfboards, fins, or magazines to get started."}
           </p>
         </div>
 
