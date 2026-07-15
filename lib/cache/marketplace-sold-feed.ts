@@ -14,31 +14,60 @@ export const MARKETPLACE_SOLD_FEED_REVALIDATE_SECONDS = 60 * 60
 
 const BRAND_NONE = "__none__"
 
+/** Stats can load while the listing grid fetch fails; never serve or retain that split state. */
+function isPoisonedSoldFeedPayload(
+  payload: MarketplaceSoldFeedPayload,
+  options: { shippedOnly: boolean; brandSlug: string | null },
+): boolean {
+  if (options.shippedOnly || options.brandSlug || payload.brandUnknown) return false
+  return payload.soldStats.count > 0 && payload.soldListings.length === 0
+}
+
 const getCachedSoldFeedPayload = unstable_cache(
   async (brandKey: string, shippedOnly: boolean): Promise<MarketplaceSoldFeedPayload> => {
     const supabase = createAnonSupabaseClient()
-    return loadMarketplaceSoldFeed(supabase, brandKey === BRAND_NONE ? null : brandKey, {
-      shippedOnly,
-    })
+    const brandSlug = brandKey === BRAND_NONE ? null : brandKey
+    const payload = await loadMarketplaceSoldFeed(supabase, brandSlug, { shippedOnly })
+
+    if (isPoisonedSoldFeedPayload(payload, { shippedOnly, brandSlug })) {
+      console.error(
+        "[marketplace-sold-feed] refusing to cache sold feed: stats count > 0 but listing grid empty",
+      )
+      throw new Error("Sold feed payload inconsistent — skip cache")
+    }
+
+    return payload
   },
-  ["marketplace-sold-feed-v6"],
+  ["marketplace-sold-feed-v7"],
   {
     revalidate: MARKETPLACE_SOLD_FEED_REVALIDATE_SECONDS,
     tags: [MARKETPLACE_SOLD_FEED_CACHE_TAG],
   },
 )
 
-export function getCachedMarketplaceSoldFeed(
+export async function getCachedMarketplaceSoldFeed(
   brandSlug: string | null,
   shippedOnly: boolean,
 ): Promise<MarketplaceSoldFeedPayload> {
+  const normalizedBrandSlug = brandSlug?.trim() || null
+
   // Dev: skip `unstable_cache` so RPC/migration fixes show up without waiting out the 1h TTL
   // or restarting after an earlier failed fetch cached an empty listing grid.
   if (process.env.NODE_ENV === "development") {
     const supabase = createAnonSupabaseClient()
-    return loadMarketplaceSoldFeed(supabase, brandSlug?.trim() || null, { shippedOnly })
+    return loadMarketplaceSoldFeed(supabase, normalizedBrandSlug, { shippedOnly })
   }
-  return getCachedSoldFeedPayload(brandSlug?.trim() || BRAND_NONE, shippedOnly)
+
+  const cached = await getCachedSoldFeedPayload(normalizedBrandSlug || BRAND_NONE, shippedOnly)
+  if (isPoisonedSoldFeedPayload(cached, { shippedOnly, brandSlug: normalizedBrandSlug })) {
+    console.warn(
+      "[marketplace-sold-feed] cached sold feed is inconsistent — refetching without cache",
+    )
+    const supabase = createAnonSupabaseClient()
+    return loadMarketplaceSoldFeed(supabase, normalizedBrandSlug, { shippedOnly })
+  }
+
+  return cached
 }
 
 const getCachedNewListingsFeedPagePayload = unstable_cache(

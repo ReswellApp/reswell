@@ -41,13 +41,35 @@ export async function filterListingIdsStillSoldOnMarketplace(
 ): Promise<string[]> {
   if (orderedListingIds.length === 0) return []
 
-  const { data, error } = await supabase
+  let data: Record<string, unknown>[] | null = null
+  let error: { message: string } | null = null
+
+  const primary = await supabase
     .from("listings")
     .select("id, title, status, hidden_from_site, archived_at, sold_off_platform")
     .in("id", [...orderedListingIds])
     .eq("status", "sold")
     .eq("sold_off_platform", false)
     .in("section", [...sections])
+
+  data = (primary.data ?? []) as Record<string, unknown>[]
+  error = primary.error
+
+  // Older DBs may not have sold_off_platform yet; retry without that filter instead of
+  // returning an empty feed while headline stats still load from SECURITY DEFINER RPCs.
+  if (error && error.message.includes("sold_off_platform")) {
+    console.warn(
+      "filterListingIdsStillSoldOnMarketplace: sold_off_platform unavailable, retrying without filter",
+    )
+    const fallback = await supabase
+      .from("listings")
+      .select("id, title, status, hidden_from_site, archived_at")
+      .in("id", [...orderedListingIds])
+      .eq("status", "sold")
+      .in("section", [...sections])
+    data = (fallback.data ?? []) as Record<string, unknown>[]
+    error = fallback.error
+  }
 
   if (error) {
     console.error("filterListingIdsStillSoldOnMarketplace:", error.message)
@@ -74,6 +96,54 @@ export async function filterListingIdsStillSoldOnMarketplace(
   return orderedListingIds.filter((id) => stillSold.has(id))
 }
 
+/** When the strict marketplace filter drops every RPC id, retry with a relaxed listings query. */
+async function resolveVisibleSoldListingOrder(
+  supabase: SupabaseClient,
+  rpcOrderedListingIds: readonly string[],
+  sections: readonly string[],
+): Promise<string[]> {
+  const filtered = await filterListingIdsStillSoldOnMarketplace(
+    supabase,
+    rpcOrderedListingIds,
+    sections,
+  )
+  if (filtered.length > 0 || rpcOrderedListingIds.length === 0) return filtered
+
+  console.warn(
+    `[recently-sold] strict filter removed all ${rpcOrderedListingIds.length} RPC ids — retrying with relaxed listing query`,
+  )
+
+  const { data, error } = await supabase
+    .from("listings")
+    .select("id, title, status, hidden_from_site, archived_at")
+    .in("id", [...rpcOrderedListingIds])
+    .eq("status", "sold")
+    .in("section", [...sections])
+
+  if (error) {
+    console.error("[recently-sold] relaxed listing query:", error.message)
+    return []
+  }
+
+  const adminTerminalSoldIds = await fetchAdminTerminalSoldListingIds(supabase, rpcOrderedListingIds)
+  const visible = new Set(
+    (data ?? [])
+      .filter((row) =>
+        isListingVisibleInPublicSoldFeed({
+          title: (row as { title?: string | null }).title,
+          status: String((row as { status?: string | null }).status ?? "sold"),
+          hidden_from_site: (row as { hidden_from_site?: boolean | null }).hidden_from_site,
+          archived_at: (row as { archived_at?: string | null }).archived_at,
+          soldViaAdminTerminal: adminTerminalSoldIds.has(String((row as { id?: string | null }).id)),
+        }),
+      )
+      .map((row) => (row as { id?: string | null }).id)
+      .filter((id): id is string => typeof id === "string" && id.length > 0),
+  )
+
+  return rpcOrderedListingIds.filter((id) => visible.has(id))
+}
+
 async function finalizeRecentSoldOrdering(
   supabase: SupabaseClient,
   rows: RpcListingSaleTime[],
@@ -95,7 +165,7 @@ async function finalizeRecentSoldOrdering(
     rpcOrderedListingIds.push(id)
   }
 
-  const orderedListingIds = await filterListingIdsStillSoldOnMarketplace(
+  const orderedListingIds = await resolveVisibleSoldListingOrder(
     supabase,
     rpcOrderedListingIds,
     sections,
