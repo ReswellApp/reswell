@@ -1,5 +1,6 @@
 export const MESSAGE_POLICY_REASON_CODES = [
   "phone_like",
+  "phone_fragment",
   "email_like",
   "off_platform_payment",
 ] as const
@@ -14,6 +15,8 @@ export function messagePolicyReasonLabel(code: MessagePolicyReasonCode): string 
   switch (code) {
     case "phone_like":
       return "Phone number"
+    case "phone_fragment":
+      return "Phone number (split across messages)"
     case "email_like":
       return "Email address"
     case "off_platform_payment":

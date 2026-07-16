@@ -13,6 +13,11 @@ export function getMessagePolicyNotice(reasonCode: MessagePolicyReasonCode): {
         heading: "Phone numbers aren’t allowed in messages",
         body: `Sharing phone numbers goes against Reswell policy. ${POLICY_NOTICE_BODY}`,
       }
+    case "phone_fragment":
+      return {
+        heading: "Phone numbers aren’t allowed in messages",
+        body: `Sharing phone numbers — including split across multiple messages — goes against Reswell policy. ${POLICY_NOTICE_BODY}`,
+      }
     case "email_like":
       return {
         heading: "Email addresses aren’t allowed in messages",

@@ -74,6 +74,7 @@ import {
 import { cn } from "@/lib/utils"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { finalizePeerListingCreate } from "@/lib/utils/admin-peer-listing-create-navigation"
+import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
 
 const SELL_SURFPACKS_FORM_SECTION_NAV_ITEMS = buildSellSectionNavItems("surfpacks", "Surfpack details")
 
@@ -381,6 +382,11 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
         })
       } catch (err) {
         console.error("surfpack photo upload failed", err)
+        logSellFunnelEvent({
+          listingType: "surfpacks",
+          event: "upload_failed",
+          message: friendlyListingPhotoErrorMessage(err, "upload"),
+        })
         updateSlot(slot.clientId, { phase: "error" })
         toast.error(friendlyListingPhotoErrorMessage(err, "upload"))
       }
@@ -485,42 +491,53 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
       return
     }
 
+    const publishStartedAt = Date.now()
+    logSellFunnelEvent({
+      listingType: "surfpacks",
+      event: "publish_attempt",
+      message: editId ? "edit" : "create",
+    })
+    const failValidation = (message: string) => {
+      logSellFunnelEvent({ listingType: "surfpacks", event: "validation_failed", message })
+      toast.error(message)
+    }
+
     if (readyPhotos.length === 0) {
-      toast.error("Add at least one photo.")
+      failValidation("Add at least one photo.")
       scrollSurfpackSellSectionIntoView("sell-surfpacks-section-photos-title")
       return
     }
     if (uploadingCount > 0) {
-      toast.error("Hang tight — your photos are still uploading.")
+      failValidation("Hang tight — your photos are still uploading.")
       return
     }
     if (!form.title.trim()) {
-      toast.error("Add a title.")
+      failValidation("Add a title.")
       scrollSurfpackSellSectionIntoView("sell-surfpacks-section-photos-title")
       return
     }
     if (!form.condition) {
-      toast.error("Choose a condition.")
+      failValidation("Choose a condition.")
       scrollSurfpackSellSectionIntoView("sell-surfpacks-section-details")
       return
     }
     if (!form.description.trim()) {
-      toast.error("Add a description.")
+      failValidation("Add a description.")
       scrollSurfpackSellSectionIntoView("sell-surfpacks-section-details")
       return
     }
     if (!form.price.trim() || Number(form.price) <= 0) {
-      toast.error("Enter a price.")
+      failValidation("Enter a price.")
       scrollSurfpackSellSectionIntoView("sell-surfpacks-section-publish")
       return
     }
     if (!form.locationCity.trim() || !form.locationState.trim()) {
-      toast.error("Confirm where you're listing from.")
+      failValidation("Confirm where you're listing from.")
       scrollSurfpackSellSectionIntoView("sell-surfpacks-section-delivery")
       return
     }
     if (!form.shippingAvailable && !form.localPickup) {
-      toast.error("Choose shipping, local pickup, or both.")
+      failValidation("Choose shipping, local pickup, or both.")
       scrollSurfpackSellSectionIntoView("sell-surfpacks-section-delivery")
       return
     }
@@ -529,7 +546,7 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
       const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
       const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
       if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) {
-        toast.error("Enter packed box dimensions for Reswell shipping.")
+        failValidation("Enter packed box dimensions for Reswell shipping.")
         scrollSurfpackSellSectionIntoView("sell-surfpacks-section-reswell-package")
         return
       }
@@ -539,7 +556,7 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
       form.shippingMode === "flat" &&
       (form.shippingPrice === "" || Number(form.shippingPrice) < 0)
     ) {
-      toast.error("Enter a flat shipping rate.")
+      failValidation("Enter a flat shipping rate.")
       scrollSurfpackSellSectionIntoView("sell-surfpacks-section-delivery")
       return
     }
@@ -629,10 +646,22 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
           })
           const data = (await res.json().catch(() => ({}))) as { error?: string; slug?: string }
           if (!res.ok) {
+            logSellFunnelEvent({
+              listingType: "surfpacks",
+              event: "publish_failed",
+              message: typeof data.error === "string" ? data.error : "Failed to update listing",
+              durationMs: Date.now() - publishStartedAt,
+            })
             toast.error(typeof data.error === "string" ? data.error : "Failed to update listing")
             setSubmitting(false)
             return
           }
+          logSellFunnelEvent({
+            listingType: "surfpacks",
+            event: "publish_succeeded",
+            listingId: editId ?? undefined,
+            durationMs: Date.now() - publishStartedAt,
+          })
           toast.success("Listing updated")
           router.push(`/l/${data.slug ?? editId}`)
           return
@@ -652,10 +681,22 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
           removedImageIds,
         })
         if ("error" in result) {
+          logSellFunnelEvent({
+            listingType: "surfpacks",
+            event: "publish_failed",
+            message: result.error,
+            durationMs: Date.now() - publishStartedAt,
+          })
           toast.error(result.error)
           setSubmitting(false)
           return
         }
+        logSellFunnelEvent({
+          listingType: "surfpacks",
+          event: "publish_succeeded",
+          listingId: editId,
+          durationMs: Date.now() - publishStartedAt,
+        })
         toast.success("Listing updated")
         router.push(`/l/${result.slug}`)
         return
@@ -672,12 +713,19 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
         section: "surfpacks",
         bulkSlotId,
         router,
+        publishStartedAt,
         successToast: "Your surfpack is live!",
         setSubmitting,
         directCreate: () => createSurfpackListingAction(payload),
       })
     } catch (err) {
       console.error("surfpack listing submit failed", err)
+      logSellFunnelEvent({
+        listingType: "surfpacks",
+        event: "publish_failed",
+        message: err instanceof Error ? err.message : "Unexpected submit error",
+        durationMs: Date.now() - publishStartedAt,
+      })
       toast.error(editId ? "Something went wrong saving your listing." : "Something went wrong publishing your listing.")
       setSubmitting(false)
     }

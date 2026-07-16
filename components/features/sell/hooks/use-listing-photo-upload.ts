@@ -37,6 +37,8 @@ import {
   type ListingPhotoSlot,
 } from "@/lib/sell-flow/listing-photo-slot"
 import { friendlyListingPhotoErrorMessage } from "@/lib/utils/friendly-listing-photo-error"
+import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
+import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import { createClient } from "@/lib/supabase/client"
 import type { SupabaseClient } from "@supabase/supabase-js"
 
@@ -48,6 +50,8 @@ export type UseListingPhotoUploadOptions = {
   signInReturnPath: () => string
   openSignIn: (redirect?: string | null) => void
   supabase?: SupabaseClient
+  /** Section for sell funnel instrumentation; upload failures are logged when set. */
+  funnelListingType?: PeerListingSection
 }
 
 export type UseListingPhotoUploadResult = {
@@ -80,6 +84,7 @@ export function useListingPhotoUpload({
   signInReturnPath,
   openSignIn,
   supabase: supabaseProp,
+  funnelListingType,
 }: UseListingPhotoUploadOptions): UseListingPhotoUploadResult {
   const supabaseRef = useRef(supabaseProp ?? createClient())
   const [images, setImages] = useState<ListingPhotoSlot[]>([])
@@ -155,6 +160,13 @@ export function useListingPhotoUpload({
         if (!session?.access_token || !user) {
           if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
           const authMsg = "Sign in again to upload this photo."
+          if (funnelListingType) {
+            logSellFunnelEvent({
+              listingType: funnelListingType,
+              event: "upload_failed",
+              message: authMsg,
+            })
+          }
           setImages((prev) =>
             prev.map((s) =>
               s.clientId === clientId
@@ -219,6 +231,13 @@ export function useListingPhotoUpload({
       } catch (e) {
         console.error("[sell] listing photo failed", e)
         const msg = friendlyListingPhotoErrorMessage(e, prepared ? "upload" : "add")
+        if (funnelListingType) {
+          logSellFunnelEvent({
+            listingType: funnelListingType,
+            event: "upload_failed",
+            message: msg,
+          })
+        }
         if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
         setImages((prev) =>
           prev.map((s) => {
@@ -237,7 +256,7 @@ export function useListingPhotoUpload({
         toast.error(msg)
       }
     },
-    [listingPhotoPrepareSeqInSync, openSignIn, signInReturnPath],
+    [listingPhotoPrepareSeqInSync, openSignIn, signInReturnPath, funnelListingType],
   )
 
   useLayoutEffect(() => {

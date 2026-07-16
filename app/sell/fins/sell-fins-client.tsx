@@ -74,6 +74,7 @@ import { shippingPriceToFormValue } from "@/lib/sell-flow/shipping-price-to-form
 import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
 import { scrollPublishValidationBannerIntoView } from "@/lib/sell-flow/scroll-section-into-view"
 import { validateFinListingForm } from "@/lib/sell-flow/validate-fin-listing-form"
+import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
 import { persistListingDraftSnapshot } from "@/lib/sell-flow/persist-listing-draft-snapshot"
 import {
   clearPendingPublish,
@@ -255,6 +256,7 @@ export default function SellFinsFlow({
     signInReturnPath: finSellReturnPath,
     openSignIn: signIn,
     supabase: supabaseRef.current,
+    funnelListingType: "fins",
   })
 
   const {
@@ -694,6 +696,13 @@ export default function SellFinsFlow({
     if (submitting) return
     setPublishValidationBanner(null)
 
+    const publishStartedAt = Date.now()
+    logSellFunnelEvent({
+      listingType: "fins",
+      event: "publish_attempt",
+      message: editId ? "edit" : "create",
+    })
+
     const supabase = supabaseRef.current
     const {
       data: { user },
@@ -727,6 +736,11 @@ export default function SellFinsFlow({
       imagesUploadReady,
     })
     if (validationMessage) {
+      logSellFunnelEvent({
+        listingType: "fins",
+        event: "validation_failed",
+        message: validationMessage,
+      })
       setPublishValidationBanner(validationMessage)
       scrollPublishValidationBannerIntoView()
       return
@@ -837,10 +851,22 @@ export default function SellFinsFlow({
             published?: boolean
           }
           if (!res.ok) {
+            logSellFunnelEvent({
+              listingType: "fins",
+              event: "publish_failed",
+              message: typeof data.error === "string" ? data.error : "Failed to update listing",
+              durationMs: Date.now() - publishStartedAt,
+            })
             toast.error(typeof data.error === "string" ? data.error : "Failed to update listing")
             setSubmitting(false)
             return
           }
+          logSellFunnelEvent({
+            listingType: "fins",
+            event: "publish_succeeded",
+            listingId: editId ?? undefined,
+            durationMs: Date.now() - publishStartedAt,
+          })
           clearPersistedFinSellFlowStep()
           clearPendingPublish("fins")
           if (user.id) await clearSellListingDraft(user.id, "fins")
@@ -867,10 +893,22 @@ export default function SellFinsFlow({
           removedImageIds,
         })
         if ("error" in result) {
+          logSellFunnelEvent({
+            listingType: "fins",
+            event: "publish_failed",
+            message: result.error,
+            durationMs: Date.now() - publishStartedAt,
+          })
           toast.error(result.error)
           setSubmitting(false)
           return
         }
+        logSellFunnelEvent({
+          listingType: "fins",
+          event: "publish_succeeded",
+          listingId: effectiveEditId,
+          durationMs: Date.now() - publishStartedAt,
+        })
         clearPersistedFinSellFlowStep()
         clearPendingPublish("fins")
         clearSellServerDraftListingId("fins")
@@ -896,6 +934,7 @@ export default function SellFinsFlow({
         router,
         successToast: "Your fin is live!",
         setSubmitting,
+        publishStartedAt,
         directCreate: async () => {
           const result = await createFinListingAction(payload)
           if (!("error" in result)) {
@@ -908,6 +947,12 @@ export default function SellFinsFlow({
       })
     } catch (err) {
       console.error("fin listing submit failed", err)
+      logSellFunnelEvent({
+        listingType: "fins",
+        event: "publish_failed",
+        message: err instanceof Error ? err.message : "Unexpected submit error",
+        durationMs: Date.now() - publishStartedAt,
+      })
       toast.error(
         editId ? "Something went wrong saving your listing." : "Something went wrong publishing your listing.",
       )

@@ -74,6 +74,7 @@ import {
 import { cn } from "@/lib/utils"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { finalizePeerListingCreate } from "@/lib/utils/admin-peer-listing-create-navigation"
+import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
 
 const SELL_LEASHES_FORM_SECTION_NAV_ITEMS = buildSellSectionNavItems("leashes", "Leash details")
 
@@ -381,6 +382,11 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
         })
       } catch (err) {
         console.error("leash photo upload failed", err)
+        logSellFunnelEvent({
+          listingType: "leashes",
+          event: "upload_failed",
+          message: friendlyListingPhotoErrorMessage(err, "upload"),
+        })
         updateSlot(slot.clientId, { phase: "error" })
         toast.error(friendlyListingPhotoErrorMessage(err, "upload"))
       }
@@ -485,42 +491,53 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
       return
     }
 
+    const publishStartedAt = Date.now()
+    logSellFunnelEvent({
+      listingType: "leashes",
+      event: "publish_attempt",
+      message: editId ? "edit" : "create",
+    })
+    const failValidation = (message: string) => {
+      logSellFunnelEvent({ listingType: "leashes", event: "validation_failed", message })
+      toast.error(message)
+    }
+
     if (readyPhotos.length === 0) {
-      toast.error("Add at least one photo.")
+      failValidation("Add at least one photo.")
       scrollLeashSellSectionIntoView("sell-leashes-section-photos-title")
       return
     }
     if (uploadingCount > 0) {
-      toast.error("Hang tight — your photos are still uploading.")
+      failValidation("Hang tight — your photos are still uploading.")
       return
     }
     if (!form.title.trim()) {
-      toast.error("Add a title.")
+      failValidation("Add a title.")
       scrollLeashSellSectionIntoView("sell-leashes-section-photos-title")
       return
     }
     if (!form.condition) {
-      toast.error("Choose a condition.")
+      failValidation("Choose a condition.")
       scrollLeashSellSectionIntoView("sell-leashes-section-details")
       return
     }
     if (!form.description.trim()) {
-      toast.error("Add a description.")
+      failValidation("Add a description.")
       scrollLeashSellSectionIntoView("sell-leashes-section-details")
       return
     }
     if (!form.price.trim() || Number(form.price) <= 0) {
-      toast.error("Enter a price.")
+      failValidation("Enter a price.")
       scrollLeashSellSectionIntoView("sell-leashes-section-publish")
       return
     }
     if (!form.locationCity.trim() || !form.locationState.trim()) {
-      toast.error("Confirm where you're listing from.")
+      failValidation("Confirm where you're listing from.")
       scrollLeashSellSectionIntoView("sell-leashes-section-delivery")
       return
     }
     if (!form.shippingAvailable && !form.localPickup) {
-      toast.error("Choose shipping, local pickup, or both.")
+      failValidation("Choose shipping, local pickup, or both.")
       scrollLeashSellSectionIntoView("sell-leashes-section-delivery")
       return
     }
@@ -529,7 +546,7 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
       const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
       const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
       if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) {
-        toast.error("Enter packed box dimensions for Reswell shipping.")
+        failValidation("Enter packed box dimensions for Reswell shipping.")
         scrollLeashSellSectionIntoView("sell-leashes-section-reswell-package")
         return
       }
@@ -539,7 +556,7 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
       form.shippingMode === "flat" &&
       (form.shippingPrice === "" || Number(form.shippingPrice) < 0)
     ) {
-      toast.error("Enter a flat shipping rate.")
+      failValidation("Enter a flat shipping rate.")
       scrollLeashSellSectionIntoView("sell-leashes-section-delivery")
       return
     }
@@ -629,10 +646,22 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
           })
           const data = (await res.json().catch(() => ({}))) as { error?: string; slug?: string }
           if (!res.ok) {
+            logSellFunnelEvent({
+              listingType: "leashes",
+              event: "publish_failed",
+              message: typeof data.error === "string" ? data.error : "Failed to update listing",
+              durationMs: Date.now() - publishStartedAt,
+            })
             toast.error(typeof data.error === "string" ? data.error : "Failed to update listing")
             setSubmitting(false)
             return
           }
+          logSellFunnelEvent({
+            listingType: "leashes",
+            event: "publish_succeeded",
+            listingId: editId ?? undefined,
+            durationMs: Date.now() - publishStartedAt,
+          })
           toast.success("Listing updated")
           router.push(`/l/${data.slug ?? editId}`)
           return
@@ -652,10 +681,22 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
           removedImageIds,
         })
         if ("error" in result) {
+          logSellFunnelEvent({
+            listingType: "leashes",
+            event: "publish_failed",
+            message: result.error,
+            durationMs: Date.now() - publishStartedAt,
+          })
           toast.error(result.error)
           setSubmitting(false)
           return
         }
+        logSellFunnelEvent({
+          listingType: "leashes",
+          event: "publish_succeeded",
+          listingId: editId,
+          durationMs: Date.now() - publishStartedAt,
+        })
         toast.success("Listing updated")
         router.push(`/l/${result.slug}`)
         return
@@ -672,12 +713,19 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
         section: "leashes",
         bulkSlotId,
         router,
+        publishStartedAt,
         successToast: "Your leash is live!",
         setSubmitting,
         directCreate: () => createLeashListingAction(payload),
       })
     } catch (err) {
       console.error("leash listing submit failed", err)
+      logSellFunnelEvent({
+        listingType: "leashes",
+        event: "publish_failed",
+        message: err instanceof Error ? err.message : "Unexpected submit error",
+        durationMs: Date.now() - publishStartedAt,
+      })
       toast.error(editId ? "Something went wrong saving your listing." : "Something went wrong publishing your listing.")
       setSubmitting(false)
     }

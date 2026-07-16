@@ -5,6 +5,7 @@ type RouterLike = {
 }
 import type { ImpersonationData } from "@/lib/impersonation"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
+import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
 import { resolveAdminBulkListingAfterCreate } from "@/lib/utils/admin-bulk-listing-navigation"
 import {
   createImpersonatedListingViaApi,
@@ -27,17 +28,34 @@ export async function finalizePeerListingCreate(params: {
   directCreate: () => Promise<DirectCreateResult>
   successToast: string
   setSubmitting: (value: boolean) => void
+  /** When set, publish outcome funnel events include elapsed time from this timestamp. */
+  publishStartedAt?: number
 }): Promise<void> {
+  const funnelDurationMs = () =>
+    params.publishStartedAt != null ? Date.now() - params.publishStartedAt : undefined
+
   if (params.listingImpersonation) {
     const impResult = await createImpersonatedListingViaApi({
       listing: params.listingFields,
       images: listingImagesToImpersonatedPayload(params.images),
     })
     if (!impResult.ok) {
+      logSellFunnelEvent({
+        listingType: params.section,
+        event: "publish_failed",
+        message: impResult.error,
+        durationMs: funnelDurationMs(),
+      })
       toast.error(impResult.error)
       params.setSubmitting(false)
       return
     }
+    logSellFunnelEvent({
+      listingType: params.section,
+      event: "publish_succeeded",
+      listingId: impResult.listingId,
+      durationMs: funnelDurationMs(),
+    })
     toast.success(params.successToast)
     if (
       resolveAdminBulkListingAfterCreate(params.router, {
@@ -57,11 +75,23 @@ export async function finalizePeerListingCreate(params: {
 
   const result = await params.directCreate()
   if ("error" in result) {
+    logSellFunnelEvent({
+      listingType: params.section,
+      event: "publish_failed",
+      message: result.error,
+      durationMs: funnelDurationMs(),
+    })
     toast.error(result.error)
     params.setSubmitting(false)
     return
   }
 
+  logSellFunnelEvent({
+    listingType: params.section,
+    event: "publish_succeeded",
+    listingId: result.listingId,
+    durationMs: funnelDurationMs(),
+  })
   toast.success(params.successToast)
   if (
     resolveAdminBulkListingAfterCreate(params.router, {

@@ -122,6 +122,8 @@ import {
 import { friendlyListingPhotoErrorMessage } from "@/lib/utils/friendly-listing-photo-error"
 import { sellerPurchasePriceToDb } from "@/lib/utils/seller-purchase-price"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
+import { applyBoardListingPublishedSideEffectsAction } from "@/lib/actions/boardListingPublishActions"
+import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
 import { cn } from "@/lib/utils"
 import {
   RequestBrandModelDialog,
@@ -1883,6 +1885,11 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       if (!session?.access_token || !user) {
         if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
         const authMsg = "Sign in again to upload this photo."
+        logSellFunnelEvent({
+          listingType: "surfboards",
+          event: "upload_failed",
+          message: authMsg,
+        })
         setImages((prev) =>
           prev.map((s) =>
             s.clientId === clientId
@@ -1950,6 +1957,11 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     } catch (e) {
       console.error("[sell] listing photo failed", e)
       const msg = friendlyListingPhotoErrorMessage(e, prepared ? "upload" : "add")
+      logSellFunnelEvent({
+        listingType: "surfboards",
+        event: "upload_failed",
+        message: msg,
+      })
       if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
       setImages((prev) =>
         prev.map((s) => {
@@ -2423,6 +2435,13 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     }
     publishInFlightRef.current = true
 
+    const publishStartedAt = Date.now()
+    logSellFunnelEvent({
+      listingType: "surfboards",
+      event: "publish_attempt",
+      message: editId ? "edit" : "create",
+    })
+
     const goSubmitStep = (n: number) => {
       submitStepIndexRef.current = n
       setSubmitStepIndex(n)
@@ -2515,6 +2534,12 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         sellerPurchaseRaw &&
         sellerPurchasePriceToDb(submitForm.sellerPurchasePrice) === null
       ) {
+        logSellFunnelEvent({
+          listingType: "surfboards",
+          event: "validation_failed",
+          field: "sellerPurchasePrice",
+          message: "Invalid seller purchase price",
+        })
         setPublishValidationBanner(
           "What you paid: enter a valid dollar amount or leave it blank.",
         )
@@ -2535,6 +2560,11 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         },
       )
       if (validationMessage) {
+        logSellFunnelEvent({
+          listingType: "surfboards",
+          event: "validation_failed",
+          message: validationMessage,
+        })
         setPublishValidationBanner(validationMessage)
         window.requestAnimationFrame(() => {
           document
@@ -2644,30 +2674,17 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       let listingId: string | null = effectiveEditId
       let listingSlug: string | null = null
       let usedImpersonationListingApi = false
+      let publishedDraftNeedsSideEffects = false
       const isLocalOnlyServerDraftSubmit = Boolean(localServerDraftId && !editId)
-
-      // Generate a unique slug from the title
-      async function generateUniqueSlug(title: string): Promise<string> {
-        const base = slugify(title)
-        const { count } = await supabase
-          .from("listings")
-          .select("id", { count: "exact", head: true })
-          .eq("slug", base)
-        if (!count) return base
-        // Append incrementing suffix until unique
-        for (let i = 2; i < 100; i++) {
-          const candidate = `${base}-${i}`
-          const { count: c } = await supabase
-            .from("listings")
-            .select("id", { count: "exact", head: true })
-            .eq("slug", candidate)
-          if (!c) return candidate
-        }
-        return `${base}-${Date.now()}`
-      }
 
       if (effectiveEditId) {
         if (!isLocalOnlyServerDraftSubmit && editId && !editListingOwnerId) {
+          logSellFunnelEvent({
+            listingType: "surfboards",
+            event: "publish_failed",
+            message: "Edit blocked: listing owner still loading",
+            durationMs: Date.now() - publishStartedAt,
+          })
           dismissUploadProgressToast()
           toast.error("Listing is still loading. Try again in a moment.")
           setLoading(false)
@@ -2770,6 +2787,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           persistBoardCatalogSnapshot(effectiveEditId, user.id)
           if (publishingFromDraftRow) {
             requestKlaviyoListingCreated(effectiveEditId)
+            // Search-index / merchant sync runs after images are synced below.
+            publishedDraftNeedsSideEffects = true
           }
           clearSellServerDraftListingId("surfboards")
         } else if (adminImpersonatesListingOwner) {
@@ -2896,7 +2915,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           listingSlug = data.slug
           goSubmitStep(2)
         } else {
-          const newSlug = await generateUniqueSlug(resolvedListingTitle)
+          const newSlug = await generateUniqueListingSlug(supabase, resolvedListingTitle)
           const insertPayload = {
             user_id: user.id,
             ...listingFields,
@@ -2947,9 +2966,22 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
             .from("listing_images")
             .insert(imageRows)
           if (imagesInsertError) {
+            // Roll back the just-created listing so a photo failure never
+            // leaves an orphaned active listing; the user can retry cleanly.
+            await supabase
+              .from("listings")
+              .delete()
+              .eq("id", listing.id)
+              .eq("user_id", user.id)
+            listingId = null
             throw new Error(submitErrorMessage(imagesInsertError, "Failed to save listing photos"))
           }
           requestKlaviyoListingCreated(String(listing.id))
+          void applyBoardListingPublishedSideEffectsAction(String(listing.id)).catch((err) => {
+            if (process.env.NODE_ENV === "development") {
+              console.warn("[sell] publish side effects:", err)
+            }
+          })
           goSubmitStep(2)
         }
       }
@@ -2965,6 +2997,13 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
       if (listingId) {
         if (!editId && !listingImpersonation) {
+          if (publishedDraftNeedsSideEffects) {
+            void applyBoardListingPublishedSideEffectsAction(listingId).catch((err) => {
+              if (process.env.NODE_ENV === "development") {
+                console.warn("[sell] publish side effects:", err)
+              }
+            })
+          }
           void clearSellListingDraft(user.id)
           persistDefaultListingLocalityForProfile()
           dismissUploadProgressToast()
@@ -2984,6 +3023,12 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
             })
           }
 
+          logSellFunnelEvent({
+            listingType: "surfboards",
+            event: "publish_succeeded",
+            listingId: listingId ?? undefined,
+            durationMs: Date.now() - publishStartedAt,
+          })
           retainPublishOverlayUntilNavigation = true
           router.push(detailPath)
           return
@@ -2993,6 +3038,13 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           if (willSyncNewPhotos) goSubmitStep(1)
           await syncListingImages(listingId)
           goSubmitStep(2)
+        }
+        if (publishedDraftNeedsSideEffects) {
+          void applyBoardListingPublishedSideEffectsAction(listingId).catch((err) => {
+            if (process.env.NODE_ENV === "development") {
+              console.warn("[sell] publish side effects:", err)
+            }
+          })
         }
       }
 
@@ -3017,6 +3069,12 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           })
         }
       }
+      logSellFunnelEvent({
+        listingType: "surfboards",
+        event: "publish_succeeded",
+        listingId: listingId ?? undefined,
+        durationMs: Date.now() - publishStartedAt,
+      })
       retainPublishOverlayUntilNavigation = true
       if (!editId && listingId) {
         const { resolveAdminBulkListingAfterCreate } = await import(
@@ -3039,6 +3097,12 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     } catch (error: unknown) {
       const msg = submitErrorMessage(error, "Failed to create listing")
       console.error("Error creating listing:", msg, error)
+      logSellFunnelEvent({
+        listingType: "surfboards",
+        event: "publish_failed",
+        message: msg,
+        durationMs: Date.now() - publishStartedAt,
+      })
       const failedLabel =
         uploadPhaseLabelsRef.current[submitStepIndexRef.current] ?? "This step"
       setPublishPreview((p) =>

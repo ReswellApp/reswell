@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
+import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -92,6 +93,7 @@ export default function SellMagazinesFlow({
     signInReturnPath: magazineSellReturnPath,
     openSignIn: signIn,
     supabase: supabaseRef.current,
+    funnelListingType: "magazines",
   })
 
   const {
@@ -221,12 +223,23 @@ export default function SellMagazinesFlow({
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
 
+    const publishStartedAt = Date.now()
+    logSellFunnelEvent({
+      listingType: "magazines",
+      event: "publish_attempt",
+      message: editId ? "edit" : "create",
+    })
+    const failValidation = (message: string) => {
+      logSellFunnelEvent({ listingType: "magazines", event: "validation_failed", message })
+      toast.error(message)
+    }
+
     if (readyImages.length === 0) {
-      toast.error("Add at least one photo.")
+      failValidation("Add at least one photo.")
       return
     }
     if (uploadingCount > 0) {
-      toast.error("Hang tight — your photos are still uploading.")
+      failValidation("Hang tight — your photos are still uploading.")
       return
     }
 
@@ -241,9 +254,21 @@ export default function SellMagazinesFlow({
           removedImageIds,
         })
         if ("error" in result) {
+          logSellFunnelEvent({
+            listingType: "magazines",
+            event: "publish_failed",
+            message: result.error,
+            durationMs: Date.now() - publishStartedAt,
+          })
           toast.error(result.error)
           return
         }
+        logSellFunnelEvent({
+          listingType: "magazines",
+          event: "publish_succeeded",
+          listingId: editId,
+          durationMs: Date.now() - publishStartedAt,
+        })
         toast.success("Magazine listing updated.")
         router.push(listingDetailHref({ id: editId, slug: result.slug }))
         router.refresh()
@@ -252,10 +277,22 @@ export default function SellMagazinesFlow({
 
       const result = await createMagazineListingAction(payload)
       if ("error" in result) {
+        logSellFunnelEvent({
+          listingType: "magazines",
+          event: "publish_failed",
+          message: result.error,
+          durationMs: Date.now() - publishStartedAt,
+        })
         toast.error(result.error)
         return
       }
 
+      logSellFunnelEvent({
+        listingType: "magazines",
+        event: "publish_succeeded",
+        listingId: result.listingId,
+        durationMs: Date.now() - publishStartedAt,
+      })
       toast.success("Magazine listing published.")
       if (
         resolveAdminBulkListingAfterCreate(router, {

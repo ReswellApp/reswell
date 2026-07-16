@@ -3,7 +3,7 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import { verifyStorageObjectExists } from "@/lib/supabase/storage-object-exists"
 import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
-import { getMessagePolicyViolationForSender } from "@/lib/messages/message-policy-enforcement"
+import { getMessagePolicyViolationForSenderInConversation } from "@/lib/messages/message-policy-enforcement"
 import { evaluateUserMessageSend } from "@/lib/services/accountRestrictions"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
@@ -97,9 +97,10 @@ export async function sendMarketplaceMediaMessage(input: {
   const content = (trimmedCaption || defaultBody).slice(0, 8000)
 
   if (trimmedCaption) {
-    const policyViolation = await getMessagePolicyViolationForSender(
+    const policyViolation = await getMessagePolicyViolationForSenderInConversation(
       service,
       senderId,
+      conversationId,
       trimmedCaption,
     )
     if (policyViolation) {

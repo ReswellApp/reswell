@@ -7,7 +7,10 @@ import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactM
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
 import { touchUserLastActive } from "@/lib/db/userActivity"
-import { getMessagePolicyViolationForSender } from "@/lib/messages/message-policy-enforcement"
+import {
+  getMessagePolicyViolationForSender,
+  getMessagePolicyViolationForSenderInConversation,
+} from "@/lib/messages/message-policy-enforcement"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 import { MESSAGE_BLOCKED_POLICY_ERROR } from "@/lib/messages/policy-errors"
@@ -333,7 +336,12 @@ export async function sendMarketplaceListingMessage(input: unknown) {
     return sendRestrictionBlockedResult(sendGuard)
   }
 
-  const policyViolation = await getMessagePolicyViolationForSender(supabase, user.id, body)
+  const policyViolation = await getMessagePolicyViolationForSenderInConversation(
+    supabase,
+    user.id,
+    conversation.id,
+    body,
+  )
   if (policyViolation) {
     await capturePolicyBlockedDmContent({
       conversationId: conversation.id,
@@ -449,7 +457,12 @@ export async function sendListingMessage(input: {
     return sendRestrictionBlockedResult(sendGuard)
   }
 
-  const policyViolation = await getMessagePolicyViolationForSender(supabase, user.id, body)
+  const policyViolation = await getMessagePolicyViolationForSenderInConversation(
+    supabase,
+    user.id,
+    conversation.id,
+    body,
+  )
   if (policyViolation) {
     await capturePolicyBlockedDmContent({
       conversationId: conversation.id,
@@ -546,7 +559,12 @@ export async function sendConversationReply(input: {
     return sendRestrictionBlockedResult(sendGuard)
   }
 
-  const policyViolation = await getMessagePolicyViolationForSender(supabase, user.id, body)
+  const policyViolation = await getMessagePolicyViolationForSenderInConversation(
+    supabase,
+    user.id,
+    conv.id,
+    body,
+  )
   if (policyViolation) {
     await capturePolicyBlockedDmContent({
       conversationId: conv.id,

@@ -69,6 +69,7 @@ import {
 import { cn } from "@/lib/utils"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { finalizePeerListingCreate } from "@/lib/utils/admin-peer-listing-create-navigation"
+import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
 
 const SELL_WETSUITS_FORM_SECTION_NAV_ITEMS = buildSellSectionNavItems("wetsuits", "Wetsuit details")
 
@@ -179,6 +180,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     signInReturnPath: wetsuitSellReturnPath,
     openSignIn: signIn,
     supabase: supabaseRef.current,
+    funnelListingType: "wetsuits",
   })
 
   const {
@@ -373,42 +375,53 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
       return
     }
 
+    const publishStartedAt = Date.now()
+    logSellFunnelEvent({
+      listingType: "wetsuits",
+      event: "publish_attempt",
+      message: editId ? "edit" : "create",
+    })
+    const failValidation = (message: string) => {
+      logSellFunnelEvent({ listingType: "wetsuits", event: "validation_failed", message })
+      toast.error(message)
+    }
+
     if (readyImages.length === 0) {
-      toast.error("Add at least one photo.")
+      failValidation("Add at least one photo.")
       scrollWetsuitSellSectionIntoView("sell-wetsuits-section-photos-title")
       return
     }
     if (uploadingCount > 0) {
-      toast.error("Hang tight — your photos are still uploading.")
+      failValidation("Hang tight — your photos are still uploading.")
       return
     }
     if (!form.title.trim()) {
-      toast.error("Add a title.")
+      failValidation("Add a title.")
       scrollWetsuitSellSectionIntoView("sell-wetsuits-section-photos-title")
       return
     }
     if (!form.condition) {
-      toast.error("Choose a condition.")
+      failValidation("Choose a condition.")
       scrollWetsuitSellSectionIntoView("sell-wetsuits-section-details")
       return
     }
     if (!form.description.trim()) {
-      toast.error("Add a description.")
+      failValidation("Add a description.")
       scrollWetsuitSellSectionIntoView("sell-wetsuits-section-details")
       return
     }
     if (!form.price.trim() || Number(form.price) <= 0) {
-      toast.error("Enter a price.")
+      failValidation("Enter a price.")
       scrollWetsuitSellSectionIntoView("sell-wetsuits-section-publish")
       return
     }
     if (!form.locationCity.trim() || !form.locationState.trim()) {
-      toast.error("Confirm where you're listing from.")
+      failValidation("Confirm where you're listing from.")
       scrollWetsuitSellSectionIntoView("sell-wetsuits-section-delivery")
       return
     }
     if (!form.shippingAvailable && !form.localPickup) {
-      toast.error("Choose shipping, local pickup, or both.")
+      failValidation("Choose shipping, local pickup, or both.")
       scrollWetsuitSellSectionIntoView("sell-wetsuits-section-delivery")
       return
     }
@@ -417,7 +430,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
       const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
       const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
       if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) {
-        toast.error("Enter packed box dimensions for Reswell shipping.")
+        failValidation("Enter packed box dimensions for Reswell shipping.")
         scrollWetsuitSellSectionIntoView("sell-wetsuits-section-reswell-package")
         return
       }
@@ -427,7 +440,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
       form.shippingMode === "flat" &&
       (form.shippingPrice === "" || Number(form.shippingPrice) < 0)
     ) {
-      toast.error("Enter a flat shipping rate.")
+      failValidation("Enter a flat shipping rate.")
       scrollWetsuitSellSectionIntoView("sell-wetsuits-section-delivery")
       return
     }
@@ -517,10 +530,22 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
           })
           const data = (await res.json().catch(() => ({}))) as { error?: string; slug?: string }
           if (!res.ok) {
+            logSellFunnelEvent({
+              listingType: "wetsuits",
+              event: "publish_failed",
+              message: typeof data.error === "string" ? data.error : "Failed to update listing",
+              durationMs: Date.now() - publishStartedAt,
+            })
             toast.error(typeof data.error === "string" ? data.error : "Failed to update listing")
             setSubmitting(false)
             return
           }
+          logSellFunnelEvent({
+            listingType: "wetsuits",
+            event: "publish_succeeded",
+            listingId: editId ?? undefined,
+            durationMs: Date.now() - publishStartedAt,
+          })
           toast.success("Listing updated")
           router.push(`/l/${data.slug ?? editId}`)
           return
@@ -540,10 +565,22 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
           removedImageIds,
         })
         if ("error" in result) {
+          logSellFunnelEvent({
+            listingType: "wetsuits",
+            event: "publish_failed",
+            message: result.error,
+            durationMs: Date.now() - publishStartedAt,
+          })
           toast.error(result.error)
           setSubmitting(false)
           return
         }
+        logSellFunnelEvent({
+          listingType: "wetsuits",
+          event: "publish_succeeded",
+          listingId: editId,
+          durationMs: Date.now() - publishStartedAt,
+        })
         toast.success("Listing updated")
         router.push(`/l/${result.slug}`)
         return
@@ -560,12 +597,19 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
         section: "wetsuits",
         bulkSlotId,
         router,
+        publishStartedAt,
         successToast: "Your wetsuit is live!",
         setSubmitting,
         directCreate: () => createWetsuitListingAction(payload),
       })
     } catch (err) {
       console.error("wetsuit listing submit failed", err)
+      logSellFunnelEvent({
+        listingType: "wetsuits",
+        event: "publish_failed",
+        message: err instanceof Error ? err.message : "Unexpected submit error",
+        durationMs: Date.now() - publishStartedAt,
+      })
       toast.error(editId ? "Something went wrong saving your listing." : "Something went wrong publishing your listing.")
       setSubmitting(false)
     }
