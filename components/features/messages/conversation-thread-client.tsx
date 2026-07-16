@@ -44,11 +44,13 @@ import { parseOfferNegotiationMessage } from '@/lib/utils/parse-offer-negotiatio
 import { parseOrderCompletedMessageMetadata } from '@/lib/validations/order-completed-message-metadata'
 import { parseOrderPlacedMessageMetadata } from '@/lib/validations/order-placed-message-metadata'
 import { parseOrderRefundedMessageMetadata } from '@/lib/validations/order-refunded-message-metadata'
+import { parseOrderExclusiveRepurchaseMessageMetadata } from '@/lib/validations/order-exclusive-repurchase-message-metadata'
 import { parseReviewRequestMessageMetadata } from '@/lib/validations/review-request-message-metadata'
 import { parseMessageLocationMetadata } from '@/lib/validations/message-location-metadata'
 import { OrderCompletedMessageCard } from '@/components/features/messages/order-completed-message-card'
 import { OrderPlacedMessageCard } from '@/components/features/messages/order-placed-message-card'
 import { OrderRefundedMessageCard } from '@/components/features/messages/order-refunded-message-card'
+import { OrderExclusiveRepurchaseMessageCard } from '@/components/features/messages/order-exclusive-repurchase-message-card'
 import { ReviewRequestMessageCard } from '@/components/features/messages/review-request-message-card'
 import { MessageLocationCard } from '@/components/features/messages/message-location-card'
 import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/local-phone-policy-block-bubble'
@@ -595,6 +597,7 @@ export function ConversationThreadClient({
       if (parseOrderPlacedMessageMetadata(m.metadata)) return false
       if (parseOrderCompletedMessageMetadata(m.metadata)) return false
       if (parseOrderRefundedMessageMetadata(m.metadata)) return false
+      if (parseOrderExclusiveRepurchaseMessageMetadata(m.metadata)) return false
       if (parseReviewRequestMessageMetadata(m.metadata)) return false
       if (parseMessageLocationMetadata(m.metadata)) return false
       if (parseMarketplaceMessageAttachment(m.metadata)) return false
@@ -909,6 +912,19 @@ export function ConversationThreadClient({
                         <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
                           <OrderRefundedMessageCard
                             payload={orderRefunded}
+                            createdAt={message.created_at}
+                            viewerIsSeller={isSeller}
+                          />
+                        </div>
+                      )
+                    }
+
+                    const exclusiveRepurchase = parseOrderExclusiveRepurchaseMessageMetadata(message.metadata)
+                    if (exclusiveRepurchase) {
+                      return (
+                        <div className={cn('flex w-full', isOwn ? 'justify-end' : 'justify-start', cardMargin)}>
+                          <OrderExclusiveRepurchaseMessageCard
+                            payload={exclusiveRepurchase}
                             createdAt={message.created_at}
                             viewerIsSeller={isSeller}
                           />
