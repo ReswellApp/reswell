@@ -6,7 +6,6 @@ import { ShippingLabelTool } from "@/components/shipping-label-tool"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
-import { SHIPPING_DEADLINE_DAYS } from "@/lib/shipping-deadline"
 import { listSellerLabelPurchasableOrders } from "@/lib/services/sellerShippingLabelCheckout"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { Truck } from "lucide-react"
@@ -155,9 +154,8 @@ function ShippingGuideCards() {
                 seller in Messages.
               </li>
               <li>
-                Once the board ships, tracking appears on your purchase page. If the seller
-                hasn&apos;t shipped within {SHIPPING_DEADLINE_DAYS} days, Reswell cancels the order
-                and refunds you automatically.
+                Once the board ships, tracking appears on your purchase page. If the seller is taking
+                longer than expected, message them in Messages or use Get help on your purchase page.
               </li>
               <li>
                 Inspect the package when it arrives. If something is damaged or not as described,

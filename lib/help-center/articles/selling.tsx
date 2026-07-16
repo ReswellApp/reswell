@@ -482,7 +482,7 @@ export const sellingHelpArticles: HelpArticle[] = [
                     tracking automatically. Print the label from your sale page, drop the package with the carrier,
                     then tap <strong>I&apos;ve dropped this off with the carrier</strong>. For your own label, enter
                     tracking with <strong>Save tracking</strong>. Ship within {SHIPPING_DEADLINE_DAYS} days of
-                    purchase confirmation or the order may be auto canceled and refunded.
+                    purchase confirmation when possible so buyers know their order is on the way.
                   </>
                 ),
               },
@@ -816,12 +816,12 @@ export const sellingHelpArticles: HelpArticle[] = [
         ),
       },
       {
-        heading: "Auto cancellation for late shipping",
+        heading: "Late shipping",
         body: (
           <p>
-            If you do not ship within {SHIPPING_DEADLINE_DAYS} days of purchase confirmation, Reswell
-            automatically cancels the order and refunds the buyer. You do not need to request that
-            yourself, but repeated late shipments can affect your seller reputation.
+            Ship within {SHIPPING_DEADLINE_DAYS} days of purchase confirmation when you can. If you are
+            running behind, message the buyer with an update. Buyers can contact Reswell support from their
+            purchase page if they need help.
           </p>
         ),
       },

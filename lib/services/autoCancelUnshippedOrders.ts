@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { insertOrderSupportRequest } from "@/lib/db/order-support"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
-import { SHIPPING_DEADLINE_DAYS } from "@/lib/shipping-deadline"
+import { SHIPPING_DEADLINE_DAYS, AUTO_CANCEL_UNSHIPPED_ORDERS_ENABLED } from "@/lib/shipping-deadline"
 import {
   issueMarketplaceOrderRefund,
   type MarketplaceOrderRefundRow,
@@ -27,6 +27,10 @@ export async function autoCancelUnshippedOrders(
   supabase: SupabaseClient,
   referenceTime: Date = new Date(),
 ): Promise<AutoCancelUnshippedOrdersSummary> {
+  if (!AUTO_CANCEL_UNSHIPPED_ORDERS_ENABLED) {
+    return { scanned: 0, cancelled: 0, failed: 0, errors: [] }
+  }
+
   const cutoff = new Date(referenceTime.getTime())
   cutoff.setUTCDate(cutoff.getUTCDate() - SHIPPING_DEADLINE_DAYS)
   const cutoffIso = cutoff.toISOString()

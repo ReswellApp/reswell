@@ -697,13 +697,12 @@ export const buyingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Sellers have <strong>{SHIPPING_DEADLINE_DAYS} days</strong> from purchase confirmation to
-              ship your board. Your purchase page shows the deadline and how many days are left.
+              Sellers are expected to ship within <strong>{SHIPPING_DEADLINE_DAYS} days</strong> of purchase
+              confirmation. Your purchase page shows the deadline and how many days are left.
             </p>
             <p>
-              If they miss that deadline, Reswell cancels the order and refunds you automatically. You
-              do not need to file a claim. Feel free to message the seller in the meantime if you want
-              a status update.
+              If shipping is delayed, message the seller for a status update or use <strong>Get help</strong>{" "}
+              on your purchase page and our team can assist.
             </p>
           </>
         ),

@@ -135,14 +135,14 @@ function buildShippingStepDescription(props: BuyerOrderExperienceProps): string 
 
   const daysLeft = daysUntilShippingDeadline(createdAtIso)
   if (daysLeft <= 0) {
-    return "The seller has not shipped yet. Reswell will cancel this purchase and refund you automatically."
+    return "The seller has not shipped yet. Use Get help on this order if you need support."
   }
 
   const deadlineLabel = getShippingDeadlineDate(createdAtIso).toLocaleDateString(undefined, {
     dateStyle: "medium",
   })
 
-  return `You'll see tracking here once the seller adds it. If they haven't shipped by ${deadlineLabel} (${SHIPPING_DEADLINE_DAYS} days), Reswell will cancel and refund you automatically.`
+  return `You'll see tracking here once the seller adds it. Sellers typically ship within ${SHIPPING_DEADLINE_DAYS} days (by ${deadlineLabel}).`
 }
 
 function buildJourney(props: BuyerOrderExperienceProps): JourneyStep[] {
@@ -600,17 +600,18 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
           <span>
             {shippingDaysLeft && shippingDaysLeft > 0 ? (
               <>
-                Sellers have {SHIPPING_DEADLINE_DAYS} days to ship. If your board isn&apos;t shipped by{" "}
+                Sellers are expected to ship within {SHIPPING_DEADLINE_DAYS} days. If your board isn&apos;t
+                shipped by{" "}
                 {getShippingDeadlineDate(props.createdAtIso).toLocaleDateString(undefined, {
                   dateStyle: "medium",
                 })}{" "}
-                ({shippingDaysLeft} day{shippingDaysLeft === 1 ? "" : "s"} left), Reswell will cancel the
-                purchase and refund you automatically.
+                ({shippingDaysLeft} day{shippingDaysLeft === 1 ? "" : "s"} left), message the seller or use
+                Get help if you need an update.
               </>
             ) : (
               <>
-                The {SHIPPING_DEADLINE_DAYS}-day shipping window has passed. Reswell is handling cancellation
-                and your refund — this page will update when processing completes.
+                The {SHIPPING_DEADLINE_DAYS}-day shipping window has passed. Use Get help on this order if
+                you need support from Reswell.
               </>
             )}
           </span>

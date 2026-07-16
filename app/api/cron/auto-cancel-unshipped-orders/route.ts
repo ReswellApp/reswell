@@ -1,9 +1,11 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { AUTO_CANCEL_UNSHIPPED_ORDERS_ENABLED } from "@/lib/shipping-deadline"
 import { autoCancelUnshippedOrders } from "@/lib/services/autoCancelUnshippedOrders"
 import { NextResponse } from "next/server"
 
 /**
  * Daily job: auto-cancel shipping orders where the seller has not shipped within 7 days.
+ * Disabled via AUTO_CANCEL_UNSHIPPED_ORDERS_ENABLED until we revisit the policy.
  * Protected with CRON_SECRET (same pattern as purge-archived).
  */
 export async function GET(request: Request) {
@@ -11,6 +13,13 @@ export async function GET(request: Request) {
   const cronSecret = process.env.CRON_SECRET
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  if (!AUTO_CANCEL_UNSHIPPED_ORDERS_ENABLED) {
+    return NextResponse.json({
+      disabled: true,
+      message: "Auto-cancel unshipped orders is disabled.",
+    })
   }
 
   let supabase

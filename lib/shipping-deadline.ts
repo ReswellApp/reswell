@@ -1,5 +1,11 @@
-/** Days after purchase confirmation before an unshipped shipping order is auto-cancelled. */
+/** Days after purchase confirmation shown as the expected shipping window in the UI. */
 export const SHIPPING_DEADLINE_DAYS = 7
+
+/**
+ * Daily cron auto-refunds unshipped shipping orders past the deadline.
+ * Disabled until we revisit the policy — use manual support refunds for now.
+ */
+export const AUTO_CANCEL_UNSHIPPED_ORDERS_ENABLED = false
 
 export function getShippingDeadlineDate(
   createdAt: Date | string,
