@@ -157,21 +157,22 @@ export function useListingPhotoUpload({
         }
         if (!session?.access_token || !user) {
           if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
+          const authMsg = "Sign in again to upload this photo."
           setImages((prev) =>
             prev.map((s) =>
               s.clientId === clientId
                 ? {
                     ...s,
                     optimizePhase: "done",
-                    uploadPhase: "idle",
-                    errorMessage: undefined,
+                    uploadPhase: "error",
+                    errorMessage: authMsg,
                   }
                 : s,
             ),
           )
           if (!photoUploadSignInPromptedRef.current) {
             photoUploadSignInPromptedRef.current = true
-            toast.message("Sign in to upload photos")
+            toast.error(authMsg)
             openSignIn(signInReturnPath())
           }
           return
@@ -221,9 +222,7 @@ export function useListingPhotoUpload({
           ),
         )
       } catch (e) {
-        if (process.env.NODE_ENV === "development") {
-          console.error("[sell] listing photo failed", e)
-        }
+        console.error("[sell] listing photo failed", e)
         const msg = friendlyListingPhotoErrorMessage(e, prepared ? "upload" : "add")
         if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
         setImages((prev) =>
