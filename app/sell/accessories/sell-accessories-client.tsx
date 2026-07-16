@@ -363,9 +363,7 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
         }
 
         const { fullUrl, thumbUrl } = await uploadListingImagePairToSupabase({
-          supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-          accessToken: session.access_token,
-          anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+          supabase,
           userId: user.id,
           clientId: slot.clientId,
           prepared,

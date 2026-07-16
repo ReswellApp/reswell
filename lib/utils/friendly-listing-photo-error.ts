@@ -65,7 +65,26 @@ export function friendlyListingPhotoErrorMessage(
   }
 
   if (context === "upload") {
-    if (!raw || looksTechnical(raw)) {
+    if (!raw) {
+      return "This photo didn't upload. Try again."
+    }
+    const lower = raw.toLowerCase()
+    if (
+      lower.includes("sign in again") ||
+      lower.includes("jwt") ||
+      lower.includes("not authorized") ||
+      lower.includes("unauthorized") ||
+      lower.includes("row-level security")
+    ) {
+      return "Sign in again to upload this photo."
+    }
+    if (isFileTooLargeMessage(raw)) {
+      return "That photo is too large after processing. Try a smaller original."
+    }
+    if (/mime type|not supported|invalid file type/i.test(raw)) {
+      return "That photo format isn't supported. Try JPEG or PNG."
+    }
+    if (looksTechnical(raw) && !/^upload failed \(\d+\)/i.test(raw)) {
       return "This photo didn't upload. Try again."
     }
     return raw
@@ -76,7 +95,7 @@ export function friendlyListingPhotoErrorMessage(
   }
 
   if (isHeicConversionMessage(raw)) {
-    return "We couldn't read this photo. Save it as JPEG from Photos and try again."
+    return "We couldn't read this iPhone photo. Tap Retry — if it keeps failing, try one photo at a time."
   }
 
   if (isUnsupportedFormatMessage(raw)) {

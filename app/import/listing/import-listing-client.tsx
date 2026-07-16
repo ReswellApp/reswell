@@ -194,9 +194,7 @@ export default function ImportListingClient({
           assertListingOriginalSize(file)
           const prepared = await prepareListingImagePairFromFile(file)
           const uploaded = await uploadListingImagePairToSupabase({
-            supabaseUrl,
-            accessToken: session.access_token,
-            anonKey,
+            supabase,
             userId: session.user.id,
             clientId: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
             prepared,

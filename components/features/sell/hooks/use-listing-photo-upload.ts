@@ -93,9 +93,6 @@ export function useListingPhotoUpload({
 
   imagesRef.current = images
 
-  const supabaseProjectUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
-
   useEffect(() => {
     return () => {
       for (const im of imagesRef.current) {
@@ -195,9 +192,7 @@ export function useListingPhotoUpload({
         )
 
         const { fullUrl, thumbUrl } = await uploadListingImagePairToSupabase({
-          supabaseUrl: supabaseProjectUrl,
-          accessToken: session.access_token,
-          anonKey: supabaseAnonKey,
+          supabase,
           userId: user.id,
           clientId,
           prepared,
@@ -242,7 +237,7 @@ export function useListingPhotoUpload({
         toast.error(msg)
       }
     },
-    [listingPhotoPrepareSeqInSync, openSignIn, signInReturnPath, supabaseAnonKey, supabaseProjectUrl],
+    [listingPhotoPrepareSeqInSync, openSignIn, signInReturnPath],
   )
 
   useLayoutEffect(() => {

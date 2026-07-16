@@ -118,12 +118,41 @@ function decodeViaImageElement(file: File): Promise<DecodedImageSource> {
   })
 }
 
+/**
+ * Decode and downscale in one step so 48MP iPhone HEIC never materializes at full resolution.
+ * Long edge is capped to {@link LISTING_FULL_MAX_LONG_EDGE} (listing output size) — enough for
+ * marketplace quality, ~10× less peak memory than a raw Pro camera bitmap.
+ */
+export async function createImageBitmapMaxLongEdge(
+  blob: Blob,
+  maxLongEdge: number = LISTING_FULL_MAX_LONG_EDGE,
+): Promise<ImageBitmap> {
+  const opts = {
+    imageOrientation: "from-image" as const,
+    resizeQuality: "high" as const,
+  }
+
+  // Portrait-primary (most sell photos after EXIF): constrain height first.
+  let bitmap = await createImageBitmap(blob, {
+    ...opts,
+    resizeHeight: maxLongEdge,
+  })
+  if (bitmap.width <= maxLongEdge) return bitmap
+
+  // Landscape / ultra-wide after orientation — constrain width instead.
+  bitmap.close()
+  bitmap = await createImageBitmap(blob, {
+    ...opts,
+    resizeWidth: maxLongEdge,
+  })
+  return bitmap
+}
+
 /** Single source of truth for main-thread decode: prefer createImageBitmap, fall back to <img>. */
 async function decodeImageSource(file: File): Promise<DecodedImageSource> {
   try {
-    // `from-image` bakes the EXIF orientation tag into the pixels so camera/iPhone photos (which
-    // store rotation metadata rather than rotated pixels) are not decoded upside down or sideways.
-    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" })
+    // Downscale during decode — critical for full-megapixel iPhone HEIC on mobile Safari.
+    const bitmap = await createImageBitmapMaxLongEdge(file, LISTING_FULL_MAX_LONG_EDGE)
     return {
       source: bitmap,
       width: bitmap.width,

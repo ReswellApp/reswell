@@ -189,9 +189,15 @@ async function convertViaServer(file: File): Promise<File> {
 
 /**
  * Returns a JPEG (or browser-decodable) {@link File} suitable for canvas / createImageBitmap pipelines.
- * HEIC/HEIF is converted in the browser first so large iPhone photos never hit Vercel's ~4.5MB body limit.
+ *
+ * iPhone / iPad Safari: HEIC is left as-is — Safari decodes it natively, and the listing pipeline
+ * downscales during createImageBitmap so 48MP camera roll photos never need WASM or a server hop.
+ *
+ * Other browsers: HEIC is converted client-side (heic-to / heic2any). Server convert is only a
+ * last resort under Vercel's ~4.5MB body limit — large iPhone HEIC must succeed on-device.
  */
 export async function ensureBrowserDecodableImageFile(file: File): Promise<File> {
+  // iOS Safari + common JPEG/PNG: skip probes and HEIC WASM. Native decode handles full megapixel HEIC.
   if (isLikelyBrowserDecodableWithoutProbe(file)) return file
 
   if (await browserCanDecodeImage(file)) return file
@@ -199,7 +205,7 @@ export async function ensureBrowserDecodableImageFile(file: File): Promise<File>
   const heicish = await fileLooksLikeHeic(file)
   if (heicish) {
     try {
-      // HEIC decode is heavy main-thread wasm; serialize so parallel photo adds don't freeze scroll.
+      // Desktop Chrome/Firefox HEIC: wasm convert, serialized so batch picks don't freeze the UI.
       return await runImageCpuTask(() => convertHeicClientSide(file))
     } catch (err) {
       if (file.size <= SERVER_IMAGE_CONVERT_MAX_BYTES) {
@@ -211,7 +217,7 @@ export async function ensureBrowserDecodableImageFile(file: File): Promise<File>
       }
       const hint = conversionErrorMessage(err)
       throw new Error(
-        `Could not convert this HEIC/HEIF photo (${hint}). Try exporting as JPEG from Photos, or use a smaller file.`,
+        `Could not read this HEIC photo (${hint}). On iPhone, try again; on desktop, export as JPEG from Photos.`,
       )
     }
   }

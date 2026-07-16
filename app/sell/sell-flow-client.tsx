@@ -1062,8 +1062,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const draftPhotosPendingRef = useRef<ListingPhotoSlot[] | null>(null)
   /** Slots from IndexedDB restore — optimized in useLayoutEffect after `optimizeAndUploadSlot` exists. */
   const idbRestoreOptimizeQueueRef = useRef<ListingPhotoSlot[] | null>(null)
-  const supabaseProjectUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ""
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
 
   useEffect(() => {
     let cancelled = false
@@ -1925,9 +1923,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       // No per-tick progress state: the tile only shows a skeleton until upload completes, so
       // streaming XHR progress here just re-rendered the whole (very large) form on every chunk.
       const { fullUrl, thumbUrl } = await uploadListingImagePairToSupabase({
-        supabaseUrl: supabaseProjectUrl,
-        accessToken: session.access_token,
-        anonKey: supabaseAnonKey,
+        supabase,
         userId: user.id,
         clientId,
         prepared,

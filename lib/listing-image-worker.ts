@@ -31,7 +31,22 @@ self.onmessage = async function (e) {
     if (!blob || blob.size === 0) {
       throw new Error("Image worker received an empty photo payload")
     }
-    var bitmap = await createImageBitmap(blob, { imageOrientation: "from-image" })
+    // Downscale during decode so 48MP iPhone HEIC never materializes at full resolution.
+    // Portrait-primary: constrain height first; landscape falls through to width constraint.
+    var maxLong = msg.fullMax || 2000
+    var bitmap = await createImageBitmap(blob, {
+      imageOrientation: "from-image",
+      resizeHeight: maxLong,
+      resizeQuality: "high",
+    })
+    if (bitmap.width > maxLong) {
+      if (bitmap.close) bitmap.close()
+      bitmap = await createImageBitmap(blob, {
+        imageOrientation: "from-image",
+        resizeWidth: maxLong,
+        resizeQuality: "high",
+      })
+    }
     var src = bitmap
     var w = bitmap.width
     var h = bitmap.height

@@ -16,8 +16,22 @@
  *     main-thread fallback, so a batch of large iPhone photos never triggers an out-of-memory abort.
  */
 
+function isAppleMobileSafari(): boolean {
+  if (typeof navigator === "undefined") return false
+  const ua = navigator.userAgent
+  return (
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  )
+}
+
+/**
+ * Prepare concurrency: one photo at a time on iPhone — full-megapixel HEIC decode is the
+ * memory cliff. Desktop can overlap two prepares safely.
+ */
 function resolveMaxConcurrency(): number {
   if (typeof navigator === "undefined") return 1
+  if (isAppleMobileSafari()) return 1
   const cores = navigator.hardwareConcurrency
   if (typeof cores === "number" && cores >= 8) return 2
   return 1
