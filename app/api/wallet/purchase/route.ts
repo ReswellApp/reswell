@@ -22,6 +22,7 @@ import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPu
 import { sendPostPurchaseReviewInvite } from "@/lib/services/orderReviewInvite"
 import { notifySellerOrderCheckoutKlaviyo } from "@/lib/services/notifySellerOrderCheckoutKlaviyo"
 import { evaluateUserPurchase } from "@/lib/services/accountRestrictions"
+import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -73,6 +74,15 @@ export async function POST(request: NextRequest) {
 
   if (listing.user_id === user.id) {
     return NextResponse.json({ error: "Cannot purchase your own listing" }, { status: 400 })
+  }
+
+  const exclusiveCheck = await assertBuyerMayPurchaseListingExclusiveWindow(
+    supabase,
+    listing_id,
+    user.id,
+  )
+  if (!exclusiveCheck.ok) {
+    return NextResponse.json({ error: exclusiveCheck.message }, { status: 403 })
   }
 
   const acceptedOffer = await fetchAcceptedOfferForBuyerListing(supabase, user.id, listing_id)

@@ -9,6 +9,7 @@ import type { MetaBrowserSignalsInput } from "@/lib/validations/metaBrowserSigna
 import type { PeerListingCartFields } from "@/lib/peer-listing-cart"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { isListingPurchasable } from "@/lib/listing-public-visibility"
+import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 
 export type CartListingRow = {
   id: string
@@ -74,6 +75,15 @@ async function assertListingEligibleForCart(
   }
   if (listing.user_id === buyerId) {
     return { ok: false, message: "You cannot add your own listing" }
+  }
+
+  const exclusiveCheck = await assertBuyerMayPurchaseListingExclusiveWindow(
+    supabase,
+    listingId,
+    buyerId,
+  )
+  if (!exclusiveCheck.ok) {
+    return { ok: false, message: exclusiveCheck.message }
   }
 
   return { ok: true, listing }

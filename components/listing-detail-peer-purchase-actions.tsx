@@ -20,6 +20,7 @@ import {
   MakeOfferDialog,
   MakeOfferTriggerButton,
 } from "@/components/features/listings/make-offer-dialog"
+import type { ListingExclusivePurchaseAccess } from "@/lib/services/listingBuyerExclusiveWindow"
 
 export type ListingMakeOfferConfig = {
   listingTitle: string
@@ -32,15 +33,7 @@ export type ListingMakeOfferConfig = {
   shippingFlatRate: number
 }
 
-export function ListingDetailPeerPurchaseActions({
-  listingId,
-  checkoutListingParam,
-  section,
-  isLoggedIn,
-  makeOffer,
-  agreedCheckoutItemUsd,
-  offerRowTrailingSlot,
-}: {
+export type ListingDetailPeerPurchaseActionsProps = {
   listingId: string
   /** Slug or id for `/checkout?listing=` */
   checkoutListingParam: string
@@ -51,7 +44,19 @@ export function ListingDetailPeerPurchaseActions({
   agreedCheckoutItemUsd?: number | null
   /** Renders beside “Make an offer” (e.g. share roundel). */
   offerRowTrailingSlot?: React.ReactNode
-}) {
+  exclusivePurchaseAccess?: ListingExclusivePurchaseAccess
+}
+
+export function ListingDetailPeerPurchaseActions({
+  listingId,
+  checkoutListingParam,
+  section,
+  isLoggedIn,
+  makeOffer,
+  agreedCheckoutItemUsd,
+  offerRowTrailingSlot,
+  exclusivePurchaseAccess = { kind: "open" },
+}: ListingDetailPeerPurchaseActionsProps) {
   const [loading, setLoading] = useState(false)
   const [cartAdded, setCartAdded] = useState(false)
   const [offerOpen, setOfferOpen] = useState(false)
@@ -116,8 +121,26 @@ export function ListingDetailPeerPurchaseActions({
     setOfferOpen(true)
   }
 
+  const purchaseBlocked =
+    exclusivePurchaseAccess.kind === "blocked_for_viewer" ||
+    exclusivePurchaseAccess.kind === "blocked_sign_in"
+  const exclusiveForViewer = exclusivePurchaseAccess.kind === "exclusive_for_viewer"
+
   return (
     <div className="flex flex-col gap-[10px]">
+      {exclusiveForViewer ? (
+        <p className="rounded-2xl border border-sky-500/20 bg-sky-500/[0.08] px-4 py-3 text-[13px] leading-snug text-sky-950 dark:border-sky-400/25 dark:bg-sky-500/10 dark:text-sky-50">
+          You have exclusive access to buy this item again through{" "}
+          <span className="font-semibold">{exclusivePurchaseAccess.expiresAtLabel}</span>.
+        </p>
+      ) : null}
+      {purchaseBlocked ? (
+        <p className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.08] px-4 py-3 text-[13px] leading-snug text-amber-950 dark:border-amber-400/25 dark:bg-amber-500/10 dark:text-amber-50">
+          {exclusivePurchaseAccess.kind === "blocked_sign_in"
+            ? `This item is reserved for the original buyer until ${exclusivePurchaseAccess.expiresAtLabel}. Sign in with that account to purchase.`
+            : `This item is reserved for the original buyer until ${exclusivePurchaseAccess.expiresAtLabel}.`}
+        </p>
+      ) : null}
       {agreedCheckoutItemUsd != null &&
       agreedCheckoutItemUsd > 0 &&
       Number.isFinite(agreedCheckoutItemUsd) ? (
@@ -126,6 +149,7 @@ export function ListingDetailPeerPurchaseActions({
           this board. Buy now charges that price (plus shipping if you choose shipping).
         </p>
       ) : null}
+      {!purchaseBlocked ? (
       <div className="flex flex-col gap-[10px]">
         {isLoggedIn ? (
           <Button
@@ -188,8 +212,9 @@ export function ListingDetailPeerPurchaseActions({
           </Button>
         )}
       </div>
+      ) : null}
 
-      {makeOffer ? (
+      {!purchaseBlocked && makeOffer ? (
         <>
           <div className="flex gap-2">
             <div className="min-w-0 flex-1">

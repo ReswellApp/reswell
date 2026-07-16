@@ -44,7 +44,7 @@ import { MAGAZINES_SECTION } from "@/lib/magazine-listing-config"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
 import { ListingDetailEngagementMetrics } from "@/components/listing-detail-engagement-metrics"
-import { ListingDetailPeerPurchaseActions } from "@/components/listing-detail-peer-purchase-actions"
+import { ListingDetailPeerPurchaseActionsLoader } from "@/components/listing-detail-peer-purchase-actions-loader"
 import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
 import {
   HomePeerListingScrollTile,
@@ -403,7 +403,7 @@ export async function MagazinesListingDetailPage({
             ) : null}
             {canPeerPurchase ? (
               <div className="mt-5">
-                <ListingDetailPeerPurchaseActions
+                <ListingDetailPeerPurchaseActionsLoader
                   listingId={magazine.id}
                   checkoutListingParam={magazine.slug ?? magazine.id}
                   section="magazines"
@@ -468,7 +468,7 @@ export async function MagazinesListingDetailPage({
               ) : null}
               {canPeerPurchase && (
                 <div className="mt-5">
-                  <ListingDetailPeerPurchaseActions
+                  <ListingDetailPeerPurchaseActionsLoader
                     listingId={magazine.id}
                     checkoutListingParam={magazine.slug ?? magazine.id}
                     section="magazines"

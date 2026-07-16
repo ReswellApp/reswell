@@ -14,6 +14,7 @@ import { dedupeIdsPreserveOrder } from "@/lib/stripe-marketplace-metadata"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { evaluateUserPurchase } from "@/lib/services/accountRestrictions"
+import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { computeCheckoutTotalWithNewsletterPromo } from "@/lib/services/newsletterPromo"
 import {
@@ -134,6 +135,17 @@ export async function POST(request: NextRequest) {
 
   if (listingsOrdered.some((l) => l.user_id === user.id)) {
     return NextResponse.json({ error: "Cannot purchase your own listing" }, { status: 400 })
+  }
+
+  for (const listing of listingsOrdered) {
+    const exclusiveCheck = await assertBuyerMayPurchaseListingExclusiveWindow(
+      supabase,
+      listing.id,
+      user.id,
+    )
+    if (!exclusiveCheck.ok) {
+      return NextResponse.json({ error: exclusiveCheck.message }, { status: 403 })
+    }
   }
 
   const listingsForTotals = await applyAcceptedOfferToPeerCheckoutListings(

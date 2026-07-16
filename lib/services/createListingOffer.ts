@@ -14,6 +14,7 @@ import { formatOfferThreadContent } from "@/lib/utils/format-offer-thread-conten
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { evaluateUserMessageSend } from "@/lib/services/accountRestrictions"
+import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -78,6 +79,15 @@ export async function createListingOffer(
 
   if (listing.user_id === buyerId) {
     return { ok: false, status: 400, error: "You can’t make an offer on your own listing." }
+  }
+
+  const exclusiveCheck = await assertBuyerMayPurchaseListingExclusiveWindow(
+    supabase,
+    listingId,
+    buyerId,
+  )
+  if (!exclusiveCheck.ok) {
+    return { ok: false, status: 403, error: exclusiveCheck.message }
   }
 
   const sendGuard = await evaluateUserMessageSend(supabase, buyerId, listing.user_id)

@@ -38,6 +38,7 @@ import {
 import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
 import type { PeerSurfboardCheckoutListingRow } from "@/lib/services/peerListingShippingQuote"
 import { KlaviyoCheckoutStartedTracker } from "@/components/features/checkout/klaviyo-checkout-started-tracker"
+import { assertBuyerMayPurchaseListingsExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 
 export const dynamic = "force-dynamic"
 
@@ -100,6 +101,15 @@ export default async function CheckoutPage(props: {
     const checkoutListings = loaded.listings.map(rowToCheckoutListing)
 
     if (checkoutListings.some((l) => l.user_id === user.id)) {
+      redirect("/messages/offers")
+    }
+
+    const exclusiveCheck = await assertBuyerMayPurchaseListingsExclusiveWindow(
+      supabase,
+      checkoutListings.map((l) => l.id),
+      user.id,
+    )
+    if (!exclusiveCheck.ok) {
       redirect("/messages/offers")
     }
 
@@ -210,6 +220,15 @@ export default async function CheckoutPage(props: {
       redirect("/cart")
     }
 
+    const exclusiveCheck = await assertBuyerMayPurchaseListingsExclusiveWindow(
+      supabase,
+      checkoutListings.map((l) => l.id),
+      user.id,
+    )
+    if (!exclusiveCheck.ok) {
+      redirect("/cart")
+    }
+
     const [{ seller, buyer }, matchedOffer] = await Promise.all([
       fetchCheckoutSellerAndBuyerContext(supabase, sellerId, user),
       findAcceptedOfferMatchingListings(
@@ -303,6 +322,17 @@ export default async function CheckoutPage(props: {
 
   if (!isPeerListingSection(listing.section)) {
     notFound()
+  }
+
+  if (user && !isAnonymousSupabaseUser(user)) {
+    const exclusiveCheck = await assertBuyerMayPurchaseListingsExclusiveWindow(
+      supabase,
+      [listing.id],
+      user.id,
+    )
+    if (!exclusiveCheck.ok) {
+      redirect(listingDetailHref(listing))
+    }
   }
 
   const lp = listing.local_pickup !== false

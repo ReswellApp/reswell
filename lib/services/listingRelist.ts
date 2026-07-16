@@ -4,6 +4,7 @@ import { revalidateSellersForUserIds } from "@/lib/cache/revalidate-sellers-dire
 import { revalidateRecentlySoldSurfaces } from "@/lib/cache/revalidate-home-public-catalog"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
+import { grantExclusiveWindowForRefundedOrderRelist } from "@/lib/services/listingBuyerExclusiveWindow"
 
 function uniqueListingIds(listingIds: readonly (string | null | undefined)[]): string[] {
   return [...new Set(listingIds.filter((id): id is string => typeof id === "string" && id.length > 0))]
@@ -62,6 +63,15 @@ export async function relistListingsAfterRefund(
   }
 }
 
+async function applyExclusiveBuyerWindowAfterRelist(
+  supabase: SupabaseClient,
+  orderId: string,
+  relistedIds: readonly string[],
+): Promise<void> {
+  if (relistedIds.length === 0) return
+  await grantExclusiveWindowForRefundedOrderRelist(supabase, orderId, relistedIds)
+}
+
 /** Re-activate a single listing after a full refund. */
 export async function relistAfterRefund(
   supabase: SupabaseClient,
@@ -92,5 +102,7 @@ export async function relistOrderListingsAfterRefund(
     ...(items ?? []).map((row) => (row as { listing_id?: string | null }).listing_id),
   ]
 
-  await relistListingsAfterRefund(supabase, listingIds)
+  const uniqueIds = uniqueListingIds(listingIds)
+  await relistListingsAfterRefund(supabase, uniqueIds)
+  await applyExclusiveBuyerWindowAfterRelist(supabase, orderId, uniqueIds)
 }

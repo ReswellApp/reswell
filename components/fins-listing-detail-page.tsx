@@ -47,7 +47,7 @@ import { getBrandById } from "@/lib/brands/server"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
 import { ListingDetailEngagementMetrics } from "@/components/listing-detail-engagement-metrics"
-import { ListingDetailPeerPurchaseActions } from "@/components/listing-detail-peer-purchase-actions"
+import { ListingDetailPeerPurchaseActionsLoader } from "@/components/listing-detail-peer-purchase-actions-loader"
 import { MetaViewContentTracker } from "@/components/meta/meta-view-content-tracker"
 import { isMetaCatalogEligibleListing } from "@/lib/meta/catalog-product"
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
@@ -473,7 +473,7 @@ export async function FinsListingDetailPage({
             ) : null}
             {canPeerPurchase ? (
               <div className="mt-5">
-                <ListingDetailPeerPurchaseActions
+                <ListingDetailPeerPurchaseActionsLoader
                   listingId={fin.id}
                   checkoutListingParam={fin.slug ?? fin.id}
                   section="fins"
@@ -554,7 +554,7 @@ export async function FinsListingDetailPage({
               ) : null}
               {canPeerPurchase && (
                 <div className="mt-5">
-                  <ListingDetailPeerPurchaseActions
+                  <ListingDetailPeerPurchaseActionsLoader
                     listingId={fin.id}
                     checkoutListingParam={fin.slug ?? fin.id}
                     section="fins"

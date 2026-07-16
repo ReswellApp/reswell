@@ -47,7 +47,7 @@ import { getBrandById } from "@/lib/brands/server"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
 import { ListingDetailEngagementMetrics } from "@/components/listing-detail-engagement-metrics"
-import { ListingDetailPeerPurchaseActions } from "@/components/listing-detail-peer-purchase-actions"
+import { ListingDetailPeerPurchaseActionsLoader } from "@/components/listing-detail-peer-purchase-actions-loader"
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
@@ -451,7 +451,7 @@ export async function BoardbagsListingDetailPage({
             ) : null}
             {canPeerPurchase ? (
               <div className="mt-5">
-                <ListingDetailPeerPurchaseActions
+                <ListingDetailPeerPurchaseActionsLoader
                   listingId={boardbag.id}
                   checkoutListingParam={boardbag.slug ?? boardbag.id}
                   section="boardbags"
@@ -532,7 +532,7 @@ export async function BoardbagsListingDetailPage({
               ) : null}
               {canPeerPurchase && (
                 <div className="mt-5">
-                  <ListingDetailPeerPurchaseActions
+                  <ListingDetailPeerPurchaseActionsLoader
                     listingId={boardbag.id}
                     checkoutListingParam={boardbag.slug ?? boardbag.id}
                     section="boardbags"
