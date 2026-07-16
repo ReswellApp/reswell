@@ -221,7 +221,10 @@ export function useListingPhotoUpload({
           ),
         )
       } catch (e) {
-        const msg = friendlyListingPhotoErrorMessage(e)
+        if (process.env.NODE_ENV === "development") {
+          console.error("[sell] listing photo failed", e)
+        }
+        const msg = friendlyListingPhotoErrorMessage(e, prepared ? "upload" : "add")
         if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
         setImages((prev) =>
           prev.map((s) => {

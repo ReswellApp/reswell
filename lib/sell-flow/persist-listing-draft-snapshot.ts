@@ -7,7 +7,10 @@ import {
   clearSellListingDraft,
   type SellListingDraftFormSnapshot,
 } from "@/lib/sell-listing-draft-idb"
-import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
+import {
+  listingPhotoSlotsForDraftPersist,
+  type ListingPhotoSlot,
+} from "@/lib/sell-flow/listing-photo-slot"
 
 export async function persistListingDraftSnapshot(args: {
   listingType: SellFlowListingKind
@@ -18,7 +21,7 @@ export async function persistListingDraftSnapshot(args: {
   const built = await buildSellListingDraft(
     args.listingType,
     args.formData,
-    args.images.map((i) => ({ file: i.sourceFile })),
+    listingPhotoSlotsForDraftPersist(args.images),
     null,
     args.userId,
     { allowGuest: !args.userId },

@@ -141,6 +141,7 @@ import { revalidateNavSearchSuggestAfterListingPublished } from "@/app/actions/n
 import { saveDefaultListingLocationAction } from "@/app/actions/sell-default-location"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 import { fetchOwnedListingForSellEditClient } from "@/lib/sell-flow/fetch-owned-listing-for-edit-client"
+import { listingPhotoSlotsForDraftPersist } from "@/lib/sell-flow/listing-photo-slot"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
   validateSellListingForm,
@@ -800,13 +801,13 @@ function listingPhotoSlotsFromDraftBlobs(
 async function persistSellListingDraftSnapshot(args: {
   listingType: "board"
   formData: SellListingDraftFormSnapshot
-  images: { file?: File }[]
+  images: ListingPhotoSlot[]
   userId: string | null
 }): Promise<void> {
   const built = await buildSellListingDraft(
     args.listingType,
     args.formData,
-    args.images,
+    listingPhotoSlotsForDraftPersist(args.images),
     null,
     args.userId,
     { allowGuest: !args.userId },
@@ -1512,7 +1513,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         await persistSellListingDraftSnapshot({
           listingType: r.listingType,
           formData: r.formData,
-          images: r.images.map((i) => ({ file: i.sourceFile })),
+          images: r.images,
           userId: sellDraftUserIdRef.current,
         })
       })()
@@ -1530,7 +1531,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         await persistSellListingDraftSnapshot({
           listingType: r.listingType,
           formData: r.formData,
-          images: r.images.map((i) => ({ file: i.sourceFile })),
+          images: r.images,
           userId: sellDraftUserIdRef.current,
         })
       })()
@@ -1950,7 +1951,10 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         ),
       )
     } catch (e) {
-      const msg = friendlyListingPhotoErrorMessage(e)
+      if (process.env.NODE_ENV === "development") {
+        console.error("[sell] listing photo failed", e)
+      }
+      const msg = friendlyListingPhotoErrorMessage(e, prepared ? "upload" : "add")
       if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
       setImages((prev) =>
         prev.map((s) => {
@@ -2441,7 +2445,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         await persistSellListingDraftSnapshot({
           listingType: "board",
           formData: formData as SellListingDraftFormSnapshot,
-          images: images.map((i) => ({ file: i.sourceFile })),
+          images,
           userId: null,
         })
         try {
@@ -2461,7 +2465,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         await persistSellListingDraftSnapshot({
           listingType: "board",
           formData: formData as SellListingDraftFormSnapshot,
-          images: images.map((i) => ({ file: i.sourceFile })),
+          images,
           userId: null,
         })
         try {

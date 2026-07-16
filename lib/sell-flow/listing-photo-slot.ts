@@ -113,3 +113,20 @@ export function listingPhotosUploadingCount(slots: ListingPhotoSlot[]): number {
 export function readyListingPhotoUrls(slots: ListingPhotoSlot[]): ListingPhotoSlot[] {
   return slots.filter((p) => p.uploadPhase === "done" && Boolean(p.url?.trim()))
 }
+
+/**
+ * Slots safe to snapshot into IndexedDB. Skips photos still decoding or uploading so
+ * `file.arrayBuffer()` does not contend with the image pipeline (a common mobile OOM trigger).
+ */
+export function listingPhotoSlotsForDraftPersist(
+  slots: ListingPhotoSlot[],
+): { file?: File }[] {
+  return slots
+    .filter(
+      (s) =>
+        s.sourceFile &&
+        s.optimizePhase !== "running" &&
+        s.uploadPhase !== "uploading",
+    )
+    .map((s) => ({ file: s.sourceFile }))
+}
