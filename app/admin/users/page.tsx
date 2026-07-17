@@ -52,6 +52,7 @@ import {
   ExternalLink,
   Loader2,
   Mail,
+  MessageSquarePlus,
   MoreVertical,
   RefreshCw,
   Shield,
@@ -73,6 +74,10 @@ import {
   AdminUserSignupsChart,
   type MonthlySignupPoint,
 } from '@/components/features/admin/admin-user-signups-chart'
+import {
+  AdminSendUserMessageDialog,
+} from '@/components/features/admin/admin-start-user-conversation-dialog'
+import type { AdminMarketplaceProfilePickerRow } from '@/lib/services/adminStartMarketplaceConversation'
 
 type User = AdminUserDirectoryRow
 
@@ -281,6 +286,8 @@ export default function AdminUsersPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [columns, setColumns] = useState<ColumnVisibility>(DEFAULT_COLUMNS)
   const [bulkRunning, setBulkRunning] = useState(false)
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false)
+  const [messageTarget, setMessageTarget] = useState<AdminMarketplaceProfilePickerRow | null>(null)
   const supabase = createClient()
 
   useEffect(() => {
@@ -1129,6 +1136,19 @@ export default function AdminUsersPage() {
                         <DropdownMenuItem onClick={() => actAsUser(user)}>
                           <ExternalLink className="mr-2 h-4 w-4" /> Act as user
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setMessageTarget({
+                              id: user.id,
+                              display_name: user.display_name,
+                              email: user.email,
+                              avatar_url: user.avatar_url,
+                            })
+                            setMessageDialogOpen(true)
+                          }}
+                        >
+                          <MessageSquarePlus className="mr-2 h-4 w-4" /> Send message
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => toggleAdmin(user.id, user.is_admin)}>
                           {user.is_admin ? (
@@ -1322,6 +1342,16 @@ export default function AdminUsersPage() {
           </div>
         </div>
       ) : null}
+
+      <AdminSendUserMessageDialog
+        open={messageDialogOpen}
+        onOpenChange={(open) => {
+          setMessageDialogOpen(open)
+          if (!open) setMessageTarget(null)
+        }}
+        defaultTargetUser={messageTarget}
+        trigger={null}
+      />
     </div>
   )
 }

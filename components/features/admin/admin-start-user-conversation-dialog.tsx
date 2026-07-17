@@ -32,6 +32,8 @@ export type AdminSendUserMessageDialogProps = {
     buyer: AdminMessageParticipantOption
     seller: AdminMessageParticipantOption
   }
+  /** Pre-select a member (e.g. from /admin/users) and skip the search step. */
+  defaultTargetUser?: AdminMarketplaceProfilePickerRow | null
   open?: boolean
   onOpenChange?: (open: boolean) => void
   /** Custom trigger; pass `null` to hide the default button when using controlled open. */
@@ -107,6 +109,7 @@ function SenderReceiverPreview({
 
 export function AdminSendUserMessageDialog({
   participants,
+  defaultTargetUser,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   trigger,
@@ -127,6 +130,13 @@ export function AdminSendUserMessageDialog({
   const [submitting, setSubmitting] = useState(false)
 
   const isParticipantMode = Boolean(participants)
+  const isPresetTargetMode = Boolean(defaultTargetUser)
+
+  useEffect(() => {
+    if (open && defaultTargetUser) {
+      setSelected(defaultTargetUser)
+    }
+  }, [defaultTargetUser, open])
 
   useEffect(() => {
     const t = window.setTimeout(() => setDebounced(search.trim()), 300)
@@ -134,7 +144,7 @@ export function AdminSendUserMessageDialog({
   }, [search])
 
   useEffect(() => {
-    if (!open || isParticipantMode) return
+    if (!open || isParticipantMode || isPresetTargetMode) return
     if (debounced.length < 2) {
       setResults([])
       setSearching(false)
@@ -171,16 +181,16 @@ export function AdminSendUserMessageDialog({
     return () => {
       cancelled = true
     }
-  }, [debounced, isParticipantMode, open])
+  }, [debounced, isParticipantMode, isPresetTargetMode, open])
 
   const resetForm = useCallback(() => {
     setSearch("")
     setDebounced("")
     setResults([])
-    setSelected(null)
+    setSelected(defaultTargetUser ?? null)
     setInitialMessage("")
     setMemberPickerOpen(false)
-  }, [])
+  }, [defaultTargetUser])
 
   useEffect(() => {
     if (!open) setMemberPickerOpen(false)
@@ -267,7 +277,9 @@ export function AdminSendUserMessageDialog({
           <DialogDescription>
             {isParticipantMode
               ? "Choose who you want to message. Messages appear in their Messages inbox like any other chat."
-              : "Opens the marketplace DM thread between you and the selected member (or jumps to your existing thread). They will see messages in Messages like any other chat."}
+              : isPresetTargetMode
+                ? "Opens the marketplace DM thread between you and this member (or jumps to your existing thread). They will see messages in Messages like any other chat."
+                : "Opens the marketplace DM thread between you and the selected member (or jumps to your existing thread). They will see messages in Messages like any other chat."}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-1">
@@ -287,6 +299,23 @@ export function AdminSendUserMessageDialog({
                   selected={selected?.id === participants.seller.id}
                   onSelect={() => setSelected(profileToPickerRow(participants.seller))}
                 />
+              </div>
+            </div>
+          ) : isPresetTargetMode && selected ? (
+            <div className="space-y-2">
+              <Label>Sender and receiver</Label>
+              <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-muted/25 px-3 py-2 text-sm">
+                <span className="font-medium text-foreground">You</span>
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                <ParticipantAvatar row={selected} />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-foreground">
+                    {selected.display_name?.trim() || "Unnamed member"}
+                  </p>
+                  {selected.email ? (
+                    <p className="truncate text-xs text-muted-foreground">{selected.email}</p>
+                  ) : null}
+                </div>
               </div>
             </div>
           ) : (

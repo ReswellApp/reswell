@@ -25,13 +25,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ArrowLeft, MoreVertical, Package, Mail, User, RotateCcw, CheckCircle2, XCircle, Wallet, RefreshCw, Loader2, Lock, Unlock } from 'lucide-react'
+import { ArrowLeft, MoreVertical, Package, Mail, User, RotateCcw, CheckCircle2, XCircle, Wallet, RefreshCw, Loader2, Lock, Unlock, MessageSquarePlus } from 'lucide-react'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import { setImpersonation as storeImpersonation } from '@/lib/impersonation'
 import { revalidateListingDetailAfterProfileUpdate } from '@/app/actions/listing-detail-cache'
+import { AdminSendUserMessageDialog } from '@/components/features/admin/admin-start-user-conversation-dialog'
 
 interface Profile {
   id: string
@@ -105,6 +106,7 @@ export default function AdminUserDetailPage() {
   const [restrictionSaving, setRestrictionSaving] = useState(false)
   const [restrictionReason, setRestrictionReason] = useState('')
   const [selectedPresetMinutes, setSelectedPresetMinutes] = useState<number>(60 * 24)
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -415,11 +417,21 @@ export default function AdminUserDetailPage() {
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-4 space-y-0">
           <CardTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
             Profile
           </CardTitle>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-2 shrink-0"
+            onClick={() => setMessageDialogOpen(true)}
+          >
+            <MessageSquarePlus className="h-4 w-4" aria-hidden />
+            Message user
+          </Button>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-6">
           <div className="relative h-16 w-16 rounded-full bg-muted overflow-hidden">
@@ -468,6 +480,18 @@ export default function AdminUserDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      <AdminSendUserMessageDialog
+        open={messageDialogOpen}
+        onOpenChange={setMessageDialogOpen}
+        defaultTargetUser={{
+          id: profile.id,
+          display_name: profile.display_name,
+          email: profile.email,
+          avatar_url: profile.avatar_url,
+        }}
+        trigger={null}
+      />
 
       <Card>
         <CardHeader>
