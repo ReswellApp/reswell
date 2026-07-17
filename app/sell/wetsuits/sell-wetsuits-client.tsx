@@ -7,7 +7,6 @@ import { toast } from "sonner"
 import { Loader2, X, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
@@ -32,7 +31,7 @@ import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell
 import {
   SellSectionNav,
   SellSectionNavHorizontal,
-  buildSellSectionNavItems,
+  SELL_WETSUITS_FORM_SECTION_NAV_ITEMS,
 } from "@/components/features/sell/sell-section-nav"
 import { createClient } from "@/lib/supabase/client"
 import { fetchOwnedListingForSellEditClient } from "@/lib/sell-flow/fetch-owned-listing-for-edit-client"
@@ -71,8 +70,6 @@ import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-li
 import { finalizePeerListingCreate } from "@/lib/utils/admin-peer-listing-create-navigation"
 import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
 import { useSellFunnelStepTracking } from "@/lib/sell-flow/use-sell-funnel-step-tracking"
-
-const SELL_WETSUITS_FORM_SECTION_NAV_ITEMS = buildSellSectionNavItems("wetsuits", "Wetsuit details")
 
 function shippingPriceToFormValue(v: unknown): string {
   if (v == null || v === "") return ""
@@ -135,8 +132,8 @@ const INITIAL_STATE: WetsuitFormState = {
   locationLat: null,
   locationLng: null,
   locationDisplay: "",
-  shippingAvailable: false,
-  localPickup: true,
+  shippingAvailable: true,
+  localPickup: false,
   shippingMode: "reswell",
   shippingPrice: "",
   reswellPackageLengthIn: "",
@@ -291,8 +288,8 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
         locationLat: listing.latitude != null ? Number(listing.latitude) : null,
         locationLng: listing.longitude != null ? Number(listing.longitude) : null,
         locationDisplay: [listing.city, listing.state].filter(Boolean).join(", "),
-        shippingAvailable: Boolean(listing.shipping_available),
-        localPickup: listing.local_pickup !== false,
+        shippingAvailable: true,
+        localPickup: false,
         shippingMode,
         shippingPrice: shippingPriceToFormValue(listing.shipping_price),
         ...loadedReswellPackage,
@@ -424,16 +421,11 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
       return
     }
     if (!form.locationCity.trim() || !form.locationState.trim()) {
-      failValidation("Confirm where you're listing from.")
+      failValidation("Confirm where you're shipping from.")
       scrollWetsuitSellSectionIntoView("sell-wetsuits-section-delivery")
       return
     }
-    if (!form.shippingAvailable && !form.localPickup) {
-      failValidation("Choose shipping, local pickup, or both.")
-      scrollWetsuitSellSectionIntoView("sell-wetsuits-section-delivery")
-      return
-    }
-    if (form.shippingAvailable && form.shippingMode === "reswell") {
+    if (form.shippingMode === "reswell") {
       const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
       const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
       const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
@@ -444,7 +436,6 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
       }
     }
     if (
-      form.shippingAvailable &&
       form.shippingMode === "flat" &&
       (form.shippingPrice === "" || Number(form.shippingPrice) < 0)
     ) {
@@ -465,11 +456,11 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
       locationState: form.locationState,
       locationLat: form.locationLat ?? undefined,
       locationLng: form.locationLng ?? undefined,
-      shippingAvailable: form.shippingAvailable,
-      localPickup: form.localPickup,
-      shippingCostMode: form.shippingAvailable ? form.shippingMode : null,
+      shippingAvailable: true,
+      localPickup: false,
+      shippingCostMode: form.shippingMode,
       shippingPrice:
-        form.shippingAvailable && form.shippingMode === "flat"
+        form.shippingMode === "flat"
           ? Number(form.shippingPrice || 0)
           : null,
       reswellPackageLengthIn: form.reswellPackageLengthIn,
@@ -784,8 +775,8 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
 
               <SellFormSection
                 sectionId="sell-wetsuits-section-delivery"
-                title="Pickup & shipping"
-                description="Pin where the wetsuit is and choose delivery options."
+                title="Shipping"
+                description="Pin where you're shipping from and choose how shipping works. Wetsuit listings ship only — local pickup isn't available."
               >
                 <div className="space-y-8">
                   <LocationPicker
@@ -817,96 +808,19 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
                   />
 
                   <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
-                    <div>
-                      <h3 className="text-sm font-semibold text-foreground">
-                        Delivery options{" "}
-                        <span className="text-destructive" aria-hidden>
-                          *
-                        </span>
-                      </h3>
-                      <p className="mt-1 text-sm text-muted-foreground/45">You can select both options.</p>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          id="sell-wetsuits-delivery-shipping"
-                          checked={form.shippingAvailable}
-                          onCheckedChange={(v) => {
-                            const want = v === true
-                            setForm((prev) => ({
-                              ...prev,
-                              shippingAvailable: want,
-                              localPickup: want || prev.localPickup ? prev.localPickup : true,
-                              ...(want
-                                ? {}
-                                : {
-                                    shippingMode: "reswell" as const,
-                                    shippingPrice: "",
-                                    reswellPackageLengthIn: "",
-                                    reswellPackageWidthIn: "",
-                                    reswellPackageHeightIn: "",
-                                    reswellPackageWeightLb: "",
-                                    reswellPackageWeightOz: "",
-                                  }),
-                            }))
-                          }}
-                          className="mt-0.5"
-                        />
-                        <div className="min-w-0 space-y-0.5">
-                          <Label
-                            htmlFor="sell-wetsuits-delivery-shipping"
-                            className="flex cursor-pointer flex-wrap items-center gap-2 text-sm font-medium leading-snug"
-                          >
-                            Shipping
-                            <Badge
-                              variant="default"
-                              className="h-auto border-0 bg-listingHeart px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white hover:bg-[#2a4170]"
-                            >
-                              Items sell faster
-                            </Badge>
-                          </Label>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <Checkbox
-                          id="sell-wetsuits-delivery-pickup"
-                          checked={form.localPickup}
-                          onCheckedChange={(v) => {
-                            const want = v === true
-                            setForm((prev) => ({
-                              ...prev,
-                              localPickup: want,
-                              shippingAvailable:
-                                want || prev.shippingAvailable ? prev.shippingAvailable : true,
-                            }))
-                          }}
-                          className="mt-0.5"
-                        />
-                        <Label
-                          htmlFor="sell-wetsuits-delivery-pickup"
-                          className="cursor-pointer pt-0.5 text-sm font-medium leading-snug"
-                        >
-                          Local pickup
-                        </Label>
-                      </div>
-                    </div>
-                  </div>
-
-                  {form.shippingAvailable ? (
-                    <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
-                      <h3 className="text-sm font-semibold text-foreground">
-                        Shipping cost in the Continental U.S.{" "}
-                        <span className="text-destructive" aria-hidden>
-                          *
-                        </span>
-                      </h3>
-                      <RadioGroup
-                        value={form.shippingMode}
-                        onValueChange={(value) =>
-                          setField("shippingMode", value as "reswell" | "free" | "flat")
-                        }
-                        className="space-y-3"
-                      >
+                    <h3 className="text-sm font-semibold text-foreground">
+                      Shipping cost in the Continental U.S.{" "}
+                      <span className="text-destructive" aria-hidden>
+                        *
+                      </span>
+                    </h3>
+                    <RadioGroup
+                      value={form.shippingMode}
+                      onValueChange={(value) =>
+                        setField("shippingMode", value as "reswell" | "free" | "flat")
+                      }
+                      className="space-y-3"
+                    >
                         <label
                           htmlFor="sell-wetsuits-ship-mode-reswell"
                           className={cn(
@@ -1021,12 +935,11 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
                           </div>
                         </div>
                       ) : null}
-                    </div>
-                  ) : null}
+                  </div>
                 </div>
               </SellFormSection>
 
-              {form.shippingAvailable && form.shippingMode === "reswell" ? (
+              {form.shippingMode === "reswell" ? (
                 <SellFormSection
                   sectionId="sell-wetsuits-section-reswell-package"
                   title="Reswell shipping: packed size & weight"
