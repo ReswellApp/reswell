@@ -70,6 +70,7 @@ import { cn } from "@/lib/utils"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { finalizePeerListingCreate } from "@/lib/utils/admin-peer-listing-create-navigation"
 import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
+import { useSellFunnelStepTracking } from "@/lib/sell-flow/use-sell-funnel-step-tracking"
 
 const SELL_WETSUITS_FORM_SECTION_NAV_ITEMS = buildSellSectionNavItems("wetsuits", "Wetsuit details")
 
@@ -361,6 +362,13 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
       }),
     [form, readyImages.length],
   )
+
+  useSellFunnelStepTracking({
+    listingType: "wetsuits",
+    sectionIds: SELL_WETSUITS_FORM_SECTION_NAV_ITEMS.map((item) => item.id),
+    sectionCompletion: sellSectionCompletion,
+    enabled: !editLoading,
+  })
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

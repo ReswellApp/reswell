@@ -75,6 +75,7 @@ import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
 import { scrollPublishValidationBannerIntoView } from "@/lib/sell-flow/scroll-section-into-view"
 import { validateFinListingForm } from "@/lib/sell-flow/validate-fin-listing-form"
 import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
+import { useSellFunnelStepTracking } from "@/lib/sell-flow/use-sell-funnel-step-tracking"
 import { persistListingDraftSnapshot } from "@/lib/sell-flow/persist-listing-draft-snapshot"
 import {
   clearPendingPublish,
@@ -675,6 +676,13 @@ export default function SellFinsFlow({
       }),
     [form, readyImages.length],
   )
+
+  useSellFunnelStepTracking({
+    listingType: "fins",
+    sectionIds: SELL_FINS_FORM_SECTION_NAV_ITEMS.map((item) => item.id),
+    sectionCompletion: sellSectionCompletion,
+    enabled: flowStep === "form" && !editLoading,
+  })
 
   const firstIncompleteSellSectionId = useMemo(() => {
     for (const item of SELL_FINS_FORM_SECTION_NAV_ITEMS) {

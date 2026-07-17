@@ -9,6 +9,9 @@ import { PEER_LISTING_SECTIONS } from "@/lib/peer-listing-sections"
 export const sellFunnelEventSchema = z.object({
   listingType: z.enum(PEER_LISTING_SECTIONS),
   event: z.enum([
+    "flow_started",
+    "step_viewed",
+    "step_completed",
     "publish_attempt",
     "validation_failed",
     "upload_failed",

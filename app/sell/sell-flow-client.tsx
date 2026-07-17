@@ -124,6 +124,7 @@ import { sellerPurchasePriceToDb } from "@/lib/utils/seller-purchase-price"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { applyBoardListingPublishedSideEffectsAction } from "@/lib/actions/boardListingPublishActions"
 import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
+import { useSellFunnelStepTracking } from "@/lib/sell-flow/use-sell-funnel-step-tracking"
 import { cn } from "@/lib/utils"
 import {
   RequestBrandModelDialog,
@@ -1283,6 +1284,18 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       SELL_FORM_SECTION_NAV_ITEMS.find((i) => i.id === firstIncompleteSellSectionId)?.label ?? null
     )
   }, [firstIncompleteSellSectionId])
+
+  const sellFunnelSectionIds = useMemo(
+    () => SELL_FORM_SECTION_NAV_ITEMS.map((item) => item.id),
+    [],
+  )
+
+  useSellFunnelStepTracking({
+    listingType: "surfboards",
+    sectionIds: sellFunnelSectionIds,
+    sectionCompletion: sellSectionCompletion,
+    enabled: !editLoading,
+  })
 
   useEffect(() => {
     if (skipPickupShippingStepperInteractionUx || editLoading) return
