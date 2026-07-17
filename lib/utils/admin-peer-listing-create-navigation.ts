@@ -1,9 +1,7 @@
 import { toast } from "sonner"
-
-type RouterLike = {
-  push: (href: string) => void
-}
+import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listing-detail-cache"
 import type { ImpersonationData } from "@/lib/impersonation"
+import { listingDetailHref } from "@/lib/listing-href"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
 import { resolveAdminBulkListingAfterCreate } from "@/lib/utils/admin-bulk-listing-navigation"
@@ -12,9 +10,32 @@ import {
   listingImagesToImpersonatedPayload,
 } from "@/lib/utils/admin-impersonated-listing-create"
 
+type RouterLike = {
+  push: (href: string) => void
+  refresh?: () => void
+}
+
 type DirectCreateResult =
   | { success: true; listingId: string; slug: string }
   | { error: string }
+
+function peerListingDetailPath(listingId: string, slug: string): string {
+  return listingDetailHref({ id: listingId, slug })
+}
+
+async function navigateToPublishedListing(
+  router: RouterLike,
+  listingId: string,
+  slug: string,
+): Promise<void> {
+  void revalidateListingDetailAfterListingMutation({ listingId, slug }).catch((err) => {
+    if (process.env.NODE_ENV === "development") {
+      console.warn("[sell] listing-detail cache revalidation:", err)
+    }
+  })
+  router.push(peerListingDetailPath(listingId, slug))
+  router.refresh?.()
+}
 
 /** Shared create + bulk redirect for peer `/sell/*` flows. */
 export async function finalizePeerListingCreate(params: {
@@ -64,12 +85,12 @@ export async function finalizePeerListingCreate(params: {
         slug: impResult.slug,
         title: params.title,
         section: params.section,
-        defaultDetailPath: `/l/${impResult.slug}`,
+        defaultDetailPath: peerListingDetailPath(impResult.listingId, impResult.slug),
       })
     ) {
       return
     }
-    params.router.push(`/l/${impResult.slug}`)
+    await navigateToPublishedListing(params.router, impResult.listingId, impResult.slug)
     return
   }
 
@@ -100,10 +121,10 @@ export async function finalizePeerListingCreate(params: {
       slug: result.slug,
       title: params.title,
       section: params.section,
-      defaultDetailPath: `/l/${result.slug}`,
+      defaultDetailPath: peerListingDetailPath(result.listingId, result.slug),
     })
   ) {
     return
   }
-  params.router.push(`/l/${result.slug}`)
+  await navigateToPublishedListing(params.router, result.listingId, result.slug)
 }

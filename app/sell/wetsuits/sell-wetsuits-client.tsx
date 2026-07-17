@@ -4,7 +4,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
-import { Heart, Loader2, X, Zap } from "lucide-react"
+import { Loader2, X, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -555,7 +555,13 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
             durationMs: Date.now() - publishStartedAt,
           })
           toast.success("Listing updated")
-          router.push(`/l/${data.slug ?? editId}`)
+          router.push(
+            listingDetailHref({
+              id: editId,
+              slug: data.slug ?? null,
+            }),
+          )
+          router.refresh()
           return
         }
 
@@ -590,7 +596,13 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
           durationMs: Date.now() - publishStartedAt,
         })
         toast.success("Listing updated")
-        router.push(`/l/${result.slug}`)
+        router.push(
+          listingDetailHref({
+            id: editId,
+            slug: result.slug,
+          }),
+        )
+        router.refresh()
         return
       }
 
@@ -739,17 +751,6 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
                     photoDragSensors={photoDragSensors}
                     photoDescription="Add clear photos. Drag to reorder — the first image is your main photo on browse tiles."
                   />
-                  <p className="space-y-1 text-xs text-muted-foreground/45">
-                      <span className="block">Thank you for listing on Reswell.</span>
-                      <span className="inline-flex flex-wrap items-center gap-1">
-                        <span>Made with</span>
-                        <Heart
-                          className="h-4 w-4 shrink-0 fill-listingHeart text-listingHeart"
-                          aria-hidden
-                        />
-                        <span>in Santa Barbara.</span>
-                      </span>
-                    </p>
                 </div>
               </SellFormSection>
 

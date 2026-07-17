@@ -34,6 +34,12 @@ export function getMessagePolicyNotice(reasonCode: MessagePolicyReasonCode): {
         body:
           "Messages that impersonate Reswell, ask you to verify account or banking details via external links, or use suspicious short links are blocked. Reswell will never ask you to verify your account through a marketplace message.",
       }
+    case "external_link":
+      return {
+        heading: "External links aren’t allowed yet",
+        body:
+          "New accounts can’t include external links in messages. Complete a purchase, add a phone number to your account, or wait until your account is at least 7 days old to share links. You can still share Reswell listing links.",
+      }
     default: {
       const _exhaustive: never = reasonCode
       return _exhaustive

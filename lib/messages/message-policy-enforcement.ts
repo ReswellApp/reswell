@@ -1,7 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
 import { getTrailingMessagesForConversation } from "@/lib/db/conversationTrailingMessages"
-import { detectMessagePolicyViolation } from "@/lib/utils/detect-message-policy-violation"
+import { evaluateMessageSenderTrust } from "@/lib/services/messageSenderTrust"
+import {
+  detectExternalLinkPolicyViolation,
+  detectMessagePolicyViolation,
+} from "@/lib/utils/detect-message-policy-violation"
 import {
   fragmentsCombineIntoPhoneNumber,
   messageIsPhoneNumberFragmentCandidate,
@@ -26,7 +30,7 @@ export async function getMessagePolicyViolationForSender(
 ): Promise<MessagePolicyReasonCode | null> {
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_admin, is_employee")
+    .select("is_admin, is_employee, created_at, phone")
     .eq("id", senderId)
     .maybeSingle()
 
@@ -34,7 +38,23 @@ export async function getMessagePolicyViolationForSender(
     return null
   }
 
-  return detectMessagePolicyViolation(text)
+  const universalViolation = detectMessagePolicyViolation(text)
+  if (universalViolation) return universalViolation
+
+  const trustProfile =
+    profile && typeof profile.created_at === "string"
+      ? {
+          createdAt: profile.created_at,
+          phone: typeof profile.phone === "string" ? profile.phone : null,
+        }
+      : null
+
+  const { isEstablished } = await evaluateMessageSenderTrust(supabase, senderId, trustProfile)
+  if (!isEstablished && detectExternalLinkPolicyViolation(text)) {
+    return "external_link"
+  }
+
+  return null
 }
 
 /**
