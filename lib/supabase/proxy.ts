@@ -5,6 +5,7 @@ import {
   isNonFatalGetUserError,
   isTransientAuthNetworkError,
 } from '@/lib/auth/clear-supabase-auth-cookies'
+import { isUserAuthBanned } from '@/lib/services/banUserAccount'
 import {
   PASSWORD_RESET_QUERY_KEY,
   PASSWORD_RESET_QUERY_VALUE,
@@ -233,6 +234,14 @@ async function refreshSupabaseSession(
 
   /** Legacy / bookmarked URLs — same hub as /dashboard/offers (see app/offers/page.tsx). */
   const isOffersShortcut = pathname === '/offers' || pathname.startsWith('/offers/')
+
+  if (user && isUserAuthBanned(user)) {
+    clearSupabaseAuthCookies(request, supabaseResponse)
+    const url = request.nextUrl.clone()
+    url.pathname = '/auth/login'
+    url.searchParams.set('error', 'account_banned')
+    return NextResponse.redirect(url)
+  }
 
   if (requiresAuth && !user) {
     // During a Supabase outage, do not bounce logged-in users to /auth/login when
