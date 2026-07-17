@@ -9,7 +9,7 @@ import {
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
-import { removeListingImageFilesFromStorage } from "@/lib/services/listingStorageCleanup"
+import { syncListingImages } from "@/lib/services/sync-listing-images"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import {
@@ -201,61 +201,18 @@ export async function PUT(request: NextRequest) {
         ? (publishSlug ?? "")
         : ""
 
-  if (removedImageIds.length > 0) {
-    const { data: removedRows } = await service
-      .from("listing_images")
-      .select("url, thumbnail_url")
-      .eq("listing_id", listingId)
-      .in("id", removedImageIds)
-    const removedUrls: string[] = []
-    for (const r of removedRows ?? []) {
-      if (r.url?.trim()) removedUrls.push(r.url)
-      if (r.thumbnail_url?.trim()) removedUrls.push(r.thumbnail_url)
-    }
-    if (removedUrls.length > 0) {
-      await removeListingImageFilesFromStorage(service, removedUrls)
-    }
-    const { error: delErr } = await service
-      .from("listing_images")
-      .delete()
-      .in("id", removedImageIds)
-      .eq("listing_id", listingId)
-    if (delErr) {
-      console.error("[impersonate] listing_images delete error:", delErr)
-    }
-  }
-
-  for (const img of images) {
-    if (img.id) {
-      const rowUpdate: {
-        sort_order: number
-        is_primary: boolean
-        url?: string
-        thumbnail_url?: string | null
-      } = { sort_order: img.sort_order, is_primary: img.is_primary }
-      const u = typeof img.url === "string" ? img.url.trim() : ""
-      if (u) {
-        rowUpdate.url = u
-        rowUpdate.thumbnail_url =
-          typeof img.thumbnail_url === "string" && img.thumbnail_url.trim()
-            ? img.thumbnail_url.trim()
-            : null
-      }
-      await service
-        .from("listing_images")
-        .update(rowUpdate)
-        .eq("id", img.id)
-        .eq("listing_id", listingId)
-    } else if (img.url) {
-      await service.from("listing_images").insert({
-        listing_id: listingId,
-        url: img.url,
-        thumbnail_url: img.thumbnail_url ?? null,
-        is_primary: img.is_primary,
-        sort_order: img.sort_order,
-      })
-    }
-  }
+  await syncListingImages(
+    service,
+    listingId,
+    removedImageIds,
+    images.map((img) => ({
+      id: img.id,
+      url: typeof img.url === "string" ? img.url : "",
+      thumbnailUrl: img.thumbnail_url ?? null,
+      isPrimary: img.is_primary,
+      sortOrder: img.sort_order,
+    })),
+  )
 
   if (
     String(listingData?.section ?? "") === "surfboards" &&

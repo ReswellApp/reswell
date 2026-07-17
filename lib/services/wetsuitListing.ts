@@ -9,9 +9,12 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
+import {
+  syncListingImages,
+  type ListingImageUpdateOp,
+} from "@/lib/services/sync-listing-images"
 import { WETSUITS_SECTION } from "@/lib/wetsuit-listing-config"
 import { buildWetsuitListingPersistFields } from "@/lib/wetsuit-listing-persist-fields"
-import { removeListingImageFilesFromStorage } from "@/lib/services/listingStorageCleanup"
 import type {
   CreateWetsuitListingInput,
   UpdateWetsuitListingInput,
@@ -19,13 +22,7 @@ import type {
 
 export type CreateWetsuitListingResult = { listingId: string; slug: string }
 
-export type WetsuitListingImageUpdateOp = {
-  id?: string
-  url: string
-  thumbnailUrl?: string | null
-  isPrimary: boolean
-  sortOrder: number
-}
+export type WetsuitListingImageUpdateOp = ListingImageUpdateOp
 
 export async function syncWetsuitListingImages(
   supabase: SupabaseClient,
@@ -33,57 +30,7 @@ export async function syncWetsuitListingImages(
   removedImageIds: string[],
   images: WetsuitListingImageUpdateOp[],
 ): Promise<void> {
-  if (removedImageIds.length > 0) {
-    const { data: removedRows } = await supabase
-      .from("listing_images")
-      .select("url, thumbnail_url")
-      .eq("listing_id", listingId)
-      .in("id", removedImageIds)
-    const removedUrls: string[] = []
-    for (const r of removedRows ?? []) {
-      if (r.url?.trim()) removedUrls.push(r.url)
-      if (r.thumbnail_url?.trim()) removedUrls.push(r.thumbnail_url)
-    }
-    if (removedUrls.length > 0) {
-      await removeListingImageFilesFromStorage(supabase, removedUrls)
-    }
-    await supabase.from("listing_images").delete().in("id", removedImageIds).eq("listing_id", listingId)
-  }
-
-  for (const img of images) {
-    if (img.id) {
-      const rowUpdate: {
-        sort_order: number
-        is_primary: boolean
-        url?: string
-        thumbnail_url?: string | null
-      } = { sort_order: img.sortOrder, is_primary: img.isPrimary }
-      const u = img.url.trim()
-      if (u) {
-        rowUpdate.url = u
-        rowUpdate.thumbnail_url =
-          typeof img.thumbnailUrl === "string" && img.thumbnailUrl.trim()
-            ? img.thumbnailUrl.trim()
-            : null
-      }
-      await supabase
-        .from("listing_images")
-        .update(rowUpdate)
-        .eq("id", img.id)
-        .eq("listing_id", listingId)
-    } else if (img.url.trim()) {
-      await supabase.from("listing_images").insert({
-        listing_id: listingId,
-        url: img.url.trim(),
-        thumbnail_url:
-          typeof img.thumbnailUrl === "string" && img.thumbnailUrl.trim()
-            ? img.thumbnailUrl.trim()
-            : null,
-        is_primary: img.isPrimary,
-        sort_order: img.sortOrder,
-      })
-    }
-  }
+  await syncListingImages(supabase, listingId, removedImageIds, images)
 }
 
 export async function updateWetsuitListing(
