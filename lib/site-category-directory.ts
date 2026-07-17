@@ -36,11 +36,12 @@ export const siteHeaderPeerProductNavLinks: CategoryLink[] = [
 /** Peer gear shown in the desktop + mobile main category bar (others hidden until launch). */
 export const siteHeaderMainPeerProductNavLinks: CategoryLink[] = [
   { label: "Fins", href: "/fins" },
+  { label: "Wetsuits", href: "/wetsuits" },
   { label: "Magazines", href: "/magazines" },
 ]
 
 /**
- * Full category rail — desktop header only (Surfboards root, then Fins, Magazines, then shapes).
+ * Full category rail — desktop header only (Surfboards root, then Fins, Wetsuits, Magazines, then shapes).
  */
 export const siteHeaderDesktopCategoryNavLinks: CategoryLink[] = [
   surfboardBrowseLinks[0],
@@ -63,7 +64,6 @@ export const allCategoriesForNav: CategoryLink[] = surfboardBrowseLinks
 export const footerCategoryLinks: CategoryLink[] = [
   ...surfboardBrowseLinks.filter((link) => link.href !== "/boards"),
   ...siteHeaderMainPeerProductNavLinks,
-  { label: "Wetsuits", href: "/wetsuits" },
 ]
 
 export type CategoryDirectorySection = {
