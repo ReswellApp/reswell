@@ -15,6 +15,10 @@ import { format } from "date-fns"
 import { AdminIssueRefundButton } from "@/components/features/admin/admin-issue-refund-button"
 import { ReswellTrackingSection } from "@/components/features/orders/reswell-tracking-section"
 import { SellerPreparedShippingLabelCard } from "@/components/features/sales/seller-prepared-shipping-label-card"
+import {
+  pickupCodeBannerLabelClassName,
+  pickupCodeBannerSurfaceClassName,
+} from "@/components/order-actions"
 import { orderStatusBadgeVariant, orderStatusLabel, deliveryStatusLabel, payoutStatusLabel } from "@/lib/order-status"
 import { carrierDeliveryPayoutEligibleAt } from "@/lib/shipping/carrier-delivery-payout-hold"
 import { createClient } from "@/lib/supabase/client"
@@ -353,6 +357,55 @@ export default function AdminOrderDetailPage() {
               <p className="whitespace-pre-wrap break-words text-sm">{shippingAddressBlock}</p>
             </div>
           ) : null}
+
+          {o.fulfillment_method === "pickup" && (
+            <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">
+              <p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+                Local pickup
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Delivery status</p>
+                  <p className="font-medium">
+                    {o.delivery_status ? deliveryStatusLabel(o.delivery_status) : "—"}
+                  </p>
+                </div>
+                {o.payout ? (
+                  <div>
+                    <p className="text-muted-foreground">Payout ledger</p>
+                    <p className="font-medium">
+                      {payoutStatusLabel(o.payout.status, o.payout.hold_reason)}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+              {o.pickup_code ? (
+                <div
+                  className={`overflow-hidden rounded-xl border text-card-foreground shadow-sm ${pickupCodeBannerSurfaceClassName}`}
+                >
+                  <div className="p-4">
+                    <p
+                      className={`mb-2 text-xs font-medium uppercase tracking-wider ${pickupCodeBannerLabelClassName}`}
+                    >
+                      Buyer pickup code
+                    </p>
+                    <p className="text-3xl font-mono font-bold tracking-[0.3em] text-center py-1">
+                      {o.pickup_code}
+                    </p>
+                    <p className="mt-3 text-xs text-muted-foreground leading-relaxed text-center">
+                      {o.delivery_status === "picked_up"
+                        ? "Pickup was verified — seller payout was released when the seller confirmed this code."
+                        : "The buyer shows this code to the seller at handoff. Seller verification releases payout."}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground leading-relaxed rounded-md border border-border/60 bg-muted/30 px-3 py-2">
+                  No pickup code on this order (common for in-person admin terminal sales).
+                </p>
+              )}
+            </div>
+          )}
 
           {o.fulfillment_method === "shipping" && o.status === "confirmed" && (
             <div className="rounded-lg border border-border/60 bg-muted/20 p-4 space-y-3">

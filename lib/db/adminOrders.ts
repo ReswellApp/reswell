@@ -75,6 +75,8 @@ export type AdminOrderDetail = {
   /** Matching payouts row when present — shipping uses held → pending after carrier delivery + 24h hold. */
   payout: { status: string; hold_reason: string | null; released_at: string | null } | null
   sales_channel: string | null
+  /** Six-digit buyer code for local pickup handoff; null for shipping and admin-terminal sales. */
+  pickup_code: string | null
 }
 
 const ADMIN_ORDER_PARTICIPANT_SELECT =
@@ -259,6 +261,7 @@ export async function getOrderDetailForAdmin(
       seller_id,
       listing_id,
       sales_channel,
+      pickup_code,
       stripe_checkout_session_id,
       shipping_address,
       order_items (
@@ -355,6 +358,10 @@ export async function getOrderDetailForAdmin(
     carrier_delivered_at?: string | null
   }
 
+  const pickupCodeRaw = (order as { pickup_code?: string | null }).pickup_code
+  const pickupCode =
+    typeof pickupCodeRaw === "string" && pickupCodeRaw.trim() ? pickupCodeRaw.trim() : null
+
   return {
     data: {
       id: order.id as string,
@@ -390,6 +397,7 @@ export async function getOrderDetailForAdmin(
       marketplace_message_count: marketplaceMessageCount,
       stripe_checkout_session_id: (order.stripe_checkout_session_id as string | null) ?? null,
       sales_channel: salesChannel,
+      pickup_code: pickupCode,
     },
     error: null,
   }
