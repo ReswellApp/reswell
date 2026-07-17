@@ -3,6 +3,7 @@ export const MESSAGE_POLICY_REASON_CODES = [
   "phone_fragment",
   "email_like",
   "off_platform_payment",
+  "phishing_like",
 ] as const
 
 export type MessagePolicyReasonCode = (typeof MESSAGE_POLICY_REASON_CODES)[number]
@@ -21,6 +22,8 @@ export function messagePolicyReasonLabel(code: MessagePolicyReasonCode): string 
       return "Email address"
     case "off_platform_payment":
       return "Off-platform payment"
+    case "phishing_like":
+      return "Phishing / impersonation scam"
     default: {
       const _exhaustive: never = code
       return _exhaustive

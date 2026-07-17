@@ -28,6 +28,12 @@ export function getMessagePolicyNotice(reasonCode: MessagePolicyReasonCode): {
         heading: "Off-platform payments aren’t allowed in messages",
         body: `Asking for Venmo, PayPal, cash, or other off-platform payment goes against Reswell policy. ${POLICY_NOTICE_BODY}`,
       }
+    case "phishing_like":
+      return {
+        heading: "This message wasn’t sent",
+        body:
+          "Messages that impersonate Reswell, ask you to verify account or banking details via external links, or use suspicious short links are blocked. Reswell will never ask you to verify your account through a marketplace message.",
+      }
     default: {
       const _exhaustive: never = reasonCode
       return _exhaustive

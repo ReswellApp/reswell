@@ -16,9 +16,9 @@ import {
   type MessageSendRestrictionCodeResult,
 } from "@/lib/messages/send-restriction-errors"
 
-export const MAX_UNIQUE_MESSAGE_RECIPIENTS = 7
-export const MESSAGE_RATE_LIMIT_WINDOW_MS = 30 * 60 * 1000
-export const MESSAGE_RATE_LIMIT_COOLDOWN_MS = 30 * 60 * 1000
+export const MAX_UNIQUE_MESSAGE_RECIPIENTS = 3
+export const MESSAGE_RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000
+export const MESSAGE_RATE_LIMIT_COOLDOWN_MS = 5 * 60 * 1000
 
 function isFutureIso(iso: string | null | undefined): iso is string {
   if (!iso) return false
@@ -162,7 +162,7 @@ export async function evaluateUserPurchase(
 function buildRateLimitUserMessage(untilIso: string): string {
   const untilMs = Date.parse(untilIso)
   if (!Number.isFinite(untilMs)) {
-    return "You've reached our messaging limit. Try again in about 30 minutes."
+    return "You've reached our messaging limit. Try again in a few minutes."
   }
   const minutes = Math.max(1, Math.ceil((untilMs - Date.now()) / 60_000))
   return `You've reached our messaging limit. Try again in about ${minutes} minute${minutes === 1 ? "" : "s"}.`
