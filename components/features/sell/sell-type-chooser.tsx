@@ -11,14 +11,6 @@ type SellTypeOption = {
   imageAlt: string
 }
 
-const WETSUITS_SELL_OPTION: SellTypeOption = {
-  href: "/sell/wetsuits",
-  title: "Wetsuits",
-  description: "List wetsuits for the marketplace.",
-  imageSrc: null,
-  imageAlt: "Wetsuit",
-}
-
 /** Shown on /sell chooser. Other sell flows stay live at their routes until launch. */
 const SELL_TYPE_OPTIONS: readonly SellTypeOption[] = [
   {
@@ -36,6 +28,13 @@ const SELL_TYPE_OPTIONS: readonly SellTypeOption[] = [
     imageAlt: "Surfboard fin",
   },
   {
+    href: "/sell/wetsuits",
+    title: "Wetsuits",
+    description: "List wetsuits for the marketplace.",
+    imageSrc: null,
+    imageAlt: "Wetsuit",
+  },
+  {
     href: "/sell/magazines",
     title: "Magazines",
     description: "List vintage and collectible surf magazines.",
@@ -44,34 +43,20 @@ const SELL_TYPE_OPTIONS: readonly SellTypeOption[] = [
   },
 ]
 
-type SellTypeChooserProps = {
-  showWetsuitsOption?: boolean
-}
-
 /** First step of /sell: pick a product type. */
-export function SellTypeChooser({
-  showWetsuitsOption = false,
-}: SellTypeChooserProps) {
-  const adminOptions: SellTypeOption[] = []
-  if (showWetsuitsOption) adminOptions.push(WETSUITS_SELL_OPTION)
-
-  const options = adminOptions.length > 0 ? [...SELL_TYPE_OPTIONS, ...adminOptions] : SELL_TYPE_OPTIONS
-  const hasAdminOptions = adminOptions.length > 0
-
+export function SellTypeChooser() {
   return (
     <main className="flex-1 bg-offwhite">
       <div className="container mx-auto max-w-lg px-4 py-12 sm:py-16">
         <div className="text-center">
           <h1 className="text-3xl font-bold sm:text-4xl">What are you listing?</h1>
           <p className="mx-auto mt-3 max-w-sm text-muted-foreground">
-            {hasAdminOptions
-              ? "Choose a product type to get started."
-              : "Choose surfboards, fins, or magazines to get started."}
+            Choose a product type to get started.
           </p>
         </div>
 
         <div className="mt-10 space-y-3">
-          {options.map((option) => (
+          {SELL_TYPE_OPTIONS.map((option) => (
             <Link
               key={option.href}
               href={option.href}

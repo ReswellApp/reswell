@@ -1,15 +1,33 @@
-import { redirect } from "next/navigation"
+import { Suspense } from "react"
 import type { Metadata } from "next"
-import { privatePageMetadata } from "@/lib/site-metadata"
-import { createClient } from "@/lib/supabase/server"
-import { actorCanManageWetsuitListings } from "@/lib/services/wetsuitListingSeller"
 import SellWetsuitsFlow from "./sell-wetsuits-client"
 
-export const metadata: Metadata = privatePageMetadata({
-  title: "List a wetsuit — Reswell",
-  description: "List wetsuits for sale on Reswell.",
-  path: "/sell/wetsuits",
-})
+const title = "Sell your wetsuit — Reswell"
+const description =
+  "List your wetsuit on Reswell in minutes: add photos, set your size and price, and ship to buyers nationwide."
+
+export const metadata: Metadata = {
+  title,
+  description,
+  keywords: [
+    "sell wetsuit",
+    "list wetsuit",
+    "used wetsuit",
+    "pre-owned wetsuit",
+    "surf wetsuit",
+    "Reswell",
+  ],
+  alternates: { canonical: "/sell/wetsuits" },
+  openGraph: {
+    title,
+    description,
+    url: "/sell/wetsuits",
+    siteName: "Reswell",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: { card: "summary_large_image", title, description },
+}
 
 function parseEditListingId(value: string | string[] | undefined): string | null {
   if (typeof value === "string" && value.trim()) return value.trim()
@@ -25,19 +43,11 @@ export default async function SellWetsuitsPage({
 }: {
   searchParams: Promise<{ edit?: string | string[] }>
 }) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    redirect("/auth/login?redirect=/sell/wetsuits")
-  }
-  const allowed = await actorCanManageWetsuitListings(supabase, user.id)
-  if (!allowed) {
-    redirect("/wetsuits")
-  }
-
   const qs = await searchParams
   const editId = parseEditListingId(qs.edit)
-  return <SellWetsuitsFlow editListingId={editId} />
+  return (
+    <Suspense fallback={null}>
+      <SellWetsuitsFlow editListingId={editId} />
+    </Suspense>
+  )
 }
