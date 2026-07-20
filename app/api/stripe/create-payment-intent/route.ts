@@ -336,13 +336,6 @@ export async function POST(request: NextRequest) {
   const promoCodeRaw = body.promo_code?.trim()
   const promoCodeNormalized = promoCodeRaw ? normalizeNewsletterPromoCodeInput(promoCodeRaw) : null
 
-  if (promoCodeNormalized && validatedOfferId) {
-    return NextResponse.json(
-      { error: "Promo codes cannot be combined with accepted offer prices." },
-      { status: 400, headers: JSON_NO_STORE_HEADERS },
-    )
-  }
-
   let promoDiscountUsd = 0
   let promoCodeId: string | null = null
   let promoKind: CheckoutPromoRef["kind"] | null = null

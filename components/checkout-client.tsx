@@ -683,7 +683,6 @@ export function CheckoutClient({
           appliedPromo={appliedPromo}
           promoError={promoError}
           promoApplying={promoApplying}
-          promoDisabled={Boolean(offerId)}
         />
       </div>
     </div>

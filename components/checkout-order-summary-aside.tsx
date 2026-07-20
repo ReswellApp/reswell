@@ -37,7 +37,6 @@ export function CheckoutOrderSummaryAside({
   appliedPromo = null,
   promoError = null,
   promoApplying = false,
-  promoDisabled = false,
 }: {
   listings: CheckoutListing[]
   seller?: CheckoutSeller | null
@@ -50,7 +49,6 @@ export function CheckoutOrderSummaryAside({
   appliedPromo?: AppliedNewsletterPromo | null
   promoError?: string | null
   promoApplying?: boolean
-  promoDisabled?: boolean
 }) {
   const promoInteractive = Boolean(onPromoCodeInputChange && onApplyPromo)
   const fulfillmentLabel: "pickup" | "shipping" = needsShipping ? "shipping" : "pickup"
@@ -154,7 +152,7 @@ export function CheckoutOrderSummaryAside({
               value={promoCodeInput}
               onChange={(e) => onPromoCodeInputChange?.(e.target.value)}
               placeholder="Discount code"
-              disabled={!promoInteractive || promoDisabled || promoApplying || Boolean(appliedPromo)}
+              disabled={!promoInteractive || promoApplying || Boolean(appliedPromo)}
               className="h-11 min-w-0 flex-1 rounded-[6px] border-neutral-200 bg-white text-[13px] uppercase placeholder:normal-case placeholder:text-neutral-400"
               aria-label="Discount code"
             />
@@ -163,7 +161,6 @@ export function CheckoutOrderSummaryAside({
               variant="outline"
               disabled={
                 !promoInteractive ||
-                promoDisabled ||
                 promoApplying ||
                 Boolean(appliedPromo) ||
                 !promoCodeInput.trim()
@@ -176,10 +173,6 @@ export function CheckoutOrderSummaryAside({
           </div>
           {!promoInteractive ? (
             <p className="mt-2 text-[11px] text-neutral-400">Sign in to apply your newsletter promo code.</p>
-          ) : promoDisabled ? (
-            <p className="mt-2 text-[11px] text-neutral-400">
-              Promo codes can&apos;t be combined with accepted offer prices.
-            </p>
           ) : appliedPromo ? (
             <p className="mt-2 text-[12px] font-medium text-[#5574AD]">
               {appliedPromo.code} applied — {appliedPromo.discountPercent}% off items
