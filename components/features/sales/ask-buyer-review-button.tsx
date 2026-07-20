@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { sendSellerReviewRequest } from "@/app/actions/messages"
 import { ratingStarFilledClassName } from "@/lib/rating-star-styles"
 import { cn } from "@/lib/utils"
+import { runServerAction } from "@/lib/utils/run-server-action"
 
 type AskBuyerReviewButtonProps = {
   orderId: string
@@ -62,18 +63,24 @@ export function AskBuyerReviewButton({
 
   const onSend = useCallback(() => {
     startTransition(async () => {
-      const result = await sendSellerReviewRequest({ order_id: orderId })
-      if ("error" in result) {
-        toast.error(result.error)
-        return
+      try {
+        const result = await runServerAction(() =>
+          sendSellerReviewRequest({ order_id: orderId }),
+        )
+        if ("error" in result) {
+          toast.error(result.error)
+          return
+        }
+        setThreadId(result.conversation_id)
+        setSent(true)
+        toast.success("Done. Your buyer will see this in Messages.", {
+          description: "We’ve dropped a review card in your thread with them.",
+          duration: 4500,
+        })
+        router.refresh()
+      } catch {
+        toast.error("Could not send review request")
       }
-      setThreadId(result.conversation_id)
-      setSent(true)
-      toast.success("Done. Your buyer will see this in Messages.", {
-        description: "We’ve dropped a review card in your thread with them.",
-        duration: 4500,
-      })
-      router.refresh()
     })
   }, [orderId, router])
 

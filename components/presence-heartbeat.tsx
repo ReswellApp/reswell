@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { updatePresenceHeartbeat } from '@/app/actions/account'
 import { isAbortError, isBenignClientFetchError } from '@/lib/utils/is-abort-error'
 
 const INTERVAL_MS = 60_000
@@ -13,7 +12,16 @@ function isBenignPresenceError(err: unknown): boolean {
 
 async function ping() {
   try {
-    await updatePresenceHeartbeat()
+    const res = await fetch('/api/presence/heartbeat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      keepalive: true,
+    })
+    // 401 = signed out mid-session; stop quietly until auth listener restarts.
+    if (res.status === 401) return
+    if (!res.ok && res.status >= 500) {
+      console.warn('[presence] heartbeat failed', res.status)
+    }
   } catch (err) {
     if (isBenignPresenceError(err)) return
   }

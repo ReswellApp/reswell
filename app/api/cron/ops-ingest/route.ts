@@ -3,7 +3,7 @@ import { ingestVercelOpsLogs } from "@/lib/services/opsVercelIngest"
 import { ingestSupabaseOpsLogs } from "@/lib/services/opsSupabaseIngest"
 
 /**
- * Hourly pull of Vercel request-log issues + Supabase project logs into ops_* tables.
+ * Every-30-minutes pull of Vercel request-log issues + Supabase project logs into ops_* tables.
  * Protected with CRON_SECRET (same pattern as other cron routes).
  */
 export async function GET(request: Request) {

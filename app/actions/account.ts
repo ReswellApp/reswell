@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { submitContactFormMessageService } from "@/lib/services/contactForm"
+import { recordPresenceHeartbeat } from "@/lib/services/presenceHeartbeat"
 
 export async function getAdminSession() {
   const supabase = await createClient()
@@ -42,23 +43,12 @@ export async function getPaypalProfileStatus() {
   return { data: data ?? {}, error: null }
 }
 
+/** Prefer POST /api/presence/heartbeat from clients — avoids deploy-skew Server Action 404s. */
 export async function updatePresenceHeartbeat() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    return { ok: false as const }
+  const result = await recordPresenceHeartbeat()
+  if (!result.ok) {
+    return { ok: false as const, error: result.error }
   }
-
-  const now = new Date().toISOString()
-  const { error } = await supabase.from("profiles").update({ last_active_at: now }).eq("id", user.id)
-
-  if (error) {
-    return { ok: false as const, error: "Failed to update presence" }
-  }
-
   return { ok: true as const }
 }
 

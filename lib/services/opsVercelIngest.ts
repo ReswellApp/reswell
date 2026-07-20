@@ -91,6 +91,8 @@ export async function ingestVercelOpsLogs(input?: {
         metadata: {
           vercel_source: issue.source,
           level: issue.level,
+          status_code: issue.responseStatusCode || null,
+          method: issue.requestMethod,
           sample_request_ids: issue.sampleRequestIds,
         },
         fingerprintParts: [

@@ -33,6 +33,7 @@ import {
   type OpsView,
   type OpsViewCounts,
 } from "@/lib/utils/opsClassify"
+import { opsGroupStatusCode } from "@/lib/utils/opsDisplay"
 import { cn } from "@/lib/utils"
 
 const STATUS_OPTIONS = ["open", "acknowledged", "resolved", "ignored", "all"] as const
@@ -360,6 +361,7 @@ export function OpsAdminClient() {
               <ul className="divide-y divide-border/70">
                 {rows.map((row) => {
                   const rowView = classifyRowView(row)
+                  const statusCode = opsGroupStatusCode(row)
                   return (
                     <li key={row.id}>
                       <Link
@@ -375,6 +377,11 @@ export function OpsAdminClient() {
                             <span className="font-mono text-xs text-muted-foreground">
                               {row.reference_code}
                             </span>
+                            {statusCode ? (
+                              <span className="rounded-full bg-red-50 px-2 py-0.5 font-mono text-[10px] font-semibold text-red-800 ring-1 ring-inset ring-red-100">
+                                {statusCode}
+                              </span>
+                            ) : null}
                             <span
                               className={cn(
                                 "rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
@@ -397,6 +404,9 @@ export function OpsAdminClient() {
                           </div>
                           <p className="mt-1.5 text-sm font-medium text-foreground group-hover:underline line-clamp-2">
                             {row.title}
+                          </p>
+                          <p className="mt-1 line-clamp-1 text-[11px] text-muted-foreground">
+                            {row.message || "No log message"}
                           </p>
                           <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
                             {row.path ? (

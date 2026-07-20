@@ -19,6 +19,7 @@ import {
   parseLocalPolicyBlockMetadata,
 } from "@/lib/messages/local-phone-policy-block-message"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
+import { runServerAction } from "@/lib/utils/run-server-action"
 
 export type OrderThreadMessage = {
   id: string
@@ -75,11 +76,13 @@ export function OrderMessageThread({
           openSignIn(null)
           return
         }
-        const result = await sendListingMessage({
-          listing_id: startConversation.listingId,
-          seller_id: startConversation.sellerId,
-          content: text,
-        })
+        const result = await runServerAction(() =>
+          sendListingMessage({
+            listing_id: startConversation.listingId,
+            seller_id: startConversation.sellerId,
+            content: text,
+          }),
+        )
         if ("error" in result) {
           const policyReason = getPolicyBlockFromSendResult(result)
           if (policyReason) {
@@ -111,10 +114,12 @@ export function OrderMessageThread({
         openSignIn(null)
         return
       }
-      const result = await sendConversationReply({
-        conversation_id: conversationId,
-        content: text,
-      })
+      const result = await runServerAction(() =>
+        sendConversationReply({
+          conversation_id: conversationId,
+          content: text,
+        }),
+      )
 
       if ("error" in result) {
         const policyReason = getPolicyBlockFromSendResult(result)

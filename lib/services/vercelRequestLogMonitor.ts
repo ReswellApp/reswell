@@ -111,16 +111,14 @@ function vercelAccessToken(): string | null {
     process.env.VERCEL_TOKEN?.trim() ||
     null
   if (!raw) return null
-  // Authorization headers must be ByteString (code points ≤ 255). Env pastes sometimes
-  // include smart punctuation (e.g. bullet • = 8226) which breaks fetch().
-  const cleaned = Array.from(raw)
-    .filter((ch) => ch.charCodeAt(0) <= 255)
-    .join("")
-    .trim()
+  // Authorization headers must be ByteString. Env pastes often include a leading bullet
+  // (• = 8226) or other smart punctuation — that lands at index 7 of `Bearer <token>`
+  // and throws before the request is sent.
+  const cleaned = raw.replace(/[^\x21-\x7E]/g, "").trim()
   if (!cleaned) return null
   if (cleaned !== raw) {
     console.warn(
-      "[vercel logs] VERCEL_ACCESS_TOKEN contained non-Latin-1 characters; stripped them for the Authorization header",
+      "[vercel logs] VERCEL_ACCESS_TOKEN had non-ASCII / whitespace junk stripped for Authorization",
     )
   }
   return cleaned
@@ -348,6 +346,12 @@ function isLikelyBotNoise(path: string, statusCode: number): boolean {
   )
 }
 
+/** Next.js returns 404 + warning when a stale tab calls a Server Action after a deploy. */
+function isDeploySkewServerActionNoise(message: string, statusCode: number): boolean {
+  if (statusCode !== 404) return false
+  return message.includes("Failed to find Server Action")
+}
+
 function worstRuntimeLevel(logs: VercelRequestLogEntry["logs"]): VercelLogLevel {
   const order: Record<VercelLogLevel, number> = {
     info: 0,
@@ -381,6 +385,7 @@ function classifyLogEntry(entry: VercelRequestLogEntry): PlatformLogIssue | null
 
   if (isCronOrInternalPath(path)) return null
   if (isLikelyBotNoise(path, status)) return null
+  if (isDeploySkewServerActionNoise(message, status)) return null
 
   if (status >= 500) {
     return {
