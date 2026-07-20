@@ -353,6 +353,8 @@ export async function getCheapestReswellRateForListings(input: {
   const weightLb = Math.max(1, parcel.weightOz / 16)
   const limitCheck = validateSurfboardLabelParcelLimits({
     lengthIn: parcel.lengthIn,
+    widthIn: parcel.widthIn,
+    heightIn: parcel.heightIn,
     weightLb,
   })
   if (!limitCheck.ok) {

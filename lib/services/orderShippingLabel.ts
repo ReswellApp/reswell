@@ -43,6 +43,8 @@ export function resolveOrderLabelParcelFromListing(
   const weightLb = Math.max(1, r.weightOz / 16)
   const limitCheck = validateSurfboardLabelParcelLimits({
     lengthIn: r.lengthIn,
+    widthIn: r.widthIn,
+    heightIn: r.heightIn,
     weightLb,
   })
   if (!limitCheck.ok) {

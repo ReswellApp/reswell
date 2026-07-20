@@ -18,6 +18,7 @@ import {
   parseReswellParcelWidthHeightRawToCarrierInches,
   validateReswellPackedWeightRequired,
 } from "@/lib/reswell-parcel-fields"
+import { validateSurfboardLabelParcelLimits } from "@/lib/shipping/surfboard-label-limits"
 
 const PRICE_MIN = 0.01
 const PRICE_MAX = 999_999.99
@@ -230,6 +231,21 @@ export function validateSellListingForm(
         form.reswellPackageWeightOz,
       )
       if (weightErr) return weightErr
+
+      const lbRaw = form.reswellPackageWeightLb?.trim() ?? ""
+      const ozRaw = form.reswellPackageWeightOz?.trim() ?? ""
+      const lb = lbRaw ? parseFloat(lbRaw) : 0
+      const oz = ozRaw ? parseFloat(ozRaw) : 0
+      const weightLb = (Number.isFinite(lb) ? lb : 0) + (Number.isFinite(oz) ? oz : 0) / 16
+      const limitCheck = validateSurfboardLabelParcelLimits({
+        lengthIn: L,
+        widthIn: W,
+        heightIn: H,
+        weightLb: Math.max(weightLb, 1 / 16),
+      })
+      if (!limitCheck.ok) {
+        return "This packed size exceeds UPS shipping limits (160″ max using Length + 2×Width + 2×Height, 25 lb max). Use flat-rate shipping or local pickup instead."
+      }
     }
   }
 

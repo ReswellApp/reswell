@@ -105,6 +105,8 @@ export async function fetchShipEngineRatesForSurfboard(params: {
 
   const limitCheck = validateSurfboardLabelParcelLimits({
     lengthIn: params.parcel.lengthIn,
+    widthIn: params.parcel.widthIn,
+    heightIn: params.parcel.heightIn,
     weightLb: params.parcel.weightLb,
   })
   if (!limitCheck.ok) {

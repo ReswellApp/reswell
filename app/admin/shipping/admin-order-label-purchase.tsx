@@ -35,7 +35,7 @@ import { ChevronDown, Download, ExternalLink, Loader2, Printer, Search, Truck, W
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { computeSellerLabelPrepaidAllowanceBreakdown } from "@/lib/shipping/seller-label-payment-breakdown"
-import { isSurfboardLabelParcelLimitError, validateSurfboardLabelParcelLimits } from "@/lib/shipping/surfboard-label-limits"
+import { isSurfboardLabelParcelLimitError, validateSurfboardLabelParcelLimits, SURFBOARD_LABEL_MAX_HEIGHT_IN, SURFBOARD_LABEL_MAX_LENGTH_IN, SURFBOARD_LABEL_MAX_WIDTH_IN, SURFBOARD_LABEL_MAX_WEIGHT_LB } from "@/lib/shipping/surfboard-label-limits"
 
 type AutoLabelParcelOk = {
   ok: true
@@ -137,11 +137,11 @@ function parseManualParcelFields(parcel: typeof EMPTY_MANUAL_PARCEL) {
 
 function manualParcelFieldsValid(parcel: typeof EMPTY_MANUAL_PARCEL): boolean {
   const { lengthIn, widthIn, heightIn, weightLb } = parseManualParcelFields(parcel)
-  if (!Number.isFinite(lengthIn) || lengthIn < 6 || lengthIn > 77) return false
-  if (!Number.isFinite(widthIn) || widthIn < 4 || widthIn > 48) return false
-  if (!Number.isFinite(heightIn) || heightIn < 2 || heightIn > 36) return false
-  if (!Number.isFinite(weightLb) || weightLb < 1 || weightLb > 25) return false
-  return validateSurfboardLabelParcelLimits({ lengthIn, weightLb }).ok
+  if (!Number.isFinite(lengthIn) || lengthIn < 6 || lengthIn > SURFBOARD_LABEL_MAX_LENGTH_IN) return false
+  if (!Number.isFinite(widthIn) || widthIn < 4 || widthIn > SURFBOARD_LABEL_MAX_WIDTH_IN) return false
+  if (!Number.isFinite(heightIn) || heightIn < 2 || heightIn > SURFBOARD_LABEL_MAX_HEIGHT_IN) return false
+  if (!Number.isFinite(weightLb) || weightLb < 1 || weightLb > SURFBOARD_LABEL_MAX_WEIGHT_LB) return false
+  return validateSurfboardLabelParcelLimits({ lengthIn, widthIn, heightIn, weightLb }).ok
 }
 
 function ManualParcelFields({
@@ -895,7 +895,8 @@ export function AdminOrderLabelPurchase() {
                       <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-4">
                         <p className="text-sm font-medium text-foreground">Packed box dimensions</p>
                         <p className="text-sm text-muted-foreground">
-                          Measure the carton the seller will ship in. Max 77″ length and 25 lb for Reswell labels.
+                          Measure the carton the seller will ship in. UPS limit: Length + (2 × Width) +
+                          (2 × Height) must be 160″ or less; weight 25 lb or less.
                         </p>
                         <ManualParcelFields
                           idPrefix="admin-required-"

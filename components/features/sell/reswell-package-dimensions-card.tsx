@@ -125,7 +125,8 @@ export function ReswellPackageDimensionsCard({
         </div>
         <p className="mt-3 text-xs text-muted-foreground/45">
           Reswell picks the rate type at checkout from what you enter here and the buyer&apos;s
-          address.
+          address. UPS Ground limit: Length + (2 × Width) + (2 × Height) must be 160″ or less
+          (165″ carrier max minus 5″ measurement buffer); weight 25 lb or less.
         </p>
       </div>
 
