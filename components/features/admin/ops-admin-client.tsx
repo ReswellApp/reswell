@@ -24,8 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { runOpsIngestNowAction } from "@/lib/actions/opsAdmin"
-import { createClient } from "@/lib/supabase/client"
-import { OPS_GROUP_LIST_SELECT, type OpsGroupRow, type OpsIngestRunRow } from "@/lib/types/ops"
+import type { OpsGroupRow, OpsIngestRunRow } from "@/lib/types/ops"
 import { cn } from "@/lib/utils"
 
 const STATUS_OPTIONS = ["all", "open", "acknowledged", "resolved", "ignored"] as const
@@ -38,7 +37,6 @@ function severityClass(severity: OpsGroupRow["severity"]): string {
 }
 
 export function OpsAdminClient() {
-  const supabase = createClient()
   const [rows, setRows] = useState<OpsGroupRow[]>([])
   const [runs, setRuns] = useState<OpsIngestRunRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -49,51 +47,41 @@ export function OpsAdminClient() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    let query = supabase
-      .from("ops_groups")
-      .select(OPS_GROUP_LIST_SELECT)
-      .order("last_seen_at", { ascending: false })
-      .limit(150)
+    try {
+      const params = new URLSearchParams()
+      params.set("status", status)
+      params.set("source", source)
+      if (q.trim()) params.set("q", q.trim())
 
-    if (status !== "all") query = query.eq("status", status)
-    if (source !== "all") query = query.eq("source", source)
-    if (q.trim()) {
-      const safe = q.trim().replace(/[%_,.()]/g, " ").slice(0, 80)
-      if (safe) {
-        const pattern = `%${safe}%`
-        query = query.or(
-          `title.ilike.${pattern},message.ilike.${pattern},reference_code.ilike.${pattern},path.ilike.${pattern}`,
-        )
+      const res = await fetch(`/api/admin/ops?${params.toString()}`, {
+        credentials: "same-origin",
+      })
+      const json = (await res.json()) as {
+        data?: { groups?: OpsGroupRow[]; runs?: OpsIngestRunRow[] }
+        error?: string
       }
-    }
 
-    const [groupsRes, runsRes] = await Promise.all([
-      query,
-      supabase
-        .from("ops_ingest_runs")
-        .select(
-          "id, source, status, range_hours, signals_ingested, groups_upserted, error_message, meta, started_at, finished_at",
-        )
-        .order("started_at", { ascending: false })
-        .limit(8),
-    ])
+      if (!res.ok) {
+        const message = json.error ?? `Failed to load ops (${res.status})`
+        console.error("[admin ops]", message)
+        toast.error(message)
+        setRows([])
+        setRuns([])
+        return
+      }
 
-    setLoading(false)
-
-    if (groupsRes.error) {
-      console.error("[admin ops]", groupsRes.error.message)
-      toast.error("Could not load ops groups — has the migration been applied?")
+      setRows(json.data?.groups ?? [])
+      setRuns(json.data?.runs ?? [])
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load ops"
+      console.error("[admin ops]", message)
+      toast.error(message)
       setRows([])
-    } else {
-      setRows((groupsRes.data ?? []) as OpsGroupRow[])
-    }
-
-    if (runsRes.error) {
       setRuns([])
-    } else {
-      setRuns((runsRes.data ?? []) as OpsIngestRunRow[])
+    } finally {
+      setLoading(false)
     }
-  }, [supabase, status, source, q])
+  }, [status, source, q])
 
   useEffect(() => {
     void load()
