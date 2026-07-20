@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Loader2, MessageSquare, Send } from 'lucide-react'
@@ -79,6 +79,10 @@ export function MessageSellerDialog({
     content: string
     reasonCode: MessagePolicyReasonCode
   } | null>(null)
+  const [mediaDraftUi, setMediaDraftUi] = useState<ReactNode>(null)
+  const handleMediaDraftUiChange = useCallback((node: ReactNode) => {
+    setMediaDraftUi(node)
+  }, [])
 
   const listingThumbSrc = useMemo(
     () => (listing ? listingTitleThumbnailSrc(listing.listing_images) : ''),
@@ -288,6 +292,7 @@ export function MessageSellerDialog({
           }}
           className="shrink-0 space-y-2.5 border-t border-border/60 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3"
         >
+          {mediaDraftUi}
           <div className="flex items-end gap-1 rounded-full bg-muted/70 py-1 pl-1 pr-1.5">
             <MessageComposerTextarea
               value={newMessage}
@@ -331,6 +336,7 @@ export function MessageSellerDialog({
                   setBlockedPolicyNotice({ content: originalContent, reasonCode })
                   setNewMessage('')
                 }}
+                onDraftUiChange={handleMediaDraftUiChange}
                 className="mb-0 text-foreground hover:bg-transparent"
               />
           </div>

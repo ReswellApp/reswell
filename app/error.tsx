@@ -5,13 +5,14 @@ import Link from "next/link"
 import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { isChunkLoadError, recoverFromChunkLoadError } from "@/lib/utils/is-chunk-load-error"
+import { reportClientError } from "@/lib/utils/reportClientError"
 
 /**
  * Root route error boundary. Catches uncaught errors thrown while rendering any route
  * segment (so the user keeps the site chrome instead of Next.js's full-page fatal screen).
  *
  * Stale-asset failures after a deploy (`ChunkLoadError`) self-heal with one fresh reload;
- * anything else shows a branded, recoverable fallback.
+ * anything else shows a branded, recoverable fallback and reports to platform ops.
  */
 export default function RootError({
   error,
@@ -21,6 +22,7 @@ export default function RootError({
   reset: () => void
 }) {
   const [recovering, setRecovering] = useState(false)
+  const [referenceCode, setReferenceCode] = useState<string | null>(null)
 
   useEffect(() => {
     if (isChunkLoadError(error)) {
@@ -31,11 +33,18 @@ export default function RootError({
       }
     }
     console.error("[app] route error:", error)
+    void reportClientError({
+      name: error.name,
+      message: error.message || "Route error",
+      stack: error.stack,
+      digest: error.digest,
+      context: { boundary: "app/error" },
+    }).then((result) => {
+      if (result?.referenceCode) setReferenceCode(result.referenceCode)
+    })
   }, [error])
 
   if (recovering) {
-    // Silent self-heal: the page reloads in <1s, so render a quiet route-transition
-    // surface instead of alarming "updating" copy (matters most mid-login on mobile).
     return (
       <main
         className="flex flex-1 items-center justify-center bg-gradient-to-b from-background via-background to-muted/30 px-4 py-16"
@@ -65,6 +74,11 @@ export default function RootError({
             <Link href="/">Go home</Link>
           </Button>
         </div>
+        {(referenceCode || error.digest) && (
+          <p className="mt-6 text-xs text-muted-foreground">
+            Ref: {referenceCode ?? error.digest}
+          </p>
+        )}
       </div>
     </main>
   )

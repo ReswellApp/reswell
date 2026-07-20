@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useId, useRef, useState } from "react"
+import { useCallback, useId, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -21,6 +21,9 @@ import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-li
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
 import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
+import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
+import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
+import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
 import { createClient } from "@/lib/supabase/client"
 import {
   MAGAZINES_SECTION,
@@ -40,6 +43,7 @@ import { LISTING_CONDITION_SELL_OPTIONS, sellFormConditionValue } from "@/lib/li
 import { listingDetailHref } from "@/lib/listing-href"
 import { resolveAdminBulkListingAfterCreate } from "@/lib/utils/admin-bulk-listing-navigation"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
 
 type MagazineFormState = {
@@ -76,7 +80,6 @@ export default function SellMagazinesFlow({
   const editId = editListingId?.trim() || null
   const [form, setForm] = useState<MagazineFormState>(INITIAL_STATE)
   const [submitting, setSubmitting] = useState(false)
-  const [editLoading, setEditLoading] = useState(Boolean(editId))
 
   const magazineSellReturnPath = useCallback(
     () =>
@@ -119,40 +122,23 @@ export default function SellMagazinesFlow({
     setForm((prev) => ({ ...prev, [key]: value }))
   }, [])
 
-  useEffect(() => {
-    if (!editId) return
-    let cancelled = false
-    ;(async () => {
-      setEditLoading(true)
-      const supabase = supabaseRef.current
-      const { data: listing, error } = await supabase
-        .from("listings")
-        .select(
-          `
-          id,
-          section,
-          title,
-          description,
-          price,
-          condition,
-          brand,
-          magazine_year,
-          listing_images (id, url, thumbnail_url, is_primary, sort_order)
-        `,
+  const hydrateMagazineEdit = useCallback(
+    (listing: OwnedListingForEditRow) => {
+      if ((listing as { status?: string }).status === "sold") {
+        toast.message("This listing has sold — it can't be edited.")
+        router.replace(
+          listingDetailHref({
+            id: String(listing.id),
+            slug: (listing as { slug?: string | null }).slug ?? null,
+          }),
         )
-        .eq("id", editId)
-        .maybeSingle()
-
-      if (cancelled) return
-      if (error || !listing) {
-        toast.error("Could not load this listing.")
-        setEditLoading(false)
-        return
+        return { status: "handled" as const }
       }
-      if (listing.section !== MAGAZINES_SECTION) {
+
+      if ((listing as { section?: string }).section !== MAGAZINES_SECTION) {
         toast.error("This listing is not a magazine.")
-        setEditLoading(false)
-        return
+        router.replace("/sell/magazines", { scroll: false })
+        return { status: "handled" as const }
       }
 
       setForm({
@@ -160,10 +146,13 @@ export default function SellMagazinesFlow({
         description: listing.description?.trim() ?? "",
         price: listing.price != null ? String(listing.price) : "",
         condition: sellFormConditionValue(listing.condition),
-        brand: listing.brand?.trim() ?? "",
+        brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
         year:
-          listing.magazine_year != null && Number.isFinite(Number(listing.magazine_year))
-            ? String(listing.magazine_year)
+          (listing as { magazine_year?: number | string | null }).magazine_year != null &&
+          Number.isFinite(
+            Number((listing as { magazine_year?: number | string | null }).magazine_year),
+          )
+            ? String((listing as { magazine_year?: number | string | null }).magazine_year)
             : "",
       })
 
@@ -195,12 +184,20 @@ export default function SellMagazinesFlow({
         )
 
       hydrateExistingImages(existingImages)
-      setEditLoading(false)
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [editId, hydrateExistingImages])
+      return { status: "ready" as const }
+    },
+    [hydrateExistingImages, router],
+  )
+
+  const { editLoading, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
+    editId,
+    supabase: supabaseRef.current,
+    signInReturnPath: editId ? `/sell/magazines?edit=${editId}` : "/sell/magazines",
+    openSignIn: signIn,
+    notFoundRedirectHref: "/sell/magazines",
+    router,
+    onHydrate: hydrateMagazineEdit,
+  })
 
   const buildPayload = () => ({
     title: form.title,
@@ -315,13 +312,19 @@ export default function SellMagazinesFlow({
     }
   }
 
-  if (editLoading) {
+  if (editLoadError) {
     return (
-      <div className="container mx-auto flex min-h-[40vh] items-center justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden />
-        <span className="sr-only">Loading listing…</span>
-      </div>
+      <SellEditLoadError
+        message={editLoadError}
+        onRetry={retryEditLoad}
+        backHref="/sell/magazines"
+        backLabel="Back to sell magazine"
+      />
     )
+  }
+
+  if (editLoading) {
+    return <SellFlowRouteSkeleton />
   }
 
   return (

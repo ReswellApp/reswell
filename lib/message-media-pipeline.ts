@@ -24,6 +24,51 @@ export const MESSAGE_VIDEO_MIME_TYPES = [
 
 export type MessageVideoMimeType = (typeof MESSAGE_VIDEO_MIME_TYPES)[number]
 
+/** Tight `<input accept>` — matches storage allowlist + HEIC (converted client-side). */
+export const MESSAGE_MEDIA_ACCEPT =
+  "image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.gif,.heic,.heif,video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm"
+
+const MESSAGE_IMAGE_NAME_RE = /\.(jpe?g|png|webp|gif|heic|heif)$/i
+const MESSAGE_VIDEO_NAME_RE = /\.(mp4|mov|webm)$/i
+
+export function isAcceptedMessageImageFile(file: File): boolean {
+  const mime = (file.type || "").toLowerCase()
+  if (
+    mime === "image/jpeg" ||
+    mime === "image/png" ||
+    mime === "image/webp" ||
+    mime === "image/gif" ||
+    mime === "image/heic" ||
+    mime === "image/heif" ||
+    mime.includes("heic") ||
+    mime.includes("heif")
+  ) {
+    return true
+  }
+  // iOS camera-roll picks often omit MIME.
+  return !mime && MESSAGE_IMAGE_NAME_RE.test(file.name)
+}
+
+export function isAcceptedMessageVideoFile(file: File): boolean {
+  const mime = (file.type || "").toLowerCase()
+  if (mime === "video/mp4" || mime === "video/quicktime" || mime === "video/webm") {
+    return true
+  }
+  return MESSAGE_VIDEO_NAME_RE.test(file.name)
+}
+
+export function isAcceptedMessageMediaFile(file: File): boolean {
+  return isAcceptedMessageImageFile(file) || isAcceptedMessageVideoFile(file)
+}
+
+export function assertAcceptedMessageMediaFile(file: File): void {
+  if (!isAcceptedMessageMediaFile(file)) {
+    throw new Error(
+      "That file type isn't supported. Try a JPEG, PNG, WebP, GIF, or an MP4/MOV video.",
+    )
+  }
+}
+
 export type PreparedMessageImage = {
   blob: Blob
   contentType: "image/webp" | "image/jpeg" | "image/png" | "image/gif"

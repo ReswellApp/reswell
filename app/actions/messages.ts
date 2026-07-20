@@ -24,6 +24,7 @@ import {
 } from "@/lib/validations/message-location-metadata"
 import { marketplaceMessageAttachmentInputSchema } from "@/lib/validations/marketplace-message-attachment"
 import { sendMarketplaceMediaMessage } from "@/lib/services/sendMarketplaceMediaMessage"
+import { discardUnsentMessageAttachment } from "@/lib/services/discardUnsentMessageAttachment"
 import {
   loadOtherPartyProfile,
   type OtherPartyProfileSummary,
@@ -50,6 +51,11 @@ const sendConversationMediaReplySchema = z.object({
   conversation_id: z.string().uuid(),
   attachment: marketplaceMessageAttachmentInputSchema,
   caption: z.string().max(5000).optional(),
+})
+
+const discardUnsentMessageAttachmentSchema = z.object({
+  conversation_id: z.string().uuid(),
+  path: z.string().min(1).max(500),
 })
 
 const marketplaceListingThreadSchema = z.object({
@@ -672,6 +678,35 @@ export async function sendConversationMediaReply(input: unknown) {
   }
 
   return { success: true as const, message: result.message }
+}
+
+/** Best-effort cleanup after a client cancel / failed send left storage bytes behind. */
+export async function discardConversationMediaUpload(input: unknown) {
+  const parsed = discardUnsentMessageAttachmentSchema.safeParse(input)
+  if (!parsed.success) {
+    return { error: "Invalid attachment" as const }
+  }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: "Unauthorized" as const }
+  }
+
+  const result = await discardUnsentMessageAttachment({
+    conversationId: parsed.data.conversation_id,
+    senderId: user.id,
+    path: parsed.data.path,
+  })
+
+  if (!result.ok) {
+    return { error: result.error }
+  }
+
+  return { success: true as const }
 }
 
 export async function sendConversationLocationReply(input: unknown) {

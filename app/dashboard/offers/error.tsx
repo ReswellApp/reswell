@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { reportClientError } from "@/lib/utils/reportClientError"
 
 export default function DashboardOffersError({
   error,
@@ -11,8 +12,19 @@ export default function DashboardOffersError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  const [referenceCode, setReferenceCode] = useState<string | null>(null)
+
   useEffect(() => {
     console.error("[dashboard/offers]", error)
+    void reportClientError({
+      name: error.name,
+      message: error.message || "Offers route error",
+      stack: error.stack,
+      digest: error.digest,
+      context: { boundary: "app/dashboard/offers/error" },
+    }).then((result) => {
+      if (result?.referenceCode) setReferenceCode(result.referenceCode)
+    })
   }, [error])
 
   return (
@@ -39,6 +51,9 @@ export default function DashboardOffersError({
           <Link href="/dashboard">Back to dashboard</Link>
         </Button>
       </div>
+      {(referenceCode || error.digest) && (
+        <p className="text-xs text-muted-foreground">Ref: {referenceCode ?? error.digest}</p>
+      )}
     </div>
   )
 }

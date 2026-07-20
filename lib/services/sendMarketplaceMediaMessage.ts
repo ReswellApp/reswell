@@ -36,6 +36,16 @@ function attachmentPathBelongsToConversation(path: string, conversationId: strin
   return path.startsWith(prefix) && path.length > prefix.length
 }
 
+async function removeOrphanAttachment(
+  service: ReturnType<typeof createServiceRoleClient>,
+  path: string,
+): Promise<void> {
+  const { error } = await service.storage.from(MARKETPLACE_MESSAGE_ATTACHMENTS_BUCKET).remove([path])
+  if (error) {
+    console.error("[sendMarketplaceMediaMessage] orphan cleanup:", error.message)
+  }
+}
+
 export async function sendMarketplaceMediaMessage(input: {
   conversationId: string
   senderId: string
@@ -116,6 +126,7 @@ export async function sendMarketplaceMediaMessage(input: {
       } catch (e) {
         console.error("[sendMarketplaceMediaMessage] fraud_messages insert:", e)
       }
+      await removeOrphanAttachment(service, attachment.path)
       return {
         ok: false,
         error: MESSAGE_BLOCKED_POLICY_ERROR,
@@ -128,6 +139,7 @@ export async function sendMarketplaceMediaMessage(input: {
   const metadata = { attachment }
   const parsedMeta = marketplaceMessageAttachmentMetadataSchema.safeParse(metadata)
   if (!parsedMeta.success) {
+    await removeOrphanAttachment(service, attachment.path)
     return { ok: false, error: "Invalid metadata", status: 500 }
   }
 
@@ -144,6 +156,7 @@ export async function sendMarketplaceMediaMessage(input: {
 
   if (insErr || !inserted) {
     console.error("[sendMarketplaceMediaMessage] insert:", insErr)
+    await removeOrphanAttachment(service, attachment.path)
     return { ok: false, error: "Could not send message", status: 500 }
   }
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
+import { useCallback, useId, useMemo, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -34,8 +34,11 @@ import {
   SELL_WETSUITS_FORM_SECTION_NAV_ITEMS,
 } from "@/components/features/sell/sell-section-nav"
 import { createClient } from "@/lib/supabase/client"
-import { fetchOwnedListingForSellEditClient } from "@/lib/sell-flow/fetch-owned-listing-for-edit-client"
+import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
+import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
+import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
+import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
 import {
   WETSUIT_LISTING_MAX_PHOTOS,
@@ -160,7 +163,6 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
 
   const [form, setForm] = useState<WetsuitFormState>(INITIAL_STATE)
   const [submitting, setSubmitting] = useState(false)
-  const [editLoading, setEditLoading] = useState(Boolean(editId))
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
 
   const wetsuitSellReturnPath = useCallback(
@@ -200,34 +202,9 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     hydrateExistingImages,
   } = photoUpload
 
-  useEffect(() => {
-    if (!editId) {
-      setEditLoading(false)
-      return
-    }
-
-    let mounted = true
-    setEditLoading(true)
-
-    void (async () => {
-      const supabase = supabaseRef.current
-      const owned = await fetchOwnedListingForSellEditClient(supabase, editId)
-      if (!owned.ok) {
-        if (!mounted) return
-        if (owned.reason === "unauthorized") {
-          setEditLoading(false)
-          signIn(`/sell/wetsuits?edit=${editId}`)
-          return
-        }
-        toast.error("Listing not found or cannot be edited")
-        router.replace("/sell/wetsuits", { scroll: false })
-        setEditLoading(false)
-        return
-      }
-
-      const { listing } = owned
+  const hydrateWetsuitEdit = useCallback(
+    (listing: OwnedListingForEditRow) => {
       const imp = getImpersonation()
-      if (!mounted) return
 
       if ((listing as { status?: string }).status === "sold") {
         toast.message("This listing has sold — it can't be edited.")
@@ -237,15 +214,13 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
             slug: (listing as { slug?: string | null }).slug ?? null,
           }),
         )
-        setEditLoading(false)
-        return
+        return { status: "handled" as const }
       }
 
       if ((listing as { section?: string }).section !== "wetsuits") {
         toast.error("Only wetsuit listings can be edited here.")
         router.replace("/sell/wetsuits", { scroll: false })
-        setEditLoading(false)
-        return
+        return { status: "handled" as const }
       }
 
       setEditListingOwnerId(listing.user_id as string)
@@ -325,13 +300,20 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
         )
 
       hydrateExistingImages(existingImages)
-      setEditLoading(false)
-    })()
+      return { status: "ready" as const }
+    },
+    [hydrateExistingImages, router],
+  )
 
-    return () => {
-      mounted = false
-    }
-  }, [editId, hydrateExistingImages, router, signIn])
+  const { editLoading, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
+    editId,
+    supabase: supabaseRef.current,
+    signInReturnPath: editId ? `/sell/wetsuits?edit=${editId}` : "/sell/wetsuits",
+    openSignIn: signIn,
+    notFoundRedirectHref: "/sell/wetsuits",
+    router,
+    onHydrate: hydrateWetsuitEdit,
+  })
 
   const setField = useCallback(<K extends keyof WetsuitFormState>(key: K, value: WetsuitFormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -625,15 +607,19 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     }
   }
 
-  if (editLoading) {
+  if (editLoadError) {
     return (
-      <main className="flex flex-1 items-center justify-center bg-background py-24">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
-          <p className="text-sm">Loading listing…</p>
-        </div>
-      </main>
+      <SellEditLoadError
+        message={editLoadError}
+        onRetry={retryEditLoad}
+        backHref="/sell/wetsuits"
+        backLabel="Back to sell wetsuit"
+      />
     )
+  }
+
+  if (editLoading) {
+    return <SellFlowRouteSkeleton />
   }
 
   return (

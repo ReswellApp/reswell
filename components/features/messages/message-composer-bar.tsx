@@ -1,5 +1,6 @@
 'use client'
 
+import { useCallback, useState, type ReactNode } from 'react'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { MessageComposerTextarea } from '@/components/features/messages/message-composer-textarea'
@@ -52,44 +53,52 @@ export function MessageComposerBar({
   media,
 }: MessageComposerBarProps) {
   const disabled = sending || textareaDisabled
+  const [mediaDraftUi, setMediaDraftUi] = useState<ReactNode>(null)
+  const handleDraftUiChange = useCallback((node: ReactNode) => {
+    setMediaDraftUi(node)
+  }, [])
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        void onSubmit()
-      }}
-      className={cn(messageComposerFormClass, className)}
-    >
-      {showMedia && media ? (
-        <MessageMediaSendButton
-          conversationId={media.conversationId}
-          disabled={disabled || media.disabled}
-          caption={value}
-          onSent={media.onSent}
-          onBlockedPolicy={media.onBlockedPolicy}
-          ensureConversationId={media.ensureConversationId}
-        />
-      ) : null}
-      <div className={messageComposerInputShellClass}>
-        <MessageComposerTextarea
-          value={value}
-          onChange={onChange}
-          placeholder={placeholder}
-          disabled={disabled}
-          autoComplete="off"
-          aria-label="Message text"
-        />
-        <Button
-          type="submit"
-          variant="ghost"
-          disabled={disabled || !value.trim()}
-          className={messageComposerSendButtonClass}
-          aria-label="Send message"
-        >
-          {sending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : 'Send'}
-        </Button>
-      </div>
-    </form>
+    <div className={cn('flex w-full min-w-0 flex-col gap-2', className)}>
+      {mediaDraftUi}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          void onSubmit()
+        }}
+        className={messageComposerFormClass}
+      >
+        {showMedia && media ? (
+          <MessageMediaSendButton
+            conversationId={media.conversationId}
+            disabled={disabled || media.disabled}
+            caption={value}
+            onSent={media.onSent}
+            onBlockedPolicy={media.onBlockedPolicy}
+            ensureConversationId={media.ensureConversationId}
+            onDraftUiChange={handleDraftUiChange}
+          />
+        ) : null}
+        <div className={messageComposerInputShellClass}>
+          <MessageComposerTextarea
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            disabled={disabled}
+            autoComplete="off"
+            aria-label="Message text"
+          />
+          <Button
+            type="submit"
+            variant="ghost"
+            disabled={disabled || !value.trim()}
+            className={messageComposerSendButtonClass}
+            aria-label="Send message"
+          >
+            {sending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : 'Send'}
+          </Button>
+        </div>
+      </form>
+    </div>
   )
 }

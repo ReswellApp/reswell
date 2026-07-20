@@ -8,8 +8,7 @@ import { isChunkLoadError, recoverFromChunkLoadError } from "@/lib/utils/is-chun
  * its own `<html>`/`<body>`. Replaces Next.js's unbranded default fatal screen.
  *
  * Stale-asset failures after a deploy (`ChunkLoadError`) self-heal with one fresh reload;
- * everything else gets a branded recover/back UI. Kept dependency-free on purpose — the app
- * shell already failed, so we avoid importing components that could fail too.
+ * everything else gets a branded recover/back UI. Kept dependency-light on purpose.
  */
 export default function GlobalError({
   error,
@@ -19,6 +18,7 @@ export default function GlobalError({
   reset: () => void
 }) {
   const [recovering, setRecovering] = useState(false)
+  const [referenceCode, setReferenceCode] = useState<string | null>(null)
 
   useEffect(() => {
     if (isChunkLoadError(error)) {
@@ -29,6 +29,33 @@ export default function GlobalError({
       }
     }
     console.error("[app] global error:", error)
+
+    // Inline fetch — avoid importing app modules that may have caused the layout failure.
+    const controller = new AbortController()
+    void fetch("/api/ops/report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        source: "client",
+        name: error.name,
+        message: error.message || "Global error",
+        stack: error.stack,
+        digest: error.digest,
+        url: typeof window !== "undefined" ? window.location.href : undefined,
+        path: typeof window !== "undefined" ? window.location.pathname : undefined,
+        context: { boundary: "app/global-error" },
+      }),
+      keepalive: true,
+      signal: controller.signal,
+    })
+      .then(async (res) => {
+        if (!res.ok) return
+        const json = (await res.json()) as { data?: { referenceCode?: string } }
+        if (json.data?.referenceCode) setReferenceCode(json.data.referenceCode)
+      })
+      .catch(() => {})
+
+    return () => controller.abort()
   }, [error])
 
   return (
@@ -37,7 +64,6 @@ export default function GlobalError({
         <div className="flex min-h-dvh w-full items-center justify-center px-6 py-16">
           <div className="flex w-full max-w-sm flex-col items-center text-center">
             {recovering ? (
-              /* Silent self-heal: reload lands in <1s — no alarming copy. */
               <div
                 className="h-5 w-5 animate-spin rounded-full border-2 border-neutral-200 border-t-neutral-500"
                 role="status"
@@ -64,9 +90,11 @@ export default function GlobalError({
                     Go home
                   </a>
                 </div>
-                {error.digest ? (
-                  <p className="mt-6 text-xs text-neutral-400">Ref: {error.digest}</p>
-                ) : null}
+                {(referenceCode || error.digest) && (
+                  <p className="mt-6 text-xs text-neutral-400">
+                    Ref: {referenceCode ?? error.digest}
+                  </p>
+                )}
               </>
             )}
           </div>

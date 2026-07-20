@@ -74,6 +74,7 @@ const NAV_ICONS: Record<AdminNavIconKey, LucideIcon> = {
   bellRing: BellRing,
   code: Code,
   rotateCcw: RotateCcw,
+  activityPulse: Activity,
 }
 
 function isNavActive(pathname: string, href: string): boolean {

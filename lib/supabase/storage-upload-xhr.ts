@@ -28,6 +28,7 @@ export async function uploadStorageObjectWithProgress(opts: {
   contentType: string
   upsert?: boolean
   onProgress?: (p: StorageUploadProgress) => void
+  signal?: AbortSignal
 }): Promise<{ pathInBucket: string }> {
   const {
     supabaseUrl,
@@ -39,18 +40,33 @@ export async function uploadStorageObjectWithProgress(opts: {
     contentType,
     upsert = false,
     onProgress,
+    signal,
   } = opts
 
   const base = supabaseUrl.replace(/\/$/, "")
   const url = `${base}/storage/v1/object/${bucket}/${encodeObjectPath(pathInBucket)}`
 
   return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException("Upload aborted", "AbortError"))
+      return
+    }
+
     const xhr = new XMLHttpRequest()
     xhr.open("POST", url)
     xhr.setRequestHeader("Authorization", `Bearer ${accessToken}`)
     xhr.setRequestHeader("apikey", anonKey)
     xhr.setRequestHeader("Content-Type", contentType)
     xhr.setRequestHeader("x-upsert", upsert ? "true" : "false")
+
+    const onAbort = () => {
+      xhr.abort()
+    }
+    signal?.addEventListener("abort", onAbort)
+
+    const cleanup = () => {
+      signal?.removeEventListener("abort", onAbort)
+    }
 
     xhr.upload.onprogress = (evt) => {
       if (evt.lengthComputable && onProgress) {
@@ -59,6 +75,7 @@ export async function uploadStorageObjectWithProgress(opts: {
     }
 
     xhr.onload = () => {
+      cleanup()
       if (xhr.status >= 200 && xhr.status < 300) {
         let path = pathInBucket
         try {
@@ -86,7 +103,16 @@ export async function uploadStorageObjectWithProgress(opts: {
       reject(new Error(message))
     }
 
-    xhr.onerror = () => reject(new Error("Network error during upload"))
+    xhr.onerror = () => {
+      cleanup()
+      reject(new Error("Network error during upload"))
+    }
+
+    xhr.onabort = () => {
+      cleanup()
+      reject(new DOMException("Upload aborted", "AbortError"))
+    }
+
     xhr.send(body)
   })
 }

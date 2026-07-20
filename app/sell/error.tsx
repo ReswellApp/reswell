@@ -5,6 +5,7 @@ import Link from "next/link"
 import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { isChunkLoadError, recoverFromChunkLoadError } from "@/lib/utils/is-chunk-load-error"
+import { reportClientError } from "@/lib/utils/reportClientError"
 
 /**
  * Sell flow error boundary. Listing drafts autosave to IndexedDB (and to server
@@ -22,6 +23,7 @@ export default function SellError({
   reset: () => void
 }) {
   const [recovering, setRecovering] = useState(false)
+  const [referenceCode, setReferenceCode] = useState<string | null>(null)
 
   useEffect(() => {
     if (isChunkLoadError(error)) {
@@ -32,6 +34,15 @@ export default function SellError({
       }
     }
     console.error("[sell] page error:", error)
+    void reportClientError({
+      name: error.name,
+      message: error.message || "Sell route error",
+      stack: error.stack,
+      digest: error.digest,
+      context: { boundary: "app/sell/error" },
+    }).then((result) => {
+      if (result?.referenceCode) setReferenceCode(result.referenceCode)
+    })
   }, [error])
 
   if (recovering) {
@@ -71,6 +82,11 @@ export default function SellError({
             <Link href="/">Go home</Link>
           </Button>
         </div>
+        {(referenceCode || error.digest) && (
+          <p className="mt-6 text-xs text-muted-foreground">
+            Ref: {referenceCode ?? error.digest}
+          </p>
+        )}
       </div>
     </main>
   )

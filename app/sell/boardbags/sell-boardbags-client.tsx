@@ -34,8 +34,11 @@ import {
   buildSellSectionNavItems,
 } from "@/components/features/sell/sell-section-nav"
 import { createClient } from "@/lib/supabase/client"
-import { fetchOwnedListingForSellEditClient } from "@/lib/sell-flow/fetch-owned-listing-for-edit-client"
+import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
+import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
+import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
+import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import {
   assertListingOriginalSize,
   prepareListingImagePairFromFile,
@@ -186,7 +189,6 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
   const [form, setForm] = useState<BoardbagFormState>(INITIAL_STATE)
   const [photos, setPhotos] = useState<PhotoSlot[]>([])
   const [submitting, setSubmitting] = useState(false)
-  const [editLoading, setEditLoading] = useState(Boolean(editId))
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
 
@@ -201,34 +203,9 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
     }
   }, [])
 
-  useEffect(() => {
-    if (!editId) {
-      setEditLoading(false)
-      return
-    }
-
-    let mounted = true
-    setEditLoading(true)
-
-    void (async () => {
-      const supabase = supabaseRef.current
-      const owned = await fetchOwnedListingForSellEditClient(supabase, editId)
-      if (!owned.ok) {
-        if (!mounted) return
-        if (owned.reason === "unauthorized") {
-          setEditLoading(false)
-          signIn(`/sell/boardbags?edit=${editId}`)
-          return
-        }
-        toast.error("Listing not found or cannot be edited")
-        router.replace("/sell/boardbags", { scroll: false })
-        setEditLoading(false)
-        return
-      }
-
-      const { listing } = owned
+  const hydrateBoardbagEdit = useCallback(
+    (listing: OwnedListingForEditRow) => {
       const imp = getImpersonation()
-      if (!mounted) return
 
       if ((listing as { status?: string }).status === "sold") {
         toast.message("This listing has sold — it can't be edited.")
@@ -238,15 +215,13 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
             slug: (listing as { slug?: string | null }).slug ?? null,
           }),
         )
-        setEditLoading(false)
-        return
+        return { status: "handled" as const }
       }
 
       if ((listing as { section?: string }).section !== "boardbags") {
         toast.error("Only boardbag listings can be edited here.")
         router.replace("/sell/boardbags", { scroll: false })
-        setEditLoading(false)
-        return
+        return { status: "handled" as const }
       }
 
       setEditListingOwnerId(listing.user_id as string)
@@ -327,13 +302,20 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
 
       setPhotos(existingImages)
       setRemovedImageIds([])
-      setEditLoading(false)
-    })()
+      return { status: "ready" as const }
+    },
+    [router],
+  )
 
-    return () => {
-      mounted = false
-    }
-  }, [editId, router, signIn])
+  const { editLoading, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
+    editId,
+    supabase: supabaseRef.current,
+    signInReturnPath: editId ? `/sell/boardbags?edit=${editId}` : "/sell/boardbags",
+    openSignIn: signIn,
+    notFoundRedirectHref: "/sell/boardbags",
+    router,
+    onHydrate: hydrateBoardbagEdit,
+  })
 
   const setField = useCallback(<K extends keyof BoardbagFormState>(key: K, value: BoardbagFormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -739,15 +721,19 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
     }
   }
 
-  if (editLoading) {
+  if (editLoadError) {
     return (
-      <main className="flex flex-1 items-center justify-center bg-background py-24">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
-          <p className="text-sm">Loading listing…</p>
-        </div>
-      </main>
+      <SellEditLoadError
+        message={editLoadError}
+        onRetry={retryEditLoad}
+        backHref="/sell/boardbags"
+        backLabel="Back to sell boardbag"
+      />
     )
+  }
+
+  if (editLoading) {
+    return <SellFlowRouteSkeleton />
   }
 
   return (

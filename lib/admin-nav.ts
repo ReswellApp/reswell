@@ -29,6 +29,7 @@ export type AdminNavIconKey =
   | 'bellRing'
   | 'code'
   | 'rotateCcw'
+  | 'activityPulse'
 
 export interface AdminNavItemConfig {
   href: string
@@ -117,6 +118,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
         label: 'Fraud messages',
         icon: 'shield',
       },
+      { href: '/admin/ops', label: 'Platform ops', icon: 'activityPulse' },
       { href: '/admin/listings/brand-requests', label: 'Brand & model requests', icon: 'tag' },
     ],
   },

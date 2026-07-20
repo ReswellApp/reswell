@@ -33,10 +33,12 @@ import {
   SellSectionNavHorizontal,
   SELL_FINS_FORM_SECTION_NAV_ITEMS,
 } from "@/components/features/sell/sell-section-nav"
-import { SellFlowFormColumnSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
+import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
+import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
 import { SellPublishValidationBanner } from "@/components/features/sell/sell-publish-validation-banner"
 import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
+import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
 import { useSellListingDraftPersistence } from "@/components/features/sell/hooks/use-sell-listing-draft-persistence"
 import {
   sellFormSnapshotLooksFilled,
@@ -44,7 +46,7 @@ import {
 } from "@/components/features/sell/hooks/use-sell-server-draft"
 import { usePendingPublishResume } from "@/components/features/sell/hooks/use-pending-publish-resume"
 import { createClient } from "@/lib/supabase/client"
-import { fetchOwnedListingForSellEditClient } from "@/lib/sell-flow/fetch-owned-listing-for-edit-client"
+import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
   FIN_LISTING_MAX_PHOTOS,
@@ -229,13 +231,6 @@ export default function SellFinsFlow({
   })
   const [form, setForm] = useState<FinFormState>(INITIAL_STATE)
   const [submitting, setSubmitting] = useState(false)
-  const [editLoading, setEditLoading] = useState(
-    () =>
-      Boolean(editId) ||
-      (!startFresh &&
-        searchParams.get("new") !== "1" &&
-        Boolean(getSellServerDraftListingId("fins"))),
-  )
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
   const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
   const [draftHydrated, setDraftHydrated] = useState(Boolean(editId))
@@ -396,88 +391,16 @@ export default function SellFinsFlow({
     [form],
   )
 
-  const serverDraft = useSellServerDraft({
-    section: "fins",
-    supabase: supabaseRef.current,
-    editId,
-    editListingStatus,
-    editLoading,
-    draftHydrated,
-    loading: submitting,
-    formLooksFilled: () =>
-      sellFormSnapshotLooksFilled("fins", {
-        ...form,
-        finFlowStep: flowStep,
-      } as SellListingDraftFormSnapshot),
-    buildDraftPayload: buildFinDraftPayload,
-    imagesRef: imagesRef,
-    removedImageIdsRef: removedImageIdsRef,
-    setImages,
-    onStartNewListing: handleStartNewListing,
-    startNewListingBusy,
-    optimizingAny: uploadingCount > 0,
-  })
+  const loadListingId = useMemo(
+    () =>
+      editId ??
+      (wantsBlankListing ? null : getSellServerDraftListingId("fins")),
+    [editId, wantsBlankListing],
+  )
 
-  const { localServerDraftId, listingIsDraft, draftControls: finDraftControls } = serverDraft
-
-  const resumeDraftId = editId ?? (wantsBlankListing ? null : localServerDraftId)
-
-  useEffect(() => {
-    void supabaseRef.current.auth.getUser().then(({ data: { user } }) => {
-      setSignedInUserId(user?.id ?? null)
-    })
-    const {
-      data: { subscription },
-    } = supabaseRef.current.auth.onAuthStateChange((_event, session) => {
-      setSignedInUserId(session?.user?.id ?? null)
-    })
-    return () => subscription.unsubscribe()
-  }, [])
-
-  useEffect(() => {
-    if (!draftHydrated || editId) return
-    const pending = draftPhotosPendingRef.current
-    if (!pending?.length) return
-    draftPhotosPendingRef.current = null
-  }, [draftHydrated, editId])
-
-  useEffect(() => {
-    if (!startAtSearch || editId) return
-    setFlowStep("search")
-    persistFinSellFlowStep("search")
-  }, [startAtSearch, editId])
-
-  useEffect(() => {
-    if (!resumeDraftId) {
-      setEditLoading(false)
-      return
-    }
-
-    let mounted = true
-    setEditLoading(true)
-
-    void (async () => {
-      const supabase = supabaseRef.current
-      const owned = await fetchOwnedListingForSellEditClient(supabase, resumeDraftId)
-      if (!owned.ok) {
-        if (!mounted) return
-        if (owned.reason === "unauthorized") {
-          setEditLoading(false)
-          signIn(`/sell/fins?edit=${resumeDraftId}`)
-          return
-        }
-        toast.error("Listing not found or cannot be edited")
-        if (!editId && localServerDraftId === resumeDraftId) {
-          clearSellServerDraftListingId("fins")
-        }
-        router.replace("/sell/fins", { scroll: false })
-        setEditLoading(false)
-        return
-      }
-
-      const { listing } = owned
+  const hydrateFinEdit = useCallback(
+    (listing: OwnedListingForEditRow) => {
       const imp = getImpersonation()
-      if (!mounted) return
 
       if ((listing as { status?: string }).status === "sold") {
         toast.message("This listing has sold — it can't be edited.")
@@ -487,15 +410,13 @@ export default function SellFinsFlow({
             slug: (listing as { slug?: string | null }).slug ?? null,
           }),
         )
-        setEditLoading(false)
-        return
+        return { status: "handled" as const }
       }
 
       if ((listing as { section?: string }).section !== "fins") {
         toast.error("Only fin listings can be edited here.")
         router.replace("/sell/fins", { scroll: false })
-        setEditLoading(false)
-        return
+        return { status: "handled" as const }
       }
 
       setEditListingOwnerId(listing.user_id as string)
@@ -592,21 +513,74 @@ export default function SellFinsFlow({
       setFlowStep("form")
       persistFinSellFlowStep("form")
       hydrateExistingImages(existingImages)
-      setEditLoading(false)
-    })()
+      return { status: "ready" as const }
+    },
+    [editId, hydrateExistingImages, router],
+  )
 
-    return () => {
-      mounted = false
-    }
-  }, [
-    editId,
-    hydrateExistingImages,
-    localServerDraftId,
-    resumeDraftId,
+  const { editLoading, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
+    editId: loadListingId,
+    supabase: supabaseRef.current,
+    signInReturnPath: loadListingId ? `/sell/fins?edit=${loadListingId}` : "/sell/fins",
+    openSignIn: signIn,
+    notFoundRedirectHref: "/sell/fins",
     router,
-    signIn,
-    signedInUserId,
-  ])
+    onNotFound: () => {
+      if (!editId) clearSellServerDraftListingId("fins")
+    },
+    onHydrate: hydrateFinEdit,
+  })
+
+  const serverDraft = useSellServerDraft({
+    section: "fins",
+    supabase: supabaseRef.current,
+    editId,
+    editListingStatus,
+    editLoading,
+    draftHydrated,
+    loading: submitting,
+    formLooksFilled: () =>
+      sellFormSnapshotLooksFilled("fins", {
+        ...form,
+        finFlowStep: flowStep,
+      } as SellListingDraftFormSnapshot),
+    buildDraftPayload: buildFinDraftPayload,
+    imagesRef: imagesRef,
+    removedImageIdsRef: removedImageIdsRef,
+    setImages,
+    onStartNewListing: handleStartNewListing,
+    startNewListingBusy,
+    optimizingAny: uploadingCount > 0,
+  })
+
+  const { localServerDraftId, listingIsDraft, draftControls: finDraftControls } = serverDraft
+
+  const resumeDraftId = editId ?? (wantsBlankListing ? null : localServerDraftId)
+
+  useEffect(() => {
+    void supabaseRef.current.auth.getUser().then(({ data: { user } }) => {
+      setSignedInUserId(user?.id ?? null)
+    })
+    const {
+      data: { subscription },
+    } = supabaseRef.current.auth.onAuthStateChange((_event, session) => {
+      setSignedInUserId(session?.user?.id ?? null)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    if (!draftHydrated || editId) return
+    const pending = draftPhotosPendingRef.current
+    if (!pending?.length) return
+    draftPhotosPendingRef.current = null
+  }, [draftHydrated, editId])
+
+  useEffect(() => {
+    if (!startAtSearch || editId) return
+    setFlowStep("search")
+    persistFinSellFlowStep("search")
+  }, [startAtSearch, editId])
 
   const setField = useCallback(<K extends keyof FinFormState>(key: K, value: FinFormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -968,20 +942,19 @@ export default function SellFinsFlow({
     }
   }
 
-  if (editLoading) {
+  if (editLoadError) {
     return (
-      <main className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24">
-        <div className="container relative mx-auto max-w-2xl lg:max-w-6xl">
-          <div
-            role="status"
-            aria-label="Loading listing editor"
-            className="rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8"
-          >
-            <SellFlowFormColumnSkeleton />
-          </div>
-        </div>
-      </main>
+      <SellEditLoadError
+        message={editLoadError}
+        onRetry={retryEditLoad}
+        backHref="/sell/fins"
+        backLabel="Back to sell fins"
+      />
     )
+  }
+
+  if (editLoading) {
+    return <SellFlowRouteSkeleton />
   }
 
   if (flowStep === "search") {

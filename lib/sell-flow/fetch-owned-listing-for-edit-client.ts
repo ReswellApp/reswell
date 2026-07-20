@@ -2,7 +2,6 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import { getActiveImpersonationClient } from "@/lib/impersonation"
-import { resolveSellEditUser } from "@/lib/sell-flow/resolve-sell-edit-user"
 
 export type OwnedListingForEditClientResult = {
   userId: string
@@ -11,7 +10,7 @@ export type OwnedListingForEditClientResult = {
 
 export type FetchOwnedListingForSellEditResult =
   | { ok: true; userId: string; listing: OwnedListingForEditRow }
-  | { ok: false; reason: "unauthorized" | "not_found" }
+  | { ok: false; reason: "unauthorized" | "not_found" | "timeout" | "error" }
 
 const OWNED_EDIT_LISTING_SELECT = `
   *,
@@ -20,17 +19,33 @@ const OWNED_EDIT_LISTING_SELECT = `
   brand_models ( id, name, brands ( slug ) )
 `
 
+const OWNED_EDIT_FETCH_TIMEOUT_MS = 12_000
+
 async function fetchOwnedListingViaApi(
   listingId: string,
-): Promise<OwnedListingForEditClientResult | "unauthorized" | "not_found"> {
+  signal?: AbortSignal,
+): Promise<OwnedListingForEditClientResult | "unauthorized" | "not_found" | "timeout" | "error"> {
+  const controller = new AbortController()
+  const timeoutId = globalThis.setTimeout(() => controller.abort(), OWNED_EDIT_FETCH_TIMEOUT_MS)
+
+  const onExternalAbort = () => controller.abort()
+  if (signal) {
+    if (signal.aborted) {
+      globalThis.clearTimeout(timeoutId)
+      return "error"
+    }
+    signal.addEventListener("abort", onExternalAbort, { once: true })
+  }
+
   try {
     const res = await fetch(`/api/listings/${encodeURIComponent(listingId)}/owned-edit`, {
       credentials: "include",
       cache: "no-store",
+      signal: controller.signal,
     })
     if (res.status === 401) return "unauthorized"
     if (res.status === 404) return "not_found"
-    if (!res.ok) return "not_found"
+    if (!res.ok) return "error"
     const body = (await res.json()) as {
       data?: { userId?: string; listing?: OwnedListingForEditRow }
     }
@@ -39,28 +54,70 @@ async function fetchOwnedListingViaApi(
     if (!userId || !listing?.id) return "not_found"
     return { userId, listing }
   } catch {
-    return "not_found"
+    if (controller.signal.aborted && !signal?.aborted) return "timeout"
+    return "error"
+  } finally {
+    globalThis.clearTimeout(timeoutId)
+    signal?.removeEventListener("abort", onExternalAbort)
   }
 }
 
 /**
- * Loads a seller-owned listing for /sell edit hydration. Uses the browser
- * Supabase client when available, otherwise falls back to a server-authenticated API
- * route (httpOnly SSR cookies are invisible to `document.cookie`).
+ * Fast path: use the browser Supabase client only when a session is already warm.
+ * Never polls for session readiness — that path can hang edit hydration for many seconds
+ * when auth cookies are httpOnly.
+ */
+async function fetchOwnedListingViaWarmClient(
+  supabase: SupabaseClient,
+  listingId: string,
+): Promise<OwnedListingForEditClientResult | null> {
+  if (getActiveImpersonationClient()) return null
+
+  try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+    const user = session?.user
+    if (!user?.id || !session?.access_token) return null
+
+    const { data: listing, error } = await supabase
+      .from("listings")
+      .select(OWNED_EDIT_LISTING_SELECT)
+      .eq("id", listingId)
+      .eq("user_id", user.id)
+      .maybeSingle()
+
+    if (error || !listing?.id) return null
+    return {
+      userId: String(listing.user_id ?? user.id),
+      listing: listing as OwnedListingForEditRow,
+    }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Loads a seller-owned listing for /sell edit hydration.
+ * Prefers the server-authenticated owned-edit API (works with httpOnly SSR cookies).
+ * Falls back to a warm browser-session Supabase query only on transient API failure.
+ * Never polls for session readiness.
  */
 export async function fetchOwnedListingForSellEditClient(
   supabase: SupabaseClient,
   listingId: string,
+  options?: { signal?: AbortSignal },
 ): Promise<FetchOwnedListingForSellEditResult> {
   const trimmed = listingId.trim()
   if (!trimmed) return { ok: false, reason: "not_found" }
 
-  /** Admin impersonation uses the authenticated owned-edit API (RLS blocks cross-user drafts). */
-  const imp = getActiveImpersonationClient()
-  if (imp) {
-    const apiResult = await fetchOwnedListingViaApi(trimmed)
-    if (apiResult === "unauthorized") return { ok: false, reason: "unauthorized" }
-    if (apiResult === "not_found") return { ok: false, reason: "not_found" }
+  const signal = options?.signal
+  if (signal?.aborted) return { ok: false, reason: "error" }
+
+  const apiResult = await fetchOwnedListingViaApi(trimmed, signal)
+  if (apiResult === "unauthorized") return { ok: false, reason: "unauthorized" }
+  if (apiResult === "not_found") return { ok: false, reason: "not_found" }
+  if (apiResult !== "timeout" && apiResult !== "error") {
     return {
       ok: true,
       userId: apiResult.userId,
@@ -68,34 +125,19 @@ export async function fetchOwnedListingForSellEditClient(
     }
   }
 
-  const user = await resolveSellEditUser(supabase)
-  if (user) {
-    const imp = getActiveImpersonationClient()
-    let query = supabase
-      .from("listings")
-      .select(OWNED_EDIT_LISTING_SELECT)
-      .eq("id", trimmed)
-    query = query.eq("user_id", imp?.userId ?? user.id)
+  if (signal?.aborted) return { ok: false, reason: "error" }
 
-    const { data: listing, error } = await query.single()
-    if (!error && listing?.id) {
+  /** Impersonation must not use the browser client — RLS blocks cross-user reads. */
+  if (!getActiveImpersonationClient()) {
+    const warm = await fetchOwnedListingViaWarmClient(supabase, trimmed)
+    if (warm) {
       return {
         ok: true,
-        userId: String(listing.user_id ?? user.id),
-        listing: listing as OwnedListingForEditRow,
+        userId: warm.userId,
+        listing: warm.listing,
       }
     }
   }
 
-  const apiResult = await fetchOwnedListingViaApi(trimmed)
-  if (apiResult === "unauthorized") return { ok: false, reason: "unauthorized" }
-  if (apiResult === "not_found") {
-    return { ok: false, reason: user ? "not_found" : "unauthorized" }
-  }
-
-  return {
-    ok: true,
-    userId: apiResult.userId,
-    listing: apiResult.listing,
-  }
+  return { ok: false, reason: apiResult }
 }

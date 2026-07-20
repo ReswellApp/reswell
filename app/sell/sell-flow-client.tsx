@@ -131,6 +131,8 @@ import {
   type ListingCatalogRequestVariant,
 } from "@/components/request-brand-model-dialog"
 import { SellFlowFormColumnSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
+import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
+import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
 import {
   sellFormSnapshotLooksFilled,
   useSellServerDraft,
@@ -143,8 +145,8 @@ import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listi
 import { revalidateNavSearchSuggestAfterListingPublished } from "@/app/actions/nav-search-suggest-cache"
 import { saveDefaultListingLocationAction } from "@/app/actions/sell-default-location"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
-import { fetchOwnedListingForSellEditClient } from "@/lib/sell-flow/fetch-owned-listing-for-edit-client"
 import { listingPhotoSlotsForDraftPersist } from "@/lib/sell-flow/listing-photo-slot"
+import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import {
   validateSellListingForm,
@@ -953,13 +955,6 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const [uploadPhaseLabels, setUploadPhaseLabels] = useState<string[]>(() => [
     ...LISTING_UPLOAD_STEP_LABELS,
   ])
-  const [editLoading, setEditLoading] = useState(
-    () =>
-      Boolean(editId) ||
-      (!startFresh &&
-        sellSearchParams.get("new") !== "1" &&
-        Boolean(getSellServerDraftListingId("surfboards"))),
-  )
   const [draftHydrated, setDraftHydrated] = useState(!!editId)
   const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
   const [signedInUserId, setSignedInUserId] = useState<string | null>(null)
@@ -1174,6 +1169,255 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     }),
     [formData],
   )
+
+  const loadListingId = useMemo(
+    () =>
+      editId ??
+      (wantsBlankListing ? null : getSellServerDraftListingId("surfboards")),
+    [editId, wantsBlankListing],
+  )
+
+  const hydrateBoardEdit = useCallback(
+    (listing: OwnedListingForEditRow) => {
+      const imp = getImpersonation()
+
+      if ((listing as { status?: string }).status === "sold") {
+        toast.message("This listing has sold — it can’t be edited.")
+        router.replace(
+          listingDetailPath({
+            section: String(listing.section),
+            slug: (listing as { slug?: string | null }).slug ?? null,
+            id: String(listing.id),
+          }),
+        )
+        return { status: "handled" as const }
+      }
+      const listingSection = (listing as { section?: string }).section
+      if (listingSection !== "surfboards") {
+        router.replace(peerListingEditHref(listingSection, String(listing.id)), { scroll: false })
+        return { status: "handled" as const }
+      }
+      setEditListingOwnerId(listing.user_id as string)
+      const st = (listing as { status?: string }).status
+      setEditListingStatus(typeof st === "string" ? st : null)
+      if (st === "draft") {
+        setSellServerDraftListingId("surfboards", String(listing.id))
+        if (!editId) {
+          replaceSellDraftEditUrl("surfboards", String(listing.id))
+        }
+      }
+      if (imp && imp.userId !== listing.user_id) {
+        clearImpersonation()
+        setImpersonation(null)
+      }
+      const loadedFulfillment = boardFulfillmentFromFlags(
+        listing.local_pickup,
+        listing.shipping_available
+      )
+      let boardShippingPrice = shippingPriceToFormValue(listing.shipping_price)
+      if (
+        (loadedFulfillment === "shipping_only" || loadedFulfillment === "pickup_and_shipping") &&
+        !boardShippingPrice
+      ) {
+        boardShippingPrice = "0"
+      }
+      let boardShippingCostMode: BoardShippingCostMode = "reswell"
+      const storedShipMode = (listing as { board_shipping_cost_mode?: string | null })
+        .board_shipping_cost_mode
+      if (
+        storedShipMode === "reswell" ||
+        storedShipMode === "free" ||
+        storedShipMode === "flat"
+      ) {
+        boardShippingCostMode = storedShipMode
+      } else if (
+        loadedFulfillment === "shipping_only" ||
+        loadedFulfillment === "pickup_and_shipping"
+      ) {
+        const p = listing.shipping_price
+        if (p != null && p !== "") {
+          const n = parseFloat(String(p).replace(/,/g, ""))
+          if (Number.isFinite(n) && n > 0) boardShippingCostMode = "flat"
+        }
+      }
+      const snapRel = (
+        listing as {
+          user_listing_board_model_data?:
+            | {
+                model_name?: string | null
+                catalog_model_slug?: string | null
+                catalog_brand_slug?: string | null
+              }
+            | {
+                model_name?: string | null
+                catalog_model_slug?: string | null
+                catalog_brand_slug?: string | null
+              }[]
+            | null
+        }
+      ).user_listing_board_model_data
+      const snapRow = Array.isArray(snapRel) ? snapRel[0] : snapRel
+      const loadedBoardModelName = snapRow?.model_name?.trim() ?? ""
+      const loadedCatalogModelSlug = snapRow?.catalog_model_slug?.trim() ?? ""
+      const loadedCatalogBrandSlug = snapRow?.catalog_brand_slug?.trim() ?? ""
+
+      type BrandModelListingEmbed = {
+        id?: string
+        name?: string | null
+        brands?: { slug?: string | null } | { slug?: string | null }[] | null
+      }
+      const bmRaw = (listing as { brand_models?: BrandModelListingEmbed | BrandModelListingEmbed[] | null })
+        .brand_models
+      const bmRow = Array.isArray(bmRaw) ? bmRaw[0] : bmRaw
+      const brandSlugFromCatalogModel = (() => {
+        const b = bmRow?.brands
+        const o = Array.isArray(b) ? b[0] : b
+        return o?.slug?.trim() ?? ""
+      })()
+      const listingModelCol = (listing as { model?: string | null }).model?.trim() ?? ""
+      const loadedBrandModelId =
+        (listing as { brand_model_id?: string | null }).brand_model_id?.trim() ||
+        bmRow?.id?.trim() ||
+        ""
+
+      const loadedReswellPackage = reswellPackageFormFromDbRow(
+        listing as {
+          shipping_packed_length_in?: number | string | null
+          shipping_packed_width_in?: number | string | null
+          shipping_packed_height_in?: number | string | null
+          shipping_packed_weight_oz?: number | string | null
+        },
+      )
+      const hasReswellPackageFromDb =
+        loadedReswellPackage.reswellPackageLengthIn.trim() !== "" ||
+        loadedReswellPackage.reswellPackageWidthIn.trim() !== "" ||
+        loadedReswellPackage.reswellPackageHeightIn.trim() !== "" ||
+        loadedReswellPackage.reswellPackageWeightLb.trim() !== "" ||
+        loadedReswellPackage.reswellPackageWeightOz.trim() !== ""
+      const parsedDims = surfboardSellFormDimensionsFromListingRow(
+        listing as {
+          dimensions?: string | null
+          length_total_inches?: number | null
+          volume_liters?: number | null
+          title?: string | null
+        },
+      )
+      setFormData({
+        title: listing.title ?? "",
+        description: (listing.description ?? "").trim() === "" ? "" : (listing.description ?? ""),
+        price: String(listing.price ?? ""),
+        sellerPurchasePrice: (() => {
+          const v = (listing as { seller_purchase_price_usd?: number | string | null })
+            .seller_purchase_price_usd
+          if (v == null || v === "") return ""
+          return String(v)
+        })(),
+        category: listing.category_id ?? "",
+        condition: sellFormConditionValue(listing.condition),
+        brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
+        boardFulfillment: loadedFulfillment,
+        boardShippingCostMode,
+        boardShippingPrice,
+        ...(hasReswellPackageFromDb
+          ? loadedReswellPackage
+          : {
+              reswellPackageLengthIn: "",
+              reswellPackageWidthIn: "",
+              reswellPackageHeightIn: "",
+              reswellPackageWeightLb: "",
+              reswellPackageWeightOz: "",
+            }),
+        autoPriceDrop: (() => {
+          const f = (listing as { auto_price_drop_floor?: number | string | null })
+            .auto_price_drop_floor
+          return f != null && f !== ""
+        })(),
+        autoPriceDropFloor: (() => {
+          const f = (listing as { auto_price_drop_floor?: number | string | null })
+            .auto_price_drop_floor
+          if (f == null || f === "") return ""
+          return String(f)
+        })(),
+        buyerOffers:
+          (listing as { buyer_offers_enabled?: boolean | null }).buyer_offers_enabled !== false,
+        boardType: listing.board_type ?? "",
+        boardLength: parsedDims.boardLength,
+        boardWidthInches: parsedDims.boardWidthInches,
+        boardThicknessInches: parsedDims.boardThicknessInches,
+        boardVolumeL: parsedDims.boardVolumeL,
+        boardFins: singleFinSetupSlugForForm(
+          (listing as { fins_setup?: string | null }).fins_setup,
+        ),
+        boardTail: (listing as { tail_shape?: string | null }).tail_shape ?? "",
+        boardFinSystem: (listing as { fin_system?: string | null }).fin_system ?? "",
+        boardConstruction: (listing as { construction?: string | null }).construction ?? "",
+        boardBrandId: (listing as { brand_id?: string | null }).brand_id?.trim() ?? "",
+        boardBrandModelId: loadedBrandModelId,
+        boardIndexBrandSlug: loadedCatalogBrandSlug || brandSlugFromCatalogModel,
+        boardIndexModelSlug:
+          loadedCatalogModelSlug ||
+          (bmRow?.name?.trim() ? slugify(bmRow.name.trim()) : ""),
+        boardIndexLabel: (() => {
+          const b = (listing as { brand?: string | null }).brand?.trim() ?? ""
+          const m = listingModelCol || loadedBoardModelName || bmRow?.name?.trim() || ""
+          if (b && m) return `${b} ${m}`.trim()
+          return b || m || ""
+        })(),
+        boardModelName: listingModelCol || loadedBoardModelName || bmRow?.name?.trim() || "",
+        boardLinkedBrandName:
+          (listing as { brand_id?: string | null }).brand_id?.trim()
+            ? ((listing as { brand?: string | null }).brand?.trim() ?? "")
+            : "",
+        locationLat: Number(listing.latitude) || 0,
+        locationLng: Number(listing.longitude) || 0,
+        locationCity: listing.city ?? "",
+        locationState: listing.state ?? "",
+        locationDisplay: [listing.city, listing.state].filter(Boolean).join(", ") || "",
+      })
+      const existingImages = (listing.listing_images || [])
+        .slice()
+        .sort(
+          (a, b) =>
+            (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) ||
+            (a.sort_order ?? 0) - (b.sort_order ?? 0)
+        )
+        .map((img) => {
+          const url = img.url as string
+          const tid = img.id as string
+          return {
+            clientId: tid,
+            previewUrl: url,
+            id: tid,
+            url,
+            thumbnailUrl: (img.thumbnail_url as string | null) || url,
+            optimizePhase: "done" as const,
+            uploadPhase: "done" as const,
+            progressFull: 100,
+            progressThumb: 100,
+            dropSourceFileAfterUpload: true,
+          }
+        })
+      sellListingThumbLoadedSrcByClientId.clear()
+      latestListingPhotoPrepareSeqRef.current.clear()
+      setImages(existingImages)
+      setRemovedImageIds([])
+      return { status: "ready" as const }
+    },
+    [editId, router],
+  )
+
+  const { editLoading, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
+    editId: loadListingId,
+    supabase,
+    signInReturnPath: loadListingId ? `/sell?edit=${loadListingId}` : "/sell",
+    openSignIn,
+    notFoundRedirectHref: "/sell",
+    router,
+    onNotFound: () => {
+      if (!editId) clearSellServerDraftListingId("surfboards")
+    },
+    onHydrate: hydrateBoardEdit,
+  })
 
   const serverDraft = useSellServerDraft({
     section: "surfboards",
@@ -1561,259 +1805,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   }, [])
 
   useEffect(() => {
-    if (!resumeDraftId) {
-      setEditListingOwnerId(null)
-      setEditLoading(false)
-      return
-    }
-    let mounted = true
-    ;(async () => {
-      const owned = await fetchOwnedListingForSellEditClient(supabase, resumeDraftId)
-      if (!owned.ok) {
-        if (!mounted) return
-        if (owned.reason === "unauthorized") {
-          setEditLoading(false)
-          openSignIn(`/sell?edit=${resumeDraftId}`)
-          return
-        }
-        toast.error("Listing not found or cannot be edited")
-        if (!editId && localServerDraftId === resumeDraftId) {
-          clearSellServerDraftListingId("surfboards")
-        }
-        router.replace("/sell", { scroll: false })
-        setEditLoading(false)
-        return
-      }
-
-      const { listing } = owned
-      const imp = getImpersonation()
-      if (!mounted) return
-      if ((listing as { status?: string }).status === "sold") {
-        toast.message("This listing has sold — it can’t be edited.")
-        router.replace(
-          listingDetailPath({
-            section: String(listing.section),
-            slug: (listing as { slug?: string | null }).slug ?? null,
-            id: String(listing.id),
-          }),
-        )
-        setEditLoading(false)
-        return
-      }
-      const listingSection = (listing as { section?: string }).section
-      if (listingSection !== "surfboards") {
-        router.replace(peerListingEditHref(listingSection, resumeDraftId), { scroll: false })
-        setEditLoading(false)
-        return
-      }
-      setEditListingOwnerId(listing.user_id as string)
-      const st = (listing as { status?: string }).status
-      setEditListingStatus(typeof st === "string" ? st : null)
-      if (st === "draft") {
-        setSellServerDraftListingId("surfboards", String(listing.id))
-        if (!editId) {
-          replaceSellDraftEditUrl("surfboards", String(listing.id))
-        }
-      }
-      if (imp && imp.userId !== listing.user_id) {
-        clearImpersonation()
-        setImpersonation(null)
-      }
-      const loadedFulfillment = boardFulfillmentFromFlags(
-        listing.local_pickup,
-        listing.shipping_available
-      )
-      let boardShippingPrice = shippingPriceToFormValue(listing.shipping_price)
-      if (
-        (loadedFulfillment === "shipping_only" || loadedFulfillment === "pickup_and_shipping") &&
-        !boardShippingPrice
-      ) {
-        boardShippingPrice = "0"
-      }
-      let boardShippingCostMode: BoardShippingCostMode = "reswell"
-      const storedShipMode = (listing as { board_shipping_cost_mode?: string | null })
-        .board_shipping_cost_mode
-      if (
-        storedShipMode === "reswell" ||
-        storedShipMode === "free" ||
-        storedShipMode === "flat"
-      ) {
-        boardShippingCostMode = storedShipMode
-      } else if (
-        loadedFulfillment === "shipping_only" ||
-        loadedFulfillment === "pickup_and_shipping"
-      ) {
-        const p = listing.shipping_price
-        if (p != null && p !== "") {
-          const n = parseFloat(String(p).replace(/,/g, ""))
-          if (Number.isFinite(n) && n > 0) boardShippingCostMode = "flat"
-        }
-      }
-      const snapRel = (
-        listing as {
-          user_listing_board_model_data?:
-            | {
-                model_name?: string | null
-                catalog_model_slug?: string | null
-                catalog_brand_slug?: string | null
-              }
-            | {
-                model_name?: string | null
-                catalog_model_slug?: string | null
-                catalog_brand_slug?: string | null
-              }[]
-            | null
-        }
-      ).user_listing_board_model_data
-      const snapRow = Array.isArray(snapRel) ? snapRel[0] : snapRel
-      const loadedBoardModelName = snapRow?.model_name?.trim() ?? ""
-      const loadedCatalogModelSlug = snapRow?.catalog_model_slug?.trim() ?? ""
-      const loadedCatalogBrandSlug = snapRow?.catalog_brand_slug?.trim() ?? ""
-
-      type BrandModelListingEmbed = {
-        id?: string
-        name?: string | null
-        brands?: { slug?: string | null } | { slug?: string | null }[] | null
-      }
-      const bmRaw = (listing as { brand_models?: BrandModelListingEmbed | BrandModelListingEmbed[] | null })
-        .brand_models
-      const bmRow = Array.isArray(bmRaw) ? bmRaw[0] : bmRaw
-      const brandSlugFromCatalogModel = (() => {
-        const b = bmRow?.brands
-        const o = Array.isArray(b) ? b[0] : b
-        return o?.slug?.trim() ?? ""
-      })()
-      const listingModelCol = (listing as { model?: string | null }).model?.trim() ?? ""
-      const loadedBrandModelId =
-        (listing as { brand_model_id?: string | null }).brand_model_id?.trim() ||
-        bmRow?.id?.trim() ||
-        ""
-
-      const loadedReswellPackage = reswellPackageFormFromDbRow(
-        listing as {
-          shipping_packed_length_in?: number | string | null
-          shipping_packed_width_in?: number | string | null
-          shipping_packed_height_in?: number | string | null
-          shipping_packed_weight_oz?: number | string | null
-        },
-      )
-      const hasReswellPackageFromDb =
-        loadedReswellPackage.reswellPackageLengthIn.trim() !== "" ||
-        loadedReswellPackage.reswellPackageWidthIn.trim() !== "" ||
-        loadedReswellPackage.reswellPackageHeightIn.trim() !== "" ||
-        loadedReswellPackage.reswellPackageWeightLb.trim() !== "" ||
-        loadedReswellPackage.reswellPackageWeightOz.trim() !== ""
-      const parsedDims = surfboardSellFormDimensionsFromListingRow(
-        listing as {
-          dimensions?: string | null
-          length_total_inches?: number | null
-          volume_liters?: number | null
-          title?: string | null
-        },
-      )
-      setFormData({
-        title: listing.title ?? "",
-        description: (listing.description ?? "").trim() === "" ? "" : (listing.description ?? ""),
-        price: String(listing.price ?? ""),
-        sellerPurchasePrice: (() => {
-          const v = (listing as { seller_purchase_price_usd?: number | string | null })
-            .seller_purchase_price_usd
-          if (v == null || v === "") return ""
-          return String(v)
-        })(),
-        category: listing.category_id ?? "",
-        condition: sellFormConditionValue(listing.condition),
-        brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
-        boardFulfillment: loadedFulfillment,
-        boardShippingCostMode,
-        boardShippingPrice,
-        ...(hasReswellPackageFromDb
-          ? loadedReswellPackage
-          : {
-              reswellPackageLengthIn: "",
-              reswellPackageWidthIn: "",
-              reswellPackageHeightIn: "",
-              reswellPackageWeightLb: "",
-              reswellPackageWeightOz: "",
-            }),
-        autoPriceDrop: (() => {
-          const f = (listing as { auto_price_drop_floor?: number | string | null })
-            .auto_price_drop_floor
-          return f != null && f !== ""
-        })(),
-        autoPriceDropFloor: (() => {
-          const f = (listing as { auto_price_drop_floor?: number | string | null })
-            .auto_price_drop_floor
-          if (f == null || f === "") return ""
-          return String(f)
-        })(),
-        buyerOffers:
-          (listing as { buyer_offers_enabled?: boolean | null }).buyer_offers_enabled !== false,
-        boardType: listing.board_type ?? "",
-        boardLength: parsedDims.boardLength,
-        boardWidthInches: parsedDims.boardWidthInches,
-        boardThicknessInches: parsedDims.boardThicknessInches,
-        boardVolumeL: parsedDims.boardVolumeL,
-        boardFins: singleFinSetupSlugForForm(
-          (listing as { fins_setup?: string | null }).fins_setup,
-        ),
-        boardTail: (listing as { tail_shape?: string | null }).tail_shape ?? "",
-        boardFinSystem: (listing as { fin_system?: string | null }).fin_system ?? "",
-        boardConstruction: (listing as { construction?: string | null }).construction ?? "",
-        boardBrandId: (listing as { brand_id?: string | null }).brand_id?.trim() ?? "",
-        boardBrandModelId: loadedBrandModelId,
-        boardIndexBrandSlug: loadedCatalogBrandSlug || brandSlugFromCatalogModel,
-        boardIndexModelSlug:
-          loadedCatalogModelSlug ||
-          (bmRow?.name?.trim() ? slugify(bmRow.name.trim()) : ""),
-        boardIndexLabel: (() => {
-          const b = (listing as { brand?: string | null }).brand?.trim() ?? ""
-          const m = listingModelCol || loadedBoardModelName || bmRow?.name?.trim() || ""
-          if (b && m) return `${b} ${m}`.trim()
-          return b || m || ""
-        })(),
-        boardModelName: listingModelCol || loadedBoardModelName || bmRow?.name?.trim() || "",
-        boardLinkedBrandName:
-          (listing as { brand_id?: string | null }).brand_id?.trim()
-            ? ((listing as { brand?: string | null }).brand?.trim() ?? "")
-            : "",
-        locationLat: Number(listing.latitude) || 0,
-        locationLng: Number(listing.longitude) || 0,
-        locationCity: listing.city ?? "",
-        locationState: listing.state ?? "",
-        locationDisplay: [listing.city, listing.state].filter(Boolean).join(", ") || "",
-      })
-      const existingImages = (listing.listing_images || [])
-        .slice()
-        .sort(
-          (a: any, b: any) =>
-            (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) ||
-            (a.sort_order ?? 0) - (b.sort_order ?? 0)
-        )
-        .map((img: any) => {
-          const url = img.url as string
-          const tid = img.id as string
-          return {
-            clientId: tid,
-            previewUrl: url,
-            id: tid,
-            url,
-            thumbnailUrl: (img.thumbnail_url as string | null) || url,
-            optimizePhase: "done" as const,
-            uploadPhase: "done" as const,
-            progressFull: 100,
-            progressThumb: 100,
-            dropSourceFileAfterUpload: true,
-          }
-        })
-      sellListingThumbLoadedSrcByClientId.clear()
-      latestListingPhotoPrepareSeqRef.current.clear()
-      setImages(existingImages)
-      setRemovedImageIds([])
-      setEditLoading(false)
-    })()
-    return () => { mounted = false }
-  }, [editId, localServerDraftId, resumeDraftId, signedInUserId, supabase, router, openSignIn])
+    if (!loadListingId) setEditListingOwnerId(null)
+  }, [loadListingId])
 
   useEffect(() => {
     if (!draftHydrated || editId) return
@@ -3167,6 +3160,17 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
   /** Covers publish + rare early loading without preview; never while edit hydration is blocking. */
   const fullscreenSellBlocking = loading && (!!publishPreview || !editLoading)
+
+  if (editLoadError) {
+    return (
+      <SellEditLoadError
+        message={editLoadError}
+        onRetry={retryEditLoad}
+        backHref="/sell"
+        backLabel="Back to sell"
+      />
+    )
+  }
 
   return (
       <main

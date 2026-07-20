@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/sonner'
 import { LocaleProvider } from '@/components/locale-provider'
 import { SiteChromeShell } from '@/components/site-chrome-shell'
 import { AbortErrorSuppressor } from '@/components/abort-error-suppressor'
+import { OpsErrorReporter } from '@/components/ops-error-reporter'
 import { PresenceHeartbeatLoader } from '@/components/presence-heartbeat-loader'
 import { DEFAULT_LOCALE } from '@/lib/translations'
 import { publicSiteOrigin } from '@/lib/public-site-origin'
@@ -83,6 +84,7 @@ export default function RootLayout({
       >
         <JsonLd data={[organizationSchema(publicSiteOrigin()), webSiteSchema(publicSiteOrigin())]} />
         <AbortErrorSuppressor />
+        <OpsErrorReporter />
         <GoogleAdsGtag />
         <MetaPixel />
         <LocaleProvider>

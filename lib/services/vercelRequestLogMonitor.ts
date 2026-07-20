@@ -633,5 +633,16 @@ export async function runVercelErrorDigest(
     else result.skipped += 1
   }
 
+  // Also persist into /admin/ops (best-effort; digest email remains the primary daily alert).
+  try {
+    const { ingestVercelOpsLogs } = await import("@/lib/services/opsVercelIngest")
+    await ingestVercelOpsLogs({ sinceHours: rangeHours, environment: "production" })
+  } catch (persistErr) {
+    console.error(
+      "[ops] digest persist failed:",
+      persistErr instanceof Error ? persistErr.message : persistErr,
+    )
+  }
+
   return result
 }
