@@ -546,13 +546,12 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
             durationMs: Date.now() - publishStartedAt,
           })
           toast.success("Listing updated")
-          router.push(
+          router.replace(
             listingDetailHref({
               id: editId,
               slug: data.slug ?? null,
             }),
           )
-          router.refresh()
           return
         }
 
@@ -587,13 +586,12 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
           durationMs: Date.now() - publishStartedAt,
         })
         toast.success("Listing updated")
-        router.push(
+        router.replace(
           listingDetailHref({
             id: editId,
             slug: result.slug,
           }),
         )
-        router.refresh()
         return
       }
 
@@ -622,6 +620,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
         durationMs: Date.now() - publishStartedAt,
       })
       toast.error(editId ? "Something went wrong saving your listing." : "Something went wrong publishing your listing.")
+    } finally {
       setSubmitting(false)
     }
   }

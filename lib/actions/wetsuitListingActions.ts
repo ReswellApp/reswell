@@ -1,5 +1,6 @@
 "use server"
 
+import { after } from "next/server"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import {
@@ -77,9 +78,12 @@ export async function updateWetsuitListingAction(
       user.id,
       parsed.data,
     )
-    revalidatePath("/wetsuits")
-    revalidatePath(`/l/${result.slug}`)
-    return { success: true, slug: result.slug }
+    const slug = result.slug
+    after(() => {
+      revalidatePath("/wetsuits")
+      revalidatePath(`/l/${slug}`)
+    })
+    return { success: true, slug }
   } catch (error) {
     console.error("updateWetsuitListingAction:", error instanceof Error ? error.message : error)
     return {

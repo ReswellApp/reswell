@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { listingStorageObjectPathFromUrl } from "@/lib/listing-media-proxy-url"
 import { removeListingImageFilesFromStorage } from "@/lib/services/listingStorageCleanup"
 
 export type ListingImageUpdateOp = {
@@ -21,6 +22,38 @@ function normalizedThumbnailUrl(thumbnailUrl: string | null | undefined): string
   return typeof thumbnailUrl === "string" && thumbnailUrl.trim() ? thumbnailUrl.trim() : null
 }
 
+function listingImageUrlsEquivalent(a: string, b: string): boolean {
+  const left = a.trim()
+  const right = b.trim()
+  if (!left || !right) return left === right
+  if (left === right) return true
+
+  const leftPath = listingStorageObjectPathFromUrl(left)
+  const rightPath = listingStorageObjectPathFromUrl(right)
+  if (leftPath && rightPath) return leftPath === rightPath
+
+  return false
+}
+
+function listingImageThumbnailsEquivalent(
+  existing: ExistingListingImageRow,
+  img: ListingImageUpdateOp,
+): boolean {
+  const existingThumb = normalizedThumbnailUrl(existing.thumbnail_url)
+  const nextThumb = normalizedThumbnailUrl(img.thumbnailUrl)
+  if (existingThumb === nextThumb) return true
+  if (existingThumb == null && nextThumb && listingImageUrlsEquivalent(existing.url, nextThumb)) {
+    return true
+  }
+  if (nextThumb == null && existingThumb && listingImageUrlsEquivalent(existing.url, existingThumb)) {
+    return true
+  }
+  if (existingThumb && nextThumb) {
+    return listingImageUrlsEquivalent(existingThumb, nextThumb)
+  }
+  return false
+}
+
 function listingImageRowNeedsUpdate(
   existing: ExistingListingImageRow,
   img: ListingImageUpdateOp,
@@ -29,12 +62,43 @@ function listingImageRowNeedsUpdate(
   if (existing.is_primary !== img.isPrimary) return true
 
   const url = img.url.trim()
-  if (!url) return false
-  if (existing.url !== url) return true
+  if (url && !listingImageUrlsEquivalent(existing.url, url)) return true
+  return !listingImageThumbnailsEquivalent(existing, img)
+}
 
-  const thumb = normalizedThumbnailUrl(img.thumbnailUrl)
-  const existingThumb = normalizedThumbnailUrl(existing.thumbnail_url)
-  return existingThumb !== thumb
+/** True when removed ids are empty and every existing image row already matches the payload. */
+export async function listingImagesAlreadySynced(
+  supabase: SupabaseClient,
+  listingId: string,
+  removedImageIds: string[],
+  images: ListingImageUpdateOp[],
+): Promise<boolean> {
+  if (removedImageIds.length > 0) return false
+  if (images.some((img) => !img.id)) return false
+
+  const { data: existingRows, error } = await supabase
+    .from("listing_images")
+    .select("id, sort_order, is_primary, url, thumbnail_url")
+    .eq("listing_id", listingId)
+    .order("sort_order", { ascending: true })
+
+  if (error || !existingRows || existingRows.length !== images.length) {
+    return false
+  }
+
+  const existingById = new Map(
+    existingRows.map((row) => [row.id as string, row as ExistingListingImageRow]),
+  )
+
+  for (const img of images) {
+    if (!img.id) return false
+    const existing = existingById.get(img.id)
+    if (!existing || listingImageRowNeedsUpdate(existing, img)) {
+      return false
+    }
+  }
+
+  return true
 }
 
 /**
@@ -63,6 +127,10 @@ export async function syncListingImages(
       await removeListingImageFilesFromStorage(supabase, removedUrls)
     }
     await supabase.from("listing_images").delete().in("id", removedImageIds).eq("listing_id", listingId)
+  }
+
+  if (await listingImagesAlreadySynced(supabase, listingId, [], images)) {
+    return
   }
 
   const inserts = images.filter((img) => !img.id && img.url.trim())
