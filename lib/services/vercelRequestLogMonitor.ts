@@ -106,11 +106,24 @@ function digestRecipients(): string[] {
 }
 
 function vercelAccessToken(): string | null {
-  return (
+  const raw =
     process.env.VERCEL_ACCESS_TOKEN?.trim() ||
     process.env.VERCEL_TOKEN?.trim() ||
     null
-  )
+  if (!raw) return null
+  // Authorization headers must be ByteString (code points ≤ 255). Env pastes sometimes
+  // include smart punctuation (e.g. bullet • = 8226) which breaks fetch().
+  const cleaned = Array.from(raw)
+    .filter((ch) => ch.charCodeAt(0) <= 255)
+    .join("")
+    .trim()
+  if (!cleaned) return null
+  if (cleaned !== raw) {
+    console.warn(
+      "[vercel logs] VERCEL_ACCESS_TOKEN contained non-Latin-1 characters; stripped them for the Authorization header",
+    )
+  }
+  return cleaned
 }
 
 function vercelProjectId(): string | null {

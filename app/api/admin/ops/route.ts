@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdminOrEmployee } from "@/lib/brands/admin-server"
-import { listOpsGroups, listRecentOpsIngestRuns } from "@/lib/db/ops"
+import { listOpenOpsGroupsForCounts, listOpsGroups, listRecentOpsIngestRuns } from "@/lib/db/ops"
 import type { OpsGroupStatus, OpsSource } from "@/lib/types/ops"
+import {
+  countOpsGroupsByView,
+  filterOpsGroupsByView,
+  isOpsView,
+  type OpsView,
+} from "@/lib/utils/opsClassify"
 
 /**
- * GET /api/admin/ops?status=&source=&q=
- * Staff-only list of ops groups + recent ingest runs.
+ * GET /api/admin/ops?view=&status=&q=
+ * Staff-only list of ops groups + ingest health + per-view open counts.
  */
 export async function GET(req: NextRequest) {
   const gate = await requireAdminOrEmployee()
@@ -13,7 +19,7 @@ export async function GET(req: NextRequest) {
 
   const url = req.nextUrl
   const statusParam = url.searchParams.get("status") ?? "open"
-  const sourceParam = url.searchParams.get("source") ?? "all"
+  const viewParam = url.searchParams.get("view") ?? "overview"
   const q = url.searchParams.get("q") ?? undefined
 
   const status =
@@ -25,21 +31,41 @@ export async function GET(req: NextRequest) {
       ? (statusParam as OpsGroupStatus | "all")
       : "open"
 
-  const source =
-    sourceParam === "all" ||
-    sourceParam === "vercel" ||
-    sourceParam === "supabase" ||
-    sourceParam === "client" ||
-    sourceParam === "server"
-      ? (sourceParam as OpsSource | "all")
-      : "all"
+  const view: OpsView = isOpsView(viewParam) ? viewParam : "overview"
+
+  const sourceForQuery: OpsSource | "all" =
+    view === "overview"
+      ? "all"
+      : view === "react" || view === "client"
+        ? "client"
+        : view
 
   try {
-    const [groups, runs] = await Promise.all([
-      listOpsGroups(gate.ctx.supabase, { status, source, q, limit: 150 }),
-      listRecentOpsIngestRuns(gate.ctx.supabase, 8),
+    const [rawGroups, openForCounts, runs] = await Promise.all([
+      listOpsGroups(gate.ctx.supabase, {
+        status,
+        source: sourceForQuery,
+        q,
+        limit: 200,
+      }),
+      listOpenOpsGroupsForCounts(gate.ctx.supabase, 500),
+      listRecentOpsIngestRuns(gate.ctx.supabase, 12),
     ])
-    return NextResponse.json({ data: { groups, runs } }, { status: 200 })
+
+    const groups = filterOpsGroupsByView(rawGroups, view)
+    const counts = countOpsGroupsByView(openForCounts)
+
+    return NextResponse.json(
+      {
+        data: {
+          view,
+          groups,
+          runs,
+          counts,
+        },
+      },
+      { status: 200 },
+    )
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to load ops"
     console.error("[api/admin/ops]", message)

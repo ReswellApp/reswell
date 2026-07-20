@@ -16,6 +16,7 @@ import {
   opsReferenceCode,
   truncateOpsText,
 } from "@/lib/utils/opsFingerprint"
+import { isReactOpsError } from "@/lib/utils/opsClassify"
 import type { OpsClientReportInput } from "@/lib/validations/ops"
 
 export type RecordOpsSignalResult = {
@@ -172,13 +173,26 @@ export async function reportClientOpsError(
         })()
       : null)
 
+  const react =
+    source === "client" &&
+    isReactOpsError({
+      title: `${name}: ${message}`,
+      message,
+      stack_sample: raw.stack,
+    })
+
   return recordOpsSignal({
     source,
     severity: raw.severity ?? "critical",
     title: `${name}: ${message}`.slice(0, 240),
     message,
     stackSample: raw.stack ?? null,
-    category: source === "client" ? "client_exception" : "server_exception",
+    category:
+      source === "client"
+        ? react
+          ? "react"
+          : "client_exception"
+        : "server_exception",
     path,
     environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? null,
     lastUrl: raw.url ?? null,
@@ -187,8 +201,15 @@ export async function reportClientOpsError(
       name,
       digest: raw.digest ?? null,
       context: raw.context ?? {},
+      react,
     },
-    fingerprintParts: [source, name, message.slice(0, 160), normalizeStackSample(raw.stack)],
+    fingerprintParts: [
+      source,
+      react ? "react" : "client",
+      name,
+      message.slice(0, 160),
+      normalizeStackSample(raw.stack),
+    ],
     signal: {
       userId: extras?.userId ?? null,
       url: raw.url ?? null,

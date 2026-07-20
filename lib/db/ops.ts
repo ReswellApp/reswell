@@ -244,6 +244,25 @@ export async function listOpsGroups(
   return (data ?? []) as OpsGroupRow[]
 }
 
+/** Open-issue rows used to build per-view badge counts (overview / vercel / react…). */
+export async function listOpenOpsGroupsForCounts(
+  supabase: SupabaseClient,
+  limit = 500,
+): Promise<OpsGroupRow[]> {
+  const { data, error } = await supabase
+    .from("ops_groups")
+    .select(OPS_GROUP_LIST_SELECT)
+    .eq("status", "open")
+    .order("last_seen_at", { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.error("[ops] listOpenOpsGroupsForCounts:", error.message)
+    throw new Error(error.message)
+  }
+  return (data ?? []) as OpsGroupRow[]
+}
+
 export async function getOpsGroupById(
   supabase: SupabaseClient,
   id: string,
