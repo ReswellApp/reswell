@@ -21,6 +21,7 @@ import {
   purchaseLabelWithRateId,
   resolveAddressesForLabel,
   resolveOrderLabelParcelFromListing,
+  SELLER_LABEL_REQUIRES_PACKED_PARCEL_ERROR,
 } from "@/lib/services/orderShippingLabel"
 import { getCheapestReswellRateForListing } from "@/lib/services/reswellListingShippingRate"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
@@ -98,9 +99,23 @@ export async function GET(request: NextRequest) {
   const listingTitle =
     typeof listing?.title === "string" ? listing.title.trim() : listing?.title != null ? String(listing.title) : "Item"
 
-  const autoLabelParcel = listing
-    ? resolveOrderLabelParcelFromListing(listing as unknown as ListingPackedParcelSource)
-    : { ok: false as const, error: "Listing not loaded." }
+  const boardMode =
+    listing && typeof listing === "object"
+      ? effectiveBoardShippingMode(listing as unknown as PeerListingForShippingQuote)
+      : "reswell"
+
+  /** Flat/free: never auto-quote from volume heuristics — enter packed dims for a real rate. */
+  const autoLabelParcel =
+    boardMode === "flat" || boardMode === "free"
+      ? {
+          ok: false as const,
+          error: listing
+            ? SELLER_LABEL_REQUIRES_PACKED_PARCEL_ERROR
+            : "Listing not loaded.",
+        }
+      : listing
+        ? resolveOrderLabelParcelFromListing(listing as unknown as ListingPackedParcelSource)
+        : { ok: false as const, error: "Listing not loaded." }
 
   const reasons: string[] = []
   if (!isPeerListingSection(section)) {
@@ -109,7 +124,11 @@ export async function GET(request: NextRequest) {
   if (row.fulfillment_method !== "shipping") reasons.push("This order is not shipping fulfillment.")
   if (row.delivery_status !== "pending") reasons.push("Tracking is already set for this order.")
 
-  if (!autoLabelParcel.ok && isSurfboardLabelParcelLimitError(autoLabelParcel.error)) {
+  if (
+    boardMode === "reswell" &&
+    !autoLabelParcel.ok &&
+    isSurfboardLabelParcelLimitError(autoLabelParcel.error)
+  ) {
     reasons.push(autoLabelParcel.error)
   }
 
@@ -117,10 +136,6 @@ export async function GET(request: NextRequest) {
 
   const displayOrderNum = formatOrderNumForCustomer(row.order_num, row.id)
   const buyerPaidShippingUsd = num(row.shipping_amount)
-  const boardMode =
-    listing && typeof listing === "object"
-      ? effectiveBoardShippingMode(listing as unknown as PeerListingForShippingQuote)
-      : "reswell"
 
   const sellerWalletReasons: string[] = []
   const sellerCtx = await loadSellerShippingLabelOrderContext(supabase, orderId, row.seller_id)
@@ -440,6 +455,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: resolved.error }, { status: 400 })
     }
 
+    const boardMode = effectiveBoardShippingMode(listingForQuote)
     let parcel: { lengthIn: number; widthIn: number; heightIn: number; weightLb: number }
     if (body.parcel) {
       parcel = {
@@ -448,6 +464,11 @@ export async function POST(request: NextRequest) {
         heightIn: body.parcel.height_in,
         weightLb: body.parcel.weight_lb,
       }
+    } else if (boardMode === "flat" || boardMode === "free") {
+      return NextResponse.json(
+        { error: SELLER_LABEL_REQUIRES_PACKED_PARCEL_ERROR },
+        { status: 400 },
+      )
     } else {
       const fromListing = resolveOrderLabelParcelFromListing(listing as unknown as ListingPackedParcelSource)
       if (!fromListing.ok) {

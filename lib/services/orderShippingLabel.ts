@@ -5,9 +5,14 @@ import {
 } from "@/lib/shipengine/surfboard-label"
 import {
   resolvePackedParcelFromListing,
+  suggestPackedBoxInchesFromListing,
   type ListingPackedParcelSource,
   type ResolvedPackedParcelSource,
 } from "@/lib/reswell-packed-parcel-from-listing"
+
+/** Seller flat/free labels: never auto-quote from listing volume heuristics — seller must enter parcel. */
+export const SELLER_LABEL_REQUIRES_PACKED_PARCEL_ERROR =
+  "Enter the packed box dimensions and weight to get a carrier quote. The buyer's prepaid flat shipping is credited toward the label cost."
 import {
   orderShippingJsonToRateQuoteAddress,
   profileRowToRateQuoteAddress,
@@ -78,6 +83,16 @@ export function resolveOrderLabelParcelFromListing(
       source: r.source,
     },
   }
+}
+
+/**
+ * Optional L×W×H prefill for seller flat/free label forms (board dims + packing buffer).
+ * Weight is never inferred — sellers must measure and enter it.
+ */
+export function suggestSellerLabelParcelDimsFromListing(
+  listing: ListingPackedParcelSource,
+): { lengthIn: number; widthIn: number; heightIn: number } | null {
+  return suggestPackedBoxInchesFromListing(listing)
 }
 
 export async function fetchRatesForSurfboardOrder(params: {

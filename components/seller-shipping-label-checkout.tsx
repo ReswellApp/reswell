@@ -137,7 +137,7 @@ function LabelPaymentForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border bg-muted/20 p-4">
       <p className="text-sm text-muted-foreground">
-        Pay the full label cost with card when it exceeds the buyer&apos;s prepaid flat shipping amount.
+        Pay the remaining label cost with card after the buyer&apos;s prepaid flat shipping credit.
       </p>
       {elementLoadError ? <p className="text-sm text-destructive">{elementLoadError}</p> : null}
       <PaymentElement
@@ -308,9 +308,9 @@ export function SellerShippingLabelCheckout({
         <span className="font-medium text-foreground tabular-nums">
           ${buyerPrepaidShippingUsd.toFixed(2)}
         </span>{" "}
-        for flat shipping on this order.
+        for flat shipping on this order. That amount credits the shipping label.
         {prepaidBreakdown && prepaidBreakdown.shippingSurplusCreditUsd > 0
-          ? ` If you choose a $${prepaidBreakdown.buyerPrepaidAppliedUsd.toFixed(2)} label, $${prepaidBreakdown.shippingSurplusCreditUsd.toFixed(2)} is credited to your wallet.`
+          ? ` If you choose a $${prepaidBreakdown.labelCostUsd.toFixed(2)} label, $${prepaidBreakdown.shippingSurplusCreditUsd.toFixed(2)} surplus is credited to your wallet.`
           : null}
       </p>
     ) : null
@@ -321,9 +321,9 @@ export function SellerShippingLabelCheckout({
       {canPrintWithPrepaidAllowance && prepaidBreakdown ? (
         <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
           <p className="text-sm text-muted-foreground">
-            Pay ${prepaidBreakdown.buyerPrepaidAppliedUsd.toFixed(2)} from buyer prepaid shipping
+            Label covered by buyer prepaid shipping
             {prepaidBreakdown.shippingSurplusCreditUsd > 0
-              ? ` — $${prepaidBreakdown.shippingSurplusCreditUsd.toFixed(2)} credited to your wallet`
+              ? ` — $${prepaidBreakdown.shippingSurplusCreditUsd.toFixed(2)} surplus credited to your wallet`
               : ""}
             .
           </p>
@@ -336,16 +336,16 @@ export function SellerShippingLabelCheckout({
             ) : (
               <>
                 <Printer className="h-4 w-4 mr-2" />
-                Print label — ${prepaidBreakdown.buyerPrepaidAppliedUsd.toFixed(2)} from buyer shipping
+                Print label — ${prepaidBreakdown.labelCostUsd.toFixed(2)} from buyer shipping
               </>
             )}
           </Button>
         </div>
       ) : prepaidBreakdown && prepaidBreakdown.excessOverPrepaidUsd > 0 ? (
         <p className="text-sm text-muted-foreground rounded-lg border bg-muted/20 p-4">
-          This label is ${prepaidBreakdown.labelCostUsd.toFixed(2)} — more than the $
-          {buyerPrepaidShippingUsd.toFixed(2)} buyer prepaid for flat shipping. Pay the full label cost
-          with card below or choose a cheaper rate.
+          This label is ${prepaidBreakdown.labelCostUsd.toFixed(2)}. Buyer prepaid shipping covers $
+          {prepaidBreakdown.buyerPrepaidAppliedUsd.toFixed(2)}; pay the remaining $
+          {prepaidBreakdown.excessOverPrepaidUsd.toFixed(2)} with card below, or choose a cheaper rate.
         </p>
       ) : null}
     </div>
@@ -376,11 +376,8 @@ export function SellerShippingLabelCheckout({
   return (
     <div className="space-y-4">
       {storedValueSection}
-      {needsCard ? (
+      {needsCard && prepaidBreakdown ? (
         <>
-          {canPrintWithPrepaidAllowance ? (
-            <p className="text-sm font-medium text-muted-foreground">Or pay full label cost with card</p>
-          ) : null}
           {loading ? (
             <div className="flex items-center gap-2 rounded-lg border bg-muted/20 p-4 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -395,7 +392,7 @@ export function SellerShippingLabelCheckout({
               <LabelPaymentForm
                 orderId={orderId}
                 clientSecret={clientSecret}
-                amountLabel={`$${amountUsd.toFixed(2)}`}
+                amountLabel={`$${prepaidBreakdown.cardChargeUsd.toFixed(2)}`}
                 onSuccess={onSuccess}
               />
             </Elements>

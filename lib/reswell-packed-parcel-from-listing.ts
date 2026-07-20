@@ -234,6 +234,36 @@ export function resolveCombinedPackedParcelFromListings(
   }
 }
 
+/**
+ * Suggested outer box L×W×H from board dimensions only (no weight).
+ * Used to pre-fill seller label forms for flat/free shipping — weight must be entered by the seller.
+ */
+export function suggestPackedBoxInchesFromListing(
+  row: ListingPackedParcelSource,
+): { lengthIn: number; widthIn: number; heightIn: number } | null {
+  const boardLength = boardLengthFormFromListing(row)
+  if (!boardLength) return null
+  const parsedDims = row.dimensions?.trim() ? parseListingDimensionsColumn(row.dimensions) : null
+  const widthStr = parsedDims?.boardWidthInches?.trim() ?? ""
+  const thickStr = parsedDims?.boardThicknessInches?.trim() ?? ""
+  const pkg = reswellSuggestedPackageInchesFromBoard({
+    boardLength,
+    boardWidthInches: widthStr,
+    boardThicknessInches: thickStr,
+  })
+  const len = pkg?.lengthIn.trim() ? parseFloat(pkg.lengthIn.replace(/,/g, "")) : NaN
+  let wid = pkg?.widthIn.trim() ? parseFloat(pkg.widthIn.replace(/,/g, "")) : NaN
+  let hgt = pkg?.heightIn.trim() ? parseFloat(pkg.heightIn.replace(/,/g, "")) : NaN
+  if (!Number.isFinite(len) || len <= 0) return null
+  if (!Number.isFinite(wid) || wid <= 0) wid = 20
+  if (!Number.isFinite(hgt) || hgt <= 0) hgt = RESWELL_HEURISTIC_FALLBACK_PACKED_HEIGHT_IN
+  return {
+    lengthIn: applyReswellShippingAxisBuffer(len),
+    widthIn: applyReswellShippingAxisBuffer(wid),
+    heightIn: applyReswellShippingAxisBuffer(hgt),
+  }
+}
+
 export function resolvePackedParcelFromListing(row: ListingPackedParcelSource):
   | {
       ok: true
@@ -253,25 +283,11 @@ export function resolvePackedParcelFromListing(row: ListingPackedParcelSource):
   const Woz = num(row.shipping_packed_weight_oz)
 
   if (boardLength) {
-    const pkg = reswellSuggestedPackageInchesFromBoard({
-      boardLength,
-      boardWidthInches: widthStr,
-      boardThicknessInches: thickStr,
-    })
-    const len = pkg?.lengthIn.trim() ? parseFloat(pkg.lengthIn.replace(/,/g, "")) : NaN
-    let wid = pkg?.widthIn.trim() ? parseFloat(pkg.widthIn.replace(/,/g, "")) : NaN
-    let hgt = pkg?.heightIn.trim() ? parseFloat(pkg.heightIn.replace(/,/g, "")) : NaN
-
-    if (!Number.isFinite(len) || len <= 0) {
+    const suggested = suggestPackedBoxInchesFromListing(row)
+    if (!suggested) {
       return { ok: false, error: "Could not read board length from this listing." }
     }
-    if (!Number.isFinite(wid) || wid <= 0) wid = 20
-    if (!Number.isFinite(hgt) || hgt <= 0) hgt = RESWELL_HEURISTIC_FALLBACK_PACKED_HEIGHT_IN
-
-    /** Apply the standard packing buffer to every axis before handing to ShipEngine. */
-    const parcelLengthIn = applyReswellShippingAxisBuffer(len)
-    const parcelWidthIn = applyReswellShippingAxisBuffer(wid)
-    const parcelHeightIn = applyReswellShippingAxisBuffer(hgt)
+    const { lengthIn: parcelLengthIn, widthIn: parcelWidthIn, heightIn: parcelHeightIn } = suggested
 
     if (Woz != null && Woz >= RESWELL_MIN_REASONABLE_STORED_PARCEL_WEIGHT_OZ && Woz <= RESWELL_MAX_REASONABLE_STORED_PARCEL_WEIGHT_OZ) {
       return {

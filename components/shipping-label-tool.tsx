@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -24,10 +23,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ChevronDown, Loader2, Truck } from "lucide-react"
+import { Loader2, Truck } from "lucide-react"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
-import { isSurfboardLabelParcelLimitError, validateSurfboardLabelParcelLimits, SURFBOARD_LABEL_MAX_HEIGHT_IN, SURFBOARD_LABEL_MAX_LENGTH_IN, SURFBOARD_LABEL_MAX_WIDTH_IN, SURFBOARD_LABEL_MAX_WEIGHT_LB } from "@/lib/shipping/surfboard-label-limits"
+import { validateSurfboardLabelParcelLimits, SURFBOARD_LABEL_MAX_HEIGHT_IN, SURFBOARD_LABEL_MAX_LENGTH_IN, SURFBOARD_LABEL_MAX_WIDTH_IN, SURFBOARD_LABEL_MAX_WEIGHT_LB } from "@/lib/shipping/surfboard-label-limits"
 import { SellerShippingLabelCheckout } from "@/components/seller-shipping-label-checkout"
 
 type SellerAddr = { id: string; label: string; oneLine: string; isDefault: boolean }
@@ -39,17 +37,6 @@ type RateRow = {
   amount: number
   currency: string
 }
-
-type AutoLabelParcelOk = {
-  ok: true
-  lengthIn: number
-  widthIn: number
-  heightIn: number
-  weightLb: number
-  source: string
-}
-
-type AutoLabelParcelErr = { ok: false; error: string }
 
 type OverviewResponse = {
   data: {
@@ -68,15 +55,9 @@ type OverviewResponse = {
       deliveryStatus: string
     }
     sellerAddresses: SellerAddr[]
-    autoLabelParcel: AutoLabelParcelOk | AutoLabelParcelErr
+    autoLabelParcel: { ok: false; error: string }
+    suggestedParcelDims: { lengthIn: number; widthIn: number; heightIn: number } | null
   }
-}
-
-const FALLBACK_MANUAL_PARCEL = {
-  length_in: "72",
-  width_in: "20",
-  height_in: "6",
-  weight_lb: "12",
 }
 
 const EMPTY_MANUAL_PARCEL = {
@@ -169,8 +150,7 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
   const [selectedRateId, setSelectedRateId] = useState<string>("")
 
   const [sellerAddressId, setSellerAddressId] = useState<string>("")
-  const [adjustOpen, setAdjustOpen] = useState(false)
-  const [manualParcel, setManualParcel] = useState(FALLBACK_MANUAL_PARCEL)
+  const [manualParcel, setManualParcel] = useState(EMPTY_MANUAL_PARCEL)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -189,22 +169,17 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
       const preferred = addrs.find((a) => a.isDefault)?.id ?? addrs[0]?.id ?? ""
       setSellerAddressId(preferred)
 
-      if (body.data.autoLabelParcel.ok) {
-        const p = body.data.autoLabelParcel
-        setManualParcel({
-          length_in: String(p.lengthIn),
-          width_in: String(p.widthIn),
-          height_in: String(p.heightIn),
-          weight_lb: String(p.weightLb),
-        })
-        setAdjustOpen(false)
-      } else if (isSurfboardLabelParcelLimitError(body.data.autoLabelParcel.error)) {
-        setManualParcel(FALLBACK_MANUAL_PARCEL)
-        setAdjustOpen(true)
-      } else {
-        setManualParcel(EMPTY_MANUAL_PARCEL)
-        setAdjustOpen(true)
-      }
+      const suggested = body.data.suggestedParcelDims
+      setManualParcel(
+        suggested
+          ? {
+              length_in: String(suggested.lengthIn),
+              width_in: String(suggested.widthIn),
+              height_in: String(suggested.heightIn),
+              weight_lb: "",
+            }
+          : EMPTY_MANUAL_PARCEL,
+      )
       setRates(null)
       setSelectedRateId("")
     } catch {
@@ -225,18 +200,13 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
     return overview.sellerAddresses.length > 0
   }, [overview])
 
-  const requestRates = async (opts?: { useManualParcel?: boolean }) => {
+  const requestRates = async () => {
     if (!sellerAddressId && overview && overview.sellerAddresses.length > 1) {
       toast.error("Choose your ship-from address")
       return
     }
 
-    const useManual =
-      opts?.useManualParcel === true ||
-      !overview?.autoLabelParcel.ok ||
-      adjustOpen
-
-    if (useManual && !manualParcelFieldsValid(manualParcel)) {
+    if (!manualParcelFieldsValid(manualParcel)) {
       toast.error("Enter valid packed length, width, height, and weight to get carrier rates.")
       return
     }
@@ -245,18 +215,18 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
     setRates(null)
     setSelectedRateId("")
     try {
-      const payload: Record<string, unknown> = { action: "rates" }
-      if (sellerAddressId) {
-        payload.seller_address_id = sellerAddressId
-      }
-      if (useManual) {
-        const p = parseManualParcelFields(manualParcel)
-        payload.parcel = {
+      const p = parseManualParcelFields(manualParcel)
+      const payload: Record<string, unknown> = {
+        action: "rates",
+        parcel: {
           length_in: p.lengthIn,
           width_in: p.widthIn,
           height_in: p.heightIn,
           weight_lb: p.weightLb,
-        }
+        },
+      }
+      if (sellerAddressId) {
+        payload.seller_address_id = sellerAddressId
       }
 
       const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}/shipping-label`, {
@@ -284,58 +254,39 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
     }
   }
 
-  useEffect(() => {
-    if (loading || !overview) return
-    if (!canUseTool) return
-    if (!overview.autoLabelParcel.ok) return
-    if (!sellerAddressId && overview.sellerAddresses.length > 0) return
-    void requestRates({ useManualParcel: false })
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- auto-fetch only when order/address/eligibility change, not when parcel fields are edited
-  }, [
-    loading,
-    canUseTool,
-    overview?.order.id,
-    overview?.autoLabelParcel.ok,
-    overview?.sellerAddresses.length,
-    sellerAddressId,
-    orderId,
-  ])
-
   const selectedRate = useMemo(
     () => rates?.find((r) => r.rate_id === selectedRateId) ?? null,
     [rates, selectedRateId],
   )
 
   const checkoutPayload = useMemo(() => {
-    if (!selectedRate) return null
+    if (!selectedRate || !manualParcelFieldsValid(manualParcel)) return null
+    const p = parseManualParcelFields(manualParcel)
     const payload: {
       rate_id: string
       seller_address_id?: string
-      parcel?: {
+      parcel: {
         length_in: number
         width_in: number
         height_in: number
         weight_lb: number
       }
-    } = { rate_id: selectedRate.rate_id }
-    if (sellerAddressId) {
-      payload.seller_address_id = sellerAddressId
-    }
-    if (adjustOpen || !overview?.autoLabelParcel.ok) {
-      const p = parseManualParcelFields(manualParcel)
-      payload.parcel = {
+    } = {
+      rate_id: selectedRate.rate_id,
+      parcel: {
         length_in: p.lengthIn,
         width_in: p.widthIn,
         height_in: p.heightIn,
         weight_lb: p.weightLb,
-      }
+      },
+    }
+    if (sellerAddressId) {
+      payload.seller_address_id = sellerAddressId
     }
     return payload
   }, [
     selectedRate,
     sellerAddressId,
-    adjustOpen,
-    overview?.autoLabelParcel.ok,
     manualParcel.length_in,
     manualParcel.width_in,
     manualParcel.height_in,
@@ -408,10 +359,6 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
     return null
   }
 
-  const autoOk = overview.autoLabelParcel.ok
-  const parcelLimitError =
-    !autoOk && isSurfboardLabelParcelLimitError(overview.autoLabelParcel.error)
-  const needsManualParcel = !autoOk && !parcelLimitError
   const manualParcelReady = manualParcelFieldsValid(manualParcel)
   const singleAddr = overview.sellerAddresses.length === 1
   const preferredAddr = overview.sellerAddresses.find((a) => a.id === sellerAddressId)
@@ -470,57 +417,25 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
 
         {canUseTool && (
           <>
-            {autoOk ? (
-              <div className="rounded-lg border bg-muted/30 px-4 py-3 text-sm">
-                <p className="font-medium text-foreground">Using this order&apos;s listing &amp; buyer address</p>
-                <p className="text-muted-foreground mt-1">
-                  Package (from your listing):{" "}
-                  <span className="text-foreground tabular-nums">
-                    {overview.autoLabelParcel.lengthIn} × {overview.autoLabelParcel.widthIn} ×{" "}
-                    {overview.autoLabelParcel.heightIn} in
-                  </span>{" "}
-                  ·{" "}
-                  <span className="text-foreground tabular-nums">
-                    {overview.autoLabelParcel.weightLb} lb
-                  </span>
+            <Alert>
+              <AlertTitle>Enter packed dimensions for a real quote</AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p>
+                  Measure the carton you will ship — length, width, height, and weight on a scale.
+                  We quote live carrier rates from those measurements. Any flat shipping the buyer
+                  prepaid is credited toward the label; you only pay the difference if the label
+                  costs more.
                 </p>
                 {singleAddr && preferredAddr ? (
-                  <p className="text-muted-foreground mt-1">
+                  <p className="text-sm">
                     Ship from:{" "}
-                    <span className="text-foreground">
+                    <span className="font-medium text-foreground">
                       {preferredAddr.label} — {preferredAddr.oneLine}
                     </span>
                   </p>
                 ) : null}
-              </div>
-            ) : needsManualParcel ? (
-              <Alert>
-                <AlertTitle>Add packed dimensions to continue</AlertTitle>
-                <AlertDescription className="space-y-2">
-                  <p>
-                    Your listing does not have package size saved yet (common when you set a flat
-                    shipping rate without board dimensions). Enter the packed box size and weight
-                    below, then get carrier rates and pay with your wallet or card.
-                  </p>
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <Alert variant="destructive" className="border-destructive/40">
-                <AlertTitle>
-                  {parcelLimitError
-                    ? "This package is too large for Reswell labels"
-                    : "We couldn&apos;t read package details from the listing"}
-                </AlertTitle>
-                <AlertDescription className="space-y-2">
-                  <p>{overview.autoLabelParcel.error}</p>
-                  {!parcelLimitError ? (
-                    <p className="text-sm">
-                      Enter packed dimensions below, or update the listing and refresh this page.
-                    </p>
-                  ) : null}
-                </AlertDescription>
-              </Alert>
-            )}
+              </AlertDescription>
+            </Alert>
 
             {!singleAddr && (
               <div className="space-y-2">
@@ -547,65 +462,34 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
               </div>
             )}
 
-            {needsManualParcel ? (
-              <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
-                <p className="text-sm font-medium text-foreground">Packed box dimensions</p>
-                <p className="text-sm text-muted-foreground">
-                  Measure the carton you will ship in — length is the longest side. UPS limit: Length
-                  + (2 × Width) + (2 × Height) must be 160″ or less; weight 25 lb or less.
-                </p>
-                <ManualParcelFields
-                  idPrefix="required-"
-                  manualParcel={manualParcel}
-                  onChange={(next) => {
-                    setManualParcel(next)
-                    setRates(null)
-                    setSelectedRateId("")
-                  }}
-                />
-                <Button
-                  type="button"
-                  variant="default"
-                  disabled={ratesBusy || !manualParcelReady}
-                  onClick={() => void requestRates({ useManualParcel: true })}
-                >
-                  {ratesBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                  Get carrier rates
-                </Button>
-              </div>
-            ) : null}
-
-            {autoOk ? (
-              <Collapsible open={adjustOpen} onOpenChange={setAdjustOpen}>
-                <CollapsibleTrigger asChild>
-                  <Button type="button" variant="ghost" size="sm" className="gap-1 px-0 text-muted-foreground">
-                    <ChevronDown className={cn("h-4 w-4 transition-transform", adjustOpen && "rotate-180")} />
-                    Different box or weight? Adjust and recalculate
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-3 pt-3">
-                  <ManualParcelFields
-                    idPrefix="adjust-"
-                    manualParcel={manualParcel}
-                    onChange={(next) => {
-                      setManualParcel(next)
-                      setRates(null)
-                      setSelectedRateId("")
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    disabled={ratesBusy || (adjustOpen && !manualParcelReady)}
-                    onClick={() => void requestRates({ useManualParcel: true })}
-                  >
-                    {ratesBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                    Recalculate rates
-                  </Button>
-                </CollapsibleContent>
-              </Collapsible>
-            ) : null}
+            <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
+              <p className="text-sm font-medium text-foreground">Packed box dimensions</p>
+              <p className="text-sm text-muted-foreground">
+                Length is the longest side. UPS limit: Length + (2 × Width) + (2 × Height) must be
+                160″ or less; weight 25 lb or less.
+                {overview.suggestedParcelDims
+                  ? " Length, width, and height are prefilled from the board listing — confirm with a tape measure and enter the packed weight."
+                  : null}
+              </p>
+              <ManualParcelFields
+                idPrefix="required-"
+                manualParcel={manualParcel}
+                onChange={(next) => {
+                  setManualParcel(next)
+                  setRates(null)
+                  setSelectedRateId("")
+                }}
+              />
+              <Button
+                type="button"
+                variant="default"
+                disabled={ratesBusy || !manualParcelReady}
+                onClick={() => void requestRates()}
+              >
+                {ratesBusy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Get carrier rates
+              </Button>
+            </div>
 
             {ratesBusy && !rates && (
               <p className="text-sm text-muted-foreground flex items-center gap-2">
@@ -659,9 +543,8 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
                   onSuccess={handleLabelPurchaseSuccess}
                 />
                 <p className="text-xs text-muted-foreground">
-                  {needsManualParcel
-                    ? "Rates use the dimensions you entered above. Buyer prepaid shipping on this order is applied first, then your wallet balance, then card if needed."
-                    : "Buyer prepaid shipping on this order is applied first, then your wallet balance from past sales, then card if needed. After payment, Reswell purchases the label and adds tracking to the order."}
+                  Rates use the dimensions you entered above. Buyer prepaid flat shipping on this
+                  order is credited toward the label first; you pay any remainder by card.
                 </p>
               </div>
             )}

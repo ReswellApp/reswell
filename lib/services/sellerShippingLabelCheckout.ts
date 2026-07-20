@@ -493,17 +493,24 @@ export async function createSellerShippingLabelPaymentIntent(params: {
     }
   }
 
-  const cardBreakdown = computeSellerLabelCardPaymentBreakdown({ labelCostUsd })
+  const cardBreakdown = computeSellerLabelCardPaymentBreakdown({
+    labelCostUsd,
+    buyerPrepaidAvailableUsd,
+  })
   const amountCents = Math.round(cardBreakdown.cardChargeUsd * 100)
   if (amountCents < 50) {
     return {
       ok: false,
-      error: "Label cost is below the minimum charge.",
+      error:
+        cardBreakdown.buyerPrepaidAppliedUsd > 0
+          ? "After applying the buyer's prepaid shipping credit, the remaining amount is below the card minimum. Choose a cheaper rate or print with prepaid shipping alone."
+          : "Label cost is below the minimum charge.",
       status: 400,
     }
   }
 
   const labelCostCents = Math.round(labelCostUsd * 100)
+  const buyerPrepaidAppliedCents = Math.round(cardBreakdown.buyerPrepaidAppliedUsd * 100)
 
   try {
     const stripe = getStripe()
@@ -518,7 +525,7 @@ export async function createSellerShippingLabelPaymentIntent(params: {
         rate_id: rateResolved.rate.rate_id,
         amount_cents: String(amountCents),
         label_cost_cents: String(labelCostCents),
-        buyer_prepaid_applied_cents: "0",
+        buyer_prepaid_applied_cents: String(buyerPrepaidAppliedCents),
         carrier_label: rateResolved.rate.carrierLabel.slice(0, 200),
         service_name: rateResolved.rate.serviceName.slice(0, 200),
       },
@@ -537,7 +544,7 @@ export async function createSellerShippingLabelPaymentIntent(params: {
       clientSecret: paymentIntent.client_secret,
       amountUsd: amountCents / 100,
       labelCostUsd,
-      buyerPrepaidAppliedUsd: 0,
+      buyerPrepaidAppliedUsd: cardBreakdown.buyerPrepaidAppliedUsd,
       cardChargeUsd: cardBreakdown.cardChargeUsd,
     }
   } catch (e) {
@@ -987,7 +994,7 @@ export async function purchaseSellerShippingLabelWithWallet(params: {
         ok: false,
         error:
           breakdown.excessOverPrepaidUsd > 0
-            ? `This label costs $${labelCostUsd.toFixed(2)}, but only $${buyerPrepaidAvailableUsd.toFixed(2)} was prepaid for flat shipping. Choose a cheaper rate or pay with card.`
+            ? `This label costs $${labelCostUsd.toFixed(2)}. Buyer prepaid shipping covers $${buyerPrepaidAvailableUsd.toFixed(2)}; pay the $${breakdown.excessOverPrepaidUsd.toFixed(2)} remainder with card or choose a cheaper rate.`
             : "This order has no buyer prepaid flat shipping for a label purchase.",
         status: 402,
       }

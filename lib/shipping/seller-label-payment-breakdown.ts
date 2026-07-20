@@ -15,17 +15,21 @@ export type SellerLabelPaymentBreakdown = {
   excessOverPrepaidUsd: number
 }
 
-/** Flat shipping: label is paid from buyer prepaid shipping; surplus credits seller wallet. */
+/**
+ * Flat shipping: buyer prepaid credits the label first.
+ * - Label ≤ prepaid → print with prepaid; surplus credits seller wallet.
+ * - Label > prepaid → seller pays only the excess on card; prepaid covers the rest.
+ */
 export function computeSellerLabelPrepaidAllowanceBreakdown(input: {
   labelCostUsd: number
   buyerPrepaidAvailableUsd: number
 }): SellerLabelPaymentBreakdown {
   const labelCostUsd = roundMoney(input.labelCostUsd)
   const buyerPrepaidAvailableUsd = roundMoney(Math.max(0, input.buyerPrepaidAvailableUsd))
+  const buyerPrepaidAppliedUsd = roundMoney(Math.min(labelCostUsd, buyerPrepaidAvailableUsd))
   const excessOverPrepaidUsd = roundMoney(Math.max(0, labelCostUsd - buyerPrepaidAvailableUsd))
   const canPurchaseWithPrepaidAllowance =
     labelCostUsd >= 0.5 && excessOverPrepaidUsd <= 0
-  const buyerPrepaidAppliedUsd = canPurchaseWithPrepaidAllowance ? labelCostUsd : 0
   const shippingSurplusCreditUsd = canPurchaseWithPrepaidAllowance
     ? roundMoney(buyerPrepaidAvailableUsd - labelCostUsd)
     : 0
@@ -42,14 +46,23 @@ export function computeSellerLabelPrepaidAllowanceBreakdown(input: {
   }
 }
 
-/** Card checkout: charge the full label cost on card when it exceeds buyer prepaid shipping. */
+/** Card checkout: charge only the label cost not covered by buyer prepaid flat shipping. */
 export function computeSellerLabelCardPaymentBreakdown(input: {
   labelCostUsd: number
-}): Pick<SellerLabelPaymentBreakdown, "labelCostUsd" | "cardChargeUsd"> {
-  const labelCostUsd = roundMoney(input.labelCostUsd)
+  buyerPrepaidAvailableUsd?: number
+}): Pick<
+  SellerLabelPaymentBreakdown,
+  "labelCostUsd" | "cardChargeUsd" | "buyerPrepaidAppliedUsd" | "buyerPrepaidAvailableUsd"
+> {
+  const breakdown = computeSellerLabelPrepaidAllowanceBreakdown({
+    labelCostUsd: input.labelCostUsd,
+    buyerPrepaidAvailableUsd: input.buyerPrepaidAvailableUsd ?? 0,
+  })
   return {
-    labelCostUsd,
-    cardChargeUsd: labelCostUsd,
+    labelCostUsd: breakdown.labelCostUsd,
+    buyerPrepaidAvailableUsd: breakdown.buyerPrepaidAvailableUsd,
+    buyerPrepaidAppliedUsd: breakdown.buyerPrepaidAppliedUsd,
+    cardChargeUsd: breakdown.cardChargeUsd,
   }
 }
 

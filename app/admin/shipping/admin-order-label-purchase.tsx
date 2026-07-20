@@ -1026,16 +1026,16 @@ export function AdminOrderLabelPurchase() {
                         {selectedRate && labelPaymentBreakdown && !canPayWithBuyerShippingCredit ? (
                           <p className="text-sm text-destructive">
                             {labelPaymentBreakdown.excessOverPrepaidUsd > 0
-                              ? `This label is $${selectedRate.amount.toFixed(2)}, but only $${buyerShippingCreditUsd.toFixed(2)} was prepaid for flat shipping. Choose a cheaper rate.`
+                              ? `This label is $${selectedRate.amount.toFixed(2)}. Buyer prepaid covers $${labelPaymentBreakdown.buyerPrepaidAppliedUsd.toFixed(2)}; seller pays the $${labelPaymentBreakdown.excessOverPrepaidUsd.toFixed(2)} remainder on the seller label tool, or choose a cheaper rate here.`
                               : "This order has no buyer prepaid flat shipping for a label purchase."}
                           </p>
                         ) : null}
 
                         <p className="text-xs text-muted-foreground">
-                          Uses the buyer&apos;s prepaid flat shipping to pay for the carrier label. Any unused
-                          amount is credited to the seller&apos;s pending balance and released with the order
-                          payout after delivery. No seller wallet debit is required when the label cost is
-                          within the prepaid amount.
+                          Uses the buyer&apos;s prepaid flat shipping as a credit toward the carrier label. Any
+                          unused amount is credited to the seller&apos;s pending balance and released with the
+                          order payout after delivery. When the label costs more than prepaid, the seller pays
+                          only the difference on the seller label tool.
                         </p>
                       </div>
                     ) : null}

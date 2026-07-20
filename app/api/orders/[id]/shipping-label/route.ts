@@ -6,7 +6,8 @@ import { PEER_SURFBOARD_CHECKOUT_LISTING_SELECT, type PeerListingForShippingQuot
 import {
   fetchRatesForSurfboardOrder,
   resolveAddressesForLabel,
-  resolveOrderLabelParcelFromListing,
+  SELLER_LABEL_REQUIRES_PACKED_PARCEL_ERROR,
+  suggestSellerLabelParcelDimsFromListing,
 } from "@/lib/services/orderShippingLabel"
 import {
   loadSellerShippingLabelOrderContext,
@@ -14,10 +15,8 @@ import {
 } from "@/lib/services/sellerShippingLabelCheckout"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import { shippingLabelPostBodySchema } from "@/lib/validations/order-shipping-label"
-import type { ListingPackedParcelSource } from "@/lib/reswell-packed-parcel-from-listing"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
-import { isSurfboardLabelParcelLimitError } from "@/lib/shipping/surfboard-label-limits"
 
 export const dynamic = "force-dynamic"
 
@@ -87,9 +86,20 @@ export async function GET(
     .eq("id", row.listing_id)
     .maybeSingle()
 
-  const autoLabelParcel = listingForParcel
-    ? resolveOrderLabelParcelFromListing(listingForParcel as ListingPackedParcelSource)
-    : { ok: false as const, error: "Could not load listing for this order." }
+  /**
+   * Flat/free seller labels never auto-quote from listing volume heuristics.
+   * Sellers must enter packed L×W×H + weight for a real carrier rate; buyer prepaid
+   * flat shipping credits the label cost at checkout.
+   */
+  const suggestedParcelDims = listingForParcel
+    ? suggestSellerLabelParcelDimsFromListing(listingForParcel as PeerListingForShippingQuote)
+    : null
+  const autoLabelParcel = {
+    ok: false as const,
+    error: listingForParcel
+      ? SELLER_LABEL_REQUIRES_PACKED_PARCEL_ERROR
+      : "Could not load listing for this order.",
+  }
 
   const reasons: string[] = []
   if (!isPeerListingSection(section)) {
@@ -97,10 +107,6 @@ export async function GET(
   }
   if (row.fulfillment_method !== "shipping") reasons.push("This order is not shipping fulfillment.")
   if (row.delivery_status !== "pending") reasons.push("Tracking is already set for this order.")
-
-  if (!autoLabelParcel.ok && isSurfboardLabelParcelLimitError(autoLabelParcel.error)) {
-    reasons.push(autoLabelParcel.error)
-  }
 
   if (user) {
     const sellerCtx = await loadSellerShippingLabelOrderContext(supabase, orderId, user.id)
@@ -157,17 +163,9 @@ export async function GET(
         deliveryStatus: row.delivery_status,
       },
       sellerAddresses,
-      autoLabelParcel:
-        autoLabelParcel.ok === true
-          ? {
-              ok: true as const,
-              lengthIn: autoLabelParcel.parcel.lengthIn,
-              widthIn: autoLabelParcel.parcel.widthIn,
-              heightIn: autoLabelParcel.parcel.heightIn,
-              weightLb: autoLabelParcel.parcel.weightLb,
-              source: autoLabelParcel.parcel.source,
-            }
-          : { ok: false as const, error: autoLabelParcel.error },
+      /** Always false for seller flat/free labels — parcel must be entered for rates. */
+      autoLabelParcel,
+      suggestedParcelDims,
     },
   })
 }
@@ -285,34 +283,18 @@ export async function POST(
       return NextResponse.json({ error: resolved.error }, { status: 400 })
     }
 
-    let parcel: { lengthIn: number; widthIn: number; heightIn: number; weightLb: number }
-    if (body.parcel) {
-      parcel = {
-        lengthIn: body.parcel.length_in,
-        widthIn: body.parcel.width_in,
-        heightIn: body.parcel.height_in,
-        weightLb: body.parcel.weight_lb,
-      }
-    } else {
-      const { data: listingRow, error: listingErr } = await supabase
-        .from("listings")
-        .select(PEER_SURFBOARD_CHECKOUT_LISTING_SELECT)
-        .eq("id", o.listing_id)
-        .maybeSingle()
+    if (!body.parcel) {
+      return NextResponse.json(
+        { error: SELLER_LABEL_REQUIRES_PACKED_PARCEL_ERROR },
+        { status: 400 },
+      )
+    }
 
-      if (listingErr || !listingRow) {
-        return NextResponse.json({ error: "Could not load listing for this order." }, { status: 500 })
-      }
-      const fromListing = resolveOrderLabelParcelFromListing(listingRow as ListingPackedParcelSource)
-      if (!fromListing.ok) {
-        return NextResponse.json({ error: fromListing.error }, { status: 400 })
-      }
-      parcel = {
-        lengthIn: fromListing.parcel.lengthIn,
-        widthIn: fromListing.parcel.widthIn,
-        heightIn: fromListing.parcel.heightIn,
-        weightLb: fromListing.parcel.weightLb,
-      }
+    const parcel = {
+      lengthIn: body.parcel.length_in,
+      widthIn: body.parcel.width_in,
+      heightIn: body.parcel.height_in,
+      weightLb: body.parcel.weight_lb,
     }
 
     const ratesResult = await fetchRatesForSurfboardOrder({
