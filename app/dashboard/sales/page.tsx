@@ -27,6 +27,8 @@ import { resolveMarketplaceOrderBuyerLabel } from "@/lib/order-buyer-display"
 import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amounts"
 import { listingPortraitThumbClass, listingPortraitThumbSizes } from "@/lib/utils/dashboard-display-styles"
 
+export const dynamic = "force-dynamic"
+
 export const metadata = privatePageMetadata({
   title: "Sales — Reswell",
   description: "Sales you're fulfilling on Reswell: ship, add tracking, and confirm pickup.",

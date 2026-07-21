@@ -27,17 +27,40 @@ export async function GET(
     return NextResponse.json({ error: result.error }, { status: result.status })
   }
 
+  let deliveryStatus: string | null = null
+  let deliveryStatusUpdated = false
+
   if (result.live) {
     try {
-      await persistOrderCarrierTrackingSnapshot(serviceSupabase, parsed.data, result.detail)
+      const persist = await persistOrderCarrierTrackingSnapshot(
+        serviceSupabase,
+        parsed.data,
+        result.detail,
+      )
+      deliveryStatus = persist.deliveryStatus
+      deliveryStatusUpdated = persist.deliveryStatusUpdated
     } catch (e) {
       console.error("[admin carrier-tracking] persist snapshot:", e)
     }
+  }
+
+  if (!deliveryStatus) {
+    const { data: orderRow } = await serviceSupabase
+      .from("orders")
+      .select("delivery_status")
+      .eq("id", parsed.data)
+      .maybeSingle()
+    deliveryStatus =
+      typeof (orderRow as { delivery_status?: unknown } | null)?.delivery_status === "string"
+        ? (orderRow as { delivery_status: string }).delivery_status
+        : null
   }
 
   return NextResponse.json({
     data: result.detail,
     live: result.live,
     fetchError: result.fetchError ?? null,
+    deliveryStatus,
+    deliveryStatusUpdated,
   })
 }

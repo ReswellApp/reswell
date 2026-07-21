@@ -26,18 +26,41 @@ export async function GET(_request: NextRequest, props: { params: Promise<{ id: 
     return NextResponse.json({ error: result.error }, { status: result.status })
   }
 
+  let deliveryStatus: string | null = null
+  let deliveryStatusUpdated = false
+
   if (result.live) {
     try {
       const serviceSupabase = createServiceRoleClient()
-      await persistOrderCarrierTrackingSnapshot(serviceSupabase, orderId.trim(), result.detail)
+      const persist = await persistOrderCarrierTrackingSnapshot(
+        serviceSupabase,
+        orderId.trim(),
+        result.detail,
+      )
+      deliveryStatus = persist.deliveryStatus
+      deliveryStatusUpdated = persist.deliveryStatusUpdated
     } catch (e) {
       console.error("[carrier-tracking] persist snapshot:", e)
     }
+  }
+
+  if (!deliveryStatus) {
+    const { data: orderRow } = await supabase
+      .from("orders")
+      .select("delivery_status")
+      .eq("id", orderId.trim())
+      .maybeSingle()
+    deliveryStatus =
+      typeof (orderRow as { delivery_status?: unknown } | null)?.delivery_status === "string"
+        ? (orderRow as { delivery_status: string }).delivery_status
+        : null
   }
 
   return NextResponse.json({
     data: result.detail,
     live: result.live,
     fetchError: result.fetchError ?? null,
+    deliveryStatus,
+    deliveryStatusUpdated,
   })
 }

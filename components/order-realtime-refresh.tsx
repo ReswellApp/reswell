@@ -1,42 +1,44 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useCallback, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import type { RealtimeChannel } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 
-type OrderRefreshSnapshot = {
-  delivery_status: string | null
-  status: string | null
-  tracking_number: string | null
-  refunded_at: string | null
-}
+function useDebouncedRouterRefresh(minIntervalMs = 1_500) {
+  const router = useRouter()
+  const lastRefreshAtRef = useRef(0)
+  const pendingTimerRef = useRef<number | null>(null)
 
-function snapshotFromRow(row: Record<string, unknown>): OrderRefreshSnapshot {
-  return {
-    delivery_status: typeof row.delivery_status === "string" ? row.delivery_status : null,
-    status: typeof row.status === "string" ? row.status : null,
-    tracking_number: typeof row.tracking_number === "string" ? row.tracking_number : null,
-    refunded_at: typeof row.refunded_at === "string" ? row.refunded_at : null,
-  }
-}
+  useEffect(() => {
+    return () => {
+      if (pendingTimerRef.current != null) {
+        window.clearTimeout(pendingTimerRef.current)
+      }
+    }
+  }, [])
 
-function isCarrierTrackingOnlyUpdate(
-  prev: OrderRefreshSnapshot | null,
-  next: OrderRefreshSnapshot,
-): boolean {
-  if (!prev) return false
-  return (
-    prev.delivery_status === next.delivery_status &&
-    prev.status === next.status &&
-    prev.tracking_number === next.tracking_number &&
-    prev.refunded_at === next.refunded_at
-  )
+  return useCallback(() => {
+    const now = Date.now()
+    const elapsed = now - lastRefreshAtRef.current
+    if (elapsed >= minIntervalMs) {
+      lastRefreshAtRef.current = now
+      router.refresh()
+      return
+    }
+
+    if (pendingTimerRef.current != null) return
+    pendingTimerRef.current = window.setTimeout(() => {
+      pendingTimerRef.current = null
+      lastRefreshAtRef.current = Date.now()
+      router.refresh()
+    }, minIntervalMs - elapsed)
+  }, [minIntervalMs, router])
 }
 
 /**
- * Revalidates the current route when a single order row changes (e.g. Stripe webhook sets refunded).
- * Skips full-page refresh when only carrier tracking_detail was updated — the tracking panel polls locally.
+ * Revalidates the current route when a single order row changes
+ * (delivery status, tracking detail, refunds, etc.).
  */
 export function OrderDetailRealtimeRefresh({
   orderId,
@@ -46,8 +48,9 @@ export function OrderDetailRealtimeRefresh({
   /** When set (e.g. admin client fetch), invoked instead of `router.refresh()`. */
   onUpdate?: () => void
 }) {
-  const router = useRouter()
-  const snapshotRef = useRef<OrderRefreshSnapshot | null>(null)
+  const refresh = useDebouncedRouterRefresh()
+  const onUpdateRef = useRef(onUpdate)
+  onUpdateRef.current = onUpdate
 
   useEffect(() => {
     const supabase = createClient()
@@ -63,18 +66,13 @@ export function OrderDetailRealtimeRefresh({
           table: "orders",
           filter: `id=eq.${orderId}`,
         },
-        (payload) => {
-          const row = payload.new as Record<string, unknown>
-          const next = snapshotFromRow(row)
-          const trackingOnly = isCarrierTrackingOnlyUpdate(snapshotRef.current, next)
-          snapshotRef.current = next
-
-          if (trackingOnly) return
-
-          onUpdate?.()
-          if (!onUpdate) {
-            router.refresh()
+        () => {
+          const custom = onUpdateRef.current
+          if (custom) {
+            custom()
+            return
           }
+          refresh()
         },
       )
       .subscribe()
@@ -84,16 +82,31 @@ export function OrderDetailRealtimeRefresh({
         void supabase.removeChannel(channel)
       }
     }
-  }, [orderId, onUpdate, router])
+  }, [orderId, refresh])
+
+  useEffect(() => {
+    if (onUpdate) return
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh()
+    }
+    document.addEventListener("visibilitychange", onVisible)
+    window.addEventListener("focus", refresh)
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible)
+      window.removeEventListener("focus", refresh)
+    }
+  }, [onUpdate, refresh])
 
   return null
 }
 
 /**
  * Revalidates the purchases or sales list when any of the user's marketplace purchases/sales change.
+ * Also soft-refreshes when the tab becomes visible so badges stay accurate if Realtime was missed.
  */
 export function OrdersListRealtimeRefresh({ role }: { role: "buyer" | "seller" }) {
-  const router = useRouter()
+  const refresh = useDebouncedRouterRefresh()
 
   useEffect(() => {
     const supabase = createClient()
@@ -118,7 +131,7 @@ export function OrdersListRealtimeRefresh({ role }: { role: "buyer" | "seller" }
             filter: `${col}=eq.${user.id}`,
           },
           () => {
-            router.refresh()
+            refresh()
           },
         )
         .subscribe()
@@ -136,7 +149,19 @@ export function OrdersListRealtimeRefresh({ role }: { role: "buyer" | "seller" }
         void supabase.removeChannel(chRef.current)
       }
     }
-  }, [role, router])
+  }, [role, refresh])
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh()
+    }
+    document.addEventListener("visibilitychange", onVisible)
+    window.addEventListener("focus", refresh)
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible)
+      window.removeEventListener("focus", refresh)
+    }
+  }, [refresh])
 
   return null
 }

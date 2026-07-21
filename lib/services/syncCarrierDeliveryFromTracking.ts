@@ -11,6 +11,8 @@ export type SyncCarrierDeliveryResult = {
   deliveredNewlyRecorded: boolean
   deliveryStatusUpdated: boolean
   carrierDeliveredAt: string | null
+  /** Marketplace delivery_status after sync (or unchanged current value). */
+  deliveryStatus: string | null
 }
 
 type OrderDeliveryRow = {
@@ -39,6 +41,7 @@ export async function syncCarrierDeliveryFromTracking(
       deliveredNewlyRecorded: false,
       deliveryStatusUpdated: false,
       carrierDeliveredAt: null,
+      deliveryStatus: null,
     }
   }
 
@@ -82,6 +85,7 @@ export async function syncCarrierDeliveryFromTracking(
       deliveredNewlyRecorded,
       deliveryStatusUpdated,
       carrierDeliveredAt: (order.carrier_delivered_at ?? deliveredAtIso) as string,
+      deliveryStatus: deliveryStatusUpdated ? "delivered" : order.delivery_status,
     }
   }
 
@@ -111,5 +115,6 @@ export async function syncCarrierDeliveryFromTracking(
     deliveredNewlyRecorded: false,
     deliveryStatusUpdated,
     carrierDeliveredAt: order.carrier_delivered_at,
+    deliveryStatus: deliveryStatusUpdated ? "shipped" : order.delivery_status,
   }
 }

@@ -25,6 +25,8 @@ import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-p
 import { listingPortraitThumbClass, listingPortraitThumbSizes } from "@/lib/utils/dashboard-display-styles"
 import { REAL_MARKETPLACE_PURCHASES_FILTER } from "@/lib/order-admin-test"
 
+export const dynamic = "force-dynamic"
+
 export const metadata = privatePageMetadata({
   title: "Purchases — Reswell",
   description: "Your purchases on Reswell: shipping status, pickup codes, and order history.",

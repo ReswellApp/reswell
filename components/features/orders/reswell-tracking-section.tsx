@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import {
   AlertCircle,
   CheckCircle2,
@@ -13,6 +14,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import {
+  carrierTrackingIndicatesDelivered,
   trackingStatusLabel,
   trackingStatusTone,
 } from "@/lib/shipping/carrier-status-display"
@@ -24,8 +26,17 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { LocalDateOnly, LocalDateTime } from "@/components/ui/local-datetime"
 
-const POLL_MS = 90_000
+const POLL_MS = 30_000
 const FETCH_TIMEOUT_MS = 35_000
+
+type CarrierTrackingApiBody = {
+  data?: OrderTrackingDetail
+  live?: boolean
+  fetchError?: string | null
+  error?: string
+  deliveryStatus?: string | null
+  deliveryStatusUpdated?: boolean
+}
 
 function formatEventLocation(event: NonNullable<OrderTrackingDetail["events"]>[number]): string | null {
   const cityState = [event.city_locality, event.state_province].filter(Boolean).join(", ")
@@ -88,6 +99,30 @@ function TrackingTimeline({ events }: { events: NonNullable<OrderTrackingDetail[
   )
 }
 
+function marketplaceStatusIsTerminal(status: string): boolean {
+  return status === "delivered" || status === "picked_up"
+}
+
+function shouldRefreshMarketplaceUi(
+  marketplaceDeliveryStatus: string,
+  body: CarrierTrackingApiBody,
+): boolean {
+  if (body.deliveryStatusUpdated) return true
+
+  const nextStatus = body.deliveryStatus?.trim()
+  if (nextStatus && nextStatus !== marketplaceDeliveryStatus) return true
+
+  if (
+    body.data &&
+    carrierTrackingIndicatesDelivered(body.data) &&
+    !marketplaceStatusIsTerminal(marketplaceDeliveryStatus)
+  ) {
+    return true
+  }
+
+  return false
+}
+
 export function ReswellTrackingSection(props: {
   orderId: string
   trackingNumber: string
@@ -110,6 +145,7 @@ export function ReswellTrackingSection(props: {
     carrierTrackingFetchPath,
   } = props
 
+  const router = useRouter()
   const [detail, setDetail] = useState<OrderTrackingDetail | null>(initialDetail ?? null)
   const [loading, setLoading] = useState(!initialDetail)
   const [refreshing, setRefreshing] = useState(false)
@@ -117,11 +153,23 @@ export function ReswellTrackingSection(props: {
   const [fetchError, setFetchError] = useState<string | null>(null)
   const detailRef = useRef(detail)
   detailRef.current = detail
+  const marketplaceStatusRef = useRef(marketplaceDeliveryStatus)
+  marketplaceStatusRef.current = marketplaceDeliveryStatus
+  const refreshScheduledRef = useRef(false)
 
   const carrierLabel = useMemo(
     () => formatCarrierDisplayName(trackingCarrier, null),
     [trackingCarrier],
   )
+
+  const scheduleMarketplaceRefresh = useCallback(() => {
+    if (refreshScheduledRef.current) return
+    refreshScheduledRef.current = true
+    router.refresh()
+    window.setTimeout(() => {
+      refreshScheduledRef.current = false
+    }, 2_000)
+  }, [router])
 
   const loadTracking = useCallback(
     async (opts?: { silent?: boolean }) => {
@@ -142,12 +190,7 @@ export function ReswellTrackingSection(props: {
           credentials: "include",
           signal: controller.signal,
         })
-        const body = (await res.json()) as {
-          data?: OrderTrackingDetail
-          live?: boolean
-          fetchError?: string | null
-          error?: string
-        }
+        const body = (await res.json()) as CarrierTrackingApiBody
         if (!res.ok) {
           setFetchError(body.error ?? "Could not load tracking")
           return
@@ -157,6 +200,10 @@ export function ReswellTrackingSection(props: {
         }
         setLive(body.live ?? false)
         setFetchError(body.fetchError ?? null)
+
+        if (shouldRefreshMarketplaceUi(marketplaceStatusRef.current, body)) {
+          scheduleMarketplaceRefresh()
+        }
       } catch (err) {
         const timedOut =
           err instanceof DOMException
@@ -173,15 +220,19 @@ export function ReswellTrackingSection(props: {
         setRefreshing(false)
       }
     },
-    [carrierTrackingFetchPath, orderId],
+    [carrierTrackingFetchPath, orderId, scheduleMarketplaceRefresh],
   )
+
+  useEffect(() => {
+    setDetail(initialDetail ?? null)
+  }, [initialDetail])
 
   useEffect(() => {
     void loadTracking()
   }, [loadTracking])
 
   useEffect(() => {
-    if (marketplaceDeliveryStatus === "delivered" || marketplaceDeliveryStatus === "picked_up") return
+    if (marketplaceStatusIsTerminal(marketplaceDeliveryStatus)) return
 
     const id = window.setInterval(() => {
       void loadTracking({ silent: true })
@@ -189,13 +240,33 @@ export function ReswellTrackingSection(props: {
     return () => window.clearInterval(id)
   }, [loadTracking, marketplaceDeliveryStatus])
 
+  useEffect(() => {
+    if (marketplaceStatusIsTerminal(marketplaceDeliveryStatus)) return
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        void loadTracking({ silent: true })
+      }
+    }
+    const onFocus = () => {
+      void loadTracking({ silent: true })
+    }
+
+    document.addEventListener("visibilitychange", onVisible)
+    window.addEventListener("focus", onFocus)
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible)
+      window.removeEventListener("focus", onFocus)
+    }
+  }, [loadTracking, marketplaceDeliveryStatus])
+
   const headline = detail ? trackingStatusLabel(detail) : "Loading carrier updates…"
   const sub = detail?.carrier_status_description?.trim()
   const tone = trackingStatusTone(detail?.status_code)
   const showCarrierDeliveredNote =
-    detail?.status_code === "DE" &&
-    marketplaceDeliveryStatus !== "delivered" &&
-    marketplaceDeliveryStatus !== "picked_up"
+    detail != null &&
+    carrierTrackingIndicatesDelivered(detail) &&
+    !marketplaceStatusIsTerminal(marketplaceDeliveryStatus)
   const events = detail?.events ?? []
 
   const copyTracking = async () => {
@@ -385,7 +456,7 @@ export function ReswellTrackingSection(props: {
         ) : null}
 
         {live === true ? (
-          <p className="text-[11px] text-muted-foreground">Updates automatically every few minutes while in transit.</p>
+          <p className="text-[11px] text-muted-foreground">Updates automatically while in transit.</p>
         ) : null}
       </CardContent>
     </Card>

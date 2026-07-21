@@ -3,8 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Info, RefreshCw } from "lucide-react"
+import { RefreshCw } from "lucide-react"
 import { getEarningsWalletData, loadMoreEarningsActivity } from "@/app/actions/wallet"
 import { EARNINGS_ACTIVITY_PAGE_SIZE } from "@/lib/earnings-activity-page-size"
 import { EarningsLifetimeStats } from "@/components/features/earnings/earnings-lifetime-stats"
@@ -339,16 +338,6 @@ export default function EarningsPage() {
           </Button>
         }
       />
-
-      <Alert className="border-sky-200 bg-sky-50 text-sky-950 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-50 [&>svg]:text-sky-700 dark:[&>svg]:text-sky-300">
-        <Info className="h-4 w-4" aria-hidden />
-        <AlertTitle className="text-sm font-semibold">We&apos;re on it</AlertTitle>
-        <AlertDescription className="text-sm leading-snug text-sky-900/90 dark:text-sky-100/90">
-          We&apos;re currently working to resolve issues with Earnings. Reswell is taking care of it —
-          your balance is safe, and you don&apos;t need to re-enter anything. We should have this
-          resolved in the next 24 hours. Thanks for your patience — Hayden, CEO of Reswell
-        </AlertDescription>
-      </Alert>
 
       <div className="mt-6 space-y-8">
         <section className="space-y-4">

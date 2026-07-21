@@ -10,6 +10,7 @@ import {
 import type { OrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import {
   carrierTrackingDetailIsActionable,
+  carrierTrackingIndicatesDelivered,
   resolveCarrierStatusHeadline,
   trackingStatusTone,
 } from "@/lib/shipping/carrier-status-display"
@@ -94,6 +95,11 @@ export function resolveSaleCardStatusDisplay(params: {
   }
 
   const hasTracking = !!trackingNumber?.trim()
+
+  // Carrier DE can land in tracking_detail before marketplace delivery_status syncs.
+  if (hasTracking && carrierTrackingIndicatesDelivered(trackingDetail)) {
+    return fulfillmentCompleteBadgeDisplay("delivered")
+  }
 
   if (hasTracking && carrierTrackingDetailIsActionable(trackingDetail)) {
     return carrierBadgeDisplay(trackingDetail)
