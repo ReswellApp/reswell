@@ -69,17 +69,11 @@ function emailsMatch(promoEmail: string, buyerEmail: string): boolean {
   return normalizeNewsletterPromoEmail(promoEmail) === normalizeNewsletterPromoEmail(buyerEmail)
 }
 
-const ABANDONED_PROMO_PI_STATUSES = new Set<Stripe.PaymentIntent.Status>([
-  "requires_payment_method",
-  "requires_confirmation",
-  "requires_action",
-  "canceled",
-])
-
 /**
  * Cancels an abandoned checkout PaymentIntent and clears its promo reservation so a new
  * intent can be created (e.g. after shipping address changes or React remounts checkout).
  * Leaves reservations tied to succeeded/processing intents untouched.
+ * Any other PI status is treated as releasable (not mid-charge).
  */
 export async function releaseAbandonedNewsletterPromoReservation(
   stripe: Stripe,
@@ -92,9 +86,6 @@ export async function releaseAbandonedNewsletterPromoReservation(
   try {
     const existingPi = await stripe.paymentIntents.retrieve(reservedPiId)
     if (existingPi.status === "succeeded" || existingPi.status === "processing") {
-      return
-    }
-    if (!ABANDONED_PROMO_PI_STATUSES.has(existingPi.status)) {
       return
     }
     if (existingPi.status !== "canceled") {

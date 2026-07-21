@@ -29,11 +29,14 @@ export function parseGoogleAddressComponents(
   const premise = get("premise")
   const line2 = [subpremise, premise].filter(Boolean).join(" ").trim()
 
+  // administrative_area_level_2 is county — used when Google omits locality for a ZIP.
+  const county = get("administrative_area_level_2").replace(/\s+County$/i, "").trim()
   const city =
     get("locality") ||
     get("sublocality") ||
     get("neighborhood") ||
     get("administrative_area_level_3") ||
+    county ||
     ""
 
   const state = get("administrative_area_level_1", true)

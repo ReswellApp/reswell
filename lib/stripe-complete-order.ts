@@ -528,10 +528,12 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   const promoCodeId = pi.metadata.promo_code_id?.trim() || null
   const promoCodeFromMeta = pi.metadata.promo_code?.trim() || null
   const promoDiscountCentsRaw = pi.metadata.promo_discount_cents?.trim()
+  const promoDiscountPercentRaw = pi.metadata.promo_discount_percent?.trim()
   const promoKind =
     parseCheckoutPromoKind(pi.metadata.promo_kind) ??
     (promoCodeId ? await inferCheckoutPromoKind(promoCodeId) : null)
   let promoDiscountUsd = 0
+  let promoDiscountPercent = 0
 
   if (promoCodeId) {
     if (!promoDiscountCentsRaw || !/^\d+$/.test(promoDiscountCentsRaw)) {
@@ -542,15 +544,31 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       return { ok: false, error: "Invalid promo metadata", status: 400 }
     }
 
-    const expectedPromoTotal = computeCheckoutTotalWithNewsletterPromo({
-      itemSubtotalUsd: bundle.totalItemPriceUsd,
-      shippingUsd: bundle.totalShippingUsd,
-      discountPercent: Math.round((promoDiscountUsd / bundle.totalItemPriceUsd) * 100),
-    }).totalUsd
+    const discountPercentFromMeta =
+      promoDiscountPercentRaw && /^\d{1,3}$/.test(promoDiscountPercentRaw)
+        ? parseInt(promoDiscountPercentRaw, 10)
+        : null
+    promoDiscountPercent =
+      discountPercentFromMeta != null &&
+      discountPercentFromMeta >= 1 &&
+      discountPercentFromMeta <= 100
+        ? discountPercentFromMeta
+        : // Legacy PIs without promo_discount_percent metadata.
+          Math.round((promoDiscountUsd / bundle.totalItemPriceUsd) * 100)
+
+    const { discountUsd: expectedDiscountUsd, totalUsd: expectedPromoTotal } =
+      computeCheckoutTotalWithNewsletterPromo({
+        itemSubtotalUsd: bundle.totalItemPriceUsd,
+        shippingUsd: bundle.totalShippingUsd,
+        discountPercent: promoDiscountPercent,
+      })
 
     const expectedPromoCents = Math.round(expectedPromoTotal * 100)
     const metaCents = hasMetaAmountCents ? parseInt(metaAmountCentsRaw!, 10) : expectedPromoCents
     if (Math.abs(metaCents - expectedPromoCents) > 1) {
+      return { ok: false, error: "Promo discount does not match order", status: 400 }
+    }
+    if (Math.abs(Math.round(promoDiscountUsd * 100) - Math.round(expectedDiscountUsd * 100)) > 1) {
       return { ok: false, error: "Promo discount does not match order", status: 400 }
     }
   }
@@ -562,7 +580,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
           computeCheckoutTotalWithNewsletterPromo({
             itemSubtotalUsd: bundle.totalItemPriceUsd,
             shippingUsd: bundle.totalShippingUsd,
-            discountPercent: Math.round((promoDiscountUsd / bundle.totalItemPriceUsd) * 100),
+            discountPercent: promoDiscountPercent,
           }).totalUsd * 100,
         )
       : Math.round(bundle.totalUsd * 100)

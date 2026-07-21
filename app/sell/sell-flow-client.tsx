@@ -120,6 +120,12 @@ import {
   type SellListingDraftFormSnapshot,
 } from "@/lib/sell-listing-draft-idb"
 import { friendlyListingPhotoErrorMessage } from "@/lib/utils/friendly-listing-photo-error"
+import {
+  SELL_SUBMIT_INTERRUPTED_MESSAGE,
+  isSellSubmitAbortError,
+  sellActionErrorMessage,
+  sellSubmitErrorMessage,
+} from "@/lib/sell-flow/sell-submit-error"
 import { sellerPurchasePriceToDb } from "@/lib/utils/seller-purchase-price"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { applyBoardListingPublishedSideEffectsAction } from "@/lib/actions/boardListingPublishActions"
@@ -220,17 +226,6 @@ function sellFormHasCommittedMapPins(fd: { locationLat: number; locationLng: num
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false
   if (lat === 0 && lng === 0) return false
   return true
-}
-
-function submitErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error && error.message.trim()) return error.message
-  if (error && typeof error === "object") {
-    const o = error as { message?: unknown; details?: unknown; hint?: unknown }
-    if (typeof o.message === "string" && o.message.trim()) return o.message
-    const parts = [o.details, o.hint].filter((x): x is string => typeof x === "string" && x.trim() !== "")
-    if (parts.length) return parts.join(" — ")
-  }
-  return fallback
 }
 
 /** Server-side Klaviyo “Listing” metric; safe to fire-and-forget from /sell after the listing is live. */
@@ -2460,28 +2455,12 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     const revalidateNavSearchOnSuccess = !editId || listingIsDraft
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        await persistSellListingDraftSnapshot({
-          listingType: "board",
-          formData: formData as SellListingDraftFormSnapshot,
-          images,
-          userId: null,
-        })
-        try {
-          sessionStorage.setItem(SELL_PENDING_PUBLISH_KEY, "1")
-        } catch {
-          /* quota / private mode */
-        }
-        const ret = `/sell${sellSearchParams.toString() ? `?${sellSearchParams}` : ""}`
-        toast.message("Sign in to publish your listing")
-        openSignIn(ret)
-        return
-      }
-
-      const { data: { session } } = await supabase.auth.getSession()
+      // Same session resolution as photo upload — retries through brief auth lock /
+      // token-refresh aborts so Save does not surface "signal is aborted without reason".
+      const session = await resolveClientSessionForMutation(supabase)
+      const user = session?.user
       const accessToken = session?.access_token
-      if (!accessToken) {
+      if (!user || !accessToken) {
         await persistSellListingDraftSnapshot({
           listingType: "board",
           formData: formData as SellListingDraftFormSnapshot,
@@ -2787,7 +2766,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
             updated = retry.data
             updateError = retry.error
           }
-          if (updateError) throw new Error(submitErrorMessage(updateError, "Failed to update listing"))
+          if (updateError) throw new Error(sellSubmitErrorMessage(updateError, "Failed to update listing"))
           listingSlug = updated?.slug ?? null
           listingId = effectiveEditId
           persistBoardCatalogSnapshot(effectiveEditId, user.id)
@@ -2848,7 +2827,9 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
             }),
           })
           const data = await res.json()
-          if (!res.ok) throw new Error(data.error || "Failed to update listing")
+          if (!res.ok) {
+            throw new Error(sellActionErrorMessage(data.error || "Failed to update listing"))
+          }
           listingSlug = data.slug
           if (data.published === true) {
             setEditListingStatus("active")
@@ -2916,7 +2897,9 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
             }),
           })
           const data = await res.json()
-          if (!res.ok) throw new Error(data.error || "Failed to create listing")
+          if (!res.ok) {
+            throw new Error(sellActionErrorMessage(data.error || "Failed to create listing"))
+          }
           listingId = data.listing_id
           listingSlug = data.slug
           goSubmitStep(2)
@@ -2952,7 +2935,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           }
 
           if (listingError) {
-            throw new Error(submitErrorMessage(listingError, "Failed to create listing"))
+            throw new Error(sellSubmitErrorMessage(listingError, "Failed to create listing"))
           }
           if (!listing) {
             throw new Error("No listing returned")
@@ -2980,7 +2963,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
               .eq("id", listing.id)
               .eq("user_id", user.id)
             listingId = null
-            throw new Error(submitErrorMessage(imagesInsertError, "Failed to save listing photos"))
+            throw new Error(sellSubmitErrorMessage(imagesInsertError, "Failed to save listing photos"))
           }
           requestKlaviyoListingCreated(String(listing.id))
           void applyBoardListingPublishedSideEffectsAction(String(listing.id)).catch((err) => {
@@ -3101,12 +3084,15 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       }
       router.push(detailPath)
     } catch (error: unknown) {
-      const msg = submitErrorMessage(error, "Failed to create listing")
-      console.error("Error creating listing:", msg, error)
+      const aborted = isSellSubmitAbortError(error)
+      const msg = sellSubmitErrorMessage(error, "Failed to create listing")
+      if (!aborted) {
+        console.error("Error creating listing:", msg, error)
+      }
       logSellFunnelEvent({
         listingType: "surfboards",
         event: "publish_failed",
-        message: msg,
+        message: aborted ? "aborted" : msg,
         durationMs: Date.now() - publishStartedAt,
       })
       const failedLabel =
@@ -3123,25 +3109,15 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       )
       const tid = uploadToastIdRef.current
       uploadToastIdRef.current = null
-      if (tid != null) {
-        toast.dismiss(tid)
-        toast.error("Something went wrong. Please try again.", {
-          duration: 8000,
-          description: msg,
-          action: {
-            label: "Retry",
-            onClick: () => formRef.current?.requestSubmit(),
-          },
-        })
-      } else {
-        toast.error(msg, {
-          duration: 8000,
-          action: {
-            label: "Retry",
-            onClick: () => formRef.current?.requestSubmit(),
-          },
-        })
-      }
+      if (tid != null) toast.dismiss(tid)
+      toast.error(aborted ? SELL_SUBMIT_INTERRUPTED_MESSAGE : "Something went wrong. Please try again.", {
+        duration: 8000,
+        ...(aborted ? {} : { description: msg }),
+        action: {
+          label: "Retry",
+          onClick: () => formRef.current?.requestSubmit(),
+        },
+      })
     } finally {
       publishInFlightRef.current = false
       if (!retainPublishOverlayUntilNavigation) {

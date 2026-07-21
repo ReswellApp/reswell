@@ -77,7 +77,13 @@ import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
 import { scrollPublishValidationBannerIntoView } from "@/lib/sell-flow/scroll-section-into-view"
 import { validateFinListingForm } from "@/lib/sell-flow/validate-fin-listing-form"
 import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
+import {
+  SELL_SUBMIT_INTERRUPTED_MESSAGE,
+  isSellSubmitAbortError,
+  sellActionErrorMessage,
+} from "@/lib/sell-flow/sell-submit-error"
 import { useSellFunnelStepTracking } from "@/lib/sell-flow/use-sell-funnel-step-tracking"
+import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 import { persistListingDraftSnapshot } from "@/lib/sell-flow/persist-listing-draft-snapshot"
 import {
   clearPendingPublish,
@@ -686,9 +692,8 @@ export default function SellFinsFlow({
     })
 
     const supabase = supabaseRef.current
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    const session = await resolveClientSessionForMutation(supabase)
+    const user = session?.user
 
     const persistDraftForSignIn = async () => {
       await persistListingDraftSnapshot({
@@ -702,13 +707,7 @@ export default function SellFinsFlow({
       signIn(finSellReturnPath())
     }
 
-    if (!user) {
-      await persistDraftForSignIn()
-      return
-    }
-
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.access_token) {
+    if (!user || !session?.access_token) {
       await persistDraftForSignIn()
       return
     }
@@ -833,13 +832,16 @@ export default function SellFinsFlow({
             published?: boolean
           }
           if (!res.ok) {
+            const message = sellActionErrorMessage(
+              typeof data.error === "string" ? data.error : "Failed to update listing",
+            )
             logSellFunnelEvent({
               listingType: "fins",
               event: "publish_failed",
-              message: typeof data.error === "string" ? data.error : "Failed to update listing",
+              message,
               durationMs: Date.now() - publishStartedAt,
             })
-            toast.error(typeof data.error === "string" ? data.error : "Failed to update listing")
+            toast.error(message)
             setSubmitting(false)
             return
           }
@@ -875,13 +877,14 @@ export default function SellFinsFlow({
           removedImageIds,
         })
         if ("error" in result) {
+          const message = sellActionErrorMessage(result.error)
           logSellFunnelEvent({
             listingType: "fins",
             event: "publish_failed",
-            message: result.error,
+            message,
             durationMs: Date.now() - publishStartedAt,
           })
-          toast.error(result.error)
+          toast.error(message)
           setSubmitting(false)
           return
         }
@@ -928,15 +931,26 @@ export default function SellFinsFlow({
         },
       })
     } catch (err) {
-      console.error("fin listing submit failed", err)
+      const aborted = isSellSubmitAbortError(err)
+      if (!aborted) {
+        console.error("fin listing submit failed", err)
+      }
       logSellFunnelEvent({
         listingType: "fins",
         event: "publish_failed",
-        message: err instanceof Error ? err.message : "Unexpected submit error",
+        message: aborted
+          ? "aborted"
+          : err instanceof Error
+            ? err.message
+            : "Unexpected submit error",
         durationMs: Date.now() - publishStartedAt,
       })
       toast.error(
-        editId ? "Something went wrong saving your listing." : "Something went wrong publishing your listing.",
+        aborted
+          ? SELL_SUBMIT_INTERRUPTED_MESSAGE
+          : editId
+            ? "Something went wrong saving your listing."
+            : "Something went wrong publishing your listing.",
       )
       setSubmitting(false)
     }

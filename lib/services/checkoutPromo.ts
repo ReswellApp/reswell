@@ -44,13 +44,6 @@ export type CheckoutPromoValidationResult =
     }
   | { ok: false; error: string }
 
-const ABANDONED_PROMO_PI_STATUSES = new Set<Stripe.PaymentIntent.Status>([
-  "requires_payment_method",
-  "requires_confirmation",
-  "requires_action",
-  "canceled",
-])
-
 export async function validateCheckoutPromoForCheckout(params: {
   code: string
   buyerEmail: string
@@ -109,6 +102,11 @@ export async function validateCheckoutPromoForCheckout(params: {
   return { ok: false, error: "That promo code is not valid." }
 }
 
+/**
+ * Cancels an abandoned checkout PaymentIntent and clears its promo reservation so a new
+ * intent can be created. Leaves reservations tied to succeeded/processing intents untouched.
+ * Any other PI status is treated as releasable (not mid-charge).
+ */
 export async function releaseAbandonedCheckoutPromoReservation(
   stripe: Stripe,
   supabase: SupabaseClient,
@@ -120,9 +118,6 @@ export async function releaseAbandonedCheckoutPromoReservation(
   try {
     const existingPi = await stripe.paymentIntents.retrieve(reservedPiId)
     if (existingPi.status === "succeeded" || existingPi.status === "processing") {
-      return
-    }
-    if (!ABANDONED_PROMO_PI_STATUSES.has(existingPi.status)) {
       return
     }
     if (existingPi.status !== "canceled") {
@@ -154,6 +149,29 @@ export async function reserveCheckoutPromoForPaymentIntent(
     return reserveNewsletterPromoForPaymentIntent(supabase, ref.promo.id, paymentIntentId)
   }
   return reserveAdminIssuedPromoForPaymentIntent(supabase, ref.promo.id, paymentIntentId)
+}
+
+/**
+ * Release any abandoned reservation, then reserve. On failure, re-fetch the promo row
+ * and retry release + reserve once (covers stale in-memory reservation ids).
+ */
+export async function releaseAndReserveCheckoutPromoForPaymentIntent(
+  stripe: Stripe,
+  supabase: SupabaseClient,
+  ref: CheckoutPromoRef,
+  paymentIntentId: string,
+): Promise<{ ok: boolean; error: string | null }> {
+  await releaseAbandonedCheckoutPromoReservation(stripe, supabase, ref)
+  const first = await reserveCheckoutPromoForPaymentIntent(supabase, ref, paymentIntentId)
+  if (first.ok) return first
+
+  const fresh = await fetchCheckoutPromoRefByCode(ref.promo.code)
+  if (!fresh || fresh.kind !== ref.kind || fresh.promo.id !== ref.promo.id) {
+    return first
+  }
+
+  await releaseAbandonedCheckoutPromoReservation(stripe, supabase, fresh)
+  return reserveCheckoutPromoForPaymentIntent(supabase, fresh, paymentIntentId)
 }
 
 export async function redeemCheckoutPromoForOrder(

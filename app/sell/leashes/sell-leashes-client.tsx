@@ -78,6 +78,12 @@ import { cn } from "@/lib/utils"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { finalizePeerListingCreate } from "@/lib/utils/admin-peer-listing-create-navigation"
 import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
+import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
+import {
+  SELL_SUBMIT_INTERRUPTED_MESSAGE,
+  isSellSubmitAbortError,
+  sellActionErrorMessage,
+} from "@/lib/sell-flow/sell-submit-error"
 import { useSellFunnelStepTracking } from "@/lib/sell-flow/use-sell-funnel-step-tracking"
 
 const SELL_LEASHES_FORM_SECTION_NAV_ITEMS = buildSellSectionNavItems("leashes", "Leash details")
@@ -334,12 +340,8 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
         updateSlot(slot.clientId, { phase: "uploading", progress: 5 })
 
         const supabase = supabaseRef.current
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
+        const session = await resolveClientSessionForMutation(supabase)
+        const user = session?.user
         if (!session?.access_token || !user) {
           updateSlot(slot.clientId, { phase: "error" })
           signIn("/sell/leashes")
@@ -473,10 +475,9 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
     if (submitting) return
 
     const supabase = supabaseRef.current
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
+    const session = await resolveClientSessionForMutation(supabase)
+    const user = session?.user
+    if (!user || !session?.access_token) {
       signIn("/sell/leashes")
       return
     }
@@ -636,13 +637,16 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
           })
           const data = (await res.json().catch(() => ({}))) as { error?: string; slug?: string }
           if (!res.ok) {
+            const message = sellActionErrorMessage(
+              typeof data.error === "string" ? data.error : "Failed to update listing",
+            )
             logSellFunnelEvent({
               listingType: "leashes",
               event: "publish_failed",
-              message: typeof data.error === "string" ? data.error : "Failed to update listing",
+              message,
               durationMs: Date.now() - publishStartedAt,
             })
-            toast.error(typeof data.error === "string" ? data.error : "Failed to update listing")
+            toast.error(message)
             setSubmitting(false)
             return
           }
@@ -671,13 +675,14 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
           removedImageIds,
         })
         if ("error" in result) {
+          const message = sellActionErrorMessage(result.error)
           logSellFunnelEvent({
             listingType: "leashes",
             event: "publish_failed",
-            message: result.error,
+            message,
             durationMs: Date.now() - publishStartedAt,
           })
-          toast.error(result.error)
+          toast.error(message)
           setSubmitting(false)
           return
         }
@@ -709,14 +714,27 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
         directCreate: () => createLeashListingAction(payload),
       })
     } catch (err) {
-      console.error("leash listing submit failed", err)
+      const aborted = isSellSubmitAbortError(err)
+      if (!aborted) {
+        console.error("leash listing submit failed", err)
+      }
       logSellFunnelEvent({
         listingType: "leashes",
         event: "publish_failed",
-        message: err instanceof Error ? err.message : "Unexpected submit error",
+        message: aborted
+          ? "aborted"
+          : err instanceof Error
+            ? err.message
+            : "Unexpected submit error",
         durationMs: Date.now() - publishStartedAt,
       })
-      toast.error(editId ? "Something went wrong saving your listing." : "Something went wrong publishing your listing.")
+      toast.error(
+        aborted
+          ? SELL_SUBMIT_INTERRUPTED_MESSAGE
+          : editId
+            ? "Something went wrong saving your listing."
+            : "Something went wrong publishing your listing.",
+      )
       setSubmitting(false)
     }
   }

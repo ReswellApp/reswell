@@ -390,8 +390,10 @@ export const buyingHelpArticles: HelpArticle[] = [
               {helpLink("/help/buying/why-charged-tax", "Why was I charged tax on my order?")}.
             </p>
             <p>
-              Promo codes and gift cards are not available for listings from other surfers yet. If you
-              have wallet balance from past sales, see{" "}
+              Promo codes can be applied on cart or checkout when you&apos;re signed in. Newsletter
+              welcome codes only work on the account email they were sent to. The discount applies to
+              item price only (not shipping); Reswell covers it so sellers are still paid in full.
+              Gift cards are not available yet. If you have wallet balance from past sales, see{" "}
               {helpLink("/help/buying/wallet-balance-at-checkout", "Can I use wallet balance at checkout?")}.
             </p>
           </>

@@ -4,6 +4,7 @@ import type { ImpersonationData } from "@/lib/impersonation"
 import { listingDetailHref } from "@/lib/listing-href"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
+import { sellActionErrorMessage } from "@/lib/sell-flow/sell-submit-error"
 import { resolveAdminBulkListingAfterCreate } from "@/lib/utils/admin-bulk-listing-navigation"
 import {
   createImpersonatedListingViaApi,
@@ -61,13 +62,14 @@ export async function finalizePeerListingCreate(params: {
       images: listingImagesToImpersonatedPayload(params.images),
     })
     if (!impResult.ok) {
+      const message = sellActionErrorMessage(impResult.error)
       logSellFunnelEvent({
         listingType: params.section,
         event: "publish_failed",
-        message: impResult.error,
+        message,
         durationMs: funnelDurationMs(),
       })
-      toast.error(impResult.error)
+      toast.error(message)
       params.setSubmitting(false)
       return
     }
@@ -96,13 +98,14 @@ export async function finalizePeerListingCreate(params: {
 
   const result = await params.directCreate()
   if ("error" in result) {
+    const message = sellActionErrorMessage(result.error)
     logSellFunnelEvent({
       listingType: params.section,
       event: "publish_failed",
-      message: result.error,
+      message,
       durationMs: funnelDurationMs(),
     })
-    toast.error(result.error)
+    toast.error(message)
     params.setSubmitting(false)
     return
   }

@@ -12,8 +12,18 @@ export function generateNewsletterPromoCode(): string {
   return `WELCOME-${suffix}`
 }
 
+/**
+ * Normalize user-entered promo codes for lookup.
+ * Trims, uppercases, strips spaces/underscores, and repairs `WELCOME` + 6-char suffix
+ * when the hyphen was omitted (e.g. `WELCOME K7M3NP` → `WELCOME-K7M3NP`).
+ */
 export function normalizeNewsletterPromoCodeInput(raw: string): string {
-  return raw.trim().toUpperCase()
+  const compact = raw.trim().toUpperCase().replace(/[\s_]+/g, "")
+  const welcomeMatch = compact.match(/^WELCOME-?([A-Z0-9]{6})$/)
+  if (welcomeMatch) {
+    return `WELCOME-${welcomeMatch[1]}`
+  }
+  return compact
 }
 
 export function normalizeNewsletterPromoEmail(raw: string): string {

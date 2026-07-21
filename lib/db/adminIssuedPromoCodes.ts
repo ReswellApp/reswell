@@ -72,10 +72,25 @@ export async function reserveAdminIssuedPromoForPaymentIntent(
     .maybeSingle()
 
   if (error) return { ok: false, error: error.message }
-  if (!data?.id) {
-    return { ok: false, error: "This promo code is no longer available." }
+  if (data?.id) return { ok: true, error: null }
+
+  // Idempotent: already reserved to this PaymentIntent.
+  const { data: existing, error: existingError } = await supabase
+    .from("admin_issued_promo_codes")
+    .select("id, redeemed_at, reserved_payment_intent_id")
+    .eq("id", promoId)
+    .maybeSingle()
+
+  if (existingError) return { ok: false, error: existingError.message }
+  if (
+    existing?.id &&
+    !existing.redeemed_at &&
+    existing.reserved_payment_intent_id === paymentIntentId
+  ) {
+    return { ok: true, error: null }
   }
-  return { ok: true, error: null }
+
+  return { ok: false, error: "This promo code is no longer available." }
 }
 
 export async function redeemAdminIssuedPromoForOrder(

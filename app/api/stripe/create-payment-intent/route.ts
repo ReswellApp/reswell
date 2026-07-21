@@ -18,8 +18,7 @@ import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/lis
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { computeCheckoutTotalWithNewsletterPromo } from "@/lib/services/newsletterPromo"
 import {
-  releaseAbandonedCheckoutPromoReservation,
-  reserveCheckoutPromoForPaymentIntent,
+  releaseAndReserveCheckoutPromoForPaymentIntent,
   validateCheckoutPromoForCheckout,
   type CheckoutPromoRef,
 } from "@/lib/services/checkoutPromo"
@@ -369,7 +368,8 @@ export async function POST(request: NextRequest) {
     promoRef =
       promoCheck.kind === "newsletter"
         ? { kind: "newsletter", promo: promoCheck.promo }
-        : { kind: "admin_issued", promo: promoCheck.promo }}
+        : { kind: "admin_issued", promo: promoCheck.promo }
+  }
 
   const chargedTotalUsd =
     promoDiscountUsd > 0
@@ -404,7 +404,6 @@ export async function POST(request: NextRequest) {
           { status: 503, headers: JSON_NO_STORE_HEADERS },
         )
       }
-      await releaseAbandonedCheckoutPromoReservation(stripe, promoServiceSupabase, promoRef)
     }
 
     const paymentIntent = await stripe.paymentIntents.create({
@@ -426,6 +425,7 @@ export async function POST(request: NextRequest) {
               promo_code: promoCodeNormalized,
               promo_kind: promoKind,
               promo_discount_cents: String(Math.round(promoDiscountUsd * 100)),
+              promo_discount_percent: String(promoDiscountPercent),
             }
           : {}),
         ...(bundle.anyUsedReswellQuote
@@ -462,7 +462,8 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      const reserved = await reserveCheckoutPromoForPaymentIntent(
+      const reserved = await releaseAndReserveCheckoutPromoForPaymentIntent(
+        stripe,
         promoServiceSupabase,
         promoRef,
         paymentIntent.id,

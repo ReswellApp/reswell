@@ -24,7 +24,13 @@ import {
   type ListingPhotoSlot,
 } from "@/lib/sell-flow/listing-photo-slot"
 import { syncListingDraftImagesClient } from "@/lib/sell-flow/sync-listing-draft-images-client"
+import {
+  SELL_SUBMIT_INTERRUPTED_MESSAGE,
+  isSellSubmitAbortError,
+  sellSubmitErrorMessage,
+} from "@/lib/sell-flow/sell-submit-error"
 import { sellDraftFormLooksFilled, type SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
+import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 
 export type UseSellServerDraftOptions = {
   section: SellDraftSection
@@ -135,10 +141,8 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
       if (!options.draftHydrated) return { ok: false }
       if (options.editLoading) return { ok: false }
       if (getImpersonation()) return { ok: false }
-      const {
-        data: { user },
-      } = await options.supabase.auth.getUser()
-      if (!user) {
+      const session = await resolveClientSessionForMutation(options.supabase)
+      if (!session?.user || !session.access_token) {
         toast.message("Sign in to save a draft")
         return { ok: false }
       }
@@ -235,8 +239,11 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
     try {
       await syncDraftImages(result.listingId)
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Photos could not be saved to the draft."
-      toast.error(msg)
+      toast.error(
+        isSellSubmitAbortError(e)
+          ? SELL_SUBMIT_INTERRUPTED_MESSAGE
+          : sellSubmitErrorMessage(e, "Photos could not be saved to the draft."),
+      )
       setDraftSaveStatus("error")
       return
     }

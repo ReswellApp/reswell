@@ -6,6 +6,7 @@ import { Loader2, Palmtree, Sun } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { setListingVacationModeAction } from "@/lib/actions/listingVacationMode"
+import { sellActionErrorMessage } from "@/lib/sell-flow/sell-submit-error"
 import { cn } from "@/lib/utils"
 
 type ListingVacationModeButtonProps = {
@@ -46,7 +47,7 @@ export function ListingVacationModeButton({
       })
       if ("error" in result) {
         setVacationMode(previous)
-        toast.error(result.error)
+        toast.error(sellActionErrorMessage(result.error))
         return
       }
       onVacationModeChange?.(next)

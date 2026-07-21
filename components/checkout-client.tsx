@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import {
   CheckoutOrderSummaryAside,
@@ -12,6 +12,10 @@ import { PurchaseOptions } from "@/components/purchase-options"
 import { ProtectionTrustBlock } from "@/components/protection-trust-block"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { listingShipFromDisplayLine } from "@/lib/listing-ship-from-display"
+import {
+  clearPendingPromoCode,
+  getPendingPromoCode,
+} from "@/lib/promo-pending-storage"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { listingDetailHref } from "@/lib/listing-href"
 import { capitalizeWords } from "@/lib/listing-labels"
@@ -158,6 +162,7 @@ export function CheckoutClient({
   const [appliedPromo, setAppliedPromo] = useState<AppliedNewsletterPromo | null>(null)
   const [promoError, setPromoError] = useState<string | null>(null)
   const [promoApplying, setPromoApplying] = useState(false)
+  const pendingPromoAutoApplyTried = useRef(false)
 
   useEffect(() => {
     setAppliedPromo(null)
@@ -165,6 +170,7 @@ export function CheckoutClient({
     setPromoCodeInput("")
     setShipQuoteToken(null)
     setSelectedShippingServiceCode(null)
+    pendingPromoAutoApplyTried.current = false
   }, [listingIdsKey, impliedFulfillment])
 
   useEffect(() => {
@@ -289,59 +295,84 @@ export function CheckoutClient({
     setPurchaseDetails(state)
   }, [])
 
-  const handleApplyPromo = useCallback(async () => {
-    const code = promoCodeInput.trim()
-    if (!code) return
+  const applyPromoCode = useCallback(
+    async (rawCode: string) => {
+      const code = rawCode.trim()
+      if (!code) return
 
-    setPromoApplying(true)
-    setPromoError(null)
+      setPromoApplying(true)
+      setPromoError(null)
 
-    const itemSubtotal = resolved.ok ? resolved.itemPrice : 0
-    const shippingUsd =
-      needsShipping && shipQuote
-        ? shipQuote.shippingUsd
-        : resolved.ok
-          ? resolved.shipping
-          : 0
+      const itemSubtotal = resolved.ok ? resolved.itemPrice : 0
+      const shippingUsd =
+        needsShipping && shipQuote
+          ? shipQuote.shippingUsd
+          : resolved.ok
+            ? resolved.shipping
+            : 0
 
-    try {
-      const res = await fetch("/api/promo/validate", {
-        method: "POST",
-        cache: "no-store",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          code,
-          item_subtotal_usd: itemSubtotal,
-          shipping_usd: shippingUsd,
-        }),
-      })
-      const data = (await res.json()) as {
-        error?: string
-        data?: {
-          code: string
-          discountUsd: number
-          discountPercent: number
+      try {
+        const res = await fetch("/api/promo/validate", {
+          method: "POST",
+          cache: "no-store",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            code,
+            item_subtotal_usd: itemSubtotal,
+            shipping_usd: shippingUsd,
+          }),
+        })
+        const data = (await res.json()) as {
+          error?: string
+          data?: {
+            code: string
+            discountUsd: number
+            discountPercent: number
+          }
         }
-      }
-      if (!res.ok || !data.data) {
+        if (!res.ok || !data.data) {
+          setAppliedPromo(null)
+          setPromoError(data.error ?? "Could not apply promo code.")
+          clearPendingPromoCode()
+          return
+        }
+        setAppliedPromo({
+          code: data.data.code,
+          discountUsd: data.data.discountUsd,
+          discountPercent: data.data.discountPercent,
+        })
+        setPromoCodeInput(data.data.code)
+        clearPendingPromoCode()
+      } catch {
         setAppliedPromo(null)
-        setPromoError(data.error ?? "Could not apply promo code.")
-        return
+        setPromoError("Could not apply promo code.")
+        clearPendingPromoCode()
+      } finally {
+        setPromoApplying(false)
       }
-      setAppliedPromo({
-        code: data.data.code,
-        discountUsd: data.data.discountUsd,
-        discountPercent: data.data.discountPercent,
-      })
-      setPromoCodeInput(data.data.code)
-    } catch {
-      setAppliedPromo(null)
-      setPromoError("Could not apply promo code.")
-    } finally {
-      setPromoApplying(false)
+    },
+    [resolved, needsShipping, shipQuote],
+  )
+
+  const handleApplyPromo = useCallback(() => {
+    void applyPromoCode(promoCodeInput)
+  }, [applyPromoCode, promoCodeInput])
+
+  useEffect(() => {
+    if (pendingPromoAutoApplyTried.current) return
+    if (!resolved.ok || appliedPromo) return
+
+    const pending = getPendingPromoCode()
+    if (!pending) {
+      pendingPromoAutoApplyTried.current = true
+      return
     }
-  }, [promoCodeInput, resolved, needsShipping, shipQuote])
+
+    pendingPromoAutoApplyTried.current = true
+    setPromoCodeInput(pending)
+    void applyPromoCode(pending)
+  }, [resolved.ok, appliedPromo, applyPromoCode, listingIdsKey, impliedFulfillment])
 
   const backHref = listingDetailHref(primaryListing)
 

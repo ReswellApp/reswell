@@ -172,7 +172,9 @@ export function CheckoutOrderSummaryAside({
             </Button>
           </div>
           {!promoInteractive ? (
-            <p className="mt-2 text-[11px] text-neutral-400">Sign in to apply your newsletter promo code.</p>
+            <p className="mt-2 text-[11px] text-neutral-400">
+              Sign in to apply a promo code. Newsletter codes must match your account email.
+            </p>
           ) : appliedPromo ? (
             <p className="mt-2 text-[12px] font-medium text-[#5574AD]">
               {appliedPromo.code} applied — {appliedPromo.discountPercent}% off items
@@ -183,7 +185,7 @@ export function CheckoutOrderSummaryAside({
             </p>
           ) : (
             <p className="mt-2 text-[11px] text-neutral-400">
-              Newsletter codes apply to item price only. Reswell covers the discount — sellers are paid in full.
+              Promo codes apply to item price only. Reswell covers the discount — sellers are paid in full.
             </p>
           )}
         </div>
@@ -195,7 +197,7 @@ export function CheckoutOrderSummaryAside({
           </div>
           {displayTotals.discount != null && displayTotals.discount > 0 ? (
             <div className="flex justify-between gap-4 text-[#5574AD]">
-              <span>Newsletter discount</span>
+              <span>Promo discount</span>
               <span className="tabular-nums font-medium">−${displayTotals.discount.toFixed(2)}</span>
             </div>
           ) : null}

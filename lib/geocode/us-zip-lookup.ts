@@ -14,6 +14,31 @@ export type UsZipLookupResult = {
   address_line1: string
 }
 
+/** Strip trailing " County" so "New Hanover County" → "New Hanover" for rate shopping. */
+function localityFromCounty(county: string | undefined): string {
+  const raw = county?.trim() ?? ""
+  if (!raw) return ""
+  return raw.replace(/\s+County$/i, "").trim()
+}
+
+/**
+ * Nominatim often omits city/town for rural or county-spanning ZIPs (e.g. 28411).
+ * Prefer municipality fields, then county as a last resort for carrier lane quotes.
+ */
+export function cityLocalityFromNominatimAddress(addr: Record<string, string>): string {
+  return (
+    addr.city ||
+    addr.town ||
+    addr.village ||
+    addr.hamlet ||
+    addr.municipality ||
+    addr.suburb ||
+    addr.neighbourhood ||
+    localityFromCounty(addr.county) ||
+    ""
+  )
+}
+
 /**
  * Resolve a US ZIP to city/state via OpenStreetMap Nominatim (~sub-second).
  * Used for carrier lane rating where a generic street line is sufficient.
@@ -53,8 +78,7 @@ export async function lookupUsZipViaNominatim(
 
   if (!addr) return null
 
-  const city =
-    addr.city || addr.town || addr.village || addr.hamlet || addr.municipality || ""
+  const city = cityLocalityFromNominatimAddress(addr)
   const stateRaw = addr.state || ""
   const state = normalizeUsStateProvinceForShipping("US", stateRaw)
 

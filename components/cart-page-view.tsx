@@ -369,8 +369,6 @@ export function CartPageView({
               subtotal={availableTotal}
               deliveryLabel={deliveryLabel}
               taxLabel="Calculated at checkout"
-              discountAmount={0}
-              total={availableTotal}
               checkoutActions={checkoutActions}
               checkoutPending={pending}
               deliveryNote={deliveryNote}

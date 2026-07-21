@@ -5,6 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
 import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
+import {
+  SELL_SUBMIT_INTERRUPTED_MESSAGE,
+  isSellSubmitAbortError,
+  sellActionErrorMessage,
+} from "@/lib/sell-flow/sell-submit-error"
 import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -251,13 +256,14 @@ export default function SellMagazinesFlow({
           removedImageIds,
         })
         if ("error" in result) {
+          const message = sellActionErrorMessage(result.error)
           logSellFunnelEvent({
             listingType: "magazines",
             event: "publish_failed",
-            message: result.error,
+            message,
             durationMs: Date.now() - publishStartedAt,
           })
-          toast.error(result.error)
+          toast.error(message)
           return
         }
         logSellFunnelEvent({
@@ -274,13 +280,14 @@ export default function SellMagazinesFlow({
 
       const result = await createMagazineListingAction(payload)
       if ("error" in result) {
+        const message = sellActionErrorMessage(result.error)
         logSellFunnelEvent({
           listingType: "magazines",
           event: "publish_failed",
-          message: result.error,
+          message,
           durationMs: Date.now() - publishStartedAt,
         })
-        toast.error(result.error)
+        toast.error(message)
         return
       }
 
@@ -307,6 +314,28 @@ export default function SellMagazinesFlow({
 
       router.push(listingDetailHref({ id: result.listingId, slug: result.slug }))
       router.refresh()
+    } catch (err) {
+      const aborted = isSellSubmitAbortError(err)
+      if (!aborted) {
+        console.error("magazine listing submit failed", err)
+      }
+      logSellFunnelEvent({
+        listingType: "magazines",
+        event: "publish_failed",
+        message: aborted
+          ? "aborted"
+          : err instanceof Error
+            ? err.message
+            : "Unexpected submit error",
+        durationMs: Date.now() - publishStartedAt,
+      })
+      toast.error(
+        aborted
+          ? SELL_SUBMIT_INTERRUPTED_MESSAGE
+          : editId
+            ? "Something went wrong saving your listing."
+            : "Something went wrong publishing your listing.",
+      )
     } finally {
       setSubmitting(false)
     }
