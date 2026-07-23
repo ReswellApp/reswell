@@ -397,6 +397,16 @@ function interpretShipEngineLabelPurchaseResponse(
   }
 }
 
+function shipEngineResponseLooksLikeCreatedLabel(data: unknown): boolean {
+  const label = asRecord(data)
+  if (!label) return false
+  if (typeof label.label_id === "string" && label.label_id.trim()) return true
+  if (extractTrackingNumberFromLabel(label)) return true
+  if (pickLabelPdfUrl(label)) return true
+  const status = typeof label.status === "string" ? label.status.toLowerCase() : ""
+  return status === "completed" || status === "label_printed" || status === "processing"
+}
+
 export async function purchaseShipEngineLabel(rateId: string): Promise<
   | { ok: true; result: PurchasedShipEngineLabelResult }
   | { ok: false; error: string; status: number }
@@ -407,29 +417,30 @@ export async function purchaseShipEngineLabel(rateId: string): Promise<
 
   const trimmed = rateId.trim()
   const labelImageId = getShipEngineLabelImageId()
-  let includeLabelImage = Boolean(labelImageId)
+  const includeLabelImage = Boolean(labelImageId)
 
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const res = await shipEngineRequest(`/labels/rates/${encodeURIComponent(trimmed)}`, {
+  const res = await shipEngineRequest(`/labels/rates/${encodeURIComponent(trimmed)}`, {
+    method: "POST",
+    body: JSON.stringify(buildShipEngineLabelPurchaseBody(includeLabelImage)),
+  })
+  const data = await parseJsonSafe(res)
+
+  // Never POST a second purchase if the first response already created/charged a label.
+  if (
+    includeLabelImage &&
+    isLabelImagesNotSupportedError(data) &&
+    !shipEngineResponseLooksLikeCreatedLabel(data)
+  ) {
+    console.warn(
+      `[purchaseShipEngineLabel] Carrier does not support label_image_id for rate ${trimmed}; retrying without branding.`,
+    )
+    const retryRes = await shipEngineRequest(`/labels/rates/${encodeURIComponent(trimmed)}`, {
       method: "POST",
-      body: JSON.stringify(buildShipEngineLabelPurchaseBody(includeLabelImage)),
+      body: JSON.stringify(buildShipEngineLabelPurchaseBody(false)),
     })
-    const data = await parseJsonSafe(res)
-
-    if (includeLabelImage && isLabelImagesNotSupportedError(data)) {
-      console.warn(
-        `[purchaseShipEngineLabel] Carrier does not support label_image_id for rate ${trimmed}; retrying without branding.`,
-      )
-      includeLabelImage = false
-      continue
-    }
-
-    return interpretShipEngineLabelPurchaseResponse(res, data)
+    const retryData = await parseJsonSafe(retryRes)
+    return interpretShipEngineLabelPurchaseResponse(retryRes, retryData)
   }
 
-  return {
-    ok: false,
-    error: "Could not purchase label without branded image.",
-    status: 502,
-  }
+  return interpretShipEngineLabelPurchaseResponse(res, data)
 }

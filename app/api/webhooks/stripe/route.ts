@@ -112,8 +112,9 @@ export async function POST(request: Request) {
     })
     if (!result.ok) {
       console.error("[stripe webhook] seller label purchase failed:", result.error, { pi: pi.id })
-      if (result.status >= 500) {
-        return NextResponse.json({ error: result.error }, { status: 500 })
+      // 409 = another worker still buying the label; 5xx = retryable infra errors.
+      if (result.status >= 500 || result.status === 409) {
+        return NextResponse.json({ error: result.error }, { status: result.status === 409 ? 503 : 500 })
       }
       return NextResponse.json({ received: true, skipped: "seller_label_failed", detail: result.error })
     }

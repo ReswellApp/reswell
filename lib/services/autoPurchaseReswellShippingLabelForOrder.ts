@@ -10,7 +10,7 @@ import { getLatestOrderShippingLabelUrlsForOrder } from "@/lib/db/orderShippingL
 import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
 import { attachOrderShippingLabel } from "@/lib/services/attachOrderShippingLabel"
 import { ensureReswellShippingLabelReadyThreadNotification } from "@/lib/services/postReswellShippingLabelReadyNotification"
-import { purchaseLabelWithRateId } from "@/lib/services/orderShippingLabel"
+import { purchaseShipEngineLabelForOrderOnce } from "@/lib/services/purchaseShipEngineLabelForOrderOnce"
 import {
   effectiveBoardShippingMode,
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
@@ -243,9 +243,21 @@ export async function autoPurchaseReswellShippingLabelForOrder(
       return
     }
 
-    const purchased = await purchaseLabelWithRateId(rateId)
+    const purchased = await purchaseShipEngineLabelForOrderOnce({
+      supabase,
+      orderId: o.id,
+      ownerKey: `auto_reswell:${o.id}`,
+      rateId,
+    })
     if (!purchased.ok) {
       await fail("label_purchase", purchased.error)
+      return
+    }
+
+    if (purchased.alreadyPurchased) {
+      await resolveOpenOrderShippingLabelFailures(supabase, orderId)
+      await ensureReswellShippingLabelReadyThreadNotification(supabase, orderId)
+      console.info(`${tag} label already purchased; skipping duplicate ShipEngine buy.`)
       return
     }
 

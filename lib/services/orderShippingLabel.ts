@@ -92,6 +92,10 @@ export async function fetchRatesForSurfboardOrder(params: {
   return fetchShipEngineRatesForSurfboard(params)
 }
 
+/**
+ * Low-level ShipEngine buy. For marketplace orders always use
+ * {@link purchaseShipEngineLabelForOrderOnce} so an order cannot be charged twice.
+ */
 export async function purchaseLabelWithRateId(rateId: string) {
   return purchaseShipEngineLabel(rateId)
 }
