@@ -18,6 +18,11 @@ import {
   validateSellListingForm,
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
+import {
+  applySurfboardShippingTierDefaults,
+  parseSurfboardShippingTierId,
+  surfboardReswellPackageHasPartialDimensions,
+} from "@/lib/surfboard-shipping-tiers"
 
 const PRICE_MIN = 0.01
 const PRICE_MAX = 999_999.99
@@ -97,17 +102,23 @@ function deliverySectionComplete(form: SellFormValidationInput): boolean {
   if (fulfillmentFlags.shipping_available) {
     const mode = form.boardShippingCostMode ?? "reswell"
     if (mode === "flat") {
-      const raw = form.boardShippingPrice?.trim() ?? ""
-      if (!raw) return false
-      const sp = parseFloat(raw)
-      if (!Number.isFinite(sp) || sp < 0) return false
+      return parseSurfboardShippingTierId(form.surfboardShippingTier) != null
     }
     if (mode === "reswell") {
-      const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
-      const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
-      const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
+      if (surfboardReswellPackageHasPartialDimensions(form)) return false
+      const tierId = parseSurfboardShippingTierId(form.surfboardShippingTier)
+      if (!tierId) return false
+      const resolved = applySurfboardShippingTierDefaults(form, { tierId })
+      const L = parseReswellParcelLengthRawToCarrierInches(resolved.reswellPackageLengthIn)
+      const W = parseReswellParcelWidthHeightRawToCarrierInches(resolved.reswellPackageWidthIn)
+      const H = parseReswellParcelWidthHeightRawToCarrierInches(resolved.reswellPackageHeightIn)
       if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) return false
-      if (!isReswellPackedWeightComplete(form.reswellPackageWeightLb, form.reswellPackageWeightOz)) {
+      if (
+        !isReswellPackedWeightComplete(
+          resolved.reswellPackageWeightLb,
+          resolved.reswellPackageWeightOz,
+        )
+      ) {
         return false
       }
     }

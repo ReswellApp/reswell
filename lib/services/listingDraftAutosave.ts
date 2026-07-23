@@ -56,10 +56,13 @@ export function buildSurfboardDraftListingRow(
 ): Record<string, unknown> {
   const flags = resolveListingFulfillmentFlagsForSellSubmit(fd)
   const fulfillment = boardFulfillmentChoiceFromListingFlags(flags)
-  const packed = reswellPackageFieldsToDb(fd)
+  const boardLengthCombined = resolveDraftBoardLength(fd)
+  const packed = reswellPackageFieldsToDb({
+    ...fd,
+    boardLength: boardLengthCombined,
+  })
   const priceRaw = (fd.price ?? "").trim()
   const price = priceRaw ? parseFloat(priceRaw.replace(/,/g, "")) : 0
-  const boardLengthCombined = resolveDraftBoardLength(fd)
   const dimDb = boardDimensionsToDbFields({
     boardLength: boardLengthCombined,
     boardWidthInches: fd.boardWidthInches ?? "",

@@ -17,6 +17,36 @@ export function parseLengthFeet(input: string): number | null {
 }
 
 /**
+ * Largest width (in) from a sell-form width field — handles nose×tail ranges like `18 x 22`.
+ * Used for carrier limits so checkout never under-rates the wide end of the board.
+ */
+export function maxBoardWidthInchesFromInput(input: string): number | null {
+  const trimmed = input.trim()
+  if (!trimmed) return null
+
+  if (/[x×]/iu.test(trimmed)) {
+    const parts = trimmed.split(/\s*[x×]\s*/iu).filter(Boolean)
+    let max: number | null = null
+    for (const part of parts) {
+      const token = part.trim()
+      if (!token) continue
+      const v =
+        parseBoardMeasurement(token) ??
+        Number.parseFloat(token.replace(/\s+/g, "").replace(/,/g, ""))
+      if (Number.isFinite(v) && v > 0) {
+        max = max == null ? v : Math.max(max, v)
+      }
+    }
+    return max
+  }
+
+  const single =
+    parseBoardMeasurement(trimmed) ??
+    Number.parseFloat(trimmed.replace(/\s+/g, "").replace(/,/g, ""))
+  return Number.isFinite(single) && single > 0 ? single : null
+}
+
+/**
  * Parse a single measurement: plain decimal, mixed fraction ("19 1/2"), or simple fraction ("3/4").
  */
 export function parseBoardMeasurement(input: string): number | null {

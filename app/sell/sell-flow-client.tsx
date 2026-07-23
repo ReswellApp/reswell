@@ -178,12 +178,17 @@ import {
   listingDimensionsColumnFromSurfboardSellForm,
   surfboardSellFormDimensionsFromListingRow,
 } from "@/lib/listing-dimensions-storage"
-import { reswellParcelAutofillStringsFromBoard } from "@/lib/surfboard-shipping-estimates"
+import {
+  parseSurfboardShippingTierId,
+  surfboardShippingTierAutofillFromSelection,
+  type SurfboardShippingTierId,
+} from "@/lib/surfboard-shipping-tiers"
 import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
-import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
+import { SurfboardShippingTierPicker } from "@/components/features/sell/surfboard-shipping-tier-picker"
+import { BoardShipperFlatRateTierSection } from "@/components/features/sell/boardshipper-flat-rate-tier-section"
 import { SellBoardFacetFields } from "@/components/features/sell/sell-board-facet-fields"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
@@ -833,6 +838,7 @@ function createInitialSellFormData() {
     boardFulfillment: "pickup_and_shipping" as BoardFulfillmentChoice,
     boardShippingCostMode: "reswell" as BoardShippingCostMode,
     boardShippingPrice: "",
+    surfboardShippingTier: "" as SurfboardShippingTierId | "",
     reswellPackageLengthIn: "",
     reswellPackageWidthIn: "",
     reswellPackageHeightIn: "",
@@ -1137,6 +1143,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       boardFulfillment: formData.boardFulfillment,
       boardShippingCostMode: formData.boardShippingCostMode,
       boardShippingPrice: formData.boardShippingPrice,
+      surfboardShippingTier: formData.surfboardShippingTier,
       reswellPackageLengthIn: formData.reswellPackageLengthIn,
       reswellPackageWidthIn: formData.reswellPackageWidthIn,
       reswellPackageHeightIn: formData.reswellPackageHeightIn,
@@ -1283,6 +1290,10 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           shipping_packed_weight_oz?: number | string | null
         },
       )
+      const loadedSurfboardShippingTier =
+        parseSurfboardShippingTierId(
+          (listing as { shipping_package_tier?: string | null }).shipping_package_tier,
+        ) ?? ""
       const hasReswellPackageFromDb =
         loadedReswellPackage.reswellPackageLengthIn.trim() !== "" ||
         loadedReswellPackage.reswellPackageWidthIn.trim() !== "" ||
@@ -1313,6 +1324,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         boardFulfillment: loadedFulfillment,
         boardShippingCostMode,
         boardShippingPrice,
+        surfboardShippingTier: loadedSurfboardShippingTier,
         ...(hasReswellPackageFromDb
           ? loadedReswellPackage
           : {
@@ -1466,6 +1478,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       boardFulfillment: formData.boardFulfillment,
       boardShippingCostMode: formData.boardShippingCostMode,
       boardShippingPrice: formData.boardShippingPrice,
+      surfboardShippingTier: formData.surfboardShippingTier,
       reswellPackageLengthIn: formData.reswellPackageLengthIn,
       reswellPackageWidthIn: formData.reswellPackageWidthIn,
       reswellPackageHeightIn: formData.reswellPackageHeightIn,
@@ -1593,42 +1606,43 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     [formData.boardFulfillment],
   )
 
-  /** Reswell parcel L/W/H mirror the Dimensions section live while Reswell shipping is on (deps only dimension fields). */
+  /** Reswell parcel fields follow the seller-selected fixed shipping tier. */
   useEffect(() => {
     if (!deliveryFlags.shipping_available || formData.boardShippingCostMode !== "reswell") {
       return
     }
 
-    const parcelFill = reswellParcelAutofillStringsFromBoard({
-      boardLength: formData.boardLength,
-      boardWidthInches: formData.boardWidthInches,
-      boardThicknessInches: formData.boardThicknessInches,
-    })
-    if (!parcelFill) return
+    const tierId = parseSurfboardShippingTierId(formData.surfboardShippingTier)
+    if (!tierId) return
+
+    const parcelFill = surfboardShippingTierAutofillFromSelection(tierId)
 
     setFormData((fd) => {
       if (!flagsFromBoardFulfillment(fd.boardFulfillment).shipping_available) return fd
       if (fd.boardShippingCostMode !== "reswell") return fd
+      if (parseSurfboardShippingTierId(fd.surfboardShippingTier) !== tierId) return fd
       if (
-        fd.reswellPackageLengthIn === parcelFill.length &&
-        fd.reswellPackageWidthIn === parcelFill.width &&
-        fd.reswellPackageHeightIn === parcelFill.height
+        fd.reswellPackageLengthIn === parcelFill.reswellPackageLengthIn &&
+        fd.reswellPackageWidthIn === parcelFill.reswellPackageWidthIn &&
+        fd.reswellPackageHeightIn === parcelFill.reswellPackageHeightIn &&
+        fd.reswellPackageWeightLb === parcelFill.reswellPackageWeightLb &&
+        fd.reswellPackageWeightOz === parcelFill.reswellPackageWeightOz
       ) {
         return fd
       }
       return {
         ...fd,
-        reswellPackageLengthIn: parcelFill.length,
-        reswellPackageWidthIn: parcelFill.width,
-        reswellPackageHeightIn: parcelFill.height,
+        reswellPackageLengthIn: parcelFill.reswellPackageLengthIn ?? "",
+        reswellPackageWidthIn: parcelFill.reswellPackageWidthIn ?? "",
+        reswellPackageHeightIn: parcelFill.reswellPackageHeightIn ?? "",
+        reswellPackageWeightLb: parcelFill.reswellPackageWeightLb ?? "",
+        reswellPackageWeightOz: parcelFill.reswellPackageWeightOz ?? "",
       }
     })
   }, [
     deliveryFlags.shipping_available,
     formData.boardShippingCostMode,
-    formData.boardLength,
-    formData.boardWidthInches,
-    formData.boardThicknessInches,
+    formData.surfboardShippingTier,
   ])
 
   /**
@@ -2588,6 +2602,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           ? (() => {
               const mode = fd.boardShippingCostMode ?? "reswell"
               if (mode === "flat") {
+                if (parseSurfboardShippingTierId(fd.surfboardShippingTier)) return 0
                 const raw = fd.boardShippingPrice.trim()
                 if (adminImpersonationEditListing && !raw) return 0
                 return parseFloat(raw)
@@ -3878,6 +3893,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                     : {
                                         boardShippingCostMode: "reswell" as BoardShippingCostMode,
                                         boardShippingPrice: "",
+                                        surfboardShippingTier: "" as SurfboardShippingTierId | "",
                                         reswellPackageLengthIn: "",
                                         reswellPackageWidthIn: "",
                                         reswellPackageHeightIn: "",
@@ -3945,6 +3961,17 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                               setFormData({
                                 ...formData,
                                 boardShippingCostMode: mode,
+                                ...(mode === "flat" ? { boardShippingPrice: "0" } : {}),
+                                ...(mode === "free"
+                                  ? {
+                                      surfboardShippingTier: "" as SurfboardShippingTierId | "",
+                                      reswellPackageLengthIn: "",
+                                      reswellPackageWidthIn: "",
+                                      reswellPackageHeightIn: "",
+                                      reswellPackageWeightLb: "",
+                                      reswellPackageWeightOz: "",
+                                    }
+                                  : {}),
                               })
                             }}
                             className="space-y-3"
@@ -4025,67 +4052,28 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                               <RadioGroupItem value="flat" id="sell-ship-mode-flat" className="mt-0.5" />
                               <div className="min-w-0 flex-1 flex flex-col gap-1.5">
                                 <span className="text-sm font-medium leading-snug text-foreground">
-                                  Set a flat shipping rate
+                                  BoardShipper flat rates
                                 </span>
                                 {formData.boardShippingCostMode === "flat" ? (
                                   <p className="text-sm text-muted-foreground/45 leading-relaxed">
-                                    Determine one cost that all buyers in this entire region will pay.
+                                    Buyers pay the BoardShipper flat rate for their destination at
+                                    checkout — you choose the size tier below.
                                   </p>
                                 ) : null}
                               </div>
                             </label>
                           </RadioGroup>
                           {formData.boardShippingCostMode === "flat" ? (
-                            <div className="rounded-lg border border-border bg-background p-4 sm:p-5 space-y-4">
-                              <h4 className="text-sm font-semibold text-foreground">
-                                Set a shipping rate for the Continental U.S.{" "}
-                                <span className="text-destructive" aria-hidden="true">
-                                  *
-                                </span>
-                              </h4>
-                              <div className="space-y-2 max-w-md">
-                                <Label
-                                  htmlFor="boardShippingPrice"
-                                  className="text-sm font-semibold text-foreground"
-                                >
-                                  Shipping Rate{" "}
-                                  <span className="text-destructive" aria-hidden="true">
-                                    *
-                                  </span>
-                                </Label>
-                                <div className="relative">
-                                  <span
-                                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground/45"
-                                    aria-hidden
-                                  >
-                                    $
-                                  </span>
-                                  <Input
-                                    id="boardShippingPrice"
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    placeholder="0.00"
-                                    value={formData.boardShippingPrice}
-                                    onChange={(e) =>
-                                      setFormData({
-                                        ...formData,
-                                        boardShippingPrice: e.target.value,
-                                      })
-                                    }
-                                    className="pl-8 tabular-nums placeholder:text-muted-foreground/45"
-                                  />
-                                </div>
-                                <button
-                                  type="button"
-                                  className="inline-flex items-center gap-0.5 text-sm font-medium text-primary hover:underline"
-                                  onClick={() => setShippingEstimatorOpen(true)}
-                                >
-                                  Shipping label cost estimator
-                                  <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
-                                </button>
-                              </div>
-                            </div>
+                            <BoardShipperFlatRateTierSection
+                              value={formData.surfboardShippingTier}
+                              onChange={(tierId) =>
+                                setFormData({
+                                  ...formData,
+                                  surfboardShippingTier: tierId,
+                                  boardShippingPrice: "0",
+                                })
+                              }
+                            />
                           ) : null}
                         </div>
                           ) : null}
@@ -4098,40 +4086,14 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                 formData.boardShippingCostMode === "reswell" ? (
                   <SellFormSection
                     sectionId="sell-section-reswell-package"
-                    title="Reswell shipping: packed size & weight"
+                    title="Reswell shipping size"
                   >
-                    <ReswellPackageDimensionsCard
-                      showHeading={false}
+                    <SurfboardShippingTierPicker
+                      value={formData.surfboardShippingTier}
+                      onChange={(tierId) =>
+                        setFormData({ ...formData, surfboardShippingTier: tierId })
+                      }
                       className="border-0 bg-transparent p-0 shadow-none rounded-none"
-                      lengthIn={formData.reswellPackageLengthIn}
-                      widthIn={formData.reswellPackageWidthIn}
-                      heightIn={formData.reswellPackageHeightIn}
-                      weightLb={formData.reswellPackageWeightLb}
-                      weightOz={formData.reswellPackageWeightOz}
-                      onLengthInChange={(v) =>
-                        setFormData({
-                          ...formData,
-                          reswellPackageLengthIn: normalizeBoardLengthInput(v),
-                        })
-                      }
-                      onWidthInChange={(v) =>
-                        setFormData({
-                          ...formData,
-                          reswellPackageWidthIn: normalizeTapeStyleInchesInput(v),
-                        })
-                      }
-                      onHeightInChange={(v) =>
-                        setFormData({
-                          ...formData,
-                          reswellPackageHeightIn: normalizeTapeStyleInchesInput(v),
-                        })
-                      }
-                      onWeightLbChange={(v) =>
-                        setFormData({ ...formData, reswellPackageWeightLb: v })
-                      }
-                      onWeightOzChange={(v) =>
-                        setFormData({ ...formData, reswellPackageWeightOz: v })
-                      }
                     />
                   </SellFormSection>
                 ) : null}

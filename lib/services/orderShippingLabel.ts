@@ -5,6 +5,7 @@ import {
 } from "@/lib/shipengine/surfboard-label"
 import {
   resolvePackedParcelFromListing,
+  resolveSurfboardShippingTierIdFromListing,
   suggestPackedBoxInchesFromListing,
   type ListingPackedParcelSource,
   type ResolvedPackedParcelSource,
@@ -23,6 +24,11 @@ import {
   SURFBOARD_LABEL_LIMITS_ERROR,
   validateSurfboardLabelParcelLimits,
 } from "@/lib/shipping/surfboard-label-limits"
+import {
+  surfboardShippingTierUsesUpsParcelLimits,
+  validateSurfboardShippingTierParcelLimits,
+  type SurfboardShippingTierId,
+} from "@/lib/surfboard-shipping-tiers"
 import { shippingLabelParcelSchema } from "@/lib/validations/order-shipping-label"
 
 export type { ShipEngineRateOption }
@@ -33,6 +39,7 @@ export type ResolvedOrderLabelParcel = {
   heightIn: number
   weightLb: number
   source: ResolvedPackedParcelSource
+  tierId: SurfboardShippingTierId | null
 }
 
 /**
@@ -46,33 +53,48 @@ export function resolveOrderLabelParcelFromListing(
     return { ok: false, error: r.error }
   }
   const weightLb = Math.max(1, r.weightOz / 16)
-  const limitCheck = validateSurfboardLabelParcelLimits({
+  const tierId = resolveSurfboardShippingTierIdFromListing(listing)
+  const dims = {
     lengthIn: r.lengthIn,
     widthIn: r.widthIn,
     heightIn: r.heightIn,
     weightLb,
-  })
-  if (!limitCheck.ok) {
-    return limitCheck
   }
 
-  const checked = shippingLabelParcelSchema.safeParse({
-    length_in: r.lengthIn,
-    width_in: r.widthIn,
-    height_in: r.heightIn,
-    weight_lb: weightLb,
-  })
-  if (!checked.success) {
-    const limitIssue = checked.error.issues.find((issue) => issue.message === SURFBOARD_LABEL_LIMITS_ERROR)
-    if (limitIssue) {
-      return { ok: false, error: SURFBOARD_LABEL_LIMITS_ERROR }
-    }
-    return {
-      ok: false,
-      error:
-        "Package details from this listing don’t meet carrier limits. Update shipping dimensions on the listing, or adjust the package below.",
+  if (tierId) {
+    const tierCheck = validateSurfboardShippingTierParcelLimits(tierId, dims)
+    if (!tierCheck.ok) {
+      return tierCheck
     }
   }
+
+  if (!tierId || surfboardShippingTierUsesUpsParcelLimits(tierId)) {
+    const limitCheck = validateSurfboardLabelParcelLimits(dims)
+    if (!limitCheck.ok) {
+      return limitCheck
+    }
+
+    const checked = shippingLabelParcelSchema.safeParse({
+      length_in: r.lengthIn,
+      width_in: r.widthIn,
+      height_in: r.heightIn,
+      weight_lb: weightLb,
+    })
+    if (!checked.success) {
+      const limitIssue = checked.error.issues.find(
+        (issue) => issue.message === SURFBOARD_LABEL_LIMITS_ERROR,
+      )
+      if (limitIssue) {
+        return { ok: false, error: SURFBOARD_LABEL_LIMITS_ERROR }
+      }
+      return {
+        ok: false,
+        error:
+          "Package details from this listing don’t meet carrier limits. Update shipping dimensions on the listing, or adjust the package below.",
+      }
+    }
+  }
+
   return {
     ok: true,
     parcel: {
@@ -81,12 +103,13 @@ export function resolveOrderLabelParcelFromListing(
       heightIn: r.heightIn,
       weightLb,
       source: r.source,
+      tierId,
     },
   }
 }
 
 /**
- * Optional L×W×H prefill for seller flat/free label forms (board dims + packing buffer).
+ * Optional L×W×H prefill for seller flat/free label forms (board dims floored to whole inches).
  * Weight is never inferred — sellers must measure and enter it.
  */
 export function suggestSellerLabelParcelDimsFromListing(
@@ -99,6 +122,7 @@ export async function fetchRatesForSurfboardOrder(params: {
   shipFrom: RateQuoteAddressFields
   shipTo: RateQuoteAddressFields
   parcel: { lengthIn: number; widthIn: number; heightIn: number; weightLb: number }
+  tierId?: SurfboardShippingTierId | null
 }) {
   return fetchShipEngineRatesForSurfboard(params)
 }

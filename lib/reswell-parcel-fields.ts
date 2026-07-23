@@ -1,4 +1,5 @@
 import {
+  maxBoardWidthInchesFromInput,
   parseBoardMeasurement,
   totalBoardLengthInchesFromCombinedInput,
 } from "@/lib/board-measurements"
@@ -64,6 +65,11 @@ export function parseReswellParcelWidthHeightRawToCarrierInches(
 ): number | null {
   const t = raw?.trim() ?? ""
   if (!t) return null
+  // Nose×tail width autofill (e.g. `18 x 22`) — use the wider end for UPS limits.
+  if (/[x×]/iu.test(t)) {
+    const maxW = maxBoardWidthInchesFromInput(t)
+    if (maxW != null) return maxW
+  }
   const v =
     parseBoardMeasurement(t) ??
     Number.parseFloat(t.replace(/\s+/g, "").replace(/,/g, ""))

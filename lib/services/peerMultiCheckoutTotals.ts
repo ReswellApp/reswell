@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
+import { resolveCombinedPackedParcelFromListings } from "@/lib/reswell-packed-parcel-from-listing"
 import {
   computePeerBundleShippingUsd,
   computePeerCheckoutTotalsUsd,
@@ -125,11 +126,17 @@ export async function computePeerMultiCheckoutUsd(params: {
 
   if (isMultiLine && fulfillment === "shipping") {
     const bundleShipping = preverifiedShipping
-      ? {
-          ok: true as const,
-          shippingUsd: preverifiedShipping.shippingUsd,
-          usedReswellQuote: preverifiedShipping.usedReswellQuote,
-        }
+      ? (() => {
+          const parcelCheck = resolveCombinedPackedParcelFromListings(listingsOrdered)
+          if (!parcelCheck.ok) {
+            return parcelCheck
+          }
+          return {
+            ok: true as const,
+            shippingUsd: preverifiedShipping.shippingUsd,
+            usedReswellQuote: preverifiedShipping.usedReswellQuote,
+          }
+        })()
       : await computePeerBundleShippingUsd({
           listings: listingsOrdered,
           buyerAddress,

@@ -27,6 +27,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { ChevronDown, ChevronUp, Loader2, Scale } from 'lucide-react'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 import type { AddressFields } from './address-fields'
 import {
   buildShipmentBody,
@@ -35,6 +36,12 @@ import {
 } from '@/lib/shipping/shipengine-rate-helpers'
 import { AddressForm } from './shipping-address-form'
 import { RATE_SEED_LISTINGS } from './rate-seed-listings'
+import { ReswellUpsCarrierStatus } from './reswell-ups-carrier-status'
+import {
+  isReswellUpsCarrier,
+  isReswellUpsCarrierId,
+  RESWELL_UPS_CARRIER_ID,
+} from '@/lib/shipengine/reswell-carriers'
 
 const inputClass = 'h-11 rounded-xl'
 const selectTriggerClass = 'h-11 rounded-xl'
@@ -368,15 +375,15 @@ function ListingRateDiagnostic({
               <div className="rounded-2xl border border-emerald-300/50 bg-emerald-50/50 p-4 text-[13px] dark:border-emerald-400/30 dark:bg-emerald-500/[0.08]">
                 <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-700 dark:text-emerald-300">
                   {result.parcelSource === 'board+saved-weight'
-                    ? 'Board L×W×Thickness (+2″ buffer) + seller-saved weight'
+                    ? 'Board L×W×Thickness + seller-saved weight'
                     : result.parcelSource === 'board+heuristic-weight'
-                      ? 'Board L×W×Thickness (+2″ buffer) + heuristic weight'
+                      ? 'Board L×W×Thickness + heuristic weight'
                       : 'Legacy stored packed values'}
                 </div>
                 <p className="mt-1 leading-relaxed">
                   {result.parcelSource === 'heuristic'
                     ? 'Listing is missing board dimensions; falling back to stored packed columns.'
-                    : "L×W×H come from the listing's board fields, floored to the nearest whole inch and bumped +2″ on every axis (carton + foam buffer). Weight comes from " +
+                    : "L×W×H come from the listing's board fields, floored to whole inches. Weight comes from " +
                       (result.parcelSource === 'board+saved-weight'
                         ? "the seller's saved Reswell weight."
                         : 'a length/volume heuristic because no weight was saved.')}
@@ -515,7 +522,11 @@ export function ShippingRateCalculator({
     if (carrierIds.length === 0) return
     if (!carriersSeenRef.current) {
       carriersSeenRef.current = true
-      setSelectedIds([...carrierIds])
+      setSelectedIds(
+        carrierIds.includes(RESWELL_UPS_CARRIER_ID)
+          ? [RESWELL_UPS_CARRIER_ID]
+          : [...carrierIds],
+      )
     }
   }, [carrierIds])
 
@@ -582,6 +593,14 @@ export function ShippingRateCalculator({
   }, [carrierIds])
 
   const clearCarriers = useCallback(() => setSelectedIds([]), [])
+
+  const selectReswellUpsOnly = useCallback(() => {
+    if (!carrierIds.includes(RESWELL_UPS_CARRIER_ID)) {
+      toast.error(`Reswell UPS carrier ${RESWELL_UPS_CARRIER_ID} is not connected`)
+      return
+    }
+    setSelectedIds([RESWELL_UPS_CARRIER_ID])
+  }, [carrierIds])
 
   const runRates = useCallback(
     async (payload: object) => {
@@ -774,6 +793,8 @@ export function ShippingRateCalculator({
 
   return (
     <div className="space-y-8">
+      <ReswellUpsCarrierStatus carriers={carriers} />
+
       <Card className={surfaceCard}>
         <CardHeader className="space-y-3 pb-2">
           <div className="flex items-start gap-3">
@@ -805,6 +826,16 @@ export function ShippingRateCalculator({
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="h-9 rounded-xl px-4 text-[13px] font-medium"
+                  onClick={selectReswellUpsOnly}
+                  disabled={!carrierIds.includes(RESWELL_UPS_CARRIER_ID)}
+                >
+                  Reswell UPS only
+                </Button>
+                <Button
+                  type="button"
                   variant="outline"
                   size="sm"
                   className="h-9 rounded-xl px-4 text-[13px] font-medium"
@@ -828,19 +859,38 @@ export function ShippingRateCalculator({
                 const id = typeof c.carrier_id === 'string' ? c.carrier_id : ''
                 if (!id) return null
                 const label = String(c.friendly_name ?? c.nickname ?? c.carrier_code ?? id)
+                const isReswellUps = isReswellUpsCarrier(c)
                 return (
                   <label
                     key={id}
-                    className="flex cursor-pointer items-center gap-3 rounded-2xl border border-border/50 bg-background/40 px-3.5 py-2.5 text-[13px] transition-colors hover:bg-muted/40"
+                    className={cn(
+                      'flex cursor-pointer items-start gap-3 rounded-2xl border px-3.5 py-2.5 text-[13px] transition-colors hover:bg-muted/40',
+                      isReswellUps
+                        ? 'border-emerald-500/30 bg-emerald-500/5'
+                        : 'border-border/50 bg-background/40',
+                    )}
                   >
                     <Checkbox
+                      className="mt-0.5"
                       checked={selectedIds.includes(id)}
                       onCheckedChange={() => {
                         toggleCarrier(id)
                       }}
                     />
-                    <span className="truncate" title={id}>
-                      {label}
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="truncate font-medium" title={label}>
+                          {label}
+                        </span>
+                        {isReswellUps ? (
+                          <Badge variant="secondary" className="rounded-full px-2 py-0 text-[10px]">
+                            Reswell UPS
+                          </Badge>
+                        ) : null}
+                      </span>
+                      <span className="mt-0.5 block truncate font-mono text-[11px] text-muted-foreground" title={id}>
+                        {id}
+                      </span>
                     </span>
                   </label>
                 )
@@ -1034,6 +1084,7 @@ export function ShippingRateCalculator({
                         Total {sortIcon('price')}
                       </TableHead>
                       <TableHead className={shipTh}>Carrier</TableHead>
+                      <TableHead className={`font-mono text-xs ${shipTh}`}>carrier_id</TableHead>
                       <TableHead
                         className={`cursor-pointer min-w-[180px] ${shipTh}`}
                         onClick={() => toggleSort('service')}
@@ -1063,7 +1114,22 @@ export function ShippingRateCalculator({
                             {currency.toUpperCase()} {total.toFixed(2)}
                           </TableCell>
                           <TableCell className="text-sm">
-                            {String(r.carrier_friendly_name ?? r.carrier_code ?? '—')}
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span>{String(r.carrier_friendly_name ?? r.carrier_code ?? '—')}</span>
+                              {isReswellUpsCarrierId(
+                                typeof r.carrier_id === 'string' ? r.carrier_id : null,
+                              ) ? (
+                                <Badge variant="secondary" className="rounded-full px-2 py-0 text-[10px]">
+                                  Reswell UPS
+                                </Badge>
+                              ) : null}
+                            </div>
+                          </TableCell>
+                          <TableCell
+                            className="font-mono text-[10px] max-w-[120px] truncate"
+                            title={String(r.carrier_id ?? '')}
+                          >
+                            {String(r.carrier_id ?? '—')}
                           </TableCell>
                           <TableCell className="text-sm">
                             <span className="font-medium">{String(r.service_type ?? '—')}</span>

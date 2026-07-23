@@ -4,10 +4,18 @@
  * Not used for rating logic — display and preset application only.
  */
 
+import {
+  SURFBOARD_SHIPPING_TIERS,
+  SURFBOARD_TIER_EXAMPLE_BOARD_LENGTH_IN,
+  surfboardShippingTierPackedParcelFromBoardLengthIn,
+  surfboardShippingTierSummaryLine,
+  type SurfboardShippingTierId,
+} from "@/lib/surfboard-shipping-tiers"
+
 export type ExampleMeasurementRow = {
   id: string
   title: string
-  /** Summary line like "14 lb — 72 × 20 × 6 in" */
+  /** Summary line like "14 lb — 76 × 20 × 6 in" */
   summary: string
   weightLb: number
   lengthIn: number
@@ -15,41 +23,19 @@ export type ExampleMeasurementRow = {
   heightIn: number
 }
 
-export const EXAMPLE_SURFBOARD_MEASUREMENTS: ExampleMeasurementRow[] = [
-  {
-    id: "short",
-    title: "Shortboard",
-    summary: "14 lb — 72 × 20 × 6 in",
-    weightLb: 14,
-    lengthIn: 72,
-    widthIn: 20,
-    heightIn: 6,
-  },
-  {
-    id: "hybrid",
-    title: "Hybrid / fish",
-    summary: "18 lb — 76 × 21 × 7 in",
-    weightLb: 18,
-    lengthIn: 76,
-    widthIn: 21,
-    heightIn: 7,
-  },
-  {
-    id: "mid",
-    title: "Hybrid",
-    summary: "24 lb — 84 × 22 × 8 in",
-    weightLb: 24,
-    lengthIn: 84,
-    widthIn: 22,
-    heightIn: 8,
-  },
-  {
-    id: "long",
-    title: "Longboard",
-    summary: "32 lb — 96 × 24 × 9 in",
-    weightLb: 32,
-    lengthIn: 96,
-    widthIn: 24,
-    heightIn: 9,
-  },
-]
+export const EXAMPLE_SURFBOARD_MEASUREMENTS: ExampleMeasurementRow[] = (
+  ["shortboard", "midlength", "longboard"] as SurfboardShippingTierId[]
+).map((id) => {
+  const tier = SURFBOARD_SHIPPING_TIERS[id]
+  const exampleBareIn = SURFBOARD_TIER_EXAMPLE_BOARD_LENGTH_IN[id]
+  const packed = surfboardShippingTierPackedParcelFromBoardLengthIn(exampleBareIn)
+  return {
+    id,
+    title: tier.label,
+    summary: surfboardShippingTierSummaryLine(id, `${Math.floor(exampleBareIn / 12)}'${exampleBareIn % 12}`),
+    weightLb: packed.weightLb,
+    lengthIn: packed.lengthIn,
+    widthIn: packed.widthIn,
+    heightIn: packed.heightIn,
+  }
+})

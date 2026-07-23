@@ -13,6 +13,11 @@ import {
   rateMoneyTotal,
 } from "@/lib/shipping/shipengine-rate-helpers"
 import { validateSurfboardLabelParcelLimits } from "@/lib/shipping/surfboard-label-limits"
+import {
+  surfboardShippingTierUsesUpsParcelLimits,
+  validateSurfboardShippingTierParcelLimits,
+  type SurfboardShippingTierId,
+} from "@/lib/surfboard-shipping-tiers"
 
 function asRecord(v: unknown): Record<string, unknown> | null {
   return v != null && typeof v === "object" && !Array.isArray(v)
@@ -91,6 +96,7 @@ export async function fetchShipEngineRatesForSurfboard(params: {
   shipFrom: RateQuoteAddressFields
   shipTo: RateQuoteAddressFields
   parcel: { lengthIn: number; widthIn: number; heightIn: number; weightLb: number }
+  tierId?: SurfboardShippingTierId | null
 }): Promise<
   | { ok: true; rates: ShipEngineRateOption[] }
   | { ok: false; error: string; status: number }
@@ -103,14 +109,24 @@ export async function fetchShipEngineRatesForSurfboard(params: {
     }
   }
 
-  const limitCheck = validateSurfboardLabelParcelLimits({
-    lengthIn: params.parcel.lengthIn,
-    widthIn: params.parcel.widthIn,
-    heightIn: params.parcel.heightIn,
-    weightLb: params.parcel.weightLb,
-  })
-  if (!limitCheck.ok) {
-    return { ok: false, error: limitCheck.error, status: 422 }
+  if (params.tierId) {
+    const tierCheck = validateSurfboardShippingTierParcelLimits(params.tierId, params.parcel)
+    if (!tierCheck.ok) {
+      return { ok: false, error: tierCheck.error, status: 422 }
+    }
+    if (!surfboardShippingTierUsesUpsParcelLimits(params.tierId)) {
+      // Midlength / longboard freight tiers — tier limits only (no UPS parcel cap).
+    } else {
+      const limitCheck = validateSurfboardLabelParcelLimits(params.parcel)
+      if (!limitCheck.ok) {
+        return { ok: false, error: limitCheck.error, status: 422 }
+      }
+    }
+  } else {
+    const limitCheck = validateSurfboardLabelParcelLimits(params.parcel)
+    if (!limitCheck.ok) {
+      return { ok: false, error: limitCheck.error, status: 422 }
+    }
   }
 
   const carrierIds = await fetchCarrierIds()

@@ -3,6 +3,7 @@ import {
   type BoardFulfillmentChoice,
 } from "@/lib/listing-fulfillment"
 import type { BoardShippingCostMode } from "@/lib/sell-form-validation"
+import { applySurfboardShippingTierDefaults, parseSurfboardShippingTierId } from "@/lib/surfboard-shipping-tiers"
 
 import {
   parseReswellParcelLengthRawToCarrierInches,
@@ -19,6 +20,11 @@ export type SellFulfillmentPersistInput = {
   boardFulfillment?: BoardFulfillmentChoice | null
   boardShippingCostMode?: BoardShippingCostMode
   boardShippingPrice?: string
+  /** Used to derive standard surfboard shipping tiers when parcel fields are blank. */
+  boardLength?: string
+  category?: string
+  /** Seller-selected Reswell surfboard shipping tier (shortboard / midlength / longboard). */
+  surfboardShippingTier?: string
   reswellPackageLengthIn?: string
   reswellPackageWidthIn?: string
   reswellPackageHeightIn?: string
@@ -43,26 +49,56 @@ export function reswellPackageFieldsToDb(fd: SellFulfillmentPersistInput): {
   shipping_packed_width_in: number | null
   shipping_packed_height_in: number | null
   shipping_packed_weight_oz: number | null
+  shipping_package_tier: string | null
 } {
   const mode = fd.boardShippingCostMode ?? "reswell"
-  if (mode !== "reswell") {
+  const tierId = parseSurfboardShippingTierId(fd.surfboardShippingTier)
+
+  if (mode !== "reswell" && mode !== "flat") {
     return {
       shipping_packed_length_in: null,
       shipping_packed_width_in: null,
       shipping_packed_height_in: null,
       shipping_packed_weight_oz: null,
+      shipping_package_tier: null,
     }
   }
-  const L = parseReswellParcelLengthRawToCarrierInches(fd.reswellPackageLengthIn)
-  const W = parseReswellParcelWidthHeightRawToCarrierInches(fd.reswellPackageWidthIn)
-  const H = parseReswellParcelWidthHeightRawToCarrierInches(fd.reswellPackageHeightIn)
-  const totalOz = parseReswellPackedWeightToTotalOz(fd.reswellPackageWeightLb, fd.reswellPackageWeightOz)
+
+  if (mode === "flat") {
+    return {
+      shipping_packed_length_in: null,
+      shipping_packed_width_in: null,
+      shipping_packed_height_in: null,
+      shipping_packed_weight_oz: null,
+      shipping_package_tier: tierId,
+    }
+  }
+
+  const resolved = applySurfboardShippingTierDefaults(
+    {
+      reswellPackageLengthIn: fd.reswellPackageLengthIn ?? "",
+      reswellPackageWidthIn: fd.reswellPackageWidthIn ?? "",
+      reswellPackageHeightIn: fd.reswellPackageHeightIn ?? "",
+      reswellPackageWeightLb: fd.reswellPackageWeightLb ?? "",
+      reswellPackageWeightOz: fd.reswellPackageWeightOz ?? "",
+      surfboardShippingTier: fd.surfboardShippingTier,
+    },
+    tierId ? { tierId } : undefined,
+  )
+  const L = parseReswellParcelLengthRawToCarrierInches(resolved.reswellPackageLengthIn)
+  const W = parseReswellParcelWidthHeightRawToCarrierInches(resolved.reswellPackageWidthIn)
+  const H = parseReswellParcelWidthHeightRawToCarrierInches(resolved.reswellPackageHeightIn)
+  const totalOz = parseReswellPackedWeightToTotalOz(
+    resolved.reswellPackageWeightLb,
+    resolved.reswellPackageWeightOz,
+  )
   if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0 || totalOz == null) {
     return {
       shipping_packed_length_in: null,
       shipping_packed_width_in: null,
       shipping_packed_height_in: null,
       shipping_packed_weight_oz: null,
+      shipping_package_tier: tierId,
     }
   }
   return {
@@ -70,6 +106,7 @@ export function reswellPackageFieldsToDb(fd: SellFulfillmentPersistInput): {
     shipping_packed_width_in: W,
     shipping_packed_height_in: H,
     shipping_packed_weight_oz: totalOz,
+    shipping_package_tier: tierId,
   }
 }
 
@@ -147,15 +184,13 @@ export function inferSellFormShippingConfigured(fd: SellFulfillmentPersistInput)
   const mode = fd.boardShippingCostMode ?? "reswell"
   if (mode === "free") return true
   if (mode === "flat") {
-    const raw = fd.boardShippingPrice?.trim() ?? ""
-    if (!raw) return false
-    const n = parseFloat(raw.replace(/,/g, ""))
-    return Number.isFinite(n) && n >= 0
+    return parseSurfboardShippingTierId(fd.surfboardShippingTier) != null
   }
   const L = parseReswellParcelLengthRawToCarrierInches(fd.reswellPackageLengthIn)
   const W = parseReswellParcelWidthHeightRawToCarrierInches(fd.reswellPackageWidthIn)
   const H = parseReswellParcelWidthHeightRawToCarrierInches(fd.reswellPackageHeightIn)
   if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) return false
+  if (!parseSurfboardShippingTierId(fd.surfboardShippingTier)) return false
   return isReswellPackedWeightComplete(fd.reswellPackageWeightLb, fd.reswellPackageWeightOz)
 }
 

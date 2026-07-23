@@ -2,20 +2,15 @@ import { resolveListingShipFromForRating } from "@/lib/geocoding/resolve-listing
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import {
   resolveCombinedPackedParcelFromListings,
+  resolveSurfboardShippingTierIdFromListing,
   type ListingPackedParcelSource,
   type ResolvedPackedParcelSource,
 } from "@/lib/reswell-packed-parcel-from-listing"
-import { shipEngineRequest } from "@/lib/shipengine/client"
-import { isShipEngineConfigured } from "@/lib/shipengine/config"
-import { formatShipEngineApiError } from "@/lib/shipengine/errors"
 import {
-  buildShipmentBody,
-  extractCarrierIdsFromCarriersResponse,
-  extractRatesFromApiEnvelope,
-  rateMoneyTotal,
-  type ShippingAddressInput,
-} from "@/lib/shipping/shipengine-rate-helpers"
-import { validateSurfboardLabelParcelLimits } from "@/lib/shipping/surfboard-label-limits"
+  surfboardShippingTierUsesUpsParcelLimits,
+  validateSurfboardShippingTierParcelLimits,
+  type SurfboardShippingTierId,
+} from "@/lib/surfboard-shipping-tiers"
 import {
   filterReswellRatesForPeerSection,
   findPeerCheckoutRateOptionByServiceCode,
@@ -351,14 +346,41 @@ export async function getCheapestReswellRateForListings(input: {
   }
 
   const weightLb = Math.max(1, parcel.weightOz / 16)
-  const limitCheck = validateSurfboardLabelParcelLimits({
+  const dims = {
     lengthIn: parcel.lengthIn,
     widthIn: parcel.widthIn,
     heightIn: parcel.heightIn,
     weightLb,
-  })
-  if (!limitCheck.ok) {
-    return limitCheck
+  }
+
+  const listingTiers = input.listings
+    .map((listing) => resolveSurfboardShippingTierIdFromListing(listing))
+    .filter((tierId): tierId is SurfboardShippingTierId => tierId != null)
+  const usesFreightTier = listingTiers.some((tierId) => !surfboardShippingTierUsesUpsParcelLimits(tierId))
+
+  if (usesFreightTier) {
+    for (const tierId of listingTiers) {
+      const tierCheck = validateSurfboardShippingTierParcelLimits(tierId, dims)
+      if (!tierCheck.ok) {
+        return tierCheck
+      }
+    }
+  } else if (listingTiers.length > 0) {
+    for (const tierId of listingTiers) {
+      const tierCheck = validateSurfboardShippingTierParcelLimits(tierId, dims)
+      if (!tierCheck.ok) {
+        return tierCheck
+      }
+    }
+    const limitCheck = validateSurfboardLabelParcelLimits(dims)
+    if (!limitCheck.ok) {
+      return limitCheck
+    }
+  } else {
+    const limitCheck = validateSurfboardLabelParcelLimits(dims)
+    if (!limitCheck.ok) {
+      return limitCheck
+    }
   }
 
   const shipFrom = await resolveListingShipFromAddress(firstListing, input.sellerShipFromName)

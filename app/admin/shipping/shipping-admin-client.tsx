@@ -22,6 +22,7 @@ import {
   Loader2,
   Package,
   RefreshCw,
+  Scale,
   Ship,
   TrendingUp,
   TriangleAlert,
@@ -37,8 +38,10 @@ import { AdminLabelsCreatedTab } from './admin-labels-created-tab'
 import { AdminFailedLabelsTab } from './admin-failed-labels-tab'
 import { AdminOrderLabelPurchase } from './admin-order-label-purchase'
 import { ShippingRateCalculator } from './rate-calculator'
+import { ReswellUpsCarrierStatus } from './reswell-ups-carrier-status'
 import { ShippingAnalytics } from './shipping-analytics'
 import { NavUnreadCountBadge } from '@/components/nav-unread-count-badge'
+import { isReswellUpsCarrier } from '@/lib/shipengine/reswell-carriers'
 
 type ApiSlice = { ok: boolean; status: number; data: unknown }
 
@@ -458,7 +461,8 @@ export function AdminShippingClient() {
               Validate
             </TabsTrigger>
             <TabsTrigger value="rates" className={tabTriggerClass} disabled={!configured}>
-              Rates
+              <Scale className="h-4 w-4" />
+              Shipping rates
             </TabsTrigger>
             <TabsTrigger value="create" className={tabTriggerClass} disabled={!configured}>
               Order label
@@ -484,6 +488,11 @@ export function AdminShippingClient() {
           {configured && overview.configured ? (
           <>
           <TabsContent value="overview" className="page-enter mt-8 space-y-6">
+            <ReswellUpsCarrierStatus
+              carriers={carriersList(overview.carriers.data)}
+              onOpenRates={() => handleTabChange('rates')}
+            />
+
             <Card className="rounded-2xl border-border bg-card">
               <CardHeader className="space-y-1 pb-2">
                 <CardTitle className="text-lg font-semibold tracking-tight">Carriers</CardTitle>
@@ -512,15 +521,28 @@ export function AdminShippingClient() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {carriersList(overview.carriers.data).map((c, i) => (
-                        <TableRow key={String(c.carrier_id ?? c.carrier_code ?? i)}>
+                      {carriersList(overview.carriers.data).map((c, i) => {
+                        const reswellUps = isReswellUpsCarrier(c)
+                        return (
+                        <TableRow
+                          key={String(c.carrier_id ?? c.carrier_code ?? i)}
+                          className={reswellUps ? 'bg-emerald-500/5' : undefined}
+                        >
                           <TableCell className="max-w-[200px] truncate">
-                            {formatCell(c.friendly_name ?? c.nickname ?? c.description)}
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span>{formatCell(c.friendly_name ?? c.nickname ?? c.description)}</span>
+                              {reswellUps ? (
+                                <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-400">
+                                  Reswell UPS
+                                </span>
+                              ) : null}
+                            </div>
                           </TableCell>
                           <TableCell>{formatCell(c.carrier_code)}</TableCell>
                           <TableCell className="font-mono text-xs">{formatCell(c.carrier_id)}</TableCell>
                         </TableRow>
-                      ))}
+                        )
+                      })}
                     </TableBody>
                   </Table>
                   </div>
