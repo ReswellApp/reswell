@@ -18,6 +18,7 @@ import {
   CHANNEL_ISLANDS_BRAND_SLUG,
   DEFAULT_CHANNEL_ISLANDS_JSON,
   loadChannelIslandsJsonRows,
+  normalizeChannelIslandsModelName,
   resolveChannelIslandsModelImage,
 } from "@/lib/services/channelIslandsSurfboardCatalogJson"
 
@@ -90,6 +91,7 @@ async function importCatalog(
   const imageCache = createBrandCatalogImageMirrorCache()
 
   for (const row of rows) {
+    const modelName = normalizeChannelIslandsModelName(row.productName)
     const description = buildChannelIslandsModelDescription(row)
 
     if (dryRun) {
@@ -108,7 +110,7 @@ async function importCatalog(
 
     const modelResult = await insertBrandModel(supabase, {
       brand_id: brandId,
-      name: row.productName,
+      name: modelName,
       description,
       image_url: modelImageUrl,
       product_category_slug: "surfboards",
@@ -120,12 +122,12 @@ async function importCatalog(
           .from("brand_models")
           .select("id, description, image_url")
           .eq("brand_id", brandId)
-          .ilike("name", row.productName.trim())
+          .ilike("name", modelName)
           .maybeSingle()
 
         if (existingError || !existing?.id) {
           skippedModels++
-          errors.push(`Model exists but could not resolve id: ${row.productName}`)
+          errors.push(`Model exists but could not resolve id: ${modelName}`)
           continue
         }
 
@@ -145,7 +147,7 @@ async function importCatalog(
           .eq("id", existing.id)
 
         if (updateError) {
-          errors.push(`Model update failed (${row.productName}): ${updateError.message}`)
+          errors.push(`Model update failed (${modelName}): ${updateError.message}`)
           continue
         }
 
@@ -153,7 +155,7 @@ async function importCatalog(
         continue
       }
 
-      errors.push(`Model failed (${row.productName}): ${modelResult.error}`)
+      errors.push(`Model failed (${modelName}): ${modelResult.error}`)
       continue
     }
 

@@ -16,6 +16,7 @@ export const DEFAULT_DEEPEST_REACHES_JSON = resolve(
 /** Scrape names that differ from catalog display names. */
 const DEEPEST_REACHES_MODEL_NAME_ALIASES: Record<string, string> = {
   megafish: "Mega Fish",
+  "kozmk-krzr": "Kozmk Krzr",
 }
 
 export type DeepestReachesJsonRow = {
