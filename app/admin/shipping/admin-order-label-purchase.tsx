@@ -35,7 +35,10 @@ import { ChevronDown, Download, ExternalLink, Loader2, Printer, Search, Truck, W
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { computeSellerLabelPrepaidAllowanceBreakdown } from "@/lib/shipping/seller-label-payment-breakdown"
-import { isSurfboardLabelParcelLimitError, validateSurfboardLabelParcelLimits, SURFBOARD_LABEL_MAX_HEIGHT_IN, SURFBOARD_LABEL_MAX_LENGTH_IN, SURFBOARD_LABEL_MAX_WIDTH_IN, SURFBOARD_LABEL_MAX_WEIGHT_LB } from "@/lib/shipping/surfboard-label-limits"
+import {
+  isSurfboardLabelParcelLimitError,
+  validateLabelParcelEntry,
+} from "@/lib/shipping/surfboard-label-limits"
 
 type AutoLabelParcelOk = {
   ok: true
@@ -135,13 +138,17 @@ function parseManualParcelFields(parcel: typeof EMPTY_MANUAL_PARCEL) {
   }
 }
 
-function manualParcelFieldsValid(parcel: typeof EMPTY_MANUAL_PARCEL): boolean {
-  const { lengthIn, widthIn, heightIn, weightLb } = parseManualParcelFields(parcel)
-  if (!Number.isFinite(lengthIn) || lengthIn < 6 || lengthIn > SURFBOARD_LABEL_MAX_LENGTH_IN) return false
-  if (!Number.isFinite(widthIn) || widthIn < 4 || widthIn > SURFBOARD_LABEL_MAX_WIDTH_IN) return false
-  if (!Number.isFinite(heightIn) || heightIn < 2 || heightIn > SURFBOARD_LABEL_MAX_HEIGHT_IN) return false
-  if (!Number.isFinite(weightLb) || weightLb < 1 || weightLb > SURFBOARD_LABEL_MAX_WEIGHT_LB) return false
-  return validateSurfboardLabelParcelLimits({ lengthIn, widthIn, heightIn, weightLb }).ok
+function manualParcelValidation(parcel: typeof EMPTY_MANUAL_PARCEL) {
+  return validateLabelParcelEntry(parseManualParcelFields(parcel))
+}
+
+function manualParcelHasAnyValue(parcel: typeof EMPTY_MANUAL_PARCEL): boolean {
+  return Boolean(
+    parcel.length_in.trim() ||
+      parcel.width_in.trim() ||
+      parcel.height_in.trim() ||
+      parcel.weight_lb.trim(),
+  )
 }
 
 function ManualParcelFields({
@@ -384,9 +391,12 @@ export function AdminOrderLabelPurchase() {
       !overview.autoLabelParcel.ok ||
       adjustOpen
 
-    if (useManual && !manualParcelFieldsValid(manualParcel)) {
-      toast.error("Enter valid packed length, width, height, and weight to get carrier rates.")
-      return
+    if (useManual) {
+      const parcelCheck = manualParcelValidation(manualParcel)
+      if (!parcelCheck.ok) {
+        toast.error(parcelCheck.error)
+        return
+      }
     }
 
     setRatesBusy(true)
@@ -439,9 +449,12 @@ export function AdminOrderLabelPurchase() {
     if (!orderId || !selectedRateId || !overview) return
 
     const useManual = adjustOpen || !overview.autoLabelParcel.ok
-    if (useManual && !manualParcelFieldsValid(manualParcel)) {
-      toast.error("Enter valid packed dimensions before purchasing.")
-      return
+    if (useManual) {
+      const parcelCheck = manualParcelValidation(manualParcel)
+      if (!parcelCheck.ok) {
+        toast.error(parcelCheck.error)
+        return
+      }
     }
 
     setWalletBusy(true)
@@ -554,7 +567,12 @@ export function AdminOrderLabelPurchase() {
     !overview.autoLabelParcel.ok &&
     isSurfboardLabelParcelLimitError(overview.autoLabelParcel.error)
   const needsManualParcel = overview != null && !autoOk && !parcelLimitError
-  const manualParcelReady = manualParcelFieldsValid(manualParcel)
+  const manualParcelCheck = manualParcelValidation(manualParcel)
+  const manualParcelReady = manualParcelCheck.ok
+  const manualParcelHint =
+    manualParcelHasAnyValue(manualParcel) && !manualParcelCheck.ok
+      ? manualParcelCheck.error
+      : null
   const canUseBuyerShippingCreditLane =
     overview?.sellerWalletLane.eligible === true &&
     overview.shipEngineConfigured &&
@@ -895,8 +913,9 @@ export function AdminOrderLabelPurchase() {
                       <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-4">
                         <p className="text-sm font-medium text-foreground">Packed box dimensions</p>
                         <p className="text-sm text-muted-foreground">
-                          Measure the carton the seller will ship in. UPS limit: Length + (2 × Width) +
-                          (2 × Height) must be 160″ or less; weight 25 lb or less.
+                          Enter the carton the seller will ship — any size within UPS limits. Length is
+                          the longest side. UPS limit: Length + (2 × Width) + (2 × Height) must be 160″
+                          or less; weight 25 lb or less.
                         </p>
                         <ManualParcelFields
                           idPrefix="admin-required-"
@@ -907,6 +926,11 @@ export function AdminOrderLabelPurchase() {
                             setSelectedRateId("")
                           }}
                         />
+                        {manualParcelHint ? (
+                          <p className="text-sm text-destructive" role="alert">
+                            {manualParcelHint}
+                          </p>
+                        ) : null}
                         <Button
                           type="button"
                           disabled={ratesBusy || !manualParcelReady}
@@ -943,6 +967,11 @@ export function AdminOrderLabelPurchase() {
                               setSelectedRateId("")
                             }}
                           />
+                          {manualParcelHint ? (
+                            <p className="text-sm text-destructive" role="alert">
+                              {manualParcelHint}
+                            </p>
+                          ) : null}
                           <Button
                             type="button"
                             variant="secondary"

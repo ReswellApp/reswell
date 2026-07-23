@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/table"
 import { Loader2, Truck } from "lucide-react"
 import { toast } from "sonner"
-import { validateSurfboardLabelParcelLimits, SURFBOARD_LABEL_MAX_HEIGHT_IN, SURFBOARD_LABEL_MAX_LENGTH_IN, SURFBOARD_LABEL_MAX_WIDTH_IN, SURFBOARD_LABEL_MAX_WEIGHT_LB } from "@/lib/shipping/surfboard-label-limits"
+import { validateLabelParcelEntry } from "@/lib/shipping/surfboard-label-limits"
 import { SellerShippingLabelCheckout } from "@/components/seller-shipping-label-checkout"
 
 type SellerAddr = { id: string; label: string; oneLine: string; isDefault: boolean }
@@ -76,13 +76,21 @@ function parseManualParcelFields(parcel: typeof EMPTY_MANUAL_PARCEL) {
   }
 }
 
+function manualParcelValidation(parcel: typeof EMPTY_MANUAL_PARCEL) {
+  return validateLabelParcelEntry(parseManualParcelFields(parcel))
+}
+
 function manualParcelFieldsValid(parcel: typeof EMPTY_MANUAL_PARCEL): boolean {
-  const { lengthIn, widthIn, heightIn, weightLb } = parseManualParcelFields(parcel)
-  if (!Number.isFinite(lengthIn) || lengthIn < 6 || lengthIn > SURFBOARD_LABEL_MAX_LENGTH_IN) return false
-  if (!Number.isFinite(widthIn) || widthIn < 4 || widthIn > SURFBOARD_LABEL_MAX_WIDTH_IN) return false
-  if (!Number.isFinite(heightIn) || heightIn < 2 || heightIn > SURFBOARD_LABEL_MAX_HEIGHT_IN) return false
-  if (!Number.isFinite(weightLb) || weightLb < 1 || weightLb > SURFBOARD_LABEL_MAX_WEIGHT_LB) return false
-  return validateSurfboardLabelParcelLimits({ lengthIn, widthIn, heightIn, weightLb }).ok
+  return manualParcelValidation(parcel).ok
+}
+
+function manualParcelHasAnyValue(parcel: typeof EMPTY_MANUAL_PARCEL): boolean {
+  return Boolean(
+    parcel.length_in.trim() ||
+      parcel.width_in.trim() ||
+      parcel.height_in.trim() ||
+      parcel.weight_lb.trim(),
+  )
 }
 
 function ManualParcelFields({
@@ -101,7 +109,7 @@ function ManualParcelFields({
         <Input
           id={`${idPrefix}L`}
           inputMode="decimal"
-          placeholder="e.g. 72"
+          placeholder="e.g. 10"
           value={manualParcel.length_in}
           onChange={(e) => onChange({ ...manualParcel, length_in: e.target.value })}
         />
@@ -111,7 +119,7 @@ function ManualParcelFields({
         <Input
           id={`${idPrefix}W`}
           inputMode="decimal"
-          placeholder="e.g. 20"
+          placeholder="e.g. 7"
           value={manualParcel.width_in}
           onChange={(e) => onChange({ ...manualParcel, width_in: e.target.value })}
         />
@@ -121,7 +129,7 @@ function ManualParcelFields({
         <Input
           id={`${idPrefix}H`}
           inputMode="decimal"
-          placeholder="e.g. 6"
+          placeholder="e.g. 4"
           value={manualParcel.height_in}
           onChange={(e) => onChange({ ...manualParcel, height_in: e.target.value })}
         />
@@ -131,7 +139,7 @@ function ManualParcelFields({
         <Input
           id={`${idPrefix}Wt`}
           inputMode="decimal"
-          placeholder="e.g. 12"
+          placeholder="e.g. 3"
           value={manualParcel.weight_lb}
           onChange={(e) => onChange({ ...manualParcel, weight_lb: e.target.value })}
         />
@@ -206,8 +214,9 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
       return
     }
 
-    if (!manualParcelFieldsValid(manualParcel)) {
-      toast.error("Enter valid packed length, width, height, and weight to get carrier rates.")
+    const parcelCheck = manualParcelValidation(manualParcel)
+    if (!parcelCheck.ok) {
+      toast.error(parcelCheck.error)
       return
     }
 
@@ -359,7 +368,12 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
     return null
   }
 
-  const manualParcelReady = manualParcelFieldsValid(manualParcel)
+  const manualParcelCheck = manualParcelValidation(manualParcel)
+  const manualParcelReady = manualParcelCheck.ok
+  const manualParcelHint =
+    manualParcelHasAnyValue(manualParcel) && !manualParcelCheck.ok
+      ? manualParcelCheck.error
+      : null
   const singleAddr = overview.sellerAddresses.length === 1
   const preferredAddr = overview.sellerAddresses.find((a) => a.id === sellerAddressId)
 
@@ -422,9 +436,9 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
               <AlertDescription className="space-y-2">
                 <p>
                   Measure the carton you will ship — length, width, height, and weight on a scale.
-                  We quote live carrier rates from those measurements. Any flat shipping the buyer
-                  prepaid is credited toward the label; you only pay the difference if the label
-                  costs more.
+                  We quote live carrier rates from those measurements (fins, boards, or anything
+                  else). Any flat shipping the buyer prepaid is credited toward the label; you only
+                  pay the difference if the label costs more.
                 </p>
                 {singleAddr && preferredAddr ? (
                   <p className="text-sm">
@@ -465,10 +479,11 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
             <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
               <p className="text-sm font-medium text-foreground">Packed box dimensions</p>
               <p className="text-sm text-muted-foreground">
-                Length is the longest side. UPS limit: Length + (2 × Width) + (2 × Height) must be
-                160″ or less; weight 25 lb or less.
+                Enter the carton you will ship — any size that fits UPS limits. Length is the
+                longest side. UPS limit: Length + (2 × Width) + (2 × Height) must be 160″ or less;
+                weight 25 lb or less.
                 {overview.suggestedParcelDims
-                  ? " Length, width, and height are prefilled from the board listing — confirm with a tape measure and enter the packed weight."
+                  ? " Length, width, and height are prefilled from the listing — confirm with a tape measure and enter the packed weight."
                   : null}
               </p>
               <ManualParcelFields
@@ -480,6 +495,11 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
                   setSelectedRateId("")
                 }}
               />
+              {manualParcelHint ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {manualParcelHint}
+                </p>
+              ) : null}
               <Button
                 type="button"
                 variant="default"

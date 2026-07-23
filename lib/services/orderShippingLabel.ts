@@ -20,10 +20,10 @@ import {
 } from "@/lib/shipping/rate-address"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import {
+  LABEL_PARCEL_MIN_WEIGHT_LB,
   SURFBOARD_LABEL_LIMITS_ERROR,
-  validateSurfboardLabelParcelLimits,
+  validateLabelParcelEntry,
 } from "@/lib/shipping/surfboard-label-limits"
-import { shippingLabelParcelSchema } from "@/lib/validations/order-shipping-label"
 
 export type { ShipEngineRateOption }
 
@@ -45,27 +45,16 @@ export function resolveOrderLabelParcelFromListing(
   if (!r.ok) {
     return { ok: false, error: r.error }
   }
-  const weightLb = Math.max(1, r.weightOz / 16)
-  const limitCheck = validateSurfboardLabelParcelLimits({
+  const weightLb = Math.max(LABEL_PARCEL_MIN_WEIGHT_LB, r.weightOz / 16)
+  const limitCheck = validateLabelParcelEntry({
     lengthIn: r.lengthIn,
     widthIn: r.widthIn,
     heightIn: r.heightIn,
     weightLb,
   })
   if (!limitCheck.ok) {
-    return limitCheck
-  }
-
-  const checked = shippingLabelParcelSchema.safeParse({
-    length_in: r.lengthIn,
-    width_in: r.widthIn,
-    height_in: r.heightIn,
-    weight_lb: weightLb,
-  })
-  if (!checked.success) {
-    const limitIssue = checked.error.issues.find((issue) => issue.message === SURFBOARD_LABEL_LIMITS_ERROR)
-    if (limitIssue) {
-      return { ok: false, error: SURFBOARD_LABEL_LIMITS_ERROR }
+    if (limitCheck.error === SURFBOARD_LABEL_LIMITS_ERROR) {
+      return limitCheck
     }
     return {
       ok: false,

@@ -1,22 +1,26 @@
 import { z } from "zod"
 import {
-  SURFBOARD_LABEL_LIMITS_ERROR,
+  LABEL_PARCEL_MIN_HEIGHT_IN,
+  LABEL_PARCEL_MIN_LENGTH_IN,
+  LABEL_PARCEL_MIN_WEIGHT_LB,
+  LABEL_PARCEL_MIN_WIDTH_IN,
   SURFBOARD_LABEL_MAX_HEIGHT_IN,
   SURFBOARD_LABEL_MAX_LENGTH_IN,
   SURFBOARD_LABEL_MAX_WEIGHT_LB,
   SURFBOARD_LABEL_MAX_WIDTH_IN,
-  validateSurfboardLabelParcelLimits,
+  validateLabelParcelEntry,
 } from "@/lib/shipping/surfboard-label-limits"
 
+/** Packed carton the seller will ship — category-agnostic (fins, boards, accessories). */
 export const shippingLabelParcelSchema = z
   .object({
-    length_in: z.coerce.number().min(6).max(SURFBOARD_LABEL_MAX_LENGTH_IN),
-    width_in: z.coerce.number().min(4).max(SURFBOARD_LABEL_MAX_WIDTH_IN),
-    height_in: z.coerce.number().min(2).max(SURFBOARD_LABEL_MAX_HEIGHT_IN),
-    weight_lb: z.coerce.number().min(1).max(SURFBOARD_LABEL_MAX_WEIGHT_LB),
+    length_in: z.coerce.number().min(LABEL_PARCEL_MIN_LENGTH_IN).max(SURFBOARD_LABEL_MAX_LENGTH_IN),
+    width_in: z.coerce.number().min(LABEL_PARCEL_MIN_WIDTH_IN).max(SURFBOARD_LABEL_MAX_WIDTH_IN),
+    height_in: z.coerce.number().min(LABEL_PARCEL_MIN_HEIGHT_IN).max(SURFBOARD_LABEL_MAX_HEIGHT_IN),
+    weight_lb: z.coerce.number().min(LABEL_PARCEL_MIN_WEIGHT_LB).max(SURFBOARD_LABEL_MAX_WEIGHT_LB),
   })
   .superRefine((data, ctx) => {
-    const check = validateSurfboardLabelParcelLimits({
+    const check = validateLabelParcelEntry({
       lengthIn: data.length_in,
       widthIn: data.width_in,
       heightIn: data.height_in,
@@ -25,7 +29,7 @@ export const shippingLabelParcelSchema = z
     if (!check.ok) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: SURFBOARD_LABEL_LIMITS_ERROR,
+        message: check.error,
         path: ["length_in"],
       })
     }
