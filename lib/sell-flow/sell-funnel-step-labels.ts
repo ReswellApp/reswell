@@ -7,7 +7,7 @@ export function sellFunnelStepLabel(stepId: string): string {
     "sell-section-photos-title": "Title & photos",
     "sell-section-board": "Board & description",
     "sell-section-delivery": "Pickup & shipping",
-    "sell-section-reswell-package": "Reswell shipping package",
+    "sell-section-reswell-package": "Shipping size",
     "sell-section-publish": "Price & publish",
     "sell-fins-section-photos-title": "Title & photos",
     "sell-fins-section-details": "Fin details",

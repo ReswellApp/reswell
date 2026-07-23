@@ -22,6 +22,7 @@ import {
   applySurfboardShippingTierDefaults,
   parseSurfboardShippingTierId,
   surfboardReswellPackageHasPartialDimensions,
+  surfboardShippingTierBoardLengthError,
   validateSurfboardShippingTierParcelLimits,
 } from "@/lib/surfboard-shipping-tiers"
 
@@ -69,6 +70,8 @@ export type SellFormValidationInput = {
   reswellPackageWeightOz?: string
   /** Seller-selected Reswell surfboard shipping tier. */
   surfboardShippingTier?: string
+  /** Seller confirmed packed board fits the selected tier ceiling (Reswell mode). */
+  surfboardShippingTierCeilingConfirmed?: boolean
   /** Scheduled price drop (2 weeks) — seller sets floor via `autoPriceDropFloor`. */
   autoPriceDrop: boolean
   autoPriceDropFloor: string
@@ -209,6 +212,8 @@ export function validateSellListingForm(
       if (!tierId) {
         return "Choose a BoardShipper shipping size (shortboard, midlength, or longboard)."
       }
+      const lengthErr = surfboardShippingTierBoardLengthError(form.boardLength, tierId)
+      if (lengthErr) return lengthErr
     }
     if (mode === "reswell" && !relaxed) {
       if (surfboardReswellPackageHasPartialDimensions(form)) {
@@ -217,6 +222,11 @@ export function validateSellListingForm(
       const tierId = parseSurfboardShippingTierId(form.surfboardShippingTier)
       if (!tierId) {
         return "Choose a Reswell shipping size (shortboard, midlength, or longboard)."
+      }
+      const lengthErr = surfboardShippingTierBoardLengthError(form.boardLength, tierId)
+      if (lengthErr) return lengthErr
+      if (!form.surfboardShippingTierCeilingConfirmed) {
+        return "Confirm your packed board will fit inside the selected shipping size ceiling."
       }
       const resolved = applySurfboardShippingTierDefaults(form, { tierId })
       const L = parseReswellParcelLengthRawToCarrierInches(resolved.reswellPackageLengthIn)

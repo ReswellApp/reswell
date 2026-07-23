@@ -32,7 +32,7 @@ export const EXAMPLE_SURFBOARD_MEASUREMENTS: ExampleMeasurementRow[] = (
   return {
     id,
     title: tier.label,
-    summary: surfboardShippingTierSummaryLine(id, `${Math.floor(exampleBareIn / 12)}'${exampleBareIn % 12}`),
+    summary: surfboardShippingTierSummaryLine(id),
     weightLb: packed.weightLb,
     lengthIn: packed.lengthIn,
     widthIn: packed.widthIn,

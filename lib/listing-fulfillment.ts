@@ -81,6 +81,9 @@ export function boardFulfillmentDetailLabels(
     } else if (mode === "flat") {
       labels.push("BoardShipper shipping (rate at checkout)")
     } else {
+      // Legacy rows (mode unknown) with $0 shipping, or flat $0: neutral copy
+      labels.push("Shipping (rate at checkout)")
+    }
   }
   return labels
 }

@@ -1,14 +1,18 @@
 /**
  * Standard Reswell shipping tiers for surfboards.
  *
- * Each tier is a **fixed packaging profile** (L×W×H + weight). Sellers pick one of three
- * options on `/sell`; nothing is derived from board length.
+ * Each tier is a **maximum shipping ceiling** (L×W×H + weight). Sellers pick one of three
+ * options on `/sell`. Checkout quotes and labels always use the tier max — smaller packed
+ * boards are fine; nothing may exceed the selected ceiling.
  *
  * **DIM** = Box Length + 2×Width + 2×Height ({@link surfboardShippingDimIn}).
  * Shortboard stays within UPS parcel limits; midlength/longboard use freight-style tiers.
  */
 
-import { totalBoardLengthInchesFromCombinedInput } from "@/lib/board-measurements"
+import {
+  maxBoardWidthInchesFromInput,
+  totalBoardLengthInchesFromCombinedInput,
+} from "@/lib/board-measurements"
 import {
   applyReswellShippingAxisBuffer,
 } from "@/lib/surfboard-shipping-estimates"
@@ -55,15 +59,19 @@ export function surfboardShippingTierCarrierDescription(tierId: SurfboardShippin
 export type SurfboardShippingTier = {
   id: SurfboardShippingTierId
   label: string
-  /** Describes the board-length band — packed length is computed from the seller's board. */
+  /** Seller-facing ceiling summary (max carton + how it ships). */
   summary: string
-  /** Inclusive lower bound on bare board length (inches) for tier selection */
+  /**
+   * Inclusive lower bound on bare board length (inches) for autofill suggestions.
+   * Sellers may still pick a larger tier for a shorter board (safer).
+   */
   minBoardLengthIn: number
   /** Exclusive upper bound on bare board length; null = no cap */
   maxBoardLengthIn: number | null
-  /** Standard outer-carton width and height (inches) for this tier */
+  /** Max outer-carton width and height (inches) for this tier ceiling */
   widthIn: number
   heightIn: number
+  /** Max billable weight quoted/labeled for this tier */
   weightLb: number
   /**
    * Max carrier DIM (Box Length + 2×Width + 2×Height) for this tier.
@@ -76,22 +84,32 @@ export type SurfboardShippingTier = {
   maxWeightLb: number | null
 }
 
-/** Shortboard tier: max DIM = Box Length + 2×Width + 2×Height */
-export const SURFBOARD_TIER_SHORTBOARD_MAX_DIM_IN = 130
+/**
+ * Shortboard packed ceiling — sized for real peer boxes (~23–27″ wide), not a skinny 20″ carton.
+ * 78 × 27 × 7 → DIM 146″ (under Reswell UPS parcel cap of 160″).
+ */
+export const SURFBOARD_TIER_SHORTBOARD_MAX_BOX_LENGTH_IN = 78
+export const SURFBOARD_TIER_SHORTBOARD_PROFILE_WIDTH_IN = 27
+export const SURFBOARD_TIER_SHORTBOARD_PROFILE_HEIGHT_IN = 7
+export const SURFBOARD_TIER_SHORTBOARD_MAX_DIM_IN = surfboardShippingDimIn(
+  SURFBOARD_TIER_SHORTBOARD_MAX_BOX_LENGTH_IN,
+  SURFBOARD_TIER_SHORTBOARD_PROFILE_WIDTH_IN,
+  SURFBOARD_TIER_SHORTBOARD_PROFILE_HEIGHT_IN,
+)
 
-/** Bare boards under 6′7″ — longest board that fits 130″ DIM at 20×6 W×H (78″ packed length). */
+/** Bare boards under 6′7″ — longest board that fits the 78″ shortboard box. */
 export const SURFBOARD_TIER_SHORTBOARD_MAX_BOARD_LENGTH_IN = 79
 
 /** Midlength tier: max packed box length (inches) */
 export const SURFBOARD_TIER_MIDLENGTH_MAX_BOX_LENGTH_IN = 100
 
-/** Midlength carton width × height (inches) */
-export const SURFBOARD_TIER_MIDLENGTH_PROFILE_WIDTH_IN = 22
-export const SURFBOARD_TIER_MIDLENGTH_PROFILE_HEIGHT_IN = 7
+/** Midlength carton — at least as wide as shortboard; longer for mid boards. */
+export const SURFBOARD_TIER_MIDLENGTH_PROFILE_WIDTH_IN = 28
+export const SURFBOARD_TIER_MIDLENGTH_PROFILE_HEIGHT_IN = 8
 
 /**
- * Midlength tier max DIM at the full profile (100″ box + 22×7 W×H):
- * 100 + 2(22) + 2(7) = 158″
+ * Midlength tier max DIM at the full profile (100″ box + 28×8 W×H):
+ * 100 + 2(28) + 2(8) = 172″ (freight — not UPS parcel).
  */
 export const SURFBOARD_TIER_MIDLENGTH_MAX_DIM_IN = surfboardShippingDimIn(
   SURFBOARD_TIER_MIDLENGTH_MAX_BOX_LENGTH_IN,
@@ -105,13 +123,13 @@ export const SURFBOARD_TIER_MIDLENGTH_MAX_BOARD_LENGTH_IN = 101
 /** Longboard tier: max packed box length (inches) */
 export const SURFBOARD_TIER_LONGBOARD_MAX_BOX_LENGTH_IN = 120
 
-/** Longboard carton width × height (inches) — 14×6 keeps full 120″ box at 160″ DIM (UPS cap). */
-export const SURFBOARD_TIER_LONGBOARD_PROFILE_WIDTH_IN = 14
-export const SURFBOARD_TIER_LONGBOARD_PROFILE_HEIGHT_IN = 6
+/** Longboard carton — real log boxes are wide; freight handles the DIM. */
+export const SURFBOARD_TIER_LONGBOARD_PROFILE_WIDTH_IN = 28
+export const SURFBOARD_TIER_LONGBOARD_PROFILE_HEIGHT_IN = 8
 
 /**
- * Longboard tier max DIM at the full profile (120″ box + 14×6 W×H):
- * 120 + 2(14) + 2(6) = 160″
+ * Longboard tier max DIM at the full profile (120″ box + 28×8 W×H):
+ * 120 + 2(28) + 2(8) = 192″ (freight).
  */
 export const SURFBOARD_TIER_LONGBOARD_MAX_DIM_IN = surfboardShippingDimIn(
   SURFBOARD_TIER_LONGBOARD_MAX_BOX_LENGTH_IN,
@@ -138,22 +156,23 @@ export const SURFBOARD_SHIPPING_TIERS: Record<SurfboardShippingTierId, Surfboard
   shortboard: {
     id: "shortboard",
     label: "Shortboard",
-    summary: "78 × 20 × 6 in carton — 130″ max DIM, UPS parcel",
+    summary: "Max 78 × 27 × 7 in · 22 lb · UPS/FedEx parcel",
     minBoardLengthIn: 0,
-    maxBoardLengthIn: null,
-    widthIn: 20,
-    heightIn: 6,
-    weightLb: 20,
+    maxBoardLengthIn: SURFBOARD_TIER_SHORTBOARD_MAX_BOARD_LENGTH_IN,
+    widthIn: SURFBOARD_TIER_SHORTBOARD_PROFILE_WIDTH_IN,
+    heightIn: SURFBOARD_TIER_SHORTBOARD_PROFILE_HEIGHT_IN,
+    weightLb: 22,
     maxDimIn: SURFBOARD_TIER_SHORTBOARD_MAX_DIM_IN,
-    maxBoxLengthIn: null,
-    maxWeightLb: null,
+    maxBoxLengthIn: SURFBOARD_TIER_SHORTBOARD_MAX_BOX_LENGTH_IN,
+    maxWeightLb: 22,
   },
   midlength: {
     id: "midlength",
     label: "Midlength",
-    summary: "100 × 22 × 7 in carton — 158″ max DIM, freight",
+    summary: "Max 100 × 28 × 8 in · 30 lb — freight",
+    // 0: shorter boards may pick midlength when their pack needs a larger ceiling.
     minBoardLengthIn: 0,
-    maxBoardLengthIn: null,
+    maxBoardLengthIn: SURFBOARD_TIER_MIDLENGTH_MAX_BOARD_LENGTH_IN,
     widthIn: SURFBOARD_TIER_MIDLENGTH_PROFILE_WIDTH_IN,
     heightIn: SURFBOARD_TIER_MIDLENGTH_PROFILE_HEIGHT_IN,
     weightLb: 30,
@@ -164,9 +183,10 @@ export const SURFBOARD_SHIPPING_TIERS: Record<SurfboardShippingTierId, Surfboard
   longboard: {
     id: "longboard",
     label: "Longboard",
-    summary: "120 × 14 × 6 in carton — 160″ max DIM, freight",
+    summary: "Max 120 × 28 × 8 in · 40 lb — freight",
+    // 0: shorter boards may pick longboard when their pack needs a larger ceiling.
     minBoardLengthIn: 0,
-    maxBoardLengthIn: null,
+    maxBoardLengthIn: SURFBOARD_TIER_LONGBOARD_MAX_BOARD_LENGTH_IN,
     widthIn: SURFBOARD_TIER_LONGBOARD_PROFILE_WIDTH_IN,
     heightIn: SURFBOARD_TIER_LONGBOARD_PROFILE_HEIGHT_IN,
     weightLb: 40,
@@ -279,6 +299,54 @@ export function getSurfboardShippingTierDimProfile(
   }
 }
 
+/** Format bare board inches as a seller-facing length like `6′6″`. */
+export function formatSurfboardTierBoardLengthLabel(totalInches: number): string {
+  const whole = Math.floor(totalInches)
+  const ft = Math.floor(whole / 12)
+  const inchRem = whole % 12
+  return `${ft}′${inchRem}″`
+}
+
+/** Inclusive max bare board length label for a tier (derived from exclusive `maxBoardLengthIn`). */
+export function surfboardShippingTierMaxBoardLengthLabel(
+  tierId: SurfboardShippingTierId,
+): string | null {
+  const tier = getSurfboardShippingTier(tierId)
+  if (tier.maxBoardLengthIn == null) return null
+  return formatSurfboardTierBoardLengthLabel(tier.maxBoardLengthIn - 1)
+}
+
+/** Seller-facing board-length band for the tier ceiling picker. */
+export function surfboardShippingTierBoardBandDescription(
+  tierId: SurfboardShippingTierId,
+): string {
+  const maxLabel = surfboardShippingTierMaxBoardLengthLabel(tierId)
+  if (tierId === "shortboard") {
+    return maxLabel ? `Boards up to ${maxLabel}` : "Shorter boards"
+  }
+  if (tierId === "midlength") {
+    const minLabel = formatSurfboardTierBoardLengthLabel(
+      SURFBOARD_TIER_SHORTBOARD_MAX_BOARD_LENGTH_IN,
+    )
+    return maxLabel ? `About ${minLabel}–${maxLabel}` : `About ${minLabel} and up`
+  }
+  const minLabel = formatSurfboardTierBoardLengthLabel(
+    SURFBOARD_TIER_MIDLENGTH_MAX_BOARD_LENGTH_IN,
+  )
+  return maxLabel ? `About ${minLabel}–${maxLabel}` : `About ${minLabel} and up`
+}
+
+/**
+ * True when bare board length is within the tier's max ceiling.
+ * Shorter boards may always use a larger tier.
+ */
+export function surfboardShippingTierAllowsBoardLength(
+  boardLength: string,
+  tierId: SurfboardShippingTierId,
+): boolean {
+  return surfboardShippingTierBoardLengthError(boardLength, tierId) == null
+}
+
 /** When set, bare board length must stay below {@link SurfboardShippingTier.maxBoardLengthIn}. */
 export function surfboardShippingTierBoardLengthError(
   boardLength: string,
@@ -292,13 +360,23 @@ export function surfboardShippingTierBoardLengthError(
     return null
   }
 
-  const maxBareIn = tier.maxBoardLengthIn - 1
-  const maxFt = Math.floor(maxBareIn / 12)
-  const maxInRem = maxBareIn % 12
-  const maxLabel =
-    maxInRem === 0 ? `${maxFt}'0″` : `${maxFt}'${maxInRem}″`
+  const maxLabel = surfboardShippingTierMaxBoardLengthLabel(tierId)
+  const larger =
+    tierId === "shortboard"
+      ? "midlength or longboard"
+      : tierId === "midlength"
+        ? "longboard"
+        : null
 
-  return `This board exceeds the ${tier.label.toLowerCase()} shipping limit (${maxLabel} max). Use flat-rate shipping or local pickup instead.`
+  if (larger) {
+    return `This board exceeds the ${tier.label.toLowerCase()} shipping ceiling${
+      maxLabel ? ` (${maxLabel} max)` : ""
+    }. Choose ${larger}, or use local pickup.`
+  }
+
+  return `This board exceeds the ${tier.label.toLowerCase()} shipping ceiling${
+    maxLabel ? ` (${maxLabel} max)` : ""
+  }. Use local pickup or contact support for oversized boards.`
 }
 
 export function validateSurfboardShippingTierParcelLimits(
@@ -347,6 +425,12 @@ export function getSurfboardShippingTier(id: SurfboardShippingTierId): Surfboard
   return SURFBOARD_SHIPPING_TIERS[id]
 }
 
+/**
+ * Bare board width at/above this usually won't pack into the 27″ shortboard box
+ * (leave ~2″ for padding), so we suggest Midlength even when length still fits Shortboard.
+ */
+export const SURFBOARD_TIER_SHORTBOARD_MAX_BOARD_WIDTH_IN = 25
+
 export function resolveSurfboardShippingTierFromBoardLengthIn(
   totalLengthIn: number,
 ): SurfboardShippingTierId {
@@ -368,6 +452,75 @@ export function resolveSurfboardShippingTierFromBoardLength(
   const totalIn = totalBoardLengthInchesFromCombinedInput(boardLength)
   if (totalIn == null) return null
   return resolveSurfboardShippingTierFromBoardLengthIn(totalIn)
+}
+
+export type SurfboardShippingTierSuggestReason =
+  | "length"
+  | "wide-board"
+  | "category"
+  | "fallback"
+
+/**
+ * Suggest a shipping ceiling from board specs (length first, then width bump).
+ * Extra-wide boards (≥25″ bare) bump Shortboard → Midlength so checkout rates stay safe.
+ * Normal shortboards around 20–22″ wide stay on Shortboard (27″ box ceiling).
+ */
+export function resolveSurfboardShippingTierFromBoardSpecs(input: {
+  boardLength?: string
+  boardWidthInches?: string
+  category?: string
+}): { tierId: SurfboardShippingTierId; reason: SurfboardShippingTierSuggestReason } | null {
+  const fromLength = input.boardLength?.trim()
+    ? resolveSurfboardShippingTierFromBoardLength(input.boardLength)
+    : null
+
+  if (fromLength) {
+    const widthIn = input.boardWidthInches?.trim()
+      ? maxBoardWidthInchesFromInput(input.boardWidthInches)
+      : null
+    if (
+      fromLength === "shortboard" &&
+      widthIn != null &&
+      widthIn >= SURFBOARD_TIER_SHORTBOARD_MAX_BOARD_WIDTH_IN
+    ) {
+      return { tierId: "midlength", reason: "wide-board" }
+    }
+    return { tierId: fromLength, reason: "length" }
+  }
+
+  const category = input.category?.trim()
+  if (category) {
+    const fromCategory = resolveSurfboardShippingTierFromCategoryId(category)
+    if (fromCategory) return { tierId: fromCategory, reason: "category" }
+  }
+
+  return null
+}
+
+/** Next larger ceiling, if any (for “need more room” UI). */
+export function surfboardShippingTierNextLarger(
+  tierId: SurfboardShippingTierId,
+): SurfboardShippingTierId | null {
+  if (tierId === "shortboard") return "midlength"
+  if (tierId === "midlength") return "longboard"
+  return null
+}
+
+/** Plain-language fit line — no DIM jargon. */
+export function surfboardShippingTierEasyFitLine(tierId: SurfboardShippingTierId): string {
+  const packed = surfboardShippingTierFixedParcel(tierId)
+  return `Maximum packed size: ${packed.lengthIn} × ${packed.widthIn} × ${packed.heightIn} in · ${packed.weightLb} lb. Smaller is fine — do not go over.`
+}
+
+/** One-line “why this tier” for sellers. */
+export function surfboardShippingTierEasyWhy(tierId: SurfboardShippingTierId): string {
+  if (tierId === "shortboard") {
+    return "Usually the lowest shipping cost — UPS or FedEx parcel"
+  }
+  if (tierId === "midlength") {
+    return "For longer or wider packed boards — ships by freight"
+  }
+  return "For the biggest boards and packs — ships by freight"
 }
 
 /**
@@ -438,16 +591,10 @@ export function resolveSurfboardShippingTierFromCategoryId(
 
 export function resolveSurfboardShippingTierForSellForm(input: {
   boardLength?: string
+  boardWidthInches?: string
   category?: string
 }): SurfboardShippingTierId | null {
-  const fromLength = input.boardLength?.trim()
-    ? resolveSurfboardShippingTierFromBoardLength(input.boardLength)
-    : null
-  if (fromLength) return fromLength
-
-  const category = input.category?.trim()
-  if (!category) return null
-  return resolveSurfboardShippingTierFromCategoryId(category)
+  return resolveSurfboardShippingTierFromBoardSpecs(input)?.tierId ?? null
 }
 
 export function surfboardShippingTierParcelFormFields(input: {
@@ -577,13 +724,14 @@ export function surfboardShippingTierDimInFromBoardLength(boardLength: string): 
 
 export function surfboardShippingTierHeadline(tierId: SurfboardShippingTierId): string {
   const tier = getSurfboardShippingTier(tierId)
-  if (tier.maxDimIn != null) {
-    return `${tier.label} (up to ${tier.maxDimIn}″ DIM) / ${tier.weightLb} lb`
-  }
-  if (tier.maxBoxLengthIn != null) {
-    return `${tier.label} (up to ${tier.maxBoxLengthIn}″ box) / ${tier.weightLb} lb`
-  }
-  return `${tier.label} (up to ${surfboardTierMaxDimIn(tier)}″ DIM) / ${tier.weightLb} lb`
+  const band = surfboardShippingTierBoardBandDescription(tierId)
+  return `${band} · up to ${tier.weightLb} lb`
+}
+
+/** One-line ceiling reminder shown under the selected tier. */
+export function surfboardShippingTierCeilingReminder(tierId: SurfboardShippingTierId): string {
+  const packed = surfboardShippingTierFixedParcel(tierId)
+  return `Quotes and labels use this max size (${packed.lengthIn} × ${packed.widthIn} × ${packed.heightIn} in, ${packed.weightLb} lb). Your packed board must fit inside — smaller is fine.`
 }
 
 /** Seller-facing limit line for the tier card (DIM vs box length). */

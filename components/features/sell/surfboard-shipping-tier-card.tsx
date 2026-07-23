@@ -50,7 +50,7 @@ export function SurfboardShippingTierCard({
           Estimated packed box
         </p>
         <p className="mt-1 text-base font-semibold text-foreground tabular-nums">
-          {surfboardShippingTierSummaryLine(tierId, boardLength)}
+          {surfboardShippingTierSummaryLine(tierId)}
         </p>
         <p className="mt-2 text-sm text-muted-foreground/45 leading-relaxed">{tier.summary}</p>
         {dimIn != null ? (

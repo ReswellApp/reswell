@@ -22,6 +22,7 @@ import {
   applySurfboardShippingTierDefaults,
   parseSurfboardShippingTierId,
   surfboardReswellPackageHasPartialDimensions,
+  surfboardShippingTierBoardLengthError,
 } from "@/lib/surfboard-shipping-tiers"
 
 const PRICE_MIN = 0.01
@@ -102,12 +103,16 @@ function deliverySectionComplete(form: SellFormValidationInput): boolean {
   if (fulfillmentFlags.shipping_available) {
     const mode = form.boardShippingCostMode ?? "reswell"
     if (mode === "flat") {
-      return parseSurfboardShippingTierId(form.surfboardShippingTier) != null
+      const tierId = parseSurfboardShippingTierId(form.surfboardShippingTier)
+      if (!tierId) return false
+      return surfboardShippingTierBoardLengthError(form.boardLength, tierId) == null
     }
     if (mode === "reswell") {
       if (surfboardReswellPackageHasPartialDimensions(form)) return false
       const tierId = parseSurfboardShippingTierId(form.surfboardShippingTier)
       if (!tierId) return false
+      if (surfboardShippingTierBoardLengthError(form.boardLength, tierId)) return false
+      if (!form.surfboardShippingTierCeilingConfirmed) return false
       const resolved = applySurfboardShippingTierDefaults(form, { tierId })
       const L = parseReswellParcelLengthRawToCarrierInches(resolved.reswellPackageLengthIn)
       const W = parseReswellParcelWidthHeightRawToCarrierInches(resolved.reswellPackageWidthIn)
