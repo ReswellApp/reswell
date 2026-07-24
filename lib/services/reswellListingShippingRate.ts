@@ -2,9 +2,25 @@ import { resolveListingShipFromForRating } from "@/lib/geocoding/resolve-listing
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import {
   resolveCombinedPackedParcelFromListings,
+  resolveSurfboardShippingTierIdFromListing,
   type ListingPackedParcelSource,
   type ResolvedPackedParcelSource,
 } from "@/lib/reswell-packed-parcel-from-listing"
+import {
+  surfboardShippingTierUsesUpsParcelLimits,
+  validateSurfboardShippingTierParcelLimits,
+  type SurfboardShippingTierId,
+} from "@/lib/surfboard-shipping-tiers"
+import {
+  filterReswellRatesForPeerSection,
+  findPeerCheckoutRateOptionByServiceCode,
+  peerCheckoutShippingServiceError,
+  type PeerCheckoutShippingRateOption,
+  toPeerCheckoutShippingRateOptions,
+} from "@/lib/shipping/peer-checkout-usps-services"
+import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
+import { logPackBandQuoteTelemetry } from "@/lib/shipping/pack-band-telemetry"
+import { resolveSurfboardShippingPackBandId } from "@/lib/surfboard-shipping-pack-bands"
 import { shipEngineRequest } from "@/lib/shipengine/client"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import { formatShipEngineApiError } from "@/lib/shipengine/errors"
@@ -16,14 +32,6 @@ import {
   type ShippingAddressInput,
 } from "@/lib/shipping/shipengine-rate-helpers"
 import { validateSurfboardLabelParcelLimits } from "@/lib/shipping/surfboard-label-limits"
-import {
-  filterReswellRatesForPeerSection,
-  findPeerCheckoutRateOptionByServiceCode,
-  peerCheckoutShippingServiceError,
-  type PeerCheckoutShippingRateOption,
-  toPeerCheckoutShippingRateOptions,
-} from "@/lib/shipping/peer-checkout-usps-services"
-import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 
 /** Minimum listing slice required to rate a Reswell-shipped surfboard at checkout. */
 export type ReswellRateableListing = ListingPackedParcelSource & {
@@ -351,14 +359,41 @@ export async function getCheapestReswellRateForListings(input: {
   }
 
   const weightLb = Math.max(1, parcel.weightOz / 16)
-  const limitCheck = validateSurfboardLabelParcelLimits({
+  const dims = {
     lengthIn: parcel.lengthIn,
     widthIn: parcel.widthIn,
     heightIn: parcel.heightIn,
     weightLb,
-  })
-  if (!limitCheck.ok) {
-    return limitCheck
+  }
+
+  const listingTiers = input.listings
+    .map((listing) => resolveSurfboardShippingTierIdFromListing(listing))
+    .filter((tierId): tierId is SurfboardShippingTierId => tierId != null)
+  const usesFreightTier = listingTiers.some((tierId) => !surfboardShippingTierUsesUpsParcelLimits(tierId))
+
+  if (usesFreightTier) {
+    for (const tierId of listingTiers) {
+      const tierCheck = validateSurfboardShippingTierParcelLimits(tierId, dims)
+      if (!tierCheck.ok) {
+        return tierCheck
+      }
+    }
+  } else if (listingTiers.length > 0) {
+    for (const tierId of listingTiers) {
+      const tierCheck = validateSurfboardShippingTierParcelLimits(tierId, dims)
+      if (!tierCheck.ok) {
+        return tierCheck
+      }
+    }
+    const limitCheck = validateSurfboardLabelParcelLimits(dims)
+    if (!limitCheck.ok) {
+      return limitCheck
+    }
+  } else {
+    const limitCheck = validateSurfboardLabelParcelLimits(dims)
+    if (!limitCheck.ok) {
+      return limitCheck
+    }
   }
 
   const shipFrom = await resolveListingShipFromAddress(firstListing, input.sellerShipFromName)
@@ -469,6 +504,32 @@ export async function getCheapestReswellRateForListings(input: {
   if (cheapest.currency && cheapest.currency.toUpperCase() !== "USD") {
     return { ok: false, error: "Unsupported currency from carrier quote." }
   }
+
+  const primaryListing = input.listings[0]
+  const quoteTierId = primaryListing
+    ? resolveSurfboardShippingTierIdFromListing(primaryListing)
+    : null
+  const quoteBandId = resolveSurfboardShippingPackBandId({
+    tierId: quoteTierId,
+    bandId: primaryListing?.shipping_package_band,
+  })
+  logPackBandQuoteTelemetry({
+    listingId:
+      primaryListing && "id" in primaryListing
+        ? String((primaryListing as { id?: string }).id ?? "")
+        : null,
+    tierId: quoteTierId,
+    bandId: quoteBandId,
+    dims: {
+      lengthIn: parcel.lengthIn,
+      widthIn: parcel.widthIn,
+      heightIn: parcel.heightIn,
+      weightLb,
+    },
+    quotedUsd: cheapest.totalAmount,
+    currency: cheapest.currency,
+    tag: input.diagnosticTag ?? null,
+  })
 
   return {
     ok: true,

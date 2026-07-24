@@ -5,6 +5,7 @@
 
 import {
   formatDecimalDimension,
+  maxBoardWidthInchesFromInput,
   parseBoardMeasurement,
   parseVolumeLiters,
   totalBoardLengthInchesFromCombinedInput,
@@ -17,30 +18,13 @@ export const RESWELL_PACKAGING_WEIGHT_LB = 4
 export const RESWELL_HEURISTIC_FALLBACK_PACKED_HEIGHT_IN = 3.25
 
 /**
- * Standard packing buffer (inches) added to length, width, AND height when handing
- * a listing's board dimensions to ShipEngine. Applied identically in /checkout,
- * /api/stripe/create-payment-intent, and the /admin/shipping listing-rate diagnostic
- * so quotes never disagree across surfaces.
- *
- * The buffer accounts for end-cap foam, bubble wrap, and the thickness of the
- * carton itself — all of which a seller types as bare board dims, not parcel dims.
- */
-export const RESWELL_SHIPPING_AXIS_BUFFER_IN = 2
-
-/**
- * Apply the standard packing buffer to one axis of a bare board dimension.
- *
- * Rule: drop the fractional part of the board value, then add the buffer.
- * Surfboard board dims often come fractional (e.g. `5'10½"`, `2 5/8"`); flooring
- * before adding gives a clean whole-inch parcel dim that carriers prefer:
- *
- *   • 70    → 72   (whole length)
- *   • 70.5  → 72   (5'10½")
- *   • 2.625 → 4    (2 5/8" thickness)
+ * Floors a bare board dimension to whole inches for carrier parcel fields.
+ * Applied identically in /checkout, /api/stripe/create-payment-intent, and the
+ * /admin/shipping listing-rate diagnostic so quotes never disagree across surfaces.
  */
 export function applyReswellShippingAxisBuffer(boardValueInches: number): number {
   if (!Number.isFinite(boardValueInches) || boardValueInches <= 0) return boardValueInches
-  return Math.floor(boardValueInches) + RESWELL_SHIPPING_AXIS_BUFFER_IN
+  return Math.floor(boardValueInches)
 }
 
 /**
@@ -112,10 +96,7 @@ export function reswellSuggestedPackageInchesFromBoard(input: {
 
   const wRaw = input.boardWidthInches.trim()
   const tRaw = input.boardThicknessInches.trim()
-  const wParsed =
-    wRaw === ""
-      ? null
-      : (parseBoardMeasurement(wRaw) ?? Number.parseFloat(wRaw))
+  const wParsed = wRaw === "" ? null : maxBoardWidthInchesFromInput(wRaw)
   const tParsed =
     tRaw === ""
       ? null

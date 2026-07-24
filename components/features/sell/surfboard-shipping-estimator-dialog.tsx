@@ -51,11 +51,11 @@ export function SurfboardShippingEstimatorDialog({
       >
         <DialogHeader className="shrink-0 space-y-0 border-0 px-10 pb-1 pt-8 text-center sm:px-14">
           <DialogTitle className="text-lg font-bold tracking-tight text-foreground">
-            Shipping label cost estimator
+            Live shipping quote
           </DialogTitle>
           <DialogDescription className="sr-only">
-            Enter your ship-from ZIP, receiver ZIP, package weight, and dimensions to see domestic label
-            prices for that lane.
+            Enter your ship-from ZIP, buyer ZIP, package weight, and dimensions to see what buyers
+            typically pay for that lane at checkout.
           </DialogDescription>
         </DialogHeader>
 

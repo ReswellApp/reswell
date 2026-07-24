@@ -18,7 +18,18 @@ import {
   parseReswellParcelWidthHeightRawToCarrierInches,
   validateReswellPackedWeightRequired,
 } from "@/lib/reswell-parcel-fields"
-import { validateSurfboardLabelParcelLimits } from "@/lib/shipping/surfboard-label-limits"
+import {
+  applySurfboardShippingTierDefaults,
+  parseSurfboardShippingTierId,
+  surfboardReswellPackageHasPartialDimensions,
+  surfboardShippingTierBoardLengthError,
+  validateSurfboardShippingTierParcelLimits,
+} from "@/lib/surfboard-shipping-tiers"
+import {
+  parseSurfboardShippingPackBandId,
+  surfboardShippingPackBandBoardSpecsError,
+  surfboardShippingPackBandFixedParcel,
+} from "@/lib/surfboard-shipping-pack-bands"
 
 const PRICE_MIN = 0.01
 const PRICE_MAX = 999_999.99
@@ -62,6 +73,14 @@ export type SellFormValidationInput = {
   reswellPackageHeightIn?: string
   reswellPackageWeightLb?: string
   reswellPackageWeightOz?: string
+  /** Seller-selected Reswell surfboard shipping tier. */
+  surfboardShippingTier?: string
+  /** Seller confirmed packed board fits the selected tier ceiling (Reswell mode). */
+  surfboardShippingTierCeilingConfirmed?: boolean
+  /** Shortboard pack band (compact / standard / max). */
+  surfboardShippingPackBand?: string
+  /** Seller confirmed packed board fits the selected shortboard pack band. */
+  surfboardShippingPackBandCeilingConfirmed?: boolean
   /** Scheduled price drop (2 weeks) — seller sets floor via `autoPriceDropFloor`. */
   autoPriceDrop: boolean
   autoPriceDropFloor: string
@@ -198,53 +217,77 @@ export function validateSellListingForm(
   if (fulfillmentFlags.shipping_available) {
     const mode = form.boardShippingCostMode ?? "reswell"
     if (mode === "flat") {
-      const raw = form.boardShippingPrice?.trim() ?? ""
-      if (!raw && !relaxed) {
-        return "Enter a flat shipping amount, or choose free shipping instead."
+      const tierId = parseSurfboardShippingTierId(form.surfboardShippingTier)
+      if (!tierId) {
+        return "Choose a BoardShipper shipping size (shortboard, midlength, or longboard)."
       }
-      if (raw) {
-        const sp = parseFloat(raw)
-        if (!Number.isFinite(sp) || sp < 0) {
-          return "Flat shipping must be a number ≥ 0."
-        }
-      }
+      const lengthErr = surfboardShippingTierBoardLengthError(form.boardLength, tierId)
+      if (lengthErr) return lengthErr
     }
     if (mode === "reswell" && !relaxed) {
-      const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
-      const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
-      const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
-      if (L == null || L <= 0) {
-        const raw = form.reswellPackageLengthIn?.trim() ?? ""
-        const hasPrime = raw.replace(/[\u2032\u2019＇]/g, "'").includes("'")
-        return hasPrime
-          ? "Packed length: check feet and inches (e.g. 6'1) or use total outer length in inches."
-          : "Enter packed length — feet'inches such as 6'1 from your Dimensions, or outer box length in inches."
+      const tierId = parseSurfboardShippingTierId(form.surfboardShippingTier)
+      if (!tierId) {
+        return "Choose a Reswell shipping size (shortboard, midlength, or longboard)."
       }
-      if (W == null || W <= 0) {
-        return "Enter packed box width — use the same inches as in Dimensions (decimals or fractions) for Reswell shipping."
-      }
-      if (H == null || H <= 0) {
-        return "Enter packed box height — use the same inches as board thickness (decimals or fractions) for Reswell shipping."
-      }
-      const weightErr = validateReswellPackedWeightRequired(
-        form.reswellPackageWeightLb,
-        form.reswellPackageWeightOz,
-      )
-      if (weightErr) return weightErr
+      const lengthErr = surfboardShippingTierBoardLengthError(form.boardLength, tierId)
+      if (lengthErr) return lengthErr
 
-      const lbRaw = form.reswellPackageWeightLb?.trim() ?? ""
-      const ozRaw = form.reswellPackageWeightOz?.trim() ?? ""
-      const lb = lbRaw ? parseFloat(lbRaw) : 0
-      const oz = ozRaw ? parseFloat(ozRaw) : 0
-      const weightLb = (Number.isFinite(lb) ? lb : 0) + (Number.isFinite(oz) ? oz : 0) / 16
-      const limitCheck = validateSurfboardLabelParcelLimits({
-        lengthIn: L,
-        widthIn: W,
-        heightIn: H,
-        weightLb: Math.max(weightLb, 1 / 16),
-      })
-      if (!limitCheck.ok) {
-        return "This packed size exceeds UPS shipping limits (160″ max using Length + 2×Width + 2×Height, 25 lb max). Use flat-rate shipping or local pickup instead."
+      if (tierId === "shortboard") {
+        const bandId = parseSurfboardShippingPackBandId(form.surfboardShippingPackBand)
+        if (!bandId) {
+          return "Choose a shortboard pack size (Compact, Standard, or Max)."
+        }
+        const bandErr = surfboardShippingPackBandBoardSpecsError({
+          bandId,
+          boardLength: form.boardLength,
+          boardWidthInches: form.boardWidthInches,
+        })
+        if (bandErr) return bandErr
+        if (!form.surfboardShippingPackBandCeilingConfirmed) {
+          return "Confirm your packed board will fit inside the selected shortboard pack size."
+        }
+        const band = surfboardShippingPackBandFixedParcel(bandId)
+        const limitCheck = validateSurfboardShippingTierParcelLimits(tierId, {
+          lengthIn: band.lengthIn,
+          widthIn: band.widthIn,
+          heightIn: band.heightIn,
+          weightLb: band.weightLb,
+        })
+        if (!limitCheck.ok) return limitCheck.error
+      } else {
+        if (surfboardReswellPackageHasPartialDimensions(form)) {
+          return "Shipping size is still loading — wait a moment or re-enter board length."
+        }
+        if (!form.surfboardShippingTierCeilingConfirmed) {
+          return "Confirm your packed board will fit inside the selected shipping size ceiling."
+        }
+        const resolved = applySurfboardShippingTierDefaults(form, { tierId })
+        const L = parseReswellParcelLengthRawToCarrierInches(resolved.reswellPackageLengthIn)
+        const W = parseReswellParcelWidthHeightRawToCarrierInches(resolved.reswellPackageWidthIn)
+        const H = parseReswellParcelWidthHeightRawToCarrierInches(resolved.reswellPackageHeightIn)
+        if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) {
+          return "Choose a Reswell shipping size (shortboard, midlength, or longboard)."
+        }
+        const weightErr = validateReswellPackedWeightRequired(
+          resolved.reswellPackageWeightLb,
+          resolved.reswellPackageWeightOz,
+        )
+        if (weightErr) return weightErr
+
+        const lbRaw = resolved.reswellPackageWeightLb?.trim() ?? ""
+        const ozRaw = resolved.reswellPackageWeightOz?.trim() ?? ""
+        const lb = lbRaw ? parseFloat(lbRaw) : 0
+        const oz = ozRaw ? parseFloat(ozRaw) : 0
+        const weightLb = (Number.isFinite(lb) ? lb : 0) + (Number.isFinite(oz) ? oz : 0) / 16
+        const limitCheck = validateSurfboardShippingTierParcelLimits(tierId, {
+          lengthIn: L,
+          widthIn: W,
+          heightIn: H,
+          weightLb: Math.max(weightLb, 1 / 16),
+        })
+        if (!limitCheck.ok) {
+          return limitCheck.error
+        }
       }
     }
   }

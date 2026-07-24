@@ -38,8 +38,8 @@ export default async function SellPage({
   const type = firstParam(qs.type)
 
   // Editing an existing listing or explicitly choosing surfboards goes straight
-  // to the surfboard flow. A fresh /sell visit shows the product-type chooser
-  // (fins continue to a dedicated /sell/fins flow).
+  // to the surfboard flow (/sell/boards is the canonical boards sell URL).
+  // A fresh /sell visit shows the product-type chooser.
   if (editId || type === "surfboard") {
     return (
       <Suspense fallback={<SellPageSuspenseFallback />}>

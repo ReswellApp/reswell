@@ -477,6 +477,7 @@ export async function POST(request: NextRequest) {
 
     const boardMode = effectiveBoardShippingMode(listingForQuote)
     let parcel: { lengthIn: number; widthIn: number; heightIn: number; weightLb: number }
+    let tierId: import("@/lib/surfboard-shipping-tiers").SurfboardShippingTierId | null = null
     if (body.parcel) {
       parcel = {
         lengthIn: body.parcel.length_in,
@@ -500,12 +501,14 @@ export async function POST(request: NextRequest) {
         heightIn: fromListing.parcel.heightIn,
         weightLb: fromListing.parcel.weightLb,
       }
+      tierId = fromListing.parcel.tierId
     }
 
     const ratesResult = await fetchRatesForSurfboardOrder({
       shipFrom: resolved.from,
       shipTo: resolved.to,
       parcel,
+      tierId,
     })
 
     if (!ratesResult.ok) {

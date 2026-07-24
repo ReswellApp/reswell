@@ -5,6 +5,7 @@ import {
 } from "@/lib/shipengine/surfboard-label"
 import {
   resolvePackedParcelFromListing,
+  resolveSurfboardShippingTierIdFromListing,
   suggestPackedBoxInchesFromListing,
   type ListingPackedParcelSource,
   type ResolvedPackedParcelSource,
@@ -23,7 +24,14 @@ import {
   LABEL_PARCEL_MIN_WEIGHT_LB,
   SURFBOARD_LABEL_LIMITS_ERROR,
   validateLabelParcelEntry,
+  validateSurfboardLabelParcelLimits,
 } from "@/lib/shipping/surfboard-label-limits"
+import {
+  surfboardShippingTierUsesUpsParcelLimits,
+  validateSurfboardShippingTierParcelLimits,
+  type SurfboardShippingTierId,
+} from "@/lib/surfboard-shipping-tiers"
+import { logPackBandLabelTelemetry } from "@/lib/shipping/pack-band-telemetry"
 
 export type { ShipEngineRateOption }
 
@@ -33,6 +41,7 @@ export type ResolvedOrderLabelParcel = {
   heightIn: number
   weightLb: number
   source: ResolvedPackedParcelSource
+  tierId: SurfboardShippingTierId | null
 }
 
 /**
@@ -46,22 +55,54 @@ export function resolveOrderLabelParcelFromListing(
     return { ok: false, error: r.error }
   }
   const weightLb = Math.max(LABEL_PARCEL_MIN_WEIGHT_LB, r.weightOz / 16)
-  const limitCheck = validateLabelParcelEntry({
+  const tierId = resolveSurfboardShippingTierIdFromListing(listing)
+  const dims = {
     lengthIn: r.lengthIn,
     widthIn: r.widthIn,
     heightIn: r.heightIn,
     weightLb,
-  })
-  if (!limitCheck.ok) {
-    if (limitCheck.error === SURFBOARD_LABEL_LIMITS_ERROR) {
-      return limitCheck
+  }
+
+  if (tierId) {
+    const tierCheck = validateSurfboardShippingTierParcelLimits(tierId, dims)
+    if (!tierCheck.ok) {
+      return tierCheck
     }
-    return {
-      ok: false,
-      error:
-        "Package details from this listing don’t meet carrier limits. Update shipping dimensions on the listing, or adjust the package below.",
+    // Mid/long freight: tier ceilings only. Shortboard / UPS parcel: full UPS caps.
+    if (surfboardShippingTierUsesUpsParcelLimits(tierId)) {
+      const limitCheck = validateSurfboardLabelParcelLimits(dims)
+      if (!limitCheck.ok) {
+        return limitCheck
+      }
+    }
+  } else {
+    // Non-surfboard / untiered: generalized manual parcel entry limits (main).
+    const limitCheck = validateLabelParcelEntry(dims)
+    if (!limitCheck.ok) {
+      if (limitCheck.error === SURFBOARD_LABEL_LIMITS_ERROR) {
+        return limitCheck
+      }
+      return {
+        ok: false,
+        error:
+          "Package details from this listing don’t meet carrier limits. Update shipping dimensions on the listing, or adjust the package below.",
+      }
     }
   }
+
+  logPackBandLabelTelemetry({
+    listingId:
+      listing && "id" in listing ? String((listing as { id?: string }).id ?? "") : null,
+    tierId,
+    bandId: listing.shipping_package_band,
+    dims: {
+      lengthIn: r.lengthIn,
+      widthIn: r.widthIn,
+      heightIn: r.heightIn,
+      weightLb,
+    },
+  })
+
   return {
     ok: true,
     parcel: {
@@ -70,12 +111,13 @@ export function resolveOrderLabelParcelFromListing(
       heightIn: r.heightIn,
       weightLb,
       source: r.source,
+      tierId,
     },
   }
 }
 
 /**
- * Optional L×W×H prefill for seller flat/free label forms (board dims + packing buffer).
+ * Optional L×W×H prefill for seller flat/free label forms (board dims floored to whole inches).
  * Weight is never inferred — sellers must measure and enter it.
  */
 export function suggestSellerLabelParcelDimsFromListing(
@@ -88,6 +130,7 @@ export async function fetchRatesForSurfboardOrder(params: {
   shipFrom: RateQuoteAddressFields
   shipTo: RateQuoteAddressFields
   parcel: { lengthIn: number; widthIn: number; heightIn: number; weightLb: number }
+  tierId?: SurfboardShippingTierId | null
 }) {
   return fetchShipEngineRatesForSurfboard(params)
 }
