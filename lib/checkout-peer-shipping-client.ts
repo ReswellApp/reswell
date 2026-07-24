@@ -4,6 +4,7 @@ type ShippingModeListing = {
   board_shipping_cost_mode?: string | null
   shipping_price?: string | number | null
   shipping_package_tier?: string | null
+  shipping_package_band?: string | null
 }
 
 /** True when checkout must call `/api/checkout/shipping-quote` (live ShipEngine or BoardShipper flat). */
@@ -44,5 +45,6 @@ export function listingHasShippingModeFields(listing: CheckoutListing): Shipping
     board_shipping_cost_mode: listing.board_shipping_cost_mode,
     shipping_price: listing.shipping_price,
     shipping_package_tier: listing.shipping_package_tier,
+    shipping_package_band: listing.shipping_package_band,
   }
 }

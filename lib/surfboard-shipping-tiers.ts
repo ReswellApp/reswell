@@ -828,3 +828,81 @@ export function assertSurfboardShippingTiersWithinCarrierLimits(): void {
 }
 
 assertSurfboardShippingTiersWithinCarrierLimits()
+
+// ---------------------------------------------------------------------------
+// Fallback buyer-pays ranges (sell-flow calculator)
+// Prefer live /api/shipping/buyer-zone-estimate when a ship-from ZIP is available.
+// ---------------------------------------------------------------------------
+
+/** Destination bands shown in the sell-flow buyer shipping calculator. */
+export type ReswellBuyerEstimateZone =
+  | "california"
+  | "west"
+  | "rest_of_us"
+  | "hawaii"
+
+export const RESWELL_BUYER_ESTIMATE_ZONE_LABELS: Record<ReswellBuyerEstimateZone, string> = {
+  california: "Within California",
+  west: "West Coast / Mountain (OR, WA, CO, AZ, NV, UT…)",
+  rest_of_us: "Rest of continental U.S.",
+  hawaii: "Hawaii / Alaska",
+}
+
+export const RESWELL_BUYER_ESTIMATE_ZONES: ReswellBuyerEstimateZone[] = [
+  "california",
+  "west",
+  "rest_of_us",
+  "hawaii",
+]
+
+export type ReswellBuyerEstimateRangeUsd = {
+  lowUsd: number
+  highUsd: number
+}
+
+/**
+ * Typical buyer totals (USD) by tier × destination, for the fixed tier ceiling carton.
+ * Tuned as ballpark guidance — refresh when carrier pricing shifts materially.
+ */
+export const RESWELL_BUYER_SHIPPING_ESTIMATES_USD: Record<
+  SurfboardShippingTierId,
+  Record<ReswellBuyerEstimateZone, ReswellBuyerEstimateRangeUsd>
+> = {
+  shortboard: {
+    california: { lowUsd: 45, highUsd: 75 },
+    west: { lowUsd: 60, highUsd: 95 },
+    rest_of_us: { lowUsd: 85, highUsd: 140 },
+    hawaii: { lowUsd: 150, highUsd: 240 },
+  },
+  midlength: {
+    california: { lowUsd: 90, highUsd: 140 },
+    west: { lowUsd: 110, highUsd: 170 },
+    rest_of_us: { lowUsd: 160, highUsd: 260 },
+    hawaii: { lowUsd: 180, highUsd: 320 },
+  },
+  longboard: {
+    california: { lowUsd: 130, highUsd: 200 },
+    west: { lowUsd: 150, highUsd: 230 },
+    rest_of_us: { lowUsd: 220, highUsd: 380 },
+    hawaii: { lowUsd: 250, highUsd: 420 },
+  },
+}
+
+export function getReswellBuyerShippingEstimateUsd(
+  tierId: SurfboardShippingTierId,
+  zone: ReswellBuyerEstimateZone,
+): ReswellBuyerEstimateRangeUsd {
+  return RESWELL_BUYER_SHIPPING_ESTIMATES_USD[tierId][zone]
+}
+
+export function formatReswellBuyerShippingEstimateUsd(
+  range: ReswellBuyerEstimateRangeUsd,
+): string {
+  if (range.lowUsd === range.highUsd) return `$${range.lowUsd}`
+  return `$${range.lowUsd}–$${range.highUsd}`
+}
+
+/** "From $X" using the lowest continental band for a tier. */
+export function reswellBuyerShippingFromUsd(tierId: SurfboardShippingTierId): number {
+  return RESWELL_BUYER_SHIPPING_ESTIMATES_USD[tierId].california.lowUsd
+}

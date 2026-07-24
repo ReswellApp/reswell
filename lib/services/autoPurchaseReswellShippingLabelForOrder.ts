@@ -10,7 +10,12 @@ import { getLatestOrderShippingLabelUrlsForOrder } from "@/lib/db/orderShippingL
 import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
 import { attachOrderShippingLabel } from "@/lib/services/attachOrderShippingLabel"
 import { ensureReswellShippingLabelReadyThreadNotification } from "@/lib/services/postReswellShippingLabelReadyNotification"
-import { purchaseLabelWithRateId } from "@/lib/services/orderShippingLabel"
+import {
+  purchaseLabelWithRateId,
+  resolveOrderLabelParcelFromListing,
+} from "@/lib/services/orderShippingLabel"
+import type { ListingPackedParcelSource } from "@/lib/reswell-packed-parcel-from-listing"
+import { logPackBandLabelTelemetry } from "@/lib/shipping/pack-band-telemetry"
 import {
   effectiveBoardShippingMode,
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
@@ -247,6 +252,27 @@ export async function autoPurchaseReswellShippingLabelForOrder(
     if (!purchased.ok) {
       await fail("label_purchase", purchased.error)
       return
+    }
+
+    {
+      const labelParcel = resolveOrderLabelParcelFromListing(
+        listing as unknown as ListingPackedParcelSource,
+      )
+      if (labelParcel.ok) {
+        logPackBandLabelTelemetry({
+          listingId: o.listing_id,
+          orderId: o.id,
+          tierId: labelParcel.parcel.tierId,
+          bandId: (listing as { shipping_package_band?: string | null }).shipping_package_band,
+          dims: {
+            lengthIn: labelParcel.parcel.lengthIn,
+            widthIn: labelParcel.parcel.widthIn,
+            heightIn: labelParcel.parcel.heightIn,
+            weightLb: labelParcel.parcel.weightLb,
+          },
+          labelCostUsd: purchased.result.costAmount,
+        })
+      }
     }
 
     let labelPdfUrl: string | null = purchased.result.labelUrl

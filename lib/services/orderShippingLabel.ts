@@ -30,6 +30,7 @@ import {
   type SurfboardShippingTierId,
 } from "@/lib/surfboard-shipping-tiers"
 import { shippingLabelParcelSchema } from "@/lib/validations/order-shipping-label"
+import { logPackBandLabelTelemetry } from "@/lib/shipping/pack-band-telemetry"
 
 export type { ShipEngineRateOption }
 
@@ -94,6 +95,19 @@ export function resolveOrderLabelParcelFromListing(
       }
     }
   }
+
+  logPackBandLabelTelemetry({
+    listingId:
+      listing && "id" in listing ? String((listing as { id?: string }).id ?? "") : null,
+    tierId,
+    bandId: listing.shipping_package_band,
+    dims: {
+      lengthIn: r.lengthIn,
+      widthIn: r.widthIn,
+      heightIn: r.heightIn,
+      weightLb,
+    },
+  })
 
   return {
     ok: true,

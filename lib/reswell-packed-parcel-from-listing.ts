@@ -17,6 +17,10 @@ import {
   type SurfboardShippingTierId,
 } from "@/lib/surfboard-shipping-tiers"
 import {
+  resolveSurfboardShippingPackBandId,
+  surfboardShippingPackBandFixedParcel,
+} from "@/lib/surfboard-shipping-pack-bands"
+import {
   applyReswellShippingAxisBuffer,
   reswellSuggestedPackageInchesFromBoard,
   reswellSuggestedShipWeightLbOzFromBoard,
@@ -49,6 +53,8 @@ export type ListingPackedParcelSource = {
   shipping_packed_height_in?: number | string | null
   shipping_packed_weight_oz?: number | string | null
   shipping_package_tier?: string | null
+  /** Shortboard pack band; null with tier=shortboard means Max. */
+  shipping_package_band?: string | null
   /** Canonical board L×W×T×vol string — sole source for parcel L/W/H + weight heuristics. */
   dimensions?: string | null
 }
@@ -183,6 +189,18 @@ function resolveSurfboardPackedParcelDims(
 ): PackedParcelDims | null {
   const tierId = parseSurfboardShippingTierId(row.shipping_package_tier)
   if (tierId) {
+    const bandId = resolveSurfboardShippingPackBandId({
+      tierId,
+      bandId: row.shipping_package_band,
+    })
+    if (bandId) {
+      const band = surfboardShippingPackBandFixedParcel(bandId)
+      return {
+        lengthIn: band.lengthIn,
+        widthIn: band.widthIn,
+        heightIn: band.heightIn,
+      }
+    }
     const fixed = surfboardShippingTierFixedParcel(tierId)
     return {
       lengthIn: fixed.lengthIn,
@@ -204,6 +222,13 @@ function resolveSurfboardPackedParcelDims(
 function surfboardTierWeightOzFromListing(row: ListingPackedParcelSource): number | null {
   const tierId = parseSurfboardShippingTierId(row.shipping_package_tier)
   if (tierId) {
+    const bandId = resolveSurfboardShippingPackBandId({
+      tierId,
+      bandId: row.shipping_package_band,
+    })
+    if (bandId) {
+      return surfboardShippingPackBandFixedParcel(bandId).weightLb * 16
+    }
     return getSurfboardShippingTier(tierId).weightLb * 16
   }
   return null

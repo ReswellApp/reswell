@@ -186,11 +186,19 @@ import {
   type SurfboardShippingTierId,
 } from "@/lib/surfboard-shipping-tiers"
 import {
+  parseSurfboardShippingPackBandId,
+  resolveSurfboardShippingPackBandFromBoardSpecs,
+  surfboardShippingPackBandFixedParcel,
+  type SurfboardShippingPackBandId,
+} from "@/lib/surfboard-shipping-pack-bands"
+import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
 import { SurfboardShippingTierPicker } from "@/components/features/sell/surfboard-shipping-tier-picker"
+import { SurfboardShippingPackBandPicker } from "@/components/features/sell/surfboard-shipping-pack-band-picker"
 import { BoardShipperFlatRateTierSection } from "@/components/features/sell/boardshipper-flat-rate-tier-section"
+import { SurfboardBuyerShippingCalculator } from "@/components/features/sell/surfboard-buyer-shipping-calculator"
 import { SellBoardFacetFields } from "@/components/features/sell/sell-board-facet-fields"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
@@ -842,6 +850,8 @@ function createInitialSellFormData() {
     boardShippingPrice: "",
     surfboardShippingTier: "" as SurfboardShippingTierId | "",
     surfboardShippingTierCeilingConfirmed: false,
+    surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
+    surfboardShippingPackBandCeilingConfirmed: false,
     reswellPackageLengthIn: "",
     reswellPackageWidthIn: "",
     reswellPackageHeightIn: "",
@@ -1148,6 +1158,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       boardShippingPrice: formData.boardShippingPrice,
       surfboardShippingTier: formData.surfboardShippingTier,
       surfboardShippingTierCeilingConfirmed: formData.surfboardShippingTierCeilingConfirmed,
+      surfboardShippingPackBand: formData.surfboardShippingPackBand,
+      surfboardShippingPackBandCeilingConfirmed: formData.surfboardShippingPackBandCeilingConfirmed,
       reswellPackageLengthIn: formData.reswellPackageLengthIn,
       reswellPackageWidthIn: formData.reswellPackageWidthIn,
       reswellPackageHeightIn: formData.reswellPackageHeightIn,
@@ -1298,6 +1310,12 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         parseSurfboardShippingTierId(
           (listing as { shipping_package_tier?: string | null }).shipping_package_tier,
         ) ?? ""
+      const loadedSurfboardShippingPackBand =
+        loadedSurfboardShippingTier === "shortboard"
+          ? parseSurfboardShippingPackBandId(
+              (listing as { shipping_package_band?: string | null }).shipping_package_band,
+            ) ?? "shortboard_max"
+          : ""
       const hasReswellPackageFromDb =
         loadedReswellPackage.reswellPackageLengthIn.trim() !== "" ||
         loadedReswellPackage.reswellPackageWidthIn.trim() !== "" ||
@@ -1331,6 +1349,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         surfboardShippingTier: loadedSurfboardShippingTier,
         // Re-confirm ceiling on edit so sellers acknowledge the max-size policy.
         surfboardShippingTierCeilingConfirmed: false,
+        surfboardShippingPackBand: loadedSurfboardShippingPackBand,
+        surfboardShippingPackBandCeilingConfirmed: false,
         ...(hasReswellPackageFromDb
           ? loadedReswellPackage
           : {
@@ -1486,6 +1506,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       boardShippingPrice: formData.boardShippingPrice,
       surfboardShippingTier: formData.surfboardShippingTier,
       surfboardShippingTierCeilingConfirmed: formData.surfboardShippingTierCeilingConfirmed,
+      surfboardShippingPackBand: formData.surfboardShippingPackBand,
+      surfboardShippingPackBandCeilingConfirmed: formData.surfboardShippingPackBandCeilingConfirmed,
       reswellPackageLengthIn: formData.reswellPackageLengthIn,
       reswellPackageWidthIn: formData.reswellPackageWidthIn,
       reswellPackageHeightIn: formData.reswellPackageHeightIn,
@@ -1613,7 +1635,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     [formData.boardFulfillment],
   )
 
-  /** Reswell parcel fields follow the seller-selected fixed shipping tier ceiling. */
+  /** Reswell parcel fields follow the selected tier ceiling (or shortboard pack band). */
   useEffect(() => {
     if (!deliveryFlags.shipping_available || formData.boardShippingCostMode !== "reswell") {
       return
@@ -1622,12 +1644,33 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     const tierId = parseSurfboardShippingTierId(formData.surfboardShippingTier)
     if (!tierId) return
 
-    const parcelFill = surfboardShippingTierAutofillFromSelection(tierId)
+    const bandId =
+      tierId === "shortboard"
+        ? parseSurfboardShippingPackBandId(formData.surfboardShippingPackBand)
+        : null
+    const parcelFill = bandId
+      ? (() => {
+          const band = surfboardShippingPackBandFixedParcel(bandId)
+          return {
+            reswellPackageLengthIn: String(band.lengthIn),
+            reswellPackageWidthIn: String(band.widthIn),
+            reswellPackageHeightIn: String(band.heightIn),
+            reswellPackageWeightLb: String(band.weightLb),
+            reswellPackageWeightOz: "",
+          }
+        })()
+      : surfboardShippingTierAutofillFromSelection(tierId)
 
     setFormData((fd) => {
       if (!flagsFromBoardFulfillment(fd.boardFulfillment).shipping_available) return fd
       if (fd.boardShippingCostMode !== "reswell") return fd
       if (parseSurfboardShippingTierId(fd.surfboardShippingTier) !== tierId) return fd
+      if (
+        tierId === "shortboard" &&
+        parseSurfboardShippingPackBandId(fd.surfboardShippingPackBand) !== bandId
+      ) {
+        return fd
+      }
       if (
         fd.reswellPackageLengthIn === parcelFill.reswellPackageLengthIn &&
         fd.reswellPackageWidthIn === parcelFill.reswellPackageWidthIn &&
@@ -1650,6 +1693,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     deliveryFlags.shipping_available,
     formData.boardShippingCostMode,
     formData.surfboardShippingTier,
+    formData.surfboardShippingPackBand,
   ])
 
   /** Clear a shipping tier that no longer fits the board length ceiling. */
@@ -1670,6 +1714,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         ...fd,
         surfboardShippingTier: "" as SurfboardShippingTierId | "",
         surfboardShippingTierCeilingConfirmed: false,
+        surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
+        surfboardShippingPackBandCeilingConfirmed: false,
       }
     })
   }, [
@@ -1701,10 +1747,19 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       if (!flagsFromBoardFulfillment(fd.boardFulfillment).shipping_available) return fd
       if (fd.boardShippingCostMode !== "reswell" && fd.boardShippingCostMode !== "flat") return fd
       if (parseSurfboardShippingTierId(fd.surfboardShippingTier)) return fd
+      const nextBand =
+        suggested.tierId === "shortboard"
+          ? resolveSurfboardShippingPackBandFromBoardSpecs({
+              boardLength: fd.boardLength,
+              boardWidthInches: fd.boardWidthInches,
+            })
+          : ("" as SurfboardShippingPackBandId | "")
       return {
         ...fd,
         surfboardShippingTier: suggested.tierId,
         surfboardShippingTierCeilingConfirmed: false,
+        surfboardShippingPackBand: nextBand,
+        surfboardShippingPackBandCeilingConfirmed: false,
       }
     })
   }, [
@@ -1714,6 +1769,36 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     formData.category,
     formData.boardShippingCostMode,
     formData.surfboardShippingTier,
+  ])
+
+  /** Recommend a shortboard pack band when Shortboard is selected without one. */
+  useEffect(() => {
+    if (!deliveryFlags.shipping_available) return
+    if (formData.boardShippingCostMode !== "reswell") return
+    if (formData.surfboardShippingTier !== "shortboard") return
+    if (parseSurfboardShippingPackBandId(formData.surfboardShippingPackBand)) return
+    if (!formData.boardLength.trim()) return
+
+    const suggested = resolveSurfboardShippingPackBandFromBoardSpecs({
+      boardLength: formData.boardLength,
+      boardWidthInches: formData.boardWidthInches,
+    })
+    setFormData((fd) => {
+      if (fd.surfboardShippingTier !== "shortboard") return fd
+      if (parseSurfboardShippingPackBandId(fd.surfboardShippingPackBand)) return fd
+      return {
+        ...fd,
+        surfboardShippingPackBand: suggested,
+        surfboardShippingPackBandCeilingConfirmed: false,
+      }
+    })
+  }, [
+    deliveryFlags.shipping_available,
+    formData.boardShippingCostMode,
+    formData.surfboardShippingTier,
+    formData.surfboardShippingPackBand,
+    formData.boardLength,
+    formData.boardWidthInches,
   ])
 
   /**
@@ -3966,6 +4051,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                         boardShippingPrice: "",
                                         surfboardShippingTier: "" as SurfboardShippingTierId | "",
                                         surfboardShippingTierCeilingConfirmed: false,
+                                        surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
+                                        surfboardShippingPackBandCeilingConfirmed: false,
                                         reswellPackageLengthIn: "",
                                         reswellPackageWidthIn: "",
                                         reswellPackageHeightIn: "",
@@ -4038,13 +4125,18 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                   ? {
                                       surfboardShippingTier: "" as SurfboardShippingTierId | "",
                                       surfboardShippingTierCeilingConfirmed: false,
+                                      surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
+                                      surfboardShippingPackBandCeilingConfirmed: false,
                                       reswellPackageLengthIn: "",
                                       reswellPackageWidthIn: "",
                                       reswellPackageHeightIn: "",
                                       reswellPackageWeightLb: "",
                                       reswellPackageWeightOz: "",
                                     }
-                                  : { surfboardShippingTierCeilingConfirmed: false }),
+                                  : {
+                                      surfboardShippingTierCeilingConfirmed: false,
+                                      surfboardShippingPackBandCeilingConfirmed: false,
+                                    }),
                               })
                             }}
                             className="space-y-3"
@@ -4136,30 +4228,78 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                             </label>
                           </RadioGroup>
                           {formData.boardShippingCostMode === "reswell" ? (
-                            <div
-                              id="sell-section-reswell-package"
-                              className="rounded-xl border border-border bg-muted/15 p-4 sm:p-5"
-                            >
-                              <SurfboardShippingTierPicker
-                                value={formData.surfboardShippingTier}
-                                boardLength={formData.boardLength}
-                                boardWidthInches={formData.boardWidthInches}
-                                category={formData.category}
-                                ceilingConfirmed={formData.surfboardShippingTierCeilingConfirmed}
-                                onCeilingConfirmedChange={(confirmed) =>
-                                  setFormData({
-                                    ...formData,
-                                    surfboardShippingTierCeilingConfirmed: confirmed,
-                                  })
-                                }
-                                onChange={(tierId) =>
-                                  setFormData({
-                                    ...formData,
-                                    surfboardShippingTier: tierId,
-                                    surfboardShippingTierCeilingConfirmed: false,
-                                  })
-                                }
-                                className="border-0 bg-transparent p-0 shadow-none rounded-none"
+                            <div className="space-y-4">
+                              <div
+                                id="sell-section-reswell-package"
+                                className="rounded-xl border border-border bg-muted/15 p-4 sm:p-5"
+                              >
+                                <SurfboardShippingTierPicker
+                                  value={formData.surfboardShippingTier}
+                                  boardLength={formData.boardLength}
+                                  boardWidthInches={formData.boardWidthInches}
+                                  category={formData.category}
+                                  ceilingConfirmed={
+                                    formData.surfboardShippingTier === "shortboard"
+                                      ? undefined
+                                      : formData.surfboardShippingTierCeilingConfirmed
+                                  }
+                                  onCeilingConfirmedChange={
+                                    formData.surfboardShippingTier === "shortboard"
+                                      ? undefined
+                                      : (confirmed) =>
+                                          setFormData({
+                                            ...formData,
+                                            surfboardShippingTierCeilingConfirmed: confirmed,
+                                          })
+                                  }
+                                  onChange={(tierId) => {
+                                    const nextBand =
+                                      tierId === "shortboard"
+                                        ? resolveSurfboardShippingPackBandFromBoardSpecs({
+                                            boardLength: formData.boardLength,
+                                            boardWidthInches: formData.boardWidthInches,
+                                          })
+                                        : ("" as SurfboardShippingPackBandId | "")
+                                    setFormData({
+                                      ...formData,
+                                      surfboardShippingTier: tierId,
+                                      surfboardShippingTierCeilingConfirmed: false,
+                                      surfboardShippingPackBand: nextBand,
+                                      surfboardShippingPackBandCeilingConfirmed: false,
+                                    })
+                                  }}
+                                  className="border-0 bg-transparent p-0 shadow-none rounded-none"
+                                />
+                              </div>
+                              {formData.surfboardShippingTier === "shortboard" ? (
+                                <div className="rounded-xl border border-border bg-muted/15 p-4 sm:p-5">
+                                  <SurfboardShippingPackBandPicker
+                                    value={formData.surfboardShippingPackBand}
+                                    boardLength={formData.boardLength}
+                                    boardWidthInches={formData.boardWidthInches}
+                                    ceilingConfirmed={
+                                      formData.surfboardShippingPackBandCeilingConfirmed
+                                    }
+                                    onCeilingConfirmedChange={(confirmed) =>
+                                      setFormData({
+                                        ...formData,
+                                        surfboardShippingPackBandCeilingConfirmed: confirmed,
+                                      })
+                                    }
+                                    onChange={(bandId) =>
+                                      setFormData({
+                                        ...formData,
+                                        surfboardShippingPackBand: bandId,
+                                        surfboardShippingPackBandCeilingConfirmed: false,
+                                      })
+                                    }
+                                  />
+                                </div>
+                              ) : null}
+                              <SurfboardBuyerShippingCalculator
+                                tierId={formData.surfboardShippingTier}
+                                packBandId={formData.surfboardShippingPackBand}
+                                onOpenLiveEstimator={() => setShippingEstimatorOpen(true)}
                               />
                             </div>
                           ) : null}

@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
-import { ChevronDown, ChevronUp, Loader2, Scale } from 'lucide-react'
+import { ArrowLeftRight, ChevronDown, ChevronUp, Loader2, Scale } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import type { AddressFields } from './address-fields'
@@ -34,9 +34,26 @@ import {
   extractRatesFromApiEnvelope,
   rateMoneyTotal,
 } from '@/lib/shipping/shipengine-rate-helpers'
+import {
+  SURFBOARD_LABEL_MAX_UPS_DIMENSION_TOTAL_IN,
+  surfboardShippingDimIn,
+} from '@/lib/shipping/surfboard-label-limits'
+import { totalBoardLengthInchesFromCombinedInput } from '@/lib/board-measurements'
+import {
+  SURFBOARD_SHIPPING_TIERS,
+  surfboardShippingTierPackedParcelFromBoardLengthIn,
+} from '@/lib/surfboard-shipping-tiers'
 import { AddressForm } from './shipping-address-form'
 import { RATE_SEED_LISTINGS } from './rate-seed-listings'
 import { ReswellUpsCarrierStatus } from './reswell-ups-carrier-status'
+import { RateLaneMatrix } from './rate-lane-matrix'
+import { ShortboardRateCliffSweep } from './shortboard-rate-cliff-sweep'
+import {
+  EXAMPLE_BOARD_PRESETS,
+  SIZE_LADDER_PRESETS,
+  TIER_CEILING_PRESETS,
+  type RatePackagePreset,
+} from './rate-package-presets'
 import {
   isReswellUpsCarrier,
   isReswellUpsCarrierId,
@@ -102,6 +119,65 @@ function newCompareRow(partial?: Partial<CompareRow>): CompareRow {
     widthIn: partial?.widthIn ?? '20',
     heightIn: partial?.heightIn ?? '6',
   }
+}
+
+function compareRowFromPreset(preset: RatePackagePreset): CompareRow {
+  return newCompareRow({
+    label: preset.label,
+    weightOz: String(Math.round(preset.weightLb * 16)),
+    lengthIn: String(preset.lengthIn),
+    widthIn: String(preset.widthIn),
+    heightIn: String(preset.heightIn),
+  })
+}
+
+function downloadRatesCsv(
+  rates: Record<string, unknown>[],
+  meta: { from: string; to: string; packageLine: string },
+): void {
+  const header = [
+    'Total',
+    'Currency',
+    'Carrier',
+    'carrier_id',
+    'Service',
+    'service_code',
+    'Days',
+    'Est delivery',
+    'rate_id',
+    'Ship from',
+    'Ship to',
+    'Package',
+  ]
+  const rows = rates.map((r) => {
+    const { total, currency } = rateMoneyTotal(r)
+    return [
+      total.toFixed(2),
+      currency,
+      String(r.carrier_friendly_name ?? r.carrier_code ?? ''),
+      String(r.carrier_id ?? ''),
+      String(r.service_type ?? ''),
+      String(r.service_code ?? ''),
+      r.delivery_days != null ? String(r.delivery_days) : '',
+      r.estimated_delivery_date ? String(r.estimated_delivery_date).slice(0, 16) : '',
+      String(r.rate_id ?? ''),
+      meta.from,
+      meta.to,
+      meta.packageLine,
+    ]
+  })
+  const csvCell = (value: string) =>
+    /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value
+  const csv = [header, ...rows].map((row) => row.map(csvCell).join(',')).join('\n')
+  const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `reswell-rates-${new Date().toISOString().slice(0, 10)}.csv`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 
 type SortKey = 'price' | 'delivery' | 'service'
@@ -533,16 +609,21 @@ export function ShippingRateCalculator({
   const [shipFrom, setShipFrom] = useState<AddressFields>(defaultFrom)
   const [shipTo, setShipTo] = useState<AddressFields>(defaultTo)
 
-  const [weight, setWeight] = useState('48')
-  const [weightUnit, setWeightUnit] = useState<'ounce' | 'pound' | 'gram' | 'kilogram'>('ounce')
-  const [length, setLength] = useState('72')
-  const [width, setWidth] = useState('20')
-  const [height, setHeight] = useState('6')
+  const shortCeiling = TIER_CEILING_PRESETS[0]
+  const [weight, setWeight] = useState(String(shortCeiling?.weightLb ?? 22))
+  const [weightUnit, setWeightUnit] = useState<'ounce' | 'pound' | 'gram' | 'kilogram'>('pound')
+  const [length, setLength] = useState(String(shortCeiling?.lengthIn ?? 78))
+  const [width, setWidth] = useState(String(shortCeiling?.widthIn ?? 27))
+  const [height, setHeight] = useState(String(shortCeiling?.heightIn ?? 7))
   const [dimUnit, setDimUnit] = useState<'inch' | 'centimeter'>('inch')
   const [packageCode, setPackageCode] = useState('package')
   const [validateAddress, setValidateAddress] = useState<
     'no_validation' | 'validate_only' | 'validate_and_clean'
   >('no_validation')
+  const [boardLengthInput, setBoardLengthInput] = useState('6\'2')
+  const [activePresetId, setActivePresetId] = useState<string | null>(
+    shortCeiling?.id ?? null,
+  )
 
   const [singleBusy, setSingleBusy] = useState(false)
   const [singleResult, setSingleResult] = useState<unknown>(null)
@@ -550,29 +631,56 @@ export function ShippingRateCalculator({
   const [sortKey, setSortKey] = useState<SortKey>('price')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
 
-  const [compareRows, setCompareRows] = useState<CompareRow[]>(() => [
-    newCompareRow({
-      label: 'Light / small',
-      weightOz: '32',
-      lengthIn: '60',
-      widthIn: '18',
-      heightIn: '5',
-    }),
-    newCompareRow({
-      label: 'Medium',
-      weightOz: '96',
-      lengthIn: '84',
-      widthIn: '22',
-      heightIn: '8',
-    }),
-    newCompareRow({
-      label: 'Heavy / large',
-      weightOz: '160',
-      lengthIn: '96',
-      widthIn: '24',
-      heightIn: '10',
-    }),
-  ])
+  const [compareRows, setCompareRows] = useState<CompareRow[]>(() =>
+    TIER_CEILING_PRESETS.map(compareRowFromPreset),
+  )
+
+  const packageDimIn = useMemo(() => {
+    const l = Number(length)
+    const w = Number(width)
+    const h = Number(height)
+    if (![l, w, h].every((n) => Number.isFinite(n) && n > 0) || dimUnit !== 'inch') {
+      return null
+    }
+    return surfboardShippingDimIn(l, w, h)
+  }, [length, width, height, dimUnit])
+
+  const applyPackagePreset = useCallback((preset: RatePackagePreset) => {
+    setWeight(String(preset.weightLb))
+    setWeightUnit('pound')
+    setLength(String(preset.lengthIn))
+    setWidth(String(preset.widthIn))
+    setHeight(String(preset.heightIn))
+    setDimUnit('inch')
+    setActivePresetId(preset.id)
+    toast.message(`Loaded ${preset.label}`, { description: preset.description })
+  }, [])
+
+  const applyBoardLengthToPackage = useCallback(() => {
+    const totalIn = totalBoardLengthInchesFromCombinedInput(boardLengthInput)
+    if (totalIn == null) {
+      toast.error('Enter board length like 6\'2, 5.10, or 9\'6')
+      return
+    }
+    const packed = surfboardShippingTierPackedParcelFromBoardLengthIn(totalIn)
+    const tier = SURFBOARD_SHIPPING_TIERS[packed.tierId]
+    setWeight(String(packed.weightLb))
+    setWeightUnit('pound')
+    setLength(String(packed.lengthIn))
+    setWidth(String(packed.widthIn))
+    setHeight(String(packed.heightIn))
+    setDimUnit('inch')
+    setActivePresetId(null)
+    toast.success(
+      `${tier.label} pack from ${totalIn}" board → ${packed.lengthIn}×${packed.widthIn}×${packed.heightIn} in · ${packed.weightLb} lb`,
+    )
+  }, [boardLengthInput])
+
+  const swapAddresses = useCallback(() => {
+    setShipFrom(shipTo)
+    setShipTo(shipFrom)
+    toast.message('Swapped ship-from and ship-to')
+  }, [shipFrom, shipTo])
   const [compareBusy, setCompareBusy] = useState(false)
   const [compareResults, setCompareResults] = useState<
     { row: CompareRow; envelope: unknown; error?: string }[] | null
@@ -762,11 +870,24 @@ export function ShippingRateCalculator({
   }
 
   const pushCurrentPackageToCompare = () => {
+    const w = Number(weight)
+    let weightOz = weight
+    if (Number.isFinite(w) && w > 0) {
+      if (weightUnit === 'pound') weightOz = String(Math.round(w * 16))
+      else if (weightUnit === 'ounce') weightOz = String(w)
+      else if (weightUnit === 'kilogram') weightOz = String(Math.round(w * 35.274))
+      else if (weightUnit === 'gram') weightOz = String(Math.round(w * 0.035274))
+    }
     setCompareRows((rows) => [
       ...rows,
       newCompareRow({
-        label: `Custom ${rows.length + 1}`,
-        weightOz: weight,
+        label: activePresetId
+          ? (TIER_CEILING_PRESETS.find((p) => p.id === activePresetId)?.label ??
+              EXAMPLE_BOARD_PRESETS.find((p) => p.id === activePresetId)?.label ??
+              SIZE_LADDER_PRESETS.find((p) => p.id === activePresetId)?.label ??
+              `Custom ${rows.length + 1}`)
+          : `Custom ${rows.length + 1}`,
+        weightOz,
         lengthIn: length,
         widthIn: width,
         heightIn: height,
@@ -802,9 +923,13 @@ export function ShippingRateCalculator({
               <Scale className="h-4 w-4" aria-hidden />
             </span>
             <div className="space-y-1">
-              <CardTitle className="text-lg font-semibold tracking-tight">Rate calculator</CardTitle>
+              <CardTitle className="text-lg font-semibold tracking-tight">
+                Surfboard rate calculator
+              </CardTitle>
               <CardDescription className="text-sm">
-                Live quotes from your carriers. ShipEngine marks best value / cheapest / fastest when available.{' '}
+                Research live carrier rates across ship-from / ship-to lanes and Reswell package
+                sizes (shortboard · midlength · longboard). Use presets and the lane matrix below
+                to lock accurate checkout rates.{' '}
                 <Link
                   href="https://www.shipengine.com/docs/rates/"
                   className="font-medium text-foreground/80 underline decoration-border underline-offset-4 hover:text-foreground"
@@ -901,13 +1026,25 @@ export function ShippingRateCalculator({
           <Separator className="bg-border/60" />
 
           <div className="space-y-3">
-            <div className="flex flex-col gap-1">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Sample routes
-              </h3>
-              <p className="text-[12px] leading-relaxed text-muted-foreground">
-                Load a preset ship-from and ship-to pair for quick rate checks.
-              </p>
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Ship-from → ship-to routes
+                </h3>
+                <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                  Load a coastal or cross-country corridor, or edit the address forms below.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 shrink-0 rounded-xl px-4 text-[13px] font-medium"
+                onClick={swapAddresses}
+              >
+                <ArrowLeftRight className="mr-2 h-3.5 w-3.5" />
+                Swap from / to
+              </Button>
             </div>
             <div className="flex flex-wrap gap-2">
               {RATE_SEED_LISTINGS.map((seed) => (
@@ -944,9 +1081,25 @@ export function ShippingRateCalculator({
               />
             </div>
             <div className="space-y-4 rounded-2xl border border-border/40 bg-muted/15 p-4 sm:p-5">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Ship to
-              </h3>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Ship to
+                </h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {(['no', 'yes'] as const).map((res) => (
+                    <Button
+                      key={res}
+                      type="button"
+                      variant={shipTo.residential === res ? 'secondary' : 'outline'}
+                      size="sm"
+                      className="h-8 rounded-full px-3 text-[12px]"
+                      onClick={() => setShipTo((a) => ({ ...a, residential: res }))}
+                    >
+                      {res === 'yes' ? 'Residential' : 'Commercial'}
+                    </Button>
+                  ))}
+                </div>
+              </div>
               <AddressForm
                 formId="ship-to"
                 inputClassName={inputClass}
@@ -955,6 +1108,120 @@ export function ShippingRateCalculator({
                 onChange={setShipTo}
               />
             </div>
+          </div>
+
+          <div className="space-y-4 rounded-2xl border border-border/40 bg-muted/10 p-4 sm:p-5">
+            <div>
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Package size
+              </h3>
+              <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+                Load a Reswell tier ceiling, an example board pack, or a length ladder step — then
+                tweak weight / dims and get rates.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-[12px] font-medium text-foreground/85">Tier ceilings (checkout)</p>
+              <div className="flex flex-wrap gap-2">
+                {TIER_CEILING_PRESETS.map((preset) => (
+                  <Button
+                    key={preset.id}
+                    type="button"
+                    variant={activePresetId === preset.id ? 'default' : 'secondary'}
+                    size="sm"
+                    title={preset.description}
+                    className="h-9 rounded-full px-4 text-[13px] font-medium"
+                    onClick={() => applyPackagePreset(preset)}
+                  >
+                    {preset.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-[12px] font-medium text-foreground/85">Example boards</p>
+              <div className="flex flex-wrap gap-2">
+                {EXAMPLE_BOARD_PRESETS.map((preset) => (
+                  <Button
+                    key={preset.id}
+                    type="button"
+                    variant={activePresetId === preset.id ? 'default' : 'outline'}
+                    size="sm"
+                    title={preset.description}
+                    className="h-9 rounded-full px-4 text-[13px] font-medium"
+                    onClick={() => applyPackagePreset(preset)}
+                  >
+                    {preset.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-[12px] font-medium text-foreground/85">Size ladder</p>
+              <div className="flex flex-wrap gap-2">
+                {SIZE_LADDER_PRESETS.map((preset) => (
+                  <Button
+                    key={preset.id}
+                    type="button"
+                    variant={activePresetId === preset.id ? 'default' : 'outline'}
+                    size="sm"
+                    title={preset.description}
+                    className="h-9 rounded-full border-dashed px-3 text-[12px] font-medium"
+                    onClick={() => applyPackagePreset(preset)}
+                  >
+                    {preset.label}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+              <div className="min-w-0 flex-1 space-y-2">
+                <Label htmlFor="rc-board-length" className="text-[13px] font-medium text-foreground/90">
+                  Board length → packed carton
+                </Label>
+                <Input
+                  id="rc-board-length"
+                  value={boardLengthInput}
+                  onChange={(e) => setBoardLengthInput(e.target.value)}
+                  placeholder="6'2 or 5.10 or 9'6"
+                  className={inputClass}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                className="h-11 shrink-0 rounded-xl px-5 text-[13px] font-medium"
+                onClick={applyBoardLengthToPackage}
+              >
+                Apply packed dims
+              </Button>
+            </div>
+
+            {packageDimIn != null ? (
+              <div
+                className={cn(
+                  'rounded-xl border px-3.5 py-2.5 text-[13px]',
+                  packageDimIn > SURFBOARD_LABEL_MAX_UPS_DIMENSION_TOTAL_IN
+                    ? 'border-amber-400/50 bg-amber-50/60 text-amber-950 dark:bg-amber-500/10 dark:text-amber-100'
+                    : 'border-emerald-400/40 bg-emerald-50/50 text-emerald-950 dark:bg-emerald-500/10 dark:text-emerald-100',
+                )}
+              >
+                <span className="font-medium">
+                  DIM {packageDimIn}″
+                </span>
+                <span className="text-muted-foreground">
+                  {' '}
+                  (L + 2W + 2H) · Reswell UPS parcel cap {SURFBOARD_LABEL_MAX_UPS_DIMENSION_TOTAL_IN}″
+                  {packageDimIn > SURFBOARD_LABEL_MAX_UPS_DIMENSION_TOTAL_IN
+                    ? ' — over parcel cap; freight / midlength·longboard territory'
+                    : ' — within UPS parcel'}
+                </span>
+              </div>
+            ) : null}
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -1056,15 +1323,34 @@ export function ShippingRateCalculator({
             </div>
           </div>
 
-          <Button
-            type="button"
-            className="h-11 px-8 text-[15px] font-medium"
-            onClick={() => void handleSingleCalculate()}
-            disabled={singleBusy}
-          >
-            {singleBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Get rates
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              className="h-11 px-8 text-[15px] font-medium"
+              onClick={() => void handleSingleCalculate()}
+              disabled={singleBusy}
+            >
+              {singleBusy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Get rates
+            </Button>
+            {sortedRates.length > 0 ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 rounded-xl px-5 text-[13px] font-medium"
+                onClick={() => {
+                  downloadRatesCsv(sortedRates, {
+                    from: `${shipFrom.city_locality}, ${shipFrom.state_province} ${shipFrom.postal_code}`,
+                    to: `${shipTo.city_locality}, ${shipTo.state_province} ${shipTo.postal_code}`,
+                    packageLine: `${weight} ${weightUnit} · ${length}×${width}×${height} ${dimUnit}`,
+                  })
+                  toast.success('Rates CSV downloaded')
+                }}
+              >
+                Export results CSV
+              </Button>
+            ) : null}
+          </div>
 
           {sortedRates.length > 0 ? (
             <div className="space-y-3">
@@ -1192,9 +1478,13 @@ export function ShippingRateCalculator({
 
       <Card className={surfaceCard}>
         <CardHeader className="space-y-2 pb-2">
-          <CardTitle className="text-lg font-semibold tracking-tight">Compare package sizes</CardTitle>
+          <CardTitle className="text-lg font-semibold tracking-tight">
+            Compare package sizes (same lane)
+          </CardTitle>
           <CardDescription className="text-sm">
-            Same origin, destination, and carriers — one rates request per row. Useful for boards, boxes, or gear.
+            Same origin, destination, and carriers — one rates request per row. Defaults to the
+            three Reswell tier ceilings so you can see shortboard vs midlength vs longboard on one
+            corridor.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5 pt-2">
@@ -1321,6 +1611,30 @@ export function ShippingRateCalculator({
             </Button>
             <Button
               type="button"
+              variant="outline"
+              size="sm"
+              className="h-10 rounded-xl px-4 text-[13px] font-medium"
+              onClick={() => {
+                setCompareRows(TIER_CEILING_PRESETS.map(compareRowFromPreset))
+                toast.message('Loaded three tier ceilings')
+              }}
+            >
+              Load tier ceilings
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-10 rounded-xl px-4 text-[13px] font-medium"
+              onClick={() => {
+                setCompareRows(SIZE_LADDER_PRESETS.map(compareRowFromPreset))
+                toast.message('Loaded size ladder rows')
+              }}
+            >
+              Load size ladder
+            </Button>
+            <Button
+              type="button"
               className="h-10 px-6 text-[14px] font-medium"
               onClick={() => void handleCompare()}
               disabled={compareBusy}
@@ -1402,6 +1716,13 @@ export function ShippingRateCalculator({
           ) : null}
         </CardContent>
       </Card>
+
+      <ShortboardRateCliffSweep selectedCarrierIds={selectedIds} />
+
+      <RateLaneMatrix
+        selectedCarrierIds={selectedIds}
+        validateAddress={validateAddress}
+      />
 
       <Card className={surfaceCard}>
         <CardHeader className="space-y-2 pb-2">

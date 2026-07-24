@@ -24,6 +24,10 @@ import {
   surfboardReswellPackageHasPartialDimensions,
   surfboardShippingTierBoardLengthError,
 } from "@/lib/surfboard-shipping-tiers"
+import {
+  parseSurfboardShippingPackBandId,
+  surfboardShippingPackBandBoardSpecsError,
+} from "@/lib/surfboard-shipping-pack-bands"
 
 const PRICE_MIN = 0.01
 const PRICE_MAX = 999_999.99
@@ -108,23 +112,38 @@ function deliverySectionComplete(form: SellFormValidationInput): boolean {
       return surfboardShippingTierBoardLengthError(form.boardLength, tierId) == null
     }
     if (mode === "reswell") {
-      if (surfboardReswellPackageHasPartialDimensions(form)) return false
       const tierId = parseSurfboardShippingTierId(form.surfboardShippingTier)
       if (!tierId) return false
       if (surfboardShippingTierBoardLengthError(form.boardLength, tierId)) return false
-      if (!form.surfboardShippingTierCeilingConfirmed) return false
-      const resolved = applySurfboardShippingTierDefaults(form, { tierId })
-      const L = parseReswellParcelLengthRawToCarrierInches(resolved.reswellPackageLengthIn)
-      const W = parseReswellParcelWidthHeightRawToCarrierInches(resolved.reswellPackageWidthIn)
-      const H = parseReswellParcelWidthHeightRawToCarrierInches(resolved.reswellPackageHeightIn)
-      if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) return false
-      if (
-        !isReswellPackedWeightComplete(
-          resolved.reswellPackageWeightLb,
-          resolved.reswellPackageWeightOz,
-        )
-      ) {
-        return false
+      if (tierId === "shortboard") {
+        const bandId = parseSurfboardShippingPackBandId(form.surfboardShippingPackBand)
+        if (!bandId) return false
+        if (
+          surfboardShippingPackBandBoardSpecsError({
+            bandId,
+            boardLength: form.boardLength,
+            boardWidthInches: form.boardWidthInches,
+          })
+        ) {
+          return false
+        }
+        if (!form.surfboardShippingPackBandCeilingConfirmed) return false
+      } else {
+        if (surfboardReswellPackageHasPartialDimensions(form)) return false
+        if (!form.surfboardShippingTierCeilingConfirmed) return false
+        const resolved = applySurfboardShippingTierDefaults(form, { tierId })
+        const L = parseReswellParcelLengthRawToCarrierInches(resolved.reswellPackageLengthIn)
+        const W = parseReswellParcelWidthHeightRawToCarrierInches(resolved.reswellPackageWidthIn)
+        const H = parseReswellParcelWidthHeightRawToCarrierInches(resolved.reswellPackageHeightIn)
+        if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) return false
+        if (
+          !isReswellPackedWeightComplete(
+            resolved.reswellPackageWeightLb,
+            resolved.reswellPackageWeightOz,
+          )
+        ) {
+          return false
+        }
       }
     }
   }

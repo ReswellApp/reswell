@@ -32,6 +32,7 @@ export type OwnedListingForEditRow = {
   shipping_packed_height_in?: number | string | null
   shipping_packed_weight_oz?: number | string | null
   shipping_package_tier?: string | null
+  shipping_package_band?: string | null
   brand?: string | null
   model?: string | null
   buyer_offers_enabled?: boolean | null

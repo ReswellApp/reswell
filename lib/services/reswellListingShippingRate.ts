@@ -19,6 +19,19 @@ import {
   toPeerCheckoutShippingRateOptions,
 } from "@/lib/shipping/peer-checkout-usps-services"
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
+import { logPackBandQuoteTelemetry } from "@/lib/shipping/pack-band-telemetry"
+import { resolveSurfboardShippingPackBandId } from "@/lib/surfboard-shipping-pack-bands"
+import { shipEngineRequest } from "@/lib/shipengine/client"
+import { isShipEngineConfigured } from "@/lib/shipengine/config"
+import { formatShipEngineApiError } from "@/lib/shipengine/errors"
+import {
+  buildShipmentBody,
+  extractCarrierIdsFromCarriersResponse,
+  extractRatesFromApiEnvelope,
+  rateMoneyTotal,
+  type ShippingAddressInput,
+} from "@/lib/shipping/shipengine-rate-helpers"
+import { validateSurfboardLabelParcelLimits } from "@/lib/shipping/surfboard-label-limits"
 
 /** Minimum listing slice required to rate a Reswell-shipped surfboard at checkout. */
 export type ReswellRateableListing = ListingPackedParcelSource & {
@@ -491,6 +504,32 @@ export async function getCheapestReswellRateForListings(input: {
   if (cheapest.currency && cheapest.currency.toUpperCase() !== "USD") {
     return { ok: false, error: "Unsupported currency from carrier quote." }
   }
+
+  const primaryListing = input.listings[0]
+  const quoteTierId = primaryListing
+    ? resolveSurfboardShippingTierIdFromListing(primaryListing)
+    : null
+  const quoteBandId = resolveSurfboardShippingPackBandId({
+    tierId: quoteTierId,
+    bandId: primaryListing?.shipping_package_band,
+  })
+  logPackBandQuoteTelemetry({
+    listingId:
+      primaryListing && "id" in primaryListing
+        ? String((primaryListing as { id?: string }).id ?? "")
+        : null,
+    tierId: quoteTierId,
+    bandId: quoteBandId,
+    dims: {
+      lengthIn: parcel.lengthIn,
+      widthIn: parcel.widthIn,
+      heightIn: parcel.heightIn,
+      weightLb,
+    },
+    quotedUsd: cheapest.totalAmount,
+    currency: cheapest.currency,
+    tag: input.diagnosticTag ?? null,
+  })
 
   return {
     ok: true,

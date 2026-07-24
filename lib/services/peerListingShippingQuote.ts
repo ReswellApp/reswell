@@ -38,6 +38,7 @@ export const PEER_SURFBOARD_CHECKOUT_LISTING_SELECT = `
   shipping_packed_height_in,
   shipping_packed_weight_oz,
   shipping_package_tier,
+  shipping_package_band,
   dimensions
 `.trim()
 
