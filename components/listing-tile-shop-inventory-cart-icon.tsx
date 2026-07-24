@@ -1,11 +1,16 @@
 "use client"
 
 import { useState } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
+import { addCartItem } from "@/app/actions/cart"
+import { trackMetaAddToCart } from "@/lib/meta/pixel-events"
+import { collectMetaClientBrowserSignals } from "@/lib/meta/collect-client-browser-signals"
 import { ListingTileBasketSvg } from "@/components/listing-tile-basket-svg"
 import { cn } from "@/lib/utils"
-import { mergeIntoCart } from "@/lib/cart-storage"
+import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
+import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 
 const tileBtnClass = cn(
   "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-900 shadow-sm transition-colors",
@@ -35,9 +40,10 @@ function CheckSvg({ className }: { className?: string }) {
   )
 }
 
-/** Marketplace inventory (localStorage cart) — matches peer tile bag control styling. */
+/** Reswell shop inventory — server cart with stock quantity. */
 export function ListingTileShopInventoryCartIcon({
   item,
+  isLoggedIn = false,
   className,
 }: {
   item: {
@@ -47,39 +53,60 @@ export function ListingTileShopInventoryCartIcon({
     image_url: string | null
     stock_quantity: number
   }
+  isLoggedIn?: boolean
   className?: string
 }) {
   const [loading, setLoading] = useState(false)
   const [added, setAdded] = useState(false)
+  const authModal = useOptionalAuthModal()
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const here = `${pathname}${searchParams.toString() ? `?${searchParams}` : ""}`
 
-  function handleClick(e: React.MouseEvent) {
+  async function handleClick(e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
     if (item.stock_quantity <= 0) {
       toast.error("Out of stock")
       return
     }
+    if (!isLoggedIn) {
+      const safe = safeRedirectPath(here)
+      if (authModal) {
+        authModal.openLogin(here)
+      } else {
+        router.push(`/auth/login?redirect=${encodeURIComponent(safe)}`)
+      }
+      return
+    }
     setLoading(true)
     try {
-      const result = mergeIntoCart(
+      const browserSignals = await collectMetaClientBrowserSignals().catch(() => ({
+        fbc: null,
+        fbp: null,
+      }))
+      const r = await addCartItem(
+        item.id,
         {
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          image_url: item.image_url,
+          fbc: browserSignals.fbc ?? undefined,
+          fbp: browserSignals.fbp ?? undefined,
         },
         1,
-        item.stock_quantity,
       )
-      if (!result.ok) {
-        toast.error("Not enough stock available")
+      if (!r.ok) {
+        toast.error(r.error ?? "Could not add to cart")
         return
       }
+      trackMetaAddToCart({
+        contentId: item.id,
+        value: r.value,
+        contentName: r.contentName,
+        eventId: r.metaEventId,
+      })
       setAdded(true)
       window.dispatchEvent(new CustomEvent("cartUpdated"))
       window.setTimeout(() => setAdded(false), 1600)
-    } catch {
-      toast.error("Could not add to cart")
     } finally {
       setLoading(false)
     }
@@ -90,17 +117,18 @@ export function ListingTileShopInventoryCartIcon({
       type="button"
       onClick={handleClick}
       disabled={loading || item.stock_quantity <= 0}
-      aria-label="Add to cart"
+      aria-label={isLoggedIn ? "Add to cart" : "Sign in to save to cart"}
       className={cn(
         tileBtnClass,
-        added &&
+        isLoggedIn &&
+          added &&
           "border-neutral-300 bg-neutral-100 text-neutral-900 dark:border-neutral-500 dark:bg-neutral-800 dark:text-neutral-50",
         className,
       )}
     >
-      {loading ? (
+      {isLoggedIn && loading ? (
         <Loader2 className="h-4 w-4 animate-spin text-neutral-900 dark:text-neutral-100" aria-hidden />
-      ) : added ? (
+      ) : isLoggedIn && added ? (
         <CheckSvg />
       ) : (
         <ListingTileBasketSvg />

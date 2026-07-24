@@ -5,13 +5,16 @@ import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import { ChevronDown, ChevronLeft, ShoppingCart, X } from "lucide-react"
+import { ChevronLeft, Minus, Plus, ShoppingCart, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   clearCart,
   removeCartItem,
+  updateCartItemQuantity,
   type CartPageItem,
 } from "@/app/actions/cart"
+import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { isReswellShopListing } from "@/lib/reswell-shop"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
@@ -84,16 +87,21 @@ export function CartPageView({
   } = useMemo(() => {
     let total = 0
     let unavail = 0
+    let availUnits = 0
     for (const row of initialItems) {
       if (listingAvailable(row.listing)) {
-        total += Number(row.listing.price)
+        const qty = Math.max(1, row.quantity || 1)
+        total += Number(row.listing.price) * qty
+        availUnits += qty
       } else {
         unavail += 1
       }
     }
-    const avail = initialItems.length - unavail
 
     const availRows = initialItems.filter(({ listing }) => listingAvailable(listing))
+    const peerRows = availRows.filter(({ listing }) => isPeerListingSection(listing.section))
+    const shopRows = availRows.filter(({ listing }) => isReswellShopListing(listing.section))
+    const shopUnits = shopRows.reduce((s, r) => s + Math.max(1, r.quantity || 1), 0)
 
     let shipLabel = "Calculated at checkout"
     if (availRows.length > 0) {
@@ -108,41 +116,56 @@ export function CartPageView({
       }
     }
 
-    const sellerGroups = new Map<string, CartPageItem[]>()
-    for (const row of availRows) {
+    const peerSellerGroups = new Map<string, CartPageItem[]>()
+    for (const row of peerRows) {
       const sid = row.listing.user_id
-      const g = sellerGroups.get(sid) ?? []
+      const g = peerSellerGroups.get(sid) ?? []
       g.push(row)
-      sellerGroups.set(sid, g)
+      peerSellerGroups.set(sid, g)
     }
 
     const checkoutActionsInner: { href: string; label: string }[] = []
-    for (const [sellerId, rows] of sellerGroups) {
-      const sellerName = getPublicSellerDisplayName(rows[0]!.listing.profiles)
-      const n = rows.length
-      const label =
-        sellerGroups.size > 1
-          ? `Checkout ${n} ${n === 1 ? "item" : "items"} — ${sellerName}`
-          : `Checkout ${n === 1 ? "1 item" : `${n} items`}`
+
+    if (peerSellerGroups.size === 0 && shopRows.length > 0) {
+      const shopSellerId = shopRows[0]!.listing.user_id
       const q = new URLSearchParams()
       q.set("from_cart", "1")
-      q.set("seller_id", sellerId)
-      checkoutActionsInner.push({ href: `/checkout?${q}`, label })
+      q.set("seller_id", shopSellerId)
+      checkoutActionsInner.push({
+        href: `/checkout?${q}`,
+        label: `Checkout ${shopUnits === 1 ? "1 item" : `${shopUnits} items`}`,
+      })
+    } else {
+      for (const [sellerId, rows] of peerSellerGroups) {
+        const sellerName = getPublicSellerDisplayName(rows[0]!.listing.profiles)
+        const peerUnits = rows.reduce((s, r) => s + Math.max(1, r.quantity || 1), 0)
+        const n = peerUnits + shopUnits
+        const label =
+          peerSellerGroups.size > 1
+            ? `Checkout ${n} ${n === 1 ? "item" : "items"} — ${sellerName}`
+            : `Checkout ${n === 1 ? "1 item" : `${n} items`}`
+        const q = new URLSearchParams()
+        q.set("from_cart", "1")
+        q.set("seller_id", sellerId)
+        checkoutActionsInner.push({ href: `/checkout?${q}`, label })
+      }
     }
     checkoutActionsInner.sort((a, b) => a.href.localeCompare(b.href))
 
-    const sellerGroupCount = sellerGroups.size
+    const sellerGroupCount = peerSellerGroups.size
 
     const note =
       sellerGroupCount > 1
-        ? "Multiple sellers — checkout each group separately. Boards from one seller can be purchased together in one checkout, shipped in one box or picked up locally."
-        : availRows.length > 0 && availRows.some(({ listing }) => listing.shipping_available)
-          ? "Shipping cost and delivery timing are finalized with the seller at checkout."
-          : "Pickup or shipping details are confirmed with the seller when you check out."
+        ? "Multiple sellers — checkout each group separately. Reswell shop items are included with whichever seller group you check out first."
+        : shopRows.length > 0 && peerRows.length > 0
+          ? "Peer listings and Reswell shop items check out together in one payment."
+          : availRows.length > 0 && availRows.some(({ listing }) => listing.shipping_available)
+            ? "Shipping cost and delivery timing are finalized at checkout."
+            : "Pickup or shipping details are confirmed when you check out."
 
     return {
       availableTotal: total,
-      availableCount: avail,
+      availableCount: availUnits,
       unavailableCount: unavail,
       checkoutActions: checkoutActionsInner,
       deliveryLabel: shipLabel,
@@ -155,6 +178,18 @@ export function CartPageView({
       const r = await removeCartItem(listingId)
       if (!r.ok) {
         toast.error(r.error ?? "Could not remove")
+        return
+      }
+      window.dispatchEvent(new CustomEvent("cartUpdated"))
+      router.refresh()
+    })
+  }
+
+  function setQty(listingId: string, quantity: number) {
+    startTransition(async () => {
+      const r = await updateCartItemQuantity(listingId, quantity)
+      if (!r.ok) {
+        toast.error(r.error ?? "Could not update quantity")
         return
       }
       window.dispatchEvent(new CustomEvent("cartUpdated"))
@@ -245,15 +280,19 @@ export function CartPageView({
         <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] lg:items-start lg:gap-10">
           <div className="rounded-lg border border-neutral-200 bg-white p-4 sm:p-6 dark:border-white/10 dark:bg-background">
             <ul className="divide-y divide-neutral-200 dark:divide-white/10">
-              {initialItems.map(({ cartCreatedAt, listing }) => {
+              {initialItems.map(({ cartCreatedAt, listing, quantity }) => {
                 const img = listingTitleThumbnailSrc(listing.listing_images ?? null)
                 const seller = listing.profiles
-                const sellerName = getPublicSellerDisplayName(seller)
-                const sellerHref = sellerProfileHref(seller)
+                const isShop = isReswellShopListing(listing.section)
+                const sellerName = isShop ? "Reswell" : getPublicSellerDisplayName(seller)
+                const sellerHref = isShop ? "/reswell/shop" : sellerProfileHref(seller)
                 const available = listingAvailable(listing)
                 const href = listingDetailHref(listing)
                 const title = listing.title
-                const price = Number(listing.price)
+                const unitPrice = Number(listing.price)
+                const qty = Math.max(1, quantity || 1)
+                const lineTotal = unitPrice * qty
+                const stockMax = Math.max(1, Math.floor(Number(listing.stock_quantity) || qty))
                 const condition = formatCondition(listing.condition)
                 const boardType = formatBoardType(listing.board_type)
                 const lengthLine = formatListingBoardLengthSubtitle({
@@ -298,13 +337,13 @@ export function CartPageView({
                             {title}
                           </Link>
                           <p className="shrink-0 text-[16px] font-semibold tabular-nums text-foreground">
-                            ${formatMoney(price)}
+                            ${formatMoney(lineTotal)}
                           </p>
                         </div>
 
                         <p className="mt-2 text-[13px] leading-relaxed text-neutral-500 dark:text-neutral-400">
                           {attrParts.length > 0 ? `${attrParts.join(" · ")} · ` : null}
-                          Price: ${formatMoney(price)} USD / per item
+                          Price: ${formatMoney(unitPrice)} USD / per item
                         </p>
 
                         <div className="mt-2 flex flex-wrap items-center gap-x-2 text-[12px] text-neutral-500 dark:text-neutral-400">
@@ -314,7 +353,7 @@ export function CartPageView({
                             className="inline-flex max-w-[200px] items-center gap-1 truncate font-medium text-neutral-800 hover:underline dark:text-neutral-200"
                           >
                             <span className="truncate">{sellerName}</span>
-                            {seller?.shop_verified ? <VerifiedBadge size="sm" /> : null}
+                            {!isShop && seller?.shop_verified ? <VerifiedBadge size="sm" /> : null}
                           </Link>
                         </div>
 
@@ -325,15 +364,40 @@ export function CartPageView({
                         )}
 
                         <div className="mt-4 flex flex-wrap items-center gap-2 sm:justify-end">
-                          <div
-                            className="flex h-9 cursor-default items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 dark:border-white/15 dark:bg-transparent"
-                            role="img"
-                            aria-label="Quantity 1"
-                          >
-                            <span className="text-[13px] text-neutral-500">Qty:</span>
-                            <span className="text-[15px] tabular-nums text-foreground">1</span>
-                            <ChevronDown className="h-4 w-4 text-neutral-500" strokeWidth={2} aria-hidden />
-                          </div>
+                          {isShop ? (
+                            <div className="flex h-9 items-center gap-1 rounded-lg border border-neutral-200 bg-white px-1 dark:border-white/15 dark:bg-transparent">
+                              <button
+                                type="button"
+                                disabled={pending || qty <= 1}
+                                onClick={() => setQty(listing.id, qty - 1)}
+                                className="flex h-7 w-7 items-center justify-center rounded-md text-neutral-600 hover:bg-neutral-100 disabled:opacity-40"
+                                aria-label="Decrease quantity"
+                              >
+                                <Minus className="h-3.5 w-3.5" />
+                              </button>
+                              <span className="min-w-[1.5rem] text-center text-[15px] tabular-nums text-foreground">
+                                {qty}
+                              </span>
+                              <button
+                                type="button"
+                                disabled={pending || qty >= stockMax}
+                                onClick={() => setQty(listing.id, qty + 1)}
+                                className="flex h-7 w-7 items-center justify-center rounded-md text-neutral-600 hover:bg-neutral-100 disabled:opacity-40"
+                                aria-label="Increase quantity"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div
+                              className="flex h-9 cursor-default items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 dark:border-white/15 dark:bg-transparent"
+                              role="img"
+                              aria-label="Quantity 1"
+                            >
+                              <span className="text-[13px] text-neutral-500">Qty:</span>
+                              <span className="text-[15px] tabular-nums text-foreground">1</span>
+                            </div>
+                          )}
                           <CartLineFavoriteButton listingId={listing.id} initialFavorited={favorited} />
                           <button
                             type="button"

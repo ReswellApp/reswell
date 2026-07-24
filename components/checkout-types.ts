@@ -14,6 +14,8 @@ export type CheckoutListing = PayableListing & {
   title: string
   user_id: string
   section: string
+  /** Units for Reswell shop lines; peer listings are always 1. */
+  quantity?: number
   /** When `"reswell"`, checkout calls ShipEngine for live carrier rates. */
   board_shipping_cost_mode?: string | null
   /** BoardShipper flat-rate tier when `board_shipping_cost_mode` is `"flat"`. */

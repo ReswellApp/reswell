@@ -84,6 +84,7 @@ export function ShopNewListingStandardTile({
             </div>
             {stockQuantity > 0 ? (
               <ListingTileShopInventoryCartIcon
+                isLoggedIn={!!userId}
                 item={{
                   id: listing.id,
                   name: listing.title,

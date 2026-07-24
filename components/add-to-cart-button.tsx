@@ -1,11 +1,16 @@
 "use client"
 
 import { useState } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { ShoppingCart, Check, Loader2 } from "lucide-react"
-import { mergeIntoCart } from "@/lib/cart-storage"
+import { addCartItem } from "@/app/actions/cart"
+import { trackMetaAddToCart } from "@/lib/meta/pixel-events"
+import { collectMetaClientBrowserSignals } from "@/lib/meta/collect-client-browser-signals"
 import { cn } from "@/lib/utils"
+import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
+import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 
 interface AddToCartButtonProps {
   item: {
@@ -16,6 +21,7 @@ interface AddToCartButtonProps {
     stock_quantity: number
   }
   quantity?: number
+  isLoggedIn?: boolean
   variant?: "default" | "outline" | "secondary"
   size?: "default" | "sm" | "lg"
   className?: string
@@ -24,38 +30,60 @@ interface AddToCartButtonProps {
 export function AddToCartButton({
   item,
   quantity = 1,
+  isLoggedIn = false,
   variant = "default",
   size = "default",
   className,
 }: AddToCartButtonProps) {
   const [loading, setLoading] = useState(false)
   const [added, setAdded] = useState(false)
+  const authModal = useOptionalAuthModal()
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const here = `${pathname}${searchParams.toString() ? `?${searchParams}` : ""}`
 
-  function addToCart() {
+  async function addToCart() {
+    if (item.stock_quantity <= 0) {
+      toast.error("Out of stock")
+      return
+    }
+    if (!isLoggedIn) {
+      const safe = safeRedirectPath(here)
+      if (authModal) {
+        authModal.openLogin(here)
+      } else {
+        router.push(`/auth/login?redirect=${encodeURIComponent(safe)}`)
+      }
+      return
+    }
     setLoading(true)
-
     try {
-      const result = mergeIntoCart(
+      const browserSignals = await collectMetaClientBrowserSignals().catch(() => ({
+        fbc: null,
+        fbp: null,
+      }))
+      const r = await addCartItem(
+        item.id,
         {
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          image_url: item.image_url,
+          fbc: browserSignals.fbc ?? undefined,
+          fbp: browserSignals.fbp ?? undefined,
         },
         quantity,
-        item.stock_quantity,
       )
-      if (!result.ok) {
-        toast.error("Not enough stock available")
+      if (!r.ok) {
+        toast.error(r.error ?? "Failed to add to cart")
         return
       }
-
+      trackMetaAddToCart({
+        contentId: item.id,
+        value: r.value,
+        contentName: r.contentName,
+        eventId: r.metaEventId,
+      })
       setAdded(true)
-
-      // Reset added state after 2 seconds
+      window.dispatchEvent(new CustomEvent("cartUpdated"))
       setTimeout(() => setAdded(false), 2000)
-    } catch {
-      toast.error("Failed to add to cart")
     } finally {
       setLoading(false)
     }
@@ -67,11 +95,7 @@ export function AddToCartButton({
       size={size}
       onClick={addToCart}
       disabled={loading || item.stock_quantity <= 0}
-      className={cn(
-        "transition-all",
-        added && "bg-black hover:bg-neutral-800 text-white",
-        className
-      )}
+      className={cn("transition-all", added && "bg-black hover:bg-neutral-800 text-white", className)}
     >
       {loading ? (
         <Loader2 className="h-4 w-4 animate-spin" />

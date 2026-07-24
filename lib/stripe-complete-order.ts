@@ -10,6 +10,12 @@ import {
 import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
 import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
 import { pendingSaleFeeClause } from "@/lib/seller-fees"
+import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { isReswellShopListing } from "@/lib/reswell-shop"
+import {
+  parseListingQuantitiesMeta,
+  resolveMixedCheckoutSellerId,
+} from "@/lib/mixed-checkout"
 import {
   creditOrderPendingEarnings,
 } from "@/lib/services/orderPendingEarnings"
@@ -291,11 +297,12 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   const { data: existing } = await serviceSupabase
     .from("orders")
-    .select("id")
+    .select("id, seller_earnings")
     .eq("stripe_checkout_session_id", piId)
     .maybeSingle()
 
   if (existing?.id) {
+    const existingSellerEarnings = parseFloat(String(existing.seller_earnings ?? 0))
     const { data: pendingLedger } = await serviceSupabase
       .from("wallet_transactions")
       .select("id")
@@ -303,7 +310,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       .eq("reference_id", existing.id)
       .maybeSingle()
 
-    if (pendingLedger?.id) {
+    if (pendingLedger?.id || (Number.isFinite(existingSellerEarnings) && existingSellerEarnings <= 0)) {
       await emitPurchaseSuccessfulKlaviyoForOrderId(serviceSupabase, existing.id)
       if (!isAdminTerminalSale) {
         void sendPostPurchaseReviewInvite(existing.id)
@@ -355,7 +362,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   const { data: listingRows, error: listingsFetchErr } = await serviceSupabase
     .from("listings")
-    .select(PEER_SURFBOARD_CHECKOUT_LISTING_SELECT)
+    .select(`${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT},\n  stock_quantity`)
     .in("id", listingIdsOrdered)
 
   if (listingsFetchErr || !listingRows?.length) {
@@ -389,19 +396,26 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         listingsOrdered,
       )
 
-  const bundleSellerId = listingsForTotals[0]!.user_id
-  if (!listingsForTotals.every((l) => l.user_id === bundleSellerId)) {
+  const mixedSeller = resolveMixedCheckoutSellerId(
+    listingsForTotals.map((l) => ({
+      id: l.id,
+      user_id: l.user_id,
+      section: l.section,
+    })),
+  )
+  if (!mixedSeller.ok) {
     return { ok: false, error: "Invalid purchase", status: 400 }
   }
+  const bundleSellerId = mixedSeller.sellerId
+  const quantityByListingId = parseListingQuantitiesMeta(
+    pi.metadata.listing_qtys,
+    listingIdsOrdered,
+  )
 
-  const allowedListingStatuses = isAdminTerminalSale
-    ? (["active", "pending_sale"] as const)
-    : (["active"] as const)
-  if (
-    listingsOrdered.some(
-      (l) => !allowedListingStatuses.includes(l.status as (typeof allowedListingStatuses)[number]),
-    )
-  ) {
+  const allowedListingStatuses: readonly string[] = isAdminTerminalSale
+    ? ["active", "pending_sale"]
+    : ["active"]
+  if (listingsOrdered.some((l) => !allowedListingStatuses.includes(String(l.status ?? "")))) {
     return {
       ok: false,
       error: "This listing is no longer available. Contact support if you were charged.",
@@ -498,6 +512,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
           lines: [
             {
               listingId: listingsForTotals[0]!.id,
+              quantity: 1,
               itemPrice,
               shippingUsd: 0,
               totalUsd,
@@ -520,6 +535,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         fulfillment: impliedFulfillment,
         buyerAddress,
         diagnosticTagPrefix: "finalize-order",
+        quantityByListingId,
       })
   if (!bundle.ok) {
     return { ok: false, error: bundle.error, status: 400 }
@@ -725,6 +741,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     order_id: purchase.id,
     listing_id: line.listingId,
     sort_order: idx,
+    quantity: line.quantity,
     item_price: line.itemPrice,
     shipping_amount: line.shippingUsd,
     platform_fee: line.platformFee,
@@ -779,27 +796,48 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       ? String(listingsOrdered[0]!.title ?? "")
       : `${listingsOrdered.length} boards`
 
-  const sellerCredit = await creditOrderPendingEarnings(serviceSupabase, {
-    userId: bundleSellerId,
-    amountUsd: sellerEarnings,
-    orderId: purchase.id,
-    description: walletPendingSaleDescription(walletTitleSummary, platformFee),
-    referenceType: "order_pending_earnings",
-  })
-  if (!sellerCredit.ok) return sellerCredit
+  if (sellerEarnings > 0) {
+    const sellerCredit = await creditOrderPendingEarnings(serviceSupabase, {
+      userId: bundleSellerId,
+      amountUsd: sellerEarnings,
+      orderId: purchase.id,
+      description: walletPendingSaleDescription(walletTitleSummary, platformFee),
+      referenceType: "order_pending_earnings",
+    })
+    if (!sellerCredit.ok) return sellerCredit
+  }
 
-  // Mark sold only — never mutate listings.price (offer discounts stay private; public sold surfaces use list price).
-  const { error: listingErr } = await serviceSupabase
-    .from("listings")
-    .update({ status: "sold" })
-    .in(
-      "id",
-      listingsOrdered.map((l) => l.id),
-    )
+  // Peer listings: mark sold. Shop inventory: atomically decrement stock (sold when 0).
+  const peerListingIds = listingsOrdered
+    .filter((l) => isPeerListingSection(l.section))
+    .map((l) => l.id)
+  if (peerListingIds.length > 0) {
+    const { error: listingErr } = await serviceSupabase
+      .from("listings")
+      .update({ status: "sold" })
+      .in("id", peerListingIds)
 
-  if (listingErr) {
-    console.error("[stripe-complete-order] listing update:", listingErr)
-    return { ok: false, error: "Could not mark listing sold", status: 500 }
+    if (listingErr) {
+      console.error("[stripe-complete-order] listing update:", listingErr)
+      return { ok: false, error: "Could not mark listing sold", status: 500 }
+    }
+  }
+
+  for (const line of bundle.lines) {
+    const listing = listingsOrdered.find((l) => l.id === line.listingId)
+    if (!listing || !isReswellShopListing(listing.section)) continue
+    const { error: stockErr } = await serviceSupabase.rpc("decrement_listing_stock", {
+      p_listing_id: line.listingId,
+      p_qty: line.quantity,
+    })
+    if (stockErr) {
+      console.error("[stripe-complete-order] stock decrement:", stockErr)
+      return {
+        ok: false,
+        error: "Could not update shop inventory. Contact support if you were charged.",
+        status: 409,
+      }
+    }
   }
 
   await safeRevalidateAfterMarketplaceOrderCommit(serviceSupabase, {

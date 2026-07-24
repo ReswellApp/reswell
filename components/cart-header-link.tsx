@@ -68,16 +68,17 @@ export function CartHeaderLink({
         return
       }
 
-      const { count: n, error } = await withTimeout(
-        supabase
-          .from("cart_items")
-          .select("*", { count: "exact", head: true })
-          .eq("profile_id", resolvedUserId),
+      const { data: rows, error } = await withTimeout(
+        supabase.from("cart_items").select("quantity").eq("profile_id", resolvedUserId),
         CART_LOAD_TIMEOUT_MS,
-        { count: 0, error: null },
+        { data: [] as { quantity?: number | null }[], error: null },
       )
 
-      if (!cancelled) setCount(error ? 0 : (n ?? 0))
+      const n = (rows ?? []).reduce(
+        (sum, row) => sum + Math.max(1, Math.floor(Number(row.quantity) || 1)),
+        0,
+      )
+      if (!cancelled) setCount(error ? 0 : n)
     }
 
     void load()

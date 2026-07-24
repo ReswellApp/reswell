@@ -4,6 +4,7 @@ import {
   PEER_LISTING_SECTIONS_FILTER,
   isPeerListingSection,
 } from "@/lib/peer-listing-sections"
+import { isReswellShopListing, RESWELL_SHOP_SECTION } from "@/lib/reswell-shop"
 import { isListingPurchasable } from "@/lib/listing-public-visibility"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -11,23 +12,30 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 export type CheckoutCartListingRow = Record<string, unknown> & {
   id: string
   user_id: string
+  section?: string | null
+}
+
+export type CheckoutCartLine = {
+  listing: CheckoutCartListingRow
+  quantity: number
 }
 
 /**
- * Loads surfboard listings from the buyer's cart for a specific seller, in cart sort order (newest cart row first).
+ * Loads peer listings for a seller plus all Reswell shop cart lines, in cart sort order.
+ * When `sellerId` is the shop seller and the cart has only shop items, returns shop lines only.
  */
 export async function fetchCheckoutCartListingsForSeller(
   supabase: SupabaseClient,
   buyerId: string,
   sellerId: string,
-): Promise<{ listings: CheckoutCartListingRow[] } | { error: string }> {
+): Promise<{ lines: CheckoutCartLine[]; listings: CheckoutCartListingRow[] } | { error: string }> {
   if (!UUID_RE.test(buyerId.trim()) || !UUID_RE.test(sellerId.trim())) {
     return { error: "Invalid cart checkout parameters" }
   }
 
   const { data: cartRows, error: cartErr } = await supabase
     .from("cart_items")
-    .select("listing_id, created_at")
+    .select("listing_id, created_at, quantity")
     .eq("profile_id", buyerId.trim())
     .order("created_at", { ascending: false })
 
@@ -35,29 +43,35 @@ export async function fetchCheckoutCartListingsForSeller(
     return { error: cartErr.message }
   }
 
-  const orderedIds = (cartRows ?? [])
-    .map((r) => String((r as { listing_id?: string }).listing_id ?? "").trim())
-    .filter((id) => UUID_RE.test(id))
+  const orderedCart = (cartRows ?? [])
+    .map((r) => ({
+      id: String((r as { listing_id?: string }).listing_id ?? "").trim(),
+      quantity: Math.max(1, Math.floor(Number((r as { quantity?: number }).quantity) || 1)),
+    }))
+    .filter((r) => UUID_RE.test(r.id))
 
-  if (orderedIds.length === 0) {
-    return { listings: [] }
+  if (orderedCart.length === 0) {
+    return { lines: [], listings: [] }
   }
+
+  const orderedIds = orderedCart.map((r) => r.id)
+  const qtyById = new Map(orderedCart.map((r) => [r.id, r.quantity]))
 
   const { data: listingRows, error: listErr } = await supabase
     .from("listings")
     .select(
       `
       ${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT},
+      stock_quantity,
       slug,
       listing_images ( url, thumbnail_url, is_primary )
     `.trim(),
     )
     .in("id", orderedIds)
-    .eq("user_id", sellerId.trim())
     .in("status", ["active", "pending_sale"])
     .eq("hidden_from_site", false)
     .is("archived_at", null)
-    .in("section", PEER_LISTING_SECTIONS_FILTER)
+    .in("section", [...PEER_LISTING_SECTIONS_FILTER, RESWELL_SHOP_SECTION])
 
   if (listErr || !listingRows) {
     return { error: listErr?.message ?? "Could not load listings" }
@@ -68,25 +82,40 @@ export async function fetchCheckoutCartListingsForSeller(
     byId.set(row.id, row)
   }
 
-  const listings: CheckoutCartListingRow[] = []
+  const seller = sellerId.trim()
+
+  const lines: CheckoutCartLine[] = []
   for (const id of orderedIds) {
     const row = byId.get(id)
-    if (row) listings.push(row)
+    if (!row) continue
+    const section = String(row.section ?? "")
+    if (isPeerListingSection(section)) {
+      if (row.user_id !== seller) continue
+      lines.push({ listing: row, quantity: 1 })
+      continue
+    }
+    if (isReswellShopListing(section)) {
+      const stock = Math.max(0, Math.floor(Number((row as { stock_quantity?: number }).stock_quantity) || 0))
+      const qty = Math.min(qtyById.get(id) ?? 1, stock)
+      if (qty < 1) continue
+      // Always include Reswell shop cart lines (fulfilled by Reswell, any admin owner).
+      lines.push({ listing: row, quantity: qty })
+    }
   }
 
-  return { listings }
+  return { lines, listings: lines.map((l) => l.listing) }
 }
 
 type CartJoinedListing = {
   user_id: string
   section: string | null
-  status: string | null
+  status: string
   hidden_from_site?: boolean | null
   archived_at?: string | null
 }
 
 /**
- * When `/checkout?from_cart=1` omits `seller_id`, infer it only if every cart surfboard eligible for checkout shares one seller.
+ * Infer checkout seller: single peer seller if present; else Reswell shop seller when cart is shop-only.
  */
 export async function inferPeerCartSellerIdFromBuyerCart(
   supabase: SupabaseClient,
@@ -114,23 +143,34 @@ export async function inferPeerCartSellerIdFromBuyerCart(
     return { ok: false, reason: "query_error", message: error.message }
   }
 
-  const sellers = new Set<string>()
+  const peerSellers = new Set<string>()
+  const shopSellers = new Set<string>()
   for (const row of data ?? []) {
     const raw = row as { listings?: CartJoinedListing | CartJoinedListing[] | null }
     const Lraw = raw.listings
     const L = Array.isArray(Lraw) ? Lraw[0] : Lraw
     if (!L?.user_id) continue
-    if (!isPeerListingSection(String(L.section ?? ""))) continue
-    if (!isListingPurchasable(L)) continue
-    sellers.add(L.user_id)
+    const listing = {
+      ...L,
+      status: String(L.status ?? ""),
+    }
+    if (!isListingPurchasable(listing)) continue
+    if (isPeerListingSection(String(listing.section ?? ""))) {
+      peerSellers.add(listing.user_id)
+    } else if (isReswellShopListing(listing.section)) {
+      shopSellers.add(listing.user_id)
+    }
   }
 
-  if (sellers.size === 0) {
-    return { ok: false, reason: "empty" }
-  }
-  if (sellers.size > 1) {
+  if (peerSellers.size > 1) {
     return { ok: false, reason: "multi" }
   }
-
-  return { ok: true, sellerId: [...sellers][0]! }
+  if (peerSellers.size === 1) {
+    return { ok: true, sellerId: [...peerSellers][0]! }
+  }
+  // Shop-only cart: Reswell-fulfilled (listing rows may be owned by different admins).
+  if (shopSellers.size >= 1) {
+    return { ok: true, sellerId: [...shopSellers][0]! }
+  }
+  return { ok: false, reason: "empty" }
 }

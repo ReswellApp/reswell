@@ -1,6 +1,6 @@
 /**
- * Client-side cart lines in localStorage (e.g. marketplace “new” inventory with quantity).
- * Peer listings (used + surfboards) use `cart_items` in the database and `/cart` instead.
+ * @deprecated Reswell shop inventory now uses the DB `cart_items` table (with quantity)
+ * via `app/actions/cart.ts`. Kept only for one-off migration / legacy callers.
  * Dispatches `cartUpdated` so any cart badge listeners stay in sync.
  */
 

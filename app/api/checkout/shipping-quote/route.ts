@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
+import { resolveMixedCheckoutSellerId } from "@/lib/mixed-checkout"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
 import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
@@ -123,7 +124,7 @@ export async function POST(request: Request) {
     .from("listings")
     .select(PEER_SURFBOARD_CHECKOUT_LISTING_SELECT)
     .in("id", listingIds)
-    .in("section", PEER_LISTING_SECTIONS_FILTER)
+    .in("section", [...PEER_LISTING_SECTIONS_FILTER, "new"])
     .eq("hidden_from_site", false)
     .is("archived_at", null)
     .in("status", ["active", "pending_sale"])
@@ -144,17 +145,24 @@ export async function POST(request: Request) {
     )
   }
 
-  const sellerId = listingRows[0]!.user_id
-  if (!listingRows.every((l) => l.user_id === sellerId)) {
+  const mixedSeller = resolveMixedCheckoutSellerId(
+    listingRows.map((l) => ({
+      id: l.id,
+      user_id: l.user_id,
+      section: l.section,
+    })),
+  )
+  if (!mixedSeller.ok) {
     return NextResponse.json(
-      { error: "All items must be from the same seller" },
+      { error: mixedSeller.error },
       { status: 400, headers: JSON_NO_STORE_HEADERS },
     )
   }
+  const sellerId = mixedSeller.sellerId
 
   if (!listingRows.every((l) => !!l.shipping_available)) {
     return NextResponse.json(
-      { error: "Every board in this order must offer shipping." },
+      { error: "Every item in this order must offer shipping." },
       { status: 422, headers: JSON_NO_STORE_HEADERS },
     )
   }
@@ -172,6 +180,19 @@ export async function POST(request: Request) {
 
   const sellerShipFromName = await fetchSellerShipFromLabelName(supabase, sellerId)
   const buyerAddress = addr as ProfileAddressRow
+
+  const qtyById = new Map<string, number>()
+  for (const id of listingIds) qtyById.set(id, 1)
+  const { data: cartQtyRows } = await supabase
+    .from("cart_items")
+    .select("listing_id, quantity")
+    .eq("profile_id", user.id)
+    .in("listing_id", listingIds)
+  for (const row of cartQtyRows ?? []) {
+    const id = String((row as { listing_id?: string }).listing_id ?? "").trim()
+    const qty = Math.max(1, Math.floor(Number((row as { quantity?: number }).quantity) || 1))
+    if (id) qtyById.set(id, qty)
+  }
 
   if (listingRows.length === 1) {
     const listingRow = listingRows[0]!
@@ -207,12 +228,16 @@ export async function POST(request: Request) {
       }
     }
 
+    const qty = qtyById.get(listingRow.id) ?? 1
+    const itemPrice = Math.round(totals.itemPrice * qty * 100) / 100
+    const totalUsd = Math.round((itemPrice + totals.shippingUsd) * 100) / 100
+
     return NextResponse.json(
       {
         data: buildQuoteResponse({
-          itemPrice: totals.itemPrice,
+          itemPrice,
           shippingUsd: totals.shippingUsd,
-          totalUsd: totals.totalUsd,
+          totalUsd,
           usedReswellQuote: totals.usedReswellQuote,
           buyerId: user.id,
           listingIds,
@@ -227,7 +252,8 @@ export async function POST(request: Request) {
   /** Multi-item bundle ships as one box — single combined-parcel quote for the seller group. */
   const itemPriceSum = listingRows.reduce((sum, l) => {
     const p = parseFloat(String(l.price))
-    return sum + (Number.isFinite(p) && p > 0 ? p : 0)
+    const qty = qtyById.get(l.id) ?? 1
+    return sum + (Number.isFinite(p) && p > 0 ? p * qty : 0)
   }, 0)
   const itemPrice = Math.round(itemPriceSum * 100) / 100
 

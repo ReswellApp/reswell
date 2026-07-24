@@ -9,9 +9,13 @@ import {
 } from "@/lib/services/peerListingShippingQuote"
 import { fetchSellerFeeWaived } from "@/lib/db/profileSellerFee"
 import { getSellerEarnings } from "@/lib/seller-fees"
+import { resolveMixedCheckoutSellerId } from "@/lib/mixed-checkout"
+import { getReswellShopLineEarnings, isReswellShopListing } from "@/lib/reswell-shop"
 
 export type PeerCheckoutLineComputation = {
   listingId: string
+  quantity: number
+  /** Unit item price (before quantity). */
   itemPrice: number
   shippingUsd: number
   totalUsd: number
@@ -21,7 +25,7 @@ export type PeerCheckoutLineComputation = {
 }
 
 /**
- * Computes totals for one or more peer surfboard listings (same seller).
+ * Computes totals for peer listings (same seller) and/or Reswell shop lines.
  *
  * Multi-line shipping ships as **one box**: a single combined-parcel quote
  * (biggest item's dims + summed weights — see {@link computePeerBundleShippingUsd}).
@@ -35,6 +39,8 @@ export async function computePeerMultiCheckoutUsd(params: {
   diagnosticTagPrefix: string
   /** Reuse shipping from `/api/checkout/shipping-quote` (signed token) — skips ShipEngine. */
   preverifiedShipping?: { shippingUsd: number; usedReswellQuote: boolean }
+  /** Units per listing id (shop inventory). Peer lines default to 1. */
+  quantityByListingId?: Record<string, number>
 }): Promise<
   | {
       ok: true
@@ -49,16 +55,37 @@ export async function computePeerMultiCheckoutUsd(params: {
     }
   | { ok: false; error: string }
 > {
-  const { listingsOrdered, fulfillment, buyerAddress, supabase, diagnosticTagPrefix, preverifiedShipping } =
-    params
+  const {
+    listingsOrdered,
+    fulfillment,
+    buyerAddress,
+    supabase,
+    diagnosticTagPrefix,
+    preverifiedShipping,
+    quantityByListingId,
+  } = params
 
   if (listingsOrdered.length === 0) {
     return { ok: false, error: "No listings to checkout" }
   }
 
-  const sellerId = listingsOrdered[0]!.user_id
-  if (!listingsOrdered.every((l) => l.user_id === sellerId)) {
-    return { ok: false, error: "All items must be from the same seller" }
+  const sellerResolved = resolveMixedCheckoutSellerId(
+    listingsOrdered.map((l) => ({
+      id: l.id,
+      user_id: l.user_id,
+      section: l.section,
+    })),
+  )
+  if (!sellerResolved.ok) {
+    return { ok: false, error: sellerResolved.error }
+  }
+  const sellerId = sellerResolved.sellerId
+
+  const qtyFor = (listingId: string, section: string | null) => {
+    if (isReswellShopListing(section)) {
+      return Math.max(1, Math.floor(quantityByListingId?.[listingId] ?? 1))
+    }
+    return 1
   }
 
   const isMultiLine = listingsOrdered.length > 1
@@ -66,13 +93,13 @@ export async function computePeerMultiCheckoutUsd(params: {
     if (fulfillment === "pickup" && !listingsOrdered.every((l) => l.local_pickup !== false)) {
       return {
         ok: false,
-        error: "Every board in a multi-item pickup checkout must offer local pickup.",
+        error: "Every item in a multi-item pickup checkout must offer local pickup.",
       }
     }
     if (fulfillment === "shipping" && !listingsOrdered.every((l) => !!l.shipping_available)) {
       return {
         ok: false,
-        error: "Every board in a multi-item shipped checkout must offer shipping.",
+        error: "Every item in a multi-item shipped checkout must offer shipping.",
       }
     }
   }
@@ -96,6 +123,7 @@ export async function computePeerMultiCheckoutUsd(params: {
 
   for (let i = 0; i < listingsOrdered.length; i++) {
     const listing = listingsOrdered[i]!
+    const quantity = qtyFor(listing.id, listing.section)
     const totals = await computePeerCheckoutTotalsUsd({
       listing,
       fulfillment: perLineFulfillment,
@@ -109,15 +137,28 @@ export async function computePeerMultiCheckoutUsd(params: {
     }
     if (totals.usedReswellQuote) anyUsedReswellQuote = true
 
-    const { marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(totals.itemPrice, {
-      feeWaived,
-    })
+    const unitPrice = totals.itemPrice
+    const lineItemTotal = Math.round(unitPrice * quantity * 100) / 100
 
+    let platformFee: number
+    let sellerEarnings: number
+    if (isReswellShopListing(listing.section)) {
+      const shop = getReswellShopLineEarnings(unitPrice, quantity)
+      platformFee = shop.platformFee
+      sellerEarnings = shop.sellerEarnings
+    } else {
+      ;({ marketplaceFee: platformFee, sellerEarnings } = getSellerEarnings(lineItemTotal, {
+        feeWaived,
+      }))
+    }
+
+    const shippingUsd = isMultiLine ? 0 : totals.shippingUsd
     lines.push({
       listingId: listing.id,
-      itemPrice: totals.itemPrice,
-      shippingUsd: totals.shippingUsd,
-      totalUsd: totals.totalUsd,
+      quantity,
+      itemPrice: unitPrice,
+      shippingUsd,
+      totalUsd: Math.round((lineItemTotal + shippingUsd) * 100) / 100,
       usedReswellQuote: totals.usedReswellQuote,
       platformFee,
       sellerEarnings,
@@ -150,13 +191,14 @@ export async function computePeerMultiCheckoutUsd(params: {
 
     /** Carry the one-box shipping charge on the first line so line sums stay exact. */
     const firstLine = lines[0]!
+    const firstItemTotal = Math.round(firstLine.itemPrice * firstLine.quantity * 100) / 100
     firstLine.shippingUsd = bundleShipping.shippingUsd
-    firstLine.totalUsd = Math.round((firstLine.itemPrice + bundleShipping.shippingUsd) * 100) / 100
+    firstLine.totalUsd = Math.round((firstItemTotal + bundleShipping.shippingUsd) * 100) / 100
     firstLine.usedReswellQuote = bundleShipping.usedReswellQuote
   }
 
   const totalItemPriceUsd =
-    Math.round(lines.reduce((s, l) => s + l.itemPrice, 0) * 100) / 100
+    Math.round(lines.reduce((s, l) => s + l.itemPrice * l.quantity, 0) * 100) / 100
   const totalShippingUsd =
     Math.round(lines.reduce((s, l) => s + l.shippingUsd, 0) * 100) / 100
   const totalUsd = Math.round(lines.reduce((s, l) => s + l.totalUsd, 0) * 100) / 100

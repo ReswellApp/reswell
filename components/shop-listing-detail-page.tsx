@@ -49,6 +49,12 @@ export async function ShopListingDetailPage({
     notFound()
   }
 
+  const authSupabaseForUser = await createClient()
+  const {
+    data: { user },
+  } = await authSupabaseForUser.auth.getUser()
+  const viewerId = user?.id ?? null
+
   const stockQuantity = Number((listing as { stock_quantity?: number }).stock_quantity) || 0
   const images = (listing.listing_images as { url: string; is_primary: boolean }[]) || []
   const primaryImage = images.find((i) => i.is_primary) || images[0]
@@ -181,6 +187,7 @@ export async function ShopListingDetailPage({
                   <QuantitySelector
                     productId={listing.id}
                     maxQuantity={stockQuantity}
+                    isLoggedIn={!!viewerId}
                     item={{
                       id: listing.id,
                       name: listing.title,
@@ -237,7 +244,7 @@ export async function ShopListingDetailPage({
             <h2 className="font-headline mb-10 text-[1.8125rem] font-semibold tracking-tight text-foreground sm:text-[1.875rem]">
               You may also like
             </h2>
-            <MarketplaceNewGrid items={relatedItems} />
+            <MarketplaceNewGrid items={relatedItems} userId={viewerId} />
           </section>
         )}
       </div>

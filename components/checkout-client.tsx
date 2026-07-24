@@ -109,12 +109,19 @@ export function CheckoutClient({
       for (const l of listings) {
         const r = resolvePayableAmount(l, "pickup")
         if (!r.ok) return r
-        itemSum += r.itemPrice
+        const qty = Math.max(1, Math.floor(l.quantity ?? 1))
+        itemSum += r.itemPrice * qty
       }
       /** Bundle shipping is a single live one-box quote — shown once the quote API responds. */
       return { ok: true as const, itemPrice: itemSum, shipping: 0, total: itemSum }
     }
-    return resolvePayableAmount(primaryListing, impliedFulfillment)
+    const single = resolvePayableAmount(primaryListing, impliedFulfillment)
+    if (!single.ok) return single
+    const qty = Math.max(1, Math.floor(primaryListing.quantity ?? 1))
+    if (qty === 1) return single
+    const itemPrice = Math.round(single.itemPrice * qty * 100) / 100
+    const total = Math.round((itemPrice + single.shipping) * 100) / 100
+    return { ok: true as const, itemPrice, shipping: single.shipping, total }
   }, [isBundle, listings, primaryListing, impliedFulfillment])
 
   const [purchaseDetails, setPurchaseDetails] = useState<PurchaseDetailsState>({

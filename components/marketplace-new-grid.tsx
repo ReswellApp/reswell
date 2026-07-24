@@ -10,7 +10,13 @@ export interface MarketplaceNewItem {
   categoryLabel?: string | null
 }
 
-export function MarketplaceNewGrid({ items }: { items: MarketplaceNewItem[] }) {
+export function MarketplaceNewGrid({
+  items,
+  userId = null,
+}: {
+  items: MarketplaceNewItem[]
+  userId?: string | null
+}) {
   if (items.length === 0) return null
 
   return (
@@ -30,7 +36,7 @@ export function MarketplaceNewGrid({ items }: { items: MarketplaceNewItem[] }) {
               : null,
           }}
           stockQuantity={item.stock_quantity}
-          userId={null}
+          userId={userId}
           isFavorited={false}
           categoryName={item.categoryLabel ?? null}
         />

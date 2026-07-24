@@ -9,6 +9,7 @@ export const siteFooterNavLinks: {
 } = {
   marketplace: [
     { name: "Surfboards", href: "/boards" },
+    { name: "Shop from Reswell", href: "/reswell/shop" },
     { name: "Recently sold", href: "/sold" },
     { name: "Sell your board", href: "/sell" },
     { name: "Sellers", href: "/sellers" },

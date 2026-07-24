@@ -8,6 +8,8 @@ import { CheckoutClient } from "@/components/checkout-client"
 import type { CheckoutCopy, CheckoutListing } from "@/components/checkout-types"
 import { findListingByParam } from "@/lib/listing-query"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { isReswellShopListing } from "@/lib/reswell-shop"
+import { resolveMixedCheckoutSellerId } from "@/lib/mixed-checkout"
 import { listingDetailHref } from "@/lib/listing-href"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
@@ -61,10 +63,14 @@ export async function generateMetadata(props: {
   })
 }
 
-function rowToCheckoutListing(row: Record<string, unknown>): CheckoutListing {
+function rowToCheckoutListing(
+  row: Record<string, unknown>,
+  quantity = 1,
+): CheckoutListing {
   return {
     ...(row as CheckoutListing),
     section: String((row as { section?: string | null }).section ?? "surfboards"),
+    quantity: Math.max(1, Math.floor(quantity)),
   }
 }
 
@@ -194,25 +200,30 @@ export default async function CheckoutPage(props: {
     if ("error" in bundle) {
       redirect("/cart")
     }
-    if (bundle.listings.length === 0) {
+    if (bundle.lines.length === 0) {
       redirect("/cart")
     }
 
-    let checkoutListings = bundle.listings.map(rowToCheckoutListing)
+    const qtyById = new Map(bundle.lines.map((l) => [l.listing.id, l.quantity]))
+    let checkoutListings = bundle.lines.map((l) => rowToCheckoutListing(l.listing, l.quantity))
 
     const pricedRows = await applyAcceptedOfferToPeerCheckoutListings(
       supabase,
       user.id,
       checkoutListings as unknown as PeerSurfboardCheckoutListingRow[],
     )
-    checkoutListings = pricedRows.map(rowToCheckoutListing)
+    checkoutListings = pricedRows.map((row) =>
+      rowToCheckoutListing(row as unknown as Record<string, unknown>, qtyById.get(row.id) ?? 1),
+    )
 
-    const bundleSellerUid = checkoutListings[0]?.user_id?.trim()
-    if (
-      !bundleSellerUid ||
-      bundleSellerUid !== sellerId ||
-      checkoutListings.some((l) => (l.user_id ?? "").trim() !== bundleSellerUid)
-    ) {
+    const mixedSeller = resolveMixedCheckoutSellerId(
+      checkoutListings.map((l) => ({
+        id: l.id,
+        user_id: l.user_id,
+        section: l.section,
+      })),
+    )
+    if (!mixedSeller.ok || mixedSeller.sellerId !== sellerId) {
       redirect("/cart")
     }
 
@@ -220,22 +231,28 @@ export default async function CheckoutPage(props: {
       redirect("/cart")
     }
 
-    const exclusiveCheck = await assertBuyerMayPurchaseListingsExclusiveWindow(
-      supabase,
-      checkoutListings.map((l) => l.id),
-      user.id,
-    )
-    if (!exclusiveCheck.ok) {
-      redirect("/cart")
+    const peerListingIds = checkoutListings
+      .filter((l) => isPeerListingSection(l.section))
+      .map((l) => l.id)
+    if (peerListingIds.length > 0) {
+      const exclusiveCheck = await assertBuyerMayPurchaseListingsExclusiveWindow(
+        supabase,
+        peerListingIds,
+        user.id,
+      )
+      if (!exclusiveCheck.ok) {
+        redirect("/cart")
+      }
     }
 
+    const orderSellerId = mixedSeller.sellerId
     const [{ seller, buyer }, matchedOffer] = await Promise.all([
-      fetchCheckoutSellerAndBuyerContext(supabase, sellerId, user),
+      fetchCheckoutSellerAndBuyerContext(supabase, orderSellerId, user),
       findAcceptedOfferMatchingListings(
         supabase,
         user.id,
-        checkoutListings.map((l) => l.id),
-        sellerId,
+        peerListingIds,
+        orderSellerId,
       ),
     ])
     const { addresses: initialAddresses, addressesError, buyerEmail, legalFullName } = buyer
@@ -296,16 +313,12 @@ export default async function CheckoutPage(props: {
 
   const { listing, redirectSlug } = await findListingByParam(supabase, id, {
     select:
-      "id, slug, title, price, user_id, status, section, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode, shipping_package_tier, city, state, listing_images ( url, thumbnail_url, is_primary )",
+      "id, slug, title, price, user_id, status, section, stock_quantity, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode, shipping_package_tier, packed_length_in, packed_width_in, packed_height_in, packed_weight_lb, ship_from_name, ship_from_phone, ship_from_line1, ship_from_line2, ship_from_city, ship_from_state, ship_from_postal_code, city, state, listing_images ( url, thumbnail_url, is_primary )",
     section: undefined,
   })
 
   if (!listing || (listing.status !== "active" && listing.status !== "pending_sale")) {
     notFound()
-  }
-
-  if (listing.section === "new") {
-    redirect(listingDetailHref(listing))
   }
 
   if (redirectSlug) {
@@ -320,11 +333,22 @@ export default async function CheckoutPage(props: {
     redirect(listingDetailHref(listing))
   }
 
-  if (!isPeerListingSection(listing.section)) {
+  if (!isPeerListingSection(listing.section) && !isReswellShopListing(listing.section)) {
     notFound()
   }
 
-  if (user && !isAnonymousSupabaseUser(user)) {
+  if (isReswellShopListing(listing.section)) {
+    const stock = Math.max(0, Math.floor(Number((listing as { stock_quantity?: number }).stock_quantity) || 0))
+    if (stock < 1) {
+      redirect(listingDetailHref(listing))
+    }
+  }
+
+  if (
+    isPeerListingSection(listing.section) &&
+    user &&
+    !isAnonymousSupabaseUser(user)
+  ) {
     const exclusiveCheck = await assertBuyerMayPurchaseListingsExclusiveWindow(
       supabase,
       [listing.id],
@@ -350,7 +374,12 @@ export default async function CheckoutPage(props: {
   let checkoutListing = rowToCheckoutListing(listing as unknown as Record<string, unknown>)
   let matchedOfferId: string | null = null
 
-  if (user && !isAnonymousSupabaseUser(user) && listing.user_id !== user.id) {
+  if (
+    isPeerListingSection(listing.section) &&
+    user &&
+    !isAnonymousSupabaseUser(user) &&
+    listing.user_id !== user.id
+  ) {
     const [priced, matchedOffer] = await Promise.all([
       applyAcceptedOfferToPeerCheckoutListings(supabase, user.id, [
         checkoutListing as unknown as PeerSurfboardCheckoutListingRow,

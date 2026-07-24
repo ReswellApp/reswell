@@ -13,6 +13,11 @@ import { validateAcceptedOfferForPaymentIntent } from "@/lib/services/acceptedOf
 import { dedupeIdsPreserveOrder } from "@/lib/stripe-marketplace-metadata"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { isReswellShopListing } from "@/lib/reswell-shop"
+import {
+  encodeListingQuantitiesMeta,
+  resolveMixedCheckoutSellerId,
+} from "@/lib/mixed-checkout"
 import { evaluateUserPurchase } from "@/lib/services/accountRestrictions"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
@@ -107,7 +112,7 @@ export async function POST(request: NextRequest) {
 
   const { data: listingsRows, error: listingsErr } = await supabase
     .from("listings")
-    .select(PEER_SURFBOARD_CHECKOUT_LISTING_SELECT)
+    .select(`${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT},\n  stock_quantity`)
     .in("id", listingIdsOrdered)
     .in("status", ["active", "pending_sale"])
     .eq("hidden_from_site", false)
@@ -137,13 +142,27 @@ export async function POST(request: NextRequest) {
   }
 
   for (const listing of listingsOrdered) {
-    const exclusiveCheck = await assertBuyerMayPurchaseListingExclusiveWindow(
-      supabase,
-      listing.id,
-      user.id,
-    )
-    if (!exclusiveCheck.ok) {
-      return NextResponse.json({ error: exclusiveCheck.message }, { status: 403 })
+    if (!isPeerListingSection(listing.section) && !isReswellShopListing(listing.section)) {
+      return NextResponse.json({ error: "This listing cannot be purchased here" }, { status: 400 })
+    }
+    if (isReswellShopListing(listing.section)) {
+      const stock = Math.max(
+        0,
+        Math.floor(Number((listing as { stock_quantity?: number }).stock_quantity) || 0),
+      )
+      if (stock < 1) {
+        return NextResponse.json({ error: "This item is out of stock" }, { status: 409 })
+      }
+    }
+    if (isPeerListingSection(listing.section)) {
+      const exclusiveCheck = await assertBuyerMayPurchaseListingExclusiveWindow(
+        supabase,
+        listing.id,
+        user.id,
+      )
+      if (!exclusiveCheck.ok) {
+        return NextResponse.json({ error: exclusiveCheck.message }, { status: 403 })
+      }
     }
   }
 
@@ -153,14 +172,12 @@ export async function POST(request: NextRequest) {
     listingsOrdered,
   )
 
-  if (listingsOrdered.some((l) => !isPeerListingSection(l.section))) {
-    return NextResponse.json({ error: "This listing cannot be purchased here" }, { status: 400 })
-  }
-
-  /** Multi-board payment intents must pull every listing from this buyer's cart (same seller),
+  /** Multi-item payment intents must pull every listing from this buyer's cart,
    * unless paying via an accepted offer bundle (`offer_id`). */
   const offerIdParam = body.offer_id?.trim() || null
   let validatedOfferId: string | null = null
+  const quantityByListingId: Record<string, number> = {}
+  for (const id of listingIdsOrdered) quantityByListingId[id] = 1
 
   if (listingIdsOrdered.length > 1) {
     if (offerIdParam) {
@@ -177,7 +194,7 @@ export async function POST(request: NextRequest) {
     } else {
       const { data: cartRows, error: cartVerifyErr } = await supabase
         .from("cart_items")
-        .select("listing_id")
+        .select("listing_id, quantity")
         .eq("profile_id", user.id)
         .in("listing_id", listingIdsOrdered)
 
@@ -185,19 +202,23 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Could not verify cart" }, { status: 500 })
       }
 
-      const inBuyerCart = new Set(
-        (cartRows ?? []).map((r) => String((r as { listing_id?: string }).listing_id ?? "").trim()),
-      )
+      const cartQty = new Map<string, number>()
+      for (const r of cartRows ?? []) {
+        const id = String((r as { listing_id?: string }).listing_id ?? "").trim()
+        const qty = Math.max(1, Math.floor(Number((r as { quantity?: number }).quantity) || 1))
+        if (id) cartQty.set(id, qty)
+      }
       for (const id of listingIdsOrdered) {
-        if (!inBuyerCart.has(id)) {
+        if (!cartQty.has(id)) {
           return NextResponse.json(
             {
               error:
-                "Checking out multiple boards together only works when every board is in your cart from the same seller, or when checking out an accepted offer bundle.",
+                "Checking out multiple items together only works when every item is in your cart, or when checking out an accepted offer bundle.",
             },
             { status: 400 },
           )
         }
+        quantityByListingId[id] = cartQty.get(id) ?? 1
       }
     }
   } else if (offerIdParam) {
@@ -211,12 +232,48 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: offerCheck.error }, { status: 400 })
     }
     validatedOfferId = offerIdParam
+  } else {
+    // Single shop line may still carry quantity from cart.
+    const onlyId = listingIdsOrdered[0]!
+    if (isReswellShopListing(listingsOrdered[0]!.section)) {
+      const { data: cartRow } = await supabase
+        .from("cart_items")
+        .select("quantity")
+        .eq("profile_id", user.id)
+        .eq("listing_id", onlyId)
+        .maybeSingle()
+      if (cartRow) {
+        quantityByListingId[onlyId] = Math.max(
+          1,
+          Math.floor(Number((cartRow as { quantity?: number }).quantity) || 1),
+        )
+      }
+    }
   }
 
-  const bundleSellerId = listingsOrdered[0]!.user_id
-  if (!listingsOrdered.every((l) => l.user_id === bundleSellerId)) {
-    return NextResponse.json({ error: "All items must be from the same seller" }, { status: 400 })
+  for (const listing of listingsOrdered) {
+    if (!isReswellShopListing(listing.section)) continue
+    const stock = Math.max(
+      0,
+      Math.floor(Number((listing as { stock_quantity?: number }).stock_quantity) || 0),
+    )
+    const qty = quantityByListingId[listing.id] ?? 1
+    if (qty > stock) {
+      return NextResponse.json({ error: "Not enough stock available" }, { status: 409 })
+    }
   }
+
+  const mixedSeller = resolveMixedCheckoutSellerId(
+    listingsOrdered.map((l) => ({
+      id: l.id,
+      user_id: l.user_id,
+      section: l.section,
+    })),
+  )
+  if (!mixedSeller.ok) {
+    return NextResponse.json({ error: mixedSeller.error }, { status: 400 })
+  }
+  const bundleSellerId = mixedSeller.sellerId
 
   if (listingsOrdered.some((l) => l.local_pickup === false && !l.shipping_available)) {
     return NextResponse.json({ error: "Listing has no fulfillment options" }, { status: 400 })
@@ -310,6 +367,7 @@ export async function POST(request: NextRequest) {
     buyerAddress,
     diagnosticTagPrefix: "payment-intent",
     preverifiedShipping,
+    quantityByListingId,
   })
 
   if (!bundle.ok) {
@@ -413,7 +471,9 @@ export async function POST(request: NextRequest) {
       metadata: {
         listing_ids: listingIdsOrdered.join(","),
         listing_id: listingIdsOrdered[0]!,
+        listing_qtys: encodeListingQuantitiesMeta(quantityByListingId),
         buyer_id: user.id,
+        seller_id: bundleSellerId,
         fulfillment: impliedFulfillment,
         amount_cents: String(amountCents),
         bundle_line_count: String(listingIdsOrdered.length),

@@ -35,7 +35,8 @@ export function AdminGuard({
         pathname === '/admin/orders/test-purchase' ||
         pathname === '/admin/orders/terminal' ||
         pathname === '/admin/promo-codes' ||
-        pathname === '/admin/fbcatalog'
+        pathname === '/admin/fbcatalog' ||
+        pathname === '/admin/shop'
       ) {
         router.replace('/admin')
       }

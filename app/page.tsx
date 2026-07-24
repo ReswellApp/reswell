@@ -403,9 +403,17 @@ export default async function HomePage() {
           <FadeInSection>
           <section className="py-16 bg-offwhite">
             <div className="container mx-auto">
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold">New Arrivals</h2>
-                <p className="text-muted-foreground">Fresh gear from our store</p>
+              <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-bold">New Arrivals</h2>
+                  <p className="text-muted-foreground">Fresh gear from our store</p>
+                </div>
+                <Link
+                  href="/reswell/shop"
+                  className="text-sm font-medium text-foreground underline underline-offset-4"
+                >
+                  Shop from Reswell
+                </Link>
               </div>
               <HomeListingScrollRow uniformCardHeights>
                 {featuredNew.map(({ listing, stockQuantity, categoryName }) => (

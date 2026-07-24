@@ -1,15 +1,21 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { Minus, Plus, ShoppingCart, Check, Loader2 } from "lucide-react"
-import { mergeIntoCart } from "@/lib/cart-storage"
+import { addCartItem } from "@/app/actions/cart"
 import { getInventoryProductById } from "@/app/actions/marketplace"
+import { trackMetaAddToCart } from "@/lib/meta/pixel-events"
+import { collectMetaClientBrowserSignals } from "@/lib/meta/collect-client-browser-signals"
+import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
+import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 
 interface QuantitySelectorProps {
   productId: string
   maxQuantity: number
+  isLoggedIn?: boolean
   /** When provided (e.g. from listing page), skip API fetch and use this for cart */
   item?: {
     id: string
@@ -26,11 +32,21 @@ interface InventoryItem {
   image_url: string | null
 }
 
-export function QuantitySelector({ productId, maxQuantity, item: itemProp }: QuantitySelectorProps) {
+export function QuantitySelector({
+  productId,
+  maxQuantity,
+  isLoggedIn = false,
+  item: itemProp,
+}: QuantitySelectorProps) {
   const [quantity, setQuantity] = useState(1)
   const [loading, setLoading] = useState(false)
   const [added, setAdded] = useState(false)
   const [product, setProduct] = useState<InventoryItem | null>(itemProp ?? null)
+  const authModal = useOptionalAuthModal()
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const here = `${pathname}${searchParams.toString() ? `?${searchParams}` : ""}`
 
   useEffect(() => {
     if (itemProp) {
@@ -47,7 +63,7 @@ export function QuantitySelector({ productId, maxQuantity, item: itemProp }: Qua
         // Product details will be fetched on add to cart
       }
     }
-    fetchProduct()
+    void fetchProduct()
   }, [productId, itemProp])
 
   function incrementQuantity() {
@@ -62,34 +78,50 @@ export function QuantitySelector({ productId, maxQuantity, item: itemProp }: Qua
     }
   }
 
-  function addToCart() {
+  async function addToCart() {
+    if (maxQuantity <= 0) {
+      toast.error("Out of stock")
+      return
+    }
+    if (!isLoggedIn) {
+      const safe = safeRedirectPath(here)
+      if (authModal) {
+        authModal.openLogin(here)
+      } else {
+        router.push(`/auth/login?redirect=${encodeURIComponent(safe)}`)
+      }
+      return
+    }
     setLoading(true)
-
     try {
-      const result = mergeIntoCart(
+      const browserSignals = await collectMetaClientBrowserSignals().catch(() => ({
+        fbc: null,
+        fbp: null,
+      }))
+      const r = await addCartItem(
+        productId,
         {
-          id: productId,
-          name: product?.name || "Product",
-          price: product?.price || 0,
-          image_url: product?.image_url ?? null,
+          fbc: browserSignals.fbc ?? undefined,
+          fbp: browserSignals.fbp ?? undefined,
         },
         quantity,
-        maxQuantity,
       )
-      if (!result.ok) {
-        toast.error("Not enough stock available")
-        setLoading(false)
+      if (!r.ok) {
+        toast.error(r.error ?? "Failed to add to cart")
         return
       }
-
+      trackMetaAddToCart({
+        contentId: productId,
+        value: r.value,
+        contentName: r.contentName,
+        eventId: r.metaEventId,
+      })
       setAdded(true)
-
+      window.dispatchEvent(new CustomEvent("cartUpdated"))
       setTimeout(() => {
         setAdded(false)
         setQuantity(1)
       }, 2000)
-    } catch {
-      toast.error("Failed to add to cart")
     } finally {
       setLoading(false)
     }
@@ -120,9 +152,7 @@ export function QuantitySelector({ productId, maxQuantity, item: itemProp }: Qua
             <Plus className="h-4 w-4" />
           </Button>
         </div>
-        <span className="text-sm text-muted-foreground">
-          ({maxQuantity} available)
-        </span>
+        <span className="text-sm text-muted-foreground">({maxQuantity} available)</span>
       </div>
 
       <Button
