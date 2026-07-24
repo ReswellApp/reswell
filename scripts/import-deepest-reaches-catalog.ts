@@ -1,9 +1,9 @@
 /**
- * Bulk import Channel Islands surfboard models from Thunderbit JSON export.
+ * Bulk import Deepest Reaches surfboard models from Thunderbit JSON export.
  * Imports model name, hero image, and description only (no variants).
  *
  * Usage:
- *   npx tsx scripts/import-channel-islands-catalog.ts [--dry-run] [json-path]
+ *   npx tsx scripts/import-deepest-reaches-catalog.ts [--dry-run] [json-path]
  */
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
@@ -14,13 +14,13 @@ import {
   resolveMirroredBrandCatalogImageUrl,
 } from "@/lib/services/brandCatalogImageStorage"
 import {
-  buildChannelIslandsModelDescription,
-  CHANNEL_ISLANDS_BRAND_SLUG,
-  DEFAULT_CHANNEL_ISLANDS_JSON,
-  loadChannelIslandsJsonRows,
-  normalizeChannelIslandsModelName,
-  resolveChannelIslandsModelImage,
-} from "@/lib/services/channelIslandsSurfboardCatalogJson"
+  buildDeepestReachesModelDescription,
+  DEEPEST_REACHES_BRAND_SLUG,
+  DEFAULT_DEEPEST_REACHES_JSON,
+  loadDeepestReachesJsonRows,
+  normalizeDeepestReachesModelName,
+  resolveDeepestReachesModelImage,
+} from "@/lib/services/deepestReachesSurfboardCatalogJson"
 
 function loadEnvFile(relativePath: string): void {
   const filePath = resolve(process.cwd(), relativePath)
@@ -52,11 +52,11 @@ async function resolveBrandId(supabase: SupabaseClient): Promise<string> {
   const { data, error } = await supabase
     .from("brands")
     .select("id")
-    .eq("slug", CHANNEL_ISLANDS_BRAND_SLUG)
+    .eq("slug", DEEPEST_REACHES_BRAND_SLUG)
     .maybeSingle()
 
   if (error || !data?.id) {
-    throw new Error(`Brand not found for slug "${CHANNEL_ISLANDS_BRAND_SLUG}"`)
+    throw new Error(`Brand not found for slug "${DEEPEST_REACHES_BRAND_SLUG}"`)
   }
   return data.id
 }
@@ -68,13 +68,13 @@ async function importCatalog(
   dryRun: boolean,
 ): Promise<void> {
   const brandId = await resolveBrandId(supabase)
-  const rows = loadChannelIslandsJsonRows(jsonPath)
+  const rows = loadDeepestReachesJsonRows(jsonPath)
 
   console.log(
     JSON.stringify(
       {
         brandId,
-        brandSlug: CHANNEL_ISLANDS_BRAND_SLUG,
+        brandSlug: DEEPEST_REACHES_BRAND_SLUG,
         jsonPath,
         dryRun,
         productCount: rows.length,
@@ -91,8 +91,8 @@ async function importCatalog(
   const imageCache = createBrandCatalogImageMirrorCache()
 
   for (const row of rows) {
-    const modelName = normalizeChannelIslandsModelName(row.productName)
-    const description = buildChannelIslandsModelDescription(row)
+    const modelName = normalizeDeepestReachesModelName(row.productName)
+    const description = buildDeepestReachesModelDescription(row)
 
     if (dryRun) {
       modelsCreated++
@@ -103,9 +103,9 @@ async function importCatalog(
       cache: imageCache,
       supabase,
       supabaseUrl,
-      sourceUrl: resolveChannelIslandsModelImage(row.productImage),
+      sourceUrl: resolveDeepestReachesModelImage(row.productImage),
       kind: "model",
-      logLabel: "import channel islands",
+      logLabel: "import deepest reaches",
     })
 
     const modelResult = await insertBrandModel(supabase, {
@@ -197,7 +197,7 @@ async function main(): Promise<void> {
   const args = process.argv.slice(2)
   const dryRun = args.includes("--dry-run")
   const jsonArg = args.find((a) => !a.startsWith("--"))
-  const jsonPath = jsonArg ? resolve(jsonArg) : DEFAULT_CHANNEL_ISLANDS_JSON
+  const jsonPath = jsonArg ? resolve(jsonArg) : DEFAULT_DEEPEST_REACHES_JSON
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()

@@ -23,8 +23,16 @@ export function toChannelIslandsJsonRow(raw: Record<string, string>): ChannelIsl
   return {
     productName: raw["Product Name"]?.trim() ?? "",
     productDescription: raw["Product Description"]?.trim() ?? "",
-    productImage: raw["Product Image"]?.trim() ?? "",
+    productImage: raw["Product Image"]?.trim() || raw["Product Images"]?.trim() || "",
   }
+}
+
+/** Strip Shopify variant length/fin suffixes from scrape product names. */
+export function normalizeChannelIslandsModelName(raw: string): string {
+  let name = raw.trim()
+  name = name.replace(/^\d+'\d*"?\s+/i, "")
+  name = name.replace(/\s+-\s+(?:FCS\s*II?|FCSII|Futures?|Future\s*Flex|EPS\s*Soft?)\s*$/i, "")
+  return name.trim()
 }
 
 function splitImageUrls(raw: string): string[] {

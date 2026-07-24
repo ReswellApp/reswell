@@ -13,10 +13,8 @@ import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
 import { getSellerBalance } from "@/lib/getSellerBalance"
 import { autoDispatchOrderIfTrackingReady } from "@/lib/services/markOrderShipped"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import {
-  purchaseLabelWithRateId,
-  resolveAddressesForLabel,
-} from "@/lib/services/orderShippingLabel"
+import { resolveAddressesForLabel } from "@/lib/services/orderShippingLabel"
+import { purchaseShipEngineLabelForOrderOnce } from "@/lib/services/purchaseShipEngineLabelForOrderOnce"
 import {
   effectiveBoardShippingMode,
   type PeerListingForShippingQuote,
@@ -553,18 +551,132 @@ export async function createSellerShippingLabelPaymentIntent(params: {
   }
 }
 
+type LabelPurchaseByPaymentIntentRow = {
+  id: string
+  orderId: string
+  labelUrl: string | null
+  trackingNumber: string | null
+  trackingCarrier: string | null
+  createdAt: string
+}
+
 async function findLabelPurchaseByPaymentIntent(
   supabase: SupabaseClient,
   paymentIntentId: string,
-): Promise<{ orderId: string } | null> {
+): Promise<LabelPurchaseByPaymentIntentRow | null> {
   const { data } = await supabase
     .from("order_shipping_labels")
-    .select("order_id")
+    .select("id, order_id, label_pdf_url, tracking_number, tracking_carrier, created_at")
     .eq("stripe_payment_intent_id", paymentIntentId)
     .maybeSingle()
 
-  const orderId = (data as { order_id?: string } | null)?.order_id
-  return orderId ? { orderId } : null
+  const row = data as {
+    id?: string
+    order_id?: string
+    label_pdf_url?: string | null
+    tracking_number?: string | null
+    tracking_carrier?: string | null
+    created_at?: string
+  } | null
+  if (!row?.id || !row.order_id) return null
+  return {
+    id: row.id,
+    orderId: row.order_id,
+    labelUrl: row.label_pdf_url ?? null,
+    trackingNumber: row.tracking_number?.trim() || null,
+    trackingCarrier: row.tracking_carrier?.trim() || null,
+    createdAt: row.created_at ?? "",
+  }
+}
+
+function isUniqueViolation(error: { code?: string; message?: string } | null | undefined): boolean {
+  return (
+    error?.code === "23505" ||
+    Boolean(error?.message?.includes("order_shipping_labels_stripe_pi_uidx"))
+  )
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * Atomically claim the right to call ShipEngine for this PaymentIntent.
+ * Stripe webhook + browser `/finalize` both complete the same PI — without a claim,
+ * both can buy a label before either inserts a row (double ShipEngine charge).
+ */
+async function claimSellerLabelPurchaseForPaymentIntent(params: {
+  serviceSupabase: SupabaseClient
+  orderId: string
+  paymentIntentId: string
+  rateId: string
+}): Promise<
+  | { ok: true; claimed: true; claimId: string }
+  | { ok: true; claimed: false }
+  | { ok: false; error: string; status: number }
+> {
+  const { data, error } = await params.serviceSupabase
+    .from("order_shipping_labels")
+    .insert({
+      order_id: params.orderId,
+      origin: "seller_paid",
+      label_pdf_url: null,
+      label_storage_path: null,
+      tracking_number: null,
+      tracking_carrier: null,
+      shipengine_rate_id: params.rateId,
+      stripe_payment_intent_id: params.paymentIntentId,
+    })
+    .select("id")
+    .maybeSingle()
+
+  if (!error) {
+    const claimId = (data as { id?: string } | null)?.id
+    if (!claimId) {
+      return { ok: false, error: "Could not claim label purchase slot.", status: 500 }
+    }
+    return { ok: true, claimed: true, claimId }
+  }
+
+  if (isUniqueViolation(error)) {
+    return { ok: true, claimed: false }
+  }
+
+  console.error("[sellerShippingLabelCheckout] claim insert:", error)
+  return { ok: false, error: "Could not start label purchase. Try again.", status: 500 }
+}
+
+async function waitForCompletedSellerLabelByPaymentIntent(params: {
+  serviceSupabase: SupabaseClient
+  paymentIntentId: string
+  attempts?: number
+  intervalMs?: number
+}): Promise<LabelPurchaseByPaymentIntentRow | null> {
+  const attempts = params.attempts ?? 40
+  const intervalMs = params.intervalMs ?? 500
+  for (let i = 0; i < attempts; i++) {
+    const row = await findLabelPurchaseByPaymentIntent(
+      params.serviceSupabase,
+      params.paymentIntentId,
+    )
+    if (row?.trackingNumber) return row
+    await sleep(intervalMs)
+  }
+  return null
+}
+
+async function releaseSellerLabelPurchaseClaim(params: {
+  serviceSupabase: SupabaseClient
+  paymentIntentId: string
+}): Promise<void> {
+  const { error } = await params.serviceSupabase
+    .from("order_shipping_labels")
+    .delete()
+    .eq("stripe_payment_intent_id", params.paymentIntentId)
+    .is("tracking_number", null)
+  if (error) {
+    console.error("[sellerShippingLabelCheckout] release claim:", error)
+  }
 }
 
 async function getServiceSupabaseOrError(): Promise<
@@ -586,6 +698,8 @@ async function persistSellerPaidLabelAndTracking(params: {
   rateId: string
   purchased: PurchasedLabelPayload
   stripePaymentIntentId?: string | null
+  /** When set, fill a pre-inserted claim row instead of inserting (card PI path). */
+  claimId?: string | null
 }): Promise<
   | {
       ok: true
@@ -596,38 +710,62 @@ async function persistSellerPaidLabelAndTracking(params: {
     }
   | { ok: false; error: string; status: number }
 > {
-  const { error: labelInsertErr } = await params.serviceSupabase.from("order_shipping_labels").insert({
-    order_id: params.orderId,
-    origin: "seller_paid",
-    label_pdf_url: params.purchased.labelUrl,
-    label_storage_path: null,
-    tracking_number: params.purchased.trackingNumber,
-    tracking_carrier: params.purchased.trackingCarrier,
-    shipengine_rate_id: params.rateId,
-    stripe_payment_intent_id: params.stripePaymentIntentId ?? null,
-  })
+  if (params.claimId) {
+    const { data: updatedClaim, error: claimUpdateErr } = await params.serviceSupabase
+      .from("order_shipping_labels")
+      .update({
+        label_pdf_url: params.purchased.labelUrl,
+        tracking_number: params.purchased.trackingNumber,
+        tracking_carrier: params.purchased.trackingCarrier,
+        shipengine_rate_id: params.rateId,
+      })
+      .eq("id", params.claimId)
+      .is("tracking_number", null)
+      .select("id")
+      .maybeSingle()
 
-  if (labelInsertErr) {
-    const isDuplicate =
-      labelInsertErr.code === "23505" ||
-      labelInsertErr.message?.includes("order_shipping_labels_stripe_pi_uidx")
-    if (isDuplicate && params.stripePaymentIntentId) {
-      const raced = await findLabelPurchaseByPaymentIntent(
-        params.serviceSupabase,
-        params.stripePaymentIntentId,
+    if (claimUpdateErr || !updatedClaim) {
+      console.error(
+        "[sellerShippingLabelCheckout] claim update:",
+        claimUpdateErr?.message ?? "claim missing or already completed",
       )
-      if (raced) {
-        return {
-          ok: true,
-          alreadyProcessed: true,
-          labelUrl: params.purchased.labelUrl,
-          trackingNumber: params.purchased.trackingNumber,
-          orderDisplayNum: formatOrderNumForCustomer(params.orderNum, params.orderId),
-        }
+      return {
+        ok: false,
+        error: "Label purchased but could not be saved. Contact support.",
+        status: 500,
       }
     }
-    console.error("[sellerShippingLabelCheckout] label insert:", labelInsertErr)
-    return { ok: false, error: "Label purchased but could not be saved. Contact support.", status: 500 }
+  } else {
+    const { error: labelInsertErr } = await params.serviceSupabase.from("order_shipping_labels").insert({
+      order_id: params.orderId,
+      origin: "seller_paid",
+      label_pdf_url: params.purchased.labelUrl,
+      label_storage_path: null,
+      tracking_number: params.purchased.trackingNumber,
+      tracking_carrier: params.purchased.trackingCarrier,
+      shipengine_rate_id: params.rateId,
+      stripe_payment_intent_id: params.stripePaymentIntentId ?? null,
+    })
+
+    if (labelInsertErr) {
+      if (isUniqueViolation(labelInsertErr) && params.stripePaymentIntentId) {
+        const raced = await findLabelPurchaseByPaymentIntent(
+          params.serviceSupabase,
+          params.stripePaymentIntentId,
+        )
+        if (raced?.trackingNumber) {
+          return {
+            ok: true,
+            alreadyProcessed: true,
+            labelUrl: raced.labelUrl,
+            trackingNumber: raced.trackingNumber,
+            orderDisplayNum: formatOrderNumForCustomer(params.orderNum, params.orderId),
+          }
+        }
+      }
+      console.error("[sellerShippingLabelCheckout] label insert:", labelInsertErr)
+      return { ok: false, error: "Label purchased but could not be saved. Contact support.", status: 500 }
+    }
   }
 
   const { data: trackedOrder, error: trackErr } = await params.serviceSupabase
@@ -785,20 +923,49 @@ export async function completeSellerShippingLabelFromPaymentIntent(params: {
   const serviceSupabase = serviceClient.client
 
   const existing = await findLabelPurchaseByPaymentIntent(serviceSupabase, params.paymentIntent.id)
-  if (existing) {
+  if (existing?.trackingNumber) {
     const { data: orderRow } = await serviceSupabase
       .from("orders")
-      .select("order_num, tracking_number")
+      .select("order_num")
       .eq("id", existing.orderId)
       .maybeSingle()
-    const o = orderRow as { order_num: string | null; tracking_number: string | null } | null
+    const orderNum = (orderRow as { order_num?: string | null } | null)?.order_num ?? null
     return {
       ok: true,
       orderId: existing.orderId,
       alreadyProcessed: true,
-      labelUrl: null,
-      trackingNumber: o?.tracking_number?.trim() || "",
-      orderDisplayNum: formatOrderNumForCustomer(o?.order_num ?? null, existing.orderId),
+      labelUrl: existing.labelUrl,
+      trackingNumber: existing.trackingNumber,
+      orderDisplayNum: formatOrderNumForCustomer(orderNum, existing.orderId),
+    }
+  }
+
+  if (existing && !existing.trackingNumber) {
+    // Another worker already claimed this PI (webhook vs finalize race) — wait for it.
+    const completed = await waitForCompletedSellerLabelByPaymentIntent({
+      serviceSupabase,
+      paymentIntentId: params.paymentIntent.id,
+    })
+    if (completed?.trackingNumber) {
+      const { data: orderRow } = await serviceSupabase
+        .from("orders")
+        .select("order_num")
+        .eq("id", completed.orderId)
+        .maybeSingle()
+      const orderNum = (orderRow as { order_num?: string | null } | null)?.order_num ?? null
+      return {
+        ok: true,
+        orderId: completed.orderId,
+        alreadyProcessed: true,
+        labelUrl: completed.labelUrl,
+        trackingNumber: completed.trackingNumber,
+        orderDisplayNum: formatOrderNumForCustomer(orderNum, completed.orderId),
+      }
+    }
+    return {
+      ok: false,
+      error: "Label purchase is still in progress. Wait a few seconds and refresh.",
+      status: 409,
     }
   }
 
@@ -809,9 +976,64 @@ export async function completeSellerShippingLabelFromPaymentIntent(params: {
   )
   if (!ctx.ok) return ctx
 
-  const purchased = await purchaseLabelWithRateId(meta.rateId)
+  const claim = await claimSellerLabelPurchaseForPaymentIntent({
+    serviceSupabase,
+    orderId: meta.orderId,
+    paymentIntentId: params.paymentIntent.id,
+    rateId: meta.rateId,
+  })
+  if (!claim.ok) return claim
+
+  if (!claim.claimed) {
+    const completed = await waitForCompletedSellerLabelByPaymentIntent({
+      serviceSupabase,
+      paymentIntentId: params.paymentIntent.id,
+    })
+    if (completed?.trackingNumber) {
+      return {
+        ok: true,
+        orderId: completed.orderId,
+        alreadyProcessed: true,
+        labelUrl: completed.labelUrl,
+        trackingNumber: completed.trackingNumber,
+        orderDisplayNum: formatOrderNumForCustomer(ctx.order.order_num, completed.orderId),
+      }
+    }
+    return {
+      ok: false,
+      error: "Label purchase is still in progress. Wait a few seconds and refresh.",
+      status: 409,
+    }
+  }
+
+  const purchased = await purchaseShipEngineLabelForOrderOnce({
+    supabase: serviceSupabase,
+    orderId: meta.orderId,
+    ownerKey: `stripe_pi:${params.paymentIntent.id}`,
+    rateId: meta.rateId,
+  })
   if (!purchased.ok) {
+    await releaseSellerLabelPurchaseClaim({
+      serviceSupabase,
+      paymentIntentId: params.paymentIntent.id,
+    })
     return { ok: false, error: purchased.error, status: purchased.status }
+  }
+
+  // Another path already bought/saved this order's label — do not write a second tracked row.
+  if (purchased.alreadyPurchased) {
+    await releaseSellerLabelPurchaseClaim({
+      serviceSupabase,
+      paymentIntentId: params.paymentIntent.id,
+    })
+    return {
+      ok: true,
+      orderId: meta.orderId,
+      alreadyProcessed: true,
+      labelUrl: purchased.result.labelUrl,
+      trackingNumber: purchased.result.trackingNumber,
+      orderDisplayNum: formatOrderNumForCustomer(ctx.order.order_num, meta.orderId),
+    }
   }
 
   const saved = await persistSellerPaidLabelAndTracking({
@@ -822,6 +1044,7 @@ export async function completeSellerShippingLabelFromPaymentIntent(params: {
     rateId: meta.rateId,
     purchased: purchased.result,
     stripePaymentIntentId: params.paymentIntent.id,
+    claimId: claim.claimId,
   })
   if (!saved.ok) return saved
 
@@ -1090,24 +1313,47 @@ export async function purchaseSellerShippingLabelWithWallet(params: {
     }
   }
 
-  const purchased = await purchaseLabelWithRateId(rateResolved.rate.rate_id)
-  if (!purchased.ok) {
-    if (deducted && breakdown.walletAppliedUsd > 0) {
-      try {
-        await refundWalletInternalSpend(writeDb, params.sellerId, breakdown.walletAppliedUsd)
-        await writeDb
-          .from("wallet_transactions")
-          .delete()
-          .eq("reference_type", SELLER_SHIPPING_LABEL_WALLET_REFERENCE_TYPE)
-          .eq("reference_id", params.orderId)
-      } catch (refundErr) {
-        console.error(
-          "[purchaseSellerShippingLabelWithWallet] CRITICAL refund after label purchase fail",
-          refundErr,
-        )
-      }
+  const refundWalletDebit = async (reason: string) => {
+    if (!deducted || breakdown.walletAppliedUsd <= 0) return
+    try {
+      await refundWalletInternalSpend(writeDb, params.sellerId, breakdown.walletAppliedUsd)
+      await writeDb
+        .from("wallet_transactions")
+        .delete()
+        .eq("reference_type", SELLER_SHIPPING_LABEL_WALLET_REFERENCE_TYPE)
+        .eq("reference_id", params.orderId)
+    } catch (refundErr) {
+      console.error(`[purchaseSellerShippingLabelWithWallet] CRITICAL refund after ${reason}`, refundErr)
     }
+  }
+
+  const purchased = await purchaseShipEngineLabelForOrderOnce({
+    supabase: serviceSupabase,
+    orderId: params.orderId,
+    ownerKey: `wallet:${params.orderId}`,
+    rateId: rateResolved.rate.rate_id,
+  })
+  if (!purchased.ok) {
+    await refundWalletDebit("label purchase fail")
     return { ok: false, error: purchased.error, status: purchased.status }
+  }
+
+  if (purchased.alreadyPurchased) {
+    await refundWalletDebit("duplicate label already purchased")
+    const walletSummary = await getSellerBalance(params.supabase, params.sellerId)
+    return {
+      ok: true,
+      labelUrl: purchased.result.labelUrl,
+      trackingNumber: purchased.result.trackingNumber,
+      orderDisplayNum,
+      alreadyProcessed: true,
+      amountUsd: labelCostUsd,
+      walletBalanceAfter: walletSummary.spendableBucks,
+      buyerPrepaidAppliedUsd: breakdown.buyerPrepaidAppliedUsd,
+      walletAppliedUsd: 0,
+      shippingSurplusCreditUsd: 0,
+      cardChargeUsd: 0,
+    }
   }
 
   const saved = await persistSellerPaidLabelAndTracking({
@@ -1120,21 +1366,7 @@ export async function purchaseSellerShippingLabelWithWallet(params: {
   })
 
   if (!saved.ok) {
-    if (deducted && breakdown.walletAppliedUsd > 0) {
-      try {
-        await refundWalletInternalSpend(writeDb, params.sellerId, breakdown.walletAppliedUsd)
-        await writeDb
-          .from("wallet_transactions")
-          .delete()
-          .eq("reference_type", SELLER_SHIPPING_LABEL_WALLET_REFERENCE_TYPE)
-          .eq("reference_id", params.orderId)
-      } catch (refundErr) {
-        console.error(
-          "[purchaseSellerShippingLabelWithWallet] CRITICAL refund after label save fail",
-          refundErr,
-        )
-      }
-    }
+    await refundWalletDebit("label save fail")
     return saved
   }
 

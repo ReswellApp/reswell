@@ -21,7 +21,9 @@ import {
 } from "@/lib/shipping/rate-address"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import {
+  LABEL_PARCEL_MIN_WEIGHT_LB,
   SURFBOARD_LABEL_LIMITS_ERROR,
+  validateLabelParcelEntry,
   validateSurfboardLabelParcelLimits,
 } from "@/lib/shipping/surfboard-label-limits"
 import {
@@ -29,7 +31,6 @@ import {
   validateSurfboardShippingTierParcelLimits,
   type SurfboardShippingTierId,
 } from "@/lib/surfboard-shipping-tiers"
-import { shippingLabelParcelSchema } from "@/lib/validations/order-shipping-label"
 import { logPackBandLabelTelemetry } from "@/lib/shipping/pack-band-telemetry"
 
 export type { ShipEngineRateOption }
@@ -53,7 +54,7 @@ export function resolveOrderLabelParcelFromListing(
   if (!r.ok) {
     return { ok: false, error: r.error }
   }
-  const weightLb = Math.max(1, r.weightOz / 16)
+  const weightLb = Math.max(LABEL_PARCEL_MIN_WEIGHT_LB, r.weightOz / 16)
   const tierId = resolveSurfboardShippingTierIdFromListing(listing)
   const dims = {
     lengthIn: r.lengthIn,
@@ -67,26 +68,19 @@ export function resolveOrderLabelParcelFromListing(
     if (!tierCheck.ok) {
       return tierCheck
     }
-  }
-
-  if (!tierId || surfboardShippingTierUsesUpsParcelLimits(tierId)) {
-    const limitCheck = validateSurfboardLabelParcelLimits(dims)
-    if (!limitCheck.ok) {
-      return limitCheck
+    // Mid/long freight: tier ceilings only. Shortboard / UPS parcel: full UPS caps.
+    if (surfboardShippingTierUsesUpsParcelLimits(tierId)) {
+      const limitCheck = validateSurfboardLabelParcelLimits(dims)
+      if (!limitCheck.ok) {
+        return limitCheck
+      }
     }
-
-    const checked = shippingLabelParcelSchema.safeParse({
-      length_in: r.lengthIn,
-      width_in: r.widthIn,
-      height_in: r.heightIn,
-      weight_lb: weightLb,
-    })
-    if (!checked.success) {
-      const limitIssue = checked.error.issues.find(
-        (issue) => issue.message === SURFBOARD_LABEL_LIMITS_ERROR,
-      )
-      if (limitIssue) {
-        return { ok: false, error: SURFBOARD_LABEL_LIMITS_ERROR }
+  } else {
+    // Non-surfboard / untiered: generalized manual parcel entry limits (main).
+    const limitCheck = validateLabelParcelEntry(dims)
+    if (!limitCheck.ok) {
+      if (limitCheck.error === SURFBOARD_LABEL_LIMITS_ERROR) {
+        return limitCheck
       }
       return {
         ok: false,
@@ -141,6 +135,10 @@ export async function fetchRatesForSurfboardOrder(params: {
   return fetchShipEngineRatesForSurfboard(params)
 }
 
+/**
+ * Low-level ShipEngine buy. For marketplace orders always use
+ * {@link purchaseShipEngineLabelForOrderOnce} so an order cannot be charged twice.
+ */
 export async function purchaseLabelWithRateId(rateId: string) {
   return purchaseShipEngineLabel(rateId)
 }

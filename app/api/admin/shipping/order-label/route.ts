@@ -18,11 +18,11 @@ import {
 } from "@/lib/services/peerListingShippingQuote"
 import {
   fetchRatesForSurfboardOrder,
-  purchaseLabelWithRateId,
   resolveAddressesForLabel,
   resolveOrderLabelParcelFromListing,
   SELLER_LABEL_REQUIRES_PACKED_PARCEL_ERROR,
 } from "@/lib/services/orderShippingLabel"
+import { purchaseShipEngineLabelForOrderOnce } from "@/lib/services/purchaseShipEngineLabelForOrderOnce"
 import { getCheapestReswellRateForListing } from "@/lib/services/reswellListingShippingRate"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import {
@@ -329,9 +329,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No purchasable rate id from ShipEngine." }, { status: 422 })
     }
 
-    const purchased = await purchaseLabelWithRateId(rateId)
+    const purchased = await purchaseShipEngineLabelForOrderOnce({
+      supabase,
+      orderId: o.id,
+      ownerKey: `admin_checkout_lane:${o.id}`,
+      rateId,
+    })
     if (!purchased.ok) {
       return NextResponse.json({ error: purchased.error }, { status: purchased.status })
+    }
+
+    if (purchased.alreadyPurchased) {
+      return NextResponse.json({
+        data: {
+          labelUrl: purchased.result.labelUrl,
+          trackingNumber: purchased.result.trackingNumber,
+          trackingCarrier: purchased.result.trackingCarrier,
+          orderDisplayNum: formatOrderNumForCustomer(o.order_num, o.id),
+          liveQuoteUsd: quoted.cheapest.totalAmount,
+          carrierLabel: quoted.cheapest.carrierName,
+          serviceName: quoted.cheapest.serviceName,
+          alreadyProcessed: true,
+        },
+      })
     }
 
     const listingTitle =
@@ -503,21 +523,28 @@ export async function POST(request: NextRequest) {
     })
   }
 
-  const purchased = await purchaseLabelWithRateId(body.rate_id)
+  const purchased = await purchaseShipEngineLabelForOrderOnce({
+    supabase,
+    orderId: o.id,
+    ownerKey: `admin_purchase:${o.id}`,
+    rateId: body.rate_id,
+  })
   if (!purchased.ok) {
     return NextResponse.json({ error: purchased.error }, { status: purchased.status })
   }
 
-  const marked = await markOrderShippedWithTrackingAsAdmin(
-    supabase,
-    { id: o.id, buyer_id: o.buyer_id, listing_id: o.listing_id },
-    o.seller_id,
-    purchased.result.trackingNumber,
-    purchased.result.trackingCarrier,
-  )
+  if (!purchased.alreadyPurchased) {
+    const marked = await markOrderShippedWithTrackingAsAdmin(
+      supabase,
+      { id: o.id, buyer_id: o.buyer_id, listing_id: o.listing_id },
+      o.seller_id,
+      purchased.result.trackingNumber,
+      purchased.result.trackingCarrier,
+    )
 
-  if (!marked.ok) {
-    return NextResponse.json({ error: marked.error }, { status: marked.status })
+    if (!marked.ok) {
+      return NextResponse.json({ error: marked.error }, { status: marked.status })
+    }
   }
 
   return NextResponse.json({
@@ -526,6 +553,7 @@ export async function POST(request: NextRequest) {
       trackingNumber: purchased.result.trackingNumber,
       trackingCarrier: purchased.result.trackingCarrier,
       orderDisplayNum: formatOrderNumForCustomer(o.order_num, o.id),
+      alreadyProcessed: purchased.alreadyPurchased,
     },
   })
 }
