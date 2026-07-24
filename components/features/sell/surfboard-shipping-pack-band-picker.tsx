@@ -96,28 +96,25 @@ export function SurfboardShippingPackBandPicker({
         {SURFBOARD_SHIPPING_PACK_BAND_IDS.map((bandId) => {
           const band = getSurfboardShippingPackBand(bandId)
           const selected = value === bandId
-          const tooBig = Boolean(
-            boardLength.trim() &&
-              surfboardShippingPackBandBoardSpecsError({
-                bandId,
-                boardLength,
-                boardWidthInches,
-              }),
-          )
+          const fitWarning =
+            boardLength.trim()
+              ? surfboardShippingPackBandBoardSpecsError({
+                  bandId,
+                  boardLength,
+                  boardWidthInches,
+                })
+              : null
           const hints = surfboardShippingPackBandSurchargeHints(bandId)
           return (
             <div
               key={bandId}
               className={cn(
                 "relative block rounded-xl border transition-colors",
-                tooBig
-                  ? "border-border/60 opacity-55"
-                  : null,
-                selected && !tooBig
-                  ? "border-primary bg-primary/5"
-                  : !tooBig
-                    ? "border-border hover:border-primary/35"
-                    : null,
+                selected
+                  ? fitWarning
+                    ? "border-destructive/50 bg-destructive/5"
+                    : "border-primary bg-primary/5"
+                  : "border-border hover:border-primary/35",
               )}
             >
               {onOpenGuide ? (
@@ -130,16 +127,12 @@ export function SurfboardShippingPackBandPicker({
               ) : null}
               <label
                 htmlFor={`sell-ship-pack-band-${bandId}`}
-                className={cn(
-                  "block",
-                  tooBig ? "cursor-not-allowed" : "cursor-pointer",
-                )}
+                className="block cursor-pointer"
               >
                 <div className="flex gap-3 p-4 sm:p-5 pr-10">
                   <RadioGroupItem
                     value={bandId}
                     id={`sell-ship-pack-band-${bandId}`}
-                    disabled={tooBig}
                     className="mt-0.5 shrink-0"
                   />
                   <div className="min-w-0 flex-1 space-y-1">
@@ -150,7 +143,11 @@ export function SurfboardShippingPackBandPicker({
                           Recommended
                         </span>
                       ) : null}
-                      {!hints.largePackageLikely ? (
+                      {fitWarning ? (
+                        <span className="rounded-md bg-destructive/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-destructive">
+                          May not fit
+                        </span>
+                      ) : !hints.largePackageLikely ? (
                         <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
                           Lower UPS fees
                         </span>

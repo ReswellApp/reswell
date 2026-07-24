@@ -537,6 +537,7 @@ export function useListingPhotoUpload({
     [addListingPhotoFiles],
   )
 
+  // Whole-tile drag: press-and-hold on touch so a normal swipe still scrolls the page.
   const photoDragSensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: { distance: 8 },

@@ -155,10 +155,13 @@ function SellListingPhotoTile({
   return (
     <div
       ref={sortable.setNodeRef}
-      style={sortable.style}
+      style={{
+        ...sortable.style,
+        // Inline touchAction — Tailwind utilities are unreliable with dnd-kit on iOS.
+        touchAction: sortable.isDragging ? "none" : "pan-y",
+      }}
       className={cn(
-        "relative aspect-square overflow-hidden rounded-lg border border-transparent bg-muted flex flex-col",
-        sortable.isDragging ? "touch-none" : "touch-pan-y",
+        "relative aspect-square overflow-hidden rounded-lg border border-transparent bg-muted flex flex-col select-none",
         sortable.isDragging && "z-[60] opacity-70 shadow-lg ring-2 ring-primary/40 scale-[1.02]",
         !isFailure && !skeletonVisible && "cursor-grab active:cursor-grabbing",
       )}
@@ -173,8 +176,9 @@ function SellListingPhotoTile({
             src={thumbSrc}
             alt={`Photo ${index + 1}`}
             fill
+            draggable={false}
             className={cn(
-              "object-cover object-center transition-opacity duration-500 ease-out motion-reduce:duration-150",
+              "pointer-events-none object-cover object-center transition-opacity duration-500 ease-out motion-reduce:duration-150 [-webkit-touch-callout:none]",
               thumbLoaded ? "opacity-100" : "opacity-0",
             )}
             unoptimized
@@ -240,7 +244,7 @@ function SellListingPhotoTile({
                 {photoReady ? "Loading thumbnail preview" : "Processing photo"}
               </span>
             ) : (
-              <div className="absolute bottom-6 left-1 flex items-center gap-1 z-[5] pointer-events-none">
+              <div className="absolute bottom-1 left-1 z-[5] flex items-center gap-1 pointer-events-none">
                 {index === 0 ? (
                   <span className="text-[10px] bg-primary text-primary-foreground px-1 rounded">
                     Main
@@ -288,10 +292,11 @@ export function SellListingPhotoGrid({
   onRetry,
   onRotate180,
   photoDragSensors: externalSensors,
-  photoDescription = "Drop images from Finder to add them. Drag tiles to reorder — the first is your main image.",
+  photoDescription = "Add photos, then drag to reorder — the first is your main image.",
 }: SellListingPhotoGridProps) {
   const internalSensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    // Press-and-hold so a normal swipe still scrolls the page over the photo grid.
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
@@ -323,7 +328,7 @@ export function SellListingPhotoGrid({
           </div>
         ) : null}
         <DndContext sensors={photoDragSensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-          <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
             <SortableContext items={images.map((im) => im.clientId)} strategy={rectSortingStrategy}>
               {images.map((image, index) => (
                 <SellListingPhotoSortableTile

@@ -643,11 +643,13 @@ function SellListingPhotoTile({
   return (
     <div
       ref={sortable.setNodeRef}
-      style={sortable.style}
+      style={{
+        ...sortable.style,
+        // Inline touchAction — Tailwind utilities are unreliable with dnd-kit on iOS.
+        touchAction: sortable.isDragging ? "none" : "pan-y",
+      }}
       className={cn(
-        "relative aspect-square rounded-lg overflow-hidden bg-muted flex flex-col border border-transparent",
-        // Allow normal touch scrolling over tiles; only suppress it once a drag is actually active.
-        sortable.isDragging ? "touch-none" : "touch-pan-y",
+        "relative aspect-square rounded-lg overflow-hidden bg-muted flex flex-col border border-transparent select-none",
         sortable.isDragging && "z-[60] opacity-70 shadow-lg ring-2 ring-primary/40 scale-[1.02]",
         !isFailure && !skeletonVisible && "cursor-grab active:cursor-grabbing",
       )}
@@ -662,8 +664,9 @@ function SellListingPhotoTile({
             src={thumbSrc}
             alt={`Photo ${index + 1}`}
             fill
+            draggable={false}
             className={cn(
-              "object-cover object-center transition-opacity duration-500 ease-out motion-reduce:duration-150",
+              "pointer-events-none object-cover object-center transition-opacity duration-500 ease-out motion-reduce:duration-150 [-webkit-touch-callout:none]",
               thumbLoaded ? "opacity-100" : "opacity-0",
             )}
             unoptimized
@@ -727,15 +730,13 @@ function SellListingPhotoTile({
                 {photoReady ? "Loading thumbnail preview" : "Processing photo"}
               </span>
             ) : (
-              <>
-                <div className="absolute bottom-6 left-1 flex items-center gap-1 z-[5] pointer-events-none">
-                  {index === 0 ? (
-                    <span className="text-[10px] bg-primary text-primary-foreground px-1 rounded">
-                      Main
-                    </span>
-                  ) : null}
-                </div>
-              </>
+              <div className="absolute bottom-1 left-1 z-[5] flex items-center gap-1 pointer-events-none">
+                {index === 0 ? (
+                  <span className="text-[10px] bg-primary text-primary-foreground px-1 rounded">
+                    Main
+                  </span>
+                ) : null}
+              </div>
             )}
           </>
         ) : null}
@@ -2471,9 +2472,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     [],
   )
 
-  // Mouse drags after an 8px move; touch reorder needs a short press-and-hold so a normal swipe
-  // scrolls the page (a plain PointerSensor + `touch-action: none` made the photo grid unscrollable
-  // on mobile). The hold tolerance lets the gesture cancel into a scroll if the finger moves first.
+  // Whole-tile drag: mouse after a short move; touch uses press-and-hold so page scroll still works.
   const photoDragSensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: { distance: 8 },
@@ -3516,7 +3515,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                   <div className="space-y-2">
                     <h3 className="text-sm font-semibold text-foreground">Photos</h3>
                     <p className="text-xs text-muted-foreground/45">
-                      Drop images from Finder to add them. Drag tiles to reorder — the first is your main image.
+                      Add photos, then drag to reorder — the first is your main image.
                     </p>
                   <Label className="sr-only">Listing photos</Label>
                   <div
@@ -3544,7 +3543,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                     collisionDetection={closestCenter}
                     onDragEnd={handlePhotosDragEnd}
                   >
-                  <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
                     <SortableContext
                       items={images.map((im) => im.clientId)}
                       strategy={rectSortingStrategy}
