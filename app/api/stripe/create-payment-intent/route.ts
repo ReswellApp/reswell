@@ -12,6 +12,7 @@ import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAc
 import { validateAcceptedOfferForPaymentIntent } from "@/lib/services/acceptedOfferCheckout"
 import { dedupeIdsPreserveOrder } from "@/lib/stripe-marketplace-metadata"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
+import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { isReswellShopListing } from "@/lib/reswell-shop"
 import {
@@ -137,7 +138,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Listing not found or not available" }, { status: 404 })
   }
 
-  if (listingsOrdered.some((l) => l.user_id === user.id)) {
+  if (listingsOrdered.some((l) => isBlockedOwnListingPurchase(l, user.id))) {
     return NextResponse.json({ error: "Cannot purchase your own listing" }, { status: 400 })
   }
 

@@ -23,6 +23,7 @@ import { sendPostPurchaseReviewInvite } from "@/lib/services/orderReviewInvite"
 import { notifySellerOrderCheckoutKlaviyo } from "@/lib/services/notifySellerOrderCheckoutKlaviyo"
 import { evaluateUserPurchase } from "@/lib/services/accountRestrictions"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
+import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Listing not found or not available" }, { status: 404 })
   }
 
-  if (listing.user_id === user.id) {
+  if (isBlockedOwnListingPurchase(listing, user.id)) {
     return NextResponse.json({ error: "Cannot purchase your own listing" }, { status: 400 })
   }
 

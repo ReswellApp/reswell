@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 import { resolveMixedCheckoutSellerId } from "@/lib/mixed-checkout"
 import type { ProfileAddressRow } from "@/lib/profile-address"
@@ -138,7 +139,7 @@ export async function POST(request: Request) {
 
   listingRows = await applyAcceptedOfferToPeerCheckoutListings(supabase, user.id, listingRows)
 
-  if (listingRows.some((l) => l.user_id === user.id)) {
+  if (listingRows.some((l) => isBlockedOwnListingPurchase(l, user.id))) {
     return NextResponse.json(
       { error: "Cannot quote your own listing" },
       { status: 400, headers: JSON_NO_STORE_HEADERS },

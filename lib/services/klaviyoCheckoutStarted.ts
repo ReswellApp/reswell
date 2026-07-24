@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
+import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import {
   fetchCheckoutCartListingsForSeller,
 } from "@/lib/db/checkout-cart-bundle"
@@ -71,7 +72,14 @@ export async function recordKlaviyoCheckoutStarted(
       return { ok: true, skipped: true, skipReason: "invalid_cart_seller" }
     }
 
-    if (checkoutListings.some((listing) => listing.user_id === user.id)) {
+    if (
+      checkoutListings.some((listing) =>
+        isBlockedOwnListingPurchase(
+          { user_id: listing.user_id ?? "", section: listing.section },
+          user.id,
+        ),
+      )
+    ) {
       return { ok: true, skipped: true, skipReason: "own_listing" }
     }
 

@@ -7,6 +7,7 @@ import { CheckoutAccountRequired } from "@/components/checkout-account-required"
 import { CheckoutClient } from "@/components/checkout-client"
 import type { CheckoutCopy, CheckoutListing } from "@/components/checkout-types"
 import { findListingByParam } from "@/lib/listing-query"
+import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { isReswellShopListing } from "@/lib/reswell-shop"
 import { resolveMixedCheckoutSellerId } from "@/lib/mixed-checkout"
@@ -227,7 +228,7 @@ export default async function CheckoutPage(props: {
       redirect("/cart")
     }
 
-    if (checkoutListings.some((l) => l.user_id === user.id)) {
+    if (checkoutListings.some((l) => isBlockedOwnListingPurchase(l, user.id))) {
       redirect("/cart")
     }
 
@@ -329,7 +330,7 @@ export default async function CheckoutPage(props: {
 
   const checkoutReturnPath = `/checkout?listing=${encodeURIComponent(listing.slug?.trim() ? listing.slug : listing.id)}`
 
-  if (user && listing.user_id === user.id) {
+  if (user && isBlockedOwnListingPurchase(listing, user.id)) {
     redirect(listingDetailHref(listing))
   }
 

@@ -8,7 +8,7 @@ import { trackMetaAddToCartServerEvent } from "@/lib/meta/track-add-to-cart-serv
 import type { MetaBrowserSignalsInput } from "@/lib/validations/metaBrowserSignals"
 import type { PeerListingCartFields } from "@/lib/peer-listing-cart"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
-import { isCartEligibleSection } from "@/lib/cart-eligibility"
+import { isBlockedOwnListingPurchase, isCartEligibleSection } from "@/lib/cart-eligibility"
 import { isReswellShopListing } from "@/lib/reswell-shop"
 import { isListingPurchasable } from "@/lib/listing-public-visibility"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
@@ -82,7 +82,7 @@ async function assertListingEligibleForCart(
   if (!lp && !sa) {
     return { ok: false, message: "This listing has no checkout option" }
   }
-  if (listing.user_id === buyerId) {
+  if (isBlockedOwnListingPurchase(listing, buyerId)) {
     return { ok: false, message: "You cannot add your own listing" }
   }
   if (isReswellShopListing(listing.section)) {
