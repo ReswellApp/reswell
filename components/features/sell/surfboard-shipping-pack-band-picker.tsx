@@ -13,6 +13,8 @@ import {
 } from "@/lib/surfboard-shipping-pack-bands"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { ReswellShippingGuideTrigger } from "@/components/features/sell/reswell-shipping-guide-trigger"
+import type { ReswellShippingGuideTopicId } from "@/lib/reswell-shipping-guide"
 
 export interface SurfboardShippingPackBandPickerProps {
   className?: string
@@ -22,6 +24,8 @@ export interface SurfboardShippingPackBandPickerProps {
   boardWidthInches?: string
   ceilingConfirmed?: boolean
   onCeilingConfirmedChange?: (confirmed: boolean) => void
+  /** Opens the Reswell shipping guide to a topic. */
+  onOpenGuide?: (topicId: ReswellShippingGuideTopicId) => void
 }
 
 export function SurfboardShippingPackBandPicker({
@@ -32,6 +36,7 @@ export function SurfboardShippingPackBandPicker({
   boardWidthInches = "",
   ceilingConfirmed = false,
   onCeilingConfirmedChange,
+  onOpenGuide,
 }: SurfboardShippingPackBandPickerProps) {
   const recommended = useMemo(
     () =>
@@ -54,7 +59,17 @@ export function SurfboardShippingPackBandPicker({
   return (
     <div className={cn("space-y-4", className)}>
       <div>
-        <p className="text-sm font-semibold text-foreground">Shortboard pack size</p>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <p className="text-sm font-semibold text-foreground">Shortboard pack size</p>
+          {onOpenGuide ? (
+            <ReswellShippingGuideTrigger
+              topicId="shortboard"
+              onOpen={onOpenGuide}
+              variant="link"
+              label="Compare pack sizes"
+            />
+          ) : null}
+        </div>
         <p className="mt-1 text-sm text-muted-foreground/45 leading-relaxed">
           Smaller packs often cost buyers much less — UPS large-package fees kick in around 130″ DIM.
           Pick the smallest size your packed board will fit.
@@ -91,14 +106,13 @@ export function SurfboardShippingPackBandPicker({
           )
           const hints = surfboardShippingPackBandSurchargeHints(bandId)
           return (
-            <label
+            <div
               key={bandId}
-              htmlFor={`sell-ship-pack-band-${bandId}`}
               className={cn(
-                "block rounded-xl border transition-colors",
+                "relative block rounded-xl border transition-colors",
                 tooBig
-                  ? "cursor-not-allowed border-border/60 opacity-55"
-                  : "cursor-pointer",
+                  ? "border-border/60 opacity-55"
+                  : null,
                 selected && !tooBig
                   ? "border-primary bg-primary/5"
                   : !tooBig
@@ -106,38 +120,54 @@ export function SurfboardShippingPackBandPicker({
                     : null,
               )}
             >
-              <div className="flex gap-3 p-4 sm:p-5">
-                <RadioGroupItem
-                  value={bandId}
-                  id={`sell-ship-pack-band-${bandId}`}
-                  disabled={tooBig}
-                  className="mt-0.5 shrink-0"
+              {onOpenGuide ? (
+                <ReswellShippingGuideTrigger
+                  topicId={bandId}
+                  onOpen={onOpenGuide}
+                  label={`Learn more about ${band.label} pack size`}
+                  className="absolute right-2 top-2 z-[1]"
                 />
-                <div className="min-w-0 flex-1 space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-semibold text-foreground">{band.label}</p>
-                    {recommended === bandId ? (
-                      <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
-                        Recommended
-                      </span>
-                    ) : null}
-                    {!hints.largePackageLikely ? (
-                      <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
-                        Lower UPS fees
-                      </span>
-                    ) : (
-                      <span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800 dark:text-amber-300">
-                        Large package likely
-                      </span>
-                    )}
+              ) : null}
+              <label
+                htmlFor={`sell-ship-pack-band-${bandId}`}
+                className={cn(
+                  "block",
+                  tooBig ? "cursor-not-allowed" : "cursor-pointer",
+                )}
+              >
+                <div className="flex gap-3 p-4 sm:p-5 pr-10">
+                  <RadioGroupItem
+                    value={bandId}
+                    id={`sell-ship-pack-band-${bandId}`}
+                    disabled={tooBig}
+                    className="mt-0.5 shrink-0"
+                  />
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-semibold text-foreground">{band.label}</p>
+                      {recommended === bandId ? (
+                        <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
+                          Recommended
+                        </span>
+                      ) : null}
+                      {!hints.largePackageLikely ? (
+                        <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 dark:text-emerald-400">
+                          Lower UPS fees
+                        </span>
+                      ) : (
+                        <span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800 dark:text-amber-300">
+                          Large package likely
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-foreground/90">{band.summary}</p>
+                    <p className="text-sm tabular-nums text-muted-foreground/70">
+                      {surfboardShippingPackBandSummaryLine(bandId)}
+                    </p>
                   </div>
-                  <p className="text-sm text-foreground/90">{band.summary}</p>
-                  <p className="text-sm tabular-nums text-muted-foreground/70">
-                    {surfboardShippingPackBandSummaryLine(bandId)}
-                  </p>
                 </div>
-              </div>
-            </label>
+              </label>
+            </div>
           )
         })}
       </RadioGroup>

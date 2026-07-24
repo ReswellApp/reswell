@@ -209,6 +209,9 @@ import {
 } from "@/components/features/sell/sell-section-nav"
 import { computeSellSectionCompletion } from "@/lib/sell-section-completion"
 import { SurfboardShippingEstimatorDialog } from "@/components/features/sell/surfboard-shipping-estimator-dialog"
+import { ReswellShippingGuideDialog } from "@/components/features/sell/reswell-shipping-guide-dialog"
+import { ReswellShippingGuideTrigger } from "@/components/features/sell/reswell-shipping-guide-trigger"
+import type { ReswellShippingGuideTopicId } from "@/lib/reswell-shipping-guide"
 import {
   boardCategoryMap,
   boardTypeFromCategoryId,
@@ -1026,6 +1029,14 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     removedImageIdsRef.current = removedImageIds
   }, [removedImageIds])
   const [shippingEstimatorOpen, setShippingEstimatorOpen] = useState(false)
+  const [reswellGuideOpen, setReswellGuideOpen] = useState(false)
+  const [reswellGuideTopic, setReswellGuideTopic] =
+    useState<ReswellShippingGuideTopicId>("overview")
+
+  const openReswellShippingGuide = (topicId: ReswellShippingGuideTopicId) => {
+    setReswellGuideTopic(topicId)
+    setReswellGuideOpen(true)
+  }
   const [listingCatalogRequestVariant, setListingCatalogRequestVariant] =
     useState<ListingCatalogRequestVariant | null>(null)
   const [formData, setFormData] = useState(createInitialSellFormData)
@@ -4168,17 +4179,25 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                   </Badge>
                                 </div>
                                 {formData.boardShippingCostMode === "reswell" ? (
-                                  <p className="text-sm text-muted-foreground/45 leading-relaxed">
-                                    Buyers pay the live UPS/FedEx rate at checkout. After they order,
-                                    we email you the shipping label.{" "}
-                                    <Link
-                                      href="/terms"
-                                      className="text-foreground underline underline-offset-2 hover:text-primary"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      View terms
-                                    </Link>
-                                  </p>
+                                  <div className="space-y-2">
+                                    <p className="text-sm text-muted-foreground/45 leading-relaxed">
+                                      Buyers pay the live UPS/FedEx rate at checkout. After they order,
+                                      we email you the shipping label.{" "}
+                                      <Link
+                                        href="/terms"
+                                        className="text-foreground underline underline-offset-2 hover:text-primary"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        View terms
+                                      </Link>
+                                    </p>
+                                    <ReswellShippingGuideTrigger
+                                      topicId="overview"
+                                      onOpen={openReswellShippingGuide}
+                                      variant="link"
+                                      label="Learn how Reswell shipping works"
+                                    />
+                                  </div>
                                 ) : null}
                               </div>
                             </label>
@@ -4238,6 +4257,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                   boardLength={formData.boardLength}
                                   boardWidthInches={formData.boardWidthInches}
                                   category={formData.category}
+                                  onOpenGuide={openReswellShippingGuide}
                                   ceilingConfirmed={
                                     formData.surfboardShippingTier === "shortboard"
                                       ? undefined
@@ -4277,6 +4297,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                     value={formData.surfboardShippingPackBand}
                                     boardLength={formData.boardLength}
                                     boardWidthInches={formData.boardWidthInches}
+                                    onOpenGuide={openReswellShippingGuide}
                                     ceilingConfirmed={
                                       formData.surfboardShippingPackBandCeilingConfirmed
                                     }
@@ -4547,6 +4568,11 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           boardVolumeL={formData.boardVolumeL}
           locationLat={formData.locationLat}
           locationLng={formData.locationLng}
+        />
+        <ReswellShippingGuideDialog
+          open={reswellGuideOpen}
+          onOpenChange={setReswellGuideOpen}
+          topicId={reswellGuideTopic}
         />
       </main>
   )

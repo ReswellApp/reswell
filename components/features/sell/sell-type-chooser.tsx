@@ -31,7 +31,7 @@ const SELL_TYPE_OPTIONS: readonly SellTypeOption[] = [
     href: "/sell/wetsuits",
     title: "Wetsuits",
     description: "List wetsuits for the marketplace.",
-    imageSrc: null,
+    imageSrc: "/images/sell/wetsuits.jpg",
     imageAlt: "Wetsuit",
   },
   {

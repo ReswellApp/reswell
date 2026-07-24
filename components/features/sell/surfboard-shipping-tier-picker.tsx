@@ -16,6 +16,8 @@ import {
 } from "@/lib/surfboard-shipping-tiers"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { ReswellShippingGuideTrigger } from "@/components/features/sell/reswell-shipping-guide-trigger"
+import type { ReswellShippingGuideTopicId } from "@/lib/reswell-shipping-guide"
 
 export interface SurfboardShippingTierPickerProps {
   className?: string
@@ -29,6 +31,8 @@ export interface SurfboardShippingTierPickerProps {
   /** Seller must confirm the packed board fits the selected ceiling. */
   ceilingConfirmed?: boolean
   onCeilingConfirmedChange?: (confirmed: boolean) => void
+  /** Opens the Reswell shipping guide to a topic. */
+  onOpenGuide?: (topicId: ReswellShippingGuideTopicId) => void
 }
 
 function largerTiersFrom(
@@ -54,6 +58,7 @@ export function SurfboardShippingTierPicker({
   category = "",
   ceilingConfirmed = false,
   onCeilingConfirmedChange,
+  onOpenGuide,
 }: SurfboardShippingTierPickerProps) {
   const [showBiggerOptions, setShowBiggerOptions] = useState(false)
 
@@ -114,11 +119,21 @@ export function SurfboardShippingTierPicker({
   return (
     <div className={cn("space-y-4", className)}>
       <div>
-        <p className="text-sm font-semibold text-foreground">
-          {boardLengthLabel
-            ? `Shipping size for your ${boardLengthLabel} board`
-            : "Shipping size for your board"}
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <p className="text-sm font-semibold text-foreground">
+            {boardLengthLabel
+              ? `Shipping size for your ${boardLengthLabel} board`
+              : "Shipping size for your board"}
+          </p>
+          {onOpenGuide ? (
+            <ReswellShippingGuideTrigger
+              topicId="overview"
+              onOpen={onOpenGuide}
+              variant="link"
+              label="How this works"
+            />
+          ) : null}
+        </div>
         <p className="mt-1 text-sm text-muted-foreground/45 leading-relaxed">
           Buyers pay shipping at checkout. We quote the maximum box for this size — your packed
           board must stay at or under it. Smaller is fine.
@@ -132,44 +147,66 @@ export function SurfboardShippingTierPicker({
       </div>
 
       {recommendedTierId ? (
-        <button
-          type="button"
-          onClick={() => selectTier(recommendedTierId)}
+        <div
           className={cn(
-            "w-full rounded-xl border p-4 sm:p-5 text-left transition-colors",
+            "relative w-full rounded-xl border p-4 sm:p-5 text-left transition-colors",
             usingRecommended
               ? "border-primary bg-primary/5"
               : "border-border hover:border-primary/35",
           )}
         >
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-semibold text-foreground">
-              {getSurfboardShippingTier(recommendedTierId).label}
+          {onOpenGuide ? (
+            <ReswellShippingGuideTrigger
+              topicId={recommendedTierId}
+              onOpen={onOpenGuide}
+              label={`Learn more about ${getSurfboardShippingTier(recommendedTierId).label} shipping`}
+              className="absolute right-2 top-2 z-[1]"
+            />
+          ) : null}
+          <button
+            type="button"
+            onClick={() => selectTier(recommendedTierId)}
+            className="w-full pr-8 text-left"
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-sm font-semibold text-foreground">
+                {getSurfboardShippingTier(recommendedTierId).label}
+              </p>
+              <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
+                Recommended
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-foreground/90">
+              {surfboardShippingTierEasyWhy(recommendedTierId)}
             </p>
-            <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary">
-              Recommended
-            </span>
-          </div>
-          <p className="mt-1 text-sm text-foreground/90">
-            {surfboardShippingTierEasyWhy(recommendedTierId)}
-          </p>
-          <p className="mt-2 text-sm text-muted-foreground/45 leading-relaxed">
-            {surfboardShippingTierEasyFitLine(recommendedTierId)}
-          </p>
-        </button>
+            <p className="mt-2 text-sm text-muted-foreground/45 leading-relaxed">
+              {surfboardShippingTierEasyFitLine(recommendedTierId)}
+            </p>
+          </button>
+        </div>
       ) : null}
 
       {selectedTierId && !usingRecommended && !selectedLengthError ? (
-        <div className="rounded-xl border border-primary bg-primary/5 p-4 sm:p-5">
-          <p className="text-sm font-semibold text-foreground">
-            {getSurfboardShippingTier(selectedTierId).label}
-          </p>
-          <p className="mt-1 text-sm text-foreground/90">
-            {surfboardShippingTierEasyWhy(selectedTierId)}
-          </p>
-          <p className="mt-2 text-sm text-muted-foreground/45 leading-relaxed">
-            {surfboardShippingTierEasyFitLine(selectedTierId)}
-          </p>
+        <div className="relative rounded-xl border border-primary bg-primary/5 p-4 sm:p-5">
+          {onOpenGuide ? (
+            <ReswellShippingGuideTrigger
+              topicId={selectedTierId}
+              onOpen={onOpenGuide}
+              label={`Learn more about ${getSurfboardShippingTier(selectedTierId).label} shipping`}
+              className="absolute right-2 top-2 z-[1]"
+            />
+          ) : null}
+          <div className="pr-8">
+            <p className="text-sm font-semibold text-foreground">
+              {getSurfboardShippingTier(selectedTierId).label}
+            </p>
+            <p className="mt-1 text-sm text-foreground/90">
+              {surfboardShippingTierEasyWhy(selectedTierId)}
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground/45 leading-relaxed">
+              {surfboardShippingTierEasyFitLine(selectedTierId)}
+            </p>
+          </div>
         </div>
       ) : null}
 
@@ -193,31 +230,43 @@ export function SurfboardShippingTierPicker({
                 const tier = getSurfboardShippingTier(tierId)
                 const selected = selectedTierId === tierId
                 return (
-                  <label
+                  <div
                     key={tierId}
-                    htmlFor={`sell-ship-tier-alt-${tierId}`}
                     className={cn(
-                      "flex gap-3 rounded-xl border p-4 cursor-pointer transition-colors",
+                      "relative flex gap-3 rounded-xl border p-4 transition-colors",
                       selected
                         ? "border-primary bg-primary/5"
                         : "border-border hover:border-primary/35",
                     )}
                   >
-                    <RadioGroupItem
-                      value={tierId}
-                      id={`sell-ship-tier-alt-${tierId}`}
-                      className="mt-0.5 shrink-0"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-foreground">{tier.label}</p>
-                      <p className="mt-0.5 text-sm text-foreground/90">
-                        {surfboardShippingTierEasyWhy(tierId)}
-                      </p>
-                      <p className="mt-1 text-sm text-muted-foreground/45 leading-relaxed">
-                        {surfboardShippingTierEasyFitLine(tierId)}
-                      </p>
-                    </div>
-                  </label>
+                    {onOpenGuide ? (
+                      <ReswellShippingGuideTrigger
+                        topicId={tierId}
+                        onOpen={onOpenGuide}
+                        label={`Learn more about ${tier.label} shipping`}
+                        className="absolute right-2 top-2 z-[1]"
+                      />
+                    ) : null}
+                    <label
+                      htmlFor={`sell-ship-tier-alt-${tierId}`}
+                      className="flex min-w-0 flex-1 cursor-pointer gap-3 pr-8"
+                    >
+                      <RadioGroupItem
+                        value={tierId}
+                        id={`sell-ship-tier-alt-${tierId}`}
+                        className="mt-0.5 shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-foreground">{tier.label}</p>
+                        <p className="mt-0.5 text-sm text-foreground/90">
+                          {surfboardShippingTierEasyWhy(tierId)}
+                        </p>
+                        <p className="mt-1 text-sm text-muted-foreground/45 leading-relaxed">
+                          {surfboardShippingTierEasyFitLine(tierId)}
+                        </p>
+                      </div>
+                    </label>
+                  </div>
                 )
               })}
             </RadioGroup>
