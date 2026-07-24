@@ -10,7 +10,10 @@ import {
   maxBoardWidthInchesFromInput,
   totalBoardLengthInchesFromCombinedInput,
 } from "@/lib/board-measurements"
-import { surfboardShippingDimIn } from "@/lib/shipping/surfboard-label-limits"
+import {
+  SURFBOARD_LABEL_MAX_UPS_DIMENSION_TOTAL_IN,
+  surfboardShippingDimIn,
+} from "@/lib/shipping/surfboard-label-limits"
 import { upsParcelSurchargeFlags } from "@/lib/shipping/ups-parcel-surcharge-flags"
 import {
   SURFBOARD_TIER_SHORTBOARD_MAX_BOX_LENGTH_IN,
@@ -223,6 +226,52 @@ export function resolveSurfboardShippingPackBandFromBoardSpecs(input: {
     return bandId
   }
   return "shortboard_max"
+}
+
+/** True when the band carton stays within Reswell’s UPS DIM ceiling. */
+export function surfboardShippingPackBandWithinUpsDim(
+  bandId: SurfboardShippingPackBandId,
+): boolean {
+  const p = surfboardShippingPackBandFixedParcel(bandId)
+  return p.dimIn <= SURFBOARD_LABEL_MAX_UPS_DIMENSION_TOTAL_IN
+}
+
+/**
+ * Whether this board can ship via Reswell UPS (fits a shortboard pack band under the UPS DIM cap).
+ * Midlength/longboard cartons exceed UPS parcel DIM and are not offered on /sell.
+ */
+export function resolveSurfboardUpsShippingAvailability(input: {
+  boardLength: string
+  boardWidthInches?: string
+}): {
+  shippingSupported: boolean
+  /** Smallest fitting UPS-eligible pack band, or empty when unsupported / length unknown. */
+  suggestedPackBandId: SurfboardShippingPackBandId | ""
+} {
+  if (!input.boardLength.trim()) {
+    return { shippingSupported: true, suggestedPackBandId: "" }
+  }
+
+  const lengthIn = totalBoardLengthInchesFromCombinedInput(input.boardLength)
+  if (lengthIn == null) {
+    return { shippingSupported: true, suggestedPackBandId: "" }
+  }
+
+  for (const bandId of SURFBOARD_SHIPPING_PACK_BAND_IDS) {
+    if (!surfboardShippingPackBandWithinUpsDim(bandId)) continue
+    if (
+      surfboardShippingPackBandBoardSpecsError({
+        bandId,
+        boardLength: input.boardLength,
+        boardWidthInches: input.boardWidthInches,
+      })
+    ) {
+      continue
+    }
+    return { shippingSupported: true, suggestedPackBandId: bandId }
+  }
+
+  return { shippingSupported: false, suggestedPackBandId: "" }
 }
 
 export function surfboardShippingPackBandNextLarger(

@@ -212,11 +212,7 @@ export function reswellPackageFormFromDbRow(row: {
  * the same relaxed/admin branches — used so DB flags stay aligned with visible options.
  */
 export function inferSellFormShippingConfigured(fd: SellFulfillmentPersistInput): boolean {
-  const mode = fd.boardShippingCostMode ?? "reswell"
-  if (mode === "free") return true
-  if (mode === "flat") {
-    return parseSurfboardShippingTierId(fd.surfboardShippingTier) != null
-  }
+  // Surfboard /sell persists Reswell shipping only.
   const tierId = parseSurfboardShippingTierId(fd.surfboardShippingTier)
   if (!tierId) return false
   if (tierId === "shortboard") {
@@ -237,8 +233,8 @@ export function inferSellFormShippingConfigured(fd: SellFulfillmentPersistInput)
 /**
  * Resolves `local_pickup` / `shipping_available` for DB writes from the sell flow.
  * If `boardFulfillment` is out of sync with the shipping section (e.g. draft restore / edge-case state)
- * but the seller has fully configured shipping (Reswell dims, flat rate, or free), we still set
- * `shipping_available` so `/l` and checkout match what the form shows.
+ * but the seller has fully configured Reswell shipping, we still set `shipping_available` so `/l`
+ * and checkout match what the form shows.
  */
 export function resolveListingFulfillmentFlagsForSellSubmit(
   fd: SellFulfillmentPersistInput,

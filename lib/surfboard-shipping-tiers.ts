@@ -389,14 +389,14 @@ export function validateSurfboardShippingTierParcelLimits(
   if (tier.maxBoxLengthIn != null && parcel.lengthIn > tier.maxBoxLengthIn) {
     return {
       ok: false,
-      error: `This board exceeds the ${tier.label.toLowerCase()} shipping limit (${tier.maxBoxLengthIn}″ max box length). Use flat-rate shipping or local pickup instead.`,
+      error: `This board exceeds the ${tier.label.toLowerCase()} shipping limit (${tier.maxBoxLengthIn}″ max box length). Choose a larger shipping size or local pickup instead.`,
     }
   }
 
   if (tier.maxDimIn != null && dimTotal > tier.maxDimIn) {
     return {
       ok: false,
-      error: `This board exceeds the ${tier.label.toLowerCase()} shipping limit (${tier.maxDimIn}″ max ${SURFBOARD_SHIPPING_DIM_FORMULA}). Use flat-rate shipping or local pickup instead.`,
+      error: `This board exceeds the ${tier.label.toLowerCase()} shipping limit (${tier.maxDimIn}″ max ${SURFBOARD_SHIPPING_DIM_FORMULA}). Choose a larger shipping size or local pickup instead.`,
     }
   }
 
@@ -406,7 +406,7 @@ export function validateSurfboardShippingTierParcelLimits(
   ) {
     return {
       ok: false,
-      error: `This board exceeds UPS shipping limits (${SURFBOARD_LABEL_MAX_UPS_DIMENSION_TOTAL_IN}″ max ${SURFBOARD_SHIPPING_DIM_FORMULA}). Use flat-rate shipping or local pickup instead.`,
+      error: `This board exceeds UPS shipping limits (${SURFBOARD_LABEL_MAX_UPS_DIMENSION_TOTAL_IN}″ max ${SURFBOARD_SHIPPING_DIM_FORMULA}). Choose local pickup instead.`,
     }
   }
 
@@ -414,7 +414,7 @@ export function validateSurfboardShippingTierParcelLimits(
   if (parcel.weightLb > maxWeight) {
     return {
       ok: false,
-      error: `This board exceeds the ${tier.label.toLowerCase()} shipping weight limit (${maxWeight} lb max). Use flat-rate shipping or local pickup instead.`,
+      error: `This board exceeds the ${tier.label.toLowerCase()} shipping weight limit (${maxWeight} lb max). Choose a larger shipping size or local pickup instead.`,
     }
   }
 

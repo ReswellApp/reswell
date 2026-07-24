@@ -6,11 +6,6 @@ import {
 } from "@/lib/board-measurements"
 import { flagsFromBoardFulfillment } from "@/lib/listing-fulfillment"
 import {
-  parseReswellParcelLengthRawToCarrierInches,
-  parseReswellParcelWidthHeightRawToCarrierInches,
-  isReswellPackedWeightComplete,
-} from "@/lib/reswell-parcel-fields"
-import {
   buildResolvedListingTitle,
   LISTING_BOARD_MODEL_MAX_LENGTH,
   LISTING_MIN_PHOTOS,
@@ -18,12 +13,7 @@ import {
   validateSellListingForm,
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
-import {
-  applySurfboardShippingTierDefaults,
-  parseSurfboardShippingTierId,
-  surfboardReswellPackageHasPartialDimensions,
-  surfboardShippingTierBoardLengthError,
-} from "@/lib/surfboard-shipping-tiers"
+import { parseSurfboardShippingTierId } from "@/lib/surfboard-shipping-tiers"
 import {
   parseSurfboardShippingPackBandId,
   surfboardShippingPackBandBoardSpecsError,
@@ -104,47 +94,20 @@ function deliverySectionComplete(form: SellFormValidationInput): boolean {
   if (!form.locationCity?.trim() || !form.locationState?.trim()) return false
 
   const fulfillmentFlags = flagsFromBoardFulfillment(form.boardFulfillment)
+  // UPS shortboard pack bands only — Compact/Standard/Max auto-picked from board specs.
   if (fulfillmentFlags.shipping_available) {
-    const mode = form.boardShippingCostMode ?? "reswell"
-    if (mode === "flat") {
-      const tierId = parseSurfboardShippingTierId(form.surfboardShippingTier)
-      if (!tierId) return false
-      return surfboardShippingTierBoardLengthError(form.boardLength, tierId) == null
-    }
-    if (mode === "reswell") {
-      const tierId = parseSurfboardShippingTierId(form.surfboardShippingTier)
-      if (!tierId) return false
-      if (surfboardShippingTierBoardLengthError(form.boardLength, tierId)) return false
-      if (tierId === "shortboard") {
-        const bandId = parseSurfboardShippingPackBandId(form.surfboardShippingPackBand)
-        if (!bandId) return false
-        if (
-          surfboardShippingPackBandBoardSpecsError({
-            bandId,
-            boardLength: form.boardLength,
-            boardWidthInches: form.boardWidthInches,
-          })
-        ) {
-          return false
-        }
-        if (!form.surfboardShippingPackBandCeilingConfirmed) return false
-      } else {
-        if (surfboardReswellPackageHasPartialDimensions(form)) return false
-        if (!form.surfboardShippingTierCeilingConfirmed) return false
-        const resolved = applySurfboardShippingTierDefaults(form, { tierId })
-        const L = parseReswellParcelLengthRawToCarrierInches(resolved.reswellPackageLengthIn)
-        const W = parseReswellParcelWidthHeightRawToCarrierInches(resolved.reswellPackageWidthIn)
-        const H = parseReswellParcelWidthHeightRawToCarrierInches(resolved.reswellPackageHeightIn)
-        if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) return false
-        if (
-          !isReswellPackedWeightComplete(
-            resolved.reswellPackageWeightLb,
-            resolved.reswellPackageWeightOz,
-          )
-        ) {
-          return false
-        }
-      }
+    if (!form.boardLength.trim()) return false
+    if (parseSurfboardShippingTierId(form.surfboardShippingTier) !== "shortboard") return false
+    const bandId = parseSurfboardShippingPackBandId(form.surfboardShippingPackBand)
+    if (!bandId) return false
+    if (
+      surfboardShippingPackBandBoardSpecsError({
+        bandId,
+        boardLength: form.boardLength,
+        boardWidthInches: form.boardWidthInches,
+      })
+    ) {
+      return false
     }
   }
 
