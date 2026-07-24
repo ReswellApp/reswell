@@ -91,6 +91,13 @@ export function BoardsBrowseClient({ children, counts, defaultSort }: BoardsBrow
         onRemove: () => state.setRadius(null),
       })
     }
+    if (state.shippingAvailable) {
+      out.push({
+        id: "shipping",
+        label: "Shipping available",
+        onRemove: () => state.setShippingAvailable(false),
+      })
+    }
     return out
   }, [state])
 

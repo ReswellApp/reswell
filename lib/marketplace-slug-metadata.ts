@@ -53,14 +53,12 @@ export function boardsBrowseBoardTypeLabel(type: string | undefined | null): str
 
 const BOARDS_CONDITION_LABELS = LISTING_CONDITION_LABELS
 
-/**
- * Default surfboards browse sort: admin Top Picks first, then newest
- * (Query: `sort` omitted or `sort=top-picks`).
- */
+/** Admin-curated Top Picks sort (Query: `sort=top-picks`). */
 export const BOARDS_BROWSE_TOP_PICKS_SORT = "top-picks" as const
-export const BOARDS_BROWSE_DEFAULT_SORT = BOARDS_BROWSE_TOP_PICKS_SORT
-/** Secondary sort when browsing by recency explicitly. */
+/** Newest-first browse sort (Query: `sort` omitted or `sort=newest`). */
 export const BOARDS_BROWSE_NEWEST_SORT = "newest" as const
+/** Default surfboards browse sort when `sort` is omitted from the URL. */
+export const BOARDS_BROWSE_DEFAULT_SORT = BOARDS_BROWSE_NEWEST_SORT
 
 export type BoardsBrowseSearchParams = {
   type?: string
@@ -88,6 +86,11 @@ export type BoardsBrowseSearchParams = {
   radius?: string
   lat?: string
   lng?: string
+  /**
+   * When `1` / `true`, only listings with `shipping_available` (seller offers shipping).
+   * Omitted when the filter is off.
+   */
+  shipping?: string
   /** Pro facet params (comma-separated slug lists). See `lib/boards-browse-facets.ts`. */
   style?: string
   fin?: string
@@ -95,6 +98,14 @@ export type BoardsBrowseSearchParams = {
   construction?: string
   length?: string
   volume?: string
+}
+
+/** True when `/boards?shipping=` requests the shipping-available filter. */
+export function isBoardsBrowseShippingAvailableParam(
+  value: string | undefined | null,
+): boolean {
+  const v = value?.trim().toLowerCase()
+  return v === "1" || v === "true" || v === "yes"
 }
 
 /** Canonical `type=` value for browse URLs, OG, and DB filters (legacy aliases → current slug). */

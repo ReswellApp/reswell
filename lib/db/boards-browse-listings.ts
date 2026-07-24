@@ -155,6 +155,8 @@ export type SurfboardBrowseFilterParams = {
   maxPrice?: number
   geoBbox?: { lat: number; lng: number; radiusMiles: number }
   locationTextFilter?: string
+  /** When true, only listings where the seller offers shipping. */
+  shippingAvailable?: boolean
 }
 
 async function fetchMatchingTopPickRows(
@@ -300,6 +302,7 @@ export async function fetchBoardsBrowseTopPicksPage(
     maxPrice: params.maxPrice,
     geoBbox: params.geoBbox,
     locationTextFilter: params.locationTextFilter,
+    shippingAvailable: params.shippingAvailable,
   }
 
   const pickRows = await fetchMatchingTopPickRows(supabase, filters, curatedIds, useSuppressionSort)
@@ -468,6 +471,8 @@ export async function buildSurfboardBrowseBaseQuery(
     prependCreatedAtOrder?: boolean
     pagedSort?: string
     locationTextFilter?: string
+    /** When true, only listings where the seller offers shipping. */
+    shippingAvailable?: boolean
     useSuppressionSort?: boolean
     excludeListingIds?: string[]
     restrictToListingIds?: string[]
@@ -543,6 +548,10 @@ export async function buildSurfboardBrowseBaseQuery(
   }
   if (params.maxPrice != null && !Number.isNaN(params.maxPrice) && params.maxPrice >= 0) {
     dbQuery = dbQuery.lte("price", params.maxPrice)
+  }
+
+  if (params.shippingAvailable) {
+    dbQuery = dbQuery.eq("shipping_available", true)
   }
 
   if (params.prependCreatedAtOrder) {
@@ -679,6 +688,7 @@ export async function fetchNearestSurfboardsWithinRadius(params: {
   facets?: BoardsBrowseFacetSelections
   minPrice?: number
   maxPrice?: number
+  shippingAvailable?: boolean
   offset: number
   limit: number
   maxFetch: number
@@ -697,6 +707,7 @@ export async function fetchNearestSurfboardsWithinRadius(params: {
     facets: params.facets,
     minPrice: params.minPrice,
     maxPrice: params.maxPrice,
+    shippingAvailable: params.shippingAvailable,
     useSuppressionSort: params.useSuppressionSort,
     geoBbox: {
       lat: params.anchorLat,
@@ -743,6 +754,7 @@ export function isBoardsBrowseCategoryTypeView(sp: BoardsBrowseSearchParams): bo
   if (hasNonEmptyParam(sp.location)) return false
   if (hasNonEmptyParam(sp.minPrice)) return false
   if (hasNonEmptyParam(sp.maxPrice)) return false
+  if (hasNonEmptyParam(sp.shipping)) return false
   if (hasNonEmptyParam(sp.radius)) return false
   if (hasNonEmptyParam(sp.lat)) return false
   if (hasNonEmptyParam(sp.lng)) return false

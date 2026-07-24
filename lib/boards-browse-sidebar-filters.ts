@@ -4,8 +4,8 @@ import {
 } from "@/lib/boards-browse-facets"
 import { normalizeBoardBrowseRadius } from "@/lib/boards-browse-location"
 import {
-  BOARDS_BROWSE_DEFAULT_SORT,
   BOARDS_BROWSE_NEWEST_SORT,
+  isBoardsBrowseShippingAvailableParam,
   type BoardsBrowseSearchParams,
 } from "@/lib/marketplace-slug-metadata"
 import { isBoardsBrowseTopPicksSort } from "@/lib/db/boards-browse-listings"
@@ -29,6 +29,7 @@ export function boardsBrowseSidebarFilterCount(sp: SidebarFilterParams): number 
   if (sp.minPrice?.trim() || sp.maxPrice?.trim()) n += 1
   if (sp.location?.trim()) n += 1
   if (normalizeBoardBrowseRadius(sp.radius ?? null) !== "any") n += 1
+  if (isBoardsBrowseShippingAvailableParam(sp.shipping)) n += 1
   return n
 }
 

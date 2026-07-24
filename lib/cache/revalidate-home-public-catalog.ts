@@ -1,6 +1,8 @@
 import { revalidatePath, revalidateTag } from "next/cache"
 import {
   HOME_MOST_VIEWED_CACHE_TAG,
+  HOME_RECENTLY_ADDED_FINS_CACHE_TAG,
+  HOME_RECENTLY_ADDED_SURFBOARDS_CACHE_TAG,
   HOME_RECENTLY_SOLD_CACHE_TAG,
   HOME_STABLE_CATALOG_CACHE_TAG,
 } from "@/lib/cache/home-public-catalog"
@@ -16,6 +18,18 @@ export function revalidateHomeStableCatalog(): void {
 /** Bust the auto-generated recently sold strip (e.g. after homepage hide on a sold listing). */
 export function revalidateHomeRecentlySoldCatalog(): void {
   revalidateTag(HOME_RECENTLY_SOLD_CACHE_TAG, 'max')
+  revalidatePath("/", "page")
+}
+
+/** Bust the newest-first recently added surfboards strip. */
+export function revalidateHomeRecentlyAddedSurfboardsCatalog(): void {
+  revalidateTag(HOME_RECENTLY_ADDED_SURFBOARDS_CACHE_TAG, 'max')
+  revalidatePath("/", "page")
+}
+
+/** Bust the newest-first recently added fins strip. */
+export function revalidateHomeRecentlyAddedFinsCatalog(): void {
+  revalidateTag(HOME_RECENTLY_ADDED_FINS_CACHE_TAG, 'max')
   revalidatePath("/", "page")
 }
 

@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/brands/admin-server"
-import { revalidateHomePublicCatalog, revalidateHomeMostViewedCatalog, revalidateHomeRecentlySoldCatalog } from "@/lib/cache/revalidate-home-public-catalog"
+import {
+  revalidateHomePublicCatalog,
+  revalidateHomeMostViewedCatalog,
+  revalidateHomeRecentlyAddedFinsCatalog,
+  revalidateHomeRecentlyAddedSurfboardsCatalog,
+  revalidateHomeRecentlySoldCatalog,
+} from "@/lib/cache/revalidate-home-public-catalog"
 import { listingHomepageVisibilityBodySchema } from "@/lib/validations/listing-homepage-visibility"
 import { setListingHomepageVisibility } from "@/lib/services/listingHomepageVisibility"
 
@@ -40,6 +46,8 @@ export async function PATCH(request: NextRequest, ctx: { params: Promise<{ id: s
 
   revalidateHomePublicCatalog()
   revalidateHomeRecentlySoldCatalog()
+  revalidateHomeRecentlyAddedSurfboardsCatalog()
+  revalidateHomeRecentlyAddedFinsCatalog()
   revalidateHomeMostViewedCatalog()
   return NextResponse.json({ success: true }, { status: 200 })
 }

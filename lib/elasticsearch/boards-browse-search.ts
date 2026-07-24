@@ -115,6 +115,8 @@ export type BoardsBrowseEsContext = {
   maxPrice?: number
   /** Free-text city/state filter (only when there is no geocoded anchor). */
   locationText?: string
+  /** When true, only listings where the seller offers shipping. */
+  shippingAvailable?: boolean
 }
 
 function priceClauses(ctx: BoardsBrowseEsContext): object[] {
@@ -184,13 +186,17 @@ function keywordMust(query: string | undefined): object[] {
 
 /** Filters shared by browse results and facet counts (excludes facet selections + geo). */
 function baseContextFilters(ctx: BoardsBrowseEsContext): object[] {
-  return [
+  const filters: object[] = [
     { term: { status: "active" } },
     { term: { section: "surfboards" } },
     ...priceClauses(ctx),
     ...brandModelClauses(ctx),
     ...locationTextClauses(ctx.locationText),
   ]
+  if (ctx.shippingAvailable) {
+    filters.push({ term: { shipping_available: true } })
+  }
+  return filters
 }
 
 /* -------------------------------------------------------------------------- */

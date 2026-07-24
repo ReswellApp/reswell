@@ -19,12 +19,16 @@ import {
   siteFilterSelectTriggerClassName,
   siteSearchInputClassName,
 } from "@/components/site-search-bar"
-import { BOARDS_BROWSE_DEFAULT_SORT, BOARDS_BROWSE_NEWEST_SORT } from "@/lib/marketplace-slug-metadata"
+import {
+  BOARDS_BROWSE_DEFAULT_SORT,
+  BOARDS_BROWSE_NEWEST_SORT,
+  BOARDS_BROWSE_TOP_PICKS_SORT,
+} from "@/lib/marketplace-slug-metadata"
 import { cn } from "@/lib/utils"
 
 export const boardSortOptions = [
-  { value: BOARDS_BROWSE_DEFAULT_SORT, label: "Top Picks" },
   { value: BOARDS_BROWSE_NEWEST_SORT, label: "Newest" },
+  { value: BOARDS_BROWSE_TOP_PICKS_SORT, label: "Top Picks" },
   { value: "price-low", label: "Price: Low → High" },
   { value: "price-high", label: "Price: High → Low" },
 ]

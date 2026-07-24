@@ -9,7 +9,10 @@ import {
   type FacetCountContext,
   type FacetCountRow,
 } from "@/lib/db/boards-browse-facet-counts"
-import type { BoardsBrowseSearchParams } from "@/lib/marketplace-slug-metadata"
+import {
+  isBoardsBrowseShippingAvailableParam,
+  type BoardsBrowseSearchParams,
+} from "@/lib/marketplace-slug-metadata"
 import {
   computeBoardsBrowseFacetCounts,
   facetCountsByParamKey,
@@ -30,6 +33,9 @@ function facetCountContextFromSearchParams(
     minPrice: searchParams.minPrice ? Number(searchParams.minPrice) : undefined,
     maxPrice: searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined,
     location: searchParams.location,
+    shippingAvailable: isBoardsBrowseShippingAvailableParam(searchParams.shipping)
+      ? true
+      : undefined,
   }
 }
 
@@ -42,6 +48,7 @@ async function loadSurfboardFacetCountRows(
   minPrice: number | null,
   maxPrice: number | null,
   location: string,
+  shippingAvailable: boolean,
 ): Promise<FacetCountRow[]> {
   const supabase = createAnonSupabaseClient()
   return fetchSurfboardFacetCountRows(supabase, {
@@ -53,12 +60,13 @@ async function loadSurfboardFacetCountRows(
     minPrice: minPrice ?? undefined,
     maxPrice: maxPrice ?? undefined,
     location: location || undefined,
+    shippingAvailable: shippingAvailable || undefined,
   })
 }
 
 const getCachedSurfboardFacetCountRows = unstable_cache(
   loadSurfboardFacetCountRows,
-  ["boards-browse-facet-count-rows", "v5"],
+  ["boards-browse-facet-count-rows", "v6"],
   {
     revalidate: BOARDS_BROWSE_REVALIDATE_SECONDS,
     tags: [BOARDS_BROWSE_CACHE_TAG],
@@ -78,6 +86,7 @@ async function dbFacetCountsByParamKey(
     ctx.minPrice ?? null,
     ctx.maxPrice ?? null,
     ctx.location?.trim() ?? "",
+    Boolean(ctx.shippingAvailable),
   )
   return facetCountsByParamKey(computeBoardsBrowseFacetCounts(rows, selections))
 }
@@ -101,6 +110,7 @@ export async function getBoardsBrowseFacetCountsMapCached(
           minPrice: ctx.minPrice,
           maxPrice: ctx.maxPrice,
           locationText: ctx.location,
+          shippingAvailable: ctx.shippingAvailable,
         },
         selections,
       )

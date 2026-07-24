@@ -9,7 +9,10 @@ import {
   hasAnyFacetSelection,
   type BoardsBrowseFacetSelections,
 } from "@/lib/boards-browse-facets"
-import { normalizedBoardsBrowseTypeFromParam } from "@/lib/marketplace-slug-metadata"
+import {
+  isBoardsBrowseShippingAvailableParam,
+  normalizedBoardsBrowseTypeFromParam,
+} from "@/lib/marketplace-slug-metadata"
 import { normalizeBoardBrowseRadius } from "@/lib/boards-browse-location"
 
 /** Params owned by the facet sidebar/drawer (reset together on "Clear all"). */
@@ -26,6 +29,7 @@ const FACET_OWNED_KEYS = [
   "lat",
   "lng",
   "radius",
+  "shipping",
 ] as const
 
 type NavigateMutator = (params: URLSearchParams) => void
@@ -41,6 +45,8 @@ export type BoardsFilterState = {
   maxPrice: string
   location: string
   radius: string
+  /** Seller offers shipping (`shipping=1`). */
+  shippingAvailable: boolean
   /** Number of distinct active facet filters (for the "Filter" badge). */
   activeCount: number
   hasAnyActive: boolean
@@ -52,6 +58,7 @@ export type BoardsFilterState = {
   setLocationQuery: (query: string) => void
   setLocationCoords: (label: string, lat: number, lng: number) => void
   setRadius: (value: string | null) => void
+  setShippingAvailable: (on: boolean) => void
   clearKey: (key: string) => void
   clearAll: () => void
 }
@@ -103,6 +110,7 @@ export function useBoardsFilterState(
   const maxPrice = searchParams.get("maxPrice") ?? ""
   const location = searchParams.get("location") ?? ""
   const radius = normalizeBoardBrowseRadius(searchParams.get("radius"))
+  const shippingAvailable = isBoardsBrowseShippingAvailableParam(searchParams.get("shipping"))
 
   const toggleMulti = useCallback(
     (key: string, value: string) => {
@@ -226,6 +234,16 @@ export function useBoardsFilterState(
     [navigate],
   )
 
+  const setShippingAvailable = useCallback(
+    (on: boolean) => {
+      navigate((params) => {
+        if (on) params.set("shipping", "1")
+        else params.delete("shipping")
+      })
+    },
+    [navigate],
+  )
+
   const clearKey = useCallback(
     (key: string) => {
       navigate((params) => params.delete(key))
@@ -253,8 +271,20 @@ export function useBoardsFilterState(
     if (minPrice.trim() || maxPrice.trim()) n += 1
     if (location.trim()) n += 1
     if (radius !== "any") n += 1
+    if (shippingAvailable) n += 1
     return n
-  }, [selections, brand, brandId, model, brandModelId, minPrice, maxPrice, location, radius])
+  }, [
+    selections,
+    brand,
+    brandId,
+    model,
+    brandModelId,
+    minPrice,
+    maxPrice,
+    location,
+    radius,
+    shippingAvailable,
+  ])
 
   return {
     searchParams,
@@ -267,6 +297,7 @@ export function useBoardsFilterState(
     maxPrice,
     location,
     radius,
+    shippingAvailable,
     activeCount,
     hasAnyActive:
       hasAnyFacetSelection(selections) ||
@@ -278,7 +309,8 @@ export function useBoardsFilterState(
           minPrice.trim() ||
           maxPrice.trim() ||
           location.trim() ||
-          radius !== "any",
+          radius !== "any" ||
+          shippingAvailable,
       ),
     toggleMulti,
     setSingle,
@@ -288,6 +320,7 @@ export function useBoardsFilterState(
     setLocationQuery,
     setLocationCoords,
     setRadius,
+    setShippingAvailable,
     clearKey,
     clearAll,
   }

@@ -47,6 +47,7 @@ import {
   boardsBrowseBoardTypeLabel,
   boardsBrowseHeroSubtext,
   BOARDS_BROWSE_DEFAULT_SORT,
+  isBoardsBrowseShippingAvailableParam,
   type BoardsBrowseSearchParams,
 } from "@/lib/marketplace-slug-metadata"
 import { forwardGeocodePlaceForServer } from "@/lib/maps/forward-geocode-server"
@@ -133,6 +134,9 @@ async function BoardListings({
   const location = searchParams.location || ""
   const minPrice = searchParams.minPrice ? Number(searchParams.minPrice) : undefined
   const maxPrice = searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined
+  const shippingAvailable = isBoardsBrowseShippingAvailableParam(searchParams.shipping)
+    ? true
+    : undefined
   const radiusMi = searchParams.radius ? Number(searchParams.radius) : undefined
   const lat = searchParams.lat ? Number(searchParams.lat) : undefined
   const lng = searchParams.lng ? Number(searchParams.lng) : undefined
@@ -168,6 +172,7 @@ async function BoardListings({
         facets,
         minPrice,
         maxPrice,
+        shippingAvailable,
         locationText: location.trim() && !useGeocodedAnchor ? location : undefined,
         geo:
           hasLatLng && (filterByRadius || isNearestSort)
@@ -204,6 +209,7 @@ async function BoardListings({
       facets,
       minPrice,
       maxPrice,
+      shippingAvailable,
       locationTextFilter: location.trim() && !useGeocodedAnchor ? location : undefined,
       page,
     })
@@ -224,6 +230,7 @@ async function BoardListings({
       facets,
       minPrice,
       maxPrice,
+      shippingAvailable,
       useSuppressionSort,
       geoBbox:
         filterByRadius && hasLatLng
@@ -294,6 +301,7 @@ async function BoardListings({
           facets,
           minPrice,
           maxPrice,
+          shippingAvailable,
           useSuppressionSort: false,
           geoBbox:
             filterByRadius && hasLatLng
@@ -375,6 +383,7 @@ async function BoardListings({
           facets,
           minPrice,
           maxPrice,
+          shippingAvailable,
           offset,
           limit,
           maxFetch: radiusCapMi >= LOCATION_FALLBACK_WIDE_RADIUS_MI ? 4000 : 2500,

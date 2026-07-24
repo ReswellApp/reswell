@@ -6,7 +6,11 @@ import {
   revalidateSellersDirectoryCatalog,
 } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
-import { revalidateHomePublicCatalog } from "@/lib/cache/revalidate-home-public-catalog"
+import {
+  revalidateHomePublicCatalog,
+  revalidateHomeRecentlyAddedFinsCatalog,
+  revalidateHomeRecentlyAddedSurfboardsCatalog,
+} from "@/lib/cache/revalidate-home-public-catalog"
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
 import { revalidateNavSearchSuggest } from "@/lib/cache/revalidate-nav-search-suggest"
 import { revalidateNavSuggestedSurfboards } from "@/lib/cache/revalidate-nav-suggested-surfboards"
@@ -38,6 +42,8 @@ async function revalidateListingCatalogSurfaces(
 
   revalidateBoardsBrowseCatalog()
   revalidateHomePublicCatalog()
+  revalidateHomeRecentlyAddedSurfboardsCatalog()
+  revalidateHomeRecentlyAddedFinsCatalog()
   revalidateNavSuggestedSurfboards()
   revalidateNavSearchSuggest()
   revalidatePath("/sold")

@@ -30,6 +30,8 @@ export type FacetCountContext = {
   minPrice?: number
   maxPrice?: number
   location?: string
+  /** When true, only listings where the seller offers shipping. */
+  shippingAvailable?: boolean
 }
 
 function escapePostgrestIlikeFragment(fragment: string): string {
@@ -58,6 +60,9 @@ export async function fetchSurfboardFacetCountRows(
   }
   if (ctx.maxPrice != null && !Number.isNaN(ctx.maxPrice) && ctx.maxPrice >= 0) {
     dbQuery = dbQuery.lte("price", ctx.maxPrice)
+  }
+  if (ctx.shippingAvailable) {
+    dbQuery = dbQuery.eq("shipping_available", true)
   }
 
   const brandModelId = ctx.brandModelId?.trim()

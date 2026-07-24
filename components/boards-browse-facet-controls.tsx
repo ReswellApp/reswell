@@ -261,6 +261,7 @@ function BrandModelSection({ state }: { state: BoardsFilterState }) {
 
 const SECTION_IDS = [
   "location",
+  "shipping",
   "style",
   "length",
   "volume",
@@ -291,6 +292,21 @@ export function BoardsBrowseFacetControls({
     >
       <FacetAccordionItem id="location" title="Location">
         <BoardsBrowseLocationFilter state={state} listboxId={locationListboxId} />
+      </FacetAccordionItem>
+
+      <FacetAccordionItem id="shipping" title="Shipping">
+        <label
+          htmlFor="facet-shipping-available"
+          className="flex cursor-pointer items-center gap-2.5 py-1.5 text-sm"
+        >
+          <Checkbox
+            id="facet-shipping-available"
+            checked={state.shippingAvailable}
+            onCheckedChange={(checked) => state.setShippingAvailable(checked === true)}
+            className="shrink-0"
+          />
+          <span className="min-w-0 flex-1 text-foreground/90">Shipping available</span>
+        </label>
       </FacetAccordionItem>
 
       <FacetAccordionItem id="style" title="Board Style">

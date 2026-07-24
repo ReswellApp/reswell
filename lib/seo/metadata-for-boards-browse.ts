@@ -41,7 +41,8 @@ function boardsBrowseHasContentFilters(sp: BoardsBrowseSearchParams): boolean {
       sp.dimVolume ||
       sp.minPrice ||
       sp.maxPrice ||
-      sp.radius,
+      sp.radius ||
+      sp.shipping,
   )
 }
 

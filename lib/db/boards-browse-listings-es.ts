@@ -75,9 +75,9 @@ export async function getBoardsBrowseListingsPageViaEs(
 
   if (ids === null) return null
   if (ids.orderedIds.length === 0 && ids.total === 0) {
-    // Legitimate empty result for an active facet filter — do not fall back to Postgres
-    // (which would ignore the same sparse indexed fields and show unfiltered rows).
-    if (input.facets && hasAnyFacetSelection(input.facets)) {
+    // Legitimate empty result for an active facet / shipping filter — do not fall back to
+    // Postgres (which would ignore the same sparse indexed fields and show unfiltered rows).
+    if ((input.facets && hasAnyFacetSelection(input.facets)) || input.shippingAvailable) {
       return { boards: [], totalPages: 0 }
     }
     return null

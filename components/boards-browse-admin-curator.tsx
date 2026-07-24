@@ -422,9 +422,9 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
           <DialogHeader className="shrink-0 min-w-0 text-left sm:text-left">
             <DialogTitle>/boards CMS</DialogTitle>
             <DialogDescription className="text-pretty [overflow-wrap:anywhere]">
-              Curate Top Picks to pin the best listings at the top of /boards (default sort). Suppress
-              listings to push them to the end (they stay visible). Hide from site removes them
-              entirely.
+              Curate Top Picks to pin the best listings at the top of /boards when that sort is
+              selected. Suppress listings to push them to the end (they stay visible). Hide from site
+              removes them entirely.
             </DialogDescription>
           </DialogHeader>
 

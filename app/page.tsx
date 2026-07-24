@@ -20,7 +20,6 @@ import {
   HomeRecentlyListedGrid,
   TrendingBrandsSection,
 } from "@/components/features/home"
-import { HomeRecentSectionListingCurator } from "@/components/home-recent-section-listing-curator"
 import { ShopNewListingStandardTile } from "@/components/features/marketplace/shop-new-listing-standard-tile"
 import {
   marketingCtaBannerCtaLabelClassName,
@@ -32,6 +31,8 @@ import {
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 import { PageStructuredData } from "@/components/seo/page-structured-data"
 import {
+  getCachedHomeRecentlyAddedFinsCatalog,
+  getCachedHomeRecentlyAddedSurfboardsCatalog,
   getCachedHomeRecentlySoldCatalog,
   getCachedHomeRecentlyListedGridCatalog,
   getCachedHomeStableCatalog,
@@ -45,8 +46,16 @@ export async function generateMetadata() {
 export const revalidate = 3600
 
 export default async function HomePage() {
-  const [stableCatalog, recentlySoldCatalog, recentlyListedGridCatalog] = await Promise.all([
+  const [
+    stableCatalog,
+    recentlyAddedSurfboardsCatalog,
+    recentlyAddedFinsCatalog,
+    recentlySoldCatalog,
+    recentlyListedGridCatalog,
+  ] = await Promise.all([
     getCachedHomeStableCatalog(),
+    getCachedHomeRecentlyAddedSurfboardsCatalog(),
+    getCachedHomeRecentlyAddedFinsCatalog(),
     getCachedHomeRecentlySoldCatalog(),
     getCachedHomeRecentlyListedGridCatalog(),
   ])
@@ -54,16 +63,18 @@ export default async function HomePage() {
   const {
     homeTrendingBrandRows,
     featuredShops,
-    featuredBoards,
-    featuredFins,
     featuredNew,
   } = stableCatalog
 
+  const { featuredBoards } = recentlyAddedSurfboardsCatalog
+  const { featuredFins } = recentlyAddedFinsCatalog
   const { featuredRecentlySold } = recentlySoldCatalog
   const { recentlyListedGrid } = recentlyListedGridCatalog
 
   const featuredListingIds = [
     ...stableCatalog.featuredListingIds,
+    ...recentlyAddedSurfboardsCatalog.featuredListingIds,
+    ...recentlyAddedFinsCatalog.featuredListingIds,
     ...recentlySoldCatalog.featuredListingIds,
     ...recentlyListedGridCatalog.featuredListingIds,
   ]
@@ -212,13 +223,6 @@ export default async function HomePage() {
               <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-2">
                   <h2 className="text-2xl font-bold">Recently added surfboards</h2>
-                  <HomeRecentSectionListingCurator
-                    sectionPath="recent-surfboards"
-                    isAdmin={isHomeHeroAdmin}
-                    buttonLabel="Curate Recently added surfboards"
-                    dialogTitle="Recently added surfboards"
-                    dialogDescription="When you add picks here, the homepage uses only those surfboard listings, in order. Remove every pick to return to the newest matching listings automatically. Use the crossed-out-eye control to hide listings from everything on the homepage while keeping them searchable elsewhere."
-                  />
                 </div>
                 <Button variant="outline" asChild>
                   <Link href="/boards" prefetch={boardsBrowseLinkPrefetch("/boards")}>
@@ -269,13 +273,6 @@ export default async function HomePage() {
                 <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-center gap-2">
                     <h2 className="text-2xl font-bold">Recently added fins</h2>
-                    <HomeRecentSectionListingCurator
-                      sectionPath="recent-fins"
-                      isAdmin={isHomeHeroAdmin}
-                      buttonLabel="Curate Recently added fins"
-                      dialogTitle="Recently added fins"
-                      dialogDescription="When picks exist here, only these fin listings appear on the homepage, in order. Clearing the list restores automatic sorting by newest listings. Homepage-only hiding helps keep stray listings off the homepage without removing site-wide listings."
-                    />
                   </div>
                   <Button variant="outline" asChild>
                     <Link href="/fins">
@@ -403,17 +400,12 @@ export default async function HomePage() {
           <FadeInSection>
           <section className="py-16 bg-offwhite">
             <div className="container mx-auto">
-              <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <h2 className="text-2xl font-bold">New Arrivals</h2>
-                  <p className="text-muted-foreground">Fresh gear from our store</p>
-                </div>
-                <Link
-                  href="/reswell/shop"
-                  className="text-sm font-medium text-foreground underline underline-offset-4"
-                >
-                  Shop from Reswell
-                </Link>
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold">
+                  <Link href="/reswell/shop" className="hover:opacity-80">
+                    Shop From Reswell
+                  </Link>
+                </h2>
               </div>
               <HomeListingScrollRow uniformCardHeights>
                 {featuredNew.map(({ listing, stockQuantity, categoryName }) => (

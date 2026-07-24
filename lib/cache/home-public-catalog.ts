@@ -17,13 +17,21 @@ import { loadHomeRecentlyListedGridRows } from "@/lib/services/homeRecentlyListe
 import { loadHomeRecentlySoldSurfboardRows } from "@/lib/services/homeRecentlySoldStrip"
 import { createAnonSupabaseClient } from "@/lib/supabase/anon"
 
-/** Admin-curated + stable homepage sections (hero, featured rows, shops, brands). */
+/** Admin-curated + stable homepage sections (hero, new gear, shops, brands). */
 export const HOME_STABLE_CATALOG_CACHE_TAG = "home-public-catalog-stable"
 export const HOME_STABLE_CATALOG_REVALIDATE_SECONDS = 60 * 60 * 24 * 7
 
 /** Auto-generated recently sold strip — refreshes on a short TTL. */
 export const HOME_RECENTLY_SOLD_CACHE_TAG = "home-public-catalog-recently-sold"
 export const HOME_RECENTLY_SOLD_REVALIDATE_SECONDS = 60 * 60
+
+/** Newest-first recently added surfboards strip — short TTL so new listings surface quickly. */
+export const HOME_RECENTLY_ADDED_SURFBOARDS_CACHE_TAG = "home-public-catalog-recently-added-surfboards"
+export const HOME_RECENTLY_ADDED_SURFBOARDS_REVALIDATE_SECONDS = 60 * 60
+
+/** Newest-first recently added fins strip — short TTL so new listings surface quickly. */
+export const HOME_RECENTLY_ADDED_FINS_CACHE_TAG = "home-public-catalog-recently-added-fins"
+export const HOME_RECENTLY_ADDED_FINS_REVALIDATE_SECONDS = 60 * 60
 
 /** Most-viewed surfboards + fins strip — view counts change more often than curated sections. */
 export const HOME_MOST_VIEWED_CACHE_TAG = "home-public-catalog-most-viewed"
@@ -88,9 +96,17 @@ export type HomeStableCatalog = {
   heroSlideUrls: string[]
   homeTrendingBrandRows: HomeTrendingBrandRow[]
   featuredShops: HomeFeaturedShop[] | null
-  featuredBoards: HomePeerScrollListing[] | null
-  featuredFins: HomePeerScrollListing[] | null
   featuredNew: HomeFeaturedNewItem[]
+  featuredListingIds: string[]
+}
+
+export type HomeRecentlyAddedSurfboardsCatalog = {
+  featuredBoards: HomePeerScrollListing[] | null
+  featuredListingIds: string[]
+}
+
+export type HomeRecentlyAddedFinsCatalog = {
+  featuredFins: HomePeerScrollListing[] | null
   featuredListingIds: string[]
 }
 
@@ -149,8 +165,6 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
     curatedHeroUrls,
     homeTrendingBrandRows,
     featuredShopsRes,
-    surfboardFeaturedRows,
-    finFeaturedRows,
     newGearRes,
   ] = await Promise.all([
     listHomeHeroCuratedSlideUrls(supabase),
@@ -163,8 +177,6 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
       .order("shop_verified", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(4),
-    loadHomeFeaturedSurfboardRows(supabase),
-    loadHomeFeaturedFinRows(supabase),
     supabase
       .from("listings")
       .select(featuredNewSelect)
@@ -189,12 +201,6 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
         .order("created_at", { ascending: false })
         .limit(24)
 
-  const rawFeaturedBoards = surfboardFeaturedRows as HomePeerScrollListing[]
-  const rawFeaturedFins = finFeaturedRows as HomePeerScrollListing[]
-
-  const featuredBoards = rawFeaturedBoards.length > 0 ? rawFeaturedBoards : null
-  const featuredFins = rawFeaturedFins.length > 0 ? rawFeaturedFins : null
-
   const featuredNew =
     newGearRes.data
       ?.map((l) => {
@@ -216,20 +222,36 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
       .filter((x) => x.stockQuantity > 0)
       .slice(0, 4) ?? []
 
-  const featuredListingIds = [
-    ...(featuredBoards ?? []).map((b) => b.id),
-    ...(featuredFins ?? []).map((b) => b.id),
-    ...featuredNew.map(({ listing }) => listing.id),
-  ]
+  const featuredListingIds = featuredNew.map(({ listing }) => listing.id)
 
   return {
     heroSlideUrls: buildHeroSlideUrls(curatedHeroUrls, heroListingsRes.data),
     homeTrendingBrandRows,
     featuredShops: (featuredShopsRes.data as HomeFeaturedShop[] | null) ?? null,
-    featuredBoards,
-    featuredFins,
     featuredNew,
     featuredListingIds,
+  }
+}
+
+async function loadHomeRecentlyAddedSurfboardsCatalogUncached(): Promise<HomeRecentlyAddedSurfboardsCatalog> {
+  const supabase = createAnonSupabaseClient()
+  const rows = (await loadHomeFeaturedSurfboardRows(supabase)) as HomePeerScrollListing[]
+  const featuredBoards = rows.length > 0 ? rows : null
+
+  return {
+    featuredBoards,
+    featuredListingIds: (featuredBoards ?? []).map((b) => b.id),
+  }
+}
+
+async function loadHomeRecentlyAddedFinsCatalogUncached(): Promise<HomeRecentlyAddedFinsCatalog> {
+  const supabase = createAnonSupabaseClient()
+  const rows = (await loadHomeFeaturedFinRows(supabase)) as HomePeerScrollListing[]
+  const featuredFins = rows.length > 0 ? rows : null
+
+  return {
+    featuredFins,
+    featuredListingIds: (featuredFins ?? []).map((b) => b.id),
   }
 }
 
@@ -248,10 +270,28 @@ async function loadHomeRecentlySoldCatalogUncached(): Promise<HomeRecentlySoldCa
 
 export const getCachedHomeStableCatalog = unstable_cache(
   loadHomeStableCatalogUncached,
-  ["home-stable-catalog-v3"],
+  ["home-stable-catalog-v5"],
   {
     revalidate: HOME_STABLE_CATALOG_REVALIDATE_SECONDS,
     tags: [HOME_STABLE_CATALOG_CACHE_TAG],
+  },
+)
+
+export const getCachedHomeRecentlyAddedSurfboardsCatalog = unstable_cache(
+  loadHomeRecentlyAddedSurfboardsCatalogUncached,
+  ["home-recently-added-surfboards-catalog-v1"],
+  {
+    revalidate: HOME_RECENTLY_ADDED_SURFBOARDS_REVALIDATE_SECONDS,
+    tags: [HOME_RECENTLY_ADDED_SURFBOARDS_CACHE_TAG],
+  },
+)
+
+export const getCachedHomeRecentlyAddedFinsCatalog = unstable_cache(
+  loadHomeRecentlyAddedFinsCatalogUncached,
+  ["home-recently-added-fins-catalog-v1"],
+  {
+    revalidate: HOME_RECENTLY_ADDED_FINS_REVALIDATE_SECONDS,
+    tags: [HOME_RECENTLY_ADDED_FINS_CACHE_TAG],
   },
 )
 
