@@ -4,9 +4,14 @@ import {
   leashSizeSlugForDb,
 } from "@/lib/leash-listing-config"
 import { reswellPackageFieldsToDb } from "@/lib/sell-listing-fulfillment-flags"
+import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
+import type { ListingPersistShippingOptions } from "@/lib/sell-shipping-cost-mode"
 import type { CreateLeashListingInput } from "@/lib/validations/leash-listing"
 
-export function leashListingShippingFieldsFor(input: CreateLeashListingInput): {
+export function leashListingShippingFieldsFor(
+  input: CreateLeashListingInput,
+  options?: ListingPersistShippingOptions,
+): {
   shipping_available: boolean
   local_pickup: boolean
   shipping_price: number | null
@@ -20,7 +25,10 @@ export function leashListingShippingFieldsFor(input: CreateLeashListingInput): {
       board_shipping_cost_mode: null,
     }
   }
-  const mode = input.shippingCostMode ?? "reswell"
+  const mode = normalizeSellShippingCostMode(
+    input.shippingCostMode,
+    options?.allowPrivilegedShippingModes === true,
+  )
   if (mode === "free") {
     return {
       shipping_available: true,
@@ -48,10 +56,15 @@ export function leashListingShippingFieldsFor(input: CreateLeashListingInput): {
 /** Maps validated sell-form input to `listings` columns for create/update. */
 export function buildLeashListingPersistFields(
   input: CreateLeashListingInput,
+  options?: ListingPersistShippingOptions,
 ): Record<string, unknown> {
-  const shipping = leashListingShippingFieldsFor(input)
+  const shipping = leashListingShippingFieldsFor(input, options)
+  const shippingMode = normalizeSellShippingCostMode(
+    input.shippingCostMode,
+    options?.allowPrivilegedShippingModes === true,
+  )
   const packedRow = reswellPackageFieldsToDb({
-    boardShippingCostMode: input.shippingCostMode ?? "reswell",
+    boardShippingCostMode: shippingMode,
     reswellPackageLengthIn: input.reswellPackageLengthIn,
     reswellPackageWidthIn: input.reswellPackageWidthIn,
     reswellPackageHeightIn: input.reswellPackageHeightIn,

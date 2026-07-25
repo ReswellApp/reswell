@@ -17,6 +17,7 @@ import {
   proxiedListingImageSrc,
 } from "@/lib/listing-media-proxy-url"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
+import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 
 function timeAgo(dateStr: string | null): string {
   if (!dateStr) return "Never"
@@ -133,6 +134,7 @@ export async function FollowersDashboardPanels() {
         .select("user_id, created_at, title, price, slug, section, listing_images(url, is_primary)")
         .in("user_id", sellerIds)
         .eq("status", "active")
+        .in("section", PEER_LISTING_SECTIONS_FILTER)
         .order("created_at", { ascending: false })
     : { data: [] }
 

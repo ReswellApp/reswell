@@ -95,9 +95,15 @@ export function validateSellListingForm(
     imagesUploadReady: boolean
     /** Admin editing another user's listing via impersonation — allow legacy rows that predate newer required fields. */
     adminImpersonationEdit?: boolean
+    /**
+     * When true, Reswell UPS DIM failures tell the admin to pick free/flat instead of
+     * blocking all shipping. Free/flat themselves never run UPS checks.
+     */
+    allowPrivilegedShippingModes?: boolean
   },
 ): string | null {
   const relaxed = opts.adminImpersonationEdit === true
+  const allowPrivilegedShipping = opts.allowPrivilegedShippingModes === true
 
   if (!form.title?.trim()) {
     return "Please enter a listing title."
@@ -207,34 +213,51 @@ export function validateSellListingForm(
   }
 
   const fulfillmentFlags = flagsFromBoardFulfillment(form.boardFulfillment)
-  // Reswell /sell shipping is UPS shortboard pack bands only (auto-picked Compact/Standard/Max).
   if (fulfillmentFlags.shipping_available && !relaxed) {
-    if (!form.boardLength.trim()) {
-      return "Enter board length so we can set up shipping for this listing."
-    }
-    const tierId = parseSurfboardShippingTierId(form.surfboardShippingTier)
-    if (tierId !== "shortboard") {
-      return "Shipping isn't available for this board — it exceeds UPS size limits. Use local pickup."
-    }
-    const bandId = parseSurfboardShippingPackBandId(form.surfboardShippingPackBand)
-    if (!bandId) {
-      return "Shipping is still setting up — wait a moment or re-enter board length."
-    }
-    const bandErr = surfboardShippingPackBandBoardSpecsError({
-      bandId,
-      boardLength: form.boardLength,
-      boardWidthInches: form.boardWidthInches,
-    })
-    if (bandErr) return bandErr
-    const band = surfboardShippingPackBandFixedParcel(bandId)
-    const limitCheck = validateSurfboardShippingTierParcelLimits(tierId, {
-      lengthIn: band.lengthIn,
-      widthIn: band.widthIn,
-      heightIn: band.heightIn,
-      weightLb: band.weightLb,
-    })
-    if (!limitCheck.ok) {
-      return "Shipping isn't available for this board — it exceeds UPS size limits. Use local pickup."
+    const shippingMode = form.boardShippingCostMode ?? "reswell"
+
+    // Free / flat are NOT Reswell UPS — no pack-band or DIM checks.
+    if (shippingMode === "flat") {
+      const raw = String(form.boardShippingPrice ?? "").trim().replace(/,/g, "")
+      const n = Number.parseFloat(raw)
+      if (!raw || !Number.isFinite(n) || n < 0) {
+        return "Enter a flat shipping rate."
+      }
+    } else if (shippingMode !== "free") {
+      // Reswell mode only — UPS shortboard pack bands (Compact/Standard/Max).
+      if (!form.boardLength.trim()) {
+        return "Enter board length so we can set up Reswell shipping for this listing."
+      }
+      const tierId = parseSurfboardShippingTierId(form.surfboardShippingTier)
+      const reswellUpsBlockedMessage = allowPrivilegedShipping
+        ? "Reswell UPS shipping isn’t available for this board size. Select Free shipping or Flat-rate shipping (other carrier), or use local pickup."
+        : "Reswell UPS shipping isn’t available for this board — it exceeds size limits. Use local pickup."
+
+      if (tierId !== "shortboard") {
+        return reswellUpsBlockedMessage
+      }
+      const bandId = parseSurfboardShippingPackBandId(form.surfboardShippingPackBand)
+      if (!bandId) {
+        return allowPrivilegedShipping
+          ? "Reswell shipping isn’t set up for this board. Select Free shipping or Flat-rate shipping, or re-enter board length."
+          : "Reswell shipping is still setting up — wait a moment or re-enter board length."
+      }
+      const bandErr = surfboardShippingPackBandBoardSpecsError({
+        bandId,
+        boardLength: form.boardLength,
+        boardWidthInches: form.boardWidthInches,
+      })
+      if (bandErr) return bandErr
+      const band = surfboardShippingPackBandFixedParcel(bandId)
+      const limitCheck = validateSurfboardShippingTierParcelLimits(tierId, {
+        lengthIn: band.lengthIn,
+        widthIn: band.widthIn,
+        heightIn: band.heightIn,
+        weightLb: band.weightLb,
+      })
+      if (!limitCheck.ok) {
+        return reswellUpsBlockedMessage
+      }
     }
   }
 

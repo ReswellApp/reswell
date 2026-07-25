@@ -111,6 +111,24 @@ export async function POST(request: NextRequest) {
       ? board_shipping_cost_mode
       : null
 
+  let surfboardShippingCostMode: string | null =
+    section === 'surfboards' ? modeRaw : null
+  if (section === 'surfboards' && (shipping_available || false)) {
+    const { data: actorProfile } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .maybeSingle()
+    const actorIsAdmin = actorProfile?.is_admin === true
+    if (!actorIsAdmin) {
+      surfboardShippingCostMode = 'reswell'
+    } else if (!surfboardShippingCostMode) {
+      surfboardShippingCostMode = 'reswell'
+    }
+  } else if (section === 'surfboards' && !shipping_available) {
+    surfboardShippingCostMode = null
+  }
+
   const listingBrandId =
     typeof bodyBrandId === "string" && bodyBrandId.trim() ? bodyBrandId.trim() : null
   const listingBrandModelId =
@@ -133,8 +151,14 @@ export async function POST(request: NextRequest) {
     category_id,
     shipping_available: shipping_available || false,
     local_pickup: local_pickup !== false,
-    shipping_price: shipping_price ? parseFloat(shipping_price) : null,
-    board_shipping_cost_mode: section === 'surfboards' ? modeRaw : null,
+    shipping_price:
+      section === 'surfboards' &&
+      (surfboardShippingCostMode === 'reswell' || surfboardShippingCostMode === 'free')
+        ? 0
+        : shipping_price
+          ? parseFloat(shipping_price)
+          : null,
+    board_shipping_cost_mode: surfboardShippingCostMode,
     city,
     state,
     board_type,

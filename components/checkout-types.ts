@@ -18,7 +18,7 @@ export type CheckoutListing = PayableListing & {
   quantity?: number
   /** When `"reswell"`, checkout calls ShipEngine for live carrier rates. */
   board_shipping_cost_mode?: string | null
-  /** BoardShipper flat-rate tier when `board_shipping_cost_mode` is `"flat"`. */
+  /** Legacy package tier (shortboard / midlength / longboard); Reswell pack bands preferred. */
   shipping_package_tier?: string | null
   shipping_package_band?: string | null
   shipping_price?: string | number | null

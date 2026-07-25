@@ -253,6 +253,8 @@ export async function SurfboardListingDetailPage({
           canPick: pickupOffered,
           canShip: shippingOffered,
           shippingFlatRate: Math.max(0, Number.parseFloat(String(board.shipping_price ?? 0)) || 0),
+          shippingCostMode:
+            (board.board_shipping_cost_mode as "reswell" | "flat" | "free" | null) ?? null,
         }
       : undefined
 
@@ -294,7 +296,10 @@ export async function SurfboardListingDetailPage({
     } else if (shippingOffered && boardShippingCostMode === "reswell") {
       shippingPriceCaption = "Shipping rate calculated at checkout"
     } else if (shippingOffered && boardShippingCostMode === "flat") {
-      shippingPriceCaption = "BoardShipper rate calculated at checkout"
+      shippingPriceCaption =
+        shippingFlatRate > 0
+          ? `+ $${shippingFlatRate.toFixed(2)} shipping`
+          : "Flat shipping at checkout"
     }
   }
 
@@ -304,7 +309,11 @@ export async function SurfboardListingDetailPage({
       if (boardShippingCostMode === "free") return ["Free shipping"]
       if (shippingFlatRate > 0) return [`Ships (+$${shippingFlatRate.toFixed(2)})`]
       if (boardShippingCostMode === "reswell") return ["Shipping at checkout"]
-      if (boardShippingCostMode === "flat") return ["BoardShipper at checkout"]
+      if (boardShippingCostMode === "flat") {
+        return shippingFlatRate > 0
+          ? [`Ships (+$${shippingFlatRate.toFixed(2)})`]
+          : ["Flat shipping"]
+      }
       return ["Ships"]
     }
     if (shippingOffered && pickupOffered) {
@@ -316,7 +325,7 @@ export async function SurfboardListingDetailPage({
             : boardShippingCostMode === "reswell"
               ? "Shipping at checkout"
               : boardShippingCostMode === "flat"
-                ? "BoardShipper at checkout"
+                ? "Flat shipping"
                 : "Shipping"
       return ["Local pickup", shipPart]
     }

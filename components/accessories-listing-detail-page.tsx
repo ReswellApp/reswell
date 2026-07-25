@@ -240,6 +240,8 @@ export async function AccessoriesListingDetailPage({
           canPick: pickupOffered,
           canShip: shippingOffered,
           shippingFlatRate,
+          shippingCostMode:
+            (accessory.board_shipping_cost_mode as "reswell" | "flat" | "free" | null) ?? null,
         }
       : undefined
 

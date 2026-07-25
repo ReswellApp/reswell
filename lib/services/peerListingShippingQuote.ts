@@ -7,11 +7,7 @@ import {
   getCheapestReswellRateForListings,
   type ReswellRateableListing,
 } from "@/lib/services/reswellListingShippingRate"
-import {
-  listingUsesBoardShipperFlatRates,
-  quoteBoardShipperFlatShippingUsd,
-} from "@/lib/shipping/boardshipper-flat-rates"
-import { parseSurfboardShippingTierId } from "@/lib/surfboard-shipping-tiers"
+import type { PeerCheckoutShippingRateOption } from "@/lib/shipping/peer-checkout-usps-services"
 
 /**
  * Supabase `listings` select fragment for peer surfboard checkout + ShipEngine.
@@ -70,8 +66,6 @@ export function effectiveBoardShippingMode(
   const sp = Math.max(0, parseFloat(String(listing.shipping_price ?? 0)) || 0)
   return sp > 0 ? "flat" : "reswell"
 }
-
-export { listingUsesBoardShipperFlatRates } from "@/lib/shipping/boardshipper-flat-rates"
 
 /**
  * Live ShipEngine quote (USD) for peer surfboard checkout when the listing uses Reswell-calculated shipping.
@@ -156,34 +150,12 @@ export async function computePeerBundleShippingUsd(input: {
   }
 
   if (!modes.includes("reswell")) {
-    if (
-      input.buyerAddress &&
-      listings.every((l) => listingUsesBoardShipperFlatRates(l))
-    ) {
-      let sum = 0
-      for (const listing of listings) {
-        const tierId = parseSurfboardShippingTierId(listing.shipping_package_tier)
-        if (!tierId) {
-          return { ok: false, error: "This listing is missing a shipping size tier." }
-        }
-        const quoted = quoteBoardShipperFlatShippingUsd({
-          tierId,
-          buyerAddress: input.buyerAddress,
-        })
-        if (!quoted.ok) return quoted
-        sum += quoted.shippingUsd
-      }
-      return {
-        ok: true,
-        shippingUsd: Math.round(sum * 100) / 100,
-        usedReswellQuote: false,
-      }
-    }
-
-    const flatSum = input.listings.reduce(
-      (sum, l) => sum + Math.max(0, parseFloat(String(l.shipping_price ?? 0)) || 0),
-      0,
-    )
+    /** Flat/free — dollar amount from listing (no BoardShipper zone tables). */
+    const flatSum = input.listings.reduce((sum, l) => {
+      const mode = effectiveBoardShippingMode(l)
+      if (mode === "free") return sum
+      return sum + Math.max(0, parseFloat(String(l.shipping_price ?? 0)) || 0)
+    }, 0)
     return { ok: true, shippingUsd: Math.round(flatSum * 100) / 100, usedReswellQuote: false }
   }
 
@@ -266,25 +238,6 @@ export async function computePeerCheckoutTotalsUsd(input: {
     return { ok: true, itemPrice, shippingUsd: 0, totalUsd: itemPrice, usedReswellQuote: false }
   }
   if (mode === "flat") {
-    const tierId = parseSurfboardShippingTierId(input.listing.shipping_package_tier)
-    if (tierId) {
-      if (!input.buyerAddress) {
-        return { ok: false, error: "Shipping address is required" }
-      }
-      const quoted = quoteBoardShipperFlatShippingUsd({
-        tierId,
-        buyerAddress: input.buyerAddress,
-      })
-      if (!quoted.ok) return quoted
-      return {
-        ok: true,
-        itemPrice,
-        shippingUsd: quoted.shippingUsd,
-        totalUsd: Math.round((itemPrice + quoted.shippingUsd) * 100) / 100,
-        usedReswellQuote: false,
-      }
-    }
-
     const ship = Math.max(0, parseFloat(String(input.listing.shipping_price ?? 0)) || 0)
     return {
       ok: true,

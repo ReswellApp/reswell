@@ -1,8 +1,10 @@
 /**
  * Reswell-owned retail shop (`listings.section = 'new'`).
- * Managed by any Reswell admin via `/admin/shop`. Not peer marketplace,
- * not consignment, and not the old localStorage-only “new” cart path.
- * Distinct from peer fee waiver (`profiles.is_reswell_seller`).
+ * Managed by any Reswell admin via `/admin/shop`. Owned by the dedicated
+ * platform profile (`RESWELL_SHOP_OWNER_USER_ID` / shop@reswell.app) — never a
+ * personal seller. Lives only on `/reswell/shop` (not peer marketplace,
+ * consignment, or seller profiles). Distinct from peer fee waiver
+ * (`profiles.is_reswell_seller`).
  */
 
 export const RESWELL_SHOP_SECTION = "new" as const

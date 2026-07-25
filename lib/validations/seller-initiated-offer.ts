@@ -9,6 +9,7 @@ export const sellerInitiatedOfferBodySchema = z
   .object({
     buyerUserId: z.string().uuid(),
     fulfillment: z.enum(["pickup", "shipping"]),
+    /** Ignored — shipping always comes from the listing. Kept for older clients. */
     shippingAmount: z.coerce.number().finite().min(0).optional(),
     lineItems: z.array(sellerOfferLineItemInputSchema).min(1).max(20).optional(),
     /** Legacy single-item clients may send amount instead of lineItems. */
@@ -33,10 +34,6 @@ export const sellerInitiatedOfferBodySchema = z
           path: ["lineItems"],
         })
       }
-    }
-    if (data.fulfillment === "shipping" && data.shippingAmount == null && !hasLineItems && data.amount != null) {
-      // Single-item legacy path may omit shippingAmount; service defaults from listing.
-      return
     }
   })
 

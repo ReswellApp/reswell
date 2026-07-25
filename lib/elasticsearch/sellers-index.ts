@@ -1,12 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 import { getElasticsearchClient } from "./client"
 
 /**
  * Sellers (shop + seller profile) search index for the `/sellers` directory dropdown.
  * A document represents a `profiles` row that qualifies as a seller — either:
  *   - `is_shop = true`, or
- *   - Has at least one active, visible listing.
+ *   - Has at least one active, visible peer marketplace listing.
  *
+ * Reswell retail (`section = new`) does not qualify a profile as a marketplace seller.
  * Profiles that stop qualifying are removed from the index.
  */
 export const ELASTICSEARCH_SELLERS_INDEX =
@@ -173,6 +175,7 @@ export async function userHasActiveListings(
     .eq("status", "active")
     .eq("hidden_from_site", false)
     .is("archived_at", null)
+    .in("section", PEER_LISTING_SECTIONS_FILTER)
     .limit(1)
   if (error) return false
   return (count ?? 0) > 0

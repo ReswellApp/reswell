@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { FollowingFeedClient } from "./following-feed-client"
+import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 
 export const metadata = pageSeoMetadata({
@@ -57,6 +58,7 @@ export default async function FollowingFeedPage() {
         `)
         .in("user_id", sellerIds)
         .eq("status", "active")
+        .in("section", PEER_LISTING_SECTIONS_FILTER)
         .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
         .order("created_at", { ascending: false })
         .limit(20)

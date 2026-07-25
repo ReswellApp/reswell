@@ -1,17 +1,15 @@
 "use client"
 
-import { useCallback, useId, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
 import { Loader2, X, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -22,6 +20,8 @@ import {
 } from "@/components/ui/breadcrumb"
 import { LocationPicker } from "@/components/location-picker"
 import { SellFormSection } from "@/components/features/sell/sell-form-section"
+import { SellShippingCostModeRadios } from "@/components/features/sell/sell-shipping-cost-mode-radios"
+import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellWetsuitsFacetFields } from "@/components/features/sell/sell-wetsuits-facet-fields"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
@@ -170,6 +170,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
   const [form, setForm] = useState<WetsuitFormState>(INITIAL_STATE)
   const [submitting, setSubmitting] = useState(false)
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
+  const [actorIsAdmin, setActorIsAdmin] = useState<boolean | null>(null)
 
   const wetsuitSellReturnPath = useCallback(
     () =>
@@ -325,6 +326,36 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     setForm((prev) => ({ ...prev, [key]: value }))
   }, [])
 
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const supabase = supabaseRef.current
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) {
+        if (!cancelled) setActorIsAdmin(null)
+        return
+      }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", user.id)
+        .maybeSingle()
+      if (!cancelled) setActorIsAdmin(profile?.is_admin === true)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (actorIsAdmin !== false) return
+    if (form.shippingMode !== "free" && form.shippingMode !== "flat") return
+    setField("shippingMode", "reswell")
+  }, [actorIsAdmin, form.shippingMode, setField])
+
+
   const sellSectionCompletion = useMemo(
     () =>
       computeWetsuitSellSectionCompletion({
@@ -366,6 +397,14 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
       signIn("/sell/wetsuits")
       return
     }
+
+    const { data: actorProfile } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .maybeSingle()
+    const submitActorIsAdmin = actorProfile?.is_admin === true
+    setActorIsAdmin(submitActorIsAdmin)
 
     const publishStartedAt = Date.now()
     logSellFunnelEvent({
@@ -412,7 +451,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
       scrollWetsuitSellSectionIntoView("sell-wetsuits-section-delivery")
       return
     }
-    if (form.shippingMode === "reswell") {
+    if (normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin) === "reswell") {
       const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
       const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
       const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
@@ -423,7 +462,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
       }
     }
     if (
-      form.shippingMode === "flat" &&
+      normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin) === "flat" &&
       (form.shippingPrice === "" || Number(form.shippingPrice) < 0)
     ) {
       failValidation("Enter a flat shipping rate.")
@@ -445,9 +484,9 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
       locationLng: form.locationLng ?? undefined,
       shippingAvailable: true,
       localPickup: false,
-      shippingCostMode: form.shippingMode,
+      shippingCostMode: normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin),
       shippingPrice:
-        form.shippingMode === "flat"
+        normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin) === "flat"
           ? Number(form.shippingPrice || 0)
           : null,
       reswellPackageLengthIn: form.reswellPackageLengthIn,
@@ -470,20 +509,23 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     try {
       clearImpersonationStorageIfCookieMissing()
 
-      const { data: actorProfile } = await supabase
-        .from("profiles")
-        .select("is_admin")
-        .eq("id", user.id)
-        .maybeSingle()
-      const actorIsAdmin = actorProfile?.is_admin === true
-
       let storedImpersonation = getImpersonation()
-      if (storedImpersonation && !actorIsAdmin) {
+      if (storedImpersonation && !submitActorIsAdmin) {
         clearImpersonation()
         storedImpersonation = null
       }
+
+      const editingOwnListing =
+        Boolean(editId) &&
+        Boolean(editListingOwnerId) &&
+        user.id === editListingOwnerId
+      if (editingOwnListing && storedImpersonation) {
+        clearImpersonation()
+        storedImpersonation = null
+      }
+
       const listingImpersonation =
-        actorIsAdmin && storedImpersonation ? storedImpersonation : null
+        submitActorIsAdmin && storedImpersonation ? storedImpersonation : null
 
       const adminImpersonatesListingOwner = Boolean(
         editId &&
@@ -509,7 +551,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               listingId: editId,
-              listing: buildWetsuitListingPersistFields(payload),
+              listing: buildWetsuitListingPersistFields(payload, { allowPrivilegedShippingModes: true }),
               removedImageIds,
               images: imageOps,
             }),
@@ -588,7 +630,10 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
 
       await finalizePeerListingCreate({
         listingImpersonation,
-        listingFields: buildWetsuitListingPersistFields(payload),
+        listingFields: buildWetsuitListingPersistFields(
+          payload,
+          listingImpersonation ? { allowPrivilegedShippingModes: true } : undefined,
+        ),
         images: payload.images.map((img) => ({
           url: img.url,
           thumbnailUrl: img.thumbnailUrl,
@@ -821,100 +866,12 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
                         *
                       </span>
                     </h3>
-                    <RadioGroup
+                    <SellShippingCostModeRadios
+                      idPrefix="sell-wetsuits"
                       value={form.shippingMode}
-                      onValueChange={(value) =>
-                        setField("shippingMode", value as "reswell" | "free" | "flat")
-                      }
-                      className="space-y-3"
-                    >
-                        <label
-                          htmlFor="sell-wetsuits-ship-mode-reswell"
-                          className={cn(
-                            "flex cursor-pointer gap-3 rounded-lg border p-4 transition-colors",
-                            form.shippingMode === "reswell"
-                              ? "border-primary bg-primary/5"
-                              : "border-border hover:border-primary/35",
-                          )}
-                        >
-                          <RadioGroupItem
-                            value="reswell"
-                            id="sell-wetsuits-ship-mode-reswell"
-                            className="mt-0.5"
-                          />
-                          <div className="min-w-0 flex-1 flex-col gap-1.5">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-sm font-medium leading-snug text-foreground">
-                                Let Reswell determine the shipping cost for you
-                              </span>
-                              <Badge
-                                variant="default"
-                                className="h-auto shrink-0 border-0 bg-listingHeart px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white hover:bg-[#2a4170]"
-                              >
-                                Recommended
-                              </Badge>
-                            </div>
-                            {form.shippingMode === "reswell" ? (
-                              <p className="text-sm leading-relaxed text-muted-foreground/45">
-                                We&apos;ll calculate shipping from your packed dimensions and add it
-                                to the buyer&apos;s total at checkout. When an order is placed,
-                                we&apos;ll email you the shipping label.{" "}
-                                <Link
-                                  href="/terms"
-                                  className="text-foreground underline underline-offset-2 hover:text-primary"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  View terms
-                                </Link>
-                              </p>
-                            ) : null}
-                          </div>
-                        </label>
-                        <label
-                          htmlFor="sell-wetsuits-ship-mode-free"
-                          className={cn(
-                            "flex cursor-pointer gap-3 rounded-lg border p-4 transition-colors",
-                            form.shippingMode === "free"
-                              ? "border-primary bg-primary/5"
-                              : "border-border hover:border-primary/35",
-                          )}
-                        >
-                          <RadioGroupItem value="free" id="sell-wetsuits-ship-mode-free" className="mt-0.5" />
-                          <div className="min-w-0 flex-1 flex-col gap-1.5">
-                            <span className="text-sm font-medium leading-snug text-foreground">
-                              Offer free shipping
-                            </span>
-                            {form.shippingMode === "free" ? (
-                              <p className="text-sm leading-relaxed text-muted-foreground/45">
-                                Attract more buyers by covering shipping — you can adjust your list
-                                price to account for the cost.
-                              </p>
-                            ) : null}
-                          </div>
-                        </label>
-                        <label
-                          htmlFor="sell-wetsuits-ship-mode-flat"
-                          className={cn(
-                            "flex cursor-pointer gap-3 rounded-lg border p-4 transition-colors",
-                            form.shippingMode === "flat"
-                              ? "border-primary bg-primary/5"
-                              : "border-border hover:border-primary/35",
-                          )}
-                        >
-                          <RadioGroupItem value="flat" id="sell-wetsuits-ship-mode-flat" className="mt-0.5" />
-                          <div className="min-w-0 flex-1 flex-col gap-1.5">
-                            <span className="text-sm font-medium leading-snug text-foreground">
-                              Set a flat shipping rate
-                            </span>
-                            {form.shippingMode === "flat" ? (
-                              <p className="text-sm leading-relaxed text-muted-foreground/45">
-                                One cost that all buyers in the Continental U.S. will pay at checkout.
-                              </p>
-                            ) : null}
-                          </div>
-                        </label>
-                      </RadioGroup>
-                      {form.shippingMode === "flat" ? (
+                      onChange={(mode) => setField("shippingMode", mode)}
+                      allowPrivilegedModes={actorIsAdmin === true}
+                      flatRateSlot={
                         <div className="space-y-2 rounded-lg border border-border bg-background p-4 sm:p-5">
                           <Label htmlFor="wetsuit-shipping-price" className="text-sm font-semibold text-foreground">
                             Shipping rate{" "}
@@ -941,7 +898,8 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
                             />
                           </div>
                         </div>
-                      ) : null}
+                      }
+                    />
                   </div>
                 </div>
               </SellFormSection>

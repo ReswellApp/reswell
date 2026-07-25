@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 import { buildInventoryCountBySeller } from "@/lib/sellers/directory-ranking"
 
 export type SellersDirectoryEligibleIdsResult = {
@@ -9,8 +10,10 @@ export type SellersDirectoryEligibleIdsResult = {
 /**
  * Profile ids shown on `/sellers` and used for directory search eligibility:
  * - shop accounts (`is_shop`), OR
- * - at least one active visible marketplace listing, OR
+ * - at least one active visible peer marketplace listing, OR
  * - at least one sold surfboard listing (visible, not archived).
+ *
+ * Reswell retail (`section = new`) is excluded — it lives only on `/reswell/shop`.
  */
 export async function fetchSellersDirectoryEligibleSellerIds(
   supabase: SupabaseClient,
@@ -26,7 +29,8 @@ export async function fetchSellersDirectoryEligibleSellerIds(
       .select("user_id")
       .eq("status", "active")
       .eq("hidden_from_site", false)
-      .is("archived_at", null),
+      .is("archived_at", null)
+      .in("section", PEER_LISTING_SECTIONS_FILTER),
     supabase
       .from("listings")
       .select("user_id")

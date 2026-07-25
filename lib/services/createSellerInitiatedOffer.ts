@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { fetchListingForOffer, type ListingRowForOffer } from "@/lib/db/offers"
-import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
+import { offerShippingAmountFromListing } from "@/lib/offer-listing-shipping"
 import { trackKlaviyoSellerMadeOfferToBuyer } from "@/lib/klaviyo/track-seller-made-offer-to-buyer"
 import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
 import { formatSellerOfferThreadContent } from "@/lib/utils/format-offer-thread-content"
@@ -36,12 +36,6 @@ async function findActiveNegotiationForBuyerListing(
 
   if (error || !data) return null
   return { id: data.id as string }
-}
-
-function defaultShippingAmount(listing: ListingRowForOffer): number {
-  const raw = listing.shipping_price
-  const n = typeof raw === "number" ? raw : parseFloat(String(raw ?? "0"))
-  return Number.isFinite(n) && n >= 0 ? roundMoney(n) : 0
 }
 
 function validateListingForSellerOffer(
@@ -194,18 +188,14 @@ export async function createSellerInitiatedOffer(
 
   const itemsSubtotal = roundMoney(lineItems.reduce((sum, row) => sum + row.amount, 0))
 
-  let shippingAmount: number | null = null
-  if (fulfillment === "shipping") {
-    const singleListing = listingsById.get(normalizedLineItems[0]!.listingId)!
-    const shippingMode = effectiveBoardShippingMode(singleListing)
-    if (shippingMode === "reswell") {
-      shippingAmount = null
-    } else if (body.shippingAmount != null) {
-      shippingAmount = roundMoney(body.shippingAmount)
-    } else {
-      shippingAmount = defaultShippingAmount(singleListing)
-    }
-  }
+  /** Shipping is never negotiated — always take the listing’s terms. */
+  const shippingAmount =
+    fulfillment === "shipping"
+      ? offerShippingAmountFromListing(
+          listingsById.get(normalizedLineItems[0]!.listingId)!,
+          fulfillment,
+        )
+      : null
 
   const primaryListingId = normalizedLineItems[0]!.listingId
   const primaryListing = listingsById.get(primaryListingId)!

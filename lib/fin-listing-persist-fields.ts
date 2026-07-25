@@ -7,15 +7,25 @@ import {
   finSizeSlugForDb,
 } from "@/lib/fin-listing-config"
 import { reswellPackageFieldsToDb } from "@/lib/sell-listing-fulfillment-flags"
+import {
+  normalizeSellShippingCostMode,
+  type ListingPersistShippingOptions,
+} from "@/lib/sell-shipping-cost-mode"
 import type { CreateFinListingInput } from "@/lib/validations/fin-listing"
 
-export function finListingShippingFieldsFor(input: CreateFinListingInput): {
+export function finListingShippingFieldsFor(
+  input: CreateFinListingInput,
+  options?: ListingPersistShippingOptions,
+): {
   shipping_available: boolean
   local_pickup: boolean
   shipping_price: number | null
   board_shipping_cost_mode: string | null
 } {
-  const mode = input.shippingCostMode ?? "reswell"
+  const mode = normalizeSellShippingCostMode(
+    input.shippingCostMode,
+    options?.allowPrivilegedShippingModes === true,
+  )
   if (mode === "free") {
     return {
       shipping_available: true,
@@ -41,9 +51,15 @@ export function finListingShippingFieldsFor(input: CreateFinListingInput): {
 }
 
 /** Maps validated sell-form input to `listings` columns for create/update. */
-export function buildFinListingPersistFields(input: CreateFinListingInput): Record<string, unknown> {
-  const shipping = finListingShippingFieldsFor(input)
-  const shippingMode = input.shippingCostMode ?? "reswell"
+export function buildFinListingPersistFields(
+  input: CreateFinListingInput,
+  options?: ListingPersistShippingOptions,
+): Record<string, unknown> {
+  const shipping = finListingShippingFieldsFor(input, options)
+  const shippingMode = normalizeSellShippingCostMode(
+    input.shippingCostMode,
+    options?.allowPrivilegedShippingModes === true,
+  )
   const reswellPackage =
     shippingMode === "reswell"
       ? applyFinReswellPackageDefaults({

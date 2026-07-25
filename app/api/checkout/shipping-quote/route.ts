@@ -113,6 +113,7 @@ export async function POST(request: Request) {
   const addressId = String(bodyObj.address_id ?? "").trim()
   const selectedRateId = String(bodyObj.selected_rate_id ?? "").trim() || null
   const selectedServiceCode = String(bodyObj.selected_service_code ?? "").trim() || null
+  const offerId = String(bodyObj.offer_id ?? "").trim() || null
 
   if (listingIds.length === 0 || !addressId) {
     return NextResponse.json(
@@ -137,7 +138,15 @@ export async function POST(request: Request) {
   /** Runtime select fragment loses Supabase's row inference; cast through `unknown` once. */
   let listingRows = listingRowsRaw as unknown as PeerSurfboardCheckoutListingRow[]
 
-  listingRows = await applyAcceptedOfferToPeerCheckoutListings(supabase, user.id, listingRows)
+  // Preserve checkout listing order from the request (offer bundles are ordered).
+  const listingById = new Map(listingRows.map((row) => [row.id, row]))
+  listingRows = listingIds
+    .map((id) => listingById.get(id))
+    .filter((row): row is PeerSurfboardCheckoutListingRow => row != null)
+
+  listingRows = await applyAcceptedOfferToPeerCheckoutListings(supabase, user.id, listingRows, {
+    offerId,
+  })
 
   if (listingRows.some((l) => isBlockedOwnListingPurchase(l, user.id))) {
     return NextResponse.json(

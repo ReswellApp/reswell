@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const service = createServiceRoleClient()
-    const result = await createReswellShopProduct(service, parsed.data, gate.ctx.user.id)
+    const result = await createReswellShopProduct(service, parsed.data)
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: 500 })
     }

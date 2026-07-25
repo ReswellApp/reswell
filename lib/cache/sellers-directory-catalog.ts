@@ -8,6 +8,7 @@ import {
   buildSellerDirectoryMosaicSlots,
   type SellerDirectoryMosaicSlot,
 } from "@/lib/sellers/directory-mosaic-images"
+import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 import { fetchSellersDirectoryEligibleSellerIds } from "@/lib/sellers/directory-eligibility"
 import { orderSellersWithDemotions } from "@/lib/sellers/directory-ranking"
 import {
@@ -126,6 +127,7 @@ async function loadSellersDirectoryCatalogUncached(): Promise<SellersDirectoryCa
       .eq("status", "active")
       .eq("hidden_from_site", false)
       .is("archived_at", null)
+      .in("section", PEER_LISTING_SECTIONS_FILTER)
       .order("created_at", { ascending: false })
       .limit(LISTINGS_FETCH_CAP),
     supabase.from("reviews").select("reviewed_id, rating").in("reviewed_id", orderedSellerIds),

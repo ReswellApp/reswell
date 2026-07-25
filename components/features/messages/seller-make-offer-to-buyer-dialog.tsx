@@ -20,6 +20,11 @@ import { createClient } from "@/lib/supabase/client"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { cn } from "@/lib/utils"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import {
+  offerShippingAmountFromListing,
+  offerShippingCostHint,
+  offerShippingCostLabel,
+} from "@/lib/offer-listing-shipping"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
 
@@ -243,7 +248,6 @@ export function SellerMakeOfferToBuyerDialog({
   const [selectedOrder, setSelectedOrder] = useState<string[]>([listingId])
   const [amountByListingId, setAmountByListingId] = useState<Record<string, string>>({})
   const [fulfillment, setFulfillment] = useState<"pickup" | "shipping">("pickup")
-  const [shippingAmountInput, setShippingAmountInput] = useState("")
   const [message, setMessage] = useState("")
   const [submitting, setSubmitting] = useState(false)
 
@@ -293,7 +297,6 @@ export function SellerMakeOfferToBuyerDialog({
     setSelectedOrder([listingId])
     setAmountByListingId({})
     setFulfillment("pickup")
-    setShippingAmountInput("")
     setMessage("")
     setSubmitting(false)
     void loadSellerListings()
@@ -331,9 +334,10 @@ export function SellerMakeOfferToBuyerDialog({
   const singleListing = orderedSelectedListings.length === 1 ? orderedSelectedListings[0] : null
   const shippingMode =
     singleListing && !isBundle ? effectiveBoardShippingMode(singleListing) : null
-  const isReswellShipping = fulfillment === "shipping" && shippingMode === "reswell"
-  const isFreeShipping = fulfillment === "shipping" && shippingMode === "free"
-  const usesFlatShippingInput = fulfillment === "shipping" && shippingMode === "flat"
+  const listingFlatRate =
+    singleListing != null
+      ? Math.max(0, Number(singleListing.shipping_price ?? 0) || 0)
+      : 0
 
   const bundleFulfillmentMode = useMemo(() => {
     if (orderedSelectedListings.length === 0) return "pickup_only" as const
@@ -355,22 +359,6 @@ export function SellerMakeOfferToBuyerDialog({
     if (bundleFulfillmentMode === "shipping_only") setFulfillment("shipping")
     if (bundleFulfillmentMode === "pickup_only") setFulfillment("pickup")
   }, [isBundle, bundleFulfillmentMode])
-
-  useEffect(() => {
-    if (fulfillment !== "shipping" || orderedSelectedListings.length !== 1) return
-    const listing = orderedSelectedListings[0]
-    if (!listing) return
-    const mode = effectiveBoardShippingMode(listing)
-    if (mode === "free") {
-      setShippingAmountInput("0")
-    } else if (mode === "reswell") {
-      setShippingAmountInput("")
-    } else if (listing.shipping_price != null && listing.shipping_price > 0) {
-      setShippingAmountInput(listing.shipping_price.toFixed(2))
-    } else {
-      setShippingAmountInput("")
-    }
-  }, [fulfillment, orderedSelectedListings])
 
   const lineItems = useMemo(() => {
     return orderedSelectedListings.map((row) => ({
@@ -417,24 +405,20 @@ export function SellerMakeOfferToBuyerDialog({
       : null
 
   const shippingAmount = useMemo(() => {
-    if (fulfillment !== "shipping") return 0
-    if (isFreeShipping) return 0
-    if (isReswellShipping) return null
-    const parsed = parseAmountInput(shippingAmountInput)
-    return parsed ?? 0
-  }, [fulfillment, isFreeShipping, isReswellShipping, shippingAmountInput])
+    if (fulfillment !== "shipping" || !singleListing) return null
+    return offerShippingAmountFromListing(singleListing, fulfillment)
+  }, [fulfillment, singleListing])
 
-  const shippingValid =
-    fulfillment !== "shipping" ||
-    isReswellShipping ||
-    isFreeShipping ||
-    parseAmountInput(shippingAmountInput) !== null
+  const shippingLabel =
+    fulfillment === "shipping"
+      ? offerShippingCostLabel(shippingMode, listingFlatRate)
+      : "Local pickup"
 
   const totalPreview =
     itemsSubtotal != null
-      ? isReswellShipping
-        ? itemsSubtotal
-        : roundMoney(itemsSubtotal + (fulfillment === "shipping" ? (shippingAmount ?? 0) : 0))
+      ? shippingAmount != null
+        ? roundMoney(itemsSubtotal + shippingAmount)
+        : itemsSubtotal
       : null
 
   function addListing(id: string) {
@@ -460,7 +444,7 @@ export function SellerMakeOfferToBuyerDialog({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!allAmountsValid || !shippingValid || orderedSelectedListings.length === 0) {
+    if (!allAmountsValid || orderedSelectedListings.length === 0) {
       toast.error("Check each item price and fulfillment option.")
       return
     }
@@ -473,8 +457,6 @@ export function SellerMakeOfferToBuyerDialog({
         body: JSON.stringify({
           buyerUserId,
           fulfillment,
-          shippingAmount:
-            fulfillment === "shipping" && !isReswellShipping ? (shippingAmount ?? 0) : undefined,
           lineItems: lineItems.map((row) => ({
             listingId: row.listingId,
             amount: row.amount,
@@ -670,45 +652,20 @@ export function SellerMakeOfferToBuyerDialog({
                     )}
                   >
                     <Truck className="h-4 w-4" aria-hidden />
-                    <span className="font-medium text-foreground">Shipping</span>
+                    <span className="font-medium text-foreground">Pay for shipping</span>
                   </button>
                 </div>
               )}
             </div>
 
-            {fulfillment === "shipping" && !isBundle ? (
-              isReswellShipping ? (
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-semibold">Shipping</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Reswell shipping — carrier rate calculated at checkout (buyer pays item + shipping).
-                  </p>
-                </div>
-              ) : usesFlatShippingInput ? (
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-semibold">Shipping price</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Flat shipping amount for this offer (buyer pays item + shipping).
-                  </p>
-                  <div className="relative max-w-[12rem]">
-                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                      $
-                    </span>
-                    <Input
-                      className="h-10 pl-7"
-                      placeholder="0.00"
-                      inputMode="decimal"
-                      value={shippingAmountInput}
-                      onChange={(e) => setShippingAmountInput(e.target.value)}
-                    />
-                  </div>
-                </div>
-              ) : isFreeShipping ? (
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-semibold">Shipping</Label>
-                  <p className="text-xs text-muted-foreground">Free shipping included in this offer.</p>
-                </div>
-              ) : null
+            {fulfillment === "shipping" && !isBundle && singleListing ? (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-semibold">Shipping from listing</Label>
+                <p className="text-sm font-medium tabular-nums">{shippingLabel}</p>
+                <p className="text-xs text-muted-foreground">
+                  {offerShippingCostHint(shippingMode, listingFlatRate)}
+                </p>
+              </div>
             ) : null}
 
             {totalPreview != null ? (
@@ -727,13 +684,13 @@ export function SellerMakeOfferToBuyerDialog({
                   ) : null}
                 </div>
                 {fulfillment === "shipping" && itemsSubtotal != null ? (
-                  isReswellShipping ? (
+                  shippingAmount != null ? (
                     <p className="mt-1 text-xs text-muted-foreground">
-                      ${itemsSubtotal.toFixed(2)} items + shipping at checkout
+                      ${itemsSubtotal.toFixed(2)} items + ${shippingAmount.toFixed(2)} shipping
                     </p>
                   ) : (
                     <p className="mt-1 text-xs text-muted-foreground">
-                      ${itemsSubtotal.toFixed(2)} items + ${(shippingAmount ?? 0).toFixed(2)} shipping
+                      ${itemsSubtotal.toFixed(2)} items + shipping at checkout
                     </p>
                   )
                 ) : isBundle && itemsSubtotal != null ? (
@@ -773,8 +730,7 @@ export function SellerMakeOfferToBuyerDialog({
                 submitting ||
                 loadingListings ||
                 orderedSelectedListings.length === 0 ||
-                !allAmountsValid ||
-                !shippingValid
+                !allAmountsValid
               }
             >
               {submitting ? (

@@ -8,6 +8,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import {
   syncListingImages,
@@ -61,7 +62,10 @@ export async function updateWetsuitListing(
     throw new Error("Sold listings cannot be edited")
   }
 
-  const updateFields = buildWetsuitListingPersistFields(input)
+  const allowPrivilegedShippingModes = await fetchProfileIsAdmin(supabase, userId)
+  const updateFields = buildWetsuitListingPersistFields(input, {
+    allowPrivilegedShippingModes,
+  })
   const { data: updated, error: updateError } = await supabase
     .from("listings")
     .update(updateFields)
@@ -93,7 +97,10 @@ export async function createWetsuitListing(
   input: CreateWetsuitListingInput,
 ): Promise<CreateWetsuitListingResult> {
   const slug = await generateUniqueListingSlug(supabase, input.title)
-  const persistFields = buildWetsuitListingPersistFields(input)
+  const allowPrivilegedShippingModes = await fetchProfileIsAdmin(supabase, userId)
+  const persistFields = buildWetsuitListingPersistFields(input, {
+    allowPrivilegedShippingModes,
+  })
   const { updated_at: _omitUpdatedAt, ...insertFields } = persistFields
 
   const { data: inserted, error: listingError } = await supabase

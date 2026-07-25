@@ -240,6 +240,8 @@ export async function ApparelListingDetailPage({
           canPick: pickupOffered,
           canShip: shippingOffered,
           shippingFlatRate,
+          shippingCostMode:
+            (apparel.board_shipping_cost_mode as "reswell" | "flat" | "free" | null) ?? null,
         }
       : undefined
 

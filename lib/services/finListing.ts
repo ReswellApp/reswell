@@ -6,6 +6,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { FINS_SECTION } from "@/lib/fin-listing-config"
 import { buildFinListingPersistFields } from "@/lib/fin-listing-persist-fields"
@@ -114,7 +115,10 @@ export async function updateFinListing(
     ? await generateUniqueListingSlug(supabase, input.title)
     : null
 
-  const updateFields = buildFinListingPersistFields(input)
+  const allowPrivilegedShippingModes = await fetchProfileIsAdmin(supabase, userId)
+  const updateFields = buildFinListingPersistFields(input, {
+    allowPrivilegedShippingModes,
+  })
   const { data: updated, error: updateError } = await supabase
     .from("listings")
     .update({
@@ -155,7 +159,10 @@ export async function createFinListing(
   input: CreateFinListingInput,
 ): Promise<CreateFinListingResult> {
   const slug = await generateUniqueListingSlug(supabase, input.title)
-  const persistFields = buildFinListingPersistFields(input)
+  const allowPrivilegedShippingModes = await fetchProfileIsAdmin(supabase, userId)
+  const persistFields = buildFinListingPersistFields(input, {
+    allowPrivilegedShippingModes,
+  })
   const { updated_at: _omitUpdatedAt, ...insertFields } = persistFields
 
   const { data: inserted, error: listingError } = await supabase

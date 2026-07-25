@@ -20,6 +20,7 @@ import {
   MakeOfferDialog,
   MakeOfferTriggerButton,
 } from "@/components/features/listings/make-offer-dialog"
+import type { OfferShippingCostMode } from "@/lib/offer-listing-shipping"
 import type { ListingExclusivePurchaseAccess } from "@/lib/services/listingBuyerExclusiveWindow"
 
 export type ListingMakeOfferConfig = {
@@ -31,6 +32,7 @@ export type ListingMakeOfferConfig = {
   canPick: boolean
   canShip: boolean
   shippingFlatRate: number
+  shippingCostMode?: OfferShippingCostMode | null
 }
 
 export type ListingDetailPeerPurchaseActionsProps = {
@@ -146,7 +148,7 @@ export function ListingDetailPeerPurchaseActions({
       Number.isFinite(agreedCheckoutItemUsd) ? (
         <p className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.08] px-4 py-3 text-[13px] leading-snug text-emerald-900 dark:border-emerald-400/25 dark:bg-emerald-500/10 dark:text-emerald-100">
           You accepted <span className="font-semibold tabular-nums">${agreedCheckoutItemUsd.toFixed(2)}</span> for
-          this board. Buy now charges that price (plus shipping if you choose shipping).
+          this board. Buy now charges that price and uses the delivery method from your offer.
         </p>
       ) : null}
       {!purchaseBlocked ? (
@@ -232,6 +234,7 @@ export function ListingDetailPeerPurchaseActions({
             canPick={makeOffer.canPick}
             canShip={makeOffer.canShip}
             shippingFlatRate={makeOffer.shippingFlatRate}
+            shippingCostMode={makeOffer.shippingCostMode ?? null}
             isLoggedIn={isLoggedIn}
             open={offerOpen}
             onOpenChange={setOfferOpen}

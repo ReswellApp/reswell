@@ -7,6 +7,8 @@ import type { SellerProfileListing } from "@/components/sellers/seller-profile-l
 import { deriveSellerDirectoryTileMeta } from "@/lib/sellers/directory-tile-meta"
 import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
 import { absoluteUrl } from "@/lib/site-metadata"
+import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
+import { configuredReswellShopOwnerUserId } from "@/lib/services/resolveReswellShopOwnerUser"
 
 const PROFILE_UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -169,6 +171,11 @@ export default async function SellerProfilePage({
 
   const id = shop.id
 
+  // Platform retail owner has no public seller storefront — send traffic to /reswell/shop.
+  if (configuredReswellShopOwnerUserId() === id) {
+    redirect("/reswell/shop")
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -192,6 +199,7 @@ export default async function SellerProfilePage({
     `,
     )
     .eq("user_id", id)
+    .in("section", PEER_LISTING_SECTIONS_FILTER)
   if (!canSeeHiddenListings) {
     // Sold history stays public on the profile even after seller archive/cleanup.
     listingsQuery = listingsQuery.or("hidden_from_site.eq.false,status.eq.sold")

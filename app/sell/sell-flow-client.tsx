@@ -144,6 +144,8 @@ import {
 } from "@/components/features/sell/hooks/use-sell-server-draft"
 import { clearSellServerDraftListingId, getSellServerDraftListingId, replaceSellDraftEditUrl, setSellServerDraftListingId } from "@/lib/sell-draft-local-meta"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
+import { SellShippingCostModeRadios } from "@/components/features/sell/sell-shipping-cost-mode-radios"
+import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import { SellBoardModelField } from "@/components/sell-board-model-field"
 import { listingDetailPath } from "@/lib/listing-query"
 import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listing-detail-cache"
@@ -972,6 +974,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
   const [impersonation, setImpersonation] = useState<ImpersonationData | null>(null)
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
+  const [actorIsAdmin, setActorIsAdmin] = useState<boolean | null>(null)
   useEffect(() => {
     clearImpersonationStorageIfCookieMissing()
     setImpersonation(getImpersonation())
@@ -1219,7 +1222,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   )
 
   const hydrateBoardEdit = useCallback(
-    (listing: OwnedListingForEditRow) => {
+    (listing: OwnedListingForEditRow, sessionUserId: string) => {
+      clearImpersonationStorageIfCookieMissing()
       const imp = getImpersonation()
 
       if ((listing as { status?: string }).status === "sold") {
@@ -1247,7 +1251,12 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           replaceSellDraftEditUrl("surfboards", String(listing.id))
         }
       }
-      if (imp && imp.userId !== listing.user_id) {
+      // Keep impersonation only when editing that seller’s listing (not your own).
+      const keepImpersonation =
+        imp != null &&
+        imp.userId === listing.user_id &&
+        sessionUserId !== listing.user_id
+      if (imp && !keepImpersonation) {
         clearImpersonation()
         setImpersonation(null)
       }
@@ -1262,8 +1271,13 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       ) {
         boardShippingPrice = "0"
       }
-      // Surfboard /sell is Reswell shipping only — migrate free/flat listings on edit.
-      const boardShippingCostMode: BoardShippingCostMode = "reswell"
+      // Load stored mode; non-admins are coerced to Reswell in an effect below.
+      const storedMode = (listing as { board_shipping_cost_mode?: string | null })
+        .board_shipping_cost_mode
+      const boardShippingCostMode: BoardShippingCostMode =
+        storedMode === "flat" || storedMode === "free" || storedMode === "reswell"
+          ? storedMode
+          : "reswell"
       const snapRel = (
         listing as {
           user_listing_board_model_data?:
@@ -1711,8 +1725,9 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     formData.surfboardShippingPackBand,
   ])
 
-  /** Keep shipping mode locked to Reswell (legacy free/flat drafts / edits). */
+  /** Sellers stay Reswell-only; admins may keep free/flat. */
   useEffect(() => {
+    if (actorIsAdmin !== false) return
     if (!deliveryFlags.shipping_available) return
     if (formData.boardShippingCostMode === "reswell") return
     setFormData((fd) =>
@@ -1720,22 +1735,88 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         ? fd
         : { ...fd, boardShippingCostMode: "reswell" as BoardShippingCostMode },
     )
-  }, [deliveryFlags.shipping_available, formData.boardShippingCostMode])
+  }, [actorIsAdmin, deliveryFlags.shipping_available, formData.boardShippingCostMode])
 
   /**
    * Auto-pick the smallest UPS-safe shortboard pack (Compact → Standard → Max).
-   * Boards over the UPS DIM ceiling cannot ship — turn shipping off.
+   * Boards over the UPS DIM ceiling cannot use Reswell shipping — turn it off for sellers.
+   * Admins may keep flat/free shipping on oversize boards (past inventory, special cases).
+   *
+   * Wait until `actorIsAdmin` is known — otherwise free/flat gets wiped while the profile
+   * query is still in flight (common when editing your own admin listings).
    */
   useEffect(() => {
+    if (actorIsAdmin === null && !impersonation) return
+
     const resolved = resolveSellReswellShipping({
       boardLength: formData.boardLength,
       boardWidthInches: formData.boardWidthInches,
     })
+    const allowPrivilegedShippingUi =
+      actorIsAdmin === true || Boolean(impersonation)
 
     setFormData((fd) => {
       const shippingOn = flagsFromBoardFulfillment(fd.boardFulfillment).shipping_available
+      const privilegedFlatOrFree =
+        allowPrivilegedShippingUi &&
+        (fd.boardShippingCostMode === "free" || fd.boardShippingCostMode === "flat")
 
       if (!resolved.shippingSupported) {
+        // Admin flat/free on an oversize board — keep shipping; clear Reswell pack fields only.
+        if (privilegedFlatOrFree && shippingOn) {
+          if (
+            !fd.surfboardShippingTier &&
+            !fd.surfboardShippingPackBand &&
+            !fd.reswellPackageLengthIn &&
+            !fd.reswellPackageWidthIn &&
+            !fd.reswellPackageHeightIn &&
+            !fd.reswellPackageWeightLb &&
+            !fd.reswellPackageWeightOz
+          ) {
+            return fd
+          }
+          return {
+            ...fd,
+            surfboardShippingTier: "" as SurfboardShippingTierId | "",
+            surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
+            surfboardShippingTierCeilingConfirmed: false,
+            surfboardShippingPackBandCeilingConfirmed: false,
+            reswellPackageLengthIn: "",
+            reswellPackageWidthIn: "",
+            reswellPackageHeightIn: "",
+            reswellPackageWeightLb: "",
+            reswellPackageWeightOz: "",
+          }
+        }
+
+        // Admin may still enable flat/free — don't yank shipping off while they pick a mode.
+        if (allowPrivilegedShippingUi && shippingOn) {
+          if (
+            !fd.surfboardShippingTier &&
+            !fd.surfboardShippingPackBand &&
+            fd.boardShippingCostMode !== "reswell"
+          ) {
+            return fd
+          }
+          return {
+            ...fd,
+            // Default oversize admin ship to flat so Save isn't blocked on Reswell UPS checks.
+            boardShippingCostMode:
+              fd.boardShippingCostMode === "free" || fd.boardShippingCostMode === "flat"
+                ? fd.boardShippingCostMode
+                : ("flat" as BoardShippingCostMode),
+            surfboardShippingTier: "" as SurfboardShippingTierId | "",
+            surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
+            surfboardShippingTierCeilingConfirmed: false,
+            surfboardShippingPackBandCeilingConfirmed: false,
+            reswellPackageLengthIn: "",
+            reswellPackageWidthIn: "",
+            reswellPackageHeightIn: "",
+            reswellPackageWeightLb: "",
+            reswellPackageWeightOz: "",
+          }
+        }
+
         if (!shippingOn && !fd.surfboardShippingTier && !fd.surfboardShippingPackBand) {
           return fd
         }
@@ -1763,8 +1844,10 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       const nextTier = nextBand ? ("shortboard" as const) : ("" as const)
       const ceilingOk = Boolean(nextBand)
 
+      const keepPrivilegedMode = privilegedFlatOrFree
+
       if (
-        fd.boardShippingCostMode === "reswell" &&
+        (keepPrivilegedMode || fd.boardShippingCostMode === "reswell") &&
         fd.surfboardShippingTier === nextTier &&
         fd.surfboardShippingPackBand === nextBand &&
         fd.surfboardShippingTierCeilingConfirmed === ceilingOk &&
@@ -1775,14 +1858,22 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
       return {
         ...fd,
-        boardShippingCostMode: "reswell" as BoardShippingCostMode,
+        boardShippingCostMode: keepPrivilegedMode
+          ? fd.boardShippingCostMode
+          : ("reswell" as BoardShippingCostMode),
         surfboardShippingTier: nextTier,
         surfboardShippingPackBand: nextBand,
         surfboardShippingTierCeilingConfirmed: ceilingOk,
         surfboardShippingPackBandCeilingConfirmed: ceilingOk,
       }
     })
-  }, [formData.boardLength, formData.boardWidthInches, deliveryFlags.shipping_available])
+  }, [
+    actorIsAdmin,
+    impersonation,
+    formData.boardLength,
+    formData.boardWidthInches,
+    deliveryFlags.shipping_available,
+  ])
 
   /**
    * `/sell?new=1` — blank form and local snapshot.
@@ -1885,9 +1976,23 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   }, [editId, startFresh, supabase])
 
   useEffect(() => {
+    const loadActorAdmin = async (userId: string | null) => {
+      if (!userId) {
+        setActorIsAdmin(null)
+        return
+      }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("is_admin")
+        .eq("id", userId)
+        .maybeSingle()
+      setActorIsAdmin(profile?.is_admin === true)
+    }
+
     void supabase.auth.getUser().then(({ data: { user } }) => {
       setSignedInUserId(user?.id ?? null)
       sellDraftUserIdRef.current = user?.id ?? null
+      void loadActorAdmin(user?.id ?? null)
     })
     const {
       data: { subscription },
@@ -1895,6 +2000,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       const uid = session?.user?.id ?? null
       sellDraftUserIdRef.current = uid
       setSignedInUserId(uid)
+      void loadActorAdmin(uid)
       if (!uid) return
       photoUploadSignInPromptedRef.current = false
       void migrateGuestSellListingDraftToUser(uid)
@@ -2636,17 +2742,33 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         .select("is_admin")
         .eq("id", user.id)
         .maybeSingle()
-      const actorIsAdmin = actorProfile?.is_admin === true
+      const submitActorIsAdmin = actorProfile?.is_admin === true
+      setActorIsAdmin(submitActorIsAdmin)
 
       /** Only admins may use impersonation listing APIs; server also requires the HTTP cookie + target id. */
       let storedImpersonation = getImpersonation()
-      if (storedImpersonation && !actorIsAdmin) {
+      if (storedImpersonation && !submitActorIsAdmin) {
         clearImpersonation()
         setImpersonation(null)
         storedImpersonation = null
       }
+
+      /**
+       * Editing your own listing never uses impersonation — drop a stale cookie so Save
+       * stays on the normal owner update path (admin flat/free included).
+       */
+      const editingOwnListing =
+        Boolean(editId) &&
+        Boolean(editListingOwnerId) &&
+        user.id === editListingOwnerId
+      if (editingOwnListing && storedImpersonation) {
+        clearImpersonation()
+        setImpersonation(null)
+        storedImpersonation = null
+      }
+
       const listingImpersonation: ImpersonationData | null =
-        actorIsAdmin && storedImpersonation ? storedImpersonation : null
+        submitActorIsAdmin && storedImpersonation ? storedImpersonation : null
 
       const adminImpersonationEditListing = Boolean(
         editId &&
@@ -2687,12 +2809,51 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         return
       }
 
+      setLoading(true)
+      // Yield one frame so loading overlay / aria-busy can paint before slug DB work (mobile "frozen" tap).
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve())
+      })
+
+      const allowPrivilegedShipping =
+        submitActorIsAdmin || Boolean(listingImpersonation)
+      const upsShippingSupported = resolveSellReswellShipping({
+        boardLength: submitForm.boardLength,
+        boardWidthInches: submitForm.boardWidthInches,
+      }).shippingSupported
+
+      // Admin free/flat are separate from Reswell UPS — never validate UPS DIM for those modes.
+      // If Reswell isn't available, coerce a leftover "reswell" selection to flat before validate/save.
+      let submitFormForSave = submitForm
+      if (
+        allowPrivilegedShipping &&
+        flagsFromBoardFulfillment(submitForm.boardFulfillment).shipping_available &&
+        !upsShippingSupported &&
+        (submitForm.boardShippingCostMode === "reswell" || !submitForm.boardShippingCostMode)
+      ) {
+        submitFormForSave = {
+          ...submitForm,
+          boardShippingCostMode: "flat" as BoardShippingCostMode,
+          surfboardShippingTier: "" as SurfboardShippingTierId | "",
+          surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
+          surfboardShippingTierCeilingConfirmed: false,
+          surfboardShippingPackBandCeilingConfirmed: false,
+          reswellPackageLengthIn: "",
+          reswellPackageWidthIn: "",
+          reswellPackageHeightIn: "",
+          reswellPackageWeightLb: "",
+          reswellPackageWeightOz: "",
+        }
+        setFormData(submitFormForSave)
+      }
+
       const validationMessage = validateSellListingForm(
-        { listingType: "board", ...submitForm } as SellFormValidationInput,
+        { listingType: "board", ...submitFormForSave } as SellFormValidationInput,
         {
           imageCount: images.length,
           imagesUploadReady,
           adminImpersonationEdit: adminImpersonationEditListing,
+          allowPrivilegedShippingModes: allowPrivilegedShipping,
         },
       )
       if (validationMessage) {
@@ -2701,6 +2862,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
           event: "validation_failed",
           message: validationMessage,
         })
+        setLoading(false)
         setPublishValidationBanner(validationMessage)
         window.requestAnimationFrame(() => {
           document
@@ -2710,13 +2872,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         return
       }
 
-      setLoading(true)
-      // Yield one frame so loading overlay / aria-busy can paint before slug DB work (mobile "frozen" tap).
-      await new Promise<void>((resolve) => {
-        requestAnimationFrame(() => resolve())
-      })
-
-      const fd = submitForm
+      const fd = submitFormForSave
 
       const persistBoardCatalogSnapshot = (listingIdForSnap: string, sellerUserId: string) => {
         void upsertUserListingBoardModelDataFromSellForm(supabase, {
@@ -2731,12 +2887,39 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       }
 
       const fulfillmentFlags = resolveListingFulfillmentFlagsForSellSubmit(fd)
+      const shippingCostMode = fulfillmentFlags.shipping_available
+        ? normalizeSellShippingCostMode(fd.boardShippingCostMode, allowPrivilegedShipping)
+        : null
+      const shippingPriceForPersist = !fulfillmentFlags.shipping_available
+        ? null
+        : shippingCostMode === "flat"
+          ? (() => {
+              const n = Number.parseFloat(String(fd.boardShippingPrice ?? "").replace(/,/g, ""))
+              return Number.isFinite(n) && n >= 0 ? n : 0
+            })()
+          : 0
+
+      if (
+        allowPrivilegedShipping &&
+        fulfillmentFlags.shipping_available &&
+        shippingCostMode === "flat" &&
+        (fd.boardShippingPrice === "" || Number(fd.boardShippingPrice) < 0)
+      ) {
+        setLoading(false)
+        setPublishValidationBanner("Enter a flat shipping rate.")
+        window.requestAnimationFrame(() => {
+          document
+            .getElementById("sell-publish-validation-banner")
+            ?.scrollIntoView({ behavior: "smooth", block: "center" })
+        })
+        return
+      }
 
       const fulfillmentRow = {
         shipping_available: fulfillmentFlags.shipping_available,
         local_pickup: fulfillmentFlags.local_pickup,
-        shipping_price: fulfillmentFlags.shipping_available ? 0 : null,
-        board_shipping_cost_mode: fulfillmentFlags.shipping_available ? "reswell" : null,
+        shipping_price: shippingPriceForPersist,
+        board_shipping_cost_mode: shippingCostMode,
       }
 
       const boardLocationLat = fd.locationLat ? fd.locationLat : null
@@ -2977,7 +3160,9 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
         } else {
           dismissUploadProgressToast()
           toast.error(
-            "This listing belongs to another account. From admin, open the seller and use impersonation for that shop, or sign in as the listing owner.",
+            submitActorIsAdmin
+              ? "This listing isn’t on your account. Sign in as the listing owner to edit it, or start impersonation for that seller first."
+              : "This listing belongs to another account. Sign in as the listing owner to edit it.",
           )
           setLoading(false)
           return
@@ -4005,14 +4190,22 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                               checked={deliveryFlags.shipping_available}
                               disabled={
                                 Boolean(formData.boardLength.trim()) &&
-                                !sellReswellShipping.shippingSupported
+                                !sellReswellShipping.shippingSupported &&
+                                actorIsAdmin === false &&
+                                !impersonation
                               }
                               onCheckedChange={(v) => {
                                 const want = v === true
+                                const allowPrivilegedShippingUi =
+                                  actorIsAdmin === true || Boolean(impersonation)
+                                // Only hard-block sellers (admin resolved false). While admin
+                                // status is loading (null), allow the toggle.
                                 if (
                                   want &&
                                   formData.boardLength.trim() &&
-                                  !sellReswellShipping.shippingSupported
+                                  !sellReswellShipping.shippingSupported &&
+                                  actorIsAdmin === false &&
+                                  !impersonation
                                 ) {
                                   return
                                 }
@@ -4020,11 +4213,35 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                 let ns = want
                                 let np = cur.local_pickup
                                 if (!ns && !np) np = true
+                                const oversizeAdminShip =
+                                  want &&
+                                  allowPrivilegedShippingUi &&
+                                  Boolean(formData.boardLength.trim()) &&
+                                  !sellReswellShipping.shippingSupported
                                 setFormData({
                                   ...formData,
                                   boardFulfillment: boardFulfillmentFromChecks(ns, np),
                                   ...(want
-                                    ? { boardShippingCostMode: "reswell" as BoardShippingCostMode }
+                                    ? {
+                                        // Oversize: default to flat (other carrier), not Reswell UPS.
+                                        boardShippingCostMode: oversizeAdminShip
+                                          ? ("flat" as BoardShippingCostMode)
+                                          : ("reswell" as BoardShippingCostMode),
+                                        ...(oversizeAdminShip
+                                          ? {
+                                              surfboardShippingTier: "" as SurfboardShippingTierId | "",
+                                              surfboardShippingTierCeilingConfirmed: false,
+                                              surfboardShippingPackBand:
+                                                "" as SurfboardShippingPackBandId | "",
+                                              surfboardShippingPackBandCeilingConfirmed: false,
+                                              reswellPackageLengthIn: "",
+                                              reswellPackageWidthIn: "",
+                                              reswellPackageHeightIn: "",
+                                              reswellPackageWeightLb: "",
+                                              reswellPackageWeightOz: "",
+                                            }
+                                          : {}),
+                                      }
                                     : {
                                         boardShippingCostMode: "reswell" as BoardShippingCostMode,
                                         boardShippingPrice: "",
@@ -4049,25 +4266,34 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                   className={cn(
                                     "text-sm font-medium leading-snug flex flex-wrap items-center gap-2",
                                     formData.boardLength.trim() &&
-                                      !sellReswellShipping.shippingSupported
+                                      !sellReswellShipping.shippingSupported &&
+                                      actorIsAdmin === false &&
+                                      !impersonation
                                       ? "cursor-not-allowed text-muted-foreground"
                                       : "cursor-pointer",
                                   )}
                                 >
-                                  <span>
-                                    Reswell shipping{" "}
-                                    <span className="font-bold uppercase tracking-wide text-foreground">
-                                      (BUYER PAYS SHIPPING)
+                                  {actorIsAdmin === true || Boolean(impersonation) ? (
+                                    <span>Offer shipping to buyers</span>
+                                  ) : (
+                                    <span>
+                                      Reswell shipping{" "}
+                                      <span className="font-bold uppercase tracking-wide text-foreground">
+                                        (BUYER PAYS SHIPPING)
+                                      </span>
                                     </span>
-                                  </span>
-                                  <Badge
-                                    variant="default"
-                                    className="border-0 bg-listingHeart text-white font-bold uppercase tracking-wide text-[10px] px-2 py-0.5 h-auto hover:bg-[#2a4170]"
-                                  >
-                                    Recommended to sell your board faster
-                                  </Badge>
+                                  )}
+                                  {!(actorIsAdmin === true || Boolean(impersonation)) ? (
+                                    <Badge
+                                      variant="default"
+                                      className="border-0 bg-listingHeart text-white font-bold uppercase tracking-wide text-[10px] px-2 py-0.5 h-auto hover:bg-[#2a4170]"
+                                    >
+                                      Recommended to sell your board faster
+                                    </Badge>
+                                  ) : null}
                                 </Label>
-                                {deliveryFlags.shipping_available ? (
+                                {deliveryFlags.shipping_available &&
+                                !(actorIsAdmin === true || Boolean(impersonation)) ? (
                                   <p className="text-sm text-muted-foreground/45 leading-relaxed">
                                     Buyer pays for shipping at checkout. We handle the calculations
                                     for you so you don&apos;t have to worry about shipping cost —
@@ -4075,11 +4301,88 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                   </p>
                                 ) : null}
                                 {formData.boardLength.trim() &&
-                                !sellReswellShipping.shippingSupported ? (
+                                !sellReswellShipping.shippingSupported &&
+                                actorIsAdmin === false &&
+                                !impersonation ? (
                                   <p className="text-sm text-destructive leading-relaxed">
-                                    Shipping isn&apos;t available for this board — it exceeds UPS
-                                    size limits. Use local pickup.
+                                    Reswell UPS shipping isn&apos;t available for this board — it
+                                    exceeds size limits. Use local pickup.
                                   </p>
+                                ) : null}
+                                {deliveryFlags.shipping_available &&
+                                (actorIsAdmin === true || Boolean(impersonation)) ? (
+                                  <div className="space-y-2 pt-1">
+                                    <p className="text-sm text-muted-foreground/45 leading-relaxed">
+                                      Choose how shipping is priced. Reswell uses UPS labels; free and
+                                      flat-rate are separate — you fulfill with any carrier.
+                                    </p>
+                                    <SellShippingCostModeRadios
+                                      idPrefix="sell-surfboard"
+                                      value={formData.boardShippingCostMode}
+                                      reswellAvailable={sellReswellShipping.shippingSupported}
+                                      onChange={(mode) => {
+                                        const clearReswellPack =
+                                          mode === "free" || mode === "flat"
+                                        setFormData({
+                                          ...formData,
+                                          boardShippingCostMode: mode,
+                                          ...(mode !== "flat" ? { boardShippingPrice: "" } : {}),
+                                          ...(clearReswellPack
+                                            ? {
+                                                surfboardShippingTier:
+                                                  "" as SurfboardShippingTierId | "",
+                                                surfboardShippingTierCeilingConfirmed: false,
+                                                surfboardShippingPackBand:
+                                                  "" as SurfboardShippingPackBandId | "",
+                                                surfboardShippingPackBandCeilingConfirmed: false,
+                                                reswellPackageLengthIn: "",
+                                                reswellPackageWidthIn: "",
+                                                reswellPackageHeightIn: "",
+                                                reswellPackageWeightLb: "",
+                                                reswellPackageWeightOz: "",
+                                              }
+                                            : {}),
+                                        })
+                                      }}
+                                      allowPrivilegedModes
+                                      flatRateSlot={
+                                        <div className="space-y-2 rounded-lg border border-border bg-background p-4 sm:p-5">
+                                          <Label
+                                            htmlFor="sell-surfboard-shipping-price"
+                                            className="text-sm font-semibold text-foreground"
+                                          >
+                                            Flat shipping rate{" "}
+                                            <span className="text-destructive" aria-hidden>
+                                              *
+                                            </span>
+                                          </Label>
+                                          <div className="relative max-w-md">
+                                            <span
+                                              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground/45"
+                                              aria-hidden
+                                            >
+                                              $
+                                            </span>
+                                            <Input
+                                              id="sell-surfboard-shipping-price"
+                                              type="number"
+                                              min="0"
+                                              step="0.01"
+                                              placeholder="0.00"
+                                              value={formData.boardShippingPrice}
+                                              onChange={(e) =>
+                                                setFormData({
+                                                  ...formData,
+                                                  boardShippingPrice: e.target.value,
+                                                })
+                                              }
+                                              className="pl-8 tabular-nums placeholder:text-muted-foreground/45"
+                                            />
+                                          </div>
+                                        </div>
+                                      }
+                                    />
+                                  </div>
                                 ) : null}
                               </div>
                             </div>
@@ -4094,11 +4397,14 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                 let ns = cur.shipping_available
                                 let np = want
                                 if (!ns && !np) ns = true
-                                // Too-large boards cannot use shipping — keep pickup on.
+                                // Too-large boards cannot use Reswell shipping — keep pickup on
+                                // for sellers only (admin free/flat uses another carrier).
                                 if (
                                   !np &&
                                   formData.boardLength.trim() &&
-                                  !sellReswellShipping.shippingSupported
+                                  !sellReswellShipping.shippingSupported &&
+                                  actorIsAdmin === false &&
+                                  !impersonation
                                 ) {
                                   np = true
                                   ns = false

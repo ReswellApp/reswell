@@ -145,7 +145,7 @@ export function surfboardShippingPackBandSummaryLine(
   bandId: SurfboardShippingPackBandId,
 ): string {
   const p = surfboardShippingPackBandFixedParcel(bandId)
-  return `${p.weightLb} lb — ${p.lengthIn} × ${p.widthIn} × ${p.heightIn} in · DIM ${p.dimIn}″`
+  return `${p.weightLb} lb - ${p.lengthIn} x ${p.widthIn} x ${p.heightIn} in · DIM ${p.dimIn}"`
 }
 
 export function surfboardShippingPackBandSurchargeHints(
@@ -189,14 +189,14 @@ export function surfboardShippingPackBandBoardSpecsError(input: {
   if (lengthIn != null) {
     const packedLengthNeed = lengthIn + SHORTBOARD_PACK_BAND_LENGTH_PAD_IN
     if (packedLengthNeed > band.lengthIn) {
-      return `This board needs about ${Math.ceil(packedLengthNeed)}″ of packed length — pick a larger shortboard pack size.`
+      return `This board needs about ${Math.ceil(packedLengthNeed)}" of packed length - pick a larger shortboard pack size.`
     }
   }
   const widthIn = maxBoardWidthInchesFromInput(input.boardWidthInches ?? "")
   if (widthIn != null) {
     const packedWidthNeed = widthIn + SHORTBOARD_PACK_BAND_WIDTH_PAD_IN
     if (packedWidthNeed > band.widthIn) {
-      return `This board is too wide for ${band.label} (needs ~${Math.ceil(packedWidthNeed)}″ packed width).`
+      return `This board is too wide for ${band.label} (needs ~${Math.ceil(packedWidthNeed)}" packed width).`
     }
   }
   return null
@@ -236,8 +236,16 @@ export function surfboardShippingPackBandWithinUpsDim(
   return p.dimIn <= SURFBOARD_LABEL_MAX_UPS_DIMENSION_TOTAL_IN
 }
 
+export function surfboardShippingPackBandNextLarger(
+  bandId: SurfboardShippingPackBandId,
+): SurfboardShippingPackBandId | null {
+  const idx = SURFBOARD_SHIPPING_PACK_BAND_IDS.indexOf(bandId)
+  if (idx < 0 || idx >= SURFBOARD_SHIPPING_PACK_BAND_IDS.length - 1) return null
+  return SURFBOARD_SHIPPING_PACK_BAND_IDS[idx + 1] ?? null
+}
+
 /**
- * Whether this board can ship via Reswell UPS (fits a shortboard pack band under the UPS DIM cap).
+ * Whether a board can ship via Reswell UPS (fits a shortboard pack band under the UPS DIM cap).
  * Midlength/longboard cartons exceed UPS parcel DIM and are not offered on /sell.
  */
 export function resolveSurfboardUpsShippingAvailability(input: {
@@ -272,12 +280,4 @@ export function resolveSurfboardUpsShippingAvailability(input: {
   }
 
   return { shippingSupported: false, suggestedPackBandId: "" }
-}
-
-export function surfboardShippingPackBandNextLarger(
-  bandId: SurfboardShippingPackBandId,
-): SurfboardShippingPackBandId | null {
-  const idx = SURFBOARD_SHIPPING_PACK_BAND_IDS.indexOf(bandId)
-  if (idx < 0 || idx >= SURFBOARD_SHIPPING_PACK_BAND_IDS.length - 1) return null
-  return SURFBOARD_SHIPPING_PACK_BAND_IDS[idx + 1] ?? null
 }

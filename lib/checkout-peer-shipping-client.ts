@@ -1,4 +1,5 @@
-import { effectiveBoardShippingMode, listingUsesBoardShipperFlatRates } from "@/lib/services/peerListingShippingQuote"
+import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
+import type { CheckoutListing } from "@/components/checkout-types"
 
 type ShippingModeListing = {
   board_shipping_cost_mode?: string | null
@@ -7,13 +8,10 @@ type ShippingModeListing = {
   shipping_package_band?: string | null
 }
 
-/** True when checkout must call `/api/checkout/shipping-quote` (live ShipEngine or BoardShipper flat). */
+/** True when checkout must call `/api/checkout/shipping-quote` (live ShipEngine). */
 export function peerCheckoutNeedsLiveShippingQuote(listings: ShippingModeListing[]): boolean {
   if (listings.length === 0) return false
-  return listings.some(
-    (l) =>
-      effectiveBoardShippingMode(l) === "reswell" || listingUsesBoardShipperFlatRates(l),
-  )
+  return listings.some((l) => effectiveBoardShippingMode(l) === "reswell")
 }
 
 /** Flat/free bundle or single-item shipping total — no ShipEngine round trip. */

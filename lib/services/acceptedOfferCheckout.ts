@@ -3,6 +3,7 @@ import {
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
+import { reconcileOfferFulfillmentWithListing } from "@/lib/offer-listing-shipping"
 import { parseOfferLineItems, type OfferLineItem } from "@/lib/types/offer-line-item"
 import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 
@@ -30,6 +31,27 @@ function listingSetsMatch(a: Set<string>, b: Set<string>): boolean {
 
 export function offerLineItemListingIds(items: OfferLineItem[]): string[] {
   return items.map((row) => row.listing_id)
+}
+
+/** Resolve checkout delivery lock from an accepted offer + current listing rows. */
+export function lockedFulfillmentFromOfferAndListings(
+  offerFulfillment: string | null | undefined,
+  listings: Array<{
+    shipping_available?: boolean | null
+    local_pickup?: boolean | null
+    shipping_price?: string | number | null
+    board_shipping_cost_mode?: string | null
+  }>,
+): "pickup" | "shipping" | null {
+  if (listings.length === 0) return null
+  const primary = listings[0]!
+  const reconciled = reconcileOfferFulfillmentWithListing(offerFulfillment, {
+    shipping_available: listings.length > 1 ? false : !!primary.shipping_available,
+    local_pickup: listings.every((row) => row.local_pickup !== false),
+    shipping_price: primary.shipping_price,
+    board_shipping_cost_mode: primary.board_shipping_cost_mode,
+  })
+  return reconciled.fulfillment
 }
 
 export async function fetchAcceptedOfferById(
@@ -64,6 +86,7 @@ export async function findAcceptedOfferMatchingListings(
   const checkoutSet = new Set(listingIdsOrdered)
 
   if (listingIdsOrdered.length === 1) {
+    // Prefer newest if multiple ACCEPTED rows exist — `.maybeSingle()` errors on >1.
     const { data, error } = await supabase
       .from("offers")
       .select(
@@ -73,6 +96,8 @@ export async function findAcceptedOfferMatchingListings(
       .eq("buyer_id", buyerId)
       .eq("seller_id", sellerId)
       .eq("status", "ACCEPTED")
+      .order("updated_at", { ascending: false })
+      .limit(1)
       .maybeSingle()
 
     if (error || !data) return null
@@ -87,6 +112,7 @@ export async function findAcceptedOfferMatchingListings(
     .eq("buyer_id", buyerId)
     .eq("seller_id", sellerId)
     .eq("status", "ACCEPTED")
+    .order("updated_at", { ascending: false })
 
   if (error || !data?.length) return null
 
@@ -122,6 +148,10 @@ export type LoadAcceptedOfferCheckoutResult =
       offer: AcceptedOfferCheckoutRow
       lineItems: OfferLineItem[]
       listings: PeerSurfboardCheckoutListingRow[]
+      /** Delivery method after aligning the offer with current listing flags. */
+      fulfillment: "pickup" | "shipping"
+      fulfillmentAdjusted: boolean
+      fulfillmentNote: string | null
     }
   | { ok: false; error: string }
 
@@ -196,7 +226,38 @@ export async function loadAcceptedOfferCheckoutListings(
 
   const listings = applyOfferLineItemsToListings(listingsOrdered, lineItems)
 
-  return { ok: true, offer, lineItems, listings }
+  const primary = listings[0]!
+  const reconciled = reconcileOfferFulfillmentWithListing(offer.fulfillment, {
+    /** Bundles are pickup-only — never treat them as shippable here. */
+    shipping_available: lineItems.length > 1 ? false : !!primary.shipping_available,
+    local_pickup: listings.every((row) => row.local_pickup !== false),
+    shipping_price: primary.shipping_price,
+    board_shipping_cost_mode: primary.board_shipping_cost_mode,
+  })
+
+  if (!reconciled.fulfillment) {
+    return {
+      ok: false,
+      error: reconciled.reason ?? "This offer’s delivery method is no longer available.",
+    }
+  }
+
+  if (lineItems.length > 1 && reconciled.fulfillment !== "pickup") {
+    return {
+      ok: false,
+      error: "Bundled offers must use local pickup. Contact the seller if you need help.",
+    }
+  }
+
+  return {
+    ok: true,
+    offer,
+    lineItems,
+    listings,
+    fulfillment: reconciled.fulfillment,
+    fulfillmentAdjusted: reconciled.adjusted,
+    fulfillmentNote: reconciled.reason,
+  }
 }
 
 export async function validateAcceptedOfferForPaymentIntent(
@@ -205,7 +266,12 @@ export async function validateAcceptedOfferForPaymentIntent(
   offerId: string,
   listingIdsOrdered: string[],
 ): Promise<
-  | { ok: true; offer: AcceptedOfferCheckoutRow; lineItems: OfferLineItem[] }
+  | {
+      ok: true
+      offer: AcceptedOfferCheckoutRow
+      lineItems: OfferLineItem[]
+      fulfillment: "pickup" | "shipping"
+    }
   | { ok: false; error: string }
 > {
   const offer = await fetchAcceptedOfferById(supabase, offerId)
@@ -230,5 +296,10 @@ export async function validateAcceptedOfferForPaymentIntent(
     return { ok: false, error: "Checkout listings do not match this offer." }
   }
 
-  return { ok: true, offer, lineItems: loaded.lineItems }
+  return {
+    ok: true,
+    offer,
+    lineItems: loaded.lineItems,
+    fulfillment: loaded.fulfillment,
+  }
 }

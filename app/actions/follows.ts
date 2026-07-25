@@ -1,6 +1,7 @@
 "use server"
 
 import { revalidateSellerProfileAndDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
+import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 import { createClient } from "@/lib/supabase/server"
 
 export async function followSeller(
@@ -178,6 +179,7 @@ export async function getFollowingFeedPage(opts: {
     .in("user_id", sellerIds)
     .eq("status", "active")
     .eq("hidden_from_site", false)
+    .in("section", PEER_LISTING_SECTIONS_FILTER)
     .gte("created_at", thirtyDaysAgo)
     .order("created_at", { ascending: false })
     .limit(limit + 1)

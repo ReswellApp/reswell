@@ -8,6 +8,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { ACCESSORIES_SECTION } from "@/lib/accessory-listing-config"
 import { buildAccessoryListingPersistFields } from "@/lib/accessory-listing-persist-fields"
@@ -114,7 +115,10 @@ export async function updateAccessoryListing(
     throw new Error("Sold listings cannot be edited")
   }
 
-  const updateFields = buildAccessoryListingPersistFields(input)
+  const allowPrivilegedShippingModes = await fetchProfileIsAdmin(supabase, userId)
+  const updateFields = buildAccessoryListingPersistFields(input, {
+    allowPrivilegedShippingModes,
+  })
   const { data: updated, error: updateError } = await supabase
     .from("listings")
     .update(updateFields)
@@ -146,7 +150,10 @@ export async function createAccessoryListing(
   input: CreateAccessoryListingInput,
 ): Promise<CreateAccessoryListingResult> {
   const slug = await generateUniqueListingSlug(supabase, input.title)
-  const persistFields = buildAccessoryListingPersistFields(input)
+  const allowPrivilegedShippingModes = await fetchProfileIsAdmin(supabase, userId)
+  const persistFields = buildAccessoryListingPersistFields(input, {
+    allowPrivilegedShippingModes,
+  })
   const { updated_at: _omitUpdatedAt, ...insertFields } = persistFields
 
   const { data: inserted, error: listingError } = await supabase

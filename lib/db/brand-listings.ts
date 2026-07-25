@@ -103,8 +103,8 @@ export async function listActiveListingsForBrand(
   } else if (sections?.length) {
     q = q.in("section", sections)
   } else {
-    /** Peer boards (`surfboards`) and shop inventory (`new`) both carry `brand_id` / `brand`. */
-    q = q.in("section", ["surfboards", "new"])
+    /** Peer marketplace only — Reswell retail lives solely on `/reswell/shop`. */
+    q = q.in("section", PEER_LISTING_SECTIONS_FILTER)
   }
 
   q = q.or(`brand_id.eq.${brand.id},brand.ilike.${namePattern}`)
@@ -120,8 +120,8 @@ export async function listActiveListingsForBrand(
 }
 
 /**
- * Sold marketplace listings for a directory brand.
- * Peer sections use the public sold feed ordering; shop (`new`) rows use sold status only.
+ * Sold peer marketplace listings for a directory brand.
+ * Reswell retail (`section = new`) is excluded — it lives only on `/reswell/shop`.
  */
 export async function listRecentlySoldListingsForBrand(
   supabase: SupabaseClient,
@@ -146,7 +146,7 @@ export async function listRecentlySoldListingsForBrand(
   if (categoryId) {
     q = q.eq("category_id", categoryId)
   } else {
-    q = q.in("section", ["surfboards", "new", ...PEER_LISTING_SECTIONS_FILTER])
+    q = q.in("section", PEER_LISTING_SECTIONS_FILTER)
   }
 
   q = q.or(`brand_id.eq.${brand.id},brand.ilike.${namePattern}`)
@@ -168,7 +168,6 @@ export async function listRecentlySoldListingsForBrand(
       .filter((row) => isPeerListingSection(row.section))
       .map((row) => [row.id, row]),
   )
-  const shopRows = rows.filter((row) => row.section === "new")
 
   const ordered: RecentListing[] = []
 
@@ -181,14 +180,9 @@ export async function listRecentlySoldListingsForBrand(
     if (ordered.length >= limit) return ordered
   }
 
-  for (const row of shopRows) {
-    ordered.push(mapRowToRecentListing(row))
-    if (ordered.length >= limit) return ordered
-  }
-
   for (const row of rows) {
     if (ordered.some((item) => item.id === row.id)) continue
-    if (row.section === "new") continue
+    if (!isPeerListingSection(row.section)) continue
     ordered.push(mapRowToRecentListing(row))
     if (ordered.length >= limit) return ordered
   }

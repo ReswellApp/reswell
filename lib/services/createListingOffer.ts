@@ -5,7 +5,7 @@ import {
   fetchListingForOffer,
   findPendingOfferForBuyer,
 } from "@/lib/db/offers"
-import { resolvePayableAmount } from "@/lib/purchase-amount"
+import { offerShippingAmountFromListing } from "@/lib/offer-listing-shipping"
 import type { CreateListingOfferBody } from "@/lib/validations/create-listing-offer"
 import { trackKlaviyoOfferMade } from "@/lib/klaviyo/track-offer-made"
 import { appendConversationMessage } from "@/lib/services/conversationThread"
@@ -21,23 +21,9 @@ function roundMoney(n: number): number {
 }
 
 function composeOfferNote(input: CreateListingOfferBody): string | null {
-  const regionLabel: Record<string, string> = {
-    continental: "Continental US",
-    alaska_hawaii: "Alaska / Hawaii",
-    international: "International",
-  }
-  const parts: string[] = []
-  if (input.shippingRegion && input.shippingRegion !== "continental") {
-    parts.push(regionLabel[input.shippingRegion] ?? input.shippingRegion)
-  }
-  if (input.shipZip) {
-    parts.push(`ZIP ${input.shipZip}`)
-  }
-  const prefix = parts.length > 0 ? `[${parts.join(" · ")}] ` : ""
   const body = (input.message ?? "").trim()
-  const combined = `${prefix}${body}`.trim()
-  if (!combined) return null
-  return combined.slice(0, 200)
+  if (!body) return null
+  return body.slice(0, 200)
 }
 
 export type CreateListingOfferResult =
@@ -143,10 +129,7 @@ export async function createListingOffer(
     }
   }
 
-  const resolved = resolvePayableAmount(listing, body.fulfillment)
-  if (!resolved.ok) {
-    return { ok: false, status: 400, error: resolved.error }
-  }
+  const shippingAmount = offerShippingAmountFromListing(listing, body.fulfillment)
 
   const note = composeOfferNote(body)
 
@@ -171,7 +154,7 @@ export async function createListingOffer(
       current_amount: amount,
       offer_timeline: [timelineEntry],
       fulfillment: body.fulfillment,
-      shipping_amount: body.fulfillment === "shipping" ? resolved.shipping : null,
+      shipping_amount: shippingAmount,
     })
     .select("id")
     .single()
@@ -232,8 +215,8 @@ export async function createListingOffer(
       sellerUserId: listing.user_id,
       offerNote: note,
       fulfillment: body.fulfillment,
-      shippingRegion: body.fulfillment === "shipping" ? body.shippingRegion : null,
-      shipZip: body.fulfillment === "shipping" ? body.shipZip ?? null : null,
+      shippingRegion: null,
+      shipZip: null,
       conversationId: threadResult.ok ? threadResult.conversationId : null,
       listingImages: listing.listing_images ?? null,
     })

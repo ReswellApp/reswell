@@ -40,7 +40,7 @@ export function resolveMixedCheckoutSellerId(
   if (shopSellers.size === 0) {
     return { ok: false, error: "No listings to checkout" }
   }
-  // Shop inventory is Reswell-fulfilled (any admin may own the listing row).
+  // Shop inventory is Reswell-fulfilled under the platform shop owner profile.
   // Seller id is only needed for order bookkeeping — no peer wallet credit.
   return { ok: true, sellerId: [...shopSellers][0]! }
 }

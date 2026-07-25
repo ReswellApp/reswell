@@ -20,6 +20,11 @@ import {
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
 import type { SellDraftSummary } from "@/lib/services/listingDraftAutosave"
+import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
+import {
+  normalizeSellShippingCostMode,
+  type ListingPersistShippingOptions,
+} from "@/lib/sell-shipping-cost-mode"
 
 function resolvedFinDraftTitle(input: FinListingDraftAutosaveInput): string {
   return (input.title ?? "").trim() || "Untitled draft"
@@ -33,8 +38,14 @@ function resolvedFinDraftCondition(input: FinListingDraftAutosaveInput): string 
   return "good"
 }
 
-export function buildFinListingDraftRow(input: FinListingDraftAutosaveInput): Record<string, unknown> {
-  const shippingMode = input.shippingCostMode ?? "reswell"
+export function buildFinListingDraftRow(
+  input: FinListingDraftAutosaveInput,
+  options?: ListingPersistShippingOptions,
+): Record<string, unknown> {
+  const shippingMode = normalizeSellShippingCostMode(
+    input.shippingCostMode ?? "reswell",
+    options?.allowPrivilegedShippingModes === true,
+  )
   let shipping_available = true
   let local_pickup = false
   let shipping_price: number | null = 0
@@ -159,7 +170,8 @@ export async function upsertFinListingDraft(
   userId: string,
   input: FinListingDraftAutosaveInput,
 ): Promise<{ id: string }> {
-  const row = buildFinListingDraftRow(input)
+  const allowPrivilegedShippingModes = await fetchProfileIsAdmin(supabase, userId)
+  const row = buildFinListingDraftRow(input, { allowPrivilegedShippingModes })
   const listingId = input.listingId?.trim() || null
 
   if (listingId) {

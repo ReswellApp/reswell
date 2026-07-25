@@ -7,6 +7,7 @@ import { appendOfferTimelineEntry } from "@/lib/services/appendOfferTimeline"
 import { deleteOfferRecord } from "@/lib/services/offerCleanup"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import type { RespondToOfferInput } from "@/lib/validations/respond-to-offer"
+import { reconcileOfferFulfillmentWithListing } from "@/lib/offer-listing-shipping"
 
 const MAX_COUNTERS = 3
 
@@ -43,7 +44,9 @@ export async function respondToOfferService(
 
   const { data: offer, error: offerErr } = await supabase
     .from("offers")
-    .select("id, listing_id, buyer_id, seller_id, status, current_amount, counter_count")
+    .select(
+      "id, listing_id, buyer_id, seller_id, status, current_amount, counter_count, fulfillment, shipping_amount",
+    )
     .eq("id", offerId)
     .maybeSingle()
 
@@ -68,7 +71,7 @@ export async function respondToOfferService(
   const { data: listing, error: listErr } = await supabase
     .from("listings")
     .select(
-      "id, price, title, user_id, slug, section, minimum_offer_pct",
+      "id, price, title, user_id, slug, section, minimum_offer_pct, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode",
     )
     .eq("id", offer.listing_id)
     .maybeSingle()
@@ -148,10 +151,23 @@ export async function respondToOfferService(
   }
 
   if (action === "accept") {
+    const reconciled = reconcileOfferFulfillmentWithListing(
+      (offer as { fulfillment?: string | null }).fulfillment,
+      listing,
+    )
+    if (!reconciled.fulfillment) {
+      return {
+        ok: false,
+        error: reconciled.reason ?? "This offer’s delivery method is no longer available.",
+      }
+    }
+
     const { error: upErr } = await supabase
       .from("offers")
       .update({
         status: "ACCEPTED",
+        fulfillment: reconciled.fulfillment,
+        shipping_amount: reconciled.shippingAmount,
         completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })

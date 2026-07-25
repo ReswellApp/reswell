@@ -8,6 +8,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { BOARDBAGS_SECTION } from "@/lib/boardbag-listing-config"
 import { buildBoardbagListingPersistFields } from "@/lib/boardbag-listing-persist-fields"
@@ -114,7 +115,10 @@ export async function updateBoardbagListing(
     throw new Error("Sold listings cannot be edited")
   }
 
-  const updateFields = buildBoardbagListingPersistFields(input)
+  const allowPrivilegedShippingModes = await fetchProfileIsAdmin(supabase, userId)
+  const updateFields = buildBoardbagListingPersistFields(input, {
+    allowPrivilegedShippingModes,
+  })
   const { data: updated, error: updateError } = await supabase
     .from("listings")
     .update(updateFields)
@@ -146,7 +150,10 @@ export async function createBoardbagListing(
   input: CreateBoardbagListingInput,
 ): Promise<CreateBoardbagListingResult> {
   const slug = await generateUniqueListingSlug(supabase, input.title)
-  const persistFields = buildBoardbagListingPersistFields(input)
+  const allowPrivilegedShippingModes = await fetchProfileIsAdmin(supabase, userId)
+  const persistFields = buildBoardbagListingPersistFields(input, {
+    allowPrivilegedShippingModes,
+  })
   const { updated_at: _omitUpdatedAt, ...insertFields } = persistFields
 
   const { data: inserted, error: listingError } = await supabase

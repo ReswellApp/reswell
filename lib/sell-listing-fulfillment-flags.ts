@@ -81,12 +81,13 @@ export function reswellPackageFieldsToDb(fd: SellFulfillmentPersistInput): {
   }
 
   if (mode === "flat") {
+    /** Admin flat rate — dollar amount only; no BoardShipper tier tables. */
     return {
       shipping_packed_length_in: null,
       shipping_packed_width_in: null,
       shipping_packed_height_in: null,
       shipping_packed_weight_oz: null,
-      shipping_package_tier: tierId,
+      shipping_package_tier: null,
       shipping_package_band: null,
     }
   }
@@ -212,7 +213,17 @@ export function reswellPackageFormFromDbRow(row: {
  * the same relaxed/admin branches — used so DB flags stay aligned with visible options.
  */
 export function inferSellFormShippingConfigured(fd: SellFulfillmentPersistInput): boolean {
-  // Surfboard /sell persists Reswell shipping only.
+  const mode = fd.boardShippingCostMode ?? "reswell"
+  // Admin flat/free do not use UPS pack bands — dollar amount (or $0) is enough.
+  if (mode === "free") return true
+  if (mode === "flat") {
+    const raw = String(fd.boardShippingPrice ?? "").trim().replace(/,/g, "")
+    if (!raw) return false
+    const n = Number.parseFloat(raw)
+    return Number.isFinite(n) && n >= 0
+  }
+
+  // Reswell /sell: UPS shortboard pack bands (or legacy mid/long parcel fields).
   const tierId = parseSurfboardShippingTierId(fd.surfboardShippingTier)
   if (!tierId) return false
   if (tierId === "shortboard") {

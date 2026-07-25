@@ -7,6 +7,7 @@ import {
   reswellShopShippingPersistFields,
   type ReswellShopPackageInches,
 } from "@/lib/reswell-shop-shipping"
+import { resolveReswellShopOwnerUserId } from "@/lib/services/resolveReswellShopOwnerUser"
 
 export type ReswellShopAdminProduct = {
   id: string
@@ -137,11 +138,15 @@ export async function listReswellShopAdminProducts(
 export async function createReswellShopProduct(
   serviceSupabase: SupabaseClient,
   input: ReswellShopProductInput,
-  adminUserId: string,
 ): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
   const pkg = normalizeReswellShopPackage(input.package)
   if (!pkg) {
     return { ok: false, error: "Enter a valid shipping box size and weight" }
+  }
+
+  const owner = await resolveReswellShopOwnerUserId(serviceSupabase)
+  if (!owner.ok) {
+    return { ok: false, error: owner.error }
   }
 
   const slug = await uniqueListingSlug(serviceSupabase, input.title)
@@ -151,7 +156,7 @@ export async function createReswellShopProduct(
   const { data: listing, error } = await serviceSupabase
     .from("listings")
     .insert({
-      user_id: adminUserId,
+      user_id: owner.userId,
       title: input.title.trim(),
       slug,
       description: input.description.trim(),

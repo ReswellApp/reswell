@@ -8,7 +8,10 @@ import {
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
-import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
+import {
+  applyAcceptedOfferToPeerCheckoutListings,
+  priceListingsFromAcceptedOffer,
+} from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
 import { validateAcceptedOfferForPaymentIntent } from "@/lib/services/acceptedOfferCheckout"
 import { dedupeIdsPreserveOrder } from "@/lib/stripe-marketplace-metadata"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
@@ -167,62 +170,18 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const listingsForTotals = await applyAcceptedOfferToPeerCheckoutListings(
-    supabase,
-    user.id,
-    listingsOrdered,
-  )
-
   /** Multi-item payment intents must pull every listing from this buyer's cart,
    * unless paying via an accepted offer bundle (`offer_id`). */
   const offerIdParam = body.offer_id?.trim() || null
   let validatedOfferId: string | null = null
+  let offerFulfillmentLock: "pickup" | "shipping" | null = null
   const quantityByListingId: Record<string, number> = {}
   for (const id of listingIdsOrdered) quantityByListingId[id] = 1
 
-  if (listingIdsOrdered.length > 1) {
-    if (offerIdParam) {
-      const offerCheck = await validateAcceptedOfferForPaymentIntent(
-        supabase,
-        user.id,
-        offerIdParam,
-        listingIdsOrdered,
-      )
-      if (!offerCheck.ok) {
-        return NextResponse.json({ error: offerCheck.error }, { status: 400 })
-      }
-      validatedOfferId = offerIdParam
-    } else {
-      const { data: cartRows, error: cartVerifyErr } = await supabase
-        .from("cart_items")
-        .select("listing_id, quantity")
-        .eq("profile_id", user.id)
-        .in("listing_id", listingIdsOrdered)
+  /** Price from the explicit offer id when present so promo math matches the UI. */
+  let listingsForTotals = listingsOrdered
 
-      if (cartVerifyErr) {
-        return NextResponse.json({ error: "Could not verify cart" }, { status: 500 })
-      }
-
-      const cartQty = new Map<string, number>()
-      for (const r of cartRows ?? []) {
-        const id = String((r as { listing_id?: string }).listing_id ?? "").trim()
-        const qty = Math.max(1, Math.floor(Number((r as { quantity?: number }).quantity) || 1))
-        if (id) cartQty.set(id, qty)
-      }
-      for (const id of listingIdsOrdered) {
-        if (!cartQty.has(id)) {
-          return NextResponse.json(
-            {
-              error:
-                "Checking out multiple items together only works when every item is in your cart, or when checking out an accepted offer bundle.",
-            },
-            { status: 400 },
-          )
-        }
-        quantityByListingId[id] = cartQty.get(id) ?? 1
-      }
-    }
-  } else if (offerIdParam) {
+  if (offerIdParam) {
     const offerCheck = await validateAcceptedOfferForPaymentIntent(
       supabase,
       user.id,
@@ -233,6 +192,47 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: offerCheck.error }, { status: 400 })
     }
     validatedOfferId = offerIdParam
+    offerFulfillmentLock = offerCheck.fulfillment
+    listingsForTotals = priceListingsFromAcceptedOffer(
+      listingsOrdered,
+      offerCheck.offer,
+      offerCheck.lineItems,
+    )
+  } else if (listingIdsOrdered.length > 1) {
+    const { data: cartRows, error: cartVerifyErr } = await supabase
+      .from("cart_items")
+      .select("listing_id, quantity")
+      .eq("profile_id", user.id)
+      .in("listing_id", listingIdsOrdered)
+
+    if (cartVerifyErr) {
+      return NextResponse.json({ error: "Could not verify cart" }, { status: 500 })
+    }
+
+    const cartQty = new Map<string, number>()
+    for (const r of cartRows ?? []) {
+      const id = String((r as { listing_id?: string }).listing_id ?? "").trim()
+      const qty = Math.max(1, Math.floor(Number((r as { quantity?: number }).quantity) || 1))
+      if (id) cartQty.set(id, qty)
+    }
+    for (const id of listingIdsOrdered) {
+      if (!cartQty.has(id)) {
+        return NextResponse.json(
+          {
+            error:
+              "Checking out multiple items together only works when every item is in your cart, or when checking out an accepted offer bundle.",
+          },
+          { status: 400 },
+        )
+      }
+      quantityByListingId[id] = cartQty.get(id) ?? 1
+    }
+
+    listingsForTotals = await applyAcceptedOfferToPeerCheckoutListings(
+      supabase,
+      user.id,
+      listingsOrdered,
+    )
   } else {
     // Single shop line may still carry quantity from cart.
     const onlyId = listingIdsOrdered[0]!
@@ -250,6 +250,12 @@ export async function POST(request: NextRequest) {
         )
       }
     }
+
+    listingsForTotals = await applyAcceptedOfferToPeerCheckoutListings(
+      supabase,
+      user.id,
+      listingsOrdered,
+    )
   }
 
   for (const listing of listingsOrdered) {
@@ -319,6 +325,18 @@ export async function POST(request: NextRequest) {
 
     impliedFulfillment =
       lp && sa ? (fulfillment === "shipping" ? "shipping" : "pickup") : !lp && sa ? "shipping" : "pickup"
+  }
+
+  if (offerFulfillmentLock && impliedFulfillment !== offerFulfillmentLock) {
+    return NextResponse.json(
+      {
+        error:
+          offerFulfillmentLock === "pickup"
+            ? "This accepted offer is for local pickup."
+            : "This accepted offer is for shipping.",
+      },
+      { status: 400 },
+    )
   }
 
   const addressId = body.address_id?.trim() || null

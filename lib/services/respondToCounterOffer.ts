@@ -6,6 +6,7 @@ import { appendOfferTimelineEntry } from "@/lib/services/appendOfferTimeline"
 import { deleteOfferRecord } from "@/lib/services/offerCleanup"
 import { parseOfferLineItems } from "@/lib/types/offer-line-item"
 import type { RespondToCounterOfferInput } from "@/lib/validations/respond-to-counter-offer"
+import { reconcileOfferFulfillmentWithListing } from "@/lib/offer-listing-shipping"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -43,7 +44,9 @@ export async function respondToCounterOfferService(
 
   const { data: offer, error: offerErr } = await supabase
     .from("offers")
-    .select("id, listing_id, buyer_id, seller_id, status, current_amount, expires_at, line_items")
+    .select(
+      "id, listing_id, buyer_id, seller_id, status, current_amount, expires_at, line_items, fulfillment, shipping_amount",
+    )
     .eq("id", offerId)
     .maybeSingle()
 
@@ -78,7 +81,9 @@ export async function respondToCounterOfferService(
 
   const { data: listing, error: listErr } = await supabase
     .from("listings")
-    .select("id, title, user_id")
+    .select(
+      "id, title, user_id, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode",
+    )
     .eq("id", offer.listing_id)
     .maybeSingle()
 
@@ -148,10 +153,30 @@ export async function respondToCounterOfferService(
   }
 
   // accept — offer price is stored on offers only; listings.price stays at the original list price.
+  const lineItems = parseOfferLineItems((offer as { line_items?: unknown }).line_items)
+  const isBundle = !!lineItems && lineItems.length > 1
+  const reconciled = reconcileOfferFulfillmentWithListing(
+    (offer as { fulfillment?: string | null }).fulfillment,
+    {
+      shipping_available: isBundle ? false : listing.shipping_available,
+      local_pickup: listing.local_pickup,
+      shipping_price: listing.shipping_price,
+      board_shipping_cost_mode: listing.board_shipping_cost_mode,
+    },
+  )
+  if (!reconciled.fulfillment) {
+    return {
+      ok: false,
+      error: reconciled.reason ?? "This offer’s delivery method is no longer available.",
+    }
+  }
+
   const { error: upErr } = await supabase
     .from("offers")
     .update({
       status: "ACCEPTED",
+      fulfillment: reconciled.fulfillment,
+      shipping_amount: reconciled.shippingAmount,
       completed_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
@@ -175,8 +200,6 @@ export async function respondToCounterOfferService(
   if (!appended) {
     console.error("[respondToCounterOffer] accept offer_timeline append failed")
   }
-
-  const lineItems = parseOfferLineItems((offer as { line_items?: unknown }).line_items)
   if (lineItems && lineItems.length > 1) {
     for (const row of lineItems) {
       const { error: cartErr } = await supabase.from("cart_items").insert({

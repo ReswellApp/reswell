@@ -11,6 +11,7 @@ import type { CheckoutCopy, CheckoutListing, CheckoutSeller } from "@/components
 import { PurchaseOptions } from "@/components/purchase-options"
 import { ProtectionTrustBlock } from "@/components/protection-trust-block"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { normalizeOfferFulfillment } from "@/lib/offer-listing-shipping"
 import { listingShipFromDisplayLine } from "@/lib/listing-ship-from-display"
 import {
   clearPendingPromoCode,
@@ -49,8 +50,10 @@ interface CheckoutClientProps {
   legalFullName?: string
   initialAddresses: ProfileAddressRow[]
   seller?: CheckoutSeller | null
-  /** When paying an accepted offer bundle, bypasses cart verification at payment. */
+  /** When paying an accepted offer, bypasses cart verification at payment. */
   offerId?: string | null
+  /** Delivery method agreed on the offer — locks checkout radios when set. */
+  lockedFulfillment?: "pickup" | "shipping" | null
 }
 
 export function CheckoutClient({
@@ -61,8 +64,10 @@ export function CheckoutClient({
   initialAddresses,
   seller,
   offerId = null,
+  lockedFulfillment = null,
 }: CheckoutClientProps) {
   const isBundle = listings.length > 1
+  const offerFulfillmentLock = normalizeOfferFulfillment(lockedFulfillment)
 
   const primaryListing = listings[0]
   if (!primaryListing) {
@@ -86,6 +91,8 @@ export function CheckoutClient({
     : !!primaryListing.shipping_available
 
   const [method, setMethod] = useState<"pickup" | "shipping">(() => {
+    if (offerFulfillmentLock === "pickup" && canPick) return "pickup"
+    if (offerFulfillmentLock === "shipping" && canShip) return "shipping"
     if (canPick && !canShip) return "pickup"
     if (!canPick && canShip) return "shipping"
     return "pickup"
@@ -231,6 +238,7 @@ export function CheckoutClient({
           body: JSON.stringify({
             listing_ids: listingIdsKey.split(","),
             address_id: purchaseDetails.shippingAddressId,
+            ...(offerId ? { offer_id: offerId } : {}),
             ...(selectedShippingServiceCode
               ? { selected_service_code: selectedShippingServiceCode }
               : {}),
@@ -293,6 +301,7 @@ export function CheckoutClient({
     needsLiveShippingQuote,
     listingIdsKey,
     listings,
+    offerId,
     purchaseDetails.shippingAddressId,
     resolved,
     selectedShippingServiceCode,
@@ -492,7 +501,30 @@ export function CheckoutClient({
               </div>
             ) : null}
 
-            {canPick && canShip && (
+            {offerFulfillmentLock && (canPick || canShip) ? (
+              <div className="mb-10 rounded-[8px] border border-[#5574AD]/25 bg-[#5574AD]/[0.06] px-4 py-3.5">
+                <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Delivery method</h2>
+                <p className="mt-2 flex items-center gap-2 text-sm font-medium text-foreground">
+                  {offerFulfillmentLock === "pickup" ? (
+                    <>
+                      <MapPin className="h-4 w-4 shrink-0 text-neutral-600" aria-hidden />
+                      Local pickup
+                    </>
+                  ) : (
+                    <>
+                      <Truck className="h-4 w-4 shrink-0 text-neutral-600" aria-hidden />
+                      Pay for shipping
+                    </>
+                  )}
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-neutral-600">
+                  Locked from your accepted offer
+                  {offerFulfillmentLock === "pickup"
+                    ? " — you’ll arrange pickup with the seller."
+                    : " — enter your address below for the shipping rate."}
+                </p>
+              </div>
+            ) : canPick && canShip ? (
               <div className="mb-10 space-y-3">
                 <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Delivery method</h2>
                 <RadioGroup
@@ -548,7 +580,7 @@ export function CheckoutClient({
                   </label>
                 </RadioGroup>
               </div>
-            )}
+            ) : null}
 
             {needsShipping ? (
               <div className="mb-10 rounded-[8px] border border-neutral-200 bg-white px-4 py-3.5 sm:px-4">

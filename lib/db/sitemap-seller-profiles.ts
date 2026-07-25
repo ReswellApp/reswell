@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 
 export interface SellerProfileSitemapEntry {
   path: string
@@ -7,7 +8,8 @@ export interface SellerProfileSitemapEntry {
 
 /**
  * Public seller shops (`/sellers/[slug]`) — same eligibility signal as the sellers directory:
- * shops (`is_shop`) or anyone with at least one active, visible marketplace listing.
+ * shops (`is_shop`) or anyone with at least one active, visible peer marketplace listing.
+ * Reswell retail (`section = new`) is excluded.
  */
 export async function fetchSellerProfileSitemapEntries(
   supabase: SupabaseClient,
@@ -20,7 +22,8 @@ export async function fetchSellerProfileSitemapEntries(
         .select("user_id")
         .eq("status", "active")
         .eq("hidden_from_site", false)
-        .is("archived_at", null),
+        .is("archived_at", null)
+        .in("section", PEER_LISTING_SECTIONS_FILTER),
     ])
 
   if (shopIdsError) console.error("[sitemap] seller profiles (shops):", shopIdsError.message)

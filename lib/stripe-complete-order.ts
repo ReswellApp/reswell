@@ -8,7 +8,11 @@ import {
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 import { computePeerMultiCheckoutUsd } from "@/lib/services/peerMultiCheckoutTotals"
-import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
+import {
+  applyAcceptedOfferToPeerCheckoutListings,
+  priceListingsFromAcceptedOffer,
+} from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
+import { validateAcceptedOfferForPaymentIntent } from "@/lib/services/acceptedOfferCheckout"
 import { pendingSaleFeeClause } from "@/lib/seller-fees"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { isReswellShopListing } from "@/lib/reswell-shop"
@@ -388,13 +392,32 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     return { ok: false, error: "Invalid purchase", status: 400 }
   }
 
-  const listingsForTotals = isAdminTerminalSale
-    ? listingsOrdered
-    : await applyAcceptedOfferToPeerCheckoutListings(
+  const offerIdMeta = pi.metadata.offer_id?.trim() || null
+  let listingsForTotals = listingsOrdered
+  if (!isAdminTerminalSale) {
+    if (offerIdMeta) {
+      const offerCheck = await validateAcceptedOfferForPaymentIntent(
+        serviceSupabase,
+        buyerId!,
+        offerIdMeta,
+        listingIdsOrdered,
+      )
+      if (!offerCheck.ok) {
+        return { ok: false, error: offerCheck.error, status: 400 }
+      }
+      listingsForTotals = priceListingsFromAcceptedOffer(
+        listingsOrdered,
+        offerCheck.offer,
+        offerCheck.lineItems,
+      )
+    } else {
+      listingsForTotals = await applyAcceptedOfferToPeerCheckoutListings(
         serviceSupabase,
         buyerId!,
         listingsOrdered,
       )
+    }
+  }
 
   const mixedSeller = resolveMixedCheckoutSellerId(
     listingsForTotals.map((l) => ({
@@ -852,6 +875,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       buyerId,
       listingIdsOrdered,
       bundleSellerId,
+      offerIdMeta,
     )
   }
 

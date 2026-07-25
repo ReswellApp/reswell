@@ -37,9 +37,13 @@ import {
   fetchAcceptedOfferById,
   findAcceptedOfferMatchingListings,
   loadAcceptedOfferCheckoutListings,
+  lockedFulfillmentFromOfferAndListings,
 } from "@/lib/services/acceptedOfferCheckout"
 import { applyAcceptedOfferToPeerCheckoutListings } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
-import type { PeerSurfboardCheckoutListingRow } from "@/lib/services/peerListingShippingQuote"
+import {
+  PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
+  type PeerSurfboardCheckoutListingRow,
+} from "@/lib/services/peerListingShippingQuote"
 import { KlaviyoCheckoutStartedTracker } from "@/components/features/checkout/klaviyo-checkout-started-tracker"
 import { assertBuyerMayPurchaseListingsExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 
@@ -172,6 +176,7 @@ export default async function CheckoutPage(props: {
             initialAddresses={addressesError ? [] : initialAddresses}
             seller={seller}
             offerId={offer.id}
+            lockedFulfillment={loaded.fulfillment}
           />
         </div>
       </main>
@@ -299,6 +304,14 @@ export default async function CheckoutPage(props: {
             initialAddresses={addressesError ? [] : initialAddresses}
             seller={seller}
             offerId={matchedOffer?.id ?? null}
+            lockedFulfillment={
+              matchedOffer
+                ? lockedFulfillmentFromOfferAndListings(
+                    matchedOffer.fulfillment,
+                    checkoutListings,
+                  )
+                : null
+            }
           />
         </div>
       </main>
@@ -313,8 +326,11 @@ export default async function CheckoutPage(props: {
   const id = listingParam
 
   const { listing, redirectSlug } = await findListingByParam(supabase, id, {
-    select:
-      "id, slug, title, price, user_id, status, section, stock_quantity, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode, shipping_package_tier, packed_length_in, packed_width_in, packed_height_in, packed_weight_lb, ship_from_name, ship_from_phone, ship_from_line1, ship_from_line2, ship_from_city, ship_from_state, ship_from_postal_code, city, state, listing_images ( url, thumbnail_url, is_primary )",
+    select: `
+      ${PEER_SURFBOARD_CHECKOUT_LISTING_SELECT},
+      stock_quantity,
+      listing_images ( url, thumbnail_url, is_primary )
+    `.trim(),
     section: undefined,
   })
 
@@ -374,6 +390,7 @@ export default async function CheckoutPage(props: {
 
   let checkoutListing = rowToCheckoutListing(listing as unknown as Record<string, unknown>)
   let matchedOfferId: string | null = null
+  let matchedOfferFulfillment: "pickup" | "shipping" | null = null
 
   if (
     isPeerListingSection(listing.section) &&
@@ -391,6 +408,11 @@ export default async function CheckoutPage(props: {
       checkoutListing = rowToCheckoutListing(priced[0] as unknown as Record<string, unknown>)
     }
     matchedOfferId = matchedOffer?.id ?? null
+    matchedOfferFulfillment = matchedOffer
+      ? lockedFulfillmentFromOfferAndListings(matchedOffer.fulfillment, [
+          checkoutListing,
+        ])
+      : null
   }
 
   const previewImpliedFulfillment: "pickup" | "shipping" = lp && sa ? "pickup" : !lp && sa ? "shipping" : "pickup"
@@ -522,6 +544,7 @@ export default async function CheckoutPage(props: {
           initialAddresses={addressesError ? [] : initialAddresses}
           seller={seller}
           offerId={matchedOfferId}
+          lockedFulfillment={matchedOfferFulfillment}
         />
       </div>
     </main>

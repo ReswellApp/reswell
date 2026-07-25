@@ -94,20 +94,29 @@ function deliverySectionComplete(form: SellFormValidationInput): boolean {
   if (!form.locationCity?.trim() || !form.locationState?.trim()) return false
 
   const fulfillmentFlags = flagsFromBoardFulfillment(form.boardFulfillment)
-  // UPS shortboard pack bands only — Compact/Standard/Max auto-picked from board specs.
   if (fulfillmentFlags.shipping_available) {
-    if (!form.boardLength.trim()) return false
-    if (parseSurfboardShippingTierId(form.surfboardShippingTier) !== "shortboard") return false
-    const bandId = parseSurfboardShippingPackBandId(form.surfboardShippingPackBand)
-    if (!bandId) return false
-    if (
-      surfboardShippingPackBandBoardSpecsError({
-        bandId,
-        boardLength: form.boardLength,
-        boardWidthInches: form.boardWidthInches,
-      })
-    ) {
-      return false
+    const shippingMode = form.boardShippingCostMode ?? "reswell"
+    if (shippingMode === "free") {
+      // Admin free shipping — no pack band required.
+    } else if (shippingMode === "flat") {
+      const raw = String(form.boardShippingPrice ?? "").trim().replace(/,/g, "")
+      const n = Number.parseFloat(raw)
+      if (!raw || !Number.isFinite(n) || n < 0) return false
+    } else {
+      // Reswell mode only — UPS shortboard pack bands (free/flat skip this).
+      if (!form.boardLength.trim()) return false
+      if (parseSurfboardShippingTierId(form.surfboardShippingTier) !== "shortboard") return false
+      const bandId = parseSurfboardShippingPackBandId(form.surfboardShippingPackBand)
+      if (!bandId) return false
+      if (
+        surfboardShippingPackBandBoardSpecsError({
+          bandId,
+          boardLength: form.boardLength,
+          boardWidthInches: form.boardWidthInches,
+        })
+      ) {
+        return false
+      }
     }
   }
 

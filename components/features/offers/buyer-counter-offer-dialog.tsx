@@ -119,6 +119,16 @@ export function BuyerCounterOfferDialog({
                 ${counter.toFixed(2)} items + ${shippingAmount.toFixed(2)} shipping
               </p>
             ) : null}
+            {offer.fulfillment === "shipping" && shippingAmount == null ? (
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                ${counter.toFixed(2)} items + Reswell shipping at checkout
+              </p>
+            ) : null}
+            {offer.fulfillment === "shipping" && shippingAmount === 0 ? (
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                ${counter.toFixed(2)} items · free shipping
+              </p>
+            ) : null}
             {offer.fulfillment === "pickup" ? (
               <p className="mt-1 text-[13px] text-muted-foreground">Local pickup</p>
             ) : null}

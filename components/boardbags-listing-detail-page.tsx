@@ -240,6 +240,8 @@ export async function BoardbagsListingDetailPage({
           canPick: pickupOffered,
           canShip: shippingOffered,
           shippingFlatRate,
+          shippingCostMode:
+            (boardbag.board_shipping_cost_mode as "reswell" | "flat" | "free" | null) ?? null,
         }
       : undefined
 

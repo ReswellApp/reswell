@@ -4,7 +4,6 @@ import Image from "next/image"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { AlertCircle, ImageOff, Loader2 } from "lucide-react"
-import { toast } from "sonner"
 import {
   Dialog,
   DialogContent,
@@ -25,6 +24,11 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
+import {
+  offerShippingCostHint,
+  offerShippingCostLabel,
+  type OfferShippingCostMode,
+} from "@/lib/offer-listing-shipping"
 import { cn } from "@/lib/utils"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 
@@ -80,6 +84,7 @@ export type MakeOfferDialogProps = {
   canPick: boolean
   canShip: boolean
   shippingFlatRate: number
+  shippingCostMode?: OfferShippingCostMode | null
   isLoggedIn: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -95,6 +100,7 @@ export function MakeOfferDialog({
   canPick,
   canShip,
   shippingFlatRate,
+  shippingCostMode = null,
   isLoggedIn,
   open,
   onOpenChange,
@@ -107,11 +113,6 @@ export function MakeOfferDialog({
   const [fulfillment, setFulfillment] = useState<"pickup" | "shipping">(() =>
     canShip && !canPick ? "shipping" : canPick && !canShip ? "pickup" : "shipping",
   )
-  const [shippingRegion, setShippingRegion] = useState<"continental" | "alaska_hawaii" | "international">(
-    "continental",
-  )
-  const [zipInput, setZipInput] = useState("")
-  const [zipApplied, setZipApplied] = useState(false)
   const [amountInput, setAmountInput] = useState("")
   const [message, setMessage] = useState("")
   const [submitting, setSubmitting] = useState(false)
@@ -120,9 +121,6 @@ export function MakeOfferDialog({
   useEffect(() => {
     if (!open) return
     setFulfillment(canShip && !canPick ? "shipping" : canPick && !canShip ? "pickup" : "shipping")
-    setShippingRegion("continental")
-    setZipInput("")
-    setZipApplied(false)
     setAmountInput("")
     setMessage("")
     setSubmitting(false)
@@ -131,33 +129,30 @@ export function MakeOfferDialog({
 
   const offerAmount = useMemo(() => parseAmountInput(amountInput), [amountInput])
 
-  const delivery = fulfillment === "shipping" ? Math.max(0, shippingFlatRate) : 0
+  const shippingLabel =
+    fulfillment === "shipping" && canShip
+      ? offerShippingCostLabel(shippingCostMode, shippingFlatRate)
+      : null
+
+  const knownFlatShipping =
+    fulfillment === "shipping" &&
+    canShip &&
+    shippingCostMode === "flat" &&
+    shippingFlatRate > 0
+      ? shippingFlatRate
+      : fulfillment === "shipping" && canShip && shippingCostMode === "free"
+        ? 0
+        : null
 
   const totalPreview =
-    offerAmount !== null ? roundMoney(offerAmount + delivery) : delivery > 0 ? delivery : null
+    offerAmount !== null
+      ? knownFlatShipping != null
+        ? roundMoney(offerAmount + knownFlatShipping)
+        : offerAmount
+      : null
 
   const amountValid =
     offerAmount !== null && offerAmount >= minOfferAmount && offerAmount <= listPrice
-
-  const applyZip = useCallback(() => {
-    const z = zipInput.trim()
-    if (!z) {
-      setZipApplied(false)
-      return
-    }
-    if (shippingRegion === "international") {
-      if (z.length < 2) {
-        toast.error("Enter a postal code.")
-        setZipApplied(false)
-        return
-      }
-    } else if (!/^\d{5}(-\d{4})?$/.test(z)) {
-      toast.error("Enter a valid US ZIP code (5 digits or ZIP+4).")
-      setZipApplied(false)
-      return
-    }
-    setZipApplied(true)
-  }, [zipInput, shippingRegion])
 
   const setQuickDiscount = useCallback(
     (pctOff: number) => {
@@ -194,8 +189,6 @@ export function MakeOfferDialog({
           amount: offerAmount,
           fulfillment,
           message: message.trim() || undefined,
-          shipZip: fulfillment === "shipping" ? zipInput.trim() || undefined : undefined,
-          shippingRegion: fulfillment === "shipping" ? shippingRegion : undefined,
         }),
       })
       const json: unknown = await res.json().catch(() => ({}))
@@ -217,7 +210,6 @@ export function MakeOfferDialog({
     }
   }
 
-  const showShippingExtras = fulfillment === "shipping" && canShip
   const methodLocked = (canPick && !canShip) || (!canPick && canShip)
 
   const duplicateOfferHref =
@@ -264,11 +256,11 @@ export function MakeOfferDialog({
                   <p className="line-clamp-2 text-sm font-semibold leading-snug">{listingTitle}</p>
                   <div className="space-y-1">
                     <Label className="text-[11px] font-medium text-muted-foreground sm:text-xs">
-                      Shipping method
+                      Delivery
                     </Label>
                     {methodLocked ? (
                       <div className="rounded-md border border-input bg-background px-2.5 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm">
-                        {canShip && !canPick ? "Shipped" : "Local pickup"}
+                        {canShip && !canPick ? "Pay for shipping" : "Local pickup"}
                       </div>
                     ) : (
                       <Select
@@ -279,65 +271,26 @@ export function MakeOfferDialog({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="shipping">Shipped</SelectItem>
-                          <SelectItem value="pickup">Local pickup</SelectItem>
+                          {canShip ? (
+                            <SelectItem value="shipping">Pay for shipping</SelectItem>
+                          ) : null}
+                          {canPick ? (
+                            <SelectItem value="pickup">Local pickup</SelectItem>
+                          ) : null}
                         </SelectContent>
                       </Select>
                     )}
                   </div>
                 </div>
               </div>
-
-              {showShippingExtras ? (
-                <div className="mt-2 grid grid-cols-2 gap-2 sm:mt-3 sm:gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-[11px] font-medium sm:text-xs">
-                      Region <span className="text-destructive">*</span>
-                    </Label>
-                    <Select
-                      value={shippingRegion}
-                      onValueChange={(v) =>
-                        setShippingRegion(v as "continental" | "alaska_hawaii" | "international")
-                      }
-                    >
-                      <SelectTrigger className="h-8 bg-background px-2 text-xs sm:h-10 sm:px-3 sm:text-sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="continental">Continental US</SelectItem>
-                        <SelectItem value="alaska_hawaii">Alaska / Hawaii</SelectItem>
-                        <SelectItem value="international">International</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-[11px] font-medium sm:text-xs">
-                      ZIP <span className="text-destructive">*</span>
-                    </Label>
-                    <div className="flex gap-1.5">
-                      <Input
-                        className="h-8 bg-background px-2 text-xs sm:h-10 sm:px-3 sm:text-sm"
-                        placeholder="94102"
-                        value={zipInput}
-                        onChange={(e) => {
-                          setZipInput(e.target.value)
-                          setZipApplied(false)
-                        }}
-                        onBlur={applyZip}
-                        inputMode="numeric"
-                        autoComplete="postal-code"
-                      />
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        className="h-8 shrink-0 px-2 text-xs sm:h-10 sm:px-3 sm:text-sm"
-                        onClick={applyZip}
-                      >
-                        Apply
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+              {fulfillment === "shipping" && canShip ? (
+                <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground sm:mt-3 sm:text-xs">
+                  {offerShippingCostHint(shippingCostMode, shippingFlatRate)}
+                </p>
+              ) : fulfillment === "pickup" && canPick ? (
+                <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground sm:mt-3 sm:text-xs">
+                  You’ll arrange pickup with the seller after checkout — no shipping charged.
+                </p>
               ) : null}
             </div>
 
@@ -356,7 +309,7 @@ export function MakeOfferDialog({
                 </span>
                 <Input
                   className={cn(
-                    "h-10 pl-6 pr-24 text-base sm:h-12 sm:pl-7 sm:pr-36",
+                    "h-10 pl-6 pr-4 text-base sm:h-12 sm:pl-7",
                     !amountValid && amountInput.trim() ? "border-destructive/60" : "",
                   )}
                   placeholder="0.00"
@@ -368,11 +321,6 @@ export function MakeOfferDialog({
                   }}
                   aria-invalid={!amountValid && amountInput.trim() !== ""}
                 />
-                {fulfillment === "shipping" && canShip ? (
-                  <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground sm:text-xs">
-                    + ${delivery.toFixed(0)} ship
-                  </span>
-                ) : null}
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {([5, 10, 15] as const).map((pct) => (
@@ -409,9 +357,18 @@ export function MakeOfferDialog({
 
             <div className="rounded-lg border border-border/60 bg-muted/20 px-2.5 py-2 text-xs sm:space-y-2 sm:px-3 sm:py-3 sm:text-sm">
               <div className="flex items-center justify-between gap-3 sm:hidden">
-                <span className="text-muted-foreground">Total if accepted</span>
+                <span className="text-muted-foreground">
+                  {shippingLabel && shippingLabel !== "Calculated at checkout"
+                    ? "Item + delivery"
+                    : "Your offer"}
+                </span>
                 <span className="font-semibold">
                   {totalPreview !== null ? `$${totalPreview.toFixed(2)}` : "—"}
+                  {fulfillment === "shipping" &&
+                  canShip &&
+                  shippingLabel === "Calculated at checkout"
+                    ? " + shipping"
+                    : null}
                 </span>
               </div>
               <div className="hidden sm:block">
@@ -421,15 +378,31 @@ export function MakeOfferDialog({
                 </div>
                 <div className="flex justify-between gap-4">
                   <span className="text-muted-foreground">Delivery</span>
-                  <span>{fulfillment === "shipping" && canShip ? `$${delivery.toFixed(2)}` : "$0.00"}</span>
+                  <span>
+                    {fulfillment === "shipping" && canShip
+                      ? shippingLabel
+                      : "Local pickup"}
+                  </span>
                 </div>
                 <div className="flex justify-between gap-4 border-t border-border/50 pt-2 font-semibold">
-                  <span>Total if accepted</span>
-                  <span>{totalPreview !== null ? `$${totalPreview.toFixed(2)}` : "—"}</span>
+                  <span>
+                    {knownFlatShipping != null ? "Total if accepted" : "Item total if accepted"}
+                  </span>
+                  <span>
+                    {totalPreview !== null
+                      ? `$${totalPreview.toFixed(2)}${
+                          fulfillment === "shipping" &&
+                          canShip &&
+                          shippingLabel === "Calculated at checkout"
+                            ? " + shipping"
+                            : ""
+                        }`
+                      : "—"}
+                  </span>
                 </div>
                 <p className="text-[11px] leading-relaxed text-muted-foreground">
-                  Shipping uses the seller’s flat rate from the listing (same as checkout). Final taxes or
-                  adjustments may still apply when you pay.
+                  You negotiate the item price only. Checkout uses this delivery choice and the
+                  listing’s shipping terms.
                 </p>
               </div>
             </div>
@@ -495,11 +468,7 @@ export function MakeOfferDialog({
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              className="h-10 flex-1 sm:flex-none"
-              disabled={submitting || !amountValid || (showShippingExtras && !zipInput.trim())}
-            >
+            <Button type="submit" className="h-10 flex-1 sm:flex-none" disabled={submitting || !amountValid}>
               {submitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />

@@ -4,9 +4,14 @@ import {
   apparelSizeSlugForDb,
 } from "@/lib/apparel-listing-config"
 import { reswellPackageFieldsToDb } from "@/lib/sell-listing-fulfillment-flags"
+import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
+import type { ListingPersistShippingOptions } from "@/lib/sell-shipping-cost-mode"
 import type { CreateApparelListingInput } from "@/lib/validations/apparel-listing"
 
-export function apparelListingShippingFieldsFor(input: CreateApparelListingInput): {
+export function apparelListingShippingFieldsFor(
+  input: CreateApparelListingInput,
+  options?: ListingPersistShippingOptions,
+): {
   shipping_available: boolean
   local_pickup: boolean
   shipping_price: number | null
@@ -20,7 +25,10 @@ export function apparelListingShippingFieldsFor(input: CreateApparelListingInput
       board_shipping_cost_mode: null,
     }
   }
-  const mode = input.shippingCostMode ?? "reswell"
+  const mode = normalizeSellShippingCostMode(
+    input.shippingCostMode,
+    options?.allowPrivilegedShippingModes === true,
+  )
   if (mode === "free") {
     return {
       shipping_available: true,
@@ -48,10 +56,15 @@ export function apparelListingShippingFieldsFor(input: CreateApparelListingInput
 /** Maps validated sell-form input to `listings` columns for create/update. */
 export function buildApparelListingPersistFields(
   input: CreateApparelListingInput,
+  options?: ListingPersistShippingOptions,
 ): Record<string, unknown> {
-  const shipping = apparelListingShippingFieldsFor(input)
+  const shipping = apparelListingShippingFieldsFor(input, options)
+  const shippingMode = normalizeSellShippingCostMode(
+    input.shippingCostMode,
+    options?.allowPrivilegedShippingModes === true,
+  )
   const packedRow = reswellPackageFieldsToDb({
-    boardShippingCostMode: input.shippingCostMode ?? "reswell",
+    boardShippingCostMode: shippingMode,
     reswellPackageLengthIn: input.reswellPackageLengthIn,
     reswellPackageWidthIn: input.reswellPackageWidthIn,
     reswellPackageHeightIn: input.reswellPackageHeightIn,
