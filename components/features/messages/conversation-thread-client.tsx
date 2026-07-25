@@ -55,7 +55,9 @@ import { ReviewRequestMessageCard } from '@/components/features/messages/review-
 import { MessageLocationCard } from '@/components/features/messages/message-location-card'
 import { LocalPhonePolicyBlockBubble } from '@/components/features/messages/local-phone-policy-block-bubble'
 import { MessageMediaAttachmentCard } from '@/components/features/messages/message-media-attachment-card'
+import { MessageSellerOfferButton } from '@/components/features/messages/message-seller-offer-button'
 import { parseMarketplaceMessageAttachment } from '@/lib/validations/marketplace-message-attachment'
+import { isPeerListingSection } from '@/lib/peer-listing-sections'
 import { effectiveMinimumOfferPct } from '@/lib/utils/offers-minimum-pct'
 import { type ListingThreadOption } from '@/components/features/messages/conversation-listing-switcher'
 import { getOtherUserIdFromConversation } from '@/lib/utils/messages-inbox-grouping'
@@ -630,6 +632,13 @@ export function ConversationThreadClient({
     backHrefProp ??
     (listingThreads.length > 1 ? `/messages/with/${otherUserId}` : '/messages')
   const showListingSwitcher = listingThreads.length > 1
+  const isSellerViewer = !!currentUserId && currentUserId === conversation.seller_id
+  const sellerOfferListing = displayListing ?? conversation.listing
+  const sellerOfferListingId = sellerOfferListing?.id ?? conversation.listing_id
+  const canMakeSellerOffer =
+    isSellerViewer &&
+    !!sellerOfferListingId &&
+    (!sellerOfferListing?.section || isPeerListingSection(sellerOfferListing.section))
 
   return (
     <main
@@ -1087,6 +1096,21 @@ export function ConversationThreadClient({
             onChange={(e) => setNewMessage(e.target.value)}
             onSubmit={handleSend}
             sending={sending}
+            leadingActions={
+              canMakeSellerOffer && sellerOfferListingId ? (
+                <MessageSellerOfferButton
+                  conversationId={id}
+                  listingId={sellerOfferListingId}
+                  buyerUserId={conversation.buyer_id}
+                  sellerUserId={conversation.seller_id}
+                  listingTitle={sellerOfferListing?.title ?? listingTitleForOffers}
+                  listPrice={listPriceNum}
+                  primaryImageUrl={threadListingThumbSrc || null}
+                  disabled={sending}
+                  onOfferSent={loadThread}
+                />
+              ) : null
+            }
             media={{
               conversationId: id,
               disabled: !currentUserId || !conversation,

@@ -27,6 +27,7 @@ import {
 } from "@/lib/offer-listing-shipping"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
+import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -260,7 +261,7 @@ export function SellerMakeOfferToBuyerDialog({
           "id, title, price, minimum_offer_pct, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode, listing_images(url, thumbnail_url, is_primary)",
         )
         .eq("user_id", sellerUserId)
-        .eq("section", "surfboards")
+        .in("section", PEER_LISTING_SECTIONS_FILTER)
         .in("status", ["active", "pending_sale"])
         .eq("hidden_from_site", false)
         .eq("buyer_offers_enabled", true)
@@ -652,7 +653,7 @@ export function SellerMakeOfferToBuyerDialog({
                     )}
                   >
                     <Truck className="h-4 w-4" aria-hidden />
-                    <span className="font-medium text-foreground">Pay for shipping</span>
+                    <span className="font-medium text-foreground">Ship to me</span>
                   </button>
                 </div>
               )}

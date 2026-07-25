@@ -32,6 +32,8 @@ export interface MessageComposerBarProps {
   placeholder?: string
   textareaDisabled?: boolean
   showMedia?: boolean
+  /** Extra controls after the media button (e.g. seller “make an offer”). */
+  leadingActions?: ReactNode
   media?: {
     conversationId: string | null
     disabled?: boolean
@@ -50,6 +52,7 @@ export function MessageComposerBar({
   placeholder = 'Send a message',
   textareaDisabled = false,
   showMedia = true,
+  leadingActions,
   media,
 }: MessageComposerBarProps) {
   const disabled = sending || textareaDisabled
@@ -79,6 +82,7 @@ export function MessageComposerBar({
             onDraftUiChange={handleDraftUiChange}
           />
         ) : null}
+        {leadingActions}
         <div className={messageComposerInputShellClass}>
           <MessageComposerTextarea
             value={value}

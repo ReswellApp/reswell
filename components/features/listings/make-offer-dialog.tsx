@@ -260,7 +260,7 @@ export function MakeOfferDialog({
                     </Label>
                     {methodLocked ? (
                       <div className="rounded-md border border-input bg-background px-2.5 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm">
-                        {canShip && !canPick ? "Pay for shipping" : "Local pickup"}
+                        {canShip && !canPick ? "Ship to me" : "Local pickup"}
                       </div>
                     ) : (
                       <Select
@@ -272,7 +272,7 @@ export function MakeOfferDialog({
                         </SelectTrigger>
                         <SelectContent>
                           {canShip ? (
-                            <SelectItem value="shipping">Pay for shipping</SelectItem>
+                            <SelectItem value="shipping">Ship to me</SelectItem>
                           ) : null}
                           {canPick ? (
                             <SelectItem value="pickup">Local pickup</SelectItem>

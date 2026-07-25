@@ -32,14 +32,14 @@ export function MessageSellerOfferButton({
     <>
       <Button
         type="button"
-        variant="outline"
+        variant="ghost"
         size="icon"
         disabled={disabled}
-        className="mb-0.5 h-10 w-10 shrink-0 rounded-full border-border/70"
+        className="h-10 w-10 shrink-0 rounded-full border-0 bg-transparent text-muted-foreground shadow-none hover:bg-transparent hover:text-foreground"
         aria-label="Make an offer"
         onClick={() => setOpen(true)}
       >
-        <Tag className="h-[18px] w-[18px]" strokeWidth={2} />
+        <Tag className="h-5 w-5" strokeWidth={2} aria-hidden />
       </Button>
 
       <SellerMakeOfferToBuyerDialog
