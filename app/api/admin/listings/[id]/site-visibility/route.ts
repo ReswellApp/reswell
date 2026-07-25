@@ -60,6 +60,8 @@ export async function PATCH(
   const result = await setListingSiteVisibility({
     listingId: listingId.trim(),
     hiddenFromSite: parsed.data.hidden_from_site,
+    source: "admin_site_visibility",
+    actorUserId: user.id,
   })
 
   if (!result.ok) {

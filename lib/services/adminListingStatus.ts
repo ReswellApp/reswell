@@ -9,6 +9,7 @@ import {
 } from "@/lib/services/googleMerchantSync"
 import type { AdminListingStatus } from "@/lib/validations/admin-listing-status"
 import { revalidateAfterListingSiteModeration } from "@/lib/services/listingSiteModerationRevalidation"
+import { recordListingVisibilityEvents } from "@/lib/services/listingVisibilityAudit"
 
 function shouldHideFromSite(status: AdminListingStatus): boolean {
   return status === "removed" || status === "draft"
@@ -21,6 +22,7 @@ function shouldRemoveFromPublicCatalog(status: AdminListingStatus): boolean {
 export async function setAdminListingStatus(params: {
   listingIds: string[]
   status: AdminListingStatus
+  actorUserId?: string | null
 }): Promise<{ ok: true; updatedIds: string[] } | { ok: false; message: string }> {
   const listingIds = [...new Set(params.listingIds.map((id) => id.trim()).filter(Boolean))]
   if (listingIds.length === 0) {
@@ -34,17 +36,45 @@ export async function setAdminListingStatus(params: {
     return { ok: false, message: "Server misconfigured" }
   }
 
+  const { data: priorRows } = await service
+    .from("listings")
+    .select("id, hidden_from_site")
+    .in("id", listingIds)
+
+  const priorHidden = new Map<string, boolean>()
+  for (const row of priorRows ?? []) {
+    const id = String((row as { id: string }).id)
+    priorHidden.set(id, Boolean((row as { hidden_from_site?: boolean | null }).hidden_from_site))
+  }
+
   const patch: {
     status: AdminListingStatus
     hidden_from_site?: boolean
   } = { status: params.status }
   if (shouldHideFromSite(params.status)) {
     patch.hidden_from_site = true
+  } else if (params.status === "active") {
+    // Restoring live inventory must clear site hide (removed/draft/vacation leftovers).
+    patch.hidden_from_site = false
   }
 
   const updated = await updateAdminListingStatus(service, listingIds, patch)
   if (!updated.ok) {
     return updated
+  }
+
+  if (patch.hidden_from_site !== undefined) {
+    const nextHidden = patch.hidden_from_site
+    const auditInputs = updated.updatedIds
+      .filter((id) => priorHidden.get(id) !== nextHidden)
+      .map((listingId) => ({
+        listingId,
+        hiddenFromSite: nextHidden,
+        source: "admin_status" as const,
+        actorUserId: params.actorUserId,
+        metadata: { status: params.status },
+      }))
+    await recordListingVisibilityEvents(service, auditInputs)
   }
 
   await applyListingStatusSideEffects(service, updated.updatedIds, params.status)

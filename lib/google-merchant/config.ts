@@ -59,7 +59,7 @@ export function getGoogleMerchantContentLanguage(): string {
 }
 
 /** Peer listing sections synced to the Merchant Center primary feed. */
-export const GOOGLE_MERCHANT_PEER_SECTIONS = ["surfboards", "fins", "magazines"] as const
+export const GOOGLE_MERCHANT_PEER_SECTIONS = ["surfboards", "fins", "wetsuits", "magazines"] as const
 
 export type GoogleMerchantPeerSection = (typeof GOOGLE_MERCHANT_PEER_SECTIONS)[number]
 
@@ -78,6 +78,9 @@ export const GOOGLE_MERCHANT_DEFAULT_FINS_PRODUCT_CATEGORY = "3525"
 /** Google taxonomy: Media > Magazines & Newspapers > Magazines (784). */
 export const GOOGLE_MERCHANT_DEFAULT_MAGAZINES_PRODUCT_CATEGORY = "784"
 
+/** Google taxonomy: Sporting Goods > … > Boating & Water Sport Apparel (499813). */
+export const GOOGLE_MERCHANT_DEFAULT_WETSUITS_PRODUCT_CATEGORY = "499813"
+
 export function getGoogleMerchantFinsProductCategory(): string {
   return (
     process.env.GOOGLE_MERCHANT_FINS_PRODUCT_CATEGORY?.trim() ||
@@ -92,10 +95,55 @@ export function getGoogleMerchantMagazinesProductCategory(): string {
   )
 }
 
+export function getGoogleMerchantWetsuitsProductCategory(): string {
+  return (
+    process.env.GOOGLE_MERCHANT_WETSUITS_PRODUCT_CATEGORY?.trim() ||
+    GOOGLE_MERCHANT_DEFAULT_WETSUITS_PRODUCT_CATEGORY
+  )
+}
+
 export function getGoogleMerchantProductCategoryForSection(section: string): string {
   if (section === "fins") return getGoogleMerchantFinsProductCategory()
   if (section === "magazines") return getGoogleMerchantMagazinesProductCategory()
+  if (section === "wetsuits") return getGoogleMerchantWetsuitsProductCategory()
   return getGoogleMerchantProductCategory()
+}
+
+/** Default customLabel0 values for Reswell sections (Shopping / PMax campaign filters). */
+export const GOOGLE_MERCHANT_DEFAULT_SURFBOARDS_CUSTOM_LABEL = "Surfboards"
+export const GOOGLE_MERCHANT_DEFAULT_WETSUITS_CUSTOM_LABEL = "Wetsuits"
+export const GOOGLE_MERCHANT_DEFAULT_MAGAZINES_CUSTOM_LABEL = "Magazines"
+export const GOOGLE_MERCHANT_DEFAULT_FINS_CUSTOM_LABEL = "Fins"
+
+/**
+ * Merchant Center `customLabel0` for a listing section.
+ * Used to segment surfboards, wetsuits, magazines, and fins in Google Ads.
+ */
+export function getGoogleMerchantCustomLabel0ForSection(section: string): string | undefined {
+  switch (section) {
+    case "surfboards":
+      return (
+        process.env.GOOGLE_MERCHANT_SURFBOARDS_CUSTOM_LABEL?.trim() ||
+        GOOGLE_MERCHANT_DEFAULT_SURFBOARDS_CUSTOM_LABEL
+      )
+    case "wetsuits":
+      return (
+        process.env.GOOGLE_MERCHANT_WETSUITS_CUSTOM_LABEL?.trim() ||
+        GOOGLE_MERCHANT_DEFAULT_WETSUITS_CUSTOM_LABEL
+      )
+    case "magazines":
+      return (
+        process.env.GOOGLE_MERCHANT_MAGAZINES_CUSTOM_LABEL?.trim() ||
+        GOOGLE_MERCHANT_DEFAULT_MAGAZINES_CUSTOM_LABEL
+      )
+    case "fins":
+      return (
+        process.env.GOOGLE_MERCHANT_FINS_CUSTOM_LABEL?.trim() ||
+        GOOGLE_MERCHANT_DEFAULT_FINS_CUSTOM_LABEL
+      )
+    default:
+      return undefined
+  }
 }
 
 export function getGoogleMerchantDeveloperEmail(): string | null {
@@ -114,6 +162,9 @@ export const GOOGLE_MERCHANT_DEFAULT_FINS_ESTIMATED_SHIPPING_USD = 15
 
 /** Representative USD shipping for Reswell-calculated magazine rates in the Merchant feed. */
 export const GOOGLE_MERCHANT_DEFAULT_MAGAZINES_ESTIMATED_SHIPPING_USD = 10
+
+/** Representative USD shipping for Reswell-calculated wetsuit rates in the Merchant feed. */
+export const GOOGLE_MERCHANT_DEFAULT_WETSUITS_ESTIMATED_SHIPPING_USD = 20
 
 /** Representative USD shipping for Reswell-calculated surfboard rates in the Merchant feed. */
 export function getGoogleMerchantEstimatedShippingUsd(): number {
@@ -150,9 +201,21 @@ export function getGoogleMerchantMagazinesEstimatedShippingUsd(): number {
   return GOOGLE_MERCHANT_DEFAULT_MAGAZINES_ESTIMATED_SHIPPING_USD
 }
 
+export function getGoogleMerchantWetsuitsEstimatedShippingUsd(): number {
+  const raw = process.env.GOOGLE_MERCHANT_WETSUITS_ESTIMATED_SHIPPING_USD?.trim()
+  if (raw) {
+    const parsed = Number.parseFloat(raw)
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      return Math.round(parsed * 100) / 100
+    }
+  }
+  return GOOGLE_MERCHANT_DEFAULT_WETSUITS_ESTIMATED_SHIPPING_USD
+}
+
 export function getGoogleMerchantEstimatedShippingUsdForSection(section: string): number {
   if (section === "fins") return getGoogleMerchantFinsEstimatedShippingUsd()
   if (section === "magazines") return getGoogleMerchantMagazinesEstimatedShippingUsd()
+  if (section === "wetsuits") return getGoogleMerchantWetsuitsEstimatedShippingUsd()
   return getGoogleMerchantEstimatedShippingUsd()
 }
 

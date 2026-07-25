@@ -8,6 +8,7 @@ import { notifyBoardSavedSearchMatchesForListing } from "@/lib/services/notifyBo
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { revalidateAfterListingSiteModeration } from "@/lib/services/listingSiteModerationRevalidation"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
+import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
 
 const PRICE_MIN = 0.01
 
@@ -171,6 +172,13 @@ export async function publishListingDraft(
 
   const publishedSlug = String((updated as { slug?: string }).slug ?? slug).trim()
   const sellerUserId = String((updated as { user_id: string }).user_id)
+
+  await recordListingVisibilityEvent(supabase, {
+    listingId,
+    hiddenFromSite: false,
+    source: "publish_draft",
+    actorUserId: sellerUserId,
+  })
 
   if (!opts?.skipKlaviyo) {
     let sellerEmail = opts?.sellerEmail ?? null

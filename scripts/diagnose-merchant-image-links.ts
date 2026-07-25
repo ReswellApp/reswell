@@ -10,6 +10,7 @@ import {
   mapListingToProductInput,
   type GoogleMerchantListingRow,
 } from "../lib/google-merchant/map-listing-to-product-input"
+import { GOOGLE_MERCHANT_PEER_SECTIONS } from "../lib/google-merchant/config"
 
 function loadEnvFile(relativePath: string): void {
   try {
@@ -159,7 +160,7 @@ async function main(): Promise<void> {
   const pageSize = 200
   for (let offset = 0; ; offset += pageSize) {
     const rows = await supabaseFetch<GoogleMerchantListingRow[]>(
-      `listings?select=${encodeURIComponent(select)}&section=in.(surfboards,fins,magazines)&status=eq.active&hidden_from_site=eq.false&archived_at=is.null&order=updated_at.desc&offset=${offset}&limit=${pageSize}`,
+      `listings?select=${encodeURIComponent(select)}&section=in.(${GOOGLE_MERCHANT_PEER_SECTIONS.join(",")})&status=eq.active&hidden_from_site=eq.false&archived_at=is.null&order=updated_at.desc&offset=${offset}&limit=${pageSize}`,
     )
     if (!rows.length) break
     all.push(...rows)

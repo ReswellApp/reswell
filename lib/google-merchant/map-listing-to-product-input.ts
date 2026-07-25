@@ -9,6 +9,7 @@ import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQu
 import {
   GOOGLE_MERCHANT_MAX_ADDITIONAL_IMAGES,
   getGoogleMerchantContentLanguage,
+  getGoogleMerchantCustomLabel0ForSection,
   getGoogleMerchantEstimatedShippingUsdForSection,
   getGoogleMerchantFeedLabel,
   getGoogleMerchantProductCategoryForSection,
@@ -43,6 +44,7 @@ export type GoogleMerchantListingRow = {
   fins_setup?: string | null
   fin_system?: string | null
   fin_size?: string | null
+  wetsuit_size?: string | null
   magazine_year?: number | null
   city?: string | null
   state?: string | null
@@ -84,6 +86,7 @@ export type GoogleMerchantProductInputPayload = {
     mpn?: string
     identifierExists: boolean
     googleProductCategory: string
+    customLabel0?: string
     shipping?: GoogleMerchantShipping[]
     taxes?: GoogleMerchantTax[]
   }
@@ -262,6 +265,7 @@ export function mapListingToProductInput(
   const shipping = mapListingShippingAttributes(listing)
   const taxes = mapListingTaxAttributes()
   const additionalImages = additionalImageLinks(listing, imageLink)
+  const customLabel0 = getGoogleMerchantCustomLabel0ForSection(listing.section)
 
   return {
     offerId: listing.id,
@@ -283,6 +287,7 @@ export function mapListingToProductInput(
       mpn: identifiers.mpn,
       identifierExists: identifiers.identifierExists,
       googleProductCategory: getGoogleMerchantProductCategoryForSection(listing.section),
+      ...(customLabel0 ? { customLabel0 } : {}),
       ...(shipping ? { shipping } : {}),
       ...(taxes ? { taxes } : {}),
     },

@@ -23,6 +23,7 @@ const GOOGLE_MERCHANT_LISTING_SELECT = `
   fins_setup,
   fin_system,
   fin_size,
+  wetsuit_size,
   magazine_year,
   city,
   state,

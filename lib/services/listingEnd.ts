@@ -13,6 +13,7 @@ import {
 } from "@/lib/services/listingStorageCleanup"
 import { deleteAllCartRowsForListing } from "@/lib/db/cart-items-server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
 
 type ListingEndRow = {
   id: string
@@ -71,6 +72,13 @@ async function applySellerArchive(
 
   try {
     const service = createServiceRoleClient()
+    await recordListingVisibilityEvent(service, {
+      listingId,
+      hiddenFromSite: true,
+      source: "seller_archive",
+      actorUserId: sellerUserId,
+      metadata: { status: nextStatus },
+    })
     await deleteAllCartRowsForListing(service, listingId)
   } catch {
     // best-effort — listing is already archived

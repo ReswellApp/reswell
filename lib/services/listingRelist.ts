@@ -5,6 +5,7 @@ import { revalidateRecentlySoldSurfaces } from "@/lib/cache/revalidate-home-publ
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { grantExclusiveWindowForRefundedOrderRelist } from "@/lib/services/listingBuyerExclusiveWindow"
+import { recordListingVisibilityEvents } from "@/lib/services/listingVisibilityAudit"
 
 function uniqueListingIds(listingIds: readonly (string | null | undefined)[]): string[] {
   return [...new Set(listingIds.filter((id): id is string => typeof id === "string" && id.length > 0))]
@@ -27,7 +28,7 @@ export async function relistListingsAfterRefund(
   const nowIso = new Date().toISOString()
   const { data, error } = await supabase
     .from("listings")
-    .update({ status: "active", updated_at: nowIso })
+    .update({ status: "active", hidden_from_site: false, updated_at: nowIso })
     .in("id", uniqueIds)
     .eq("status", "sold")
     .select("id, user_id")
@@ -56,6 +57,17 @@ export async function relistListingsAfterRefund(
     .map((row) => (row as { user_id?: string | null }).user_id)
     .filter((id): id is string => typeof id === "string" && id.length > 0)
   await revalidateSellersForUserIds(supabase, sellerUserIds)
+
+  await recordListingVisibilityEvents(
+    supabase,
+    relistedIds.map((listingId) => ({
+      listingId,
+      hiddenFromSite: false,
+      source: "seller_relist" as const,
+      note: "Reactivated after refund",
+      metadata: { reason: "refund" },
+    })),
+  )
 
   for (const listingId of relistedIds) {
     void syncListingToGoogleMerchantBestEffort(supabase, listingId)

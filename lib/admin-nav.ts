@@ -75,6 +75,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     items: [
       { href: '/admin', label: 'Overview', icon: 'layoutDashboard' },
       { href: '/admin/listings', label: 'Listings', icon: 'package' },
+      { href: '/admin/listings/hidden', label: 'Hidden listings', icon: 'package' },
       { href: '/admin/shop', label: 'Reswell', icon: 'store' },
       { href: '/admin/listings/bulk', label: 'Bulk list', icon: 'layers' },
       { href: '/admin/seo', label: 'SEO', icon: 'search' },

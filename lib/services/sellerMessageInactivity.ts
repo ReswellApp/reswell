@@ -139,6 +139,7 @@ export async function processSellerMessageInactivity(
       userId: group.sellerId,
       listingId: group.listingId,
       vacationMode: true,
+      source: "seller_inactivity",
     })
 
     const vacationOk = vacationResult.ok

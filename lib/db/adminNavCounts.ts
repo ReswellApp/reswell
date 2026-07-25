@@ -1,13 +1,26 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { createServiceRoleClient } from '@/lib/supabase/server'
+import { countCheckoutBlockedHiddenActiveListings } from '@/lib/db/adminHiddenListings'
+import type { AdminNavBadgeCounts } from '@/lib/admin-nav-badge-counts'
 
-/** Badge counts keyed by admin nav href. */
-export type AdminNavBadgeCounts = Record<string, number>
+export type { AdminNavBadgeCounts } from '@/lib/admin-nav-badge-counts'
+export { sumAdminNavBadgeCounts } from '@/lib/admin-nav-badge-counts'
+
+/** Hidden listing counts require service role (RLS hides rows from staff session). */
+async function fetchHiddenActiveCheckoutBlockedCount(): Promise<number> {
+  try {
+    const service = createServiceRoleClient()
+    return await countCheckoutBlockedHiddenActiveListings(service)
+  } catch {
+    return 0
+  }
+}
 
 export async function fetchAdminNavBadgeCounts(
   supabase: SupabaseClient,
   options: { includeBrandRequests: boolean },
 ): Promise<AdminNavBadgeCounts> {
-  const [supportNewRes, fraudRes, opsOpenRes, brandPendingRes, labelFailuresRes] =
+  const [supportNewRes, fraudRes, opsOpenRes, brandPendingRes, labelFailuresRes, hiddenActiveRes] =
     await Promise.all([
       supabase
         .from('contact_messages')
@@ -30,6 +43,7 @@ export async function fetchAdminNavBadgeCounts(
             .select('*', { count: 'exact', head: true })
             .eq('status', 'open')
         : Promise.resolve({ count: 0 as number | null, error: null }),
+      fetchHiddenActiveCheckoutBlockedCount(),
     ])
 
   const take = (res: { count: number | null; error: unknown }): number => {
@@ -41,6 +55,7 @@ export async function fetchAdminNavBadgeCounts(
     '/admin/contact-messages': take(supportNewRes),
     '/admin/fraud-messages': take(fraudRes),
     '/admin/ops': take(opsOpenRes),
+    '/admin/listings/hidden': hiddenActiveRes,
   }
 
   if (options.includeBrandRequests) {
@@ -53,11 +68,4 @@ export async function fetchAdminNavBadgeCounts(
   }
 
   return counts
-}
-
-export function sumAdminNavBadgeCounts(
-  counts: AdminNavBadgeCounts,
-  hrefs: string[],
-): number {
-  return hrefs.reduce((sum, href) => sum + (counts[href] ?? 0), 0)
 }

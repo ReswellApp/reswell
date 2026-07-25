@@ -2,7 +2,7 @@ import React from "react"
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { AdminGuard } from './AdminGuard'
-import { AdminSidebarNav } from '@/components/features/admin/admin-sidebar-nav'
+import { AdminSidebarNavLazy } from '@/components/features/admin/admin-sidebar-nav-lazy'
 import { getAdminNavGroupsForUser } from '@/lib/admin-nav'
 import { fetchAdminNavBadgeCounts } from '@/lib/db/adminNavCounts'
 
@@ -41,7 +41,7 @@ export default async function AdminLayout({
           {/* Sidebar */}
           <aside className="w-full md:w-64 flex-shrink-0">
             <nav className="space-y-1">
-              <AdminSidebarNav groups={navGroups} badgeCounts={navBadgeCounts} />
+              <AdminSidebarNavLazy groups={navGroups} badgeCounts={navBadgeCounts} />
             </nav>
           </aside>
 

@@ -5,6 +5,8 @@ import { updateListingHiddenFromSite } from "@/lib/db/listings"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { revalidateAfterListingSiteModeration } from "@/lib/services/listingSiteModerationRevalidation"
+import type { ListingVisibilitySource } from "@/lib/listing-visibility-sources"
+import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
 
 const VACATION_ALLOWED_STATUSES = new Set(["active", "pending_sale"])
 
@@ -13,6 +15,8 @@ export async function setListingVacationModeForSeller(params: {
   userId: string
   listingId: string
   vacationMode: boolean
+  /** Defaults to seller_vacation; inactivity job passes seller_inactivity. */
+  source?: Extract<ListingVisibilitySource, "seller_vacation" | "seller_inactivity">
 }): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
   const listingId = params.listingId.trim()
   if (!listingId) {
@@ -61,6 +65,14 @@ export async function setListingVacationModeForSeller(params: {
   if (!updated.ok) {
     return { ok: false, error: updated.message, status: 500 }
   }
+
+  await recordListingVisibilityEvent(service, {
+    listingId,
+    hiddenFromSite,
+    source: params.source ?? "seller_vacation",
+    actorUserId: params.userId,
+    metadata: { vacationMode: params.vacationMode },
+  })
 
   if (hiddenFromSite) {
     try {

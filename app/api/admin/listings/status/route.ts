@@ -49,6 +49,7 @@ export async function PATCH(request: NextRequest) {
   const result = await setAdminListingStatus({
     listingIds: parsed.data.listing_ids,
     status: parsed.data.status,
+    actorUserId: user.id,
   })
 
   if (!result.ok) {

@@ -927,6 +927,17 @@ export default function AdminListingsPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/admin/listings/hidden">
+              <EyeOff className="mr-2 h-4 w-4" />
+              Hidden listings
+              {stats.hidden > 0 ? (
+                <span className="ml-1.5 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-amber-800 dark:text-amber-300">
+                  {stats.hidden}
+                </span>
+              ) : null}
+            </Link>
+          </Button>
           {isAdminUser ? (
             <>
               <Button variant="outline" asChild>

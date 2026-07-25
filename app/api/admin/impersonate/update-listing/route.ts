@@ -18,6 +18,7 @@ import {
 } from "@/lib/services/publishListingDraft"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
+import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
 
 export async function PUT(request: NextRequest) {
   const supabase = await createClient()
@@ -192,6 +193,16 @@ export async function PUT(request: NextRequest) {
   if (updateError) {
     console.error("[impersonate] listing update error:", updateError)
     return NextResponse.json({ error: "Failed to update listing" }, { status: 500 })
+  }
+
+  if (publishingFromDraft) {
+    await recordListingVisibilityEvent(service, {
+      listingId,
+      hiddenFromSite: false,
+      source: "impersonate_update",
+      actorUserId: user.id,
+      note: "Published draft while impersonating",
+    })
   }
 
   const slugTrim =
