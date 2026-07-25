@@ -17,6 +17,10 @@ import { formatGmv } from "@/lib/format-gmv"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
 import { isListingVisibleInPublicSoldFeed } from "@/lib/listing-public-visibility"
+import {
+  fetchMarketplaceSoldFeedOrderPage,
+  type MarketplaceSoldFeedCursor,
+} from "@/lib/db/marketplace-sold-feed"
 
 export const MARKETPLACE_SOLD_FEED_LIMIT = 40
 
@@ -43,7 +47,14 @@ export type MarketplaceSoldFeedPayload = {
   soldStats: { count: number; gmvFormatted: string }
   brandFilterName: string | null
   brandUnknown: boolean
+  hasMore: boolean
+  nextCursor: MarketplaceSoldFeedCursor | null
 }
+
+export type MarketplaceSoldFeedPagePayload = Pick<
+  MarketplaceSoldFeedPayload,
+  "soldListings" | "brandFilterName" | "brandUnknown" | "hasMore" | "nextCursor"
+>
 
 function mapSoldRow(
   row: Record<string, unknown>,
@@ -98,6 +109,82 @@ function mapRecentListingToSoldFeed(listing: RecentListing): SoldFeedListing {
   }
 }
 
+export async function loadMarketplaceSoldFeedPage(
+  supabase: SupabaseClient,
+  brandSlug: string | null,
+  cursor: MarketplaceSoldFeedCursor | null,
+): Promise<MarketplaceSoldFeedPagePayload> {
+  const brand = brandSlug ? await getBrandBySlug(supabase, brandSlug) : null
+  if (brandSlug && !brand) {
+    return {
+      soldListings: [],
+      brandFilterName: null,
+      brandUnknown: true,
+      hasMore: false,
+      nextCursor: null,
+    }
+  }
+
+  const orderPage = await fetchMarketplaceSoldFeedOrderPage(supabase, {
+    cursor,
+    brand: brand ? { id: brand.id, name: brand.name } : null,
+  })
+
+  if (orderPage.orderedListingIds.length === 0) {
+    return {
+      soldListings: [],
+      brandFilterName: brand?.name ?? null,
+      brandUnknown: false,
+      hasMore: false,
+      nextCursor: null,
+    }
+  }
+
+  const { data, error } = await supabase
+    .from("listings")
+    .select(`${SOLD_LISTING_SELECT}, hidden_from_site, archived_at`)
+    .in("id", orderPage.orderedListingIds)
+    .eq("status", "sold")
+
+  if (error) {
+    console.error("[marketplaceSoldFeedPage] listings fetch:", error.message)
+    throw new Error("Unable to load sold listings")
+  }
+
+  const rows = (data ?? []) as Record<string, unknown>[]
+  const rowsById = new Map(rows.map((row) => [String(row.id), row]))
+  const adminTerminalSoldIds = await fetchAdminTerminalSoldListingIds(
+    supabase,
+    orderPage.orderedListingIds,
+  )
+  const soldListings = orderPage.orderedListingIds
+    .map((id) => {
+      const row = rowsById.get(id)
+      if (!row) return null
+      if (
+        !isListingVisibleInPublicSoldFeed({
+          title: String(row.title ?? ""),
+          status: "sold",
+          hidden_from_site: row.hidden_from_site as boolean | null | undefined,
+          archived_at: row.archived_at as string | null | undefined,
+          soldViaAdminTerminal: adminTerminalSoldIds.has(id),
+        })
+      ) {
+        return null
+      }
+      return mapSoldRow(row, orderPage.confirmedAtIsoByListingId.get(id) ?? null)
+    })
+    .filter((listing): listing is SoldFeedListing => listing != null)
+
+  return {
+    soldListings,
+    brandFilterName: brand?.name ?? null,
+    brandUnknown: false,
+    hasMore: orderPage.hasMore,
+    nextCursor: orderPage.nextCursor,
+  }
+}
+
 /** Public sold / shipped marketplace feed (no session). */
 export async function loadMarketplaceSoldFeed(
   supabase: SupabaseClient,
@@ -105,6 +192,17 @@ export async function loadMarketplaceSoldFeed(
   options?: { shippedOnly?: boolean },
 ): Promise<MarketplaceSoldFeedPayload> {
   const shippedOnly = options?.shippedOnly === true
+
+  if (!shippedOnly) {
+    const [page, stats] = await Promise.all([
+      loadMarketplaceSoldFeedPage(supabase, brandSlug, null),
+      getSoldFeedStats([...MARKETPLACE_SOLD_FEED_SECTIONS]),
+    ])
+    return {
+      ...page,
+      soldStats: { count: stats.soldCount, gmvFormatted: formatGmv(stats.gmvTotal) },
+    }
+  }
 
   if (brandSlug) {
     const brand = await getBrandBySlug(supabase, brandSlug)
@@ -115,6 +213,8 @@ export async function loadMarketplaceSoldFeed(
         soldStats: { count: stats.soldCount, gmvFormatted: formatGmv(stats.gmvTotal) },
         brandFilterName: null,
         brandUnknown: true,
+        hasMore: false,
+        nextCursor: null,
       }
     }
 
@@ -139,6 +239,8 @@ export async function loadMarketplaceSoldFeed(
       soldStats: { count: stats.soldCount, gmvFormatted: formatGmv(stats.gmvTotal) },
       brandFilterName: brand.name,
       brandUnknown: false,
+      hasMore: false,
+      nextCursor: null,
     }
   }
 
@@ -199,5 +301,7 @@ export async function loadMarketplaceSoldFeed(
     soldStats: { count: stats.soldCount, gmvFormatted: formatGmv(stats.gmvTotal) },
     brandFilterName: null,
     brandUnknown: false,
+    hasMore: false,
+    nextCursor: null,
   }
 }

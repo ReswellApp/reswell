@@ -102,6 +102,7 @@ async function FeedPageData({
         brandUnknown={brandUnknown}
         shippedPanel={
           <SoldFeedPanel
+            key={`shipped:${brandSlug ?? "all"}`}
             soldListings={soldListings}
             soldStats={soldStats}
             variant="shipped"
@@ -111,7 +112,14 @@ async function FeedPageData({
     )
   }
 
-  const { soldListings, soldStats, brandFilterName, brandUnknown } =
+  const {
+    soldListings,
+    soldStats,
+    brandFilterName,
+    brandUnknown,
+    hasMore,
+    nextCursor,
+  } =
     await getCachedMarketplaceSoldFeed(brandSlug, false)
 
   return (
@@ -119,7 +127,16 @@ async function FeedPageData({
       activeTab="sold"
       brandFilterName={brandFilterName}
       brandUnknown={brandUnknown}
-      soldPanel={<SoldFeedPanel soldListings={soldListings} soldStats={soldStats} />}
+      soldPanel={
+        <SoldFeedPanel
+          key={`sold:${brandSlug ?? "all"}`}
+          soldListings={soldListings}
+          soldStats={soldStats}
+          brandSlug={brandSlug}
+          initialHasMore={hasMore}
+          initialCursor={nextCursor}
+        />
+      }
     />
   )
 }

@@ -1,5 +1,6 @@
 "use client"
 
+import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { formatDistanceToNowStrict } from "date-fns"
 import { capitalizeWords, formatHomePeerListingConditionLine } from "@/lib/listing-labels"
@@ -21,6 +22,8 @@ import {
   MarketplaceFeedSoldStatsBanner,
   MarketplaceFeedStatsBanner,
 } from "@/components/features/marketplace/marketplace-feed-stats-banner"
+import { ListingTileGridSkeleton } from "@/components/listing-tile-skeleton"
+import { Button } from "@/components/ui/button"
 
 export type SoldFeedListing = {
   id: string
@@ -53,6 +56,20 @@ export interface RecentlySoldPageClientProps {
   /** When set via `/sold?brandSlug=`, shown in the page header. */
   brandFilterName?: string | null
   brandUnknown?: boolean
+}
+
+interface SoldFeedCursor {
+  soldAt: string
+  listingId: string
+}
+
+interface SoldFeedPageResponse {
+  data?: {
+    soldListings: SoldFeedListing[]
+    hasMore: boolean
+    nextCursor: SoldFeedCursor | null
+  }
+  error?: string
 }
 
 function soldRelativeLabel(iso: string): string {
@@ -187,23 +204,105 @@ export function SoldFeedPanel({
   soldListings,
   soldStats,
   variant = "sold",
+  brandSlug = null,
+  initialHasMore = false,
+  initialCursor = null,
 }: Pick<RecentlySoldPageClientProps, "soldListings" | "soldStats"> & {
   variant?: "sold" | "shipped"
+  brandSlug?: string | null
+  initialHasMore?: boolean
+  initialCursor?: SoldFeedCursor | null
 }) {
+  const [listings, setListings] = useState(soldListings)
+  const [cursor, setCursor] = useState(initialCursor)
+  const [hasMore, setHasMore] = useState(initialHasMore)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const isLoadingRef = useRef(false)
+  const sentinelRef = useRef<HTMLDivElement>(null)
+
+  const loadMore = useCallback(async () => {
+    if (variant !== "sold" || !hasMore || !cursor || isLoadingRef.current) return
+
+    isLoadingRef.current = true
+    setIsLoading(true)
+    setLoadError(null)
+
+    try {
+      const query = new URLSearchParams({
+        soldAt: cursor.soldAt,
+        listingId: cursor.listingId,
+      })
+      if (brandSlug) query.set("brandSlug", brandSlug)
+
+      const response = await fetch(`/api/feed/sold?${query.toString()}`)
+      const payload = (await response.json()) as SoldFeedPageResponse
+      if (!response.ok || !payload.data) {
+        throw new Error(payload.error || "Unable to load more sold items")
+      }
+      const page = payload.data
+
+      setListings((current) => {
+        const existingIds = new Set(current.map((listing) => listing.id))
+        return [
+          ...current,
+          ...page.soldListings.filter((listing) => !existingIds.has(listing.id)),
+        ]
+      })
+      setCursor(page.nextCursor)
+      setHasMore(page.hasMore)
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Unable to load more sold items")
+    } finally {
+      isLoadingRef.current = false
+      setIsLoading(false)
+    }
+  }, [brandSlug, cursor, hasMore, variant])
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current
+    if (!sentinel || variant !== "sold" || !hasMore) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) void loadMore()
+      },
+      { rootMargin: "800px 0px" },
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [hasMore, loadMore, variant])
+
   return (
     <>
       {variant === "shipped" ? (
         <MarketplaceFeedStatsBanner>
           <span className="inline-flex flex-wrap items-center justify-center gap-x-1 gap-y-1">
             <Truck className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-            <span className="font-medium tabular-nums">{soldListings.length}</span>
+            <span className="font-medium tabular-nums">{listings.length}</span>
             <span>shipped boards on Reswell</span>
           </span>
         </MarketplaceFeedStatsBanner>
       ) : (
         <MarketplaceFeedSoldStatsBanner count={soldStats.count} gmvFormatted={soldStats.gmvFormatted} />
       )}
-      <SoldFeedGrid listings={soldListings} variant={variant} />
+      <SoldFeedGrid listings={listings} variant={variant} />
+      {variant === "sold" && hasMore ? (
+        <div ref={sentinelRef} className="pt-6" aria-live="polite">
+          {isLoading ? (
+            <ListingTileGridSkeleton count={5} ariaLabel="Loading more sold items" />
+          ) : loadError ? (
+            <div className="flex flex-col items-center gap-3 py-4 text-center">
+              <p className="text-sm text-muted-foreground">{loadError}</p>
+              <Button variant="outline" size="sm" onClick={() => void loadMore()}>
+                Try again
+              </Button>
+            </div>
+          ) : (
+            <div className="h-px" aria-hidden />
+          )}
+        </div>
+      ) : null}
     </>
   )
 }
