@@ -31,6 +31,11 @@ export type SignInRequiredGateProps = {
    * gated subtree (e.g. /sell/*) so listing drafts are not unmounted on route change.
    */
   persistSessionAcrossRoutes?: boolean
+  /**
+   * Server already confirmed signed-out. Skip the “checking” spinner flash and show
+   * the sign-in wall immediately; still upgrade to authed if the client finds a session.
+   */
+  initialPhase?: Exclude<SignInRequiredPhase, "checking">
 }
 
 export function SignInRequiredGate({
@@ -41,14 +46,16 @@ export function SignInRequiredGate({
   backHref = "/",
   backLabel = "Back to shopping",
   persistSessionAcrossRoutes = false,
+  initialPhase,
 }: SignInRequiredGateProps) {
   const router = useRouter()
   const pathname = usePathname()
   const authModal = useOptionalAuthModal()
   const supabase = useMemo(() => createClient(), [])
-  // Always probe the session first — Supabase SSR auth cookies are often httpOnly and
+  // Default to probing the session — Supabase SSR auth cookies are often httpOnly and
   // invisible to document.cookie, so a missing client cookie is not proof of signed-out.
-  const [phase, setPhase] = useState<SignInRequiredPhase>("checking")
+  // When the server already confirmed signed-out, start blocked to avoid a spinner flash.
+  const [phase, setPhase] = useState<SignInRequiredPhase>(initialPhase ?? "checking")
   const authPromptedRef = useRef(false)
   const authedRef = useRef(false)
 

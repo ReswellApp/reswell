@@ -187,7 +187,17 @@ import { SellBoardFacetFields } from "@/components/features/sell/sell-board-face
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
+import { ScanBoardDimsControl } from "@/components/features/sell/scan-board-dims-control"
+import { ExtractListingFromPhotosBanner } from "@/components/features/sell/extract-listing-from-photos-banner"
 import { sellListingThumbLoadedSrcByClientId } from "@/components/features/sell/hooks/use-listing-photo-upload"
+import {
+  allExtractTargetFieldsFilled,
+  clearBrandAiFilledKeys,
+  mergeExtractListingIntoEmptyFields,
+  pickListingThumbUrlsForExtract,
+  type ExtractListingAiFieldKey,
+} from "@/lib/sell-flow/merge-extract-listing-into-form"
+import type { ExtractListingFromPhotosNormalized } from "@/lib/validations/extract-listing-from-photos"
 import {
   SELL_COMPLETE_BADGE_CLASS,
   SELL_CONTROL_CLASS,
@@ -843,6 +853,49 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   const prevBoardLengthRef = useRef<string | undefined>(undefined)
   const prevBoardWidthRef = useRef<string | undefined>(undefined)
   const prevBoardThicknessRef = useRef<string | undefined>(undefined)
+  const formDataRef = useRef(formData)
+  formDataRef.current = formData
+  const [aiFilledFields, setAiFilledFields] = useState<ExtractListingAiFieldKey[]>([])
+  const [extractBannerOpen, setExtractBannerOpen] = useState(false)
+
+  const clearAiFilledField = useCallback((key: ExtractListingAiFieldKey) => {
+    setAiFilledFields((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : prev))
+  }, [])
+
+  const clearAiBrandOwnership = useCallback(() => {
+    setAiFilledFields((prev) => clearBrandAiFilledKeys(prev))
+  }, [])
+
+  const clearAiSuggestions = useCallback(() => {
+    setAiFilledFields((filled) => {
+      if (filled.length === 0) return filled
+      setFormData((fd) => {
+        const next = { ...fd }
+        for (const key of filled) {
+          switch (key) {
+            case "boardLength":
+            case "boardWidthInches":
+            case "boardThicknessInches":
+            case "boardVolumeL":
+            case "boardFins":
+            case "boardFinSystem":
+            case "boardConstruction":
+            case "brand":
+            case "boardBrandId":
+            case "boardLinkedBrandName":
+            case "boardIndexBrandSlug":
+              next[key] = ""
+              break
+            default:
+              break
+          }
+        }
+        return next
+      })
+      return []
+    })
+    setExtractBannerOpen(false)
+  }, [])
 
   const [sellCategoryOptions, setSellCategoryOptions] = useState<SellCategoryOptionRow[]>([])
   const [sellCategoriesLoaded, setSellCategoriesLoaded] = useState(false)
@@ -1318,6 +1371,114 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
       ),
     [images],
   )
+
+  const doneListingThumbKey = useMemo(
+    () =>
+      images
+        .filter((im) => im.uploadPhase === "done")
+        .map((im) => (im.thumbnailUrl?.trim() || im.url?.trim() || "").trim())
+        .filter(Boolean)
+        .join("|"),
+    [images],
+  )
+
+  /** Auto-extract dims / fins / construction from uploaded listing thumbs (empty fields only). */
+  useEffect(() => {
+    if (!draftHydrated || editLoading || loading) return
+    if (!doneListingThumbKey) return
+
+    const urls = pickListingThumbUrlsForExtract(images)
+    if (urls.length === 0) return
+
+    const currentSlice = {
+      boardLength: formDataRef.current.boardLength,
+      boardWidthInches: formDataRef.current.boardWidthInches,
+      boardThicknessInches: formDataRef.current.boardThicknessInches,
+      boardVolumeL: formDataRef.current.boardVolumeL,
+      boardFins: formDataRef.current.boardFins,
+      boardFinSystem: formDataRef.current.boardFinSystem,
+      boardConstruction: formDataRef.current.boardConstruction,
+      brand: formDataRef.current.brand,
+      boardBrandId: formDataRef.current.boardBrandId,
+      boardLinkedBrandName: formDataRef.current.boardLinkedBrandName,
+      boardIndexBrandSlug: formDataRef.current.boardIndexBrandSlug,
+    }
+    if (allExtractTargetFieldsFilled(currentSlice)) return
+
+    const controller = new AbortController()
+    const timer = setTimeout(() => {
+      void (async () => {
+        try {
+          const res = await fetch("/api/sell/extract-listing-from-photos", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ imageUrls: urls }),
+            signal: controller.signal,
+          })
+          if (controller.signal.aborted) return
+          if (!res.ok) {
+            // Soft-fail — listing flow stays usable; Scan sticker remains available.
+            if (res.status === 503) {
+              toast.message("Couldn’t read details from photos. You can fill them in or use Scan sticker.")
+            }
+            return
+          }
+
+          let body: unknown = null
+          try {
+            body = await res.json()
+          } catch {
+            return
+          }
+          const data =
+            body &&
+            typeof body === "object" &&
+            "data" in body &&
+            (body as { data: unknown }).data &&
+            typeof (body as { data: unknown }).data === "object"
+              ? ((body as { data: ExtractListingFromPhotosNormalized }).data)
+              : null
+          if (!data || typeof data.fieldCount !== "number" || data.fieldCount < 1) return
+
+          const sliceNow = {
+            boardLength: formDataRef.current.boardLength,
+            boardWidthInches: formDataRef.current.boardWidthInches,
+            boardThicknessInches: formDataRef.current.boardThicknessInches,
+            boardVolumeL: formDataRef.current.boardVolumeL,
+            boardFins: formDataRef.current.boardFins,
+            boardFinSystem: formDataRef.current.boardFinSystem,
+            boardConstruction: formDataRef.current.boardConstruction,
+            brand: formDataRef.current.brand,
+            boardBrandId: formDataRef.current.boardBrandId,
+            boardLinkedBrandName: formDataRef.current.boardLinkedBrandName,
+            boardIndexBrandSlug: formDataRef.current.boardIndexBrandSlug,
+          }
+          const { patch, filledKeys } = mergeExtractListingIntoEmptyFields(sliceNow, data)
+          if (filledKeys.length === 0) return
+
+          if (patch.boardLength) prevBoardLengthRef.current = patch.boardLength
+          if (patch.boardWidthInches) prevBoardWidthRef.current = patch.boardWidthInches
+          if (patch.boardThicknessInches) {
+            prevBoardThicknessRef.current = patch.boardThicknessInches
+          }
+
+          setFormData((fd) => ({ ...fd, ...patch }))
+          setAiFilledFields((prev) => [...new Set([...prev, ...filledKeys])])
+          setExtractBannerOpen(true)
+        } catch (err) {
+          if (err instanceof DOMException && err.name === "AbortError") return
+          // Soft-fail: seller can fill manually or use Scan sticker.
+        }
+      })()
+    }, 1500)
+
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
+    }
+    // images + doneListingThumbKey stay in sync; form read via formDataRef
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional photo-set trigger
+  }, [doneListingThumbKey, draftHydrated, editLoading, loading])
 
   const sellSectionCompletionBase = useMemo(
     () =>
@@ -3463,6 +3624,11 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                   title="Board shape, dimensions & description"
                 >
                     <div className="space-y-8">
+                      <ExtractListingFromPhotosBanner
+                        open={extractBannerOpen && aiFilledFields.length > 0}
+                        onDismiss={() => setExtractBannerOpen(false)}
+                        onClearSuggestions={clearAiSuggestions}
+                      />
                       <div className="space-y-2">
                         <Label>Board shape / category *</Label>
                         <Select
@@ -3560,6 +3726,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                   : null
                               }
                               onChange={(v) => {
+                                clearAiBrandOwnership()
                                 setFormData((f) => {
                                   const clear =
                                     f.boardBrandId &&
@@ -3584,6 +3751,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                 const modelFromCatalog =
                                   opt.modelName.trim() ||
                                   (opt.modelSlug.trim() ? opt.label.trim() : "")
+                                clearAiBrandOwnership()
                                 setFormData((f) => ({
                                   ...f,
                                   boardBrandId: opt.brandId,
@@ -3647,6 +3815,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                           defaultBrandName={formData.boardLinkedBrandName.trim() || formData.brand.trim()}
                           defaultModelName={formData.boardModelName.trim()}
                           onBrandSubmitted={(brandName) => {
+                            clearAiBrandOwnership()
                             setFormData((f) => ({
                               ...f,
                               brand: brandName,
@@ -3668,6 +3837,50 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                       </div>
 
                       <div className="space-y-3">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-xs font-medium text-foreground/85">Dimensions</p>
+                        <ScanBoardDimsControl
+                          disabled={editLoading || loading}
+                          onApply={(dims) => {
+                            const nextLength = dims.boardLength
+                              ? normalizeBoardLengthInput(dims.boardLength)
+                              : ""
+                            const nextWidth = dims.boardWidthInches
+                              ? normalizeTapeStyleInchesInput(dims.boardWidthInches)
+                              : ""
+                            const nextThickness = dims.boardThicknessInches
+                              ? normalizeTapeStyleInchesInput(dims.boardThicknessInches)
+                              : ""
+                            const nextVolume = dims.boardVolumeL
+                              ? normalizeVolumeLitersInput(dims.boardVolumeL)
+                              : ""
+                            if (nextLength) prevBoardLengthRef.current = nextLength
+                            if (nextWidth) prevBoardWidthRef.current = nextWidth
+                            if (nextThickness) prevBoardThicknessRef.current = nextThickness
+                            setFormData((fd) => ({
+                              ...fd,
+                              ...(nextLength ? { boardLength: nextLength } : {}),
+                              ...(nextWidth ? { boardWidthInches: nextWidth } : {}),
+                              ...(nextThickness
+                                ? { boardThicknessInches: nextThickness }
+                                : {}),
+                              ...(nextVolume ? { boardVolumeL: nextVolume } : {}),
+                            }))
+                            // Sticker scan is seller-confirmed — drop AI ownership for applied dims.
+                            setAiFilledFields((prev) =>
+                              prev.filter(
+                                (k) =>
+                                  !(
+                                    (nextLength && k === "boardLength") ||
+                                    (nextWidth && k === "boardWidthInches") ||
+                                    (nextThickness && k === "boardThicknessInches") ||
+                                    (nextVolume && k === "boardVolumeL")
+                                  ),
+                              ),
+                            )
+                          }}
+                        />
+                      </div>
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                         {/* Length */}
                         <div className="space-y-1.5">
@@ -3688,6 +3901,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                 onChange={(e) => {
                                   const next = normalizeBoardLengthInput(e.target.value)
                                   prevBoardLengthRef.current = next
+                                  clearAiFilledField("boardLength")
                                   setFormData((fd) => ({ ...fd, boardLength: next }))
                                 }}
                                 className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
@@ -3735,6 +3949,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                 onChange={(e) => {
                                   const next = normalizeTapeStyleInchesInput(e.target.value)
                                   prevBoardWidthRef.current = next
+                                  clearAiFilledField("boardWidthInches")
                                   setFormData((fd) => ({ ...fd, boardWidthInches: next }))
                                 }}
                                 className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
@@ -3768,6 +3983,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                 onChange={(e) => {
                                   const next = normalizeTapeStyleInchesInput(e.target.value)
                                   prevBoardThicknessRef.current = next
+                                  clearAiFilledField("boardThicknessInches")
                                   setFormData((fd) => ({ ...fd, boardThicknessInches: next }))
                                 }}
                                 className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
@@ -3798,12 +4014,13 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                 inputMode="text"
                                 placeholder="30.4"
                                 value={formData.boardVolumeL}
-                                onChange={(e) =>
+                                onChange={(e) => {
+                                  clearAiFilledField("boardVolumeL")
                                   setFormData((fd) => ({
                                     ...fd,
                                     boardVolumeL: normalizeVolumeLitersInput(e.target.value),
                                   }))
-                                }
+                                }}
                                 className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
                                 autoComplete="off"
                                 spellCheck={false}
@@ -3821,15 +4038,18 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                         boardFins={formData.boardFins}
                         boardFinSystem={formData.boardFinSystem}
                         boardConstruction={formData.boardConstruction}
-                        onBoardFinsChange={(value) =>
+                        onBoardFinsChange={(value) => {
+                          clearAiFilledField("boardFins")
                           setFormData((fd) => ({ ...fd, boardFins: value }))
-                        }
-                        onBoardFinSystemChange={(value) =>
+                        }}
+                        onBoardFinSystemChange={(value) => {
+                          clearAiFilledField("boardFinSystem")
                           setFormData((fd) => ({ ...fd, boardFinSystem: value }))
-                        }
-                        onBoardConstructionChange={(value) =>
+                        }}
+                        onBoardConstructionChange={(value) => {
+                          clearAiFilledField("boardConstruction")
                           setFormData((fd) => ({ ...fd, boardConstruction: value }))
-                        }
+                        }}
                         disabled={editLoading}
                       />
 

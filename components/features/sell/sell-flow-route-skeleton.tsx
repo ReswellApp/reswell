@@ -47,3 +47,38 @@ export function SellFlowRouteSkeleton() {
     </main>
   )
 }
+
+/**
+ * Matches `/sell` type chooser layout so soft navigations do not flash the form editor skeleton.
+ */
+export function SellTypeChooserSkeleton() {
+  return (
+    <main
+      className="flex-1 bg-offwhite"
+      role="status"
+      aria-label="Loading sell options"
+    >
+      <div className="container mx-auto max-w-lg px-4 py-12 sm:py-16">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <Skeleton className="h-9 w-64 max-w-[90%] sm:h-10 sm:w-80" />
+          <Skeleton className="h-4 w-52 max-w-[80%]" />
+        </div>
+        <div className="mt-10 space-y-3">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div
+              key={i}
+              className="flex items-center gap-4 rounded-xl border border-border bg-background px-4 py-4 sm:px-5"
+            >
+              <Skeleton className="h-14 w-14 shrink-0 rounded-lg" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <Skeleton className="h-5 w-28" />
+                <Skeleton className="h-4 w-44 max-w-full" />
+              </div>
+              <Skeleton className="h-5 w-5 shrink-0 rounded-sm" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </main>
+  )
+}

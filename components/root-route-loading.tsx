@@ -2,11 +2,19 @@
 
 import { usePathname } from "next/navigation"
 import { BoardsBrowsePageSkeleton } from "@/components/boards-browse-page-skeleton"
-import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
+import {
+  SellFlowRouteSkeleton,
+  SellTypeChooserSkeleton,
+} from "@/components/features/sell/sell-flow-route-skeleton"
 import { ListingDetailRouteSkeleton } from "@/components/listing-detail-page-loading"
 import { ListingTileScrollRowSkeleton } from "@/components/listing-tile-skeleton"
 import { RouteTransitionMark } from "@/components/route-transition-mark"
 import { cn } from "@/lib/utils"
+
+function sellSearchParamsFromWindow(): URLSearchParams {
+  if (typeof window === "undefined") return new URLSearchParams()
+  return new URLSearchParams(window.location.search)
+}
 
 /**
  * Full-bleed placeholder while the App Router segment streams. For `/`, mirrors the home
@@ -45,6 +53,15 @@ function HomeLoadingSkeleton() {
   )
 }
 
+function isSellListingEditorPath(pathname: string | null): boolean {
+  if (pathname?.startsWith("/sell/")) return true
+  if (pathname !== "/sell") return false
+  // Surfboard editor still mounts on `/sell` for these query shapes.
+  // Read from window so this loading fallback does not need useSearchParams Suspense.
+  const searchParams = sellSearchParamsFromWindow()
+  return Boolean(searchParams.get("edit")?.trim()) || searchParams.get("type") === "surfboard"
+}
+
 export function RootRouteLoading() {
   const pathname = usePathname()
   if (pathname === "/") {
@@ -53,8 +70,13 @@ export function RootRouteLoading() {
   if (pathname?.startsWith("/l/")) {
     return <ListingDetailRouteSkeleton />
   }
-  if (pathname?.startsWith("/sell")) {
-    return <SellFlowRouteSkeleton />
+  // `/sell` chooser vs listing editor (nested routes or ?edit / ?type=surfboard).
+  if (pathname === "/sell" || pathname?.startsWith("/sell/")) {
+    return isSellListingEditorPath(pathname) ? (
+      <SellFlowRouteSkeleton />
+    ) : (
+      <SellTypeChooserSkeleton />
+    )
   }
   if (pathname === "/boards") {
     return <BoardsBrowsePageSkeleton />
