@@ -30,6 +30,26 @@ export const BRAND_PRODUCT_CATEGORY_OPTIONS: readonly {
   { slug: "accessories", label: "Accessories" },
 ]
 
+/** Product types shown on `/brands` filters — expand as more catalog surfaces ship. */
+export const BRANDS_DIRECTORY_FILTER_CATEGORY_SLUGS = [
+  "surfboards",
+  "fins",
+  "wetsuits",
+] as const satisfies readonly BrandProductCategorySlug[]
+
+export type BrandsDirectoryFilterCategorySlug =
+  (typeof BRANDS_DIRECTORY_FILTER_CATEGORY_SLUGS)[number]
+
+const BRANDS_DIRECTORY_FILTER_SLUG_SET = new Set<string>(BRANDS_DIRECTORY_FILTER_CATEGORY_SLUGS)
+
+export const BRANDS_DIRECTORY_FILTER_CATEGORY_OPTIONS: readonly {
+  slug: BrandsDirectoryFilterCategorySlug
+  label: string
+}[] = BRAND_PRODUCT_CATEGORY_OPTIONS.filter(
+  (option): option is { slug: BrandsDirectoryFilterCategorySlug; label: string } =>
+    BRANDS_DIRECTORY_FILTER_SLUG_SET.has(option.slug),
+)
+
 const SLUG_SET = new Set<string>(BRAND_PRODUCT_CATEGORY_SLUGS)
 
 const LABEL_BY_SLUG = Object.fromEntries(
@@ -68,6 +88,16 @@ export function parseBrandProductCategorySlugsFromSearchParam(
     .filter(Boolean)
     .filter(isBrandProductCategorySlug)
   return normalizeBrandProductCategorySlugs(slugs)
+}
+
+/** Parse `?category=` for `/brands`, limited to directory-visible product types. */
+export function parseBrandsDirectoryFilterCategorySlugsFromSearchParam(
+  raw: string | string[] | undefined,
+): BrandsDirectoryFilterCategorySlug[] {
+  return parseBrandProductCategorySlugsFromSearchParam(raw).filter(
+    (slug): slug is BrandsDirectoryFilterCategorySlug =>
+      BRANDS_DIRECTORY_FILTER_SLUG_SET.has(slug),
+  )
 }
 
 export function parseBrandProductCategorySlugsFromBody(

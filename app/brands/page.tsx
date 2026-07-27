@@ -6,7 +6,7 @@ import { BrandsExplorer } from "@/components/brands/brands-explorer"
 import { BrandsListAdminBar } from "@/components/brands/brands-list-admin-bar"
 import { createClient } from "@/lib/supabase/server"
 import { listBrands } from "@/lib/brands/server"
-import { parseBrandProductCategorySlugsFromSearchParam } from "@/lib/brand-product-categories"
+import { parseBrandsDirectoryFilterCategorySlugsFromSearchParam } from "@/lib/brand-product-categories"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
 export const revalidate = 3600
@@ -27,7 +27,7 @@ export default async function BrandsPage({
   const raw = sp.brandRequest
   const brandRequestImportId =
     typeof raw === "string" && UUID_RE.test(raw.trim()) ? raw.trim() : undefined
-  const categoryFilter = parseBrandProductCategorySlugsFromSearchParam(sp.category)
+  const categoryFilter = parseBrandsDirectoryFilterCategorySlugsFromSearchParam(sp.category)
 
   const supabase = await createClient()
   const brands = await listBrands(supabase, {

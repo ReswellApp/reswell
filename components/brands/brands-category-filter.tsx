@@ -3,9 +3,9 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useTransition } from "react"
 import {
-  BRAND_PRODUCT_CATEGORY_OPTIONS,
-  type BrandProductCategorySlug,
-  parseBrandProductCategorySlugsFromSearchParam,
+  BRANDS_DIRECTORY_FILTER_CATEGORY_OPTIONS,
+  type BrandsDirectoryFilterCategorySlug,
+  parseBrandsDirectoryFilterCategorySlugsFromSearchParam,
 } from "@/lib/brand-product-categories"
 import { cn } from "@/lib/utils"
 
@@ -15,17 +15,19 @@ export function BrandsCategoryFilter() {
   const searchParams = useSearchParams()
   const [, startTransition] = useTransition()
 
-  const selected = parseBrandProductCategorySlugsFromSearchParam(searchParams.getAll("category"))
+  const selected = parseBrandsDirectoryFilterCategorySlugsFromSearchParam(
+    searchParams.getAll("category"),
+  )
 
-  function toggleCategory(slug: BrandProductCategorySlug) {
+  function toggleCategory(slug: BrandsDirectoryFilterCategorySlug) {
     const next = new Set(selected)
     if (next.has(slug)) next.delete(slug)
     else next.add(slug)
 
     const params = new URLSearchParams(searchParams.toString())
     params.delete("category")
-    const ordered = BRAND_PRODUCT_CATEGORY_OPTIONS.map((option) => option.slug).filter((s) =>
-      next.has(s),
+    const ordered = BRANDS_DIRECTORY_FILTER_CATEGORY_OPTIONS.map((option) => option.slug).filter(
+      (s) => next.has(s),
     )
     if (ordered.length > 0) params.set("category", ordered.join(","))
 
@@ -59,7 +61,7 @@ export function BrandsCategoryFilter() {
         ) : null}
       </div>
       <div className="flex flex-wrap gap-2">
-        {BRAND_PRODUCT_CATEGORY_OPTIONS.map((option) => {
+        {BRANDS_DIRECTORY_FILTER_CATEGORY_OPTIONS.map((option) => {
           const active = selected.includes(option.slug)
           return (
             <button
