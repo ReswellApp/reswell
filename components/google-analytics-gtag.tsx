@@ -4,7 +4,7 @@ import { getGa4MeasurementId } from "@/lib/google-analytics/config"
 import { isGoogleAdsEnabled } from "@/lib/google-ads/config"
 
 /**
- * GA4 gtag config for partner embed routes. Renders nothing unless
+ * Site-wide GA4 gtag config. Renders nothing unless
  * NEXT_PUBLIC_GA4_MEASUREMENT_ID is set to a valid G-* id (see .env.example).
  *
  * When Google Ads gtag is already loaded site-wide, this only adds the GA4

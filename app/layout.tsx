@@ -11,6 +11,7 @@ import { PresenceHeartbeatLoader } from '@/components/presence-heartbeat-loader'
 import { DEFAULT_LOCALE } from '@/lib/translations'
 import { publicSiteOrigin } from '@/lib/public-site-origin'
 import { GoogleAdsGtag } from '@/components/google-ads-gtag'
+import { GoogleAnalyticsGtag } from '@/components/google-analytics-gtag'
 import { GoogleSignUpWelcomeRedirect } from '@/components/auth/google-sign-up-welcome-redirect'
 import { KlaviyoOnsite } from '@/components/klaviyo-onsite'
 import { KlaviyoPageViewTracker } from '@/components/klaviyo-page-view-tracker'
@@ -86,6 +87,7 @@ export default function RootLayout({
         <AbortErrorSuppressor />
         <OpsErrorReporter />
         <GoogleAdsGtag />
+        <GoogleAnalyticsGtag />
         <MetaPixel />
         <LocaleProvider>
           <Suspense fallback={null}>

@@ -27,6 +27,8 @@ export type CheckoutOrderSuccessPayload = {
   orderLines: Array<{
     listingId: string | null
     title: string
+    itemPrice: number
+    quantity: number
     imageUrl: string | null
     subtitle: string | null
     categoryLabel?: string | null

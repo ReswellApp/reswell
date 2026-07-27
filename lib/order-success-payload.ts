@@ -62,6 +62,8 @@ type OrderSuccessOrderRow = {
   order_items?:
     | Array<{
         sort_order: number | null
+        item_price: number | string
+        quantity: number | null
         listings: SuccessListingEmbed | SuccessListingEmbed[] | null
       }>
     | null
@@ -90,6 +92,8 @@ function mapOrderRowToCheckoutPayload(
     linesFromItems.push({
       listingId: listing.id,
       title,
+      itemPrice: Math.max(0, Number(row.item_price) || 0),
+      quantity: Math.max(1, Math.floor(Number(row.quantity) || 1)),
       imageUrl: primaryImage(listing.listing_images),
       subtitle: conditionLabel,
       categoryLabel: formatCategory(listing.section)?.trim() || null,
@@ -106,6 +110,8 @@ function mapOrderRowToCheckoutPayload(
             {
               listingId: fallbackListing.id,
               title: fallbackListing.title ? capitalizeWords(fallbackListing.title) : "Item",
+              itemPrice: 0,
+              quantity: 1,
               imageUrl: primaryImage(fallbackListing.listing_images),
               subtitle: fallbackListing.condition ? formatCondition(fallbackListing.condition) : null,
               categoryLabel: formatCategory(fallbackListing.section)?.trim() || null,
@@ -161,7 +167,10 @@ function mapOrderRowToCheckoutPayload(
       ? order.pickup_code.trim()
       : null
 
-  const listingIdForLinks = orderLines[0]?.listingId ?? fallbackListing?.id ?? null
+  const pricedOrderLines = orderLines.map((line) =>
+    line.itemPrice > 0 ? line : { ...line, itemPrice },
+  )
+  const listingIdForLinks = pricedOrderLines[0]?.listingId ?? fallbackListing?.id ?? null
 
   return {
     orderId: order.id,
@@ -174,7 +183,7 @@ function mapOrderRowToCheckoutPayload(
     pickupCode,
     sellerId: order.seller_id?.trim() ? order.seller_id : null,
     listingId: listingIdForLinks,
-    orderLines,
+    orderLines: pricedOrderLines,
     shipping: ship
       ? {
           oneLine: shippingOneLine,
@@ -226,6 +235,8 @@ export async function fetchBuyerOrderSuccessPayload(
       ),
       order_items (
         sort_order,
+        item_price,
+        quantity,
         listings (
           id,
           title,
