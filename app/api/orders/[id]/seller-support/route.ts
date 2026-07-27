@@ -92,6 +92,8 @@ export async function POST(
     email: user.email ?? "",
     externalId: user.id,
     source: "order_seller_support",
+    subject: parsed.data.request_type,
+    message: parsed.data.body.trim(),
     orderRef: orderRef,
   })
 

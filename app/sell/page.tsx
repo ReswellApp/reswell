@@ -1,5 +1,4 @@
 import { Suspense } from "react"
-import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
 import { SellTypeChooser } from "@/components/features/sell/sell-type-chooser"
 import SellFlowShell from "./sell-flow-client"
 
@@ -20,10 +19,6 @@ function firstParam(value: string | string[] | undefined): string | undefined {
   return undefined
 }
 
-function SellPageSuspenseFallback() {
-  return <SellFlowRouteSkeleton />
-}
-
 export default async function SellPage({
   searchParams,
 }: {
@@ -40,9 +35,11 @@ export default async function SellPage({
   // Editing an existing listing or explicitly choosing surfboards goes straight
   // to the surfboard flow (/sell/boards is the canonical boards sell URL).
   // A fresh /sell visit shows the product-type chooser.
+  // Suspense fallback is null: the client form owns its own editLoading skeleton,
+  // and a route-level skeleton was flashing on every `?edit=` draft switch.
   if (editId || type === "surfboard") {
     return (
-      <Suspense fallback={<SellPageSuspenseFallback />}>
+      <Suspense fallback={null}>
         <SellFlowShell urlEditListingId={editId} />
       </Suspense>
     )

@@ -717,9 +717,15 @@ const SELL_PENDING_PUBLISH_KEY = sellPendingPublishKey("board")
 type SellPageContentProps = {
   editId: string | null
   startFresh: boolean
+  /** Soft draft open — updates local edit id + URL without an App Router navigation. */
+  onSoftOpenDraft?: (draftId: string) => void
 }
 
-function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
+function SellPageContentInner({
+  editId,
+  startFresh,
+  onSoftOpenDraft,
+}: SellPageContentProps) {
   const listingPhotosInputId = useId()
   const router = useRouter()
   const sellSearchParams = useSearchParams()
@@ -1259,9 +1265,14 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
     startNewListingBusy,
     optimizingAny: images.some((im) => im.optimizePhase === "running"),
     extraDisabled: boardCategoryOptions.length === 0,
+    onOpenDraft: onSoftOpenDraft,
   })
 
-  const { localServerDraftId, draftControls: boardDraftControls } = serverDraft
+  const {
+    localServerDraftId,
+    draftControls: boardDraftControls,
+    showDraftControls: showBoardDraftControls,
+  } = serverDraft
   const effectiveEditId = editId ?? localServerDraftId
   const resumeDraftId = editId ?? (wantsBlankListing ? null : localServerDraftId)
   const draftRowForImages = effectiveEditId
@@ -3292,7 +3303,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                 </BreadcrumbList>
               </Breadcrumb>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3 shrink-0">
-                {!editLoading && (!editId || listingIsDraft) && !getImpersonation() && (
+                {(showBoardDraftControls ||
+                  (!editLoading && (!editId || listingIsDraft) && !getImpersonation())) && (
                     <div className="flex items-center gap-3">
                       {boardDraftControls}
                       <Button
@@ -4378,13 +4390,17 @@ export default function SellFlowShell(props: {
   return <SellSearchParamsBridge {...props} />
 }
 
-/** Reads URL params — avoids wrapping the shell in Suspense */
+/**
+ * Reads URL params client-side and supports soft draft switches.
+ * Soft opens use history.replaceState (same as autosave) so changing `?edit=`
+ * never hits `app/sell/loading.tsx` / the route Suspense skeleton.
+ */
 function SellSearchParamsBridge(props: {
   urlEditListingId: string | null
 }) {
   const searchParams = useSearchParams()
   const qEditRaw = searchParams.get("edit")
-  const editId =
+  const urlEditId =
     typeof qEditRaw === "string" && qEditRaw.trim() !== ""
       ? qEditRaw.trim()
       : props.urlEditListingId
@@ -4392,10 +4408,31 @@ function SellSearchParamsBridge(props: {
   /** Next serializes query on SSR + client transitions; avoids relying solely on Suspense spinner */
   const startFresh = searchParams.get("new") === "1"
 
+  /**
+   * Local override for draft picker opens. `history.replaceState` updates the
+   * address bar without notifying `useSearchParams`, so we keep the active
+   * edit id here until a real App Router navigation syncs the URL.
+   */
+  const [softEditId, setSoftEditId] = useState<string | null>(null)
+
+  useEffect(() => {
+    setSoftEditId(null)
+  }, [urlEditId, startFresh])
+
+  const editId = softEditId ?? urlEditId
+
+  const onSoftOpenDraft = useCallback((draftId: string) => {
+    if (!draftId) return
+    setSoftEditId(draftId)
+    setSellServerDraftListingId("surfboards", draftId)
+    replaceSellDraftEditUrl("surfboards", draftId)
+  }, [])
+
   return (
     <SellPageContent
       editId={editId}
       startFresh={startFresh}
+      onSoftOpenDraft={onSoftOpenDraft}
     />
   )
 }

@@ -49,6 +49,11 @@ export type UseSellServerDraftOptions = {
   startNewListingBusy?: boolean
   optimizingAny?: boolean
   extraDisabled?: boolean
+  /**
+   * Open a draft without a Next.js navigation. Prefer this on `/sell` so changing
+   * `?edit=` does not flash `loading.tsx` / the route Suspense skeleton.
+   */
+  onOpenDraft?: (draftId: string) => void
 }
 
 export type UseSellServerDraftResult = {
@@ -62,6 +67,10 @@ export type UseSellServerDraftResult = {
     (opts?: { keepalive?: boolean }) => Promise<{ ok: false } | { ok: true; listingId: string }>
   >
   clearLocalServerDraft: () => void
+}
+
+function blankListingHref(section: SellDraftSection): string {
+  return section === "fins" ? "/sell/fins?new=1" : "/sell?type=surfboard&new=1"
 }
 
 export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellServerDraftResult {
@@ -78,6 +87,9 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
     localServerDraftIdRef.current = localServerDraftId
   }, [localServerDraftId])
 
+  const onOpenDraftRef = useRef(options.onOpenDraft)
+  onOpenDraftRef.current = options.onOpenDraft
+
   useEffect(() => {
     if (options.editId || getImpersonation()) return
     setLocalServerDraftId(getSellServerDraftListingId(options.section))
@@ -93,8 +105,12 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
         `/api/listings/draft?section=${encodeURIComponent(options.section)}`,
         { credentials: "include" },
       )
-      if (!res.ok) {
+      if (res.status === 401) {
         setAvailableDrafts([])
+        return
+      }
+      if (!res.ok) {
+        // Keep the previous list on transient failures so the header does not flicker.
         return
       }
       const json = (await res.json()) as {
@@ -119,14 +135,16 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
         })),
       )
     } catch {
-      setAvailableDrafts([])
+      // Keep prior drafts on network blips — empty only on auth / impersonation.
     }
   }, [options.section])
 
+  // Load the drafts list once the form is hydrated — including while editing a draft.
+  // Skipping on `editId` left the picker empty after soft URL updates / deep links.
   useEffect(() => {
-    if (!options.draftHydrated || options.editId) return
+    if (!options.draftHydrated) return
     void reloadDrafts()
-  }, [options.draftHydrated, options.editId, reloadDrafts])
+  }, [options.draftHydrated, reloadDrafts])
 
   const currentDraftId = useMemo(() => {
     if (options.editId && listingIsDraft) return options.editId
@@ -250,12 +268,27 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
     toast.success("Draft saved")
   }, [options.formLooksFilled, options.imagesRef, persistServerDraft, syncDraftImages])
 
+  const navigateToDraft = useCallback(
+    (draftId: string) => {
+      setSellServerDraftListingId(options.section, draftId)
+      setLocalServerDraftId(draftId)
+      const softOpen = onOpenDraftRef.current
+      if (softOpen) {
+        softOpen(draftId)
+        return
+      }
+      // Fallback: soft replace (still an App Router navigation, but no history spam).
+      router.replace(peerListingEditHref(options.section, draftId), { scroll: false })
+    },
+    [options.section, router],
+  )
+
   const handleOpenDraft = useCallback(
     async (draftId: string) => {
       if (!draftId) return
       if (draftId === currentDraftId) {
         if (!options.editId) {
-          router.push(peerListingEditHref(options.section, draftId))
+          navigateToDraft(draftId)
         }
         return
       }
@@ -271,12 +304,18 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
             }
           }
         }
-        router.push(peerListingEditHref(options.section, draftId))
+        navigateToDraft(draftId)
       } finally {
         setDraftSwitching(false)
       }
     },
-    [currentDraftId, options.section, persistServerDraft, router, syncDraftImages],
+    [
+      currentDraftId,
+      navigateToDraft,
+      options.editId,
+      persistServerDraft,
+      syncDraftImages,
+    ],
   )
 
   const handleDiscardDraftFromPicker = useCallback(
@@ -295,7 +334,8 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
         clearSellServerDraftListingId(options.section)
         setLocalServerDraftId(null)
         if (options.editId) {
-          router.push(options.section === "fins" ? "/sell/fins?new=1" : "/sell?new=1")
+          // Stay on the sell flow (type=surfboard) — bare `/sell?new=1` would show the chooser.
+          router.replace(blankListingHref(options.section), { scroll: false })
         } else {
           await options.onStartNewListing?.()
         }
@@ -305,6 +345,8 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
   )
 
   const handleStartNewListing = useCallback(async () => {
+    clearSellServerDraftListingId(options.section)
+    setLocalServerDraftId(null)
     await options.onStartNewListing?.()
     void reloadDrafts()
   }, [options, reloadDrafts])
@@ -337,11 +379,14 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
     }
   }, [syncDraftImages])
 
+  // Keep the Drafts control mounted across soft switches / edit loads when we
+  // already know a server draft id — avoids the header jumping as editLoading flips.
   const showDraftControls =
     !options.loading &&
-    !options.editLoading &&
     !getImpersonation() &&
-    (!options.editId || listingIsDraft)
+    (draftSwitching ||
+      Boolean(localServerDraftId) ||
+      (!options.editLoading && (!options.editId || listingIsDraft)))
 
   const draftControls = showDraftControls ? (
     <>

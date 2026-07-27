@@ -1,9 +1,12 @@
 /**
  * Server-only: Klaviyo Events API — fires when support staff notifies a customer about their ticket.
  *
- * **Metric name in Klaviyo:** `Support Tickets Response` — trigger transactional email to the ticket
- * requester (`profile` below). Uses `support_ticket_id` to align with metric **Support Tickets**;
- * `response` is the customer-visible text (workflow status blast or support DM reply).
+ * **Metric name in Klaviyo:** `Support Tickets Response` — trigger transactional email with the
+ * staff reply. Template properties:
+ * - `{{ event.support_ticket_id }}`
+ * - `{{ event.response }}` — customer-visible reply body (admin inbox / support DM / status update)
+ * - `{{ event.response_type }}` — `admin_inbox_reply` | `support_dm_reply` | `status_update`
+ * - `{{ event.ticket_url }}` — Dashboard → Support deep link
  *
  * Avoid top-level duplicate email fields — `profile.email` identifies the recipient; keep copy in `response`.
  *
@@ -11,6 +14,7 @@
  */
 
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
+import { publicSiteOriginForEmail } from "@/lib/public-site-origin"
 
 const RESPONSE_PROP_MAX = 4000
 
@@ -73,6 +77,7 @@ export async function trackKlaviyoSupportTicketResponse(
       response,
       response_type: payload.responseType,
       support_status: payload.supportStatus?.trim() ?? "",
+      ticket_url: `${publicSiteOriginForEmail()}/dashboard/support/${supportTicketId}`,
     },
     uniqueId: payload.uniqueId.trim() || `support-ticket-response-${supportTicketId}-${time}`,
   })

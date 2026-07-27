@@ -112,6 +112,7 @@ export async function submitMessagesSupportTicketService(
     externalId: user.id,
     source: "messages_support",
     subject,
+    message: parsed.data.details.trim(),
   })
 
   return { success: true, id: ticketId, support_conversation_id: supportConversationId }

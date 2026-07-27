@@ -57,6 +57,7 @@ export async function submitContactFormMessageService(input: {
     externalId: linkedUserId,
     source: "contact_form",
     subject: "Website contact",
+    message,
   })
 
   return { success: true, ticketId: inserted.id }

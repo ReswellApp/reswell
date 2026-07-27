@@ -1,6 +1,5 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
-import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
 import SellFlowShell from "../sell-flow-client"
 
 const title = "Sell your surfboard — Reswell"
@@ -38,10 +37,6 @@ function parseEditListingId(value: string | string[] | undefined): string | null
   return null
 }
 
-function SellPageSuspenseFallback() {
-  return <SellFlowRouteSkeleton />
-}
-
 export default async function SellBoardsPage({
   searchParams,
 }: {
@@ -50,8 +45,9 @@ export default async function SellBoardsPage({
   const qs = await searchParams
   const editId = parseEditListingId(qs.edit)
 
+  // Null fallback: client owns editLoading; route skeleton was flashing on draft switches.
   return (
-    <Suspense fallback={<SellPageSuspenseFallback />}>
+    <Suspense fallback={null}>
       <SellFlowShell urlEditListingId={editId} />
     </Suspense>
   )

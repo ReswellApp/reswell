@@ -226,7 +226,16 @@ export default function SellFinsFlow({
   const fileInputId = useId()
   const formRef = useRef<HTMLFormElement>(null)
   const supabaseRef = useRef(createClient())
-  const editId = editListingId?.trim() || null
+  const urlEditId = editListingId?.trim() || null
+  /**
+   * Soft draft opens update the address bar via replaceState without an App Router
+   * navigation — keep the active edit id here until a real RSC prop sync arrives.
+   */
+  const [softEditId, setSoftEditId] = useState<string | null>(null)
+  useEffect(() => {
+    setSoftEditId(null)
+  }, [urlEditId, startFresh])
+  const editId = softEditId ?? urlEditId
   const draftPhotosPendingRef = useRef<ListingPhotoSlot[] | null>(null)
   const removedImageIdsRef = useRef<string[]>([])
 
@@ -235,6 +244,15 @@ export default function SellFinsFlow({
     if (startAtSearch) return "search"
     return readStoredFinSellFlowStep() ?? "search"
   })
+
+  const onSoftOpenDraft = useCallback((draftId: string) => {
+    if (!draftId) return
+    setSoftEditId(draftId)
+    setSellServerDraftListingId("fins", draftId)
+    replaceSellDraftEditUrl("fins", draftId)
+    setFlowStep("form")
+    persistFinSellFlowStep("form")
+  }, [])
   const [form, setForm] = useState<FinFormState>(INITIAL_STATE)
   const [submitting, setSubmitting] = useState(false)
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
@@ -558,9 +576,15 @@ export default function SellFinsFlow({
     onStartNewListing: handleStartNewListing,
     startNewListingBusy,
     optimizingAny: uploadingCount > 0,
+    onOpenDraft: onSoftOpenDraft,
   })
 
-  const { localServerDraftId, listingIsDraft, draftControls: finDraftControls } = serverDraft
+  const {
+    localServerDraftId,
+    listingIsDraft,
+    draftControls: finDraftControls,
+    showDraftControls: showFinDraftControls,
+  } = serverDraft
 
   const resumeDraftId = editId ?? (wantsBlankListing ? null : localServerDraftId)
 
@@ -1068,7 +1092,8 @@ export default function SellFinsFlow({
               </BreadcrumbList>
             </Breadcrumb>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3 shrink-0">
-              {!editLoading && (!editId || listingIsDraft) && !getImpersonation() ? (
+              {showFinDraftControls ||
+              (!editLoading && (!editId || listingIsDraft) && !getImpersonation()) ? (
                 <div className="flex items-center gap-3">
                   {finDraftControls}
                   <Button type="button" variant="ghost" size="icon" aria-label="Exit listing form" asChild>
