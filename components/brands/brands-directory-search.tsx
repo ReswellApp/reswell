@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { createPortal } from "react-dom"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Input } from "@/components/ui/input"
 import {
@@ -15,6 +16,8 @@ import { BRANDS_BASE } from "@/lib/brands/routes"
 import { searchBrandsCatalogSuggest } from "@/app/actions/marketplace"
 import type { BrandCatalogSuggestRow } from "@/lib/services/brandDirectorySearch"
 import { recordBrandDirectorySearchAnalytics } from "@/app/actions/brand-directory-search-analytics"
+import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 
 const BROWSE_LIMIT = 36
 const SUGGEST_DEBOUNCE_MS = 280
@@ -217,12 +220,27 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
                     goToBrand(b.slug)
                   }}
                 >
-                  <span
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted text-sm font-semibold text-cerulean"
-                    aria-hidden
-                  >
-                    {b.name.slice(0, 1).toUpperCase()}
-                  </span>
+                  {b.logo_url ? (
+                    <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-background">
+                      <Image
+                        src={brandLogoDisplaySrc(b.logo_url)}
+                        alt=""
+                        fill
+                        className="object-contain p-1"
+                        sizes="40px"
+                        unoptimized={listingImageShouldBypassOptimization(
+                          brandLogoDisplaySrc(b.logo_url),
+                        )}
+                      />
+                    </span>
+                  ) : (
+                    <span
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted text-sm font-semibold text-cerulean"
+                      aria-hidden
+                    >
+                      {b.name.slice(0, 1).toUpperCase()}
+                    </span>
+                  )}
                   <span className="min-w-0 flex-1 truncate font-semibold text-foreground">
                     {b.name}
                   </span>
@@ -270,12 +288,27 @@ export function BrandsDirectorySearch({ brands, className }: BrandsDirectorySear
                     goToBrand(b.slug)
                   }}
                 >
-                  <span
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted text-sm font-semibold text-cerulean"
-                    aria-hidden
-                  >
-                    {b.name.slice(0, 1).toUpperCase()}
-                  </span>
+                  {b.logo_url ? (
+                    <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-background">
+                      <Image
+                        src={brandLogoDisplaySrc(b.logo_url)}
+                        alt=""
+                        fill
+                        className="object-contain p-1"
+                        sizes="40px"
+                        unoptimized={listingImageShouldBypassOptimization(
+                          brandLogoDisplaySrc(b.logo_url),
+                        )}
+                      />
+                    </span>
+                  ) : (
+                    <span
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted text-sm font-semibold text-cerulean"
+                      aria-hidden
+                    >
+                      {b.name.slice(0, 1).toUpperCase()}
+                    </span>
+                  )}
                   <span className="min-w-0 flex-1 truncate font-semibold text-foreground">
                     {b.name}
                   </span>
