@@ -204,7 +204,7 @@ export function SurfboardBuyerShippingCalculator({
             className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground/70"
             aria-hidden
           />
-          <p className="text-sm text-muted-foreground/45 leading-relaxed">
+          <p className="text-sm text-muted-foreground leading-relaxed">
             Pick a shipping size above to see what buyers typically pay to have your board
             delivered.
           </p>
@@ -231,7 +231,7 @@ export function SurfboardBuyerShippingCalculator({
           <h3 className="text-sm font-semibold text-foreground">
             Buyer shipping calculator
           </h3>
-          <p className="text-sm text-muted-foreground/45 leading-relaxed">
+          <p className="text-sm text-muted-foreground leading-relaxed">
             Live sample rates for your {sizeLabel} carton — same size checkout uses. Buyers pay
             the carrier total for their real address.
           </p>
@@ -277,7 +277,7 @@ export function SurfboardBuyerShippingCalculator({
         </div>
 
         <div className="rounded-lg border border-border/80 bg-background px-4 py-3.5">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground/45">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             {liveQuote ? "Sample buyer pays" : "Buyer typically pays"}
           </p>
           {busy ? (
@@ -293,7 +293,7 @@ export function SurfboardBuyerShippingCalculator({
               <p className="mt-1.5 text-sm text-foreground/80">
                 {liveQuote.carrierName} · {shortServiceLabel(liveQuote.serviceName)}
               </p>
-              <p className="mt-1 text-xs text-muted-foreground/45 leading-relaxed">
+              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
                 Live carrier quote to {liveQuote.sampleCityLabel} from your ZIP, using the{" "}
                 {sizeLabel} carton. Checkout can differ slightly with exact street addresses.
               </p>
@@ -303,7 +303,7 @@ export function SurfboardBuyerShippingCalculator({
               <p className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-foreground">
                 {formatReswellBuyerShippingEstimateUsd(fallbackRange)}
               </p>
-              <p className="mt-1.5 text-xs text-muted-foreground/45 leading-relaxed">
+              <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
                 {zipReady
                   ? liveError ??
                     "Live rate unavailable — showing a ballpark. Try again or use a ZIP quote."
@@ -362,7 +362,7 @@ export function SurfboardBuyerShippingCalculator({
               </table>
             )}
             {!zipReady ? (
-              <p className="mt-2 text-xs text-muted-foreground/45">
+              <p className="mt-2 text-xs text-muted-foreground">
                 Add your ship-from ZIP above to replace ballparks with live sample rates.
               </p>
             ) : null}

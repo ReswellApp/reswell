@@ -108,7 +108,7 @@ export function SurfboardShippingTierPicker({
   if (!boardLength.trim() && !recommendedTierId) {
     return (
       <div className={cn("space-y-3", className)}>
-        <p className="text-sm text-muted-foreground/45 leading-relaxed">
+        <p className="text-sm text-muted-foreground leading-relaxed">
           Enter your board length in Dimensions above — we&apos;ll pick the right shipping size for
           you.
         </p>
@@ -134,7 +134,7 @@ export function SurfboardShippingTierPicker({
             />
           ) : null}
         </div>
-        <p className="mt-1 text-sm text-muted-foreground/45 leading-relaxed">
+        <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
           Buyers pay shipping at checkout. We quote the maximum box for this size — your packed
           board must stay at or under it. Smaller is fine.
         </p>
@@ -179,7 +179,7 @@ export function SurfboardShippingTierPicker({
             <p className="mt-1 text-sm text-foreground/90">
               {surfboardShippingTierEasyWhy(recommendedTierId)}
             </p>
-            <p className="mt-2 text-sm text-muted-foreground/45 leading-relaxed">
+            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
               {surfboardShippingTierEasyFitLine(recommendedTierId)}
             </p>
           </button>
@@ -203,7 +203,7 @@ export function SurfboardShippingTierPicker({
             <p className="mt-1 text-sm text-foreground/90">
               {surfboardShippingTierEasyWhy(selectedTierId)}
             </p>
-            <p className="mt-2 text-sm text-muted-foreground/45 leading-relaxed">
+            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
               {surfboardShippingTierEasyFitLine(selectedTierId)}
             </p>
           </div>
@@ -261,7 +261,7 @@ export function SurfboardShippingTierPicker({
                         <p className="mt-0.5 text-sm text-foreground/90">
                           {surfboardShippingTierEasyWhy(tierId)}
                         </p>
-                        <p className="mt-1 text-sm text-muted-foreground/45 leading-relaxed">
+                        <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
                           {surfboardShippingTierEasyFitLine(tierId)}
                         </p>
                       </div>
@@ -297,7 +297,7 @@ export function SurfboardShippingTierPicker({
       ) : null}
 
       {!selectedTierId ? (
-        <p className="text-sm text-muted-foreground/45">
+        <p className="text-sm text-muted-foreground">
           Tap the recommended size to continue.
         </p>
       ) : null}

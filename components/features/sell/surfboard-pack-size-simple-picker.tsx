@@ -30,7 +30,7 @@ export function SurfboardPackSizeSimplePicker({
   return (
     <div className={cn("space-y-2", className)}>
       <p className="text-sm font-medium text-foreground">Pack size</p>
-      <p className="text-sm text-muted-foreground/45 leading-relaxed">
+      <p className="text-sm text-muted-foreground leading-relaxed">
         Pick the smallest box your packed board will fit — smaller usually means lower shipping for
         buyers.
       </p>

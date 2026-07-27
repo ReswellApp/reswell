@@ -450,7 +450,11 @@ export function SurfboardTitleIndexInput({
       <Input
         ref={inputRef}
         id={id}
-        className={cn("placeholder:text-muted-foreground/45", loading && q.length >= 1 && "pr-8", className)}
+        className={cn(
+          "h-11 border-foreground/20 bg-card shadow-sm placeholder:text-muted-foreground",
+          loading && q.length >= 1 && "pr-8",
+          className,
+        )}
         placeholder={placeholder}
         required={required}
         disabled={disabled}
@@ -532,7 +536,7 @@ export function SurfboardTitleIndexInput({
       {anchoredBelowInputMobile ? dropdownPanel : null}
       {dropdownPortal}
       {loadError && items.length === 0 ? (
-        <p className="text-xs text-muted-foreground/45 mt-1.5" role="status">
+        <p className="mt-1.5 text-xs text-muted-foreground" role="status">
           {loadError}
         </p>
       ) : null}

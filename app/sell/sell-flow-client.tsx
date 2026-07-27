@@ -198,6 +198,12 @@ import { SellBoardFacetFields } from "@/components/features/sell/sell-board-face
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import {
+  SELL_CONTROL_CLASS,
+  SELL_PAGE_GROUND_CLASS,
+  SELL_SECTION_CARD_CLASS,
+  SELL_SECTION_DESCRIPTION_CLASS,
+} from "@/components/features/sell/sell-form-surface"
+import {
   SellSectionNav,
   SellSectionNavHorizontal,
   SELL_FORM_SECTION_NAV_ITEMS,
@@ -288,10 +294,10 @@ function SellFormSection({
           {title}
         </h2>
         {description ? (
-          <p className="text-sm text-muted-foreground/45 mt-1 lg:text-base lg:mt-1.5">{description}</p>
+          <p className={SELL_SECTION_DESCRIPTION_CLASS}>{description}</p>
         ) : null}
       </div>
-      <Card className="shadow-sm hover:shadow-sm lg:shadow-md">
+      <Card className={SELL_SECTION_CARD_CLASS}>
         <CardContent className="p-6 lg:p-8 xl:p-10">{children}</CardContent>
       </Card>
     </section>
@@ -3475,7 +3481,8 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
   return (
       <main
         className={cn(
-          "flex-1 w-full bg-background",
+          "flex-1 w-full",
+          SELL_PAGE_GROUND_CLASS,
           !fullscreenSellBlocking && "pt-8 pb-16 md:pb-20 lg:pb-24",
         )}
       >
@@ -3632,7 +3639,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                             "text-xs tabular-nums",
                             resolvedTitlePreview.length > LISTING_TITLE_MAX_LENGTH
                               ? "font-medium text-destructive"
-                              : "text-muted-foreground/45",
+                              : "text-muted-foreground",
                           )}
                           aria-live="polite"
                         >
@@ -3641,7 +3648,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                       </div>
                       <Input
                         id="listing-title"
-                        className="placeholder:text-muted-foreground/45"
+                        className={SELL_CONTROL_CLASS}
                         placeholder={`e.g., 6'0 CI Rookie — light use, fins included`}
                         value={formData.title}
                         onChange={(e) =>
@@ -3657,7 +3664,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
                   <div className="space-y-2">
                     <h3 className="text-sm font-semibold text-foreground">Photos</h3>
-                    <p className="text-xs text-muted-foreground/45">
+                    <p className="text-xs text-muted-foreground">
                       Add photos, then drag to reorder — the first is your main image.
                     </p>
                   <Label className="sr-only">Listing photos</Label>
@@ -3703,13 +3710,13 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                     ))}
                     </SortableContext>
                     {images.length < 12 && (
-                      <div className="relative aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 transition-colors overflow-hidden">
+                      <div className="relative aspect-square overflow-hidden rounded-lg border-2 border-dashed border-slate-400/80 transition-colors hover:border-primary/50">
                         <div
                           className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
                           aria-hidden
                         >
-                          <Upload className="h-6 w-6 text-muted-foreground/45" />
-                          <span className="mt-1 text-xs text-muted-foreground/45">Add</span>
+                          <Upload className="h-6 w-6 text-muted-foreground" />
+                          <span className="mt-1 text-xs text-muted-foreground">Add</span>
                         </div>
                         <input
                           id={listingPhotosInputId}
@@ -3726,7 +3733,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                   </div>
                   </DndContext>
                   </div>
-                  <p className="text-xs text-muted-foreground/45 space-y-1">
+                  <p className="text-xs text-muted-foreground space-y-1">
                     <span className="block">Thank you for listing on Reswell.</span>
                     <span className="inline-flex flex-wrap items-center gap-1">
                       <span>Made with</span>
@@ -3771,7 +3778,10 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                             }))
                           }}
                         >
-                          <SelectTrigger aria-label="Board shape or category">
+                          <SelectTrigger
+                            aria-label="Board shape or category"
+                            className={SELL_CONTROL_CLASS}
+                          >
                             <SelectValue placeholder={SELL_BOARD_CATEGORY_UNSELECTED_LABEL} />
                           </SelectTrigger>
                           <SelectContent>
@@ -3805,7 +3815,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                           value={formData.condition}
                           onValueChange={(value) => setFormData({ ...formData, condition: value })}
                         >
-                          <SelectTrigger id="sell-condition">
+                          <SelectTrigger id="sell-condition" className={SELL_CONTROL_CLASS}>
                             <SelectValue placeholder="Select condition" />
                           </SelectTrigger>
                           <SelectContent>
@@ -3940,7 +3950,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                             }))
                           }}
                         />
-                        <p className="text-xs text-muted-foreground/45">
+                        <p className="text-xs text-muted-foreground">
                           {
                             "Brand and model are saved on your listing and power search and filters. Requesting a missing brand or model still goes through the separate request queue for our catalog team."
                           }
@@ -3951,11 +3961,11 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                         {/* Length */}
                         <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground/45">Length</Label>
+                          <Label className="text-xs text-muted-foreground">Length</Label>
                           <div className="flex items-center gap-1">
                             <div
                               className={cn(
-                                "flex min-h-10 min-w-0 max-w-[11rem] flex-1 items-center justify-center gap-0.5 rounded-md border border-input bg-background px-1.5 shadow-sm ring-offset-background",
+                                "flex min-h-11 min-w-0 max-w-[11rem] flex-1 items-center justify-center gap-0.5 rounded-md border border-foreground/20 bg-card px-1.5 shadow-sm ring-offset-background",
                                 "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
                               )}
                             >
@@ -3970,7 +3980,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                   prevBoardLengthRef.current = next
                                   setFormData((fd) => ({ ...fd, boardLength: next }))
                                 }}
-                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground/45 focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
+                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
                                 autoComplete="off"
                                 spellCheck={false}
                                 aria-label="Board length in feet and inches"
@@ -3998,11 +4008,11 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
                         {/* Width */}
                         <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground/45">Width</Label>
+                          <Label className="text-xs text-muted-foreground">Width</Label>
                           <div className="flex items-center gap-1">
                             <div
                               className={cn(
-                                "flex min-h-10 min-w-0 max-w-[11rem] flex-1 items-center justify-center rounded-md border border-input bg-background px-1.5 shadow-sm ring-offset-background",
+                                "flex min-h-11 min-w-0 max-w-[11rem] flex-1 items-center justify-center rounded-md border border-foreground/20 bg-card px-1.5 shadow-sm ring-offset-background",
                                 "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
                               )}
                             >
@@ -4017,13 +4027,13 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                   prevBoardWidthRef.current = next
                                   setFormData((fd) => ({ ...fd, boardWidthInches: next }))
                                 }}
-                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground/45 focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
+                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
                                 autoComplete="off"
                                 spellCheck={false}
                                 aria-label="Board width in inches"
                               />
                             </div>
-                            <span className="inline-flex w-5 shrink-0 items-center justify-center text-xs text-muted-foreground/45 tabular-nums">
+                            <span className="inline-flex w-5 shrink-0 items-center justify-center text-xs text-muted-foreground tabular-nums">
                               in
                             </span>
                           </div>
@@ -4031,11 +4041,11 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
                         {/* Thickness */}
                         <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground/45">Thickness</Label>
+                          <Label className="text-xs text-muted-foreground">Thickness</Label>
                           <div className="flex items-center gap-1">
                             <div
                               className={cn(
-                                "flex min-h-10 min-w-0 max-w-[11rem] flex-1 items-center justify-center rounded-md border border-input bg-background px-1.5 shadow-sm ring-offset-background",
+                                "flex min-h-11 min-w-0 max-w-[11rem] flex-1 items-center justify-center rounded-md border border-foreground/20 bg-card px-1.5 shadow-sm ring-offset-background",
                                 "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
                               )}
                             >
@@ -4050,13 +4060,13 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                   prevBoardThicknessRef.current = next
                                   setFormData((fd) => ({ ...fd, boardThicknessInches: next }))
                                 }}
-                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground/45 focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
+                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
                                 autoComplete="off"
                                 spellCheck={false}
                                 aria-label="Board thickness in inches"
                               />
                             </div>
-                            <span className="inline-flex w-5 shrink-0 items-center justify-center text-xs text-muted-foreground/45 tabular-nums">
+                            <span className="inline-flex w-5 shrink-0 items-center justify-center text-xs text-muted-foreground tabular-nums">
                               in
                             </span>
                           </div>
@@ -4064,11 +4074,11 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
 
                         {/* Volume */}
                         <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground/45">Volume</Label>
+                          <Label className="text-xs text-muted-foreground">Volume</Label>
                           <div className="flex items-center gap-1">
                             <div
                               className={cn(
-                                "flex min-h-10 min-w-0 max-w-[11rem] flex-1 items-center justify-center rounded-md border border-input bg-background px-1.5 shadow-sm ring-offset-background",
+                                "flex min-h-11 min-w-0 max-w-[11rem] flex-1 items-center justify-center rounded-md border border-foreground/20 bg-card px-1.5 shadow-sm ring-offset-background",
                                 "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
                               )}
                             >
@@ -4084,13 +4094,13 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                     boardVolumeL: normalizeVolumeLitersInput(e.target.value),
                                   }))
                                 }
-                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground/45 focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
+                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
                                 autoComplete="off"
                                 spellCheck={false}
                                 aria-label="Board volume in liters"
                               />
                             </div>
-                            <span className="inline-flex w-5 shrink-0 items-center justify-center text-xs text-muted-foreground/45 tabular-nums">
+                            <span className="inline-flex w-5 shrink-0 items-center justify-center text-xs text-muted-foreground tabular-nums">
                               L
                             </span>
                           </div>
@@ -4113,7 +4123,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                         disabled={editLoading}
                       />
 
-                      <p className="text-xs text-muted-foreground/45 pt-0.5">
+                      <p className="text-xs text-muted-foreground pt-0.5">
                         Dimensions are optional. When you fill them in, surfers can compare your board more
                         confidently—often that helps listings move faster.
                       </p>
@@ -4179,7 +4189,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                               *
                             </span>
                           </h3>
-                          <p className="text-sm text-muted-foreground/45 mt-1">
+                          <p className="text-sm text-muted-foreground mt-1">
                             You can select both options.
                           </p>
                         </div>
@@ -4294,7 +4304,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                 </Label>
                                 {deliveryFlags.shipping_available &&
                                 !(actorIsAdmin === true || Boolean(impersonation)) ? (
-                                  <p className="text-sm text-muted-foreground/45 leading-relaxed">
+                                  <p className="text-sm text-muted-foreground leading-relaxed">
                                     Buyer pays for shipping at checkout. We handle the calculations
                                     for you so you don&apos;t have to worry about shipping cost —
                                     we&apos;ll email you the label after the sale.
@@ -4312,7 +4322,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                 {deliveryFlags.shipping_available &&
                                 (actorIsAdmin === true || Boolean(impersonation)) ? (
                                   <div className="space-y-2 pt-1">
-                                    <p className="text-sm text-muted-foreground/45 leading-relaxed">
+                                    <p className="text-sm text-muted-foreground leading-relaxed">
                                       Choose how shipping is priced. Reswell uses UPS labels; free and
                                       flat-rate are separate — you fulfill with any carrier.
                                     </p>
@@ -4358,7 +4368,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                           </Label>
                                           <div className="relative max-w-md">
                                             <span
-                                              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground/45"
+                                              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground"
                                               aria-hidden
                                             >
                                               $
@@ -4376,7 +4386,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                                   boardShippingPrice: e.target.value,
                                                 })
                                               }
-                                              className="pl-8 tabular-nums placeholder:text-muted-foreground/45"
+                                              className="h-11 border-foreground/20 bg-card pl-8 tabular-nums shadow-sm placeholder:text-muted-foreground"
                                             />
                                           </div>
                                         </div>
@@ -4457,7 +4467,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                             <h3 className="text-sm font-semibold text-foreground">
                               Sell your board even faster
                             </h3>
-                            <p className="text-sm text-muted-foreground/45 leading-relaxed">
+                            <p className="text-sm text-muted-foreground leading-relaxed">
                               Increase your chances of selling with price drops and offers.
                             </p>
                           </div>
@@ -4483,7 +4493,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                               >
                                 Drop the price in 2 weeks
                               </Label>
-                              <p className="text-sm text-muted-foreground/45 leading-relaxed">
+                              <p className="text-sm text-muted-foreground leading-relaxed">
                                 If it hasn&apos;t sold, we can lower your list price after two weeks.
                                 You choose the floor — we won&apos;t go below that price.
                               </p>
@@ -4507,9 +4517,9 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                                     autoPriceDropFloor: e.target.value,
                                   })
                                 }
-                                className="placeholder:text-muted-foreground/45"
+                                className="h-11 border-foreground/20 bg-card shadow-sm placeholder:text-muted-foreground"
                               />
-                              <p className="text-xs text-muted-foreground/45 leading-relaxed">
+                              <p className="text-xs text-muted-foreground leading-relaxed">
                                 Must be less than your list price. When automation ships, this is the
                                 minimum your listing will show after the scheduled drop.
                               </p>
@@ -4536,7 +4546,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                             >
                               Allow buyers to make offers
                             </Label>
-                            <p className="text-sm text-muted-foreground/45 leading-relaxed">
+                            <p className="text-sm text-muted-foreground leading-relaxed">
                               Lets you negotiate a final price with buyers before checkout.
                             </p>
                           </div>
@@ -4585,7 +4595,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground/45">
+                      <p className="text-sm text-muted-foreground">
                         ${publishPreview.price}
                         {publishPreview.detailHref && publishPreview.status === "live" && (
                           <>
@@ -4601,7 +4611,7 @@ function SellPageContentInner({ editId, startFresh }: SellPageContentProps) {
                       </p>
                       {publishPreview.status === "error" && (
                         <div className="pt-2 space-y-2">
-                          <p className="text-xs text-muted-foreground/45">
+                          <p className="text-xs text-muted-foreground">
                             {publishPreview.failedStepLabel ? (
                               <>
                                 <span className="font-medium text-foreground">

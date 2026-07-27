@@ -305,7 +305,7 @@ export function SellListingPhotoGrid({
   return (
     <div className="space-y-2">
       <h3 className="text-sm font-semibold text-foreground">Photos</h3>
-      <p className="text-xs text-muted-foreground/45">{photoDescription}</p>
+      <p className="text-xs text-muted-foreground">{photoDescription}</p>
       <Label className="sr-only">Listing photos</Label>
       <div
         className={cn(
@@ -342,13 +342,13 @@ export function SellListingPhotoGrid({
               ))}
             </SortableContext>
             {images.length < maxPhotos ? (
-              <div className="relative aspect-square overflow-hidden rounded-lg border-2 border-dashed border-border transition-colors hover:border-primary/50">
+              <div className="relative aspect-square overflow-hidden rounded-lg border-2 border-dashed border-slate-400/80 transition-colors hover:border-primary/50">
                 <div
                   className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
                   aria-hidden
                 >
-                  <Upload className="h-6 w-6 text-muted-foreground/45" />
-                  <span className="mt-1 text-xs text-muted-foreground/45">Add</span>
+                  <Upload className="h-6 w-6 text-muted-foreground" />
+                  <span className="mt-1 text-xs text-muted-foreground">Add</span>
                 </div>
                 <input
                   id={fileInputId}
@@ -365,7 +365,7 @@ export function SellListingPhotoGrid({
           </div>
         </DndContext>
       </div>
-      <p className="space-y-1 text-xs text-muted-foreground/45">
+      <p className="space-y-1 text-xs text-muted-foreground">
         <span className="block">Thank you for listing on Reswell.</span>
         <span className="inline-flex flex-wrap items-center gap-1">
           <span>Made with</span>

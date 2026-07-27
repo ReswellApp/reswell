@@ -141,7 +141,7 @@ export function SellBoardModelField({
             "text-xs tabular-nums",
             modelName.length > LISTING_BOARD_MODEL_MAX_LENGTH
               ? "font-medium text-destructive"
-              : "text-muted-foreground/45",
+              : "text-muted-foreground",
           )}
           aria-live="polite"
         >

@@ -64,7 +64,7 @@ export function SellShippingCostModeRadios({
             reswellEnabled ? "cursor-pointer" : "cursor-not-allowed opacity-60",
             effectiveValue === "reswell"
               ? "border-primary bg-primary/5"
-              : "border-border hover:border-primary/35",
+              : "border-slate-300 hover:border-primary/35",
           )}
         >
           <RadioGroupItem
@@ -86,7 +86,7 @@ export function SellShippingCostModeRadios({
               </Badge>
             </div>
             {effectiveValue === "reswell" && reswellEnabled ? (
-              <p className="text-sm leading-relaxed text-muted-foreground/45">
+              <p className="text-sm leading-relaxed text-muted-foreground">
                 We calculate the UPS rate from packed dimensions and add it at checkout. After the
                 sale we email you the Reswell shipping label.{" "}
                 <Link
@@ -115,7 +115,7 @@ export function SellShippingCostModeRadios({
                 "flex cursor-pointer gap-3 rounded-lg border p-4 transition-colors",
                 effectiveValue === "free"
                   ? "border-primary bg-primary/5"
-                  : "border-border hover:border-primary/35",
+                  : "border-slate-300 hover:border-primary/35",
               )}
             >
               <RadioGroupItem value="free" id={`${idPrefix}-ship-mode-free`} className="mt-0.5" />
@@ -129,7 +129,7 @@ export function SellShippingCostModeRadios({
                   </Badge>
                 </div>
                 {effectiveValue === "free" ? (
-                  <p className="text-sm leading-relaxed text-muted-foreground/45">
+                  <p className="text-sm leading-relaxed text-muted-foreground">
                     Buyer pays $0 for shipping at checkout. You arrange fulfillment with any carrier
                     — not through Reswell UPS labels.
                   </p>
@@ -143,7 +143,7 @@ export function SellShippingCostModeRadios({
                 "flex cursor-pointer gap-3 rounded-lg border p-4 transition-colors",
                 effectiveValue === "flat"
                   ? "border-primary bg-primary/5"
-                  : "border-border hover:border-primary/35",
+                  : "border-slate-300 hover:border-primary/35",
               )}
             >
               <RadioGroupItem value="flat" id={`${idPrefix}-ship-mode-flat`} className="mt-0.5" />
@@ -157,7 +157,7 @@ export function SellShippingCostModeRadios({
                   </Badge>
                 </div>
                 {effectiveValue === "flat" ? (
-                  <p className="text-sm leading-relaxed text-muted-foreground/45">
+                  <p className="text-sm leading-relaxed text-muted-foreground">
                     One dollar amount buyers in the Continental U.S. pay at checkout. You arrange
                     fulfillment with any carrier — not through Reswell UPS labels.
                   </p>

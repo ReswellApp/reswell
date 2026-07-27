@@ -38,7 +38,7 @@ export function SurfboardShippingTierCard({
       <div>
         <h3 className="text-sm font-semibold text-foreground">Shipping size estimate</h3>
         <p className="mt-1 text-sm font-medium text-foreground/90">{surfboardShippingTierHeadline(tierId)}</p>
-        <p className="mt-1 text-sm text-muted-foreground/45 leading-relaxed">
+        <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
           {SURFBOARD_SHIPPING_DIM_FORMULA}. Based on your board length, we use a standard{" "}
           <span className="font-medium text-foreground/80">{tier.label.toLowerCase()}</span> carton
           for carrier rates — no tape measure needed.
@@ -46,17 +46,17 @@ export function SurfboardShippingTierCard({
       </div>
 
       <div className="rounded-lg border border-border/80 bg-background px-4 py-3.5">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground/45">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Estimated packed box
         </p>
         <p className="mt-1 text-base font-semibold text-foreground tabular-nums">
           {surfboardShippingTierSummaryLine(tierId)}
         </p>
-        <p className="mt-2 text-sm text-muted-foreground/45 leading-relaxed">{tier.summary}</p>
+        <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{tier.summary}</p>
         {dimIn != null ? (
           <p className="mt-2 text-sm tabular-nums text-foreground/80">
             DIM {dimIn}″{" "}
-            <span className="text-muted-foreground/45">
+            <span className="text-muted-foreground">
               ({SURFBOARD_SHIPPING_DIM_FORMULA}; {surfboardShippingTierLimitDescription(tier)})
             </span>
           </p>
@@ -80,7 +80,7 @@ export function SurfboardShippingTierCard({
             faster options, or when it&apos;s the better rate for the lane.
           </p>
         </div>
-        <p className="mt-3 text-xs text-muted-foreground/45">
+        <p className="mt-3 text-xs text-muted-foreground">
           Reswell picks the carrier at checkout from this estimate and the buyer&apos;s address.
           {SURFBOARD_SHIPPING_DIM_FORMULA} must be {SURFBOARD_LABEL_MAX_UPS_DIMENSION_TOTAL_IN}″ or
           less; weight 25 lb or less.

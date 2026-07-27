@@ -40,7 +40,7 @@ function SellFinFacetSelect({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs text-muted-foreground/45">
+      <Label htmlFor={id} className="text-xs font-medium text-foreground/85">
         {label}
         {required ? (
           <span className="text-destructive" aria-hidden>
@@ -53,7 +53,7 @@ function SellFinFacetSelect({
         value={value.trim() ? value : UNSELECTED}
         onValueChange={(next) => onValueChange(next === UNSELECTED ? "" : next)}
       >
-        <SelectTrigger id={id} className="h-10 text-sm">
+        <SelectTrigger id={id} className="h-11 border-foreground/20 bg-card text-sm shadow-sm">
           <SelectValue placeholder={required ? "Select…" : "Not specified"} />
         </SelectTrigger>
         <SelectContent>
@@ -65,7 +65,7 @@ function SellFinFacetSelect({
           ))}
         </SelectContent>
       </Select>
-      {hint ? <p className="text-[11px] leading-snug text-muted-foreground/45">{hint}</p> : null}
+      {hint ? <p className="text-[11px] leading-snug text-muted-foreground">{hint}</p> : null}
     </div>
   )
 }
@@ -141,7 +141,7 @@ export function SellFinsFacetFields({
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="sell-fin-brand" className="text-xs text-muted-foreground/45">
+          <Label htmlFor="sell-fin-brand" className="text-xs font-medium text-foreground/85">
             Brand
           </Label>
           <SurfboardTitleIndexInput
@@ -158,14 +158,14 @@ export function SellFinsFacetFields({
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="sell-fin-model" className="text-xs text-muted-foreground/45">
+          <Label htmlFor="sell-fin-model" className="text-xs font-medium text-foreground/85">
             Model
           </Label>
           <Input
             id="sell-fin-model"
             value={model}
             placeholder="e.g. Performer, Mark Richards"
-            className="h-10 text-sm placeholder:text-muted-foreground/45"
+            className="h-11 border-foreground/20 bg-card text-sm shadow-sm placeholder:text-muted-foreground"
             onChange={(e) => onModelChange(e.target.value)}
           />
         </div>

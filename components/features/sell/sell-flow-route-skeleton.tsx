@@ -30,7 +30,7 @@ export function SellFlowFormColumnSkeleton({
 export function SellFlowRouteSkeleton() {
   return (
     <main
-      className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24"
+      className="flex-1 w-full bg-slate-100 pt-8 pb-16 md:pb-20 lg:pb-24"
       role="status"
       aria-label="Loading listing editor"
     >

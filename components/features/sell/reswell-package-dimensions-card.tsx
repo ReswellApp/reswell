@@ -55,13 +55,13 @@ function SuffixInput({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className={cn(
-            "rounded-lg placeholder:text-muted-foreground/45",
+            "h-11 rounded-lg border-foreground/20 bg-card shadow-sm placeholder:text-muted-foreground",
             hasSuffix ? "pr-10" : "pr-4",
           )}
         />
         {hasSuffix ? (
           <span
-            className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm tabular-nums text-muted-foreground/45"
+            className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm tabular-nums text-muted-foreground"
             aria-hidden
           >
             {suffix}
@@ -90,7 +90,7 @@ export function ReswellPackageDimensionsCard({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border bg-muted/20 p-5 sm:p-6 space-y-4 shadow-sm",
+        "space-y-4 rounded-xl border border-slate-300 bg-card p-5 shadow-md ring-1 ring-slate-900/[0.05] sm:p-6",
         className,
       )}
     >
@@ -99,14 +99,14 @@ export function ReswellPackageDimensionsCard({
           <h3 className="text-sm font-semibold text-foreground">
             Packed size &amp; weight
           </h3>
-          <p className="mt-1 text-sm text-muted-foreground/45 leading-relaxed">
+          <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
             Carriers bill by the box you ship in, not the board specs alone. Underestimating size or
             weight can mean extra charges later — measure the bag or box you&apos;ll actually use.
           </p>
         </div>
       ) : null}
 
-      <div className="rounded-lg border border-border/80 bg-muted/40 px-3.5 py-3 text-sm leading-relaxed text-foreground/90">
+      <div className="rounded-lg border border-slate-300 bg-slate-50 px-3.5 py-3 text-sm leading-relaxed text-foreground/90">
         <div className="flex gap-3">
           <UpsMark className="mt-0.5" />
           <p className="min-w-0">
@@ -123,7 +123,7 @@ export function ReswellPackageDimensionsCard({
             faster options, or when it&apos;s the better rate for the lane.
           </p>
         </div>
-        <p className="mt-3 text-xs text-muted-foreground/45">
+        <p className="mt-3 text-xs text-muted-foreground">
           Reswell picks the rate type at checkout from what you enter here and the buyer&apos;s
           address. UPS Ground limit: Length + (2 × Width) + (2 × Height) must be 160″ or less
           (165″ carrier max minus 5″ measurement buffer); weight 25 lb or less.
@@ -131,7 +131,7 @@ export function ReswellPackageDimensionsCard({
       </div>
 
       <div className="space-y-2">
-        <p className="text-xs text-muted-foreground/45 leading-relaxed">
+        <p className="text-xs text-muted-foreground leading-relaxed">
           When Reswell shipping is on, these three fields stay in sync with <span className="font-medium text-foreground/80">Length</span>,{" "}
           <span className="font-medium text-foreground/80">Width</span>, and{" "}
           <span className="font-medium text-foreground/80">Thickness</span> above — change them here only if

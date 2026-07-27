@@ -804,7 +804,7 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
   }
 
   return (
-    <main className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24">
+    <main className="flex-1 w-full bg-slate-100 pt-8 pb-16 md:pb-20 lg:pb-24">
       <AdminBulkListingBanner section="surfpacks" bulkSlotId={bulkSlotId} />
       <div className="container relative mx-auto max-w-2xl min-h-[50vh] lg:max-w-6xl">
         <h1 className="sr-only">{editId ? "Edit surfpack listing" : "List your surfpack"}</h1>
@@ -870,7 +870,7 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
                           "text-xs tabular-nums",
                           form.title.length > SURFPACK_LISTING_TITLE_MAX_LENGTH
                             ? "font-medium text-destructive"
-                            : "text-muted-foreground/45",
+                            : "text-muted-foreground",
                         )}
                         aria-live="polite"
                       >
@@ -879,7 +879,7 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
                     </div>
                     <Input
                       id="surfpack-title"
-                      className="placeholder:text-muted-foreground/45"
+                      className="h-11 border-foreground/20 bg-card shadow-sm placeholder:text-muted-foreground"
                       placeholder="e.g. Rip Curl Flashbomb 3/2 Steamer — Medium"
                       value={form.title}
                       maxLength={SURFPACK_LISTING_TITLE_MAX_LENGTH}
@@ -893,7 +893,7 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
 
                   <div className="space-y-2">
                     <h3 className="text-sm font-semibold text-foreground">Photos</h3>
-                    <p className="text-xs text-muted-foreground/45">
+                    <p className="text-xs text-muted-foreground">
                       Add clear photos. The first image is your main photo — tap the star on any
                       other photo to make it the cover.
                     </p>
@@ -961,11 +961,11 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
                           >
                             <span className="sr-only">Add listing photos</span>
                             <Upload
-                              className="pointer-events-none h-6 w-6 text-muted-foreground/45"
+                              className="pointer-events-none h-6 w-6 text-muted-foreground"
                               aria-hidden
                             />
                             <span
-                              className="pointer-events-none mt-1 text-xs text-muted-foreground/45"
+                              className="pointer-events-none mt-1 text-xs text-muted-foreground"
                               aria-hidden
                             >
                               Add
@@ -985,7 +985,7 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
                         </div>
                       ) : null}
                     </div>
-                    <p className="space-y-1 text-xs text-muted-foreground/45">
+                    <p className="space-y-1 text-xs text-muted-foreground">
                       <span className="block">Thank you for listing on Reswell.</span>
                       <span className="inline-flex flex-wrap items-center gap-1">
                         <span>Made with</span>
@@ -1070,7 +1070,7 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
                           *
                         </span>
                       </h3>
-                      <p className="mt-1 text-sm text-muted-foreground/45">You can select both options.</p>
+                      <p className="mt-1 text-sm text-muted-foreground">You can select both options.</p>
                     </div>
                     <div className="space-y-4">
                       <div className="flex items-start gap-3">
@@ -1161,7 +1161,7 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
                           </Label>
                           <div className="relative max-w-md">
                             <span
-                              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground/45"
+                              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground"
                               aria-hidden
                             >
                               $
@@ -1174,7 +1174,7 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
                               placeholder="0.00"
                               value={form.shippingPrice}
                               onChange={(e) => setField("shippingPrice", e.target.value)}
-                              className="pl-8 tabular-nums placeholder:text-muted-foreground/45"
+                              className="h-11 border-foreground/20 bg-card pl-8 tabular-nums shadow-sm placeholder:text-muted-foreground"
                             />
                           </div>
                         </div>
@@ -1238,7 +1238,7 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
                             <h3 className="text-sm font-semibold text-foreground">
                               Sell your surfpack even faster
                             </h3>
-                            <p className="text-sm leading-relaxed text-muted-foreground/45">
+                            <p className="text-sm leading-relaxed text-muted-foreground">
                               Increase your chances of selling with offers from buyers.
                             </p>
                           </div>
@@ -1261,7 +1261,7 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
                             >
                               Allow buyers to make offers
                             </Label>
-                            <p className="text-sm leading-relaxed text-muted-foreground/45">
+                            <p className="text-sm leading-relaxed text-muted-foreground">
                               Lets you negotiate a final price with buyers before checkout.
                             </p>
                           </div>
@@ -1288,7 +1288,7 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
                     )}
                   </Button>
                   {uploadingCount > 0 ? (
-                    <p className="text-center text-xs text-muted-foreground/45">
+                    <p className="text-center text-xs text-muted-foreground">
                       {uploadingCount} photo{uploadingCount > 1 ? "s" : ""} still uploading…
                     </p>
                   ) : null}

@@ -108,7 +108,7 @@ export function SellSectionNavHorizontal({
     <nav
       aria-label="Listing form sections"
       className={cn(
-        "rounded-lg border border-border bg-card/80 py-3 shadow-sm backdrop-blur-sm",
+        "rounded-lg border border-slate-300 bg-card py-3 shadow-md ring-1 ring-slate-900/[0.05] backdrop-blur-sm",
         className,
       )}
     >

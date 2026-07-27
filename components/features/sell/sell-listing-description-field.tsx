@@ -2,6 +2,7 @@
 
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { SELL_TEXTAREA_CLASS } from "@/components/features/sell/sell-form-surface"
 import { cn } from "@/lib/utils"
 
 /** Shown under every peer listing description field — freeform; no minimum length enforced. */
@@ -35,14 +36,14 @@ export function SellListingDescriptionField({
   return (
     <div className={cn("space-y-2", className)}>
       <Label htmlFor={id}>Description{required ? " *" : ""}</Label>
-      <p className="text-xs text-muted-foreground/45">{SELL_LISTING_DESCRIPTION_HINT}</p>
+      <p className="text-xs text-muted-foreground">{SELL_LISTING_DESCRIPTION_HINT}</p>
       <Textarea
         id={id}
         value={value}
         rows={rows}
         placeholder={placeholder}
         className={cn(
-          "placeholder:text-muted-foreground/45",
+          SELL_TEXTAREA_CLASS,
           showCounter && "min-h-[120px] resize-none",
         )}
         maxLength={maxLength}
@@ -53,7 +54,7 @@ export function SellListingDescriptionField({
         <span
           className={cn(
             "text-xs tabular-nums",
-            nearLimit ? "font-medium text-amber-700 dark:text-amber-400" : "text-muted-foreground/45",
+            nearLimit ? "font-medium text-amber-700 dark:text-amber-400" : "text-muted-foreground",
           )}
           aria-live="polite"
         >

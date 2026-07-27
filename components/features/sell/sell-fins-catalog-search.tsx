@@ -311,7 +311,7 @@ export function SellFinsCatalogSearch({ onSelect, onSkip, onExit, className }: S
   const showSimilarFallback = matchTier === "similar" && hasSimilarResults
 
   return (
-    <main className={cn("flex-1 w-full bg-background pt-8 pb-16 md:pb-24", className)}>
+    <main className={cn("flex-1 w-full bg-slate-100 pt-8 pb-16 md:pb-24", className)}>
       <div className="container relative mx-auto max-w-6xl px-4 sm:px-6">
         <div className="mb-8 border-t border-neutral-200 pt-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">

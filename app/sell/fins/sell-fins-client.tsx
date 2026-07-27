@@ -1027,7 +1027,7 @@ export default function SellFinsFlow({
   }
 
   return (
-    <main className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24">
+    <main className="flex-1 w-full bg-slate-100 pt-8 pb-16 md:pb-20 lg:pb-24">
       <AdminBulkListingBanner section="fins" bulkSlotId={bulkSlotId} />
       <div className="container relative mx-auto max-w-2xl min-h-[50vh] lg:max-w-6xl">
         <h1 className="sr-only">{editId ? "Edit fin listing" : "List your fins"}</h1>
@@ -1132,7 +1132,7 @@ export default function SellFinsFlow({
                           "text-xs tabular-nums",
                           form.title.length > FIN_LISTING_TITLE_MAX_LENGTH
                             ? "font-medium text-destructive"
-                            : "text-muted-foreground/45",
+                            : "text-muted-foreground",
                         )}
                         aria-live="polite"
                       >
@@ -1141,7 +1141,7 @@ export default function SellFinsFlow({
                     </div>
                     <Input
                       id="fin-title"
-                      className="placeholder:text-muted-foreground/45"
+                      className="h-11 border-foreground/20 bg-card shadow-sm placeholder:text-muted-foreground"
                       placeholder="e.g. FCS II Performer Tri Fins — Medium"
                       value={form.title}
                       maxLength={FIN_LISTING_TITLE_MAX_LENGTH}
@@ -1285,7 +1285,7 @@ export default function SellFinsFlow({
                           </Label>
                           <div className="relative max-w-md">
                             <span
-                              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground/45"
+                              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground"
                               aria-hidden
                             >
                               $
@@ -1298,7 +1298,7 @@ export default function SellFinsFlow({
                               placeholder="0.00"
                               value={form.shippingPrice}
                               onChange={(e) => setField("shippingPrice", e.target.value)}
-                              className="pl-8 tabular-nums placeholder:text-muted-foreground/45"
+                              className="h-11 border-foreground/20 bg-card pl-8 tabular-nums shadow-sm placeholder:text-muted-foreground"
                             />
                           </div>
                         </div>
@@ -1362,7 +1362,7 @@ export default function SellFinsFlow({
                             <h3 className="text-sm font-semibold text-foreground">
                               Sell your fins even faster
                             </h3>
-                            <p className="text-sm leading-relaxed text-muted-foreground/45">
+                            <p className="text-sm leading-relaxed text-muted-foreground">
                               Increase your chances of selling with offers from buyers.
                             </p>
                           </div>
@@ -1385,7 +1385,7 @@ export default function SellFinsFlow({
                             >
                               Allow buyers to make offers
                             </Label>
-                            <p className="text-sm leading-relaxed text-muted-foreground/45">
+                            <p className="text-sm leading-relaxed text-muted-foreground">
                               Lets you negotiate a final price with buyers before checkout.
                             </p>
                           </div>
@@ -1412,7 +1412,7 @@ export default function SellFinsFlow({
                     )}
                   </Button>
                   {uploadingCount > 0 ? (
-                    <p className="text-center text-xs text-muted-foreground/45">
+                    <p className="text-center text-xs text-muted-foreground">
                       {uploadingCount} photo{uploadingCount > 1 ? "s" : ""} still uploading…
                     </p>
                   ) : null}

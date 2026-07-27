@@ -25,6 +25,8 @@ import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
+import { SELL_CONTROL_CLASS } from "@/components/features/sell/sell-form-surface"
+import { cn } from "@/lib/utils"
 import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
 import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
 import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
@@ -357,7 +359,7 @@ export default function SellMagazinesFlow({
   }
 
   return (
-    <>
+    <main className="flex-1 w-full bg-slate-100">
       <AdminBulkListingBanner section="magazines" bulkSlotId={bulkSlotId} />
       <div className="container mx-auto max-w-2xl px-4 py-8 sm:py-12">
       <div className="mb-8 space-y-2">
@@ -398,6 +400,7 @@ export default function SellMagazinesFlow({
             value={form.title}
             maxLength={MAGAZINE_LISTING_TITLE_MAX_LENGTH}
             placeholder="e.g. Surfer's Journal Vol. 12 No. 3"
+            className={SELL_CONTROL_CLASS}
             onChange={(e) => setField("title", e.target.value)}
             required
           />
@@ -412,7 +415,7 @@ export default function SellMagazinesFlow({
                 setField("condition", value === CONDITION_UNSELECTED ? "" : value)
               }
             >
-              <SelectTrigger id="magazine-condition">
+              <SelectTrigger id="magazine-condition" className={SELL_CONTROL_CLASS}>
                 <SelectValue placeholder="Select condition" />
               </SelectTrigger>
               <SelectContent>
@@ -437,6 +440,7 @@ export default function SellMagazinesFlow({
               pattern="[0-9]*"
               value={form.year}
               placeholder="e.g. 1998"
+              className={SELL_CONTROL_CLASS}
               onChange={(e) => setField("year", e.target.value.replace(/\D/g, "").slice(0, 4))}
               required
             />
@@ -449,6 +453,7 @@ export default function SellMagazinesFlow({
             id="magazine-brand"
             value={form.brand}
             placeholder="e.g. Surfer, Surfing World, Tracks"
+            className={SELL_CONTROL_CLASS}
             onChange={(e) => setField("brand", e.target.value)}
             required
           />
@@ -475,7 +480,7 @@ export default function SellMagazinesFlow({
               type="text"
               inputMode="decimal"
               autoComplete="off"
-              className="pl-8 tabular-nums"
+              className={cn(SELL_CONTROL_CLASS, "pl-8 tabular-nums")}
               placeholder="0.00"
               value={form.price}
               onChange={(e) => setField("price", e.target.value)}
@@ -484,7 +489,7 @@ export default function SellMagazinesFlow({
           </div>
         </div>
 
-        <div className="space-y-3 rounded-xl border border-border/60 p-4 sm:p-5">
+        <div className="space-y-3 rounded-xl border border-slate-300 bg-card p-4 shadow-md ring-1 ring-slate-900/[0.05] sm:p-5">
           <div>
             <h2 className="text-base font-semibold">Shipping</h2>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -528,6 +533,6 @@ export default function SellMagazinesFlow({
         </div>
       </form>
     </div>
-    </>
+    </main>
   )
 }

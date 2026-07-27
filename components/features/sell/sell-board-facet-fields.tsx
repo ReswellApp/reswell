@@ -38,7 +38,7 @@ function SellOptionalFacetSelect({
 }: SellOptionalFacetSelectProps) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs text-muted-foreground/45">
+      <Label htmlFor={id} className="text-xs font-medium text-foreground/85">
         {label}
       </Label>
       <Select
@@ -46,7 +46,7 @@ function SellOptionalFacetSelect({
         onValueChange={(next) => onValueChange(next === UNSELECTED ? "" : next)}
         disabled={disabled}
       >
-        <SelectTrigger id={id} className="h-10 text-sm">
+        <SelectTrigger id={id} className="h-11 border-foreground/20 bg-card text-sm shadow-sm">
           <SelectValue placeholder="Not specified" />
         </SelectTrigger>
         <SelectContent>
@@ -58,7 +58,7 @@ function SellOptionalFacetSelect({
           ))}
         </SelectContent>
       </Select>
-      {hint ? <p className="text-[11px] leading-snug text-muted-foreground/45">{hint}</p> : null}
+      {hint ? <p className="text-[11px] leading-snug text-muted-foreground">{hint}</p> : null}
     </div>
   )
 }
@@ -86,7 +86,7 @@ export function SellBoardFacetFields({
     <div className="space-y-3">
       <div className="space-y-0.5">
         <p className="text-xs font-medium text-foreground/80">Fin setup & construction</p>
-        <p className="text-xs text-muted-foreground/45">
+        <p className="text-xs text-muted-foreground">
           Optional — helps surfers filter and compare your board on browse.
         </p>
       </div>

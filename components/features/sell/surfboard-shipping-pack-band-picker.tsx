@@ -70,7 +70,7 @@ export function SurfboardShippingPackBandPicker({
             />
           ) : null}
         </div>
-        <p className="mt-1 text-sm text-muted-foreground/45 leading-relaxed">
+        <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
           Smaller packs often cost buyers much less — UPS large-package fees kick in around 130″ DIM.
           Pick the smallest size your packed board will fit.
         </p>
@@ -192,7 +192,7 @@ export function SurfboardShippingPackBandPicker({
       ) : null}
 
       {!value ? (
-        <p className="text-sm text-muted-foreground/45">
+        <p className="text-sm text-muted-foreground">
           Choose a shortboard pack size to continue.
         </p>
       ) : null}

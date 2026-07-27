@@ -36,7 +36,7 @@ function SellBoardbagFacetSelect({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs text-muted-foreground/45">
+      <Label htmlFor={id} className="text-xs font-medium text-foreground/85">
         {label}
         {required ? (
           <span className="text-destructive" aria-hidden>
@@ -49,7 +49,7 @@ function SellBoardbagFacetSelect({
         value={value.trim() ? value : UNSELECTED}
         onValueChange={(next) => onValueChange(next === UNSELECTED ? "" : next)}
       >
-        <SelectTrigger id={id} className="h-10 text-sm">
+        <SelectTrigger id={id} className="h-11 border-foreground/20 bg-card text-sm shadow-sm">
           <SelectValue placeholder={required ? "Select…" : "Not specified"} />
         </SelectTrigger>
         <SelectContent>
@@ -61,7 +61,7 @@ function SellBoardbagFacetSelect({
           ))}
         </SelectContent>
       </Select>
-      {hint ? <p className="text-[11px] leading-snug text-muted-foreground/45">{hint}</p> : null}
+      {hint ? <p className="text-[11px] leading-snug text-muted-foreground">{hint}</p> : null}
     </div>
   )
 }
@@ -112,26 +112,26 @@ export function SellBoardbagsFacetFields({
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor="sell-boardbag-brand" className="text-xs text-muted-foreground/45">
+          <Label htmlFor="sell-boardbag-brand" className="text-xs font-medium text-foreground/85">
             Brand
           </Label>
           <Input
             id="sell-boardbag-brand"
             value={brand}
             placeholder="e.g. Rip Curl, O'Neill, Patagonia"
-            className="h-10 text-sm placeholder:text-muted-foreground/45"
+            className="h-11 border-foreground/20 bg-card text-sm shadow-sm placeholder:text-muted-foreground"
             onChange={(e) => onBrandChange(e.target.value)}
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="sell-boardbag-model" className="text-xs text-muted-foreground/45">
+          <Label htmlFor="sell-boardbag-model" className="text-xs font-medium text-foreground/85">
             Model
           </Label>
           <Input
             id="sell-boardbag-model"
             value={model}
             placeholder="e.g. Flashbomb 3/2, Hyperfreak"
-            className="h-10 text-sm placeholder:text-muted-foreground/45"
+            className="h-11 border-foreground/20 bg-card text-sm shadow-sm placeholder:text-muted-foreground"
             onChange={(e) => onModelChange(e.target.value)}
           />
         </div>

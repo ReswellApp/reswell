@@ -365,7 +365,7 @@ export function LocationPicker({
             debounceMs={280}
             placeholder="Start typing a city, ZIP, or beach…"
             inputClassName={cn(
-              "h-11 pl-10 placeholder:text-muted-foreground/45",
+              "h-11 border-foreground/20 bg-card pl-10 shadow-sm placeholder:text-muted-foreground",
               showSavedLocationCard ? "pr-[4.75rem]" : "pr-10",
             )}
             aria-label="Where you’re listing from"

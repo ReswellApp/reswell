@@ -253,7 +253,10 @@ export function SurfboardModelCatalogInput({
     <div ref={containerRef} className="relative">
       <Input
         id={id}
-        className={cn("placeholder:text-muted-foreground/45", className)}
+        className={cn(
+          "h-11 border-foreground/20 bg-card shadow-sm placeholder:text-muted-foreground",
+          className,
+        )}
         placeholder={placeholder}
         disabled={disabled}
         value={value}

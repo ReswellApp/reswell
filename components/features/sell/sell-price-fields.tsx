@@ -10,6 +10,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import { SELL_CONTROL_CLASS } from "@/components/features/sell/sell-form-surface"
+import { cn } from "@/lib/utils"
 
 export interface SellPriceFieldsProps {
   listingPrice: string
@@ -33,7 +35,7 @@ export function SellPriceFields({
 }: SellPriceFieldsProps) {
   return (
     <div className="max-w-lg space-y-4">
-      <p className="text-sm leading-relaxed text-muted-foreground/45">
+      <p className="text-sm leading-relaxed text-muted-foreground">
         Fair, competitive listings tend to sell faster on Reswell.
       </p>
 
@@ -46,7 +48,7 @@ export function SellPriceFields({
         </Label>
         <div className="relative">
           <span
-            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground/45"
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground"
             aria-hidden
           >
             $
@@ -59,20 +61,20 @@ export function SellPriceFields({
             placeholder="0.00"
             value={listingPrice}
             onChange={(e) => onListingPriceChange(e.target.value)}
-            className="pl-8 tabular-nums placeholder:text-muted-foreground/45"
+            className={cn(SELL_CONTROL_CLASS, "pl-8 tabular-nums")}
             aria-required="true"
           />
         </div>
       </div>
 
-      <div className="rounded-lg border border-border bg-muted/30">
+      <div className="rounded-lg border border-slate-300 bg-slate-50/80">
         <Accordion type="single" collapsible className="w-full px-1">
           <AccordionItem value="purchase" className="border-0">
             <AccordionTrigger className="px-3 py-3 text-left text-sm font-semibold hover:no-underline [&[data-state=open]]:pb-1">
               {purchaseAccordionTitle}
             </AccordionTrigger>
             <AccordionContent className="px-3 pb-3 pt-0">
-              <p className="text-sm leading-relaxed text-muted-foreground/45">
+              <p className="text-sm leading-relaxed text-muted-foreground">
                 {purchaseAccordionDescription}
               </p>
               <div className="mt-4 space-y-2">
@@ -81,7 +83,7 @@ export function SellPriceFields({
                 </Label>
                 <div className="relative">
                   <span
-                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground/45"
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground"
                     aria-hidden
                   >
                     $
@@ -94,10 +96,10 @@ export function SellPriceFields({
                     placeholder="0.00"
                     value={sellerPurchasePrice}
                     onChange={(e) => onSellerPurchasePriceChange(e.target.value)}
-                    className="pl-8 tabular-nums placeholder:text-muted-foreground/45"
+                    className={cn(SELL_CONTROL_CLASS, "pl-8 tabular-nums")}
                   />
                 </div>
-                <p className="text-xs text-muted-foreground/45">Not shown publicly.</p>
+                <p className="text-xs text-muted-foreground">Not shown publicly.</p>
               </div>
             </AccordionContent>
           </AccordionItem>
