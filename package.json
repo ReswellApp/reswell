@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint .",
     "env:pull": "vercel env pull .env.local --yes && vercel env pull .env.production.local --environment=production --yes && node scripts/sync-search-console-env.mjs",
-    "logs:scan": "node --experimental-strip-types scripts/scan-vercel-logs.mjs"
+    "logs:scan": "node scripts/scan-vercel-logs.mjs",
+    "audit": "node scripts/scan-vercel-logs.mjs --report"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.1",
