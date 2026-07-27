@@ -2,6 +2,9 @@ import "server-only"
 
 import type { SupabaseClient } from "@supabase/supabase-js"
 import {
+  getFinCatalogBrandsByIds,
+  getFinCatalogModelsByIds,
+  getFinCatalogVariantsByIds,
   listFinCatalogBrandIds,
   listFinCatalogModelsForBrandIds,
   searchFinCatalogBrands,
@@ -12,6 +15,8 @@ import {
   type FinCatalogModelRow,
   type FinCatalogVariantRow,
 } from "@/lib/db/fin-catalog-search"
+import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
+import { searchFinCatalogHitsFromElasticsearch } from "@/lib/elasticsearch/fin-catalog-index"
 import {
   FIN_SETUP_OPTIONS,
   FIN_SYSTEM_OPTIONS_FOR_FINS,
@@ -24,7 +29,11 @@ import {
   type BrandCatalogSuggestRow,
 } from "@/lib/services/brandDirectorySearch"
 import { formatFinCatalogVariantLabel } from "@/lib/utils/fin-catalog-variant-label"
-import { rankFinCatalogSearchResults } from "@/lib/utils/fin-catalog-search-rank"
+import {
+  compactSearchKey,
+  compactSearchKeysMatch,
+  rankFinCatalogSearchResults,
+} from "@/lib/utils/fin-catalog-search-rank"
 import type {
   FinCatalogSearchBrandRow,
   FinCatalogSearchModelRow,
@@ -224,40 +233,126 @@ export type SearchFinCatalogForSellOptions = {
   finBrandIds?: readonly string[]
 }
 
-/**
- * Search the brand/model/variant catalog for the `/sell/fins` entry step.
- * Results are limited to brands tagged with the `fins` product category slug.
- */
-export async function searchFinCatalogForSell(
+function emptyFinCatalogResult(
+  finBrandCount: number,
+  backend: "elasticsearch" | "supabase" = "supabase",
+): FinCatalogSearchResult {
+  return {
+    brands: [],
+    models: [],
+    variants: [],
+    results: [],
+    similarResults: [],
+    meta: { backend, finBrandCount, matchTier: "none" },
+  }
+}
+
+async function searchFinCatalogForSellFromElasticsearch(
   supabase: SupabaseClient,
-  qRaw: string,
-  options: SearchFinCatalogForSellOptions = {},
+  q: string,
+  finBrandIds: readonly string[],
+): Promise<FinCatalogSearchResult | null> {
+  const hits = await searchFinCatalogHitsFromElasticsearch(q, {
+    limit: 40,
+    finBrandIds,
+  })
+  if (hits.length === 0) return null
+
+  const brandIds = hits.filter((h) => h.kind === "brand").map((h) => h.id)
+  const modelIds = hits.filter((h) => h.kind === "model").map((h) => h.id)
+  const variantIds = hits.filter((h) => h.kind === "variant").map((h) => h.id)
+
+  const [brandRows, modelRows, variantRows] = await Promise.all([
+    getFinCatalogBrandsByIds(supabase, brandIds),
+    getFinCatalogModelsByIds(supabase, modelIds),
+    getFinCatalogVariantsByIds(supabase, variantIds),
+  ])
+
+  const brands = mergeBrandsById(brandRows)
+  const models = mergeModelsById(modelRows)
+  const variants = variantRows.map(variantToSearchRow)
+
+  // When ES matches a brand via compact name, pull that brand's models for suggestions.
+  const brandOnlyCompactQuery =
+    brands.length > 0 &&
+    !/\s/.test(q) &&
+    compactSearchKey(q).length >= 4 &&
+    brands.some(
+      (b) => compactSearchKeysMatch(q, b.name) || compactSearchKeysMatch(q, b.slug),
+    )
+
+  const modelsForBrands =
+    brandOnlyCompactQuery && brands.length > 0
+      ? await listFinCatalogModelsForBrandIds(
+          supabase,
+          finBrandIds,
+          brands.map((b) => b.id),
+          "",
+          MAX_MODELS,
+        )
+      : []
+
+  const allModels = mergeModelsById([...models, ...modelsForBrands])
+
+  const variantRowsForModels =
+    brandOnlyCompactQuery && allModels.length > 0
+      ? await searchFinCatalogVariants(supabase, {
+          finBrandIds,
+          qRaw: q,
+          brandModelIds: allModels.map((m) => m.id),
+          limit: MAX_VARIANTS,
+        })
+      : []
+
+  const allVariants = [...variants, ...variantRowsForModels.map(variantToSearchRow)]
+    .filter((row, index, all) => all.findIndex((r) => r.id === row.id) === index)
+    .slice(0, MAX_VARIANTS)
+
+  const candidateRows: FinCatalogSearchResultRow[] = [
+    ...brands,
+    ...allModels,
+    ...allVariants,
+  ]
+
+  if (candidateRows.length === 0) return null
+
+  const results = rankFinCatalogSearchResults(q, candidateRows, MAX_RANKED_RESULTS, "strict")
+  let similarResults: FinCatalogSearchResultRow[] = []
+  let matchTier: "exact" | "similar" | "none" = results.length > 0 ? "exact" : "none"
+
+  if (results.length === 0) {
+    similarResults = rankFinCatalogSearchResults(
+      q,
+      candidateRows,
+      MAX_RANKED_RESULTS,
+      "relaxed",
+    )
+    if (similarResults.length === 0) {
+      // Trust ES order when local ranker is too strict on hydrated rows.
+      similarResults = candidateRows.slice(0, MAX_RANKED_RESULTS)
+    }
+    if (similarResults.length > 0) matchTier = "similar"
+  }
+
+  return {
+    brands,
+    models: allModels,
+    variants: allVariants,
+    results,
+    similarResults,
+    meta: {
+      backend: "elasticsearch",
+      finBrandCount: finBrandIds.length,
+      matchTier,
+    },
+  }
+}
+
+async function searchFinCatalogForSellFromSupabase(
+  supabase: SupabaseClient,
+  q: string,
+  finBrandIds: readonly string[],
 ): Promise<FinCatalogSearchResult> {
-  const q = (qRaw || "").trim().replace(/%/g, "")
-  if (q.length < 1) {
-    return {
-      brands: [],
-      models: [],
-      variants: [],
-      results: [],
-      similarResults: [],
-      meta: { backend: "supabase", finBrandCount: 0, matchTier: "none" },
-    }
-  }
-
-  const finBrandIds =
-    options.finBrandIds ?? (await listFinCatalogBrandIds(supabase))
-  if (finBrandIds.length === 0) {
-    return {
-      brands: [],
-      models: [],
-      variants: [],
-      results: [],
-      similarResults: [],
-      meta: { backend: "supabase", finBrandCount: 0, matchTier: "none" },
-    }
-  }
-
   const { finSystems, finSetups, finSizes } = extractFinFacetMatches(q)
 
   const [finScopedBrands, modelsByText, variantRows] = await Promise.all([
@@ -276,9 +371,25 @@ export async function searchFinCatalogForSell(
   const brands = mergeBrandsById(finScopedBrands)
   const matchedBrandIds = brands.map((b) => b.id)
 
+  // Concatenated brand queries (`trueames`) should list that brand's models,
+  // not AND-filter model names for the compacted token.
+  const brandOnlyCompactQuery =
+    matchedBrandIds.length > 0 &&
+    !/\s/.test(q) &&
+    compactSearchKey(q).length >= 4 &&
+    brands.some(
+      (b) => compactSearchKeysMatch(q, b.name) || compactSearchKeysMatch(q, b.slug),
+    )
+
   const modelsForBrands =
     matchedBrandIds.length > 0
-      ? await listFinCatalogModelsForBrandIds(supabase, finBrandIds, matchedBrandIds, q, MAX_MODELS)
+      ? await listFinCatalogModelsForBrandIds(
+          supabase,
+          finBrandIds,
+          matchedBrandIds,
+          brandOnlyCompactQuery ? "" : q,
+          MAX_MODELS,
+        )
       : []
 
   const models = mergeModelsById([...modelsByText, ...modelsForBrands])
@@ -358,4 +469,46 @@ export async function searchFinCatalogForSell(
     similarResults,
     meta: { backend: "supabase", finBrandCount: finBrandIds.length, matchTier },
   }
+}
+
+/**
+ * Search the brand/model/variant catalog for the `/sell/fins` entry step.
+ * Results are limited to brands tagged with the `fins` product category slug.
+ * Uses Elasticsearch when configured (hydrate from Supabase); falls back to Supabase `ilike`.
+ */
+export async function searchFinCatalogForSell(
+  supabase: SupabaseClient,
+  qRaw: string,
+  options: SearchFinCatalogForSellOptions = {},
+): Promise<FinCatalogSearchResult> {
+  const q = (qRaw || "").trim().replace(/%/g, "")
+  if (q.length < 1) {
+    return emptyFinCatalogResult(0)
+  }
+
+  const finBrandIds =
+    options.finBrandIds ?? (await listFinCatalogBrandIds(supabase))
+  if (finBrandIds.length === 0) {
+    return emptyFinCatalogResult(0)
+  }
+
+  if (isElasticsearchConfigured()) {
+    try {
+      const esResult = await searchFinCatalogForSellFromElasticsearch(
+        supabase,
+        q,
+        finBrandIds,
+      )
+      if (esResult && (esResult.results.length > 0 || esResult.similarResults.length > 0)) {
+        return esResult
+      }
+    } catch (err) {
+      console.error(
+        "[searchFinCatalogForSell] Elasticsearch error, falling back to Supabase:",
+        err,
+      )
+    }
+  }
+
+  return searchFinCatalogForSellFromSupabase(supabase, q, finBrandIds)
 }

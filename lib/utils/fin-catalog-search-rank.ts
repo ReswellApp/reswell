@@ -44,6 +44,7 @@ const FIN_CATALOG_TOKEN_SYNONYMS: Record<string, readonly string[]> = {
   ci: ["channel", "islands"],
   pv: ["pacific", "vibrations"],
   ta: ["true", "ames"],
+  trueames: ["true", "ames"],
   fcs2: ["fcs"],
   fcsii: ["fcs"],
   tri: ["tri", "thruster"],
@@ -56,6 +57,25 @@ const FIN_CATALOG_TOKEN_SYNONYMS: Record<string, readonly string[]> = {
 
 function normalizeText(value: string): string {
   return value.trim().toLowerCase().replace(/\s+/g, " ")
+}
+
+/** Lowercase alphanumeric-only key for concatenated queries (`trueames` ↔ `True Ames`). */
+export function compactSearchKey(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "")
+}
+
+/**
+ * Whether a query matches a field when spaces/punctuation are ignored
+ * (e.g. `trueames` ↔ `True Ames`, `channelislands` ↔ `Channel Islands`).
+ */
+export function compactSearchKeysMatch(query: string, field: string): boolean {
+  const q = compactSearchKey(query)
+  const f = compactSearchKey(field)
+  if (!q || !f || q.length < 2) return false
+  if (f === q || f.startsWith(q) || q.startsWith(f)) return true
+  // Longer queries may include brand+model compacted together.
+  if (q.length >= 4 && f.length >= 4 && (f.includes(q) || q.includes(f))) return true
+  return false
 }
 
 function tokenize(raw: string): string[] {
@@ -125,6 +145,7 @@ function tokenMatchesField(token: string, field: string, fuzzy: boolean): boolea
   const f = field.toLowerCase()
   if (!f) return false
   if (f.includes(token)) return true
+  if (compactSearchKeysMatch(token, field)) return true
   if (!fuzzy || token.length < 4) return false
 
   for (const word of wordsFromHaystack(f)) {
@@ -153,6 +174,35 @@ function countTokenMatches(
     }
   }
   return matched
+}
+
+function compactMatchBoost(q: string, title: string, brand: string, model: string): number {
+  const qCompact = compactSearchKey(q)
+  if (qCompact.length < 2) return 0
+
+  const titleCompact = compactSearchKey(title)
+  const brandCompact = compactSearchKey(brand)
+  const modelCompact = compactSearchKey(model)
+
+  if (titleCompact === qCompact) return 950
+  if (brandCompact === qCompact) return 900
+  if (modelCompact === qCompact) return 850
+  if (titleCompact.startsWith(qCompact) || brandCompact.startsWith(qCompact)) return 650
+  if (modelCompact.startsWith(qCompact)) return 600
+  if (qCompact.length >= 4 && (titleCompact.includes(qCompact) || brandCompact.includes(qCompact))) {
+    return 400
+  }
+  if (qCompact.length >= 4 && modelCompact.includes(qCompact)) return 350
+  // Query is brand+model smashed together (e.g. trueamesbonzer).
+  if (
+    brandCompact.length >= 4 &&
+    modelCompact.length >= 2 &&
+    qCompact.startsWith(brandCompact) &&
+    qCompact.includes(modelCompact)
+  ) {
+    return 720
+  }
+  return 0
 }
 
 function rowBrandName(row: FinCatalogSearchResultRow): string {
@@ -209,16 +259,20 @@ export function scoreFinCatalogSearchRow(
   const model = normalizeText(rowModelName(row) ?? "")
   const tokens = finCatalogMeaningfulSearchTokens(q)
   const fuzzy = mode === "relaxed"
+  const compactBoost = compactMatchBoost(q, title, brand, model)
+  const hasCompactHit = compactBoost > 0
   const matchedCount = countTokenMatches(tokens, title, brand, model, fuzzy)
   const tokenTotal = tokens.length
 
   if (tokenTotal > 0) {
     if (mode === "strict") {
-      if (matchedCount < tokenTotal) return 0
+      // Compact hits (trueames → True Ames) satisfy strict even when the
+      // single concatenated token does not appear as a spaced substring.
+      if (matchedCount < tokenTotal && !hasCompactHit) return 0
     } else {
       const minRequired =
         tokenTotal <= 2 ? 1 : Math.max(2, Math.ceil(tokenTotal * 0.6))
-      if (matchedCount < minRequired) return 0
+      if (matchedCount < minRequired && !hasCompactHit) return 0
     }
   }
 
@@ -228,6 +282,8 @@ export function scoreFinCatalogSearchRow(
   else if (title.startsWith(q)) score += 700
   else if (model.startsWith(q) || brand.startsWith(q)) score += 500
   else if (title.includes(q)) score += 350
+
+  score += compactBoost
 
   for (const token of tokens) {
     if (model === token) score += 120

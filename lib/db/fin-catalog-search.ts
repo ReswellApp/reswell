@@ -2,7 +2,12 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { FIN_CATALOG_PRODUCT_CATEGORY } from "@/lib/brand-catalog-fin-variants"
 import { listBrandIdsMatchingProductCategories } from "@/lib/db/brand-product-categories"
 import type { FinBoxesType, FinBoxType, FinCatalogVariantSize } from "@/lib/validations/brand-model-variants"
-import { finCatalogMeaningfulSearchTokens, expandFinCatalogSearchTokens } from "@/lib/utils/fin-catalog-search-rank"
+import {
+  compactSearchKey,
+  compactSearchKeysMatch,
+  expandFinCatalogSearchTokens,
+  finCatalogMeaningfulSearchTokens,
+} from "@/lib/utils/fin-catalog-search-rank"
 
 export { FIN_CATALOG_PRODUCT_CATEGORY } from "@/lib/brand-catalog-fin-variants"
 
@@ -251,7 +256,7 @@ export type FinCatalogBrandRow = {
   lead_shaper_name: string | null
 }
 
-/** Match fin brand names by word starts or initials (e.g. `pv` → Pacific Vibrations). */
+/** Match fin brand names by word starts, initials, or compacted form (`trueames` → True Ames). */
 function finBrandMatchesQuery(name: string, slug: string, q: string): boolean {
   const query = q.trim().toLowerCase()
   if (!query) return false
@@ -260,11 +265,22 @@ function finBrandMatchesQuery(name: string, slug: string, q: string): boolean {
   const slugLower = slug.trim().toLowerCase()
   if (nameLower.includes(query) || slugLower.includes(query)) return true
 
+  if (compactSearchKeysMatch(query, name) || compactSearchKeysMatch(query, slug)) return true
+
   const words = name.match(/[\w']+/g) ?? []
   if (words.some((word) => word.toLowerCase().startsWith(query))) return true
 
   const initials = words.map((word) => word[0]?.toLowerCase() ?? "").join("")
   return initials.startsWith(query)
+}
+
+function shouldRunFinBrandMemoryFallback(q: string, rowCount: number, limit: number): boolean {
+  if (rowCount >= limit) return false
+  // Short queries: initials / word-start (e.g. `ta`, `pv`).
+  if (q.length < 4) return true
+  // Longer single-token queries: compact match (e.g. `trueames`).
+  const compact = compactSearchKey(q)
+  return compact.length >= 4 && !/\s/.test(q.trim())
 }
 
 /** Search `brands` limited to fin-tagged brand IDs. */
@@ -292,7 +308,7 @@ export async function searchFinCatalogBrands(
   }
 
   const rows = (data ?? []) as FinCatalogBrandRow[]
-  if (rows.length >= limit || q.length >= 4) return rows
+  if (!shouldRunFinBrandMemoryFallback(q, rows.length, limit)) return rows
 
   const seen = new Set(rows.map((row) => row.id))
   const { data: allFinBrands, error: allErr } = await supabase
@@ -302,7 +318,7 @@ export async function searchFinCatalogBrands(
     .order("name", { ascending: true })
 
   if (allErr) {
-    console.error("searchFinCatalogBrands (initials fallback):", allErr.message)
+    console.error("searchFinCatalogBrands (memory fallback):", allErr.message)
     return rows
   }
 
@@ -663,4 +679,80 @@ export async function searchFinCatalogVariants(
   }
 
   return [...byId.values()].slice(0, limit)
+}
+
+function orderByIds<T extends { id: string }>(
+  rows: T[],
+  ids: readonly string[],
+): T[] {
+  const byId = new Map(rows.map((row) => [row.id, row]))
+  return ids
+    .map((id) => byId.get(id))
+    .filter((row): row is T => row != null)
+}
+
+/** Hydrate fin catalog brands by id, preserving caller order. */
+export async function getFinCatalogBrandsByIds(
+  supabase: SupabaseClient,
+  ids: readonly string[],
+): Promise<FinCatalogBrandRow[]> {
+  if (ids.length === 0) return []
+  const { data, error } = await supabase
+    .from("brands")
+    .select(FIN_BRAND_LIST_SELECT)
+    .in("id", [...ids])
+
+  if (error) {
+    console.error("getFinCatalogBrandsByIds:", error.message)
+    return []
+  }
+  return orderByIds((data ?? []) as FinCatalogBrandRow[], ids)
+}
+
+/** Hydrate fin catalog models by id, preserving caller order. */
+export async function getFinCatalogModelsByIds(
+  supabase: SupabaseClient,
+  ids: readonly string[],
+): Promise<FinCatalogModelRow[]> {
+  if (ids.length === 0) return []
+  const { data, error } = await supabase
+    .from("brand_models")
+    .select(MODEL_LIST_SELECT)
+    .in("id", [...ids])
+
+  if (error) {
+    console.error("getFinCatalogModelsByIds:", error.message)
+    return []
+  }
+
+  const mapped: FinCatalogModelRow[] = []
+  for (const row of (data ?? []) as RawBrandModelRow[]) {
+    const next = mapModelRow(row)
+    if (next) mapped.push(next)
+  }
+  return orderByIds(mapped, ids)
+}
+
+/** Hydrate fin catalog variants by id, preserving caller order. */
+export async function getFinCatalogVariantsByIds(
+  supabase: SupabaseClient,
+  ids: readonly string[],
+): Promise<FinCatalogVariantRow[]> {
+  if (ids.length === 0) return []
+  const { data, error } = await supabase
+    .from("brand_model_variants")
+    .select(VARIANT_LIST_SELECT)
+    .in("id", [...ids])
+
+  if (error) {
+    console.error("getFinCatalogVariantsByIds:", error.message)
+    return []
+  }
+
+  const mapped: FinCatalogVariantRow[] = []
+  for (const row of (data ?? []) as RawVariantRow[]) {
+    const next = mapVariantRow(row)
+    if (next) mapped.push(next)
+  }
+  return orderByIds(mapped, ids)
 }

@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { brandRowToSearchDoc, ensureBrandsIndex, indexBrandDocument } from "@/lib/elasticsearch/brands-index"
 import {
+  ensureFinCatalogIndex,
+  reindexFinCatalogFromSupabase,
+} from "@/lib/elasticsearch/fin-catalog-index"
+import {
   ensureListingsIndex,
   indexListingDocument,
   listingRowToSearchDocFromRow,
@@ -86,6 +90,7 @@ export async function POST(request: NextRequest) {
   try {
     await ensureListingsIndex()
     await ensureBrandsIndex()
+    await ensureFinCatalogIndex()
     await ensureSellersIndex()
     await ensureForumThreadsIndex()
   } catch (err) {
@@ -167,6 +172,21 @@ export async function POST(request: NextRequest) {
 
     if (brandRows.length < pageSize) break
     brandFrom += pageSize
+  }
+
+  let finCatalogBrandsIndexed = 0
+  let finCatalogModelsIndexed = 0
+  let finCatalogVariantsIndexed = 0
+  let finCatalogErrors = 0
+  try {
+    const finCatalog = await reindexFinCatalogFromSupabase(supabase)
+    finCatalogBrandsIndexed = finCatalog.brandsIndexed
+    finCatalogModelsIndexed = finCatalog.modelsIndexed
+    finCatalogVariantsIndexed = finCatalog.variantsIndexed
+    finCatalogErrors = finCatalog.errors
+  } catch (err) {
+    console.error("[api/search/reindex] fin catalog reindex failed:", err)
+    finCatalogErrors++
   }
 
   // Collect user_ids with at least one active, visible listing so we can set
@@ -267,6 +287,10 @@ export async function POST(request: NextRequest) {
     errors,
     brandsIndexed,
     brandErrors,
+    finCatalogBrandsIndexed,
+    finCatalogModelsIndexed,
+    finCatalogVariantsIndexed,
+    finCatalogErrors,
     sellersIndexed,
     sellersRemoved,
     sellerErrors,

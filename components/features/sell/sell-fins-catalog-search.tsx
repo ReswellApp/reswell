@@ -29,6 +29,9 @@ import {
 import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
 import { finCatalogSearchRowThumbUrl } from "@/lib/utils/fin-catalog-display-image"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { finSetupLabel, finSizeLabel, finSystemLabel } from "@/lib/fin-listing-config"
+import { compactSearchKey } from "@/lib/utils/fin-catalog-search-rank"
+import { SellFocusScrim } from "@/components/features/sell/sell-focus-scrim"
 import { cn } from "@/lib/utils"
 
 const SEARCH_DEBOUNCE_MS = 250
@@ -37,8 +40,6 @@ type CatalogResultRow =
   | FinCatalogSearchBrandRow
   | FinCatalogSearchModelRow
   | FinCatalogSearchVariantRow
-
-type CatalogMetaLine = { label: string; value: string }
 
 export type SellFinsCatalogSearchProps = {
   onSelect: (selection: FinCatalogSearchSelection) => void
@@ -57,66 +58,154 @@ function titleForRow(row: CatalogResultRow): string {
   return `${row.brandName} ${row.modelName}`
 }
 
-function metaLinesForRow(row: CatalogResultRow): CatalogMetaLine[] {
-  if (row.kind === "brand") return []
-  if (row.kind === "model") {
-    return [
-      { label: "Brand", value: row.brandName },
-      { label: "Model", value: row.name },
-    ]
+function brandNameForRow(row: CatalogResultRow): string {
+  return row.kind === "brand" ? row.name : row.brandName
+}
+
+function modelNameForRow(row: CatalogResultRow): string | null {
+  if (row.kind === "brand") return null
+  if (row.kind === "model") return row.name
+  return row.modelName
+}
+
+function productMetaLine(row: CatalogResultRow): string | null {
+  if (row.kind === "variant") {
+    const parts = [
+      finSystemLabel(row.finSystem),
+      finSetupLabel(row.finSetup),
+      finSizeLabel(row.finSize),
+    ].filter((part): part is string => Boolean(part?.trim()))
+    if (parts.length > 0) return parts.join(" · ")
+    return row.variantLabel.trim() || null
   }
-  return [
-    { label: "Brand", value: row.brandName },
-    { label: "Model", value: row.modelName },
-  ]
+  if (row.kind === "model") {
+    return row.description?.trim() || null
+  }
+  return row.shortDescription?.trim() || null
 }
 
 function rowKey(row: CatalogResultRow): string {
   return `${row.kind}-${row.id}`
 }
 
-function partitionResults(rows: CatalogResultRow[]): {
-  topPick: CatalogResultRow | null
-  moreMatches: CatalogResultRow[]
+/** Brands/models as text suggestions; variants (and imaged models) as product rows. */
+function partitionDropdownRows(rows: CatalogResultRow[]): {
+  suggestions: CatalogResultRow[]
+  products: CatalogResultRow[]
 } {
-  if (rows.length === 0) return { topPick: null, moreMatches: [] }
-  return { topPick: rows[0] ?? null, moreMatches: rows.slice(1) }
+  const suggestions: CatalogResultRow[] = []
+  const products: CatalogResultRow[] = []
+  for (const row of rows) {
+    if (row.kind === "variant") {
+      products.push(row)
+      continue
+    }
+    if (row.kind === "model" && thumbForRow(row)) {
+      products.push(row)
+      continue
+    }
+    suggestions.push(row)
+  }
+  return { suggestions, products }
 }
 
-function ResultImage({
+function highlightQueryParts(text: string, query: string): React.ReactNode {
+  const q = query.trim()
+  if (!q || !text) return text
+
+  const tokens = Array.from(
+    new Set(
+      (q.toLowerCase().match(/[\w']+/g) ?? [])
+        .map((t) => t.replace(/^'+|'+$/g, ""))
+        .filter((t) => t.length >= 2),
+    ),
+  ).sort((a, b) => b.length - a.length)
+
+  if (tokens.length === 0) {
+    const compactQ = compactSearchKey(q)
+    const compactText = compactSearchKey(text)
+    if (compactQ.length >= 2 && compactText.includes(compactQ)) {
+      return <span className="font-semibold text-foreground">{text}</span>
+    }
+    return text
+  }
+
+  const pattern = new RegExp(`(${tokens.map(escapeRegExp).join("|")})`, "ig")
+  const parts = text.split(pattern)
+  return parts.map((part, index) => {
+    const isMatch = tokens.some((token) => part.toLowerCase() === token)
+    if (isMatch) {
+      return (
+        <span key={`${part}-${index}`} className="font-semibold text-foreground">
+          {part}
+        </span>
+      )
+    }
+    return <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>
+  })
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+function SuggestionRow({
+  row,
+  query,
+  onSelect,
+}: {
+  row: CatalogResultRow
+  query: string
+  onSelect: (selection: FinCatalogSearchSelection) => void
+}) {
+  const brand = brandNameForRow(row)
+  const model = modelNameForRow(row)
+
+  return (
+    <li>
+      <button
+        type="button"
+        className="flex w-full cursor-pointer select-none flex-wrap items-baseline gap-x-1.5 gap-y-0.5 px-3.5 py-2.5 text-left text-[15px] leading-snug outline-none transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 sm:px-4 sm:text-sm"
+        onClick={() => onSelect(finCatalogSelectionFromRow(row))}
+      >
+        <span className="font-semibold text-foreground">
+          {highlightQueryParts(brand, query)}
+        </span>
+        {model ? (
+          <span className="text-foreground/85">
+            {highlightQueryParts(model, query)}
+          </span>
+        ) : null}
+      </button>
+    </li>
+  )
+}
+
+function ProductThumb({
   src,
   alt,
   fallbackLetter,
   isLogo,
-  emphasized,
 }: {
   src: string | null | undefined
   alt: string
   fallbackLetter: string
   isLogo: boolean
-  emphasized?: boolean
 }) {
   const displaySrc = src?.trim() ? brandLogoDisplaySrc(src) : null
   return (
-    <div
-      className={cn(
-        "relative shrink-0 overflow-hidden rounded-xl border border-border/70 bg-muted/30",
-        emphasized
-          ? "h-[7.5rem] w-[7.5rem] sm:h-36 sm:w-36 lg:h-44 lg:w-44"
-          : "h-[7.5rem] w-[7.5rem] sm:h-32 sm:w-32 lg:h-36 lg:w-36",
-      )}
-    >
+    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-border/70 bg-muted/30 sm:h-11 sm:w-11 sm:rounded-md">
       {displaySrc ? (
         <Image
           src={displaySrc}
           alt={alt}
           fill
-          className={cn(isLogo ? "object-contain p-3 lg:p-4" : "object-cover")}
-          sizes="(max-width: 640px) 120px, (max-width: 1024px) 144px, 176px"
+          className={cn(isLogo ? "object-contain p-1.5" : "object-cover")}
+          sizes="44px"
           unoptimized={listingImageShouldBypassOptimization(displaySrc)}
         />
       ) : (
-        <div className="flex h-full w-full items-center justify-center bg-muted/50 text-2xl font-semibold text-cerulean/80 sm:text-3xl lg:text-4xl">
+        <div className="flex h-full w-full items-center justify-center bg-muted/50 text-sm font-semibold text-cerulean/80">
           {fallbackLetter.slice(0, 1).toUpperCase()}
         </div>
       )}
@@ -124,17 +213,17 @@ function ResultImage({
   )
 }
 
-function CatalogMatchRow({
+function ProductRow({
   row,
+  query,
   onSelect,
-  emphasized,
 }: {
   row: CatalogResultRow
+  query: string
   onSelect: (selection: FinCatalogSearchSelection) => void
-  emphasized?: boolean
 }) {
   const title = titleForRow(row)
-  const meta = metaLinesForRow(row)
+  const meta = productMetaLine(row)
   const thumb = thumbForRow(row)
   const brandLogo =
     row.kind === "brand" ? row.logoUrl?.trim() : row.brandLogoUrl?.trim()
@@ -144,40 +233,23 @@ function CatalogMatchRow({
     <li>
       <button
         type="button"
-        className={cn(
-          "flex w-full cursor-pointer select-none gap-4 px-4 py-4 text-left outline-none transition-colors sm:gap-6 sm:px-6 sm:py-6 lg:gap-8 lg:px-8 lg:py-7",
-          "hover:bg-muted/35 focus-visible:bg-muted/35",
-          emphasized && "bg-muted/15",
-        )}
+        className="flex w-full cursor-pointer select-none items-start gap-3 px-3.5 py-2.5 text-left outline-none transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 sm:items-center sm:px-4"
         onClick={() => onSelect(finCatalogSelectionFromRow(row))}
       >
-        <ResultImage
+        <ProductThumb
           src={thumb}
           alt={title}
           fallbackLetter={title}
           isLogo={isLogo}
-          emphasized={emphasized}
         />
-        <div className="min-w-0 flex-1 pt-0.5 lg:pt-1">
-          <p
-            className={cn(
-              "line-clamp-2 leading-snug text-foreground",
-              emphasized
-                ? "text-base font-semibold sm:text-lg lg:text-xl"
-                : "text-sm font-semibold sm:text-base lg:text-lg",
-            )}
-          >
-            {title}
+        <div className="min-w-0 flex-1 pt-0.5 sm:pt-0">
+          <p className="line-clamp-2 text-[15px] leading-snug text-foreground/90 sm:text-sm">
+            {highlightQueryParts(title, query)}
           </p>
-          {meta.length > 0 ? (
-            <dl className="mt-2 space-y-1 lg:mt-3 lg:space-y-1.5">
-              {meta.map((line) => (
-                <div key={line.label} className="flex flex-wrap gap-x-1.5 text-xs sm:text-sm lg:text-base">
-                  <dt className="shrink-0 text-muted-foreground">{line.label}:</dt>
-                  <dd className="min-w-0 text-foreground/90">{line.value}</dd>
-                </div>
-              ))}
-            </dl>
+          {meta ? (
+            <p className="mt-0.5 line-clamp-1 text-xs leading-snug text-muted-foreground">
+              {meta}
+            </p>
           ) : null}
         </div>
       </button>
@@ -185,19 +257,47 @@ function CatalogMatchRow({
   )
 }
 
-function ResultsSection({
-  title,
-  children,
+function DropdownResults({
+  rows,
+  query,
+  onSelect,
 }: {
-  title: string
-  children: React.ReactNode
+  rows: CatalogResultRow[]
+  query: string
+  onSelect: (selection: FinCatalogSearchSelection) => void
 }) {
+  const { suggestions, products } = partitionDropdownRows(rows)
+  if (suggestions.length === 0 && products.length === 0) return null
+
   return (
-    <div className="border-b border-border/60 last:border-b-0 md:border-b-0">
-      <h2 className="border-b border-border/40 bg-muted/20 px-4 py-2.5 text-xs font-semibold tracking-wide text-foreground sm:px-6 sm:text-sm md:bg-transparent md:px-8 md:py-3 md:text-base lg:px-10">
-        {title}
-      </h2>
-      <ul className="md:divide-y md:divide-border/50">{children}</ul>
+    <div className="max-h-[min(52dvh,440px)] overflow-y-auto overscroll-contain sm:max-h-[min(65dvh,560px)] [-ms-overflow-style:none] [scrollbar-width:thin]">
+      {suggestions.length > 0 ? (
+        <div className={cn(products.length > 0 && "border-b border-border/50")}>
+          <p className="px-3.5 pt-2.5 pb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/80 sm:px-4">
+            Suggestions
+          </p>
+          <ul>
+            {suggestions.map((row) => (
+              <SuggestionRow key={rowKey(row)} row={row} query={query} onSelect={onSelect} />
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {products.length > 0 ? (
+        <div>
+          {suggestions.length > 0 ? (
+            <p className="px-3.5 pt-2.5 pb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/80 sm:px-4">
+              Catalog
+            </p>
+          ) : null}
+          <ul className="divide-y divide-border/40">
+            {products.map((row) => (
+              <ProductRow key={rowKey(row)} row={row} query={query} onSelect={onSelect} />
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -209,9 +309,31 @@ export function SellFinsCatalogSearch({ onSelect, onSkip, onExit, className }: S
   const [results, setResults] = React.useState<FinCatalogSearchResult | null>(null)
   const [error, setError] = React.useState<string | null>(null)
   const [hasSearched, setHasSearched] = React.useState(false)
+  const [focusMode, setFocusMode] = React.useState(false)
   const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
   const searchEpochRef = React.useRef(0)
   const inputRef = React.useRef<HTMLInputElement>(null)
+  const focusStageRef = React.useRef<HTMLDivElement>(null)
+
+  const dismissSearchFocus = React.useCallback(() => {
+    const active = document.activeElement
+    if (active instanceof HTMLElement && focusStageRef.current?.contains(active)) {
+      active.blur()
+    }
+    inputRef.current?.blur()
+    setFocusMode(false)
+  }, [])
+
+  React.useEffect(() => {
+    if (!focusMode) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return
+      event.preventDefault()
+      dismissSearchFocus()
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [dismissSearchFocus, focusMode])
 
   const runSearch = React.useCallback(async (q: string, epoch: number) => {
     setLoading(true)
@@ -298,22 +420,35 @@ export function SellFinsCatalogSearch({ onSelect, onSkip, onExit, className }: S
   }
 
   const matchTier = results?.meta.matchTier ?? "none"
-  const exactPartition = results ? partitionResults(results.results) : { topPick: null, moreMatches: [] }
-  const similarPartition = results ? partitionResults(results.similarResults) : { topPick: null, moreMatches: [] }
-
-  const hasExactResults = exactPartition.topPick != null
-  const hasSimilarResults = similarPartition.topPick != null
-  const hasResults = hasExactResults || hasSimilarResults
+  const rankedRows =
+    matchTier === "similar"
+      ? (results?.similarResults ?? [])
+      : (results?.results ?? [])
+  const hasResults = rankedRows.length > 0
 
   const showResultsPanel = hasSearched && query.trim().length >= 1
   const showNoMatches =
     showResultsPanel && searchSettled && !loading && !hasResults && !error
-  const showSimilarFallback = matchTier === "similar" && hasSimilarResults
+  const showSimilarFallback = matchTier === "similar" && hasResults
+  const trimmedQuery = query.trim()
 
   return (
-    <main className={cn("flex-1 w-full bg-slate-100 pt-8 pb-16 md:pb-24", className)}>
-      <div className="container relative mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="mb-8 border-t border-neutral-200 pt-4">
+    <main
+      className={cn(
+        "relative flex-1 w-full bg-slate-100 pb-12 pt-5 sm:pt-8 sm:pb-16 md:pb-24",
+        className,
+      )}
+    >
+      <SellFocusScrim open={focusMode} onDismiss={dismissSearchFocus} />
+
+      <div className="container relative mx-auto max-w-6xl px-3 sm:px-6">
+        <div
+          className={cn(
+            "mb-5 border-t border-neutral-200 pt-3 transition-opacity duration-200 motion-reduce:transition-none sm:mb-8 sm:pt-4",
+            focusMode && "pointer-events-none opacity-35",
+          )}
+          aria-hidden={focusMode || undefined}
+        >
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <Breadcrumb>
               <BreadcrumbList className="gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
@@ -342,167 +477,210 @@ export function SellFinsCatalogSearch({ onSelect, onSkip, onExit, className }: S
           </div>
         </div>
 
-        <div className="mx-auto max-w-2xl space-y-8">
-          <header className="space-y-2 text-center sm:text-left">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-              Find a match
-            </h1>
-            <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-              Search our fin catalog by brand, model, setup, or system — then pick the closest
-              match to prefill your listing.
-            </p>
-          </header>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <SiteSearchShell
+        <div
+          ref={focusStageRef}
+          className={cn(focusMode && "relative z-50")}
+          onFocusCapture={() => setFocusMode(true)}
+          onBlurCapture={(event) => {
+            const next = event.relatedTarget
+            if (next instanceof Node && focusStageRef.current?.contains(next)) return
+            setFocusMode(false)
+          }}
+        >
+          <div className="mx-auto w-full max-w-2xl space-y-5 sm:space-y-8">
+            <header
               className={cn(
-                "pl-3",
-                "focus-within:border-border focus-within:ring-1 focus-within:ring-foreground/5 focus-within:shadow-sm",
+                "space-y-1.5 text-left sm:space-y-2",
+                focusMode && "max-sm:hidden",
               )}
-              actionSlot={
-                <SiteSearchFormSubmitButton type="submit" disabled={loading && query.trim().length >= 1}>
-                  Search
-                </SiteSearchFormSubmitButton>
-              }
             >
-              <Search
-                className="pointer-events-none absolute left-3 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-muted-foreground/60"
-                aria-hidden
-              />
-              <input
-                ref={inputRef}
-                type="text"
-                inputMode="search"
-                enterKeyHint="search"
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value)
-                  queueSearch(e.target.value)
-                }}
-                placeholder="Enter brand, model, fin setup, system, etc."
+              <h1 className="text-[1.65rem] font-semibold tracking-tight text-foreground sm:text-3xl">
+                Find a match
+              </h1>
+              <p
                 className={cn(
-                  siteSearchInputClassName(),
-                  "pl-10 outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0",
-                  query.trim().length > 0 ? "pr-10" : "pr-2",
+                  "text-sm leading-relaxed text-muted-foreground transition-opacity duration-200 motion-reduce:transition-none sm:text-base",
+                  focusMode && "opacity-40",
                 )}
-                autoComplete="off"
-                aria-label="Search fin catalog"
-              />
-              {query.trim().length > 0 ? (
-                <button
-                  type="button"
-                  aria-label="Clear search"
-                  className="absolute right-1 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-muted/80 hover:text-foreground"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => {
-                    setQuery("")
-                    queueSearch("")
-                    inputRef.current?.focus()
-                  }}
+              >
+                Search our fin catalog by brand, model, setup, or system — then pick the closest
+                match to prefill your listing.
+              </p>
+            </header>
+
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="w-full min-w-0">
+                <label
+                  htmlFor="sell-fins-catalog-search-input"
+                  className="mb-1.5 block text-xs font-medium text-muted-foreground"
                 >
-                  <X className="h-4 w-4" aria-hidden />
-                </button>
+                  Brand, model, or system
+                </label>
+                <SiteSearchShell
+                  className={cn(
+                    "relative z-[1] h-12 min-h-12 gap-1.5 pl-2.5 pr-1 sm:h-auto sm:min-h-0 sm:gap-1 sm:pl-3 sm:pr-1.5",
+                    "focus-within:border-cerulean/50 focus-within:ring-2 focus-within:ring-cerulean/25 focus-within:shadow-sm",
+                    focusMode && "border-cerulean/45 bg-background shadow-md ring-2 ring-cerulean/20",
+                    showResultsPanel &&
+                      "rounded-t-2xl rounded-b-none border-b-transparent shadow-none ring-0 focus-within:shadow-none focus-within:ring-0 sm:rounded-t-full",
+                    showResultsPanel &&
+                      focusMode &&
+                      "border-cerulean/45 ring-2 ring-cerulean/20",
+                  )}
+                  actionSlot={
+                    <SiteSearchFormSubmitButton
+                      type="submit"
+                      compact
+                      disabled={loading && trimmedQuery.length >= 1}
+                      className="h-9 min-h-9 px-3.5 text-[13px] sm:h-10 sm:min-h-10 sm:px-5 sm:text-[14px]"
+                    >
+                      Search
+                    </SiteSearchFormSubmitButton>
+                  }
+                >
+                  <Search
+                    className="pointer-events-none absolute left-2.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground/60 sm:left-3 sm:h-5 sm:w-5"
+                    aria-hidden
+                  />
+                  <input
+                    id="sell-fins-catalog-search-input"
+                    ref={inputRef}
+                    type="text"
+                    inputMode="search"
+                    enterKeyHint="search"
+                    value={query}
+                    onChange={(e) => {
+                      setQuery(e.target.value)
+                      queueSearch(e.target.value)
+                    }}
+                    placeholder="Brand, model, or system"
+                    className={cn(
+                      siteSearchInputClassName({ compact: true }),
+                      "h-full min-h-0 pl-9 text-[16px] leading-none outline-none focus:outline-none focus-visible:outline-none focus-visible:ring-0 sm:pl-10 sm:text-[15px]",
+                      trimmedQuery.length > 0 ? "pr-9" : "pr-1.5",
+                    )}
+                    autoComplete="off"
+                    aria-label="Brand, model, or system"
+                  />
+                  {trimmedQuery.length > 0 ? (
+                    <button
+                      type="button"
+                      aria-label="Clear search"
+                      className="absolute right-0.5 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-muted/80 hover:text-foreground"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setQuery("")
+                        queueSearch("")
+                        inputRef.current?.focus()
+                      }}
+                    >
+                      <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden />
+                    </button>
+                  ) : null}
+                </SiteSearchShell>
+
+                {showResultsPanel ? (
+                  <section
+                    className={cn(
+                      "-mt-px w-full min-w-0 overflow-hidden rounded-b-2xl border border-border bg-card text-card-foreground shadow-md sm:rounded-b-xl",
+                      "rounded-t-none border-t-border/60",
+                      focusMode && "border-cerulean/35",
+                    )}
+                    aria-live="polite"
+                    onMouseDown={(event) => {
+                      // Keep focus inside the stage when choosing a result so the scrim
+                      // does not flicker off between mousedown and click.
+                      event.preventDefault()
+                    }}
+                  >
+                    {loading && !hasResults ? (
+                      <div className="flex items-center justify-center gap-2 px-4 py-8 text-sm text-muted-foreground sm:py-10">
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                        Searching fin catalog…
+                      </div>
+                    ) : null}
+
+                    {error ? (
+                      <div className="px-3.5 py-4 text-sm text-destructive sm:px-5 sm:py-5">{error}</div>
+                    ) : null}
+
+                    {showSimilarFallback ? (
+                      <div className="border-b border-border/40 px-3.5 py-2.5 text-sm sm:px-4 sm:py-3">
+                        <p className="text-muted-foreground">
+                          No exact match for &ldquo;{trimmedQuery}&rdquo;. Closest catalog results:
+                        </p>
+                      </div>
+                    ) : null}
+
+                    {showNoMatches ? (
+                      <div className="space-y-3 px-3.5 py-5 text-sm sm:px-4">
+                        <p className="text-muted-foreground">
+                          No fin catalog matches for that search. You can still list your fins
+                          manually — brand and model don&apos;t have to be in our directory.
+                        </p>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="w-full min-h-touch md:w-auto"
+                          onClick={onSkip}
+                        >
+                          Continue without a catalog match
+                        </Button>
+                      </div>
+                    ) : null}
+
+                    {hasResults ? (
+                      <>
+                        <DropdownResults
+                          rows={rankedRows}
+                          query={trimmedQuery}
+                          onSelect={onSelect}
+                        />
+                        {showSimilarFallback ? (
+                          <div className="border-t border-border/40 px-3.5 py-3 sm:px-4">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              className="w-full min-h-touch md:w-auto"
+                              onClick={onSkip}
+                            >
+                              Continue without a catalog match
+                            </Button>
+                          </div>
+                        ) : null}
+                      </>
+                    ) : null}
+                  </section>
+                ) : null}
+              </div>
+
+              {!showResultsPanel ? (
+                <p
+                  className={cn(
+                    "text-xs text-muted-foreground/60 transition-opacity duration-200 motion-reduce:transition-none",
+                    focusMode && "opacity-40",
+                  )}
+                >
+                  Only fin brands and models from our catalog are shown (brands tagged as fin
+                  manufacturers).
+                </p>
               ) : null}
-            </SiteSearchShell>
-            <p className="text-xs text-muted-foreground/60">
-              Only fin brands and models from our catalog are shown (brands tagged as fin
-              manufacturers).
-            </p>
-          </form>
+            </form>
+          </div>
         </div>
 
-        {showResultsPanel ? (
-          <section
-            className={cn(
-              "mt-8 w-full",
-              "rounded-xl border border-border bg-card text-card-foreground shadow-sm",
-              "md:mt-10 md:rounded-none md:border-0 md:border-t md:bg-transparent md:pt-2 md:shadow-none",
-            )}
-            aria-live="polite"
+        <div
+          className={cn(
+            "relative z-50 mx-auto mt-5 max-w-2xl transition-opacity duration-200 motion-reduce:transition-none sm:mt-8",
+            focusMode && "opacity-70",
+          )}
+        >
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-auto px-1 py-2 text-sm text-muted-foreground sm:px-4"
+            onClick={onSkip}
           >
-            {loading && !hasResults ? (
-              <div className="flex items-center justify-center gap-2 px-4 py-12 text-sm text-muted-foreground md:py-16 md:text-base">
-                <Loader2 className="h-4 w-4 animate-spin md:h-5 md:w-5" aria-hidden />
-                Searching fin catalog…
-              </div>
-            ) : null}
-
-            {error ? (
-              <div className="px-4 py-6 text-sm text-destructive sm:px-6 md:px-8 md:text-base">{error}</div>
-            ) : null}
-
-            {showSimilarFallback ? (
-              <div className="mx-auto max-w-2xl border-b border-border/40 px-4 py-4 text-sm sm:px-6 md:px-8 md:text-base">
-                <p className="text-muted-foreground">
-                  No exact match for &ldquo;{query.trim()}&rdquo;. Here are the closest fin catalog
-                  results — pick one to prefill your listing, or continue manually.
-                </p>
-              </div>
-            ) : null}
-
-            {showNoMatches ? (
-              <div className="mx-auto max-w-2xl space-y-4 px-4 py-6 text-sm sm:px-6 md:py-10 md:text-base">
-                <p className="text-muted-foreground">
-                  No fin catalog matches for that search. You can still list your fins manually —
-                  brand and model don&apos;t have to be in our directory.
-                </p>
-                <Button type="button" variant="secondary" className="w-full min-h-touch md:w-auto" onClick={onSkip}>
-                  Continue without a catalog match
-                </Button>
-              </div>
-            ) : null}
-
-            {hasExactResults ? (
-              <div className="max-h-[min(65dvh,560px)] overflow-y-auto overscroll-contain md:max-h-none md:overflow-visible">
-                {exactPartition.topPick ? (
-                  <ResultsSection title="Top pick from the fin catalog">
-                    <CatalogMatchRow row={exactPartition.topPick} onSelect={onSelect} emphasized />
-                  </ResultsSection>
-                ) : null}
-
-                {exactPartition.moreMatches.length > 0 ? (
-                  <ResultsSection title="More catalog matches">
-                    {exactPartition.moreMatches.map((row) => (
-                      <CatalogMatchRow key={rowKey(row)} row={row} onSelect={onSelect} />
-                    ))}
-                  </ResultsSection>
-                ) : null}
-              </div>
-            ) : null}
-
-            {showSimilarFallback ? (
-              <div className="max-h-[min(65dvh,560px)] overflow-y-auto overscroll-contain md:max-h-none md:overflow-visible">
-                {similarPartition.topPick ? (
-                  <ResultsSection title="Closest catalog match">
-                    <CatalogMatchRow row={similarPartition.topPick} onSelect={onSelect} emphasized />
-                  </ResultsSection>
-                ) : null}
-
-                {similarPartition.moreMatches.length > 0 ? (
-                  <ResultsSection title="Similar catalog results">
-                    {similarPartition.moreMatches.map((row) => (
-                      <CatalogMatchRow key={rowKey(row)} row={row} onSelect={onSelect} />
-                    ))}
-                  </ResultsSection>
-                ) : null}
-
-                <div className="border-t border-border/40 px-4 py-4 sm:px-6 md:px-8">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="w-full min-h-touch md:w-auto"
-                    onClick={onSkip}
-                  >
-                    Continue without a catalog match
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-          </section>
-        ) : null}
-
-        <div className="mx-auto mt-8 max-w-2xl">
-          <Button type="button" variant="ghost" className="text-muted-foreground" onClick={onSkip}>
             List manually without searching
           </Button>
         </div>

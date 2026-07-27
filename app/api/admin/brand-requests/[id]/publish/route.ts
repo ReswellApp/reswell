@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
+import { syncFinCatalogBrandToIndex } from "@/lib/elasticsearch/fin-catalog-index"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import { isValidBrandSlug, slugifyBrandName } from "@/lib/brands/slug"
 import { BRANDS_BASE } from "@/lib/brands/routes"
@@ -118,6 +119,7 @@ export async function POST(request: NextRequest, ctx: Ctx) {
   revalidatePath(`${BRANDS_BASE}/${slug}`)
   if (inserted?.id) {
     void syncBrandToIndex(supabase, inserted.id)
+    void syncFinCatalogBrandToIndex(supabase, inserted.id)
   }
   return NextResponse.json({ slug, ok: true })
 }

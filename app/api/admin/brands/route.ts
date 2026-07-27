@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { revalidateNavSearchSuggest } from "@/lib/cache/revalidate-nav-search-suggest"
 import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
+import { syncFinCatalogBrandToIndex } from "@/lib/elasticsearch/fin-catalog-index"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import { listBrands } from "@/lib/brands/server"
 import { isValidBrandSlug } from "@/lib/brands/slug"
@@ -193,5 +194,6 @@ export async function POST(request: Request) {
   revalidatePath(`${BRANDS_BASE}/${data.slug}`)
   revalidateNavSearchSuggest()
   void syncBrandToIndex(supabase, data.id)
+  void syncFinCatalogBrandToIndex(supabase, data.id)
   return NextResponse.json({ slug: data.slug, id: data.id })
 }

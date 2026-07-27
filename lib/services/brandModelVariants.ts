@@ -17,6 +17,10 @@ import {
   type FinBoxesType,
 } from "@/lib/db/brand-model-variants"
 import type { BrandModelVariantCondition, BrandModelVariantMaterial, FinCatalogVariantSize } from "@/lib/validations/brand-model-variants"
+import {
+  deleteFinCatalogDocument,
+  syncFinCatalogVariantToIndex,
+} from "@/lib/elasticsearch/fin-catalog-index"
 
 export type { BrandModelVariantRow, FinBoxType, FinBoxesType, BrandModelVariantCondition, BrandModelVariantMaterial }
 
@@ -124,6 +128,7 @@ export async function createBrandModelVariantService(
     const status = result.code === "23505" ? 409 : result.code === "23503" ? 404 : 500
     return { ok: false, error: result.error, status }
   }
+  void syncFinCatalogVariantToIndex(supabase, result.row.id)
   return { ok: true, row: result.row }
 }
 
@@ -156,6 +161,7 @@ export async function updateBrandModelVariantService(
     const status = result.code === "23505" ? 409 : 500
     return { ok: false, error: result.error, status }
   }
+  void syncFinCatalogVariantToIndex(supabase, id)
   return { ok: true }
 }
 
@@ -168,5 +174,6 @@ export async function deleteBrandModelVariantService(
     const isNotFound = /not found/i.test(result.error)
     return { ok: false, error: result.error, status: isNotFound ? 404 : 500 }
   }
+  void deleteFinCatalogDocument("variant", id)
   return { ok: true }
 }

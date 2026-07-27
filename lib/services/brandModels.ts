@@ -8,6 +8,10 @@ import {
   type BrandModelAdminRow,
   type BrandModelRow,
 } from "@/lib/db/brand-models"
+import {
+  deleteFinCatalogDocument,
+  syncFinCatalogModelToIndex,
+} from "@/lib/elasticsearch/fin-catalog-index"
 
 export type { BrandModelAdminRow, BrandModelRow }
 
@@ -48,6 +52,7 @@ export async function createBrandModelService(
     const status = result.code === "23505" ? 409 : result.code === "23503" ? 404 : 500
     return { ok: false, error: result.error, status }
   }
+  void syncFinCatalogModelToIndex(supabase, result.row.id)
   return { ok: true, row: result.row }
 }
 
@@ -78,6 +83,7 @@ export async function updateBrandModelService(
     const status = result.code === "23505" ? 409 : result.code === "23503" ? 404 : 500
     return { ok: false, error: result.error, status }
   }
+  void syncFinCatalogModelToIndex(supabase, id)
   return { ok: true }
 }
 
@@ -90,5 +96,6 @@ export async function deleteBrandModelService(
     const isNotFound = /not found/i.test(result.error)
     return { ok: false, error: result.error, status: isNotFound ? 404 : 500 }
   }
+  void deleteFinCatalogDocument("model", id)
   return { ok: true }
 }
