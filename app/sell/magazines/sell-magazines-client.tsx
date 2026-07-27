@@ -370,7 +370,7 @@ export default function SellMagazinesFlow({
           {editId ? "Edit magazine listing" : "List a magazine"}
         </h1>
         <p className="text-sm text-muted-foreground">
-          List vintage and collectible surf magazines on the marketplace. Reswell shipping only — no local pickup.
+          Start with cover photos, then details. Reswell shipping only — no local pickup.
         </p>
       </div>
 

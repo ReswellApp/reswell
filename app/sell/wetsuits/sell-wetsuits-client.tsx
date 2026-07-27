@@ -744,10 +744,31 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
             <form onSubmit={handleSubmit} className="space-y-10 lg:space-y-12" aria-busy={submitting}>
               <SellFormSection
                 sectionId="sell-wetsuits-section-photos-title"
-                title="Title & photos"
-                description="Write a title in your own words. It's what buyers see first. Add clear photos of your wetsuit."
+                title="Photos & title"
+                description="Start with clear photos of your wetsuit, then add a short title. Buyers see these first."
+                complete={sellSectionCompletion["sell-wetsuits-section-photos-title"] === true}
               >
                 <div className="space-y-8">
+                  <SellListingPhotoGrid
+                    images={images}
+                    maxPhotos={WETSUIT_LISTING_MAX_PHOTOS}
+                    fileInputId={fileInputId}
+                    photosFileDragActive={photosFileDragActive}
+                    onImageInputChange={handleImageInputChange}
+                    onDragEnter={handlePhotosFileDragEnter}
+                    onDragLeave={handlePhotosFileDragLeave}
+                    onDragOver={handlePhotosFileDragOver}
+                    onDrop={handlePhotosFileDrop}
+                    onDragEnd={handlePhotosDragEnd}
+                    onRemove={handlePhotoTileRemove}
+                    onRetry={handlePhotoTileRetry}
+                    onRotate180={handlePhotoTileRotate}
+                    photoDragSensors={photoDragSensors}
+                    photoDescription="Add clear photos. Drag to reorder — the first image is your main photo on browse tiles."
+                  />
+
+                  <Separator className="bg-border" />
+
                   <div className="space-y-2">
                     <div className="flex items-end justify-between gap-2">
                       <Label htmlFor="wetsuit-title">Title *</Label>
@@ -774,26 +795,6 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
                       required
                     />
                   </div>
-
-                  <Separator className="bg-border" />
-
-                  <SellListingPhotoGrid
-                    images={images}
-                    maxPhotos={WETSUIT_LISTING_MAX_PHOTOS}
-                    fileInputId={fileInputId}
-                    photosFileDragActive={photosFileDragActive}
-                    onImageInputChange={handleImageInputChange}
-                    onDragEnter={handlePhotosFileDragEnter}
-                    onDragLeave={handlePhotosFileDragLeave}
-                    onDragOver={handlePhotosFileDragOver}
-                    onDrop={handlePhotosFileDrop}
-                    onDragEnd={handlePhotosDragEnd}
-                    onRemove={handlePhotoTileRemove}
-                    onRetry={handlePhotoTileRetry}
-                    onRotate180={handlePhotoTileRotate}
-                    photoDragSensors={photoDragSensors}
-                    photoDescription="Add clear photos. Drag to reorder — the first image is your main photo on browse tiles."
-                  />
                 </div>
               </SellFormSection>
 

@@ -1120,10 +1120,30 @@ export default function SellFinsFlow({
             >
               <SellFormSection
                 sectionId="sell-fins-section-photos-title"
-                title="Title & photos"
-                description="Write a title in your own words. It's what buyers see first. Add clear photos of your fins."
+                title="Photos & title"
+                description="Start with clear photos of your fins, then add a short title. Buyers see these first."
+                complete={sellSectionCompletion["sell-fins-section-photos-title"] === true}
               >
                 <div className="space-y-8">
+                  <SellListingPhotoGrid
+                    images={images}
+                    maxPhotos={FIN_LISTING_MAX_PHOTOS}
+                    fileInputId={fileInputId}
+                    photosFileDragActive={photosFileDragActive}
+                    onImageInputChange={handleImageInputChange}
+                    onDragEnter={handlePhotosFileDragEnter}
+                    onDragLeave={handlePhotosFileDragLeave}
+                    onDragOver={handlePhotosFileDragOver}
+                    onDrop={handlePhotosFileDrop}
+                    onDragEnd={handlePhotosDragEnd}
+                    onRemove={handlePhotoTileRemove}
+                    onRetry={handlePhotoTileRetry}
+                    onRotate180={handlePhotoTileRotate}
+                    photoDragSensors={photoDragSensors}
+                  />
+
+                  <Separator className="bg-border" />
+
                   <div className="space-y-2">
                     <div className="flex items-end justify-between gap-2">
                       <Label htmlFor="fin-title">Title *</Label>
@@ -1150,25 +1170,6 @@ export default function SellFinsFlow({
                       required
                     />
                   </div>
-
-                  <Separator className="bg-border" />
-
-                  <SellListingPhotoGrid
-                    images={images}
-                    maxPhotos={FIN_LISTING_MAX_PHOTOS}
-                    fileInputId={fileInputId}
-                    photosFileDragActive={photosFileDragActive}
-                    onImageInputChange={handleImageInputChange}
-                    onDragEnter={handlePhotosFileDragEnter}
-                    onDragLeave={handlePhotosFileDragLeave}
-                    onDragOver={handlePhotosFileDragOver}
-                    onDrop={handlePhotosFileDrop}
-                    onDragEnd={handlePhotosDragEnd}
-                    onRemove={handlePhotoTileRemove}
-                    onRetry={handlePhotoTileRetry}
-                    onRotate180={handlePhotoTileRotate}
-                    photoDragSensors={photoDragSensors}
-                  />
                 </div>
               </SellFormSection>
 

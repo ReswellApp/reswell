@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { LocationPicker } from "@/components/location-picker"
 import { SellFormSection } from "@/components/features/sell/sell-form-section"
+import { SellListingPhotoEmptyDropzone } from "@/components/features/sell/sell-listing-photo-empty-dropzone"
 import { SellShippingCostModeRadios } from "@/components/features/sell/sell-shipping-cost-mode-radios"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
@@ -858,46 +859,39 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
             <form onSubmit={handleSubmit} className="space-y-10 lg:space-y-12" aria-busy={submitting}>
               <SellFormSection
                 sectionId="sell-leashes-section-photos-title"
-                title="Title & photos"
-                description="Write a title in your own words. It's what buyers see first. Add clear photos of your leash."
+                title="Photos & title"
+                description="Start with clear photos, then add a short title. Buyers see these first."
+                complete={sellSectionCompletion["sell-leashes-section-photos-title"] === true}
               >
                 <div className="space-y-8">
-                  <div className="space-y-2">
-                    <div className="flex items-end justify-between gap-2">
-                      <Label htmlFor="leash-title">Title *</Label>
-                      <span
-                        className={cn(
-                          "text-xs tabular-nums",
-                          form.title.length > LEASH_LISTING_TITLE_MAX_LENGTH
-                            ? "font-medium text-destructive"
-                            : "text-muted-foreground",
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 space-y-1">
+                        <h3 className="text-sm font-semibold text-foreground">Photos</h3>
+                        <p className="text-xs text-muted-foreground sm:text-sm">
+                          Add clear photos. The first image is your main photo — tap the star on any
+                          other photo to make it the cover.
+                        </p>
+                      </div>
+                      <div className="shrink-0 pt-0.5" aria-live="polite">
+                        {photos.length >= 1 ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-listingHeart/10 px-2.5 py-1 text-xs font-medium text-listingHeart ring-1 ring-inset ring-listingHeart/25">
+                            Ready
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-muted-foreground ring-1 ring-inset ring-slate-200/80">
+                            Add at least 1
+                          </span>
                         )}
-                        aria-live="polite"
-                      >
-                        {form.title.length}/{LEASH_LISTING_TITLE_MAX_LENGTH}
-                      </span>
+                      </div>
                     </div>
-                    <Input
-                      id="leash-title"
-                      className="h-11 border-foreground/20 bg-card shadow-sm placeholder:text-muted-foreground"
-                      placeholder="e.g. Rip Curl Flashbomb 3/2 Steamer — Medium"
-                      value={form.title}
-                      maxLength={LEASH_LISTING_TITLE_MAX_LENGTH}
-                      onChange={(e) => setField("title", e.target.value)}
-                      autoComplete="off"
-                      required
-                    />
-                  </div>
-
-                  <Separator className="bg-border" />
-
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-semibold text-foreground">Photos</h3>
-                    <p className="text-xs text-muted-foreground">
-                      Add clear photos. The first image is your main photo — tap the star on any
-                      other photo to make it the cover.
-                    </p>
                     <Label className="sr-only">Listing photos</Label>
+                    {photos.length === 0 ? (
+                      <SellListingPhotoEmptyDropzone
+                        fileInputId={fileInputId}
+                        onFilesSelected={addFiles}
+                      />
+                    ) : (
                     <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
                       {photos.map((photo, index) => (
                         <div
@@ -985,6 +979,7 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
                         </div>
                       ) : null}
                     </div>
+                    )}
                     <p className="space-y-1 text-xs text-muted-foreground">
                       <span className="block">Thank you for listing on Reswell.</span>
                       <span className="inline-flex flex-wrap items-center gap-1">
@@ -997,6 +992,36 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
                       </span>
                     </p>
                   </div>
+
+                  <Separator className="bg-border" />
+
+                  <div className="space-y-2">
+                    <div className="flex items-end justify-between gap-2">
+                      <Label htmlFor="leash-title">Title *</Label>
+                      <span
+                        className={cn(
+                          "text-xs tabular-nums",
+                          form.title.length > LEASH_LISTING_TITLE_MAX_LENGTH
+                            ? "font-medium text-destructive"
+                            : "text-muted-foreground",
+                        )}
+                        aria-live="polite"
+                      >
+                        {form.title.length}/{LEASH_LISTING_TITLE_MAX_LENGTH}
+                      </span>
+                    </div>
+                    <Input
+                      id="leash-title"
+                      className="h-11 border-foreground/20 bg-card shadow-sm placeholder:text-muted-foreground"
+                      placeholder="e.g. Rip Curl Flashbomb 3/2 Steamer — Medium"
+                      value={form.title}
+                      maxLength={LEASH_LISTING_TITLE_MAX_LENGTH}
+                      onChange={(e) => setField("title", e.target.value)}
+                      autoComplete="off"
+                      required
+                    />
+                  </div>
+
                 </div>
               </SellFormSection>
 

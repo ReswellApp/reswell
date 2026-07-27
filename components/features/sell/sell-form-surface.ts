@@ -27,3 +27,7 @@ export const SELL_CONTROL_CLASS =
 /** Textareas on sell forms. */
 export const SELL_TEXTAREA_CLASS =
   "min-h-[7rem] border-foreground/20 bg-card shadow-sm placeholder:text-muted-foreground"
+
+/** Complete / ready pill — uses brand `listingHeart`, not generic green. */
+export const SELL_COMPLETE_BADGE_CLASS =
+  "inline-flex items-center gap-1.5 rounded-full bg-listingHeart/10 px-2.5 py-1 text-xs font-medium text-listingHeart ring-1 ring-inset ring-listingHeart/25"

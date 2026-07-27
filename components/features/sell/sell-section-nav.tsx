@@ -20,7 +20,7 @@ function scrollToSection(id: string) {
 export const SELL_FINS_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[] = [
   {
     id: "sell-fins-section-photos-title",
-    label: "Title & photos",
+    label: "Photos & title",
     shortLabel: "Start",
   },
   {
@@ -39,7 +39,7 @@ export const SELL_FINS_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[] = [
 export const SELL_WETSUITS_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[] = [
   {
     id: "sell-wetsuits-section-photos-title",
-    label: "Title & photos",
+    label: "Photos & title",
     shortLabel: "Start",
   },
   {
@@ -65,7 +65,7 @@ export function buildSellSectionNavItems(
   detailsLabel: string,
 ): readonly SellSectionNavItem[] {
   return [
-    { id: `sell-${prefix}-section-photos-title`, label: "Title & photos", shortLabel: "Start" },
+    { id: `sell-${prefix}-section-photos-title`, label: "Photos & title", shortLabel: "Start" },
     { id: `sell-${prefix}-section-details`, label: detailsLabel, shortLabel: "Details" },
     { id: `sell-${prefix}-section-delivery`, label: "Pickup & shipping", shortLabel: "Delivery" },
     { id: `sell-${prefix}-section-publish`, label: "Price & publish", shortLabel: "Publish" },
@@ -75,7 +75,7 @@ export function buildSellSectionNavItems(
 export const SELL_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[] = [
   {
     id: "sell-section-photos-title",
-    label: "Title & photos",
+    label: "Photos & title",
     shortLabel: "Start",
   },
   {

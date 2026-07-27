@@ -4,12 +4,12 @@ export function sellFunnelStepLabel(stepId: string): string {
   if (!trimmed) return "(unknown step)"
 
   const known: Record<string, string> = {
-    "sell-section-photos-title": "Title & photos",
+    "sell-section-photos-title": "Photos & title",
     "sell-section-board": "Board & description",
     "sell-section-delivery": "Pickup & shipping",
     "sell-section-reswell-package": "Shipping size",
     "sell-section-publish": "Price & publish",
-    "sell-fins-section-photos-title": "Title & photos",
+    "sell-fins-section-photos-title": "Photos & title",
     "sell-fins-section-details": "Fin details",
     "sell-fins-section-delivery": "Shipping",
     "sell-fins-section-publish": "Price & publish",
@@ -22,7 +22,7 @@ export function sellFunnelStepLabel(stepId: string): string {
     const [, product, section] = peerMatch
     const sectionLabel =
       section === "photos-title"
-        ? "Title & photos"
+        ? "Photos & title"
         : section === "details"
           ? "Details"
           : section === "delivery"

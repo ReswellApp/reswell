@@ -21,11 +21,12 @@ import {
   useSortable,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { Heart, RefreshCw, RotateCw, Upload, X } from "lucide-react"
+import { CheckCircle2, Heart, RefreshCw, RotateCw, Upload, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
+import { SELL_COMPLETE_BADGE_CLASS } from "@/components/features/sell/sell-form-surface"
 import { cn } from "@/lib/utils"
 import { sellListingThumbLoadedSrcByClientId } from "@/components/features/sell/hooks/use-listing-photo-upload"
 
@@ -46,6 +47,8 @@ export type SellListingPhotoGridProps = {
   /** When omitted, grid creates its own dnd sensors (same as surfboard sell flow). */
   photoDragSensors?: ReturnType<typeof useSensors>
   photoDescription?: string
+  /** Minimum photos for the “ready” state. Defaults to 1. */
+  minPhotos?: number
 }
 
 const SellListingPhotoSortableTile = React.memo(function SellListingPhotoSortableTile({
@@ -277,6 +280,73 @@ function SellListingPhotoTile({
   )
 }
 
+function SellListingPhotoAddTile({
+  fileInputId,
+  onImageInputChange,
+  compact,
+}: {
+  fileInputId: string
+  onImageInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  compact?: boolean
+}) {
+  if (compact) {
+    return (
+      <div className="relative aspect-square overflow-hidden rounded-lg border-2 border-dashed border-slate-400/80 bg-slate-50/60 transition-colors hover:border-primary/50 hover:bg-primary/[0.03]">
+        <div
+          className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-2"
+          aria-hidden
+        >
+          <Upload className="h-6 w-6 text-muted-foreground" />
+          <span className="mt-1 text-xs font-medium text-foreground/80">Add</span>
+        </div>
+        <input
+          id={fileInputId}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={onImageInputChange}
+          aria-label="Add listing photos"
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0 touch-manipulation"
+          onPointerDown={(e) => e.stopPropagation()}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className={cn(
+        "relative flex min-h-[13.5rem] w-full flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-slate-400/80 bg-slate-50/80 px-6 py-10 text-center transition-colors sm:min-h-[16rem]",
+        "hover:border-primary/50 hover:bg-primary/[0.03]",
+      )}
+    >
+      <div className="pointer-events-none flex flex-col items-center gap-3" aria-hidden>
+        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-card shadow-sm ring-1 ring-slate-900/5">
+          <Upload className="h-7 w-7 text-foreground/70" strokeWidth={1.75} />
+        </span>
+        <div className="space-y-1">
+          <p className="text-base font-semibold tracking-tight text-foreground">
+            Add photos of your item
+          </p>
+          <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+            Drag and drop or click to browse. The first photo becomes your cover image.
+          </p>
+        </div>
+      </div>
+      <input
+        id={fileInputId}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={onImageInputChange}
+        aria-label="Add listing photos"
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0 touch-manipulation"
+        onPointerDown={(e) => e.stopPropagation()}
+      />
+    </div>
+  )
+}
+
 export function SellListingPhotoGrid({
   images,
   maxPhotos,
@@ -293,6 +363,7 @@ export function SellListingPhotoGrid({
   onRotate180,
   photoDragSensors: externalSensors,
   photoDescription = "Add photos, then drag to reorder — the first is your main image.",
+  minPhotos = 1,
 }: SellListingPhotoGridProps) {
   const internalSensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
@@ -301,16 +372,37 @@ export function SellListingPhotoGrid({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
   const photoDragSensors = externalSensors ?? internalSensors
+  const isEmpty = images.length === 0
+  const photosReady = images.length >= minPhotos
+  const photoCountLabel =
+    images.length === 1 ? "1 photo" : `${images.length} photos`
 
   return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-foreground">Photos</h3>
-      <p className="text-xs text-muted-foreground">{photoDescription}</p>
+    <div className="space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          <h3 className="text-sm font-semibold text-foreground">Photos</h3>
+          <p className="text-xs text-muted-foreground sm:text-sm">{photoDescription}</p>
+        </div>
+        <div className="shrink-0 pt-0.5" aria-live="polite">
+          {photosReady ? (
+            <span className={SELL_COMPLETE_BADGE_CLASS}>
+              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+              {photoCountLabel} · Ready
+            </span>
+          ) : (
+            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-muted-foreground ring-1 ring-inset ring-slate-200/80">
+              Add at least {minPhotos}
+            </span>
+          )}
+        </div>
+      </div>
+
       <Label className="sr-only">Listing photos</Label>
       <div
         className={cn(
-          "relative rounded-lg transition-shadow",
-          photosFileDragActive && "ring-2 ring-primary ring-offset-2 ring-offset-background",
+          "relative rounded-xl transition-shadow",
+          photosFileDragActive && "ring-2 ring-primary ring-offset-2 ring-offset-slate-100",
         )}
         onDragEnter={onDragEnter}
         onDragLeave={onDragLeave}
@@ -319,7 +411,7 @@ export function SellListingPhotoGrid({
       >
         {photosFileDragActive ? (
           <div
-            className="pointer-events-none absolute inset-0 z-[70] flex items-center justify-center rounded-lg bg-primary/10"
+            className="pointer-events-none absolute inset-0 z-[70] flex items-center justify-center rounded-xl bg-primary/10"
             aria-hidden
           >
             <p className="rounded-md bg-background/90 px-3 py-1.5 text-sm font-medium text-primary shadow-sm">
@@ -327,44 +419,46 @@ export function SellListingPhotoGrid({
             </p>
           </div>
         ) : null}
-        <DndContext sensors={photoDragSensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-            <SortableContext items={images.map((im) => im.clientId)} strategy={rectSortingStrategy}>
-              {images.map((image, index) => (
-                <SellListingPhotoSortableTile
-                  key={image.clientId}
-                  image={image}
-                  index={index}
-                  onRemove={onRemove}
-                  onRetry={onRetry}
-                  onRotate180={onRotate180}
+
+        {isEmpty ? (
+          <SellListingPhotoAddTile
+            fileInputId={fileInputId}
+            onImageInputChange={onImageInputChange}
+          />
+        ) : (
+          <DndContext
+            sensors={photoDragSensors}
+            collisionDetection={closestCenter}
+            onDragEnd={onDragEnd}
+          >
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+              <SortableContext
+                items={images.map((im) => im.clientId)}
+                strategy={rectSortingStrategy}
+              >
+                {images.map((image, index) => (
+                  <SellListingPhotoSortableTile
+                    key={image.clientId}
+                    image={image}
+                    index={index}
+                    onRemove={onRemove}
+                    onRetry={onRetry}
+                    onRotate180={onRotate180}
+                  />
+                ))}
+              </SortableContext>
+              {images.length < maxPhotos ? (
+                <SellListingPhotoAddTile
+                  fileInputId={fileInputId}
+                  onImageInputChange={onImageInputChange}
+                  compact
                 />
-              ))}
-            </SortableContext>
-            {images.length < maxPhotos ? (
-              <div className="relative aspect-square overflow-hidden rounded-lg border-2 border-dashed border-slate-400/80 transition-colors hover:border-primary/50">
-                <div
-                  className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
-                  aria-hidden
-                >
-                  <Upload className="h-6 w-6 text-muted-foreground" />
-                  <span className="mt-1 text-xs text-muted-foreground">Add</span>
-                </div>
-                <input
-                  id={fileInputId}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={onImageInputChange}
-                  aria-label="Add listing photos"
-                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0 touch-manipulation"
-                  onPointerDown={(e) => e.stopPropagation()}
-                />
-              </div>
-            ) : null}
-          </div>
-        </DndContext>
+              ) : null}
+            </div>
+          </DndContext>
+        )}
       </div>
+
       <p className="space-y-1 text-xs text-muted-foreground">
         <span className="block">Thank you for listing on Reswell.</span>
         <span className="inline-flex flex-wrap items-center gap-1">
