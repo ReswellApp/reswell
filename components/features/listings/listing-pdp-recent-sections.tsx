@@ -1,13 +1,12 @@
 "use client"
 
-import type { ReactNode } from "react"
 import { useLayoutEffect, useState } from "react"
 import { ListingTileSkeleton } from "@/components/listing-tile-skeleton"
-import { listingDetailHorizontalStripBleedClassName } from "@/components/features/home/home-listing-scroll-row"
 import {
+  HomeListingScrollRow,
   HomePeerListingScrollTile,
   type HomePeerScrollListing,
-} from "@/components/features/home/home-peer-listing-scroll-tile"
+} from "@/components/features/home"
 import type { PdpRecentStripListingWithFavorite } from "@/lib/pdp-recent-strip-listing"
 import {
   pushRecentSurfboardListingId,
@@ -36,70 +35,20 @@ function pdpRecentToHomePeerListing(
   }
 }
 
-/** Hard cap (~280px): keeps sparse PDP “recent” rows from growing with the viewport. */
-function recentStripCardMaxWidthClass() {
-  return "max-w-[min(100%,17.5rem)]"
-}
-
-function recentStripImageSizes(tilesInRow: number): string {
-  if (tilesInRow <= 1) return "(max-width: 640px) 92vw, 280px"
-  if (tilesInRow === 2) return "(max-width: 640px) 46vw, 280px"
-  if (tilesInRow === 3) return "(max-width: 640px) 80vw, 200px"
-  if (tilesInRow === 4) return "(max-width: 640px) 70vw, 180px"
-  if (tilesInRow === 5) return "(max-width: 640px) 65vw, 160px"
-  return "(max-width: 640px) 60vw, 150px"
-}
-
-function pdpRecentStripTileWrapClass(tilesInRow: number, sparseRow: boolean) {
-  return cn(
-    "flex min-h-0 flex-col",
-    recentStripCardMaxWidthClass(),
-    tilesInRow === 1 && "mx-auto w-full",
-    sparseRow && tilesInRow >= 2 && "w-full flex-1 basis-0 sm:w-auto",
-    !sparseRow &&
-      "w-[min(100%,260px)] shrink-0 snap-start sm:w-auto sm:min-w-0 sm:flex-1 sm:basis-0 sm:snap-none",
-  )
-}
-
-function PdpRecentHorizontalStrip({ tileCount, children }: { tileCount: number; children: ReactNode }) {
-  const sparse = tileCount <= 2
-  return (
-    <div className={listingDetailHorizontalStripBleedClassName}>
-      <div
-        className={cn(
-          "flex gap-3 px-4 pb-2 sm:gap-4 sm:px-6 lg:px-8",
-          sparse
-            ? cn("w-full flex-row items-stretch", tileCount === 1 && "justify-center")
-            : "w-full flex-nowrap overflow-x-auto overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] sm:overflow-x-visible [&::-webkit-scrollbar]:hidden",
-        )}
-      >
-        {children}
-      </div>
-    </div>
-  )
-}
-
 function PdpRecentHomePeerTile({
   listing,
   viewerUserId,
-  tilesInRow,
-  sparseRow,
 }: {
   listing: PdpRecentStripListingWithFavorite
   viewerUserId: string | null
-  tilesInRow: number
-  sparseRow: boolean
 }) {
   return (
-    <div className={pdpRecentStripTileWrapClass(tilesInRow, sparseRow)}>
-      <HomePeerListingScrollTile
-        listing={pdpRecentToHomePeerListing(listing)}
-        userId={viewerUserId}
-        isFavorited={listing.viewerFavorited}
-        layout="homeScroll"
-        imageSizesOverride={recentStripImageSizes(tilesInRow)}
-      />
-    </div>
+    <HomePeerListingScrollTile
+      listing={pdpRecentToHomePeerListing(listing)}
+      userId={viewerUserId}
+      isFavorited={listing.viewerFavorited}
+      layout="homeScroll"
+    />
   )
 }
 
@@ -120,13 +69,11 @@ function PdpRecentStripSkeleton({
       <div className="mb-8">
         <Skeleton className={cn("h-9", titleClass)} />
       </div>
-      <PdpRecentHorizontalStrip tileCount={tileCount}>
+      <HomeListingScrollRow uniformCardHeights>
         {Array.from({ length: tileCount }, (_, i) => (
-          <div key={i} className={pdpRecentStripTileWrapClass(tileCount, tileCount <= 2)}>
-            <ListingTileSkeleton layout="homeScroll" index={i} />
-          </div>
+          <ListingTileSkeleton key={i} layout="homeScroll" index={i} />
         ))}
-      </PdpRecentHorizontalStrip>
+      </HomeListingScrollRow>
     </section>
   )
 }
@@ -284,17 +231,15 @@ export function ListingPdpRecentSections({
           <h2 className="mb-8 text-2xl font-bold text-foreground">
             Recently viewed products
           </h2>
-          <PdpRecentHorizontalStrip tileCount={catalogRow.length}>
+          <HomeListingScrollRow uniformCardHeights>
             {catalogRow.map((listing) => (
               <PdpRecentHomePeerTile
                 key={listing.id}
                 listing={listing}
                 viewerUserId={viewerUserId}
-                tilesInRow={catalogRow.length}
-                sparseRow={catalogRow.length <= 2}
               />
             ))}
-          </PdpRecentHorizontalStrip>
+          </HomeListingScrollRow>
         </section>
       ) : null}
 
@@ -307,17 +252,15 @@ export function ListingPdpRecentSections({
               "Recently viewed"
             )}
           </h2>
-          <PdpRecentHorizontalStrip tileCount={marketRow.length}>
+          <HomeListingScrollRow uniformCardHeights>
             {marketRow.map((listing) => (
               <PdpRecentHomePeerTile
                 key={listing.id}
                 listing={listing}
                 viewerUserId={viewerUserId}
-                tilesInRow={marketRow.length}
-                sparseRow={marketRow.length <= 2}
               />
             ))}
-          </PdpRecentHorizontalStrip>
+          </HomeListingScrollRow>
         </section>
       ) : null}
     </div>
