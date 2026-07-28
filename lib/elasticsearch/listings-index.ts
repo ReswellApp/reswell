@@ -302,8 +302,10 @@ function normalizeExpansions(expansions: string[] | undefined): string[] {
  * Builds a bool query: requires a majority of meaningful terms (not lone digits),
  * plus optional phrase boosts so exact titles rank higher. Admin `expansions`
  * (synonyms) are added as additional satisfying clauses so aliases/typos recover results.
+ *
+ * Shared by `/search` and `/boards` browse keyword search.
  */
-function buildListingsSearchQueryBody(
+export function buildListingsSearchQueryBody(
   filter: object[],
   rawQuery: string,
   expansions?: string[],
@@ -415,7 +417,10 @@ function buildListingsSearchQueryBody(
 }
 
 /** Lenient match on the strongest token when the strict query returns nothing (typos in title/brand). */
-function buildListingsTypoFallbackQueryBody(filter: object[], rawQuery: string): object | null {
+export function buildListingsTypoFallbackQueryBody(
+  filter: object[],
+  rawQuery: string,
+): object | null {
   const meaningful = meaningfulSearchTerms(rawQuery)
   if (meaningful.length === 0) return null
   const term = [...meaningful].sort((a, b) => b.length - a.length)[0]

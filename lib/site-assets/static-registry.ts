@@ -1,7 +1,7 @@
 import {
   FALLBACK_HOME_HERO_SLIDE_PATHS,
 } from "@/lib/home-hero-slide-urls"
-import { helpArticlePath } from "@/lib/help-center/paths"
+import { helpArticlePath, helpTopicPath } from "@/lib/help-center/paths"
 import type { SiteAssetEntry } from "@/lib/types/site-assets"
 
 function publicImage(
@@ -69,7 +69,7 @@ export function listStaticSiteAssets(): SiteAssetEntry[] {
       notes: "Used in listing share cards and brand metadata — not visible in page body.",
     }),
 
-    publicImage("home/hero-backdrop-rincon.jpg", "Homepage hero backdrop", "home", ["/"]),
+    publicImage("home/hero-backdrop-rincon-v3.jpg", "Homepage hero backdrop", "home", ["/"]),
     publicImage(
       "home/how-it-works-sell-list.png",
       "How it works — list a board",
@@ -94,6 +94,24 @@ export function listStaticSiteAssets(): SiteAssetEntry[] {
     publicImage("sell/surfboard.jpg", "Sell type — surfboard", "sell", ["/sell"]),
     publicImage("sell/fins.jpg", "Sell type — fins", "sell", ["/sell"]),
 
+    publicImage(
+      "help-center/shopping-on-reswell.jpg",
+      "Help buying — Shopping on Reswell category",
+      "help-center",
+      ["/help", helpTopicPath("buying")],
+    ),
+    publicImage(
+      "help-center/checkout.jpg",
+      "Help buying — Checkout category",
+      "help-center",
+      ["/help", helpTopicPath("buying")],
+    ),
+    publicImage(
+      "help-center/managing-purchases.jpg",
+      "Help buying — Managing purchases category",
+      "help-center",
+      ["/help", helpTopicPath("buying")],
+    ),
     publicImage(
       "help-center/browse-boards.png",
       "Help — browse boards screenshot",

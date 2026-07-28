@@ -9,15 +9,15 @@ export const helpTopicIndexes: HelpTopicIndex[] = [
     allArticlesLabel: "All buying articles",
     categoryImages: {
       "shopping-on-reswell": {
-        src: "/images/home/how-it-works-sell-list.png",
+        src: "/images/help-center/shopping-on-reswell.jpg",
         alt: "Surfboards listed for sale on Reswell",
       },
       "managing-purchases": {
-        src: "/images/home/how-it-works-sell-connect.png",
+        src: "/images/help-center/managing-purchases.jpg",
         alt: "Buyer reviewing a purchase on Reswell",
       },
       checkout: {
-        src: "/images/home/how-it-works-sell-list.png",
+        src: "/images/help-center/checkout.jpg",
         alt: "Completing checkout on Reswell",
       },
     },

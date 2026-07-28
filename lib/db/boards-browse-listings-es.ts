@@ -54,11 +54,20 @@ export type BoardsBrowseEsPageInput = Omit<
   page: number
 }
 
+/** Empty ES results that must not fall through to Postgres ILIKE / unfiltered browse. */
+function isLockedEmptyEsResult(input: BoardsBrowseEsPageInput): boolean {
+  return (
+    Boolean(input.query?.trim()) ||
+    Boolean(input.shippingAvailable) ||
+    Boolean(input.facets && hasAnyFacetSelection(input.facets))
+  )
+}
+
 /**
  * Elasticsearch-backed browse page. Returns hydrated rows + total pages, or `null` when
- * Elasticsearch is unavailable so callers can fall back to Postgres. Empty ES results also
- * return `null` so the Postgres "nearest listings" fallback (wider radius / dropped keyword)
- * still runs and produces a helpful notice.
+ * Elasticsearch is unavailable so callers can fall back to Postgres (non-keyword browse only).
+ * Keyword / facet / shipping empties return `{ boards: [], totalPages: 0 }` so Postgres
+ * never re-runs the same search with ILIKE.
  */
 export async function getBoardsBrowseListingsPageViaEs(
   supabase: SupabaseClient,
@@ -75,16 +84,19 @@ export async function getBoardsBrowseListingsPageViaEs(
 
   if (ids === null) return null
   if (ids.orderedIds.length === 0 && ids.total === 0) {
-    // Legitimate empty result for an active facet / shipping filter — do not fall back to
-    // Postgres (which would ignore the same sparse indexed fields and show unfiltered rows).
-    if ((input.facets && hasAnyFacetSelection(input.facets)) || input.shippingAvailable) {
+    if (isLockedEmptyEsResult(input)) {
       return { boards: [], totalPages: 0 }
     }
     return null
   }
 
   const boards = await hydrateBoardsBrowseByIds(supabase, ids.orderedIds)
-  if (boards.length === 0) return null
+  if (boards.length === 0) {
+    if (isLockedEmptyEsResult(input)) {
+      return { boards: [], totalPages: 0 }
+    }
+    return null
+  }
 
   const totalPages = ids.total === 0 ? 0 : Math.max(1, Math.ceil(ids.total / limit))
   return { boards, totalPages }

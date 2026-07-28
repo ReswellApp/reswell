@@ -154,11 +154,13 @@ async function BoardListings({
   let boards: Awaited<ReturnType<ReturnType<typeof supabase.from>["select"]>>["data"] = null
   let totalPages = 0
   let handledByEs = false
+  const esEnabled = isBoardsBrowseEsEnabled()
+  const hasKeywordQuery = query.trim().length > 0
 
-  // Elasticsearch: indexed filtering + geo_distance sort. Nav category views stay on the
-  // (cheap, hourly-cached) Postgres path. Empty/errored ES results fall through to Postgres
-  // so the "nearest listings" fallback + no-results panel still run.
-  if (!cachedCategoryPage && isBoardsBrowseEsEnabled()) {
+  // Elasticsearch: indexed filtering + geo_distance sort on reswell_listings (surfboards).
+  // Nav category views stay on the (cheap, hourly-cached) Postgres path. Keyword search
+  // never falls through to Postgres ILIKE when ES is configured.
+  if (!cachedCategoryPage && esEnabled) {
     try {
       const esPage = await getBoardsBrowseListingsPageViaEs(supabase, {
         boardType,
@@ -185,9 +187,18 @@ async function BoardListings({
         boards = esPage.boards
         totalPages = esPage.totalPages
         handledByEs = true
+      } else if (hasKeywordQuery) {
+        boards = []
+        totalPages = 0
+        handledByEs = true
       }
     } catch (e) {
-      console.error("BoardListings ES browse failed, falling back to DB:", e)
+      console.error("BoardListings ES browse failed:", e)
+      if (hasKeywordQuery) {
+        boards = []
+        totalPages = 0
+        handledByEs = true
+      }
     }
   }
 
@@ -336,8 +347,6 @@ async function BoardListings({
   let locationFallbackNotice: string | null = null
 
   if (!cachedCategoryPage && (!boards || boards.length === 0)) {
-    const useSuppressionSort = await isBoardsBrowseSuppressionSortAvailable(supabase)
-
     let anchorLat: number | undefined = hasLatLng ? lat! : undefined
     let anchorLng: number | undefined = hasLatLng ? lng! : undefined
 
@@ -366,7 +375,33 @@ async function BoardListings({
       const alat = anchorLat!
       const alng = anchorLng!
 
-      async function fetchNearbyRadius(radiusCapMi: number, q: string) {
+      const nearbyBrand = brandModelIdForQuery ? undefined : brand.trim() || undefined
+      const nearbyModel =
+        brandModelIdForQuery || brandIdForQuery ? undefined : model.trim() || undefined
+
+      async function fetchNearbyRadiusEs(radiusCapMi: number, q: string) {
+        const pageResult = await getBoardsBrowseListingsPageViaEs(supabase, {
+          boardType,
+          condition,
+          query: q,
+          brand: nearbyBrand,
+          model: nearbyModel,
+          brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
+          brandModelId: brandModelIdForQuery,
+          dimensionTokens: boardDimensionBrowseIlikeTokens(dimensionFields),
+          facets,
+          minPrice,
+          maxPrice,
+          shippingAvailable,
+          geo: { lat: alat, lng: alng, radiusMi: radiusCapMi },
+          sort: "nearest",
+          page,
+        })
+        return pageResult ?? { boards: [] as BoardBrowseListingRow[], totalPages: 0 }
+      }
+
+      async function fetchNearbyRadiusPg(radiusCapMi: number, q: string) {
+        const useSuppressionSort = await isBoardsBrowseSuppressionSortAvailable(supabase)
         return fetchNearestSurfboardsWithinRadius({
           supabase,
           anchorLat: alat,
@@ -375,8 +410,8 @@ async function BoardListings({
           boardType,
           condition,
           query: q,
-          brand: brandModelIdForQuery ? undefined : brand.trim() || undefined,
-          model: brandModelIdForQuery || brandIdForQuery ? undefined : model.trim() || undefined,
+          brand: nearbyBrand,
+          model: nearbyModel,
           brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
           brandModelId: brandModelIdForQuery,
           dimensionFields,
@@ -389,6 +424,12 @@ async function BoardListings({
           maxFetch: radiusCapMi >= LOCATION_FALLBACK_WIDE_RADIUS_MI ? 4000 : 2500,
           useSuppressionSort,
         })
+      }
+
+      async function fetchNearbyRadius(radiusCapMi: number, q: string) {
+        // When ES is on, widen via the listings index — never Postgres ILIKE for nearby search.
+        if (esEnabled) return fetchNearbyRadiusEs(radiusCapMi, q)
+        return fetchNearbyRadiusPg(radiusCapMi, q)
       }
 
       const try100MiFirst =

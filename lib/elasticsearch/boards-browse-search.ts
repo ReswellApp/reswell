@@ -10,7 +10,11 @@
 import type { estypes } from "@elastic/elasticsearch"
 import { getElasticsearchClient } from "./client"
 import { ELASTICSEARCH_LISTINGS_INDEX } from "./config"
-import { ensureListingsIndex } from "./listings-index"
+import {
+  buildListingsSearchQueryBody,
+  buildListingsTypoFallbackQueryBody,
+  ensureListingsIndex,
+} from "./listings-index"
 import {
   BOARD_STYLE_OPTIONS,
   CONDITION_OPTIONS,
@@ -30,15 +34,42 @@ import { categoryIdsForBrowseBoardTypes } from "@/lib/utils/board-type-from-cate
 import type { BoardsBrowseFacetCounts } from "@/lib/services/boardsBrowseFacetCounts"
 import { isUuidString } from "@/lib/utils/isUuid"
 
-const SEARCH_KEYWORD_FIELDS = [
-  "title^3",
-  "description",
-  "brand^2",
-  "model^2",
-  "category_name^2",
-  "fins_setup",
-  "tail_shape",
-] as const
+/** Attach `must_not` to a listings bool query body (keyword builders already set filter/must/should). */
+function withMustNot(queryBody: object, mustNot: object[]): object {
+  if (mustNot.length === 0) return queryBody
+  const body = queryBody as { bool?: Record<string, unknown> }
+  if (!body.bool) return queryBody
+  const existing = body.bool.must_not
+  const prior = Array.isArray(existing) ? existing : existing != null ? [existing] : []
+  return {
+    bool: {
+      ...body.bool,
+      must_not: [...prior, ...mustNot],
+    },
+  }
+}
+
+function boardsBrowseKeywordQuery(
+  filter: object[],
+  query: string | undefined,
+  mustNot: object[],
+  typoFallback = false,
+): object | null {
+  const q = query?.trim()
+  if (!q) {
+    return {
+      bool: {
+        filter: filter as estypes.QueryDslQueryContainer[],
+        must_not: mustNot as estypes.QueryDslQueryContainer[],
+      },
+    }
+  }
+  const body = typoFallback
+    ? buildListingsTypoFallbackQueryBody(filter, q)
+    : buildListingsSearchQueryBody(filter, q)
+  if (!body) return null
+  return withMustNot(body, mustNot)
+}
 
 /** ES filter for board style slugs — matches `board_type` or surfboard `category_id`. */
 function boardStyleFilterClause(styleSlugs: string[]): object | null {
@@ -171,21 +202,6 @@ function locationTextClauses(locationText: string | undefined): object[] {
   ]
 }
 
-function keywordMust(query: string | undefined): object[] {
-  const q = query?.trim()
-  if (!q) return []
-  return [
-    {
-      multi_match: {
-        query: q,
-        fields: [...SEARCH_KEYWORD_FIELDS],
-        type: "best_fields",
-        operator: "or",
-      },
-    },
-  ]
-}
-
 /** Filters shared by browse results and facet counts (excludes facet selections + geo). */
 function baseContextFilters(ctx: BoardsBrowseEsContext): object[] {
   const filters: object[] = [
@@ -297,6 +313,8 @@ function buildSort(params: BoardsBrowseEsSearchParams): object[] {
     return sort
   }
 
+  const hasKeyword = Boolean(params.query?.trim())
+
   if (params.sort === "price-low") {
     sort.push({ price: { order: "asc", missing: "_last" } })
   } else if (params.sort === "price-high") {
@@ -305,12 +323,25 @@ function buildSort(params: BoardsBrowseEsSearchParams): object[] {
     sort.push({ price: { order: "desc", missing: "_last" } })
     sort.push({ created_at: { order: "desc" } })
   } else {
+    // Newest / default — prefer relevance when keyword searching (same as `/search`).
+    if (hasKeyword) sort.push({ _score: { order: "desc" } })
     sort.push({ created_at: { order: "desc" } })
   }
   return sort
 }
 
 export type BoardsBrowseEsResult = { ids: string[]; total: number }
+
+function parseBoardsBrowseHits(res: estypes.SearchResponse): BoardsBrowseEsResult {
+  const ids = (res.hits.hits ?? [])
+    .map((h) => h._id)
+    .filter((id): id is string => typeof id === "string" && id.length > 0)
+
+  const totalRaw = res.hits.total
+  const total = typeof totalRaw === "number" ? totalRaw : (totalRaw?.value ?? 0)
+
+  return { ids, total }
+}
 
 /** Filtered / geo browse over Elasticsearch. Returns ordered listing ids + total match count. */
 export async function searchBoardsBrowse(
@@ -322,7 +353,6 @@ export async function searchBoardsBrowse(
   await ensureListingsIndex()
 
   const filter = buildListingsFilters(params)
-  const must = keywordMust(params.query)
   const mustNot: object[] = []
   const exclude = params.excludeIds?.filter(Boolean) ?? []
   if (exclude.length > 0) mustNot.push({ ids: { values: exclude } })
@@ -332,30 +362,40 @@ export async function searchBoardsBrowse(
   // ES rejects from + size > 10000 by default; clamp deep pagination.
   if (from + size > 10_000) return { ids: [], total: 0 }
 
+  const keywordQuery = boardsBrowseKeywordQuery(filter, params.query, mustNot)
+  if (!keywordQuery) return { ids: [], total: 0 }
+
+  const sort = buildSort(params) as estypes.Sort
+
   const res = await es.search({
     index: ELASTICSEARCH_LISTINGS_INDEX,
     from,
     size,
     _source: false,
     track_total_hits: true,
-    query: {
-      bool: {
-        filter: filter as estypes.QueryDslQueryContainer[],
-        must: must as estypes.QueryDslQueryContainer[],
-        must_not: mustNot as estypes.QueryDslQueryContainer[],
-      },
-    },
-    sort: buildSort(params) as estypes.Sort,
+    query: keywordQuery as estypes.QueryDslQueryContainer,
+    sort,
   })
 
-  const ids = (res.hits.hits ?? [])
-    .map((h) => h._id)
-    .filter((id): id is string => typeof id === "string" && id.length > 0)
+  const parsed = parseBoardsBrowseHits(res)
+  const q = params.query?.trim()
+  if (!q || parsed.total > 0 || parsed.ids.length > 0) return parsed
 
-  const totalRaw = res.hits.total
-  const total = typeof totalRaw === "number" ? totalRaw : (totalRaw?.value ?? 0)
+  // Same typo recovery as `/search` when the strict listings query returns nothing.
+  const typoQuery = boardsBrowseKeywordQuery(filter, q, mustNot, true)
+  if (!typoQuery) return parsed
 
-  return { ids, total }
+  const typoRes = await es.search({
+    index: ELASTICSEARCH_LISTINGS_INDEX,
+    from,
+    size,
+    _source: false,
+    track_total_hits: true,
+    query: typoQuery as estypes.QueryDslQueryContainer,
+    sort,
+  })
+
+  return parseBoardsBrowseHits(typoRes)
 }
 
 /* -------------------------------------------------------------------------- */
@@ -478,15 +518,15 @@ export async function boardsBrowseFacetCountsFromEs(
     }
   }
 
+  const filter = baseContextFilters(ctx)
+  const facetQuery = boardsBrowseKeywordQuery(filter, ctx.query, []) ?? {
+    bool: { filter: filter as estypes.QueryDslQueryContainer[] },
+  }
+
   const res = await es.search({
     index: ELASTICSEARCH_LISTINGS_INDEX,
     size: 0,
-    query: {
-      bool: {
-        filter: baseContextFilters(ctx) as estypes.QueryDslQueryContainer[],
-        must: keywordMust(ctx.query) as estypes.QueryDslQueryContainer[],
-      },
-    },
+    query: facetQuery as estypes.QueryDslQueryContainer,
     aggs,
   })
 
