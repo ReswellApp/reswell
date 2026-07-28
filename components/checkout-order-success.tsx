@@ -7,6 +7,7 @@ import confetti from "canvas-confetti"
 import { motion } from "motion/react"
 import { ArrowRight, Check, Package, Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 
 export type CheckoutOrderSuccessPayload = {
   orderId: string
@@ -23,7 +24,7 @@ export type CheckoutOrderSuccessPayload = {
   sellerId: string | null
   /** Primary listing id for Messages deep-links (`order_lines[0]`). */
   listingId: string | null
-  /** One entry per purchased listing (multi-board checkout). */
+  /** One entry per purchased listing (multi-item checkout). */
   orderLines: Array<{
     listingId: string | null
     title: string
@@ -32,6 +33,7 @@ export type CheckoutOrderSuccessPayload = {
     imageUrl: string | null
     subtitle: string | null
     categoryLabel?: string | null
+    section?: string | null
   }>
   shipping: {
     oneLine: string | null
@@ -49,7 +51,7 @@ function subcopy(fulfillment: CheckoutOrderSuccessPayload["fulfillmentMethod"]) 
   if (fulfillment === "pickup") {
     return "Stoke is high. Coordinate pickup with your seller."
   }
-  return "Stoke is on the way. Your board ships out soon."
+  return "Stoke is on the way. Your order ships out soon."
 }
 
 /** Order confirmation — same layout as before (motion, confetti, two-column card), styled with site tokens. */
@@ -112,6 +114,8 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
   const lines = data.orderLines
   const head = lines[0]
   const category = head?.categoryLabel?.trim() || "Order"
+  const lineSections = lines.map((line) => line.section)
+  const multiItemHeading = formatPeerItemCountPhrase(lines.length, lineSections)
 
   return (
     <main className="relative flex-1 overflow-hidden bg-background">
@@ -217,7 +221,7 @@ export function CheckoutOrderSuccess({ data }: { data: CheckoutOrderSuccessPaylo
                   </>
                 ) : (
                   <>
-                    <h2 className="mb-3 text-2xl font-semibold tracking-tight">{lines.length} boards</h2>
+                    <h2 className="mb-3 text-2xl font-semibold tracking-tight">{multiItemHeading}</h2>
                     <ul className="mb-4 space-y-1.5 text-[15px] leading-snug text-muted-foreground">
                       {lines.map((line) => (
                         <li key={line.listingId ?? line.title}>• {line.title}</li>

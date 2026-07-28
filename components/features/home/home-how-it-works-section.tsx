@@ -10,9 +10,9 @@ const SELLER_STEPS = [
   {
     imageSrc: "/images/home/how-it-works-sell-list.png",
     imageAlt: "Surfer in a wetsuit riding a wave, black and white",
-    title: "List your board",
+    title: "List your gear",
     body:
-      "Add photos, dimensions, condition, and price. Offer local pickup, shipping, or both so buyers know how the handoff works.",
+      "Add photos, details, condition, and price. Offer local pickup, shipping, or both so buyers know how the handoff works.",
   },
   {
     imageSrc: "/images/home/how-it-works-sell-connect.png",

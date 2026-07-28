@@ -13,6 +13,7 @@ import { toast } from "sonner"
 import { MessageSquare, Send } from "lucide-react"
 import { listingDetailHref } from "@/lib/listing-href"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
+import { peerListingItemNounForm } from "@/lib/peer-listing-item-nouns"
 
 interface ContactSellerFormProps {
   listingId: string
@@ -47,6 +48,7 @@ export function ContactSellerForm({
   const router = useRouter()
   const openSignIn = useSignInGate()
   const listingReturnPath = listingDetailHref({ id: listingId, slug: listingSlug, section })
+  const itemNoun = peerListingItemNounForm(section).singular
 
   const quickMessages = shippingAvailable
     ? [
@@ -54,7 +56,7 @@ export function ContactSellerForm({
         "What's the lowest you'll accept?",
         "Can I see more photos?",
         "Where can we meet for pickup?",
-        "Can you ship this board to me?",
+        `Can you ship this ${itemNoun} to me?`,
       ]
     : [
         "Hi, is this still available?",

@@ -85,7 +85,7 @@ export async function attachAdminShippingLabelToOrder(params: {
     track ? `Tracking: ${track}` : null,
     car ? `Carrier: ${car}` : null,
     "",
-    "Seller: print the label, pack the board, and hand it to the carrier. Use your sale page to confirm when it’s dropped off.",
+    "Seller: print the label, pack the item, and hand it to the carrier. Use your sale page to confirm when it’s dropped off.",
     track
       ? "Buyer: this tracking number is on your order page. The seller confirms shipment after drop-off; then delivery protection and payout timing follow the normal flow."
       : "Buyer: the seller received the label here and on their sale page; tracking will appear on your order when it’s added.",

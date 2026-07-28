@@ -222,8 +222,8 @@ export function DashboardOffersView({
 
   const subtitle =
     tab === "seller"
-      ? "Send discounted offers to interested buyers who have your boards in their carts."
-      : "Send offers to sellers on boards you're looking for."
+      ? "Send discounted offers to interested buyers who have your listings in their carts."
+      : "Send offers to sellers on listings you're looking for."
 
   return (
     <div className="space-y-0">
@@ -282,7 +282,7 @@ export function DashboardOffersView({
         <div className="mt-6 rounded-2xl border border-rose-100/80 bg-rose-50/60 px-4 py-4 dark:border-rose-950/40 dark:bg-rose-950/20 sm:px-5 sm:py-5">
           <p className="text-[15px] font-semibold text-foreground">Make offers on any listing</p>
           <p className="mt-1 max-w-2xl text-[14px] leading-relaxed text-muted-foreground">
-            Open a board you want, tap Make an offer, and your negotiations will appear here on the
+            Open a listing you want, tap Make an offer, and your negotiations will appear here on the
             Buyer tab.
           </p>
         </div>

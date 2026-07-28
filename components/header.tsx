@@ -1141,7 +1141,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                     openSignUp("/sell?new=1")
                   }}
                 >
-                  List your board
+                  List your gear
                 </Link>
               </Button>
             ) : null}
@@ -1217,7 +1217,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                       openSignUp("/sell?new=1")
                     }}
                   >
-                    List your board
+                    List your gear
                   </Link>
                 </Button>
                 <div className="hidden items-center gap-2 lg:flex">

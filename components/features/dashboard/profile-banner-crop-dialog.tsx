@@ -27,6 +27,8 @@ type ProfileBannerCropDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   bannerUrl: string
+  /** Local blob/data URL for instant crop UI before the remote banner is warm. */
+  previewSrc?: string | null
   initialFocalX?: number | null
   initialFocalY?: number | null
   onSaved?: (focal: ProfileBannerFocal) => void
@@ -53,6 +55,7 @@ export function ProfileBannerCropDialog({
   open,
   onOpenChange,
   bannerUrl,
+  previewSrc = null,
   initialFocalX,
   initialFocalY,
   onSaved,
@@ -71,14 +74,19 @@ export function ProfileBannerCropDialog({
   )
   const [saving, setSaving] = useState(false)
 
+  const preview = previewSrc?.trim() || ""
+  const src = preview || profileMediaDisplaySrc(bannerUrl)
+  const localPreview = preview.startsWith("blob:") || preview.startsWith("data:")
+
   useEffect(() => {
     if (!open) return
     setFocal(resolveProfileBannerFocal(initialFocalX, initialFocalY))
     setNaturalSize(null)
-  }, [open, initialFocalX, initialFocalY, bannerUrl])
+  }, [open, initialFocalX, initialFocalY, bannerUrl, preview])
 
-  const src = profileMediaDisplaySrc(bannerUrl)
-  const objectPosition = profileBannerObjectPosition(focal)
+  const objectPosition = localPreview
+    ? "50% 50%"
+    : profileBannerObjectPosition(focal)
 
   function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
     if (!naturalSize) return
@@ -173,13 +181,14 @@ export function ProfileBannerCropDialog({
             onPointerCancel={onPointerUp}
           >
             <Image
+              key={src}
               src={src}
               alt=""
               fill
               sizes="(max-width: 768px) 100vw, 640px"
               className="pointer-events-none select-none object-cover"
               style={{ objectPosition }}
-              unoptimized={listingImageShouldBypassOptimization(src)}
+              unoptimized={localPreview || listingImageShouldBypassOptimization(src)}
               draggable={false}
               onLoadingComplete={({ naturalWidth, naturalHeight }) => {
                 if (naturalWidth <= 0 || naturalHeight <= 0) return

@@ -217,7 +217,7 @@ export function CartPageView({
         <div className="mx-auto max-w-xl px-5 py-20 md:px-6">
           <p className="text-[15px] leading-relaxed text-destructive">{loadError}</p>
           <Button asChild variant="outline" className="mt-6 rounded-lg" size="sm">
-            <Link href="/boards">Back to surfboards</Link>
+            <Link href="/boards">Continue shopping</Link>
           </Button>
         </div>
       </main>

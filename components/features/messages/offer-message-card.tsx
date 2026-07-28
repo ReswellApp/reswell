@@ -231,13 +231,13 @@ export function OfferMessageCard({
               >
                 <Link href={acceptedOfferCheckoutHref(offer.id)}>
                   {isBundleOffer
-                    ? `Checkout all ${offerLineItems.length} boards`
+                    ? `Checkout all ${offerLineItems.length} items`
                     : "Checkout now"}
                 </Link>
               </Button>
               <p className="text-[12px] text-muted-foreground">
                 {isBundleOffer
-                  ? "Pay for every board in this bundle in one checkout at your agreed prices (local pickup)."
+                  ? "Pay for every item in this bundle in one checkout at your agreed prices (local pickup)."
                   : offer.fulfillment === "pickup"
                     ? "Pay at your agreed price with local pickup."
                     : offer.fulfillment === "shipping"

@@ -525,7 +525,7 @@ export function SellerMakeOfferToBuyerDialog({
         <DialogHeader className="shrink-0 space-y-1 border-b border-border/60 px-5 pb-4 pt-5 sm:px-6">
           <DialogTitle className="text-left text-xl font-semibold">Make them an offer</DialogTitle>
           <p className="text-left text-[15px] leading-snug text-muted-foreground">
-            Set your price for each board. Add more listings to bundle into one offer.
+            Set your price for each listing. Add more listings to bundle into one offer.
           </p>
         </DialogHeader>
 
@@ -567,7 +567,7 @@ export function SellerMakeOfferToBuyerDialog({
                     </p>
                   ) : offerSubtotalLive != null && !allOfferAmountsEntered ? (
                     <p className="mt-2 text-[11px] text-muted-foreground">
-                      Enter a price for each board to complete your offer.
+                      Enter a price for each listing to complete your offer.
                     </p>
                   ) : null}
                 </div>
@@ -696,7 +696,7 @@ export function SellerMakeOfferToBuyerDialog({
                   )
                 ) : isBundle && itemsSubtotal != null ? (
                   <p className="mt-1 text-xs text-muted-foreground">
-                    ${itemsSubtotal.toFixed(2)} for {orderedSelectedListings.length} boards (list $
+                    ${itemsSubtotal.toFixed(2)} for {orderedSelectedListings.length} items (list $
                     {listSubtotal.toFixed(2)})
                   </p>
                 ) : null}
@@ -713,7 +713,7 @@ export function SellerMakeOfferToBuyerDialog({
               <Textarea
                 rows={3}
                 maxLength={200}
-                placeholder="e.g. Happy to meet locally this weekend, or bundle both boards."
+                placeholder="e.g. Happy to meet locally this weekend, or bundle both items."
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 className="resize-none"

@@ -13,6 +13,7 @@ import { collectMetaClientBrowserSignals } from "@/lib/meta/collect-client-brows
 import { peerListingCheckoutHref } from "@/lib/listing-href"
 import { prefetchStripeCheckout } from "@/lib/stripe/prefetch-stripe-checkout"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
+import { peerListingItemNounForm } from "@/lib/peer-listing-item-nouns"
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { toast } from "sonner"
@@ -148,7 +149,8 @@ export function ListingDetailPeerPurchaseActions({
       Number.isFinite(agreedCheckoutItemUsd) ? (
         <p className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.08] px-4 py-3 text-[13px] leading-snug text-emerald-900 dark:border-emerald-400/25 dark:bg-emerald-500/10 dark:text-emerald-100">
           You accepted <span className="font-semibold tabular-nums">${agreedCheckoutItemUsd.toFixed(2)}</span> for
-          this board. Buy now charges that price and uses the delivery method from your offer.
+          this {peerListingItemNounForm(section).singular}. Buy now charges that price and uses the delivery method
+          from your offer.
         </p>
       ) : null}
       {!purchaseBlocked ? (
@@ -235,6 +237,7 @@ export function ListingDetailPeerPurchaseActions({
             canShip={makeOffer.canShip}
             shippingFlatRate={makeOffer.shippingFlatRate}
             shippingCostMode={makeOffer.shippingCostMode ?? null}
+            section={section}
             isLoggedIn={isLoggedIn}
             open={offerOpen}
             onOpenChange={setOfferOpen}

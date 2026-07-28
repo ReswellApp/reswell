@@ -21,15 +21,15 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
   },
   {
     q: "What are my payment options?",
-    a: "Peer surfboard purchases use secure card checkout (Stripe) when the seller has payments enabled. You’ll complete payment on the checkout screen.",
+    a: "Peer marketplace purchases use secure card checkout (Stripe) when the seller has payments enabled. You’ll complete payment on the checkout screen.",
   },
   {
     q: "What are my financing options?",
     a: "Reswell does not offer financing today. You pay the listing total (and shipping when applicable) at checkout with your card.",
   },
   {
-    q: "When I buy on Reswell, is my purchase ready to ride?",
-    a: "Listings describe condition and what’s included. Confirm details with the seller before you pay. Use messages to ask about fins, dings, or pickup logistics.",
+    q: "When I buy on Reswell, what condition should I expect?",
+    a: "Listings describe condition and what’s included. Confirm details with the seller before you pay. Use messages to ask about condition, what’s included, or pickup logistics.",
   },
 ]
 

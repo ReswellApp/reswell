@@ -219,7 +219,7 @@ export async function loadAcceptedOfferCheckoutListings(
     if (!listingsOrdered.every((row) => row.local_pickup !== false)) {
       return {
         ok: false,
-        error: "Every board in this bundle must offer local pickup.",
+        error: "Every item in this bundle must offer local pickup.",
       }
     }
   }

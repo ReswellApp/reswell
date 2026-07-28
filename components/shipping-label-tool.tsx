@@ -420,7 +420,7 @@ export function ShippingLabelTool({ orderId }: { orderId: string }) {
           <Alert>
             <AlertTitle>Add a ship-from address</AlertTitle>
             <AlertDescription>
-              Save an address on your profile so we know where the board ships from, then return
+              Save an address on your profile so we know where the item ships from, then return
               here.{" "}
               <Link href="/profile" className="underline font-medium">
                 Profile → addresses

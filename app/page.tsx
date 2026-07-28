@@ -206,7 +206,7 @@ export default async function HomePage() {
                 </p>
               </div>
               <span className={marketingCtaBannerCtaLabelClassName}>
-                List your board
+                List your gear
                 <ArrowRight className="h-4 w-4" />
               </span>
             </Link>
@@ -304,7 +304,8 @@ export default async function HomePage() {
                 <div className="min-w-0">
                   <p className={marketingCtaBannerTitleClassName}>Ready to get started?</p>
                   <p className={marketingCtaBannerDescriptionClassName}>
-                    Browse boards from locals and shops, or list yours with photos and pickup options in a few minutes.
+                    Browse boards, fins, wetsuits, and more from locals and shops — or list yours with photos and
+                    pickup options in a few minutes.
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center">
@@ -315,7 +316,7 @@ export default async function HomePage() {
                     </Link>
                   </Button>
                   <Button size="lg" variant="outline" asChild>
-                    <Link href="/sell">List your board</Link>
+                    <Link href="/sell">List your gear</Link>
                   </Button>
                 </div>
               </div>

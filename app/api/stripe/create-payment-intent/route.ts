@@ -17,6 +17,7 @@ import { dedupeIdsPreserveOrder } from "@/lib/stripe-marketplace-metadata"
 import { isAnonymousSupabaseUser } from "@/lib/auth/is-anonymous-user"
 import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 import { isReswellShopListing } from "@/lib/reswell-shop"
 import {
   encodeListingQuantitiesMeta,
@@ -297,13 +298,13 @@ export async function POST(request: NextRequest) {
     }
     if (body.fulfillment === "pickup" && !listingsOrdered.every((l) => l.local_pickup !== false)) {
       return NextResponse.json(
-        { error: "Every board in a multi-item pickup checkout must offer local pickup." },
+        { error: "Every item in a multi-item pickup checkout must offer local pickup." },
         { status: 400 },
       )
     }
     if (body.fulfillment === "shipping" && !listingsOrdered.every((l) => !!l.shipping_available)) {
       return NextResponse.json(
-        { error: "Every board in a multi-item shipped checkout must offer shipping." },
+        { error: "Every item in a multi-item shipped checkout must offer shipping." },
         { status: 400 },
       )
     }
@@ -465,7 +466,10 @@ export async function POST(request: NextRequest) {
   const primaryTitle = listingsOrdered[0]?.title ?? "listing"
   const stripeDescription =
     listingsOrdered.length > 1
-      ? `Reswell — ${listingsOrdered.length} boards (${primaryTitle})`
+      ? `Reswell — ${formatPeerItemCountPhrase(
+          listingsOrdered.length,
+          listingsOrdered.map((l) => l.section),
+        )} (${primaryTitle})`
       : `Reswell — ${primaryTitle}`
 
   try {

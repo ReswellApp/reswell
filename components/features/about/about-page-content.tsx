@@ -154,7 +154,7 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link href="/sell">List your board</Link>
+              <Link href="/sell">List your gear</Link>
             </Button>
           </div>
         </div>

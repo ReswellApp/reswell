@@ -17,8 +17,8 @@ const tips = [
     body: "For local pickup, pick a busy, well lit spot like a coffee shop or a store parking lot. It's a good idea not to invite a stranger to your home, or go to theirs, on a first meetup.",
   },
   {
-    title: "Inspect the board before you pay",
-    body: "For surfboards and anything pricey, take a proper look in person before you hand over any money. Check for dings, delamination, or wear that wasn't obvious in the listing photos.",
+    title: "Inspect the item before you pay",
+    body: "For surfboards, fins, wetsuits, and anything pricey, take a proper look in person before you hand over any money. Check for damage or wear that wasn't obvious in the listing photos.",
   },
   {
     title: "Pay through Reswell",

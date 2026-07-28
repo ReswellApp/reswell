@@ -40,7 +40,7 @@ function displayListingTitleSummary(order: {
 }
 
 const REVIEW_REQUEST_MESSAGE =
-  "Thanks again for getting a board on Reswell! When you have a minute, a quick review would mean a lot. Open our message thread and tap Write review to leave a rating if you would like. Thank you."
+  "Thanks again for your purchase on Reswell! When you have a minute, a quick review would mean a lot. Open our message thread and tap Write review to leave a rating if you would like. Thank you."
 
 /** True if this order already has a `review_requested` message in the buyer↔seller thread. */
 export async function sellerReviewRequestAlreadySentForOrder(

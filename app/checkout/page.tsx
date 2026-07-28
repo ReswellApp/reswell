@@ -5,7 +5,7 @@ import { Suspense } from "react"
 import { createClient } from "@/lib/supabase/server"
 import { CheckoutAccountRequired } from "@/components/checkout-account-required"
 import { CheckoutClient } from "@/components/checkout-client"
-import type { CheckoutCopy, CheckoutListing } from "@/components/checkout-types"
+import type { CheckoutListing } from "@/components/checkout-types"
 import { findListingByParam } from "@/lib/listing-query"
 import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
@@ -46,6 +46,7 @@ import {
 } from "@/lib/services/peerListingShippingQuote"
 import { KlaviyoCheckoutStartedTracker } from "@/components/features/checkout/klaviyo-checkout-started-tracker"
 import { assertBuyerMayPurchaseListingsExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
+import { peerCheckoutCopyFromSections } from "@/lib/peer-listing-item-nouns"
 
 export const dynamic = "force-dynamic"
 
@@ -63,7 +64,7 @@ export async function generateMetadata(props: {
   return privatePageMetadata({
     title: "Checkout — Reswell",
     description:
-      "Confirm shipping or local pickup, review totals, and complete your surfboard purchase on Reswell.",
+      "Confirm shipping or local pickup, review totals, and complete your purchase on Reswell.",
     path,
   })
 }
@@ -128,14 +129,10 @@ export default async function CheckoutPage(props: {
     const { seller, buyer } = await fetchCheckoutSellerAndBuyerContext(supabase, sellerId, user)
     const { addresses: initialAddresses, addressesError, buyerEmail, legalFullName } = buyer
 
-    const isBundle = checkoutListings.length > 1
-    const copy: CheckoutCopy | undefined = isBundle
-      ? {
-          itemLineLabel: "Boards",
-          inspectNoun: "boards",
-          priceContextNoun: "bundle",
-        }
-      : undefined
+    const copy = peerCheckoutCopyFromSections(
+      checkoutListings.map((l) => l.section),
+      checkoutListings.length,
+    )
 
     return (
       <main className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24">
@@ -263,8 +260,6 @@ export default async function CheckoutPage(props: {
     ])
     const { addresses: initialAddresses, addressesError, buyerEmail, legalFullName } = buyer
 
-    const copy: CheckoutCopy | undefined = undefined
-
     return (
       <main className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24">
         <Suspense fallback={null}>
@@ -298,7 +293,6 @@ export default async function CheckoutPage(props: {
 
           <CheckoutClient
             listings={checkoutListings}
-            copy={copy}
             buyerEmail={buyerEmail}
             legalFullName={legalFullName}
             initialAddresses={addressesError ? [] : initialAddresses}
@@ -381,8 +375,6 @@ export default async function CheckoutPage(props: {
   if (!lp && !sa) {
     notFound()
   }
-
-  const copy: CheckoutCopy | undefined = undefined
 
   const seller = await fetchCheckoutSellerProfile(supabase, listing.user_id)
 
@@ -538,7 +530,6 @@ export default async function CheckoutPage(props: {
 
         <CheckoutClient
           listings={[checkoutListing]}
-          copy={copy}
           buyerEmail={buyerEmail}
           legalFullName={legalFullName}
           initialAddresses={addressesError ? [] : initialAddresses}

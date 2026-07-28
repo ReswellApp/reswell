@@ -47,7 +47,7 @@ export async function generateMetadata(props: {
   return privatePageMetadata({
     title: "Purchase details — Reswell",
     description:
-      "Track delivery or pickup, view tracking, and manage resolutions for this surfboard purchase.",
+      "Track delivery or pickup, view tracking, and manage resolutions for this purchase.",
     path: `/dashboard/purchases/${id}`,
   })
 }

@@ -223,7 +223,7 @@ export function MyListingsClient({ listings, stats, fetchError }: MyListingsClie
     <div className="space-y-6">
       <DashboardPageHeader
         title="Listings"
-        description="Summary of your surfboard inventory and performance."
+        description="Summary of your listing inventory and performance."
         actions={
           <>
             <Link

@@ -75,6 +75,7 @@ interface ProfileShopTabProps {
   avatarCropRequestKey?: number
   uploadingBanner: boolean
   removingBanner: boolean
+  bannerPreviewUrl?: string | null
   bannerSavedFlash: boolean
   bannerCropRequestKey?: number
   onProfileChange: (patch: Partial<DashboardProfileRow>) => void
@@ -97,6 +98,7 @@ export function ProfileShopTab({
   avatarCropRequestKey = 0,
   uploadingBanner,
   removingBanner,
+  bannerPreviewUrl = null,
   bannerSavedFlash,
   bannerCropRequestKey = 0,
   onProfileChange,
@@ -302,12 +304,15 @@ export function ProfileShopTab({
           <div
             className="relative aspect-[4/1] w-full min-h-[88px]"
             style={
-              profile.shop_banner_url?.trim() ? undefined : { backgroundColor: SELLER_PROFILE_BANNER_DEFAULT }
+              profile.shop_banner_url?.trim() || bannerPreviewUrl?.trim()
+                ? undefined
+                : { backgroundColor: SELLER_PROFILE_BANNER_DEFAULT }
             }
           >
-            {profile.shop_banner_url ? (
+            {profile.shop_banner_url || bannerPreviewUrl ? (
               <ProfileBannerImage
                 bannerUrl={profile.shop_banner_url}
+                previewSrc={bannerPreviewUrl}
                 focalX={profile.shop_banner_focal_x_pct}
                 focalY={profile.shop_banner_focal_y_pct}
                 sizes="(max-width: 768px) 100vw, 640px"
@@ -361,6 +366,7 @@ export function ProfileShopTab({
             open={bannerCropOpen}
             onOpenChange={setBannerCropOpen}
             bannerUrl={profile.shop_banner_url}
+            previewSrc={bannerPreviewUrl}
             initialFocalX={profile.shop_banner_focal_x_pct}
             initialFocalY={profile.shop_banner_focal_y_pct}
             onSaved={handleBannerCropSaved}

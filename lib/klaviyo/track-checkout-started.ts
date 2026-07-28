@@ -14,6 +14,7 @@ import {
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
+import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 
 export type KlaviyoCheckoutStartedListing = {
   id: string
@@ -106,7 +107,13 @@ export async function trackKlaviyoCheckoutStarted(
         items: commerceItems,
       }),
       listing_id: primary.id,
-      Title: itemCount > 1 ? `${itemCount} boards` : String(primary.title ?? ""),
+      Title:
+        itemCount > 1
+          ? formatPeerItemCountPhrase(
+              itemCount,
+              payload.listings.map((listing) => listing.section),
+            )
+          : String(primary.title ?? ""),
       item_count: itemCount,
       from_cart: payload.fromCart,
       seller_id: payload.sellerId ?? primary.user_id,

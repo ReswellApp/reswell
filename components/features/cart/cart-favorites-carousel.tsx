@@ -57,7 +57,7 @@ export function CartFavoritesCarousel({
           <h2 id="cart-favorites-heading" className="text-2xl font-bold">
             From your favorites
           </h2>
-          <p className="text-muted-foreground">Boards you&apos;ve saved for later</p>
+          <p className="text-muted-foreground">Listings you&apos;ve saved for later</p>
         </div>
         <Button variant="outline" asChild>
           <Link href="/favorites">

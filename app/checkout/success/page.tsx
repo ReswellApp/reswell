@@ -129,7 +129,7 @@ function CheckoutSuccessInner() {
                   <Link href="/dashboard/purchases">View purchases</Link>
                 </Button>
                 <Button variant="outline" asChild>
-                  <Link href="/boards">Browse boards</Link>
+                  <Link href="/">Continue shopping</Link>
                 </Button>
               </div>
             </CardContent>
@@ -183,7 +183,7 @@ function CheckoutSuccessInner() {
                   <Link href="/dashboard/purchases">View purchases</Link>
                 </Button>
                 <Button variant="outline" asChild>
-                  <Link href="/boards">Browse boards</Link>
+                  <Link href="/">Continue shopping</Link>
                 </Button>
               </div>
             </CardContent>

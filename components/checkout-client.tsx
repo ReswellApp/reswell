@@ -34,14 +34,13 @@ import {
 } from "@/lib/shipping/peer-checkout-usps-services"
 import { Truck, MapPin } from "lucide-react"
 import { cn } from "@/lib/utils"
+import {
+  formatPeerItemCountPhrase,
+  peerCheckoutCopyFromSections,
+  peerListingsItemNounForm,
+} from "@/lib/peer-listing-item-nouns"
 
 export type { CheckoutCopy, CheckoutListing, CheckoutSeller } from "@/components/checkout-types"
-
-const SURFBOARD_COPY = {
-  itemLineLabel: "Board",
-  inspectNoun: "board",
-  priceContextNoun: "board",
-} as const
 
 interface CheckoutClientProps {
   listings: CheckoutListing[]
@@ -58,7 +57,7 @@ interface CheckoutClientProps {
 
 export function CheckoutClient({
   listings,
-  copy = SURFBOARD_COPY,
+  copy: copyProp,
   buyerEmail,
   legalFullName = "",
   initialAddresses,
@@ -68,6 +67,11 @@ export function CheckoutClient({
 }: CheckoutClientProps) {
   const isBundle = listings.length > 1
   const offerFulfillmentLock = normalizeOfferFulfillment(lockedFulfillment)
+  const listingSections = listings.map((l) => l.section)
+  const copy =
+    copyProp ?? peerCheckoutCopyFromSections(listingSections, listings.length)
+  const itemNoun = peerListingsItemNounForm(listingSections)
+  const itemCountPhrase = formatPeerItemCountPhrase(listings.length, listingSections)
 
   const primaryListing = listings[0]
   if (!primaryListing) {
@@ -85,7 +89,7 @@ export function CheckoutClient({
     ? listings.every((l) => l.local_pickup !== false)
     : primaryListing.local_pickup !== false
 
-  /** Bundles ship as one box only when every board offers shipping. */
+  /** Bundles ship as one box only when every item offers shipping. */
   const canShip = isBundle
     ? listings.every((l) => !!l.shipping_available)
     : !!primaryListing.shipping_available
@@ -398,17 +402,17 @@ export function CheckoutClient({
   )
 
   const inspectNounPhrase =
-    listings.length > 1 ? `${listings.length} boards` : copy.inspectNoun
+    listings.length > 1 ? itemCountPhrase : copy.inspectNoun
 
   const listingSummaryTitle =
     listings.length === 1
       ? capitalizeWords(primaryListing.title)
-      : `${listings.length} surfboards`
+      : itemCountPhrase
 
   if (isBundle && !canPick && !canShip) {
     return (
       <p className="text-sm text-destructive">
-        These boards don&apos;t share a delivery method — some are pickup-only and others are shipping-only. Check them
+        These items don&apos;t share a delivery method — some are pickup-only and others are shipping-only. Check them
         out separately.{" "}
         <Link href="/cart" className="underline">
           Back to cart
@@ -485,8 +489,9 @@ export function CheckoutClient({
           <div className="mx-auto max-w-[520px] lg:mx-0">
             {isBundle ? (
               <div className="mb-10 rounded-[8px] border border-[#5574AD]/25 bg-[#5574AD]/[0.06] px-4 py-3.5 text-[13px] leading-relaxed text-neutral-700">
-                You&apos;re buying <span className="font-semibold text-foreground">{listings.length} boards</span>{" "}
-                from one seller in a single payment.{" "}
+                You&apos;re buying{" "}
+                <span className="font-semibold text-foreground">{itemCountPhrase}</span> from one seller in a
+                single payment.{" "}
                 {needsShipping ? (
                   <>
                     Everything ships together in <span className="font-medium text-foreground">one box</span> — shipping
@@ -495,7 +500,7 @@ export function CheckoutClient({
                 ) : (
                   <>
                     This combined checkout uses <span className="font-medium text-foreground">local pickup</span> —
-                    you&apos;ll get one pickup code that covers every board in this order.
+                    you&apos;ll get one pickup code that covers every {itemNoun.singular} in this order.
                   </>
                 )}
               </div>
@@ -567,7 +572,7 @@ export function CheckoutClient({
                       </span>
                       <p className="mt-1 text-xs leading-relaxed text-neutral-500">
                         {isBundle && !shipQuote
-                          ? "All boards ship together in one box — rate is calculated for your address."
+                          ? `All ${itemNoun.plural} ship together in one box — rate is calculated for your address.`
                           : shipQuote?.usedReswellQuote
                             ? displayTotals.shipping > 0
                               ? `Includes about $${displayTotals.shipping.toFixed(2)} carrier shipping (Reswell rate).`
@@ -597,8 +602,8 @@ export function CheckoutClient({
                   </>
                 ) : (
                   <p className="mt-2 text-[13px] leading-relaxed text-neutral-600">
-                    Rates use the map location from when this board was listed. If this looks off, the seller can edit
-                    location on the listing.
+                    Rates use the map location from when this {itemNoun.singular} was listed. If this looks off, the
+                    seller can edit location on the listing.
                   </p>
                 )}
               </div>

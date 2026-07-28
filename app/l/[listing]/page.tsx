@@ -21,8 +21,8 @@ export const revalidate = 3600
 
 function unavailableListingMetadata(listingParam: string): Metadata {
   return pageSeoMetadata({
-    title: "This board is no longer available — Reswell",
-    description: "Check out related surfboards on Reswell.",
+    title: "This listing is no longer available — Reswell",
+    description: "Check out related listings on Reswell.",
     path: `/l/${listingParam}`,
   })
 }

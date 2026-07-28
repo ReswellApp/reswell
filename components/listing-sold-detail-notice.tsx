@@ -32,7 +32,7 @@ export function ListingSoldDetailNotice({
           {shipped ? (
             <p className="inline-flex items-center gap-1.5 pt-0.5 text-[13px] leading-snug text-foreground/85">
               <Truck className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
-              <span>This board was shipped</span>
+              <span>This item was shipped</span>
             </p>
           ) : null}
         </div>

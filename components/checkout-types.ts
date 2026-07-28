@@ -1,10 +1,10 @@
 import type { PayableListing } from "@/lib/purchase-amount"
 
-/** Line-item labels for peer surfboard checkout (optional overrides). */
+/** Line-item labels for peer checkout (optional overrides; derived from listing sections when omitted). */
 export type CheckoutCopy = {
   itemLineLabel: string
   inspectNoun: string
-  /** e.g. "board" / "item" — used in "the ___ price only" */
+  /** e.g. "board" / "item" / "bundle" — used in "the ___ price only" */
   priceContextNoun: string
 }
 

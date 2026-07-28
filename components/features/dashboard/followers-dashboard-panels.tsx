@@ -321,7 +321,7 @@ export async function FollowersDashboardPanels() {
             </span>
             <p className="font-medium text-foreground">Find sellers you care about</p>
             <p className="text-sm text-muted-foreground max-w-sm">
-              Follow a shop to see their new boards in your feed and notifications.
+              Follow a shop to see their new listings in your feed and notifications.
             </p>
             <Button asChild size="sm" variant="secondary" className="mt-1">
               <Link href="/following">Open discover</Link>

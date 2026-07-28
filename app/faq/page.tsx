@@ -29,19 +29,19 @@ const sections: FaqSection[] = [
   {
     id: "buying",
     title: "Buying on Reswell",
-    description: "How to find a board, make an offer, and check out.",
+    description: "How to find gear, make an offer, and check out.",
     faqs: [
       {
-        question: "How do I buy a board?",
+        question: "How do I buy on Reswell?",
         answerPlain:
-          "Browse boards from the Surfboards page, open a listing you like, and hit Buy now to check out. If you want to ask the seller something first, tap Message seller. Payment always happens inside Reswell checkout. We don't process payments outside the app.",
+          "Browse the marketplace (boards, fins, wetsuits, and more), open a listing you like, and hit Buy now to check out. If you want to ask the seller something first, tap Message seller. Payment always happens inside Reswell checkout. We don't process payments outside the app.",
         answer: (
           <>
-            Browse boards from the{" "}
+            Browse the marketplace —{" "}
             <Link href="/boards" className="text-primary underline">
               Surfboards
-            </Link>{" "}
-            page, open a listing you like, and hit{" "}
+            </Link>
+            , fins, wetsuits, and more — open a listing you like, and hit{" "}
             <strong className="text-foreground">Buy now</strong> to check out. If you want to ask
             the seller something first, tap <strong className="text-foreground">Message seller</strong>.
             Payment always happens inside Reswell checkout. We don&apos;t process payments outside
@@ -66,11 +66,11 @@ const sections: FaqSection[] = [
       {
         question: "Local pickup or shipping, how do I know which a listing offers?",
         answerPlain:
-          "Every listing tells you whether the seller offers local pickup, shipping, or both. For shipped purchases, the seller adds tracking once the board is on its way. For pickup, you and the seller sort out a time and place in Messages. It's worth reading our Safety tips before you meet up.",
+          "Every listing tells you whether the seller offers local pickup, shipping, or both. For shipped purchases, the seller adds tracking once the item is on its way. For pickup, you and the seller sort out a time and place in Messages. It's worth reading our Safety tips before you meet up.",
         answer: (
           <>
             Every listing tells you whether the seller offers local pickup, shipping, or both. For
-            shipped purchases, the seller adds tracking once the board is on its way. For pickup, you
+            shipped purchases, the seller adds tracking once the item is on its way. For pickup, you
             and the seller sort out a time and place in Messages. It&apos;s worth reading our{" "}
             <Link href="/safety" className="text-primary underline">
               Safety tips
@@ -84,12 +84,12 @@ const sections: FaqSection[] = [
   {
     id: "selling",
     title: "Selling on Reswell",
-    description: "Listing your board, handling offers, and closing the sale.",
+    description: "Listing gear, handling offers, and closing the sale.",
     faqs: [
       {
-        question: "How do I list a board for sale?",
+        question: "How do I list something for sale?",
         answerPlain:
-          "Sign in and tap Sell in the header, or go straight to /sell. Add good photos, your price, the condition, the dimensions (length, width, thickness, volume), the fin setup, and whether you want to offer local pickup, shipping, or both. Posting a listing is free.",
+          "Sign in and tap Sell in the header, or go straight to /sell. Choose a category (boards, fins, wetsuits, and more), add good photos, your price, condition, and whether you want to offer local pickup, shipping, or both. Posting a listing is free.",
         answer: (
           <>
             Sign in and tap <strong className="text-foreground">Sell</strong> in the header, or go
@@ -97,9 +97,9 @@ const sections: FaqSection[] = [
             <Link href="/sell" className="text-primary underline">
               /sell
             </Link>
-            . Add good photos, your price, the condition, the dimensions (length, width,
-            thickness, volume), the fin setup, and whether you want to offer local pickup,
-            shipping, or both. Posting a listing is free.
+            . Choose a category (boards, fins, wetsuits, and more), add good photos, your price,
+            condition, and whether you want to offer local pickup, shipping, or both. Posting a
+            listing is free.
           </>
         ),
       },
@@ -123,16 +123,16 @@ const sections: FaqSection[] = [
         ),
       },
       {
-        question: "I sold a board. What happens next?",
+        question: "I made a sale. What happens next?",
         answerPlain:
-          "Open the sale from Sales. If you're shipping it, pack the board well, use a tracked carrier, and add the tracking number to the sale. You can also buy a label straight from the sale page when ShipEngine is set up. If it's local pickup, confirm the meetup in Messages. Your earnings land in your wallet once the sale reaches the right state, as laid out in Purchase Protection.",
+          "Open the sale from Sales. If you're shipping it, pack the item well, use a tracked carrier, and add the tracking number to the sale. You can also buy a label straight from the sale page when ShipEngine is set up. If it's local pickup, confirm the meetup in Messages. Your earnings land in your wallet once the sale reaches the right state, as laid out in Purchase Protection.",
         answer: (
           <>
             Open the sale from{" "}
             <Link href="/dashboard/sales" className="text-primary underline">
               Sales
             </Link>
-            . If you&apos;re shipping it, pack the board well, use a tracked carrier, and add the
+            . If you&apos;re shipping it, pack the item well, use a tracked carrier, and add the
             tracking number to the sale. You can also buy a label straight from the sale page
             when ShipEngine is set up. If it&apos;s local pickup, confirm the meetup in Messages.
             Your earnings land in your wallet once the sale reaches the right state, as laid out

@@ -342,7 +342,7 @@ export function MessagesOffersTab({
           <p className="mt-2 max-w-sm text-[15px] leading-relaxed text-muted-foreground">
             {subTab === "sent"
               ? "Offers you started — as a buyer on a listing or as a seller offering to a buyer."
-              : "Offers sent to you — from buyers on your listings or from sellers on boards you want."}
+              : "Offers sent to you — from buyers on your listings or from sellers on listings you want."}
           </p>
         </div>
       ) : activeOffers.length === 0 ? (

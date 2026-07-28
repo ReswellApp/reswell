@@ -31,6 +31,7 @@ import {
 } from "@/lib/offer-listing-shipping"
 import { cn } from "@/lib/utils"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { peerListingItemNounForm } from "@/lib/peer-listing-item-nouns"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -85,6 +86,8 @@ export type MakeOfferDialogProps = {
   canShip: boolean
   shippingFlatRate: number
   shippingCostMode?: OfferShippingCostMode | null
+  /** Peer section — drives placeholder copy (defaults to generic "item"). */
+  section?: string | null
   isLoggedIn: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -101,6 +104,7 @@ export function MakeOfferDialog({
   canShip,
   shippingFlatRate,
   shippingCostMode = null,
+  section = null,
   isLoggedIn,
   open,
   onOpenChange,
@@ -348,7 +352,7 @@ export function MakeOfferDialog({
               <Textarea
                 rows={2}
                 maxLength={200}
-                placeholder="Why you want this board…"
+                placeholder={`Why you want this ${peerListingItemNounForm(section).singular}…`}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 className="min-h-[3.25rem] resize-none text-sm sm:min-h-[4.5rem]"

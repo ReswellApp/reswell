@@ -24,10 +24,10 @@ export const SUPPORT_JOURNEY_BY_TOPIC: Record<MessagesSupportTopic, SupportJourn
   general: [
     n({
       id: "gen-buying-101",
-      title: "I'm new — how do I buy a board?",
+      title: "I'm new — how do I buy?",
       hint: "Browse, message, checkout",
       resolution:
-        "Browse the Surfboards marketplace, open a listing you like, and use Message seller if you have questions. When you're ready, pay only through Reswell checkout so your order is covered by Purchase Protection. We never recommend paying outside the app.",
+        "Browse the marketplace (boards, fins, wetsuits, and more), open a listing you like, and use Message seller if you have questions. When you're ready, pay only through Reswell checkout so your order is covered by Purchase Protection. We never recommend paying outside the app.",
       helpHref: "/faq#buying",
       helpLinkLabel: "Buying FAQ",
     }),
@@ -136,7 +136,7 @@ export const SUPPORT_JOURNEY_BY_TOPIC: Record<MessagesSupportTopic, SupportJourn
           id: "bs-pickup-safety",
           title: "Pickup safety & meetups",
           resolution:
-            "Meet in public, bring a friend when you can, and inspect the board before you leave. Never pay cash off-platform for something that was supposed to go through checkout.",
+            "Meet in public, bring a friend when you can, and inspect the item before you leave. Never pay cash off-platform for something that was supposed to go through checkout.",
           helpHref: "/safety",
           helpLinkLabel: "Safety tips",
         }),
@@ -154,7 +154,7 @@ export const SUPPORT_JOURNEY_BY_TOPIC: Record<MessagesSupportTopic, SupportJourn
     n({
       id: "bs-listing",
       title: "Listing visibility, edits, or removal",
-      hint: "My board isn’t right on the site",
+      hint: "My listing isn’t right on the site",
       resolution:
         "Edit the listing from your dashboard. If it violates guidelines or you see another listing that does, use report flows on the listing page and tell us what’s wrong.",
     }),

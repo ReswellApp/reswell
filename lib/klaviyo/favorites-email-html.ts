@@ -79,7 +79,7 @@ export function buildFavoritesItemsEmailHtml(
   if (items.length === 0) {
     const m = favoritesHref ?? "#"
     parts.push(
-      `<p style="margin:0;font-family:${KLAVIYO_EMAIL_FONT_SANS};font-size:15px;color:${C.muted};">You don&apos;t have any saved boards right now — <a href="${escapeHtmlAttr(m)}" style="color:${C.link};text-decoration:underline;text-underline-offset:2px;">browse the marketplace</a>.</p>`,
+      `<p style="margin:0;font-family:${KLAVIYO_EMAIL_FONT_SANS};font-size:15px;color:${C.muted};">You don&apos;t have any saved listings right now — <a href="${escapeHtmlAttr(m)}" style="color:${C.link};text-decoration:underline;text-underline-offset:2px;">browse the marketplace</a>.</p>`,
     )
     return parts.join("\n")
   }
@@ -150,7 +150,7 @@ export function buildFavoritesItemsPlainText(
     lines.push(`Price drop: ${priceDropDisplay.trim()}`, "")
   }
   if (items.length === 0) {
-    lines.push(`Browse saved boards: ${favoritesUrl}`)
+    lines.push(`Browse saved listings: ${favoritesUrl}`)
     return lines.join("\n")
   }
   for (const item of items) {

@@ -15,6 +15,7 @@ import {
 import { validateAcceptedOfferForPaymentIntent } from "@/lib/services/acceptedOfferCheckout"
 import { pendingSaleFeeClause } from "@/lib/seller-fees"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 import { isReswellShopListing } from "@/lib/reswell-shop"
 import {
   parseListingQuantitiesMeta,
@@ -458,14 +459,14 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     if (fulfillmentMeta === "pickup" && !listingsOrdered.every((l) => l.local_pickup !== false)) {
       return {
         ok: false,
-        error: "Every board in this order must offer local pickup.",
+        error: "Every item in this order must offer local pickup.",
         status: 400,
       }
     }
     if (fulfillmentMeta === "shipping" && !listingsOrdered.every((l) => !!l.shipping_available)) {
       return {
         ok: false,
-        error: "Every board in this order must offer shipping.",
+        error: "Every item in this order must offer shipping.",
         status: 400,
       }
     }
@@ -817,7 +818,10 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   const walletTitleSummary =
     listingsOrdered.length === 1
       ? String(listingsOrdered[0]!.title ?? "")
-      : `${listingsOrdered.length} boards`
+      : formatPeerItemCountPhrase(
+          listingsOrdered.length,
+          listingsOrdered.map((l) => l.section),
+        )
 
   if (sellerEarnings > 0) {
     const sellerCredit = await creditOrderPendingEarnings(serviceSupabase, {
@@ -924,7 +928,10 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   const klListingTitle =
     listingsOrdered.length === 1
       ? String(listingsOrdered[0]!.title ?? "")
-      : `${listingsOrdered.length} boards (${listingTitles.slice(0, 3).join(" · ")}${listingTitles.length > 3 ? "…" : ""})`
+      : `${formatPeerItemCountPhrase(
+          listingsOrdered.length,
+          listingsOrdered.map((l) => l.section),
+        )} (${listingTitles.slice(0, 3).join(" · ")}${listingTitles.length > 3 ? "…" : ""})`
 
   const listingImageUrls = await fetchPrimaryListingImageUrlsForKlaviyo(
     serviceSupabase,

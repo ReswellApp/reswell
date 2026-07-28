@@ -12,7 +12,8 @@ import {
 import { cn } from "@/lib/utils"
 
 type ProfileBannerImageProps = {
-  bannerUrl: string
+  bannerUrl?: string | null
+  previewSrc?: string | null
   focalX?: number | null
   focalY?: number | null
   focal?: ProfileBannerFocal
@@ -24,8 +25,13 @@ type ProfileBannerImageProps = {
   placeholder?: "blur" | "empty"
 }
 
+function isLocalPreviewSrc(src: string): boolean {
+  return src.startsWith("blob:") || src.startsWith("data:")
+}
+
 export function ProfileBannerImage({
   bannerUrl,
+  previewSrc,
   focalX,
   focalY,
   focal,
@@ -37,21 +43,30 @@ export function ProfileBannerImage({
   placeholder = "empty",
 }: ProfileBannerImageProps) {
   const resolvedFocal = focal ?? resolveProfileBannerFocal(focalX, focalY)
-  const src = profileMediaDisplaySrc(bannerUrl)
-  const objectPosition = profileBannerObjectPosition(resolvedFocal)
+  const preview = previewSrc?.trim() || ""
+  const remote = bannerUrl?.trim() ? profileMediaDisplaySrc(bannerUrl) : ""
+  const src = preview || remote
+  if (!src) return null
+
+  const localPreview = Boolean(preview && isLocalPreviewSrc(preview))
+  const objectPosition = localPreview
+    ? "50% 50%"
+    : profileBannerObjectPosition(resolvedFocal)
+  const useBlur = placeholder === "blur" && !localPreview
 
   return (
     <Image
+      key={src}
       src={src}
       alt={alt}
       fill={fill}
       sizes={sizes}
-      priority={priority}
+      priority={priority || localPreview}
       className={cn("object-cover", className)}
       style={{ objectPosition }}
-      unoptimized={listingImageShouldBypassOptimization(src)}
-      placeholder={placeholder === "blur" ? "blur" : undefined}
-      blurDataURL={placeholder === "blur" ? wideShimmer : undefined}
+      unoptimized={localPreview || listingImageShouldBypassOptimization(src)}
+      placeholder={useBlur ? "blur" : undefined}
+      blurDataURL={useBlur ? wideShimmer : undefined}
     />
   )
 }

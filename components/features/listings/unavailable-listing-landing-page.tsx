@@ -64,10 +64,10 @@ export async function UnavailableListingLandingPage({
       <section className="border-b border-border/60 bg-offwhite py-12 sm:py-16">
         <div className="container mx-auto max-w-3xl px-4 text-center">
           <h1 className="text-balance text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            This board is no longer available
+            This listing is no longer available
           </h1>
           <p className="mt-3 text-pretty text-base text-muted-foreground sm:text-lg">
-            Check out related boards
+            Check out related listings
           </p>
           {landing.listingTitle ? (
             <p className="mt-2 text-sm text-muted-foreground/90">{landing.listingTitle}</p>

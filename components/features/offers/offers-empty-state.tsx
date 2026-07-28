@@ -25,16 +25,16 @@ export function OffersEmptyState({ role, className }: OffersEmptyStateProps) {
             No offers available to send yet
           </h2>
           <p className="mt-2 max-w-md text-[15px] leading-relaxed text-muted-foreground">
-            Your eligible offers will show up here when buyers save your boards or add them to
-            cart. Make sure you have boards listed for sale to receive offers.
+            Your eligible offers will show up here when buyers save your listings or add them to
+            cart. Make sure you have listings for sale to receive offers.
           </p>
         </>
       ) : (
         <>
           <h2 className="text-[17px] font-semibold text-foreground">No offers yet</h2>
           <p className="mt-2 max-w-md text-[15px] leading-relaxed text-muted-foreground">
-            Offers you make on a listing appear here. Browse boards and tap Make an offer to start
-            negotiating with a seller.
+            Offers you make on a listing appear here. Browse the marketplace and tap Make an offer to
+            start negotiating with a seller.
           </p>
         </>
       )}

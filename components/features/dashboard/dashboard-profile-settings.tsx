@@ -14,6 +14,7 @@ import { revalidateListingDetailAfterProfileUpdate } from "@/app/actions/listing
 import { dispatchHeaderAuthRefresh } from "@/lib/auth/header-auth-refresh"
 import { PROFILE_AVATAR_MAX_INPUT_BYTES } from "@/lib/validations/profileAvatar"
 import { PROFILE_BANNER_MAX_INPUT_BYTES } from "@/lib/validations/profileBanner"
+import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
 import { buildPasswordRecoveryCallbackUrl } from "@/lib/auth/password-recovery-callback-url"
 import { signOutAndRedirect } from "@/lib/auth/sign-out-and-redirect"
 import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
@@ -62,6 +63,7 @@ export function DashboardProfileSettings({
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null)
   const [uploadingBanner, setUploadingBanner] = useState(false)
   const [removingBanner, setRemovingBanner] = useState(false)
+  const [bannerPreviewUrl, setBannerPreviewUrl] = useState<string | null>(null)
   const [bannerSavedFlash, setBannerSavedFlash] = useState(false)
   const [avatarCropRequestKey, setAvatarCropRequestKey] = useState(0)
   const [bannerCropRequestKey, setBannerCropRequestKey] = useState(0)
@@ -80,6 +82,14 @@ export function DashboardProfileSettings({
       }
     }
   }, [avatarPreviewUrl])
+
+  useEffect(() => {
+    return () => {
+      if (bannerPreviewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(bannerPreviewUrl)
+      }
+    }
+  }, [bannerPreviewUrl])
 
   useEffect(() => {
     const applyHash = () => {
@@ -235,11 +245,22 @@ export function DashboardProfileSettings({
     if (!file || !profile) return
 
     if (file.size > PROFILE_BANNER_MAX_INPUT_BYTES) {
+      setBannerPreviewUrl((prev) => {
+        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev)
+        return null
+      })
       toast.error(
         `Image must be under ${Math.round(PROFILE_BANNER_MAX_INPUT_BYTES / (1024 * 1024))}MB`,
       )
+      e.target.value = ""
       return
     }
+
+    const localPreview = URL.createObjectURL(file)
+    setBannerPreviewUrl((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev)
+      return localPreview
+    })
 
     setUploadingBanner(true)
     try {
@@ -275,7 +296,23 @@ export function DashboardProfileSettings({
       window.setTimeout(() => setBannerSavedFlash(false), 2000)
       void revalidateListingDetailAfterProfileUpdate()
       router.refresh()
+
+      // Keep the local preview until the remote image is warm, then drop the blob.
+      const remote = new window.Image()
+      const clearBannerPreview = () => {
+        setBannerPreviewUrl((prev) => {
+          if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev)
+          return null
+        })
+      }
+      remote.onload = clearBannerPreview
+      remote.onerror = clearBannerPreview
+      remote.src = profileMediaDisplaySrc(bannerUrl)
     } catch (err: unknown) {
+      setBannerPreviewUrl((prev) => {
+        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev)
+        return null
+      })
       const message = err instanceof Error ? err.message : "Failed to upload banner"
       console.error("Banner upload error:", message)
       toast.error(message)
@@ -301,6 +338,10 @@ export function DashboardProfileSettings({
         throw new Error(json.error || "Remove failed")
       }
 
+      setBannerPreviewUrl((prev) => {
+        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev)
+        return null
+      })
       setProfile({
         ...profile,
         shop_banner_url: null,
@@ -436,6 +477,7 @@ export function DashboardProfileSettings({
           avatarCropRequestKey={avatarCropRequestKey}
           uploadingBanner={uploadingBanner}
           removingBanner={removingBanner}
+          bannerPreviewUrl={bannerPreviewUrl}
           bannerSavedFlash={bannerSavedFlash}
           bannerCropRequestKey={bannerCropRequestKey}
           onProfileChange={(patch) => setProfile({ ...profile, ...patch })}

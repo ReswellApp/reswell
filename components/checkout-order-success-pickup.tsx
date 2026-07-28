@@ -9,6 +9,10 @@ import { ArrowRight, Check, MessageSquare, Package, Truck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { CheckoutOrderSuccessPayload } from "@/components/checkout-order-success"
 import {
+  formatPeerItemCountPhrase,
+  formatPeerPossessiveItemPhrase,
+} from "@/lib/peer-listing-item-nouns"
+import {
   pickupCodeBannerLabelClassName,
   pickupCodeBannerSurfaceClassName,
 } from "@/components/order-actions"
@@ -64,6 +68,12 @@ export function CheckoutOrderSuccessPickup({ data }: { data: CheckoutOrderSucces
   const lines = data.orderLines
   const head = lines[0]
   const category = head?.categoryLabel?.trim() || "Order"
+  const lineSections = lines.map((line) => line.section)
+  const multiItemHeading = formatPeerItemCountPhrase(lines.length, lineSections)
+  const pickupTargetPhrase =
+    lines.length > 1
+      ? `all ${formatPeerItemCountPhrase(lines.length, lineSections)}`
+      : formatPeerPossessiveItemPhrase(1, lineSections)
 
   const messagesHref =
     data.sellerId && data.listingId
@@ -124,9 +134,8 @@ export function CheckoutOrderSuccessPickup({ data }: { data: CheckoutOrderSucces
                 {data.pickupCode}
               </p>
               <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
-                One code for this whole order — share it when you pick up{" "}
-                {lines.length > 1 ? `all ${lines.length} boards` : "your board"}. The seller enters it to confirm the
-                handoff and release their payout.
+                One code for this whole order — share it when you pick up {pickupTargetPhrase}. The seller
+                enters it to confirm the handoff and release their payout.
               </p>
             </div>
           </motion.div>
@@ -201,7 +210,7 @@ export function CheckoutOrderSuccessPickup({ data }: { data: CheckoutOrderSucces
                   </>
                 ) : (
                   <>
-                    <h2 className="mb-3 text-2xl font-semibold tracking-tight">{lines.length} boards</h2>
+                    <h2 className="mb-3 text-2xl font-semibold tracking-tight">{multiItemHeading}</h2>
                     <ul className="mb-4 space-y-1.5 text-[15px] leading-snug text-muted-foreground">
                       {lines.map((line) => (
                         <li key={line.listingId ?? line.title}>• {line.title}</li>

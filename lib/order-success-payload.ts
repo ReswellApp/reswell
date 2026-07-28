@@ -97,6 +97,7 @@ function mapOrderRowToCheckoutPayload(
       imageUrl: primaryImage(listing.listing_images),
       subtitle: conditionLabel,
       categoryLabel: formatCategory(listing.section)?.trim() || null,
+      section: listing.section ?? null,
     })
   }
 
@@ -115,6 +116,7 @@ function mapOrderRowToCheckoutPayload(
               imageUrl: primaryImage(fallbackListing.listing_images),
               subtitle: fallbackListing.condition ? formatCondition(fallbackListing.condition) : null,
               categoryLabel: formatCategory(fallbackListing.section)?.trim() || null,
+              section: fallbackListing.section ?? null,
             },
           ]
         : []

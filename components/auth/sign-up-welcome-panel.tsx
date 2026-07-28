@@ -16,8 +16,8 @@ import { GOOGLE_NEW_SIGNUP_WELCOME_COMPLETED_KEY } from "@/lib/auth/google-sign-
 import { navigateAfterClientAuth } from "@/lib/auth/navigate-after-client-auth"
 
 const WELCOME_ITEMS = [
-  "Browse surfboards and gear from local sellers",
-  "List your boards and wetsuits in minutes",
+  "Browse boards, fins, wetsuits, and more from local sellers",
+  "List gear in minutes",
   "Make offers, message sellers, and checkout securely",
 ] as const
 

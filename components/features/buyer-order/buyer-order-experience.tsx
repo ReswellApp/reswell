@@ -222,7 +222,7 @@ function buildJourney(props: BuyerOrderExperienceProps): JourneyStep[] {
       },
       {
         key: "ship",
-        title: hasTrack || shipped ? "Shipped" : "Seller ships your board",
+        title: hasTrack || shipped ? "Shipped" : "Seller ships your order",
         description: buildShippingStepDescription(props),
         state: !hasTrack && !shipped ? "current" : "done",
       },
@@ -237,7 +237,7 @@ function buildJourney(props: BuyerOrderExperienceProps): JourneyStep[] {
         title: "Delivered",
         description: hasTrack
           ? "When the carrier reports delivery, Reswell completes your order and releases the seller payout after a 24-hour review window."
-          : "When your board arrives, confirm delivery to complete the order.",
+          : "When your order arrives, confirm delivery to complete it.",
         state: delivered ? "done" : shipped ? "current" : "upcoming",
       },
     ]
@@ -256,7 +256,7 @@ function buildJourney(props: BuyerOrderExperienceProps): JourneyStep[] {
       key: "meet",
       title: "Meet & inspect",
       description:
-        "Bring your pickup code when you meet. Inspect the board before you leave — the seller confirms your code to complete the sale.",
+        "Bring your pickup code when you meet. Inspect the item before you leave — the seller confirms your code to complete the sale.",
       state: donePickup ? "done" : "current",
     },
   ]
@@ -600,7 +600,7 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
           <span>
             {shippingDaysLeft && shippingDaysLeft > 0 ? (
               <>
-                Sellers are expected to ship within {SHIPPING_DEADLINE_DAYS} days. If your board isn&apos;t
+                Sellers are expected to ship within {SHIPPING_DEADLINE_DAYS} days. If your order isn&apos;t
                 shipped by{" "}
                 {getShippingDeadlineDate(props.createdAtIso).toLocaleDateString(undefined, {
                   dateStyle: "medium",
