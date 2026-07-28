@@ -239,17 +239,30 @@ export function AdminShopClient() {
           <p className="mt-1 text-sm text-muted-foreground">
             New items sold and shipped by Reswell — shipping only, live ShipEngine rates at checkout.
           </p>
-          <Link
-            href="/reswell/shop"
-            className="mt-2 inline-flex items-center gap-1 text-sm text-foreground underline underline-offset-4"
-          >
-            View public shop <ExternalLink className="h-3.5 w-3.5" />
-          </Link>
+          <div className="mt-2 flex flex-wrap gap-3">
+            <Link
+              href="/admin/shop/orders"
+              className="inline-flex items-center gap-1 text-sm font-medium text-foreground underline underline-offset-4"
+            >
+              Shop orders
+            </Link>
+            <Link
+              href="/reswell/shop"
+              className="inline-flex items-center gap-1 text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+            >
+              View public shop <ExternalLink className="h-3.5 w-3.5" />
+            </Link>
+          </div>
         </div>
-        <Button type="button" onClick={startCreate} className="gap-2">
-          <Plus className="h-4 w-4" />
-          New product
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" asChild className="gap-2">
+            <Link href="/admin/shop/orders">Shop orders</Link>
+          </Button>
+          <Button type="button" onClick={startCreate} className="gap-2">
+            <Plus className="h-4 w-4" />
+            New product
+          </Button>
+        </div>
       </div>
 
       {configError ? (

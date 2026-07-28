@@ -66,6 +66,7 @@ const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
   '/admin/promo-codes',
   '/admin/listings/bulk',
   '/admin/shop',
+  '/admin/shop/orders',
 ])
 
 export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
@@ -77,6 +78,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/listings', label: 'Listings', icon: 'package' },
       { href: '/admin/listings/hidden', label: 'Hidden listings', icon: 'package' },
       { href: '/admin/shop', label: 'Reswell', icon: 'store' },
+      { href: '/admin/shop/orders', label: 'Shop orders', icon: 'shoppingBag' },
       { href: '/admin/listings/bulk', label: 'Bulk list', icon: 'layers' },
       { href: '/admin/seo', label: 'SEO', icon: 'search' },
       { href: '/admin/partner-embeds', label: 'Partner embeds', icon: 'code' },

@@ -1,5 +1,6 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js"
 import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
+import { isReswellShopListing } from "@/lib/reswell-shop"
 
 export type AdminOrderShippingAddress = {
   name?: string | null
@@ -60,6 +61,10 @@ export type AdminOrderDetail = {
   seller_id: string
   listing_id: string
   listing_title: string | null
+  /** Primary listing section — `new` means Reswell retail shop inventory. */
+  listing_section: string | null
+  /** True when the primary listing is Reswell shop (`section = new`). */
+  is_reswell_shop: boolean
   buyer: AdminOrderParticipant
   seller: AdminOrderParticipant
   shipping_address: AdminOrderShippingAddress
@@ -292,7 +297,7 @@ export async function getOrderDetailForAdmin(
   const isTerminalGuestOrder = !buyerId
 
   const [listingRes, buyerRes, sellerRes, payoutRes, conversation] = await Promise.all([
-    supabase.from("listings").select("title").eq("id", listingId).maybeSingle(),
+    supabase.from("listings").select("title, section").eq("id", listingId).maybeSingle(),
     isTerminalGuestOrder
       ? Promise.resolve({ data: null, error: null })
       : supabase.from("profiles").select(ADMIN_ORDER_PARTICIPANT_SELECT).eq("id", buyerId).maybeSingle(),
@@ -313,10 +318,12 @@ export async function getOrderDetailForAdmin(
     marketplaceMessageCount = count ?? 0
   }
 
+  const listingRow = listingRes.data as { title?: string; section?: string | null } | null
   const listingTitle =
-    listingRes.data && typeof (listingRes.data as { title?: string }).title === "string"
-      ? (listingRes.data as { title: string }).title
-      : null
+    listingRow && typeof listingRow.title === "string" ? listingRow.title : null
+  const listingSection =
+    listingRow && typeof listingRow.section === "string" ? listingRow.section : null
+  const isReswellShop = isReswellShopListing(listingSection)
 
   const buyer = isTerminalGuestOrder
     ? mapGuestBuyerFromShippingAddress(shippingAddress)
@@ -389,6 +396,8 @@ export async function getOrderDetailForAdmin(
       seller_id: sellerId,
       listing_id: listingId,
       listing_title: listingTitle,
+      listing_section: listingSection,
+      is_reswell_shop: isReswellShop,
       buyer,
       seller,
       shipping_address: shippingAddress,

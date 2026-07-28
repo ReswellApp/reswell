@@ -54,12 +54,21 @@ export async function GET(
     trackingNumber: data.tracking_number,
   })
 
+  const canFulfillReswellShop =
+    gate.ctx.isAdmin &&
+    data.is_reswell_shop &&
+    data.status === "confirmed" &&
+    data.fulfillment_method === "shipping" &&
+    data.delivery_status === "pending" &&
+    Boolean(data.buyer_id)
+
   return NextResponse.json({
     data,
     capabilities: {
       canRefund: gate.ctx.isAdmin,
-      canReleaseShippingSellerEarnings: gate.ctx.isAdmin,
+      canReleaseShippingSellerEarnings: gate.ctx.isAdmin && !data.is_reswell_shop,
       hasShippingLabel,
+      canFulfillReswellShop,
     },
   })
 }

@@ -36,6 +36,8 @@ const SEARCH_KEYWORD_FIELDS = [
   "brand^2",
   "model^2",
   "category_name^2",
+  "fins_setup",
+  "tail_shape",
 ] as const
 
 /** ES filter for board style slugs — matches `board_type` or surfboard `category_id`. */

@@ -2,6 +2,9 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { isElasticsearchIndexedListingSection } from "@/lib/elasticsearch/listing-sections"
 import { isMarketplaceSearchNoiseToken } from "@/lib/utils/marketplace-brand-query"
 import { parseFinsSetupFromStorage } from "@/lib/listing-fin-setup-tags"
+import { parseTailShapeFromStorage } from "@/lib/listing-tail-shape-tags"
+import { parseBoardMeasurement } from "@/lib/board-measurements"
+import { parseListingDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { resolveLengthTotalInches, resolveVolumeLiters } from "@/lib/listing-facet-write"
 import { getElasticsearchClient } from "./client"
 import { ELASTICSEARCH_LISTINGS_INDEX } from "./config"
@@ -27,8 +30,14 @@ export type ListingSearchDoc = {
   construction: string | null
   /** Canonical fin-setup slugs (comma list in DB → array here for `terms` membership). */
   fins_setup: string[]
+  /** Canonical tail-shape slugs (comma list in DB → array here for `terms` membership). */
+  tail_shape: string[]
   length_total_inches: number | null
   volume_liters: number | null
+  /** Parsed board width in inches (`listings.width`, with `dimensions` fallback). */
+  width_inches: number | null
+  /** Parsed board thickness in inches (`listings.thickness`, with `dimensions` fallback). */
+  thickness_inches: number | null
   price: number | null
   brand_id: string | null
   brand_model_id: string | null
@@ -39,6 +48,14 @@ export type ListingSearchDoc = {
   dimensions: string | null
   /** Geo point for `geo_distance` filter + nearest sort; omitted when lat/lng missing. */
   location?: { lat: number; lon: number }
+  /** Magazine publication year (`listings.magazine_year`). */
+  magazine_year: number | null
+  /** Wetsuit size slug (`listings.wetsuit_size`). */
+  wetsuit_size: string | null
+  /** Wetsuit thickness slug (`listings.wetsuit_thickness`). */
+  wetsuit_thickness: string | null
+  /** Wetsuit zip type slug (`listings.wetsuit_zip_type`). */
+  wetsuit_zip_type: string | null
 }
 
 const INDEX_SETTINGS = {
@@ -84,8 +101,11 @@ const BROWSE_INDEX_PROPERTIES = {
   fin_system: { type: "keyword" as const },
   construction: { type: "keyword" as const },
   fins_setup: { type: "keyword" as const },
+  tail_shape: { type: "keyword" as const },
   length_total_inches: { type: "float" as const },
   volume_liters: { type: "float" as const },
+  width_inches: { type: "float" as const },
+  thickness_inches: { type: "float" as const },
   price: { type: "double" as const },
   brand_id: { type: "keyword" as const },
   brand_model_id: { type: "keyword" as const },
@@ -96,8 +116,21 @@ const BROWSE_INDEX_PROPERTIES = {
   location: { type: "geo_point" as const },
 }
 
+/** Section-specific facet fields (magazines, wetsuits). Additive on existing indices. */
+const SECTION_INDEX_PROPERTIES = {
+  magazine_year: { type: "integer" as const },
+  wetsuit_size: { type: "keyword" as const },
+  wetsuit_thickness: { type: "keyword" as const },
+  wetsuit_zip_type: { type: "keyword" as const },
+}
+
+const ADDITIVE_INDEX_PROPERTIES = {
+  ...BROWSE_INDEX_PROPERTIES,
+  ...SECTION_INDEX_PROPERTIES,
+}
+
 const INDEX_MAPPINGS = {
-  properties: { ...BASE_INDEX_PROPERTIES, ...BROWSE_INDEX_PROPERTIES },
+  properties: { ...BASE_INDEX_PROPERTIES, ...ADDITIVE_INDEX_PROPERTIES },
 }
 
 /**
@@ -124,7 +157,7 @@ export async function ensureListingsIndex(): Promise<void> {
       // Additive mapping update: only the new browse fields (base-field analyzers can't change).
       await es.indices.putMapping({
         index: ELASTICSEARCH_LISTINGS_INDEX,
-        properties: BROWSE_INDEX_PROPERTIES,
+        properties: ADDITIVE_INDEX_PROPERTIES,
       })
     }
     listingsIndexReady = true
@@ -175,6 +208,8 @@ const SEARCH_FIELDS = [
   "brand^2",
   "model^2",
   "board_type",
+  "fins_setup",
+  "tail_shape",
   "city",
   "state",
 ] as const
@@ -495,6 +530,12 @@ export const LISTING_SEARCH_DOC_SELECT = `
   fin_system,
   construction,
   fins_setup,
+  tail_shape,
+  length_feet,
+  length_inches,
+  width,
+  thickness,
+  volume,
   length_total_inches,
   volume_liters,
   price,
@@ -506,6 +547,10 @@ export const LISTING_SEARCH_DOC_SELECT = `
   dimensions,
   latitude,
   longitude,
+  magazine_year,
+  wetsuit_size,
+  wetsuit_thickness,
+  wetsuit_zip_type,
   categories (name)
 `
 
@@ -526,6 +571,12 @@ export type ListingSearchDocRow = {
   fin_system?: string | null
   construction?: string | null
   fins_setup?: string | null
+  tail_shape?: string | null
+  length_feet?: number | null
+  length_inches?: number | null
+  width?: number | string | null
+  thickness?: number | string | null
+  volume?: number | string | null
   length_total_inches?: number | null
   volume_liters?: number | null
   price?: number | string | null
@@ -537,6 +588,10 @@ export type ListingSearchDocRow = {
   dimensions?: string | null
   latitude?: number | string | null
   longitude?: number | string | null
+  magazine_year?: number | null
+  wetsuit_size?: string | null
+  wetsuit_thickness?: string | null
+  wetsuit_zip_type?: string | null
   categories: { name: string | null } | null | { name: string | null }[]
 }
 
@@ -544,6 +599,41 @@ function toFiniteNumber(value: number | string | null | undefined): number | nul
   if (value == null) return null
   const n = typeof value === "number" ? value : Number(value)
   return Number.isFinite(n) ? n : null
+}
+
+function dimensionInchesFromParsedColumn(
+  raw: string | null | undefined,
+  pick: (parsed: NonNullable<ReturnType<typeof parseListingDimensionsColumn>>) => string,
+): number | null {
+  const parsed = raw?.trim() ? parseListingDimensionsColumn(raw) : null
+  if (!parsed) return null
+  const token = pick(parsed).trim()
+  if (!token) return null
+  return parseBoardMeasurement(token) ?? toFiniteNumber(token)
+}
+
+function resolveWidthInches(row: ListingSearchDocRow): number | null {
+  const stored = toFiniteNumber(row.width)
+  if (stored != null && stored > 0) return stored
+  return dimensionInchesFromParsedColumn(row.dimensions, (p) => p.boardWidthInches)
+}
+
+function resolveThicknessInches(row: ListingSearchDocRow): number | null {
+  const stored = toFiniteNumber(row.thickness)
+  if (stored != null && stored > 0) return stored
+  return dimensionInchesFromParsedColumn(row.dimensions, (p) => p.boardThicknessInches)
+}
+
+function browseMeasurementRow(row: ListingSearchDocRow) {
+  return {
+    length_total_inches: row.length_total_inches,
+    volume_liters: row.volume_liters,
+    dimensions: row.dimensions,
+    length_feet: row.length_feet,
+    length_inches: toFiniteNumber(row.length_inches),
+    volume: toFiniteNumber(row.volume),
+    title: row.title,
+  }
 }
 
 /** Load listing + category name from Supabase and build ES document. */
@@ -570,8 +660,11 @@ export function listingRowToSearchDocFromRow(row: ListingSearchDocRow): ListingS
     fin_system: row.fin_system ?? null,
     construction: row.construction ?? null,
     fins_setup: parseFinsSetupFromStorage(row.fins_setup),
-    length_total_inches: resolveLengthTotalInches(row),
-    volume_liters: resolveVolumeLiters(row),
+    tail_shape: parseTailShapeFromStorage(row.tail_shape),
+    length_total_inches: resolveLengthTotalInches(browseMeasurementRow(row)),
+    volume_liters: resolveVolumeLiters(browseMeasurementRow(row)),
+    width_inches: resolveWidthInches(row),
+    thickness_inches: resolveThicknessInches(row),
     price: toFiniteNumber(row.price),
     brand_id: row.brand_id ?? null,
     brand_model_id: row.brand_model_id ?? null,
@@ -579,6 +672,10 @@ export function listingRowToSearchDocFromRow(row: ListingSearchDocRow): ListingS
     shipping_available: row.shipping_available ?? null,
     suppressed_on_boards_browse: row.suppressed_on_boards_browse ?? null,
     dimensions: row.dimensions?.trim() ? row.dimensions.trim().toLowerCase() : null,
+    magazine_year: toFiniteNumber(row.magazine_year),
+    wetsuit_size: row.wetsuit_size?.trim() || null,
+    wetsuit_thickness: row.wetsuit_thickness?.trim() || null,
+    wetsuit_zip_type: row.wetsuit_zip_type?.trim() || null,
     ...(lat != null && lon != null ? { location: { lat, lon } } : {}),
   }
 }

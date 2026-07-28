@@ -1,6 +1,6 @@
 # Elasticsearch search
 
-The **nav search bar** (magnifying glass) is the main site-wide search. It navigates to **`/search`**, a dedicated results page that searches **surfboard** (`section = surfboards`) listings. When `ELASTICSEARCH_URL` is set, `/search` uses Elasticsearch for relevance-ranked results; otherwise it falls back to Supabase `ilike` queries.
+The **nav search bar** (magnifying glass) is the main site-wide search. It navigates to **`/search`**, a dedicated results page that searches indexed peer listings (**surfboards**, **fins**, **magazines**, **wetsuits**). When `ELASTICSEARCH_URL` is set, `/search` uses Elasticsearch for relevance-ranked results; otherwise it falls back to Supabase `ilike` queries.
 
 **`/sell/fins` catalog search** uses a separate index (`ELASTICSEARCH_FIN_CATALOG_INDEX`, default `reswell_fin_catalog`) of fin-tagged brands, models, and variants. Search is ES-first with Supabase hydration and `ilike` fallback. Reindex via Admin → Settings → Reindex search.
 
@@ -38,7 +38,7 @@ Optional:
 
 ## Reindex (admin UI)
 
-The easiest way to reindex: log in as admin, go to **Admin** → **Settings**, and click **Reindex search**. The index is built from all active **`surfboards`** listings.
+The easiest way to reindex: log in as admin, go to **Admin** → **Settings**, and click **Reindex search**. The index is built from all active listings in indexed peer sections (**surfboards**, **fins**, **magazines**, **wetsuits**).
 
 ## Reindex via API (optional)
 

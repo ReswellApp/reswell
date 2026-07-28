@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { ArrowLeft, Loader2, Package, LifeBuoy, CircleDollarSign, MapPin } from "lucide-react"
+import { ArrowLeft, Loader2, Package, LifeBuoy, CircleDollarSign, MapPin, Store } from "lucide-react"
 import { AdminOrderParticipantCard } from "@/components/features/admin/admin-order-participant-card"
 import { AdminOrderMarketplaceMessagesPanel } from "@/components/features/admin/admin-order-marketplace-messages-panel"
 import type { AdminOrderDetail, AdminOrderShippingAddress } from "@/lib/db/adminOrders"
@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { format } from "date-fns"
 import { AdminIssueRefundButton } from "@/components/features/admin/admin-issue-refund-button"
+import { AdminReswellShopFulfillForm } from "@/components/features/admin/admin-reswell-shop-fulfill-form"
 import { ReswellTrackingSection } from "@/components/features/orders/reswell-tracking-section"
 import { SellerPreparedShippingLabelCard } from "@/components/features/sales/seller-prepared-shipping-label-card"
 import {
@@ -32,6 +33,7 @@ type OrderApiResponse =
         canRefund: boolean
         canReleaseShippingSellerEarnings: boolean
         hasShippingLabel: boolean
+        canFulfillReswellShop: boolean
       }
     }
   | { error: string }
@@ -125,6 +127,7 @@ export default function AdminOrderDetailPage() {
             canReleaseShippingSellerEarnings:
               body.capabilities.canReleaseShippingSellerEarnings === true,
             hasShippingLabel: body.capabilities.hasShippingLabel === true,
+            canFulfillReswellShop: body.capabilities.canFulfillReswellShop === true,
           },
         })
       } else {
@@ -195,6 +198,7 @@ export default function AdminOrderDetailPage() {
   const canReleaseShippingSellerEarnings =
     payload.capabilities.canReleaseShippingSellerEarnings
   const hasShippingLabel = payload.capabilities.hasShippingLabel
+  const canFulfillReswellShop = payload.capabilities.canFulfillReswellShop
   const showShippingLabel =
     o.fulfillment_method === "shipping" && hasShippingLabel
   const showCarrierTracking =
@@ -243,17 +247,37 @@ export default function AdminOrderDetailPage() {
       <OrderDetailRealtimeRefresh orderId={id} onUpdate={bumpRefetch} />
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="ghost" size="sm" asChild className="gap-2">
-          <Link href="/admin/orders">
+          <Link href={o.is_reswell_shop ? "/admin/shop/orders" : "/admin/orders"}>
             <ArrowLeft className="h-4 w-4" />
-            All orders
+            {o.is_reswell_shop ? "Shop orders" : "All orders"}
           </Link>
         </Button>
+        {o.is_reswell_shop ? (
+          <Button variant="ghost" size="sm" asChild className="gap-2 text-muted-foreground">
+            <Link href="/admin/orders">All marketplace orders</Link>
+          </Button>
+        ) : null}
       </div>
 
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Order #{displayNum}</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Order #{displayNum}</h1>
+          {o.is_reswell_shop ? (
+            <Badge
+              variant="outline"
+              className="gap-1 border-foreground/20 bg-foreground/[0.04] text-foreground"
+            >
+              <Store className="h-3 w-3" aria-hidden />
+              Reswell shop
+            </Badge>
+          ) : null}
+        </div>
         <p className="text-muted-foreground text-sm font-mono">{o.id}</p>
       </div>
+
+      {canFulfillReswellShop ? (
+        <AdminReswellShopFulfillForm orderId={o.id} onFulfilled={bumpRefetch} />
+      ) : null}
 
       <Card>
         <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-4 space-y-0">
@@ -264,6 +288,7 @@ export default function AdminOrderDetailPage() {
             </CardTitle>
             <CardDescription>
               Created {format(new Date(o.created_at), "MMM d, yyyy HH:mm")}
+              {o.is_reswell_shop ? " · Fulfilled by Reswell" : ""}
             </CardDescription>
           </div>
           <Badge variant={orderStatusBadgeVariant(o.status)}>{orderStatusLabel(o.status)}</Badge>
@@ -594,7 +619,7 @@ export default function AdminOrderDetailPage() {
       <AdminOrderMarketplaceMessagesPanel
         conversationId={o.conversation_id}
         messageCount={o.marketplace_message_count}
-        buyerId={o.buyer_id}
+        buyerId={o.buyer_id ?? ""}
         sellerId={o.seller_id}
         buyerName={buyerName}
         sellerName={sellerName}

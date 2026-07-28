@@ -28,7 +28,7 @@ import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { ELASTICSEARCH_INDEXED_LISTING_SECTIONS } from "@/lib/elasticsearch/listing-sections"
 
 /**
- * Full reindex of active indexed peer listings (surfboards + fins) into Elasticsearch.
+ * Full reindex of active indexed peer listings (surfboards, fins, magazines, wetsuits) into Elasticsearch.
  * POST /api/search/reindex
  *
  * Auth: either
