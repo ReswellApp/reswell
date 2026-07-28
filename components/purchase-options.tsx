@@ -49,9 +49,9 @@ interface PurchaseOptionsProps {
 
 function purchaseDetailsPlaceholder(needsShipping: boolean): string {
   if (needsShipping) {
-    return "Save a shipping address above to continue to payment."
+    return "Add your phone number and shipping address above to continue to payment."
   }
-  return "Complete purchase details above to pay with your card."
+  return "Add your phone number above to pay with your card."
 }
 
 export function PurchaseOptions({

@@ -9,10 +9,13 @@ import type {
 } from "@/lib/types/nav-search-personalization"
 
 export const MAX_USER_RECENT_SEARCHES = 5
-export const MAX_USER_RECENTLY_VIEWED = 24
+/** Matches `record_user_listing_view` trim cap in DB. */
+export const MAX_USER_RECENTLY_VIEWED = 100
 export const NAV_RECENTLY_VIEWED_DISPLAY_LIMIT = 10
 export const MAX_USER_RECENTLY_VIEWED_BRANDS = 24
 export const NAV_RECENTLY_VIEWED_BRANDS_DISPLAY_LIMIT = 10
+/** Active boards shown in PDP “Recently viewed” strips. */
+export const PDP_RECENTLY_VIEWED_DISPLAY_LIMIT = 6
 
 /** PostgREST: relation not exposed / not in schema cache (e.g. migration not applied yet). */
 export function isUserRecentlyViewedBrandsUnavailable(
@@ -146,39 +149,13 @@ export async function upsertUserRecentlyViewedListing(
   const id = listingId.trim()
   if (!id) return
 
-  const { error: upsertErr } = await supabase.from("user_recently_viewed_listings").upsert(
-    {
-      user_id: userId,
-      listing_id: id,
-      viewed_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id,listing_id" },
-  )
+  const { error } = await supabase.rpc("record_user_listing_view", {
+    p_user_id: userId,
+    p_listing_id: id,
+  })
 
-  if (upsertErr) {
-    console.error("[navSearchPersonalization] upsert viewed:", upsertErr)
-    return
-  }
-
-  const { data: rows, error: listErr } = await supabase
-    .from("user_recently_viewed_listings")
-    .select("listing_id")
-    .eq("user_id", userId)
-    .order("viewed_at", { ascending: false })
-
-  if (listErr || !rows || rows.length <= MAX_USER_RECENTLY_VIEWED) return
-
-  const staleIds = rows.slice(MAX_USER_RECENTLY_VIEWED).map((row) => row.listing_id as string)
-  if (staleIds.length === 0) return
-
-  const { error: deleteErr } = await supabase
-    .from("user_recently_viewed_listings")
-    .delete()
-    .eq("user_id", userId)
-    .in("listing_id", staleIds)
-
-  if (deleteErr) {
-    console.error("[navSearchPersonalization] trim viewed:", deleteErr)
+  if (error) {
+    console.error("[navSearchPersonalization] record viewed:", error)
   }
 }
 

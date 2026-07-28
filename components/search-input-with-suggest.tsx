@@ -215,6 +215,8 @@ function listingHref(listing: SuggestListing) {
 function listingSectionLabel(section: string) {
   if (section === "surfboards") return "Surfboard"
   if (section === "fins") return "Fin"
+  if (section === "wetsuits") return "Wetsuit"
+  if (section === "magazines") return "Magazine"
   if (section === "new") return "Shop"
   return "Listing"
 }

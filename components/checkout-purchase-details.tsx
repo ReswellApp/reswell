@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
-import { createProfileAddress } from "@/app/actions/addresses"
+import { createProfileAddress, updateProfileAddress } from "@/app/actions/addresses"
+import { updateProfilePersonalInfoAction } from "@/app/actions/profilePersonalInfo"
 import {
   CheckoutAddressLine1Field,
   type ResolvedCheckoutAddress,
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/select"
 import type { ShippingAddressFormInput } from "@/lib/address-input"
 import type { ProfileAddressRow } from "@/lib/profile-address"
+import { toE164UsPhone } from "@/lib/utils/phone-e164-us"
 
 function formatAddressLine(a: ProfileAddressRow) {
   const parts = [a.line1, a.city, a.state, a.postal_code].filter(Boolean)
@@ -34,12 +36,14 @@ export type PurchaseDetailsState = {
 
 export function CheckoutPurchaseDetails({
   buyerEmail,
+  buyerPhone = null,
   initialAddresses,
   needsShipping,
   legalFullName = "",
   onStateChange,
 }: {
   buyerEmail: string | null
+  buyerPhone?: string | null
   initialAddresses: ProfileAddressRow[]
   needsShipping: boolean
   /** From private profile personal info — used for pickup and shipping identity. */
@@ -55,6 +59,10 @@ export function CheckoutPurchaseDetails({
   const prevSelectedRef = useRef<string | null>(selectedId)
 
   const [pickupName, setPickupName] = useState(legalFullName)
+  const [phone, setPhone] = useState(() => buyerPhone?.trim() ?? "")
+  const [persistedPhone, setPersistedPhone] = useState(() => buyerPhone?.trim() ?? "")
+  const [phoneSaving, setPhoneSaving] = useState(false)
+  const [phoneError, setPhoneError] = useState<string | null>(null)
 
   const [draft, setDraft] = useState<ShippingAddressFormInput>({
     line1: "",
@@ -65,6 +73,8 @@ export function CheckoutPurchaseDetails({
     country: "US",
   })
   const [saving, setSaving] = useState(false)
+
+  const phoneValid = useMemo(() => toE164UsPhone(phone) != null, [phone])
 
   const applyResolvedAddress = useCallback((addr: ResolvedCheckoutAddress) => {
     setDraft((d) => ({
@@ -83,6 +93,13 @@ export function CheckoutPurchaseDetails({
       setPickupName(legalFullName.trim())
     }
   }, [legalFullName, pickupName])
+
+  useEffect(() => {
+    const next = buyerPhone?.trim() ?? ""
+    if (!next) return
+    setPhone((prev) => (prev.trim() ? prev : next))
+    setPersistedPhone((prev) => (prev.trim() ? prev : next))
+  }, [buyerPhone])
 
   useEffect(() => {
     if (!needsShipping) return
@@ -108,12 +125,60 @@ export function CheckoutPurchaseDetails({
     )
   }, [draft])
 
+  const persistPhone = useCallback(async (): Promise<boolean> => {
+    const trimmed = phone.trim()
+    if (!toE164UsPhone(trimmed)) {
+      setPhoneError("Enter a valid US phone number.")
+      return false
+    }
+    if (trimmed === persistedPhone.trim()) {
+      setPhoneError(null)
+      return true
+    }
+
+    setPhoneSaving(true)
+    try {
+      const result = await updateProfilePersonalInfoAction({ phone: trimmed })
+      if (!result.ok) {
+        setPhoneError(result.error)
+        toast.error(result.error)
+        return false
+      }
+      const saved = result.personal.phone?.trim() || trimmed
+      setPersistedPhone(saved)
+      setPhone(saved)
+      setPhoneError(null)
+
+      if (selectedId) {
+        const { address, error } = await updateProfileAddress(selectedId, { phone: saved })
+        if (!error && address) {
+          setAddresses((prev) => prev.map((a) => (a.id === address.id ? address : a)))
+        }
+      }
+      return true
+    } finally {
+      setPhoneSaving(false)
+    }
+  }, [phone, persistedPhone, selectedId])
+
+  const phoneReady =
+    phoneValid && toE164UsPhone(phone) === toE164UsPhone(persistedPhone)
+
+  useEffect(() => {
+    if (!phoneValid) return
+    if (toE164UsPhone(phone) === toE164UsPhone(persistedPhone)) return
+    const timer = window.setTimeout(() => {
+      void persistPhone()
+    }, 450)
+    return () => window.clearTimeout(timer)
+  }, [phone, phoneValid, persistedPhone, persistPhone])
+
   const computeAndNotify = useCallback(() => {
     const pickupNameOk = pickupName.trim().length > 0
 
     if (!needsShipping) {
       onStateChange({
-        readyToPay: pickupNameOk,
+        readyToPay: pickupNameOk && phoneReady,
         shippingAddressId: null,
       })
       return
@@ -130,7 +195,7 @@ export function CheckoutPurchaseDetails({
     if (selectedId) {
       const selected = addresses.find((a) => a.id === selectedId)
       onStateChange({
-        readyToPay: !!selected,
+        readyToPay: !!selected && phoneReady,
         shippingAddressId: selectedId,
       })
       return
@@ -140,7 +205,7 @@ export function CheckoutPurchaseDetails({
       readyToPay: false,
       shippingAddressId: null,
     })
-  }, [needsShipping, pickupName, showNewForm, selectedId, addresses, onStateChange])
+  }, [needsShipping, pickupName, phoneReady, showNewForm, selectedId, addresses, onStateChange])
 
   useEffect(() => {
     computeAndNotify()
@@ -170,8 +235,16 @@ export function CheckoutPurchaseDetails({
       toast.error("Fill in street, city, postal code, and country.")
       return
     }
+    if (!phoneValid) {
+      setPhoneError("Enter a valid US phone number.")
+      toast.error("Phone number is required.")
+      return
+    }
     setSaving(true)
     try {
+      const phoneOk = await persistPhone()
+      if (!phoneOk) return
+
       const { address, error } = await createProfileAddress({
         line1: draft.line1,
         line2: draft.line2 || null,
@@ -179,6 +252,7 @@ export function CheckoutPurchaseDetails({
         state: draft.state || null,
         postal_code: draft.postal_code,
         country: draft.country,
+        phone: phone.trim(),
         label: null,
         is_default: addresses.length === 0,
       })
@@ -191,7 +265,6 @@ export function CheckoutPurchaseDetails({
       prevSelectedRef.current = address.id
       setShowNewForm(false)
       setDraft({
-        full_name: "",
         line1: "",
         line2: "",
         city: "",
@@ -225,6 +298,39 @@ export function CheckoutPurchaseDetails({
             className={`${fieldClass} bg-neutral-50 text-neutral-700`}
           />
           <p className="text-xs text-neutral-500">Receipts and purchase updates are sent here.</p>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="checkout-phone" className="text-[13px] font-normal text-neutral-600">
+            Phone <span className="text-neutral-400">(required)</span>
+          </Label>
+          <Input
+            id="checkout-phone"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            required
+            aria-required
+            aria-invalid={phoneError ? true : undefined}
+            value={phone}
+            onChange={(e) => {
+              setPhone(e.target.value)
+              if (phoneError) setPhoneError(null)
+            }}
+            onBlur={() => {
+              void persistPhone()
+            }}
+            placeholder="(555) 555-5555"
+            className={fieldClass}
+          />
+          {phoneError ? (
+            <p className="text-xs text-destructive">{phoneError}</p>
+          ) : (
+            <p className="text-xs text-neutral-500">
+              {phoneSaving
+                ? "Saving phone…"
+                : "Required for delivery updates and carrier labels."}
+            </p>
+          )}
         </div>
       </section>
 
@@ -296,7 +402,7 @@ export function CheckoutPurchaseDetails({
               </p>
               {legalFullName.trim() ? (
                 <p className="text-xs text-neutral-500">
-                  Ships to {legalFullName.trim()} — update name and phone under Addresses.
+                  Ships to {legalFullName.trim()} — update your name under Addresses if needed.
                 </p>
               ) : (
                 <p className="text-xs text-amber-700">

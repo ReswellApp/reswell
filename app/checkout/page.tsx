@@ -127,7 +127,8 @@ export default async function CheckoutPage(props: {
 
     const sellerId = offer.seller_id
     const { seller, buyer } = await fetchCheckoutSellerAndBuyerContext(supabase, sellerId, user)
-    const { addresses: initialAddresses, addressesError, buyerEmail, legalFullName } = buyer
+    const { addresses: initialAddresses, addressesError, buyerEmail, buyerPhone, legalFullName } =
+      buyer
 
     const copy = peerCheckoutCopyFromSections(
       checkoutListings.map((l) => l.section),
@@ -169,6 +170,7 @@ export default async function CheckoutPage(props: {
             listings={checkoutListings}
             copy={copy}
             buyerEmail={buyerEmail}
+            buyerPhone={buyerPhone}
             legalFullName={legalFullName}
             initialAddresses={addressesError ? [] : initialAddresses}
             seller={seller}
@@ -258,7 +260,8 @@ export default async function CheckoutPage(props: {
         orderSellerId,
       ),
     ])
-    const { addresses: initialAddresses, addressesError, buyerEmail, legalFullName } = buyer
+    const { addresses: initialAddresses, addressesError, buyerEmail, buyerPhone, legalFullName } =
+      buyer
 
     return (
       <main className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24">
@@ -294,6 +297,7 @@ export default async function CheckoutPage(props: {
           <CheckoutClient
             listings={checkoutListings}
             buyerEmail={buyerEmail}
+            buyerPhone={buyerPhone}
             legalFullName={legalFullName}
             initialAddresses={addressesError ? [] : initialAddresses}
             seller={seller}
@@ -483,11 +487,8 @@ export default async function CheckoutPage(props: {
     )
   }
 
-  const { addresses: initialAddresses, addressesError, buyerEmail, legalFullName } =
-    await fetchCheckoutBuyerContext(
-    supabase,
-    user,
-  )
+  const { addresses: initialAddresses, addressesError, buyerEmail, buyerPhone, legalFullName } =
+    await fetchCheckoutBuyerContext(supabase, user)
 
   return (
     <main className="flex-1 w-full bg-background pt-8 pb-16 md:pb-20 lg:pb-24">
@@ -531,6 +532,7 @@ export default async function CheckoutPage(props: {
         <CheckoutClient
           listings={[checkoutListing]}
           buyerEmail={buyerEmail}
+          buyerPhone={buyerPhone}
           legalFullName={legalFullName}
           initialAddresses={addressesError ? [] : initialAddresses}
           seller={seller}

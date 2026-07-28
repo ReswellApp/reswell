@@ -4,14 +4,29 @@ function isSearchResultsPath(pathname: string | null): boolean {
   return pathname === "/search" || pathname === "/search/recent"
 }
 
-/** Scope header nav typeahead + submit to fins when browsing `/fins`. */
+const PATH_SCOPED_SECTIONS = ["fins", "wetsuits", "magazines"] as const
+
+type PathScopedSection = (typeof PATH_SCOPED_SECTIONS)[number]
+
+function isPathScopedSection(section: string): section is PathScopedSection {
+  return (PATH_SCOPED_SECTIONS as readonly string[]).includes(section)
+}
+
+/** Scope header nav typeahead + submit to the category when browsing its browse path. */
 export function resolveHeaderNavSearchSection(pathname: string | null): string {
-  if (pathname === "/fins" || pathname?.startsWith("/fins/")) return "fins"
+  if (!pathname) return ""
+  for (const section of PATH_SCOPED_SECTIONS) {
+    if (pathname === `/${section}` || pathname.startsWith(`/${section}/`)) {
+      return section
+    }
+  }
   return ""
 }
 
 export function headerNavSearchPlaceholder(section: string): string {
   if (section === "fins") return "Search fins…"
+  if (section === "wetsuits") return "Search wetsuits…"
+  if (section === "magazines") return "Search magazines…"
   return "Search surfboards…"
 }
 
@@ -19,18 +34,24 @@ export function headerNavSearchPlaceholder(section: string): string {
 export function marketplaceSearchSuggestSections(section: string): string[] {
   const normalized = section.trim().toLowerCase()
   if (normalized === "new") return ["new"]
-  if (normalized === "fins") return ["fins"]
+  if (isPathScopedSection(normalized)) return [normalized]
   if (normalized === "surfboards") return ["surfboards"]
   return [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS]
 }
 
 /** Stable cache key for nav search suggest (`section` query param). */
-export type NavSearchSuggestSectionKey = "new" | "surfboards" | "fins" | "marketplace"
+export type NavSearchSuggestSectionKey =
+  | "new"
+  | "surfboards"
+  | "fins"
+  | "wetsuits"
+  | "magazines"
+  | "marketplace"
 
 export function navSearchSuggestSectionKey(section: string): NavSearchSuggestSectionKey {
   const normalized = section.trim().toLowerCase()
   if (normalized === "new") return "new"
-  if (normalized === "fins") return "fins"
+  if (isPathScopedSection(normalized)) return normalized
   if (normalized === "surfboards") return "surfboards"
   return "marketplace"
 }
@@ -43,8 +64,9 @@ export function headerNavSearchSubmitHref(
   const term = rawQuery.trim()
   if (!term) return ""
 
-  if (resolveHeaderNavSearchSection(pathname) === "fins") {
-    return `/fins?q=${encodeURIComponent(term)}`
+  const scoped = resolveHeaderNavSearchSection(pathname)
+  if (isPathScopedSection(scoped)) {
+    return `/${scoped}?q=${encodeURIComponent(term)}`
   }
 
   const params = new URLSearchParams()

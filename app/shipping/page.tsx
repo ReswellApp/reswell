@@ -20,10 +20,10 @@ function ShippingGuideCards() {
   return (
     <>
       <p className="text-muted-foreground mb-4 leading-relaxed">
-        Sellers choose whether to offer shipping on each listing. For surfboards you can offer
-        local pickup, shipping, or both. If you ship, you set a flat shipping price when you post
-        the listing. This guide covers both sides, whether you&apos;re sending a board or waiting
-        on one.
+        Sellers choose whether to offer shipping on each listing — boards, fins, wetsuits, and other
+        gear. You can offer local pickup, shipping, or both. If you ship, you set a flat shipping
+        price or use Reswell-calculated rates when you post the listing. This guide covers both
+        sides, whether you&apos;re sending an item or waiting on one.
       </p>
       <p className="text-muted-foreground mb-8 leading-relaxed">
         Planning ahead? Use our{" "}
@@ -51,7 +51,8 @@ function ShippingGuideCards() {
         </div>
 
         <p className="text-muted-foreground leading-relaxed">
-          Sellers can get purpose-built, sustainable surfboard shipping boxes from our partner{" "}
+          Sellers shipping surfboards can get purpose-built, sustainable board shipping boxes from
+          our partner{" "}
           <a
             href="https://anewearthproject.com"
             target="_blank"
@@ -116,7 +117,7 @@ function ShippingGuideCards() {
             </p>
             <ul className="list-disc pl-5 space-y-1">
               <li>
-                Pack the board well. See{" "}
+                Pack the item well. For surfboards, see{" "}
                 <a href="#how-to-pack-a-surfboard" className="text-primary underline">
                   How to pack a surfboard
                 </a>{" "}
@@ -154,7 +155,7 @@ function ShippingGuideCards() {
                 seller in Messages.
               </li>
               <li>
-                Once the board ships, tracking appears on your purchase page. If the seller is taking
+                Once the item ships, tracking appears on your purchase page. If the seller is taking
                 longer than expected, message them in Messages or use Get help on your purchase page.
               </li>
               <li>
@@ -176,8 +177,8 @@ function ShippingGuideCards() {
           </CardHeader>
           <CardContent className="space-y-3 text-muted-foreground">
             <p>
-              Plenty of listings, especially surfboards, are pickup only. Meet somewhere public,
-              take a proper look at the board, and only pay once you&apos;re happy. Our{" "}
+              Plenty of listings are pickup only. Meet somewhere public, take a proper look at the
+              item, and only pay once you&apos;re happy. Our{" "}
               <Link href="/safety" className="text-primary underline">
                 Safety tips
               </Link>{" "}
@@ -203,7 +204,7 @@ function ShippingGuideCards() {
               </li>
               <li>
                 After a sale, the seller gets a shipping label to print and attach before handing
-                the board to the carrier.
+                the package to the carrier.
               </li>
               <li>
                 Sellers can preview label costs with the{" "}
@@ -231,7 +232,7 @@ function ShippingGuideCards() {
                 see on the listing is what you pay.
               </li>
               <li>
-                Sellers arrange shipping themselves and add tracking in Messages once the board is
+                Sellers arrange shipping themselves and add tracking in Messages once the item is
                 on its way.
               </li>
               <li>
@@ -257,11 +258,11 @@ function ShippingGuideCards() {
                 tax.
               </li>
               <li>
-                The seller still ships the board to you and should share tracking once it&apos;s
+                The seller still ships the item to you and should share tracking once it&apos;s
                 sent.
               </li>
               <li>
-                Sellers often build the shipping cost into the listing price, so the board may
+                Sellers often build the shipping cost into the listing price, so the item price may
                 reflect that upfront.
               </li>
             </ul>
@@ -338,7 +339,7 @@ export default async function ShippingGuidePage(props: {
           <p className="text-muted-foreground mt-1">
             {labelFlow
               ? "Buy a carrier label and add tracking to this order."
-              : "How to ship and receive surfboards safely"}
+              : "How to ship and receive gear safely on Reswell"}
           </p>
         </div>
 

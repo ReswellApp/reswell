@@ -63,6 +63,7 @@ import {
 } from "@/lib/marketplace-slug-metadata"
 import { formatDistanceToNow } from "date-fns"
 import { ListingPdpRecentSections } from "@/components/features/listings/listing-pdp-recent-sections"
+import { fetchSignedInPdpRecentlyViewedSurfboards } from "@/lib/services/pdp-recent-strip-listings"
 import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
 import { getListingFavoriteCount } from "@/lib/db/listing-favorite-count"
 import { HOME_PEER_LISTING_WITH_PROFILE_SELECT } from "@/lib/db/home-peer-listing-feed"
@@ -181,7 +182,7 @@ export async function SurfboardListingDetailPage({
 
   // Wave 2: everything that depends on the viewer runs in parallel,
   // with all favorite lookups coalesced into a single query.
-  const [favoriteRowsRes, acceptedOffer] = await Promise.all([
+  const [favoriteRowsRes, acceptedOffer, dbRecentListings] = await Promise.all([
     user
       ? supabase
           .from("favorites")
@@ -192,6 +193,9 @@ export async function SurfboardListingDetailPage({
     user && !isOwnListing && board.status === "active"
       ? fetchAcceptedOfferForBuyerListing(supabase, user.id, board.id)
       : Promise.resolve(null),
+    user
+      ? fetchSignedInPdpRecentlyViewedSurfboards(supabase, user.id, board.id)
+      : Promise.resolve(undefined),
   ])
 
   const favoritedIds = new Set(
@@ -871,6 +875,7 @@ export async function SurfboardListingDetailPage({
             viewerUserId={user?.id ?? null}
             moreListings={[]}
             padStripWithRecommendations={false}
+            initialDbRecentListings={dbRecentListings}
           />
         </div>
       </main>

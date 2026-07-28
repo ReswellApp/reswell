@@ -38,8 +38,8 @@ const VALUE_PILLARS = [
     body: "When you write in, a person on our team reads it. No scripts, no runaround.",
   },
   {
-    title: "Your next board is out there",
-    body: "That board sitting in your quiver might be someone else's dream setup. List what you are ready to move on from, or browse until you find the one you have been hunting for.",
+    title: "Your next setup is out there",
+    body: "That board or wetsuit sitting in your quiver might be someone else's dream setup. List what you are ready to move on from, or browse until you find what you have been hunting for.",
   },
   {
     title: "Trust on both sides",
@@ -83,7 +83,7 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
             We&apos;re creating{" "}
             <span className="text-listingHeart">the easiest</span> and{" "}
             <span className="text-listingHeart">most enjoyable</span> place to buy and sell
-            surfboards
+            surf gear
           </h1>
         }
       />
@@ -110,21 +110,22 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
             </h2>
             <div className="mt-6 space-y-5 text-base leading-relaxed text-muted-foreground sm:text-lg">
               <p>
-                Buying a used board usually means juggling DMs, Venmo, and a lot of trust. Sellers
+                Buying used surf gear usually means juggling DMs, Venmo, and a lot of trust. Sellers
                 post a photo somewhere, answer the same questions ten times, and hope the buyer
-                actually shows up. Buyers wire money or meet a stranger with no backup if the board
+                actually shows up. Buyers wire money or meet a stranger with no backup if the item
                 is not what they expected. We built Reswell because that process breaks too often.
               </p>
               <p>
-                Reswell is a marketplace for surfboards. List what you have, browse what is out there,
-                message the seller, and checkout on the site when you are ready. Payments, offers,
-                shipping labels, and seller payouts live in one place instead of spread across five
-                apps. If a covered purchase goes wrong, there is a policy for that too.
+                Reswell is a marketplace for surfboards and surf gear — fins, wetsuits, and more.
+                List what you have, browse what is out there, message the seller, and checkout on the
+                site when you are ready. Payments, offers, shipping labels, and seller payouts live
+                in one place instead of spread across five apps. If a covered purchase goes wrong,
+                there is a policy for that too.
               </p>
               <p>
                 We&apos;re a small team. We use Reswell ourselves, read your support messages, and
                 push fixes when something&apos;s off. We&apos;re not trying to reinvent surfing. We
-                just want buying and selling a board to feel simple enough that you actually close
+                just want buying and selling gear to feel simple enough that you actually close
                 the deal.
               </p>
             </div>
@@ -142,14 +143,14 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
             for surfers by surfers
           </h2>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            We know how personal a board can be. That is why we built a marketplace with messaging,
+            We know how personal gear can be. That is why we built a marketplace with messaging,
             checkout, shipping tools, and real support, so you can handle the whole thing in one
             place.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button size="lg" asChild>
               <Link href="/boards">
-                Browse surfboards
+                Browse the marketplace
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
@@ -163,9 +164,9 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
       <section className="border-b border-border/70 bg-background">
         <div className="container mx-auto px-4 py-14 sm:px-6 sm:py-16">
           <div className="grid gap-10 sm:grid-cols-3 sm:gap-8">
-            <StatCell value={stats.soldCountLabel} label="boards sold on Reswell" />
+            <StatCell value={stats.soldCountLabel} label="items sold on Reswell" />
             <StatCell value={stats.gmvLabel} label="in completed sales" />
-            <StatCell value={stats.activeListingsLabel} label="boards listed right now" />
+            <StatCell value={stats.activeListingsLabel} label="listings live right now" />
           </div>
         </div>
       </section>
@@ -219,21 +220,21 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
 
           <div className="rounded-[1.75rem] border border-border/80 bg-muted/30 p-8 sm:p-10">
             <h2 className="font-headline text-2xl font-bold tracking-tight text-foreground">
-              Keeping boards in the water
+              Keeping gear in the water
             </h2>
             <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-              Surfers list boards here when they are ready to sell. Browse what is nearby, get
-              get shipping when a seller offers it, and check{" "}
+              Surfers list boards, fins, wetsuits, and more here when they are ready to sell. Browse
+              what is nearby, get shipping when a seller offers it, and check{" "}
               <Link href="/sold" className="text-foreground underline underline-offset-4">
                 recently sold
               </Link>{" "}
-              boards if you want a read on what similar setups are going for.
+              if you want a read on what similar setups are going for.
             </p>
             <Link
               href="/boards"
               className="mt-6 inline-flex items-center gap-2 font-medium text-foreground underline-offset-4 hover:underline"
             >
-              Explore surfboards
+              Explore the marketplace
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
@@ -270,7 +271,7 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
               <a href="mailto:help@reswell.app" className="text-foreground underline underline-offset-4">
                 help@reswell.app
               </a>
-              . Thanks for being here. Now go find your next board.
+              . Thanks for being here. Now go find your next setup.
             </p>
           </div>
         </div>

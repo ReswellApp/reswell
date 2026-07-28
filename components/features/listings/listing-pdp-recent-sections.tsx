@@ -83,18 +83,30 @@ export function ListingPdpRecentSections({
   viewerUserId,
   moreListings,
   padStripWithRecommendations = true,
+  initialDbRecentListings,
 }: {
   currentListingId: string
   viewerUserId: string | null
   moreListings: PdpRecentStripListingWithFavorite[]
   /**
-   * When false (e.g. short `/l/*` PDP URLs), only listing IDs from local “recently viewed”
+   * When false (e.g. short `/l/*` PDP URLs), only listing IDs from “recently viewed”
    * are shown — no filler tiles from `moreListings`.
    */
   padStripWithRecommendations?: boolean
+  /**
+   * Signed-in server preload from `user_recently_viewed_listings`.
+   * When provided, skips localStorage and uses DB history for the strip.
+   */
+  initialDbRecentListings?: PdpRecentStripListingWithFavorite[]
 }) {
+  const useDbHistory = viewerUserId != null && initialDbRecentListings !== undefined
+
   const [catalogRow, setCatalogRow] = useState<PdpRecentStripListingWithFavorite[] | null>(null)
-  const [marketRow, setMarketRow] = useState<PdpRecentStripListingWithFavorite[] | null>(null)
+  const [marketRow, setMarketRow] = useState<PdpRecentStripListingWithFavorite[] | null>(() => {
+    if (!useDbHistory) return null
+    const rows = (initialDbRecentListings ?? []).filter((l) => l.id !== currentListingId)
+    return rows.length ? rows : null
+  })
   const [recentUi, setRecentUi] = useState<
     | { phase: "idle" }
     | {
@@ -104,9 +116,27 @@ export function ListingPdpRecentSections({
         skeletonCatalogTileCount: number
       }
     | { phase: "content" }
-  >({ phase: "idle" })
+  >(() => {
+    if (!useDbHistory) return { phase: "idle" }
+    const rows = (initialDbRecentListings ?? []).filter((l) => l.id !== currentListingId)
+    return rows.length ? { phase: "content" } : { phase: "idle" }
+  })
 
   useLayoutEffect(() => {
+    if (useDbHistory) {
+      const rows = (initialDbRecentListings ?? []).filter((l) => l.id !== currentListingId)
+      const market = rows.length ? rows.slice(0, 6) : null
+      let catalog: PdpRecentStripListingWithFavorite[] | null = null
+      if (padStripWithRecommendations && market?.length) {
+        catalog = market.slice(0, 4)
+      }
+      setCatalogRow(catalog)
+      setMarketRow(market)
+      setRecentUi(catalog?.length || market?.length ? { phase: "content" } : { phase: "idle" })
+      return
+    }
+
+    // Guests: localStorage-backed strip.
     pushRecentSurfboardListingId(currentListingId)
 
     let cancelled = false
@@ -199,7 +229,13 @@ export function ListingPdpRecentSections({
     return () => {
       cancelled = true
     }
-  }, [currentListingId, moreListings, padStripWithRecommendations])
+  }, [
+    currentListingId,
+    moreListings,
+    padStripWithRecommendations,
+    useDbHistory,
+    initialDbRecentListings,
+  ])
 
   if (recentUi.phase === "skeleton") {
     return (

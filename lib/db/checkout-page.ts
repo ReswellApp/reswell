@@ -10,6 +10,7 @@ export type CheckoutBuyerContext = {
   addresses: ProfileAddressRow[]
   addressesError: string | null
   buyerEmail: string | null
+  buyerPhone: string | null
   legalFullName: string
 }
 
@@ -46,13 +47,16 @@ export async function fetchCheckoutBuyerContext(
     fetchProfileAddresses(supabase, user.id),
     supabase
       .from("profiles")
-      .select("email, display_name, first_name, last_name")
+      .select("email, display_name, first_name, last_name, phone")
       .eq("id", user.id)
       .maybeSingle(),
   ])
 
   const profileEmail =
     typeof profileResult.data?.email === "string" ? profileResult.data.email.trim() : ""
+
+  const profilePhone =
+    typeof profileResult.data?.phone === "string" ? profileResult.data.phone.trim() : ""
 
   const legalFullName = formatProfileLegalName(
     profileResult.data?.first_name,
@@ -64,6 +68,7 @@ export async function fetchCheckoutBuyerContext(
     addresses: addressesResult.addresses,
     addressesError: addressesResult.error ?? null,
     buyerEmail: authEmail || profileEmail || null,
+    buyerPhone: profilePhone || null,
     legalFullName,
   }
 }

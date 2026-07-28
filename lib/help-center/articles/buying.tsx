@@ -15,28 +15,29 @@ export const buyingHelpArticles: HelpArticle[] = [
     sectionSlug: "shopping-on-reswell",
     sectionTitle: "Shopping on Reswell",
     groupTitle: "Browsing and checkout",
-    title: "How do I buy a board on Reswell?",
+    title: "How do I buy on Reswell?",
     description:
-      "Find a surfboard you love, check out with Buy it now, and stay covered by Purchase Protection. You can also message the seller or make an offer first.",
-    keywords: ["buy", "checkout", "purchase", "board"],
+      "Find boards, fins, wetsuits, and more, check out with Buy it now, and stay covered by Purchase Protection. You can also message the seller or make an offer first.",
+    keywords: ["buy", "checkout", "purchase", "board", "fins", "wetsuit", "gear"],
     relatedSlugs: ["local-pickup-or-shipping", "how-do-i-pay", "how-do-offers-work"],
     quickAnswer: (
       <>
-        Browse {helpLink("/boards", "Surfboards")}, open a listing, and tap <strong>Buy it now</strong> to
-        check out in Reswell. You can also <strong>Message Seller</strong> first or{" "}
-        <strong>Make an offer</strong> when the seller has offers turned on. Just keep payment inside
-        Reswell checkout.
+        Browse the marketplace — {helpLink("/boards", "Surfboards")}, fins, wetsuits, and more — open a
+        listing, and tap <strong>Buy it now</strong> to check out in Reswell. You can also{" "}
+        <strong>Message Seller</strong> first or <strong>Make an offer</strong> when the seller has
+        offers turned on. Just keep payment inside Reswell checkout.
       </>
     ),
     sections: [
       {
-        heading: "Find a board",
+        heading: "Find a listing",
         body: (
           <>
             <p>
-              Start on the {helpLink("/boards", "Surfboards")} page or use search to filter by brand,
-              length, fin setup, and price. Tap any active listing to see photos, dimensions, condition
-              notes, and how the seller can get the board to you.
+              Start on {helpLink("/boards", "Surfboards")} or browse other categories like fins and
+              wetsuits. Use search and filters to narrow by brand, size, and price. Tap any active
+              listing to see photos, details, condition notes, and how the seller can get the item to
+              you.
             </p>
             <p>
               See something you like? Tap the heart to save it to {helpLink("/favorites", "Favorites")}{" "}
@@ -46,8 +47,8 @@ export const buyingHelpArticles: HelpArticle[] = [
         ),
         figure: helpFigure(
           "browse-boards.png",
-          "Surfboards browse page with filters and listing grid on Reswell",
-          "Browse boards by type, location, and price from the Surfboards page.",
+          "Marketplace browse page with filters and listing grid on Reswell",
+          "Browse listings by category, location, and price.",
         ),
       },
       {
@@ -56,7 +57,7 @@ export const buyingHelpArticles: HelpArticle[] = [
           <>
             <p>
               When you are ready, tap <strong>Buy it now</strong> on the listing. Checkout is where you
-              pick how you will get the board (if the seller offers both pickup and shipping), confirm
+              pick how you will get the item (if the seller offers both pickup and shipping), confirm
               your details, and pay through Stripe.
             </p>
             <NumberedSteps
@@ -66,7 +67,7 @@ export const buyingHelpArticles: HelpArticle[] = [
                   body: "You need a Reswell account so we can connect your purchase to Purchase Protection and your order history.",
                 },
                 {
-                  title: "Choose how you will get the board",
+                  title: "Choose how you will get the item",
                   body: (
                     <>
                       Pick <strong>Local pickup</strong> to meet the seller in person, or{" "}
@@ -110,9 +111,9 @@ export const buyingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Tap <strong>Message Seller</strong> in the About Seller section to ask about dings, fin
-              setup, or pickup timing. If the seller has offers on, tap <strong>Make an offer</strong>{" "}
-              to negotiate. Read{" "}
+              Tap <strong>Message Seller</strong> in the About Seller section to ask about condition,
+              what&apos;s included, or pickup timing. If the seller has offers on, tap{" "}
+              <strong>Make an offer</strong> to negotiate. Read{" "}
               {helpLink("/help/buying/how-do-offers-work", "How do offers work on Reswell?")} for the
               full rundown.
             </p>
@@ -134,7 +135,7 @@ export const buyingHelpArticles: HelpArticle[] = [
     groupTitle: "Offers",
     title: "How do offers work on Reswell?",
     description:
-      "Make an offer on a surfboard, respond to counteroffers, and check out at the price you and the seller agree on.",
+      "Make an offer on a listing, respond to counteroffers, and check out at the price you and the seller agree on.",
     keywords: ["offer", "counter", "negotiate"],
     relatedSlugs: ["how-do-i-buy-a-board", "how-long-to-pay", "how-to-contact-a-seller"],
     quickAnswer: (
@@ -150,9 +151,9 @@ export const buyingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Offers work on active surfboard listings when the seller has turned them on. You can have
-              one open offer per board at a time. Most sellers set a minimum around 70% of the list
-              price, and the Make an Offer dialog shows you the floor before you submit.
+              Offers work on active peer listings when the seller has turned them on. You can have one
+              open offer per listing at a time. Most sellers set a minimum around 70% of the list price,
+              and the Make an Offer dialog shows you the floor before you submit.
             </p>
             <BulletList
               items={[
@@ -166,7 +167,7 @@ export const buyingHelpArticles: HelpArticle[] = [
         ),
         figure: helpFigure(
           "listing-detail.png",
-          "Make an offer button on a surfboard listing page",
+          "Make an offer button on a listing page",
           "Make an offer appears on listings when the seller has offers turned on.",
         ),
       },
@@ -221,7 +222,7 @@ export const buyingHelpArticles: HelpArticle[] = [
     groupTitle: "Browsing and checkout",
     title: "How do I know if a listing offers pickup or shipping?",
     description:
-      "Every listing shows how you can get the board. Here is how to read those options and what they mean at checkout.",
+      "Every listing shows how you can get the item. Here is how to read those options and what they mean at checkout.",
     keywords: ["pickup", "shipping", "delivery"],
     relatedSlugs: ["how-do-i-buy-a-board", "package-delayed-or-lost", "purchase-protection-claim"],
     sections: [
@@ -236,7 +237,7 @@ export const buyingHelpArticles: HelpArticle[] = [
             </p>
             <BulletList
               items={[
-                <><strong>Local pickup</strong> means you meet the seller in person to inspect and grab the board.</>,
+                <><strong>Local pickup</strong> means you meet the seller in person to inspect and grab the item.</>,
                 <><strong>Flat rate shipping</strong> is a fixed amount shown on the listing and in checkout.</>,
                 <><strong>Free shipping</strong> means no extra shipping charge. The item price is your total before tax.</>,
                 <><strong>Shipping (rate at checkout)</strong> means Reswell calculates the carrier rate from the box size and your address when you check out.</>,
@@ -255,7 +256,7 @@ export const buyingHelpArticles: HelpArticle[] = [
               shipping. Shipping only listings need a delivery address.
             </p>
             <p>
-              For shipped orders, the seller adds tracking once the board goes out. Follow along from{" "}
+              For shipped orders, the seller adds tracking once the item goes out. Follow along from{" "}
               {helpLink("/dashboard/purchases", "Purchases")} and tap <strong>Track package</strong> when
               the carrier link is ready.
             </p>
@@ -268,7 +269,7 @@ export const buyingHelpArticles: HelpArticle[] = [
           <>
             <p>
               After a pickup purchase is confirmed, you get a pickup code on your purchase page. Message
-              the seller to agree on a safe, public spot and time. Inspect the board in person, and share
+              the seller to agree on a safe, public spot and time. Inspect the item in person, and share
               your code when you are happy with it.
             </p>
             <HelpNote>
@@ -289,7 +290,7 @@ export const buyingHelpArticles: HelpArticle[] = [
     groupTitle: "Search and favorites",
     title: "How do favorites work on Reswell?",
     description:
-      "Save boards you are eyeing, compare them later, and jump back to buy when the timing is right.",
+      "Save listings you are eyeing, compare them later, and jump back to buy when the timing is right.",
     keywords: ["favorite", "save", "wishlist"],
     relatedSlugs: ["how-do-i-buy-a-board", "how-do-offers-work"],
     sections: [
@@ -298,9 +299,9 @@ export const buyingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Tap the heart on any listing to save it. Your saved boards live in{" "}
-              {helpLink("/favorites", "Favorites")}, your personal shortlist of boards and gear you are
-              thinking about.
+              Tap the heart on any listing to save it. Your saved listings live in{" "}
+              {helpLink("/favorites", "Favorites")}, your personal shortlist of gear you are thinking
+              about.
             </p>
             <p>
               You need to be signed in to save favorites. Browsing without an account? You will be
@@ -310,7 +311,7 @@ export const buyingHelpArticles: HelpArticle[] = [
         ),
         figure: helpFigure(
           "listing-detail.png",
-          "Heart icon on a surfboard listing for saving to Favorites",
+          "Heart icon on a listing for saving to Favorites",
           "Tap the heart on any listing tile or detail page to save it.",
         ),
       },
@@ -324,7 +325,7 @@ export const buyingHelpArticles: HelpArticle[] = [
             </p>
             <BulletList
               items={[
-                <>Compare boards before you commit to an offer or purchase.</>,
+                <>Compare listings before you commit to an offer or purchase.</>,
                 <>Check back for price drops or status changes.</>,
                 <>Sold listings stay in your list with a sold badge so you can reference them later.</>,
               ]}
@@ -338,7 +339,7 @@ export const buyingHelpArticles: HelpArticle[] = [
           <p>
             Open a saved listing and use <strong>Buy it now</strong>, <strong>Make an offer</strong>, or{" "}
             <strong>Message Seller</strong>, same as any active listing. For the full walkthrough, see{" "}
-            {helpLink("/help/buying/how-do-i-buy-a-board", "How do I buy a board on Reswell?")}.
+            {helpLink("/help/buying/how-do-i-buy-a-board", "How do I buy on Reswell?")}.
           </p>
         ),
       },
@@ -446,7 +447,7 @@ export const buyingHelpArticles: HelpArticle[] = [
           <>
             <p>
               If you have balance from past sales, you may be able to apply it when you buy another
-              board on Reswell. Standard checkout also takes card payment through Stripe when your
+              listing on Reswell. Standard checkout also takes card payment through Stripe when your
               balance does not cover the full amount.
             </p>
             <p>
@@ -483,7 +484,7 @@ export const buyingHelpArticles: HelpArticle[] = [
     groupTitle: "Returns and refunds",
     title: "How do returns work for buyers on Reswell?",
     description:
-      "How to return a board, file a Purchase Protection claim, and start a refund request from your purchase page.",
+      "How to return an item, file a Purchase Protection claim, and start a refund request from your purchase page.",
     keywords: ["return", "refund"],
     relatedSlugs: ["purchase-protection-claim", "how-to-contact-a-seller", "package-delayed-or-lost"],
     quickAnswer: (
@@ -604,7 +605,7 @@ export const buyingHelpArticles: HelpArticle[] = [
             <BulletList
               items={[
                 <><strong>Item never arrives.</strong> Tracking confirms it did not get delivered. You get a full refund and do not need to return anything.</>,
-                <><strong>Not as described.</strong> The board is materially different from the listing (wrong size, hidden damage, wrong model). Full refund plus a prepaid return label. Your refund releases after the seller confirms they got it back.</>,
+                <><strong>Not as described.</strong> The item is materially different from the listing (wrong size, hidden damage, wrong model). Full refund plus a prepaid return label. Your refund releases after the seller confirms they got it back.</>,
                 <><strong>Arrives damaged.</strong> Transit damage with photo evidence. Same process as not as described claims.</>,
               ]}
             />
@@ -623,7 +624,7 @@ export const buyingHelpArticles: HelpArticle[] = [
             <BulletList
               items={[
                 <>Buyer&apos;s remorse or change of mind</>,
-                <>Subjective stuff, like the board not riding the way you hoped</>,
+                <>Subjective stuff, like the item not performing the way you hoped</>,
                 <>Damage that happens after you receive the item</>,
                 <><strong>Local pickup</strong> transactions</>,
                 <>Payments made outside Reswell checkout</>,
@@ -689,7 +690,7 @@ export const buyingHelpArticles: HelpArticle[] = [
             </p>
             <p>
               Your purchase page walks through the journey: purchase confirmed, shipped, in transit,
-              then confirm delivery. Tap <strong>I received my item</strong> once the board arrives.
+              then confirm delivery. Tap <strong>I received my item</strong> once your order arrives.
             </p>
           </>
         ),

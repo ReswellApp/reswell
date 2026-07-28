@@ -6,7 +6,7 @@ export const helpCenterTopArticlesByTab: Record<
 > = {
   buying: [
     { title: "How do offers work on Reswell?", slug: "how-do-offers-work", topicId: "buying" },
-    { title: "How do I buy a board on Reswell?", slug: "how-do-i-buy-a-board", topicId: "buying" },
+    { title: "How do I buy on Reswell?", slug: "how-do-i-buy-a-board", topicId: "buying" },
     { title: "How do returns work for buyers on Reswell?", slug: "buyer-returns", topicId: "buying" },
     {
       title: "How am I protected if I do not receive an item or it is not as described?",
@@ -23,9 +23,9 @@ export const helpCenterTopArticlesByTab: Record<
   selling: [
     { title: "How to verify your seller information", slug: "verify-seller-information", topicId: "selling" },
     { title: "How to connect a bank account for payouts", slug: "connect-payout-account", topicId: "selling" },
-    { title: "I sold a board. What should I do next?", slug: "i-sold-an-item-whats-next", topicId: "selling" },
+    { title: "I made a sale. What should I do next?", slug: "i-sold-an-item-whats-next", topicId: "selling" },
     { title: "How long does it take to get paid?", slug: "how-long-to-get-paid", topicId: "selling" },
-    { title: "How do I list a board for sale?", slug: "how-to-list-a-board", topicId: "selling" },
+    { title: "How do I list something for sale?", slug: "how-to-list-a-board", topicId: "selling" },
     { title: "What are Reswell's selling fees?", slug: "marketplace-fees", topicId: "selling" },
     { title: "How do returns work for sellers on Reswell?", slug: "seller-returns", topicId: "selling" },
     { title: "How do I respond to messages and offers?", slug: "respond-to-offers", topicId: "selling" },

@@ -6,7 +6,7 @@ export { helpCenterTopArticlesByTab } from "@/lib/help-center/top-articles"
 export const helpCenterAdditionalResources = [
   { title: "Terms & Policies", href: "/terms" },
   { title: "Shipping Resources", href: "/shipping" },
-  { title: "Recently sold boards", href: "/sold" },
+  { title: "Recently sold", href: "/sold" },
   { title: "Sales tax information", href: "/contact", highlight: true },
   { title: "Reswell Purchase Protection", href: "/protection-policy" },
   { title: "Blog", href: "/blog" },

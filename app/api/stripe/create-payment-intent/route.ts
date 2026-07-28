@@ -35,6 +35,7 @@ import {
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { normalizeNewsletterPromoCodeInput } from "@/lib/utils/newsletter-promo-code"
 import { verifyCheckoutShippingQuoteToken, type CheckoutShippingQuoteTokenPayload } from "@/lib/services/checkoutShippingQuoteToken"
+import { ensureCheckoutBuyerPhone } from "@/lib/services/checkoutBuyerPhone"
 
 const JSON_NO_STORE_HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -357,6 +358,12 @@ export async function POST(request: NextRequest) {
     }
     buyerAddress = addr as ProfileAddressRow
   }
+
+  const phoneCheck = await ensureCheckoutBuyerPhone(supabase, user.id, buyerAddress)
+  if (!phoneCheck.ok) {
+    return NextResponse.json({ error: phoneCheck.error }, { status: 400 })
+  }
+  buyerAddress = phoneCheck.address
 
   let preverifiedShipping: { shippingUsd: number; usedReswellQuote: boolean } | undefined
   let verifiedQuotePayload: CheckoutShippingQuoteTokenPayload | null = null

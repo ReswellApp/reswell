@@ -16,16 +16,16 @@ export const sellingHelpArticles: HelpArticle[] = [
     sectionSlug: "listings",
     sectionTitle: "Listings",
     groupTitle: "Creating listings",
-    title: "How do I list a board for sale?",
+    title: "How do I list something for sale?",
     description:
-      "Create a surfboard listing on Reswell with photos, board details, pickup or shipping options, and your price. Listing is free.",
-    keywords: ["list", "sell", "post"],
+      "Create a listing on Reswell — boards, fins, wetsuits, and more — with photos, details, pickup or shipping options, and your price. Listing is free.",
+    keywords: ["list", "sell", "post", "fins", "wetsuit", "gear"],
     relatedSlugs: ["listing-photos-and-pricing", "edit-or-remove-listing", "i-sold-an-item-whats-next"],
     quickAnswer: (
       <>
-        Tap {helpLink("/sell", "Sell")}, add photos and board details, choose pickup and/or shipping,
-        set your price, and hit <strong>Create Listing</strong>. You can turn on offers to let buyers
-        negotiate before checkout.
+        Tap {helpLink("/sell", "Sell")}, choose a category, add photos and details, choose pickup
+        and/or shipping, set your price, and hit <strong>Create Listing</strong>. You can turn on
+        offers to let buyers negotiate before checkout.
       </>
     ),
     sections: [
@@ -34,9 +34,9 @@ export const sellingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Sign in and go to {helpLink("/sell", "Sell")}. The flow walks you through four sections:
-              Title &amp; photos, Board &amp; description, Pickup &amp; shipping, and Price &amp;
-              publish. You can save a draft and come back later.
+              Sign in and go to {helpLink("/sell", "Sell")}. Pick what you&apos;re listing (surfboards,
+              fins, wetsuits, and more), then follow the flow for photos, details, pickup &amp;
+              shipping, and price. You can save a draft and come back later.
             </p>
             <p>
               Already have a listing? Edit it anytime from{" "}
@@ -60,14 +60,14 @@ export const sellingHelpArticles: HelpArticle[] = [
                 body: (
                   <>
                     Add a clear title (up to 60 characters) and at least one photo. You can upload up
-                    to 12. Drag to reorder. Good photos sell boards. See{" "}
+                    to 12. Drag to reorder. Good photos sell gear. See{" "}
                     {helpLink("/help/selling/listing-photos-and-pricing", "Tips for photos and pricing")}.
                   </>
                 ),
               },
               {
-                title: "Board details",
-                body: "Pick the board shape, condition, brand, model, and dimensions. Write an honest description (up to 1,000 characters). You can use the AI helper to draft or polish your copy.",
+                title: "Listing details",
+                body: "Add the details buyers need — condition, brand, model, size or dimensions where they apply. Write an honest description (up to 1,000 characters). You can use the AI helper to draft or polish your copy.",
               },
               {
                 title: "Pickup and shipping",
@@ -100,9 +100,9 @@ export const sellingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Your board goes live on {helpLink("/boards", "Surfboards")}. Buyers can favorite it,
-              message you, make an offer (if enabled), or buy at your list price. Manage everything
-              from {helpLink("/dashboard/listings", "My Listings")}.
+              Your listing goes live on the marketplace (for example {helpLink("/boards", "Surfboards")}{" "}
+              for boards). Buyers can favorite it, message you, make an offer (if enabled), or buy at
+              your list price. Manage everything from {helpLink("/dashboard/listings", "My Listings")}.
             </p>
             <HelpNote>
               Listing on Reswell is free. Reswell takes a {MARKETPLACE_FEE_PERCENT}% marketplace fee
@@ -120,26 +120,26 @@ export const sellingHelpArticles: HelpArticle[] = [
     sectionSlug: "listings",
     sectionTitle: "Listings",
     groupTitle: "Creating listings",
-    title: "Tips for photos and pricing your board",
+    title: "Tips for photos and pricing your listing",
     description:
-      "Take photos that sell your board and price it fairly against similar listings and recent sales on Reswell.",
+      "Take photos that sell your gear and price it fairly against similar listings and recent sales on Reswell.",
     keywords: ["photos", "price", "listing"],
     relatedSlugs: ["how-to-list-a-board", "marketplace-fees", "respond-to-offers"],
     sections: [
       {
-        heading: "Photos that help your board sell",
+        heading: "Photos that help your listing sell",
         body: (
           <>
             <p>
-              Buyers cannot pick up the board in a shop. Your photos do the talking. A few things
-              that work well:
+              Buyers cannot inspect the item in a shop. Your photos do the talking. A few things that
+              work well:
             </p>
             <BulletList
               items={[
                 <>Shoot in natural light, outdoors or near a window.</>,
-                <>Show the whole board: deck, bottom, rails, nose, and tail.</>,
-                <>Include close ups of dings, pressure dents, and yellowing. Honesty builds trust.</>,
-                <>Add fin setup shots if fins are included.</>,
+                <>Show the whole item from multiple angles, plus any accessories included.</>,
+                <>Include close ups of wear, damage, or flaws. Honesty builds trust.</>,
+                <>For surfboards, show deck, bottom, rails, nose, and tail, plus fin setup if fins are included.</>,
                 <>Upload up to 12 photos and drag them into the order you want buyers to see first.</>,
               ]}
             />
@@ -147,11 +147,11 @@ export const sellingHelpArticles: HelpArticle[] = [
         ),
       },
       {
-        heading: "Pricing your board",
+        heading: "Pricing your listing",
         body: (
           <>
             <p>
-              Check {helpLink("/sold", "Recently sold")} for similar boards: same brand, length, and
+              Check {helpLink("/sold", "Recently sold")} for similar items: same brand, size, and
               condition. Price a little high if you expect offers, or set a firm price if you want
               a quick sale.
             </p>
@@ -171,8 +171,9 @@ export const sellingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Mention how long you have owned the board, how often you rode it, and any repairs or
-              modifications. Call out fin setup, volume, and whether fins are included.
+              Mention how long you have owned the item, how often you used it, and any repairs or
+              modifications. Call out size, what&apos;s included, and anything a buyer would want to
+              know before checkout.
             </p>
             <p>
               The AI description helper can get you started, but read it over before publishing.
@@ -191,7 +192,7 @@ export const sellingHelpArticles: HelpArticle[] = [
     groupTitle: "Managing listings",
     title: "How do I edit or remove a listing?",
     description:
-      "Update a live listing, mark a board as sold, or end a listing from My Listings on Reswell.",
+      "Update a live listing, mark an item as sold, or end a listing from My Listings on Reswell.",
     keywords: ["edit", "delete", "archive"],
     relatedSlugs: ["how-to-list-a-board", "i-sold-an-item-whats-next"],
     sections: [
@@ -200,7 +201,7 @@ export const sellingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Open {helpLink("/dashboard/listings", "My Listings")}, find your board, and tap{" "}
+              Open {helpLink("/dashboard/listings", "My Listings")}, find your listing, and tap{" "}
               <strong>Edit</strong>. You can update photos, price, description, shipping options,
               and offer settings. Tap <strong>Save changes</strong> when you are done.
             </p>
@@ -211,10 +212,10 @@ export const sellingHelpArticles: HelpArticle[] = [
         ),
       },
       {
-        heading: "Marking a board as sold",
+        heading: "Marking a listing as sold",
         body: (
           <p>
-            Sold the board elsewhere? From an active listing, choose <strong>Mark as Sold</strong>.
+            Sold the item elsewhere? From an active listing, choose <strong>Mark as Sold</strong>.
             That removes it from the marketplace and moves it to your Sold tab.
           </p>
         ),
@@ -420,9 +421,9 @@ export const sellingHelpArticles: HelpArticle[] = [
     sectionSlug: "getting-paid",
     sectionTitle: "Getting paid",
     groupTitle: "Receiving your earnings",
-    title: "I sold a board. What should I do next?",
+    title: "I made a sale. What should I do next?",
     description:
-      "Your board sold on Reswell. Here is how to ship it, coordinate pickup, and get your earnings released.",
+      "Your listing sold on Reswell. Here is how to ship it, coordinate pickup, and get your earnings released.",
     keywords: ["sold", "ship", "next steps"],
     relatedSlugs: ["how-long-to-get-paid", "marketplace-fees", "respond-to-offers"],
     quickAnswer: (
@@ -455,10 +456,10 @@ export const sellingHelpArticles: HelpArticle[] = [
           <NumberedSteps
             steps={[
               {
-                title: "Pack the board carefully",
+                title: "Pack the item carefully",
                 body: (
                   <>
-                    Use a proper surfboard box and padding. Our{" "}
+                    Use sturdy packaging and padding. For surfboards, use a proper board box — our{" "}
                     {helpLink("/shipping", "Shipping guide")} covers packing tips and box partners.
                   </>
                 ),
@@ -475,7 +476,7 @@ export const sellingHelpArticles: HelpArticle[] = [
                 ),
               },
               {
-                title: "Ship the board",
+                title: "Ship the order",
                 body: (
                   <>
                     For Reswell shipping, Reswell purchases the cheapest carrier label after checkout and adds
@@ -496,7 +497,7 @@ export const sellingHelpArticles: HelpArticle[] = [
           <>
             <p>
               Message the buyer to agree on a safe, public meeting place and time. The buyer has a
-              pickup code on their purchase page. When they are satisfied with the board, they share
+              pickup code on their purchase page. When they are satisfied with the item, they share
               the code and you tap <strong>Verify pickup</strong> on the sale page to enter the
               6 digit code. That releases your payout.
             </p>
@@ -527,7 +528,7 @@ export const sellingHelpArticles: HelpArticle[] = [
             <p>
               After a sale, your earnings show as <strong>Pending</strong> in{" "}
               {helpLink("/dashboard/earnings", "Earnings")} until the order clears Purchase Protection
-              timelines. That usually means the buyer received the board (tracked shipping) or you
+              timelines. That usually means the buyer received the item (tracked shipping) or you
               verified pickup.
             </p>
             <p>
@@ -688,7 +689,7 @@ export const sellingHelpArticles: HelpArticle[] = [
           <>
             <BulletList
               items={[
-                <>Respond quickly. Active buyers often have other boards in mind.</>,
+                <>Respond quickly. Active buyers often have other listings in mind.</>,
                 <>Use Messages to clarify shipping or pickup before accepting a low offer.</>,
                 <>You can send a seller initiated offer from a message thread when negotiation makes sense.</>,
                 <>Your minimum offer threshold is set when you create the listing (typically around 70% of list price).</>,
@@ -722,7 +723,7 @@ export const sellingHelpArticles: HelpArticle[] = [
             </p>
             <p>
               You will be notified and may need to cooperate in Messages or confirm receipt of a
-              returned board. Stay responsive. Delays can extend the resolution.
+              returned item. Stay responsive. Delays can extend the resolution.
             </p>
           </>
         ),
@@ -777,7 +778,7 @@ export const sellingHelpArticles: HelpArticle[] = [
         heading: "When you need to cancel",
         body: (
           <p>
-            Sometimes a sale cannot go through: the board got damaged, you sold it elsewhere before
+            Sometimes a sale cannot go through: the item got damaged, you sold it elsewhere before
             shipping, or you cannot coordinate pickup. Do not ship an order you intend to cancel.
             Contact the buyer and Reswell support as soon as you know.
           </p>

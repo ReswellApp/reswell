@@ -3,18 +3,19 @@ import type { ReactNode } from "react"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { SellAuthGate } from "@/components/features/sell/sell-auth-gate"
 
-const title = "Sell your surfboard — Reswell"
+const title = "Sell surf gear — Reswell"
 const description =
-  "Create a listing on Reswell in minutes: add photos, describe your board, set your price, and choose shipping. Reach buyers on the peer-to-peer surf marketplace."
+  "Create a listing on Reswell in minutes: add photos, describe your gear, set your price, and choose shipping. Boards, fins, wetsuits, and more on the peer-to-peer surf marketplace."
 
 export const metadata: Metadata = {
   title,
   description,
   keywords: [
     "sell surfboard",
-    "list surfboard",
-    "surfboard marketplace",
-    "used surfboard",
+    "sell fins",
+    "sell wetsuit",
+    "surf marketplace",
+    "used surf gear",
     "Reswell",
   ],
   alternates: {

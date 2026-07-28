@@ -140,7 +140,7 @@ const nextConfig = {
 
     return [
       {
-        source: '/images/home/hero-backdrop-rincon-v3.jpg',
+        source: '/images/home/hero-backdrop-mesa-v2.jpg',
         headers: [{ key: 'Cache-Control', value: staticHeroCacheControl }],
       },
       {

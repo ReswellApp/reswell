@@ -96,6 +96,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/used-board-market-dashboard', label: 'Used board market', icon: 'waves' },
       { href: '/admin/catalog-overview', label: 'Brand catalog explorer', icon: 'folderTree' },
       { href: '/admin/search-analytics', label: 'Search analytics', icon: 'lineChart' },
+      { href: '/admin/listing-views', label: 'Listing views', icon: 'activity' },
       { href: '/admin/sell-funnel', label: 'Sell funnel', icon: 'lineChart' },
       { href: '/admin/notifications', label: 'Notifications center', icon: 'bellRing' },
       { href: '/admin/promo-codes', label: 'Promo codes', icon: 'tag' },

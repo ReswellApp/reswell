@@ -69,7 +69,13 @@ export function listStaticSiteAssets(): SiteAssetEntry[] {
       notes: "Used in listing share cards and brand metadata — not visible in page body.",
     }),
 
-    publicImage("home/hero-backdrop-rincon-v3.jpg", "Homepage hero backdrop", "home", ["/"]),
+    publicImage("home/hero-backdrop-mesa-v2.jpg", "Homepage hero backdrop", "home", ["/"]),
+    publicImage("home/hero-backdrop-mesa.jpg", "Legacy homepage hero backdrop (low-res)", "orphan", [], {
+      status: "orphan",
+    }),
+    publicImage("home/hero-backdrop-rincon-v3.jpg", "Legacy homepage hero backdrop", "orphan", [], {
+      status: "orphan",
+    }),
     publicImage(
       "home/how-it-works-sell-list.png",
       "How it works — list a board",

@@ -46,6 +46,7 @@ interface CheckoutClientProps {
   listings: CheckoutListing[]
   copy?: CheckoutCopy
   buyerEmail?: string | null
+  buyerPhone?: string | null
   legalFullName?: string
   initialAddresses: ProfileAddressRow[]
   seller?: CheckoutSeller | null
@@ -59,6 +60,7 @@ export function CheckoutClient({
   listings,
   copy: copyProp,
   buyerEmail,
+  buyerPhone = null,
   legalFullName = "",
   initialAddresses,
   seller,
@@ -611,6 +613,7 @@ export function CheckoutClient({
 
             <CheckoutPurchaseDetails
               buyerEmail={buyerEmail ?? null}
+              buyerPhone={buyerPhone}
               initialAddresses={initialAddresses}
               needsShipping={needsShipping}
               legalFullName={legalFullName}

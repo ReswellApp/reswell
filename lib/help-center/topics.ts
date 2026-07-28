@@ -10,7 +10,7 @@ export const helpTopicIndexes: HelpTopicIndex[] = [
     categoryImages: {
       "shopping-on-reswell": {
         src: "/images/help-center/shopping-on-reswell.jpg",
-        alt: "Surfboards listed for sale on Reswell",
+        alt: "Surf gear listed for sale on Reswell",
       },
       "managing-purchases": {
         src: "/images/help-center/managing-purchases.jpg",
@@ -29,7 +29,7 @@ export const helpTopicIndexes: HelpTopicIndex[] = [
           {
             title: "Browsing and checkout",
             articles: [
-              { slug: "how-do-i-buy-a-board", title: "How do I buy a board on Reswell?" },
+              { slug: "how-do-i-buy-a-board", title: "How do I buy on Reswell?" },
               { slug: "local-pickup-or-shipping", title: "How do I know if a listing offers pickup or shipping?" },
             ],
           },
@@ -106,7 +106,7 @@ export const helpTopicIndexes: HelpTopicIndex[] = [
       },
       listings: {
         src: "/images/home/how-it-works-sell-list.png",
-        alt: "Seller creating a surfboard listing",
+        alt: "Seller creating a listing on Reswell",
       },
     },
     sections: [
@@ -125,7 +125,7 @@ export const helpTopicIndexes: HelpTopicIndex[] = [
           {
             title: "Receiving your earnings",
             articles: [
-              { slug: "i-sold-an-item-whats-next", title: "I sold a board. What should I do next?" },
+              { slug: "i-sold-an-item-whats-next", title: "I made a sale. What should I do next?" },
               { slug: "how-long-to-get-paid", title: "How long does it take to get paid?" },
               { slug: "marketplace-fees", title: "What are Reswell's selling fees?" },
             ],
@@ -164,8 +164,8 @@ export const helpTopicIndexes: HelpTopicIndex[] = [
           {
             title: "Creating listings",
             articles: [
-              { slug: "how-to-list-a-board", title: "How do I list a board for sale?" },
-              { slug: "listing-photos-and-pricing", title: "Tips for photos and pricing your board" },
+              { slug: "how-to-list-a-board", title: "How do I list something for sale?" },
+              { slug: "listing-photos-and-pricing", title: "Tips for photos and pricing your listing" },
             ],
           },
           {

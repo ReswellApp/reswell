@@ -71,7 +71,7 @@ export default async function SellersPage({
               Explore sellers on Reswell
             </h1>
             <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground text-pretty sm:text-base">
-              Every board you buy on Reswell supports another surfer just like you. Browse profiles below to find
+              Every purchase you make on Reswell supports another surfer just like you. Browse profiles below to find
               sellers near you or who offer shipping to your area.
             </p>
             {catalogItems.length > 0 ? (

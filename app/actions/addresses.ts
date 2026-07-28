@@ -63,6 +63,13 @@ export async function createProfileAddress(
     }
   }
 
+  if (!identity.phone?.trim()) {
+    return {
+      address: null,
+      error: "Add a phone number in checkout contact details before saving an address.",
+    }
+  }
+
   if (isDefault) {
     await supabase.from("addresses").update({ is_default: false }).eq("profile_id", user.id)
   }

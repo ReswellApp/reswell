@@ -199,10 +199,10 @@ export default async function HomePage() {
           <div className="container mx-auto">
             <Link href="/sell" className={marketingCtaBannerLinkClassName}>
               <div>
-                <p className={marketingCtaBannerTitleClassName}>Every board deserves another session</p>
+                <p className={marketingCtaBannerTitleClassName}>Gear that deserves another session</p>
                 <p className={marketingCtaBannerDescriptionClassName}>
-                  A community of surfers buying, selling, and passing along the boards they love. Find your next board,
-                  or send one off to its next.
+                  A community of surfers buying, selling, and passing along the boards and gear they love. Find your
+                  next setup, or send one off to its next owner.
                 </p>
               </div>
               <span className={marketingCtaBannerCtaLabelClassName}>

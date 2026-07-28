@@ -116,7 +116,7 @@ export const MANAGED_PAGES: ManagedPage[] = [
   page("home", "core", "Homepage", {
     title: "Buy & Sell Used Surfboards | Reswell",
     description:
-      "Peer-to-peer marketplace for surfboards and surf gear. Browse local listings, find boards with shipping, or list your board today.",
+      "Peer-to-peer marketplace for surfboards and surf gear. Browse boards, fins, wetsuits, and more — or list yours today.",
     path: "/",
     ogImageUrl:
       "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/1260e45d-5bbd-4e3e-9e02-9b7995b2f23e.jpg",
@@ -341,7 +341,7 @@ export const MANAGED_PAGES: ManagedPage[] = [
   page("shipping", "trust", "Shipping guide", {
     title: "Shipping guide — Reswell",
     description:
-      "How to ship and receive surfboards on Reswell, from packaging to pickup, labels, and what each side is responsible for.",
+      "How to ship and receive boards, fins, wetsuits, and other gear on Reswell — packaging, pickup, labels, and what each side is responsible for.",
     path: "/shipping",
   }),
   page("return-policy", "trust", "Return policy", {
