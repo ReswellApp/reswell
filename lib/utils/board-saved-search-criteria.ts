@@ -1,4 +1,7 @@
-import { BOARDS_BROWSE_DEFAULT_SORT } from "@/lib/marketplace-slug-metadata"
+import {
+  BOARDS_BROWSE_DEFAULT_SORT,
+  isBoardsBrowseShippingAvailableParam,
+} from "@/lib/marketplace-slug-metadata"
 import type { BoardSavedSearchCriteria } from "@/lib/validations/boardSavedSearch"
 import { isUuidString } from "@/lib/utils/isUuid"
 import type { BoardDimensionBrowseFields } from "@/lib/utils/board-dimension-browse-filter"
@@ -6,6 +9,7 @@ import {
   boardDimensionBrowseSummary,
   hasActiveBoardDimensionBrowseFilters,
 } from "@/lib/utils/board-dimension-browse-filter"
+import type { BoardsBrowseFacetSelections } from "@/lib/boards-browse-facets"
 
 /** Fields used for /boards browse and saved-search snapshots (excludes geo). */
 export type BoardsBrowseFilterFields = {
@@ -23,12 +27,21 @@ export type BoardsBrowseFilterFields = {
   type: string
   condition: string
   sort: string
+  /** Pro facet multi-selects from the browse URL. */
+  facets?: BoardsBrowseFacetSelections
+  /** Raw `shipping=` query value, or boolean. */
+  shipping?: string | boolean | null
+}
+
+function nonEmptyFacetList(values: string[] | undefined): string[] | undefined {
+  if (!values || values.length === 0) return undefined
+  return values
 }
 
 export function boardSavedSearchCriteriaFromFilters(
   f: BoardsBrowseFilterFields,
 ): BoardSavedSearchCriteria {
-  const out: BoardSavedSearchCriteria = {}
+  const out: BoardSavedSearchCriteria = { section: "surfboards" }
   const q = f.q.trim()
   if (q) out.q = q
   const brand = f.brand.trim()
@@ -54,7 +67,36 @@ export function boardSavedSearchCriteriaFromFilters(
     if (summary) out.dimensions = summary
   }
   if (f.type && f.type !== "all") out.type = f.type
-  if (f.condition && f.condition !== "all") out.condition = f.condition
+
+  const facets = f.facets
+  const styleList = nonEmptyFacetList(facets?.styles)
+  if (styleList) out.style = styleList
+
+  const conditionList = nonEmptyFacetList(facets?.conditions)
+  if (conditionList) {
+    out.conditions = conditionList
+    out.condition = conditionList.join(",")
+  } else if (f.condition && f.condition !== "all") {
+    out.condition = f.condition
+  }
+
+  const finList = nonEmptyFacetList(facets?.finSetups)
+  if (finList) out.fin = finList
+  const finSystemList = nonEmptyFacetList(facets?.finSystems)
+  if (finSystemList) out.finSystem = finSystemList
+  const constructionList = nonEmptyFacetList(facets?.constructions)
+  if (constructionList) out.construction = constructionList
+  const lengthList = nonEmptyFacetList(facets?.lengthBuckets)
+  if (lengthList) out.length = lengthList
+  const volumeList = nonEmptyFacetList(facets?.volumeBuckets)
+  if (volumeList) out.volume = volumeList
+
+  const shippingOn =
+    typeof f.shipping === "boolean"
+      ? f.shipping
+      : isBoardsBrowseShippingAvailableParam(f.shipping)
+  if (shippingOn) out.shipping = true
+
   if (f.sort && f.sort !== BOARDS_BROWSE_DEFAULT_SORT) out.sort = f.sort
   const minT = f.minPrice.trim()
   if (minT) {

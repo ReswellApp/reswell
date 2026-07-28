@@ -168,7 +168,10 @@ export async function ensureListingsIndex(): Promise<void> {
   }
 }
 
-export async function indexListingDocument(doc: ListingSearchDoc): Promise<void> {
+export async function indexListingDocument(
+  doc: ListingSearchDoc,
+  options?: { refresh?: boolean | "wait_for" },
+): Promise<void> {
   const es = getElasticsearchClient()
   if (!es) return
 
@@ -177,7 +180,7 @@ export async function indexListingDocument(doc: ListingSearchDoc): Promise<void>
     index: ELASTICSEARCH_LISTINGS_INDEX,
     id: doc.id,
     document: doc,
-    refresh: false,
+    refresh: options?.refresh ?? false,
   })
 }
 
@@ -703,6 +706,7 @@ export async function listingRowToSearchDoc(
 export async function syncListingToIndex(
   supabase: SupabaseClient,
   listingId: string,
+  options?: { refresh?: boolean | "wait_for" },
 ): Promise<void> {
   if (!getElasticsearchClient()) return
 
@@ -730,5 +734,5 @@ export async function syncListingToIndex(
     return
   }
 
-  await indexListingDocument(doc)
+  await indexListingDocument(doc, options)
 }

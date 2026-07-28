@@ -4,9 +4,21 @@ import {
   getNavSearchSuggestCached,
   NAV_SEARCH_SUGGEST_REVALIDATE_SECONDS,
 } from "@/lib/cache/nav-search-suggest"
+import type { NavSearchSuggestSectionKey } from "@/lib/header-nav-marketplace-search"
 import { normalizeMarketplaceSearchSuggestQuery } from "@/lib/services/marketplaceSearchSuggest"
 
-const sectionSchema = z.enum(["", "surfboards", "fins", "new", "marketplace"])
+/** Keep in sync with `NavSearchSuggestSectionKey` (+ empty = unscoped marketplace). */
+const NAV_SEARCH_SUGGEST_SECTIONS = [
+  "",
+  "surfboards",
+  "fins",
+  "wetsuits",
+  "magazines",
+  "new",
+  "marketplace",
+] as const satisfies readonly (NavSearchSuggestSectionKey | "")[]
+
+const sectionSchema = z.enum(NAV_SEARCH_SUGGEST_SECTIONS)
 
 /**
  * GET `/api/nav/search-suggest?q=chan&section=surfboards`

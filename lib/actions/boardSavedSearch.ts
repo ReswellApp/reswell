@@ -8,11 +8,11 @@ import {
   fetchBoardSavedSearchesForUser,
   insertBoardSavedSearch,
   type BoardSavedSearchRow,
-} from "@/lib/db/boardSavedSearches"
+} from "@/lib/db/savedSearches"
 import {
   BOARD_SAVED_SEARCHES_MAX,
   createBoardSavedSearchActionSchema,
-  boardSavedCriteriaHasSpecificity,
+  boardSavedCriteriaCanSaveFromEmptyState,
   deleteBoardSavedSearchActionSchema,
 } from "@/lib/validations/boardSavedSearch"
 
@@ -20,6 +20,8 @@ export type BoardSavedSearchListItem = {
   id: string
   label: string | null
   criteria: BoardSavedSearchRow["criteria"]
+  section: string | null
+  categoryId: string | null
   emailNotificationsEnabled: boolean
   updatedAt: string
 }
@@ -29,6 +31,8 @@ function toListItem(row: BoardSavedSearchRow): BoardSavedSearchListItem {
     id: row.id,
     label: row.label,
     criteria: row.criteria,
+    section: row.section,
+    categoryId: row.category_id,
     emailNotificationsEnabled: row.email_notifications_enabled,
     updatedAt: row.updated_at,
   }
@@ -76,7 +80,9 @@ export async function createBoardSavedSearchAction(raw: unknown) {
 
   const criteria = parsed.data.criteria
 
-  if (!boardSavedCriteriaHasSpecificity(criteria)) {
+  // Empty-state category saves (e.g. bare `/fins`) are allowed; sidebar still
+  // requires filters via client-side `boardSavedCriteriaHasSpecificity`.
+  if (!boardSavedCriteriaCanSaveFromEmptyState(criteria)) {
     return { error: "Choose at least one filter before saving." as const }
   }
 
@@ -101,6 +107,15 @@ export async function createBoardSavedSearchAction(raw: unknown) {
   }
 
   revalidatePath("/boards")
+  revalidatePath("/fins")
+  revalidatePath("/wetsuits")
+  revalidatePath("/magazines")
+  revalidatePath("/boardbags")
+  revalidatePath("/surfpacks")
+  revalidatePath("/leashes")
+  revalidatePath("/apparel")
+  revalidatePath("/accessories")
+  revalidatePath("/search")
 
   return {
     success: true as const,

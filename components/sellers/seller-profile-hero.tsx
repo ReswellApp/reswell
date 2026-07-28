@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { SellersBreadcrumbs } from "@/components/sellers/sellers-breadcrumbs"
 import { SellerProfileBannerEditor } from "@/components/sellers/seller-profile-banner-editor"
@@ -153,7 +154,12 @@ export function SellerProfileHero({
     },
     listingImageFallbacks,
   )
-  const lastActiveLabel = formatLastActive(shop.last_active_at)
+  // Relative time ("Active X ago") must wait until mount — server clock vs client
+  // hydration time otherwise mismatches and triggers a recoverable hydration error.
+  const [lastActiveLabel, setLastActiveLabel] = useState<string | null>(null)
+  useEffect(() => {
+    setLastActiveLabel(formatLastActive(shop.last_active_at))
+  }, [shop.last_active_at])
   const description = shop.shop_description || shop.bio
   const loc = locationLabel(shop)
   const monogram = bannerMonogram(displayName?.trim() || "Seller")

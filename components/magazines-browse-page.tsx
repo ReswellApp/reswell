@@ -1,7 +1,5 @@
 import { Suspense } from "react"
 import Link from "next/link"
-import { BookOpen } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { BoardsBrowsePagination } from "@/components/boards-browse-pagination"
 import { ListingTileGridSkeleton } from "@/components/listing-tile-skeleton"
 import {
@@ -14,7 +12,9 @@ import {
 } from "@/components/ui/breadcrumb"
 import { createClient } from "@/lib/supabase/server"
 import { MagazinesBrowseClient } from "@/components/magazines-browse-client"
+import { BoardsNoResultsSaveSearch } from "@/components/boards-no-results-save-search"
 import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
+import { peerSavedSearchCriteriaFromBrowseParams } from "@/lib/utils/peer-saved-search-criteria"
 import {
   fetchMagazinesBrowsePage,
   MAGAZINES_BROWSE_PAGE_SIZE,
@@ -56,22 +56,30 @@ async function MagazineListings({
     limit: MAGAZINES_BROWSE_PAGE_SIZE,
   })
 
-  if (magazines.length === 0) {
-    return (
-      <div className="py-16 text-center">
-        <BookOpen className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-        <p className="mb-2 text-lg font-medium">No magazines found</p>
-        <p className="mb-4 text-muted-foreground">Try adjusting your search or filters</p>
-        <Button variant="outline" asChild>
-          <Link href="/magazines">Clear filters</Link>
-        </Button>
-      </div>
-    )
-  }
-
   const {
     data: { user },
   } = await supabase.auth.getUser()
+
+  if (magazines.length === 0) {
+    return (
+      <BoardsNoResultsSaveSearch
+        criteria={peerSavedSearchCriteriaFromBrowseParams({
+          section: "magazines",
+          q: searchParams.q,
+          brand: searchParams.brand,
+          condition: searchParams.condition,
+          minPrice: searchParams.minPrice,
+          maxPrice: searchParams.maxPrice,
+          minYear: searchParams.minYear,
+          maxYear: searchParams.maxYear,
+          sort: searchParams.sort,
+        })}
+        isLoggedIn={Boolean(user)}
+        clearHref="/magazines"
+      />
+    )
+  }
+
   let favoritedIds: string[] = []
   if (user && magazines.length > 0) {
     const { data: favs } = await supabase

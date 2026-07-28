@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
+import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -23,12 +24,23 @@ import {
   boardSavedSearchCriteriaSummary,
   boardSavedSearchCriteriaToBrowseHref,
 } from "@/lib/utils/board-saved-search-browse-url"
+import { facetSelectionsFromBrowseParams } from "@/lib/boards-browse-facets"
 import { siteFilterSelectTriggerClassName } from "@/components/site-search-bar"
 import { isBenignClientFetchError } from "@/lib/utils/is-abort-error"
 import { Bookmark, Loader2, Mail, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 function boardsCriteriaFromSearchParams(sp: URLSearchParams): BoardSavedSearchCriteria {
+  const facets = facetSelectionsFromBrowseParams({
+    type: sp.get("type"),
+    style: sp.get("style") ?? undefined,
+    condition: sp.get("condition") ?? undefined,
+    fin: sp.get("fin") ?? undefined,
+    finSystem: sp.get("finSystem") ?? undefined,
+    construction: sp.get("construction") ?? undefined,
+    length: sp.get("length") ?? undefined,
+    volume: sp.get("volume") ?? undefined,
+  })
   const fields: BoardsBrowseFilterFields = {
     q: sp.get("q") ?? "",
     brand: sp.get("brand") ?? "",
@@ -44,6 +56,8 @@ function boardsCriteriaFromSearchParams(sp: URLSearchParams): BoardSavedSearchCr
     sort: sp.get("sort") ?? BOARDS_BROWSE_DEFAULT_SORT,
     minPrice: sp.get("minPrice") ?? "",
     maxPrice: sp.get("maxPrice") ?? "",
+    facets,
+    shipping: sp.get("shipping"),
   }
   return boardSavedSearchCriteriaFromFilters(fields)
 }
@@ -61,6 +75,7 @@ export function BoardsSaveSearchPanel({
 }) {
   const sp = useSearchParams()
   const { toast } = useToast()
+  const openSignIn = useSignInGate()
   const [emailOptIn, setEmailOptIn] = useState(false)
   const [pending, setPending] = useState(false)
   const [savedSearches, setSavedSearches] = useState<BoardSavedSearchListItem[]>([])
@@ -113,6 +128,11 @@ export function BoardsSaveSearchPanel({
   }, [refreshSavedSearches])
 
   async function handleSave() {
+    if (!isSignedIn) {
+      openSignIn(undefined, { skipSessionProbe: true })
+      return
+    }
+
     setPending(true)
     const res = await createBoardSavedSearchAction({
       criteria,
@@ -120,6 +140,10 @@ export function BoardsSaveSearchPanel({
     })
     setPending(false)
     if ("error" in res) {
+      if (res.error === "Sign in to save a search.") {
+        openSignIn()
+        return
+      }
       toast({
         title: "Could not save",
         description: res.error,
@@ -183,37 +207,33 @@ export function BoardsSaveSearchPanel({
           </Label>
         </div>
 
-        {!isSignedIn ? (
-          <Link
-            href="/auth/login?redirect=%2Fboards"
-            className={cn(
-              siteFilterSelectTriggerClassName(),
-              "inline-flex w-auto shrink-0 items-center justify-center px-4 text-sm no-underline",
-            )}
-          >
-            Sign in to save
-          </Link>
-        ) : (
-          <Button
-            type="button"
-            variant="outline"
-            className={cn(siteFilterSelectTriggerClassName(), "w-auto shrink-0 px-4 text-sm")}
-            disabled={pending || !canSave || atSavedLimit}
-            onClick={() => void handleSave()}
-            title={canSave ? summary : "Add filters to save this search"}
-          >
-            {pending ? (
-              <>
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
-                Saving…
-              </>
-            ) : atSavedLimit ? (
-              "3 saved max"
-            ) : (
-              "Save search"
-            )}
-          </Button>
-        )}
+        <Button
+          type="button"
+          variant="outline"
+          className={cn(siteFilterSelectTriggerClassName(), "w-auto shrink-0 px-4 text-sm")}
+          disabled={pending || (isSignedIn && (!canSave || atSavedLimit))}
+          onClick={() => void handleSave()}
+          title={
+            !isSignedIn
+              ? "Sign in to save this search"
+              : canSave
+                ? summary
+                : "Add filters to save this search"
+          }
+        >
+          {pending ? (
+            <>
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
+              Saving…
+            </>
+          ) : !isSignedIn ? (
+            "Sign in to save"
+          ) : atSavedLimit ? (
+            "3 saved max"
+          ) : (
+            "Save search"
+          )}
+        </Button>
 
         {savedLoading ? (
           <span
@@ -320,12 +340,13 @@ export function BoardsSaveSearchPanel({
               ) : (
                 <>
                   Uses your account email.{" "}
-                  <Link
-                    href="/auth/login?redirect=%2Fboards"
+                  <button
+                    type="button"
                     className="underline underline-offset-2 hover:text-foreground"
+                    onClick={() => openSignIn(undefined, { skipSessionProbe: true })}
                   >
                     Sign in
-                  </Link>{" "}
+                  </button>{" "}
                   to save.
                 </>
               )}
@@ -336,7 +357,7 @@ export function BoardsSaveSearchPanel({
           type="button"
           variant="outline"
           className="shrink-0 rounded-full"
-          disabled={pending || !canSave || atSavedLimit}
+          disabled={pending || (isSignedIn && (!canSave || atSavedLimit))}
           onClick={() => void handleSave()}
         >
           {pending ? (
@@ -344,6 +365,8 @@ export function BoardsSaveSearchPanel({
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Saving…
             </>
+          ) : !isSignedIn ? (
+            "Sign in to save"
           ) : atSavedLimit ? (
             "3 saved — remove one"
           ) : (

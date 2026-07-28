@@ -1,7 +1,5 @@
 import { Suspense } from "react"
 import Link from "next/link"
-import { Users } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { BoardsBrowsePagination } from "@/components/boards-browse-pagination"
 import { ListingTileGridSkeleton } from "@/components/listing-tile-skeleton"
 import {
@@ -14,7 +12,9 @@ import {
 } from "@/components/ui/breadcrumb"
 import { createClient } from "@/lib/supabase/server"
 import { ApparelBrowseClient } from "@/components/apparel-browse-client"
+import { BoardsNoResultsSaveSearch } from "@/components/boards-no-results-save-search"
 import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
+import { peerSavedSearchCriteriaFromBrowseParams } from "@/lib/utils/peer-saved-search-criteria"
 import { fetchApparelBrowsePage, APPAREL_BROWSE_PAGE_SIZE } from "@/lib/db/apparel-listings"
 import { apparelFacetSelectionsFromParams } from "@/lib/apparel-browse-facets"
 import {
@@ -48,22 +48,29 @@ async function ApparelListings({
     limit: APPAREL_BROWSE_PAGE_SIZE,
   })
 
-  if (apparel.length === 0) {
-    return (
-      <div className="py-16 text-center">
-        <Users className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-        <p className="mb-2 text-lg font-medium">No apparel found</p>
-        <p className="mb-4 text-muted-foreground">Try adjusting your search or filters</p>
-        <Button variant="outline" asChild>
-          <Link href="/apparel">Clear Filters</Link>
-        </Button>
-      </div>
-    )
-  }
-
   const {
     data: { user },
   } = await supabase.auth.getUser()
+
+  if (apparel.length === 0) {
+    return (
+      <BoardsNoResultsSaveSearch
+        criteria={peerSavedSearchCriteriaFromBrowseParams({
+          section: "apparel",
+          q: searchParams.q,
+          brand: searchParams.brand,
+          condition: searchParams.condition,
+          size: searchParams.size,
+          minPrice: searchParams.minPrice,
+          maxPrice: searchParams.maxPrice,
+          sort: searchParams.sort,
+        })}
+        isLoggedIn={Boolean(user)}
+        clearHref="/apparel"
+      />
+    )
+  }
+
   let favoritedIds: string[] = []
   if (user && apparel.length > 0) {
     const { data: favs } = await supabase

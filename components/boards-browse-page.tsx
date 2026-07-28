@@ -1,7 +1,6 @@
 import { Suspense, type ReactNode } from "react"
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import { Button } from "@/components/ui/button"
 import { BoardsBrowsePagination } from "@/components/boards-browse-pagination"
 import { ListingTileGridSkeleton } from "@/components/listing-tile-skeleton"
 import { ListYourSurfboardMarketplaceReviewsSection } from "@/components/features/marketing/list-your-surfboard-buyer-reviews-section"
@@ -18,13 +17,12 @@ import {
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { createAnonSupabaseClient } from "@/lib/supabase/anon"
 import { BoardsBrowseClient } from "@/components/boards-browse-client"
-import { BoardsNoResultsRequestPanel } from "@/components/boards-no-results-request-panel"
+import { BoardsNoResultsSaveSearch } from "@/components/boards-no-results-save-search"
 import { boardSavedSearchCriteriaFromFilters } from "@/lib/utils/board-saved-search-criteria"
 import { BoardsBrowseJsonLd } from "@/components/features/marketplace/boards-browse-json-ld"
 import { BoardsBrowseFiltersSectionSkeleton } from "@/components/boards-browse-page-skeleton"
 import { getBoardsBrowseCategoryTypePageCached } from "@/lib/cache/boards-browse-catalog"
 import { getBoardsBrowseFacetCountsMapCached } from "@/lib/cache/boards-browse-facet-counts"
-import { Users } from "lucide-react"
 import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
 import { BoardsBrowseAdminCurator } from "@/components/boards-browse-admin-curator"
 import { isBoardsBrowseSuppressionSortAvailable } from "@/lib/db/boards-browse-suppressed-admin"
@@ -486,7 +484,7 @@ async function BoardListings({
   }
 
   if (!boards || boards.length === 0) {
-    const requestCriteria = boardSavedSearchCriteriaFromFilters({
+    const saveCriteria = boardSavedSearchCriteriaFromFilters({
       q: query,
       brand,
       model,
@@ -501,22 +499,17 @@ async function BoardListings({
       type: boardType,
       condition,
       sort,
+      facets,
+      shipping: searchParams.shipping,
     })
+    const { user } = await getCachedRequestSession()
 
     return (
-      <div className="text-center py-16">
-        <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <p className="text-lg font-medium mb-2">No surfboards found</p>
-        <p className="text-muted-foreground mb-4">Try adjusting your search or filters</p>
-        <Button variant="outline" asChild>
-          <Link href="/boards">Clear Filters</Link>
-        </Button>
-        <BoardsNoResultsRequestPanel
-          source="boards"
-          query={query}
-          criteria={requestCriteria}
-        />
-      </div>
+      <BoardsNoResultsSaveSearch
+        criteria={saveCriteria}
+        isLoggedIn={Boolean(user)}
+        clearHref="/boards"
+      />
     )
   }
 

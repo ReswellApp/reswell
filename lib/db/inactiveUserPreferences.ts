@@ -82,7 +82,7 @@ export async function fetchInactiveUserPreferences(
   try {
     const [savedSearches, favorites, profile] = await Promise.all([
       supabase
-        .from("board_saved_searches")
+        .from("saved_searches")
         .select("criteria")
         .eq("user_id", id)
         .limit(SAVED_SEARCH_SAMPLE_LIMIT),

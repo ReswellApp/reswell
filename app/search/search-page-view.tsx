@@ -5,7 +5,8 @@ import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { SearchCategoryFilters } from "./search-section-filters"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { RecentFeedClient } from "@/components/recent-feed-client"
-import { BoardsNoResultsRequestPanel } from "@/components/boards-no-results-request-panel"
+import { BoardsNoResultsSaveSearch } from "@/components/boards-no-results-save-search"
+import { marketplaceSearchSavedCriteria } from "@/lib/utils/peer-saved-search-criteria"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { ELASTICSEARCH_INDEXED_LISTING_SECTIONS } from "@/lib/elasticsearch/listing-sections"
 import {
@@ -208,14 +209,7 @@ export async function SearchPageView({
                 )}
               </>
             ) : rawQuery ? (
-              <>
-                Use the search bar in the header to refine results.
-                {isElasticsearchConfigured() && (
-                  <span className="mt-1 block text-xs text-muted-foreground/80">
-                    Results use Elasticsearch when the index is populated.
-                  </span>
-                )}
-              </>
+              <>Use the search bar in the header to refine results.</>
             ) : (
               <>
                 A curated mix of new listings, favoring active sellers, then freshest posts. Use the
@@ -245,29 +239,28 @@ export async function SearchPageView({
       </Suspense>
 
       <section className="container mx-auto py-8">
-        <RecentFeedClient
-          listings={listings}
-          favoritedListingIds={favoritedListingIds}
-          isLoggedIn={!!user}
-          viewerUserId={user?.id ?? null}
-          hydrateOwnFavorites={skipAuthLookup}
-          emptyMessage={
-            brandUnknown
-              ? "No brand matches that URL. Return to search and pick a brand from suggestions."
-              : brandRow
-                ? "No active listings for this brand yet. Try another category or check back soon."
-                : rawQuery
-                  ? "No listings match your search. Try different keywords or filters."
-                  : "No listings to show yet. Check back soon or browse by category."
-          }
-        />
         {listings.length === 0 && rawQuery.trim() && !brandUnknown ? (
-          <BoardsNoResultsRequestPanel
-            source="search"
-            query={rawQuery}
-            criteria={{ q: rawQuery.trim() }}
+          <BoardsNoResultsSaveSearch
+            criteria={marketplaceSearchSavedCriteria(rawQuery)}
+            isLoggedIn={!!user}
+            clearHref="/search/recent"
           />
-        ) : null}
+        ) : (
+          <RecentFeedClient
+            listings={listings}
+            favoritedListingIds={favoritedListingIds}
+            isLoggedIn={!!user}
+            viewerUserId={user?.id ?? null}
+            hydrateOwnFavorites={skipAuthLookup}
+            emptyMessage={
+              brandUnknown
+                ? "No brand matches that URL. Return to search and pick a brand from suggestions."
+                : brandRow
+                  ? "No active listings for this brand yet. Try another category or check back soon."
+                  : "No listings to show yet. Check back soon or browse by category."
+            }
+          />
+        )}
       </section>
     </main>
   )

@@ -41,28 +41,28 @@ export const siteHeaderMainPeerProductNavLinks: CategoryLink[] = [
 ]
 
 /**
- * Full category rail — desktop header only (Surfboards root, then Fins, Wetsuits, Magazines, then shapes).
+ * Full category rail — desktop header (Surfboards root, then Fins, Wetsuits, Magazines).
+ * Shape browse links (`/boards?type=…`) stay on /categories and filters — not in the top rail.
  */
 export const siteHeaderDesktopCategoryNavLinks: CategoryLink[] = [
   surfboardBrowseLinks[0],
   ...siteHeaderMainPeerProductNavLinks,
-  ...surfboardBrowseLinks.slice(1),
 ]
 
 /**
  * Category pill strip — mobile/tablet category bar and hamburger menu.
- * Same surfboard shape browse links as desktop.
+ * Same category links as desktop (Surfboards + peer gear only).
  */
 export const siteHeaderMobileCategoryNavLinks: CategoryLink[] = siteHeaderDesktopCategoryNavLinks
 /** Header Categories dropdown + /categories page: surfboards only. */
 export const allCategoriesForNav: CategoryLink[] = surfboardBrowseLinks
 
 /**
- * Footer Categories column — all surfboard shape browse links plus peer gear.
- * The `/boards` root is omitted (Marketplace column already links there).
+ * Footer Categories column — Surfboards root plus peer gear (same as the header rail).
+ * Shape browse links (`/boards?type=…`) stay on /categories and filters.
  */
 export const footerCategoryLinks: CategoryLink[] = [
-  ...surfboardBrowseLinks.filter((link) => link.href !== "/boards"),
+  surfboardBrowseLinks[0],
   ...siteHeaderMainPeerProductNavLinks,
 ]
 

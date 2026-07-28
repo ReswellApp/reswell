@@ -1,10 +1,11 @@
 /**
- * Server-only: Klaviyo Events API — fires when a new surfboard listing matches a buyer's saved search.
+ * Server-only: Klaviyo Events API — fires when a new peer listing would appear in a
+ * buyer's saved marketplace search (boards / fins / wetsuits / magazines / …).
  *
  * **Metric name in Klaviyo:** `Board Alert Match` — create a flow triggered on this metric;
  * profile on the event is the subscriber (`external_id` = Supabase user id).
  *
- * Flow filters can branch on properties such as Listing_ID, Saved_Search_ID, Brand, Model.
+ * Flow filters can branch on properties such as Listing_ID, Saved_Search_ID, Section, Brand, Model.
  */
 
 import { absoluteKlaviyoListingPhotoUrl } from "@/lib/klaviyo/catalog-product"
@@ -27,6 +28,8 @@ export type KlaviyoBoardAlertMatchPayload = {
   dimensions?: string | null
   condition?: string | null
   boardType?: string | null
+  /** Peer listing section (`surfboards`, `fins`, `wetsuits`, …). */
+  section?: string | null
 }
 
 export async function trackKlaviyoBoardAlertMatch(
@@ -56,6 +59,7 @@ export async function trackKlaviyoBoardAlertMatch(
       Dimensions: payload.dimensions ?? "",
       Condition: payload.condition ?? "",
       Board_Type: payload.boardType ?? "",
+      Section: payload.section ?? "",
     },
     profile: {
       external_id: payload.subscriberUserId,
