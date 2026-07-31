@@ -4,6 +4,8 @@ import { carrierDeliveryPayoutHoldElapsed, CARRIER_DELIVERY_PAYOUT_HOLD_MS } fro
 import { markShippingDeliveredAndReleaseSellerEarnings } from "@/lib/services/shippingDeliveredFinalize"
 
 const BATCH_LIMIT = 50
+/** Cap total releases per cron invocation so we drain backlog without timing out. */
+const MAX_BATCHES = 10
 
 export type AutoReleaseCarrierPayoutSummary = {
   scanned: number
@@ -85,37 +87,47 @@ export async function autoReleaseShippingPayoutsAfterCarrierDelivery(
     referenceTime.getTime() - CARRIER_DELIVERY_PAYOUT_HOLD_MS,
   ).toISOString()
 
-  const { data: rows, error } = await supabase
-    .from("orders")
-    .select("id")
-    .eq("fulfillment_method", "shipping")
-    .eq("status", "confirmed")
-    .not("carrier_delivered_at", "is", null)
-    .lte("carrier_delivered_at", cutoffIso)
-    .order("carrier_delivered_at", { ascending: true })
-    .limit(BATCH_LIMIT)
+  for (let batch = 0; batch < MAX_BATCHES; batch += 1) {
+    // Only held payouts still awaiting the 24h carrier settlement — avoids
+    // re-scanning already-released orders and blocking the queue.
+    const { data: rows, error } = await supabase
+      .from("orders")
+      .select("id, payouts!inner(status, hold_reason)")
+      .eq("fulfillment_method", "shipping")
+      .eq("status", "confirmed")
+      .not("carrier_delivered_at", "is", null)
+      .lte("carrier_delivered_at", cutoffIso)
+      .eq("payouts.status", "held")
+      .eq("payouts.hold_reason", "awaiting_carrier_settlement")
+      .order("carrier_delivered_at", { ascending: true })
+      .limit(BATCH_LIMIT)
 
-  if (error) {
-    summary.errors.push(error.message)
-    return summary
-  }
-
-  const ids = (rows ?? []).map((r) => (r as { id: string }).id)
-  summary.scanned = ids.length
-
-  for (const orderId of ids) {
-    const attempt = await tryReleaseShippingPayoutAfterCarrierHold(
-      orderId,
-      referenceTime,
-      supabase,
-    )
-    if (attempt.released) {
-      summary.released += 1
-    } else if (attempt.error) {
-      summary.errors.push(`${orderId}: ${attempt.error}`)
-    } else {
-      summary.skipped += 1
+    if (error) {
+      summary.errors.push(error.message)
+      return summary
     }
+
+    const ids = (rows ?? []).map((r) => (r as { id: string }).id)
+    if (ids.length === 0) break
+
+    summary.scanned += ids.length
+
+    for (const orderId of ids) {
+      const attempt = await tryReleaseShippingPayoutAfterCarrierHold(
+        orderId,
+        referenceTime,
+        supabase,
+      )
+      if (attempt.released) {
+        summary.released += 1
+      } else if (attempt.error) {
+        summary.errors.push(`${orderId}: ${attempt.error}`)
+      } else {
+        summary.skipped += 1
+      }
+    }
+
+    if (ids.length < BATCH_LIMIT) break
   }
 
   return summary

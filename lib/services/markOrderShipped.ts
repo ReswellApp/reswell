@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { trackKlaviyoOrderShipped } from "@/lib/klaviyo/track-order-shipped"
+import { normalizeTrackingNumberForCarrier } from "@/lib/shipping/normalize-tracking-number"
 import { parseOrderShippedMessageMetadata } from "@/lib/validations/order-shipped-message-metadata"
 import type { OrderShippedMessagePayload } from "@/lib/validations/order-shipped-message-metadata"
 
@@ -145,7 +146,7 @@ export async function saveOrderTracking(
 
   const { data, error: rpcErr } = await supabase.rpc("save_order_tracking_for_seller", {
     p_order_id: orderId,
-    p_tracking_number: trimmed,
+    p_tracking_number: normalizeTrackingNumberForCarrier(trimmed) || trimmed,
     p_tracking_carrier: carrier,
   })
 
@@ -219,7 +220,7 @@ export async function saveOrderTracking(
   const { data: updated, error: updateErr } = await supabase
     .from("orders")
     .update({
-      tracking_number: trimmed,
+      tracking_number: normalizeTrackingNumberForCarrier(trimmed) || trimmed,
       tracking_carrier: carrier,
       updated_at: new Date().toISOString(),
     })

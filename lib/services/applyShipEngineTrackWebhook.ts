@@ -3,12 +3,10 @@ import {
   buildOrderTrackingDetailFromShipEngineData,
   type OrderTrackingDetail,
 } from "@/lib/shipping/order-tracking-detail"
+import { normalizeTrackingNumberForCarrier } from "@/lib/shipping/normalize-tracking-number"
 import type { ShipEngineTrackWebhookPayload } from "@/lib/validations/shipengine-track-webhook"
+import { findOrderIdsByTrackingNumber } from "@/lib/db/findOrdersByTrackingNumber"
 import { persistOrderCarrierTrackingSnapshot } from "@/lib/services/persistOrderCarrierTracking"
-
-function normalizeTrackingNumber(value: string): string {
-  return value.trim()
-}
 
 function buildDetail(payload: ShipEngineTrackWebhookPayload): OrderTrackingDetail | null {
   const data = payload.data
@@ -28,24 +26,19 @@ export async function applyShipEngineTrackWebhook(
     return { ok: false, error: "Missing tracking_number in payload" }
   }
 
-  const trackingNumber = normalizeTrackingNumber(tnRaw)
+  const trackingNumber = normalizeTrackingNumberForCarrier(tnRaw)
   const detail = buildDetail(payload)
   if (!detail) {
     return { ok: false, error: "Could not build tracking detail" }
   }
 
   const supabase = createServiceRoleClient()
-  const { data: rows, error } = await supabase
-    .from("orders")
-    .select("id")
-    .eq("tracking_number", trackingNumber)
-
-  if (error) {
-    console.error("[applyShipEngineTrackWebhook] lookup", error)
-    return { ok: false, error: "Database lookup failed" }
+  const lookup = await findOrderIdsByTrackingNumber(supabase, trackingNumber)
+  if (lookup.error) {
+    return { ok: false, error: lookup.error }
   }
 
-  const orderIds = (rows ?? []).map((r) => (r as { id: string }).id)
+  const orderIds = lookup.orderIds
   if (orderIds.length === 0) {
     console.info("[applyShipEngineTrackWebhook] no order for tracking_number", {
       trackingNumber: trackingNumber.slice(0, 8) + "…",

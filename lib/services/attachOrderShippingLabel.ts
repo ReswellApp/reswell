@@ -4,6 +4,7 @@ import {
   type OrderShippingLabelOrigin,
 } from "@/lib/db/orderShippingLabels"
 import { resolveOpenOrderShippingLabelFailures } from "@/lib/db/orderShippingLabelFailures"
+import { normalizeTrackingNumberForCarrier } from "@/lib/shipping/normalize-tracking-number"
 
 /**
  * Persists a marketplace shipping label on the order and writes tracking to the order row.
@@ -19,7 +20,7 @@ export async function attachOrderShippingLabel(params: {
   trackingCarrier: string | null
   shipengineRateId?: string | null
 }): Promise<{ ok: true } | { ok: false; error: string }> {
-  const track = params.trackingNumber?.trim() || null
+  const track = normalizeTrackingNumberForCarrier(params.trackingNumber ?? "") || null
   const car = params.trackingCarrier?.trim() || null
 
   const ins = await insertOrderShippingLabel(params.supabase, {

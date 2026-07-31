@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server"
-import { autoReleaseShippingPayoutsAfterCarrierDelivery } from "@/lib/services/autoReleaseShippingPayoutsAfterCarrierDelivery"
+import { syncOpenShippingCarrierTracking } from "@/lib/services/syncOpenShippingCarrierTracking"
 
 export const maxDuration = 60
 
 /**
- * Every ~15 minutes: release seller wallet earnings 24h after ShipEngine reports delivery.
+ * Every 15 minutes: poll ShipEngine for open shipping orders missing carrier_delivered_at.
+ * Ensures delivery status (and the 24h pending-earnings clock) updates even if webhooks miss.
  * Protected with CRON_SECRET (same pattern as other cron routes).
  */
 export async function GET(request: Request) {
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
   const referenceTime = new Date()
 
   try {
-    const summary = await autoReleaseShippingPayoutsAfterCarrierDelivery(referenceTime)
+    const summary = await syncOpenShippingCarrierTracking()
     return NextResponse.json({
       summary,
       reference_time: referenceTime.toISOString(),

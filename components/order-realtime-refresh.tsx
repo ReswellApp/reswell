@@ -9,6 +9,7 @@ type OrderRefreshSnapshot = {
   delivery_status: string | null
   status: string | null
   tracking_number: string | null
+  carrier_delivered_at: string | null
   refunded_at: string | null
 }
 
@@ -17,6 +18,8 @@ function snapshotFromRow(row: Record<string, unknown>): OrderRefreshSnapshot {
     delivery_status: typeof row.delivery_status === "string" ? row.delivery_status : null,
     status: typeof row.status === "string" ? row.status : null,
     tracking_number: typeof row.tracking_number === "string" ? row.tracking_number : null,
+    carrier_delivered_at:
+      typeof row.carrier_delivered_at === "string" ? row.carrier_delivered_at : null,
     refunded_at: typeof row.refunded_at === "string" ? row.refunded_at : null,
   }
 }
@@ -30,6 +33,7 @@ function isCarrierTrackingOnlyUpdate(
     prev.delivery_status === next.delivery_status &&
     prev.status === next.status &&
     prev.tracking_number === next.tracking_number &&
+    prev.carrier_delivered_at === next.carrier_delivered_at &&
     prev.refunded_at === next.refunded_at
   )
 }

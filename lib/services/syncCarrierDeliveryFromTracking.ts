@@ -35,6 +35,9 @@ export async function syncCarrierDeliveryFromTracking(
     .maybeSingle()
 
   if (fetchErr || !row) {
+    if (fetchErr) {
+      console.error("[syncCarrierDeliveryFromTracking] fetch:", orderId, fetchErr.message)
+    }
     return {
       deliveredNewlyRecorded: false,
       deliveryStatusUpdated: false,
@@ -62,14 +65,30 @@ export async function syncCarrierDeliveryFromTracking(
     }
 
     if (Object.keys(patch).length > 1) {
-      await supabase.from("orders").update(patch).eq("id", orderId)
+      const { error: orderUpdErr } = await supabase
+        .from("orders")
+        .update(patch)
+        .eq("id", orderId)
+
+      if (orderUpdErr) {
+        console.error(
+          "[syncCarrierDeliveryFromTracking] order delivered update:",
+          orderId,
+          orderUpdErr.message,
+        )
+        return {
+          deliveredNewlyRecorded: false,
+          deliveryStatusUpdated: false,
+          carrierDeliveredAt: order.carrier_delivered_at,
+        }
+      }
     }
 
     if (deliveryStatusUpdated) {
       void sendFulfillmentReviewReminder(orderId)
     }
 
-    await supabase
+    const { error: payoutUpdErr } = await supabase
       .from("payouts")
       .update({
         hold_reason: "awaiting_carrier_settlement",
@@ -77,6 +96,14 @@ export async function syncCarrierDeliveryFromTracking(
       })
       .eq("order_id", orderId)
       .eq("status", "held")
+
+    if (payoutUpdErr) {
+      console.error(
+        "[syncCarrierDeliveryFromTracking] payout hold update:",
+        orderId,
+        payoutUpdErr.message,
+      )
+    }
 
     return {
       deliveredNewlyRecorded,
@@ -89,13 +116,26 @@ export async function syncCarrierDeliveryFromTracking(
     carrierTrackingIndicatesInTransit(detail) &&
     order.delivery_status === "pending"
   ) {
-    await supabase
+    const { error: shipUpdErr } = await supabase
       .from("orders")
       .update({ delivery_status: "shipped", updated_at: nowIso })
       .eq("id", orderId)
       .eq("delivery_status", "pending")
 
-    await supabase
+    if (shipUpdErr) {
+      console.error(
+        "[syncCarrierDeliveryFromTracking] order shipped update:",
+        orderId,
+        shipUpdErr.message,
+      )
+      return {
+        deliveredNewlyRecorded: false,
+        deliveryStatusUpdated: false,
+        carrierDeliveredAt: order.carrier_delivered_at,
+      }
+    }
+
+    const { error: payoutUpdErr } = await supabase
       .from("payouts")
       .update({
         hold_reason: "awaiting_delivery",
@@ -103,6 +143,14 @@ export async function syncCarrierDeliveryFromTracking(
       })
       .eq("order_id", orderId)
       .eq("status", "held")
+
+    if (payoutUpdErr) {
+      console.error(
+        "[syncCarrierDeliveryFromTracking] payout awaiting_delivery:",
+        orderId,
+        payoutUpdErr.message,
+      )
+    }
 
     deliveryStatusUpdated = true
   }

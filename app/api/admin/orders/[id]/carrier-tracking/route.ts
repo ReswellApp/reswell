@@ -27,9 +27,32 @@ export async function GET(
     return NextResponse.json({ error: result.error }, { status: result.status })
   }
 
+  let marketplace: {
+    delivery_status: string | null
+    carrier_delivered_at: string | null
+  } | null = null
+
   if (result.live) {
     try {
       await persistOrderCarrierTrackingSnapshot(serviceSupabase, parsed.data, result.detail)
+      const { data: orderRow } = await serviceSupabase
+        .from("orders")
+        .select("delivery_status, carrier_delivered_at")
+        .eq("id", parsed.data)
+        .maybeSingle()
+      if (orderRow) {
+        marketplace = {
+          delivery_status:
+            typeof (orderRow as { delivery_status?: unknown }).delivery_status === "string"
+              ? (orderRow as { delivery_status: string }).delivery_status
+              : null,
+          carrier_delivered_at:
+            typeof (orderRow as { carrier_delivered_at?: unknown }).carrier_delivered_at ===
+            "string"
+              ? (orderRow as { carrier_delivered_at: string }).carrier_delivered_at
+              : null,
+        }
+      }
     } catch (e) {
       console.error("[admin carrier-tracking] persist snapshot:", e)
     }
@@ -39,5 +62,6 @@ export async function GET(
     data: result.detail,
     live: result.live,
     fetchError: result.fetchError ?? null,
+    marketplace,
   })
 }

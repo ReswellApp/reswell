@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import {
   AlertCircle,
   CheckCircle2,
@@ -12,6 +13,7 @@ import {
   Truck,
 } from "lucide-react"
 import { toast } from "sonner"
+import { carrierTrackingIndicatesDelivered } from "@/lib/shipping/carrier-status-display"
 import {
   trackingStatusLabel,
   trackingStatusTone,
@@ -24,7 +26,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { LocalDateOnly, LocalDateTime } from "@/components/ui/local-datetime"
 
-const POLL_MS = 90_000
+const POLL_MS = 45_000
 const FETCH_TIMEOUT_MS = 35_000
 
 function formatEventLocation(event: NonNullable<OrderTrackingDetail["events"]>[number]): string | null {
@@ -110,6 +112,7 @@ export function ReswellTrackingSection(props: {
     carrierTrackingFetchPath,
   } = props
 
+  const router = useRouter()
   const [detail, setDetail] = useState<OrderTrackingDetail | null>(initialDetail ?? null)
   const [loading, setLoading] = useState(!initialDetail)
   const [refreshing, setRefreshing] = useState(false)
@@ -117,6 +120,8 @@ export function ReswellTrackingSection(props: {
   const [fetchError, setFetchError] = useState<string | null>(null)
   const detailRef = useRef(detail)
   detailRef.current = detail
+  const marketplaceStatusRef = useRef(marketplaceDeliveryStatus)
+  marketplaceStatusRef.current = marketplaceDeliveryStatus
 
   const carrierLabel = useMemo(
     () => formatCarrierDisplayName(trackingCarrier, null),
@@ -147,6 +152,10 @@ export function ReswellTrackingSection(props: {
           live?: boolean
           fetchError?: string | null
           error?: string
+          marketplace?: {
+            delivery_status: string | null
+            carrier_delivered_at: string | null
+          } | null
         }
         if (!res.ok) {
           setFetchError(body.error ?? "Could not load tracking")
@@ -157,6 +166,27 @@ export function ReswellTrackingSection(props: {
         }
         setLive(body.live ?? false)
         setFetchError(body.fetchError ?? null)
+
+        // Refresh server props when carrier delivery lands so pending earnings
+        // and marketplace status update without waiting for a full page reload.
+        const syncedStatus = body.marketplace?.delivery_status
+        const prevStatus = marketplaceStatusRef.current
+        const carrierSaysDelivered =
+          (body.data && carrierTrackingIndicatesDelivered(body.data)) ||
+          syncedStatus === "delivered"
+        if (
+          carrierSaysDelivered &&
+          prevStatus !== "delivered" &&
+          prevStatus !== "picked_up"
+        ) {
+          router.refresh()
+        } else if (
+          body.marketplace?.carrier_delivered_at &&
+          syncedStatus &&
+          syncedStatus !== prevStatus
+        ) {
+          router.refresh()
+        }
       } catch (err) {
         const timedOut =
           err instanceof DOMException
@@ -173,7 +203,7 @@ export function ReswellTrackingSection(props: {
         setRefreshing(false)
       }
     },
-    [carrierTrackingFetchPath, orderId],
+    [carrierTrackingFetchPath, orderId, router],
   )
 
   useEffect(() => {

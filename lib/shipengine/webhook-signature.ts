@@ -72,8 +72,9 @@ export async function verifyShipEngineWebhookSignature(
   if (Number.isNaN(webhookTime.getTime())) {
     throw new ShipEngineWebhookTimestampError("Invalid x-shipengine-timestamp")
   }
+  // Allow delayed ShipEngine retries so delivery scans are not dropped.
   const ageMinutes = Math.abs(Date.now() - webhookTime.getTime()) / 1000 / 60
-  if (ageMinutes > 5) {
+  if (ageMinutes > 15) {
     throw new ShipEngineWebhookTimestampError("Webhook timestamp outside allowed window")
   }
 
