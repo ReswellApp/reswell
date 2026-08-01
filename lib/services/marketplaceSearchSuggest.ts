@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { listActiveListingsForBrand } from "@/lib/db/brand-listings"
+import {
+  searchBrandModelsForBrandId,
+  searchBrandModelsWithBrandsForSuggest,
+} from "@/lib/db/brand-models"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { searchListingIdsFromElasticsearch } from "@/lib/elasticsearch/listings-index"
 import {
@@ -13,6 +17,7 @@ import {
   resolveInferredBrandForMarketplaceSuggest,
   searchBrandsCatalogSuggestWithClient,
   type BrandCatalogSuggestRow,
+  type DirectoryBrandMini,
 } from "@/lib/services/brandDirectorySearch"
 import {
   listingTitleThumbnailCandidates,
@@ -24,6 +29,10 @@ import type {
   SearchSuggestResult,
   SuggestListing,
 } from "@/lib/types/marketplace-search-suggest"
+import {
+  isBrandOnlyMarketplaceSuggestQuery,
+  residualMarketplaceQueryAfterBrand,
+} from "@/lib/utils/marketplace-brand-query"
 
 const MAX_TITLES = 20
 const MAX_CATEGORIES = 12
@@ -92,6 +101,93 @@ function recentListingToSuggestListing(row: RecentListing): SuggestListing {
     state: row.state ?? null,
     condition: row.condition ?? null,
   }
+}
+
+const SUGGEST_LISTING_ROW_SELECT = `
+  id,
+  slug,
+  title,
+  price,
+  section,
+  city,
+  state,
+  brand,
+  condition,
+  ${SUGGEST_LISTING_IMAGES_SELECT}
+`
+
+async function listSuggestListingsByBrandModelIds(
+  supabase: SupabaseClient,
+  modelIds: string[],
+  sections: string[],
+  limit: number,
+): Promise<SuggestListing[]> {
+  if (modelIds.length === 0) return []
+  const { data, error } = await supabase
+    .from("listings")
+    .select(SUGGEST_LISTING_ROW_SELECT)
+    .eq("status", "active")
+    .eq("hidden_from_site", false)
+    .in("section", sections)
+    .in("brand_model_id", modelIds)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.error("[searchSuggest] brand_model_id listing lookup failed:", error.message)
+    return []
+  }
+  return ((data || []) as Record<string, unknown>[]).map((row) => rowToSuggestListing(row))
+}
+
+/** Match catalog model / listing model text within an inferred brand. */
+async function listSuggestListingsForBrandResidualQuery(
+  supabase: SupabaseClient,
+  brand: DirectoryBrandMini,
+  residualQuery: string,
+  sections: string[],
+  limit: number,
+): Promise<SuggestListing[]> {
+  const safe = escapeIlikeToken(residualQuery)
+  const pattern = `"%${safe}%"`
+  const namePattern = `"%${escapeIlikeToken(brand.name)}%"`
+
+  const catalogModels = await searchBrandModelsForBrandId(supabase, brand.id, residualQuery, 8)
+  const modelIds = catalogModels.map((m) => m.id)
+
+  let query = supabase
+    .from("listings")
+    .select(SUGGEST_LISTING_ROW_SELECT)
+    .eq("status", "active")
+    .eq("hidden_from_site", false)
+    .in("section", sections)
+    .or(`brand_id.eq.${brand.id},brand.ilike.${namePattern}`)
+
+  if (modelIds.length > 0) {
+    const idList = modelIds.join(",")
+    query = query.or(
+      `brand_model_id.in.(${idList}),model.ilike.${pattern},title.ilike.${pattern}`,
+    )
+  } else {
+    query = query.or(`model.ilike.${pattern},title.ilike.${pattern},description.ilike.${pattern}`)
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: false }).limit(limit)
+  if (error) {
+    console.error("[searchSuggest] brand residual listing lookup failed:", error.message)
+    return []
+  }
+  return ((data || []) as Record<string, unknown>[]).map((row) => rowToSuggestListing(row))
+}
+
+function pinSuggestListingsFront(
+  pinned: SuggestListing[],
+  rest: SuggestListing[],
+  limit: number,
+): SuggestListing[] {
+  if (pinned.length === 0) return rest.slice(0, limit)
+  const seen = new Set(pinned.map((l) => l.id))
+  return [...pinned, ...rest.filter((l) => !seen.has(l.id))].slice(0, limit)
 }
 
 function catalogRowsToSuggestBrandChips(
@@ -163,25 +259,12 @@ export async function runMarketplaceSearchSuggest(
     catalogBrands.rows.find((r) => r.name.toLowerCase().includes(q.toLowerCase()))?.slug ??
     null
 
-  const textOr = `title.ilike.${pattern},description.ilike.${pattern},brand.ilike.${pattern}`
+  const textOr = `title.ilike.${pattern},description.ilike.${pattern},brand.ilike.${pattern},model.ilike.${pattern}`
 
   const [listingsRes, titlesRes, categoriesRes, brandsRes] = await Promise.all([
     supabase
       .from("listings")
-      .select(
-        `
-        id,
-        slug,
-        title,
-        price,
-        section,
-        city,
-        state,
-        brand,
-        condition,
-        ${SUGGEST_LISTING_IMAGES_SELECT}
-      `,
-      )
+      .select(SUGGEST_LISTING_ROW_SELECT)
       .eq("status", "active")
       .eq("hidden_from_site", false)
       .in("section", sections)
@@ -227,20 +310,7 @@ export async function runMarketplaceSearchSuggest(
       if (ids.length > 0) {
         const { data: esRows } = await supabase
           .from("listings")
-          .select(
-            `
-            id,
-            slug,
-            title,
-            price,
-            section,
-            city,
-            state,
-            brand,
-            condition,
-            ${SUGGEST_LISTING_IMAGES_SELECT}
-          `,
-          )
+          .select(SUGGEST_LISTING_ROW_SELECT)
           .in("id", ids)
           .eq("status", "active")
           .eq("hidden_from_site", false)
@@ -264,14 +334,47 @@ export async function runMarketplaceSearchSuggest(
     }
   }
 
+  // Brand inventory fill only for brand-only queries (e.g. "channel islands").
+  // Brand + model (e.g. "channel islands dumpster diver") keeps relevance results,
+  // with catalog/model matches pinned to the front when present.
   if (inferredBrand) {
-    const brandListings = await listActiveListingsForBrand(supabase, inferredBrand, {
-      limit: MAX_LISTINGS,
-      sections,
-    })
-    if (brandListings.length > 0) {
-      listings = brandListings.map(recentListingToSuggestListing)
-      listingsBackend = "supabase"
+    if (isBrandOnlyMarketplaceSuggestQuery(q, inferredBrand.name)) {
+      const brandListings = await listActiveListingsForBrand(supabase, inferredBrand, {
+        limit: MAX_LISTINGS,
+        sections,
+      })
+      if (brandListings.length > 0) {
+        listings = brandListings.map(recentListingToSuggestListing)
+        listingsBackend = "supabase"
+      }
+    } else {
+      const residual = residualMarketplaceQueryAfterBrand(q, inferredBrand.name)
+      if (residual) {
+        const residualListings = await listSuggestListingsForBrandResidualQuery(
+          supabase,
+          inferredBrand,
+          residual,
+          sections,
+          MAX_LISTINGS,
+        )
+        if (residualListings.length > 0) {
+          listings = pinSuggestListingsFront(residualListings, listings, MAX_LISTINGS)
+        }
+      }
+    }
+  } else {
+    // Model-only queries (e.g. "dumpster diver"): pin listings tagged to matching catalog models.
+    const catalogModels = await searchBrandModelsWithBrandsForSuggest(supabase, q, 8)
+    if (catalogModels.length > 0) {
+      const modelListings = await listSuggestListingsByBrandModelIds(
+        supabase,
+        catalogModels.map((m) => m.id),
+        sections,
+        MAX_LISTINGS,
+      )
+      if (modelListings.length > 0) {
+        listings = pinSuggestListingsFront(modelListings, listings, MAX_LISTINGS)
+      }
     }
   }
 

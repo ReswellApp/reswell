@@ -208,3 +208,36 @@ export function isLikelyTypoBrandMatch(rawQuery: string, brandName: string): boo
   const brandTokens = brand.match(/[\w']+/g) ?? []
   return !brandTokens.some((t) => t.length >= 3 && q.includes(t))
 }
+
+/**
+ * Meaningful query text left after removing a directory brand name (and marketplace noise).
+ * e.g. "channel islands dumpster diver" + "Channel Islands" → "dumpster diver"
+ */
+export function residualMarketplaceQueryAfterBrand(rawQuery: string, brandName: string): string {
+  let residual = (rawQuery || "").trim().toLowerCase()
+  const brand = (brandName || "").trim().toLowerCase()
+  if (!residual || !brand) return stripMarketplaceSearchNoiseWords(residual)
+
+  if (residual.includes(brand)) {
+    residual = residual.split(brand).join(" ")
+  } else {
+    const brandTokens = brand.match(/[\w']+/g) ?? []
+    for (const token of brandTokens) {
+      if (token.length < 2) continue
+      residual = residual
+        .split(/\s+/)
+        .filter((t) => {
+          const core = t.replace(/^['']+|['']+$/g, "")
+          return core !== token
+        })
+        .join(" ")
+    }
+  }
+
+  return stripMarketplaceSearchNoiseWords(residual)
+}
+
+/** True when the query is effectively just this brand (plus optional noise like "surfboards"). */
+export function isBrandOnlyMarketplaceSuggestQuery(rawQuery: string, brandName: string): boolean {
+  return residualMarketplaceQueryAfterBrand(rawQuery, brandName).length === 0
+}
