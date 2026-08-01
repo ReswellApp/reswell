@@ -40,6 +40,7 @@ export async function hydrateBoardsBrowseByIds(
     .eq("status", "active")
     .eq("section", "surfboards")
     .eq("hidden_from_site", false)
+    .is("archived_at", null)
 
   if (error || !data) return []
 

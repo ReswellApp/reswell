@@ -89,7 +89,12 @@ export const surfpackBrowseLinks: CategoryLink[] = [{ label: "All Surfpacks", hr
 
 export const leashBrowseLinks: CategoryLink[] = [{ label: "All Leashes", href: "/leashes" }]
 
-export const apparelBrowseLinks: CategoryLink[] = [{ label: "All Apparel", href: "/apparel" }]
+export const apparelBrowseLinks: CategoryLink[] = [
+  { label: "All Apparel", href: "/apparel" },
+  { label: "Boardshorts", href: "/apparel?kind=boardshorts" },
+  { label: "Hats", href: "/apparel?kind=hat" },
+  { label: "T-Shirts", href: "/apparel?kind=t_shirt" },
+]
 
 export const accessoryBrowseLinks: CategoryLink[] = [
   { label: "All Accessories", href: "/accessories" },
@@ -293,7 +298,7 @@ export const advancedCategorySections: AdvancedCategorySection[] = [
     id: "apparel",
     title: "Apparel",
     description:
-      "Browse used surf apparel by condition. Every item is listed by a real seller you can meet or have shipped.",
+      "Browse used boardshorts, hats, and t-shirts. Every item is listed by a real seller you can meet or have shipped.",
     browseAllHref: "/apparel",
     browseAllLabel: "View all apparel",
     subcategories: [{ heading: "Apparel", links: apparelBrowseLinks }],

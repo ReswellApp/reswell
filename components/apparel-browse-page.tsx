@@ -60,6 +60,7 @@ async function ApparelListings({
           q: searchParams.q,
           brand: searchParams.brand,
           condition: searchParams.condition,
+          kind: searchParams.kind,
           size: searchParams.size,
           minPrice: searchParams.minPrice,
           maxPrice: searchParams.maxPrice,

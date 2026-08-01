@@ -1,6 +1,6 @@
 import { z } from "zod"
 import { addReswellPackedWeightZodIssues } from "@/lib/validations/reswell-packed-weight"
-import { APPAREL_SIZE_OPTIONS } from "@/lib/apparel-listing-config"
+import { APPAREL_KIND_OPTIONS, APPAREL_SIZE_OPTIONS } from "@/lib/apparel-listing-config"
 import {
   parseReswellParcelLengthRawToCarrierInches,
   parseReswellParcelWidthHeightRawToCarrierInches,
@@ -10,6 +10,7 @@ export const APPAREL_LISTING_TITLE_MAX_LENGTH = 60
 export const APPAREL_LISTING_MIN_PHOTOS = 1
 export const APPAREL_LISTING_MAX_PHOTOS = 12
 
+const apparelKindValues = APPAREL_KIND_OPTIONS.map((o) => o.value) as [string, ...string[]]
 const apparelSizeValues = APPAREL_SIZE_OPTIONS.map((o) => o.value)
 
 const sellableConditions = ["brand_new", "excellent", "very_good", "good", "fair", "poor"] as const
@@ -39,6 +40,9 @@ const apparelListingBaseSchema = z.object({
   description: z.string().trim().min(1, "Add a description"),
   price: z.coerce.number().positive("Enter a price greater than $0"),
   condition: z.enum(sellableConditions),
+
+  /** Apparel category — boardshorts | hat | t_shirt. Required. */
+  kind: z.enum(apparelKindValues, { required_error: "Choose a category" }),
 
   size: optionalSlug(apparelSizeValues),
 

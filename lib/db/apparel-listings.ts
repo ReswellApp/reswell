@@ -1,7 +1,7 @@
 /**
  * Data access for apparel listings. Apparel are `listings` rows
  * (section = 'apparel') with the apparel attributes stored directly on the row:
- * `apparel_size` (size), plus `brand`/`brand_id`/`model`.
+ * `apparel_kind` (category), `apparel_size` (size), plus `brand`/`brand_id`/`model`.
  *
  * Mirrors the fin browse data layer (`lib/db/fin-listings.ts`) scoped to apparel.
  */
@@ -33,6 +33,7 @@ export type ApparelBrowseListingRow = {
   local_pickup: boolean | null
   shipping_available: boolean | null
   created_at: string
+  apparel_kind: string | null
   apparel_size: string | null
   brand: string | null
   brand_id: string | null
@@ -51,6 +52,7 @@ const APPAREL_BROWSE_LISTING_SELECT = `
   local_pickup,
   shipping_available,
   created_at,
+  apparel_kind,
   apparel_size,
   brand,
   brand_id,
@@ -86,6 +88,9 @@ export async function fetchApparelBrowsePage(
     .eq("hidden_from_site", false)
     .is("archived_at", null)
 
+  if (input.facets.kinds.length > 0) {
+    q = q.in("apparel_kind", input.facets.kinds)
+  }
   if (input.facets.conditions.length > 0) {
     q = q.in("condition", input.facets.conditions)
   }

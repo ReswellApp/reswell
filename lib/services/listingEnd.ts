@@ -60,6 +60,7 @@ async function applySellerArchive(
       status: nextStatus,
       archived_at: new Date().toISOString(),
       hidden_from_site: true,
+      site_visibility_reason: "seller_archive",
       updated_at: new Date().toISOString(),
     })
     .eq("id", listingId)

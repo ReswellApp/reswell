@@ -8,6 +8,7 @@ import {
 export type ApparelSellSectionCompletionInput = {
   title: string
   readyPhotoCount: number
+  kind: string
   condition: string
   description: string
   locationCity: string
@@ -39,7 +40,10 @@ export function computeApparelSellSectionCompletion(
     form.title.trim().length > 0 && form.title.trim().length <= APPAREL_LISTING_TITLE_MAX_LENGTH
   const photosTitle = titleOk && form.readyPhotoCount > 0
 
-  const details = Boolean(form.condition.trim()) && Boolean(form.description.trim())
+  const details =
+    Boolean(form.kind.trim()) &&
+    Boolean(form.condition.trim()) &&
+    Boolean(form.description.trim())
 
   const hasDelivery = form.shippingAvailable || form.localPickup
   const shippingRateOk =

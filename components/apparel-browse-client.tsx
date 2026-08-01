@@ -31,6 +31,7 @@ export function ApparelBrowseClient({ children }: { children: ReactNode }) {
         })
       }
     }
+    pushMulti(APPAREL_FACET_PARAM_KEYS.kind, state.selections.kinds)
     pushMulti(APPAREL_FACET_PARAM_KEYS.size, state.selections.sizes)
     pushMulti(APPAREL_FACET_PARAM_KEYS.condition, state.selections.conditions)
 

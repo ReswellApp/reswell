@@ -1,6 +1,7 @@
 import {
   APPAREL_SECTION,
   USED_APPAREL_CATEGORY_ID,
+  apparelKindSlugForDb,
   apparelSizeSlugForDb,
 } from "@/lib/apparel-listing-config"
 import { reswellPackageFieldsToDb } from "@/lib/sell-listing-fulfillment-flags"
@@ -96,6 +97,7 @@ export function buildApparelListingPersistFields(
     brand_id: brandId,
     model,
     brand_model_id: brandModelId,
+    apparel_kind: apparelKindSlugForDb(input.kind),
     apparel_size: apparelSizeSlugForDb(input.size ?? null),
     board_type: null,
     updated_at: new Date().toISOString(),

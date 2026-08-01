@@ -61,7 +61,10 @@ export async function setListingVacationModeForSeller(params: {
     return { ok: false, error: "Server configuration error", status: 503 }
   }
 
-  const updated = await updateListingHiddenFromSite(service, listingId, hiddenFromSite)
+  const source = params.source ?? "seller_vacation"
+  const updated = await updateListingHiddenFromSite(service, listingId, hiddenFromSite, {
+    source,
+  })
   if (!updated.ok) {
     return { ok: false, error: updated.message, status: 500 }
   }
@@ -69,7 +72,7 @@ export async function setListingVacationModeForSeller(params: {
   await recordListingVisibilityEvent(service, {
     listingId,
     hiddenFromSite,
-    source: params.source ?? "seller_vacation",
+    source,
     actorUserId: params.userId,
     metadata: { vacationMode: params.vacationMode },
   })

@@ -45,6 +45,8 @@ export const boardSavedSearchCriteriaSchema = z.object({
   volume: facetSlugListSchema,
   /** Fin size / wetsuit size facet slugs. */
   sizes: facetSlugListSchema,
+  /** Apparel category facet slugs (`boardshorts`, `hat`, `t_shirt`, `other`). */
+  kind: facetSlugListSchema,
   /** Magazine year range. */
   minYear: z.number().int().min(1900).max(2100).optional(),
   maxYear: z.number().int().min(1900).max(2100).optional(),
@@ -100,6 +102,7 @@ export function boardSavedCriteriaHasSpecificity(c: BoardSavedSearchCriteria): b
   if (c.length && c.length.length > 0) return true
   if (c.volume && c.volume.length > 0) return true
   if (c.sizes && c.sizes.length > 0) return true
+  if (c.kind && c.kind.length > 0) return true
   if (c.minYear != null && Number.isFinite(c.minYear)) return true
   if (c.maxYear != null && Number.isFinite(c.maxYear)) return true
   if (c.shipping === true) return true

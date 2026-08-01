@@ -28,7 +28,12 @@ export async function relistListingsAfterRefund(
   const nowIso = new Date().toISOString()
   const { data, error } = await supabase
     .from("listings")
-    .update({ status: "active", hidden_from_site: false, updated_at: nowIso })
+    .update({
+      status: "active",
+      hidden_from_site: false,
+      site_visibility_reason: null,
+      updated_at: nowIso,
+    })
     .in("id", uniqueIds)
     .eq("status", "sold")
     .select("id, user_id")

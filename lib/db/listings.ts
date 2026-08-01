@@ -1,4 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import {
+  siteVisibilityReasonForWrite,
+  type SiteVisibilityReason,
+} from "@/lib/listing-site-visibility-reason"
 
 export async function updateAdminListingStatus(
   client: SupabaseClient,
@@ -6,6 +10,8 @@ export async function updateAdminListingStatus(
   patch: {
     status: string
     hidden_from_site?: boolean
+    /** When `hidden_from_site` is set, pass the denormalized reason (null clears). */
+    site_visibility_reason?: SiteVisibilityReason | null
   },
 ): Promise<{ ok: true; updatedIds: string[] } | { ok: false; message: string }> {
   if (listingIds.length === 0) {
@@ -16,12 +22,17 @@ export async function updateAdminListingStatus(
     status: string
     updated_at: string
     hidden_from_site?: boolean
+    site_visibility_reason?: SiteVisibilityReason | null
   } = {
     status: patch.status,
     updated_at: new Date().toISOString(),
   }
   if (patch.hidden_from_site !== undefined) {
     row.hidden_from_site = patch.hidden_from_site
+    row.site_visibility_reason =
+      patch.site_visibility_reason !== undefined
+        ? patch.site_visibility_reason
+        : siteVisibilityReasonForWrite(patch.hidden_from_site, "admin_status")
   }
 
   const { data, error } = await client
@@ -46,10 +57,24 @@ export async function updateListingHiddenFromSite(
   client: SupabaseClient,
   listingId: string,
   hiddenFromSite: boolean,
+  options?: {
+    /** Visibility-event source used to derive `site_visibility_reason`. */
+    source?: string | null
+    /** Explicit reason override; when omitted, derived from `source`. */
+    siteVisibilityReason?: SiteVisibilityReason | null
+  },
 ): Promise<{ ok: true } | { ok: false; message: string }> {
+  const reason =
+    options?.siteVisibilityReason !== undefined
+      ? options.siteVisibilityReason
+      : siteVisibilityReasonForWrite(hiddenFromSite, options?.source)
+
   const { data, error } = await client
     .from("listings")
-    .update({ hidden_from_site: hiddenFromSite })
+    .update({
+      hidden_from_site: hiddenFromSite,
+      site_visibility_reason: hiddenFromSite ? reason : null,
+    })
     .eq("id", listingId)
     .select("id")
     .maybeSingle()

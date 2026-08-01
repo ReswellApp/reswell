@@ -38,6 +38,7 @@ export function useApparelFilterState(
   const selections = useMemo(
     () =>
       apparelFacetSelectionsFromParams({
+        kind: searchParams.get(APPAREL_FACET_PARAM_KEYS.kind) ?? undefined,
         size: searchParams.get(APPAREL_FACET_PARAM_KEYS.size) ?? undefined,
         condition: searchParams.get(APPAREL_FACET_PARAM_KEYS.condition) ?? undefined,
       }),
@@ -101,6 +102,7 @@ export function useApparelFilterState(
     facetActive || !!brand.trim() || !!minPrice.trim() || !!maxPrice.trim()
 
   const activeCount =
+    selections.kinds.length +
     selections.sizes.length +
     selections.conditions.length +
     (brand.trim() ? 1 : 0) +

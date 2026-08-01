@@ -1,5 +1,7 @@
 import { Suspense } from "react"
 import { SellTypeChooser } from "@/components/features/sell/sell-type-chooser"
+import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
+import { createClient } from "@/lib/supabase/server"
 import SellFlowShell from "./sell-flow-client"
 
 function parseEditListingId(
@@ -45,5 +47,11 @@ export default async function SellPage({
     )
   }
 
-  return <SellTypeChooser />
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const isAdmin = user ? await fetchProfileIsAdmin(supabase, user.id) : false
+
+  return <SellTypeChooser isAdmin={isAdmin} />
 }

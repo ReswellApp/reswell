@@ -50,6 +50,8 @@ export function peerSavedSearchCriteriaFromBrowseParams(input: {
   fin?: string | null
   finSystem?: string | null
   size?: string | null
+  /** Apparel category slugs (comma-separated). */
+  kind?: string | null
   minPrice?: string | null
   maxPrice?: string | null
   minYear?: string | null
@@ -74,6 +76,8 @@ export function peerSavedSearchCriteriaFromBrowseParams(input: {
   if (finSystem.length > 0) out.finSystem = finSystem
   const sizes = parseCommaSlugs(input.size)
   if (sizes.length > 0) out.sizes = sizes
+  const kinds = parseCommaSlugs(input.kind)
+  if (kinds.length > 0) out.kind = kinds
 
   const minPrice = parsePrice(input.minPrice)
   if (minPrice != null) out.minPrice = minPrice

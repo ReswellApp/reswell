@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
+  APPAREL_KIND_OPTIONS,
   APPAREL_SIZE_OPTIONS,
   type ApparelFacetOption,
 } from "@/lib/apparel-listing-config"
@@ -67,10 +68,12 @@ function SellApparelFacetSelect({
 }
 
 export type SellApparelFacetFieldsProps = {
+  kind: string
   condition: string
   size: string
   brand: string
   model: string
+  onKindChange: (value: string) => void
   onConditionChange: (value: string) => void
   onSizeChange: (value: string) => void
   onBrandChange: (value: string) => void
@@ -78,10 +81,12 @@ export type SellApparelFacetFieldsProps = {
 }
 
 export function SellApparelFacetFields({
+  kind,
   condition,
   size,
   brand,
   model,
+  onKindChange,
   onConditionChange,
   onSizeChange,
   onBrandChange,
@@ -92,6 +97,15 @@ export function SellApparelFacetFields({
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <SellApparelFacetSelect
+          id="sell-apparel-kind"
+          label="Category"
+          hint="Boardshorts, hat, t-shirt, or other"
+          value={kind}
+          options={APPAREL_KIND_OPTIONS}
+          onValueChange={onKindChange}
+          required
+        />
+        <SellApparelFacetSelect
           id="sell-apparel-condition"
           label="Condition"
           value={condition}
@@ -99,7 +113,10 @@ export function SellApparelFacetFields({
           onValueChange={onConditionChange}
           required
         />
-        {hasSizeOptions ? (
+      </div>
+
+      {hasSizeOptions ? (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <SellApparelFacetSelect
             id="sell-apparel-size"
             label="Size"
@@ -107,8 +124,8 @@ export function SellApparelFacetFields({
             options={APPAREL_SIZE_OPTIONS}
             onValueChange={onSizeChange}
           />
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
@@ -130,7 +147,7 @@ export function SellApparelFacetFields({
           <Input
             id="sell-apparel-model"
             value={model}
-            placeholder="e.g. Flashbomb 3/2, Hyperfreak"
+            placeholder="e.g. Mirage Ultimate, Trucker Cap"
             className="h-11 border-foreground/20 bg-card text-sm shadow-sm placeholder:text-muted-foreground"
             onChange={(e) => onModelChange(e.target.value)}
           />

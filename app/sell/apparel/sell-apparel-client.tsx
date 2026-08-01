@@ -129,6 +129,7 @@ type ApparelFormState = {
   description: string
   price: string
   sellerPurchasePrice: string
+  kind: string
   condition: string
   size: string
   brand: string
@@ -155,6 +156,7 @@ const INITIAL_STATE: ApparelFormState = {
   description: "",
   price: "",
   sellerPurchasePrice: "",
+  kind: "",
   condition: "",
   size: "",
   brand: "",
@@ -264,6 +266,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
           if (v == null || v === "") return ""
           return String(v)
         })(),
+        kind: (listing as { apparel_kind?: string | null }).apparel_kind ?? "",
         condition: sellFormConditionValue(listing.condition),
         size: (listing as { apparel_size?: string | null }).apparel_size ?? "",
         brand: (listing as { brand?: string | null }).brand?.trim() ?? "",
@@ -478,6 +481,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       computeApparelSellSectionCompletion({
         title: form.title,
         readyPhotoCount: readyPhotos.length,
+        kind: form.kind,
         condition: form.condition,
         description: form.description,
         locationCity: form.locationCity,
@@ -548,6 +552,11 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       scrollApparelSellSectionIntoView("sell-apparel-section-photos-title")
       return
     }
+    if (!form.kind) {
+      failValidation("Choose a category (boardshorts, hat, t-shirt, or other).")
+      scrollApparelSellSectionIntoView("sell-apparel-section-details")
+      return
+    }
     if (!form.condition) {
       failValidation("Choose a condition.")
       scrollApparelSellSectionIntoView("sell-apparel-section-details")
@@ -598,6 +607,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       description: form.description,
       price: Number(form.price),
       condition: form.condition as CreateApparelListingInput["condition"],
+      kind: form.kind as CreateApparelListingInput["kind"],
       size: form.size || null,
       brand: form.brand,
       model: form.model,
@@ -1013,7 +1023,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
                     <Input
                       id="apparel-title"
                       className="h-11 border-foreground/20 bg-card shadow-sm placeholder:text-muted-foreground"
-                      placeholder="e.g. Rip Curl Flashbomb 3/2 Steamer — Medium"
+                      placeholder="e.g. Rip Curl Mirage Boardshorts — 32"
                       value={form.title}
                       maxLength={APPAREL_LISTING_TITLE_MAX_LENGTH}
                       onChange={(e) => setField("title", e.target.value)}
@@ -1028,14 +1038,16 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
               <SellFormSection
                 sectionId="sell-apparel-section-details"
                 title="Apparel details & description"
-                description="Condition and details help buyers shop with confidence."
+                description="Category, condition, and details help buyers shop with confidence."
               >
                 <div className="space-y-8">
                   <SellApparelFacetFields
+                    kind={form.kind}
                     condition={form.condition}
                     size={form.size}
                     brand={form.brand}
                     model={form.model}
+                    onKindChange={(v) => setField("kind", v)}
                     onConditionChange={(v) => setField("condition", v)}
                     onSizeChange={(v) => setField("size", v)}
                     onBrandChange={(v) => setField("brand", v)}
@@ -1048,7 +1060,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
                     id="apparel-description"
                     value={form.description}
                     onChange={(v) => setField("description", v)}
-                    placeholder="Thickness, seams, any wear or repairs, why you're selling…"
+                    placeholder="Fit notes, material, any wear or repairs, why you're selling…"
                   />
                 </div>
               </SellFormSection>

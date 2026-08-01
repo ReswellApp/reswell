@@ -38,6 +38,8 @@ export type OwnedListingForEditRow = {
   buyer_offers_enabled?: boolean | null
   seller_purchase_price_usd?: number | string | null
   wetsuit_size?: string | null
+  apparel_kind?: string | null
+  apparel_size?: string | null
   fin_setup?: string | null
   fin_system?: string | null
   size?: string | null

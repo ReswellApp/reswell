@@ -2831,6 +2831,7 @@ function SellPageContentInner({
               ? {
                   status: "active" as const,
                   hidden_from_site: false,
+                  site_visibility_reason: null,
                   slug: publishSlug ?? undefined,
                 }
               : {}),
@@ -2857,6 +2858,7 @@ function SellPageContentInner({
                   ? {
                       status: "active" as const,
                       hidden_from_site: false,
+                      site_visibility_reason: null,
                       slug: publishSlug ?? undefined,
                     }
                   : {}),

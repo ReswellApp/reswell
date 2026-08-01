@@ -2,15 +2,22 @@
  * Single source of truth for the apparel marketplace product type.
  *
  * Apparel are stored as `listings` rows with `section = 'apparel'`. The
- * apparel-specific size lives in the `apparel_size` column; brand/model reuse the
- * existing listings columns. This module owns the shared vocabulary (option slugs
- * + labels) consumed by the /sell apparel flow, the /apparel browse filters, the
- * apparel PDP, and SEO/sitemap helpers.
+ * apparel-specific category lives in `apparel_kind` and size in `apparel_size`;
+ * brand/model reuse the existing listings columns. This module owns the shared
+ * vocabulary (option slugs + labels) consumed by the /sell apparel flow, the
+ * /apparel browse filters, the apparel PDP, and SEO/sitemap helpers.
  *
  * Modeled on `lib/fin-listing-config.ts`.
  */
 
 export const APPAREL_SECTION = "apparel" as const
+
+/**
+ * Soft-launch gate: only marketplace admins (`profiles.is_admin`) may open
+ * `/sell/apparel` or create/update apparel listings. `/apparel` browse stays public.
+ * Flip to `false` when peer sellers can list apparel.
+ */
+export const APPAREL_SELL_ADMIN_ONLY = true
 
 /**
  * Fixed `categories.id` for peer-to-peer apparel. Must match the seed in
@@ -21,19 +28,41 @@ export const USED_APPAREL_CATEGORY_ID = "f1115a1e-aaaa-4bbb-8ccc-000000000006"
 
 export type ApparelFacetOption = { value: string; label: string }
 
+/**
+ * Apparel category — stored as a slug in `listings.apparel_kind`.
+ * Required on create; browse filters as multi-select `kind=`.
+ */
+export const APPAREL_KIND_OPTIONS: readonly ApparelFacetOption[] = [
+  { value: "boardshorts", label: "Boardshorts" },
+  { value: "hat", label: "Hat" },
+  { value: "t_shirt", label: "T-Shirt" },
+  { value: "other", label: "Other" },
+]
+
 /** Apparel size — stored as a slug in `listings.apparel_size`. */
 export const APPAREL_SIZE_OPTIONS: readonly ApparelFacetOption[] = []
 
+const APPAREL_KIND_SLUGS = new Set(APPAREL_KIND_OPTIONS.map((o) => o.value))
 const APPAREL_SIZE_SLUGS = new Set(APPAREL_SIZE_OPTIONS.map((o) => o.value))
+
+export function isApparelKindSlug(value: string): boolean {
+  return APPAREL_KIND_SLUGS.has(value)
+}
 
 export function isApparelSizeSlug(value: string): boolean {
   return APPAREL_SIZE_SLUGS.has(value)
 }
 
+const APPAREL_KIND_LABELS = labelMap(APPAREL_KIND_OPTIONS)
 const APPAREL_SIZE_LABELS = labelMap(APPAREL_SIZE_OPTIONS)
 
 function labelMap(options: readonly ApparelFacetOption[]): Record<string, string> {
   return Object.fromEntries(options.map((o) => [o.value, o.label]))
+}
+
+export function apparelKindLabel(slug: string | null | undefined): string | null {
+  if (!slug) return null
+  return APPAREL_KIND_LABELS[slug] ?? null
 }
 
 export function apparelSizeLabel(slug: string | null | undefined): string | null {
@@ -42,6 +71,11 @@ export function apparelSizeLabel(slug: string | null | undefined): string | null
 }
 
 /** Normalize a raw form value to an allowed slug or null (for DB writes). */
+export function apparelKindSlugForDb(raw: string | null | undefined): string | null {
+  const v = raw?.trim().toLowerCase() ?? ""
+  return isApparelKindSlug(v) ? v : null
+}
+
 export function apparelSizeSlugForDb(raw: string | null | undefined): string | null {
   const v = raw?.trim().toLowerCase() ?? ""
   return isApparelSizeSlug(v) ? v : null

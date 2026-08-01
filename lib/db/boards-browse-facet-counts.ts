@@ -53,6 +53,7 @@ export async function fetchSurfboardFacetCountRows(
     .eq("status", "active")
     .eq("section", "surfboards")
     .eq("hidden_from_site", false)
+    .is("archived_at", null)
     .limit(FACET_COUNT_MAX_ROWS)
 
   if (ctx.minPrice != null && !Number.isNaN(ctx.minPrice) && ctx.minPrice >= 0) {

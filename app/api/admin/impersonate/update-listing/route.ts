@@ -160,6 +160,7 @@ export async function PUT(request: NextRequest) {
       ? {
           status: "active" as const,
           hidden_from_site: false,
+          site_visibility_reason: null,
           slug: publishSlug ?? undefined,
         }
       : {}),
@@ -182,6 +183,14 @@ export async function PUT(request: NextRequest) {
       .update({
         ...withoutListingDimensionDisplayDbFields(listingFields as Record<string, unknown>),
         updated_at: new Date().toISOString(),
+        ...(publishingFromDraft
+          ? {
+              status: "active" as const,
+              hidden_from_site: false,
+              site_visibility_reason: null,
+              slug: publishSlug ?? undefined,
+            }
+          : {}),
       })
       .eq("id", listingId)
       .select("slug")

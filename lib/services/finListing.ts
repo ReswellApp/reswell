@@ -127,6 +127,7 @@ export async function updateFinListing(
         ? {
             status: "active" as const,
             hidden_from_site: false,
+            site_visibility_reason: null,
             slug: publishSlug ?? undefined,
           }
         : {}),

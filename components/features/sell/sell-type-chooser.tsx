@@ -1,6 +1,7 @@
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
+import { APPAREL_SELL_ADMIN_ONLY } from "@/lib/apparel-listing-config"
 import { cn } from "@/lib/utils"
 
 type SellTypeOption = {
@@ -9,6 +10,8 @@ type SellTypeOption = {
   description: string
   imageSrc: string | null
   imageAlt: string
+  /** When true, only shown to marketplace admins. */
+  adminOnly?: boolean
 }
 
 /** Shown on /sell chooser. Other sell flows stay live at their routes until launch. */
@@ -41,10 +44,20 @@ const SELL_TYPE_OPTIONS: readonly SellTypeOption[] = [
     imageSrc: "/images/sell/magazines.jpg",
     imageAlt: "Surf magazine",
   },
+  {
+    href: "/sell/apparel",
+    title: "Apparel",
+    description: "List boardshorts, hats, t-shirts, and more.",
+    imageSrc: null,
+    imageAlt: "Apparel",
+    adminOnly: APPAREL_SELL_ADMIN_ONLY,
+  },
 ]
 
 /** First step of /sell: pick a product type. */
-export function SellTypeChooser() {
+export function SellTypeChooser({ isAdmin = false }: { isAdmin?: boolean }) {
+  const options = SELL_TYPE_OPTIONS.filter((option) => !option.adminOnly || isAdmin)
+
   return (
     <main className="flex-1 bg-offwhite">
       <div className="container mx-auto max-w-lg px-4 py-12 sm:py-16">
@@ -56,7 +69,7 @@ export function SellTypeChooser() {
         </div>
 
         <div className="mt-10 space-y-3">
-          {SELL_TYPE_OPTIONS.map((option) => (
+          {options.map((option) => (
             <Link
               key={option.href}
               href={option.href}
@@ -75,7 +88,14 @@ export function SellTypeChooser() {
                     className="object-cover object-center"
                   />
                 </div>
-              ) : null}
+              ) : (
+                <div
+                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                  aria-hidden
+                >
+                  {option.title.slice(0, 3)}
+                </div>
+              )}
               <div className="min-w-0 flex-1">
                 <h2 className="text-lg font-semibold">{option.title}</h2>
                 <p className="mt-0.5 text-sm text-muted-foreground">{option.description}</p>

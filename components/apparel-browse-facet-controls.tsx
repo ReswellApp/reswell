@@ -13,6 +13,7 @@ import {
 import {
   APPAREL_CONDITION_OPTIONS,
   APPAREL_FACET_PARAM_KEYS,
+  APPAREL_KIND_OPTIONS,
   type ApparelFacetOption,
 } from "@/lib/apparel-browse-facets"
 import { APPAREL_SIZE_OPTIONS } from "@/lib/apparel-listing-config"
@@ -32,7 +33,9 @@ type CheckRowProps = {
 }
 
 function CheckRow({ checked, count, label, onToggle, id }: CheckRowProps) {
-  const disabled = !checked && (count ?? 0) === 0
+  // Only disable zero-count options when counts are provided (fins-style).
+  // Apparel browse may omit counts; undefined must stay selectable.
+  const disabled = count != null && !checked && count === 0
   return (
     <label
       htmlFor={id}
@@ -191,6 +194,7 @@ export function ApparelBrowseFacetControls({
   const { selections } = state
   const hasSizeOptions = APPAREL_SIZE_OPTIONS.length > 0
   const sectionIds = [
+    "kind",
     ...(hasSizeOptions ? ["size"] : []),
     "brand",
     "condition",
@@ -199,6 +203,16 @@ export function ApparelBrowseFacetControls({
 
   return (
     <Accordion type="multiple" defaultValue={sectionIds} className="w-full">
+      <FacetAccordionItem id="kind" title="Category">
+        <MultiSelectSection
+          paramKey={APPAREL_FACET_PARAM_KEYS.kind}
+          options={APPAREL_KIND_OPTIONS}
+          selected={selections.kinds}
+          counts={counts[APPAREL_FACET_PARAM_KEYS.kind]}
+          state={state}
+        />
+      </FacetAccordionItem>
+
       {hasSizeOptions ? (
         <FacetAccordionItem id="size" title="Size">
           <MultiSelectSection

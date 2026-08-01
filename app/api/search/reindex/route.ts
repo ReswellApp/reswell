@@ -26,6 +26,7 @@ import {
 import { getElasticsearchClient } from "@/lib/elasticsearch/client"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { ELASTICSEARCH_INDEXED_LISTING_SECTIONS } from "@/lib/elasticsearch/listing-sections"
+import { isListingExternallyIndexable } from "@/lib/listing-public-visibility"
 
 /**
  * Full reindex of active indexed peer listings (surfboards, fins, magazines, wetsuits) into Elasticsearch.
@@ -123,6 +124,7 @@ export async function POST(request: NextRequest) {
       .select(LISTING_SEARCH_DOC_SELECT)
       .eq("status", "active")
       .eq("hidden_from_site", false)
+      .is("archived_at", null)
       .in("section", [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS])
       .order("created_at", { ascending: false })
       .range(from, from + pageSize - 1)
@@ -135,6 +137,16 @@ export async function POST(request: NextRequest) {
 
     for (const row of rows as any[]) {
       try {
+        if (
+          !isListingExternallyIndexable({
+            status: String(row.status ?? ""),
+            title: row.title,
+            hidden_from_site: row.hidden_from_site,
+            archived_at: row.archived_at,
+          })
+        ) {
+          continue
+        }
         const doc = listingRowToSearchDocFromRow(row)
         await indexListingDocument(doc)
         indexed++

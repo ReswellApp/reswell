@@ -50,12 +50,15 @@ export async function setAdminListingStatus(params: {
   const patch: {
     status: AdminListingStatus
     hidden_from_site?: boolean
+    site_visibility_reason?: "admin_status" | null
   } = { status: params.status }
   if (shouldHideFromSite(params.status)) {
     patch.hidden_from_site = true
+    patch.site_visibility_reason = "admin_status"
   } else if (params.status === "active") {
     // Restoring live inventory must clear site hide (removed/draft/vacation leftovers).
     patch.hidden_from_site = false
+    patch.site_visibility_reason = null
   }
 
   const updated = await updateAdminListingStatus(service, listingIds, patch)

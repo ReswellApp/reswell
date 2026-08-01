@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { isElasticsearchIndexedListingSection } from "@/lib/elasticsearch/listing-sections"
+import { isListingExternallyIndexable } from "@/lib/listing-public-visibility"
 import { isMarketplaceSearchNoiseToken } from "@/lib/utils/marketplace-brand-query"
 import { parseFinsSetupFromStorage } from "@/lib/listing-fin-setup-tags"
 import { parseTailShapeFromStorage } from "@/lib/listing-tail-shape-tags"
@@ -559,6 +560,8 @@ export const LISTING_SEARCH_DOC_SELECT = `
   wetsuit_size,
   wetsuit_thickness,
   wetsuit_zip_type,
+  hidden_from_site,
+  archived_at,
   categories (name)
 `
 
@@ -600,6 +603,8 @@ export type ListingSearchDocRow = {
   wetsuit_size?: string | null
   wetsuit_thickness?: string | null
   wetsuit_zip_type?: string | null
+  hidden_from_site?: boolean | null
+  archived_at?: string | null
   categories: { name: string | null } | null | { name: string | null }[]
 }
 
@@ -712,7 +717,7 @@ export async function syncListingToIndex(
 
   const { data: visibilityRow, error: visibilityError } = await supabase
     .from("listings")
-    .select("id, hidden_from_site")
+    .select("id, status, title, hidden_from_site, archived_at")
     .eq("id", listingId)
     .maybeSingle()
 
@@ -721,7 +726,22 @@ export async function syncListingToIndex(
     await deleteListingDocument(listingId)
     return
   }
-  if ((visibilityRow as { hidden_from_site?: boolean | null }).hidden_from_site) {
+
+  const row = visibilityRow as {
+    status?: string | null
+    title?: string | null
+    hidden_from_site?: boolean | null
+    archived_at?: string | null
+  }
+
+  if (
+    !isListingExternallyIndexable({
+      status: String(row.status ?? ""),
+      title: row.title,
+      hidden_from_site: row.hidden_from_site,
+      archived_at: row.archived_at,
+    })
+  ) {
     await deleteListingDocument(listingId)
     return
   }
@@ -729,7 +749,7 @@ export async function syncListingToIndex(
   const doc = await listingRowToSearchDoc(supabase, listingId)
   if (!doc) return
 
-  if (doc.status !== "active" || !isElasticsearchIndexedListingSection(doc.section)) {
+  if (!isElasticsearchIndexedListingSection(doc.section)) {
     await deleteListingDocument(listingId)
     return
   }

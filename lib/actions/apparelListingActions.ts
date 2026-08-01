@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { APPAREL_SELL_ADMIN_ONLY } from "@/lib/apparel-listing-config"
+import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import {
   createApparelListingSchema,
   updateApparelListingSchema,
@@ -15,6 +17,18 @@ export type CreateApparelListingActionResult =
 export type UpdateApparelListingActionResult =
   | { success: true; slug: string }
   | { error: string }
+
+async function assertCanSellApparel(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+): Promise<string | null> {
+  if (!APPAREL_SELL_ADMIN_ONLY) return null
+  const isAdmin = await fetchProfileIsAdmin(supabase, userId)
+  if (!isAdmin) {
+    return "Apparel listings are not open to the public yet."
+  }
+  return null
+}
 
 /**
  * Creates a apparel listing (a single listings row with section='apparel' plus
@@ -35,8 +49,11 @@ export async function createApparelListingAction(
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) {
-    return { error: "Please sign in to list a apparel." }
+    return { error: "Please sign in to list apparel." }
   }
+
+  const gateError = await assertCanSellApparel(supabase, user.id)
+  if (gateError) return { error: gateError }
 
   try {
     const result = await createApparelListing(supabase, user.id, parsed.data)
@@ -69,6 +86,9 @@ export async function updateApparelListingAction(
   if (!user) {
     return { error: "Please sign in to edit this listing." }
   }
+
+  const gateError = await assertCanSellApparel(supabase, user.id)
+  if (gateError) return { error: gateError }
 
   try {
     const result = await updateApparelListing(supabase, parsed.data.listingId, user.id, parsed.data)

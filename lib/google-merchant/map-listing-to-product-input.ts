@@ -18,6 +18,7 @@ import {
 } from "./config"
 import { mapListingConditionToGoogleMerchant, type GoogleMerchantCondition } from "./condition"
 import { buildGoogleMerchantProductDescription } from "./product-description"
+import { isListingDiscoveryEligible } from "@/lib/listing-public-visibility"
 
 export type GoogleMerchantListingImage = ListingImageForCard & {
   sort_order?: number | null
@@ -241,9 +242,16 @@ function mapListingTaxAttributes(): GoogleMerchantTax[] | undefined {
 
 export function isGoogleMerchantEligibleListing(listing: GoogleMerchantListingRow): boolean {
   if (!isGoogleMerchantPeerSection(listing.section)) return false
-  if (listing.status !== "active") return false
-  if (listing.archived_at) return false
-  if (listing.hidden_from_site === true) return false
+  if (
+    !isListingDiscoveryEligible({
+      status: listing.status,
+      title: listing.title,
+      hidden_from_site: listing.hidden_from_site,
+      archived_at: listing.archived_at,
+    })
+  ) {
+    return false
+  }
   if (!listing.title?.trim()) return false
   if (!Number.isFinite(listing.price) || listing.price <= 0) return false
   if (!absoluteImageLink(listing)) return false

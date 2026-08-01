@@ -1,12 +1,13 @@
 /**
  * Browse filter facets for the /apparel marketplace page. Mirrors
  * `lib/fins-browse-facets.ts` scoped to the attributes that matter for apparel:
- * size and condition.
+ * category (kind), size, and condition.
  *
  * All multi-select facets serialize to the URL as comma-separated slug lists.
  */
 
 import {
+  APPAREL_KIND_OPTIONS,
   APPAREL_SIZE_OPTIONS,
   type ApparelFacetOption,
 } from "@/lib/apparel-listing-config"
@@ -14,11 +15,15 @@ import { listingConditionFilterRows } from "@/lib/listing-labels"
 
 export type { ApparelFacetOption } from "@/lib/apparel-listing-config"
 
+/** Re-export kind options for browse UI. */
+export { APPAREL_KIND_OPTIONS }
+
 /** Condition — multi-select against `listings.condition`. */
 export const APPAREL_CONDITION_OPTIONS: readonly ApparelFacetOption[] = listingConditionFilterRows()
 
 /** URL query keys for the multi-select facets. */
 export const APPAREL_FACET_PARAM_KEYS = {
+  kind: "kind",
   size: "size",
   condition: "condition",
 } as const
@@ -27,6 +32,7 @@ export type ApparelFacetParamKey =
   (typeof APPAREL_FACET_PARAM_KEYS)[keyof typeof APPAREL_FACET_PARAM_KEYS]
 
 const LABEL_LOOKUPS: Record<string, Record<string, string>> = {
+  [APPAREL_FACET_PARAM_KEYS.kind]: optionLabelMap(APPAREL_KIND_OPTIONS),
   [APPAREL_FACET_PARAM_KEYS.size]: optionLabelMap(APPAREL_SIZE_OPTIONS),
   [APPAREL_FACET_PARAM_KEYS.condition]: optionLabelMap(APPAREL_CONDITION_OPTIONS),
 }
@@ -60,31 +66,36 @@ export function parseApparelFacetParam(
 }
 
 export const APPAREL_FACET_ALLOWED_VALUES: Record<ApparelFacetParamKey, readonly string[]> = {
+  [APPAREL_FACET_PARAM_KEYS.kind]: APPAREL_KIND_OPTIONS.map((o) => o.value),
   [APPAREL_FACET_PARAM_KEYS.size]: APPAREL_SIZE_OPTIONS.map((o) => o.value),
   [APPAREL_FACET_PARAM_KEYS.condition]: APPAREL_CONDITION_OPTIONS.map((o) => o.value),
 }
 
 export type ApparelBrowseFacetSelections = {
+  kinds: string[]
   sizes: string[]
   conditions: string[]
 }
 
 export const EMPTY_APPAREL_FACET_SELECTIONS: ApparelBrowseFacetSelections = {
+  kinds: [],
   sizes: [],
   conditions: [],
 }
 
 /** Read all facet selections from a search-params bag. */
 export function apparelFacetSelectionsFromParams(sp: {
+  kind?: string | string[]
   size?: string | string[]
   condition?: string | string[]
 }): ApparelBrowseFacetSelections {
   return {
+    kinds: parseApparelFacetParam(sp.kind, APPAREL_FACET_ALLOWED_VALUES.kind),
     sizes: parseApparelFacetParam(sp.size, APPAREL_FACET_ALLOWED_VALUES.size),
     conditions: parseApparelFacetParam(sp.condition, APPAREL_FACET_ALLOWED_VALUES.condition),
   }
 }
 
 export function hasAnyApparelFacetSelection(sel: ApparelBrowseFacetSelections): boolean {
-  return sel.sizes.length > 0 || sel.conditions.length > 0
+  return sel.kinds.length > 0 || sel.sizes.length > 0 || sel.conditions.length > 0
 }

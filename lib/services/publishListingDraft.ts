@@ -158,6 +158,7 @@ export async function publishListingDraft(
     .update({
       status: "active",
       hidden_from_site: false,
+      site_visibility_reason: null,
       slug,
       updated_at: now,
     })

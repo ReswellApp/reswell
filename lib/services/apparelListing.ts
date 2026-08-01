@@ -10,7 +10,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
-import { APPAREL_SECTION } from "@/lib/apparel-listing-config"
+import { APPAREL_SECTION, APPAREL_SELL_ADMIN_ONLY } from "@/lib/apparel-listing-config"
 import { buildApparelListingPersistFields } from "@/lib/apparel-listing-persist-fields"
 import { removeListingImageFilesFromStorage } from "@/lib/services/listingStorageCleanup"
 import type {
@@ -19,6 +19,17 @@ import type {
 } from "@/lib/validations/apparel-listing"
 
 export type CreateApparelListingResult = { listingId: string; slug: string }
+
+async function assertApparelSellAllowed(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<void> {
+  if (!APPAREL_SELL_ADMIN_ONLY) return
+  const isAdmin = await fetchProfileIsAdmin(supabase, userId)
+  if (!isAdmin) {
+    throw new Error("Apparel listings are not open to the public yet.")
+  }
+}
 
 export type ApparelListingImageUpdateOp = {
   id?: string
@@ -93,6 +104,8 @@ export async function updateApparelListing(
   userId: string,
   input: UpdateApparelListingInput,
 ): Promise<{ slug: string }> {
+  await assertApparelSellAllowed(supabase, userId)
+
   const { data: existing, error: existingErr } = await supabase
     .from("listings")
     .select("id, user_id, section, status, slug")
@@ -149,6 +162,8 @@ export async function createApparelListing(
   userId: string,
   input: CreateApparelListingInput,
 ): Promise<CreateApparelListingResult> {
+  await assertApparelSellAllowed(supabase, userId)
+
   const slug = await generateUniqueListingSlug(supabase, input.title)
   const allowPrivilegedShippingModes = await fetchProfileIsAdmin(supabase, userId)
   const persistFields = buildApparelListingPersistFields(input, {

@@ -494,7 +494,9 @@ export async function buildSurfboardBrowseBaseQuery(
     .select(selectClause, selectOptions)
     .eq("status", "active")
     .eq("section", "surfboards")
-    .eq("hidden_from_site", false) as unknown as SurfboardBrowseListingsQuery
+    .eq("hidden_from_site", false)
+    // Align with peer browse + listings_*_public_browse_created_idx predicates.
+    .is("archived_at", null) as unknown as SurfboardBrowseListingsQuery
 
   const facets = params.facets
   const styleSlugs = facets?.styles?.length

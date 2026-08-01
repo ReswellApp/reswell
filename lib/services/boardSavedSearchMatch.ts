@@ -50,6 +50,7 @@ export type ListingRowForBoardAlert = {
   fin_system?: string | null
   fin_size?: string | null
   wetsuit_size?: string | null
+  apparel_kind?: string | null
   magazine_year?: number | string | null
 }
 
@@ -335,6 +336,10 @@ export function listingMatchesBoardSavedCriteria(
 
   if (listing.section === "wetsuits" || (section === "wetsuits" && !c.anySection)) {
     if (!slugListOverlapsStored(c.sizes, listing.wetsuit_size)) return false
+  }
+
+  if (listing.section === "apparel" || (section === "apparel" && !c.anySection)) {
+    if (!slugListOverlapsStored(c.kind, listing.apparel_kind)) return false
   }
 
   if (listing.section === "magazines" || (section === "magazines" && !c.anySection)) {

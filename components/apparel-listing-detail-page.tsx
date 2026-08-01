@@ -64,7 +64,11 @@ import { ReswellPlatformRatingWidget } from "@/components/features/reswell/reswe
 import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
 import { getListingFavoriteCount } from "@/lib/db/listing-favorite-count"
 import { formatDistanceToNow } from "date-fns"
-import { APPAREL_SECTION, apparelSizeLabel } from "@/lib/apparel-listing-config"
+import {
+  APPAREL_SECTION,
+  apparelKindLabel,
+  apparelSizeLabel,
+} from "@/lib/apparel-listing-config"
 
 type AboutSellerProfilesProp = ComponentProps<typeof ListingAboutSellerSection>["profiles"]
 
@@ -208,6 +212,7 @@ export async function ApparelListingDetailPage({
   const specsBrandHref = indexBrand ? `${BRANDS_BASE}/${indexBrand.slug}` : null
   const modelForSpecs = (apparel.model as string | null)?.trim() || null
 
+  const kindLabel = apparelKindLabel(apparel.apparel_kind as string | null)
   const sizeLabel = apparelSizeLabel(apparel.apparel_size as string | null)
 
   const listingTitle = capitalizeWords(apparel.title as string)
@@ -303,6 +308,7 @@ export async function ApparelListingDetailPage({
   const showFavoriteOnGalleryOverlay = !isOwnListing
 
   const specRows = [
+    kindLabel ? { label: "Category", value: kindLabel } : null,
     sizeLabel ? { label: "Size", value: sizeLabel } : null,
     specsBrandLabel
       ? {
