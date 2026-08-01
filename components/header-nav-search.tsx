@@ -20,6 +20,7 @@ import {
   navSearchTopListingRowClassName,
   navSearchTopListingThumbClassName,
 } from "@/components/features/search/nav-search-top-listing-row"
+import { FocusScrim } from "@/components/focus-scrim"
 import { SearchInputWithSuggest } from "@/components/search-input-with-suggest"
 import {
   SiteSearchBar,
@@ -273,6 +274,7 @@ export function HeaderNavSearch({
   const prevPathnameRef = useRef(pathname)
 
   const [idleOpen, setIdleOpen] = useState(false)
+  const [suggestOpen, setSuggestOpen] = useState(false)
   const [recentSearches, setRecentSearches] = useState<string[]>([])
   const [recentlyViewed, setRecentlyViewed] = useState<NavSearchPersonalizationListing[]>([])
   const [recentBrands, setRecentBrands] = useState<NavSearchPersonalizationBrand[]>([])
@@ -283,6 +285,27 @@ export function HeaderNavSearch({
   const [dropdownRect, setDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
   const idleDropdownRef = useRef<HTMLDivElement>(null)
+
+  const dismissSearchFocus = useCallback(() => {
+    setIdleOpen(false)
+    setSuggestOpen(false)
+    const active = document.activeElement
+    if (active instanceof HTMLElement && formRef.current?.contains(active)) {
+      active.blur()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (variant === "mobile") return
+    if (!idleOpen && !suggestOpen) return
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return
+      event.preventDefault()
+      dismissSearchFocus()
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [dismissSearchFocus, idleOpen, suggestOpen, variant])
 
   useEffect(() => {
     if (!isSearchResultsPath(pathname)) return
@@ -605,6 +628,9 @@ export function HeaderNavSearch({
     suggestedListings.length > 0
   const showPersonalizationSkeleton =
     userId && idleOpen && !personalizationLoaded && !showPersonalization
+  /** Soft page dim while the idle or typeahead panel is open (desktop only — mobile menu has its own backdrop). */
+  const showFocusScrim =
+    variant !== "mobile" && (showIdleDropdown || suggestOpen)
 
   const panelWidth = dropdownRect ? dropdownRect.width : 400
   const panelLeft = dropdownRect ? dropdownRect.left : 0
@@ -768,6 +794,7 @@ export function HeaderNavSearch({
     },
     onNavigate: clearSearchAndStorage,
     onFocus: handleIdleFocus,
+    onOpenChange: setSuggestOpen,
     placeholder: headerNavSearchPlaceholder(),
     // Unscoped: typeahead includes listings from every marketplace section.
     section: "",
@@ -812,7 +839,18 @@ export function HeaderNavSearch({
   }
 
   return (
-    <div className="hidden min-w-0 w-full flex-1 items-center px-2 md:flex">
+    <div
+      className={cn(
+        "hidden min-w-0 w-full flex-1 items-center px-2 md:flex",
+        // Keep the search bar above the portaled page scrim / sibling chrome while open.
+        showFocusScrim && "relative z-[70]",
+      )}
+    >
+      <FocusScrim
+        open={showFocusScrim}
+        onDismiss={dismissSearchFocus}
+        ariaLabel="Dismiss search"
+      />
       <SiteSearchBar ref={formRef} onSubmit={handleSubmit} className="w-full">
         <SearchInputWithSuggest
           {...sharedSearchInputProps}

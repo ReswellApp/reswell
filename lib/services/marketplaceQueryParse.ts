@@ -16,7 +16,9 @@ import {
   type DirectoryBrandMini,
 } from "@/lib/services/brandDirectorySearch"
 import { expansionsForMarketplaceQuery } from "@/lib/services/searchSynonyms"
+import type { ElasticsearchIndexedListingSection } from "@/lib/elasticsearch/listing-sections"
 import {
+  extractMarketplaceSectionIntent,
   isBrandOnlyMarketplaceSuggestQuery,
   isMarketplaceSearchNoiseToken,
   residualMarketplaceQueryAfterBrand,
@@ -54,6 +56,11 @@ export type MarketplaceParsedQuery = {
   textQuery: string
   /** True when the query is effectively just a brand name (plus noise words). */
   isBrandOnly: boolean
+  /**
+   * Listing section implied by query tokens (e.g. "fins" → fins).
+   * Callers should scope ES/Supabase section filters when set.
+   */
+  sectionIntent: ElasticsearchIndexedListingSection | null
   expansions: string[]
 }
 
@@ -340,6 +347,8 @@ export async function parseMarketplaceQuery(
   const expansions =
     options?.expansions ?? (raw.length >= 2 ? await expansionsForMarketplaceQuery(raw) : [])
 
+  const sectionIntent = extractMarketplaceSectionIntent(raw)
+
   if (!raw) {
     return {
       raw: "",
@@ -352,6 +361,7 @@ export async function parseMarketplaceQuery(
       residualText: "",
       textQuery: "",
       isBrandOnly: false,
+      sectionIntent: null,
       expansions,
     }
   }
@@ -360,8 +370,6 @@ export async function parseMarketplaceQuery(
   // Never fall back to noise-only leftovers ("board") — that matched Softboard / Foot models.
   const cleaned = stripMarketplaceSearchNoiseWords(withoutLength)
 
-  // Resolve model first for model-only queries so we don't fuzzy-match a brand incorrectly.
-  const modelFirst = await resolveModelsForParse(supabase, null, cleaned)
   const brand = await resolveBrandForParse(
     supabase,
     raw,
@@ -370,23 +378,34 @@ export async function parseMarketplaceQuery(
     options?.brandHint,
   )
 
-  const modelSearchText = brand
+  // Text left after removing the brand name. Empty ⇒ brand-only intent (e.g. "channel islands").
+  // Do not fall back to `cleaned` for model search — that reintroduces brand tokens and matches
+  // catalog models whose names include the brand (e.g. "Channel Islands (AMK) Keels…").
+  const residualAfterBrand = brand
     ? stripMarketplaceSearchNoiseWords(
         residualMarketplaceQueryAfterBrand(withoutLength, brand.name),
-      ) || cleaned
-    : cleaned
+      )
+    : ""
 
-  const modelsForBrand = brand
-    ? await resolveModelsForParse(supabase, brand, modelSearchText)
-    : modelFirst
+  let model: MarketplaceParsedModel | null = null
+  let modelIds: string[] = []
 
-  // Prefer brand-scoped models when we have a grounded brand; else model-first hits.
-  const modelBundle =
-    brand && modelsForBrand.modelIds.length > 0 ? modelsForBrand : modelFirst.modelIds.length > 0
-      ? modelFirst
-      : modelsForBrand
-  const model = modelBundle.model
-  const modelIds = modelBundle.modelIds
+  if (brand) {
+    if (residualAfterBrand.length >= 2) {
+      const modelsForBrand = await resolveModelsForParse(
+        supabase,
+        brand,
+        residualAfterBrand,
+      )
+      model = modelsForBrand.model
+      modelIds = modelsForBrand.modelIds
+    }
+  } else {
+    // Model-only queries (no brand resolved yet) — e.g. "dumpster diver".
+    const modelFirst = await resolveModelsForParse(supabase, null, cleaned)
+    model = modelFirst.model
+    modelIds = modelFirst.modelIds
+  }
 
   // If model implies a brand and we didn't resolve one, adopt the model's brand.
   let resolvedBrand = brand
@@ -412,7 +431,7 @@ export async function parseMarketplaceQuery(
   if (model) {
     residual = stripPhraseFromQuery(residual, model.name)
     // Strip the typed model phrase even when catalog name is longer ("Dumpster Diver 2").
-    residual = stripPhraseFromQuery(residual, modelSearchText)
+    residual = stripPhraseFromQuery(residual, residualAfterBrand || cleaned)
   }
   const synonymMapsToBrand = Boolean(
     resolvedBrand &&
@@ -436,12 +455,14 @@ export async function parseMarketplaceQuery(
   }
   residual = stripMarketplaceSearchNoiseWords(residual)
 
+  // After brand/model/length/noise strip (incl. section words like "fins"), nothing left ⇒ brand-only.
   const isBrandOnly = Boolean(
     resolvedBrand &&
       !model &&
       modelIds.length === 0 &&
       lengthInches == null &&
-      (isBrandOnlyMarketplaceSuggestQuery(withoutLength, resolvedBrand.name) ||
+      (residual.length === 0 ||
+        isBrandOnlyMarketplaceSuggestQuery(withoutLength, resolvedBrand.name) ||
         (synonymMapsToBrand && residual.length === 0)),
   )
 
@@ -459,6 +480,7 @@ export async function parseMarketplaceQuery(
     residualText: residual,
     textQuery,
     isBrandOnly,
+    sectionIntent,
     expansions,
   }
 }

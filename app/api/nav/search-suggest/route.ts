@@ -39,11 +39,16 @@ export async function GET(req: NextRequest) {
 
     const result = await getNavSearchSuggestCached(q, parsedSection.data)
 
+    const cacheControl =
+      process.env.NODE_ENV === "development"
+        ? "private, no-store"
+        : `public, s-maxage=${NAV_SEARCH_SUGGEST_REVALIDATE_SECONDS}, stale-while-revalidate=600`
+
     return NextResponse.json(
       { data: result },
       {
         headers: {
-          "Cache-Control": `public, s-maxage=${NAV_SEARCH_SUGGEST_REVALIDATE_SECONDS}, stale-while-revalidate=600`,
+          "Cache-Control": cacheControl,
         },
       },
     )

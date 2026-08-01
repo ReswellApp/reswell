@@ -247,7 +247,6 @@ export async function runMarketplaceSearchSuggest(
 
   const safe = escapeIlikeToken(q)
   const pattern = `"%${safe}%"`
-  const sections = marketplaceSearchSuggestSections(section)
 
   const catalogBrands = await searchBrandsCatalogSuggestWithClient(supabase, q)
   const inferredBrand = await resolveInferredBrandForMarketplaceSuggest(
@@ -258,6 +257,10 @@ export async function runMarketplaceSearchSuggest(
   const parsed = await parseMarketplaceQuery(supabase, q, {
     brandHint: inferredBrand,
   })
+  // Query tokens like "fins" scope suggest to that section; nav `section` param is the fallback.
+  const sections = parsed.sectionIntent
+    ? [parsed.sectionIntent]
+    : marketplaceSearchSuggestSections(section)
   const pickedCatalogSlug =
     parsed.brand?.slug ??
     inferredBrand?.slug ??
@@ -268,6 +271,24 @@ export async function runMarketplaceSearchSuggest(
   const ilikeSafe = escapeIlikeToken(ilikeQuery)
   const ilikePattern = `"%${ilikeSafe}%"`
   const textOr = `title.ilike.${ilikePattern},description.ilike.${ilikePattern},brand.ilike.${ilikePattern},model.ilike.${ilikePattern}`
+
+  const hydrateSuggestListingsFromIds = async (ids: string[]): Promise<SuggestListing[]> => {
+    if (ids.length === 0) return []
+    const { data: esRows } = await supabase
+      .from("listings")
+      .select(SUGGEST_LISTING_ROW_SELECT)
+      .in("id", ids)
+      .eq("status", "active")
+      .eq("hidden_from_site", false)
+    if (!esRows?.length) return []
+    const byId = new Map(
+      (esRows as Record<string, unknown>[]).map((row) => [row.id as string, row]),
+    )
+    return ids
+      .map((id) => byId.get(id))
+      .filter((row): row is Record<string, unknown> => row != null)
+      .map((row) => rowToSuggestListing(row))
+  }
 
   const [listingsRes, titlesRes, categoriesRes, brandsRes] = await Promise.all([
     supabase
@@ -321,27 +342,10 @@ export async function runMarketplaceSearchSuggest(
         brandModelIds: parsed.modelIds.length > 0 ? parsed.modelIds : null,
         lengthInches: parsed.lengthInches,
       })
-      if (ids.length > 0) {
-        const { data: esRows } = await supabase
-          .from("listings")
-          .select(SUGGEST_LISTING_ROW_SELECT)
-          .in("id", ids)
-          .eq("status", "active")
-          .eq("hidden_from_site", false)
-
-        if (esRows?.length) {
-          const byId = new Map(
-            (esRows as Record<string, unknown>[]).map((row) => [row.id as string, row]),
-          )
-          const ordered = ids
-            .map((id) => byId.get(id))
-            .filter((row): row is Record<string, unknown> => row != null)
-            .map((row) => rowToSuggestListing(row))
-          if (ordered.length > 0) {
-            listings = ordered
-            listingsBackend = "elasticsearch"
-          }
-        }
+      const ordered = await hydrateSuggestListingsFromIds(ids)
+      if (ordered.length > 0) {
+        listings = ordered
+        listingsBackend = "elasticsearch"
       }
     } catch (err) {
       console.error("[searchSuggest] Elasticsearch listing suggestions failed, using Supabase:", err)
@@ -367,6 +371,30 @@ export async function runMarketplaceSearchSuggest(
     if (brandListings.length > 0) {
       listings = brandListings.map(recentListingToSuggestListing)
       listingsBackend = "supabase"
+    } else if (parsed.sectionIntent && isElasticsearchConfigured()) {
+      // Co-brand / collaborator: manufacturer brand_id may differ (Futures AM2 × CI).
+      // Section-scoped text search without brand_id hard filter.
+      try {
+        const ids = await searchListingIdsFromElasticsearch(
+          parsed.textQuery || effectiveBrand.name || q,
+          MAX_LISTINGS,
+          {
+            sections,
+            expansions: parsed.expansions,
+            brandId: null,
+          },
+        )
+        const ordered = await hydrateSuggestListingsFromIds(ids)
+        if (ordered.length > 0) {
+          listings = ordered
+          listingsBackend = "elasticsearch"
+        }
+      } catch (err) {
+        console.error(
+          "[searchSuggest] section-scoped brand text fallback failed, keeping prior listings:",
+          err,
+        )
+      }
     }
   } else if (parsed.modelIds.length > 0) {
     const modelListings = await listSuggestListingsByBrandModelIds(

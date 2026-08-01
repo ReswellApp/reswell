@@ -213,6 +213,7 @@ export async function resolveBoardsSearchQuery(
         residualText: "",
         textQuery: q,
         isBrandOnly: false,
+        sectionIntent: null,
         expansions: [],
       }
 

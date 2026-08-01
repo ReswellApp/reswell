@@ -3,12 +3,20 @@
  * Strips generic listing words so "andreini surfboards" resolves to brand "Andreini".
  */
 
+import type { ElasticsearchIndexedListingSection } from "@/lib/elasticsearch/listing-sections"
+
 const MARKETPLACE_SEARCH_NOISE_WORDS = new Set([
   "surfboard",
   "surfboards",
   "board",
   "boards",
   "surf",
+  "fin",
+  "fins",
+  "wetsuit",
+  "wetsuits",
+  "magazine",
+  "magazines",
   "used",
   "new",
   "for",
@@ -20,6 +28,48 @@ const MARKETPLACE_SEARCH_NOISE_WORDS = new Set([
   "sell",
   "gear",
 ])
+
+/**
+ * Query tokens that imply a marketplace listing section (e.g. "channel islands fins").
+ * Bare "board(s)" stay noise-only — they do not force surfboards scope.
+ */
+const SECTION_INTENT_BY_TOKEN: Record<string, ElasticsearchIndexedListingSection> = {
+  fin: "fins",
+  fins: "fins",
+  wetsuit: "wetsuits",
+  wetsuits: "wetsuits",
+  magazine: "magazines",
+  magazines: "magazines",
+  surfboard: "surfboards",
+  surfboards: "surfboards",
+}
+
+const SECTION_INTENT_PRIORITY: ElasticsearchIndexedListingSection[] = [
+  "fins",
+  "wetsuits",
+  "magazines",
+  "surfboards",
+]
+
+/**
+ * Detect listing-section intent from free-text (does not remove tokens — use noise strip for that).
+ */
+export function extractMarketplaceSectionIntent(
+  rawQuery: string,
+): ElasticsearchIndexedListingSection | null {
+  const tokens = tokenizeQuery(rawQuery)
+  if (tokens.length === 0) return null
+  const found = new Set<ElasticsearchIndexedListingSection>()
+  for (const token of tokens) {
+    const section = SECTION_INTENT_BY_TOKEN[token]
+    if (section) found.add(section)
+  }
+  if (found.size === 0) return null
+  for (const section of SECTION_INTENT_PRIORITY) {
+    if (found.has(section)) return section
+  }
+  return null
+}
 
 function tokenizeQuery(raw: string): string[] {
   const s = raw.trim().toLowerCase()
@@ -237,7 +287,10 @@ export function residualMarketplaceQueryAfterBrand(rawQuery: string, brandName: 
   return stripMarketplaceSearchNoiseWords(residual)
 }
 
-/** True when the query is effectively just this brand (plus optional noise like "surfboards"). */
+/** True when the query is effectively just this brand (plus optional noise like "surfboards" / "fins"). */
 export function isBrandOnlyMarketplaceSuggestQuery(rawQuery: string, brandName: string): boolean {
-  return residualMarketplaceQueryAfterBrand(rawQuery, brandName).length === 0
+  return (
+    stripMarketplaceSearchNoiseWords(residualMarketplaceQueryAfterBrand(rawQuery, brandName))
+      .length === 0
+  )
 }

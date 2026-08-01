@@ -155,6 +155,8 @@ interface SearchInputWithSuggestProps {
   onNavigate?: () => void
   /** Called when the input receives focus. */
   onFocus?: () => void
+  /** Fires when the suggestions panel becomes visible or hidden. */
+  onOpenChange?: (open: boolean) => void
   /**
    * When false, the query-driven fetch still fills suggestions but does not open the menu.
    * Prevents flashing after navigating to `/search` (URL sync + focused input).
@@ -359,6 +361,7 @@ export function SearchInputWithSuggest({
   autoOpenDropdownOnFetch = true,
   onNavigate,
   onFocus: onFocusProp,
+  onOpenChange,
   variant = "default",
   suggestSource = "marketplace",
   onCatalogBrandPicked,
@@ -593,6 +596,10 @@ export function SearchInputWithSuggest({
     (brandRows?.length ?? 0) > 0
   const showPanelForRect = showMarketplacePanel || showBrandsPanel || showLoadingPanel
 
+  useEffect(() => {
+    onOpenChange?.(showPanelForRect)
+  }, [showPanelForRect, onOpenChange])
+
   /** When listings share the panel with brands/categories/suggestions, flex so listings scroll instead of clipping the footer. */
   const listingsSharePanelWithFooter =
     listings.length > 0 &&
@@ -674,6 +681,21 @@ export function SearchInputWithSuggest({
     document.addEventListener("click", handleClickOutside)
     return () => document.removeEventListener("click", handleClickOutside)
   }, [])
+
+  useEffect(() => {
+    if (!showPanelForRect) return
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return
+      event.preventDefault()
+      invalidatePendingSuggest()
+      setOpen(false)
+      if (inputRef.current && document.activeElement === inputRef.current) {
+        inputRef.current.blur()
+      }
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [showPanelForRect])
 
   useEffect(() => {
     return () => {

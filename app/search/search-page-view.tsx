@@ -357,11 +357,17 @@ async function resolveSearchListings(
     ((!rawQuery.trim() && brandFromUrl) || Boolean(parsed?.isBrandOnly))
 
   if (useBrandInventory && brand) {
+    const inventorySections = parsed?.sectionIntent ? [parsed.sectionIntent] : undefined
     const listings = await listActiveListingsForBrand(supabase, brand, {
       limit: LIMIT,
       categoryId,
+      sections: inventorySections,
     })
-    return { listings, searchMeta: null }
+    // Section-scoped brand inventory can be empty for co-brands (CI query → Futures fins).
+    // Fall through to ES text search in that case.
+    if (listings.length > 0 || !parsed?.sectionIntent) {
+      return { listings, searchMeta: null }
+    }
   }
 
   if (!rawQuery.trim()) {
@@ -384,7 +390,9 @@ async function resolveSearchListings(
   const lengthInches = parsed?.lengthInches ?? null
   const sections = categoryId
     ? ["surfboards"]
-    : [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS]
+    : parsed?.sectionIntent
+      ? [parsed.sectionIntent]
+      : [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS]
 
   let listings: RecentListing[]
   let backend: MarketplaceSearchResolutionMeta["backend"]

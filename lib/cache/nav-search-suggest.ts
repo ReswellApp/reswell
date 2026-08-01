@@ -45,5 +45,9 @@ export async function getNavSearchSuggestCached(
     }
   }
   const sectionNormalized = navSearchSuggestSectionKey(section)
+  // Bypass Data Cache in development so typeahead changes are testable immediately.
+  if (process.env.NODE_ENV === "development") {
+    return loadNavSearchSuggest(q.toLowerCase(), sectionNormalized)
+  }
   return getCachedNavSearchSuggest(q.toLowerCase(), sectionNormalized)
 }
