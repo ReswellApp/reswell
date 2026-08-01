@@ -466,6 +466,14 @@ export async function searchListingIdsFromElasticsearch(
     typoFallback?: boolean
     /** Admin synonym expansions OR-added to widen recall (ignored on typo fallback). */
     expansions?: string[]
+    /** Directory brand filter (`listings.brand_id`). */
+    brandId?: string | null
+    /** Catalog model filter (`listings.brand_model_id`). */
+    brandModelId?: string | null
+    /** Multiple catalog model ids (e.g. Dumpster Diver + Dumpster Diver 2). */
+    brandModelIds?: string[] | null
+    /** Exact board length in inches (±1" range). */
+    lengthInches?: number | null
   },
 ): Promise<string[]> {
   const es = getElasticsearchClient()
@@ -484,6 +492,31 @@ export async function searchListingIdsFromElasticsearch(
     const cat = typeof options?.categoryName === "string" ? options.categoryName.trim() : ""
     if (cat) {
       filter.push({ match_phrase: { category_name: cat } })
+    }
+
+    const brandModelIds = (options?.brandModelIds ?? [])
+      .map((id) => id.trim())
+      .filter(Boolean)
+    const brandModelId = options?.brandModelId?.trim()
+    if (brandModelIds.length > 0) {
+      filter.push({ terms: { brand_model_id: brandModelIds } })
+    } else if (brandModelId) {
+      filter.push({ term: { brand_model_id: brandModelId } })
+    } else {
+      const brandId = options?.brandId?.trim()
+      if (brandId) filter.push({ term: { brand_id: brandId } })
+    }
+
+    const lengthInches = options?.lengthInches
+    if (lengthInches != null && Number.isFinite(lengthInches) && lengthInches > 0) {
+      filter.push({
+        range: {
+          length_total_inches: {
+            gte: lengthInches - 1,
+            lte: lengthInches + 1,
+          },
+        },
+      })
     }
 
     const q = rawQuery.trim()

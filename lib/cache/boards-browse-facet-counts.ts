@@ -19,7 +19,12 @@ import {
 } from "@/lib/services/boardsBrowseFacetCounts"
 import { boardsBrowseFacetCountsFromEs } from "@/lib/elasticsearch/boards-browse-search"
 import { isBoardsBrowseEsEnabled } from "@/lib/db/boards-browse-listings-es"
+import {
+  mergeNlOverlayIntoFacets,
+  resolveBoardsSearchQuery,
+} from "@/lib/services/searchBoards"
 import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { isUuidString } from "@/lib/utils/isUuid"
 
 function facetCountContextFromSearchParams(
   searchParams: BoardsBrowseSearchParams,
@@ -100,19 +105,38 @@ export async function getBoardsBrowseFacetCountsMapCached(
 
   if (isBoardsBrowseEsEnabled()) {
     try {
+      const supabase = createAnonSupabaseClient()
+      const brandId = isUuidString(ctx.brandId?.trim() ?? "") ? ctx.brandId!.trim() : undefined
+      const brandModelId = isUuidString(ctx.brandModelId?.trim() ?? "")
+        ? ctx.brandModelId!.trim()
+        : undefined
+      const resolved = ctx.query?.trim()
+        ? await resolveBoardsSearchQuery(supabase, {
+            q: ctx.query,
+            brandId,
+            brandModelId,
+            brand: ctx.brand,
+            model: ctx.model,
+          })
+        : null
+
+      const nl = resolved?.nl ?? null
       const esCounts = await boardsBrowseFacetCountsFromEs(
         {
-          query: ctx.query,
-          brand: ctx.brand,
-          model: ctx.model,
-          brandId: ctx.brandId,
-          brandModelId: ctx.brandModelId,
-          minPrice: ctx.minPrice,
-          maxPrice: ctx.maxPrice,
-          locationText: ctx.location,
-          shippingAvailable: ctx.shippingAvailable,
+          query: resolved?.context.query ?? ctx.query,
+          brand: resolved?.context.brand ?? ctx.brand,
+          model: resolved?.context.model ?? ctx.model,
+          brandId: resolved?.context.brandId ?? brandId,
+          brandModelId: resolved?.context.brandModelId ?? brandModelId,
+          brandModelIds: resolved?.context.brandModelIds,
+          expansions: resolved?.context.expansions,
+          lengthInches: resolved?.context.lengthInches,
+          minPrice: ctx.minPrice ?? nl?.minPrice,
+          maxPrice: ctx.maxPrice ?? nl?.maxPrice,
+          locationText: ctx.location?.trim() || nl?.locationText,
+          shippingAvailable: ctx.shippingAvailable ?? nl?.shippingAvailable,
         },
-        selections,
+        mergeNlOverlayIntoFacets(selections, nl),
       )
       // ES docs index resolved length/volume (listingRowToSearchDocFromRow), so all facet
       // counts — including range buckets — come from the same source as the search results.

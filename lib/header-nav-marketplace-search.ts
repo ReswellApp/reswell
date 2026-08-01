@@ -69,10 +69,19 @@ export function headerNavSearchSubmitHref(
     return `/${scoped}?q=${encodeURIComponent(term)}`
   }
 
+  // Default surfboard search lands on faceted `/boards` (Pango-style filter page).
+  // Legacy `/search` stays available for category chips / curated recent.
+  if (isSearchResultsPath(pathname)) {
+    const params = new URLSearchParams()
+    params.set("q", term)
+    params.set("nq", "1")
+    const category = categorySource.get("category")
+    if (category?.trim()) params.set("category", category.trim())
+    return `/search?${params.toString()}`
+  }
+
   const params = new URLSearchParams()
   params.set("q", term)
   params.set("nq", "1")
-  const category = isSearchResultsPath(pathname) ? categorySource.get("category") : null
-  if (category?.trim()) params.set("category", category.trim())
-  return `/search?${params.toString()}`
+  return `/boards?${params.toString()}`
 }

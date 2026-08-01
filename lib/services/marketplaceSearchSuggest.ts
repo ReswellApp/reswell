@@ -29,6 +29,7 @@ import type {
   SearchSuggestResult,
   SuggestListing,
 } from "@/lib/types/marketplace-search-suggest"
+import { parseMarketplaceQuery } from "@/lib/services/marketplaceQueryParse"
 import {
   isBrandOnlyMarketplaceSuggestQuery,
   residualMarketplaceQueryAfterBrand,
@@ -254,12 +255,19 @@ export async function runMarketplaceSearchSuggest(
     q,
     catalogBrands.rows,
   )
+  const parsed = await parseMarketplaceQuery(supabase, q, {
+    brandHint: inferredBrand,
+  })
   const pickedCatalogSlug =
+    parsed.brand?.slug ??
     inferredBrand?.slug ??
     catalogBrands.rows.find((r) => r.name.toLowerCase().includes(q.toLowerCase()))?.slug ??
     null
 
-  const textOr = `title.ilike.${pattern},description.ilike.${pattern},brand.ilike.${pattern},model.ilike.${pattern}`
+  const ilikeQuery = parsed.textQuery || q
+  const ilikeSafe = escapeIlikeToken(ilikeQuery)
+  const ilikePattern = `"%${ilikeSafe}%"`
+  const textOr = `title.ilike.${ilikePattern},description.ilike.${ilikePattern},brand.ilike.${ilikePattern},model.ilike.${ilikePattern}`
 
   const [listingsRes, titlesRes, categoriesRes, brandsRes] = await Promise.all([
     supabase
@@ -306,7 +314,13 @@ export async function runMarketplaceSearchSuggest(
 
   if (isElasticsearchConfigured()) {
     try {
-      const ids = await searchListingIdsFromElasticsearch(q, MAX_LISTINGS, { sections })
+      const ids = await searchListingIdsFromElasticsearch(parsed.textQuery || q, MAX_LISTINGS, {
+        sections,
+        expansions: parsed.expansions,
+        brandId: parsed.modelIds.length > 0 ? null : parsed.brand?.id ?? null,
+        brandModelIds: parsed.modelIds.length > 0 ? parsed.modelIds : null,
+        lengthInches: parsed.lengthInches,
+      })
       if (ids.length > 0) {
         const { data: esRows } = await supabase
           .from("listings")
@@ -334,36 +348,52 @@ export async function runMarketplaceSearchSuggest(
     }
   }
 
-  // Brand inventory fill only for brand-only queries (e.g. "channel islands").
-  // Brand + model (e.g. "channel islands dumpster diver") keeps relevance results,
-  // with catalog/model matches pinned to the front when present.
-  if (inferredBrand) {
-    if (isBrandOnlyMarketplaceSuggestQuery(q, inferredBrand.name)) {
-      const brandListings = await listActiveListingsForBrand(supabase, inferredBrand, {
-        limit: MAX_LISTINGS,
-        sections,
-      })
-      if (brandListings.length > 0) {
-        listings = brandListings.map(recentListingToSuggestListing)
-        listingsBackend = "supabase"
+  const effectiveBrand = parsed.brand
+    ? {
+        id: parsed.brand.id,
+        name: parsed.brand.name,
+        slug: parsed.brand.slug,
+        logo_url: inferredBrand?.logo_url ?? null,
       }
-    } else {
-      const residual = residualMarketplaceQueryAfterBrand(q, inferredBrand.name)
-      if (residual) {
-        const residualListings = await listSuggestListingsForBrandResidualQuery(
-          supabase,
-          inferredBrand,
-          residual,
-          sections,
-          MAX_LISTINGS,
-        )
-        if (residualListings.length > 0) {
-          listings = pinSuggestListingsFront(residualListings, listings, MAX_LISTINGS)
-        }
+    : inferredBrand
+
+  // Brand inventory fill only for brand-only queries (e.g. "channel islands").
+  // Brand + model keeps relevance results, with catalog/model matches pinned front.
+  if (effectiveBrand && parsed.isBrandOnly) {
+    const brandListings = await listActiveListingsForBrand(supabase, effectiveBrand, {
+      limit: MAX_LISTINGS,
+      sections,
+    })
+    if (brandListings.length > 0) {
+      listings = brandListings.map(recentListingToSuggestListing)
+      listingsBackend = "supabase"
+    }
+  } else if (parsed.modelIds.length > 0) {
+    const modelListings = await listSuggestListingsByBrandModelIds(
+      supabase,
+      parsed.modelIds,
+      sections,
+      MAX_LISTINGS,
+    )
+    if (modelListings.length > 0) {
+      listings = pinSuggestListingsFront(modelListings, listings, MAX_LISTINGS)
+    }
+  } else if (effectiveBrand) {
+    const residual =
+      parsed.residualText || residualMarketplaceQueryAfterBrand(q, effectiveBrand.name)
+    if (residual && !isBrandOnlyMarketplaceSuggestQuery(q, effectiveBrand.name)) {
+      const residualListings = await listSuggestListingsForBrandResidualQuery(
+        supabase,
+        effectiveBrand,
+        residual,
+        sections,
+        MAX_LISTINGS,
+      )
+      if (residualListings.length > 0) {
+        listings = pinSuggestListingsFront(residualListings, listings, MAX_LISTINGS)
       }
     }
   } else {
-    // Model-only queries (e.g. "dumpster diver"): pin listings tagged to matching catalog models.
     const catalogModels = await searchBrandModelsWithBrandsForSuggest(supabase, q, 8)
     if (catalogModels.length > 0) {
       const modelListings = await listSuggestListingsByBrandModelIds(

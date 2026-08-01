@@ -57,6 +57,11 @@ import {
   getBoardsBrowseListingsPageViaEs,
   isBoardsBrowseEsEnabled,
 } from "@/lib/db/boards-browse-listings-es"
+import {
+  mergeNlOverlayIntoFacets,
+  resolveBoardsSearchQuery,
+} from "@/lib/services/searchBoards"
+import { NaturalLanguageSearchHint } from "@/components/features/search/natural-language-search-hint"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
 import { cn } from "@/lib/utils"
 import { isUuidString } from "@/lib/utils/isUuid"
@@ -128,11 +133,11 @@ async function BoardListings({
     dimVolume: searchParams.dimVolume,
     legacyDimensions: searchParams.dimensions,
   })
-  const facets = facetSelectionsFromBrowseParams(searchParams)
-  const location = searchParams.location || ""
-  const minPrice = searchParams.minPrice ? Number(searchParams.minPrice) : undefined
-  const maxPrice = searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined
-  const shippingAvailable = isBoardsBrowseShippingAvailableParam(searchParams.shipping)
+  const baseFacets = facetSelectionsFromBrowseParams(searchParams)
+  const urlLocation = searchParams.location || ""
+  const urlMinPrice = searchParams.minPrice ? Number(searchParams.minPrice) : undefined
+  const urlMaxPrice = searchParams.maxPrice ? Number(searchParams.maxPrice) : undefined
+  const urlShipping = isBoardsBrowseShippingAvailableParam(searchParams.shipping)
     ? true
     : undefined
   const radiusMi = searchParams.radius ? Number(searchParams.radius) : undefined
@@ -154,20 +159,84 @@ async function BoardListings({
   let handledByEs = false
   const esEnabled = isBoardsBrowseEsEnabled()
   const hasKeywordQuery = query.trim().length > 0
+  const resolvedKeyword = hasKeywordQuery
+    ? await resolveBoardsSearchQuery(supabase, {
+        q: query,
+        brandId: brandIdForQuery,
+        brandModelId: brandModelIdForQuery,
+        brand: brand.trim() || undefined,
+        model: model.trim() || undefined,
+      })
+    : null
+
+  const nl = resolvedKeyword?.nl ?? null
+  const facets = mergeNlOverlayIntoFacets(baseFacets, nl)
+  const location = urlLocation.trim() || nl?.locationText || ""
+  const minPrice =
+    urlMinPrice != null && !Number.isNaN(urlMinPrice) ? urlMinPrice : nl?.minPrice
+  const maxPrice =
+    urlMaxPrice != null && !Number.isNaN(urlMaxPrice) ? urlMaxPrice : nl?.maxPrice
+  const shippingAvailable = urlShipping ?? nl?.shippingAvailable
+
+  const esQuery = resolvedKeyword?.context.query ?? (hasKeywordQuery ? query : undefined)
+  const esBrandModelIds =
+    resolvedKeyword?.context.brandModelIds ??
+    (brandModelIdForQuery ? [brandModelIdForQuery] : undefined)
+  const esBrandModelId =
+    esBrandModelIds?.length === 1
+      ? esBrandModelIds[0]
+      : resolvedKeyword?.context.brandModelId ?? brandModelIdForQuery
+  const esBrandId =
+    esBrandModelIds?.length || esBrandModelId
+      ? undefined
+      : resolvedKeyword?.context.brandId ?? brandIdForQuery
+  const esBrand =
+    resolvedKeyword?.context.brand ??
+    (esBrandModelId || esBrandModelIds?.length ? undefined : brand.trim() || undefined)
+  const esModel =
+    resolvedKeyword?.context.model ??
+    (esBrandModelId || esBrandModelIds?.length || esBrandId
+      ? undefined
+      : model.trim() || undefined)
+  const esExpansions = resolvedKeyword?.context.expansions
+  const esLengthInches = resolvedKeyword?.context.lengthInches
+  // Structured keyword resolution counts as a locked keyword search (no PG ILIKE fallthrough).
+  const hasStructuredKeyword = Boolean(
+    hasKeywordQuery ||
+      esBrandModelId ||
+      (esBrandModelIds?.length ?? 0) > 0 ||
+      esBrandId ||
+      esLengthInches != null ||
+      Boolean(nl),
+  )
+
+  const nlHint =
+    hasKeywordQuery ? (
+      <div className="mb-4">
+        <NaturalLanguageSearchHint
+          appliedLabels={nl?.appliedLabels}
+          summary={nl?.summary}
+        />
+      </div>
+    ) : null
 
   // Elasticsearch: indexed filtering + geo_distance sort on reswell_listings (surfboards).
   // Nav category views stay on the (cheap, hourly-cached) Postgres path. Keyword search
   // never falls through to Postgres ILIKE when ES is configured.
   if (!cachedCategoryPage && esEnabled) {
     try {
-      const esPage = await getBoardsBrowseListingsPageViaEs(supabase, {
+      const esBrowseInput = {
         boardType,
         condition,
-        query,
-        brand: brandModelIdForQuery ? undefined : brand.trim() || undefined,
-        model: brandModelIdForQuery || brandIdForQuery ? undefined : model.trim() || undefined,
-        brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
-        brandModelId: brandModelIdForQuery,
+        query: esQuery,
+        brand: esBrandModelIds?.length || esBrandModelId ? undefined : esBrand,
+        model:
+          esBrandModelIds?.length || esBrandModelId || esBrandId ? undefined : esModel,
+        brandId: esBrandModelIds?.length || esBrandModelId ? undefined : esBrandId,
+        brandModelId: esBrandModelId,
+        brandModelIds: esBrandModelIds,
+        expansions: esExpansions,
+        lengthInches: esLengthInches,
         dimensionTokens: boardDimensionBrowseIlikeTokens(dimensionFields),
         facets,
         minPrice,
@@ -180,19 +249,33 @@ async function BoardListings({
             : undefined,
         sort,
         page,
-      })
+      } as const
+
+      let esPage = await getBoardsBrowseListingsPageViaEs(supabase, esBrowseInput)
+      // Length from free-text is a hint — if it zeros out results, retry without it.
+      if (
+        esPage &&
+        esPage.boards.length === 0 &&
+        esLengthInches != null &&
+        (hasKeywordQuery || (esBrandModelIds?.length ?? 0) > 0)
+      ) {
+        esPage = await getBoardsBrowseListingsPageViaEs(supabase, {
+          ...esBrowseInput,
+          lengthInches: undefined,
+        })
+      }
       if (esPage) {
         boards = esPage.boards
         totalPages = esPage.totalPages
         handledByEs = true
-      } else if (hasKeywordQuery) {
+      } else if (hasStructuredKeyword) {
         boards = []
         totalPages = 0
         handledByEs = true
       }
     } catch (e) {
       console.error("BoardListings ES browse failed:", e)
-      if (hasKeywordQuery) {
+      if (hasStructuredKeyword) {
         boards = []
         totalPages = 0
         handledByEs = true
@@ -381,11 +464,18 @@ async function BoardListings({
         const pageResult = await getBoardsBrowseListingsPageViaEs(supabase, {
           boardType,
           condition,
-          query: q,
-          brand: nearbyBrand,
-          model: nearbyModel,
-          brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
-          brandModelId: brandModelIdForQuery,
+          query: q || esQuery,
+          brand:
+            nearbyBrand ??
+            (esBrandModelIds?.length || esBrandModelId ? undefined : esBrand),
+          model:
+            nearbyModel ??
+            (esBrandModelIds?.length || esBrandModelId || esBrandId ? undefined : esModel),
+          brandId: esBrandModelIds?.length || esBrandModelId ? undefined : esBrandId,
+          brandModelId: esBrandModelId,
+          brandModelIds: esBrandModelIds,
+          expansions: esExpansions,
+          lengthInches: esLengthInches,
           dimensionTokens: boardDimensionBrowseIlikeTokens(dimensionFields),
           facets,
           minPrice,
@@ -505,11 +595,14 @@ async function BoardListings({
     const { user } = await getCachedRequestSession()
 
     return (
-      <BoardsNoResultsSaveSearch
-        criteria={saveCriteria}
-        isLoggedIn={Boolean(user)}
-        clearHref="/boards"
-      />
+      <>
+        {nlHint}
+        <BoardsNoResultsSaveSearch
+          criteria={saveCriteria}
+          isLoggedIn={Boolean(user)}
+          clearHref="/boards"
+        />
+      </>
     )
   }
 
@@ -517,6 +610,7 @@ async function BoardListings({
 
   return (
     <>
+      {nlHint}
       {locationFallbackNotice ? (
         <p
           className="mb-4 rounded-lg border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground"

@@ -10,7 +10,8 @@ import { createAnonSupabaseClient } from "@/lib/supabase/anon"
 
 /** Header nav typeahead (Top listings, brands, categories). */
 export const NAV_SEARCH_SUGGEST_CACHE_TAG = "nav-search-suggest"
-export const NAV_SEARCH_SUGGEST_REVALIDATE_SECONDS = 60 * 60
+/** Short TTL: typeahead should pick up new listings without hammering ES/DB per keystroke. */
+export const NAV_SEARCH_SUGGEST_REVALIDATE_SECONDS = 60 * 10
 
 async function loadNavSearchSuggest(
   qNormalized: string,

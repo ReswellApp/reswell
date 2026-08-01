@@ -59,6 +59,9 @@ export type BoardsBrowseEsPageInput = Omit<
 function isLockedEmptyEsResult(input: BoardsBrowseEsPageInput): boolean {
   return (
     Boolean(input.query?.trim()) ||
+    Boolean(input.brandId?.trim()) ||
+    Boolean(input.brandModelId?.trim()) ||
+    input.lengthInches != null ||
     Boolean(input.shippingAvailable) ||
     Boolean(input.facets && hasAnyFacetSelection(input.facets))
   )

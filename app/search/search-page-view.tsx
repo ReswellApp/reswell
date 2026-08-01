@@ -29,10 +29,12 @@ import {
   recordMarketplaceSearchAnalyticsEvent,
 } from "@/lib/services/searchAnalytics"
 import {
-  expandSearchQueryTerms,
-  getActiveSearchSynonyms,
-} from "@/lib/services/searchSynonyms"
+  parseMarketplaceQuery,
+  type MarketplaceParsedQuery,
+} from "@/lib/services/marketplaceQueryParse"
+import { expansionsForMarketplaceQuery } from "@/lib/services/searchSynonyms"
 import { resolveSearchOverrideListingIds } from "@/lib/services/searchResultOverrides"
+import { NaturalLanguageSearchHint } from "@/components/features/search/natural-language-search-hint"
 
 const LIMIT = 48
 
@@ -99,7 +101,7 @@ export async function SearchPageView({
 
   const supabase = await createClient()
 
-  let brandRow: { id: string; name: string; slug: string } | null = null
+  let brandFromUrl: { id: string; name: string; slug: string } | null = null
   if (brandSlugRequested) {
     const { data: b } = await supabase
       .from("brands")
@@ -107,9 +109,31 @@ export async function SearchPageView({
       .eq("slug", brandSlugRequested)
       .maybeSingle()
     if (b) {
-      brandRow = { id: b.id, name: b.name, slug: b.slug }
+      brandFromUrl = { id: b.id, name: b.name, slug: b.slug }
     }
-  } else if (rawQuery.trim()) {
+  }
+
+  const parsedQuery =
+    rawQuery.trim().length >= 2
+      ? await parseMarketplaceQuery(supabase, rawQuery, {
+          brandHint: brandFromUrl
+            ? { ...brandFromUrl, logo_url: null }
+            : null,
+        })
+      : null
+
+  let brandRow: { id: string; name: string; slug: string } | null =
+    brandFromUrl ??
+    (parsedQuery?.brand
+      ? {
+          id: parsedQuery.brand.id,
+          name: parsedQuery.brand.name,
+          slug: parsedQuery.brand.slug,
+        }
+      : null)
+
+  // Brand-only free-text still resolves via directory when the parser misses.
+  if (!brandRow && rawQuery.trim() && !parsedQuery?.model) {
     brandRow = await resolveDirectoryBrandRowFromLabel(supabase, rawQuery)
   }
 
@@ -130,15 +154,24 @@ export async function SearchPageView({
   const selectedSlug = matched?.slug ?? null
   const categorySlugForLog = matched?.slug ?? null
 
-  const brandUnknown = Boolean(brandSlugRequested && !brandRow)
-  const brandTypoCorrected =
-    Boolean(brandRow && rawQuery.trim() && isLikelyTypoBrandMatch(rawQuery, brandRow.name))
+  const brandUnknown = Boolean(brandSlugRequested && !brandFromUrl)
+  const matchedModel = Boolean(parsedQuery?.model || (parsedQuery?.modelIds.length ?? 0) > 0)
+  // Only show "closest brand" when we corrected a brand typo — not when a model implied the brand.
+  const brandTypoCorrected = Boolean(
+    brandRow &&
+      rawQuery.trim() &&
+      !matchedModel &&
+      Boolean(parsedQuery?.isBrandOnly) &&
+      isLikelyTypoBrandMatch(rawQuery, brandRow.name),
+  )
 
   const { listings, searchMeta } = await resolveSearchListings(
     supabase,
     rawQuery,
     matched ? { id: matched.id, name: matched.name } : null,
     brandUnknown ? null : brandRow,
+    parsedQuery,
+    Boolean(brandFromUrl),
   )
 
   if (rawQuery.trim() && searchMeta) {
@@ -175,6 +208,19 @@ export async function SearchPageView({
           <h1 className="text-xl font-bold text-foreground md:text-2xl">
             {brandUnknown ? (
               <>Brand not found</>
+            ) : matchedModel && rawQuery.trim() ? (
+              <>
+                Results for &ldquo;{rawQuery}&rdquo;
+                {parsedQuery?.model ? (
+                  <>
+                    {" "}
+                    — {parsedQuery.model.name}
+                    {brandRow ? ` · ${brandRow.name}` : null}
+                  </>
+                ) : brandRow ? (
+                  <> — {brandRow.name}</>
+                ) : null}
+              </>
             ) : brandRow ? (
               <>
                 {rawQuery.trim() ? (
@@ -192,6 +238,27 @@ export async function SearchPageView({
           <p className="mt-1 text-sm text-muted-foreground">
             {brandUnknown ? (
               <>Check the spelling or search from the header — that slug is not in our brand directory.</>
+            ) : matchedModel && rawQuery.trim() ? (
+              <>
+                Matching catalog model
+                {parsedQuery?.lengthToken ? <> · length {parsedQuery.lengthToken}</> : null}
+                . For filters (style, price, shipping),{" "}
+                <a
+                  href={`/boards?q=${encodeURIComponent(rawQuery.trim())}${
+                    parsedQuery?.model?.id
+                      ? `&brandModelId=${encodeURIComponent(parsedQuery.model.id)}`
+                      : ""
+                  }${
+                    parsedQuery?.lengthToken
+                      ? `&dimLength=${encodeURIComponent(parsedQuery.lengthToken)}`
+                      : ""
+                  }`}
+                  className="font-medium text-foreground underline underline-offset-2"
+                >
+                  browse with facets
+                </a>
+                .
+              </>
             ) : brandRow ? (
               <>
                 {brandTypoCorrected ? (
@@ -223,6 +290,11 @@ export async function SearchPageView({
               </>
             )}
           </p>
+          {rawQuery.trim() ? (
+            <div className="mt-4 max-w-2xl">
+              <NaturalLanguageSearchHint />
+            </div>
+          ) : null}
         </div>
       </section>
 
@@ -271,13 +343,20 @@ async function resolveSearchListings(
   rawQuery: string,
   category: { id: string; name: string } | null,
   brand: { id: string; name: string } | null,
+  parsed: MarketplaceParsedQuery | null,
+  brandFromUrl: boolean,
 ): Promise<{
   listings: RecentListing[]
   searchMeta: MarketplaceSearchResolutionMeta | null
 }> {
   const categoryId = category?.id ?? null
 
-  if (brand) {
+  // Brand inventory only for brand-only intent (URL brand with no q, or parsed brand-only).
+  const useBrandInventory =
+    Boolean(brand) &&
+    ((!rawQuery.trim() && brandFromUrl) || Boolean(parsed?.isBrandOnly))
+
+  if (useBrandInventory && brand) {
     const listings = await listActiveListingsForBrand(supabase, brand, {
       limit: LIMIT,
       categoryId,
@@ -290,29 +369,81 @@ async function resolveSearchListings(
     return { listings, searchMeta: null }
   }
 
-  // Admin synonyms widen recall (e.g. "ci" -> "channel islands") on both backends.
-  const synonyms = await getActiveSearchSynonyms()
-  const expansions = expandSearchQueryTerms(rawQuery, synonyms)
+  const expansions = parsed?.expansions ?? (await expansionsForMarketplaceQuery(rawQuery))
+  const textQuery = parsed?.textQuery?.trim() || rawQuery.trim()
+  const brandModelIds =
+    parsed?.modelIds?.length
+      ? parsed.modelIds
+      : parsed?.model?.id
+        ? [parsed.model.id]
+        : []
+  const brandId =
+    brandModelIds.length > 0
+      ? null
+      : parsed?.brand?.id ?? (brandFromUrl ? brand?.id : null) ?? null
+  const lengthInches = parsed?.lengthInches ?? null
+  const sections = categoryId
+    ? ["surfboards"]
+    : [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS]
 
   let listings: RecentListing[]
   let backend: MarketplaceSearchResolutionMeta["backend"]
 
   if (isElasticsearchConfigured()) {
     try {
-      const ids = await searchListingIdsFromElasticsearch(rawQuery, LIMIT, {
-        categoryName: category?.name ?? null,
-        expansions,
-        sections: categoryId ? ["surfboards"] : [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS],
-      })
-      listings = await hydrateListingsByIds(supabase, ids)
-      if (listings.length === 0) {
-        const typoIds = await searchListingIdsFromElasticsearch(rawQuery, LIMIT, {
+      const runEs = (opts: {
+        q: string
+        brandModelIds?: string[] | null
+        brandId?: string | null
+        lengthInches?: number | null
+        typoFallback?: boolean
+      }) =>
+        searchListingIdsFromElasticsearch(opts.q, LIMIT, {
           categoryName: category?.name ?? null,
-          typoFallback: true,
-          sections: categoryId ? ["surfboards"] : [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS],
+          expansions,
+          sections,
+          brandId: opts.brandId,
+          brandModelIds: opts.brandModelIds,
+          lengthInches: opts.lengthInches,
+          typoFallback: opts.typoFallback,
         })
-        listings = await hydrateListingsByIds(supabase, typoIds)
+
+      // Progressive relaxation: model+length → model only → text (+ brand) → typo.
+      let ids = await runEs({
+        q: textQuery,
+        brandModelIds,
+        brandId,
+        lengthInches,
+      })
+      if (ids.length === 0 && lengthInches != null && brandModelIds.length > 0) {
+        ids = await runEs({ q: textQuery, brandModelIds, brandId: null, lengthInches: null })
       }
+      if (ids.length === 0 && brandModelIds.length > 0) {
+        ids = await runEs({
+          q: rawQuery.trim(),
+          brandModelIds: null,
+          brandId: parsed?.brand?.id ?? brandId,
+          lengthInches: null,
+        })
+      }
+      if (ids.length === 0) {
+        ids = await runEs({
+          q: rawQuery.trim(),
+          brandModelIds: null,
+          brandId: null,
+          lengthInches: null,
+        })
+      }
+      if (ids.length === 0) {
+        ids = await runEs({
+          q: textQuery || rawQuery,
+          brandModelIds: null,
+          brandId: null,
+          lengthInches: null,
+          typoFallback: true,
+        })
+      }
+      listings = await hydrateListingsByIds(supabase, ids)
       backend = "elasticsearch"
     } catch (err) {
       console.error("[search] Elasticsearch error, falling back to Supabase:", err)

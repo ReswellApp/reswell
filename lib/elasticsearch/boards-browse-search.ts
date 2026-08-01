@@ -54,6 +54,7 @@ function boardsBrowseKeywordQuery(
   query: string | undefined,
   mustNot: object[],
   typoFallback = false,
+  expansions?: string[],
 ): object | null {
   const q = query?.trim()
   if (!q) {
@@ -66,7 +67,7 @@ function boardsBrowseKeywordQuery(
   }
   const body = typoFallback
     ? buildListingsTypoFallbackQueryBody(filter, q)
-    : buildListingsSearchQueryBody(filter, q)
+    : buildListingsSearchQueryBody(filter, q, expansions)
   if (!body) return null
   return withMustNot(body, mustNot)
 }
@@ -144,12 +145,18 @@ export type BoardsBrowseEsContext = {
   model?: string
   brandId?: string
   brandModelId?: string
+  /** Multiple catalog model ids (Dumpster Diver + variants). */
+  brandModelIds?: string[]
   minPrice?: number
   maxPrice?: number
   /** Free-text city/state filter (only when there is no geocoded anchor). */
   locationText?: string
   /** When true, only listings where the seller offers shipping. */
   shippingAvailable?: boolean
+  /** Admin synonym expansions for keyword recall (e.g. "ci" → "channel islands"). */
+  expansions?: string[]
+  /** Exact board length from query parse (`5'10` → 70); applied as a tight inches range. */
+  lengthInches?: number
 }
 
 function priceClauses(ctx: BoardsBrowseEsContext): object[] {
@@ -164,8 +171,14 @@ function priceClauses(ctx: BoardsBrowseEsContext): object[] {
 }
 
 function brandModelClauses(ctx: BoardsBrowseEsContext): object[] {
+  const brandModelIds = (ctx.brandModelIds ?? [])
+    .map((id) => id.trim())
+    .filter((id) => isUuidString(id))
   const brandModelId = ctx.brandModelId?.trim()
   const brandId = ctx.brandId?.trim()
+  if (brandModelIds.length > 0) {
+    return [{ terms: { brand_model_id: brandModelIds } }]
+  }
   if (brandModelId && isUuidString(brandModelId)) {
     return [{ term: { brand_model_id: brandModelId } }]
   }
@@ -202,6 +215,21 @@ function locationTextClauses(locationText: string | undefined): object[] {
   ]
 }
 
+function lengthInchesClause(lengthInches: number | undefined): object | null {
+  if (lengthInches == null || !Number.isFinite(lengthInches) || lengthInches <= 0) {
+    return null
+  }
+  // ±1" tolerance around the parsed length (covers 5'10 vs 5'10.5 rounding).
+  return {
+    range: {
+      length_total_inches: {
+        gte: lengthInches - 1,
+        lte: lengthInches + 1,
+      },
+    },
+  }
+}
+
 /** Filters shared by browse results and facet counts (excludes facet selections + geo). */
 function baseContextFilters(ctx: BoardsBrowseEsContext): object[] {
   const filters: object[] = [
@@ -214,6 +242,8 @@ function baseContextFilters(ctx: BoardsBrowseEsContext): object[] {
   if (ctx.shippingAvailable) {
     filters.push({ term: { shipping_available: true } })
   }
+  const lengthClause = lengthInchesClause(ctx.lengthInches)
+  if (lengthClause) filters.push(lengthClause)
   return filters
 }
 
@@ -362,7 +392,13 @@ export async function searchBoardsBrowse(
   // ES rejects from + size > 10000 by default; clamp deep pagination.
   if (from + size > 10_000) return { ids: [], total: 0 }
 
-  const keywordQuery = boardsBrowseKeywordQuery(filter, params.query, mustNot)
+  const keywordQuery = boardsBrowseKeywordQuery(
+    filter,
+    params.query,
+    mustNot,
+    false,
+    params.expansions,
+  )
   if (!keywordQuery) return { ids: [], total: 0 }
 
   const sort = buildSort(params) as estypes.Sort
@@ -382,7 +418,7 @@ export async function searchBoardsBrowse(
   if (!q || parsed.total > 0 || parsed.ids.length > 0) return parsed
 
   // Same typo recovery as `/search` when the strict listings query returns nothing.
-  const typoQuery = boardsBrowseKeywordQuery(filter, q, mustNot, true)
+  const typoQuery = boardsBrowseKeywordQuery(filter, q, mustNot, true, params.expansions)
   if (!typoQuery) return parsed
 
   const typoRes = await es.search({
@@ -519,7 +555,7 @@ export async function boardsBrowseFacetCountsFromEs(
   }
 
   const filter = baseContextFilters(ctx)
-  const facetQuery = boardsBrowseKeywordQuery(filter, ctx.query, []) ?? {
+  const facetQuery = boardsBrowseKeywordQuery(filter, ctx.query, [], false, ctx.expansions) ?? {
     bool: { filter: filter as estypes.QueryDslQueryContainer[] },
   }
 

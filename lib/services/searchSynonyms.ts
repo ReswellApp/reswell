@@ -25,7 +25,14 @@ export async function getActiveSearchSynonyms(): Promise<SearchSynonymRow[]> {
 
 /** Call after any admin synonym write so search picks up the change. */
 export function revalidateSearchSynonyms(): void {
-  revalidateTag(SEARCH_SYNONYMS_CACHE_TAG)
+  revalidateTag(SEARCH_SYNONYMS_CACHE_TAG, "max")
+}
+
+/** Shared synonym expansions for `/search`, nav suggest, and `/boards` keyword. */
+export async function expansionsForMarketplaceQuery(rawQuery: string): Promise<string[]> {
+  const q = (rawQuery || "").trim()
+  if (q.length < 2) return []
+  return expandSearchQueryTerms(q, await getActiveSearchSynonyms())
 }
 
 /**
