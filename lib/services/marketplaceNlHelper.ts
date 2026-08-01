@@ -8,7 +8,11 @@
 
 import "server-only"
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { parseMarketplaceQuery } from "@/lib/services/marketplaceQueryParse"
+import {
+  catalogLabelGroundedInQuery,
+  formatBoardLengthTokenFromInches,
+  parseMarketplaceQuery,
+} from "@/lib/services/marketplaceQueryParse"
 import {
   isMarketplaceNlSearchEnabled,
   marketplaceQueryLikelyNeedsLlm,
@@ -29,7 +33,6 @@ import {
 } from "@/lib/utils/marketplace-fin-query"
 import { extractTailShapesFromQuery } from "@/lib/utils/marketplace-tail-query"
 import { totalBoardLengthInchesFromCombinedInput } from "@/lib/board-measurements"
-import { formatBoardLengthTokenFromInches } from "@/lib/services/marketplaceQueryParse"
 import type { MarketplaceNlHelperRefine } from "@/lib/utils/marketplace-nl-helper-refine"
 
 export type { MarketplaceNlHelperRefine } from "@/lib/utils/marketplace-nl-helper-refine"
@@ -129,34 +132,48 @@ export async function runMarketplaceNlHelper(
   let brandId: string | undefined
   let brandModelId: string | undefined
 
-  const hintQ = [intent.brandText, intent.modelText, intent.lengthToken]
-    .filter(Boolean)
-    .join(" ")
-    .trim()
-  if (hintQ.length >= 2) {
-    const retry = await parseMarketplaceQuery(supabase, hintQ)
-    if (retry.modelIds.length === 1) brandModelId = retry.modelIds[0]
-    else if (retry.brand?.id) brandId = retry.brand.id
+  // Resolve catalog IDs only from LLM-extracted brand/model (never synonym/fuzzy rules parse).
+  const llmBrand = intent.brandText?.trim() || ""
+  const llmModel = intent.modelText?.trim() || ""
+  if (llmBrand || llmModel) {
+    const hintQ = [llmBrand, llmModel].filter(Boolean).join(" ").trim()
+    if (hintQ.length >= 2) {
+      const retry = await parseMarketplaceQuery(supabase, hintQ)
+      if (
+        retry.model &&
+        catalogLabelGroundedInQuery(hintQ, retry.model.name) &&
+        retry.modelIds.length === 1
+      ) {
+        brandModelId = retry.modelIds[0]
+      } else if (retry.brand?.id && catalogLabelGroundedInQuery(hintQ, retry.brand.name)) {
+        brandId = retry.brand.id
+      }
+    }
+    if (!brandId && !brandModelId && llmBrand) {
+      const brand = await resolveDirectoryBrandRowFromLabel(supabase, llmBrand)
+      if (brand) brandId = brand.id
+    }
   }
-  if (!brandId && !brandModelId && intent.brandText?.trim()) {
-    const brand = await resolveDirectoryBrandRowFromLabel(supabase, intent.brandText)
-    if (brand) brandId = brand.id
-  }
-  if (!brandId && parsed.brand?.id) brandId = parsed.brand.id
-  if (!brandModelId && parsed.modelIds.length === 1) brandModelId = parsed.modelIds[0]
 
+  const casualFeetLength = /\b\d{1,2}\s*(?:foot|feet|ft)\b/i.test(q)
   let dimLength: string | undefined
+  let lengthInches: number | undefined
   if (intent.lengthToken?.trim()) {
     const inches = totalBoardLengthInchesFromCombinedInput(intent.lengthToken)
+    lengthInches = inches ?? undefined
     dimLength =
       (inches != null ? formatBoardLengthTokenFromInches(inches) : null) ??
       intent.lengthToken.trim()
   } else if (parsed.lengthToken) {
     dimLength = parsed.lengthToken
+    lengthInches = parsed.lengthInches ?? undefined
   }
 
+  // Applied chips come from the LLM intent — not synonym/rules catalog accidents.
   const labels = nlIntentToAppliedLabels({
     ...intent,
+    brandText: llmBrand || null,
+    modelText: llmModel || null,
     finSystems: finSystemsList,
     finSetups: finSetupsList,
     constructions: constructionsList,
@@ -170,10 +187,23 @@ export async function runMarketplaceNlHelper(
   ) {
     labels.push(lengthBounds.label)
   }
+  if (
+    dimLength &&
+    !labels.some((l) => l.toLowerCase() === dimLength!.toLowerCase())
+  ) {
+    labels.push(dimLength)
+  }
 
   const refine: MarketplaceNlHelperRefine = {}
+  const clearParams: string[] = []
+
   if (brandModelId) refine.brandModelId = brandModelId
   else if (brandId) refine.brandId = brandId
+  else {
+    // Drop stale auto brand/model from a prior bad refine.
+    clearParams.push("brandModelId", "brandId", "brand", "model")
+  }
+
   if (minPrice != null) refine.minPrice = String(Math.round(minPrice))
   if (maxPrice != null) refine.maxPrice = String(Math.round(maxPrice))
   const condition = uniqueCsv(intent.conditions)
@@ -185,13 +215,11 @@ export async function runMarketplaceNlHelper(
   if (construction) refine.construction = construction
   if (intent.shippingAvailable === true) refine.shipping = "1"
   if (intent.locationText?.trim()) refine.location = intent.locationText.trim()
-  if (dimLength) refine.dimLength = dimLength
 
   // Map open length bounds onto browse length facet buckets when possible.
   if (lengthBounds.maxLengthInches != null || lengthBounds.minLengthInches != null) {
     const buckets = LENGTH_BUCKETS.filter((b) => {
       if (lengthBounds.maxLengthInches != null) {
-        // Bucket must lie entirely under the exclusive max.
         if (b.max == null || b.max > lengthBounds.maxLengthInches) return false
       }
       if (lengthBounds.minLengthInches != null) {
@@ -200,17 +228,39 @@ export async function runMarketplaceNlHelper(
       return true
     }).map((b) => b.value)
     if (buckets.length > 0) refine.length = buckets.join(",")
+    clearParams.push("dimLength")
+  } else if (casualFeetLength && lengthInches != null) {
+    // "6 foot board" → 6'0–6'5 bucket (better recall than exact 72±1").
+    const bucket = LENGTH_BUCKETS.find(
+      (b) =>
+        (b.min == null || lengthInches! >= b.min) &&
+        (b.max == null || lengthInches! < b.max),
+    )
+    if (bucket) {
+      refine.length = bucket.value
+      clearParams.push("dimLength")
+    } else if (dimLength) {
+      refine.dimLength = dimLength
+    }
+  } else if (dimLength) {
+    refine.dimLength = dimLength
   }
 
   // Clear a prior bad price refine (e.g. "under 6 feet" → maxPrice=6 in the URL).
   if (maxPrice == null && minPrice == null && (lengthBounds.label || /\b(?:feet|foot|ft)\b/i.test(q))) {
-    refine.clearParams = ["minPrice", "maxPrice"]
+    clearParams.push("minPrice", "maxPrice")
+  }
+
+  if (clearParams.length > 0) {
+    refine.clearParams = [...new Set(clearParams)]
   }
 
   return {
     ok: true,
     appliedLabels: labels,
-    summary: [intent.summary.trim(), lengthBounds.label].filter(Boolean).join(", ") || labels.join(", "),
+    summary:
+      [intent.summary.trim(), lengthBounds.label, dimLength].filter(Boolean).join(", ") ||
+      labels.join(", "),
     refine,
   }
 }

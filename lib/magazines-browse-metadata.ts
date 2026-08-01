@@ -3,7 +3,7 @@ import { LISTING_CONDITION_LABELS } from "@/lib/listing-labels"
 
 export const MAGAZINES_BROWSE_DEFAULT_SORT = "newest" as const
 
-export const magazinesBrowseRootLabel = "All Magazines"
+export const magazinesBrowseRootLabel = "Magazines"
 
 export type MagazinesBrowseSearchParams = {
   q?: string

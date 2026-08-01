@@ -18,6 +18,7 @@ import {
 import { expansionsForMarketplaceQuery } from "@/lib/services/searchSynonyms"
 import {
   isBrandOnlyMarketplaceSuggestQuery,
+  isMarketplaceSearchNoiseToken,
   residualMarketplaceQueryAfterBrand,
   stripMarketplaceSearchNoiseWords,
 } from "@/lib/utils/marketplace-brand-query"
@@ -61,6 +62,15 @@ const LENGTH_TOKEN_RE =
 /** `5 10`, `5.10`, `510` (feet+inches) when users omit the apostrophe. */
 const LENGTH_LOOSE_RE =
   /(?:^|\s)(\d{1,2})(?:\s+|\.)(\d{1,2})(?=\s|$)/g
+/** `6 foot`, `6 feet`, `6ft`, `6-foot` → exact length in inches (N'0). */
+const LENGTH_FEET_WORD_RE =
+  /(?:^|\s)(\d{1,2})(?:\s*-?\s*|\s*)(?:feet|foot|ft)\b/gi
+
+/**
+ * Length-unit tokens that must never hard-filter to a catalog model on their own.
+ * Without this, "6 foot surfboard" → noise-stripped "foot" → "… Regular Foot ASYM".
+ */
+const MODEL_QUERY_LENGTH_UNIT_STOPWORDS = new Set(["foot", "feet", "ft", "inch", "inches"])
 
 function collapseWhitespace(s: string): string {
   return s.replace(/\s+/g, " ").trim()
@@ -124,7 +134,91 @@ function extractLengthFromQuery(raw: string): {
     }
   }
 
+  LENGTH_FEET_WORD_RE.lastIndex = 0
+  const feetWord = LENGTH_FEET_WORD_RE.exec(raw)
+  LENGTH_FEET_WORD_RE.lastIndex = 0
+  if (feetWord) {
+    const combined = `${feetWord[1]}'0`
+    const inches = totalBoardLengthInchesFromCombinedInput(combined)
+    if (inches != null) {
+      return {
+        lengthInches: inches,
+        lengthToken: formatBoardLengthTokenFromInches(inches),
+        withoutLength: collapseWhitespace(raw.replace(feetWord[0], " ")),
+      }
+    }
+  }
+
   return { lengthInches: null, lengthToken: null, withoutLength: raw.trim() }
+}
+
+function modelQueryTokens(modelQuery: string): string[] {
+  return (
+    modelQuery
+      .toLowerCase()
+      .match(/[\w']+/g)
+      ?.map((t) => t.replace(/^['']+|['']+$/g, ""))
+      .filter((t) => t.length >= 2) ?? []
+  )
+}
+
+/** True when the model search phrase is only a length unit (e.g. leftover "foot"). */
+function isLengthUnitOnlyModelQuery(modelQuery: string): boolean {
+  const tokens = modelQueryTokens(modelQuery)
+  if (tokens.length === 0) return false
+  return tokens.every((t) => MODEL_QUERY_LENGTH_UNIT_STOPWORDS.has(t))
+}
+
+/**
+ * True when leftover text is only generic marketplace words ("board") or length units.
+ * "6 foot board" must not hard-filter to "… Softboard …".
+ */
+function isNoiseOnlyModelQuery(modelQuery: string): boolean {
+  const tokens = modelQueryTokens(modelQuery)
+  if (tokens.length === 0) return true
+  return tokens.every(
+    (t) => MODEL_QUERY_LENGTH_UNIT_STOPWORDS.has(t) || isMarketplaceSearchNoiseToken(t),
+  )
+}
+
+/**
+ * Brand/model labels for Applied chips / hard filters must appear in the typed query.
+ * Blocks synonym-only and fuzzy catalog accidents from the banner.
+ */
+export function catalogLabelGroundedInQuery(query: string, label: string | null | undefined): boolean {
+  const q = (query || "").trim().toLowerCase()
+  const name = (label || "").trim().toLowerCase()
+  if (!q || !name) return false
+  if (q.includes(name)) return true
+  if (name.includes(q) && q.length >= 5 && !isNoiseOnlyModelQuery(q)) return true
+  const nameTokens =
+    name
+      .match(/[\w']+/g)
+      ?.map((t) => t.replace(/^['']+|['']+$/g, ""))
+      .filter((t) => t.length >= 4 && !isMarketplaceSearchNoiseToken(t)) ?? []
+  if (nameTokens.length === 0) return false
+  if (nameTokens.length === 1) return q.includes(nameTokens[0]!)
+  // Multi-word catalog names: require every distinctive token (e.g. "dumpster diver").
+  return nameTokens.every((t) => q.includes(t))
+}
+
+/**
+ * Ground a catalog model hit against the typed query.
+ * Rejects weak substring hits like query "foot" → model "… Regular Foot ASYM".
+ */
+function modelCandidateGroundedInQuery(query: string, modelName: string): boolean {
+  const q = query.trim().toLowerCase()
+  const name = modelName.trim().toLowerCase()
+  if (!q || !name) return false
+  if (name === q) return true
+  if (q.includes(name)) return true
+  // Partial typeahead ("dumpster" → "Dumpster Diver"): require a distinctive token.
+  if (name.includes(q) && q.length >= 5 && !MODEL_QUERY_LENGTH_UNIT_STOPWORDS.has(q)) {
+    return true
+  }
+  return Boolean(
+    matchModelFromTitle(query, [{ id: "_", brand_id: "_", name: modelName }]),
+  )
 }
 
 function toParsedBrand(row: DirectoryBrandMini): MarketplaceParsedBrand {
@@ -203,18 +297,14 @@ async function resolveModelsForParse(
 ): Promise<{ model: MarketplaceParsedModel | null; modelIds: string[] }> {
   const q = modelQuery.trim()
   if (q.length < 2) return { model: null, modelIds: [] }
-
-  const lower = q.toLowerCase()
+  if (isLengthUnitOnlyModelQuery(q) || isNoiseOnlyModelQuery(q)) {
+    return { model: null, modelIds: [] }
+  }
 
   if (brand) {
     const rows = await searchBrandModelsForBrandId(supabase, brand.id, q, 40)
     const candidates: MarketplaceParsedModel[] = rows
-      .filter(
-        (r) =>
-          r.name.toLowerCase() === lower ||
-          r.name.toLowerCase().includes(lower) ||
-          lower.includes(r.name.toLowerCase()),
-      )
+      .filter((r) => modelCandidateGroundedInQuery(q, r.name))
       .map((r) => ({ id: r.id, name: r.name, brandId: brand.id }))
     // Also keep phrase matches that ILIKE may miss on ordering.
     for (const r of rows) {
@@ -229,12 +319,7 @@ async function resolveModelsForParse(
 
   const rows = await searchBrandModelsWithBrandsForSuggest(supabase, q, 20)
   const candidates: MarketplaceParsedModel[] = rows
-    .filter(
-      (r) =>
-        r.name.toLowerCase() === lower ||
-        r.name.toLowerCase().includes(lower) ||
-        lower.includes(r.name.toLowerCase()),
-    )
+    .filter((r) => modelCandidateGroundedInQuery(q, r.name))
     .map((r) => ({ id: r.id, name: r.name, brandId: r.brandId }))
   const model = pickBestModel(q, candidates)
   return { model, modelIds: candidates.map((c) => c.id) }
@@ -272,7 +357,8 @@ export async function parseMarketplaceQuery(
   }
 
   const { lengthInches, lengthToken, withoutLength } = extractLengthFromQuery(raw)
-  const cleaned = stripMarketplaceSearchNoiseWords(withoutLength) || withoutLength.trim()
+  // Never fall back to noise-only leftovers ("board") — that matched Softboard / Foot models.
+  const cleaned = stripMarketplaceSearchNoiseWords(withoutLength)
 
   // Resolve model first for model-only queries so we don't fuzzy-match a brand incorrectly.
   const modelFirst = await resolveModelsForParse(supabase, null, cleaned)
@@ -285,7 +371,9 @@ export async function parseMarketplaceQuery(
   )
 
   const modelSearchText = brand
-    ? residualMarketplaceQueryAfterBrand(withoutLength, brand.name) || cleaned
+    ? stripMarketplaceSearchNoiseWords(
+        residualMarketplaceQueryAfterBrand(withoutLength, brand.name),
+      ) || cleaned
     : cleaned
 
   const modelsForBrand = brand

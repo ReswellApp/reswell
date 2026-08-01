@@ -1,13 +1,14 @@
 "use client"
 
 import { type ReactNode, Suspense, useEffect, useMemo, useState, useTransition } from "react"
-import { X } from "lucide-react"
+import { Check, Truck, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { BoardsBrowseFilterToolbar } from "@/components/boards-browse-filter-toolbar"
+import { CategoryBrowsePageHeader } from "@/components/category-browse-page-header"
+import { CategoryBrowseFilterButton } from "@/components/category-browse-filter-button"
 import { BoardsBrowseFacetControls } from "@/components/boards-browse-facet-controls"
 import { useBoardsFilterState } from "@/components/boards-browse-filter-state"
 import { prefetchBoardsBrowseBrandModelsCatalog } from "@/components/boards-browse-catalog-brand-model"
@@ -20,12 +21,19 @@ type FacetCountsMap = Record<string, Record<string, number>>
 type BoardsBrowseClientProps = {
   children: ReactNode
   counts: FacetCountsMap
-  defaultSort?: string
+  /** Page H1 — rendered with Filter in one header band. Omit when the page supplies its own heading. */
+  title?: string
+  description?: string
 }
 
 type ActiveChip = { id: string; label: string; onRemove: () => void }
 
-export function BoardsBrowseClient({ children, counts, defaultSort }: BoardsBrowseClientProps) {
+export function BoardsBrowseClient({
+  children,
+  counts,
+  title,
+  description,
+}: BoardsBrowseClientProps) {
   const [isPending, startTransition] = useTransition()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [desktopFiltersOpen, setDesktopFiltersOpen] = useState(false)
@@ -94,7 +102,7 @@ export function BoardsBrowseClient({ children, counts, defaultSort }: BoardsBrow
     if (state.shippingAvailable) {
       out.push({
         id: "shipping",
-        label: "Shipping available",
+        label: "Ship to me",
         onRemove: () => state.setShippingAvailable(false),
       })
     }
@@ -103,18 +111,46 @@ export function BoardsBrowseClient({ children, counts, defaultSort }: BoardsBrow
 
   return (
     <>
-      <div className="w-full min-w-0 border-b pb-4">
-        <BoardsBrowseFilterToolbar
-          activeFilterCount={state.activeCount}
-          onOpenMobileFilters={() => setMobileOpen(true)}
-          desktopFiltersOpen={desktopFiltersOpen}
-          onToggleDesktopFilters={() => setDesktopFiltersOpen((open) => !open)}
-          transitionStart={startTransition}
-          defaultSort={defaultSort}
-        />
-      </div>
+      <CategoryBrowsePageHeader
+        title={title}
+        description={description}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              aria-pressed={state.shippingAvailable}
+              aria-label={
+                state.shippingAvailable
+                  ? "Showing boards that ship — click to clear"
+                  : "Show only boards that ship to you"
+              }
+              onClick={() => state.setShippingAvailable(!state.shippingAvailable)}
+              className={cn(
+                "h-10 shrink-0 gap-2 rounded-full px-4 text-sm font-semibold shadow-none transition-colors",
+                state.shippingAvailable
+                  ? "border-transparent bg-[#001A4A] text-white hover:bg-[#001A4A]/90"
+                  : "border-[#001A4A]/20 bg-[#E8EEF8] text-[#001A4A] hover:border-[#001A4A]/35 hover:bg-[#DCE6F5]",
+              )}
+            >
+              {state.shippingAvailable ? (
+                <Check className="h-4 w-4 stroke-[2.25]" aria-hidden="true" />
+              ) : (
+                <Truck className="h-4 w-4 stroke-[1.75]" aria-hidden="true" />
+              )}
+              Ship to me
+            </Button>
+            <CategoryBrowseFilterButton
+              activeFilterCount={state.activeCount}
+              onOpenMobileFilters={() => setMobileOpen(true)}
+              desktopFiltersOpen={desktopFiltersOpen}
+              onToggleDesktopFilters={() => setDesktopFiltersOpen((open) => !open)}
+            />
+          </div>
+        }
+      />
 
-      <div className="mt-4 flex w-full min-w-0 gap-6">
+      <div className="mt-5 flex w-full min-w-0 gap-6">
         {/* Desktop: collapsible left sidebar (toggled by the toolbar Filters button) */}
         <aside className={cn("hidden w-[260px] shrink-0", desktopFiltersOpen && "md:block")}>
           <div className="sticky top-4">

@@ -10,7 +10,7 @@ import { finSetupLabel, finSystemLabel } from "@/lib/fin-listing-config"
 export const FINS_BROWSE_DEFAULT_SORT = "newest" as const
 
 /** `/fins` root label — matches header nav and browse breadcrumbs. */
-export const finsBrowseRootLabel = "All Fins"
+export const finsBrowseRootLabel = "Fins"
 
 export type FinsBrowseSearchParams = {
   /** Free-text keyword search. */
@@ -62,7 +62,7 @@ export function finsBrowseHeroSubtext(sp: FinsBrowseSearchParams): string {
   if (setup) {
     return `${setup} fin sets from surfers who ship or welcome local pickup.`
   }
-  return "Thrusters, quads, twins, and singles in every system — Futures, FCS, glass-on, and more — from local surfers on Reswell."
+  return "Thrusters, quads, twins, and singles in every system — Futures, FCS, glass-on, and more — from surfers on Reswell."
 }
 
 /** Title, description, and canonical URL for `/fins` (keep in sync with metadata). */

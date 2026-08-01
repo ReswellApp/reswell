@@ -16,7 +16,6 @@ import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import {
   headerNavSearchPlaceholder,
   headerNavSearchSubmitHref,
-  resolveHeaderNavSearchSection,
 } from "@/lib/header-nav-marketplace-search"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { navigateToBrandProfileFromNavPick } from "@/lib/nav-marketplace-brand-search"
@@ -42,8 +41,6 @@ export function HeaderSearchOverlay({
   const router = useRouter()
   const pathname = usePathname()
   const headerSearchParams = useClientSearchParams()
-  const navSearchSection = resolveHeaderNavSearchSection(pathname)
-
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
@@ -97,8 +94,8 @@ export function HeaderSearchOverlay({
           clearNavSearchQuery()
           onClose()
         }}
-        placeholder={headerNavSearchPlaceholder(navSearchSection)}
-        section={navSearchSection}
+        placeholder={headerNavSearchPlaceholder()}
+        section=""
         listboxId="nav-search-suggestions-tablet"
         inputClassName={siteSearchInputClassName({ compact: true })}
         className="w-full"

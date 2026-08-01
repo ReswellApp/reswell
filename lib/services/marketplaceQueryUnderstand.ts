@@ -66,6 +66,9 @@ export function marketplaceQueryLikelyNeedsLlm(
     ) ||
     /\$\s*\d+/.test(q) ||
     /\b\d{2,5}\s*(dollars|usd)\b/.test(lower) ||
+    // Casual length language — LLM should own Applied chips (not fuzzy catalog matches).
+    /\b\d{1,2}\s*(?:foot|feet|ft)\b/.test(lower) ||
+    /\b\d{1,2}'\s*\d{0,2}\b/.test(lower) ||
     queryMentionsFinFilters(q) ||
     queryMentionsTailFilters(q) ||
     queryMentionsConstructionFilters(q)
@@ -74,7 +77,7 @@ export function marketplaceQueryLikelyNeedsLlm(
 
   // Multi-token queries with no structured brand/model hit still benefit from NL.
   const tokens = lower.match(/[\w']+/g) ?? []
-  if (tokens.length >= 4 && !rulesParsed.model && rulesParsed.modelIds.length === 0) {
+  if (tokens.length >= 3 && !rulesParsed.model && rulesParsed.modelIds.length === 0) {
     return true
   }
 
@@ -94,16 +97,18 @@ Only use the provided enum values for styles, conditions, constructions, finSyst
 Map casual language:
 - "new" / "brand new" → brand_new; "mint" / "like new" → excellent
 - "CI" → brandText "Channel Islands"; "Lost" → brandText "Lost Surfboards"
+- Length: "6 foot" / "6 feet" / "6ft" / "6'" → lengthToken "6'0"; "5'10" stays "5'10"
 - Fin SYSTEMS (plugs): "fcs" / "fcs2" / "fcs ii" → fcs_ii; "futures" → futures; "twin tab" → fcs_twin_tab; "glass on" → glass_on
 - Fin SETUPS (layout): "thruster" / "tri" → thruster; "twin" → twin_only; "2+1" → twin; "quad" → quad; "5-fin" → five; "single" → single
 - Tail shapes: "round tail" / "round" → round; "squash" → squash; "pin" / "pintail" → pin; "swallow" → swallow
 - Construction: "epoxy" → eps_epoxy; "poly" / "pu" → pu_poly; "carbon" → carbon
 If a field is not mentioned, use null or [].
+CRITICAL: Never invent brandText or modelText. Only set them when the user clearly named that brand or model. Queries like "6 foot board" / "6 foot surfboard" are length-only — brandText and modelText must be null, lengthToken "6'0", residualText "".
 Split the query into:
 1) structured filters (brand/model/price/condition/fins/tail/construction/location/shipping/style)
 2) residualText = ONLY leftover model words that help rank listings (e.g. "puddle jumper", "sub driver").
-Never put brand names, prices, fin/tail words (fcs, thruster, round tail, …), "under"/"over"/"near", shipping, condition words, or generic words like "boards"/"surfboards" into residualText.
-If the query is only filters (e.g. "lost under $800", "boards with fcs", "lost round tail"), residualText must be "".
+Never put brand names, prices, fin/tail words (fcs, thruster, round tail, …), "under"/"over"/"near", shipping, condition words, or generic words like "boards"/"surfboards"/"board" into residualText.
+If the query is only filters (e.g. "lost under $800", "boards with fcs", "6 foot board"), residualText must be "".
 Prices are USD integers.`,
       prompt: `Extract search filters from this query:\n"""${q}"""`,
       temperature: 0,
@@ -150,7 +155,7 @@ const getCachedNlIntent = unstable_cache(
   async (normalizedQuery: string): Promise<MarketplaceNlSearchIntent | null> => {
     return callGeminiForNlIntent(normalizedQuery)
   },
-  ["marketplace-nl-search-v4"],
+  ["marketplace-nl-search-v5"],
   { revalidate: NL_CACHE_SECONDS, tags: [NL_CACHE_TAG] },
 )
 

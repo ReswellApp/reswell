@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { WetsuitsBrowseFilterToolbar } from "@/components/wetsuits-browse-filter-toolbar"
+import { CategoryBrowsePageHeader } from "@/components/category-browse-page-header"
+import { CategoryBrowseFilterButton } from "@/components/category-browse-filter-button"
 import { WetsuitsBrowseFacetControls } from "@/components/wetsuits-browse-facet-controls"
 import { useWetsuitsFilterState } from "@/components/wetsuits-browse-filter-state"
 import { WETSUIT_FACET_PARAM_KEYS, wetsuitFacetOptionLabel } from "@/lib/wetsuits-browse-facets"
@@ -14,7 +15,15 @@ import { cn } from "@/lib/utils"
 
 type ActiveChip = { id: string; label: string; onRemove: () => void }
 
-export function WetsuitsBrowseClient({ children }: { children: ReactNode }) {
+export function WetsuitsBrowseClient({
+  children,
+  title,
+  description,
+}: {
+  children: ReactNode
+  title?: string
+  description?: string
+}) {
   const [isPending, startTransition] = useTransition()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [desktopFiltersOpen, setDesktopFiltersOpen] = useState(false)
@@ -55,17 +64,20 @@ export function WetsuitsBrowseClient({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <div className="w-full min-w-0 border-b pb-4">
-        <WetsuitsBrowseFilterToolbar
-          activeFilterCount={state.activeCount}
-          onOpenMobileFilters={() => setMobileOpen(true)}
-          desktopFiltersOpen={desktopFiltersOpen}
-          onToggleDesktopFilters={() => setDesktopFiltersOpen((open) => !open)}
-          transitionStart={startTransition}
-        />
-      </div>
+      <CategoryBrowsePageHeader
+        title={title}
+        description={description}
+        action={
+          <CategoryBrowseFilterButton
+            activeFilterCount={state.activeCount}
+            onOpenMobileFilters={() => setMobileOpen(true)}
+            desktopFiltersOpen={desktopFiltersOpen}
+            onToggleDesktopFilters={() => setDesktopFiltersOpen((open) => !open)}
+          />
+        }
+      />
 
-      <div className="mt-4 flex w-full min-w-0 gap-6">
+      <div className="mt-5 flex w-full min-w-0 gap-6">
         <aside className={cn("hidden w-[260px] shrink-0", desktopFiltersOpen && "md:block")}>
           <div className="sticky top-4">
             <div className="mb-2 flex items-center justify-between">

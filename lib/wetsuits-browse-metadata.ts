@@ -10,7 +10,7 @@ import { wetsuitSizeLabel } from "@/lib/wetsuit-listing-config"
 export const WETSUITS_BROWSE_DEFAULT_SORT = "newest" as const
 
 /** `/wetsuits` root label — matches header nav and browse breadcrumbs. */
-export const wetsuitsBrowseRootLabel = "All Wetsuits"
+export const wetsuitsBrowseRootLabel = "Wetsuits"
 
 export type WetsuitsBrowseSearchParams = {
   /** Free-text keyword search. */

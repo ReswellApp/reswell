@@ -1,5 +1,9 @@
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import {
+  marketplaceNlSearchExamplesFromQuery,
+  marketplaceNlSearchLeadExample,
+} from "@/lib/utils/marketplace-nl-search-examples"
 
 /**
  * Pango-style prompt for natural-language search on results pages.
@@ -8,25 +12,20 @@ import { cn } from "@/lib/utils"
  */
 export function NaturalLanguageSearchHint({
   className,
+  query,
   appliedLabels,
   summary,
 }: {
   className?: string
+  /** Current search query — drives contextual "Try …" examples. */
+  query?: string
   /** Chips from the last NL parse (shown when Gemini applied filters). */
   appliedLabels?: string[]
   summary?: string | null
 }) {
-  const examples = [
-    {
-      label: "Dumpster Diver 5'10 excellent under $600",
-      href: "/boards?q=Dumpster%20Diver%205%2710%20excellent%20under%20%24600&nq=1",
-    },
-    {
-      label: "boards with FCS thruster",
-      href: "/boards?q=boards%20with%20FCS%20thruster&nq=1",
-    },
-  ] as const
-
+  const q = (query || "").trim()
+  const examples = marketplaceNlSearchExamplesFromQuery(q)
+  const leadExample = marketplaceNlSearchLeadExample(q)
   const hasApplied = (appliedLabels?.length ?? 0) > 0
 
   return (
@@ -71,12 +70,22 @@ export function NaturalLanguageSearchHint({
           ) : (
             <>
               <p className="font-headline text-[15px] font-semibold leading-snug tracking-tight">
-                Try natural language in search
+                {q ? "Refine your search with natural language" : "Try natural language in search"}
               </p>
               <p className="mt-0.5 text-xs leading-relaxed text-[#355185] sm:text-sm">
-                Brand, model, length, condition, fins, tail, construction, price, shipping, and
-                location —{" "}
-                <span className="italic text-[#163060]">e.g. &ldquo;{examples[0].label}&rdquo;</span>
+                {q ? (
+                  <>
+                    Build on &ldquo;{q}&rdquo; — add brand, model, condition, fins, price, or
+                    shipping.{" "}
+                    <span className="italic text-[#163060]">e.g. &ldquo;{leadExample}&rdquo;</span>
+                  </>
+                ) : (
+                  <>
+                    Brand, model, length, condition, fins, tail, construction, price, shipping, and
+                    location —{" "}
+                    <span className="italic text-[#163060]">e.g. &ldquo;{leadExample}&rdquo;</span>
+                  </>
+                )}
               </p>
               <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium">
                 {examples.map((ex) => (

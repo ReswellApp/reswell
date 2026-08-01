@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { LeashesBrowseFilterToolbar } from "@/components/leashes-browse-filter-toolbar"
+import { CategoryBrowsePageHeader } from "@/components/category-browse-page-header"
+import { CategoryBrowseFilterButton } from "@/components/category-browse-filter-button"
 import { LeashesBrowseFacetControls } from "@/components/leashes-browse-facet-controls"
 import { useLeashesFilterState } from "@/components/leashes-browse-filter-state"
 import { LEASH_FACET_PARAM_KEYS, leashFacetOptionLabel } from "@/lib/leashes-browse-facets"
@@ -14,7 +15,15 @@ import { cn } from "@/lib/utils"
 
 type ActiveChip = { id: string; label: string; onRemove: () => void }
 
-export function LeashesBrowseClient({ children }: { children: ReactNode }) {
+export function LeashesBrowseClient({
+  children,
+  title,
+  description,
+}: {
+  children: ReactNode
+  title?: string
+  description?: string
+}) {
   const [isPending, startTransition] = useTransition()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [desktopFiltersOpen, setDesktopFiltersOpen] = useState(false)
@@ -55,17 +64,20 @@ export function LeashesBrowseClient({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <div className="w-full min-w-0 border-b pb-4">
-        <LeashesBrowseFilterToolbar
-          activeFilterCount={state.activeCount}
-          onOpenMobileFilters={() => setMobileOpen(true)}
-          desktopFiltersOpen={desktopFiltersOpen}
-          onToggleDesktopFilters={() => setDesktopFiltersOpen((open) => !open)}
-          transitionStart={startTransition}
-        />
-      </div>
+      <CategoryBrowsePageHeader
+        title={title}
+        description={description}
+        action={
+          <CategoryBrowseFilterButton
+            activeFilterCount={state.activeCount}
+            onOpenMobileFilters={() => setMobileOpen(true)}
+            desktopFiltersOpen={desktopFiltersOpen}
+            onToggleDesktopFilters={() => setDesktopFiltersOpen((open) => !open)}
+          />
+        }
+      />
 
-      <div className="mt-4 flex w-full min-w-0 gap-6">
+      <div className="mt-5 flex w-full min-w-0 gap-6">
         <aside className={cn("hidden w-[260px] shrink-0", desktopFiltersOpen && "md:block")}>
           <div className="sticky top-4">
             <div className="mb-2 flex items-center justify-between">

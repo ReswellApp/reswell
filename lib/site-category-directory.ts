@@ -74,14 +74,14 @@ export type CategoryDirectorySection = {
 
 /** `/fins` browse links — peer-to-peer surfboard fins. */
 export const finBrowseLinks: CategoryLink[] = [
-  { label: "All Fins", href: "/fins" },
+  { label: "Fins", href: "/fins" },
   { label: "Thruster", href: "/fins?fin=thruster" },
   { label: "Twin", href: "/fins?fin=twin_only" },
   { label: "Quad", href: "/fins?fin=quad" },
   { label: "Single", href: "/fins?fin=single" },
 ]
 
-export const wetsuitBrowseLinks: CategoryLink[] = [{ label: "All Wetsuits", href: "/wetsuits" }]
+export const wetsuitBrowseLinks: CategoryLink[] = [{ label: "Wetsuits", href: "/wetsuits" }]
 
 export const boardbagBrowseLinks: CategoryLink[] = [{ label: "All Boardbags", href: "/boardbags" }]
 

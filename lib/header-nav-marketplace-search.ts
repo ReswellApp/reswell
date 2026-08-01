@@ -1,32 +1,11 @@
-import { ELASTICSEARCH_INDEXED_LISTING_SECTIONS } from "@/lib/elasticsearch/listing-sections"
+import { PEER_LISTING_SECTIONS } from "@/lib/peer-listing-sections"
 
 function isSearchResultsPath(pathname: string | null): boolean {
   return pathname === "/search" || pathname === "/search/recent"
 }
 
-const PATH_SCOPED_SECTIONS = ["fins", "wetsuits", "magazines"] as const
-
-type PathScopedSection = (typeof PATH_SCOPED_SECTIONS)[number]
-
-function isPathScopedSection(section: string): section is PathScopedSection {
-  return (PATH_SCOPED_SECTIONS as readonly string[]).includes(section)
-}
-
-/** Scope header nav typeahead + submit to the category when browsing its browse path. */
-export function resolveHeaderNavSearchSection(pathname: string | null): string {
-  if (!pathname) return ""
-  for (const section of PATH_SCOPED_SECTIONS) {
-    if (pathname === `/${section}` || pathname.startsWith(`/${section}/`)) {
-      return section
-    }
-  }
-  return ""
-}
-
-export function headerNavSearchPlaceholder(section: string): string {
-  if (section === "fins") return "Search fins…"
-  if (section === "wetsuits") return "Search wetsuits…"
-  if (section === "magazines") return "Search magazines…"
+/** Boards-standard copy for main nav — same on every route. */
+export function headerNavSearchPlaceholder(_section?: string): string {
   return "Search surfboards…"
 }
 
@@ -34,9 +13,12 @@ export function headerNavSearchPlaceholder(section: string): string {
 export function marketplaceSearchSuggestSections(section: string): string[] {
   const normalized = section.trim().toLowerCase()
   if (normalized === "new") return ["new"]
-  if (isPathScopedSection(normalized)) return [normalized]
+  if (normalized === "fins" || normalized === "wetsuits" || normalized === "magazines") {
+    return [normalized]
+  }
   if (normalized === "surfboards") return ["surfboards"]
-  return [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS]
+  // Empty / unknown → all peer marketplace categories (main nav default).
+  return [...PEER_LISTING_SECTIONS]
 }
 
 /** Stable cache key for nav search suggest (`section` query param). */
@@ -51,11 +33,17 @@ export type NavSearchSuggestSectionKey =
 export function navSearchSuggestSectionKey(section: string): NavSearchSuggestSectionKey {
   const normalized = section.trim().toLowerCase()
   if (normalized === "new") return "new"
-  if (isPathScopedSection(normalized)) return normalized
+  if (normalized === "fins" || normalized === "wetsuits" || normalized === "magazines") {
+    return normalized
+  }
   if (normalized === "surfboards") return "surfboards"
   return "marketplace"
 }
 
+/**
+ * Main nav submit always lands on faceted `/boards` (boards-standard), except when
+ * the user is already on legacy `/search` (preserve category chip).
+ */
 export function headerNavSearchSubmitHref(
   rawQuery: string,
   pathname: string | null,
@@ -64,12 +52,6 @@ export function headerNavSearchSubmitHref(
   const term = rawQuery.trim()
   if (!term) return ""
 
-  const scoped = resolveHeaderNavSearchSection(pathname)
-  if (isPathScopedSection(scoped)) {
-    return `/${scoped}?q=${encodeURIComponent(term)}`
-  }
-
-  // Default surfboard search lands on faceted `/boards` (Pango-style filter page).
   // Legacy `/search` stays available for category chips / curated recent.
   if (isSearchResultsPath(pathname)) {
     const params = new URLSearchParams()

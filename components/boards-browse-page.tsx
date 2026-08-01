@@ -1,18 +1,10 @@
 import { Suspense, type ReactNode } from "react"
-import Link from "next/link"
 import { redirect } from "next/navigation"
 import { BoardsBrowsePagination } from "@/components/boards-browse-pagination"
 import { ListingTileGridSkeleton } from "@/components/listing-tile-skeleton"
 import { ListYourSurfboardMarketplaceReviewsSection } from "@/components/features/marketing/list-your-surfboard-buyer-reviews-section"
 import type { MarketplaceShowcaseReviewRow } from "@/lib/db/marketplace-reviews-showcase"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+import { CategoryBrowseBreadcrumbs } from "@/components/category-browse-breadcrumbs"
 
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { createAnonSupabaseClient } from "@/lib/supabase/anon"
@@ -24,7 +16,6 @@ import { BoardsBrowseFiltersSectionSkeleton } from "@/components/boards-browse-p
 import { getBoardsBrowseCategoryTypePageCached } from "@/lib/cache/boards-browse-catalog"
 import { getBoardsBrowseFacetCountsMapCached } from "@/lib/cache/boards-browse-facet-counts"
 import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
-import { BoardsBrowseAdminCurator } from "@/components/boards-browse-admin-curator"
 import { isBoardsBrowseSuppressionSortAvailable } from "@/lib/db/boards-browse-suppressed-admin"
 import {
   BOARDS_BROWSE_PAGE_SIZE,
@@ -72,30 +63,25 @@ import {
   boardsBrowseHasSidebarFilters,
 } from "@/lib/boards-browse-sidebar-filters"
 
-async function BoardsBrowseAdminCuratorGate() {
-  const { supabase, user } = await getCachedRequestSession()
-  if (!user) return null
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("is_admin")
-    .eq("id", user.id)
-    .maybeSingle()
-  return <BoardsBrowseAdminCurator isAdmin={profile?.is_admin === true} />
-}
-
 async function BoardsBrowseFiltersSection({
   searchParams: searchParamsPromise,
-  defaultSort,
   children,
+  title,
+  description,
 }: {
   searchParams: Promise<BoardsBrowseSearchParams>
-  defaultSort: string
   children: ReactNode
+  title?: string
+  description?: string
 }) {
   const searchParams = await searchParamsPromise
   const facetCounts = await getBoardsBrowseFacetCountsMapCached(searchParams)
   return (
-    <BoardsBrowseClient counts={facetCounts} defaultSort={defaultSort}>
+    <BoardsBrowseClient
+      counts={facetCounts}
+      title={title}
+      description={description}
+    >
       {children}
     </BoardsBrowseClient>
   )
@@ -737,7 +723,7 @@ async function BoardListingsTileGridWithFavorites({
 export async function BoardsBrowsePage(props: {
   searchParams: Promise<BoardsBrowseSearchParams>
   showListYourSurfboardCta?: boolean
-  /** When `sort` is omitted from the URL, listings and the sort control use this value. */
+  /** When `sort` is omitted from the URL, listings use this value. */
   defaultSort?: string
   topMarketplaceReviews?: MarketplaceShowcaseReviewRow[]
   heroListingImages?: readonly string[]
@@ -794,53 +780,31 @@ export async function BoardsBrowsePage(props: {
     redirect(`/boards?${next.toString()}`)
   }
   const typeCrumb = boardsBrowseBoardTypeLabel(searchParams.type)
+  const pageTitle = typeCrumb ?? surfboardsBrowseRootLabel
+  const pageDescription = boardsBrowseHeroSubtext(searchParams.type)
 
   return (
     <main className="flex-1">
       <BoardsBrowseJsonLd searchParams={searchParams} />
       {!props.showListYourSurfboardCta ? (
-        <section className="bg-offwhite pt-1 pb-4 sm:pt-2 sm:pb-5 lg:pt-8 lg:pb-5">
+        <section className="bg-offwhite pt-1 sm:pt-2 lg:pt-6">
           <div className="container mx-auto">
-            <div className="border-t border-neutral-200 mb-4 pt-2 lg:pt-4">
-              <Breadcrumb>
-                <BreadcrumbList className="gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
-                  <BreadcrumbItem>
-                    <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                      <Link href="/">Home</Link>
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
-                  {typeCrumb ? (
-                    <>
-                      <BreadcrumbItem>
-                        <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                          <Link href="/boards">{surfboardsBrowseRootLabel}</Link>
-                        </BreadcrumbLink>
-                      </BreadcrumbItem>
-                      <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
-                      <BreadcrumbItem>
-                        <BreadcrumbPage className="font-normal text-[#5c6b89]">{typeCrumb}</BreadcrumbPage>
-                      </BreadcrumbItem>
-                    </>
-                  ) : (
-                    <BreadcrumbItem>
-                      <BreadcrumbPage className="font-normal text-[#5c6b89]">
-                        {surfboardsBrowseRootLabel}
-                      </BreadcrumbPage>
-                    </BreadcrumbItem>
-                  )}
-                </BreadcrumbList>
-              </Breadcrumb>
+            <div className="border-t border-neutral-200 pt-2 lg:pt-3">
+              <CategoryBrowseBreadcrumbs
+                rootHref="/boards"
+                rootLabel={surfboardsBrowseRootLabel}
+                searchParams={searchParams}
+                segment={
+                  typeCrumb && searchParams.type?.trim()
+                    ? {
+                        label: typeCrumb,
+                        href: `/boards?type=${encodeURIComponent(searchParams.type.trim())}`,
+                        ownedParamKeys: ["type"],
+                      }
+                    : undefined
+                }
+              />
             </div>
-            <div className="flex items-center justify-center gap-2">
-              <h1 className="text-3xl font-bold text-center">{typeCrumb ?? surfboardsBrowseRootLabel}</h1>
-              <Suspense fallback={null}>
-                <BoardsBrowseAdminCuratorGate />
-              </Suspense>
-            </div>
-            <p className="text-center text-muted-foreground mt-2 max-w-2xl mx-auto text-sm sm:text-base">
-              {boardsBrowseHeroSubtext(searchParams.type)}
-            </p>
           </div>
         </section>
       ) : null}
@@ -854,8 +818,8 @@ export async function BoardsBrowsePage(props: {
 
       <section
         className={cn(
-          "pb-4 min-w-0",
-          props.showListYourSurfboardCta ? "pt-8 sm:pt-10" : "pt-2",
+          "min-w-0 pb-4",
+          props.showListYourSurfboardCta ? "pt-8 sm:pt-10" : "bg-offwhite pt-4 sm:pt-5",
         )}
       >
         <div className="container mx-auto min-w-0">
@@ -864,10 +828,11 @@ export async function BoardsBrowsePage(props: {
               Browse all surfboards
             </h2>
           ) : null}
-          <Suspense fallback={<BoardsBrowseFiltersSectionSkeleton />}>
+          <Suspense fallback={<BoardsBrowseFiltersSectionSkeleton showTitle={!props.showListYourSurfboardCta} />}>
             <BoardsBrowseFiltersSection
               searchParams={searchParamsPromise}
-              defaultSort={pageDefaultSort}
+              title={props.showListYourSurfboardCta ? undefined : pageTitle}
+              description={props.showListYourSurfboardCta ? undefined : pageDescription}
             >
               <Suspense fallback={<ListingTileGridSkeleton count={10} ariaLabel="Loading surfboards" />}>
                 <BoardListings searchParams={searchParamsPromise} />

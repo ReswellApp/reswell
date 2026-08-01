@@ -292,7 +292,7 @@ export async function SearchPageView({
           </p>
           {rawQuery.trim() ? (
             <div className="mt-4 max-w-2xl">
-              <NaturalLanguageSearchHint />
+              <NaturalLanguageSearchHint query={rawQuery} />
             </div>
           ) : null}
         </div>

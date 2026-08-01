@@ -11,7 +11,9 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import type { BoardsBrowseEsContext } from "@/lib/elasticsearch/boards-browse-search"
 import type { BoardsBrowseFacetSelections } from "@/lib/boards-browse-facets"
 import { totalBoardLengthInchesFromCombinedInput } from "@/lib/board-measurements"
+import { LENGTH_BUCKETS } from "@/lib/boards-browse-facets"
 import {
+  catalogLabelGroundedInQuery,
   formatBoardLengthTokenFromInches,
   parseMarketplaceQuery,
   type MarketplaceParsedQuery,
@@ -223,29 +225,40 @@ export async function resolveBoardsSearchQuery(
   const hasLengthBounds =
     lengthBounds.minLengthInches != null || lengthBounds.maxLengthInches != null
   const hasPriceRules = priceRules.minPrice != null || priceRules.maxPrice != null
+  // Casual "6 foot" (not 6'2) → length bucket for recall; exact token stays for chips.
+  const casualFeetLength = /\b\d{1,2}\s*(?:foot|feet|ft)\b/i.test(q)
+
+  // Applied brand/model chips only when the typed query mentions them — never synonym/fuzzy accidents.
+  const groundedBrandName = catalogLabelGroundedInQuery(q, parsed.brand?.name)
+    ? parsed.brand!.name
+    : null
+  const groundedModelName = catalogLabelGroundedInQuery(q, parsed.model?.name)
+    ? parsed.model!.name
+    : null
 
   const mergedNlIntent: MarketplaceNlSearchIntent | null = finRules
     ? {
         ...finRules,
-        brandText: finRules.brandText ?? parsed.brand?.name ?? null,
-        modelText: finRules.modelText ?? parsed.model?.name ?? null,
+        brandText: finRules.brandText ?? groundedBrandName,
+        modelText: finRules.modelText ?? groundedModelName,
         minPrice: priceRules.minPrice ?? null,
         maxPrice: priceRules.maxPrice ?? null,
         summary:
           [
-            parsed.brand?.name,
+            groundedBrandName,
             finRules.summary,
             lengthBoundLabel,
+            parsed.lengthToken,
             priceRules.maxPrice != null ? `under $${priceRules.maxPrice}` : null,
             priceRules.minPrice != null ? `from $${priceRules.minPrice}` : null,
           ]
             .filter(Boolean)
             .join(" · ") || finRules.summary,
       }
-    : hasPriceRules || hasLengthBounds
+    : hasPriceRules || hasLengthBounds || parsed.lengthInches != null
       ? {
-          brandText: parsed.brand?.name ?? null,
-          modelText: parsed.model?.name ?? null,
+          brandText: groundedBrandName,
+          modelText: groundedModelName,
           residualText: parsed.residualText || "",
           styles: [],
           conditions: [],
@@ -259,18 +272,20 @@ export async function resolveBoardsSearchQuery(
           locationText: null,
           shippingAvailable: null,
           summary: [
-            parsed.brand?.name,
+            groundedBrandName,
+            groundedModelName,
             lengthBoundLabel,
+            parsed.lengthToken,
             priceRules.maxPrice != null ? `under $${priceRules.maxPrice}` : null,
             priceRules.minPrice != null ? `from $${priceRules.minPrice}` : null,
           ]
             .filter(Boolean)
             .join(", "),
         }
-      : parsed.brand || parsed.model || parsed.lengthInches != null
+      : groundedBrandName || groundedModelName
         ? {
-            brandText: parsed.brand?.name ?? null,
-            modelText: parsed.model?.name ?? null,
+            brandText: groundedBrandName,
+            modelText: groundedModelName,
             residualText: parsed.residualText || "",
             styles: [],
             conditions: [],
@@ -283,7 +298,7 @@ export async function resolveBoardsSearchQuery(
             maxPrice: null,
             locationText: null,
             shippingAvailable: null,
-            summary: [parsed.brand?.name, parsed.model?.name, parsed.lengthToken]
+            summary: [groundedBrandName, groundedModelName, parsed.lengthToken]
               .filter(Boolean)
               .join(", "),
           }
@@ -305,9 +320,37 @@ export async function resolveBoardsSearchQuery(
     }
   }
 
+  // "6 foot board" → prefer the 6'0–6'5 bucket over exact 72±1" so nearby lengths still hit.
+  if (
+    nl &&
+    casualFeetLength &&
+    !hasLengthBounds &&
+    (parsed.lengthInches != null || nl.lengthInches != null)
+  ) {
+    const inches = parsed.lengthInches ?? nl.lengthInches!
+    const bucket = LENGTH_BUCKETS.find(
+      (b) =>
+        (b.min == null || inches >= b.min) && (b.max == null || inches < b.max),
+    )
+    if (bucket) {
+      nl = {
+        ...nl,
+        lengthInches: undefined,
+        minLengthInches: bucket.min ?? undefined,
+        maxLengthInches: bucket.max ?? undefined,
+        appliedLabels: nl.appliedLabels.some((l) => l === (parsed.lengthToken ?? nl.lengthToken))
+          ? nl.appliedLabels
+          : [...nl.appliedLabels, parsed.lengthToken ?? nl.lengthToken ?? bucket.label].filter(
+              (v, i, a): v is string => Boolean(v) && a.indexOf(v) === i,
+            ),
+        summary: nl.summary || parsed.lengthToken || bucket.label,
+      }
+    }
+  }
+
   let enriched = parsed
   // Rules brandText is usually already on `parsed`; keep resolve for safety.
-  if (!enriched.brand && nl?.brandText) {
+  if (!enriched.brand && nl?.brandText && catalogLabelGroundedInQuery(q, nl.brandText)) {
     const fromRules = await resolveDirectoryBrandRowFromLabel(supabase, nl.brandText)
     if (fromRules) {
       enriched = {
@@ -324,36 +367,57 @@ export async function resolveBoardsSearchQuery(
       lengthToken: nl.lengthToken ?? enriched.lengthToken,
     }
   }
+  // Casual feet queries use min/max bucket — clear exact inches so ES doesn't AND both.
+  if (nl?.minLengthInches != null || nl?.maxLengthInches != null) {
+    if (casualFeetLength) {
+      enriched = { ...enriched, lengthInches: null }
+    }
+  }
 
   const urlBrandModelId = input.brandModelId?.trim() || undefined
   const urlBrandId = input.brandId?.trim() || undefined
   const urlBrand = input.brand?.trim() || undefined
   const urlModel = input.model?.trim() || undefined
 
+  const groundedModelIds =
+    enriched.model && catalogLabelGroundedInQuery(q, enriched.model.name)
+      ? enriched.modelIds.length > 0
+        ? enriched.modelIds
+        : [enriched.model.id]
+      : undefined
+
   const brandModelIds =
     urlBrandModelId
       ? [urlBrandModelId]
-      : enriched.modelIds.length > 0
-        ? enriched.modelIds
-        : enriched.model?.id
-          ? [enriched.model.id]
-          : undefined
+      : groundedModelIds
 
   const brandModelId = brandModelIds?.length === 1 ? brandModelIds[0] : undefined
+  const groundedBrandId =
+    !brandModelIds?.length &&
+    enriched.brand?.id &&
+    catalogLabelGroundedInQuery(q, enriched.brand.name)
+      ? enriched.brand.id
+      : undefined
   const brandId =
     brandModelIds && brandModelIds.length > 0
       ? undefined
-      : urlBrandId || enriched.brand?.id || undefined
+      : urlBrandId || groundedBrandId || undefined
   const brand =
     brandModelIds?.length || brandId
       ? undefined
       : urlBrand ||
-        (enriched.brand && !enriched.model ? enriched.brand.name : undefined) ||
-        nl?.brandText
+        (enriched.brand && !enriched.model && catalogLabelGroundedInQuery(q, enriched.brand.name)
+          ? enriched.brand.name
+          : undefined) ||
+        (nl?.brandText && catalogLabelGroundedInQuery(q, nl.brandText) ? nl.brandText : undefined)
   const model =
     brandModelIds?.length || brandId
       ? undefined
-      : urlModel || enriched.model?.name || nl?.modelText
+      : urlModel ||
+        (enriched.model && catalogLabelGroundedInQuery(q, enriched.model.name)
+          ? enriched.model.name
+          : undefined) ||
+        (nl?.modelText && catalogLabelGroundedInQuery(q, nl.modelText) ? nl.modelText : undefined)
 
   // When NL (or rules) already applied brand/price/etc., leftover text must NOT be an ES
   // `must` (filter words like "under" zero results via minimum_should_match). Instead it

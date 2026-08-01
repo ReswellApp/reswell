@@ -34,7 +34,6 @@ import { goToCuratedSearchPage } from "@/lib/nav-curated-search"
 import {
   headerNavSearchPlaceholder,
   headerNavSearchSubmitHref,
-  resolveHeaderNavSearchSection,
 } from "@/lib/header-nav-marketplace-search"
 import type {
   NavSearchPersonalizationBrand,
@@ -550,8 +549,6 @@ export function HeaderNavSearch({
     [userId],
   )
 
-  const navSearchSection = resolveHeaderNavSearchSection(pathname)
-
   const runSearch = useCallback(
     (q: string) => {
       const term = q.trim()
@@ -771,8 +768,9 @@ export function HeaderNavSearch({
     },
     onNavigate: clearSearchAndStorage,
     onFocus: handleIdleFocus,
-    placeholder: headerNavSearchPlaceholder(navSearchSection),
-    section: navSearchSection,
+    placeholder: headerNavSearchPlaceholder(),
+    // Unscoped: typeahead includes listings from every marketplace section.
+    section: "",
     className: "w-full",
     minLength: 2,
     analyticsSurface: "header_nav" as const,

@@ -105,6 +105,7 @@ export function NaturalLanguageSearchHelper({
   return (
     <NaturalLanguageSearchHint
       className={className}
+      query={q}
       appliedLabels={appliedLabels}
       summary={summary}
     />

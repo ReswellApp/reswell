@@ -1,15 +1,7 @@
 import { Suspense } from "react"
-import Link from "next/link"
 import { BoardsBrowsePagination } from "@/components/boards-browse-pagination"
 import { ListingTileGridSkeleton } from "@/components/listing-tile-skeleton"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
+import { CategoryBrowseBreadcrumbs } from "@/components/category-browse-breadcrumbs"
 import { createClient } from "@/lib/supabase/server"
 import { ApparelBrowseClient } from "@/components/apparel-browse-client"
 import { BoardsNoResultsSaveSearch } from "@/components/boards-no-results-save-search"
@@ -123,53 +115,41 @@ export async function ApparelBrowsePage(props: {
 
   return (
     <main className="flex-1">
-      <section className="bg-offwhite pt-1 pb-4 sm:pt-2 sm:pb-5 lg:pt-8 lg:pb-5">
+      <section className="bg-offwhite pt-1 sm:pt-2 lg:pt-6">
         <div className="container mx-auto">
-          <div className="mb-4 border-t border-neutral-200 pt-2 lg:pt-4">
-            <Breadcrumb>
-              <BreadcrumbList className="gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
-                <BreadcrumbItem>
-                  <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                    <Link href="/">Home</Link>
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
-                {filterCrumb ? (
-                  <>
-                    <BreadcrumbItem>
-                      <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                        <Link href="/apparel">{apparelBrowseRootLabel}</Link>
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage className="font-normal text-[#5c6b89]">{filterCrumb}</BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </>
-                ) : (
-                  <BreadcrumbItem>
-                    <BreadcrumbPage className="font-normal text-[#5c6b89]">
-                      {apparelBrowseRootLabel}
-                    </BreadcrumbPage>
-                  </BreadcrumbItem>
-                )}
-              </BreadcrumbList>
-            </Breadcrumb>
+          <div className="border-t border-neutral-200 pt-2 lg:pt-3">
+            <CategoryBrowseBreadcrumbs
+              rootHref="/apparel"
+              rootLabel={apparelBrowseRootLabel}
+              searchParams={searchParams}
+              segment={
+                filterCrumb
+                  ? searchParams.kind?.trim()
+                    ? {
+                        label: filterCrumb,
+                        href: `/apparel?kind=${encodeURIComponent(searchParams.kind.trim())}`,
+                        ownedParamKeys: ["kind"],
+                      }
+                    : searchParams.size?.trim()
+                      ? {
+                          label: filterCrumb,
+                          href: `/apparel?size=${encodeURIComponent(searchParams.size.trim())}`,
+                          ownedParamKeys: ["size"],
+                        }
+                      : undefined
+                  : undefined
+              }
+            />
           </div>
-          <div className="flex items-center justify-center gap-2">
-            <h1 className="text-center text-3xl font-bold">
-              {filterCrumb ?? apparelBrowseRootLabel}
-            </h1>
-          </div>
-          <p className="mx-auto mt-2 max-w-2xl text-center text-sm text-muted-foreground sm:text-base">
-            {apparelBrowseHeroSubtext(searchParams)}
-          </p>
         </div>
       </section>
 
-      <section className="min-w-0 pt-2 pb-4">
+      <section className="min-w-0 bg-offwhite pt-4 pb-4 sm:pt-5">
         <div className="container mx-auto min-w-0">
-          <ApparelBrowseClient>
+          <ApparelBrowseClient
+            title={filterCrumb ?? apparelBrowseRootLabel}
+            description={apparelBrowseHeroSubtext(searchParams)}
+          >
             <Suspense fallback={<ListingTileGridSkeleton count={10} ariaLabel="Loading apparel" />}>
               <ApparelListings searchParams={props.searchParams} />
             </Suspense>
