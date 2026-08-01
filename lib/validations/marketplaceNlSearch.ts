@@ -6,12 +6,14 @@ import {
   FIN_SETUP_OPTIONS,
   FIN_SYSTEM_OPTIONS,
 } from "@/lib/boards-browse-facets"
+import { TAIL_SHAPE_TAG_OPTIONS } from "@/lib/listing-tail-shape-tags"
 
 const styleValues = BOARD_STYLE_OPTIONS.map((o) => o.value) as [string, ...string[]]
 const conditionValues = CONDITION_OPTIONS.map((o) => o.value) as [string, ...string[]]
 const constructionValues = CONSTRUCTION_OPTIONS.map((o) => o.value) as [string, ...string[]]
 const finSystemValues = FIN_SYSTEM_OPTIONS.map((o) => o.value) as [string, ...string[]]
 const finSetupValues = FIN_SETUP_OPTIONS.map((o) => o.value) as [string, ...string[]]
+const tailShapeValues = TAIL_SHAPE_TAG_OPTIONS.map((o) => o.value) as [string, ...string[]]
 
 /**
  * Structured NL search intent from Gemini (or another LLM).
@@ -50,6 +52,12 @@ export const marketplaceNlSearchIntentSchema = z.object({
     .array(z.enum(finSetupValues))
     .describe(
       "Fin layout: thruster/tri→thruster, twin→twin_only, 2+1→twin, quad→quad, 5-fin→five, single→single",
+    ),
+  tailShapes: z
+    .array(z.enum(tailShapeValues))
+    .default([])
+    .describe(
+      "Tail shapes: round tail→round, squash→squash, pin→pin, swallow→swallow, square→square, fish tail→fish",
     ),
   lengthToken: z
     .string()

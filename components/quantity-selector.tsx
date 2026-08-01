@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { Minus, Plus, ShoppingCart, Check, Loader2 } from "lucide-react"
@@ -11,6 +11,7 @@ import { trackMetaAddToCart } from "@/lib/meta/pixel-events"
 import { collectMetaClientBrowserSignals } from "@/lib/meta/collect-client-browser-signals"
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
+import { useClientSearchParams } from "@/hooks/use-client-search-params"
 
 interface QuantitySelectorProps {
   productId: string
@@ -45,7 +46,7 @@ export function QuantitySelector({
   const authModal = useOptionalAuthModal()
   const router = useRouter()
   const pathname = usePathname()
-  const searchParams = useSearchParams()
+  const searchParams = useClientSearchParams()
   const here = `${pathname}${searchParams.toString() ? `?${searchParams}` : ""}`
 
   useEffect(() => {

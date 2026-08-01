@@ -34,6 +34,10 @@ import {
 import { categoryIdsForBrowseBoardTypes } from "@/lib/utils/board-type-from-category-id"
 import type { BoardsBrowseFacetCounts } from "@/lib/services/boardsBrowseFacetCounts"
 import { isUuidString } from "@/lib/utils/isUuid"
+import {
+  TAIL_SHAPE_LABELS,
+  type TailShapeTagSlug,
+} from "@/lib/listing-tail-shape-tags"
 
 /** Attach `must_not` to a listings bool query body (keyword builders already set filter/must/should). */
 function withMustNot(queryBody: object, mustNot: object[]): object {
@@ -186,6 +190,15 @@ export type BoardsBrowseEsContext = {
   expansions?: string[]
   /** Exact board length from query parse (`5'10` → 70); applied as a tight inches range. */
   lengthInches?: number
+  /** Inclusive min board length in inches (`over 7 feet`). */
+  minLengthInches?: number
+  /** Exclusive max board length in inches (`under 6 feet` → 72). */
+  maxLengthInches?: number
+  /**
+   * Tail-shape slugs from NL/rules. Matches indexed `tail_shape` OR title/model/attrs_text
+   * (many listings omit the structured tail field).
+   */
+  tailShapes?: string[]
 }
 
 function priceClauses(ctx: BoardsBrowseEsContext): object[] {
@@ -259,6 +272,21 @@ function lengthInchesClause(lengthInches: number | undefined): object | null {
   }
 }
 
+function lengthBoundsClause(
+  minLengthInches: number | undefined,
+  maxLengthInches: number | undefined,
+): object | null {
+  const range: Record<string, number> = {}
+  if (minLengthInches != null && Number.isFinite(minLengthInches) && minLengthInches > 0) {
+    range.gte = minLengthInches
+  }
+  if (maxLengthInches != null && Number.isFinite(maxLengthInches) && maxLengthInches > 0) {
+    range.lt = maxLengthInches
+  }
+  if (Object.keys(range).length === 0) return null
+  return { range: { length_total_inches: range } }
+}
+
 /** Filters shared by browse results and facet counts (excludes facet selections + geo). */
 function baseContextFilters(ctx: BoardsBrowseEsContext): object[] {
   const filters: object[] = [
@@ -271,9 +299,37 @@ function baseContextFilters(ctx: BoardsBrowseEsContext): object[] {
   if (ctx.shippingAvailable) {
     filters.push({ term: { shipping_available: true } })
   }
-  const lengthClause = lengthInchesClause(ctx.lengthInches)
-  if (lengthClause) filters.push(lengthClause)
+  // Exact length wins over open bounds when both are present.
+  const exactLength = lengthInchesClause(ctx.lengthInches)
+  if (exactLength) {
+    filters.push(exactLength)
+  } else {
+    const bounds = lengthBoundsClause(ctx.minLengthInches, ctx.maxLengthInches)
+    if (bounds) filters.push(bounds)
+  }
+  const tailClause = tailShapeFilterClause(ctx.tailShapes)
+  if (tailClause) filters.push(tailClause)
   return filters
+}
+
+/** Prefer structured `tail_shape`, but also match title/model/attrs when sellers skipped the field. */
+function tailShapeFilterClause(tailShapes: string[] | undefined): object | null {
+  const slugs = (tailShapes ?? []).map((s) => s.trim().toLowerCase()).filter(Boolean)
+  if (slugs.length === 0) return null
+
+  const should: object[] = [{ terms: { tail_shape: slugs } }]
+  for (const slug of slugs) {
+    const label = TAIL_SHAPE_LABELS[slug as TailShapeTagSlug] ?? slug
+    should.push({
+      multi_match: {
+        query: `${label} tail ${slug}`,
+        fields: ["title^2", "model^2", "attrs_text^2", "description"],
+        type: "best_fields",
+        operator: "or",
+      },
+    })
+  }
+  return { bool: { should, minimum_should_match: 1 } }
 }
 
 /* -------------------------------------------------------------------------- */

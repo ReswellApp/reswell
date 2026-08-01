@@ -1,5 +1,4 @@
 import Link from "next/link"
-import Image from "next/image"
 import { notFound } from "next/navigation"
 import {
   Breadcrumb,
@@ -18,6 +17,7 @@ import {
 import { Package, Truck, Shield, RotateCcw } from "lucide-react"
 import { QuantitySelector } from "@/components/quantity-selector"
 import { MarketplaceNewGrid } from "@/components/marketplace-new-grid"
+import { ImageGallery } from "@/components/image-gallery"
 import { formatCategory } from "@/lib/listing-labels"
 import { findListingByParam } from "@/lib/listing-query"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
@@ -56,9 +56,22 @@ export async function ShopListingDetailPage({
   const viewerId = user?.id ?? null
 
   const stockQuantity = Number((listing as { stock_quantity?: number }).stock_quantity) || 0
-  const images = (listing.listing_images as { url: string; is_primary: boolean }[]) || []
+  const images = (
+    (listing.listing_images as {
+      id: string
+      url: string
+      thumbnail_url?: string | null
+      is_primary: boolean
+      sort_order?: number
+    }[]) || []
+  ).sort(
+    (a, b) =>
+      (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) ||
+      (a.sort_order ?? 0) - (b.sort_order ?? 0),
+  )
   const primaryImage = images.find((i) => i.is_primary) || images[0]
   const imageUrl = primaryImage?.url ? proxiedListingImageSrc(primaryImage.url) : null
+  const title = typeof listing.title === "string" ? listing.title : ""
   const price = Number(listing.price)
 
   const relatedListings = await getCachedShopRelatedListings(listing.id)
@@ -81,6 +94,7 @@ export async function ShopListingDetailPage({
         const categoryLabel = catRow?.name?.trim() ? formatCategory(catRow.name) : null
         return {
           id: l.id,
+          slug: (l as { slug?: string | null }).slug ?? null,
           title: l.title,
           price: Number(l.price),
           image_url: prim?.url ?? null,
@@ -127,22 +141,7 @@ export async function ShopListingDetailPage({
 
         <div className="mx-auto grid w-full min-w-0 max-w-full gap-8 sm:max-w-6xl lg:grid-cols-[minmax(0,0.98fr)_minmax(0,1.02fr)] lg:items-start lg:gap-12 xl:gap-16">
           <div className="relative min-w-0 w-full max-w-full lg:max-w-[29rem] lg:justify-self-start xl:max-w-[32rem]">
-            <div className="relative aspect-square min-h-0 w-full overflow-hidden rounded-2xl bg-[#f5f5f7] shadow-sm ring-1 ring-black/[0.04] dark:bg-muted dark:ring-white/[0.06]">
-              {imageUrl ? (
-                <Image
-                  src={imageUrl}
-                  alt={listing.title}
-                  fill
-                  className="object-cover object-center"
-                  priority
-                  unoptimized
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                  No Image
-                </div>
-              )}
-            </div>
+            <ImageGallery images={images} title={title} />
           </div>
 
           <div className="min-w-0 space-y-8 lg:pt-2">

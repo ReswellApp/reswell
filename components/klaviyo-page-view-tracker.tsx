@@ -1,9 +1,10 @@
 "use client"
 
-import { usePathname, useSearchParams } from "next/navigation"
+import { usePathname } from "next/navigation"
 import React from "react"
 
 import { useDebouncedEffect } from "@/hooks/use-debounced-effect"
+import { useClientSearchParams } from "@/hooks/use-client-search-params"
 import { hasMarketingConsent } from "@/lib/analytics/marketing-consent"
 
 const STORAGE_KEY = "rw_klaviyo_anon_id"
@@ -33,8 +34,8 @@ function getOrCreateAnonymousId(): string {
  */
 export function KlaviyoPageViewTracker(): null {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const searchString = searchParams?.toString() ?? ""
+  const searchParams = useClientSearchParams()
+  const searchString = searchParams.toString()
 
   useDebouncedEffect(
     () => {

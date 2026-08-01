@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { ShoppingCart, Check, Loader2 } from "lucide-react"
@@ -11,6 +11,7 @@ import { collectMetaClientBrowserSignals } from "@/lib/meta/collect-client-brows
 import { cn } from "@/lib/utils"
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
+import { useClientSearchParams } from "@/hooks/use-client-search-params"
 
 interface AddToCartButtonProps {
   item: {
@@ -40,7 +41,7 @@ export function AddToCartButton({
   const authModal = useOptionalAuthModal()
   const router = useRouter()
   const pathname = usePathname()
-  const searchParams = useSearchParams()
+  const searchParams = useClientSearchParams()
   const here = `${pathname}${searchParams.toString() ? `?${searchParams}` : ""}`
 
   async function addToCart() {

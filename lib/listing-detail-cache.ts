@@ -22,6 +22,7 @@ export async function getCachedShopRelatedListings(excludeListingId: string) {
     .from("listings")
     .select(`
       id,
+      slug,
       title,
       price,
       listing_images (url, is_primary),

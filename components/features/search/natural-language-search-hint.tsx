@@ -3,7 +3,8 @@ import { cn } from "@/lib/utils"
 
 /**
  * Pango-style prompt for natural-language search on results pages.
- * Gemini compiles the query into `/boards` filters (condition, price, location, …).
+ * Rules chips may show immediately; Gemini (via the parallel helper) can add more.
+ * Colors: Reswell brand palette only (`lib/brand-colors.ts`).
  */
 export function NaturalLanguageSearchHint({
   className,
@@ -31,59 +32,67 @@ export function NaturalLanguageSearchHint({
   return (
     <aside
       className={cn(
-        "flex flex-col gap-1.5 rounded-lg border border-emerald-200/90 bg-emerald-50/90 px-3.5 py-3 sm:flex-row sm:items-start sm:gap-3",
+        "relative overflow-hidden rounded-xl border border-[#7F9DD5]/40",
+        "bg-gradient-to-br from-[#F9F9F2] via-white to-[#7F9DD5]/20",
+        "shadow-[0_1px_0_0_rgba(4,7,14,0.04)]",
         className,
       )}
     >
-      <span className="inline-flex w-fit shrink-0 items-center rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-        New
-      </span>
-      <div className="min-w-0 flex-1 text-sm text-emerald-950">
-        {hasApplied ? (
-          <>
-            <p className="font-medium leading-snug">
-              Applied from your search
-              {summary?.trim() ? (
-                <span className="font-normal text-emerald-900/80"> — {summary.trim()}</span>
-              ) : null}
-            </p>
-            <ul className="mt-1.5 flex flex-wrap gap-1.5">
-              {appliedLabels!.map((label) => (
-                <li
-                  key={label}
-                  className="rounded-md bg-white/80 px-2 py-0.5 text-xs font-medium text-emerald-950 ring-1 ring-emerald-200/80"
-                >
-                  {label}
-                </li>
-              ))}
-            </ul>
-          </>
-        ) : (
-          <>
-            <p className="font-medium leading-snug">
-              Try natural language in search —{" "}
-              <span className="font-normal italic text-emerald-800">
-                e.g. &ldquo;{examples[0].label}&rdquo;
-              </span>
-            </p>
-            <p className="mt-0.5 text-xs text-emerald-900/75 sm:text-sm">
-              We&apos;ll apply brand, model, length, condition, fin setup/system, price,
-              shipping, and location.
-            </p>
-            <ul className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-emerald-900/90">
-              {examples.map((ex) => (
-                <li key={ex.href}>
-                  <Link
-                    href={ex.href}
-                    className="underline underline-offset-2 hover:text-emerald-950"
+      <div aria-hidden className="absolute inset-y-0 left-0 w-[3px] bg-[#5574AD]" />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full bg-[#7F9DD5]/25 blur-2xl"
+      />
+
+      <div className="relative px-4 py-3.5 pl-5">
+        <div className="min-w-0 text-sm text-[#163060]">
+          {hasApplied ? (
+            <>
+              <p className="font-headline text-[15px] font-semibold leading-snug tracking-tight">
+                Applied from your search
+                {summary?.trim() ? (
+                  <span className="font-sans text-sm font-normal text-[#355185]">
+                    {" "}
+                    — {summary.trim()}
+                  </span>
+                ) : null}
+              </p>
+              <ul className="mt-2 flex flex-wrap gap-1.5">
+                {appliedLabels!.map((label) => (
+                  <li
+                    key={label}
+                    className="rounded-full bg-white px-2.5 py-1 text-xs font-medium tracking-tight text-[#001A4A] ring-1 ring-[#7F9DD5]/45"
                   >
-                    Try &ldquo;{ex.label}&rdquo;
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
+                    {label}
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <>
+              <p className="font-headline text-[15px] font-semibold leading-snug tracking-tight">
+                Try natural language in search
+              </p>
+              <p className="mt-0.5 text-xs leading-relaxed text-[#355185] sm:text-sm">
+                Brand, model, length, condition, fins, tail, construction, price, shipping, and
+                location —{" "}
+                <span className="italic text-[#163060]">e.g. &ldquo;{examples[0].label}&rdquo;</span>
+              </p>
+              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium">
+                {examples.map((ex) => (
+                  <li key={ex.href}>
+                    <Link
+                      href={ex.href}
+                      className="text-[#5574AD] underline decoration-[#7F9DD5]/70 underline-offset-[3px] transition-colors hover:text-[#466091] hover:decoration-[#5574AD]"
+                    >
+                      Try &ldquo;{ex.label}&rdquo;
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
       </div>
     </aside>
   )

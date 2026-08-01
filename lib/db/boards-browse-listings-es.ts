@@ -64,6 +64,7 @@ function isLockedEmptyEsResult(input: BoardsBrowseEsPageInput): boolean {
     Boolean(input.brandModelId?.trim()) ||
     (input.brandModelIds?.length ?? 0) > 0 ||
     input.lengthInches != null ||
+    (input.tailShapes?.length ?? 0) > 0 ||
     input.minPrice != null ||
     input.maxPrice != null ||
     Boolean(input.shippingAvailable) ||

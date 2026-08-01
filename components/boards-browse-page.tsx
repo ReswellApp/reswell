@@ -61,7 +61,7 @@ import {
   mergeNlOverlayIntoFacets,
   resolveBoardsSearchQuery,
 } from "@/lib/services/searchBoards"
-import { NaturalLanguageSearchHint } from "@/components/features/search/natural-language-search-hint"
+import { NaturalLanguageSearchHelper } from "@/components/features/search/natural-language-search-helper"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
 import { cn } from "@/lib/utils"
 import { isUuidString } from "@/lib/utils/isUuid"
@@ -208,6 +208,9 @@ async function BoardListings({
       : model.trim() || undefined)
   const esExpansions = resolvedKeyword?.context.expansions
   const esLengthInches = resolvedKeyword?.context.lengthInches
+  const esMinLengthInches = resolvedKeyword?.context.minLengthInches
+  const esMaxLengthInches = resolvedKeyword?.context.maxLengthInches
+  const esTailShapes = resolvedKeyword?.context.tailShapes
   // Structured keyword resolution counts as a locked keyword search (no PG ILIKE fallthrough).
   const hasStructuredKeyword = Boolean(
     hasKeywordQuery ||
@@ -215,15 +218,27 @@ async function BoardListings({
       (esBrandModelIds?.length ?? 0) > 0 ||
       esBrandId ||
       esLengthInches != null ||
+      esMinLengthInches != null ||
+      esMaxLengthInches != null ||
+      (esTailShapes?.length ?? 0) > 0 ||
       Boolean(nl),
   )
+
+  const searchParamsString = new URLSearchParams(
+    Object.entries(searchParams).flatMap(([key, value]) => {
+      if (typeof value !== "string" || !value.trim()) return []
+      return [[key, value] as [string, string]]
+    }),
+  ).toString()
 
   const nlHint =
     hasKeywordQuery ? (
       <div className="mb-4">
-        <NaturalLanguageSearchHint
-          appliedLabels={nl?.appliedLabels}
-          summary={nl?.summary}
+        <NaturalLanguageSearchHelper
+          query={query}
+          searchParamsString={searchParamsString}
+          initialAppliedLabels={nl?.appliedLabels}
+          initialSummary={nl?.summary}
         />
       </div>
     ) : null
@@ -246,6 +261,9 @@ async function BoardListings({
         brandModelIds: esBrandModelIds,
         expansions: esExpansions,
         lengthInches: esLengthInches,
+        minLengthInches: esMinLengthInches,
+        maxLengthInches: esMaxLengthInches,
+        tailShapes: esTailShapes,
         dimensionTokens: boardDimensionBrowseIlikeTokens(dimensionFields),
         facets,
         minPrice,
@@ -485,6 +503,9 @@ async function BoardListings({
           brandModelIds: esBrandModelIds,
           expansions: esExpansions,
           lengthInches: esLengthInches,
+          minLengthInches: esMinLengthInches,
+          maxLengthInches: esMaxLengthInches,
+          tailShapes: esTailShapes,
           dimensionTokens: boardDimensionBrowseIlikeTokens(dimensionFields),
           facets,
           minPrice,

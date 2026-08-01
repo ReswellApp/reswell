@@ -1,8 +1,9 @@
 "use client"
 
-import { usePathname, useSearchParams } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { useEffect, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { useClientSearchParams } from "@/hooks/use-client-search-params"
 import {
   GOOGLE_NEW_SIGNUP_WELCOME_COMPLETED_KEY,
   GOOGLE_NEW_SIGNUP_WELCOME_REDIRECT_ATTEMPTED_KEY,
@@ -16,7 +17,7 @@ import { buildGoogleSignUpSuccessPath, GOOGLE_SIGN_UP_SUCCESS_PATH } from "@/lib
  */
 export function GoogleSignUpWelcomeRedirect(): null {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
+  const searchParams = useClientSearchParams()
   const handledRef = useRef(false)
 
   useEffect(() => {
@@ -53,7 +54,7 @@ export function GoogleSignUpWelcomeRedirect(): null {
       }
 
       handledRef.current = true
-      const query = searchParams?.toString()
+      const query = searchParams.toString()
       const returnPath = `${pathname ?? "/"}${query ? `?${query}` : ""}`
       window.location.replace(buildGoogleSignUpSuccessPath(returnPath))
     }

@@ -245,7 +245,7 @@ function drawToCanvas(
 /**
  * Listing UIs expect portrait-oriented assets (height ≥ width). Landscape photos are rotated
  * 90° counter-clockwise so the long edge becomes vertical — no user-facing rejection for orientation.
- * Square images are unchanged.
+ * Square images are unchanged. Skip for Reswell shop / non-board product photos.
  */
 function rotateLandscapeToPortraitIfNeeded(src: Drawable): Drawable {
   if (src.height >= src.width) return src
@@ -271,9 +271,34 @@ function rotate180(src: Drawable): Drawable {
   return { source: canvas, width: w, height: h }
 }
 
+/** One 90° clockwise turn (width/height swap). */
+function rotateClockwise90(src: Drawable): Drawable {
+  const w = src.width
+  const h = src.height
+  const canvas = drawToCanvas(src, h, w, (ctx) => {
+    ctx.translate(h, 0)
+    ctx.rotate(Math.PI / 2)
+    ctx.drawImage(src.source, 0, 0)
+  })
+  return { source: canvas, width: h, height: w }
+}
+
+function normalizeQuarterTurns(value: number | undefined): 0 | 1 | 2 | 3 {
+  if (value == null || !Number.isFinite(value)) return 0
+  const n = ((Math.trunc(value) % 4) + 4) % 4
+  return n as 0 | 1 | 2 | 3
+}
+
 export type PrepareListingImagePairOptions = {
   /** Applied after landscape→portrait normalization so listing geometry rules stay the same. */
   rotate180?: boolean
+  /**
+   * When true, keep the decoded orientation (no landscape→portrait force).
+   * Use for Reswell shop product photos (hats, apparel, etc.).
+   */
+  skipLandscapeToPortrait?: boolean
+  /** Clockwise 90° turns after orientation normalization (0–3). */
+  rotateClockwiseQuarterTurns?: number
 }
 
 async function renderResizedToBlob(
@@ -297,9 +322,15 @@ async function prepareListingImagePairOnMainThread(
   const decoded = await decodeImageSource(file)
   try {
     let drawable: Drawable = decoded
-    drawable = rotateLandscapeToPortraitIfNeeded(drawable)
+    if (!options?.skipLandscapeToPortrait) {
+      drawable = rotateLandscapeToPortraitIfNeeded(drawable)
+    }
     if (options?.rotate180) {
       drawable = rotate180(drawable)
+    }
+    const turns = normalizeQuarterTurns(options?.rotateClockwiseQuarterTurns)
+    for (let i = 0; i < turns; i += 1) {
+      drawable = rotateClockwise90(drawable)
     }
     const useWebp = await canvasSupportsWebp()
     const [fullPack, thumbPack] = await Promise.all([

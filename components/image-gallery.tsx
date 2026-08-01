@@ -288,7 +288,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
             const isSelected = i === selectedIndex
             return (
               <Image
-                key={image.id}
+                key={image.id || `hero-${i}-${image.url}`}
                 src={heroUrls[i] || "/placeholder.svg"}
                 alt={`${title} - Image ${i + 1}`}
                 fill
@@ -366,7 +366,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
         >
           {images.map((image, index) => (
             <button
-              key={image.id}
+              key={image.id || `thumb-${index}-${image.url}`}
               type="button"
               onClick={() => setSelectedIndex(index)}
               aria-label={`Show photo ${index + 1} in gallery`}

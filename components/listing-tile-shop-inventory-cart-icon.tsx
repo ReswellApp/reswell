@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { addCartItem } from "@/app/actions/cart"
@@ -11,6 +11,7 @@ import { ListingTileBasketSvg } from "@/components/listing-tile-basket-svg"
 import { cn } from "@/lib/utils"
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
+import { useClientSearchParams } from "@/hooks/use-client-search-params"
 
 const tileBtnClass = cn(
   "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-900 shadow-sm transition-colors",
@@ -61,7 +62,7 @@ export function ListingTileShopInventoryCartIcon({
   const authModal = useOptionalAuthModal()
   const router = useRouter()
   const pathname = usePathname()
-  const searchParams = useSearchParams()
+  const searchParams = useClientSearchParams()
   const here = `${pathname}${searchParams.toString() ? `?${searchParams}` : ""}`
 
   async function handleClick(e: React.MouseEvent) {

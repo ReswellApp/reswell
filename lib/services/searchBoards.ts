@@ -2,8 +2,9 @@
  * Boards search orchestration: parse free-text → structured filters + expansions,
  * then map onto the Elasticsearch `/boards` browse query context.
  *
- * Optional Gemini NL understanding fills condition / price / location / style when
- * the query looks like natural language. ES DSL stays in boards-browse-search.
+ * Critical path is rules-only (brand/model/length/price/fins/tails) so Enter stays
+ * fast. Gemini via AI Gateway runs in parallel as a client helper
+ * (`/api/search/nl-helper`) and may refine filters after first paint.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js"
@@ -18,11 +19,13 @@ import {
 import {
   nlIntentToAppliedLabels,
   rulesFinOverlayFromQuery,
-  understandMarketplaceQueryWithLlm,
 } from "@/lib/services/marketplaceQueryUnderstand"
 import { stripMarketplaceSearchNoiseWords } from "@/lib/utils/marketplace-brand-query"
+import { stripConstructionFilterPhrasesFromKeyword } from "@/lib/utils/marketplace-construction-query"
 import { stripFinFilterPhrasesFromKeyword } from "@/lib/utils/marketplace-fin-query"
 import { extractPriceFiltersFromQuery } from "@/lib/utils/marketplace-price-query"
+import { extractLengthBoundsFromQuery } from "@/lib/utils/marketplace-length-query"
+import { stripTailFilterPhrasesFromKeyword } from "@/lib/utils/marketplace-tail-query"
 import { resolveDirectoryBrandRowFromLabel } from "@/lib/services/brandDirectorySearch"
 import type { MarketplaceNlSearchIntent } from "@/lib/validations/marketplaceNlSearch"
 
@@ -59,18 +62,14 @@ const FILTER_LANGUAGE_TOKENS = new Set([
   "without",
   "fins",
   "fin",
+  "tail",
+  "tails",
+  "feet",
+  "foot",
+  "ft",
+  "inches",
+  "inch",
 ])
-
-function uniqueKeepOrder(values: string[]): string[] {
-  const out: string[] = []
-  const seen = new Set<string>()
-  for (const v of values) {
-    if (!v || seen.has(v)) continue
-    seen.add(v)
-    out.push(v)
-  }
-  return out
-}
 
 function stripFilterLanguageFromKeyword(raw: string): string {
   const withoutMoney = raw.replace(/\$\s*\d+(?:[.,]\d+)?/g, " ").replace(/\b\d+\s*(?:dollars|usd)\b/gi, " ")
@@ -93,12 +92,15 @@ export type SearchBoardsNlOverlay = {
   constructions: string[]
   finSystems: string[]
   finSetups: string[]
+  tailShapes: string[]
   minPrice?: number
   maxPrice?: number
   locationText?: string
   shippingAvailable?: boolean
   lengthInches?: number
   lengthToken?: string
+  minLengthInches?: number
+  maxLengthInches?: number
   /** Keyword override from LLM residual (merged carefully with rules text). */
   residualText?: string
   brandText?: string
@@ -122,6 +124,9 @@ export type SearchBoardsQueryResolution = {
     | "brandModelIds"
     | "expansions"
     | "lengthInches"
+    | "minLengthInches"
+    | "maxLengthInches"
+    | "tailShapes"
   >
 }
 
@@ -142,13 +147,18 @@ function nlIntentToOverlay(intent: MarketplaceNlSearchIntent): SearchBoardsNlOve
     constructions: intent.constructions,
     finSystems: intent.finSystems,
     finSetups: intent.finSetups,
+    tailShapes: intent.tailShapes ?? [],
     minPrice: intent.minPrice ?? undefined,
     maxPrice: intent.maxPrice ?? undefined,
     locationText: intent.locationText?.trim() || undefined,
     shippingAvailable: intent.shippingAvailable === true ? true : undefined,
     lengthInches,
     lengthToken,
-    residualText: stripFinFilterPhrasesFromKeyword(intent.residualText?.trim() || ""),
+    residualText: stripConstructionFilterPhrasesFromKeyword(
+      stripTailFilterPhrasesFromKeyword(
+        stripFinFilterPhrasesFromKeyword(intent.residualText?.trim() || ""),
+      ),
+    ),
     brandText: intent.brandText?.trim() || undefined,
     modelText: intent.modelText?.trim() || undefined,
     appliedLabels: nlIntentToAppliedLabels(intent),
@@ -204,40 +214,60 @@ export async function resolveBoardsSearchQuery(
         expansions: [],
       }
 
-  const nlIntent =
-    q.length >= 2 ? await understandMarketplaceQueryWithLlm(q, parsed) : null
-  // Always apply deterministic fin + price aliases; fall back to rules-only when Gemini skipped.
+  // Rules-only on the request critical path (price / fins / tails / length bounds).
+  // Gemini runs in parallel via `/api/search/nl-helper` and must not delay first results.
   const finRules = q.length >= 2 ? rulesFinOverlayFromQuery(q) : null
   const priceRules = q.length >= 2 ? extractPriceFiltersFromQuery(q) : {}
-  const mergedNlIntent: MarketplaceNlSearchIntent | null = nlIntent
+  const lengthBounds = q.length >= 2 ? extractLengthBoundsFromQuery(q) : {}
+  const lengthBoundLabel = lengthBounds.label ?? null
+  const hasLengthBounds =
+    lengthBounds.minLengthInches != null || lengthBounds.maxLengthInches != null
+  const hasPriceRules = priceRules.minPrice != null || priceRules.maxPrice != null
+
+  const mergedNlIntent: MarketplaceNlSearchIntent | null = finRules
     ? {
-        ...nlIntent,
-        finSystems: uniqueKeepOrder([
-          ...nlIntent.finSystems,
-          ...(finRules?.finSystems ?? []),
-        ]),
-        finSetups: uniqueKeepOrder([
-          ...nlIntent.finSetups,
-          ...(finRules?.finSetups ?? []),
-        ]),
-        minPrice: nlIntent.minPrice ?? priceRules.minPrice ?? null,
-        maxPrice: nlIntent.maxPrice ?? priceRules.maxPrice ?? null,
+        ...finRules,
+        brandText: finRules.brandText ?? parsed.brand?.name ?? null,
+        modelText: finRules.modelText ?? parsed.model?.name ?? null,
+        minPrice: priceRules.minPrice ?? null,
+        maxPrice: priceRules.maxPrice ?? null,
+        summary:
+          [
+            parsed.brand?.name,
+            finRules.summary,
+            lengthBoundLabel,
+            priceRules.maxPrice != null ? `under $${priceRules.maxPrice}` : null,
+            priceRules.minPrice != null ? `from $${priceRules.minPrice}` : null,
+          ]
+            .filter(Boolean)
+            .join(" · ") || finRules.summary,
       }
-    : finRules
+    : hasPriceRules || hasLengthBounds
       ? {
-          ...finRules,
+          brandText: parsed.brand?.name ?? null,
+          modelText: parsed.model?.name ?? null,
+          residualText: parsed.residualText || "",
+          styles: [],
+          conditions: [],
+          constructions: [],
+          finSystems: [],
+          finSetups: [],
+          tailShapes: [],
+          lengthToken: parsed.lengthToken,
           minPrice: priceRules.minPrice ?? null,
           maxPrice: priceRules.maxPrice ?? null,
-          summary:
-            [
-              finRules.summary,
-              priceRules.maxPrice != null ? `under $${priceRules.maxPrice}` : null,
-              priceRules.minPrice != null ? `from $${priceRules.minPrice}` : null,
-            ]
-              .filter(Boolean)
-              .join(" · ") || finRules.summary,
+          locationText: null,
+          shippingAvailable: null,
+          summary: [
+            parsed.brand?.name,
+            lengthBoundLabel,
+            priceRules.maxPrice != null ? `under $${priceRules.maxPrice}` : null,
+            priceRules.minPrice != null ? `from $${priceRules.minPrice}` : null,
+          ]
+            .filter(Boolean)
+            .join(", "),
         }
-      : priceRules.minPrice != null || priceRules.maxPrice != null
+      : parsed.brand || parsed.model || parsed.lengthInches != null
         ? {
             brandText: parsed.brand?.name ?? null,
             modelText: parsed.model?.name ?? null,
@@ -247,49 +277,42 @@ export async function resolveBoardsSearchQuery(
             constructions: [],
             finSystems: [],
             finSetups: [],
+            tailShapes: [],
             lengthToken: parsed.lengthToken,
-            minPrice: priceRules.minPrice ?? null,
-            maxPrice: priceRules.maxPrice ?? null,
+            minPrice: null,
+            maxPrice: null,
             locationText: null,
             shippingAvailable: null,
-            summary: [
-              parsed.brand?.name,
-              priceRules.maxPrice != null ? `under $${priceRules.maxPrice}` : null,
-              priceRules.minPrice != null ? `from $${priceRules.minPrice}` : null,
-            ]
+            summary: [parsed.brand?.name, parsed.model?.name, parsed.lengthToken]
               .filter(Boolean)
               .join(", "),
           }
         : null
-  const nl = mergedNlIntent ? nlIntentToOverlay(mergedNlIntent) : null
-
-  // If rules missed brand/model but Gemini found text, re-parse with that hint text.
-  let enriched = parsed
-  if (nl && (!parsed.brand || !parsed.model || parsed.modelIds.length === 0)) {
-    const hintQ = [nl.brandText, nl.modelText, nl.lengthToken].filter(Boolean).join(" ").trim()
-    if (hintQ.length >= 2) {
-      const retry = await parseMarketplaceQuery(supabase, `${hintQ} ${nl.residualText ?? ""}`.trim())
-      if (retry.modelIds.length > 0 || retry.brand) {
-        enriched = {
-          ...parsed,
-          brand: parsed.brand ?? retry.brand,
-          model: parsed.model ?? retry.model,
-          modelIds: parsed.modelIds.length > 0 ? parsed.modelIds : retry.modelIds,
-          lengthInches: parsed.lengthInches ?? retry.lengthInches ?? nl.lengthInches ?? null,
-          lengthToken: parsed.lengthToken ?? retry.lengthToken ?? nl.lengthToken ?? null,
-          // Prefer NL residual for keywords — never keep "under $800" in textQuery.
-          textQuery: nl.residualText || retry.residualText || "",
-        }
-      }
+  let nl = mergedNlIntent ? nlIntentToOverlay(mergedNlIntent) : null
+  if (nl && hasLengthBounds) {
+    const labels = [...nl.appliedLabels]
+    if (lengthBoundLabel && !labels.some((l) => l.toLowerCase() === lengthBoundLabel.toLowerCase())) {
+      labels.push(lengthBoundLabel)
     }
-    // Resolve bare NL brandText (e.g. "Lost") to directory brand when rules missed it.
-    if (!enriched.brand && nl.brandText) {
-      const fromNl = await resolveDirectoryBrandRowFromLabel(supabase, nl.brandText)
-      if (fromNl) {
-        enriched = {
-          ...enriched,
-          brand: { id: fromNl.id, name: fromNl.name, slug: fromNl.slug },
-        }
+    nl = {
+      ...nl,
+      minLengthInches: lengthBounds.minLengthInches,
+      maxLengthInches: lengthBounds.maxLengthInches,
+      appliedLabels: labels,
+      summary: nl.summary.includes(lengthBoundLabel ?? "\0")
+        ? nl.summary
+        : [nl.summary, lengthBoundLabel].filter(Boolean).join(", "),
+    }
+  }
+
+  let enriched = parsed
+  // Rules brandText is usually already on `parsed`; keep resolve for safety.
+  if (!enriched.brand && nl?.brandText) {
+    const fromRules = await resolveDirectoryBrandRowFromLabel(supabase, nl.brandText)
+    if (fromRules) {
+      enriched = {
+        ...enriched,
+        brand: { id: fromRules.id, name: fromRules.name, slug: fromRules.slug },
       }
     }
   }
@@ -341,12 +364,15 @@ export async function resolveBoardsSearchQuery(
       brand ||
       model ||
       enriched.lengthInches != null ||
+      nl?.minLengthInches != null ||
+      nl?.maxLengthInches != null ||
       nl?.maxPrice != null ||
       nl?.minPrice != null ||
       nl?.conditions.length ||
       nl?.styles.length ||
       nl?.finSystems.length ||
       nl?.finSetups.length ||
+      nl?.tailShapes.length ||
       nl?.constructions.length ||
       nl?.shippingAvailable ||
       nl?.locationText,
@@ -354,7 +380,11 @@ export async function resolveBoardsSearchQuery(
 
   const residualKeyword = nl
     ? stripFilterLanguageFromKeyword(
-        stripFinFilterPhrasesFromKeyword(nl.residualText || ""),
+        stripConstructionFilterPhrasesFromKeyword(
+          stripTailFilterPhrasesFromKeyword(
+            stripFinFilterPhrasesFromKeyword(nl.residualText || ""),
+          ),
+        ),
       ) ||
       // Model text is already a hard filter when resolved; only keep as soft rank otherwise.
       (!brandModelIds?.length
@@ -362,7 +392,11 @@ export async function resolveBoardsSearchQuery(
         : "") ||
       ""
     : stripFilterLanguageFromKeyword(
-        stripFinFilterPhrasesFromKeyword(enriched.textQuery || q),
+        stripConstructionFilterPhrasesFromKeyword(
+          stripTailFilterPhrasesFromKeyword(
+            stripFinFilterPhrasesFromKeyword(enriched.textQuery || q),
+          ),
+        ),
       ) || ""
 
   let query: string | undefined
@@ -401,6 +435,9 @@ export async function resolveBoardsSearchQuery(
       brandModelIds,
       expansions: enriched.expansions,
       lengthInches: enriched.lengthInches ?? nl?.lengthInches ?? undefined,
+      minLengthInches: nl?.minLengthInches,
+      maxLengthInches: nl?.maxLengthInches,
+      tailShapes: nl?.tailShapes.length ? nl.tailShapes : undefined,
     },
   }
 }

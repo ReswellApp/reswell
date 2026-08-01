@@ -1,9 +1,10 @@
 'use client'
 
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useRef } from 'react'
 
 import { useDebouncedEffect } from '@/hooks/use-debounced-effect'
+import { useClientSearchParams } from '@/hooks/use-client-search-params'
 
 declare global {
   interface Window {
@@ -20,8 +21,8 @@ const PAGE_VIEW_DEBOUNCE_MS = 800
  */
 export function MetaPixelPageViewTracker(): null {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const searchString = searchParams?.toString() ?? ''
+  const searchParams = useClientSearchParams()
+  const searchString = searchParams.toString()
   const isFirstRender = useRef(true)
 
   useDebouncedEffect(

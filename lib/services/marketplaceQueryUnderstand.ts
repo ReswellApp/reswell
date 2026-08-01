@@ -13,12 +13,22 @@ import {
 } from "@/lib/validations/marketplaceNlSearch"
 import type { MarketplaceParsedQuery } from "@/lib/services/marketplaceQueryParse"
 import {
+  constructionLabel,
+  extractConstructionsFromQuery,
+  queryMentionsConstructionFilters,
+} from "@/lib/utils/marketplace-construction-query"
+import {
   extractFinSetupsFromQuery,
   extractFinSystemsFromQuery,
   finSetupLabel,
   finSystemLabel,
   queryMentionsFinFilters,
 } from "@/lib/utils/marketplace-fin-query"
+import {
+  extractTailShapesFromQuery,
+  queryMentionsTailFilters,
+  tailShapeLabel,
+} from "@/lib/utils/marketplace-tail-query"
 
 const NL_CACHE_TAG = "marketplace-nl-search"
 const NL_CACHE_SECONDS = 60 * 30
@@ -56,7 +66,9 @@ export function marketplaceQueryLikelyNeedsLlm(
     ) ||
     /\$\s*\d+/.test(q) ||
     /\b\d{2,5}\s*(dollars|usd)\b/.test(lower) ||
-    queryMentionsFinFilters(q)
+    queryMentionsFinFilters(q) ||
+    queryMentionsTailFilters(q) ||
+    queryMentionsConstructionFilters(q)
 
   if (nlSignals) return true
 
@@ -78,18 +90,20 @@ async function callGeminiForNlIntent(rawQuery: string): Promise<MarketplaceNlSea
       model: nlSearchModelId(),
       output: Output.object({ schema: marketplaceNlSearchIntentSchema }),
       system: `You extract surfboard marketplace search filters for Reswell.
-Only use the provided enum values for styles, conditions, constructions, finSystems, and finSetups.
+Only use the provided enum values for styles, conditions, constructions, finSystems, finSetups, and tailShapes.
 Map casual language:
 - "new" / "brand new" → brand_new; "mint" / "like new" → excellent
 - "CI" → brandText "Channel Islands"; "Lost" → brandText "Lost Surfboards"
 - Fin SYSTEMS (plugs): "fcs" / "fcs2" / "fcs ii" → fcs_ii; "futures" → futures; "twin tab" → fcs_twin_tab; "glass on" → glass_on
 - Fin SETUPS (layout): "thruster" / "tri" → thruster; "twin" → twin_only; "2+1" → twin; "quad" → quad; "5-fin" → five; "single" → single
+- Tail shapes: "round tail" / "round" → round; "squash" → squash; "pin" / "pintail" → pin; "swallow" → swallow
+- Construction: "epoxy" → eps_epoxy; "poly" / "pu" → pu_poly; "carbon" → carbon
 If a field is not mentioned, use null or [].
 Split the query into:
-1) structured filters (brand/model/price/condition/fins/location/shipping/style)
-2) residualText = ONLY leftover model/shape words that help rank listings (e.g. "puddle jumper", "sub driver").
-Never put brand names, prices, fin system/setup words (fcs, futures, thruster, …), "under"/"over"/"near", shipping, condition words, or generic words like "boards"/"surfboards" into residualText.
-If the query is only filters (e.g. "lost under $800", "boards with fcs"), residualText must be "".
+1) structured filters (brand/model/price/condition/fins/tail/construction/location/shipping/style)
+2) residualText = ONLY leftover model words that help rank listings (e.g. "puddle jumper", "sub driver").
+Never put brand names, prices, fin/tail words (fcs, thruster, round tail, …), "under"/"over"/"near", shipping, condition words, or generic words like "boards"/"surfboards" into residualText.
+If the query is only filters (e.g. "lost under $800", "boards with fcs", "lost round tail"), residualText must be "".
 Prices are USD integers.`,
       prompt: `Extract search filters from this query:\n"""${q}"""`,
       temperature: 0,
@@ -106,7 +120,15 @@ Prices are USD integers.`,
       ...parsed.finSetups,
       ...extractFinSetupsFromQuery(q),
     ])
-    return { ...parsed, finSystems, finSetups }
+    const constructions = uniqueStrings([
+      ...parsed.constructions,
+      ...extractConstructionsFromQuery(q),
+    ])
+    const tailShapes = uniqueStrings([
+      ...(parsed.tailShapes ?? []),
+      ...extractTailShapesFromQuery(q),
+    ])
+    return { ...parsed, finSystems, finSetups, constructions, tailShapes }
   } catch (err) {
     console.error("[marketplaceQueryUnderstand] Gemini NL parse failed:", err)
     return null
@@ -128,7 +150,7 @@ const getCachedNlIntent = unstable_cache(
   async (normalizedQuery: string): Promise<MarketplaceNlSearchIntent | null> => {
     return callGeminiForNlIntent(normalizedQuery)
   },
-  ["marketplace-nl-search-v3"],
+  ["marketplace-nl-search-v4"],
   { revalidate: NL_CACHE_SECONDS, tags: [NL_CACHE_TAG] },
 )
 
@@ -162,6 +184,8 @@ export function nlIntentToAppliedLabels(intent: MarketplaceNlSearchIntent): stri
   for (const c of intent.conditions) chips.push(c.replace(/_/g, " "))
   for (const f of intent.finSystems) chips.push(finSystemLabel(f))
   for (const f of intent.finSetups) chips.push(finSetupLabel(f))
+  for (const t of intent.tailShapes ?? []) chips.push(`${tailShapeLabel(t)} tail`)
+  for (const c of intent.constructions) chips.push(constructionLabel(c))
   if (intent.maxPrice != null) chips.push(`under $${Math.round(intent.maxPrice)}`)
   if (intent.minPrice != null) chips.push(`from $${Math.round(intent.minPrice)}`)
   if (intent.locationText?.trim()) chips.push(intent.locationText.trim())
@@ -170,16 +194,27 @@ export function nlIntentToAppliedLabels(intent: MarketplaceNlSearchIntent): stri
 }
 
 /**
- * Rules-only fin overlay when Gemini is skipped/disabled but the query clearly
- * asks for a fin system/setup (e.g. "boards with fcs").
+ * Rules-only facet overlay when Gemini is skipped/disabled but the query clearly
+ * asks for fins, tails, or construction (e.g. "boards with fcs", "epoxy").
  */
 export function rulesFinOverlayFromQuery(rawQuery: string): MarketplaceNlSearchIntent | null {
   const finSystems = extractFinSystemsFromQuery(rawQuery)
   const finSetups = extractFinSetupsFromQuery(rawQuery)
-  if (finSystems.length === 0 && finSetups.length === 0) return null
+  const tailShapes = extractTailShapesFromQuery(rawQuery)
+  const constructions = extractConstructionsFromQuery(rawQuery)
+  if (
+    finSystems.length === 0 &&
+    finSetups.length === 0 &&
+    tailShapes.length === 0 &&
+    constructions.length === 0
+  ) {
+    return null
+  }
   const labels = [
     ...finSystems.map(finSystemLabel),
     ...finSetups.map(finSetupLabel),
+    ...tailShapes.map((t) => `${tailShapeLabel(t)} tail`),
+    ...constructions.map(constructionLabel),
   ]
   return {
     brandText: null,
@@ -187,9 +222,10 @@ export function rulesFinOverlayFromQuery(rawQuery: string): MarketplaceNlSearchI
     residualText: "",
     styles: [],
     conditions: [],
-    constructions: [],
+    constructions,
     finSystems,
     finSetups,
+    tailShapes,
     lengthToken: null,
     minPrice: null,
     maxPrice: null,

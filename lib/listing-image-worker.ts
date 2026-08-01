@@ -51,7 +51,7 @@ self.onmessage = async function (e) {
     var w = bitmap.width
     var h = bitmap.height
 
-    if (w > h) {
+    if (!msg.skipLandscapeToPortrait && w > h) {
       var lc = new OffscreenCanvas(h, w)
       var lx = lc.getContext("2d")
       lx.imageSmoothingEnabled = true
@@ -74,6 +74,22 @@ self.onmessage = async function (e) {
       rx.rotate(Math.PI)
       rx.drawImage(src, 0, 0)
       src = rc
+    }
+
+    var turns = msg.rotateClockwiseQuarterTurns | 0
+    turns = ((turns % 4) + 4) % 4
+    for (var t = 0; t < turns; t++) {
+      var qc = new OffscreenCanvas(h, w)
+      var qx = qc.getContext("2d")
+      qx.imageSmoothingEnabled = true
+      qx.imageSmoothingQuality = "high"
+      qx.translate(h, 0)
+      qx.rotate(Math.PI / 2)
+      qx.drawImage(src, 0, 0)
+      src = qc
+      var qswap = w
+      w = h
+      h = qswap
     }
 
     function longEdge(width, height, maxLong) {
@@ -247,6 +263,8 @@ export async function prepareListingImagePairInWorker(
         buffer,
         type: file.type || "image/jpeg",
         rotate180: Boolean(options?.rotate180),
+        skipLandscapeToPortrait: Boolean(options?.skipLandscapeToPortrait),
+        rotateClockwiseQuarterTurns: Number(options?.rotateClockwiseQuarterTurns) || 0,
         fullMax: LISTING_FULL_MAX_LONG_EDGE,
         thumbMax: LISTING_THUMB_MAX_LONG_EDGE,
         qFull: LISTING_WEBP_QUALITY_FULL,

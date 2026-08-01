@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
 import { slugify } from "@/lib/slugify"
 import { RESWELL_SHOP_SECTION } from "@/lib/reswell-shop"
 import {
@@ -209,7 +210,7 @@ export async function updateReswellShopProduct(
 
   const { data: existing, error: findErr } = await serviceSupabase
     .from("listings")
-    .select("id, section")
+    .select("id, section, slug")
     .eq("id", listingId)
     .maybeSingle()
 
@@ -241,7 +242,7 @@ export async function updateReswellShopProduct(
   const urls = input.image_urls.map((u) => u.trim()).filter(Boolean)
   await serviceSupabase.from("listing_images").delete().eq("listing_id", listingId)
   if (urls.length > 0) {
-    await serviceSupabase.from("listing_images").insert(
+    const { error: imgErr } = await serviceSupabase.from("listing_images").insert(
       urls.map((url, index) => ({
         listing_id: listingId,
         url,
@@ -249,7 +250,14 @@ export async function updateReswellShopProduct(
         sort_order: index,
       })),
     )
+    if (imgErr) {
+      console.error("[reswellShopAdmin] update images:", imgErr.message)
+      return { ok: false, error: "Could not update product photos" }
+    }
   }
+
+  // Shop PDP (`/l/...`) reads hourly `getCachedPublicShopListing` — bust it so rotated photos show.
+  revalidateListingDetailPage(listingId, existing.slug)
 
   return { ok: true }
 }
@@ -260,7 +268,7 @@ export async function archiveReswellShopProduct(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const { data: existing } = await serviceSupabase
     .from("listings")
-    .select("id, section")
+    .select("id, section, slug")
     .eq("id", listingId)
     .maybeSingle()
 
@@ -281,6 +289,8 @@ export async function archiveReswellShopProduct(
   if (error) {
     return { ok: false, error: error.message }
   }
+
+  revalidateListingDetailPage(listingId, existing.slug)
   return { ok: true }
 }
 

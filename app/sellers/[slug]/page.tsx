@@ -278,8 +278,11 @@ export default async function SellerProfilePage({
 
   const allListings = listings || []
 
+  // Exclude vacation / site-hidden from shop inventory (owners still see them in My Listings).
   const inCurrentInventory = (l: (typeof allListings)[number]) =>
-    !l.archived_at && (l.status === "active" || l.status === "pending_sale")
+    !l.archived_at &&
+    !l.hidden_from_site &&
+    (l.status === "active" || l.status === "pending_sale")
 
   const currentListings = allListings.filter(inCurrentInventory)
 

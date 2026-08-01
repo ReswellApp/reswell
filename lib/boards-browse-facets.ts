@@ -56,8 +56,8 @@ export const FIN_SYSTEM_OPTIONS: readonly FacetOption[] = [
 
 /** Board construction — `listings.construction`. */
 export const CONSTRUCTION_OPTIONS: readonly FacetOption[] = [
-  { value: "eps_epoxy", label: "EPS / Epoxy" },
-  { value: "pu_poly", label: "PU / Poly" },
+  { value: "eps_epoxy", label: "EPS/Epoxy" },
+  { value: "pu_poly", label: "PU/Poly" },
   { value: "carbon", label: "Carbon" },
   { value: "other", label: "Other" },
 ]

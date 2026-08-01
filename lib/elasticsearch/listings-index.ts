@@ -3,10 +3,20 @@ import { isElasticsearchIndexedListingSection } from "@/lib/elasticsearch/listin
 import { isListingExternallyIndexable } from "@/lib/listing-public-visibility"
 import { isMarketplaceSearchNoiseToken } from "@/lib/utils/marketplace-brand-query"
 import { parseFinsSetupFromStorage } from "@/lib/listing-fin-setup-tags"
-import { parseTailShapeFromStorage } from "@/lib/listing-tail-shape-tags"
+import {
+  parseTailShapeFromStorage,
+  TAIL_SHAPE_LABELS,
+  type TailShapeTagSlug,
+} from "@/lib/listing-tail-shape-tags"
 import { parseBoardMeasurement } from "@/lib/board-measurements"
 import { parseListingDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { resolveLengthTotalInches, resolveVolumeLiters } from "@/lib/listing-facet-write"
+import {
+  CONSTRUCTION_OPTIONS,
+  FIN_SETUP_OPTIONS,
+  FIN_SYSTEM_OPTIONS,
+} from "@/lib/boards-browse-facets"
+import { LISTING_CONDITION_LABELS } from "@/lib/listing-labels"
 import { getElasticsearchClient } from "./client"
 import { ELASTICSEARCH_LISTINGS_INDEX } from "./config"
 
@@ -47,6 +57,11 @@ export type ListingSearchDoc = {
   suppressed_on_boards_browse: boolean | null
   /** Lowercased `listings.dimensions` for wildcard token filters. */
   dimensions: string | null
+  /**
+   * Human-readable facet/attr bag for free-text search (condition, fins, construction,
+   * tail, dimensions, shipping). Slug fields stay keyword for exact filters.
+   */
+  attrs_text: string
   /** Geo point for `geo_distance` filter + nearest sort; omitted when lat/lng missing. */
   location?: { lat: number; lon: number }
   /** Magazine publication year (`listings.magazine_year`). */
@@ -114,6 +129,7 @@ const BROWSE_INDEX_PROPERTIES = {
   shipping_available: { type: "boolean" as const },
   suppressed_on_boards_browse: { type: "boolean" as const },
   dimensions: { type: "keyword" as const },
+  attrs_text: { type: "text" as const, analyzer: "listing_text" },
   location: { type: "geo_point" as const },
 }
 
@@ -211,12 +227,104 @@ const SEARCH_FIELDS = [
   "category_name^2",
   "brand^2",
   "model^2",
+  "attrs_text^2",
   "board_type",
+  "condition",
+  "construction",
+  "fin_system",
   "fins_setup",
   "tail_shape",
+  "dimensions",
   "city",
   "state",
 ] as const
+
+const FIN_SYSTEM_LABELS = Object.fromEntries(FIN_SYSTEM_OPTIONS.map((o) => [o.value, o.label]))
+const FIN_SETUP_LABELS = Object.fromEntries(FIN_SETUP_OPTIONS.map((o) => [o.value, o.label]))
+const CONSTRUCTION_LABELS = Object.fromEntries(CONSTRUCTION_OPTIONS.map((o) => [o.value, o.label]))
+
+/** Build searchable text covering surfboard attrs used in NL / keyword matching. */
+export function buildListingAttrsText(input: {
+  category_name?: string | null
+  board_type?: string | null
+  condition?: string | null
+  fin_system?: string | null
+  construction?: string | null
+  fins_setup?: string[]
+  tail_shape?: string[]
+  dimensions?: string | null
+  length_total_inches?: number | null
+  width_inches?: number | null
+  thickness_inches?: number | null
+  volume_liters?: number | null
+  shipping_available?: boolean | null
+  local_pickup?: boolean | null
+  price?: number | null
+}): string {
+  const parts: string[] = []
+  const push = (v: string | null | undefined) => {
+    const t = v?.trim()
+    if (t) parts.push(t)
+  }
+
+  push(input.category_name)
+  push(input.board_type?.replace(/-/g, " "))
+  if (input.condition) {
+    push(LISTING_CONDITION_LABELS[input.condition] ?? input.condition.replace(/_/g, " "))
+    push(input.condition.replace(/_/g, " "))
+  }
+  if (input.fin_system) {
+    push(FIN_SYSTEM_LABELS[input.fin_system] ?? input.fin_system.replace(/_/g, " "))
+    push(input.fin_system.replace(/_/g, " "))
+  }
+  if (input.construction) {
+    push(CONSTRUCTION_LABELS[input.construction] ?? input.construction.replace(/_/g, " "))
+    push(input.construction.replace(/_/g, " "))
+    // Casual synonyms sellers/searchers use.
+    if (input.construction === "eps_epoxy") push("epoxy")
+    if (input.construction === "pu_poly") push("poly polyurethane")
+    if (input.construction === "carbon") push("carbon fiber")
+  }
+  for (const slug of input.fins_setup ?? []) {
+    push(FIN_SETUP_LABELS[slug] ?? slug.replace(/_/g, " "))
+    push(slug.replace(/_/g, " "))
+  }
+  for (const slug of input.tail_shape ?? []) {
+    const label = TAIL_SHAPE_LABELS[slug as TailShapeTagSlug] ?? slug
+    push(label)
+    push(`${label} tail`)
+    push(slug)
+  }
+  push(input.dimensions)
+  if (input.length_total_inches != null && Number.isFinite(input.length_total_inches)) {
+    const inches = Math.round(input.length_total_inches)
+    const ft = Math.floor(inches / 12)
+    const inch = inches % 12
+    push(`${ft}'${inch}`)
+    push(`${inches} inches`)
+  }
+  if (input.width_inches != null && Number.isFinite(input.width_inches)) {
+    push(`${input.width_inches} width`)
+  }
+  if (input.thickness_inches != null && Number.isFinite(input.thickness_inches)) {
+    push(`${input.thickness_inches} thickness`)
+  }
+  if (input.volume_liters != null && Number.isFinite(input.volume_liters)) {
+    push(`${input.volume_liters}L`)
+    push(`${input.volume_liters} liters`)
+  }
+  if (input.price != null && Number.isFinite(input.price)) {
+    push(`$${Math.round(input.price)}`)
+  }
+  if (input.shipping_available) {
+    push("shipping ships shippable")
+  }
+  if (input.local_pickup) {
+    push("local pickup meetup")
+  }
+
+  return parts.join(" ").replace(/\s+/g, " ").trim()
+}
 
 /**
  * English function words excluded from Elasticsearch `minimum_should_match` logic.
@@ -713,13 +821,28 @@ export function listingRowToSearchDocFromRow(row: ListingSearchDocRow): ListingS
   const cat = Array.isArray(row.categories) ? row.categories[0] : row.categories
   const lat = toFiniteNumber(row.latitude)
   const lon = toFiniteNumber(row.longitude)
+  const fins_setup = parseFinsSetupFromStorage(row.fins_setup)
+  const tail_shape = parseTailShapeFromStorage(row.tail_shape)
+  const length_total_inches = resolveLengthTotalInches(browseMeasurementRow(row))
+  const volume_liters = resolveVolumeLiters(browseMeasurementRow(row))
+  const width_inches = resolveWidthInches(row)
+  const thickness_inches = resolveThicknessInches(row)
+  const dimensions = row.dimensions?.trim() ? row.dimensions.trim().toLowerCase() : null
+  const price = toFiniteNumber(row.price)
+  const shipping_available = row.shipping_available ?? null
+  const local_pickup = row.local_pickup ?? null
+  const category_name = cat?.name ?? ""
+  const condition = row.condition ?? null
+  const fin_system = row.fin_system ?? null
+  const construction = row.construction ?? null
+
   return {
     id: row.id,
     title: row.title ?? "",
     description: row.description ?? "",
     section: row.section,
     status: row.status,
-    category_name: cat?.name ?? "",
+    category_name,
     board_type: row.board_type,
     category_id: row.category_id ?? null,
     brand: row.brand,
@@ -727,22 +850,39 @@ export function listingRowToSearchDocFromRow(row: ListingSearchDocRow): ListingS
     city: row.city,
     state: row.state,
     created_at: row.created_at,
-    condition: row.condition ?? null,
-    fin_system: row.fin_system ?? null,
-    construction: row.construction ?? null,
-    fins_setup: parseFinsSetupFromStorage(row.fins_setup),
-    tail_shape: parseTailShapeFromStorage(row.tail_shape),
-    length_total_inches: resolveLengthTotalInches(browseMeasurementRow(row)),
-    volume_liters: resolveVolumeLiters(browseMeasurementRow(row)),
-    width_inches: resolveWidthInches(row),
-    thickness_inches: resolveThicknessInches(row),
-    price: toFiniteNumber(row.price),
+    condition,
+    fin_system,
+    construction,
+    fins_setup,
+    tail_shape,
+    length_total_inches,
+    volume_liters,
+    width_inches,
+    thickness_inches,
+    price,
     brand_id: row.brand_id ?? null,
     brand_model_id: row.brand_model_id ?? null,
-    local_pickup: row.local_pickup ?? null,
-    shipping_available: row.shipping_available ?? null,
+    local_pickup,
+    shipping_available,
     suppressed_on_boards_browse: row.suppressed_on_boards_browse ?? null,
-    dimensions: row.dimensions?.trim() ? row.dimensions.trim().toLowerCase() : null,
+    dimensions,
+    attrs_text: buildListingAttrsText({
+      category_name,
+      board_type: row.board_type,
+      condition,
+      fin_system,
+      construction,
+      fins_setup,
+      tail_shape,
+      dimensions,
+      length_total_inches,
+      width_inches,
+      thickness_inches,
+      volume_liters,
+      shipping_available,
+      local_pickup,
+      price,
+    }),
     magazine_year: toFiniteNumber(row.magazine_year),
     wetsuit_size: row.wetsuit_size?.trim() || null,
     // Thickness / zip were dropped from `listings`; keep ES fields null for mapping compat.

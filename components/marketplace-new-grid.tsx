@@ -2,6 +2,8 @@ import { ShopNewListingStandardTile } from "@/components/features/marketplace/sh
 
 export interface MarketplaceNewItem {
   id: string
+  /** Canonical listing slug — avoid `/l/{uuid}` soft-nav + redirect (trips App Router hooks bugs). */
+  slug?: string | null
   title: string
   price: number
   image_url: string | null
@@ -28,7 +30,7 @@ export function MarketplaceNewGrid({
           showFavorites={false}
           listing={{
             id: item.id,
-            slug: null,
+            slug: item.slug ?? null,
             title: item.title,
             price: Number(item.price),
             listing_images: item.image_url

@@ -4,7 +4,17 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { toast } from "sonner"
-import { Archive, ExternalLink, ImagePlus, Loader2, Pencil, Plus, Trash2, X } from "lucide-react"
+import {
+  Archive,
+  ExternalLink,
+  ImagePlus,
+  Loader2,
+  Pencil,
+  Plus,
+  RotateCw,
+  Trash2,
+  X,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -80,6 +90,7 @@ export function AdminShopClient() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [rotatingUrl, setRotatingUrl] = useState<string | null>(null)
   const [products, setProducts] = useState<ReswellShopAdminProduct[]>([])
   const [form, setForm] = useState<FormState>(() => emptyForm())
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -152,7 +163,10 @@ export function AdminShopClient() {
           toast.error(`${file.name} is not an image`)
           continue
         }
-        const prepared = await prepareListingImagePairFromFile(file)
+        // Shop products are not boards — keep photographer orientation (no landscape→portrait force).
+        const prepared = await prepareListingImagePairFromFile(file, {
+          skipLandscapeToPortrait: true,
+        })
         const { fullUrl } = await uploadListingImagePairToSupabase({
           supabase,
           userId: user.id,
@@ -175,6 +189,51 @@ export function AdminShopClient() {
 
   function removeImage(url: string) {
     setForm((f) => ({ ...f, image_urls: f.image_urls.filter((u) => u !== url) }))
+  }
+
+  async function rotateImageClockwise90(url: string) {
+    if (rotatingUrl || uploading) return
+    const supabase = createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) {
+      toast.error("Sign in again to rotate photos")
+      return
+    }
+
+    setRotatingUrl(url)
+    try {
+      const res = await fetch(proxiedListingImageSrc(url) || url)
+      if (!res.ok) {
+        throw new Error("Could not load this photo to rotate it.")
+      }
+      const blob = await res.blob()
+      const file = new File(
+        [blob],
+        "shop-photo.jpg",
+        { type: blob.type && blob.type.startsWith("image/") ? blob.type : "image/jpeg" },
+      )
+      const prepared = await prepareListingImagePairFromFile(file, {
+        skipLandscapeToPortrait: true,
+        rotateClockwiseQuarterTurns: 1,
+      })
+      const { fullUrl } = await uploadListingImagePairToSupabase({
+        supabase,
+        userId: user.id,
+        clientId: crypto.randomUUID(),
+        prepared,
+      })
+      setForm((f) => ({
+        ...f,
+        image_urls: f.image_urls.map((u) => (u === url ? fullUrl : u)),
+      }))
+      toast.success("Photo rotated")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not rotate photo")
+    } finally {
+      setRotatingUrl(null)
+    }
   }
 
   async function save() {
@@ -383,26 +442,45 @@ export function AdminShopClient() {
               <div className="flex flex-wrap gap-3">
                 {form.image_urls.map((url) => {
                   const src = proxiedListingImageSrc(url) || url
+                  const isRotating = rotatingUrl === url
                   return (
                     <div
                       key={url}
                       className="relative h-24 w-24 overflow-hidden rounded-lg border border-border bg-muted"
                     >
                       <Image src={src} alt="" fill className="object-cover" sizes="96px" />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(url)}
-                        className="absolute right-1 top-1 rounded-full bg-black/70 p-1 text-white"
-                        aria-label="Remove photo"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
+                      {isRotating ? (
+                        <div className="absolute inset-0 z-[2] flex items-center justify-center bg-black/40">
+                          <Loader2 className="h-5 w-5 animate-spin text-white" />
+                        </div>
+                      ) : null}
+                      <div className="absolute inset-x-1 top-1 z-[3] flex justify-between gap-1">
+                        <button
+                          type="button"
+                          disabled={Boolean(rotatingUrl) || uploading}
+                          onClick={() => void rotateImageClockwise90(url)}
+                          className="rounded-full bg-black/70 p-1 text-white disabled:opacity-50"
+                          aria-label="Rotate photo 90 degrees clockwise"
+                          title="Rotate 90°"
+                        >
+                          <RotateCw className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={Boolean(rotatingUrl) || uploading}
+                          onClick={() => removeImage(url)}
+                          className="rounded-full bg-black/70 p-1 text-white disabled:opacity-50"
+                          aria-label="Remove photo"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
                   )
                 })}
                 <button
                   type="button"
-                  disabled={uploading || form.image_urls.length >= 12}
+                  disabled={uploading || Boolean(rotatingUrl) || form.image_urls.length >= 12}
                   onClick={() => fileInputRef.current?.click()}
                   className="flex h-24 w-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-border text-muted-foreground hover:bg-muted/50 disabled:opacity-50"
                 >
@@ -417,7 +495,11 @@ export function AdminShopClient() {
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button type="button" onClick={() => void save()} disabled={saving || uploading}>
+            <Button
+              type="button"
+              onClick={() => void save()}
+              disabled={saving || uploading || Boolean(rotatingUrl)}
+            >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {editingId ? "Save changes" : "Create product"}
             </Button>

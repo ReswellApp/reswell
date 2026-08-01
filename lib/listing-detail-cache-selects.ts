@@ -14,6 +14,7 @@ export const SURFBOARD_LISTING_SELECT = `
 
 export const SHOP_LISTING_SELECT = `
       id,
+      slug,
       title,
       description,
       price,
@@ -21,7 +22,7 @@ export const SHOP_LISTING_SELECT = `
       user_id,
       views,
       created_at,
-      listing_images (url, is_primary),
+      listing_images (id, url, thumbnail_url, is_primary, sort_order),
       stock_quantity,
       categories (name)
     `

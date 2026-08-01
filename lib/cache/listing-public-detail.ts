@@ -38,7 +38,7 @@ const getCachedPublicListingDetailRow = unstable_cache(
 
 const getCachedPublicShopListingRow = unstable_cache(
   (param: string) => loadPublicListingByParam(param, SHOP_LISTING_SELECT, "new"),
-  ["listing-public-shop-detail"],
+  ["listing-public-shop-detail-v2"],
   {
     revalidate: LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS,
     tags: [LISTING_PUBLIC_DETAIL_CACHE_TAG],

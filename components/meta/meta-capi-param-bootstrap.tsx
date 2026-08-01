@@ -1,8 +1,9 @@
 "use client"
 
-import { usePathname, useSearchParams } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { useEffect, useRef } from "react"
 
+import { useClientSearchParams } from "@/hooks/use-client-search-params"
 import { primeMetaBrowserSignals } from "@/lib/meta/collect-client-browser-signals"
 
 /**
@@ -11,8 +12,8 @@ import { primeMetaBrowserSignals } from "@/lib/meta/collect-client-browser-signa
  */
 export function MetaCapiParamBootstrap(): null {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const searchString = searchParams?.toString() ?? ""
+  const searchParams = useClientSearchParams()
+  const searchString = searchParams.toString()
   const isFirstRender = useRef(true)
 
   useEffect(() => {
