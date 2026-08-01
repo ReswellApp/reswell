@@ -29,11 +29,14 @@ import {
   loadOtherPartyProfile,
   type OtherPartyProfileSummary,
 } from "@/lib/messages/profile-reviews-loader"
+import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportRecipientUser"
 import {
   filterConversationsWithMessages,
+  filterOutSupportInboxConversations,
   type InboxConversationRow,
 } from "@/lib/utils/messages-inbox-grouping"
-import { loadMessagesInboxForUser, type MessagesInboxPayload } from "@/lib/db/messagesInbox"
+import type { MessagesInboxPayload } from "@/lib/db/messagesInbox"
+import { getMessagesInboxForUser } from "@/lib/services/messagesInbox"
 
 const sendConversationLocationReplySchema = z.object({
   conversation_id: z.string().uuid(),
@@ -885,7 +888,7 @@ export async function refreshMessagesInbox(): Promise<
     return { error: "Unauthorized" }
   }
 
-  return loadMessagesInboxForUser(user.id)
+  return getMessagesInboxForUser(user.id)
 }
 
 export type CounterpartyThreadProfile = {
@@ -954,8 +957,23 @@ export async function loadCounterpartyThreads(
       .limit(1, { referencedTable: "messages" }),
   ])
 
-  const threads = filterConversationsWithMessages(
-    (convData ?? []) as unknown as InboxConversationRow[],
+  const supportResolved = await resolveSupportRecipientUserId()
+  const supportUserId = supportResolved.ok ? supportResolved.userId : null
+
+  // Support-ticket DMs belong under /dashboard/support, not marketplace messages.
+  if (supportUserId && otherUserId === supportUserId) {
+    return {
+      currentUserId: user.id,
+      otherUser: (profile as CounterpartyThreadProfile | null) ?? null,
+      threads: [],
+    }
+  }
+
+  const threads = filterOutSupportInboxConversations(
+    filterConversationsWithMessages(
+      (convData ?? []) as unknown as InboxConversationRow[],
+    ),
+    supportUserId,
   )
 
   const conversationIds = threads.map((t) => t.id)

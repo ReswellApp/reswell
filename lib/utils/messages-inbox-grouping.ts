@@ -67,6 +67,28 @@ export function filterConversationsWithMessages(
   return conversations.filter(conversationHasMessages)
 }
 
+/**
+ * Member↔Reswell Support DMs (support tickets) use `listing_id: null` and the
+ * configured support user as a participant. Those belong under `/dashboard/support`,
+ * not the marketplace `/messages` inbox.
+ */
+export function isSupportInboxConversation(
+  conv: Pick<InboxConversationRow, "listing_id" | "buyer_id" | "seller_id">,
+  supportUserId: string | null | undefined,
+): boolean {
+  if (!supportUserId) return false
+  if (conv.listing_id != null) return false
+  return conv.seller_id === supportUserId || conv.buyer_id === supportUserId
+}
+
+export function filterOutSupportInboxConversations(
+  conversations: InboxConversationRow[],
+  supportUserId: string | null | undefined,
+): InboxConversationRow[] {
+  if (!supportUserId) return conversations
+  return conversations.filter((c) => !isSupportInboxConversation(c, supportUserId))
+}
+
 export function getLatestMessage(conv: InboxConversationRow): InboxConversationMessage | undefined {
   if (!conv.messages?.length) return undefined
   return [...conv.messages].sort(

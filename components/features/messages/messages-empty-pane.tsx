@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { MessageSquare } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -42,7 +43,15 @@ export function MessagesEmptyPane({ variant = "pane", className }: MessagesEmpty
       </div>
       <p className="text-[17px] font-semibold text-foreground">Select a conversation</p>
       <p className="mt-2 max-w-sm text-[14px] leading-relaxed text-muted-foreground">
-        Choose a chat from the list to view messages and reply.
+        Choose a marketplace chat from the list to view messages and reply. For help from
+        Reswell, open{" "}
+        <Link
+          href="/dashboard/support"
+          className="text-primary underline underline-offset-2"
+        >
+          Support
+        </Link>
+        .
       </p>
     </div>
   )

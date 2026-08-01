@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { loadConversationThread } from '@/app/actions/messages'
 import { ConversationThreadClient } from '@/components/features/messages/conversation-thread-client'
 import { MessagesChatSplit } from '@/components/features/messages/messages-chat-split'
+import { resolveSupportRedirectForConversation } from '@/lib/services/supportConversationRedirect'
 
 export default async function ConversationPage({
   params,
@@ -11,6 +12,12 @@ export default async function ConversationPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
+
+  const supportRedirect = await resolveSupportRedirectForConversation(id)
+  if (supportRedirect) {
+    redirect(supportRedirect)
+  }
+
   const result = await loadConversationThread(id)
 
   if ('error' in result) {

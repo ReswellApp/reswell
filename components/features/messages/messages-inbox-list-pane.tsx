@@ -84,6 +84,19 @@ export function MessagesInboxListPane({
         />
       </div>
 
+      <p
+        className={cn(
+          "shrink-0 border-b border-border/40 py-2 text-[12px] leading-snug text-muted-foreground lg:hidden",
+          flatMobileInbox ? "px-0" : "px-3",
+        )}
+      >
+        Marketplace chats only. Support tickets are in{" "}
+        <Link href="/dashboard/support" className="text-primary underline underline-offset-2">
+          Support
+        </Link>
+        .
+      </p>
+
       <MessageSmsNotificationsToggle
         initialOptIn={messageSmsOptIn}
         initialPhone={smsPhone}
@@ -106,8 +119,16 @@ export function MessagesInboxListPane({
                   <MessageCircle className="h-7 w-7 text-muted-foreground" strokeWidth={1.5} />
                 </div>
                 <p className="text-[15px] font-semibold text-foreground">No messages yet</p>
-                <p className="mt-2 max-w-[240px] text-[14px] leading-relaxed text-muted-foreground">
+                <p className="mt-2 max-w-[260px] text-[14px] leading-relaxed text-muted-foreground">
                   When you contact a seller or receive a message, it will appear here.
+                  Support tickets are in{" "}
+                  <Link
+                    href="/dashboard/support"
+                    className="text-primary underline underline-offset-2"
+                  >
+                    Support
+                  </Link>
+                  .
                 </p>
               </>
             )}

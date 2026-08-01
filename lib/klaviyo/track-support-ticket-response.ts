@@ -1,8 +1,13 @@
 /**
  * Server-only: Klaviyo Events API — fires when support staff notifies a customer about their ticket.
  *
- * **Metric name in Klaviyo:** `Support Tickets Response` — trigger transactional email with the
- * staff reply. Template properties:
+ * **Metric name in Klaviyo:** `Support Tickets Response`
+ * **Live flow:** Support Tickets Response (`RuDgCm`) — emails the member when staff reply from
+ * the support inbox (or linked support DM / status update). Fired from
+ * `sendSupportTicketAdminReplyService` (`response_type: admin_inbox_reply`).
+ * HTML paste template: `lib/klaviyo/support-ticket-response-email-liquid.ts`
+ *
+ * Template properties:
  * - `{{ event.support_ticket_id }}`
  * - `{{ event.response }}` — customer-visible reply body (admin inbox / support DM / status update)
  * - `{{ event.response_type }}` — `admin_inbox_reply` | `support_dm_reply` | `status_update`

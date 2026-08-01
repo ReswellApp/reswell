@@ -158,15 +158,15 @@ export function MessagesSupportDialog({
       }
       if ("success" in res && res.success) {
         toast.success(
-          res.support_conversation_id
+          res.id
             ? "Ticket sent — opening your support request."
             : "Thanks — we received your message and will get back to you soon.",
         )
         handleOpenChange(false)
         if (res.id) {
           router.push(`/dashboard/support/${res.id}`)
-        } else if (res.support_conversation_id) {
-          router.push(`/messages/${res.support_conversation_id}`)
+        } else {
+          router.push("/dashboard/support")
         }
       }
     })
@@ -213,7 +213,7 @@ export function MessagesSupportDialog({
   const mobileSubtitle = onTopicPick
     ? "Pick a topic, or ask our team below."
     : phase === "freeform"
-      ? "Tell us what happened — we’ll open a support chat."
+      ? "Tell us what happened — we’ll open a Support ticket."
       : phase === "resolution"
         ? "Try this first, or message our team."
         : "Pick the closest match, or ask our team below."
@@ -269,7 +269,7 @@ export function MessagesSupportDialog({
               {onTopicPick
                 ? "Choose a topic to see quick answers tailored to your question. You can still message our team anytime at the end."
                 : phase === "freeform"
-                  ? "Tell us what’s going on. We’ll open a support chat for you and follow up there."
+                  ? "Tell us what’s going on. We’ll open a Support ticket (under Support, not Messages) and follow up there."
                   : phase === "resolution"
                     ? "Here’s something that helps most people with this."
                     : "Pick the option that best matches what you need."}

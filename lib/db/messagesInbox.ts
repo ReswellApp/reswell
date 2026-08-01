@@ -89,6 +89,8 @@ export async function loadMessagesInboxForUser(userId: string): Promise<Messages
 
   // Conversations with no messages at all are excluded from the inbox; only the
   // latest message was fetched above, so unread counts are merged in next.
+  // Support-ticket filtering (member ↔ Reswell Support) is applied in
+  // `getMessagesInboxForUser` so this data layer stays free of service imports.
   const conversations = filterConversationsWithMessages(conversationRows)
 
   await mergeUnreadMessages(supabase, userId, conversations)

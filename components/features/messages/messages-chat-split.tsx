@@ -1,6 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
+import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { MessagesSupportDialog } from "@/components/features/messages/messages-support-dialog"
 import { MessagesInboxListPane } from "@/components/features/messages/messages-inbox-list-pane"
@@ -40,7 +41,16 @@ export function MessagesChatSplit({
       <header className="mb-4 hidden shrink-0 flex-col gap-3 lg:flex lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h1 className={dashboardPageTitleClass}>Messages</h1>
-          <p className={dashboardPageSubtitleClass}>Communicate with buyers and sellers.</p>
+          <p className={dashboardPageSubtitleClass}>
+            Marketplace chats with buyers and sellers. Support tickets live in{" "}
+            <Link
+              href="/dashboard/support"
+              className="text-primary underline underline-offset-2"
+            >
+              Support
+            </Link>
+            , not here.
+          </p>
         </div>
         <MessagesSupportDialog
           triggerMode="floating"
