@@ -21,8 +21,8 @@ export function NaturalLanguageSearchHint({
       href: "/boards?q=Dumpster%20Diver%205%2710%20excellent%20under%20%24600&nq=1",
     },
     {
-      label: "CI fish near Santa Barbara with shipping",
-      href: "/boards?q=CI%20fish%20near%20Santa%20Barbara%20with%20shipping&nq=1",
+      label: "boards with FCS thruster",
+      href: "/boards?q=boards%20with%20FCS%20thruster&nq=1",
     },
   ] as const
 
@@ -67,7 +67,8 @@ export function NaturalLanguageSearchHint({
               </span>
             </p>
             <p className="mt-0.5 text-xs text-emerald-900/75 sm:text-sm">
-              We&apos;ll apply brand, model, length, condition, price, shipping, and location.
+              We&apos;ll apply brand, model, length, condition, fin setup/system, price,
+              shipping, and location.
             </p>
             <ul className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-xs text-emerald-900/90">
               {examples.map((ex) => (

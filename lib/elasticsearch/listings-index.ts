@@ -303,6 +303,47 @@ function normalizeExpansions(expansions: string[] | undefined): string[] {
 }
 
 /**
+ * Soft ranking clauses for leftover NL keywords when structured filters already
+ * own recall (brand / price / fins…). Never used as `must`.
+ */
+export function buildListingsRankBoostShouldClauses(rawQuery: string): object[] {
+  const q = rawQuery.trim()
+  if (!q) return []
+  const meaningful = meaningfulSearchTerms(q)
+  const clauses: object[] = [
+    {
+      multi_match: {
+        query: q,
+        fields: ["title^4", "brand^3", "model^3", "category_name^2"],
+        type: "phrase",
+        boost: 6,
+      },
+    },
+    {
+      multi_match: {
+        query: q,
+        fields: ["title^2", "model^2", "description"],
+        type: "best_fields",
+        operator: "or",
+        tie_breaker: 0.2,
+        boost: 2,
+      },
+    },
+  ]
+  for (const term of meaningful) {
+    clauses.push({
+      multi_match: {
+        query: term,
+        fields: ["title^2", "model^2", "brand", "description"],
+        type: "best_fields",
+        boost: 1.25,
+      },
+    })
+  }
+  return clauses
+}
+
+/**
  * Builds a bool query: requires a majority of meaningful terms (not lone digits),
  * plus optional phrase boosts so exact titles rank higher. Admin `expansions`
  * (synonyms) are added as additional satisfying clauses so aliases/typos recover results.
@@ -555,6 +596,11 @@ export async function searchListingIdsFromElasticsearch(
 }
 
 /** Columns required to build a full browse-ready listing search doc. */
+/**
+ * Columns for ES listing docs. Board dims live on `dimensions` +
+ * `length_total_inches` / `volume_liters` — legacy `length_feet` / `width` /
+ * `thickness` / `volume` were dropped (see 20260816120000).
+ */
 export const LISTING_SEARCH_DOC_SELECT = `
   id,
   title,
@@ -573,11 +619,6 @@ export const LISTING_SEARCH_DOC_SELECT = `
   construction,
   fins_setup,
   tail_shape,
-  length_feet,
-  length_inches,
-  width,
-  thickness,
-  volume,
   length_total_inches,
   volume_liters,
   price,
@@ -591,8 +632,6 @@ export const LISTING_SEARCH_DOC_SELECT = `
   longitude,
   magazine_year,
   wetsuit_size,
-  wetsuit_thickness,
-  wetsuit_zip_type,
   hidden_from_site,
   archived_at,
   categories (name)
@@ -616,11 +655,6 @@ export type ListingSearchDocRow = {
   construction?: string | null
   fins_setup?: string | null
   tail_shape?: string | null
-  length_feet?: number | null
-  length_inches?: number | null
-  width?: number | string | null
-  thickness?: number | string | null
-  volume?: number | string | null
   length_total_inches?: number | null
   volume_liters?: number | null
   price?: number | string | null
@@ -634,8 +668,6 @@ export type ListingSearchDocRow = {
   longitude?: number | string | null
   magazine_year?: number | null
   wetsuit_size?: string | null
-  wetsuit_thickness?: string | null
-  wetsuit_zip_type?: string | null
   hidden_from_site?: boolean | null
   archived_at?: string | null
   categories: { name: string | null } | null | { name: string | null }[]
@@ -659,14 +691,10 @@ function dimensionInchesFromParsedColumn(
 }
 
 function resolveWidthInches(row: ListingSearchDocRow): number | null {
-  const stored = toFiniteNumber(row.width)
-  if (stored != null && stored > 0) return stored
   return dimensionInchesFromParsedColumn(row.dimensions, (p) => p.boardWidthInches)
 }
 
 function resolveThicknessInches(row: ListingSearchDocRow): number | null {
-  const stored = toFiniteNumber(row.thickness)
-  if (stored != null && stored > 0) return stored
   return dimensionInchesFromParsedColumn(row.dimensions, (p) => p.boardThicknessInches)
 }
 
@@ -675,9 +703,6 @@ function browseMeasurementRow(row: ListingSearchDocRow) {
     length_total_inches: row.length_total_inches,
     volume_liters: row.volume_liters,
     dimensions: row.dimensions,
-    length_feet: row.length_feet,
-    length_inches: toFiniteNumber(row.length_inches),
-    volume: toFiniteNumber(row.volume),
     title: row.title,
   }
 }
@@ -720,8 +745,9 @@ export function listingRowToSearchDocFromRow(row: ListingSearchDocRow): ListingS
     dimensions: row.dimensions?.trim() ? row.dimensions.trim().toLowerCase() : null,
     magazine_year: toFiniteNumber(row.magazine_year),
     wetsuit_size: row.wetsuit_size?.trim() || null,
-    wetsuit_thickness: row.wetsuit_thickness?.trim() || null,
-    wetsuit_zip_type: row.wetsuit_zip_type?.trim() || null,
+    // Thickness / zip were dropped from `listings`; keep ES fields null for mapping compat.
+    wetsuit_thickness: null,
+    wetsuit_zip_type: null,
     ...(lat != null && lon != null ? { location: { lat, lon } } : {}),
   }
 }

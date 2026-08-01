@@ -11,6 +11,7 @@ import type { estypes } from "@elastic/elasticsearch"
 import { getElasticsearchClient } from "./client"
 import { ELASTICSEARCH_LISTINGS_INDEX } from "./config"
 import {
+  buildListingsRankBoostShouldClauses,
   buildListingsSearchQueryBody,
   buildListingsTypoFallbackQueryBody,
   ensureListingsIndex,
@@ -49,27 +50,50 @@ function withMustNot(queryBody: object, mustNot: object[]): object {
   }
 }
 
+function withRankBoosts(queryBody: object, rankQuery: string | undefined): object {
+  const rank = rankQuery?.trim()
+  if (!rank) return queryBody
+  const boosts = buildListingsRankBoostShouldClauses(rank)
+  if (boosts.length === 0) return queryBody
+  const body = queryBody as { bool?: Record<string, unknown> }
+  if (!body.bool) return queryBody
+  const existing = body.bool.should
+  const prior = Array.isArray(existing) ? existing : existing != null ? [existing] : []
+  return {
+    bool: {
+      ...body.bool,
+      should: [...prior, ...boosts],
+      // Keep prior MSM when present; soft boosts must not become required.
+      minimum_should_match: body.bool.minimum_should_match ?? 0,
+    },
+  }
+}
+
 function boardsBrowseKeywordQuery(
   filter: object[],
   query: string | undefined,
   mustNot: object[],
   typoFallback = false,
   expansions?: string[],
+  rankQuery?: string,
 ): object | null {
   const q = query?.trim()
   if (!q) {
-    return {
-      bool: {
-        filter: filter as estypes.QueryDslQueryContainer[],
-        must_not: mustNot as estypes.QueryDslQueryContainer[],
+    return withRankBoosts(
+      {
+        bool: {
+          filter: filter as estypes.QueryDslQueryContainer[],
+          must_not: mustNot as estypes.QueryDslQueryContainer[],
+        },
       },
-    }
+      rankQuery,
+    )
   }
   const body = typoFallback
     ? buildListingsTypoFallbackQueryBody(filter, q)
     : buildListingsSearchQueryBody(filter, q, expansions)
   if (!body) return null
-  return withMustNot(body, mustNot)
+  return withRankBoosts(withMustNot(body, mustNot), rankQuery)
 }
 
 /** ES filter for board style slugs — matches `board_type` or surfboard `category_id`. */
@@ -141,6 +165,11 @@ function facetSelectionClauses(
 
 export type BoardsBrowseEsContext = {
   query?: string
+  /**
+   * Soft ranking text from NL residual keywords. Never required for a hit —
+   * used when brand/price/fin (etc.) filters already constrain the result set.
+   */
+  rankQuery?: string
   brand?: string
   model?: string
   brandId?: string
@@ -343,7 +372,7 @@ function buildSort(params: BoardsBrowseEsSearchParams): object[] {
     return sort
   }
 
-  const hasKeyword = Boolean(params.query?.trim())
+  const hasKeyword = Boolean(params.query?.trim() || params.rankQuery?.trim())
 
   if (params.sort === "price-low") {
     sort.push({ price: { order: "asc", missing: "_last" } })
@@ -398,6 +427,7 @@ export async function searchBoardsBrowse(
     mustNot,
     false,
     params.expansions,
+    params.rankQuery,
   )
   if (!keywordQuery) return { ids: [], total: 0 }
 
@@ -418,7 +448,14 @@ export async function searchBoardsBrowse(
   if (!q || parsed.total > 0 || parsed.ids.length > 0) return parsed
 
   // Same typo recovery as `/search` when the strict listings query returns nothing.
-  const typoQuery = boardsBrowseKeywordQuery(filter, q, mustNot, true, params.expansions)
+  const typoQuery = boardsBrowseKeywordQuery(
+    filter,
+    q,
+    mustNot,
+    true,
+    params.expansions,
+    params.rankQuery,
+  )
   if (!typoQuery) return parsed
 
   const typoRes = await es.search({
@@ -555,7 +592,14 @@ export async function boardsBrowseFacetCountsFromEs(
   }
 
   const filter = baseContextFilters(ctx)
-  const facetQuery = boardsBrowseKeywordQuery(filter, ctx.query, [], false, ctx.expansions) ?? {
+  const facetQuery = boardsBrowseKeywordQuery(
+    filter,
+    ctx.query,
+    [],
+    false,
+    ctx.expansions,
+    ctx.rankQuery,
+  ) ?? {
     bool: { filter: filter as estypes.QueryDslQueryContainer[] },
   }
 

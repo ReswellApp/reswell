@@ -178,7 +178,15 @@ async function BoardListings({
     urlMaxPrice != null && !Number.isNaN(urlMaxPrice) ? urlMaxPrice : nl?.maxPrice
   const shippingAvailable = urlShipping ?? nl?.shippingAvailable
 
-  const esQuery = resolvedKeyword?.context.query ?? (hasKeywordQuery ? query : undefined)
+  // When resolve ran, honor its keyword (including "none") — never fall back to the raw
+  // URL `q`. Falling back re-introduces filter words ("under", "$800") into ES `must`
+  // and zeros out brand/price results via minimum_should_match.
+  const esQuery = resolvedKeyword
+    ? resolvedKeyword.context.query
+    : hasKeywordQuery
+      ? query
+      : undefined
+  const esRankQuery = resolvedKeyword?.context.rankQuery
   const esBrandModelIds =
     resolvedKeyword?.context.brandModelIds ??
     (brandModelIdForQuery ? [brandModelIdForQuery] : undefined)
@@ -229,6 +237,7 @@ async function BoardListings({
         boardType,
         condition,
         query: esQuery,
+        rankQuery: esRankQuery,
         brand: esBrandModelIds?.length || esBrandModelId ? undefined : esBrand,
         model:
           esBrandModelIds?.length || esBrandModelId || esBrandId ? undefined : esModel,

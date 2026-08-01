@@ -123,7 +123,9 @@ export async function getBoardsBrowseFacetCountsMapCached(
       const nl = resolved?.nl ?? null
       const esCounts = await boardsBrowseFacetCountsFromEs(
         {
-          query: resolved?.context.query ?? ctx.query,
+          // Same as browse page: once resolve runs, do not fall back to raw `q`.
+          query: resolved ? resolved.context.query : ctx.query,
+          rankQuery: resolved?.context.rankQuery,
           brand: resolved?.context.brand ?? ctx.brand,
           model: resolved?.context.model ?? ctx.model,
           brandId: resolved?.context.brandId ?? brandId,

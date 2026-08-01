@@ -18,7 +18,7 @@ export type ApplyBoardListingPublishedSideEffectsResult =
  * The board sell client writes the listing directly via the browser Supabase
  * client, which skips the side effects that `publishListingDraft` and the
  * admin publish APIs apply — without this, a freshly published board is live
- * but missing from search until the next full reindex.
+ * but missing from search until live sync / the hourly ES reindex cron catches up.
  */
 export async function applyBoardListingPublishedSideEffectsAction(
   rawListingId: unknown,

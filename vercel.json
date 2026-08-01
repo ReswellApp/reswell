@@ -46,6 +46,10 @@
       "schedule": "20 * * * *"
     },
     {
+      "path": "/api/cron/elasticsearch-reindex",
+      "schedule": "15 * * * *"
+    },
+    {
       "path": "/api/cron/sync-open-carrier-tracking",
       "schedule": "*/15 * * * *"
     },

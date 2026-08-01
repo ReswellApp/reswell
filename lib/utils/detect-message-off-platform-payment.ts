@@ -2,7 +2,8 @@
  * Marketplace policy: prohibit off-platform payment terms in DM text.
  */
 
-const OFF_PLATFORM_PAYMENT_SERVICES_PATTERN = /\b(?:venmo|paypal|pay\s*pal)\b/i
+const OFF_PLATFORM_PAYMENT_SERVICES_PATTERN =
+  /\b(?:venmo|paypal|pay\s*pal|zelle)\b/i
 
 export function messageContainsOffPlatformPaymentTerms(text: string): boolean {
   const t = text.trim()
