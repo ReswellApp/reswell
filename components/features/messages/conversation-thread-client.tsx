@@ -25,6 +25,8 @@ import {
   type ConversationThreadData,
 } from '@/app/actions/messages'
 import {
+  dispatchConversationThreadOpened,
+  dispatchMessagesInboxRefresh,
   dispatchUnreadCountRefresh,
   dispatchUnreadMessageCountAdjust,
 } from '@/lib/utils/unread-message-count-events'
@@ -294,6 +296,8 @@ export function ConversationThreadClient({
   useEffect(() => {
     let active = true
     const unreadInbound = initialData.unreadInboundCount ?? 0
+    // Clear header badge + inbox row immediately (don't wait on the server write).
+    dispatchConversationThreadOpened(id, unreadInbound)
     if (unreadInbound > 0) {
       unreadAdjustRef.current = unreadInbound
       dispatchUnreadMessageCountAdjust(-unreadInbound)
@@ -303,6 +307,7 @@ export function ConversationThreadClient({
       .then(() => {
         if (!active || typeof window === 'undefined') return
         dispatchUnreadCountRefresh()
+        dispatchMessagesInboxRefresh()
       })
       .catch(() => {
         if (!active || unreadAdjustRef.current <= 0) return
@@ -478,11 +483,18 @@ export function ConversationThreadClient({
             fetchOfferForMessage(msg.offer_id, () => active)
           }
           if (currentUserId && msg.sender_id !== currentUserId) {
+            // Viewing this thread — clear badge/inbox for the inbound message
+            // immediately so the ticker never flashes while mark-read runs.
+            dispatchConversationThreadOpened(id, 1)
+            dispatchUnreadMessageCountAdjust(-1)
             void markConversationThreadRead(id)
               .then(() => {
                 dispatchUnreadCountRefresh()
+                dispatchMessagesInboxRefresh()
               })
-              .catch(() => {})
+              .catch(() => {
+                dispatchUnreadMessageCountAdjust(1)
+              })
           }
         },
       )

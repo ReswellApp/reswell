@@ -1,7 +1,12 @@
 import { Suspense } from "react"
-import { permanentRedirect } from "next/navigation"
+import { permanentRedirect, redirect } from "next/navigation"
 import { NavSearchQueryParamCleanup } from "@/components/features/search/nav-search-query-param-cleanup"
 import { pageSeoMetadata } from "@/lib/site-metadata"
+import {
+  extractMarketplaceSectionIntent,
+  isMarketplaceSectionOnlyQuery,
+  marketplaceSectionBrowseHref,
+} from "@/lib/utils/marketplace-brand-query"
 import { SearchPageView } from "./search-page-view"
 
 interface SearchParams {
@@ -36,6 +41,12 @@ export default async function SearchPage(props: {
     const sp = new URLSearchParams()
     if (categorySlugFromUrl) sp.set("category", categorySlugFromUrl)
     permanentRedirect(`/search/recent${sp.size ? `?${sp}` : ""}`)
+  }
+
+  // Bare "fins" / "wetsuits" / etc. → section browse, not a brand that contains that word.
+  if (rawQuery && !brandSlugFromUrl && isMarketplaceSectionOnlyQuery(rawQuery)) {
+    const browseHref = marketplaceSectionBrowseHref(extractMarketplaceSectionIntent(rawQuery))
+    if (browseHref) redirect(browseHref)
   }
 
   return (

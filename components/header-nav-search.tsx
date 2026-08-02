@@ -580,10 +580,10 @@ export function HeaderNavSearch({
       const href = headerNavSearchSubmitHref(term, pathname, searchParams)
       setQuery(term)
       writeNavSearchQuery(term)
+      dismissSearchFocus()
       router.push(href)
-      setIdleOpen(false)
     },
-    [router, pathname, searchParams, persistRecentSearch],
+    [router, pathname, searchParams, persistRecentSearch, dismissSearchFocus],
   )
 
   const clearSearchAndStorage = useCallback(() => {
@@ -597,6 +597,7 @@ export function HeaderNavSearch({
     if (!term) {
       clearNavSearchQuery()
       setQuery("")
+      dismissSearchFocus()
       await goToCuratedSearchPage(router, pathname, searchParams.toString())
       return
     }

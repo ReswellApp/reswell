@@ -12,7 +12,16 @@ import {
 import { createClient } from "@/lib/supabase/client"
 import type { MessagesInboxNotification } from "@/lib/db/messagesInbox"
 import { refreshMessagesInbox } from "@/app/actions/messages"
-import type { InboxConversationRow } from "@/lib/utils/messages-inbox-grouping"
+import {
+  markConversationMessagesReadLocally,
+  type InboxConversationRow,
+} from "@/lib/utils/messages-inbox-grouping"
+import {
+  CONVERSATION_THREAD_OPENED_EVENT,
+  MESSAGES_INBOX_REFRESH_EVENT,
+  UNREAD_COUNT_REFRESH_EVENT,
+  type ConversationThreadOpenedDetail,
+} from "@/lib/utils/unread-message-count-events"
 
 interface MessagesInboxContextValue {
   currentUserId: string
@@ -68,14 +77,13 @@ export function MessagesInboxProvider({
     setConversations(fresh.conversations)
     setNotifications(fresh.notifications)
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("unreadCountRefresh"))
+      window.dispatchEvent(new CustomEvent(UNREAD_COUNT_REFRESH_EVENT))
     }
   }, [])
 
   useEffect(() => {
     if (!userId) return
 
-    let cancelled = false
     let refreshTimer: ReturnType<typeof setTimeout> | null = null
 
     const scheduleRefresh = () => {
@@ -85,6 +93,22 @@ export function MessagesInboxProvider({
         void refreshInbox().catch(() => {})
       }, 300)
     }
+
+    const onThreadOpened = (event: Event) => {
+      const detail = (event as CustomEvent<ConversationThreadOpenedDetail>).detail
+      if (!detail?.conversationId) return
+      // Optimistic only — server reconcile waits for mark-read (MESSAGES_INBOX_REFRESH).
+      setConversations((prev) =>
+        markConversationMessagesReadLocally(prev, detail.conversationId, userId),
+      )
+    }
+
+    const onInboxRefresh = () => {
+      scheduleRefresh()
+    }
+
+    window.addEventListener(CONVERSATION_THREAD_OPENED_EVENT, onThreadOpened)
+    window.addEventListener(MESSAGES_INBOX_REFRESH_EVENT, onInboxRefresh)
 
     const channels = (["buyer_id", "seller_id"] as const).map((column) =>
       supabase
@@ -103,8 +127,9 @@ export function MessagesInboxProvider({
     )
 
     return () => {
-      cancelled = true
       if (refreshTimer) clearTimeout(refreshTimer)
+      window.removeEventListener(CONVERSATION_THREAD_OPENED_EVENT, onThreadOpened)
+      window.removeEventListener(MESSAGES_INBOX_REFRESH_EVENT, onInboxRefresh)
       for (const channel of channels) void supabase.removeChannel(channel)
     }
   }, [userId, supabase, refreshInbox])

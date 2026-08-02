@@ -713,6 +713,27 @@ export function SearchInputWithSuggest({
     if (inputRef.current && document.activeElement === inputRef.current) inputRef.current.blur()
   }
 
+  /** Form submit (Enter or Search button): close typeahead without waiting for navigation. */
+  useEffect(() => {
+    const form = containerRef.current?.closest("form")
+    if (!form) return
+    const onSubmit = () => {
+      suggestGenerationRef.current += 1
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current)
+        debounceRef.current = null
+      }
+      setOpen(false)
+      setSuggestions(null)
+      setLoading(false)
+      if (inputRef.current && document.activeElement === inputRef.current) {
+        inputRef.current.blur()
+      }
+    }
+    form.addEventListener("submit", onSubmit)
+    return () => form.removeEventListener("submit", onSubmit)
+  }, [])
+
   const logSuggestAnalytics = useCallback(
     (args: {
       pickKind: SearchSuggestPickKind

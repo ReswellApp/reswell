@@ -71,6 +71,35 @@ export function extractMarketplaceSectionIntent(
   return null
 }
 
+/**
+ * True when the query is only a marketplace section keyword (plus noise),
+ * e.g. "fins", "used wetsuits" — not "channel islands fins" or "futures fins".
+ */
+export function isMarketplaceSectionOnlyQuery(rawQuery: string): boolean {
+  const trimmed = (rawQuery || "").trim()
+  if (!trimmed) return false
+  if (!extractMarketplaceSectionIntent(trimmed)) return false
+  return stripMarketplaceSearchNoiseWords(trimmed).length === 0
+}
+
+/** Browse hub for a listing section (`fins` → `/fins`). */
+export function marketplaceSectionBrowseHref(
+  section: ElasticsearchIndexedListingSection | null,
+): string | null {
+  switch (section) {
+    case "fins":
+      return "/fins"
+    case "wetsuits":
+      return "/wetsuits"
+    case "magazines":
+      return "/magazines"
+    case "surfboards":
+      return "/boards"
+    default:
+      return null
+  }
+}
+
 function tokenizeQuery(raw: string): string[] {
   const s = raw.trim().toLowerCase()
   if (!s) return []

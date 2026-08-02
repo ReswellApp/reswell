@@ -114,6 +114,29 @@ export function getUnreadCountForConversation(
   return conv.messages.filter((m) => !m.is_read && m.sender_id !== currentUserId).length
 }
 
+/** Mark inbound messages in one conversation as read (optimistic inbox patch). */
+export function markConversationMessagesReadLocally(
+  conversations: InboxConversationRow[],
+  conversationId: string,
+  currentUserId: string | null,
+): InboxConversationRow[] {
+  if (!currentUserId) return conversations
+  let changed = false
+  const next = conversations.map((conv) => {
+    if (conv.id !== conversationId) return conv
+    let rowChanged = false
+    const messages = conv.messages.map((m) => {
+      if (m.is_read || m.sender_id === currentUserId) return m
+      rowChanged = true
+      return { ...m, is_read: true }
+    })
+    if (!rowChanged) return conv
+    changed = true
+    return { ...conv, messages }
+  })
+  return changed ? next : conversations
+}
+
 /** One inbox row per counterparty; threads sorted newest listing activity first. */
 export function groupConversationsByCounterparty(
   conversations: InboxConversationRow[],

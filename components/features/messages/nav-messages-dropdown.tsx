@@ -30,6 +30,7 @@ import {
 } from "@/lib/utils/messages-inbox-activity"
 import { formatInboxChatPreviewText } from "@/lib/utils/messages-inbox-preview"
 import { cn } from "@/lib/utils"
+import { dispatchUnreadCountRefresh } from "@/lib/utils/unread-message-count-events"
 
 const NAV_PREVIEW_LIMIT = 8
 
@@ -377,9 +378,13 @@ export function NavMessagesDropdown({
   const handleOpenChange = useCallback(
     (next: boolean) => {
       setOpen(next)
+      if (next) {
+        // Pull a fresh badge count whenever the panel opens.
+        dispatchUnreadCountRefresh()
+      }
       if (next && unreadActivityCount > 0 && tab === "activity") {
         void markInboxNotificationsRead().then(() => {
-          window.dispatchEvent(new CustomEvent("unreadCountRefresh"))
+          dispatchUnreadCountRefresh()
         })
       }
     },

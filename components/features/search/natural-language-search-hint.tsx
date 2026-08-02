@@ -1,9 +1,4 @@
-import Link from "next/link"
 import { cn } from "@/lib/utils"
-import {
-  marketplaceNlSearchExamplesFromQuery,
-  marketplaceNlSearchLeadExample,
-} from "@/lib/utils/marketplace-nl-search-examples"
 
 /**
  * Pango-style prompt for natural-language search on results pages.
@@ -17,15 +12,13 @@ export function NaturalLanguageSearchHint({
   summary,
 }: {
   className?: string
-  /** Current search query — drives contextual "Try …" examples. */
+  /** Current search query — shown so the hint matches what they searched. */
   query?: string
   /** Chips from the last NL parse (shown when Gemini applied filters). */
   appliedLabels?: string[]
   summary?: string | null
 }) {
   const q = (query || "").trim()
-  const examples = marketplaceNlSearchExamplesFromQuery(q)
-  const leadExample = marketplaceNlSearchLeadExample(q)
   const hasApplied = (appliedLabels?.length ?? 0) > 0
 
   return (
@@ -75,30 +68,16 @@ export function NaturalLanguageSearchHint({
               <p className="mt-0.5 text-xs leading-relaxed text-[#355185] sm:text-sm">
                 {q ? (
                   <>
-                    Build on &ldquo;{q}&rdquo; — add brand, model, condition, fins, price, or
-                    shipping.{" "}
-                    <span className="italic text-[#163060]">e.g. &ldquo;{leadExample}&rdquo;</span>
+                    Showing results for &ldquo;{q}&rdquo;. Narrow with brand, model, condition,
+                    fins, price, or shipping in the search bar.
                   </>
                 ) : (
                   <>
                     Brand, model, length, condition, fins, tail, construction, price, shipping, and
-                    location —{" "}
-                    <span className="italic text-[#163060]">e.g. &ldquo;{leadExample}&rdquo;</span>
+                    location — type it in the search bar.
                   </>
                 )}
               </p>
-              <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium">
-                {examples.map((ex) => (
-                  <li key={ex.href}>
-                    <Link
-                      href={ex.href}
-                      className="text-[#5574AD] underline decoration-[#7F9DD5]/70 underline-offset-[3px] transition-colors hover:text-[#466091] hover:decoration-[#5574AD]"
-                    >
-                      Try &ldquo;{ex.label}&rdquo;
-                    </Link>
-                  </li>
-                ))}
-              </ul>
             </>
           )}
         </div>

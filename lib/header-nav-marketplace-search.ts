@@ -1,4 +1,9 @@
 import { ELASTICSEARCH_INDEXED_LISTING_SECTIONS } from "@/lib/elasticsearch/listing-sections"
+import {
+  extractMarketplaceSectionIntent,
+  isMarketplaceSectionOnlyQuery,
+  marketplaceSectionBrowseHref,
+} from "@/lib/utils/marketplace-brand-query"
 
 /** Marketplace-wide copy for main nav — same on every route. */
 export function headerNavSearchPlaceholder(_section?: string): string {
@@ -37,8 +42,8 @@ export function navSearchSuggestSectionKey(section: string): NavSearchSuggestSec
 }
 
 /**
- * Main nav submit always lands on marketplace-wide `/search` (all ES-indexed
- * sections). Pathname and category chips do not scope results.
+ * Main nav submit lands on marketplace-wide `/search`, except bare section
+ * keywords (`fins`, `wetsuits`, …) which open that section’s browse hub.
  */
 export function headerNavSearchSubmitHref(
   rawQuery: string,
@@ -47,6 +52,11 @@ export function headerNavSearchSubmitHref(
 ): string {
   const term = rawQuery.trim()
   if (!term) return ""
+
+  if (isMarketplaceSectionOnlyQuery(term)) {
+    const browseHref = marketplaceSectionBrowseHref(extractMarketplaceSectionIntent(term))
+    if (browseHref) return browseHref
+  }
 
   const params = new URLSearchParams()
   params.set("q", term)

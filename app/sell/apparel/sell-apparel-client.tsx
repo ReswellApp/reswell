@@ -48,6 +48,7 @@ import {
 import { ensureBrowserDecodableImageFile } from "@/lib/client-image-decode"
 import { friendlyListingPhotoErrorMessage } from "@/lib/utils/friendly-listing-photo-error"
 import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
+import { isListingPhotoFile } from "@/lib/sell-flow/listing-photo-slot"
 import {
   APPAREL_LISTING_MAX_PHOTOS,
   APPAREL_LISTING_TITLE_MAX_LENGTH,
@@ -417,8 +418,12 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
 
   const addFiles = useCallback(
     (files: FileList | File[]) => {
-      const list = Array.from(files).filter((f) => f.type.startsWith("image/"))
-      if (list.length === 0) return
+      // iOS "Take Photo" often returns empty MIME; accept by extension too (same as boards).
+      const list = Array.from(files).filter(isListingPhotoFile)
+      if (list.length === 0) {
+        toast.error("Choose a photo (JPEG, PNG, HEIC, etc.).")
+        return
+      }
 
       const remaining = APPAREL_LISTING_MAX_PHOTOS - photosRef.current.length
       if (remaining <= 0) {

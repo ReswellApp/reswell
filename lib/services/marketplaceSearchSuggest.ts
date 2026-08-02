@@ -32,6 +32,7 @@ import type {
 import { parseMarketplaceQuery } from "@/lib/services/marketplaceQueryParse"
 import {
   isBrandOnlyMarketplaceSuggestQuery,
+  isMarketplaceSectionOnlyQuery,
   residualMarketplaceQueryAfterBrand,
 } from "@/lib/utils/marketplace-brand-query"
 
@@ -254,23 +255,29 @@ export async function runMarketplaceSearchSuggest(
     q,
     catalogBrands.rows,
   )
+  const sectionOnly = isMarketplaceSectionOnlyQuery(q)
   const parsed = await parseMarketplaceQuery(supabase, q, {
-    brandHint: inferredBrand,
+    // Bare "fins" must not inherit Futures Fins from catalog contains-match.
+    brandHint: sectionOnly ? null : inferredBrand,
   })
   // Query tokens like "fins" scope suggest to that section; nav `section` param is the fallback.
   const sections = parsed.sectionIntent
     ? [parsed.sectionIntent]
     : marketplaceSearchSuggestSections(section)
-  const pickedCatalogSlug =
-    parsed.brand?.slug ??
-    inferredBrand?.slug ??
-    catalogBrands.rows.find((r) => r.name.toLowerCase().includes(q.toLowerCase()))?.slug ??
-    null
+  const pickedCatalogSlug = sectionOnly
+    ? null
+    : (parsed.brand?.slug ??
+      inferredBrand?.slug ??
+      catalogBrands.rows.find((r) => r.name.toLowerCase().includes(q.toLowerCase()))?.slug ??
+      null)
 
-  const ilikeQuery = parsed.textQuery || q
-  const ilikeSafe = escapeIlikeToken(ilikeQuery)
-  const ilikePattern = `"%${ilikeSafe}%"`
-  const textOr = `title.ilike.${ilikePattern},description.ilike.${ilikePattern},brand.ilike.${ilikePattern},model.ilike.${ilikePattern}`
+  // Section-only ("fins"): no title keyword filter — show recent listings in that section.
+  const listingTextQuery = sectionOnly ? "" : (parsed.textQuery || q).trim()
+  const ilikeSafe = listingTextQuery ? escapeIlikeToken(listingTextQuery) : ""
+  const ilikePattern = ilikeSafe ? `"%${ilikeSafe}%"` : ""
+  const textOr = ilikePattern
+    ? `title.ilike.${ilikePattern},description.ilike.${ilikePattern},brand.ilike.${ilikePattern},model.ilike.${ilikePattern}`
+    : null
 
   const hydrateSuggestListingsFromIds = async (ids: string[]): Promise<SuggestListing[]> => {
     if (ids.length === 0) return []
@@ -290,25 +297,29 @@ export async function runMarketplaceSearchSuggest(
       .map((row) => rowToSuggestListing(row))
   }
 
+  let listingsQuery = supabase
+    .from("listings")
+    .select(SUGGEST_LISTING_ROW_SELECT)
+    .eq("status", "active")
+    .eq("hidden_from_site", false)
+    .in("section", sections)
+    .order("created_at", { ascending: false })
+    .limit(MAX_LISTINGS)
+  if (textOr) listingsQuery = listingsQuery.or(textOr)
+
+  let titlesQuery = supabase
+    .from("listings")
+    .select("title")
+    .eq("status", "active")
+    .eq("hidden_from_site", false)
+    .in("section", sections)
+    .order("created_at", { ascending: false })
+    .limit(TITLE_SUGGEST_FETCH)
+  if (textOr) titlesQuery = titlesQuery.or(textOr)
+
   const [listingsRes, titlesRes, categoriesRes, brandsRes] = await Promise.all([
-    supabase
-      .from("listings")
-      .select(SUGGEST_LISTING_ROW_SELECT)
-      .eq("status", "active")
-      .eq("hidden_from_site", false)
-      .in("section", sections)
-      .or(textOr)
-      .order("created_at", { ascending: false })
-      .limit(MAX_LISTINGS),
-    supabase
-      .from("listings")
-      .select("title")
-      .eq("status", "active")
-      .eq("hidden_from_site", false)
-      .in("section", sections)
-      .or(textOr)
-      .order("created_at", { ascending: false })
-      .limit(TITLE_SUGGEST_FETCH),
+    listingsQuery,
+    titlesQuery,
     supabase
       .from("categories")
       .select("name, slug")
@@ -316,16 +327,18 @@ export async function runMarketplaceSearchSuggest(
       .or(`name.ilike.${pattern},slug.ilike.${pattern}`)
       .order("name", { ascending: true })
       .limit(MAX_CATEGORIES * 3),
-    supabase
-      .from("listings")
-      .select("brand, brand_id")
-      .eq("status", "active")
-      .eq("hidden_from_site", false)
-      .in("section", sections)
-      .not("brand", "is", null)
-      .ilike("brand", `%${safe}%`)
-      .order("created_at", { ascending: false })
-      .limit(MAX_BRANDS * 4),
+    sectionOnly
+      ? Promise.resolve({ data: [] as { brand: string | null; brand_id: string | null }[] })
+      : supabase
+          .from("listings")
+          .select("brand, brand_id")
+          .eq("status", "active")
+          .eq("hidden_from_site", false)
+          .in("section", sections)
+          .not("brand", "is", null)
+          .ilike("brand", `%${safe}%`)
+          .order("created_at", { ascending: false })
+          .limit(MAX_BRANDS * 4),
   ])
 
   let listings: SuggestListing[] = (listingsRes.data || []).map((row: Record<string, unknown>) =>
@@ -335,7 +348,7 @@ export async function runMarketplaceSearchSuggest(
 
   if (isElasticsearchConfigured()) {
     try {
-      const ids = await searchListingIdsFromElasticsearch(parsed.textQuery || q, MAX_LISTINGS, {
+      const ids = await searchListingIdsFromElasticsearch(listingTextQuery, MAX_LISTINGS, {
         sections,
         expansions: parsed.expansions,
         brandId: parsed.modelIds.length > 0 ? null : parsed.brand?.id ?? null,
@@ -453,12 +466,11 @@ export async function runMarketplaceSearchSuggest(
     .filter(Boolean)
     .slice(0, MAX_CATEGORIES) as string[]
 
-  let brands = catalogRowsToSuggestBrandChips(
-    catalogBrands.rows,
-    pickedCatalogSlug,
-    MAX_BRANDS,
-  )
-  if (brands.length === 0) {
+  // Bare "fins" must not surface Futures Fins from catalog name-contains.
+  let brands = sectionOnly
+    ? []
+    : catalogRowsToSuggestBrandChips(catalogBrands.rows, pickedCatalogSlug, MAX_BRANDS)
+  if (brands.length === 0 && !sectionOnly) {
     const brandInputs = dedupeListingBrandInputsForSuggest(
       (brandsRes.data || []) as { brand: string | null; brand_id: string | null }[],
       MAX_BRANDS,

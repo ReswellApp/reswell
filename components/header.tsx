@@ -445,6 +445,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
   const [walletBalance, setWalletBalance] = useState<number | null>(initNav.walletBalance)
   /** Client-synced total from earnings (or other wallet UI); wins over stale server bootstrap. */
   const clientWalletTotalRef = useRef<number | null>(null)
+  /**
+   * After an optimistic unread decrease (opening a thread), ignore higher SSR
+   * bootstrap values until Realtime / a light unread select reconciles.
+   */
+  const preferClientUnreadRef = useRef(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mobileLogoHovered, setMobileLogoHovered] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -543,13 +548,26 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
 
     setUser(d.user)
 
+    const applyServerUnread = (serverUnread: number, mode: "partial" | "full") => {
+      setUnreadMessages((prev) => {
+        if (preferClientUnreadRef.current && serverUnread > prev) {
+          return prev
+        }
+        if (mode === "partial" && serverUnread <= 0) {
+          return prev
+        }
+        preferClientUnreadRef.current = false
+        return serverUnread
+      })
+    }
+
     if (isPartialBootstrap) {
       // Incomplete server bootstrap (profile/wallet missing) — keep last-known UI until
       // client refetch restores the full snapshot (avoids OAuth avatar flash + hidden balance).
       setProfileAvatarUrl((prev) => prev ?? d.profileAvatarUrl)
       setProfileDisplayName((prev) => prev ?? d.profileDisplayName)
       setIsAdmin((prev) => (d.isAdmin ? d.isAdmin : prev))
-      setUnreadMessages((prev) => (d.unreadMessages > 0 ? d.unreadMessages : prev))
+      applyServerUnread(d.unreadMessages, "partial")
       setWalletBalance((prev) => {
         if (prev !== null) return prev
         const clientTotal = clientWalletTotalRef.current
@@ -560,7 +578,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       setProfileAvatarUrl(d.profileAvatarUrl)
       setProfileDisplayName(d.profileDisplayName)
       setIsAdmin(d.isAdmin)
-      setUnreadMessages(d.unreadMessages)
+      applyServerUnread(d.unreadMessages, "full")
       if (d.walletBalance !== null) {
         setWalletBalance((prev) => {
           const clientTotal = clientWalletTotalRef.current
@@ -627,7 +645,14 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       setIsAdmin(profile?.is_admin || false)
       setProfileAvatarUrl(resolveHeaderAvatarUrl(resolvedUser, profile))
       setProfileDisplayName(profile?.display_name || null)
-      setUnreadMessages(Number(profile?.unread_message_count ?? 0))
+      {
+        const nextUnread = Number(profile?.unread_message_count ?? 0)
+        setUnreadMessages((prev) => {
+          if (preferClientUnreadRef.current && nextUnread > prev) return prev
+          preferClientUnreadRef.current = false
+          return Math.max(0, nextUnread)
+        })
+      }
 
       const { data: wallet } = await supabase
         .from("wallets")
@@ -706,17 +731,29 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         .select("unread_message_count")
         .eq("id", u.id)
         .single()
-      setUnreadMessages(Number(profile?.unread_message_count ?? 0))
+      const next = Number(profile?.unread_message_count ?? 0)
+      setUnreadMessages((prev) => {
+        if (preferClientUnreadRef.current && next > prev) return prev
+        preferClientUnreadRef.current = false
+        return Math.max(0, next)
+      })
     }
 
     function onUnreadCountAdjust(event: Event) {
       const delta = (event as CustomEvent<UnreadMessageCountAdjustDetail>).detail?.delta
       if (typeof delta !== "number" || !Number.isFinite(delta) || delta === 0) return
+      if (delta < 0) preferClientUnreadRef.current = true
       setUnreadMessages((prev) => Math.max(0, prev + delta))
+    }
+
+    function onVisibilityUnreadRefresh() {
+      if (document.visibilityState === "visible") void refreshUnreadCount()
     }
 
     window.addEventListener(UNREAD_COUNT_REFRESH_EVENT, refreshUnreadCount)
     window.addEventListener(UNREAD_MESSAGE_COUNT_ADJUST_EVENT, onUnreadCountAdjust)
+    document.addEventListener("visibilitychange", onVisibilityUnreadRefresh)
+    window.addEventListener("focus", refreshUnreadCount)
 
     const {
       data: { subscription },
@@ -757,6 +794,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       window.removeEventListener(HEADER_AUTH_REFRESH_EVENT, onHeaderAuthRefresh)
       window.removeEventListener(UNREAD_COUNT_REFRESH_EVENT, refreshUnreadCount)
       window.removeEventListener(UNREAD_MESSAGE_COUNT_ADJUST_EVENT, onUnreadCountAdjust)
+      document.removeEventListener("visibilitychange", onVisibilityUnreadRefresh)
+      window.removeEventListener("focus", refreshUnreadCount)
       subscription.unsubscribe()
     }
   }, [supabase, router, refetchFromClient])
@@ -767,6 +806,32 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     const refreshHeader = () => {
       window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
     }
+
+    const applyUnreadFromProfileRow = (row: unknown) => {
+      if (!row || typeof row !== "object") return false
+      const raw = (row as { unread_message_count?: unknown }).unread_message_count
+      if (raw == null) return false
+      const next = Number(raw)
+      if (!Number.isFinite(next)) return false
+      setUnreadMessages((prev) => {
+        // Keep optimistic decreases (thread open / viewing) over a briefly higher
+        // denormalized count from an INSERT that is about to be marked read.
+        if (preferClientUnreadRef.current && next > prev) return prev
+        preferClientUnreadRef.current = false
+        return Math.max(0, next)
+      })
+      return true
+    }
+
+    let unreadRefreshTimer: ReturnType<typeof setTimeout> | null = null
+    const scheduleUnreadRefresh = () => {
+      if (unreadRefreshTimer) clearTimeout(unreadRefreshTimer)
+      unreadRefreshTimer = setTimeout(() => {
+        unreadRefreshTimer = null
+        window.dispatchEvent(new CustomEvent(UNREAD_COUNT_REFRESH_EVENT))
+      }, 150)
+    }
+
     const channel = supabase
       .channel(`header_realtime_${user.id}`)
       .on(
@@ -797,16 +862,42 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           table: "profiles",
           filter: `id=eq.${user.id}`,
         },
-        refreshHeader,
+        (payload) => {
+          // Apply unread instantly from the payload — avoid a full auth/wallet
+          // refetch just because a message bumped the denormalized counter.
+          const applied = applyUnreadFromProfileRow(payload.new)
+          if (!applied) scheduleUnreadRefresh()
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "conversations",
+          filter: `buyer_id=eq.${user.id}`,
+        },
+        scheduleUnreadRefresh,
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "conversations",
+          filter: `seller_id=eq.${user.id}`,
+        },
+        scheduleUnreadRefresh,
       )
       .subscribe()
 
     return () => {
+      if (unreadRefreshTimer) clearTimeout(unreadRefreshTimer)
       void supabase.removeChannel(channel)
     }
   }, [supabase, user?.id])
 
-  /** Lightweight wallet-only resync on route changes — catches staleness when Realtime misses an update. */
+  /** Lightweight wallet + unread resync on route changes — catches Realtime misses. */
   useEffect(() => {
     if (!user?.id) return
     let cancelled = false
@@ -826,6 +917,21 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
             clientWalletTotalRef.current = null
           }
         }
+      })
+    supabase
+      .from("profiles")
+      .select("unread_message_count")
+      .eq("id", user.id)
+      .single()
+      .then(({ data: profile }) => {
+        if (cancelled || !profile) return
+        const next = Number(profile.unread_message_count ?? 0)
+        if (!Number.isFinite(next)) return
+        setUnreadMessages((prev) => {
+          if (preferClientUnreadRef.current && next > prev) return prev
+          preferClientUnreadRef.current = false
+          return Math.max(0, next)
+        })
       })
     return () => { cancelled = true }
   }, [supabase, user?.id, pathname])

@@ -15,6 +15,8 @@ import {
 } from "@/lib/elasticsearch/listings-index"
 import {
   fuzzyBrandNamePrefix,
+  isLikelyTypoBrandMatch,
+  isMarketplaceSectionOnlyQuery,
   stripMarketplaceSearchNoiseWords,
 } from "@/lib/utils/marketplace-brand-query"
 import { hydrateListingsByIds } from "@/lib/search/hydrate-listings"
@@ -22,7 +24,6 @@ import { listActiveListingsForBrand } from "@/lib/db/brand-listings"
 import { fetchCuratedRecentListings } from "@/lib/db/curatedRecentListings"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { resolveDirectoryBrandRowFromLabel } from "@/lib/services/brandDirectorySearch"
-import { isLikelyTypoBrandMatch } from "@/lib/utils/marketplace-brand-query"
 import {
   displayMarketplaceSearchQueryForAnalytics,
   normalizeMarketplaceSearchQueryForAnalytics,
@@ -133,7 +134,13 @@ export async function SearchPageView({
       : null)
 
   // Brand-only free-text still resolves via directory when the parser misses.
-  if (!brandRow && rawQuery.trim() && !parsedQuery?.model) {
+  // Skip for bare section keywords ("fins") — those must not match Futures Fins, etc.
+  if (
+    !brandRow &&
+    rawQuery.trim() &&
+    !parsedQuery?.model &&
+    !isMarketplaceSectionOnlyQuery(rawQuery)
+  ) {
     brandRow = await resolveDirectoryBrandRowFromLabel(supabase, rawQuery)
   }
 
@@ -376,7 +383,9 @@ async function resolveSearchListings(
   }
 
   const expansions = parsed?.expansions ?? (await expansionsForMarketplaceQuery(rawQuery))
-  const textQuery = parsed?.textQuery?.trim() || rawQuery.trim()
+  // Prefer parser text (may be "" for section-only "fins" → all listings in that section).
+  const textQuery =
+    parsed != null ? (parsed.textQuery ?? "").trim() : rawQuery.trim()
   const brandModelIds =
     parsed?.modelIds?.length
       ? parsed.modelIds

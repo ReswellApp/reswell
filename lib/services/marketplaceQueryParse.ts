@@ -21,6 +21,7 @@ import {
   extractMarketplaceSectionIntent,
   isBrandOnlyMarketplaceSuggestQuery,
   isMarketplaceSearchNoiseToken,
+  isMarketplaceSectionOnlyQuery,
   residualMarketplaceQueryAfterBrand,
   stripMarketplaceSearchNoiseWords,
 } from "@/lib/utils/marketplace-brand-query"
@@ -367,6 +368,25 @@ export async function parseMarketplaceQuery(
   }
 
   const { lengthInches, lengthToken, withoutLength } = extractLengthFromQuery(raw)
+
+  // Bare "fins" / "wetsuits" / etc. are section browse intent — never Futures Fins, etc.
+  if (isMarketplaceSectionOnlyQuery(withoutLength) && sectionIntent) {
+    return {
+      raw,
+      cleaned: "",
+      brand: null,
+      model: null,
+      modelIds: [],
+      lengthInches,
+      lengthToken,
+      residualText: "",
+      textQuery: "",
+      isBrandOnly: false,
+      sectionIntent,
+      expansions,
+    }
+  }
+
   // Never fall back to noise-only leftovers ("board") — that matched Softboard / Foot models.
   const cleaned = stripMarketplaceSearchNoiseWords(withoutLength)
 
