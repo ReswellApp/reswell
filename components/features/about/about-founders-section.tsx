@@ -14,6 +14,8 @@ const FOUNDERS: readonly FounderProfileData[] = [
     name: "Hayden Garfield",
     role: "Co-founder",
     title: "CEO & Full Stack Engineer",
+    imageSrc: "/images/about/hayden-garfield.png",
+    imageAlt: "Hayden Garfield, co-founder of Reswell",
   },
   {
     name: "David Kalt",
