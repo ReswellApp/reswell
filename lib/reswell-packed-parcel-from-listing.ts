@@ -17,7 +17,7 @@ import {
   type SurfboardShippingTierId,
 } from "@/lib/surfboard-shipping-tiers"
 import {
-  resolveSurfboardShippingPackBandId,
+  parseSurfboardShippingPackBandId,
   surfboardShippingPackBandFixedParcel,
 } from "@/lib/surfboard-shipping-pack-bands"
 import {
@@ -183,24 +183,46 @@ export function resolveSurfboardShippingTierIdFromListing(
 
 /**
  * Resolves outer-carton L×W×H for surfboard listings from the stored tier or saved packed dims.
+ *
+ * Explicit pack band → fixed band carton.
+ * Null band + usable stored dims → admin custom (or legacy persisted) carton.
+ * Null shortboard band + no stored dims → Max (legacy).
  */
 function resolveSurfboardPackedParcelDims(
   row: ListingPackedParcelSource,
 ): PackedParcelDims | null {
   const tierId = parseSurfboardShippingTierId(row.shipping_package_tier)
+  const Ls = num(row.shipping_packed_length_in)
+  const Ws = num(row.shipping_packed_width_in)
+  const Hs = num(row.shipping_packed_height_in)
+  const stored =
+    Ls && Ws && Hs && storedPackedSurfboardDimsInRange(Ls, Ws, Hs)
+      ? { lengthIn: Ls, widthIn: Ws, heightIn: Hs }
+      : null
+
   if (tierId) {
-    const bandId = resolveSurfboardShippingPackBandId({
-      tierId,
-      bandId: row.shipping_package_band,
-    })
-    if (bandId) {
-      const band = surfboardShippingPackBandFixedParcel(bandId)
+    const explicitBandId = parseSurfboardShippingPackBandId(row.shipping_package_band)
+    if (explicitBandId) {
+      const band = surfboardShippingPackBandFixedParcel(explicitBandId)
       return {
         lengthIn: band.lengthIn,
         widthIn: band.widthIn,
         heightIn: band.heightIn,
       }
     }
+
+    // Admin custom carton (or legacy row that persisted packed dims without a band).
+    if (stored) return stored
+
+    if (tierId === "shortboard") {
+      const max = surfboardShippingPackBandFixedParcel("shortboard_max")
+      return {
+        lengthIn: max.lengthIn,
+        widthIn: max.widthIn,
+        heightIn: max.heightIn,
+      }
+    }
+
     const fixed = surfboardShippingTierFixedParcel(tierId)
     return {
       lengthIn: fixed.lengthIn,
@@ -209,25 +231,20 @@ function resolveSurfboardPackedParcelDims(
     }
   }
 
-  const Ls = num(row.shipping_packed_length_in)
-  const Ws = num(row.shipping_packed_width_in)
-  const Hs = num(row.shipping_packed_height_in)
-  if (Ls && Ws && Hs && storedPackedSurfboardDimsInRange(Ls, Ws, Hs)) {
-    return { lengthIn: Ls, widthIn: Ws, heightIn: Hs }
-  }
-
-  return null
+  return stored
 }
 
 function surfboardTierWeightOzFromListing(row: ListingPackedParcelSource): number | null {
   const tierId = parseSurfboardShippingTierId(row.shipping_package_tier)
   if (tierId) {
-    const bandId = resolveSurfboardShippingPackBandId({
-      tierId,
-      bandId: row.shipping_package_band,
-    })
-    if (bandId) {
-      return surfboardShippingPackBandFixedParcel(bandId).weightLb * 16
+    const explicitBandId = parseSurfboardShippingPackBandId(row.shipping_package_band)
+    if (explicitBandId) {
+      return surfboardShippingPackBandFixedParcel(explicitBandId).weightLb * 16
+    }
+    // Custom carton weight comes from shipping_packed_weight_oz (caller prefers saved).
+    // Fall back to Max / tier defaults only when weight wasn't persisted.
+    if (tierId === "shortboard") {
+      return surfboardShippingPackBandFixedParcel("shortboard_max").weightLb * 16
     }
     return getSurfboardShippingTier(tierId).weightLb * 16
   }

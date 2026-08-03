@@ -18,6 +18,11 @@ import {
   parseSurfboardShippingPackBandId,
   surfboardShippingPackBandBoardSpecsError,
 } from "@/lib/surfboard-shipping-pack-bands"
+import {
+  isReswellPackedWeightComplete,
+  parseReswellParcelLengthRawToCarrierInches,
+  parseReswellParcelWidthHeightRawToCarrierInches,
+} from "@/lib/reswell-parcel-fields"
 
 const PRICE_MIN = 0.01
 const PRICE_MAX = 999_999.99
@@ -44,9 +49,14 @@ function shapeSectionComplete(form: SellFormValidationInput): boolean {
 }
 
 function dimensionsSectionComplete(form: SellFormValidationInput): boolean {
+  const shippingRequiresDims = flagsFromBoardFulfillment(form.boardFulfillment).shipping_available
   const lenRaw = form.boardLength?.trim() ?? ""
+
+  // Pickup-only: dimensions stay optional. Shipping: length, width, and thickness required.
+  if (!lenRaw) return !shippingRequiresDims
+
   const { feetStr, inchesStr } = parseBoardLengthParts(lenRaw)
-  if (!lenRaw || !feetStr) return false
+  if (!feetStr) return false
   const ft = parseLengthFeet(feetStr)
   if (ft == null || ft < 1 || ft > 15) return false
 
@@ -54,8 +64,7 @@ function dimensionsSectionComplete(form: SellFormValidationInput): boolean {
   const inches = parseBoardMeasurement(inRaw) ?? Number.parseFloat(inRaw)
   if (!Number.isFinite(inches) || inches < 0 || inches >= 12) return false
 
-  const skipDims = form.boardSkipOptionalDimensions === true
-  if (!skipDims) {
+  if (shippingRequiresDims) {
     if (!form.boardWidthInches?.trim()) return false
     const width =
       parseBoardMeasurement(form.boardWidthInches.trim()) ??
@@ -102,6 +111,16 @@ function deliverySectionComplete(form: SellFormValidationInput): boolean {
       const raw = String(form.boardShippingPrice ?? "").trim().replace(/,/g, "")
       const n = Number.parseFloat(raw)
       if (!raw || !Number.isFinite(n) || n < 0) return false
+    } else if (form.adminCustomShippingCarton === true) {
+      // Admin custom carton — packed L×W×H + weight.
+      if (!form.boardLength.trim()) return false
+      const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
+      const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
+      const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
+      if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) return false
+      if (!isReswellPackedWeightComplete(form.reswellPackageWeightLb, form.reswellPackageWeightOz)) {
+        return false
+      }
     } else {
       // Reswell mode only — UPS shortboard pack bands (free/flat skip this).
       if (!form.boardLength.trim()) return false

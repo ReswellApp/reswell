@@ -82,8 +82,8 @@ export const SURFBOARD_SHIPPING_PACK_BANDS: Record<
     widthIn: 22,
     heightIn: 6,
     weightLb: 18,
-    maxBoardLengthIn: 70,
-    maxBoardWidthIn: 20,
+    maxBoardLengthIn: 71,
+    maxBoardWidthIn: 21,
   },
   shortboard_standard: {
     id: "shortboard_standard",
@@ -94,8 +94,8 @@ export const SURFBOARD_SHIPPING_PACK_BANDS: Record<
     widthIn: 22,
     heightIn: 6,
     weightLb: 20,
-    maxBoardLengthIn: 72,
-    maxBoardWidthIn: 20,
+    maxBoardLengthIn: 73,
+    maxBoardWidthIn: 21,
   },
   shortboard_max: {
     id: "shortboard_max",
@@ -105,16 +105,16 @@ export const SURFBOARD_SHIPPING_PACK_BANDS: Record<
     widthIn: SURFBOARD_TIER_SHORTBOARD_PROFILE_WIDTH_IN,
     heightIn: SURFBOARD_TIER_SHORTBOARD_PROFILE_HEIGHT_IN,
     weightLb: 22,
-    maxBoardLengthIn: 79,
-    maxBoardWidthIn: 25,
+    maxBoardLengthIn: 77,
+    maxBoardWidthIn: 26,
   },
 }
 
 /** Inches of packing pad added to bare length when recommending a band. */
-export const SHORTBOARD_PACK_BAND_LENGTH_PAD_IN = 2
+export const SHORTBOARD_PACK_BAND_LENGTH_PAD_IN = 1
 
 /** Inches of packing pad added to bare width when recommending a band. */
-export const SHORTBOARD_PACK_BAND_WIDTH_PAD_IN = 2
+export const SHORTBOARD_PACK_BAND_WIDTH_PAD_IN = 1
 
 export function getSurfboardShippingPackBand(
   bandId: SurfboardShippingPackBandId,
@@ -162,6 +162,8 @@ export function surfboardShippingPackBandSurchargeHints(
 
 /**
  * When parent tier is shortboard and band is missing, treat as Max (legacy listings).
+ * Prefer {@link parseSurfboardShippingPackBandId} when distinguishing admin custom cartons
+ * (null band + stored packed dims) from legacy Max.
  */
 export function resolveSurfboardShippingPackBandId(input: {
   tierId: SurfboardShippingTierId | null
@@ -169,6 +171,31 @@ export function resolveSurfboardShippingPackBandId(input: {
 }): SurfboardShippingPackBandId | null {
   if (input.tierId !== "shortboard") return null
   return parseSurfboardShippingPackBandId(input.bandId) ?? "shortboard_max"
+}
+
+/** True when L×W×H match a pack-band carton exactly (weight ignored). */
+export function surfboardShippingPackBandMatchesParcel(
+  bandId: SurfboardShippingPackBandId,
+  parcel: { lengthIn: number; widthIn: number; heightIn: number },
+): boolean {
+  const band = surfboardShippingPackBandFixedParcel(bandId)
+  return (
+    band.lengthIn === parcel.lengthIn &&
+    band.widthIn === parcel.widthIn &&
+    band.heightIn === parcel.heightIn
+  )
+}
+
+/** Which pack band matches these carton dims, if any. */
+export function matchSurfboardShippingPackBandFromParcel(parcel: {
+  lengthIn: number
+  widthIn: number
+  heightIn: number
+}): SurfboardShippingPackBandId | null {
+  for (const bandId of SURFBOARD_SHIPPING_PACK_BAND_IDS) {
+    if (surfboardShippingPackBandMatchesParcel(bandId, parcel)) return bandId
+  }
+  return null
 }
 
 export function surfboardShippingPackBandAllowsBoardSpecs(input: {

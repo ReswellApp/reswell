@@ -8,6 +8,11 @@ export interface ReswellPackageDimensionsCardProps {
   className?: string
   /** When false, omit the inner title + intro (e.g. parent section already has a heading). */
   showHeading?: boolean
+  /**
+   * Admin exact carton mode: hide board-sync copy and state that quotes use the entered
+   * outer box with no packing pad / buffer added.
+   */
+  exactCartonMode?: boolean
   /** Outer packed length placeholder (surfboards use feet/inches; fins use inches). */
   lengthPlaceholder?: string
   lengthIn: string
@@ -75,6 +80,7 @@ function SuffixInput({
 export function ReswellPackageDimensionsCard({
   className,
   showHeading = true,
+  exactCartonMode = false,
   lengthPlaceholder = "e.g. 6'1",
   lengthIn,
   widthIn,
@@ -100,45 +106,57 @@ export function ReswellPackageDimensionsCard({
             Packed size &amp; weight
           </h3>
           <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
-            Carriers bill by the box you ship in, not the board specs alone. Underestimating size or
-            weight can mean extra charges later — measure the bag or box you&apos;ll actually use.
+            {exactCartonMode
+              ? "Enter the exact outer box you will ship in. Quotes and labels use these numbers as-is — no packing pad or buffer is added."
+              : "Carriers bill by the box you ship in, not the board specs alone. Underestimating size or weight can mean extra charges later — measure the bag or box you will actually use."}
           </p>
         </div>
       ) : null}
 
-      <div className="rounded-lg border border-slate-300 bg-slate-50 px-3.5 py-3 text-sm leading-relaxed text-foreground/90">
-        <div className="flex gap-3">
-          <UpsMark className="mt-0.5" />
-          <p className="min-w-0">
-            <span className="sr-only">UPS. </span>
-            Many heavier or longer packed surfboards route{" "}
-            <span className="font-semibold text-foreground">UPS</span> Ground.
+      {!exactCartonMode ? (
+        <div className="rounded-lg border border-slate-300 bg-slate-50 px-3.5 py-3 text-sm leading-relaxed text-foreground/90">
+          <div className="flex gap-3">
+            <UpsMark className="mt-0.5" />
+            <p className="min-w-0">
+              <span className="sr-only">UPS. </span>
+              Many heavier or longer packed surfboards route{" "}
+              <span className="font-semibold text-foreground">UPS</span> Ground.
+            </p>
+          </div>
+          <div className="mt-3 flex gap-3">
+            <FedExMark className="mt-0.5" />
+            <p className="min-w-0">
+              <span className="sr-only">FedEx. </span>
+              <span className="font-semibold text-foreground">FedEx</span> often fits mid-size boards,
+              faster options, or when it&apos;s the better rate for the lane.
+            </p>
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Reswell picks the rate type at checkout from what you enter here and the buyer&apos;s
+            address. UPS Ground limit: Length + (2 × Width) + (2 × Height) must be 160″ or less
+            (165″ carrier max minus 5″ measurement buffer); weight 25 lb or less.
           </p>
         </div>
-        <div className="mt-3 flex gap-3">
-          <FedExMark className="mt-0.5" />
-          <p className="min-w-0">
-            <span className="sr-only">FedEx. </span>
-            <span className="font-semibold text-foreground">FedEx</span> often fits mid-size boards,
-            faster options, or when it&apos;s the better rate for the lane.
-          </p>
-        </div>
-        <p className="mt-3 text-xs text-muted-foreground">
-          Reswell picks the rate type at checkout from what you enter here and the buyer&apos;s
-          address. UPS Ground limit: Length + (2 × Width) + (2 × Height) must be 160″ or less
-          (165″ carrier max minus 5″ measurement buffer); weight 25 lb or less.
+      ) : (
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Quotes use your exact outer L×W×H and weight — no packing pad. UPS Ground limit: Length +
+          (2 × Width) + (2 × Height) ≤ 160″, weight ≤ 25 lb.
         </p>
-      </div>
+      )}
 
-      <div className="space-y-2">
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          When Reswell shipping is on, these three fields stay in sync with <span className="font-medium text-foreground/80">Length</span>,{" "}
-          <span className="font-medium text-foreground/80">Width</span>, and{" "}
-          <span className="font-medium text-foreground/80">Thickness</span> above — change them here only if
-          your packed box differs. Length uses the same feet-and-inches style (such as 5&apos;4), or outer
-          inches. Width and height use the same inch values — we use what you save for carrier rates.
-        </p>
-      </div>
+      {!exactCartonMode ? (
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            When Reswell shipping is on, these three fields stay in sync with{" "}
+            <span className="font-medium text-foreground/80">Length</span>,{" "}
+            <span className="font-medium text-foreground/80">Width</span>, and{" "}
+            <span className="font-medium text-foreground/80">Thickness</span> above — change them here
+            only if your packed box differs. Length uses the same feet-and-inches style (such as
+            5&apos;4), or outer inches. Width and height use the same inch values — we use what you
+            save for carrier rates.
+          </p>
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <SuffixInput

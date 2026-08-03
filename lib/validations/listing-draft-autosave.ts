@@ -45,6 +45,7 @@ export const listingDraftAutosaveSchema = z.object({
   reswellPackageWeightOz: z.string().optional(),
   surfboardShippingTier: z.string().optional(),
   surfboardShippingPackBand: z.string().optional(),
+  adminCustomShippingCarton: z.boolean().optional(),
 })
 
 export type ListingDraftAutosaveInput = z.infer<typeof listingDraftAutosaveSchema>
