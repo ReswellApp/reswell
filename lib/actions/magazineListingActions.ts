@@ -7,6 +7,7 @@ import {
   updateMagazineListingSchema,
 } from "@/lib/validations/magazine-listing"
 import { createMagazineListing, updateMagazineListing } from "@/lib/services/magazineListing"
+import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
 
 export type CreateMagazineListingActionResult =
   | { success: true; listingId: string; slug: string }
@@ -33,6 +34,11 @@ export async function createMagazineListingAction(
 
   try {
     const result = await createMagazineListing(supabase, user.id, parsed.data)
+    void trackFirstTimeSellerForListingIfNeeded(supabase, {
+      listingId: result.listingId,
+      sellerUserId: user.id,
+      sellerEmail: user.email ?? null,
+    })
     revalidatePath("/magazines")
     revalidatePath(`/l/${result.slug}`)
     return { success: true, listingId: result.listingId, slug: result.slug }

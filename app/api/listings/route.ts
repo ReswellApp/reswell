@@ -7,6 +7,7 @@ import { syncListingToIndex } from '@/lib/elasticsearch/listings-index'
 import { syncListingToGoogleMerchantBestEffort } from '@/lib/services/googleMerchantSync'
 import { slugify } from '@/lib/slugify'
 import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
+import { trackFirstTimeSellerForListingIfNeeded } from '@/lib/services/klaviyoFirstTimeSeller'
 import { notifyBoardSavedSearchMatchesForListing } from '@/lib/services/notifyBoardSavedSearchMatches'
 import { LISTING_TITLE_MAX_LENGTH } from '@/lib/sell-form-validation'
 import {
@@ -252,6 +253,11 @@ export async function POST(request: NextRequest) {
     photoUrl: photoUrl || null,
     localPickup: local_pickup !== false,
     shippingAvailable: shipping_available || false,
+  })
+  void trackFirstTimeSellerForListingIfNeeded(supabase, {
+    listingId: listing.id,
+    sellerUserId: user.id,
+    sellerEmail: user.email ?? null,
   })
   void notifyBoardSavedSearchMatchesForListing(listing.id)
 

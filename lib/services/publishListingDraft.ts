@@ -4,6 +4,7 @@ import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-bro
 import { revalidateSellersAfterListingChange } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
+import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
 import { notifyBoardSavedSearchMatchesForListing } from "@/lib/services/notifyBoardSavedSearchMatches"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { revalidateAfterListingSiteModeration } from "@/lib/services/listingSiteModerationRevalidation"
@@ -205,6 +206,11 @@ export async function publishListingDraft(
       photoUrl: primary?.url?.trim() ?? null,
       localPickup: (updated as { local_pickup?: boolean | null }).local_pickup,
       shippingAvailable: (updated as { shipping_available?: boolean | null }).shipping_available,
+    })
+    void trackFirstTimeSellerForListingIfNeeded(supabase, {
+      listingId,
+      sellerUserId,
+      sellerEmail,
     })
   }
 

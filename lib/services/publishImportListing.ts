@@ -10,6 +10,7 @@ import {
 } from "@/lib/listing-dimensions-display"
 import { listingDimensionsColumnTrim } from "@/lib/listing-dimensions-storage"
 import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
+import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
 import { notifyBoardSavedSearchMatchesForListing } from "@/lib/services/notifyBoardSavedSearchMatches"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { mirrorExternalListingImagesToStorage } from "@/lib/services/importListingImages"
@@ -153,6 +154,11 @@ export async function publishImportListing(opts: {
     photoUrl: images[0]?.thumbnail_url ?? images[0]?.url ?? null,
     localPickup: true,
     shippingAvailable: false,
+  })
+  void trackFirstTimeSellerForListingIfNeeded(supabase, {
+    listingId: listing.id,
+    sellerUserId: userId,
+    sellerEmail: userEmail,
   })
   void notifyBoardSavedSearchMatchesForListing(listing.id)
 

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 import { slugify } from '@/lib/slugify'
 import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
+import { trackFirstTimeSellerForListingIfNeeded } from '@/lib/services/klaviyoFirstTimeSeller'
 import { notifyBoardSavedSearchMatchesForListing } from '@/lib/services/notifyBoardSavedSearchMatches'
 import {
   isListingDimensionDisplaySchemaCacheError,
@@ -343,6 +344,11 @@ export async function POST(request: NextRequest) {
     photoUrl: photoUrl || null,
     localPickup: local_pickup !== false,
     shippingAvailable: shipping_available || false,
+  })
+  void trackFirstTimeSellerForListingIfNeeded(supabase, {
+    listingId: listing.id,
+    sellerUserId: targetUserId,
+    sellerEmail: null,
   })
   void notifyBoardSavedSearchMatchesForListing(listing.id)
 

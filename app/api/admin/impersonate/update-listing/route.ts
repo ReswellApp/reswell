@@ -18,6 +18,7 @@ import {
 } from "@/lib/services/publishListingDraft"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
+import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
 import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
 
 export async function PUT(request: NextRequest) {
@@ -292,6 +293,11 @@ export async function PUT(request: NextRequest) {
         typeof listingFields.shipping_available === "boolean"
           ? listingFields.shipping_available
           : existingListing.shipping_available,
+    })
+    void trackFirstTimeSellerForListingIfNeeded(service, {
+      listingId,
+      sellerUserId: existingListing.user_id,
+      sellerEmail: impersonation.email,
     })
     await applyPublishedListingSideEffects(service, listingId, existingListing.user_id)
   } else {

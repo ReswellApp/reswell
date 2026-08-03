@@ -8,6 +8,7 @@ import {
   updateWetsuitListingSchema,
 } from "@/lib/validations/wetsuit-listing"
 import { createWetsuitListing, updateWetsuitListing } from "@/lib/services/wetsuitListing"
+import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
 
 export type CreateWetsuitListingActionResult =
   | { success: true; listingId: string; slug: string }
@@ -41,6 +42,11 @@ export async function createWetsuitListingAction(
 
   try {
     const result = await createWetsuitListing(supabase, user.id, parsed.data)
+    void trackFirstTimeSellerForListingIfNeeded(supabase, {
+      listingId: result.listingId,
+      sellerUserId: user.id,
+      sellerEmail: user.email ?? null,
+    })
     revalidatePath("/wetsuits")
     revalidatePath(`/l/${result.slug}`)
     return { success: true, listingId: result.listingId, slug: result.slug }

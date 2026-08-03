@@ -9,6 +9,7 @@ import {
   updateApparelListingSchema,
 } from "@/lib/validations/apparel-listing"
 import { createApparelListing, updateApparelListing } from "@/lib/services/apparelListing"
+import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
 
 export type CreateApparelListingActionResult =
   | { success: true; listingId: string; slug: string }
@@ -57,6 +58,11 @@ export async function createApparelListingAction(
 
   try {
     const result = await createApparelListing(supabase, user.id, parsed.data)
+    void trackFirstTimeSellerForListingIfNeeded(supabase, {
+      listingId: result.listingId,
+      sellerUserId: user.id,
+      sellerEmail: user.email ?? null,
+    })
     revalidatePath("/apparel")
     revalidatePath(`/l/${result.slug}`)
     return { success: true, listingId: result.listingId, slug: result.slug }

@@ -5,6 +5,7 @@ import { z } from "zod"
 import { createClient } from "@/lib/supabase/server"
 import { createFinListingSchema, updateFinListingSchema } from "@/lib/validations/fin-listing"
 import { createFinListing, updateFinListing } from "@/lib/services/finListing"
+import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { getFinCatalogSearchSellCached } from "@/lib/cache/fin-catalog-search-sell"
 import { searchFinBrandsCatalogSuggestWithClient } from "@/lib/services/finCatalogSearch"
@@ -79,6 +80,11 @@ export async function createFinListingAction(
   try {
     const result = await createFinListing(supabase, user.id, parsed.data)
     void syncListingToGoogleMerchantBestEffort(supabase, result.listingId)
+    void trackFirstTimeSellerForListingIfNeeded(supabase, {
+      listingId: result.listingId,
+      sellerUserId: user.id,
+      sellerEmail: user.email ?? null,
+    })
     revalidatePath("/fins")
     revalidatePath(`/l/${result.slug}`)
     return { success: true, listingId: result.listingId, slug: result.slug }

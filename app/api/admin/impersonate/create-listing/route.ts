@@ -3,6 +3,7 @@ import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { IMPERSONATION_COOKIE, parseImpersonationCookie } from "@/lib/impersonation"
 import { slugify } from "@/lib/slugify"
 import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
+import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
 import { notifyBoardSavedSearchMatchesForListing } from "@/lib/services/notifyBoardSavedSearchMatches"
 import {
   isListingDimensionDisplaySchemaCacheError,
@@ -186,6 +187,11 @@ export async function POST(request: NextRequest) {
     photoUrl,
     localPickup: listingData.local_pickup,
     shippingAvailable: listingData.shipping_available,
+  })
+  void trackFirstTimeSellerForListingIfNeeded(service, {
+    listingId: listing.id,
+    sellerUserId: targetUserId,
+    sellerEmail: null,
   })
   void notifyBoardSavedSearchMatchesForListing(listing.id)
   void syncListingToGoogleMerchantBestEffort(service, listing.id)
