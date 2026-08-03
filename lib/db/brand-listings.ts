@@ -80,6 +80,54 @@ function mapRowToRecentListing(row: BrandMarketplaceListingRow): RecentListing {
   }
 }
 
+const BRAND_ID_IN_CHUNK = 80
+const LISTING_BRAND_ID_PAGE = 1000
+
+/**
+ * Active peer-marketplace listing counts keyed by directory `brands.id`.
+ * Counts rows with `listings.brand_id` set (same discovery gates as brand inventory lists).
+ */
+export async function countActiveListingsByBrandIds(
+  supabase: SupabaseClient,
+  brandIds: readonly string[],
+): Promise<Map<string, number>> {
+  const counts = new Map<string, number>()
+  for (const id of brandIds) counts.set(id, 0)
+  if (brandIds.length === 0) return counts
+
+  for (let i = 0; i < brandIds.length; i += BRAND_ID_IN_CHUNK) {
+    const chunk = brandIds.slice(i, i + BRAND_ID_IN_CHUNK)
+    let from = 0
+
+    for (;;) {
+      const { data, error } = await supabase
+        .from("listings")
+        .select("brand_id")
+        .eq("status", "active")
+        .eq("hidden_from_site", false)
+        .in("section", PEER_LISTING_SECTIONS_FILTER)
+        .in("brand_id", chunk)
+        .range(from, from + LISTING_BRAND_ID_PAGE - 1)
+
+      if (error) {
+        console.error("[countActiveListingsByBrandIds]", error.message)
+        break
+      }
+
+      const rows = (data ?? []) as { brand_id: string | null }[]
+      for (const row of rows) {
+        if (!row.brand_id) continue
+        counts.set(row.brand_id, (counts.get(row.brand_id) ?? 0) + 1)
+      }
+
+      if (rows.length < LISTING_BRAND_ID_PAGE) break
+      from += LISTING_BRAND_ID_PAGE
+    }
+  }
+
+  return counts
+}
+
 /**
  * Active marketplace listings linked to a directory brand (`brand_id`) or legacy `brand` text.
  * Matches `/search?brandSlug=` surfboard results (optional category filter).

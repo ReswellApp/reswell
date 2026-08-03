@@ -1,5 +1,6 @@
+import Image from "next/image"
 import Link from "next/link"
-import { ExternalLink, MapPin } from "lucide-react"
+import { ExternalLink, MapPin, Package } from "lucide-react"
 import {
   BRANDS_BASE,
   brandActiveListingsBrowseHref,
@@ -7,6 +8,8 @@ import {
   brandSoldListingsBrowseHref,
 } from "@/lib/brands/routes"
 import type { BrandRow } from "@/lib/brands/types"
+import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { BrandDetailAdminBar } from "@/components/brands/brand-detail-admin-bar"
 import { BrandProductCategoryBadges } from "@/components/brands/brand-product-category-badges"
 import { Button } from "@/components/ui/button"
@@ -32,11 +35,20 @@ export function BrandProfileView({
   isLoggedIn: boolean
   viewerUserId: string | null
 }) {
+  const logoSrc = brand.logo_url ? brandLogoDisplaySrc(brand.logo_url) : null
+  const metaBits = [
+    brand.founder_name ? `Founded by ${brand.founder_name}` : null,
+    brand.lead_shaper_name ? `Shaped by ${brand.lead_shaper_name}` : null,
+    brand.model_count > 0
+      ? `${brand.model_count} model${brand.model_count === 1 ? "" : "s"}`
+      : null,
+  ].filter((bit): bit is string => bit != null)
+
   return (
     <main className="flex-1">
-      <div className="border-b border-border/80 bg-muted/15">
-        <div className="container mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+      <header className="border-b border-border/80">
+        <div className="container mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-6">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <Link
               href={BRANDS_BASE}
               className="inline-flex text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
@@ -45,65 +57,73 @@ export function BrandProfileView({
             </Link>
             <BrandDetailAdminBar brand={brand} />
           </div>
-        </div>
-      </div>
 
-      <header className="border-b border-border/80 bg-card">
-        <div className="container mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
-          <div className="mx-auto max-w-2xl text-center">
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Brand</p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-balance text-foreground sm:text-4xl">
-              {brand.name}
-            </h1>
-
-            {brand.location_label ? (
-              <p className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="h-4 w-4 shrink-0" aria-hidden />
-                {brand.location_label}
-              </p>
-            ) : null}
-
-            {brand.short_description ? (
-              <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-[17px]">
-                {brand.short_description}
-              </p>
-            ) : null}
-
-            {brand.product_categories.length > 0 ? (
-              <div className="mt-6 flex justify-center">
-                <BrandProductCategoryBadges categories={brand.product_categories} />
+          <div className="flex gap-4 sm:gap-5">
+            {logoSrc ? (
+              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-background p-1.5 sm:h-16 sm:w-16 sm:rounded-xl sm:p-2">
+                <Image
+                  src={logoSrc}
+                  alt={`${brand.name} logo`}
+                  fill
+                  className="object-contain object-center"
+                  sizes="64px"
+                  unoptimized={listingImageShouldBypassOptimization(logoSrc)}
+                />
               </div>
-            ) : null}
+            ) : (
+              <div
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted text-muted-foreground sm:h-16 sm:w-16 sm:rounded-xl"
+                aria-hidden
+              >
+                <Package className="h-6 w-6" />
+              </div>
+            )}
 
-            <dl className="mt-8 grid max-w-lg grid-cols-1 gap-6 text-left sm:mx-auto sm:max-w-none sm:grid-cols-3 sm:gap-8 sm:text-center">
-              <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Founder</dt>
-                <dd className="mt-1 text-sm font-medium text-foreground">{brand.founder_name ?? "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Lead shaper / designer
-                </dt>
-                <dd className="mt-1 text-sm font-medium text-foreground">{brand.lead_shaper_name ?? "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Models</dt>
-                <dd className="mt-1 text-sm font-medium tabular-nums text-foreground">{brand.model_count}</dd>
-              </div>
-            </dl>
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+                {brand.name}
+              </h1>
 
-            <div className="mt-10 flex flex-wrap justify-center gap-3">
-              {brand.website_url ? (
-                <Button asChild className="rounded-full px-6">
-                  <a href={brand.website_url} target="_blank" rel="noopener noreferrer">
-                    Official site
-                    <ExternalLink className="ml-2 h-4 w-4" aria-hidden />
-                  </a>
-                </Button>
+              {brand.location_label ? (
+                <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  <span className="truncate">{brand.location_label}</span>
+                </p>
               ) : null}
-              <Button asChild variant="outline" className="rounded-full px-6">
-                <Link href={brandKeywordSearchHref(brand.name)}>Search listings</Link>
-              </Button>
+
+              {brand.short_description ? (
+                <p className="mt-2.5 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                  {brand.short_description}
+                </p>
+              ) : null}
+
+              {metaBits.length > 0 ? (
+                <p className="mt-2 text-xs text-muted-foreground/90">
+                  {metaBits.join(" · ")}
+                </p>
+              ) : null}
+
+              {brand.product_categories.length > 0 ? (
+                <BrandProductCategoryBadges
+                  categories={brand.product_categories}
+                  className="mt-3"
+                  size="sm"
+                />
+              ) : null}
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {brand.website_url ? (
+                  <Button asChild size="sm" variant="outline">
+                    <a href={brand.website_url} target="_blank" rel="noopener noreferrer">
+                      Official site
+                      <ExternalLink className="ml-1.5 h-3.5 w-3.5" aria-hidden />
+                    </a>
+                  </Button>
+                ) : null}
+                <Button asChild size="sm" variant="outline">
+                  <Link href={brandKeywordSearchHref(brand.name)}>Search listings</Link>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -115,7 +135,7 @@ export function BrandProfileView({
           className="scroll-mt-28 border-b border-border/80 bg-background sm:scroll-mt-32"
           aria-label="Listings"
         >
-          <div className="container mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12">
+          <div className="container mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
             <BrandMarketplaceListingsPreview
               liveListings={brandListingsPreview}
               soldListings={brandSoldListingsPreview}
@@ -129,7 +149,7 @@ export function BrandProfileView({
         </section>
       ) : null}
 
-      <footer className="border-t border-border/80 py-10">
+      <footer className="border-t border-border/80 py-6">
         <div className="container mx-auto max-w-6xl px-4 sm:px-6">
           <p className="text-sm text-muted-foreground">
             <Link href={BRANDS_BASE} className="font-medium text-foreground underline-offset-4 hover:underline">

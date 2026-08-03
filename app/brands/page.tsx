@@ -6,6 +6,7 @@ import { BrandsExplorer } from "@/components/brands/brands-explorer"
 import { BrandsListAdminBar } from "@/components/brands/brands-list-admin-bar"
 import { createClient } from "@/lib/supabase/server"
 import { listBrands } from "@/lib/brands/server"
+import { countActiveListingsByBrandIds } from "@/lib/db/brand-listings"
 import { parseBrandsDirectoryFilterCategorySlugsFromSearchParam } from "@/lib/brand-product-categories"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
@@ -33,6 +34,11 @@ export default async function BrandsPage({
   const brands = await listBrands(supabase, {
     productCategories: categoryFilter.length > 0 ? categoryFilter : undefined,
   })
+  const activeListingCounts = await countActiveListingsByBrandIds(
+    supabase,
+    brands.map((brand) => brand.id),
+  )
+  const activeListingCountByBrandId = Object.fromEntries(activeListingCounts)
 
   return (
     <main className="flex-1">
@@ -61,7 +67,11 @@ export default async function BrandsPage({
           </Suspense>
         </div>
       </section>
-      <BrandsExplorer brands={brands} categoryFilter={categoryFilter} />
+      <BrandsExplorer
+        brands={brands}
+        categoryFilter={categoryFilter}
+        activeListingCountByBrandId={activeListingCountByBrandId}
+      />
     </main>
   )
 }
