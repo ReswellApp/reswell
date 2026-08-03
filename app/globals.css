@@ -37,8 +37,10 @@
   }
 }
 
+/* `backwards` (not `both`): avoid a lingering transform containing block that breaks
+   IntersectionObserver / position:fixed under overflow-x: clip after soft nav. */
 .page-enter {
-  animation: page-enter 260ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: page-enter 260ms cubic-bezier(0.4, 0, 0.2, 1) backwards;
 }
 
 @media (prefers-reduced-motion: reduce) {

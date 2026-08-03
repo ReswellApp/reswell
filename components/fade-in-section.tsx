@@ -12,6 +12,13 @@ interface FadeInSectionProps {
   threshold?: number
 }
 
+function elementOverlapsViewport(el: HTMLElement): boolean {
+  const rect = el.getBoundingClientRect()
+  const vh = window.innerHeight
+  const vw = window.innerWidth
+  return rect.top < vh && rect.bottom > 0 && rect.left < vw && rect.right > 0
+}
+
 /**
  * Wraps children in a div that fades up into view once it enters the viewport.
  * Uses IntersectionObserver; respects `prefers-reduced-motion` via CSS.
@@ -28,18 +35,16 @@ export function FadeInSection({
     const el = ref.current
     if (!el) return
 
+    let visible = false
     const markVisible = () => {
+      if (visible) return
+      visible = true
       el.classList.add("is-visible")
     }
 
     // Avoid a post-hydration “blank band” for sections already in the viewport: run before paint
     // so the first paint matches the scroll-driven case as closely as possible.
-    const rect = el.getBoundingClientRect()
-    const vh = window.innerHeight
-    const vw = window.innerWidth
-    const overlapsViewport =
-      rect.top < vh && rect.bottom > 0 && rect.left < vw && rect.right > 0
-    if (overlapsViewport) {
+    if (elementOverlapsViewport(el)) {
       markVisible()
       return
     }
@@ -55,7 +60,22 @@ export function FadeInSection({
     )
 
     observer.observe(el)
-    return () => observer.disconnect()
+
+    // Soft-nav settle: `NavigationPageGate` may still be applying `page-enter` when this
+    // first runs, which can stall IntersectionObserver under a transformed ancestor.
+    // Recheck once that animation (260ms) has finished.
+    const settleTimer = window.setTimeout(() => {
+      if (visible) return
+      if (elementOverlapsViewport(el)) {
+        markVisible()
+        observer.disconnect()
+      }
+    }, 300)
+
+    return () => {
+      observer.disconnect()
+      window.clearTimeout(settleTimer)
+    }
   }, [threshold])
 
   return (

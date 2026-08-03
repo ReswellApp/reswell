@@ -70,6 +70,11 @@ export function NavigationPageGate({ children }: { children: ReactNode }) {
           flatMobileMessagesInbox ? "flex w-full flex-col" : "flex w-full min-h-0 min-w-0 flex-1 flex-col",
           navCount > 0 && "page-enter",
         )}
+        onAnimationEnd={(event) => {
+          // Drop the class so no animated transform can linger on this wrapper.
+          if (event.target !== event.currentTarget) return
+          event.currentTarget.classList.remove("page-enter")
+        }}
       >
         {children}
       </div>
