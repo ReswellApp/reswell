@@ -11,11 +11,6 @@ export default async function CounterpartyThreadsPage({
 }) {
   const { userId } = await params
 
-  const supportResolved = await resolveSupportRecipientUserId()
-  if (supportResolved.ok && supportResolved.userId === userId) {
-    redirect("/dashboard/support")
-  }
-
   const result = await loadCounterpartyThreads(userId)
 
   if ("error" in result) {
@@ -26,6 +21,12 @@ export default async function CounterpartyThreadsPage({
   }
 
   if (result.threads.length === 0) {
+    // No marketplace threads with this counterparty. If they opened the support
+    // user hub, send them to Support tickets; otherwise back to the inbox.
+    const supportResolved = await resolveSupportRecipientUserId()
+    if (supportResolved.ok && supportResolved.userId === userId) {
+      redirect("/dashboard/support")
+    }
     redirect("/messages")
   }
 

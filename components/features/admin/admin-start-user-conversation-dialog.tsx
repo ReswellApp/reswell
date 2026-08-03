@@ -1,7 +1,6 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
 import { ArrowRight, Loader2, MessageSquarePlus, Search } from "lucide-react"
 import { toast } from "sonner"
 import type { AdminMarketplaceProfilePickerRow } from "@/lib/services/adminStartMarketplaceConversation"
@@ -114,7 +113,6 @@ export function AdminSendUserMessageDialog({
   onOpenChange: controlledOnOpenChange,
   trigger,
 }: AdminSendUserMessageDialogProps) {
-  const router = useRouter()
   const [internalOpen, setInternalOpen] = useState(false)
   const open = controlledOpen ?? internalOpen
   const setOpen = controlledOnOpenChange ?? setInternalOpen
@@ -230,10 +228,16 @@ export function AdminSendUserMessageDialog({
         toast.error(typeof body.error === "string" ? body.error : "Could not start conversation")
         return
       }
+      const conversationId = body.data.conversation_id
       toast.success("Opening thread…")
       setOpen(false)
       resetForm()
-      router.push(`/admin/messages/${body.data.conversation_id}`)
+      // Hard navigate after the dialog closes — soft router.push from inside a
+      // closing Radix Dialog often never leaves /admin/messages, so the new
+      // staff↔member thread looked like it "disappeared".
+      window.setTimeout(() => {
+        window.location.assign(`/admin/messages/${conversationId}`)
+      }, 0)
     } catch {
       toast.error("Could not start conversation")
     } finally {

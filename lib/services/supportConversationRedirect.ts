@@ -4,8 +4,9 @@ import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportReci
 import { isSupportInboxConversation } from "@/lib/utils/messages-inbox-grouping"
 
 /**
- * If this conversation is a Reswell Support ticket thread, returns the member
- * Support URL to redirect marketplace `/messages` deep links.
+ * If this conversation is a Reswell Support ticket thread (member buyer +
+ * support seller, listing_id null), returns the member Support URL to redirect
+ * marketplace `/messages` deep links. Staff-outbound DMs are not redirected.
  */
 export async function resolveSupportRedirectForConversation(
   conversationId: string,

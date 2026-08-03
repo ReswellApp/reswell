@@ -68,9 +68,13 @@ export function filterConversationsWithMessages(
 }
 
 /**
- * Member↔Reswell Support DMs (support tickets) use `listing_id: null` and the
- * configured support user as a participant. Those belong under `/dashboard/support`,
- * not the marketplace `/messages` inbox.
+ * Member↔Reswell Support ticket DMs use `listing_id: null` with the member as
+ * `buyer_id` and the configured support user as `seller_id`. Those belong under
+ * `/dashboard/support`, not the marketplace `/messages` inbox.
+ *
+ * Staff-outbound marketplace DMs (admin/employee messaging a member) use the
+ * opposite orientation (`buyer_id` = staff). Those must stay in `/messages` —
+ * matching either participant here previously hid them and orphaned deep links.
  */
 export function isSupportInboxConversation(
   conv: Pick<InboxConversationRow, "listing_id" | "buyer_id" | "seller_id">,
@@ -78,7 +82,7 @@ export function isSupportInboxConversation(
 ): boolean {
   if (!supportUserId) return false
   if (conv.listing_id != null) return false
-  return conv.seller_id === supportUserId || conv.buyer_id === supportUserId
+  return conv.seller_id === supportUserId
 }
 
 export function filterOutSupportInboxConversations(

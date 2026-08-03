@@ -960,15 +960,8 @@ export async function loadCounterpartyThreads(
   const supportResolved = await resolveSupportRecipientUserId()
   const supportUserId = supportResolved.ok ? supportResolved.userId : null
 
-  // Support-ticket DMs belong under /dashboard/support, not marketplace messages.
-  if (supportUserId && otherUserId === supportUserId) {
-    return {
-      currentUserId: user.id,
-      otherUser: (profile as CounterpartyThreadProfile | null) ?? null,
-      threads: [],
-    }
-  }
-
+  // Drop support-ticket DMs (support as seller). Keep staff-outbound marketplace
+  // DMs where the support/staff account messaged the member as buyer.
   const threads = filterOutSupportInboxConversations(
     filterConversationsWithMessages(
       (convData ?? []) as unknown as InboxConversationRow[],

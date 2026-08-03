@@ -66,7 +66,31 @@ export async function searchProfilesForAdminMessaging(
   return { rows }
 }
 
+async function insertStaffOutboundMessage(
+  supabase: SupabaseClient,
+  conversationId: string,
+  staffUserId: string,
+  content: string,
+): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
+  const { error: msgErr } = await supabase.from("messages").insert({
+    conversation_id: conversationId,
+    sender_id: staffUserId,
+    content: content.slice(0, 8000),
+  })
+  if (msgErr) {
+    console.error("[startStaffOutboundMarketplaceConversation] message insert:", msgErr)
+    return { ok: false, error: "Could not send message", status: 500 }
+  }
+  return { ok: true }
+}
+
+/**
+ * Opens or reuses the general (listing_id null) marketplace DM between staff and a
+ * member, optionally sending an opening message. Uses the service role so inserts
+ * are not blocked by participant RLS edge cases.
+ */
 export async function startStaffOutboundMarketplaceConversation(input: {
+  /** Kept for call-site compatibility; inserts use the service role. */
   supabase: SupabaseClient
   staffUserId: string
   targetUserId: string
@@ -75,7 +99,8 @@ export async function startStaffOutboundMarketplaceConversation(input: {
   | { ok: true; conversationId: string; createdNewConversation: boolean }
   | { ok: false; error: string; status: number }
 > {
-  const { supabase, staffUserId, targetUserId } = input
+  const { staffUserId, targetUserId } = input
+  void input.supabase
 
   if (staffUserId === targetUserId) {
     return { ok: false, error: "Choose a user other than yourself", status: 400 }
@@ -92,25 +117,19 @@ export async function startStaffOutboundMarketplaceConversation(input: {
     return { ok: false, error: "User not found", status: 404 }
   }
 
-  const existing = await getAnyConversationBetweenUsers(supabase, staffUserId, targetUserId)
+  // Only reuse the general staff↔member DM — never a listing-scoped buyer↔seller thread.
+  const existing = await getAnyConversationBetweenUsers(svc, staffUserId, targetUserId, null)
 
   if (existing) {
     const body = input.initialMessage?.trim()
     if (body) {
-      const { error: msgErr } = await supabase.from("messages").insert({
-        conversation_id: existing.id,
-        sender_id: staffUserId,
-        content: body.slice(0, 8000),
-      })
-      if (msgErr) {
-        console.error("[startStaffOutboundMarketplaceConversation] message on existing thread:", msgErr)
-        return { ok: false, error: "Could not send message", status: 500 }
-      }
+      const sent = await insertStaffOutboundMessage(svc, existing.id, staffUserId, body)
+      if (!sent.ok) return sent
     }
     return { ok: true, conversationId: existing.id, createdNewConversation: false }
   }
 
-  const { data: created, error: convErr } = await supabase
+  const { data: created, error: convErr } = await svc
     .from("conversations")
     .insert({
       buyer_id: staffUserId,
@@ -121,6 +140,16 @@ export async function startStaffOutboundMarketplaceConversation(input: {
     .single()
 
   if (convErr || !created?.id) {
+    // Race: another request created the general thread — reuse it.
+    const raced = await getAnyConversationBetweenUsers(svc, staffUserId, targetUserId, null)
+    if (raced) {
+      const body = input.initialMessage?.trim()
+      if (body) {
+        const sent = await insertStaffOutboundMessage(svc, raced.id, staffUserId, body)
+        if (!sent.ok) return sent
+      }
+      return { ok: true, conversationId: raced.id, createdNewConversation: false }
+    }
     console.error("[startStaffOutboundMarketplaceConversation] insert conv:", convErr)
     return { ok: false, error: "Could not start conversation", status: 500 }
   }
@@ -129,14 +158,13 @@ export async function startStaffOutboundMarketplaceConversation(input: {
   const body = input.initialMessage?.trim()
 
   if (body) {
-    const { error: msgErr } = await supabase.from("messages").insert({
-      conversation_id: conversationId,
-      sender_id: staffUserId,
-      content: body.slice(0, 8000),
-    })
-    if (msgErr) {
-      console.error("[startStaffOutboundMarketplaceConversation] insert msg:", msgErr)
-      return { ok: false, error: "Conversation started but the message could not be sent", status: 500 }
+    const sent = await insertStaffOutboundMessage(svc, conversationId, staffUserId, body)
+    if (!sent.ok) {
+      return {
+        ok: false,
+        error: "Conversation started but the message could not be sent",
+        status: 500,
+      }
     }
   }
 
