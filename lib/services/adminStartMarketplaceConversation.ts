@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
 import { getAnyConversationBetweenUsers } from "@/lib/db/conversations"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 
@@ -70,6 +71,7 @@ async function insertStaffOutboundMessage(
   supabase: SupabaseClient,
   conversationId: string,
   staffUserId: string,
+  targetUserId: string,
   content: string,
 ): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
   const { error: msgErr } = await supabase.from("messages").insert({
@@ -81,6 +83,7 @@ async function insertStaffOutboundMessage(
     console.error("[startStaffOutboundMarketplaceConversation] message insert:", msgErr)
     return { ok: false, error: "Could not send message", status: 500 }
   }
+  revalidateMessagesInboxForParticipants(staffUserId, targetUserId)
   return { ok: true }
 }
 
@@ -123,7 +126,13 @@ export async function startStaffOutboundMarketplaceConversation(input: {
   if (existing) {
     const body = input.initialMessage?.trim()
     if (body) {
-      const sent = await insertStaffOutboundMessage(svc, existing.id, staffUserId, body)
+      const sent = await insertStaffOutboundMessage(
+        svc,
+        existing.id,
+        staffUserId,
+        targetUserId,
+        body,
+      )
       if (!sent.ok) return sent
     }
     return { ok: true, conversationId: existing.id, createdNewConversation: false }
@@ -145,7 +154,13 @@ export async function startStaffOutboundMarketplaceConversation(input: {
     if (raced) {
       const body = input.initialMessage?.trim()
       if (body) {
-        const sent = await insertStaffOutboundMessage(svc, raced.id, staffUserId, body)
+        const sent = await insertStaffOutboundMessage(
+          svc,
+          raced.id,
+          staffUserId,
+          targetUserId,
+          body,
+        )
         if (!sent.ok) return sent
       }
       return { ok: true, conversationId: raced.id, createdNewConversation: false }
@@ -158,7 +173,13 @@ export async function startStaffOutboundMarketplaceConversation(input: {
   const body = input.initialMessage?.trim()
 
   if (body) {
-    const sent = await insertStaffOutboundMessage(svc, conversationId, staffUserId, body)
+    const sent = await insertStaffOutboundMessage(
+      svc,
+      conversationId,
+      staffUserId,
+      targetUserId,
+      body,
+    )
     if (!sent.ok) {
       return {
         ok: false,

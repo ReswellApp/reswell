@@ -120,6 +120,33 @@ export async function findMessagesSupportTicketMetaByConversationId(
   }
 }
 
+/** Conversation ids that are linked to at least one support ticket. */
+export async function listConversationIdsLinkedToSupportTickets(
+  supabase: SupabaseClient,
+  conversationIds: string[],
+): Promise<Set<string>> {
+  const unique = Array.from(new Set(conversationIds.filter(Boolean)))
+  if (unique.length === 0) return new Set()
+
+  const { data, error } = await supabase
+    .from("contact_messages")
+    .select("support_conversation_id")
+    .in("support_conversation_id", unique)
+
+  if (error) {
+    console.error("[listConversationIdsLinkedToSupportTickets]", error)
+    return new Set()
+  }
+
+  const linked = new Set<string>()
+  for (const row of data ?? []) {
+    if (row.support_conversation_id) {
+      linked.add(String(row.support_conversation_id))
+    }
+  }
+  return linked
+}
+
 export async function updateContactMessageRow(
   supabase: SupabaseClient,
   args: {

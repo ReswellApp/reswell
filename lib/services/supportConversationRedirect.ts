@@ -40,5 +40,8 @@ export async function resolveSupportRedirectForConversation(
   if (ticket?.id) {
     return `/dashboard/support/${ticket.id}`
   }
-  return "/dashboard/support"
+
+  // No ticket linked — keep the thread on `/messages` so staff-outbound / orphaned
+  // general DMs remain reachable instead of dumping users on an empty Support list.
+  return null
 }

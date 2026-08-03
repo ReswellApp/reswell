@@ -1,3 +1,4 @@
+import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 
 export type AdminSendMarketplaceThreadMessageResult =
@@ -33,7 +34,7 @@ export async function adminSendMarketplaceThreadMessage(input: {
 
   const { data: conv, error: convErr } = await supabase
     .from("conversations")
-    .select("id")
+    .select("id, buyer_id, seller_id")
     .eq("id", conversationId)
     .maybeSingle()
 
@@ -60,6 +61,11 @@ export async function adminSendMarketplaceThreadMessage(input: {
     .from("conversations")
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conversationId)
+
+  revalidateMessagesInboxForParticipants(
+    conv.buyer_id as string,
+    conv.seller_id as string,
+  )
 
   return {
     ok: true,

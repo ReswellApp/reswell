@@ -1,3 +1,4 @@
+import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
   MARKETPLACE_MESSAGE_ATTACHMENTS_BUCKET,
@@ -52,7 +53,7 @@ export async function adminSendMarketplacePdfMessage(input: {
 
   const { data: conv, error: convErr } = await supabase
     .from("conversations")
-    .select("id")
+    .select("id, buyer_id, seller_id")
     .eq("id", conversationId)
     .maybeSingle()
 
@@ -111,6 +112,11 @@ export async function adminSendMarketplacePdfMessage(input: {
     .from("conversations")
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conversationId)
+
+  revalidateMessagesInboxForParticipants(
+    conv.buyer_id as string,
+    conv.seller_id as string,
+  )
 
   const metaRow = inserted.metadata as unknown
   const att = marketplaceMessageAttachmentMetadataSchema.safeParse(metaRow)

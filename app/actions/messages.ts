@@ -32,11 +32,13 @@ import {
 import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportRecipientUser"
 import {
   filterConversationsWithMessages,
-  filterOutSupportInboxConversations,
   type InboxConversationRow,
 } from "@/lib/utils/messages-inbox-grouping"
 import type { MessagesInboxPayload } from "@/lib/db/messagesInbox"
-import { getMessagesInboxForUser } from "@/lib/services/messagesInbox"
+import {
+  getMessagesInboxForUser,
+  retainMarketplaceInboxConversations,
+} from "@/lib/services/messagesInbox"
 
 const sendConversationLocationReplySchema = z.object({
   conversation_id: z.string().uuid(),
@@ -960,9 +962,8 @@ export async function loadCounterpartyThreads(
   const supportResolved = await resolveSupportRecipientUserId()
   const supportUserId = supportResolved.ok ? supportResolved.userId : null
 
-  // Drop support-ticket DMs (support as seller). Keep staff-outbound marketplace
-  // DMs where the support/staff account messaged the member as buyer.
-  const threads = filterOutSupportInboxConversations(
+  // Drop ticketed support DMs; keep staff-outbound + unticketed general threads.
+  const threads = await retainMarketplaceInboxConversations(
     filterConversationsWithMessages(
       (convData ?? []) as unknown as InboxConversationRow[],
     ),
