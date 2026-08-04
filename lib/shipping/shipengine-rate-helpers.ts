@@ -4,6 +4,7 @@
  */
 
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
+import { normalizeCountryCodeForShipping } from "@/lib/shipping/normalize-country-code"
 
 export type ShippingAddressInput = {
   name: string
@@ -28,7 +29,7 @@ function asRecord(v: unknown): Record<string, unknown> | null {
 export const SHIPENGINE_PLACEHOLDER_US_PHONE = "5555555555"
 
 export function addressToPayload(a: ShippingAddressInput, role: "from" | "to") {
-  const country = a.country_code.trim().toUpperCase() || "US"
+  const country = normalizeCountryCodeForShipping(a.country_code)
   const phone = a.phone.trim()
   const base: Record<string, unknown> = {
     name: a.name.trim() || (role === "from" ? "Shipper" : "Recipient"),

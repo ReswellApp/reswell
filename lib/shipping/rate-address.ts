@@ -1,4 +1,5 @@
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
+import { normalizeCountryCodeForShipping } from "@/lib/shipping/normalize-country-code"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { SHIPENGINE_PLACEHOLDER_US_PHONE } from "@/lib/shipping/shipengine-rate-helpers"
 import type { ShippingAddressInput } from "@/lib/shipping/shipengine-rate-helpers"
@@ -27,7 +28,7 @@ export function profileRowToRateQuoteAddress(row: ProfileAddressRow): RateQuoteA
     city_locality: row.city.trim(),
     state_province: row.state?.trim() ?? "",
     postal_code: row.postal_code.trim(),
-    country_code: row.country.trim().toUpperCase() || "US",
+    country_code: normalizeCountryCodeForShipping(row.country),
     residential: "yes",
   }
 }
@@ -48,7 +49,7 @@ export function orderShippingJsonToRateQuoteAddress(ship: unknown): RateQuoteAdd
   const city = typeof a.city === "string" ? a.city.trim() : ""
   const postal = typeof a.postal_code === "string" ? a.postal_code.trim() : ""
   if (!line1 || !city || !postal) return null
-  const country = (typeof a.country === "string" ? a.country.trim() : "") || "US"
+  const countryRaw = typeof a.country === "string" ? a.country.trim() : ""
   const nm = typeof s.name === "string" ? s.name.trim() : ""
   const ph = typeof s.phone === "string" ? s.phone.trim() : ""
   const line2 = typeof a.line2 === "string" ? a.line2.trim() : ""
@@ -62,7 +63,7 @@ export function orderShippingJsonToRateQuoteAddress(ship: unknown): RateQuoteAdd
     city_locality: city,
     state_province: st,
     postal_code: postal,
-    country_code: country.toUpperCase(),
+    country_code: normalizeCountryCodeForShipping(countryRaw || "US"),
     residential: "yes",
   }
 }
@@ -84,7 +85,7 @@ export function rateQuoteFieldsToShippingInput(a: RateQuoteAddressFields): Shipp
 }
 
 export function addressToShipEnginePayload(a: RateQuoteAddressFields, role: "from" | "to") {
-  const country = a.country_code.trim().toUpperCase() || "US"
+  const country = normalizeCountryCodeForShipping(a.country_code)
   const phone = a.phone.trim()
   const base: Record<string, unknown> = {
     name: a.name.trim() || (role === "from" ? "Shipper" : "Recipient"),
