@@ -38,6 +38,7 @@ import {
   ListingVacationModeButton,
   canUseListingVacationMode,
 } from "@/components/features/sell/listing-vacation-mode-button"
+import { SellerBanRestrictedPanel } from "@/components/features/sell/seller-ban-restricted-panel"
 import { peerListingEditHref } from "@/lib/peer-listing-sections"
 import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
 import type { MyListingRow, MyListingsDashboardStats } from "@/lib/db/my-listings"
@@ -56,6 +57,7 @@ interface MyListingsClientProps {
   listings: MyListingRow[]
   stats: MyListingsDashboardStats
   fetchError?: string
+  sellerBanned?: boolean
 }
 
 function listingRowImageSrc(listing: MyListingRow): string | null {
@@ -169,7 +171,12 @@ function ListingEngagementBadge({
   )
 }
 
-export function MyListingsClient({ listings, stats, fetchError }: MyListingsClientProps) {
+export function MyListingsClient({
+  listings,
+  stats,
+  fetchError,
+  sellerBanned = false,
+}: MyListingsClientProps) {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
   const [sort, setSort] = useState<SortOption>("recent")
@@ -232,15 +239,19 @@ export function MyListingsClient({ listings, stats, fetchError }: MyListingsClie
             >
               Archived listings
             </Link>
-            <Button asChild size="sm" className="rounded-full">
-              <Link href="/sell?new=1">
-                <Plus className="h-4 w-4" />
-                New listing
-              </Link>
-            </Button>
+            {!sellerBanned ? (
+              <Button asChild size="sm" className="rounded-full">
+                <Link href="/sell?new=1">
+                  <Plus className="h-4 w-4" />
+                  New listing
+                </Link>
+              </Button>
+            ) : null}
           </>
         }
       />
+
+      {sellerBanned ? <SellerBanRestrictedPanel compact /> : null}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard icon={Package} label="Total Listings" value={stats.totalListings} />
@@ -300,14 +311,18 @@ export function MyListingsClient({ listings, stats, fetchError }: MyListingsClie
             <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
             <h3 className="mb-2 text-lg font-semibold text-foreground">No listings yet</h3>
             <p className="mb-4 text-muted-foreground">
-              Start selling by creating your first listing
+              {sellerBanned
+                ? "Selling is temporarily unavailable on this account."
+                : "Start selling by creating your first listing"}
             </p>
-            <Button asChild className="rounded-full">
-              <Link href="/sell?new=1">
-                <Plus className="h-4 w-4" />
-                Create listing
-              </Link>
-            </Button>
+            {!sellerBanned ? (
+              <Button asChild className="rounded-full">
+                <Link href="/sell?new=1">
+                  <Plus className="h-4 w-4" />
+                  Create listing
+                </Link>
+              </Button>
+            ) : null}
           </CardContent>
         </Card>
       ) : (
@@ -366,7 +381,8 @@ function ListingRow({
   const imageSrc = listingRowImageSrc(listing)
   const isDraft = listing.status === "draft"
   const isSold = listing.status === "sold"
-  const showVacation = canUseListingVacationMode(listing.status)
+  const isDelinquent = listing.status === "delinquent"
+  const showVacation = !isDelinquent && canUseListingVacationMode(listing.status)
   const editHref = peerListingEditHref(listing.section, listing.id)
   const cardHref = isDraft ? editHref : getListingHref(listing.section, listing.id, listing.slug)
   const brandLine = listingBrandLine(listing)
@@ -420,12 +436,16 @@ function ListingRow({
             <ListingEngagementBadge icon={Heart} label="Saved" value={listing.favoriteCount} />
           ) : null}
         </div>
-        {listing.hidden_from_site && !isDraft && !isSold ? (
+        {isDelinquent ? (
+          <p className="mt-0.5 text-[11px] font-medium text-orange-700 dark:text-orange-400">
+            Delinquent — hidden from site
+          </p>
+        ) : listing.hidden_from_site && !isDraft && !isSold ? (
           <p className="mt-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400">
             On vacation — hidden from site
           </p>
         ) : null}
-        {!isDraft && listing.status !== "active" && !isSold ? (
+        {!isDraft && !isDelinquent && listing.status !== "active" && !isSold ? (
           <p className="mt-0.5 text-[11px] capitalize text-muted-foreground">{listing.status}</p>
         ) : null}
       </div>

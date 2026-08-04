@@ -69,6 +69,7 @@ export function SurfpacksBrowseClient({
         description={description}
         action={
           <CategoryBrowseFilterButton
+            category="surfpacks"
             activeFilterCount={state.activeCount}
             onOpenMobileFilters={() => setMobileOpen(true)}
             desktopFiltersOpen={desktopFiltersOpen}

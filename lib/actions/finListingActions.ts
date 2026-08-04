@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { createClient } from "@/lib/supabase/server"
+import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
 import { createFinListingSchema, updateFinListingSchema } from "@/lib/validations/fin-listing"
 import { createFinListing, updateFinListing } from "@/lib/services/finListing"
 import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
@@ -75,6 +76,12 @@ export async function createFinListingAction(
   } = await supabase.auth.getUser()
   if (!user) {
     return { error: "Please sign in to list a fin." }
+  }
+
+
+  const sellGuard = await evaluateSellerCanSell(supabase, user.id)
+  if (!sellGuard.ok) {
+    return { error: sellGuard.userMessage }
   }
 
   try {

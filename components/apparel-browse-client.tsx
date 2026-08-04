@@ -70,6 +70,7 @@ export function ApparelBrowseClient({
         description={description}
         action={
           <CategoryBrowseFilterButton
+            category="apparel"
             activeFilterCount={state.activeCount}
             onOpenMobileFilters={() => setMobileOpen(true)}
             desktopFiltersOpen={desktopFiltersOpen}

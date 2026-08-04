@@ -43,7 +43,9 @@ export async function canViewHiddenListing(
   }
 
   const restrictedFromPublic =
-    listing.hidden_from_site === true || listing.status === "removed"
+    listing.hidden_from_site === true ||
+    listing.status === "removed" ||
+    listing.status === "delinquent"
 
   if (!restrictedFromPublic) return true
 

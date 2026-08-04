@@ -6,6 +6,7 @@ import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { grantExclusiveWindowForRefundedOrderRelist } from "@/lib/services/listingBuyerExclusiveWindow"
 import { recordListingVisibilityEvents } from "@/lib/services/listingVisibilityAudit"
+import { fetchSellerBanState, isSellerBanActive } from "@/lib/db/sellerBan"
 
 function uniqueListingIds(listingIds: readonly (string | null | undefined)[]): string[] {
   return [...new Set(listingIds.filter((id): id is string => typeof id === "string" && id.length > 0))]
@@ -26,57 +27,157 @@ export async function relistListingsAfterRefund(
   }
 
   const nowIso = new Date().toISOString()
-  const { data, error } = await supabase
+  const { data: soldRows, error: soldErr } = await supabase
     .from("listings")
-    .update({
-      status: "active",
-      hidden_from_site: false,
-      site_visibility_reason: null,
-      updated_at: nowIso,
-    })
+    .select("id, user_id")
     .in("id", uniqueIds)
     .eq("status", "sold")
-    .select("id, user_id")
 
-  if (error) {
-    console.error("[relist] failed to reactivate listings after refund", {
+  if (soldErr) {
+    console.error("[relist] failed to load sold listings for refund relist", {
       listingIds: uniqueIds,
-      error,
+      error: soldErr,
     })
     revalidateRecentlySoldSurfaces()
     return
   }
 
-  const relistedIds = (data ?? [])
-    .map((row) => (row as { id?: string | null }).id)
-    .filter((id): id is string => typeof id === "string" && id.length > 0)
-
-  revalidateRecentlySoldSurfaces()
-
-  if (relistedIds.length === 0) {
+  const rows = soldRows ?? []
+  if (rows.length === 0) {
+    revalidateRecentlySoldSurfaces()
     return
   }
 
-  revalidateBoardsBrowseCatalog()
-  const sellerUserIds = (data ?? [])
-    .map((row) => (row as { user_id?: string | null }).user_id)
-    .filter((id): id is string => typeof id === "string" && id.length > 0)
-  await revalidateSellersForUserIds(supabase, sellerUserIds)
+  const sellerIds = [
+    ...new Set(
+      rows
+        .map((row) => (row as { user_id?: string | null }).user_id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    ),
+  ]
 
-  await recordListingVisibilityEvents(
-    supabase,
-    relistedIds.map((listingId) => ({
-      listingId,
-      hiddenFromSite: false,
-      source: "seller_relist" as const,
-      note: "Reactivated after refund",
-      metadata: { reason: "refund" },
-    })),
+  const bannedSellerIds = new Set<string>()
+  await Promise.all(
+    sellerIds.map(async (sellerId) => {
+      const banState = await fetchSellerBanState(supabase, sellerId)
+      if (isSellerBanActive(banState)) bannedSellerIds.add(sellerId)
+    }),
   )
 
-  for (const listingId of relistedIds) {
-    void syncListingToGoogleMerchantBestEffort(supabase, listingId)
-    void syncListingToIndex(supabase, listingId)
+  const liveIds = rows
+    .filter((row) => {
+      const sellerId = (row as { user_id?: string | null }).user_id
+      return typeof sellerId === "string" && !bannedSellerIds.has(sellerId)
+    })
+    .map((row) => String((row as { id: string }).id))
+
+  const delinquentIds = rows
+    .filter((row) => {
+      const sellerId = (row as { user_id?: string | null }).user_id
+      return typeof sellerId === "string" && bannedSellerIds.has(sellerId)
+    })
+    .map((row) => String((row as { id: string }).id))
+
+  const relistedIds: string[] = []
+  const sellerUserIds: string[] = []
+
+  if (liveIds.length > 0) {
+    const { data, error } = await supabase
+      .from("listings")
+      .update({
+        status: "active",
+        hidden_from_site: false,
+        site_visibility_reason: null,
+        updated_at: nowIso,
+      })
+      .in("id", liveIds)
+      .eq("status", "sold")
+      .select("id, user_id")
+
+    if (error) {
+      console.error("[relist] failed to reactivate listings after refund", {
+        listingIds: liveIds,
+        error,
+      })
+    } else {
+      for (const row of data ?? []) {
+        const id = (row as { id?: string | null }).id
+        const sellerId = (row as { user_id?: string | null }).user_id
+        if (typeof id === "string" && id.length > 0) relistedIds.push(id)
+        if (typeof sellerId === "string" && sellerId.length > 0) sellerUserIds.push(sellerId)
+      }
+    }
+  }
+
+  if (delinquentIds.length > 0) {
+    const { data, error } = await supabase
+      .from("listings")
+      .update({
+        status: "delinquent",
+        hidden_from_site: true,
+        site_visibility_reason: "seller_ban",
+        updated_at: nowIso,
+      })
+      .in("id", delinquentIds)
+      .eq("status", "sold")
+      .select("id, user_id")
+
+    if (error) {
+      console.error("[relist] failed to mark banned-seller refund listings delinquent", {
+        listingIds: delinquentIds,
+        error,
+      })
+    } else {
+      const restoredDelinquent = (data ?? [])
+        .map((row) => (row as { id?: string | null }).id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0)
+      await recordListingVisibilityEvents(
+        supabase,
+        restoredDelinquent.map((listingId) => ({
+          listingId,
+          hiddenFromSite: true,
+          source: "seller_ban" as const,
+          note: "Refund relist while seller banned — kept delinquent",
+          metadata: { reason: "refund_seller_banned" },
+        })),
+      )
+      for (const listingId of restoredDelinquent) {
+        void syncListingToIndex(supabase, listingId)
+      }
+      for (const row of data ?? []) {
+        const sellerId = (row as { user_id?: string | null }).user_id
+        if (typeof sellerId === "string" && sellerId.length > 0) sellerUserIds.push(sellerId)
+      }
+    }
+  }
+
+  revalidateRecentlySoldSurfaces()
+
+  if (relistedIds.length === 0 && delinquentIds.length === 0) {
+    return
+  }
+
+  if (relistedIds.length > 0) {
+    revalidateBoardsBrowseCatalog()
+    await revalidateSellersForUserIds(supabase, sellerUserIds)
+
+    await recordListingVisibilityEvents(
+      supabase,
+      relistedIds.map((listingId) => ({
+        listingId,
+        hiddenFromSite: false,
+        source: "seller_relist" as const,
+        note: "Reactivated after refund",
+        metadata: { reason: "refund" },
+      })),
+    )
+
+    for (const listingId of relistedIds) {
+      void syncListingToGoogleMerchantBestEffort(supabase, listingId)
+      void syncListingToIndex(supabase, listingId)
+    }
+  } else if (sellerUserIds.length > 0) {
+    await revalidateSellersForUserIds(supabase, sellerUserIds)
   }
 }
 

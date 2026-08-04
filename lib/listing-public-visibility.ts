@@ -60,6 +60,12 @@ export function isListingVisibleInPublicSoldFeed(listing: ListingPublicVisibilit
 export function isListingVisibleInSavedList(listing: ListingPublicVisibilityFields): boolean {
   if (listing.archived_at) return false
   if (listing.hidden_from_site) return false
-  if (listing.status === "removed" || listing.status === "draft") return false
+  if (
+    listing.status === "removed" ||
+    listing.status === "draft" ||
+    listing.status === "delinquent"
+  ) {
+    return false
+  }
   return SAVED_LIST_STATUSES.has(listing.status)
 }

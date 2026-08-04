@@ -28,13 +28,18 @@ export function ListingOwnerManageActions({
   hiddenFromSite = false,
   showQuickPriceEdit = true,
 }: ListingOwnerManageActionsProps) {
-  const showVacation = canUseListingVacationMode(listingStatus)
+  const isDelinquent = listingStatus === "delinquent"
+  const showVacation = !isDelinquent && canUseListingVacationMode(listingStatus)
 
   return (
     <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">
       <div className="flex min-w-0 flex-col items-start gap-2">
         <p className="text-[14px] text-muted-foreground">Your listing</p>
-        {hiddenFromSite ? (
+        {isDelinquent ? (
+          <p className="text-sm font-medium text-orange-700 dark:text-orange-400">
+            Delinquent — this listing is hidden while your account is restricted.
+          </p>
+        ) : hiddenFromSite ? (
           <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
             On vacation — hidden from browse and search until you go live again.
           </p>

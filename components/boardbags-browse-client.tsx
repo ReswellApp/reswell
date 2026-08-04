@@ -69,6 +69,7 @@ export function BoardbagsBrowseClient({
         description={description}
         action={
           <CategoryBrowseFilterButton
+            category="boardbags"
             activeFilterCount={state.activeCount}
             onOpenMobileFilters={() => setMobileOpen(true)}
             desktopFiltersOpen={desktopFiltersOpen}

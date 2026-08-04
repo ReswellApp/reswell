@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
 import { APPAREL_SELL_ADMIN_ONLY } from "@/lib/apparel-listing-config"
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import {
@@ -55,6 +56,12 @@ export async function createApparelListingAction(
 
   const gateError = await assertCanSellApparel(supabase, user.id)
   if (gateError) return { error: gateError }
+
+
+  const sellGuard = await evaluateSellerCanSell(supabase, user.id)
+  if (!sellGuard.ok) {
+    return { error: sellGuard.userMessage }
+  }
 
   try {
     const result = await createApparelListing(supabase, user.id, parsed.data)

@@ -7,6 +7,7 @@ export const ADMIN_LISTING_STATUS_VALUES = [
   "pending",
   "pending_sale",
   "draft",
+  "delinquent",
 ] as const
 
 export type AdminListingStatus = (typeof ADMIN_LISTING_STATUS_VALUES)[number]

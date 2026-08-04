@@ -7,6 +7,7 @@ import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerc
 import { revalidateAfterListingSiteModeration } from "@/lib/services/listingSiteModerationRevalidation"
 import type { ListingVisibilitySource } from "@/lib/listing-visibility-sources"
 import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
+import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
 
 const VACATION_ALLOWED_STATUSES = new Set(["active", "pending_sale"])
 
@@ -52,6 +53,14 @@ export async function setListingVacationModeForSeller(params: {
   const hiddenFromSite = params.vacationMode
   if (Boolean(listing.hidden_from_site) === hiddenFromSite) {
     return { ok: true }
+  }
+
+  // Going live again is a sell action — blocked for seller-banned accounts.
+  if (!hiddenFromSite) {
+    const sellGuard = await evaluateSellerCanSell(params.supabase, params.userId)
+    if (!sellGuard.ok) {
+      return { ok: false, error: sellGuard.userMessage, status: 403 }
+    }
   }
 
   let service: ReturnType<typeof createServiceRoleClient>

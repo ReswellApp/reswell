@@ -75,6 +75,7 @@ export function FinsBrowseClient({
         description={description}
         action={
           <CategoryBrowseFilterButton
+            category="fins"
             activeFilterCount={state.activeCount}
             onOpenMobileFilters={() => setMobileOpen(true)}
             desktopFiltersOpen={desktopFiltersOpen}

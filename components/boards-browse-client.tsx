@@ -14,6 +14,7 @@ import { useBoardsFilterState } from "@/components/boards-browse-filter-state"
 import { prefetchBoardsBrowseBrandModelsCatalog } from "@/components/boards-browse-catalog-brand-model"
 import { BoardsSaveSearchPanel } from "@/components/boards-save-search-panel"
 import { facetOptionLabel, FACET_PARAM_KEYS } from "@/lib/boards-browse-facets"
+import { logBrowseButtonClick } from "@/lib/log-browse-button-click"
 import { cn } from "@/lib/utils"
 
 type FacetCountsMap = Record<string, Record<string, number>>
@@ -125,7 +126,15 @@ export function BoardsBrowseClient({
                   ? "Showing boards that ship — click to clear"
                   : "Show only boards that ship to you"
               }
-              onClick={() => state.setShippingAvailable(!state.shippingAvailable)}
+              onClick={() => {
+                const next = !state.shippingAvailable
+                logBrowseButtonClick({
+                  category: "boards",
+                  button: "ship_to_me",
+                  detail: next ? "enabled" : "disabled",
+                })
+                state.setShippingAvailable(next)
+              }}
               className={cn(
                 "h-10 shrink-0 gap-2 rounded-full px-4 text-sm font-semibold shadow-none transition-colors",
                 state.shippingAvailable
@@ -141,6 +150,7 @@ export function BoardsBrowseClient({
               Ship to me
             </Button>
             <CategoryBrowseFilterButton
+              category="boards"
               activeFilterCount={state.activeCount}
               onOpenMobileFilters={() => setMobileOpen(true)}
               desktopFiltersOpen={desktopFiltersOpen}

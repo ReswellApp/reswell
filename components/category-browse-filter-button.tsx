@@ -3,9 +3,12 @@
 import { SlidersHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import type { BrowseButtonCategory } from "@/lib/browse-button-tracking"
+import { logBrowseButtonClick } from "@/lib/log-browse-button-click"
 import { cn } from "@/lib/utils"
 
 type Props = {
+  category: BrowseButtonCategory
   activeFilterCount: number
   onOpenMobileFilters: () => void
   desktopFiltersOpen?: boolean
@@ -15,6 +18,7 @@ type Props = {
 
 /** Compact Filter control shared by category browse page headers. */
 export function CategoryBrowseFilterButton({
+  category,
   activeFilterCount,
   onOpenMobileFilters,
   desktopFiltersOpen = false,
@@ -37,7 +41,10 @@ export function CategoryBrowseFilterButton({
         type="button"
         variant="outline"
         className="h-10 shrink-0 gap-2 rounded-full border-[#001A4A]/15 bg-white px-4 text-sm font-medium text-[#001A4A] shadow-none hover:bg-[#F9F9F2] md:hidden"
-        onClick={onOpenMobileFilters}
+        onClick={() => {
+          logBrowseButtonClick({ category, button: "filter", detail: "mobile" })
+          onOpenMobileFilters()
+        }}
       >
         <SlidersHorizontal className="h-4 w-4 stroke-[1.75]" aria-hidden="true" />
         Filter
@@ -49,7 +56,10 @@ export function CategoryBrowseFilterButton({
         variant="outline"
         aria-expanded={desktopFiltersOpen}
         aria-label={desktopFiltersOpen ? "Hide filters" : "Show filters"}
-        onClick={onToggleDesktopFilters}
+        onClick={() => {
+          logBrowseButtonClick({ category, button: "filter", detail: "desktop" })
+          onToggleDesktopFilters?.()
+        }}
         className="hidden h-10 shrink-0 gap-2 rounded-full border-[#001A4A]/15 bg-white px-4 text-sm font-medium text-[#001A4A] shadow-none hover:bg-[#F9F9F2] md:inline-flex"
       >
         <SlidersHorizontal className="h-4 w-4 stroke-[1.75]" aria-hidden="true" />

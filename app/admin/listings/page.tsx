@@ -257,6 +257,11 @@ const STATUS_META: Record<string, { label: string; dot: string; badge: string }>
     dot: 'bg-rose-500',
     badge: 'border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400',
   },
+  delinquent: {
+    label: 'Delinquent',
+    dot: 'bg-orange-500',
+    badge: 'border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-400',
+  },
 }
 
 function statusMeta(status: string) {
@@ -570,7 +575,10 @@ export default function AdminListingsPage() {
             ? {
                 ...l,
                 status: newStatus,
-                hidden_from_site: newStatus === 'removed' ? true : l.hidden_from_site,
+                hidden_from_site:
+                  newStatus === 'removed' || newStatus === 'delinquent'
+                    ? true
+                    : l.hidden_from_site,
               }
             : l,
         ),
@@ -853,7 +861,8 @@ export default function AdminListingsPage() {
           ? {
               ...l,
               status,
-              hidden_from_site: status === 'removed' ? true : l.hidden_from_site,
+              hidden_from_site:
+                status === 'removed' || status === 'delinquent' ? true : l.hidden_from_site,
             }
           : l,
       ),
@@ -1021,6 +1030,7 @@ export default function AdminListingsPage() {
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="pending_sale">Pending sale</SelectItem>
                 <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="delinquent">Delinquent</SelectItem>
                 <SelectItem value="removed">Removed</SelectItem>
               </SelectContent>
             </Select>
@@ -1536,7 +1546,7 @@ export default function AdminListingsPage() {
                               <Flag className="mr-2 h-4 w-4" /> Remove
                             </DropdownMenuItem>
                           ) : null}
-                          {listing.status === 'removed' ? (
+                          {listing.status === 'removed' || listing.status === 'delinquent' ? (
                             <DropdownMenuItem onClick={() => updateListingStatus(listing.id, 'active')}>
                               <RotateCcw className="mr-2 h-4 w-4" /> Restore
                             </DropdownMenuItem>

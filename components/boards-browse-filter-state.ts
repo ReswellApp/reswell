@@ -14,6 +14,10 @@ import {
   normalizedBoardsBrowseTypeFromParam,
 } from "@/lib/marketplace-slug-metadata"
 import { normalizeBoardBrowseRadius } from "@/lib/boards-browse-location"
+import {
+  browseFacetRangeValue,
+  logBrowseFacetClick,
+} from "@/lib/log-browse-button-click"
 
 /** Params owned by the facet sidebar/drawer (reset together on "Clear all"). */
 const FACET_OWNED_KEYS = [
@@ -114,6 +118,29 @@ export function useBoardsFilterState(
 
   const toggleMulti = useCallback(
     (key: string, value: string) => {
+      let selecting = true
+      if (key === FACET_PARAM_KEYS.style) {
+        const navType = normalizedBoardsBrowseTypeFromParam(searchParams.get("type"))
+        let current = (searchParams.get(key) ?? "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+        if (current.length === 0 && navType) current = [navType]
+        selecting = !current.includes(value)
+      } else {
+        const current = (searchParams.get(key) ?? "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+        selecting = !current.includes(value)
+      }
+      logBrowseFacetClick({
+        category: "boards",
+        facetKey: key,
+        facetValue: value,
+        detail: selecting ? "select" : "deselect",
+      })
+
       navigate((params) => {
         if (key === FACET_PARAM_KEYS.style) {
           const navType = normalizedBoardsBrowseTypeFromParam(params.get("type"))
@@ -142,7 +169,7 @@ export function useBoardsFilterState(
         else params.delete(key)
       })
     },
-    [navigate],
+    [navigate, searchParams],
   )
 
   const setSingle = useCallback(
@@ -157,8 +184,15 @@ export function useBoardsFilterState(
 
   const setBrand = useCallback(
     (next: { brand: string; brandId?: string; model?: string; brandModelId?: string }) => {
+      const trimmed = next.brand.trim()
+      logBrowseFacetClick({
+        category: "boards",
+        facetKey: "brand",
+        facetValue: trimmed || undefined,
+        detail: trimmed ? "set" : "clear",
+      })
       navigate((params) => {
-        if (next.brand.trim()) params.set("brand", next.brand.trim())
+        if (trimmed) params.set("brand", trimmed)
         else params.delete("brand")
         if (next.brandId?.trim()) params.set("brandId", next.brandId.trim())
         else params.delete("brandId")
@@ -174,8 +208,15 @@ export function useBoardsFilterState(
 
   const setModel = useCallback(
     (next: { model: string; brandModelId?: string }) => {
+      const trimmed = next.model.trim()
+      logBrowseFacetClick({
+        category: "boards",
+        facetKey: "model",
+        facetValue: trimmed || undefined,
+        detail: trimmed ? "set" : "clear",
+      })
       navigate((params) => {
-        if (next.model.trim()) params.set("model", next.model.trim())
+        if (trimmed) params.set("model", trimmed)
         else params.delete("model")
         if (next.brandModelId?.trim()) params.set("brandModelId", next.brandModelId.trim())
         else params.delete("brandModelId")
@@ -186,6 +227,13 @@ export function useBoardsFilterState(
 
   const setPriceRange = useCallback(
     (min: string | null, max: string | null) => {
+      const range = browseFacetRangeValue(min, max)
+      logBrowseFacetClick({
+        category: "boards",
+        facetKey: "price",
+        facetValue: range || undefined,
+        detail: range ? "set" : "clear",
+      })
       navigate((params) => {
         const minN = min?.trim() ? Math.round(Number(min)) : NaN
         const maxN = max?.trim() ? Math.round(Number(max)) : NaN
@@ -200,8 +248,15 @@ export function useBoardsFilterState(
 
   const setLocationQuery = useCallback(
     (query: string) => {
+      const trimmed = query.trim()
+      logBrowseFacetClick({
+        category: "boards",
+        facetKey: "location",
+        facetValue: trimmed || undefined,
+        detail: trimmed ? "set" : "clear",
+      })
       navigate((params) => {
-        if (query.trim()) params.set("location", query.trim())
+        if (trimmed) params.set("location", trimmed)
         else {
           params.delete("location")
           params.delete("lat")
@@ -215,6 +270,12 @@ export function useBoardsFilterState(
 
   const setLocationCoords = useCallback(
     (label: string, lat: number, lng: number) => {
+      logBrowseFacetClick({
+        category: "boards",
+        facetKey: "location",
+        facetValue: label.trim() || undefined,
+        detail: "set",
+      })
       navigate((params) => {
         params.set("location", label)
         params.set("lat", String(lat))
@@ -226,8 +287,15 @@ export function useBoardsFilterState(
 
   const setRadius = useCallback(
     (value: string | null) => {
+      const trimmed = value?.trim() ?? ""
+      logBrowseFacetClick({
+        category: "boards",
+        facetKey: "radius",
+        facetValue: trimmed || undefined,
+        detail: trimmed ? "set" : "clear",
+      })
       navigate((params) => {
-        if (value?.trim()) params.set("radius", value.trim())
+        if (trimmed) params.set("radius", trimmed)
         else params.delete("radius")
       })
     },
@@ -236,6 +304,7 @@ export function useBoardsFilterState(
 
   const setShippingAvailable = useCallback(
     (on: boolean) => {
+      // Toolbar "Ship to me" is tracked separately as button=ship_to_me.
       navigate((params) => {
         if (on) params.set("shipping", "1")
         else params.delete("shipping")

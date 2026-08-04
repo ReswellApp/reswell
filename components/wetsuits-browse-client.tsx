@@ -69,6 +69,7 @@ export function WetsuitsBrowseClient({
         description={description}
         action={
           <CategoryBrowseFilterButton
+            category="wetsuits"
             activeFilterCount={state.activeCount}
             onOpenMobileFilters={() => setMobileOpen(true)}
             desktopFiltersOpen={desktopFiltersOpen}

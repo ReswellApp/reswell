@@ -8,6 +8,10 @@ import {
   hasAnyMagazineFacetSelection,
   type MagazinesBrowseFacetSelections,
 } from "@/lib/magazines-browse-facets"
+import {
+  browseFacetRangeValue,
+  logBrowseFacetClick,
+} from "@/lib/log-browse-button-click"
 
 const FACET_OWNED_KEYS = [
   ...Object.values(MAGAZINE_FACET_PARAM_KEYS),
@@ -56,25 +60,42 @@ export function useMagazinesFilterState(
 
   const toggleMulti = useCallback(
     (key: string, value: string) => {
+      const current = (searchParams.get(key) ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+      const selecting = !current.includes(value)
+      logBrowseFacetClick({
+        category: "magazines",
+        facetKey: key,
+        facetValue: value,
+        detail: selecting ? "select" : "deselect",
+      })
       navigate((params) => {
-        const current = (params.get(key) ?? "")
+        const cur = (params.get(key) ?? "")
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean)
-        const next = current.includes(value)
-          ? current.filter((v) => v !== value)
-          : [...current, value]
+        const next = cur.includes(value)
+          ? cur.filter((v) => v !== value)
+          : [...cur, value]
         if (next.length) params.set(key, next.join(","))
         else params.delete(key)
       })
     },
-    [navigate],
+    [navigate, searchParams],
   )
 
   const setBrand = useCallback(
     (nextBrand: string) => {
+      const trimmed = nextBrand.trim()
+      logBrowseFacetClick({
+        category: "magazines",
+        facetKey: "brand",
+        facetValue: trimmed || undefined,
+        detail: trimmed ? "set" : "clear",
+      })
       navigate((params) => {
-        const trimmed = nextBrand.trim()
         if (trimmed) params.set("brand", trimmed)
         else params.delete("brand")
       })
@@ -84,6 +105,13 @@ export function useMagazinesFilterState(
 
   const setPriceRange = useCallback(
     (min: string | null, max: string | null) => {
+      const range = browseFacetRangeValue(min, max)
+      logBrowseFacetClick({
+        category: "magazines",
+        facetKey: "price",
+        facetValue: range || undefined,
+        detail: range ? "set" : "clear",
+      })
       navigate((params) => {
         const normMin = (min ?? "").trim()
         const normMax = (max ?? "").trim()
@@ -98,6 +126,13 @@ export function useMagazinesFilterState(
 
   const setYearRange = useCallback(
     (min: string | null, max: string | null) => {
+      const range = browseFacetRangeValue(min, max)
+      logBrowseFacetClick({
+        category: "magazines",
+        facetKey: "year",
+        facetValue: range || undefined,
+        detail: range ? "set" : "clear",
+      })
       navigate((params) => {
         const normMin = (min ?? "").trim()
         const normMax = (max ?? "").trim()

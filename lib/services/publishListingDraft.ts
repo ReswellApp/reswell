@@ -10,6 +10,7 @@ import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerc
 import { revalidateAfterListingSiteModeration } from "@/lib/services/listingSiteModerationRevalidation"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
+import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
 
 const PRICE_MIN = 0.01
 
@@ -133,6 +134,11 @@ export async function publishListingDraft(
   const row = await fetchDraftListingForPublish(supabase, listingId)
   if (!row) {
     return { ok: false, message: "Listing not found" }
+  }
+
+  const sellGuard = await evaluateSellerCanSell(supabase, row.user_id)
+  if (!sellGuard.ok) {
+    return { ok: false, message: sellGuard.userMessage }
   }
 
   const images = Array.isArray(row.listing_images) ? row.listing_images : []

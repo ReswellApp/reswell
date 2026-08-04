@@ -69,6 +69,7 @@ export function AccessoriesBrowseClient({
         description={description}
         action={
           <CategoryBrowseFilterButton
+            category="accessories"
             activeFilterCount={state.activeCount}
             onOpenMobileFilters={() => setMobileOpen(true)}
             desktopFiltersOpen={desktopFiltersOpen}

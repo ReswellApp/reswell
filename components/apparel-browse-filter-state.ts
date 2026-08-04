@@ -8,6 +8,10 @@ import {
   hasAnyApparelFacetSelection,
   type ApparelBrowseFacetSelections,
 } from "@/lib/apparel-browse-facets"
+import {
+  browseFacetRangeValue,
+  logBrowseFacetClick,
+} from "@/lib/log-browse-button-click"
 
 const FACET_OWNED_KEYS = [
   ...Object.values(APPAREL_FACET_PARAM_KEYS),
@@ -51,25 +55,42 @@ export function useApparelFilterState(
 
   const toggleMulti = useCallback(
     (key: string, value: string) => {
+      const current = (searchParams.get(key) ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+      const selecting = !current.includes(value)
+      logBrowseFacetClick({
+        category: "apparel",
+        facetKey: key,
+        facetValue: value,
+        detail: selecting ? "select" : "deselect",
+      })
       navigate((params) => {
-        const current = (params.get(key) ?? "")
+        const cur = (params.get(key) ?? "")
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean)
-        const next = current.includes(value)
-          ? current.filter((v) => v !== value)
-          : [...current, value]
+        const next = cur.includes(value)
+          ? cur.filter((v) => v !== value)
+          : [...cur, value]
         if (next.length) params.set(key, next.join(","))
         else params.delete(key)
       })
     },
-    [navigate],
+    [navigate, searchParams],
   )
 
   const setBrand = useCallback(
     (nextBrand: string) => {
+      const trimmed = nextBrand.trim()
+      logBrowseFacetClick({
+        category: "apparel",
+        facetKey: "brand",
+        facetValue: trimmed || undefined,
+        detail: trimmed ? "set" : "clear",
+      })
       navigate((params) => {
-        const trimmed = nextBrand.trim()
         if (trimmed) params.set("brand", trimmed)
         else params.delete("brand")
       })
@@ -79,6 +100,13 @@ export function useApparelFilterState(
 
   const setPriceRange = useCallback(
     (min: string | null, max: string | null) => {
+      const range = browseFacetRangeValue(min, max)
+      logBrowseFacetClick({
+        category: "apparel",
+        facetKey: "price",
+        facetValue: range || undefined,
+        detail: range ? "set" : "clear",
+      })
       navigate((params) => {
         const normMin = (min ?? "").trim()
         const normMax = (max ?? "").trim()

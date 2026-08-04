@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
 import {
   createLeashListingSchema,
   updateLeashListingSchema,
@@ -36,6 +37,12 @@ export async function createLeashListingAction(
   } = await supabase.auth.getUser()
   if (!user) {
     return { error: "Please sign in to list a leash." }
+  }
+
+
+  const sellGuard = await evaluateSellerCanSell(supabase, user.id)
+  if (!sellGuard.ok) {
+    return { error: sellGuard.userMessage }
   }
 
   try {

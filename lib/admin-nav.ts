@@ -98,6 +98,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/search-analytics', label: 'Search analytics', icon: 'lineChart' },
       { href: '/admin/listing-views', label: 'Listing views', icon: 'activity' },
       { href: '/admin/sell-funnel', label: 'Sell funnel', icon: 'lineChart' },
+      { href: '/admin/browse-clicks', label: 'Browse clicks', icon: 'activity' },
       { href: '/admin/notifications', label: 'Notifications center', icon: 'bellRing' },
       { href: '/admin/promo-codes', label: 'Promo codes', icon: 'tag' },
       { href: '/admin/search-curation', label: 'Search curation', icon: 'wrench' },

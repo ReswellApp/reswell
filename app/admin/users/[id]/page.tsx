@@ -25,7 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ArrowLeft, MoreVertical, Package, Mail, User, RotateCcw, CheckCircle2, XCircle, Wallet, RefreshCw, Loader2, Lock, Unlock, MessageSquarePlus } from 'lucide-react'
+import { ArrowLeft, MoreVertical, Package, Mail, User, RotateCcw, CheckCircle2, XCircle, Wallet, RefreshCw, Loader2, Lock, Unlock, MessageSquarePlus, Ban } from 'lucide-react'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -76,6 +76,12 @@ interface AccountRestrictionState {
   messageRateLimitedUntil: string | null
 }
 
+interface SellerBanState {
+  banned: boolean
+  sellerBannedAt: string | null
+  sellerBannedReason: string | null
+}
+
 const RESTRICTION_PRESETS = [
   { label: '30 minutes', minutes: 30 },
   { label: '1 hour', minutes: 60 },
@@ -106,6 +112,10 @@ export default function AdminUserDetailPage() {
   const [restrictionSaving, setRestrictionSaving] = useState(false)
   const [restrictionReason, setRestrictionReason] = useState('')
   const [selectedPresetMinutes, setSelectedPresetMinutes] = useState<number>(60 * 24)
+  const [sellerBan, setSellerBan] = useState<SellerBanState | null>(null)
+  const [sellerBanLoading, setSellerBanLoading] = useState(true)
+  const [sellerBanSaving, setSellerBanSaving] = useState(false)
+  const [sellerBanReason, setSellerBanReason] = useState('')
   const [messageDialogOpen, setMessageDialogOpen] = useState(false)
 
   useEffect(() => {
@@ -227,6 +237,88 @@ export default function AdminUserDetailPage() {
       toast.error('Could not update account restriction')
     } finally {
       setRestrictionSaving(false)
+    }
+  }
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadSellerBan() {
+      setSellerBanLoading(true)
+      try {
+        const res = await fetch(`/api/admin/users/${id}/seller-ban`, {
+          credentials: 'include',
+        })
+        const body = (await res.json()) as {
+          data?: SellerBanState
+          error?: string
+        }
+        if (!res.ok) {
+          if (!cancelled) {
+            setSellerBan(null)
+            toast.error(body.error || 'Could not load seller ban status')
+          }
+          return
+        }
+        if (!cancelled && body.data) {
+          setSellerBan(body.data)
+          setSellerBanReason(body.data.sellerBannedReason ?? '')
+        }
+      } catch {
+        if (!cancelled) {
+          setSellerBan(null)
+          toast.error('Could not load seller ban status')
+        }
+      } finally {
+        if (!cancelled) setSellerBanLoading(false)
+      }
+    }
+    void loadSellerBan()
+    return () => {
+      cancelled = true
+    }
+  }, [id])
+
+  async function applySellerBan(banned: boolean) {
+    setSellerBanSaving(true)
+    try {
+      const res = await fetch(`/api/admin/users/${id}/seller-ban`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          banned
+            ? { banned: true, reason: sellerBanReason.trim() || null }
+            : { banned: false },
+        ),
+      })
+      const body = (await res.json()) as {
+        success?: boolean
+        data?: SellerBanState & { affectedListingCount?: number }
+        error?: string
+      }
+      if (!res.ok) {
+        toast.error(body.error || 'Could not update seller ban')
+        return
+      }
+      if (body.data) {
+        setSellerBan({
+          banned: body.data.banned,
+          sellerBannedAt: body.data.sellerBannedAt,
+          sellerBannedReason: body.data.sellerBannedReason,
+        })
+        if (!body.data.banned) setSellerBanReason('')
+      }
+      const affected = body.data?.affectedListingCount
+      toast.success(
+        banned
+          ? `Seller banned${typeof affected === 'number' ? ` — ${affected} listing(s) set to delinquent` : ''}`
+          : `Seller ban removed${typeof affected === 'number' ? ` — ${affected} listing(s) restored` : ''}`,
+      )
+      router.refresh()
+    } catch {
+      toast.error('Could not update seller ban')
+    } finally {
+      setSellerBanSaving(false)
     }
   }
 
@@ -665,6 +757,95 @@ export default function AdminUserDetailPage() {
               )}
               {restriction?.reason ? (
                 <p className="text-xs text-muted-foreground">Note: {restriction.reason}</p>
+              ) : null}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Ban className="h-5 w-5" />
+            Seller ban
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {sellerBanLoading ? (
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading seller ban status…
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                {sellerBan?.banned ? (
+                  <Badge variant="destructive">Seller banned</Badge>
+                ) : (
+                  <Badge variant="outline">Can sell</Badge>
+                )}
+                {sellerBan?.banned && sellerBan.sellerBannedAt ? (
+                  <span className="text-sm text-muted-foreground">
+                    Since {format(new Date(sellerBan.sellerBannedAt), 'MMM d, yyyy h:mm a')}
+                  </span>
+                ) : null}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Banned sellers can still buy and message, but all live listings move to delinquent
+                (hidden) and they cannot make listings live.
+              </p>
+              {!sellerBan?.banned ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="seller-ban-reason">Internal note (optional)</Label>
+                    <Input
+                      id="seller-ban-reason"
+                      value={sellerBanReason}
+                      onChange={(event) => setSellerBanReason(event.target.value)}
+                      placeholder="Reason for seller ban"
+                      maxLength={500}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="gap-2"
+                    disabled={sellerBanSaving || profile.is_admin}
+                    onClick={() => void applySellerBan(true)}
+                  >
+                    {sellerBanSaving ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Ban className="h-4 w-4" />
+                    )}
+                    Ban seller
+                  </Button>
+                  {profile.is_admin ? (
+                    <p className="text-xs text-muted-foreground">
+                      Admin accounts cannot be seller-banned from this screen.
+                    </p>
+                  ) : null}
+                </>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  disabled={sellerBanSaving}
+                  onClick={() => void applySellerBan(false)}
+                >
+                  {sellerBanSaving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Unlock className="h-4 w-4" />
+                  )}
+                  Remove seller ban
+                </Button>
+              )}
+              {sellerBan?.sellerBannedReason ? (
+                <p className="text-xs text-muted-foreground">Note: {sellerBan.sellerBannedReason}</p>
               ) : null}
             </>
           )}

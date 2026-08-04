@@ -77,6 +77,7 @@ export function MagazinesBrowseClient({
         description={description}
         action={
           <CategoryBrowseFilterButton
+            category="magazines"
             activeFilterCount={state.activeCount}
             onOpenMobileFilters={() => setMobileOpen(true)}
             desktopFiltersOpen={desktopFiltersOpen}

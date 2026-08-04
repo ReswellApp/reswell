@@ -69,6 +69,7 @@ export function LeashesBrowseClient({
         description={description}
         action={
           <CategoryBrowseFilterButton
+            category="leashes"
             activeFilterCount={state.activeCount}
             onOpenMobileFilters={() => setMobileOpen(true)}
             desktopFiltersOpen={desktopFiltersOpen}

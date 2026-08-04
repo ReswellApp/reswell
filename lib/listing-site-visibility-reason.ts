@@ -11,6 +11,7 @@ export const SITE_VISIBILITY_REASONS = [
   "seller_archive",
   "admin_status",
   "system",
+  "seller_ban",
 ] as const
 
 export type SiteVisibilityReason = (typeof SITE_VISIBILITY_REASONS)[number]

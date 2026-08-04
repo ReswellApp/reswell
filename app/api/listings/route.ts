@@ -9,6 +9,7 @@ import { slugify } from '@/lib/slugify'
 import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
 import { trackFirstTimeSellerForListingIfNeeded } from '@/lib/services/klaviyoFirstTimeSeller'
 import { notifyBoardSavedSearchMatchesForListing } from '@/lib/services/notifyBoardSavedSearchMatches'
+import { evaluateSellerCanSell } from '@/lib/services/sellerBan'
 import { LISTING_TITLE_MAX_LENGTH } from '@/lib/sell-form-validation'
 import {
   composeListingDimensionsFromSplitListingFields,
@@ -25,6 +26,11 @@ export async function POST(request: NextRequest) {
 
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const sellGuard = await evaluateSellerCanSell(supabase, user.id)
+  if (!sellGuard.ok) {
+    return NextResponse.json({ error: sellGuard.userMessage }, { status: 403 })
   }
 
   const body = await request.json()

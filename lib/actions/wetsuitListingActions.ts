@@ -3,6 +3,7 @@
 import { after } from "next/server"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
 import {
   createWetsuitListingSchema,
   updateWetsuitListingSchema,
@@ -38,6 +39,12 @@ export async function createWetsuitListingAction(
   } = await supabase.auth.getUser()
   if (!user) {
     return { error: "Please sign in to list a wetsuit." }
+  }
+
+
+  const sellGuard = await evaluateSellerCanSell(supabase, user.id)
+  if (!sellGuard.ok) {
+    return { error: sellGuard.userMessage }
   }
 
   try {
