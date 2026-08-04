@@ -3,6 +3,13 @@ import { getLatestAdminLabelUrlsForOrder } from "@/lib/db/adminOrderShippingLabe
 
 export type OrderShippingLabelOrigin = "auto_reswell_checkout" | "seller_paid"
 
+export type OrderShippingLabelPaperlessFields = {
+  paperless_qr_url: string | null
+  paperless_qr_storage_path: string | null
+  paperless_instructions: string | null
+  paperless_handoff_code: string | null
+}
+
 export type OrderShippingLabelRow = {
   id: string
   order_id: string
@@ -13,6 +20,26 @@ export type OrderShippingLabelRow = {
   tracking_carrier: string | null
   shipengine_rate_id: string | null
   created_at: string
+} & OrderShippingLabelPaperlessFields
+
+export type PreparedShippingLabelUrls = {
+  label_pdf_url: string | null
+  label_storage_path: string | null
+} & OrderShippingLabelPaperlessFields
+
+function normalizePaperless(row: Partial<OrderShippingLabelPaperlessFields>): OrderShippingLabelPaperlessFields {
+  return {
+    paperless_qr_url: row.paperless_qr_url?.trim() || null,
+    paperless_qr_storage_path: row.paperless_qr_storage_path?.trim() || null,
+    paperless_instructions: row.paperless_instructions?.trim() || null,
+    paperless_handoff_code: row.paperless_handoff_code?.trim() || null,
+  }
+}
+
+export function preparedLabelHasPaperlessQr(
+  label: Pick<PreparedShippingLabelUrls, "paperless_qr_url" | "paperless_qr_storage_path"> | null,
+): boolean {
+  return Boolean(label?.paperless_qr_url?.trim() || label?.paperless_qr_storage_path?.trim())
 }
 
 export async function insertOrderShippingLabel(
@@ -26,6 +53,10 @@ export async function insertOrderShippingLabel(
     tracking_carrier?: string | null
     shipengine_rate_id?: string | null
     stripe_payment_intent_id?: string | null
+    paperless_qr_url?: string | null
+    paperless_qr_storage_path?: string | null
+    paperless_instructions?: string | null
+    paperless_handoff_code?: string | null
   },
 ): Promise<{ error: Error | null }> {
   const { error } = await supabase.from("order_shipping_labels").insert({
@@ -37,6 +68,10 @@ export async function insertOrderShippingLabel(
     tracking_carrier: row.tracking_carrier ?? null,
     shipengine_rate_id: row.shipengine_rate_id ?? null,
     stripe_payment_intent_id: row.stripe_payment_intent_id ?? null,
+    paperless_qr_url: row.paperless_qr_url ?? null,
+    paperless_qr_storage_path: row.paperless_qr_storage_path ?? null,
+    paperless_instructions: row.paperless_instructions ?? null,
+    paperless_handoff_code: row.paperless_handoff_code ?? null,
   })
 
   if (!error) return { error: null }
@@ -49,20 +84,32 @@ export async function insertOrderShippingLabel(
 export async function getLatestOrderShippingLabelUrlsForOrder(
   supabase: SupabaseClient,
   orderId: string,
-): Promise<{ label_pdf_url: string | null; label_storage_path: string | null } | null> {
+): Promise<PreparedShippingLabelUrls | null> {
   const { data, error } = await supabase
     .from("order_shipping_labels")
-    .select("label_pdf_url, label_storage_path")
+    .select(
+      "label_pdf_url, label_storage_path, paperless_qr_url, paperless_qr_storage_path, paperless_instructions, paperless_handoff_code",
+    )
     .eq("order_id", orderId)
     .order("created_at", { ascending: false })
     .limit(8)
 
   if (error || !data?.length) return null
   for (const row of data) {
-    const r = row as { label_pdf_url: string | null; label_storage_path: string | null }
+    const r = row as {
+      label_pdf_url: string | null
+      label_storage_path: string | null
+    } & Partial<OrderShippingLabelPaperlessFields>
     const u = r.label_pdf_url?.trim() || null
     const p = r.label_storage_path?.trim() || null
-    if (u || p) return { label_pdf_url: u, label_storage_path: p }
+    const paperless = normalizePaperless(r)
+    if (u || p || paperless.paperless_qr_url || paperless.paperless_qr_storage_path) {
+      return {
+        label_pdf_url: u,
+        label_storage_path: p,
+        ...paperless,
+      }
+    }
   }
   return null
 }
@@ -71,7 +118,7 @@ export async function getLatestOrderShippingLabelUrlsForOrder(
 export async function getLatestPreparedShippingLabelForOrder(
   supabase: SupabaseClient,
   orderId: string,
-): Promise<{ label_pdf_url: string | null; label_storage_path: string | null } | null> {
+): Promise<PreparedShippingLabelUrls | null> {
   const marketplace = await getLatestOrderShippingLabelUrlsForOrder(supabase, orderId)
   if (marketplace) return marketplace
   return getLatestAdminLabelUrlsForOrder(supabase, orderId)

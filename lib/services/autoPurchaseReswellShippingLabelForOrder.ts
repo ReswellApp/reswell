@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import {
   recordOrderShippingLabelFailure,
@@ -15,6 +14,10 @@ import type { ListingPackedParcelSource } from "@/lib/reswell-packed-parcel-from
 import { logPackBandLabelTelemetry } from "@/lib/shipping/pack-band-telemetry"
 import { purchaseShipEngineLabelForOrderOnce } from "@/lib/services/purchaseShipEngineLabelForOrderOnce"
 import {
+  downloadAndStoreLabelPdf,
+  downloadAndStorePaperlessQr,
+} from "@/lib/services/storeOrderShippingLabelAssets"
+import {
   effectiveBoardShippingMode,
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerListingForShippingQuote,
@@ -26,60 +29,6 @@ import {
   orderShippingJsonToRateQuoteAddress,
   rateQuoteFieldsToShippingInput,
 } from "@/lib/shipping/rate-address"
-
-const MAX_PDF_BYTES = 15 * 1024 * 1024
-
-function isLikelyPdf(buf: Buffer): boolean {
-  return buf.length >= 5 && buf.subarray(0, 5).toString("ascii") === "%PDF-"
-}
-
-async function downloadAndStoreLabelPdf(params: {
-  supabase: SupabaseClient
-  orderId: string
-  pdfUrl: string
-}): Promise<{ ok: true; storagePath: string } | { ok: false; error: string }> {
-  let pdfRes: Response
-  try {
-    pdfRes = await fetch(params.pdfUrl, {
-      redirect: "follow",
-      signal: AbortSignal.timeout(60_000),
-      headers: { Accept: "application/pdf,*/*" },
-    })
-  } catch (e) {
-    console.error("[autoPurchaseReswellShippingLabelForOrder] fetch pdf:", e)
-    return { ok: false, error: "Could not download label PDF from ShipEngine." }
-  }
-
-  if (!pdfRes.ok) {
-    return {
-      ok: false,
-      error: `ShipEngine PDF download failed (${pdfRes.status}).`,
-    }
-  }
-
-  const buf = Buffer.from(await pdfRes.arrayBuffer())
-  if (buf.length > MAX_PDF_BYTES) {
-    return { ok: false, error: "Label PDF too large (max 15 MB)." }
-  }
-  if (!isLikelyPdf(buf)) {
-    return { ok: false, error: "ShipEngine download was not a PDF." }
-  }
-
-  const storagePath = `${params.orderId}/${randomUUID()}.pdf`
-  const { error: upErr } = await params.supabase.storage
-    .from("order-shipping-labels")
-    .upload(storagePath, buf, {
-      contentType: "application/pdf",
-      upsert: false,
-    })
-
-  if (upErr) {
-    console.error("[autoPurchaseReswellShippingLabelForOrder] storage:", upErr)
-    return { ok: false, error: "Could not store label PDF." }
-  }
-
-  return { ok: true, storagePath }
-}
 
 async function orderAlreadyHasPreparedLabel(
   supabase: SupabaseClient,
@@ -287,6 +236,8 @@ export async function autoPurchaseReswellShippingLabelForOrder(
 
     let labelPdfUrl: string | null = purchased.result.labelUrl
     let labelStoragePath: string | null = null
+    let paperlessQrUrl: string | null = purchased.result.paperlessQrUrl
+    let paperlessQrStoragePath: string | null = null
 
     if (labelPdfUrl) {
       const stored = await downloadAndStoreLabelPdf({
@@ -302,6 +253,20 @@ export async function autoPurchaseReswellShippingLabelForOrder(
       }
     }
 
+    if (paperlessQrUrl) {
+      const storedQr = await downloadAndStorePaperlessQr({
+        supabase,
+        orderId: o.id,
+        qrUrl: paperlessQrUrl,
+      })
+      if (storedQr.ok) {
+        paperlessQrStoragePath = storedQr.storagePath
+        paperlessQrUrl = null
+      } else {
+        console.warn(`${tag} paperless QR storage failed (${storedQr.error}); keeping ShipEngine URL.`)
+      }
+    }
+
     const attached = await attachOrderShippingLabel({
       supabase,
       orderId: o.id,
@@ -311,6 +276,10 @@ export async function autoPurchaseReswellShippingLabelForOrder(
       trackingNumber: purchased.result.trackingNumber,
       trackingCarrier: purchased.result.trackingCarrier,
       shipengineRateId: rateId,
+      paperlessQrUrl,
+      paperlessQrStoragePath,
+      paperlessInstructions: purchased.result.paperlessInstructions,
+      paperlessHandoffCode: purchased.result.paperlessHandoffCode,
     })
 
     if (!attached.ok) {

@@ -4,6 +4,10 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import { requireAdmin, requireAdminOrEmployee } from "@/lib/brands/admin-server"
 import { getOrderDetailForAdmin, isPostgrestSchemaStaleError } from "@/lib/db/adminOrders"
 import { deleteAdminTestOrderService } from "@/lib/services/adminOrderDelete"
+import {
+  getLatestPreparedShippingLabelForOrder,
+  preparedLabelHasPaperlessQr,
+} from "@/lib/db/orderShippingLabels"
 import { orderHasAccessibleShippingLabelPdf } from "@/lib/services/resolveOrderShippingLabelPdf"
 
 const orderIdSchema = z.string().uuid()
@@ -53,6 +57,11 @@ export async function GET(
     orderId: parsed.data,
     trackingNumber: data.tracking_number,
   })
+  const preparedShippingLabel = await getLatestPreparedShippingLabelForOrder(
+    serviceSupabase,
+    parsed.data,
+  )
+  const hasPaperlessQr = preparedLabelHasPaperlessQr(preparedShippingLabel)
 
   const canFulfillReswellShop =
     gate.ctx.isAdmin &&
@@ -68,6 +77,9 @@ export async function GET(
       canRefund: gate.ctx.isAdmin,
       canReleaseShippingSellerEarnings: gate.ctx.isAdmin && !data.is_reswell_shop,
       hasShippingLabel,
+      hasPaperlessQr,
+      paperlessInstructions: preparedShippingLabel?.paperless_instructions ?? null,
+      paperlessHandoffCode: preparedShippingLabel?.paperless_handoff_code ?? null,
       canFulfillReswellShop,
     },
   })

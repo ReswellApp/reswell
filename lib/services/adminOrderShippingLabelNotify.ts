@@ -29,6 +29,10 @@ export async function attachAdminShippingLabelToOrder(params: {
   shipengineRateId?: string | null
   labelCostUsd?: number | null
   labelCostCurrency?: string | null
+  paperlessQrUrl?: string | null
+  paperlessQrStoragePath?: string | null
+  paperlessInstructions?: string | null
+  paperlessHandoffCode?: string | null
 }): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
   const u = params.order
   const track = params.trackingNumber?.trim() || null
@@ -45,6 +49,10 @@ export async function attachAdminShippingLabelToOrder(params: {
     shipengine_rate_id: params.shipengineRateId ?? null,
     label_cost_usd: params.labelCostUsd ?? null,
     label_cost_currency: params.labelCostCurrency ?? null,
+    paperless_qr_url: params.paperlessQrUrl ?? null,
+    paperless_qr_storage_path: params.paperlessQrStoragePath ?? null,
+    paperless_instructions: params.paperlessInstructions ?? null,
+    paperless_handoff_code: params.paperlessHandoffCode ?? null,
   })
   if (ins.error) {
     console.error("[attachAdminShippingLabelToOrder] insert label row:", ins.error)
@@ -85,7 +93,7 @@ export async function attachAdminShippingLabelToOrder(params: {
     track ? `Tracking: ${track}` : null,
     car ? `Carrier: ${car}` : null,
     "",
-    "Seller: print the label, pack the item, and hand it to the carrier. Use your sale page to confirm when it’s dropped off.",
+    "Seller: print the label or open the USPS QR code on your sale page (when available), pack the item, and hand it to the carrier. Use your sale page to confirm when it’s dropped off.",
     track
       ? "Buyer: this tracking number is on your order page. The seller confirms shipment after drop-off; then delivery protection and payout timing follow the normal flow."
       : "Buyer: the seller received the label here and on their sale page; tracking will appear on your order when it’s added.",

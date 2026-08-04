@@ -243,6 +243,10 @@ export type PurchasedShipEngineLabelResult = {
   trackingCarrier: string
   costAmount: number | null
   costCurrency: string | null
+  /** USPS Label Broker QR image URL when the carrier returns paperless docs. */
+  paperlessQrUrl: string | null
+  paperlessInstructions: string | null
+  paperlessHandoffCode: string | null
 }
 
 /** ShipEngine returns the carrier charge as shipment_cost { amount, currency }. */
@@ -269,6 +273,61 @@ function pickLabelPdfUrl(label: Record<string, unknown>): string | null {
   const png = asRecord(ld.png)
   if (png && typeof png.url === "string") return png.url
   return null
+}
+
+function pickHttpUrl(value: unknown): string | null {
+  if (typeof value === "string") {
+    const u = value.trim()
+    return /^https?:\/\//i.test(u) ? u : null
+  }
+  const r = asRecord(value)
+  if (!r) return null
+  if (typeof r.href === "string") {
+    const u = r.href.trim()
+    if (/^https?:\/\//i.test(u)) return u
+  }
+  if (typeof r.url === "string") {
+    const u = r.url.trim()
+    if (/^https?:\/\//i.test(u)) return u
+  }
+  return null
+}
+
+/** USPS Label Broker / paperless QR from shipment- or package-level paperless_download. */
+function pickPaperlessDownload(label: Record<string, unknown>): {
+  qrUrl: string | null
+  instructions: string | null
+  handoffCode: string | null
+} {
+  const candidates: Record<string, unknown>[] = []
+  const top = asRecord(label.paperless_download)
+  if (top) candidates.push(top)
+
+  const pkgs = label.packages
+  if (Array.isArray(pkgs)) {
+    for (const p of pkgs) {
+      const row = asRecord(p)
+      const pd = row ? asRecord(row.paperless_download) : null
+      if (pd) candidates.push(pd)
+    }
+  }
+
+  for (const pd of candidates) {
+    const qrUrl = pickHttpUrl(pd.href) ?? pickHttpUrl(pd.png) ?? pickHttpUrl(pd.pdf)
+    const instructions =
+      typeof pd.instructions === "string" && pd.instructions.trim()
+        ? pd.instructions.trim()
+        : null
+    const handoffCode =
+      typeof pd.handoff_code === "string" && pd.handoff_code.trim()
+        ? pd.handoff_code.trim()
+        : null
+    if (qrUrl || instructions || handoffCode) {
+      return { qrUrl, instructions, handoffCode }
+    }
+  }
+
+  return { qrUrl: null, instructions: null, handoffCode: null }
 }
 
 /** ShipEngine sometimes nests tracking on packages[] or shipment. */
@@ -322,17 +381,34 @@ function pickTrackingCarrierLabel(label: Record<string, unknown>): string {
   return parts.length ? parts.join(" · ") : "Carrier"
 }
 
-function buildShipEngineLabelPurchaseBody(includeLabelImage: boolean): Record<string, unknown> {
+function buildShipEngineLabelPurchaseBody(opts: {
+  includeLabelImage: boolean
+  /** Request printable PDF + USPS Label Broker QR when the carrier supports it. */
+  includePaperless: boolean
+}): Record<string, unknown> {
   const body: Record<string, unknown> = {
     label_format: "pdf",
     label_download_type: "url",
     label_layout: "4x6",
   }
-  if (includeLabelImage) {
+  if (opts.includePaperless) {
+    body.display_scheme = "label_and_paperless"
+  }
+  if (opts.includeLabelImage) {
     const labelImageId = getShipEngineLabelImageId()
     if (labelImageId) body.label_image_id = labelImageId
   }
   return body
+}
+
+function isPaperlessDisplaySchemeError(data: unknown): boolean {
+  const text =
+    typeof data === "string"
+      ? data
+      : data != null
+        ? JSON.stringify(data)
+        : ""
+  return /display_scheme|paperless|label.?broker/i.test(text)
 }
 
 function interpretShipEngineLabelPurchaseResponse(
@@ -404,6 +480,7 @@ function interpretShipEngineLabelPurchaseResponse(
   }
 
   const cost = pickLabelCost(label)
+  const paperless = pickPaperlessDownload(label)
 
   return {
     ok: true,
@@ -413,6 +490,9 @@ function interpretShipEngineLabelPurchaseResponse(
       trackingCarrier: pickTrackingCarrierLabel(label),
       costAmount: cost.amount,
       costCurrency: cost.currency,
+      paperlessQrUrl: paperless.qrUrl,
+      paperlessInstructions: paperless.instructions,
+      paperlessHandoffCode: paperless.handoffCode,
     },
   }
 }
@@ -441,7 +521,9 @@ export async function purchaseShipEngineLabel(rateId: string): Promise<
 
   const res = await shipEngineRequest(`/labels/rates/${encodeURIComponent(trimmed)}`, {
     method: "POST",
-    body: JSON.stringify(buildShipEngineLabelPurchaseBody(includeLabelImage)),
+    body: JSON.stringify(
+      buildShipEngineLabelPurchaseBody({ includeLabelImage, includePaperless: true }),
+    ),
   })
   const data = await parseJsonSafe(res)
 
@@ -456,7 +538,42 @@ export async function purchaseShipEngineLabel(rateId: string): Promise<
     )
     const retryRes = await shipEngineRequest(`/labels/rates/${encodeURIComponent(trimmed)}`, {
       method: "POST",
-      body: JSON.stringify(buildShipEngineLabelPurchaseBody(false)),
+      body: JSON.stringify(
+        buildShipEngineLabelPurchaseBody({ includeLabelImage: false, includePaperless: true }),
+      ),
+    })
+    const retryData = await parseJsonSafe(retryRes)
+    if (
+      !shipEngineResponseLooksLikeCreatedLabel(retryData) &&
+      isPaperlessDisplaySchemeError(retryData)
+    ) {
+      console.warn(
+        `[purchaseShipEngineLabel] Carrier does not support paperless for rate ${trimmed}; retrying label-only.`,
+      )
+      const labelOnlyRes = await shipEngineRequest(`/labels/rates/${encodeURIComponent(trimmed)}`, {
+        method: "POST",
+        body: JSON.stringify(
+          buildShipEngineLabelPurchaseBody({ includeLabelImage: false, includePaperless: false }),
+        ),
+      })
+      const labelOnlyData = await parseJsonSafe(labelOnlyRes)
+      return interpretShipEngineLabelPurchaseResponse(labelOnlyRes, labelOnlyData)
+    }
+    return interpretShipEngineLabelPurchaseResponse(retryRes, retryData)
+  }
+
+  if (
+    !shipEngineResponseLooksLikeCreatedLabel(data) &&
+    isPaperlessDisplaySchemeError(data)
+  ) {
+    console.warn(
+      `[purchaseShipEngineLabel] Carrier does not support paperless for rate ${trimmed}; retrying label-only.`,
+    )
+    const retryRes = await shipEngineRequest(`/labels/rates/${encodeURIComponent(trimmed)}`, {
+      method: "POST",
+      body: JSON.stringify(
+        buildShipEngineLabelPurchaseBody({ includeLabelImage, includePaperless: false }),
+      ),
     })
     const retryData = await parseJsonSafe(retryRes)
     return interpretShipEngineLabelPurchaseResponse(retryRes, retryData)

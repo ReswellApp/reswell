@@ -45,7 +45,10 @@ import {
   PayoutStatusBadge,
 } from "@/components/order-actions"
 import { ReswellTrackingSection } from "@/components/features/orders/reswell-tracking-section"
-import { getLatestPreparedShippingLabelForOrder } from "@/lib/db/orderShippingLabels"
+import {
+  getLatestPreparedShippingLabelForOrder,
+  preparedLabelHasPaperlessQr,
+} from "@/lib/db/orderShippingLabels"
 import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
 import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amounts"
 import { createServiceRoleClient } from "@/lib/supabase/server"
@@ -310,10 +313,9 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
   } = amounts
   const carrierTracking = parseOrderTrackingDetail(trackingDetailRaw)
   const serviceSupabase = createServiceRoleClient()
-  const hasPreparedShippingLabel = !!(await getLatestPreparedShippingLabelForOrder(
-    serviceSupabase,
-    id,
-  ))
+  const preparedShippingLabel = await getLatestPreparedShippingLabelForOrder(serviceSupabase, id)
+  const hasPreparedShippingLabel = !!preparedShippingLabel
+  const hasPaperlessQr = preparedLabelHasPaperlessQr(preparedShippingLabel)
   const hasAccessibleShippingLabelPdf = await orderHasAccessibleShippingLabelPdf(serviceSupabase, {
     orderId: id,
     trackingNumber: sale.tracking_number,
@@ -616,7 +618,12 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
 
           {sale.fulfillment_method === "shipping" &&
           (hasAccessibleShippingLabelPdf || (isReswellShippingOrder && hasShippingTracking)) ? (
-            <SellerPreparedShippingLabelCard orderId={sale.id} />
+            <SellerPreparedShippingLabelCard
+              orderId={sale.id}
+              hasPaperlessQr={hasPaperlessQr}
+              paperlessInstructions={preparedShippingLabel?.paperless_instructions ?? null}
+              paperlessHandoffCode={preparedShippingLabel?.paperless_handoff_code ?? null}
+            />
           ) : null}
 
           {/* ── Seller actions ── */}

@@ -18,6 +18,10 @@ export type AdminShippingLabelListRow = {
   label_cost_usd: number | null
   label_cost_currency: string | null
   created_at: string
+  paperless_qr_url: string | null
+  paperless_qr_storage_path: string | null
+  paperless_instructions: string | null
+  paperless_handoff_code: string | null
 }
 
 export type AdminShippingLabelFilters = {
@@ -41,6 +45,10 @@ export async function insertOrderAdminShippingLabel(
     shipengine_rate_id?: string | null
     label_cost_usd?: number | null
     label_cost_currency?: string | null
+    paperless_qr_url?: string | null
+    paperless_qr_storage_path?: string | null
+    paperless_instructions?: string | null
+    paperless_handoff_code?: string | null
   },
 ): Promise<{ error: Error | null }> {
   const { error } = await supabase.from("order_admin_shipping_labels").insert({
@@ -54,6 +62,10 @@ export async function insertOrderAdminShippingLabel(
     shipengine_rate_id: row.shipengine_rate_id ?? null,
     label_cost_usd: row.label_cost_usd ?? null,
     label_cost_currency: row.label_cost_currency ?? null,
+    paperless_qr_url: row.paperless_qr_url ?? null,
+    paperless_qr_storage_path: row.paperless_qr_storage_path ?? null,
+    paperless_instructions: row.paperless_instructions ?? null,
+    paperless_handoff_code: row.paperless_handoff_code ?? null,
   })
   if (!error) return { error: null }
   const parts = [error.message, error.hint, error.details, error.code].filter(
@@ -198,20 +210,49 @@ export async function getLatestStoredLabelPathForOrder(
 export async function getLatestAdminLabelUrlsForOrder(
   supabase: SupabaseClient,
   orderId: string,
-): Promise<{ label_pdf_url: string | null; label_storage_path: string | null } | null> {
+): Promise<{
+  label_pdf_url: string | null
+  label_storage_path: string | null
+  paperless_qr_url: string | null
+  paperless_qr_storage_path: string | null
+  paperless_instructions: string | null
+  paperless_handoff_code: string | null
+} | null> {
   const { data, error } = await supabase
     .from("order_admin_shipping_labels")
-    .select("label_pdf_url, label_storage_path")
+    .select(
+      "label_pdf_url, label_storage_path, paperless_qr_url, paperless_qr_storage_path, paperless_instructions, paperless_handoff_code",
+    )
     .eq("order_id", orderId)
     .order("created_at", { ascending: false })
     .limit(8)
 
   if (error || !data?.length) return null
   for (const row of data) {
-    const r = row as { label_pdf_url: string | null; label_storage_path: string | null }
+    const r = row as {
+      label_pdf_url: string | null
+      label_storage_path: string | null
+      paperless_qr_url?: string | null
+      paperless_qr_storage_path?: string | null
+      paperless_instructions?: string | null
+      paperless_handoff_code?: string | null
+    }
     const u = r.label_pdf_url?.trim() || null
     const p = r.label_storage_path?.trim() || null
-    if (u || p) return { label_pdf_url: u, label_storage_path: p }
+    const qrUrl = r.paperless_qr_url?.trim() || null
+    const qrPath = r.paperless_qr_storage_path?.trim() || null
+    const instructions = r.paperless_instructions?.trim() || null
+    const handoff = r.paperless_handoff_code?.trim() || null
+    if (u || p || qrUrl || qrPath) {
+      return {
+        label_pdf_url: u,
+        label_storage_path: p,
+        paperless_qr_url: qrUrl,
+        paperless_qr_storage_path: qrPath,
+        paperless_instructions: instructions,
+        paperless_handoff_code: handoff,
+      }
+    }
   }
   return null
 }

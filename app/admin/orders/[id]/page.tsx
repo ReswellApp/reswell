@@ -33,6 +33,9 @@ type OrderApiResponse =
         canRefund: boolean
         canReleaseShippingSellerEarnings: boolean
         hasShippingLabel: boolean
+        hasPaperlessQr: boolean
+        paperlessInstructions: string | null
+        paperlessHandoffCode: string | null
         canFulfillReswellShop: boolean
       }
     }
@@ -127,6 +130,15 @@ export default function AdminOrderDetailPage() {
             canReleaseShippingSellerEarnings:
               body.capabilities.canReleaseShippingSellerEarnings === true,
             hasShippingLabel: body.capabilities.hasShippingLabel === true,
+            hasPaperlessQr: body.capabilities.hasPaperlessQr === true,
+            paperlessInstructions:
+              typeof body.capabilities.paperlessInstructions === "string"
+                ? body.capabilities.paperlessInstructions
+                : null,
+            paperlessHandoffCode:
+              typeof body.capabilities.paperlessHandoffCode === "string"
+                ? body.capabilities.paperlessHandoffCode
+                : null,
             canFulfillReswellShop: body.capabilities.canFulfillReswellShop === true,
           },
         })
@@ -198,6 +210,7 @@ export default function AdminOrderDetailPage() {
   const canReleaseShippingSellerEarnings =
     payload.capabilities.canReleaseShippingSellerEarnings
   const hasShippingLabel = payload.capabilities.hasShippingLabel
+  const hasPaperlessQr = payload.capabilities.hasPaperlessQr
   const canFulfillReswellShop = payload.capabilities.canFulfillReswellShop
   const showShippingLabel =
     o.fulfillment_method === "shipping" && hasShippingLabel
@@ -597,6 +610,9 @@ export default function AdminOrderDetailPage() {
         <SellerPreparedShippingLabelCard
           orderId={o.id}
           downloadApiPrefix="/api/admin/orders"
+          hasPaperlessQr={hasPaperlessQr}
+          paperlessInstructions={payload.capabilities.paperlessInstructions}
+          paperlessHandoffCode={payload.capabilities.paperlessHandoffCode}
         />
       ) : null}
 

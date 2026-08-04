@@ -149,6 +149,9 @@ export async function purchaseShipEngineLabelForOrderOnce(params: {
         trackingCarrier: existing.trackingCarrier ?? "Carrier",
         costAmount: null,
         costCurrency: null,
+        paperlessQrUrl: null,
+        paperlessInstructions: null,
+        paperlessHandoffCode: null,
       },
     }
   }
@@ -164,6 +167,9 @@ export async function purchaseShipEngineLabelForOrderOnce(params: {
         trackingCarrier: existingLock.tracking_carrier?.trim() || "Carrier",
         costAmount: null,
         costCurrency: null,
+        paperlessQrUrl: null,
+        paperlessInstructions: null,
+        paperlessHandoffCode: null,
       },
     }
   }
@@ -202,6 +208,9 @@ export async function purchaseShipEngineLabelForOrderOnce(params: {
           trackingCarrier: waited.tracking_carrier?.trim() || "Carrier",
           costAmount: null,
           costCurrency: null,
+          paperlessQrUrl: null,
+          paperlessInstructions: null,
+          paperlessHandoffCode: null,
         },
       }
     }
@@ -250,6 +259,9 @@ export async function purchaseShipEngineLabelForOrderOnce(params: {
         trackingCarrier: existingAfterLock.trackingCarrier ?? "Carrier",
         costAmount: null,
         costCurrency: null,
+        paperlessQrUrl: null,
+        paperlessInstructions: null,
+        paperlessHandoffCode: null,
       },
     }
   }

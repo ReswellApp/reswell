@@ -19,6 +19,10 @@ export async function attachOrderShippingLabel(params: {
   trackingNumber: string | null
   trackingCarrier: string | null
   shipengineRateId?: string | null
+  paperlessQrUrl?: string | null
+  paperlessQrStoragePath?: string | null
+  paperlessInstructions?: string | null
+  paperlessHandoffCode?: string | null
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const track = normalizeTrackingNumberForCarrier(params.trackingNumber ?? "") || null
   const car = params.trackingCarrier?.trim() || null
@@ -31,6 +35,10 @@ export async function attachOrderShippingLabel(params: {
     tracking_number: track,
     tracking_carrier: car,
     shipengine_rate_id: params.shipengineRateId ?? null,
+    paperless_qr_url: params.paperlessQrUrl ?? null,
+    paperless_qr_storage_path: params.paperlessQrStoragePath ?? null,
+    paperless_instructions: params.paperlessInstructions ?? null,
+    paperless_handoff_code: params.paperlessHandoffCode ?? null,
   })
 
   if (ins.error) {

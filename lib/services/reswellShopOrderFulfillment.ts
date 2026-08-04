@@ -230,6 +230,9 @@ export async function fulfillReswellShopOrder(
       trackingNumber,
       trackingCarrier,
       shipengineRateId: rateId,
+      paperlessQrUrl: purchased.result.paperlessQrUrl,
+      paperlessInstructions: purchased.result.paperlessInstructions,
+      paperlessHandoffCode: purchased.result.paperlessHandoffCode,
     })
     if (!attached.ok) {
       return { ok: false, error: attached.error, status: 500 }

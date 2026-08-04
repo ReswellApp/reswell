@@ -376,6 +376,9 @@ export async function POST(request: NextRequest) {
       shipengineRateId: rateId,
       labelCostUsd: purchased.result.costAmount,
       labelCostCurrency: purchased.result.costCurrency,
+      paperlessQrUrl: purchased.result.paperlessQrUrl,
+      paperlessInstructions: purchased.result.paperlessInstructions,
+      paperlessHandoffCode: purchased.result.paperlessHandoffCode,
     })
 
     if (!attached.ok) {

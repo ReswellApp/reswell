@@ -53,6 +53,9 @@ type PurchasedLabelPayload = {
   labelUrl: string | null
   trackingNumber: string
   trackingCarrier: string
+  paperlessQrUrl?: string | null
+  paperlessInstructions?: string | null
+  paperlessHandoffCode?: string | null
 }
 
 async function findWalletLabelPurchaseByOrder(
@@ -718,6 +721,9 @@ async function persistSellerPaidLabelAndTracking(params: {
         tracking_number: params.purchased.trackingNumber,
         tracking_carrier: params.purchased.trackingCarrier,
         shipengine_rate_id: params.rateId,
+        paperless_qr_url: params.purchased.paperlessQrUrl ?? null,
+        paperless_instructions: params.purchased.paperlessInstructions ?? null,
+        paperless_handoff_code: params.purchased.paperlessHandoffCode ?? null,
       })
       .eq("id", params.claimId)
       .is("tracking_number", null)
@@ -745,6 +751,9 @@ async function persistSellerPaidLabelAndTracking(params: {
       tracking_carrier: params.purchased.trackingCarrier,
       shipengine_rate_id: params.rateId,
       stripe_payment_intent_id: params.stripePaymentIntentId ?? null,
+      paperless_qr_url: params.purchased.paperlessQrUrl ?? null,
+      paperless_instructions: params.purchased.paperlessInstructions ?? null,
+      paperless_handoff_code: params.purchased.paperlessHandoffCode ?? null,
     })
 
     if (labelInsertErr) {
