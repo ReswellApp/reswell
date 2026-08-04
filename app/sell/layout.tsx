@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import type { ReactNode } from "react"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
-import { SellAuthGate } from "@/components/features/sell/sell-auth-gate"
+import { SellUnsignedAccess } from "@/components/features/sell/sell-unsigned-access"
 import { SellerBanSellBlocked } from "@/components/features/sell/seller-ban-sell-blocked"
 import { fetchSellerBanState, isSellerBanActive } from "@/lib/db/sellerBan"
 import { createClient } from "@/lib/supabase/server"
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
 export default async function SellLayout({ children }: { children: ReactNode }) {
   const { user } = await getCachedRequestSession()
   if (!user) {
-    return <SellAuthGate>{children}</SellAuthGate>
+    return <SellUnsignedAccess>{children}</SellUnsignedAccess>
   }
 
   const supabase = await createClient()

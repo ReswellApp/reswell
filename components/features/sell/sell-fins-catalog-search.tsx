@@ -33,6 +33,7 @@ import { finSetupLabel, finSizeLabel, finSystemLabel } from "@/lib/fin-listing-c
 import { compactSearchKey } from "@/lib/utils/fin-catalog-search-rank"
 import { SellFocusScrim } from "@/components/features/sell/sell-focus-scrim"
 import { cn } from "@/lib/utils"
+import { SELL_PAGE_GROUND_CLASS } from "@/components/features/sell/sell-form-surface"
 
 const SEARCH_DEBOUNCE_MS = 250
 
@@ -435,7 +436,8 @@ export function SellFinsCatalogSearch({ onSelect, onSkip, onExit, className }: S
   return (
     <main
       className={cn(
-        "relative flex-1 w-full bg-slate-100 pb-12 pt-5 sm:pt-8 sm:pb-16 md:pb-24",
+        "relative flex-1 w-full pb-12 pt-5 sm:pt-8 sm:pb-16 md:pb-24",
+        SELL_PAGE_GROUND_CLASS,
         className,
       )}
     >

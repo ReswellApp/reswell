@@ -79,6 +79,7 @@ import {
 } from "@/lib/sell-flow/sell-submit-error"
 import { useSellFunnelStepTracking } from "@/lib/sell-flow/use-sell-funnel-step-tracking"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
+import { SELL_PAGE_GROUND_CLASS } from "@/components/features/sell/sell-form-surface"
 
 function shippingPriceToFormValue(v: unknown): string {
   if (v == null || v === "") return ""
@@ -690,7 +691,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
   }
 
   return (
-    <main className="flex-1 w-full bg-slate-100 pt-8 pb-16 md:pb-20 lg:pb-24">
+    <main className={cn("flex-1 w-full pt-8 pb-16 md:pb-20 lg:pb-24", SELL_PAGE_GROUND_CLASS)}>
       <AdminBulkListingBanner section="wetsuits" bulkSlotId={bulkSlotId} />
       <div className="container relative mx-auto max-w-2xl min-h-[50vh] lg:max-w-6xl">
         <h1 className="sr-only">{editId ? "Edit wetsuit listing" : "List your wetsuit"}</h1>

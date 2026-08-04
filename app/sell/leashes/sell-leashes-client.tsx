@@ -87,6 +87,7 @@ import {
   sellActionErrorMessage,
 } from "@/lib/sell-flow/sell-submit-error"
 import { useSellFunnelStepTracking } from "@/lib/sell-flow/use-sell-funnel-step-tracking"
+import { SELL_PAGE_GROUND_CLASS } from "@/components/features/sell/sell-form-surface"
 
 const SELL_LEASHES_FORM_SECTION_NAV_ITEMS = buildSellSectionNavItems("leashes", "Leash details")
 
@@ -805,7 +806,7 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
   }
 
   return (
-    <main className="flex-1 w-full bg-slate-100 pt-8 pb-16 md:pb-20 lg:pb-24">
+    <main className={cn("flex-1 w-full pt-8 pb-16 md:pb-20 lg:pb-24", SELL_PAGE_GROUND_CLASS)}>
       <AdminBulkListingBanner section="leashes" bulkSlotId={bulkSlotId} />
       <div className="container relative mx-auto max-w-2xl min-h-[50vh] lg:max-w-6xl">
         <h1 className="sr-only">{editId ? "Edit leash listing" : "List your leash"}</h1>

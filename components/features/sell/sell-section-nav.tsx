@@ -17,6 +17,17 @@ function scrollToSection(id: string) {
   el.scrollIntoView({ behavior: "smooth", block: "start" })
 }
 
+function selectSection(
+  id: string,
+  onSelectSection?: (id: string) => void,
+) {
+  if (onSelectSection) {
+    onSelectSection(id)
+    return
+  }
+  scrollToSection(id)
+}
+
 export const SELL_FINS_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[] = [
   {
     id: "sell-fins-section-photos-title",
@@ -74,19 +85,19 @@ export function buildSellSectionNavItems(
 
 export const SELL_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[] = [
   {
-    id: "sell-section-photos-title",
-    label: "Photos & title",
-    shortLabel: "Start",
+    id: "sell-section-basics",
+    label: "Brand, model & shape",
+    shortLabel: "Basics",
   },
   {
-    id: "sell-section-board",
-    label: "Board & description",
-    shortLabel: "Board",
+    id: "sell-section-details",
+    label: "Dimensions & details",
+    shortLabel: "Details",
   },
   { id: "sell-section-delivery", label: "Pickup & shipping", shortLabel: "Delivery" },
   {
     id: "sell-section-publish",
-    label: "Price & publish",
+    label: "Title, photos & publish",
     shortLabel: "Publish",
   },
 ]
@@ -98,17 +109,23 @@ export const SELL_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[] = [
 export function SellSectionNavHorizontal({
   items,
   sectionCompletion,
+  activeSectionId,
+  onSelectSection,
   className,
 }: {
   items: readonly SellSectionNavItem[]
   sectionCompletion?: Readonly<Partial<Record<string, boolean>>>
+  /** When set, highlights the current wizard step. */
+  activeSectionId?: string | null
+  /** Wizard mode: jump steps instead of scrolling to section anchors. */
+  onSelectSection?: (sectionId: string) => void
   className?: string
 }) {
   return (
     <nav
       aria-label="Listing form sections"
       className={cn(
-        "rounded-lg border border-slate-300 bg-card py-3 shadow-md ring-1 ring-slate-900/[0.05] backdrop-blur-sm",
+        "rounded-lg border border-border bg-card py-3 shadow-surface",
         className,
       )}
     >
@@ -116,19 +133,21 @@ export function SellSectionNavHorizontal({
         <ol className="mx-auto flex w-max min-w-full items-start justify-center gap-0 px-3 pb-0.5 pt-0.5 sm:px-4">
           {items.map((item, index) => {
             const complete = sectionCompletion?.[item.id] === true
+            const active = activeSectionId === item.id
             const label = item.shortLabel ?? item.label
             return (
               <li key={item.id} className="flex items-start">
                 {index > 0 ? (
                   <div
-                    className="mt-2.5 h-px w-2 shrink-0 bg-foreground/25 sm:w-3"
+                    className="mt-2.5 h-px w-2 shrink-0 bg-midgray/40 sm:w-3"
                     aria-hidden
                   />
                 ) : null}
                 <div className="flex w-[3rem] shrink-0 flex-col items-center px-0.5 sm:w-14">
                   <button
                     type="button"
-                    onClick={() => scrollToSection(item.id)}
+                    onClick={() => selectSection(item.id, onSelectSection)}
+                    aria-current={active ? "step" : undefined}
                     aria-label={
                       complete ? `${item.label}, completed` : `Go to ${item.label}`
                     }
@@ -138,18 +157,32 @@ export function SellSectionNavHorizontal({
                     )}
                   >
                     <span
-                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-foreground transition-opacity hover:opacity-90"
+                      className={cn(
+                        "flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white transition-all hover:opacity-90",
+                        complete
+                          ? "bg-listingHeart"
+                          : active
+                            ? "border-2 border-listingHeart"
+                            : "border-2 border-midgray/60",
+                      )}
                       aria-hidden
                     >
                       {complete ? (
                         <Check
-                          className="h-3 w-3 text-background"
+                          className="h-3 w-3 text-white"
                           strokeWidth={3}
                           aria-hidden
                         />
+                      ) : active ? (
+                        <span className="h-1.5 w-1.5 rounded-full bg-listingHeart" />
                       ) : null}
                     </span>
-                    <span className="w-full text-center text-[10px] leading-tight text-foreground sm:text-xs">
+                    <span
+                      className={cn(
+                        "w-full text-center text-[10px] leading-tight sm:text-xs",
+                        active ? "font-semibold text-foreground" : "text-foreground",
+                      )}
+                    >
                       {label}
                     </span>
                   </button>
@@ -164,16 +197,22 @@ export function SellSectionNavHorizontal({
 }
 
 /**
- * Desktop sidebar: vertical stepper (bold rail + rings) with section labels; completed steps are solid with a check.
+ * Desktop sidebar: vertical stepper (bold rail + rings) with section labels; completed steps are solid blue with a check.
  */
 export function SellSectionNav({
   items,
   sectionCompletion,
+  activeSectionId,
+  onSelectSection,
   className,
 }: {
   items: readonly SellSectionNavItem[]
   /** When set, keys are section ids (see `SELL_FORM_SECTION_NAV_ITEMS`); completed steps render a check. */
   sectionCompletion?: Readonly<Partial<Record<string, boolean>>>
+  /** When set, highlights the current wizard step. */
+  activeSectionId?: string | null
+  /** Wizard mode: jump steps instead of scrolling to section anchors. */
+  onSelectSection?: (sectionId: string) => void
   className?: string
 }) {
   return (
@@ -181,47 +220,58 @@ export function SellSectionNav({
       aria-label="Listing form sections"
       className={cn("sticky top-24", className)}
     >
-      <div className="w-full overflow-auto rounded-xl bg-listingHeart px-3 py-6 xl:px-4">
+      <div className="w-full overflow-auto px-3 py-6 xl:px-4">
         <div className="relative">
           <div
-            className="absolute bottom-3 left-3 top-3 w-[3px] -translate-x-1/2 bg-white/35"
+            className="absolute bottom-3 left-3 top-3 w-[2px] -translate-x-1/2 bg-midgray/30"
             aria-hidden
           />
           <ul className="relative m-0 list-none space-y-8 p-0">
             {items.map((item) => {
               const complete = sectionCompletion?.[item.id] === true
+              const active = activeSectionId === item.id
               return (
                 <li key={item.id}>
                   <button
                     type="button"
-                    onClick={() => scrollToSection(item.id)}
+                    onClick={() => selectSection(item.id, onSelectSection)}
+                    aria-current={active ? "step" : undefined}
                     aria-label={
                       complete ? `${item.label}, completed` : `Go to ${item.label}`
                     }
                     className={cn(
                       "group flex w-full items-start gap-3 rounded-sm text-left",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-listingHeart",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     )}
                   >
                     <span
                       className={cn(
-                        "relative z-10 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-opacity",
+                        "relative z-10 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white transition-all",
                         "group-hover:opacity-90",
                         complete
-                          ? "bg-white"
-                          : "border-[3px] border-white bg-listingHeart",
+                          ? "bg-listingHeart"
+                          : active
+                            ? "border-2 border-listingHeart shadow-sm"
+                            : "border-2 border-midgray/60",
                       )}
                       aria-hidden
                     >
                       {complete ? (
                         <Check
-                          className="h-3.5 w-3.5 text-listingHeart"
+                          className="h-3.5 w-3.5 text-white"
                           strokeWidth={3}
                           aria-hidden
                         />
+                      ) : active ? (
+                        <span className="h-2 w-2 rounded-full bg-listingHeart" />
                       ) : null}
                     </span>
-                    <span className="min-w-0 max-w-[13rem] pt-1 text-sm leading-snug text-white/95 group-hover:underline group-hover:underline-offset-4">
+                    <span
+                      className={cn(
+                        "min-w-0 max-w-[13rem] pt-1 text-sm leading-snug text-black group-hover:underline group-hover:underline-offset-4",
+                        active && "font-semibold",
+                      )}
+                    >
                       {item.label}
                     </span>
                   </button>

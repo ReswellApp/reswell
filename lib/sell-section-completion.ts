@@ -10,7 +10,6 @@ import {
   LISTING_BOARD_MODEL_MAX_LENGTH,
   LISTING_MIN_PHOTOS,
   LISTING_TITLE_MAX_LENGTH,
-  validateSellListingForm,
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
 import { parseSurfboardShippingTierId } from "@/lib/surfboard-shipping-tiers"
@@ -46,6 +45,14 @@ function brandModelComplete(form: SellFormValidationInput): boolean {
 
 function shapeSectionComplete(form: SellFormValidationInput): boolean {
   return Boolean(form.category?.trim() && form.boardType?.trim())
+}
+
+function conditionComplete(form: SellFormValidationInput): boolean {
+  return Boolean(form.condition?.trim())
+}
+
+function descriptionOnlyComplete(form: SellFormValidationInput): boolean {
+  return Boolean(form.description?.trim())
 }
 
 function dimensionsSectionComplete(form: SellFormValidationInput): boolean {
@@ -139,52 +146,49 @@ function deliverySectionComplete(form: SellFormValidationInput): boolean {
     }
   }
 
+  return true
+}
+
+function pricePublishFieldsComplete(form: SellFormValidationInput): boolean {
+  const priceRaw = form.price?.trim() ?? ""
+  if (!priceRaw) return false
+  const price = Number.parseFloat(priceRaw.replace(/,/g, ""))
+  if (!Number.isFinite(price) || price < PRICE_MIN || price > PRICE_MAX) return false
+
   if (form.autoPriceDrop) {
     const floorRaw = form.autoPriceDropFloor?.trim() ?? ""
     if (!floorRaw) return false
-    const floor = parseFloat(floorRaw.replace(/,/g, ""))
-    const price = parseFloat(form.price?.trim() ?? "")
+    const floor = Number.parseFloat(floorRaw.replace(/,/g, ""))
     if (!Number.isFinite(floor) || floor < PRICE_MIN || floor > PRICE_MAX) return false
-    if (!Number.isFinite(price) || floor >= price) return false
+    if (floor >= price) return false
   }
 
   return true
 }
 
-function descriptionSectionComplete(form: SellFormValidationInput): boolean {
-  return Boolean(form.condition?.trim() && form.description?.trim())
-}
-
 /**
- * Per-section completion for the `/sell` desktop stepper. Rules mirror
+ * Per-section completion for the `/sell` board wizard stepper. Rules mirror
  * {@link validateSellListingForm} field groups so checkmarks match what’s left to publish.
  *
- * Delivery (`sell-section-delivery`): the `/sell` page may additionally require scroll + explicit
- * `LocationPicker` confirmation before marking that step complete in the rail (prefill alone cannot),
- * unless the form already carries map coordinates from draft restore / hydrate.
+ * Delivery (`sell-section-delivery`): the `/sell` page may additionally require visiting the
+ * delivery step + explicit `LocationPicker` confirmation before marking that step complete
+ * in the rail (prefill alone cannot), unless the form already carries map coordinates from
+ * draft restore / hydrate.
  */
 export function computeSellSectionCompletion(
   form: SellFormValidationInput,
   opts: { imageCount: number; imagesUploadReady: boolean },
 ): Record<string, boolean> {
-  const publishComplete =
-    validateSellListingForm(form, {
-      imageCount: opts.imageCount,
-      imagesUploadReady: opts.imagesUploadReady,
-      adminImpersonationEdit: false,
-    }) === null
-
   return {
-    "sell-section-photos-title":
+    "sell-section-basics":
+      brandModelComplete(form) && shapeSectionComplete(form) && conditionComplete(form),
+    "sell-section-details":
+      dimensionsSectionComplete(form) && descriptionOnlyComplete(form),
+    "sell-section-delivery": deliverySectionComplete(form),
+    "sell-section-publish":
       photosTitleSectionComplete(form) &&
       opts.imageCount >= LISTING_MIN_PHOTOS &&
-      opts.imagesUploadReady,
-    "sell-section-board":
-      brandModelComplete(form) &&
-      shapeSectionComplete(form) &&
-      dimensionsSectionComplete(form) &&
-      descriptionSectionComplete(form),
-    "sell-section-delivery": deliverySectionComplete(form),
-    "sell-section-publish": publishComplete,
+      opts.imagesUploadReady &&
+      pricePublishFieldsComplete(form),
   }
 }

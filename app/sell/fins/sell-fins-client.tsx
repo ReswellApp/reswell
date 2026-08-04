@@ -104,6 +104,7 @@ import {
 import { cn } from "@/lib/utils"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { finalizePeerListingCreate } from "@/lib/utils/admin-peer-listing-create-navigation"
+import { SELL_PAGE_GROUND_CLASS } from "@/components/features/sell/sell-form-surface"
 
 function finShippingModeFromListing(listing: {
   shipping_available?: boolean | null
@@ -1051,7 +1052,7 @@ export default function SellFinsFlow({
   }
 
   return (
-    <main className="flex-1 w-full bg-slate-100 pt-8 pb-16 md:pb-20 lg:pb-24">
+    <main className={cn("flex-1 w-full pt-8 pb-16 md:pb-20 lg:pb-24", SELL_PAGE_GROUND_CLASS)}>
       <AdminBulkListingBanner section="fins" bulkSlotId={bulkSlotId} />
       <div className="container relative mx-auto max-w-2xl min-h-[50vh] lg:max-w-6xl">
         <h1 className="sr-only">{editId ? "Edit fin listing" : "List your fins"}</h1>

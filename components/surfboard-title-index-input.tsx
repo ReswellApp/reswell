@@ -7,6 +7,7 @@ import Image from "next/image"
 import { SlidersHorizontal } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { SELL_CONTROL_CLASS } from "@/components/features/sell/sell-form-surface"
 import { cn } from "@/lib/utils"
 import type { IndexBoardModelSelection } from "@/components/index-board-model-combobox"
 import { getBoardModelsCatalogItems, searchBrandsCatalogSuggest } from "@/app/actions/marketplace"
@@ -451,7 +452,7 @@ export function SurfboardTitleIndexInput({
         ref={inputRef}
         id={id}
         className={cn(
-          "h-11 border-foreground/20 bg-card shadow-sm placeholder:text-muted-foreground",
+          SELL_CONTROL_CLASS,
           loading && q.length >= 1 && "pr-8",
           className,
         )}

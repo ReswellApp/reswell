@@ -9,7 +9,9 @@ export function sellPendingPublishKey(kind: SellFlowListingKind): string {
 }
 
 export function sellFlowStepSessionKey(kind: SellFlowListingKind): string | null {
-  return kind === "fins" ? "reswell.sell.fins.flowStep" : null
+  if (kind === "fins") return "reswell.sell.fins.flowStep"
+  if (kind === "board") return "reswell.sell.board.flowStep"
+  return null
 }
 
 export function markPendingPublish(kind: SellFlowListingKind): void {

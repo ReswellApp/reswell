@@ -39,8 +39,19 @@ export function useSellFunnelStepTracking(input: {
   sectionIds: readonly string[]
   sectionCompletion: Readonly<Partial<Record<string, boolean>>>
   enabled?: boolean
+  /**
+   * Wizard flows only mount one step at a time — pass the active section id so
+   * `step_viewed` still fires without relying on IntersectionObserver alone.
+   */
+  activeSectionId?: string | null
 }): void {
-  const { listingType, sectionIds, sectionCompletion, enabled = true } = input
+  const {
+    listingType,
+    sectionIds,
+    sectionCompletion,
+    enabled = true,
+    activeSectionId = null,
+  } = input
   const sectionIdsKey = sectionIds.join("|")
   const prevCompletionRef = useRef<Record<string, boolean>>({})
 
@@ -54,6 +65,23 @@ export function useSellFunnelStepTracking(input: {
 
   useEffect(() => {
     if (!enabled || typeof window === "undefined") return
+    if (!activeSectionId || !sectionIds.includes(activeSectionId)) return
+
+    const viewed = readViewedSteps(listingType)
+    if (viewed.has(activeSectionId)) return
+    viewed.add(activeSectionId)
+    persistViewedSteps(listingType, viewed)
+    logSellFunnelEvent({
+      listingType,
+      event: "step_viewed",
+      field: activeSectionId,
+    })
+  }, [activeSectionId, enabled, listingType, sectionIds, sectionIdsKey])
+
+  useEffect(() => {
+    if (!enabled || typeof window === "undefined") return
+    // Wizard mode already records via `activeSectionId`.
+    if (activeSectionId) return
 
     const viewed = readViewedSteps(listingType)
     const observers: IntersectionObserver[] = []
@@ -98,7 +126,7 @@ export function useSellFunnelStepTracking(input: {
     return () => {
       for (const io of observers) io.disconnect()
     }
-  }, [enabled, listingType, sectionIdsKey, sectionIds])
+  }, [activeSectionId, enabled, listingType, sectionIdsKey, sectionIds])
 
   useEffect(() => {
     if (!enabled) return

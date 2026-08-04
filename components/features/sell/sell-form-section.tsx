@@ -25,11 +25,11 @@ export function SellFormSection({
   return (
     <section
       id={sectionId}
-      className={cn("space-y-3 lg:space-y-4", sectionId && "scroll-mt-24")}
+      className={cn("space-y-4 lg:space-y-5", sectionId && "scroll-mt-24")}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-base font-semibold tracking-tight text-foreground lg:text-lg">
+          <h2 className="text-lg font-semibold tracking-tight text-foreground lg:text-xl">
             {title}
           </h2>
           {description ? (

@@ -207,6 +207,7 @@ import {
   SellSectionNavHorizontal,
   SELL_FORM_SECTION_NAV_ITEMS,
 } from "@/components/features/sell/sell-section-nav"
+import { BoardSellWizardFooter } from "@/components/features/sell/board-sell-wizard-footer"
 import { computeSellSectionCompletion } from "@/lib/sell-section-completion"
 import {
   boardCategoryMap,
@@ -226,12 +227,17 @@ import {
   SELL_SUPPRESS_IDB_RESTORE_KEY,
   sellPendingPublishKey,
 } from "@/lib/sell-flow/session-keys"
-
-function scrollSellFormSectionIntoView(sectionId: string) {
-  const el = document.getElementById(sectionId)
-  if (!el) return
-  el.scrollIntoView({ behavior: "smooth", block: "start" })
-}
+import {
+  BOARD_SELL_SECTION_ID_BY_STEP,
+  BOARD_SELL_STEP_BY_SECTION_ID,
+  clearPersistedBoardSellFlowStep,
+  nextBoardSellFlowStep,
+  parseBoardSellFlowStep,
+  persistBoardSellFlowStep,
+  prevBoardSellFlowStep,
+  readStoredBoardSellFlowStep,
+  type BoardSellFlowStep,
+} from "@/lib/sell-flow/board-sell-flow-step"
 
 /** True once the seller has pinned the board (coordinates used for drafts + validation). */
 function sellFormHasCommittedMapPins(fd: { locationLat: number; locationLng: number }): boolean {
@@ -286,13 +292,13 @@ function SellFormSection({
     <section
       id={sectionId}
       className={cn(
-        "space-y-3 lg:space-y-4",
+        "space-y-4 lg:space-y-5",
         sectionId && "scroll-mt-24",
       )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-base font-semibold tracking-tight text-foreground lg:text-lg">
+          <h2 className="text-lg font-semibold tracking-tight text-foreground lg:text-xl">
             {title}
           </h2>
           {description ? (
@@ -540,9 +546,10 @@ function shippingPriceToFormValue(v: unknown): string {
 function sellFormStateFromIdbSnapshot(
   snapshot: SellListingDraftFormSnapshot,
 ): ReturnType<typeof createInitialSellFormData> {
+  const { boardFlowStep: _boardFlowStep, ...snapshotFields } = snapshot
   const base = {
     ...createInitialSellFormData(),
-    ...snapshot,
+    ...snapshotFields,
   } as ReturnType<typeof createInitialSellFormData>
   return {
     ...base,
@@ -781,6 +788,15 @@ function SellPageContentInner({
     ...LISTING_UPLOAD_STEP_LABELS,
   ])
   const [draftHydrated, setDraftHydrated] = useState(!!editId)
+  const [flowStep, setFlowStep] = useState<BoardSellFlowStep>(() => {
+    if (editId) return "basics"
+    if (typeof window === "undefined") return "basics"
+    return readStoredBoardSellFlowStep() ?? "basics"
+  })
+  const setBoardFlowStep = useCallback((step: BoardSellFlowStep) => {
+    setFlowStep(step)
+    persistBoardSellFlowStep(step)
+  }, [])
   const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
   const [signedInUserId, setSignedInUserId] = useState<string | null>(null)
   /** Guests exit to browse; signed-in sellers to their listings hub (`/listings` → dashboard). */
@@ -811,6 +827,13 @@ function SellPageContentInner({
   useEffect(() => {
     setPickupShippingSectionEnteredOnce(false)
     setPickupShippingLocationUserCommits(0)
+  }, [editId])
+
+  /** Server / soft draft opens start on the first wizard step. */
+  useEffect(() => {
+    if (!editId) return
+    setFlowStep("basics")
+    persistBoardSellFlowStep("basics")
   }, [editId])
 
   useEffect(() => {
@@ -918,7 +941,7 @@ function SellPageContentInner({
 
   sellDraftLatestRef.current = {
     listingType,
-    formData: formData as SellListingDraftFormSnapshot,
+    formData: { ...formData, boardFlowStep: flowStep } as SellListingDraftFormSnapshot,
     images,
     editId,
     draftHydrated,
@@ -932,6 +955,8 @@ function SellPageContentInner({
       }
       draftPhotosPendingRef.current = null
       setFormData(createInitialSellFormData())
+      setBoardFlowStep("basics")
+      clearPersistedBoardSellFlowStep()
       sellListingThumbLoadedSrcByClientId.clear()
       latestListingPhotoPrepareSeqRef.current.clear()
       setImages([])
@@ -950,7 +975,7 @@ function SellPageContentInner({
     } finally {
       setStartNewListingBusy(false)
     }
-  }, [editId, router, supabase])
+  }, [editId, router, setBoardFlowStep, supabase])
 
   const buildBoardDraftPayload = useCallback(
     (listingId: string | null) => ({
@@ -1392,6 +1417,38 @@ function SellPageContentInner({
     }
   }, [pickupShippingStepperUxSatisfied, sellSectionCompletionBase])
 
+  const activeSellSectionId = BOARD_SELL_SECTION_ID_BY_STEP[flowStep]
+
+  const goToSellSection = useCallback(
+    (sectionId: string) => {
+      const step = BOARD_SELL_STEP_BY_SECTION_ID[sectionId]
+      if (!step) return
+      setBoardFlowStep(step)
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" })
+      }
+    },
+    [setBoardFlowStep],
+  )
+
+  const goToNextSellStep = useCallback(() => {
+    const next = nextBoardSellFlowStep(flowStep)
+    if (!next) return
+    setBoardFlowStep(next)
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" })
+    }
+  }, [flowStep, setBoardFlowStep])
+
+  const goToPrevSellStep = useCallback(() => {
+    const prev = prevBoardSellFlowStep(flowStep)
+    if (!prev) return
+    setBoardFlowStep(prev)
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" })
+    }
+  }, [flowStep, setBoardFlowStep])
+
   const firstIncompleteSellSectionId = useMemo(() => {
     for (const item of SELL_FORM_SECTION_NAV_ITEMS) {
       if (sellSectionCompletion[item.id] !== true) return item.id
@@ -1416,10 +1473,18 @@ function SellPageContentInner({
     sectionIds: sellFunnelSectionIds,
     sectionCompletion: sellSectionCompletion,
     enabled: !editLoading,
+    activeSectionId: activeSellSectionId,
   })
 
   useEffect(() => {
+    if (flowStep === "delivery") {
+      setPickupShippingSectionEnteredOnce(true)
+    }
+  }, [flowStep])
+
+  useEffect(() => {
     if (skipPickupShippingStepperInteractionUx || editLoading) return
+    if (flowStep !== "delivery") return
 
     let cancelled = false
     let raf = 0
@@ -1464,7 +1529,7 @@ function SellPageContentInner({
       window.cancelAnimationFrame(raf)
       detach?.()
     }
-  }, [editLoading, skipPickupShippingStepperInteractionUx])
+  }, [editLoading, flowStep, skipPickupShippingStepperInteractionUx])
   const resolvedTitlePreview = useMemo(
     () => buildResolvedListingTitle(sellValidationForm),
     [sellValidationForm],
@@ -1726,6 +1791,8 @@ function SellPageContentInner({
     }
     draftPhotosPendingRef.current = null
     setFormData(createInitialSellFormData())
+    setBoardFlowStep("basics")
+    clearPersistedBoardSellFlowStep()
     sellListingThumbLoadedSrcByClientId.clear()
     latestListingPhotoPrepareSeqRef.current.clear()
     setImages([])
@@ -1745,7 +1812,7 @@ function SellPageContentInner({
         /* ignore */
       }
     })()
-  }, [startFresh, supabase])
+  }, [setBoardFlowStep, startFresh, supabase])
 
   useEffect(() => {
     if (!editId) {
@@ -1794,6 +1861,13 @@ function SellPageContentInner({
             : await loadGuestSellListingDraft()
           if (record && !cancelled) {
             setFormData(sellFormStateFromIdbSnapshot(record.formData))
+            const restoredStep =
+              parseBoardSellFlowStep(record.formData.boardFlowStep) ??
+              readStoredBoardSellFlowStep()
+            if (restoredStep) {
+              setFlowStep(restoredStep)
+              persistBoardSellFlowStep(restoredStep)
+            }
             const blobs = Array.isArray(record.imageBlobs) ? record.imageBlobs : []
             if (blobs.length > 0) {
               const slots = listingPhotoSlotsFromDraftBlobs(blobs)
@@ -1871,7 +1945,7 @@ function SellPageContentInner({
     return () => {
       if (sellDraftPersistTimerRef.current) clearTimeout(sellDraftPersistTimerRef.current)
     }
-  }, [editId, draftHydrated, formData, images])
+  }, [editId, draftHydrated, flowStep, formData, images])
 
   useEffect(() => {
     const flushIdb = () => {
@@ -3404,9 +3478,7 @@ function SellPageContentInner({
                       type="button"
                       variant="secondary"
                       size="sm"
-                      onClick={() =>
-                        scrollSellFormSectionIntoView(firstIncompleteSellSectionId)
-                      }
+                      onClick={() => goToSellSection(firstIncompleteSellSectionId)}
                     >
                       Go to {firstIncompleteSellSectionLabel ?? "section"}
                     </Button>
@@ -3450,175 +3522,40 @@ function SellPageContentInner({
                 <SellSectionNav
                   items={SELL_FORM_SECTION_NAV_ITEMS}
                   sectionCompletion={sellSectionCompletion}
+                  activeSectionId={activeSellSectionId}
+                  onSelectSection={goToSellSection}
                 />
               </div>
               <div className="min-w-0 w-full max-w-2xl lg:w-auto lg:max-w-3xl lg:shrink-0">
                 <SellSectionNavHorizontal
                   items={SELL_FORM_SECTION_NAV_ITEMS}
                   sectionCompletion={sellSectionCompletion}
-                  className="mb-8 hidden md:block lg:hidden"
+                  activeSectionId={activeSellSectionId}
+                  onSelectSection={goToSellSection}
+                  className="mb-8 lg:hidden"
                 />
                 <form
               ref={formRef}
-              onSubmit={handleSubmit}
+              onSubmit={(e) => {
+                if (flowStep !== "publish") {
+                  e.preventDefault()
+                  goToNextSellStep()
+                  return
+                }
+                void handleSubmit(e)
+              }}
               className="space-y-10 lg:space-y-12"
               aria-busy={loading}
             >
+                {flowStep === "basics" ? (
                 <SellFormSection
-                  sectionId="sell-section-photos-title"
-                  title="Photos & title"
-                  description="Start with clear photos of your board, then add a short title. Buyers see these first."
-                  complete={sellSectionCompletion["sell-section-photos-title"] === true}
-                >
-                <div className="space-y-8">
-                  <SellListingPhotoGrid
-                    images={images}
-                    maxPhotos={12}
-                    fileInputId={listingPhotosInputId}
-                    photosFileDragActive={photosFileDragActive}
-                    onImageInputChange={handleImageChange}
-                    onDragEnter={handlePhotosFileDragEnter}
-                    onDragLeave={handlePhotosFileDragLeave}
-                    onDragOver={handlePhotosFileDragOver}
-                    onDrop={handlePhotosFileDrop}
-                    onDragEnd={handlePhotosDragEnd}
-                    onRemove={handlePhotoTileRemove}
-                    onRetry={handlePhotoTileRetry}
-                    onRotate180={handlePhotoTileRotate}
-                    photoDragSensors={photoDragSensors}
-                    photoDescription="Drop a few clear shots — deck, bottom, and any dings. Drag to reorder; the first is your cover."
-                  />
-
-                  <Separator className="bg-border" />
-
-                  <div className="space-y-2">
-                      <div className="flex items-end justify-between gap-2">
-                        <Label htmlFor="listing-title">Title *</Label>
-                        <span
-                          className={cn(
-                            "text-xs tabular-nums",
-                            resolvedTitlePreview.length > LISTING_TITLE_MAX_LENGTH
-                              ? "font-medium text-destructive"
-                              : "text-muted-foreground",
-                          )}
-                          aria-live="polite"
-                        >
-                          {resolvedTitlePreview.length}/{LISTING_TITLE_MAX_LENGTH}
-                        </span>
-                      </div>
-                      <Input
-                        id="listing-title"
-                        className={SELL_CONTROL_CLASS}
-                        placeholder={`e.g., 6'0 CI Rookie — light use, fins included`}
-                        value={formData.title}
-                        onChange={(e) =>
-                          setFormData((f) => ({ ...f, title: e.target.value }))
-                        }
-                        autoComplete="off"
-                        required
-                        maxLength={LISTING_TITLE_MAX_LENGTH}
-                      />
-                      {formData.title.trim() &&
-                      sellSectionCompletion["sell-section-photos-title"] !== true &&
-                      images.length >= 1 ? (
-                        <p className="text-xs text-muted-foreground">
-                          Almost there — finish this title and you&apos;re done with step 1.
-                        </p>
-                      ) : null}
-                      {sellSectionCompletion["sell-section-photos-title"] === true ? (
-                        <p className="text-sm font-medium text-listingHeart">
-                          Photos and title look good — keep going with board details below.
-                        </p>
-                      ) : null}
-                  </div>
-                </div>
-                </SellFormSection>
-
-                <SellFormSection
-                  sectionId="sell-section-board"
-                  title="Board shape, dimensions & description"
+                  sectionId="sell-section-basics"
+                  title="Brand, model & shape"
+                  description="Tell buyers what board you have — brand, model, shape, and condition."
+                  complete={sellSectionCompletion["sell-section-basics"] === true}
                 >
                     <div className="space-y-8">
-                      <div className="space-y-2">
-                        <Label>Board shape / category *</Label>
-                        <Select
-                          value={
-                            formData.category.trim()
-                              ? formData.category
-                              : SELL_BOARD_CATEGORY_UNSELECTED_VALUE
-                          }
-                          disabled={editLoading}
-                          onValueChange={(value) => {
-                            if (value === SELL_BOARD_CATEGORY_UNSELECTED_VALUE) {
-                              setFormData((prev) => ({
-                                ...prev,
-                                category: "",
-                                boardType: "",
-                              }))
-                              return
-                            }
-                            setFormData((prev) => ({
-                              ...prev,
-                              category: value,
-                              boardType: boardTypeFromCategoryId(value),
-                            }))
-                          }}
-                        >
-                          <SelectTrigger
-                            aria-label="Board shape or category"
-                            className={SELL_CONTROL_CLASS}
-                          >
-                            <SelectValue placeholder={SELL_BOARD_CATEGORY_UNSELECTED_LABEL} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {!sellCategoriesLoaded ? (
-                              <SelectItem value="__loading__" disabled>
-                                Loading categories…
-                              </SelectItem>
-                            ) : boardCategoryOptions.length === 0 ? (
-                              <SelectItem value="__empty__" disabled>
-                                No board categories found — add rows with board = true in public.categories.
-                              </SelectItem>
-                            ) : (
-                              <>
-                                <SelectItem value={SELL_BOARD_CATEGORY_UNSELECTED_VALUE}>
-                                  {SELL_BOARD_CATEGORY_UNSELECTED_LABEL}
-                                </SelectItem>
-                                {boardCategoryOptions.map((cat) => (
-                                  <SelectItem key={cat.value} value={cat.value}>
-                                    {cat.label}
-                                  </SelectItem>
-                                ))}
-                              </>
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="max-w-md space-y-2">
-                        <Label htmlFor="sell-condition">Condition *</Label>
-                        <Select
-                          value={formData.condition}
-                          onValueChange={(value) => setFormData({ ...formData, condition: value })}
-                        >
-                          <SelectTrigger id="sell-condition" className={SELL_CONTROL_CLASS}>
-                            <SelectValue placeholder="Select condition" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {LISTING_CONDITION_SELL_OPTIONS.map((cond) => (
-                              <SelectItem key={cond.value} value={cond.value}>
-                                {cond.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <Separator className="bg-border" />
-
-                      {/* Brand, model & dimensions — one zone; divider separates from shape / condition */}
-                      <div className="space-y-4">
-                        <div className="space-y-3">
+                      <div className="space-y-3">
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-4 sm:gap-y-3">
                           <div className="min-w-0 space-y-2">
                             <div className="flex items-end justify-between gap-2">
@@ -3743,6 +3680,94 @@ function SellPageContentInner({
                         </p>
                       </div>
 
+                      <Separator className="bg-border" />
+
+                      <div className="space-y-2">
+                        <Label>Board shape / category *</Label>
+                        <Select
+                          value={
+                            formData.category.trim()
+                              ? formData.category
+                              : SELL_BOARD_CATEGORY_UNSELECTED_VALUE
+                          }
+                          disabled={editLoading}
+                          onValueChange={(value) => {
+                            if (value === SELL_BOARD_CATEGORY_UNSELECTED_VALUE) {
+                              setFormData((prev) => ({
+                                ...prev,
+                                category: "",
+                                boardType: "",
+                              }))
+                              return
+                            }
+                            setFormData((prev) => ({
+                              ...prev,
+                              category: value,
+                              boardType: boardTypeFromCategoryId(value),
+                            }))
+                          }}
+                        >
+                          <SelectTrigger
+                            aria-label="Board shape or category"
+                            className={SELL_CONTROL_CLASS}
+                          >
+                            <SelectValue placeholder={SELL_BOARD_CATEGORY_UNSELECTED_LABEL} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {!sellCategoriesLoaded ? (
+                              <SelectItem value="__loading__" disabled>
+                                Loading categories…
+                              </SelectItem>
+                            ) : boardCategoryOptions.length === 0 ? (
+                              <SelectItem value="__empty__" disabled>
+                                No board categories found — add rows with board = true in public.categories.
+                              </SelectItem>
+                            ) : (
+                              <>
+                                <SelectItem value={SELL_BOARD_CATEGORY_UNSELECTED_VALUE}>
+                                  {SELL_BOARD_CATEGORY_UNSELECTED_LABEL}
+                                </SelectItem>
+                                {boardCategoryOptions.map((cat) => (
+                                  <SelectItem key={cat.value} value={cat.value}>
+                                    {cat.label}
+                                  </SelectItem>
+                                ))}
+                              </>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="max-w-md space-y-2">
+                        <Label htmlFor="sell-condition">Condition *</Label>
+                        <Select
+                          value={formData.condition}
+                          onValueChange={(value) => setFormData({ ...formData, condition: value })}
+                        >
+                          <SelectTrigger id="sell-condition" className={SELL_CONTROL_CLASS}>
+                            <SelectValue placeholder="Select condition" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {LISTING_CONDITION_SELL_OPTIONS.map((cond) => (
+                              <SelectItem key={cond.value} value={cond.value}>
+                                {cond.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                </SellFormSection>
+                ) : null}
+
+                {flowStep === "details" ? (
+                <SellFormSection
+                  sectionId="sell-section-details"
+                  title="Dimensions & details"
+                  description="Add measurements, fin setup, construction, and a short description."
+                  complete={sellSectionCompletion["sell-section-details"] === true}
+                >
+                    <div className="space-y-8">
                       <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                         {/* Length */}
@@ -3942,7 +3967,6 @@ function SellPageContentInner({
                           : "Dimensions are optional for local pickup. When you fill them in, surfers can compare your board more confidently—often that helps listings move faster."}
                       </p>
                     </div>
-                      </div>
 
                     <Separator className="bg-border" />
 
@@ -3957,11 +3981,14 @@ function SellPageContentInner({
                     </div>
                     </div>
                 </SellFormSection>
+                ) : null}
 
+                {flowStep === "delivery" ? (
                 <SellFormSection
                   sectionId="sell-section-delivery"
                   title="Pickup & shipping"
                   description="Pin where the board is and choose delivery options."
+                  complete={sellSectionCompletion["sell-section-delivery"] === true}
                 >
                   <div className="space-y-8">
                     <div className="space-y-6">
@@ -4401,12 +4428,47 @@ function SellPageContentInner({
                     </div>
                   </div>
                 </SellFormSection>
+                ) : null}
 
+                {flowStep === "publish" ? (
                 <SellFormSection
                   sectionId="sell-section-publish"
-                  title={editId ? "Price & listing" : "Price & publish your listing"}
+                  title={editId ? "Title, photos & price" : "Title, photos & publish"}
+                  description="Add a title and photos, set your price, then publish."
+                  complete={sellSectionCompletion["sell-section-publish"] === true}
                 >
-                <div className="space-y-6">
+                <div className="space-y-8">
+                  <div className="space-y-2">
+                    <div className="flex items-end justify-between gap-2">
+                      <Label htmlFor="listing-title">Title *</Label>
+                      <span
+                        className={cn(
+                          "text-xs tabular-nums",
+                          resolvedTitlePreview.length > LISTING_TITLE_MAX_LENGTH
+                            ? "font-medium text-destructive"
+                            : "text-muted-foreground",
+                        )}
+                        aria-live="polite"
+                      >
+                        {resolvedTitlePreview.length}/{LISTING_TITLE_MAX_LENGTH}
+                      </span>
+                    </div>
+                    <Input
+                      id="listing-title"
+                      className={SELL_CONTROL_CLASS}
+                      placeholder={`e.g., 6'0 CI Rookie — light use, fins included`}
+                      value={formData.title}
+                      onChange={(e) =>
+                        setFormData((f) => ({ ...f, title: e.target.value }))
+                      }
+                      autoComplete="off"
+                      required
+                      maxLength={LISTING_TITLE_MAX_LENGTH}
+                    />
+                  </div>
+
+                  <Separator className="bg-border" />
+
                   <SellPriceFields
                     listingPrice={formData.price}
                     onListingPriceChange={(value) =>
@@ -4516,7 +4578,29 @@ function SellPageContentInner({
                       </div>
                     }
                   />
-                  <Separator />
+
+                  <Separator className="bg-border" />
+
+                  <SellListingPhotoGrid
+                    images={images}
+                    maxPhotos={12}
+                    fileInputId={listingPhotosInputId}
+                    photosFileDragActive={photosFileDragActive}
+                    onImageInputChange={handleImageChange}
+                    onDragEnter={handlePhotosFileDragEnter}
+                    onDragLeave={handlePhotosFileDragLeave}
+                    onDragOver={handlePhotosFileDragOver}
+                    onDrop={handlePhotosFileDrop}
+                    onDragEnd={handlePhotosDragEnd}
+                    onRemove={handlePhotoTileRemove}
+                    onRetry={handlePhotoTileRetry}
+                    onRotate180={handlePhotoTileRotate}
+                    photoDragSensors={photoDragSensors}
+                    photoDescription="Drop a few clear shots — deck, bottom, and any dings. Drag to reorder; the first is your cover."
+                  />
+
+                  <Separator className="bg-border" />
+
                 {publishPreview && !loading && (
                   <div
                     className={cn(
@@ -4611,6 +4695,15 @@ function SellPageContentInner({
                 ) : null}
                 </div>
                 </SellFormSection>
+                ) : null}
+
+                <BoardSellWizardFooter
+                  showBack={flowStep !== "basics"}
+                  showNext={flowStep !== "publish"}
+                  onBack={goToPrevSellStep}
+                  onNext={goToNextSellStep}
+                  disabled={loading || editLoading}
+                />
                 </form>
               </div>
             </div>

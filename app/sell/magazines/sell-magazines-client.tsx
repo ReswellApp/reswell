@@ -25,7 +25,7 @@ import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
-import { SELL_CONTROL_CLASS } from "@/components/features/sell/sell-form-surface"
+import { SELL_PAGE_GROUND_CLASS, SELL_CONTROL_CLASS } from "@/components/features/sell/sell-form-surface"
 import { cn } from "@/lib/utils"
 import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
 import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
@@ -359,7 +359,7 @@ export default function SellMagazinesFlow({
   }
 
   return (
-    <main className="flex-1 w-full bg-slate-100">
+    <main className={cn("flex-1 w-full", SELL_PAGE_GROUND_CLASS)}>
       <AdminBulkListingBanner section="magazines" bulkSlotId={bulkSlotId} />
       <div className="container mx-auto max-w-2xl px-4 py-8 sm:py-12">
       <div className="mb-8 space-y-2">

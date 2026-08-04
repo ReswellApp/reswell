@@ -4,6 +4,7 @@ import * as React from "react"
 import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { SELL_CONTROL_CLASS } from "@/components/features/sell/sell-form-surface"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { computeBelowFieldDropdownLayout } from "@/lib/utils/below-field-dropdown-layout"
@@ -254,7 +255,7 @@ export function SurfboardModelCatalogInput({
       <Input
         id={id}
         className={cn(
-          "h-11 border-foreground/20 bg-card shadow-sm placeholder:text-muted-foreground",
+          SELL_CONTROL_CLASS,
           className,
         )}
         placeholder={placeholder}
