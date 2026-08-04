@@ -19,6 +19,7 @@ const METRIC_CATEGORY: Record<string, KlaviyoMetricCategory> = {
   "Shipping Label Ready": "transactional",
   "Order Shipped": "transactional",
   "Order Shipping Update": "transactional",
+  "Order Refunded": "transactional",
   Payouts: "transactional",
   "New Account Created": "lifecycle",
   "User Inactive 30 Days": "lifecycle",

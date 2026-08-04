@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from "next/server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import { issueMarketplaceOrderRefund } from "@/lib/services/issueMarketplaceOrderRefund"
+import { emitKlaviyoOrderRefundedForOrder } from "@/lib/services/klaviyoOrderRefunded"
 
 /**
  * POST /api/admin/orders/:id/refund
  *
  * Same refund behavior as the seller endpoint, but restricted to marketplace admins.
  * Use when support refunds from the dashboard or needs to reconcile after a Stripe-side refund.
+ * On full in-app refund, emits Klaviyo metric **Order Refunded** for the buyer.
  */
 export async function POST(
   _request: NextRequest,
@@ -37,6 +39,13 @@ export async function POST(
 
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status })
+  }
+
+  if (result.fullyRefundedInApp) {
+    await emitKlaviyoOrderRefundedForOrder(serviceSupabase, orderId, {
+      refundType: result.refund_type,
+      source: "admin",
+    })
   }
 
   return NextResponse.json({

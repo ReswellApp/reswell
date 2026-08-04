@@ -1,6 +1,7 @@
 import { resolveListingShipFromForRating } from "@/lib/geocoding/resolve-listing-ship-from-for-rating"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import {
+  listingUsesAdminCustomSurfboardCarton,
   resolveCombinedPackedParcelFromListings,
   resolveSurfboardShippingTierIdFromListing,
   type ListingPackedParcelSource,
@@ -372,15 +373,23 @@ export async function getCheapestReswellRateForListings(input: {
   const usesFreightTier = listingTiers.some((tierId) => !surfboardShippingTierUsesUpsParcelLimits(tierId))
 
   if (usesFreightTier) {
-    for (const tierId of listingTiers) {
-      const tierCheck = validateSurfboardShippingTierParcelLimits(tierId, dims)
+    for (const listing of input.listings) {
+      const tierId = resolveSurfboardShippingTierIdFromListing(listing)
+      if (!tierId) continue
+      const tierCheck = validateSurfboardShippingTierParcelLimits(tierId, dims, {
+        adminCustomCarton: listingUsesAdminCustomSurfboardCarton(listing),
+      })
       if (!tierCheck.ok) {
         return tierCheck
       }
     }
   } else if (listingTiers.length > 0) {
-    for (const tierId of listingTiers) {
-      const tierCheck = validateSurfboardShippingTierParcelLimits(tierId, dims)
+    for (const listing of input.listings) {
+      const tierId = resolveSurfboardShippingTierIdFromListing(listing)
+      if (!tierId) continue
+      const tierCheck = validateSurfboardShippingTierParcelLimits(tierId, dims, {
+        adminCustomCarton: listingUsesAdminCustomSurfboardCarton(listing),
+      })
       if (!tierCheck.ok) {
         return tierCheck
       }

@@ -4,6 +4,7 @@ import {
   type ShipEngineRateOption,
 } from "@/lib/shipengine/surfboard-label"
 import {
+  listingUsesAdminCustomSurfboardCarton,
   resolvePackedParcelFromListing,
   resolveSurfboardShippingTierIdFromListing,
   suggestPackedBoxInchesFromListing,
@@ -64,7 +65,9 @@ export function resolveOrderLabelParcelFromListing(
   }
 
   if (tierId) {
-    const tierCheck = validateSurfboardShippingTierParcelLimits(tierId, dims)
+    const tierCheck = validateSurfboardShippingTierParcelLimits(tierId, dims, {
+      adminCustomCarton: listingUsesAdminCustomSurfboardCarton(listing),
+    })
     if (!tierCheck.ok) {
       return tierCheck
     }
@@ -131,6 +134,7 @@ export async function fetchRatesForSurfboardOrder(params: {
   shipTo: RateQuoteAddressFields
   parcel: { lengthIn: number; widthIn: number; heightIn: number; weightLb: number }
   tierId?: SurfboardShippingTierId | null
+  adminCustomCarton?: boolean
 }) {
   return fetchShipEngineRatesForSurfboard(params)
 }

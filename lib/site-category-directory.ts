@@ -37,11 +37,12 @@ export const siteHeaderPeerProductNavLinks: CategoryLink[] = [
 export const siteHeaderMainPeerProductNavLinks: CategoryLink[] = [
   { label: "Fins", href: "/fins" },
   { label: "Wetsuits", href: "/wetsuits" },
+  { label: "Apparel", href: "/apparel" },
   { label: "Magazines", href: "/magazines" },
 ]
 
 /**
- * Full category rail — desktop header (Surfboards root, then Fins, Wetsuits, Magazines).
+ * Full category rail — desktop header (Surfboards root, then Fins, Wetsuits, Apparel, Magazines).
  * Shape browse links (`/boards?type=…`) stay on /categories and filters — not in the top rail.
  */
 export const siteHeaderDesktopCategoryNavLinks: CategoryLink[] = [

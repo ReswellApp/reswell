@@ -97,6 +97,8 @@ export async function fetchShipEngineRatesForSurfboard(params: {
   shipTo: RateQuoteAddressFields
   parcel: { lengthIn: number; widthIn: number; heightIn: number; weightLb: number }
   tierId?: SurfboardShippingTierId | null
+  /** Admin custom carton — skip tier max box length; UPS DIM is the ceiling for shortboard. */
+  adminCustomCarton?: boolean
 }): Promise<
   | { ok: true; rates: ShipEngineRateOption[] }
   | { ok: false; error: string; status: number }
@@ -110,7 +112,9 @@ export async function fetchShipEngineRatesForSurfboard(params: {
   }
 
   if (params.tierId) {
-    const tierCheck = validateSurfboardShippingTierParcelLimits(params.tierId, params.parcel)
+    const tierCheck = validateSurfboardShippingTierParcelLimits(params.tierId, params.parcel, {
+      adminCustomCarton: params.adminCustomCarton === true,
+    })
     if (!tierCheck.ok) {
       return { ok: false, error: tierCheck.error, status: 422 }
     }

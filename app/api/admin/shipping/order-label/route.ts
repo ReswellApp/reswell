@@ -33,7 +33,10 @@ import { adminOrderShippingLabelPostBodySchema } from "@/lib/validations/order-s
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { isSurfboardLabelParcelLimitError } from "@/lib/shipping/surfboard-label-limits"
 import type { ProfileAddressRow } from "@/lib/profile-address"
-import type { ListingPackedParcelSource } from "@/lib/reswell-packed-parcel-from-listing"
+import {
+  listingUsesAdminCustomSurfboardCarton,
+  type ListingPackedParcelSource,
+} from "@/lib/reswell-packed-parcel-from-listing"
 
 export const dynamic = "force-dynamic"
 
@@ -478,6 +481,8 @@ export async function POST(request: NextRequest) {
     const boardMode = effectiveBoardShippingMode(listingForQuote)
     let parcel: { lengthIn: number; widthIn: number; heightIn: number; weightLb: number }
     let tierId: import("@/lib/surfboard-shipping-tiers").SurfboardShippingTierId | null = null
+    let adminCustomCarton = false
+    const listingParcelSource = listing as unknown as ListingPackedParcelSource
     if (body.parcel) {
       parcel = {
         lengthIn: body.parcel.length_in,
@@ -485,13 +490,14 @@ export async function POST(request: NextRequest) {
         heightIn: body.parcel.height_in,
         weightLb: body.parcel.weight_lb,
       }
+      // Manual admin dims: UPS DIM only (no tierId) — same as validateLabelParcelEntry upstream.
     } else if (boardMode === "flat" || boardMode === "free") {
       return NextResponse.json(
         { error: SELLER_LABEL_REQUIRES_PACKED_PARCEL_ERROR },
         { status: 400 },
       )
     } else {
-      const fromListing = resolveOrderLabelParcelFromListing(listing as unknown as ListingPackedParcelSource)
+      const fromListing = resolveOrderLabelParcelFromListing(listingParcelSource)
       if (!fromListing.ok) {
         return NextResponse.json({ error: fromListing.error }, { status: 400 })
       }
@@ -502,6 +508,7 @@ export async function POST(request: NextRequest) {
         weightLb: fromListing.parcel.weightLb,
       }
       tierId = fromListing.parcel.tierId
+      adminCustomCarton = listingUsesAdminCustomSurfboardCarton(listingParcelSource)
     }
 
     const ratesResult = await fetchRatesForSurfboardOrder({
@@ -509,6 +516,7 @@ export async function POST(request: NextRequest) {
       shipTo: resolved.to,
       parcel,
       tierId,
+      adminCustomCarton,
     })
 
     if (!ratesResult.ok) {

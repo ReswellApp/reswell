@@ -379,14 +379,30 @@ export function surfboardShippingTierBoardLengthError(
   }. Use local pickup or contact support for oversized boards.`
 }
 
+export type ValidateSurfboardShippingTierParcelLimitsOptions = {
+  /**
+   * Admin custom carton (no pack band — seller entered exact L×W×H).
+   * Skips the nominal max box-length ceiling; for UPS shortboard, DIM/weight use the
+   * Reswell UPS parcel caps instead of the pack-band profile ceilings.
+   */
+  adminCustomCarton?: boolean
+}
+
 export function validateSurfboardShippingTierParcelLimits(
   tierId: SurfboardShippingTierId,
   parcel: { lengthIn: number; widthIn: number; heightIn: number; weightLb: number },
+  options?: ValidateSurfboardShippingTierParcelLimitsOptions,
 ): { ok: true } | { ok: false; error: string } {
   const tier = getSurfboardShippingTier(tierId)
   const dimTotal = surfboardShippingDimIn(parcel.lengthIn, parcel.widthIn, parcel.heightIn)
+  const adminCustomCarton = options?.adminCustomCarton === true
 
-  if (tier.maxBoxLengthIn != null && parcel.lengthIn > tier.maxBoxLengthIn) {
+  // Pack-band / tier profile length ceiling — not applied to admin custom cartons (DIM is king).
+  if (
+    !adminCustomCarton &&
+    tier.maxBoxLengthIn != null &&
+    parcel.lengthIn > tier.maxBoxLengthIn
+  ) {
     return {
       ok: false,
       error: `This board exceeds the ${tier.label.toLowerCase()} shipping limit (${tier.maxBoxLengthIn}″ max box length). Choose a larger shipping size or local pickup instead.`,
@@ -394,9 +410,12 @@ export function validateSurfboardShippingTierParcelLimits(
   }
 
   if (tier.maxDimIn != null && dimTotal > tier.maxDimIn) {
-    return {
-      ok: false,
-      error: `This board exceeds the ${tier.label.toLowerCase()} shipping limit (${tier.maxDimIn}″ max ${SURFBOARD_SHIPPING_DIM_FORMULA}). Choose a larger shipping size or local pickup instead.`,
+    // Admin custom shortboard: sell form already allows up to the UPS parcel DIM cap.
+    if (!(adminCustomCarton && tier.id === "shortboard")) {
+      return {
+        ok: false,
+        error: `This board exceeds the ${tier.label.toLowerCase()} shipping limit (${tier.maxDimIn}″ max ${SURFBOARD_SHIPPING_DIM_FORMULA}). Choose a larger shipping size or local pickup instead.`,
+      }
     }
   }
 
@@ -410,7 +429,10 @@ export function validateSurfboardShippingTierParcelLimits(
     }
   }
 
-  const maxWeight = surfboardTierMaxWeightLb(tier)
+  const maxWeight =
+    adminCustomCarton && tier.id === "shortboard"
+      ? SURFBOARD_LABEL_MAX_WEIGHT_LB
+      : surfboardTierMaxWeightLb(tier)
   if (parcel.weightLb > maxWeight) {
     return {
       ok: false,
