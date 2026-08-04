@@ -91,7 +91,7 @@ export const surfpackBrowseLinks: CategoryLink[] = [{ label: "All Surfpacks", hr
 export const leashBrowseLinks: CategoryLink[] = [{ label: "All Leashes", href: "/leashes" }]
 
 export const apparelBrowseLinks: CategoryLink[] = [
-  { label: "All Apparel", href: "/apparel" },
+  { label: "Apparel", href: "/apparel" },
   { label: "Boardshorts", href: "/apparel?kind=boardshorts" },
   { label: "Hats", href: "/apparel?kind=hat" },
   { label: "T-Shirts", href: "/apparel?kind=t_shirt" },

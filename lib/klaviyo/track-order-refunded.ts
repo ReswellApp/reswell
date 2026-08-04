@@ -24,7 +24,10 @@
 import { formatKlaviyoPriceDisplay } from "@/lib/klaviyo/catalog-product"
 import { listingDetailHref } from "@/lib/listing-href"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
-import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
+import {
+  sendKlaviyoServerEvent,
+  type SendKlaviyoServerEventResult,
+} from "@/lib/klaviyo/send-event"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import {
   isPeerListingSection,
@@ -80,6 +83,11 @@ export type KlaviyoOrderRefundedPayload = {
   refundedAt?: string | null
   /** How the refund was completed in Reswell (e.g. admin). */
   source?: string | null
+  /**
+   * Optional suffix for Klaviyo `unique_id` so a re-emit can create a new event
+   * (and re-trigger flows) instead of upserting `order-refunded-{orderId}-{role}`.
+   */
+  uniqueIdSuffix?: string | null
   lineItems?: KlaviyoOrderRefundedLineItem[]
 }
 
@@ -201,7 +209,7 @@ function toCommerceItems(
  */
 export async function trackKlaviyoOrderRefunded(
   payload: KlaviyoOrderRefundedPayload,
-): Promise<void> {
+): Promise<SendKlaviyoServerEventResult> {
   const origin = publicSiteOrigin()
   const isBuyer = payload.recipientRole === "buyer"
   const orderUrl = isBuyer
@@ -240,10 +248,15 @@ export async function trackKlaviyoOrderRefunded(
         ? amountNum
         : undefined
 
-  await sendKlaviyoServerEvent({
+  const uniqueIdSuffix =
+    typeof payload.uniqueIdSuffix === "string" && payload.uniqueIdSuffix.trim()
+      ? `-${payload.uniqueIdSuffix.trim()}`
+      : ""
+
+  return sendKlaviyoServerEvent({
     metricName: "Order Refunded",
     profile,
-    uniqueId: `order-refunded-${payload.orderId}-${payload.recipientRole}`,
+    uniqueId: `order-refunded-${payload.orderId}-${payload.recipientRole}${uniqueIdSuffix}`,
     value,
     valueCurrency: "USD",
     properties: {

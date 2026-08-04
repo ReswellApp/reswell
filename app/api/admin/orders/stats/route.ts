@@ -5,7 +5,8 @@ import { getAdminOrdersStats } from "@/lib/services/adminOrdersStats"
 /**
  * GET /api/admin/orders/stats
  *
- * Admin / support — order count KPIs by status for the orders dashboard.
+ * Admin / support — payment KPIs, open-fulfillment breakdown, shipping-label ops,
+ * and attention queues for the orders dashboard.
  */
 export async function GET() {
   const gate = await requireAdminOrEmployee()

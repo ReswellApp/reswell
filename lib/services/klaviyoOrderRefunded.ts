@@ -80,17 +80,30 @@ function lineFromListing(
   }
 }
 
+export type EmitKlaviyoOrderRefundedResult =
+  | {
+      ok: true
+      orderId: string
+      orderNum: string | null
+      buyerStatus: number
+      sellerStatus: number
+      uniqueIdSuffix: string | null
+    }
+  | { ok: false; error: string }
+
 export async function emitKlaviyoOrderRefundedForOrder(
   supabase: SupabaseClient,
   orderId: string,
   opts: {
     refundType: "stripe" | "wallet"
     source?: string
+    /** Append to Klaviyo unique_id so re-emits create a new event / re-trigger flows. */
+    uniqueIdSuffix?: string
   },
-): Promise<void> {
+): Promise<EmitKlaviyoOrderRefundedResult> {
   try {
     const trimmedId = orderId.trim()
-    if (!trimmedId) return
+    if (!trimmedId) return { ok: false, error: "Missing order id" }
 
     const { data: order, error: orderErr } = await supabase
       .from("orders")
@@ -101,11 +114,9 @@ export async function emitKlaviyoOrderRefundedForOrder(
       .maybeSingle()
 
     if (orderErr || !order?.buyer_id || !order.seller_id) {
-      console.error(
-        "[klaviyo Order Refunded] order load failed",
-        orderErr?.message ?? "missing buyer/seller",
-      )
-      return
+      const error = orderErr?.message ?? "Order not found or missing buyer/seller"
+      console.error("[klaviyo Order Refunded] order load failed", error)
+      return { ok: false, error }
     }
 
     const { data: orderItemRows } = await supabase
@@ -239,17 +250,38 @@ export async function emitKlaviyoOrderRefundedForOrder(
       refundType: opts.refundType,
       refundedAt: typeof order.refunded_at === "string" ? order.refunded_at : null,
       source: opts.source ?? "admin",
+      uniqueIdSuffix: opts.uniqueIdSuffix ?? null,
       lineItems,
     }
 
-    await Promise.all([
+    const [buyerResult, sellerResult] = await Promise.all([
       trackKlaviyoOrderRefunded({ ...shared, recipientRole: "buyer" }),
       trackKlaviyoOrderRefunded({ ...shared, recipientRole: "seller" }),
     ])
+
+    if (!buyerResult.ok && !sellerResult.ok) {
+      return {
+        ok: false,
+        error:
+          buyerResult.skipReason ||
+          sellerResult.skipReason ||
+          buyerResult.detail ||
+          sellerResult.detail ||
+          "Klaviyo rejected both Order Refunded events",
+      }
+    }
+
+    return {
+      ok: true,
+      orderId: order.id,
+      orderNum: typeof order.order_num === "string" ? order.order_num : null,
+      buyerStatus: buyerResult.status,
+      sellerStatus: sellerResult.status,
+      uniqueIdSuffix: opts.uniqueIdSuffix ?? null,
+    }
   } catch (e) {
-    console.error(
-      "[klaviyo Order Refunded] emit failed:",
-      e instanceof Error ? e.message : e,
-    )
+    const error = e instanceof Error ? e.message : String(e)
+    console.error("[klaviyo Order Refunded] emit failed:", error)
+    return { ok: false, error }
   }
 }

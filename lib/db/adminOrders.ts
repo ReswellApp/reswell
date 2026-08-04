@@ -1,5 +1,7 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js"
 import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
+import { countOpenOrderShippingLabelFailures } from "@/lib/db/orderShippingLabelFailures"
+import { fetchOrderIdsWithPreparedShippingLabels } from "@/lib/db/orderShippingLabels"
 import { isReswellShopListing } from "@/lib/reswell-shop"
 
 export type AdminOrderShippingAddress = {
@@ -182,7 +184,210 @@ export type AdminOrderStatusCounts = {
   refunded: number
 }
 
+/** Open-fulfillment stage for confirmed orders that are not yet delivered / picked up. */
+export type AdminOpenOrderStage = "awaiting_shipment" | "shipped" | "pickup_ready"
+
+export type AdminOpenOrderAgeBucket = {
+  key: "under_1d" | "1_3d" | "3_7d" | "7_14d" | "over_14d"
+  label: string
+  count: number
+}
+
+/**
+ * Dashboard KPIs for `/admin/orders`.
+ * Payment-status counts include all orders; open-fulfillment metrics exclude admin test seeds
+ * (same semantics as the admin overview “Fulfillment” attention tile).
+ */
+export type AdminOrdersDashboardStats = AdminOrderStatusCounts & {
+  /** Confirmed real orders not yet delivered or picked up. */
+  openUnfulfilled: number
+  openByStage: Record<AdminOpenOrderStage, number>
+  openByMethod: { shipping: number; pickup: number }
+  openByAge: AdminOpenOrderAgeBucket[]
+  /** Confirmed shipping orders still `pending` with no tracking yet. */
+  needsLabel: number
+  /** Confirmed shipping orders with a label/tracking but not marked shipped. */
+  openLabels: number
+  /** Automated label-purchase failures still open. */
+  openLabelFailures: number
+}
+
+export type AdminOrdersOpsParty = {
+  display_name: string | null
+  email: string | null
+}
+
+/** Compact order row for dashboard attention queues. */
+export type AdminOrdersOpsOrderRow = {
+  id: string
+  order_num: string | null
+  amount: number
+  shipping_amount: number
+  fulfillment_method: string | null
+  delivery_status: string | null
+  tracking_number: string | null
+  tracking_carrier: string | null
+  listing_title: string | null
+  created_at: string
+  buyer: AdminOrdersOpsParty | null
+  seller: AdminOrdersOpsParty | null
+  has_prepared_label: boolean
+}
+
+export type AdminOrdersOpsLabelKind = "label_ready" | "label_failed"
+
+/** Open shipping-label attention row (ready to ship or failed automation). */
+export type AdminOrdersOpsLabelRow = {
+  id: string
+  order_num: string | null
+  amount: number
+  shipping_amount: number
+  tracking_number: string | null
+  tracking_carrier: string | null
+  listing_title: string | null
+  created_at: string
+  seller: AdminOrdersOpsParty | null
+  kind: AdminOrdersOpsLabelKind
+  failure_stage: string | null
+  failure_message: string | null
+  has_prepared_label: boolean
+}
+
+export type AdminOrdersDashboardQueues = {
+  openOrders: AdminOrdersOpsOrderRow[]
+  openLabels: AdminOrdersOpsLabelRow[]
+}
+
+export type AdminOrdersDashboardPayload = {
+  stats: AdminOrdersDashboardStats
+  queues: AdminOrdersDashboardQueues
+}
+
+const OPS_QUEUE_LIMIT = 8
+
 const ORDER_STATUS_KEYS = ["confirmed", "pending", "refunding", "refunded"] as const
+
+const OPEN_AGE_BUCKETS: Array<{
+  key: AdminOpenOrderAgeBucket["key"]
+  label: string
+  /** Inclusive lower bound in days ago (null = no lower bound). */
+  minDaysAgo: number | null
+  /** Exclusive upper bound in days ago (null = no upper bound / “now”). */
+  maxDaysAgo: number | null
+}> = [
+  { key: "under_1d", label: "< 1 day", minDaysAgo: null, maxDaysAgo: 1 },
+  { key: "1_3d", label: "1–3 days", minDaysAgo: 1, maxDaysAgo: 3 },
+  { key: "3_7d", label: "3–7 days", minDaysAgo: 3, maxDaysAgo: 7 },
+  { key: "7_14d", label: "7–14 days", minDaysAgo: 7, maxDaysAgo: 14 },
+  { key: "over_14d", label: "14+ days", minDaysAgo: 14, maxDaysAgo: null },
+]
+
+function daysAgoIso(days: number): string {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
+}
+
+/** Confirmed real marketplace orders still in an open delivery stage. */
+function openOrdersBase(supabase: SupabaseClient) {
+  return supabase
+    .from("orders")
+    .select("*", { count: "exact", head: true })
+    .eq("is_admin_test", false)
+    .eq("status", "confirmed")
+    .in("delivery_status", ["pending", "shipped", "pickup_ready"])
+}
+
+/** Confirmed real shipping orders awaiting first shipment (delivery_status = pending). */
+function awaitingShipmentShippingBase(supabase: SupabaseClient) {
+  return openOrdersBase(supabase)
+    .eq("fulfillment_method", "shipping")
+    .eq("delivery_status", "pending")
+}
+
+type OpsOrderRaw = {
+  id: string
+  order_num: string | null
+  amount: number | string | null
+  shipping_amount: number | string | null
+  fulfillment_method: string | null
+  delivery_status: string | null
+  tracking_number: string | null
+  tracking_carrier: string | null
+  created_at: string
+  buyer_id: string | null
+  seller_id: string
+  listings?:
+    | { title: string | null }
+    | { title: string | null }[]
+    | null
+}
+
+function listingTitleFromJoin(
+  listings: OpsOrderRaw["listings"],
+): string | null {
+  const row = Array.isArray(listings) ? listings[0] ?? null : listings
+  const title = row?.title?.trim()
+  return title || null
+}
+
+async function mapOpsOrderRows(
+  supabase: SupabaseClient,
+  rows: OpsOrderRaw[],
+): Promise<AdminOrdersOpsOrderRow[]> {
+  if (rows.length === 0) return []
+
+  const orderIds = rows.map((r) => r.id)
+  const profileIds = [
+    ...new Set(
+      rows.flatMap((r) => [r.buyer_id, r.seller_id].filter((id): id is string => Boolean(id))),
+    ),
+  ]
+
+  const [profilesRes, prepared] = await Promise.all([
+    profileIds.length > 0
+      ? supabase.from("profiles").select("id, display_name, email").in("id", profileIds)
+      : Promise.resolve({ data: [] as Array<{ id: string; display_name: string | null; email: string | null }>, error: null }),
+    fetchOrderIdsWithPreparedShippingLabels(supabase, orderIds),
+  ])
+
+  const profileMap = new Map<string, AdminOrdersOpsParty>()
+  for (const p of profilesRes.data ?? []) {
+    profileMap.set(p.id, {
+      display_name: p.display_name ?? null,
+      email: p.email ?? null,
+    })
+  }
+
+  return rows.map((r) => ({
+    id: r.id,
+    order_num: r.order_num,
+    amount: num(r.amount),
+    shipping_amount: num(r.shipping_amount),
+    fulfillment_method: r.fulfillment_method,
+    delivery_status: r.delivery_status,
+    tracking_number: r.tracking_number,
+    tracking_carrier: r.tracking_carrier,
+    listing_title: listingTitleFromJoin(r.listings),
+    created_at: r.created_at,
+    buyer: r.buyer_id ? profileMap.get(r.buyer_id) ?? null : null,
+    seller: profileMap.get(r.seller_id) ?? null,
+    has_prepared_label: prepared.has(r.id),
+  }))
+}
+
+const OPS_ORDER_SELECT = `
+  id,
+  order_num,
+  amount,
+  shipping_amount,
+  fulfillment_method,
+  delivery_status,
+  tracking_number,
+  tracking_carrier,
+  created_at,
+  buyer_id,
+  seller_id,
+  listings ( title )
+`
 
 /**
  * Count orders per status using cheap `head: true` count queries (no row transfer).
@@ -219,6 +424,266 @@ export async function dbGetAdminOrderStatusCounts(
   }
 
   return { data: counts, error: null }
+}
+
+/**
+ * Full orders-page dashboard stats: payment KPIs + open (unfulfilled) fulfillment breakdown.
+ * Count queries use `head: true` so this stays cheap at scale.
+ */
+export async function dbGetAdminOrdersDashboardStats(
+  supabase: SupabaseClient,
+): Promise<{ data: AdminOrdersDashboardStats | null; error: PostgrestError | null }> {
+  const statusResult = await dbGetAdminOrderStatusCounts(supabase)
+  if (statusResult.error || !statusResult.data) {
+    return { data: null, error: statusResult.error }
+  }
+
+  const [
+    awaitingRes,
+    shippedRes,
+    pickupReadyRes,
+    openShippingRes,
+    openPickupRes,
+    needsLabelRes,
+    openLabelsRes,
+    openLabelFailures,
+    ...ageResults
+  ] = await Promise.all([
+    openOrdersBase(supabase).eq("delivery_status", "pending"),
+    openOrdersBase(supabase).eq("delivery_status", "shipped"),
+    openOrdersBase(supabase).eq("delivery_status", "pickup_ready"),
+    openOrdersBase(supabase).eq("fulfillment_method", "shipping"),
+    openOrdersBase(supabase).eq("fulfillment_method", "pickup"),
+    awaitingShipmentShippingBase(supabase).is("tracking_number", null),
+    awaitingShipmentShippingBase(supabase).not("tracking_number", "is", null),
+    countOpenOrderShippingLabelFailures(supabase),
+    ...OPEN_AGE_BUCKETS.map((bucket) => {
+      let q = openOrdersBase(supabase)
+      if (bucket.minDaysAgo != null) {
+        // Older than minDaysAgo → created_at < now - minDaysAgo
+        q = q.lt("created_at", daysAgoIso(bucket.minDaysAgo))
+      }
+      if (bucket.maxDaysAgo != null) {
+        // Newer than maxDaysAgo → created_at >= now - maxDaysAgo
+        q = q.gte("created_at", daysAgoIso(bucket.maxDaysAgo))
+      }
+      return q
+    }),
+  ])
+
+  const results = [
+    awaitingRes,
+    shippedRes,
+    pickupReadyRes,
+    openShippingRes,
+    openPickupRes,
+    needsLabelRes,
+    openLabelsRes,
+    ...ageResults,
+  ]
+  for (const res of results) {
+    if (res.error) {
+      return { data: null, error: res.error }
+    }
+  }
+
+  const openByStage: Record<AdminOpenOrderStage, number> = {
+    awaiting_shipment: awaitingRes.count ?? 0,
+    shipped: shippedRes.count ?? 0,
+    pickup_ready: pickupReadyRes.count ?? 0,
+  }
+
+  const openByAge: AdminOpenOrderAgeBucket[] = OPEN_AGE_BUCKETS.map((bucket, i) => ({
+    key: bucket.key,
+    label: bucket.label,
+    count: ageResults[i]?.count ?? 0,
+  }))
+
+  return {
+    data: {
+      ...statusResult.data,
+      openUnfulfilled:
+        openByStage.awaiting_shipment + openByStage.shipped + openByStage.pickup_ready,
+      openByStage,
+      openByMethod: {
+        shipping: openShippingRes.count ?? 0,
+        pickup: openPickupRes.count ?? 0,
+      },
+      openByAge,
+      needsLabel: needsLabelRes.count ?? 0,
+      openLabels: openLabelsRes.count ?? 0,
+      openLabelFailures,
+    },
+    error: null,
+  }
+}
+
+/**
+ * Attention queues for the orders dashboard: oldest open orders + open shipping labels
+ * (label ready / not shipped, and open automation failures). Profiles batched — no N+1.
+ */
+export async function dbGetAdminOrdersDashboardQueues(
+  supabase: SupabaseClient,
+): Promise<{ data: AdminOrdersDashboardQueues; error: PostgrestError | null }> {
+  const empty: AdminOrdersDashboardQueues = { openOrders: [], openLabels: [] }
+
+  const [openOrdersRes, labelReadyRes, failuresRes] = await Promise.all([
+    supabase
+      .from("orders")
+      .select(OPS_ORDER_SELECT)
+      .eq("is_admin_test", false)
+      .eq("status", "confirmed")
+      .in("delivery_status", ["pending", "shipped", "pickup_ready"])
+      .order("created_at", { ascending: true })
+      .limit(OPS_QUEUE_LIMIT),
+    supabase
+      .from("orders")
+      .select(OPS_ORDER_SELECT)
+      .eq("is_admin_test", false)
+      .eq("status", "confirmed")
+      .eq("fulfillment_method", "shipping")
+      .eq("delivery_status", "pending")
+      .not("tracking_number", "is", null)
+      .order("created_at", { ascending: true })
+      .limit(OPS_QUEUE_LIMIT),
+    supabase
+      .from("order_shipping_label_failures")
+      .select("order_id, failure_stage, error_message, created_at")
+      .eq("status", "open")
+      .order("created_at", { ascending: false })
+      .limit(OPS_QUEUE_LIMIT),
+  ])
+
+  if (openOrdersRes.error) {
+    return { data: empty, error: openOrdersRes.error }
+  }
+  if (labelReadyRes.error) {
+    return { data: empty, error: labelReadyRes.error }
+  }
+  if (failuresRes.error) {
+    return { data: empty, error: failuresRes.error }
+  }
+
+  const failureRows = failuresRes.data ?? []
+  const failureOrderIds = [...new Set(failureRows.map((f) => f.order_id as string))]
+  const openOrderRaws = (openOrdersRes.data ?? []) as OpsOrderRaw[]
+  const labelReadyRaws = (labelReadyRes.data ?? []) as OpsOrderRaw[]
+  const knownOrderIds = new Set([
+    ...openOrderRaws.map((r) => r.id),
+    ...labelReadyRaws.map((r) => r.id),
+  ])
+  const missingFailureIds = failureOrderIds.filter((id) => !knownOrderIds.has(id))
+
+  let failureOrders: OpsOrderRaw[] = []
+  if (missingFailureIds.length > 0) {
+    const failureOrdersRes = await supabase
+      .from("orders")
+      .select(OPS_ORDER_SELECT)
+      .in("id", missingFailureIds)
+    if (failureOrdersRes.error) {
+      return { data: empty, error: failureOrdersRes.error }
+    }
+    failureOrders = (failureOrdersRes.data ?? []) as OpsOrderRaw[]
+  }
+
+  const enrichedById = new Map(
+    (
+      await mapOpsOrderRows(supabase, [
+        ...openOrderRaws,
+        ...labelReadyRaws,
+        ...failureOrders,
+      ])
+    ).map((row) => [row.id, row]),
+  )
+
+  const openOrders = openOrderRaws
+    .map((raw) => enrichedById.get(raw.id))
+    .filter((row): row is AdminOrdersOpsOrderRow => Boolean(row))
+
+  const seenLabelOrderIds = new Set<string>()
+  const openLabels: AdminOrdersOpsLabelRow[] = []
+
+  for (const raw of labelReadyRaws) {
+    const row = enrichedById.get(raw.id)
+    if (!row) continue
+    seenLabelOrderIds.add(row.id)
+    openLabels.push({
+      id: row.id,
+      order_num: row.order_num,
+      amount: row.amount,
+      shipping_amount: row.shipping_amount,
+      tracking_number: row.tracking_number,
+      tracking_carrier: row.tracking_carrier,
+      listing_title: row.listing_title,
+      created_at: row.created_at,
+      seller: row.seller,
+      kind: "label_ready",
+      failure_stage: null,
+      failure_message: null,
+      has_prepared_label: row.has_prepared_label,
+    })
+  }
+
+  for (const failure of failureRows) {
+    const orderId = failure.order_id as string
+    if (seenLabelOrderIds.has(orderId)) continue
+    const order = enrichedById.get(orderId)
+    if (!order) continue
+    seenLabelOrderIds.add(orderId)
+    openLabels.push({
+      id: order.id,
+      order_num: order.order_num,
+      amount: order.amount,
+      shipping_amount: order.shipping_amount,
+      tracking_number: order.tracking_number,
+      tracking_carrier: order.tracking_carrier,
+      listing_title: order.listing_title,
+      created_at: (failure.created_at as string) || order.created_at,
+      seller: order.seller,
+      kind: "label_failed",
+      failure_stage: (failure.failure_stage as string) || null,
+      failure_message: (failure.error_message as string) || null,
+      has_prepared_label: order.has_prepared_label,
+    })
+  }
+
+  openLabels.sort((a, b) => {
+    if (a.kind !== b.kind) return a.kind === "label_failed" ? -1 : 1
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  })
+
+  return {
+    data: {
+      openOrders,
+      openLabels: openLabels.slice(0, OPS_QUEUE_LIMIT),
+    },
+    error: null,
+  }
+}
+
+/** Stats + attention queues for the `/admin/orders` dashboard in one round trip. */
+export async function dbGetAdminOrdersDashboard(
+  supabase: SupabaseClient,
+): Promise<{ data: AdminOrdersDashboardPayload | null; error: PostgrestError | null }> {
+  const [statsResult, queuesResult] = await Promise.all([
+    dbGetAdminOrdersDashboardStats(supabase),
+    dbGetAdminOrdersDashboardQueues(supabase),
+  ])
+
+  if (statsResult.error || !statsResult.data) {
+    return { data: null, error: statsResult.error }
+  }
+  if (queuesResult.error) {
+    return { data: null, error: queuesResult.error }
+  }
+
+  return {
+    data: {
+      stats: statsResult.data,
+      queues: queuesResult.data,
+    },
+    error: null,
+  }
 }
 
 /** PostgREST rejects the whole row if the select lists a column missing from cache/DB (PGRST204). */

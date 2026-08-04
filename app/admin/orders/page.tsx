@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -61,7 +61,9 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { format, formatDistanceToNow } from 'date-fns'
+import { AdminOrdersDashboard } from '@/components/features/admin/admin-orders-dashboard'
 import { profileMediaDisplaySrc } from '@/lib/public-media-display-src'
+import type { AdminOrdersDashboardPayload } from '@/lib/services/adminOrdersStats'
 import { cn } from '@/lib/utils'
 
 type PartyLabel = { display_name: string | null; email: string | null; avatar_url: string | null }
@@ -80,14 +82,6 @@ type OrderRow = {
   is_admin_test: boolean
   buyer: PartyLabel | null
   seller: PartyLabel | null
-}
-
-type OrderStats = {
-  total: number
-  confirmed: number
-  pending: number
-  refunding: number
-  refunded: number
 }
 
 type SortKey = 'created_at' | 'amount'
@@ -170,42 +164,6 @@ function StatusBadge({ status }: { status: string }) {
   }
 }
 
-interface StatTileProps {
-  icon: typeof ShoppingBag
-  accent: 'neutral' | 'emerald' | 'amber' | 'sky' | 'violet' | 'rose'
-  label: string
-  value: string
-  hint?: string
-}
-
-const STAT_ACCENT: Record<StatTileProps['accent'], string> = {
-  neutral: 'bg-secondary text-foreground',
-  emerald: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
-  amber: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
-  sky: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
-  violet: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
-  rose: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
-}
-
-function StatTile({ icon: Icon, accent, label, value, hint }: StatTileProps) {
-  return (
-    <div className="rounded-2xl border border-border bg-card p-4 transition-all duration-200 hover:border-foreground/15 hover:shadow-sm">
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {label}
-        </span>
-        <span className={cn('flex h-8 w-8 items-center justify-center rounded-lg', STAT_ACCENT[accent])}>
-          <Icon className="h-4 w-4" aria-hidden />
-        </span>
-      </div>
-      <p className="mt-3 text-2xl font-bold leading-none tabular-nums tracking-tight text-foreground">
-        {value}
-      </p>
-      {hint ? <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p> : null}
-    </div>
-  )
-}
-
 function PartyCell({
   party,
   fallbackId,
@@ -242,7 +200,8 @@ export default function AdminOrdersPage() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [stats, setStats] = useState<OrderStats | null>(null)
+  const [dashboard, setDashboard] = useState<AdminOrdersDashboardPayload | null>(null)
+  const [statsLoading, setStatsLoading] = useState(true)
 
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
@@ -267,12 +226,15 @@ export default function AdminOrdersPage() {
   }, [search, statusFilter, paymentFilter, testFilter, sortKey, sortDir, pageSize])
 
   const fetchStats = useCallback(async () => {
+    setStatsLoading(true)
     try {
       const res = await fetch('/api/admin/orders/stats', { credentials: 'include' })
-      const body = (await res.json()) as { data?: OrderStats; error?: string }
-      if (res.ok && body.data) setStats(body.data)
+      const body = (await res.json()) as { data?: AdminOrdersDashboardPayload; error?: string }
+      if (res.ok && body.data) setDashboard(body.data)
     } catch {
-      /* non-fatal — KPI strip just stays in loading state */
+      /* non-fatal — dashboard stays in loading / last-known state */
+    } finally {
+      setStatsLoading(false)
     }
   }, [])
 
@@ -313,11 +275,6 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     void fetchStats()
   }, [fetchStats])
-
-  const refundRate = useMemo(() => {
-    if (!stats || stats.total === 0) return 0
-    return Math.round(((stats.refunded + stats.refunding) / stats.total) * 100)
-  }, [stats])
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const currentPage = Math.floor(offset / pageSize) + 1
@@ -395,11 +352,13 @@ export default function AdminOrdersPage() {
           <div className="flex items-center gap-2">
             <h1 className="font-headline text-3xl font-bold tracking-tight text-foreground">Orders</h1>
             <span className="inline-flex items-center rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-medium tabular-nums text-muted-foreground">
-              {stats ? `${compactNumber(stats.total)} total` : 'Loading…'}
+              {dashboard
+                ? `${compactNumber(dashboard.stats.total)} total`
+                : 'Loading…'}
             </span>
           </div>
           <p className="text-sm text-muted-foreground">
-            Inspect every marketplace order, payment, and fulfillment status. Open one to refund or cancel.
+            Track open fulfillment, payments, and refunds. Open an order to refund, ship, or cancel.
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -423,15 +382,7 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
-      {/* KPI strip */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <StatTile icon={ShoppingBag} accent="neutral" label="Total" value={stats ? compactNumber(stats.total) : '—'} />
-        <StatTile icon={CheckCircle2} accent="emerald" label="Confirmed" value={stats ? compactNumber(stats.confirmed) : '—'} />
-        <StatTile icon={Clock} accent="amber" label="Pending" value={stats ? compactNumber(stats.pending) : '—'} />
-        <StatTile icon={RotateCcw} accent="amber" label="Refunding" value={stats ? compactNumber(stats.refunding) : '—'} hint="In progress" />
-        <StatTile icon={RotateCcw} accent="rose" label="Refunded" value={stats ? compactNumber(stats.refunded) : '—'} />
-        <StatTile icon={RefreshCw} accent="violet" label="Refund rate" value={stats ? `${refundRate}%` : '—'} hint="Refunded + refunding" />
-      </div>
+      <AdminOrdersDashboard data={dashboard} loading={statsLoading} />
 
       {/* Toolbar */}
       <div className="rounded-2xl border border-border bg-card p-3">

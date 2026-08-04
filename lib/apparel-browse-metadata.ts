@@ -10,7 +10,7 @@ import { apparelKindLabel, apparelSizeLabel } from "@/lib/apparel-listing-config
 export const APPAREL_BROWSE_DEFAULT_SORT = "newest" as const
 
 /** `/apparel` root label — matches header nav and browse breadcrumbs. */
-export const apparelBrowseRootLabel = "All Apparel"
+export const apparelBrowseRootLabel = "Apparel"
 
 export type ApparelBrowseSearchParams = {
   /** Free-text keyword search. */
@@ -70,7 +70,7 @@ export function apparelBrowseHeroSubtext(sp: ApparelBrowseSearchParams): string 
   if (size) {
     return `${size} apparel from surfers who ship or welcome local pickup.`
   }
-  return "Boardshorts, hats, and t-shirts from local surfers on Reswell — ship or meet up for pickup."
+  return "Boardshorts, hats, and t-shirts from surfers on Reswell."
 }
 
 /** Title, description, and canonical URL for `/apparel` (keep in sync with metadata). */
