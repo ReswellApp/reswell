@@ -6,7 +6,9 @@ import {
 import { normalizeTrackingNumberForCarrier } from "@/lib/shipping/normalize-tracking-number"
 import type { ShipEngineTrackWebhookPayload } from "@/lib/validations/shipengine-track-webhook"
 import { findOrderIdsByTrackingNumber } from "@/lib/db/findOrdersByTrackingNumber"
+import { findReturnIdsByTrackingNumber } from "@/lib/db/findReturnsByTrackingNumber"
 import { persistOrderCarrierTrackingSnapshot } from "@/lib/services/persistOrderCarrierTracking"
+import { persistOrderReturnCarrierTrackingSnapshot } from "@/lib/services/persistOrderReturnCarrierTracking"
 
 function buildDetail(payload: ShipEngineTrackWebhookPayload): OrderTrackingDetail | null {
   const data = payload.data
@@ -15,8 +17,8 @@ function buildDetail(payload: ShipEngineTrackWebhookPayload): OrderTrackingDetai
 }
 
 /**
- * Persists latest carrier tracking on matching orders (by tracking number),
- * syncs marketplace delivery from ShipEngine, and auto-releases payouts after the 24h hold.
+ * Persists latest carrier tracking on matching orders or return shipments (by tracking number).
+ * Outbound: syncs marketplace delivery + payout hold. Returns: advances return status + refund hold.
  */
 export async function applyShipEngineTrackWebhook(
   payload: ShipEngineTrackWebhookPayload,
@@ -33,14 +35,23 @@ export async function applyShipEngineTrackWebhook(
   }
 
   const supabase = createServiceRoleClient()
-  const lookup = await findOrderIdsByTrackingNumber(supabase, trackingNumber)
-  if (lookup.error) {
-    return { ok: false, error: lookup.error }
+  const [orderLookup, returnLookup] = await Promise.all([
+    findOrderIdsByTrackingNumber(supabase, trackingNumber),
+    findReturnIdsByTrackingNumber(supabase, trackingNumber),
+  ])
+
+  if (orderLookup.error) {
+    return { ok: false, error: orderLookup.error }
+  }
+  if (returnLookup.error) {
+    return { ok: false, error: returnLookup.error }
   }
 
-  const orderIds = lookup.orderIds
-  if (orderIds.length === 0) {
-    console.info("[applyShipEngineTrackWebhook] no order for tracking_number", {
+  const orderIds = orderLookup.orderIds
+  const returnIds = returnLookup.returnIds
+
+  if (orderIds.length === 0 && returnIds.length === 0) {
+    console.info("[applyShipEngineTrackWebhook] no order/return for tracking_number", {
       trackingNumber: trackingNumber.slice(0, 8) + "…",
     })
     return { ok: true, matched: 0 }
@@ -49,6 +60,9 @@ export async function applyShipEngineTrackWebhook(
   for (const orderId of orderIds) {
     await persistOrderCarrierTrackingSnapshot(supabase, orderId, detail)
   }
+  for (const returnId of returnIds) {
+    await persistOrderReturnCarrierTrackingSnapshot(supabase, returnId, detail)
+  }
 
-  return { ok: true, matched: orderIds.length }
+  return { ok: true, matched: orderIds.length + returnIds.length }
 }

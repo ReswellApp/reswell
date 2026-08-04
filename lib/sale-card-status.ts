@@ -56,6 +56,15 @@ function carrierBadgeDisplay(detail: OrderTrackingDetail): SaleCardStatusDisplay
   }
 }
 
+export type OrderReturnSummaryForStatus = {
+  /** Any non-cancelled return on the order. */
+  hasReturn: boolean
+  /** True when some but not all line items have a non-cancelled return. */
+  isPartial: boolean
+  /** True when every non-cancelled return is already refunded. */
+  allReturnsRefunded: boolean
+}
+
 /**
  * Status shown on purchase and sale list cards (and sale detail headers).
  * Refund labels stay authoritative; marketplace delivery confirmation wins over carrier scans.
@@ -66,9 +75,16 @@ export function resolveSaleCardStatusDisplay(params: {
   trackingNumber: string | null
   trackingDetail: OrderTrackingDetail | null
   hasPreparedShippingLabel?: boolean
+  returnSummary?: OrderReturnSummaryForStatus | null
 }): SaleCardStatusDisplay {
-  const { orderStatus, deliveryStatus, trackingNumber, trackingDetail, hasPreparedShippingLabel } =
-    params
+  const {
+    orderStatus,
+    deliveryStatus,
+    trackingNumber,
+    trackingDetail,
+    hasPreparedShippingLabel,
+    returnSummary,
+  } = params
 
   if (orderStatusIsRefundInProgress(orderStatus)) {
     return {
@@ -82,6 +98,27 @@ export function resolveSaleCardStatusDisplay(params: {
     return {
       label: orderStatusLabel(orderStatus),
       variant: orderStatusBadgeVariant(orderStatus),
+    }
+  }
+
+  if (returnSummary?.hasReturn) {
+    if (returnSummary.allReturnsRefunded && !returnSummary.isPartial) {
+      return {
+        label: "Returned",
+        variant: "destructive",
+      }
+    }
+    if (returnSummary.isPartial) {
+      return {
+        label: returnSummary.allReturnsRefunded ? "Partial refund" : "Partial return",
+        variant: "outline",
+        className: "border-amber-500/40 text-amber-950 dark:text-amber-100",
+      }
+    }
+    return {
+      label: "Returned",
+      variant: "outline",
+      className: "border-amber-500/40 text-amber-950 dark:text-amber-100",
     }
   }
 

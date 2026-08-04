@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { format } from "date-fns"
 import { AdminIssueRefundButton } from "@/components/features/admin/admin-issue-refund-button"
+import { AdminIssueItemReturnPanel } from "@/components/features/admin/admin-issue-item-return-panel"
 import { AdminReswellShopFulfillForm } from "@/components/features/admin/admin-reswell-shop-fulfill-form"
 import { ReswellTrackingSection } from "@/components/features/orders/reswell-tracking-section"
 import { SellerPreparedShippingLabelCard } from "@/components/features/sales/seller-prepared-shipping-label-card"
@@ -554,6 +555,17 @@ export default function AdminOrderDetailPage() {
             </div>
           )}
 
+          {/* Per-item returns (label + delayed refund) */}
+          {o.fulfillment_method === "shipping" && (o.status === "confirmed" || o.status === "refunding") && (
+            <div className="border-t border-border/60 pt-4">
+              <AdminIssueItemReturnPanel
+                orderId={o.id}
+                canIssue={canRefund && o.status === "confirmed"}
+                onComplete={bumpRefetch}
+              />
+            </div>
+          )}
+
           {/* Admin actions */}
           {(o.status === "confirmed" || o.status === "refunding") && canRefund && (
             <div className="flex flex-col gap-3 border-t border-border/60 pt-4">
@@ -567,6 +579,10 @@ export default function AdminOrderDetailPage() {
                   onComplete={bumpRefetch}
                 />
               </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Full-order refund refunds every item at once. Prefer item returns above when only one
+                line should come back.
+              </p>
             </div>
           )}
 

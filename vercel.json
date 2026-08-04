@@ -58,6 +58,14 @@
       "schedule": "5,20,35,50 * * * *"
     },
     {
+      "path": "/api/cron/sync-open-return-carrier-tracking",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/refund-after-return-delivered",
+      "schedule": "10,25,40,55 * * * *"
+    },
+    {
       "path": "/api/cron/search-insights-digest",
       "schedule": "0 15 * * 1"
     },

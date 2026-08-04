@@ -13,6 +13,7 @@ import {
   orderStatusIsRefundInProgress,
 } from "@/lib/order-status"
 import { resolveSaleCardStatusDisplay } from "@/lib/sale-card-status"
+import { getOrderReturnSummariesByOrderIds } from "@/lib/db/orderReturnStatusSummary"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { LocalDateTime } from "@/components/ui/local-datetime"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
@@ -168,6 +169,7 @@ export default async function PurchasesPage() {
   )
 
   const orderIds = list.map((o) => o.id)
+  const returnSummaries = await getOrderReturnSummariesByOrderIds(supabase, orderIds)
   const { data: reviewRows } =
     orderIds.length > 0
       ? await supabase
@@ -253,6 +255,7 @@ export default async function PurchasesPage() {
             deliveryStatus: row.delivery_status ?? "pending",
             trackingNumber: row.tracking_number,
             trackingDetail: parseOrderTrackingDetail(row.tracking_detail),
+            returnSummary: returnSummaries.get(row.id) ?? null,
           })
 
           return (

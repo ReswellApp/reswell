@@ -64,6 +64,8 @@ import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
 import { sellerReviewRequestAlreadySentForOrder } from "@/lib/services/sellerReviewRequest"
 import { AskBuyerReviewButton } from "@/components/features/sales/ask-buyer-review-button"
 import { SellerPreparedShippingLabelCard } from "@/components/features/sales/seller-prepared-shipping-label-card"
+import { OrderReturnsSection } from "@/components/features/orders/order-returns-section"
+import { getOrderReturnSummariesByOrderIds } from "@/lib/db/orderReturnStatusSummary"
 import { ReviewBuyerControls } from "@/components/review-buyer-controls"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
@@ -326,12 +328,18 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     sale.delivery_status === "pending" &&
     !hasAccessibleShippingLabelPdf &&
     !hasShippingTracking
+  const returnSummaries = await getOrderReturnSummariesByOrderIds(
+    supabase,
+    [id],
+    new Map([[id, displayListings.length || 1]]),
+  )
   const statusDisplay = resolveSaleCardStatusDisplay({
     orderStatus: sale.status,
     deliveryStatus: sale.delivery_status,
     trackingNumber: sale.tracking_number,
     trackingDetail: carrierTracking,
     hasPreparedShippingLabel: hasPreparedShippingLabel || (isReswellShippingOrder && hasShippingTracking),
+    returnSummary: returnSummaries.get(id) ?? null,
   })
 
   const convRow = sale.buyer_id
@@ -704,6 +712,14 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
               variant="seller"
             />
           )}
+
+          <OrderReturnsSection
+            orderId={sale.id}
+            audience="seller"
+            listingTitlesById={Object.fromEntries(
+              displayListings.map((l) => [l.id, l.title ? capitalizeWords(l.title) : "Item"]),
+            )}
+          />
 
           {/* Support request (refund / cancel / return — admin handles it) */}
           {sale.status === "confirmed" && (

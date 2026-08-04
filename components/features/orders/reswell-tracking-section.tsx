@@ -100,6 +100,8 @@ export function ReswellTrackingSection(props: {
   className?: string
   /** Defaults to `/api/orders/:id/carrier-tracking` (buyer/seller). Pass admin path for staff views. */
   carrierTrackingFetchPath?: string
+  sectionTitle?: string
+  sectionDescription?: string
 }) {
   const {
     orderId,
@@ -110,6 +112,8 @@ export function ReswellTrackingSection(props: {
     variant = "buyer",
     className,
     carrierTrackingFetchPath,
+    sectionTitle = "Reswell tracking",
+    sectionDescription = "Live carrier scans for your shipment.",
   } = props
 
   const router = useRouter()
@@ -246,9 +250,9 @@ export function ReswellTrackingSection(props: {
               <Truck className="h-5 w-5" aria-hidden />
             </div>
             <div className="min-w-0 space-y-1">
-              <CardTitle className="text-base">Reswell tracking</CardTitle>
+              <CardTitle className="text-base">{sectionTitle}</CardTitle>
               <CardDescription className="text-[13px] leading-snug">
-                Live carrier scans for your shipment.
+                {sectionDescription}
               </CardDescription>
             </div>
           </div>

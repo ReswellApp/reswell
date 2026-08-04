@@ -27,6 +27,7 @@ import {
   DeliveryStatusBadge,
 } from "@/components/order-actions"
 import { ReswellTrackingSection } from "@/components/features/orders/reswell-tracking-section"
+import { OrderReturnsSection } from "@/components/features/orders/order-returns-section"
 import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
 import { listingPortraitThumbClass, listingPortraitThumbSizes } from "@/lib/utils/dashboard-display-styles"
 import { BuyerOrderExperience } from "@/components/features/buyer-order/buyer-order-experience"
@@ -383,6 +384,14 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
           variant="buyer"
         />
       )}
+
+      <OrderReturnsSection
+        orderId={order.id}
+        audience="buyer"
+        listingTitlesById={Object.fromEntries(
+          displayListings.map((l) => [l.id, l.title ? capitalizeWords(l.title) : "Item"]),
+        )}
+      />
 
       <Card>
         <CardHeader>

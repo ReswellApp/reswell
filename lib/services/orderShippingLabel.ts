@@ -158,3 +158,22 @@ export function resolveAddressesForLabel(params: {
   }
   return { ok: true, from, to }
 }
+
+/**
+ * Return label: buyer ships back to the seller's ship-from address.
+ * `from` = buyer order shipping address, `to` = seller profile address.
+ */
+export function resolveAddressesForReturnLabel(params: {
+  sellerAddress: ProfileAddressRow
+  orderShippingJson: unknown
+}): { ok: true; from: RateQuoteAddressFields; to: RateQuoteAddressFields } | { ok: false; error: string } {
+  const from = orderShippingJsonToRateQuoteAddress(params.orderShippingJson)
+  if (!from) {
+    return { ok: false, error: "This order does not have a complete buyer shipping address for the return." }
+  }
+  const to = profileRowToRateQuoteAddress(params.sellerAddress)
+  if (!to.name?.trim() || !to.address_line1?.trim() || !to.city_locality?.trim() || !to.state_province?.trim()) {
+    return { ok: false, error: "Seller ship-from address is incomplete." }
+  }
+  return { ok: true, from, to }
+}
