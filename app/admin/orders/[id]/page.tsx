@@ -14,6 +14,7 @@ import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { format } from "date-fns"
 import { AdminIssueRefundButton } from "@/components/features/admin/admin-issue-refund-button"
 import { AdminIssueItemReturnPanel } from "@/components/features/admin/admin-issue-item-return-panel"
+import { AdminReplaceOrderShippingLabelPanel } from "@/components/features/admin/admin-replace-order-shipping-label-panel"
 import { AdminReswellShopFulfillForm } from "@/components/features/admin/admin-reswell-shop-fulfill-form"
 import { ReswellTrackingSection } from "@/components/features/orders/reswell-tracking-section"
 import { SellerPreparedShippingLabelCard } from "@/components/features/sales/seller-prepared-shipping-label-card"
@@ -38,6 +39,7 @@ type OrderApiResponse =
         paperlessInstructions: string | null
         paperlessHandoffCode: string | null
         canFulfillReswellShop: boolean
+        canReplaceShippingLabel: boolean
       }
     }
   | { error: string }
@@ -141,6 +143,7 @@ export default function AdminOrderDetailPage() {
                 ? body.capabilities.paperlessHandoffCode
                 : null,
             canFulfillReswellShop: body.capabilities.canFulfillReswellShop === true,
+            canReplaceShippingLabel: body.capabilities.canReplaceShippingLabel === true,
           },
         })
       } else {
@@ -213,6 +216,7 @@ export default function AdminOrderDetailPage() {
   const hasShippingLabel = payload.capabilities.hasShippingLabel
   const hasPaperlessQr = payload.capabilities.hasPaperlessQr
   const canFulfillReswellShop = payload.capabilities.canFulfillReswellShop
+  const canReplaceShippingLabel = payload.capabilities.canReplaceShippingLabel
   const showShippingLabel =
     o.fulfillment_method === "shipping" && hasShippingLabel
   const showCarrierTracking =
@@ -624,6 +628,14 @@ export default function AdminOrderDetailPage() {
           hasPaperlessQr={hasPaperlessQr}
           paperlessInstructions={payload.capabilities.paperlessInstructions}
           paperlessHandoffCode={payload.capabilities.paperlessHandoffCode}
+        />
+      ) : null}
+
+      {canReplaceShippingLabel ? (
+        <AdminReplaceOrderShippingLabelPanel
+          orderId={o.id}
+          canReplace={canReplaceShippingLabel}
+          onComplete={bumpRefetch}
         />
       ) : null}
 

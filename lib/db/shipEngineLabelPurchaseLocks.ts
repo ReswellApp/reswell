@@ -203,3 +203,24 @@ export async function syncShipEngineLabelPurchaseLockFromExisting(params: {
     console.error("[shipEngineLabelPurchaseLocks] sync existing:", error.message)
   }
 }
+
+/**
+ * Clears the one-label-per-order lock so an admin can buy a replacement after voiding.
+ * Only call from the admin exact-parcel replace flow after the prior label has been voided
+ * (or best-effort void attempted) and order tracking cleared.
+ */
+export async function deleteShipEngineLabelPurchaseLockForReplacement(params: {
+  supabase: SupabaseClient
+  orderId: string
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { error } = await params.supabase
+    .from("shipengine_label_purchase_locks")
+    .delete()
+    .eq("order_id", params.orderId)
+
+  if (error) {
+    console.error("[shipEngineLabelPurchaseLocks] delete for replacement:", error.message)
+    return { ok: false, error: error.message || "Could not reset label purchase lock" }
+  }
+  return { ok: true }
+}

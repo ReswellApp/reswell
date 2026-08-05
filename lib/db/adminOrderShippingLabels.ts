@@ -217,11 +217,12 @@ export async function getLatestAdminLabelUrlsForOrder(
   paperless_qr_storage_path: string | null
   paperless_instructions: string | null
   paperless_handoff_code: string | null
+  created_at: string | null
 } | null> {
   const { data, error } = await supabase
     .from("order_admin_shipping_labels")
     .select(
-      "label_pdf_url, label_storage_path, paperless_qr_url, paperless_qr_storage_path, paperless_instructions, paperless_handoff_code",
+      "label_pdf_url, label_storage_path, paperless_qr_url, paperless_qr_storage_path, paperless_instructions, paperless_handoff_code, created_at",
     )
     .eq("order_id", orderId)
     .order("created_at", { ascending: false })
@@ -236,6 +237,7 @@ export async function getLatestAdminLabelUrlsForOrder(
       paperless_qr_storage_path?: string | null
       paperless_instructions?: string | null
       paperless_handoff_code?: string | null
+      created_at?: string | null
     }
     const u = r.label_pdf_url?.trim() || null
     const p = r.label_storage_path?.trim() || null
@@ -251,6 +253,7 @@ export async function getLatestAdminLabelUrlsForOrder(
         paperless_qr_storage_path: qrPath,
         paperless_instructions: instructions,
         paperless_handoff_code: handoff,
+        created_at: typeof r.created_at === "string" ? r.created_at : null,
       }
     }
   }

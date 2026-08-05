@@ -71,6 +71,14 @@ export async function GET(
     data.delivery_status === "pending" &&
     Boolean(data.buyer_id)
 
+  const canReplaceShippingLabel =
+    gate.ctx.isAdmin &&
+    !data.is_reswell_shop &&
+    data.fulfillment_method === "shipping" &&
+    (data.status === "confirmed" || data.status === "refunding") &&
+    data.delivery_status !== "delivered" &&
+    data.delivery_status !== "picked_up"
+
   return NextResponse.json({
     data,
     capabilities: {
@@ -81,6 +89,7 @@ export async function GET(
       paperlessInstructions: preparedShippingLabel?.paperless_instructions ?? null,
       paperlessHandoffCode: preparedShippingLabel?.paperless_handoff_code ?? null,
       canFulfillReswellShop,
+      canReplaceShippingLabel,
     },
   })
 }

@@ -84,11 +84,11 @@ export async function insertOrderShippingLabel(
 export async function getLatestOrderShippingLabelUrlsForOrder(
   supabase: SupabaseClient,
   orderId: string,
-): Promise<PreparedShippingLabelUrls | null> {
+): Promise<(PreparedShippingLabelUrls & { created_at: string | null }) | null> {
   const { data, error } = await supabase
     .from("order_shipping_labels")
     .select(
-      "label_pdf_url, label_storage_path, paperless_qr_url, paperless_qr_storage_path, paperless_instructions, paperless_handoff_code",
+      "label_pdf_url, label_storage_path, paperless_qr_url, paperless_qr_storage_path, paperless_instructions, paperless_handoff_code, created_at",
     )
     .eq("order_id", orderId)
     .order("created_at", { ascending: false })
@@ -99,6 +99,7 @@ export async function getLatestOrderShippingLabelUrlsForOrder(
     const r = row as {
       label_pdf_url: string | null
       label_storage_path: string | null
+      created_at?: string | null
     } & Partial<OrderShippingLabelPaperlessFields>
     const u = r.label_pdf_url?.trim() || null
     const p = r.label_storage_path?.trim() || null
@@ -108,20 +109,42 @@ export async function getLatestOrderShippingLabelUrlsForOrder(
         label_pdf_url: u,
         label_storage_path: p,
         ...paperless,
+        created_at: typeof r.created_at === "string" ? r.created_at : null,
       }
     }
   }
   return null
 }
 
-/** Marketplace label first, then manual admin-prepared label (legacy / fallback). */
+/**
+ * Newest prepared label across marketplace + admin rows.
+ * Replacement labels must win over an older auto-purchased marketplace PDF.
+ */
 export async function getLatestPreparedShippingLabelForOrder(
   supabase: SupabaseClient,
   orderId: string,
 ): Promise<PreparedShippingLabelUrls | null> {
-  const marketplace = await getLatestOrderShippingLabelUrlsForOrder(supabase, orderId)
-  if (marketplace) return marketplace
-  return getLatestAdminLabelUrlsForOrder(supabase, orderId)
+  const [marketplace, admin] = await Promise.all([
+    getLatestOrderShippingLabelUrlsForOrder(supabase, orderId),
+    getLatestAdminLabelUrlsForOrder(supabase, orderId),
+  ])
+  if (!marketplace && !admin) return null
+  if (!marketplace) {
+    const { created_at: _c, ...urls } = admin!
+    return urls
+  }
+  if (!admin) {
+    const { created_at: _c, ...urls } = marketplace
+    return urls
+  }
+  const mAt = marketplace.created_at ? Date.parse(marketplace.created_at) : 0
+  const aAt = admin.created_at ? Date.parse(admin.created_at) : 0
+  if (aAt >= mAt) {
+    const { created_at: _c, ...urls } = admin
+    return urls
+  }
+  const { created_at: _c, ...urls } = marketplace
+  return urls
 }
 
 const LABEL_BUCKET = "order-shipping-labels"
