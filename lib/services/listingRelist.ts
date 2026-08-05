@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
 import { revalidateSellersForUserIds } from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { revalidateRecentlySoldSurfaces } from "@/lib/cache/revalidate-home-public-catalog"
+import { deleteAllCartRowsForListing } from "@/lib/db/cart-items-server"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { grantExclusiveWindowForRefundedOrderRelist } from "@/lib/services/listingBuyerExclusiveWindow"
@@ -12,6 +13,16 @@ function uniqueListingIds(listingIds: readonly (string | null | undefined)[]): s
   return [...new Set(listingIds.filter((id): id is string => typeof id === "string" && id.length > 0))]
 }
 
+export type RelistAfterRefundOptions = {
+  /**
+   * `public` — live on site (default, existing behavior).
+   * `vacation` — active but vacation-hidden so it appears in the seller’s listings as on vacation.
+   */
+  listingVisibility?: "public" | "vacation"
+  /** Grant the original buyer the exclusive repurchase window (default true for public path). */
+  grantExclusiveBuyerWindow?: boolean
+}
+
 /**
  * Re-activate listings after a full refund.
  * Only transitions from `sold` → `active`; archived/removed listings are left as-is.
@@ -19,11 +30,13 @@ function uniqueListingIds(listingIds: readonly (string | null | undefined)[]): s
 export async function relistListingsAfterRefund(
   supabase: SupabaseClient,
   listingIds: readonly (string | null | undefined)[],
-): Promise<void> {
+  options: RelistAfterRefundOptions = {},
+): Promise<string[]> {
+  const listingVisibility = options.listingVisibility ?? "public"
   const uniqueIds = uniqueListingIds(listingIds)
   if (uniqueIds.length === 0) {
     revalidateRecentlySoldSurfaces()
-    return
+    return []
   }
 
   const nowIso = new Date().toISOString()
@@ -39,13 +52,13 @@ export async function relistListingsAfterRefund(
       error: soldErr,
     })
     revalidateRecentlySoldSurfaces()
-    return
+    return []
   }
 
   const rows = soldRows ?? []
   if (rows.length === 0) {
     revalidateRecentlySoldSurfaces()
-    return
+    return []
   }
 
   const sellerIds = [
@@ -80,14 +93,15 @@ export async function relistListingsAfterRefund(
 
   const relistedIds: string[] = []
   const sellerUserIds: string[] = []
+  const vacationHide = listingVisibility === "vacation"
 
   if (liveIds.length > 0) {
     const { data, error } = await supabase
       .from("listings")
       .update({
         status: "active",
-        hidden_from_site: false,
-        site_visibility_reason: null,
+        hidden_from_site: vacationHide,
+        site_visibility_reason: vacationHide ? "seller_vacation" : null,
         updated_at: nowIso,
       })
       .in("id", liveIds)
@@ -97,6 +111,7 @@ export async function relistListingsAfterRefund(
     if (error) {
       console.error("[relist] failed to reactivate listings after refund", {
         listingIds: liveIds,
+        listingVisibility,
         error,
       })
     } else {
@@ -154,7 +169,7 @@ export async function relistListingsAfterRefund(
   revalidateRecentlySoldSurfaces()
 
   if (relistedIds.length === 0 && delinquentIds.length === 0) {
-    return
+    return []
   }
 
   if (relistedIds.length > 0) {
@@ -165,12 +180,28 @@ export async function relistListingsAfterRefund(
       supabase,
       relistedIds.map((listingId) => ({
         listingId,
-        hiddenFromSite: false,
-        source: "seller_relist" as const,
-        note: "Reactivated after refund",
-        metadata: { reason: "refund" },
+        hiddenFromSite: vacationHide,
+        source: vacationHide ? ("seller_vacation" as const) : ("seller_relist" as const),
+        note: vacationHide
+          ? "Reactivated after refund — held on seller vacation"
+          : "Reactivated after refund",
+        metadata: {
+          reason: vacationHide ? "refund_vacation_hold" : "refund",
+        },
       })),
     )
+
+    if (vacationHide) {
+      await Promise.all(
+        relistedIds.map(async (listingId) => {
+          try {
+            await deleteAllCartRowsForListing(supabase, listingId)
+          } catch {
+            // best-effort
+          }
+        }),
+      )
+    }
 
     for (const listingId of relistedIds) {
       void syncListingToGoogleMerchantBestEffort(supabase, listingId)
@@ -179,6 +210,8 @@ export async function relistListingsAfterRefund(
   } else if (sellerUserIds.length > 0) {
     await revalidateSellersForUserIds(supabase, sellerUserIds)
   }
+
+  return relistedIds
 }
 
 async function applyExclusiveBuyerWindowAfterRelist(
@@ -194,14 +227,16 @@ async function applyExclusiveBuyerWindowAfterRelist(
 export async function relistAfterRefund(
   supabase: SupabaseClient,
   listingId: string,
+  options?: RelistAfterRefundOptions,
 ): Promise<void> {
-  await relistListingsAfterRefund(supabase, [listingId])
+  await relistListingsAfterRefund(supabase, [listingId], options)
 }
 
 /** Re-list every marketplace line on an order (primary `orders.listing_id` + `order_items`). */
 export async function relistOrderListingsAfterRefund(
   supabase: SupabaseClient,
   orderId: string,
+  options: RelistAfterRefundOptions = {},
 ): Promise<void> {
   const [{ data: order, error: orderErr }, { data: items, error: itemsErr }] = await Promise.all([
     supabase.from("orders").select("listing_id").eq("id", orderId).maybeSingle(),
@@ -221,6 +256,10 @@ export async function relistOrderListingsAfterRefund(
   ]
 
   const uniqueIds = uniqueListingIds(listingIds)
-  await relistListingsAfterRefund(supabase, uniqueIds)
-  await applyExclusiveBuyerWindowAfterRelist(supabase, orderId, uniqueIds)
+  const relistedIds = await relistListingsAfterRefund(supabase, uniqueIds, options)
+  const grantExclusive =
+    options.grantExclusiveBuyerWindow ?? options.listingVisibility !== "vacation"
+  if (grantExclusive) {
+    await applyExclusiveBuyerWindowAfterRelist(supabase, orderId, relistedIds)
+  }
 }

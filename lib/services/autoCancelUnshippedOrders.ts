@@ -7,7 +7,6 @@ import {
   issueMarketplaceOrderRefund,
   type MarketplaceOrderRefundRow,
 } from "@/lib/services/issueMarketplaceOrderRefund"
-import { voidShipEngineLabelForOrder } from "@/lib/services/voidShipEngineLabelForOrder"
 
 type AutoCancelCandidate = MarketplaceOrderRefundRow & {
   order_num: string | null
@@ -76,21 +75,10 @@ async function autoCancelSingleUnshippedOrder(
   supabase: SupabaseClient,
   order: AutoCancelCandidate,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  if (order.tracking_number?.trim()) {
-    const voidResult = await voidShipEngineLabelForOrder({
-      supabase,
-      orderId: order.id,
-      explicitLabelId: null,
-    })
-    if (!voidResult.ok) {
-      console.warn("[auto-cancel-unshipped] void label failed", {
-        orderId: order.id,
-        error: voidResult.error,
-      })
-    }
-  }
-
-  const refundResult = await issueMarketplaceOrderRefund(supabase, order)
+  // Label void is handled by `cancel_unshipped` disposition inside issueMarketplaceOrderRefund.
+  const refundResult = await issueMarketplaceOrderRefund(supabase, order, {
+    disposition: "cancel_unshipped",
+  })
   if (!refundResult.ok) {
     return { ok: false, error: refundResult.error }
   }

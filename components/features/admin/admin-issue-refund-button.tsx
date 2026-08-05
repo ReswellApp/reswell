@@ -13,14 +13,23 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Loader2, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
+import {
+  ADMIN_REFUND_DISPOSITION_OPTIONS,
+  DEFAULT_MARKETPLACE_ORDER_REFUND_DISPOSITION,
+  type MarketplaceOrderRefundDisposition,
+} from "@/lib/services/marketplaceOrderRefundDisposition"
+import { cn } from "@/lib/utils"
 
 type RefundApiResponse =
   | {
       success: true
       refund_type: "stripe" | "wallet"
+      disposition?: MarketplaceOrderRefundDisposition
       message: string
       fullyRefundedInApp: boolean
       alreadyProcessedInStripe?: boolean
@@ -28,7 +37,7 @@ type RefundApiResponse =
   | { error: string }
 
 /**
- * Full-admin refund for a marketplace order (same server logic as seller refund, different auth).
+ * Full-admin refund for a marketplace order with selectable post-refund dispositions.
  */
 export function AdminIssueRefundButton({
   orderId,
@@ -48,6 +57,9 @@ export function AdminIssueRefundButton({
   const [busy, setBusy] = useState(false)
   const [open, setOpen] = useState(false)
   const [fullyRefundedUi, setFullyRefundedUi] = useState(false)
+  const [disposition, setDisposition] = useState<MarketplaceOrderRefundDisposition>(
+    DEFAULT_MARKETPLACE_ORDER_REFUND_DISPOSITION,
+  )
 
   if (orderStatus !== "confirmed" && orderStatus !== "refunding") return null
 
@@ -62,12 +74,17 @@ export function AdminIssueRefundButton({
   const isSyncOnly = orderStatus === "refunding"
   const isCard = paymentMethod === "stripe"
   const refundTarget = isCard ? "the buyer's card" : "the buyer's wallet balance"
+  const selectedOption =
+    ADMIN_REFUND_DISPOSITION_OPTIONS.find((o) => o.value === disposition) ??
+    ADMIN_REFUND_DISPOSITION_OPTIONS[0]!
 
   const submit = async () => {
     setBusy(true)
     try {
       const res = await fetch(`/api/admin/orders/${encodeURIComponent(orderId)}/refund`, {
         method: "POST",
+        headers: isSyncOnly ? undefined : { "Content-Type": "application/json" },
+        body: isSyncOnly ? undefined : JSON.stringify({ disposition }),
       })
       const data = (await res.json()) as RefundApiResponse
       if (!res.ok || !("success" in data) || !data.success) {
@@ -90,7 +107,15 @@ export function AdminIssueRefundButton({
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
+    <AlertDialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next)
+        if (next && !isSyncOnly) {
+          setDisposition(DEFAULT_MARKETPLACE_ORDER_REFUND_DISPOSITION)
+        }
+      }}
+    >
       <AlertDialogTrigger asChild>
         <Button
           variant="outline"
@@ -105,30 +130,74 @@ export function AdminIssueRefundButton({
           {isSyncOnly ? "Sync refund from Stripe" : "Issue refund (admin)"}
         </Button>
       </AlertDialogTrigger>
-      <AlertDialogContent>
+      <AlertDialogContent className="max-h-[min(90vh,40rem)] overflow-y-auto sm:max-w-lg">
         <AlertDialogHeader>
           <AlertDialogTitle>
             {isSyncOnly
               ? "Sync refund status from Stripe?"
               : `Refund $${amount.toFixed(2)} to the buyer?`}
           </AlertDialogTitle>
-          <AlertDialogDescription className="space-y-2">
-            {isSyncOnly ? (
-              <span className="block">
-                Fetches the latest refund state from Stripe and updates this order (for example after a
-                Dashboard refund or when a pending refund has just completed). No new refund is created if
-                one already exists.
-              </span>
-            ) : (
-              <>
-                <span className="block">
-                  This runs the same full refund as the seller: ${amount.toFixed(2)} to {refundTarget},
-                  seller earnings reversed, payouts cancelled where applicable, and the listing re-listed
-                  if sold.
-                </span>
-                <span className="block font-medium text-destructive">This action cannot be undone.</span>
-              </>
-            )}
+          <AlertDialogDescription asChild>
+            <div className="space-y-3 text-sm text-muted-foreground">
+              {isSyncOnly ? (
+                <p>
+                  Fetches the latest refund state from Stripe and updates this order (for example after a
+                  Dashboard refund or when a pending refund has just completed). No new refund is created if
+                  one already exists. Listing side effects follow the disposition saved when the refund was
+                  started.
+                </p>
+              ) : (
+                <>
+                  <p>
+                    Refunds ${amount.toFixed(2)} to {refundTarget} and reverses seller earnings. Choose how
+                    the listing and Messages should behave after the refund — no return shipping label is
+                    purchased for any of these options.
+                  </p>
+                  <RadioGroup
+                    value={disposition}
+                    onValueChange={(value) =>
+                      setDisposition(value as MarketplaceOrderRefundDisposition)
+                    }
+                    className="gap-2 pt-1"
+                    disabled={busy}
+                  >
+                    {ADMIN_REFUND_DISPOSITION_OPTIONS.map((option) => {
+                      const id = `refund-disposition-${option.value}`
+                      const selected = disposition === option.value
+                      return (
+                        <label
+                          key={option.value}
+                          htmlFor={id}
+                          className={cn(
+                            "flex cursor-pointer gap-3 rounded-lg border p-3 transition-colors",
+                            selected
+                              ? "border-destructive/40 bg-destructive/[0.04]"
+                              : "border-border/70 hover:bg-muted/40",
+                          )}
+                        >
+                          <RadioGroupItem value={option.value} id={id} className="mt-0.5" />
+                          <span className="min-w-0 space-y-1">
+                            <Label htmlFor={id} className="cursor-pointer font-medium text-foreground">
+                              {option.label}
+                            </Label>
+                            <span className="block text-xs leading-relaxed text-muted-foreground">
+                              {option.description}
+                            </span>
+                            <span className="block text-xs text-muted-foreground/90">
+                              Use when: {option.recommendedWhen}
+                            </span>
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </RadioGroup>
+                  <p className="text-xs leading-relaxed">
+                    Selected: <span className="font-medium text-foreground">{selectedOption.label}</span>
+                  </p>
+                  <p className="font-medium text-destructive">This action cannot be undone.</p>
+                </>
+              )}
+            </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

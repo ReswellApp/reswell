@@ -580,8 +580,9 @@ export default function AdminOrderDetailPage() {
                 />
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Full-order refund refunds every item at once. Prefer item returns above when only one
-                line should come back.
+                Full-order refunds offer several dispositions (buyer repurchase window, vacation hold,
+                cancel never shipped, public relist). Prefer item returns above only when a physical return
+                label is required.
               </p>
             </div>
           )}

@@ -3,8 +3,15 @@ import Stripe from "stripe"
 import { getStripe } from "@/lib/stripe-server"
 import { applyWalletOrderRefund } from "@/lib/services/walletRefund"
 import { applyMarketplaceOrderRefundSideEffects } from "@/lib/services/marketplaceOrderRefundSideEffects"
+import {
+  DEFAULT_MARKETPLACE_ORDER_REFUND_DISPOSITION,
+  planMarketplaceOrderRefundSideEffects,
+  resolveMarketplaceOrderRefundDisposition,
+  type MarketplaceOrderRefundDisposition,
+} from "@/lib/services/marketplaceOrderRefundDisposition"
 import { syncMarketplaceOrderFromStripePaymentIntent } from "@/lib/services/stripeRefundWebhook"
 import { applySellerRefundClawback } from "@/lib/split-seller-refund-clawback"
+import { voidShipEngineLabelForOrder } from "@/lib/services/voidShipEngineLabelForOrder"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -20,6 +27,15 @@ export type MarketplaceOrderRefundRow = {
   status: string
   payment_method: string | null
   stripe_checkout_session_id: string | null
+  refund_disposition?: string | null
+}
+
+export type IssueMarketplaceOrderRefundOptions = {
+  /**
+   * Post-refund listing + messaging plan. Persisted on the order so async Stripe
+   * webhooks apply the same side effects. Defaults to exclusive_relist.
+   */
+  disposition?: MarketplaceOrderRefundDisposition
 }
 
 export type IssueMarketplaceOrderRefundResult =
@@ -30,8 +46,45 @@ export type IssueMarketplaceOrderRefundResult =
       alreadyProcessedInStripe?: boolean
       /** True when this order is now `refunded` in the database (not mid-Stripe processing). */
       fullyRefundedInApp: boolean
+      disposition: MarketplaceOrderRefundDisposition
     }
   | { ok: false; error: string; status: number }
+
+function successMessageForDisposition(
+  refundType: "stripe" | "wallet",
+  disposition: MarketplaceOrderRefundDisposition,
+  fullyRefundedInApp: boolean,
+): string {
+  if (!fullyRefundedInApp) {
+    return (
+      "Refund started — Stripe is processing it. This order will move to Refunded when Stripe completes the refund. Card refunds can take several business days to appear on the buyer’s statement."
+    )
+  }
+  if (refundType === "wallet") {
+    switch (disposition) {
+      case "vacation_hold":
+        return "Refund complete — buyer credited; listing held on seller vacation (no repurchase message)."
+      case "cancel_unshipped":
+        return "Refund complete — buyer credited; unused label voided when possible; listing on seller vacation."
+      case "public_relist":
+        return "Refund complete — buyer credited; listing is back on the market for everyone."
+      case "exclusive_relist":
+      default:
+        return "Refund complete — buyer has been credited and the listing is back on the market"
+    }
+  }
+  switch (disposition) {
+    case "vacation_hold":
+      return "Refund issued — buyer’s card will be refunded; listing held on seller vacation (no repurchase message)."
+    case "cancel_unshipped":
+      return "Refund issued — unused label voided when possible; listing held on seller vacation."
+    case "public_relist":
+      return "Refund issued — listing is back on the market for everyone (no exclusive repurchase window)."
+    case "exclusive_relist":
+    default:
+      return "Refund issued — the buyer's card will be refunded by Stripe shortly"
+  }
+}
 
 function isStripeChargeAlreadyRefundedError(err: unknown): boolean {
   if (err instanceof Stripe.errors.StripeInvalidRequestError) {
@@ -45,10 +98,11 @@ function isStripeChargeAlreadyRefundedError(err: unknown): boolean {
  * Full refund for a confirmed marketplace order (Stripe card or wallet).
  *
  * Stripe card path:
- *   1. Create Stripe refund
- *   2. Mark order `refunded`, cancel payouts
- *   3. **Immediately** claw back seller wallet (pending_balance first, then balance)
- *   4. Re-list listing
+ *   1. Optionally void unused outbound label (`cancel_unshipped`)
+ *   2. Create Stripe refund
+ *   3. Mark order `refunded` / `refunding`, persist `refund_disposition`, cancel payouts
+ *   4. **Immediately** claw back seller wallet (pending_balance first, then balance)
+ *   5. Disposition-specific listing + messaging side effects
  *   Idempotent via unique index on `(reference_type, reference_id) WHERE reference_type = 'stripe_refund'`.
  *   The later webhook (`refund.created`/`refund.updated`) detects the existing wallet tx and skips.
  *
@@ -57,10 +111,16 @@ function isStripeChargeAlreadyRefundedError(err: unknown): boolean {
 export async function issueMarketplaceOrderRefund(
   serviceSupabase: SupabaseClient,
   order: MarketplaceOrderRefundRow,
+  options: IssueMarketplaceOrderRefundOptions = {},
 ): Promise<IssueMarketplaceOrderRefundResult> {
   if (order.status === "refunded") {
     return { ok: false, error: "Order is already refunded", status: 409 }
   }
+
+  const disposition = resolveMarketplaceOrderRefundDisposition(
+    options.disposition ?? order.refund_disposition ?? DEFAULT_MARKETPLACE_ORDER_REFUND_DISPOSITION,
+  )
+  const sideEffectPlan = planMarketplaceOrderRefundSideEffects(disposition)
 
   if (order.status === "refunding") {
     if (order.payment_method !== "stripe" || !order.stripe_checkout_session_id) {
@@ -92,6 +152,7 @@ export async function issueMarketplaceOrderRefund(
     return {
       ok: true,
       refund_type: "stripe",
+      disposition: resolveMarketplaceOrderRefundDisposition(order.refund_disposition),
       fullyRefundedInApp: sync.fullyRefunded,
       message: sync.fullyRefunded
         ? "Refund completed in Stripe — order updated."
@@ -101,6 +162,20 @@ export async function issueMarketplaceOrderRefund(
 
   if (order.status !== "confirmed") {
     return { ok: false, error: "Only confirmed orders can be refunded", status: 400 }
+  }
+
+  if (sideEffectPlan.voidUnusedOutboundLabel) {
+    const voidResult = await voidShipEngineLabelForOrder({
+      supabase: serviceSupabase,
+      orderId: order.id,
+      explicitLabelId: null,
+    })
+    if (!voidResult.ok) {
+      console.warn("[issue refund] void unused label failed (continuing refund)", {
+        orderId: order.id,
+        error: voidResult.error,
+      })
+    }
   }
 
   if (order.payment_method === "stripe") {
@@ -117,6 +192,11 @@ export async function issueMarketplaceOrderRefund(
       })
     } catch (err) {
       if (isStripeChargeAlreadyRefundedError(err)) {
+        await serviceSupabase
+          .from("orders")
+          .update({ refund_disposition: disposition, updated_at: new Date().toISOString() })
+          .eq("id", order.id)
+
         const sync = await syncMarketplaceOrderFromStripePaymentIntent(
           serviceSupabase,
           order.stripe_checkout_session_id,
@@ -139,6 +219,7 @@ export async function issueMarketplaceOrderRefund(
         return {
           ok: true,
           refund_type: "stripe",
+          disposition,
           alreadyProcessedInStripe: true,
           fullyRefundedInApp: sync.fullyRefunded,
           message: sync.fullyRefunded
@@ -156,7 +237,11 @@ export async function issueMarketplaceOrderRefund(
     if (stripeRefund.status !== "succeeded") {
       await serviceSupabase
         .from("orders")
-        .update({ status: "refunding", updated_at: nowIso })
+        .update({
+          status: "refunding",
+          refund_disposition: disposition,
+          updated_at: nowIso,
+        })
         .eq("id", order.id)
         .eq("status", "confirmed")
 
@@ -168,16 +253,21 @@ export async function issueMarketplaceOrderRefund(
       return {
         ok: true,
         refund_type: "stripe",
+        disposition,
         fullyRefundedInApp: false,
-        message:
-          "Refund started — Stripe is processing it. This order will move to Refunded when Stripe completes the refund. Card refunds can take several business days to appear on the buyer’s statement.",
+        message: successMessageForDisposition("stripe", disposition, false),
       }
     }
 
     // 2. Mark order refunded + cancel payouts
     await serviceSupabase
       .from("orders")
-      .update({ status: "refunded", refunded_at: nowIso, updated_at: nowIso })
+      .update({
+        status: "refunded",
+        refunded_at: nowIso,
+        refund_disposition: disposition,
+        updated_at: nowIso,
+      })
       .eq("id", order.id)
       .neq("status", "refunded")
 
@@ -201,14 +291,15 @@ export async function issueMarketplaceOrderRefund(
       nowIso,
     })
 
-    // 4. Re-list every line on the order and notify the seller in /messages
-    await applyMarketplaceOrderRefundSideEffects(serviceSupabase, order.id)
+    // 4. Listing + messaging side effects for this disposition
+    await applyMarketplaceOrderRefundSideEffects(serviceSupabase, order.id, disposition)
 
     return {
       ok: true,
       refund_type: "stripe",
+      disposition,
       fullyRefundedInApp: true,
-      message: "Refund issued — the buyer's card will be refunded by Stripe shortly",
+      message: successMessageForDisposition("stripe", disposition, true),
     }
   }
 
@@ -216,15 +307,19 @@ export async function issueMarketplaceOrderRefund(
     if (!order.listing_id) {
       return { ok: false, error: "Order is missing listing reference", status: 400 }
     }
-    const result = await applyWalletOrderRefund(serviceSupabase, {
-      id: order.id,
-      listing_id: order.listing_id,
-      buyer_id: order.buyer_id,
-      seller_id: order.seller_id,
-      amount: order.amount,
-      seller_earnings: order.seller_earnings,
-      status: order.status,
-    })
+    const result = await applyWalletOrderRefund(
+      serviceSupabase,
+      {
+        id: order.id,
+        listing_id: order.listing_id,
+        buyer_id: order.buyer_id,
+        seller_id: order.seller_id,
+        amount: order.amount,
+        seller_earnings: order.seller_earnings,
+        status: order.status,
+      },
+      disposition,
+    )
 
     if (!result.ok) {
       return { ok: false, error: result.error, status: result.status }
@@ -233,8 +328,9 @@ export async function issueMarketplaceOrderRefund(
     return {
       ok: true,
       refund_type: "wallet",
+      disposition,
       fullyRefundedInApp: true,
-      message: "Refund complete — buyer has been credited and the listing is back on the market",
+      message: successMessageForDisposition("wallet", disposition, true),
     }
   }
 

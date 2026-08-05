@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { applyMarketplaceOrderRefundSideEffects } from "@/lib/services/marketplaceOrderRefundSideEffects"
+import type { MarketplaceOrderRefundDisposition } from "@/lib/services/marketplaceOrderRefundDisposition"
 import { applySellerRefundClawback } from "@/lib/split-seller-refund-clawback"
 
 function roundMoney(n: number): number {
@@ -23,15 +24,16 @@ type RefundResult =
 /**
  * Full refund for a wallet-paid order.
  *
- * 1. Mark order as `refunded`, set `refunded_at`
+ * 1. Mark order as `refunded`, set `refunded_at` (+ optional refund_disposition)
  * 2. Cancel all payouts for the order
  * 3. Claw back seller earnings (pending or available)
  * 4. Credit buyer wallet with the full order amount
- * 5. Re-list the listing (sold → active)
+ * 5. Apply disposition-specific listing + messaging side effects
  */
 export async function applyWalletOrderRefund(
   supabase: SupabaseClient,
   order: WalletOrderRow,
+  disposition?: MarketplaceOrderRefundDisposition,
 ): Promise<RefundResult> {
   const nowIso = new Date().toISOString()
   const orderAmount = roundMoney(Number(order.amount))
@@ -44,7 +46,12 @@ export async function applyWalletOrderRefund(
   // --- 1. Mark order refunded ---
   const { error: orderErr } = await supabase
     .from("orders")
-    .update({ status: "refunded", refunded_at: nowIso, updated_at: nowIso })
+    .update({
+      status: "refunded",
+      refunded_at: nowIso,
+      updated_at: nowIso,
+      ...(disposition ? { refund_disposition: disposition } : {}),
+    })
     .eq("id", order.id)
     .neq("status", "refunded")
 
@@ -73,8 +80,8 @@ export async function applyWalletOrderRefund(
     await creditBuyerWallet(supabase, order, orderAmount, nowIso)
   }
 
-  // --- 5. Re-list and notify seller in /messages ---
-  await applyMarketplaceOrderRefundSideEffects(supabase, order.id)
+  // --- 5. Listing + messaging side effects ---
+  await applyMarketplaceOrderRefundSideEffects(supabase, order.id, disposition)
 
   return { ok: true }
 }
