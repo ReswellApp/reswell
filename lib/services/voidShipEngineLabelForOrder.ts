@@ -101,7 +101,15 @@ export async function voidShipEngineLabelForOrder(params: {
       return { ok: false, error: detail.error, status: detail.status }
     }
     if (detail.label.voided) {
-      return { ok: false, error: "This label is already voided in ShipEngine.", status: 409 }
+      return {
+        ok: true,
+        data: {
+          labelId: detail.label.label_id,
+          approved: true,
+          message: "Label was already voided in ShipEngine.",
+          clearedOrderTracking: false,
+        },
+      }
     }
     const belongs = await labelBelongsToOrder({
       supabase: params.supabase,
@@ -134,23 +142,44 @@ export async function voidShipEngineLabelForOrder(params: {
     if (!listed.ok) {
       return { ok: false, error: listed.error, status: listed.status }
     }
-    const candidate = listed.labels.find((l) => !l.voided && l.label_id)
-    if (!candidate?.label_id) {
+    // Prefer an active label; if every match is already voided, treat as success.
+    const active = listed.labels.find((l) => !l.voided && l.label_id)
+    const anyWithId = listed.labels.find((l) => l.label_id)
+    if (!active?.label_id && anyWithId?.label_id) {
+      return {
+        ok: true,
+        data: {
+          labelId: anyWithId.label_id,
+          approved: true,
+          message: "Label was already voided in ShipEngine.",
+          clearedOrderTracking: false,
+        },
+      }
+    }
+    if (!active?.label_id) {
       return {
         ok: false,
         error:
-          "No active (non-voided) ShipEngine label found for this tracking number, or paste label_id explicitly.",
+          "No ShipEngine label found for this tracking number, or paste label_id explicitly.",
         status: 404,
       }
     }
 
-    labelId = candidate.label_id
+    labelId = active.label_id
     const detail = await fetchLabelById(labelId)
     if (!detail.ok) {
       return { ok: false, error: detail.error, status: detail.status }
     }
     if (detail.label.voided) {
-      return { ok: false, error: "This label is already voided in ShipEngine.", status: 409 }
+      return {
+        ok: true,
+        data: {
+          labelId: detail.label.label_id,
+          approved: true,
+          message: "Label was already voided in ShipEngine.",
+          clearedOrderTracking: false,
+        },
+      }
     }
     if (normalizeTracking(detail.label.tracking_number) !== normalizeTracking(tracking)) {
       return {

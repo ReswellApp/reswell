@@ -47,12 +47,33 @@ export async function voidShipEngineLabel(labelId: string): Promise<
   const data = await parseJsonSafe(res)
   const apiErr = formatShipEngineApiError(data)
   if (apiErr) {
+    // Idempotent: already-voided labels are a success for our refund flow.
+    if (/already\s+been\s+voided|has\s+been\s+voided|label\s+is\s+voided|already\s+voided/i.test(apiErr)) {
+      return {
+        ok: true,
+        result: {
+          approved: true,
+          message: "Label was already voided in ShipEngine.",
+        },
+      }
+    }
     return { ok: false, error: apiErr, status: res.ok ? 422 : res.status >= 400 ? res.status : 502 }
   }
   if (!res.ok) {
+    const fallback =
+      typeof data === "string" ? data : JSON.stringify(data).slice(0, 400)
+    if (/already\s+been\s+voided|has\s+been\s+voided|label\s+is\s+voided|already\s+voided/i.test(fallback)) {
+      return {
+        ok: true,
+        result: {
+          approved: true,
+          message: "Label was already voided in ShipEngine.",
+        },
+      }
+    }
     return {
       ok: false,
-      error: typeof data === "string" ? data : JSON.stringify(data).slice(0, 400),
+      error: fallback,
       status: res.status >= 400 ? res.status : 502,
     }
   }
