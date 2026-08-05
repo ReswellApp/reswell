@@ -570,20 +570,13 @@ export default function AdminOrderDetailPage() {
           {(o.status === "confirmed" || o.status === "refunding") && canRefund && (
             <div className="flex flex-col gap-3 border-t border-border/60 pt-4">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Admin actions</p>
-              <div className="flex flex-wrap items-start gap-3">
-                <AdminIssueRefundButton
-                  orderId={o.id}
-                  orderStatus={o.status}
-                  amount={o.amount}
-                  paymentMethod={o.payment_method}
-                  onComplete={bumpRefetch}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Full-order refunds offer several dispositions (buyer repurchase window, vacation hold,
-                cancel never shipped, public relist). Prefer item returns above only when a physical return
-                label is required.
-              </p>
+              <AdminIssueRefundButton
+                orderId={o.id}
+                orderStatus={o.status}
+                amount={o.amount}
+                paymentMethod={o.payment_method}
+                onComplete={bumpRefetch}
+              />
             </div>
           )}
 

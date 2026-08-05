@@ -38,6 +38,7 @@ type RefundApiResponse =
 
 /**
  * Full-admin refund for a marketplace order with selectable post-refund dispositions.
+ * Disposition options are shown inline on the order page so admins can pick before confirming.
  */
 export function AdminIssueRefundButton({
   orderId,
@@ -106,108 +107,123 @@ export function AdminIssueRefundButton({
     }
   }
 
-  return (
-    <AlertDialog
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next)
-        if (next && !isSyncOnly) {
-          setDisposition(DEFAULT_MARKETPLACE_ORDER_REFUND_DISPOSITION)
-        }
-      }}
-    >
-      <AlertDialogTrigger asChild>
-        <Button
-          variant="outline"
-          disabled={busy}
-          className={
-            isSyncOnly
-              ? "gap-2 border-amber-500/30 text-amber-950 dark:text-amber-100 hover:bg-amber-500/10"
-              : "gap-2 border-destructive/30 text-destructive hover:bg-destructive/5 hover:text-destructive"
-          }
-        >
-          <RotateCcw className="h-4 w-4" />
-          {isSyncOnly ? "Sync refund from Stripe" : "Issue refund (admin)"}
-        </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent className="max-h-[min(90vh,40rem)] overflow-y-auto sm:max-w-lg">
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            {isSyncOnly
-              ? "Sync refund status from Stripe?"
-              : `Refund $${amount.toFixed(2)} to the buyer?`}
-          </AlertDialogTitle>
-          <AlertDialogDescription asChild>
-            <div className="space-y-3 text-sm text-muted-foreground">
-              {isSyncOnly ? (
-                <p>
-                  Fetches the latest refund state from Stripe and updates this order (for example after a
-                  Dashboard refund or when a pending refund has just completed). No new refund is created if
-                  one already exists. Listing side effects follow the disposition saved when the refund was
-                  started.
-                </p>
-              ) : (
-                <>
-                  <p>
-                    Refunds ${amount.toFixed(2)} to {refundTarget} and reverses seller earnings. Choose how
-                    the listing and Messages should behave after the refund — no return shipping label is
-                    purchased for any of these options.
-                  </p>
-                  <RadioGroup
-                    value={disposition}
-                    onValueChange={(value) =>
-                      setDisposition(value as MarketplaceOrderRefundDisposition)
-                    }
-                    className="gap-2 pt-1"
-                    disabled={busy}
-                  >
-                    {ADMIN_REFUND_DISPOSITION_OPTIONS.map((option) => {
-                      const id = `refund-disposition-${option.value}`
-                      const selected = disposition === option.value
-                      return (
-                        <label
-                          key={option.value}
-                          htmlFor={id}
-                          className={cn(
-                            "flex cursor-pointer gap-3 rounded-lg border p-3 transition-colors",
-                            selected
-                              ? "border-destructive/40 bg-destructive/[0.04]"
-                              : "border-border/70 hover:bg-muted/40",
-                          )}
-                        >
-                          <RadioGroupItem value={option.value} id={id} className="mt-0.5" />
-                          <span className="min-w-0 space-y-1">
-                            <Label htmlFor={id} className="cursor-pointer font-medium text-foreground">
-                              {option.label}
-                            </Label>
-                            <span className="block text-xs leading-relaxed text-muted-foreground">
-                              {option.description}
-                            </span>
-                            <span className="block text-xs text-muted-foreground/90">
-                              Use when: {option.recommendedWhen}
-                            </span>
-                          </span>
-                        </label>
-                      )
-                    })}
-                  </RadioGroup>
-                  <p className="text-xs leading-relaxed">
-                    Selected: <span className="font-medium text-foreground">{selectedOption.label}</span>
-                  </p>
-                  <p className="font-medium text-destructive">This action cannot be undone.</p>
-                </>
-              )}
-            </div>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
-          <Button variant={isSyncOnly ? "default" : "destructive"} onClick={submit} disabled={busy}>
-            {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            {isSyncOnly ? "Sync from Stripe" : "Confirm refund"}
+  if (isSyncOnly) {
+    return (
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogTrigger asChild>
+          <Button
+            variant="outline"
+            disabled={busy}
+            className="gap-2 border-amber-500/30 text-amber-950 dark:text-amber-100 hover:bg-amber-500/10"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Sync refund from Stripe
           </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sync refund status from Stripe?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Fetches the latest refund state from Stripe and updates this order (for example after a
+              Dashboard refund or when a pending refund has just completed). No new refund is created if
+              one already exists. Listing side effects follow the disposition saved when the refund was
+              started.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <Button onClick={submit} disabled={busy}>
+              {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Sync from Stripe
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    )
+  }
+
+  return (
+    <div className="w-full max-w-xl space-y-3">
+      <div className="space-y-1.5">
+        <p className="text-sm font-medium text-foreground">Refund type</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          All options refund ${amount.toFixed(2)} to {refundTarget} and reverse seller earnings. None buy
+          a return shipping label — use Item returns above only when a physical return is needed.
+        </p>
+      </div>
+
+      <RadioGroup
+        value={disposition}
+        onValueChange={(value) => setDisposition(value as MarketplaceOrderRefundDisposition)}
+        className="gap-2"
+        disabled={busy}
+      >
+        {ADMIN_REFUND_DISPOSITION_OPTIONS.map((option) => {
+          const id = `refund-disposition-${option.value}`
+          const selected = disposition === option.value
+          return (
+            <label
+              key={option.value}
+              htmlFor={id}
+              className={cn(
+                "flex cursor-pointer gap-3 rounded-lg border p-3 transition-colors",
+                selected
+                  ? "border-destructive/40 bg-destructive/[0.04]"
+                  : "border-border/70 hover:bg-muted/40",
+              )}
+            >
+              <RadioGroupItem value={option.value} id={id} className="mt-0.5 shrink-0" />
+              <span className="min-w-0 space-y-1">
+                <Label htmlFor={id} className="cursor-pointer font-medium text-foreground">
+                  {option.label}
+                </Label>
+                <span className="block text-xs leading-relaxed text-muted-foreground">
+                  {option.description}
+                </span>
+                <span className="block text-xs text-muted-foreground/90">
+                  Use when: {option.recommendedWhen}
+                </span>
+              </span>
+            </label>
+          )
+        })}
+      </RadioGroup>
+
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogTrigger asChild>
+          <Button
+            variant="outline"
+            disabled={busy}
+            className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/5 hover:text-destructive"
+          >
+            <RotateCcw className="h-4 w-4" />
+            Issue refund — {selectedOption.label}
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Refund ${amount.toFixed(2)} ({selectedOption.label})?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <span className="block">
+                Refunds ${amount.toFixed(2)} to {refundTarget} and reverses seller earnings.
+              </span>
+              <span className="block text-foreground">
+                {selectedOption.description}
+              </span>
+              <span className="block font-medium text-destructive">This action cannot be undone.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <Button variant="destructive" onClick={submit} disabled={busy}>
+              {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Confirm refund
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   )
 }
