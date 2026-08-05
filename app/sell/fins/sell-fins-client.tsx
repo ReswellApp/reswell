@@ -544,7 +544,7 @@ export default function SellFinsFlow({
     [editId, hydrateExistingImages, router],
   )
 
-  const { editLoading, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
+  const { editLoading, showEditSkeleton, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
     editId: loadListingId,
     supabase: supabaseRef.current,
     signInReturnPath: loadListingId ? `/sell/fins?edit=${loadListingId}` : "/sell/fins",
@@ -1037,7 +1037,7 @@ export default function SellFinsFlow({
     )
   }
 
-  if (editLoading) {
+  if (showEditSkeleton) {
     return <SellFlowRouteSkeleton />
   }
 
@@ -1052,7 +1052,14 @@ export default function SellFinsFlow({
   }
 
   return (
-    <main className={cn("flex-1 w-full pt-8 pb-16 md:pb-20 lg:pb-24", SELL_PAGE_GROUND_CLASS)}>
+    <main
+      aria-busy={editLoading || undefined}
+      className={cn(
+        "flex-1 w-full pt-8 pb-16 transition-opacity md:pb-20 lg:pb-24",
+        SELL_PAGE_GROUND_CLASS,
+        editLoading && "pointer-events-none opacity-60",
+      )}
+    >
       <AdminBulkListingBanner section="fins" bulkSlotId={bulkSlotId} />
       <div className="container relative mx-auto max-w-2xl min-h-[50vh] lg:max-w-6xl">
         <h1 className="sr-only">{editId ? "Edit fin listing" : "List your fins"}</h1>
@@ -1172,7 +1179,12 @@ export default function SellFinsFlow({
 
                   <div className="space-y-2">
                     <div className="flex items-end justify-between gap-2">
-                      <Label htmlFor="fin-title">Title *</Label>
+                      <Label htmlFor="fin-title">
+                        Title{" "}
+                        <span className="text-destructive" aria-hidden="true">
+                          *
+                        </span>
+                      </Label>
                       <span
                         className={cn(
                           "text-xs tabular-nums",

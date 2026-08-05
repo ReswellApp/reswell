@@ -35,9 +35,19 @@ export type UseOwnedListingEditLoadOptions = {
 
 export type UseOwnedListingEditLoadResult = {
   editLoading: boolean
+  /**
+   * Whether to swap the form for a loading skeleton. Immediate on the first
+   * load (deep links land on an empty form), but delayed on subsequent edit-id
+   * switches so fast draft opens keep the current form in place — no skeleton
+   * flash / page bounce.
+   */
+  showEditSkeleton: boolean
   editLoadError: string | null
   retryEditLoad: () => void
 }
+
+/** Soft draft switches only reveal the skeleton once the load is genuinely slow. */
+const EDIT_SKELETON_REVEAL_DELAY_MS = 400
 
 function errorMessageForReason(reason: "timeout" | "error"): string {
   if (reason === "timeout") {
@@ -65,8 +75,10 @@ export function useOwnedListingEditLoad(
   } = options
 
   const [editLoading, setEditLoading] = useState(Boolean(editId))
+  const [showEditSkeleton, setShowEditSkeleton] = useState(Boolean(editId))
   const [editLoadError, setEditLoadError] = useState<string | null>(null)
   const [retryNonce, setRetryNonce] = useState(0)
+  const hasLoadedOnceRef = useRef(false)
 
   const onHydrateRef = useRef(onHydrate)
   onHydrateRef.current = onHydrate
@@ -83,6 +95,7 @@ export function useOwnedListingEditLoad(
   useEffect(() => {
     if (!editId) {
       setEditLoading(false)
+      setShowEditSkeleton(false)
       setEditLoadError(null)
       return
     }
@@ -91,6 +104,16 @@ export function useOwnedListingEditLoad(
     let mounted = true
     setEditLoading(true)
     setEditLoadError(null)
+
+    let skeletonRevealTimer: number | undefined
+    if (!hasLoadedOnceRef.current) {
+      setShowEditSkeleton(true)
+    } else {
+      skeletonRevealTimer = window.setTimeout(() => {
+        if (mounted && !controller.signal.aborted) setShowEditSkeleton(true)
+      }, EDIT_SKELETON_REVEAL_DELAY_MS)
+    }
+    hasLoadedOnceRef.current = true
 
     void (async () => {
       try {
@@ -124,7 +147,9 @@ export function useOwnedListingEditLoad(
         setEditLoadError(errorMessageForReason("error"))
       } finally {
         if (mounted && !controller.signal.aborted) {
+          if (skeletonRevealTimer != null) window.clearTimeout(skeletonRevealTimer)
           setEditLoading(false)
+          setShowEditSkeleton(false)
         }
       }
     })()
@@ -132,8 +157,9 @@ export function useOwnedListingEditLoad(
     return () => {
       mounted = false
       controller.abort()
+      if (skeletonRevealTimer != null) window.clearTimeout(skeletonRevealTimer)
     }
   }, [editId, notFoundRedirectHref, retryNonce, router, signInReturnPath, supabase])
 
-  return { editLoading, editLoadError, retryEditLoad }
+  return { editLoading, showEditSkeleton, editLoadError, retryEditLoad }
 }

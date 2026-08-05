@@ -405,110 +405,145 @@ export function SellBoardDimensionsPicker({
   const widthDisplay = widthValue ? displayInchesOrRaw(widthValue) : ""
   const thicknessDisplay = thicknessValue ? displayInchesOrRaw(thicknessValue) : ""
 
+  const requiredMark = dimensionsRequired ? (
+    <span className="text-destructive" aria-hidden="true">
+      {" "}
+      *
+    </span>
+  ) : null
+
+  const fieldLabel = (text: string, required: boolean) => (
+    <Label className="text-xs font-medium text-muted-foreground">
+      {text}
+      {required ? requiredMark : null}
+    </Label>
+  )
+
+  const segmentedBoxClassName = cn(
+    "grid grid-cols-2 overflow-hidden rounded-md border border-foreground/25 bg-background shadow-sm",
+    "divide-x divide-foreground/25",
+  )
+
+  const lengthSelect = (
+    <DimSelect
+      value={lengthValue}
+      onValueChange={(next) => onChange({ boardLength: next })}
+      options={lengthOptions}
+      focusValue={BOARD_LENGTH_FOCUS_VALUE}
+      placeholder="—"
+      ariaLabel="Board length"
+      disabled={disabled}
+      required={dimensionsRequired}
+    />
+  )
+  const widthSelect = (
+    <DimSelect
+      value={widthValue}
+      onValueChange={(next) => onChange({ boardWidthInches: next })}
+      options={widthOptions}
+      focusValue={BOARD_WIDTH_FOCUS_VALUE}
+      placeholder="—"
+      ariaLabel="Board width in inches"
+      disabled={disabled}
+      required={dimensionsRequired}
+    />
+  )
+  const thicknessSelect = (
+    <DimSelect
+      value={thicknessValue}
+      onValueChange={(next) => onChange({ boardThicknessInches: next })}
+      options={thicknessOptions}
+      focusValue={BOARD_THICKNESS_FOCUS_VALUE}
+      placeholder="—"
+      ariaLabel="Board thickness in inches"
+      disabled={disabled}
+      required={dimensionsRequired}
+    />
+  )
+  /** Rendered once per breakpoint layout; `volumeInputRef` ends up on the sm+ instance. */
+  const volumeField = (
+    <div
+      className={cn(
+        "relative flex h-12 min-w-0 items-center justify-center bg-muted px-1.5",
+        "focus-within:z-10 focus-within:ring-2 focus-within:ring-ring focus-within:ring-inset",
+      )}
+    >
+      <Input
+        ref={volumeInputRef}
+        type="text"
+        inputMode="decimal"
+        placeholder="— L"
+        value={values.boardVolumeL}
+        disabled={disabled}
+        onChange={(e) =>
+          onChange({ boardVolumeL: normalizeVolumeLitersInput(e.target.value) })
+        }
+        className={cn(
+          "h-full min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-sm font-medium tabular-nums text-foreground shadow-none",
+          "placeholder:text-muted-foreground/60 focus-visible:ring-0 focus-visible:ring-offset-0",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          values.boardVolumeL.trim() && "pr-5",
+        )}
+        autoComplete="off"
+        spellCheck={false}
+        aria-label="Board volume in liters"
+      />
+      {values.boardVolumeL.trim() ? (
+        <span
+          className="pointer-events-none absolute right-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+          aria-hidden
+        >
+          L
+        </span>
+      ) : null}
+    </div>
+  )
+
   return (
     <div className={cn("space-y-2", className)} data-sell-board-dims="ci-picker">
-      <div className="grid grid-cols-4 gap-x-2 text-xs text-muted-foreground">
-        <Label className="text-xs font-medium text-muted-foreground">
-          Length
-          {dimensionsRequired ? (
-            <span className="text-destructive" aria-hidden="true">
-              {" "}
-              *
-            </span>
-          ) : null}
-        </Label>
-        <Label className="text-xs font-medium text-muted-foreground">
-          Width
-          {dimensionsRequired ? (
-            <span className="text-destructive" aria-hidden="true">
-              {" "}
-              *
-            </span>
-          ) : null}
-        </Label>
-        <Label className="text-xs font-medium text-muted-foreground">
-          Thickness
-          {dimensionsRequired ? (
-            <span className="text-destructive" aria-hidden="true">
-              {" "}
-              *
-            </span>
-          ) : null}
-        </Label>
-        <Label className="text-xs font-medium text-muted-foreground">Volume</Label>
+      {/* Mobile: 2×2 rows so full fraction labels (e.g. 19 3/4") never truncate. */}
+      <div className="space-y-3 sm:hidden">
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-x-2 text-xs text-muted-foreground">
+            {fieldLabel("Length", dimensionsRequired)}
+            {fieldLabel("Width", dimensionsRequired)}
+          </div>
+          <div className={segmentedBoxClassName}>
+            {lengthSelect}
+            {widthSelect}
+          </div>
+        </div>
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-x-2 text-xs text-muted-foreground">
+            {fieldLabel("Thickness", dimensionsRequired)}
+            {fieldLabel("Volume", false)}
+          </div>
+          <div className={segmentedBoxClassName}>
+            {thicknessSelect}
+            {volumeField}
+          </div>
+        </div>
       </div>
 
-      <div
-        className={cn(
-          "grid grid-cols-4 overflow-hidden rounded-md border border-foreground/25 bg-background shadow-sm",
-          "divide-x divide-foreground/25",
-        )}
-      >
-        <DimSelect
-          value={lengthValue}
-          onValueChange={(next) => onChange({ boardLength: next })}
-          options={lengthOptions}
-          focusValue={BOARD_LENGTH_FOCUS_VALUE}
-          placeholder="—"
-          ariaLabel="Board length"
-          disabled={disabled}
-          required={dimensionsRequired}
-        />
-        <DimSelect
-          value={widthValue}
-          onValueChange={(next) => onChange({ boardWidthInches: next })}
-          options={widthOptions}
-          focusValue={BOARD_WIDTH_FOCUS_VALUE}
-          placeholder="—"
-          ariaLabel="Board width in inches"
-          disabled={disabled}
-          required={dimensionsRequired}
-        />
-        <DimSelect
-          value={thicknessValue}
-          onValueChange={(next) => onChange({ boardThicknessInches: next })}
-          options={thicknessOptions}
-          focusValue={BOARD_THICKNESS_FOCUS_VALUE}
-          placeholder="—"
-          ariaLabel="Board thickness in inches"
-          disabled={disabled}
-          required={dimensionsRequired}
-        />
+      {/* sm+: original single-row segmented control. */}
+      <div className="hidden space-y-2 sm:block">
+        <div className="grid grid-cols-4 gap-x-2 text-xs text-muted-foreground">
+          {fieldLabel("Length", dimensionsRequired)}
+          {fieldLabel("Width", dimensionsRequired)}
+          {fieldLabel("Thickness", dimensionsRequired)}
+          {fieldLabel("Volume", false)}
+        </div>
 
         <div
           className={cn(
-            "relative flex h-12 min-w-0 items-center justify-center bg-foreground px-1.5",
-            "focus-within:z-10 focus-within:ring-2 focus-within:ring-ring focus-within:ring-inset",
+            "grid grid-cols-4 overflow-hidden rounded-md border border-foreground/25 bg-background shadow-sm",
+            "divide-x divide-foreground/25",
           )}
         >
-          <Input
-            ref={volumeInputRef}
-            type="text"
-            inputMode="decimal"
-            placeholder="— L"
-            value={values.boardVolumeL}
-            disabled={disabled}
-            onChange={(e) =>
-              onChange({ boardVolumeL: normalizeVolumeLitersInput(e.target.value) })
-            }
-            className={cn(
-              "h-full min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-sm font-medium tabular-nums text-background shadow-none",
-              "placeholder:text-background/45 focus-visible:ring-0 focus-visible:ring-offset-0",
-              "disabled:cursor-not-allowed disabled:opacity-50",
-              values.boardVolumeL.trim() && "pr-5",
-            )}
-            autoComplete="off"
-            spellCheck={false}
-            aria-label="Board volume in liters"
-          />
-          {values.boardVolumeL.trim() ? (
-            <span
-              className="pointer-events-none absolute right-2 text-[10px] font-semibold uppercase tracking-wide text-background/70"
-              aria-hidden
-            >
-              L
-            </span>
-          ) : null}
+          {lengthSelect}
+          {widthSelect}
+          {thicknessSelect}
+          {volumeField}
         </div>
       </div>
 

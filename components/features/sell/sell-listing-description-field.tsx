@@ -35,7 +35,15 @@ export function SellListingDescriptionField({
 
   return (
     <div className={cn("space-y-2", className)}>
-      <Label htmlFor={id}>Description{required ? " *" : ""}</Label>
+      <Label htmlFor={id}>
+        Description
+        {required ? (
+          <span className="text-destructive" aria-hidden="true">
+            {" "}
+            *
+          </span>
+        ) : null}
+      </Label>
       <p className="text-xs text-muted-foreground">{SELL_LISTING_DESCRIPTION_HINT}</p>
       <Textarea
         id={id}

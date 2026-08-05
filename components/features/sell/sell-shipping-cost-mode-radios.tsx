@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { SmoothCollapse } from "@/components/ui/smooth-collapse"
 import type { SellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import { cn } from "@/lib/utils"
 
@@ -47,7 +48,7 @@ export function SellShippingCostModeRadios({
   }, [allowPrivilegedModes, reswellEnabled, value])
 
   return (
-    <div className="space-y-4">
+    <div>
       <RadioGroup
         value={effectiveValue}
         onValueChange={(next) => {
@@ -85,8 +86,11 @@ export function SellShippingCostModeRadios({
                 Recommended
               </Badge>
             </div>
-            {effectiveValue === "reswell" && reswellEnabled ? (
-              <p className="text-sm leading-relaxed text-muted-foreground">
+            <SmoothCollapse
+              open={effectiveValue === "reswell" && reswellEnabled}
+              className="duration-200"
+            >
+              <p className="pt-1.5 text-sm leading-relaxed text-muted-foreground">
                 We calculate the UPS rate from packed dimensions and add it at checkout. After the
                 sale we email you the Reswell shipping label.{" "}
                 <Link
@@ -97,7 +101,7 @@ export function SellShippingCostModeRadios({
                   View terms
                 </Link>
               </p>
-            ) : null}
+            </SmoothCollapse>
             {!reswellEnabled ? (
               <p className="text-sm leading-relaxed text-destructive">
                 Not available — this board exceeds UPS size limits. Use free or flat-rate shipping
@@ -128,12 +132,12 @@ export function SellShippingCostModeRadios({
                     Admin
                   </Badge>
                 </div>
-                {effectiveValue === "free" ? (
-                  <p className="text-sm leading-relaxed text-muted-foreground">
+                <SmoothCollapse open={effectiveValue === "free"} className="duration-200">
+                  <p className="pt-1.5 text-sm leading-relaxed text-muted-foreground">
                     Buyer pays $0 for shipping at checkout. You arrange fulfillment with any carrier
                     — not through Reswell UPS labels.
                   </p>
-                ) : null}
+                </SmoothCollapse>
               </div>
             </label>
 
@@ -156,19 +160,23 @@ export function SellShippingCostModeRadios({
                     Admin
                   </Badge>
                 </div>
-                {effectiveValue === "flat" ? (
-                  <p className="text-sm leading-relaxed text-muted-foreground">
+                <SmoothCollapse open={effectiveValue === "flat"} className="duration-200">
+                  <p className="pt-1.5 text-sm leading-relaxed text-muted-foreground">
                     One dollar amount buyers in the Continental U.S. pay at checkout. You arrange
                     fulfillment with any carrier — not through Reswell UPS labels.
                   </p>
-                ) : null}
+                </SmoothCollapse>
               </div>
             </label>
           </>
         ) : null}
       </RadioGroup>
 
-      {allowPrivilegedModes && effectiveValue === "flat" ? flatRateSlot : null}
+      {allowPrivilegedModes && flatRateSlot ? (
+        <SmoothCollapse open={effectiveValue === "flat"}>
+          <div className="pt-4">{flatRateSlot}</div>
+        </SmoothCollapse>
+      ) : null}
     </div>
   )
 }

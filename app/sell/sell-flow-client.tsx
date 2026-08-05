@@ -33,6 +33,7 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { SmoothCollapse } from "@/components/ui/smooth-collapse"
 import { Switch } from "@/components/ui/switch"
 import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
@@ -155,7 +156,6 @@ import {
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
 import {
-  LISTING_CONDITION_LABELS,
   LISTING_CONDITION_SELL_OPTIONS,
   sellFormConditionValue,
 } from "@/lib/listing-labels"
@@ -194,7 +194,10 @@ import {
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
 import { SellBoardDimensionsPicker } from "@/components/features/sell/sell-board-dimensions-picker"
-import { SellBoardFacetFields } from "@/components/features/sell/sell-board-facet-fields"
+import {
+  SellBoardFacetFields,
+  SellFacetChipGroup,
+} from "@/components/features/sell/sell-board-facet-fields"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
@@ -207,7 +210,6 @@ import {
   SELL_SECTION_CARD_CLASS,
   SELL_SECTION_DESCRIPTION_CLASS,
 } from "@/components/features/sell/sell-form-surface"
-import { SellListingPreviewCard } from "@/components/features/sell/sell-listing-preview-card"
 import { SellPhotoExamplesBanner } from "@/components/features/sell/sell-photo-examples-banner"
 import {
   SellSectionNav,
@@ -224,8 +226,6 @@ import {
 import {
   orderSurfboardSellCategoryOptions,
   staticSellBoardCategoryOptions,
-  SELL_BOARD_CATEGORY_UNSELECTED_LABEL,
-  SELL_BOARD_CATEGORY_UNSELECTED_VALUE,
   type SellCategoryOptionRow,
 } from "@/lib/surfboard-sell-categories"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
@@ -1301,7 +1301,7 @@ function SellPageContentInner({
     [editId, router],
   )
 
-  const { editLoading, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
+  const { editLoading, showEditSkeleton, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
     editId: loadListingId,
     supabase,
     signInReturnPath: loadListingId ? `/sell?edit=${loadListingId}` : "/sell",
@@ -1339,6 +1339,7 @@ function SellPageContentInner({
     localServerDraftId,
     draftControls: boardDraftControls,
     showDraftControls: showBoardDraftControls,
+    draftSaveStatus: serverDraftSaveStatus,
   } = serverDraft
   const effectiveEditId = editId ?? localServerDraftId
   const resumeDraftId = editId ?? (wantsBlankListing ? null : localServerDraftId)
@@ -3426,7 +3427,7 @@ function SellPageContentInner({
           <h1 className="sr-only">
             {editId ? "Edit listing" : "Create a Listing"}
           </h1>
-          <div className="border-t border-neutral-200 pt-4 pb-8 mb-6">
+          <div className="border-t border-neutral-200 pt-4 pb-4 mb-4 sm:pb-8 sm:mb-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <Breadcrumb>
                 <BreadcrumbList className="gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
@@ -3438,7 +3439,7 @@ function SellPageContentInner({
                   <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
                   <BreadcrumbItem>
                     <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                      <Link href={sellListingsHubHref}>Listings</Link>
+                      <Link href="/sell">Listings</Link>
                     </BreadcrumbLink>
                   </BreadcrumbItem>
                   <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
@@ -3449,15 +3450,16 @@ function SellPageContentInner({
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3 shrink-0">
+              <div className="flex flex-col gap-1 shrink-0">
                 {(showBoardDraftControls ||
                   (!editLoading && (!editId || listingIsDraft) && !getImpersonation())) && (
-                    <div className="flex items-center gap-3">
+                    <div className="flex w-full items-center gap-3 sm:w-auto sm:justify-end">
                       {boardDraftControls}
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
+                        className="ml-auto sm:ml-0"
                         aria-label="Exit listing form"
                         asChild
                       >
@@ -3467,6 +3469,30 @@ function SellPageContentInner({
                       </Button>
                     </div>
                   )}
+                {/* Local-device autosave line is a fallback only — hidden once the
+                    server draft indicator next to the Drafts picker is active. */}
+                {!editId && serverDraftSaveStatus === "idle" ? (
+                  <div
+                    className="flex min-h-5 items-center gap-1.5 sm:justify-end"
+                    aria-live="polite"
+                  >
+                    {draftAutosaveState !== "idle" ? (
+                      <>
+                        {draftAutosaveState === "saved" ? (
+                          <Check
+                            className="h-3.5 w-3.5 text-listingHeart"
+                            aria-hidden
+                          />
+                        ) : null}
+                        <span className="text-xs text-muted-foreground">
+                          {draftAutosaveState === "saving"
+                            ? "Saving draft…"
+                            : "Draft saved on this device"}
+                        </span>
+                      </>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
@@ -3517,7 +3543,7 @@ function SellPageContentInner({
             </Alert>
           ) : null}
 
-          {editLoading ? (
+          {showEditSkeleton ? (
             <div
               role="status"
               aria-label="Loading listing editor"
@@ -3526,28 +3552,19 @@ function SellPageContentInner({
               <SellFlowFormColumnSkeleton />
             </div>
           ) : (
-            <div className="flex w-full flex-col gap-8 lg:mx-auto lg:w-max lg:max-w-full lg:flex-row lg:items-start lg:gap-10 xl:gap-14">
+            <div
+              aria-busy={editLoading || undefined}
+              className={cn(
+                "flex w-full flex-col gap-8 transition-opacity lg:mx-auto lg:w-max lg:max-w-full lg:flex-row lg:items-start lg:gap-10 xl:gap-14",
+                editLoading && "pointer-events-none opacity-60",
+              )}
+            >
               <div className="hidden shrink-0 lg:block lg:w-52 xl:w-56">
                 <SellSectionNav
                   items={SELL_FORM_SECTION_NAV_ITEMS}
                   sectionCompletion={sellSectionCompletion}
                   activeSectionId={activeSellSectionId}
                   onSelectSection={goToSellSection}
-                />
-                <SellListingPreviewCard
-                  className="mt-6 px-3 xl:px-4"
-                  title={formData.title}
-                  brand={formData.brand}
-                  model={formData.model}
-                  conditionLabel={
-                    formData.condition
-                      ? LISTING_CONDITION_LABELS[formData.condition] ?? formData.condition
-                      : undefined
-                  }
-                  price={formData.price}
-                  imageSrc={
-                    images[0]?.thumbnailUrl?.trim() || images[0]?.previewUrl || undefined
-                  }
                 />
               </div>
               <div className="min-w-0 w-full max-w-2xl lg:w-auto lg:max-w-3xl lg:shrink-0">
@@ -3556,30 +3573,8 @@ function SellPageContentInner({
                   sectionCompletion={sellSectionCompletion}
                   activeSectionId={activeSellSectionId}
                   onSelectSection={goToSellSection}
-                  className="mb-8 lg:hidden"
+                  className="mb-4 sm:mb-8 lg:hidden"
                 />
-                {!editId ? (
-                  <div
-                    className="-mt-4 mb-2 flex min-h-5 items-center justify-end gap-1.5 lg:-mt-2"
-                    aria-live="polite"
-                  >
-                    {draftAutosaveState !== "idle" ? (
-                      <>
-                        {draftAutosaveState === "saved" ? (
-                          <Check
-                            className="h-3.5 w-3.5 text-listingHeart"
-                            aria-hidden
-                          />
-                        ) : null}
-                        <span className="text-xs text-muted-foreground">
-                          {draftAutosaveState === "saving"
-                            ? "Saving draft…"
-                            : "Draft saved on this device"}
-                        </span>
-                      </>
-                    ) : null}
-                  </div>
-                ) : null}
                 <form
               ref={formRef}
               onSubmit={(e) => {
@@ -3597,7 +3592,7 @@ function SellPageContentInner({
                 <SellFormSection
                   sectionId="sell-section-basics"
                   title="Brand, model & title"
-                  description="Tell buyers what board you have, give it a title, then set the shape and condition."
+                  description="Tell buyers what board you have, give it a title, then set the condition."
                   complete={sellSectionCompletion["sell-section-basics"] === true}
                 >
                     <div className="space-y-8">
@@ -3707,7 +3702,12 @@ function SellPageContentInner({
 
                       <div className="space-y-2">
                         <div className="flex items-end justify-between gap-2">
-                          <Label htmlFor="listing-title">Title *</Label>
+                          <Label htmlFor="listing-title">
+                            Title{" "}
+                            <span className="text-destructive" aria-hidden="true">
+                              *
+                            </span>
+                          </Label>
                           <span
                             className={cn(
                               "text-xs tabular-nums",
@@ -3736,64 +3736,13 @@ function SellPageContentInner({
 
                       <Separator className="bg-border" />
 
-                      <div className="space-y-2">
-                        <Label>Board shape / category *</Label>
-                        <Select
-                          value={
-                            formData.category.trim()
-                              ? formData.category
-                              : SELL_BOARD_CATEGORY_UNSELECTED_VALUE
-                          }
-                          disabled={editLoading}
-                          onValueChange={(value) => {
-                            if (value === SELL_BOARD_CATEGORY_UNSELECTED_VALUE) {
-                              setFormData((prev) => ({
-                                ...prev,
-                                category: "",
-                                boardType: "",
-                              }))
-                              return
-                            }
-                            setFormData((prev) => ({
-                              ...prev,
-                              category: value,
-                              boardType: boardTypeFromCategoryId(value),
-                            }))
-                          }}
-                        >
-                          <SelectTrigger
-                            aria-label="Board shape or category"
-                            className={SELL_CONTROL_CLASS}
-                          >
-                            <SelectValue placeholder={SELL_BOARD_CATEGORY_UNSELECTED_LABEL} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {!sellCategoriesLoaded ? (
-                              <SelectItem value="__loading__" disabled>
-                                Loading categories…
-                              </SelectItem>
-                            ) : boardCategoryOptions.length === 0 ? (
-                              <SelectItem value="__empty__" disabled>
-                                No board categories found — add rows with board = true in public.categories.
-                              </SelectItem>
-                            ) : (
-                              <>
-                                <SelectItem value={SELL_BOARD_CATEGORY_UNSELECTED_VALUE}>
-                                  {SELL_BOARD_CATEGORY_UNSELECTED_LABEL}
-                                </SelectItem>
-                                {boardCategoryOptions.map((cat) => (
-                                  <SelectItem key={cat.value} value={cat.value}>
-                                    {cat.label}
-                                  </SelectItem>
-                                ))}
-                              </>
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
                       <div className="max-w-md space-y-2">
-                        <Label htmlFor="sell-condition">Condition *</Label>
+                        <Label htmlFor="sell-condition">
+                          Condition{" "}
+                          <span className="text-destructive" aria-hidden="true">
+                            *
+                          </span>
+                        </Label>
                         <Select
                           value={formData.condition}
                           onValueChange={(value) => setFormData({ ...formData, condition: value })}
@@ -3818,7 +3767,7 @@ function SellPageContentInner({
                 <SellFormSection
                   sectionId="sell-section-details"
                   title="Dimensions & details"
-                  description="Add measurements, fin setup, construction, and a short description."
+                  description="Add measurements, board shape, fin setup, construction, and a short description."
                   complete={sellSectionCompletion["sell-section-details"] === true}
                 >
                     <div className="space-y-8">
@@ -3836,6 +3785,61 @@ function SellPageContentInner({
                         dimensionsRequired={deliveryFlags.shipping_available}
                         disabled={editLoading}
                       />
+
+                      <div className="space-y-1.5">
+                        {!sellCategoriesLoaded ? (
+                          <>
+                            <Label className="text-xs font-medium text-foreground/85">
+                              Board shape / category{" "}
+                              <span className="text-destructive" aria-hidden="true">
+                                *
+                              </span>
+                            </Label>
+                            <p className="text-xs text-muted-foreground">Loading categories…</p>
+                          </>
+                        ) : boardCategoryOptions.length === 0 ? (
+                          <>
+                            <Label className="text-xs font-medium text-foreground/85">
+                              Board shape / category{" "}
+                              <span className="text-destructive" aria-hidden="true">
+                                *
+                              </span>
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                              No board categories found — add rows with board = true in public.categories.
+                            </p>
+                          </>
+                        ) : (
+                          <SellFacetChipGroup
+                            label={
+                              <>
+                                Board shape / category{" "}
+                                <span className="text-destructive" aria-hidden="true">
+                                  *
+                                </span>
+                              </>
+                            }
+                            value={formData.category}
+                            options={boardCategoryOptions}
+                            onValueChange={(value) => {
+                              if (!value) {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  category: "",
+                                  boardType: "",
+                                }))
+                                return
+                              }
+                              setFormData((prev) => ({
+                                ...prev,
+                                category: value,
+                                boardType: boardTypeFromCategoryId(value),
+                              }))
+                            }}
+                            disabled={editLoading}
+                          />
+                        )}
+                      </div>
 
                       <SellBoardFacetFields
                         boardFins={formData.boardFins}
@@ -4013,7 +4017,15 @@ function SellPageContentInner({
                                   )}
                                 >
                                   {actorIsAdmin === true || Boolean(impersonation) ? (
-                                    <span>Offer shipping to buyers</span>
+                                    <>
+                                      <span>Offer shipping to buyers</span>
+                                      <Badge
+                                        variant="default"
+                                        className="border-0 bg-listingHeart text-white font-bold uppercase tracking-wide text-[10px] px-2 py-0.5 h-auto hover:bg-[#2a4170]"
+                                      >
+                                        Items sell faster
+                                      </Badge>
+                                    </>
                                   ) : (
                                     <span>
                                       Reswell shipping{" "}
@@ -4031,13 +4043,14 @@ function SellPageContentInner({
                                     </Badge>
                                   ) : null}
                                 </Label>
-                                {deliveryFlags.shipping_available &&
-                                !(actorIsAdmin === true || Boolean(impersonation)) ? (
-                                  <p className="text-sm text-muted-foreground leading-relaxed">
-                                    Buyer pays for shipping at checkout. We handle the calculations
-                                    for you so you don&apos;t have to worry about shipping cost —
-                                    we&apos;ll email you the label after the sale.
-                                  </p>
+                                {!(actorIsAdmin === true || Boolean(impersonation)) ? (
+                                  <SmoothCollapse open={deliveryFlags.shipping_available}>
+                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                      Buyer pays for shipping at checkout. We handle the calculations
+                                      for you so you don&apos;t have to worry about shipping cost —
+                                      we&apos;ll email you the label after the sale.
+                                    </p>
+                                  </SmoothCollapse>
                                 ) : null}
                                 {formData.boardLength.trim() &&
                                 !sellReswellShipping.shippingSupported &&
@@ -4048,8 +4061,8 @@ function SellPageContentInner({
                                     exceeds size limits. Use local pickup.
                                   </p>
                                 ) : null}
-                                {deliveryFlags.shipping_available &&
-                                (actorIsAdmin === true || Boolean(impersonation)) ? (
+                                {actorIsAdmin === true || Boolean(impersonation) ? (
+                                  <SmoothCollapse open={deliveryFlags.shipping_available}>
                                   <div className="space-y-2 pt-1">
                                     <p className="text-sm text-muted-foreground leading-relaxed">
                                       Choose how shipping is priced. Reswell uses UPS labels; free and
@@ -4124,7 +4137,9 @@ function SellPageContentInner({
                                         </div>
                                       }
                                     />
-                                    {formData.boardShippingCostMode === "reswell" ? (
+                                    <SmoothCollapse
+                                      open={formData.boardShippingCostMode === "reswell"}
+                                    >
                                       <div className="space-y-3 rounded-lg border border-border bg-background p-4 sm:p-5">
                                         <div className="space-y-1">
                                           <p className="text-sm font-semibold text-foreground">
@@ -4267,8 +4282,9 @@ function SellPageContentInner({
                                           />
                                         )}
                                       </div>
-                                    ) : null}
+                                    </SmoothCollapse>
                                   </div>
+                                  </SmoothCollapse>
                                 ) : null}
                               </div>
                             </div>
@@ -4325,6 +4341,27 @@ function SellPageContentInner({
                   complete={sellSectionCompletion["sell-section-publish"] === true}
                 >
                 <div className="space-y-8">
+                  <SellListingPhotoGrid
+                    images={images}
+                    maxPhotos={12}
+                    fileInputId={listingPhotosInputId}
+                    photosFileDragActive={photosFileDragActive}
+                    onImageInputChange={handleImageChange}
+                    onDragEnter={handlePhotosFileDragEnter}
+                    onDragLeave={handlePhotosFileDragLeave}
+                    onDragOver={handlePhotosFileDragOver}
+                    onDrop={handlePhotosFileDrop}
+                    onDragEnd={handlePhotosDragEnd}
+                    onRemove={handlePhotoTileRemove}
+                    onRetry={handlePhotoTileRetry}
+                    onRotate180={handlePhotoTileRotate}
+                    photoDragSensors={photoDragSensors}
+                    photoDescription="3+ clear photos help boards sell faster. Drag to reorder; the first is your cover."
+                    aboveGrid={<SellPhotoExamplesBanner />}
+                  />
+
+                  <Separator className="bg-border" />
+
                   <SellPriceFields
                     listingPrice={formData.price}
                     onListingPriceChange={(value) =>
@@ -4434,27 +4471,6 @@ function SellPageContentInner({
                         </div>
                       </div>
                     }
-                  />
-
-                  <Separator className="bg-border" />
-
-                  <SellListingPhotoGrid
-                    images={images}
-                    maxPhotos={12}
-                    fileInputId={listingPhotosInputId}
-                    photosFileDragActive={photosFileDragActive}
-                    onImageInputChange={handleImageChange}
-                    onDragEnter={handlePhotosFileDragEnter}
-                    onDragLeave={handlePhotosFileDragLeave}
-                    onDragOver={handlePhotosFileDragOver}
-                    onDrop={handlePhotosFileDrop}
-                    onDragEnd={handlePhotosDragEnd}
-                    onRemove={handlePhotoTileRemove}
-                    onRetry={handlePhotoTileRetry}
-                    onRotate180={handlePhotoTileRotate}
-                    photoDragSensors={photoDragSensors}
-                    photoDescription="3+ clear photos help boards sell faster. Drag to reorder; the first is your cover."
-                    aboveGrid={<SellPhotoExamplesBanner />}
                   />
 
                   <Separator className="bg-border" />

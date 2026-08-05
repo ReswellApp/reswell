@@ -61,6 +61,8 @@ export type UseSellServerDraftResult = {
   currentDraftId: string | null
   listingIsDraft: boolean
   showDraftControls: boolean
+  /** Server autosave status — lets callers avoid stacking a second "saved" indicator. */
+  draftSaveStatus: DraftSaveStatusKind
   draftControls: React.ReactNode
   handleSaveDraft: () => Promise<void>
   persistServerDraftRef: React.MutableRefObject<
@@ -80,7 +82,6 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
   const [availableDrafts, setAvailableDrafts] = useState<SellDraftItem[]>([])
   const [draftSaveStatus, setDraftSaveStatus] = useState<DraftSaveStatusKind>("idle")
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null)
-  const [draftSwitching, setDraftSwitching] = useState(false)
 
   const localServerDraftIdRef = useRef<string | null>(null)
   useEffect(() => {
@@ -283,8 +284,60 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
     [options.section, router],
   )
 
+  /**
+   * Best-effort save of the draft being switched away from. The payload, image
+   * slots, and target listing id are snapshotted synchronously — before the
+   * switch mutates any form state — so the background request can never write
+   * the newly opened draft's data onto the outgoing one. Intentionally does not
+   * touch `draftSaveStatus` (it describes the draft on screen) or `setImages`.
+   */
+  const persistOutgoingDraftInBackground = useCallback(() => {
+    if (!options.draftHydrated || options.editLoading) return
+    if (getImpersonation()) return
+    if (options.editId && !listingIsDraft) return
+    const outgoingId = options.editId ?? localServerDraftIdRef.current
+    const slots = [...options.imagesRef.current]
+    const removedIds = [...options.removedImageIdsRef.current]
+    if (slots.length === 0 && !options.formLooksFilled()) return
+    const body = options.buildDraftPayload(outgoingId)
+
+    void (async () => {
+      try {
+        const session = await resolveClientSessionForMutation(options.supabase)
+        if (!session?.user || !session.access_token) return
+        const res = await fetch("/api/listings/draft", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        })
+        if (!res.ok) return
+        const json = (await res.json()) as { data?: { id?: string } }
+        const savedId =
+          typeof json?.data?.id === "string" && json.data.id ? json.data.id : outgoingId
+        if (savedId && listingPhotosReadyForDraftSync(slots)) {
+          await syncListingDraftImagesClient(options.supabase, savedId, slots, removedIds)
+        }
+        void reloadDrafts()
+      } catch {
+        /* best-effort — the switched-to draft is already open */
+      }
+    })()
+  }, [
+    listingIsDraft,
+    options.buildDraftPayload,
+    options.draftHydrated,
+    options.editId,
+    options.editLoading,
+    options.formLooksFilled,
+    options.imagesRef,
+    options.removedImageIdsRef,
+    options.supabase,
+    reloadDrafts,
+  ])
+
   const handleOpenDraft = useCallback(
-    async (draftId: string) => {
+    (draftId: string) => {
       if (!draftId) return
       if (draftId === currentDraftId) {
         if (!options.editId) {
@@ -292,29 +345,16 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
         }
         return
       }
-      setDraftSwitching(true)
-      try {
-        if (currentDraftId) {
-          const persisted = await persistServerDraft()
-          if (persisted.ok) {
-            try {
-              await syncDraftImages(persisted.listingId)
-            } catch {
-              /* best-effort before switch */
-            }
-          }
-        }
-        navigateToDraft(draftId)
-      } finally {
-        setDraftSwitching(false)
-      }
+      // Snapshot + fire the outgoing save first, then switch immediately — no
+      // network round trip between the click and the draft opening.
+      if (currentDraftId) persistOutgoingDraftInBackground()
+      navigateToDraft(draftId)
     },
     [
       currentDraftId,
       navigateToDraft,
       options.editId,
-      persistServerDraft,
-      syncDraftImages,
+      persistOutgoingDraftInBackground,
     ],
   )
 
@@ -384,8 +424,7 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
   const showDraftControls =
     !options.loading &&
     !getImpersonation() &&
-    (draftSwitching ||
-      Boolean(localServerDraftId) ||
+    (Boolean(localServerDraftId) ||
       (!options.editLoading && (!options.editId || listingIsDraft)))
 
   const draftControls = showDraftControls ? (
@@ -394,7 +433,7 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
       <DraftsPicker
         drafts={availableDrafts}
         currentDraftId={currentDraftId}
-        onSelect={(id) => void handleOpenDraft(id)}
+        onSelect={handleOpenDraft}
         onDiscard={handleDiscardDraftFromPicker}
         onSaveDraft={() => void handleSaveDraft()}
         saveDraftBusy={draftSaveStatus === "saving"}
@@ -406,7 +445,6 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
         disabled={
           options.loading ||
           options.startNewListingBusy === true ||
-          draftSwitching ||
           options.optimizingAny === true ||
           !options.draftHydrated ||
           options.extraDisabled === true
@@ -420,6 +458,7 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
     currentDraftId,
     listingIsDraft,
     showDraftControls,
+    draftSaveStatus,
     draftControls,
     handleSaveDraft,
     persistServerDraftRef,

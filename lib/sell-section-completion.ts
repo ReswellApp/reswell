@@ -183,10 +183,11 @@ export function computeSellSectionCompletion(
     "sell-section-basics":
       titleComplete(form) &&
       brandModelComplete(form) &&
-      shapeSectionComplete(form) &&
       conditionComplete(form),
     "sell-section-details":
-      dimensionsSectionComplete(form) && descriptionOnlyComplete(form),
+      shapeSectionComplete(form) &&
+      dimensionsSectionComplete(form) &&
+      descriptionOnlyComplete(form),
     "sell-section-delivery": deliverySectionComplete(form),
     "sell-section-publish":
       opts.imageCount >= LISTING_MIN_PHOTOS &&

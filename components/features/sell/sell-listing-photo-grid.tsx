@@ -401,7 +401,12 @@ export function SellListingPhotoGrid({
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
-          <h3 className="text-sm font-semibold text-foreground">Photos</h3>
+          <h3 className="text-sm font-semibold text-foreground">
+            Photos{" "}
+            <span className="text-destructive" aria-hidden="true">
+              *
+            </span>
+          </h3>
           <p className="text-xs text-muted-foreground sm:text-sm">{photoDescription}</p>
         </div>
         <div className="shrink-0 pt-0.5" aria-live="polite">
