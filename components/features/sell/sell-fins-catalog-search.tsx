@@ -271,7 +271,7 @@ function DropdownResults({
   if (suggestions.length === 0 && products.length === 0) return null
 
   return (
-    <div className="max-h-[min(52dvh,440px)] overflow-y-auto overscroll-contain sm:max-h-[min(65dvh,560px)] [-ms-overflow-style:none] [scrollbar-width:thin]">
+    <div className="max-h-[min(52dvh,440px)] overflow-y-auto overscroll-contain py-1.5 sm:max-h-[min(65dvh,560px)] [-ms-overflow-style:none] [scrollbar-width:thin]">
       {suggestions.length > 0 ? (
         <div className={cn(products.length > 0 && "border-b border-border/50")}>
           <p className="px-3.5 pt-2.5 pb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/80 sm:px-4">
@@ -324,6 +324,20 @@ export function SellFinsCatalogSearch({ onSelect, onSkip, onExit, className }: S
     inputRef.current?.blur()
     setFocusMode(false)
   }, [])
+
+  // Dismiss on any tap/click outside the search stage. Blur alone is not
+  // enough: on touch devices, tapping non-interactive page areas does not
+  // always blur the input, which left the dropdown stuck open.
+  React.useEffect(() => {
+    if (!focusMode) return
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target
+      if (target instanceof Node && focusStageRef.current?.contains(target)) return
+      dismissSearchFocus()
+    }
+    document.addEventListener("pointerdown", onPointerDown)
+    return () => document.removeEventListener("pointerdown", onPointerDown)
+  }, [dismissSearchFocus, focusMode])
 
   React.useEffect(() => {
     if (!focusMode) return
@@ -427,7 +441,9 @@ export function SellFinsCatalogSearch({ onSelect, onSkip, onExit, className }: S
       : (results?.results ?? [])
   const hasResults = rankedRows.length > 0
 
-  const showResultsPanel = hasSearched && query.trim().length >= 1
+  // The dropdown only exists while the user is engaged with the search
+  // (focus inside the stage) — clicking or tapping anywhere else closes it.
+  const showResultsPanel = focusMode && hasSearched && query.trim().length >= 1
   const showNoMatches =
     showResultsPanel && searchSettled && !loading && !hasResults && !error
   const showSimilarFallback = matchTier === "similar" && hasResults
@@ -521,8 +537,19 @@ export function SellFinsCatalogSearch({ onSelect, onSkip, onExit, className }: S
                 <SiteSearchShell
                   className={cn(
                     "relative z-[1] h-12 min-h-12 gap-1.5 pl-2.5 pr-1 sm:h-auto sm:min-h-0 sm:gap-1 sm:pl-3 sm:pr-1.5",
-                    "focus-within:border-cerulean/50 focus-within:ring-2 focus-within:ring-cerulean/25 focus-within:shadow-sm",
-                    focusMode && "border-cerulean/45 bg-background shadow-md ring-2 ring-cerulean/20",
+                    showResultsPanel
+                      ? cn(
+                          // Connected state: square off the bottom so the results panel
+                          // reads as one continuous surface with the bar.
+                          "rounded-t-[1.5rem] rounded-b-none border-border bg-background",
+                          "border-b-transparent shadow-none",
+                          "focus-within:border-border focus-within:border-b-transparent focus-within:ring-0 focus-within:shadow-none",
+                          "max-sm:rounded-t-2xl",
+                        )
+                      : cn(
+                          "focus-within:border-cerulean/50 focus-within:ring-2 focus-within:ring-cerulean/25 focus-within:shadow-sm",
+                          focusMode && "border-cerulean/45 bg-background shadow-md ring-2 ring-cerulean/20",
+                        ),
                   )}
                   actionSlot={
                     <SiteSearchFormSubmitButton
@@ -579,8 +606,9 @@ export function SellFinsCatalogSearch({ onSelect, onSkip, onExit, className }: S
                 {showResultsPanel ? (
                   <section
                     className={cn(
-                      "absolute left-0 right-0 top-full z-20 mt-1.5 w-full min-w-0 overflow-hidden border border-border/80 bg-popover text-popover-foreground shadow-xl shadow-black/10",
-                      "rounded-2xl max-sm:rounded-xl max-sm:shadow-2xl",
+                      "absolute left-0 right-0 top-full z-20 w-full min-w-0 overflow-hidden border border-t-0 border-border bg-background text-popover-foreground",
+                      "rounded-b-3xl shadow-[0_24px_48px_-16px_rgba(2,8,20,0.25)]",
+                      "max-sm:rounded-b-2xl",
                     )}
                     aria-live="polite"
                     onMouseDown={(event) => {
@@ -589,6 +617,7 @@ export function SellFinsCatalogSearch({ onSelect, onSkip, onExit, className }: S
                       event.preventDefault()
                     }}
                   >
+                    <div className="mx-3.5 border-t border-border/60 sm:mx-4" aria-hidden />
                     {loading && !hasResults ? (
                       <div className="flex items-center justify-center gap-2 px-4 py-8 text-sm text-muted-foreground sm:py-10">
                         <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -667,8 +696,10 @@ export function SellFinsCatalogSearch({ onSelect, onSkip, onExit, className }: S
 
         <div
           className={cn(
-            "relative z-50 mx-auto mt-5 max-w-2xl transition-opacity duration-200 motion-reduce:transition-none sm:mt-8",
-            focusMode && "opacity-70",
+            "relative mx-auto mt-5 max-w-2xl transition-opacity duration-200 motion-reduce:transition-none sm:mt-8",
+            // Above the scrim (z-40) so it stays clickable in focus mode, but below
+            // the focused search stage (z-50) so the results panel covers it.
+            focusMode && "z-[45] opacity-70",
           )}
         >
           <Button
