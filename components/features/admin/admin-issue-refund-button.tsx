@@ -25,6 +25,17 @@ import {
 } from "@/lib/services/marketplaceOrderRefundDisposition"
 import { cn } from "@/lib/utils"
 
+type LabelVoidApiResult =
+  | {
+      attempted: true
+      ok: true
+      approved: boolean
+      labelId: string
+      message: string
+    }
+  | { attempted: true; ok: false; error: string }
+  | { attempted: false }
+
 type RefundApiResponse =
   | {
       success: true
@@ -33,6 +44,7 @@ type RefundApiResponse =
       message: string
       fullyRefundedInApp: boolean
       alreadyProcessedInStripe?: boolean
+      labelVoid?: LabelVoidApiResult
     }
   | { error: string }
 
@@ -44,12 +56,15 @@ export function AdminIssueRefundButton({
   orderId,
   orderStatus,
   amount,
+  shippingAmount = 0,
   paymentMethod,
   onComplete,
 }: {
   orderId: string
   orderStatus: string
   amount: number
+  /** Buyer-paid shipping included in `amount` (for display). */
+  shippingAmount?: number
   paymentMethod: string
   /** Called after a successful refund (client pages should refetch order data). */
   onComplete?: () => void
@@ -75,9 +90,12 @@ export function AdminIssueRefundButton({
   const isSyncOnly = orderStatus === "refunding"
   const isCard = paymentMethod === "stripe"
   const refundTarget = isCard ? "the buyer's card" : "the buyer's wallet balance"
+  const shippingUsd = Number.isFinite(shippingAmount) ? Math.max(0, shippingAmount) : 0
+  const itemUsd = Math.max(0, Math.round((amount - shippingUsd) * 100) / 100)
   const selectedOption =
     ADMIN_REFUND_DISPOSITION_OPTIONS.find((o) => o.value === disposition) ??
     ADMIN_REFUND_DISPOSITION_OPTIONS[0]!
+  const isCancelUnshipped = disposition === "cancel_unshipped"
 
   const submit = async () => {
     setBusy(true)
@@ -95,7 +113,17 @@ export function AdminIssueRefundButton({
       if (data.fullyRefundedInApp) {
         setFullyRefundedUi(true)
       }
-      toast.success(data.message)
+      toast.success(data.message, { duration: 10_000 })
+      if (
+        data.labelVoid?.attempted &&
+        !data.labelVoid.ok &&
+        disposition === "cancel_unshipped"
+      ) {
+        toast.warning(
+          `Buyer refund issued, but ShipEngine label void failed: ${data.labelVoid.error}. Void manually from Admin → Shipping if needed.`,
+          { duration: 14_000 },
+        )
+      }
       setOpen(false)
       onComplete?.()
       window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
@@ -147,8 +175,12 @@ export function AdminIssueRefundButton({
       <div className="space-y-1.5">
         <p className="text-sm font-medium text-foreground">Refund type</p>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          All options refund ${amount.toFixed(2)} to {refundTarget} and reverse seller earnings. None buy
-          a return shipping label — use Item returns above only when a physical return is needed.
+          All options refund ${amount.toFixed(2)} to {refundTarget}
+          {shippingUsd > 0
+            ? ` (item $${itemUsd.toFixed(2)} + shipping $${shippingUsd.toFixed(2)})`
+            : ""}{" "}
+          and reverse seller earnings. None buy a return shipping label — use Item returns above only when
+          a physical return is needed.
         </p>
       </div>
 
@@ -207,11 +239,19 @@ export function AdminIssueRefundButton({
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <span className="block">
-                Refunds ${amount.toFixed(2)} to {refundTarget} and reverses seller earnings.
+                Refunds ${amount.toFixed(2)} to {refundTarget}
+                {shippingUsd > 0
+                  ? ` — item $${itemUsd.toFixed(2)} + shipping $${shippingUsd.toFixed(2)}`
+                  : ""}
+                {" "}and reverses seller earnings.
               </span>
-              <span className="block text-foreground">
-                {selectedOption.description}
-              </span>
+              <span className="block text-foreground">{selectedOption.description}</span>
+              {isCancelUnshipped ? (
+                <span className="block text-xs text-muted-foreground">
+                  Reswell recovers unused postage via ShipEngine label void (credits ShipEngine balance when
+                  the carrier approves). That is separate from the buyer refund.
+                </span>
+              ) : null}
               <span className="block font-medium text-destructive">This action cannot be undone.</span>
             </AlertDialogDescription>
           </AlertDialogHeader>

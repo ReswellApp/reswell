@@ -30,9 +30,21 @@ async function labelBelongsToOrder(params: {
     .select("tracking_number")
     .eq("order_id", params.orderId)
 
-  if (error || !rows?.length) return false
+  if (!error && rows?.length) {
+    for (const row of rows) {
+      const r = row as { tracking_number?: string | null }
+      if (normalizeTracking(r.tracking_number) === lt) return true
+    }
+  }
 
-  for (const row of rows) {
+  const { data: prepared, error: preparedErr } = await params.supabase
+    .from("order_shipping_labels")
+    .select("tracking_number")
+    .eq("order_id", params.orderId)
+
+  if (preparedErr || !prepared?.length) return false
+
+  for (const row of prepared) {
     const r = row as { tracking_number?: string | null }
     if (normalizeTracking(r.tracking_number) === lt) return true
   }
@@ -40,8 +52,13 @@ async function labelBelongsToOrder(params: {
 }
 
 /**
- * Voids a ShipEngine label tied to an order (verifies tracking against the order or admin label rows),
+ * Voids a ShipEngine label tied to an order (verifies tracking against the order or saved label rows),
  * requesting refund to the ShipEngine account balance when the carrier approves.
+ *
+ * Resolution order when `explicitLabelId` is omitted:
+ * 1. `orders.tracking_number`
+ * 2. Latest tracking on `order_shipping_labels`
+ * 3. Latest tracking on `order_admin_shipping_labels`
  */
 export async function voidShipEngineLabelForOrder(params: {
   supabase: SupabaseClient
@@ -103,12 +120,12 @@ export async function voidShipEngineLabelForOrder(params: {
     labelId = detail.label.label_id
     labelRow = detail.label
   } else {
-    const tracking = o.tracking_number?.trim() || null
+    const tracking = await resolveOrderLabelTrackingNumber(params.supabase, o)
     if (!tracking) {
       return {
         ok: false,
         error:
-          "This order has no tracking number — paste the ShipEngine label_id so we can void the correct label.",
+          "No tracking found on this order or its saved shipping labels — paste the ShipEngine label_id so we can void the correct label.",
         status: 400,
       }
     }
@@ -178,4 +195,37 @@ export async function voidShipEngineLabelForOrder(params: {
       clearedOrderTracking: shouldClear,
     },
   }
+}
+
+async function resolveOrderLabelTrackingNumber(
+  supabase: SupabaseClient,
+  order: { id: string; tracking_number: string | null },
+): Promise<string | null> {
+  const fromOrder = order.tracking_number?.trim() || null
+  if (fromOrder) return fromOrder
+
+  const [{ data: prepared }, { data: adminRows }] = await Promise.all([
+    supabase
+      .from("order_shipping_labels")
+      .select("tracking_number")
+      .eq("order_id", order.id)
+      .order("created_at", { ascending: false })
+      .limit(8),
+    supabase
+      .from("order_admin_shipping_labels")
+      .select("tracking_number")
+      .eq("order_id", order.id)
+      .order("created_at", { ascending: false })
+      .limit(8),
+  ])
+
+  for (const row of prepared ?? []) {
+    const t = (row as { tracking_number?: string | null }).tracking_number?.trim()
+    if (t) return t
+  }
+  for (const row of adminRows ?? []) {
+    const t = (row as { tracking_number?: string | null }).tracking_number?.trim()
+    if (t) return t
+  }
+  return null
 }

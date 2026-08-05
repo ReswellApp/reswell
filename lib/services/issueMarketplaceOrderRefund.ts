@@ -38,6 +38,17 @@ export type IssueMarketplaceOrderRefundOptions = {
   disposition?: MarketplaceOrderRefundDisposition
 }
 
+export type MarketplaceOrderRefundLabelVoidResult =
+  | {
+      attempted: true
+      ok: true
+      approved: boolean
+      labelId: string
+      message: string
+    }
+  | { attempted: true; ok: false; error: string }
+  | { attempted: false }
+
 export type IssueMarketplaceOrderRefundResult =
   | {
       ok: true
@@ -47,42 +58,62 @@ export type IssueMarketplaceOrderRefundResult =
       /** True when this order is now `refunded` in the database (not mid-Stripe processing). */
       fullyRefundedInApp: boolean
       disposition: MarketplaceOrderRefundDisposition
+      labelVoid: MarketplaceOrderRefundLabelVoidResult
     }
   | { ok: false; error: string; status: number }
+
+function formatLabelVoidSuffix(labelVoid: MarketplaceOrderRefundLabelVoidResult): string {
+  if (!labelVoid.attempted) return ""
+  if (!labelVoid.ok) {
+    return ` ShipEngine label void skipped: ${labelVoid.error}`
+  }
+  if (labelVoid.approved) {
+    return ` ShipEngine label ${labelVoid.labelId} voided — postage refund to ShipEngine balance approved.`
+  }
+  return ` ShipEngine label ${labelVoid.labelId} void requested but not approved yet: ${labelVoid.message}`
+}
 
 function successMessageForDisposition(
   refundType: "stripe" | "wallet",
   disposition: MarketplaceOrderRefundDisposition,
   fullyRefundedInApp: boolean,
+  labelVoid: MarketplaceOrderRefundLabelVoidResult,
 ): string {
   if (!fullyRefundedInApp) {
     return (
-      "Refund started — Stripe is processing it. This order will move to Refunded when Stripe completes the refund. Card refunds can take several business days to appear on the buyer’s statement."
+      "Refund started — Stripe is processing it. This order will move to Refunded when Stripe completes the refund. Card refunds can take several business days to appear on the buyer’s statement." +
+      formatLabelVoidSuffix(labelVoid)
     )
   }
   if (refundType === "wallet") {
     switch (disposition) {
       case "vacation_hold":
-        return "Refund complete — buyer credited; listing held on seller vacation (no repurchase message)."
+        return "Refund complete — buyer credited for the full order (item + shipping); listing held on seller vacation (no repurchase message)."
       case "cancel_unshipped":
-        return "Refund complete — buyer credited; unused label voided when possible; listing on seller vacation."
+        return (
+          "Refund complete — buyer credited for the full order (item + shipping they paid); listing on seller vacation." +
+          formatLabelVoidSuffix(labelVoid)
+        )
       case "public_relist":
-        return "Refund complete — buyer credited; listing is back on the market for everyone."
+        return "Refund complete — buyer credited for the full order (item + shipping); listing is back on the market for everyone."
       case "exclusive_relist":
       default:
-        return "Refund complete — buyer has been credited and the listing is back on the market"
+        return "Refund complete — buyer has been credited for the full order (item + shipping) and the listing is back on the market"
     }
   }
   switch (disposition) {
     case "vacation_hold":
-      return "Refund issued — buyer’s card will be refunded; listing held on seller vacation (no repurchase message)."
+      return "Refund issued — buyer’s card will be refunded for the full order (item + shipping); listing held on seller vacation (no repurchase message)."
     case "cancel_unshipped":
-      return "Refund issued — unused label voided when possible; listing held on seller vacation."
+      return (
+        "Refund issued — buyer’s card will be refunded for the full order (item + shipping they paid); listing held on seller vacation." +
+        formatLabelVoidSuffix(labelVoid)
+      )
     case "public_relist":
-      return "Refund issued — listing is back on the market for everyone (no exclusive repurchase window)."
+      return "Refund issued — full order (item + shipping) refunded; listing is back on the market for everyone (no exclusive repurchase window)."
     case "exclusive_relist":
     default:
-      return "Refund issued — the buyer's card will be refunded by Stripe shortly"
+      return "Refund issued — the buyer's card will be refunded the full order (item + shipping) by Stripe shortly"
   }
 }
 
@@ -121,6 +152,7 @@ export async function issueMarketplaceOrderRefund(
     options.disposition ?? order.refund_disposition ?? DEFAULT_MARKETPLACE_ORDER_REFUND_DISPOSITION,
   )
   const sideEffectPlan = planMarketplaceOrderRefundSideEffects(disposition)
+  const noLabelVoid: MarketplaceOrderRefundLabelVoidResult = { attempted: false }
 
   if (order.status === "refunding") {
     if (order.payment_method !== "stripe" || !order.stripe_checkout_session_id) {
@@ -154,6 +186,7 @@ export async function issueMarketplaceOrderRefund(
       refund_type: "stripe",
       disposition: resolveMarketplaceOrderRefundDisposition(order.refund_disposition),
       fullyRefundedInApp: sync.fullyRefunded,
+      labelVoid: noLabelVoid,
       message: sync.fullyRefunded
         ? "Refund completed in Stripe — order updated."
         : "Refund status synced from Stripe. If the refund is still processing, check again shortly.",
@@ -164,14 +197,24 @@ export async function issueMarketplaceOrderRefund(
     return { ok: false, error: "Only confirmed orders can be refunded", status: 400 }
   }
 
+  let labelVoid: MarketplaceOrderRefundLabelVoidResult = noLabelVoid
   if (sideEffectPlan.voidUnusedOutboundLabel) {
     const voidResult = await voidShipEngineLabelForOrder({
       supabase: serviceSupabase,
       orderId: order.id,
       explicitLabelId: null,
     })
-    if (!voidResult.ok) {
-      console.warn("[issue refund] void unused label failed (continuing refund)", {
+    if (voidResult.ok) {
+      labelVoid = {
+        attempted: true,
+        ok: true,
+        approved: voidResult.data.approved,
+        labelId: voidResult.data.labelId,
+        message: voidResult.data.message,
+      }
+    } else {
+      labelVoid = { attempted: true, ok: false, error: voidResult.error }
+      console.warn("[issue refund] void unused label failed (continuing buyer refund)", {
         orderId: order.id,
         error: voidResult.error,
       })
@@ -222,9 +265,11 @@ export async function issueMarketplaceOrderRefund(
           disposition,
           alreadyProcessedInStripe: true,
           fullyRefundedInApp: sync.fullyRefunded,
-          message: sync.fullyRefunded
-            ? "This payment was already refunded in Stripe. Order status has been updated."
-            : "Refund status synced from Stripe.",
+          labelVoid,
+          message:
+            (sync.fullyRefunded
+              ? "This payment was already refunded in Stripe. Order status has been updated."
+              : "Refund status synced from Stripe.") + formatLabelVoidSuffix(labelVoid),
         }
       }
       const msg = err instanceof Error ? err.message : String(err)
@@ -255,7 +300,8 @@ export async function issueMarketplaceOrderRefund(
         refund_type: "stripe",
         disposition,
         fullyRefundedInApp: false,
-        message: successMessageForDisposition("stripe", disposition, false),
+        labelVoid,
+        message: successMessageForDisposition("stripe", disposition, false, labelVoid),
       }
     }
 
@@ -299,7 +345,8 @@ export async function issueMarketplaceOrderRefund(
       refund_type: "stripe",
       disposition,
       fullyRefundedInApp: true,
-      message: successMessageForDisposition("stripe", disposition, true),
+      labelVoid,
+      message: successMessageForDisposition("stripe", disposition, true, labelVoid),
     }
   }
 
@@ -330,7 +377,8 @@ export async function issueMarketplaceOrderRefund(
       refund_type: "wallet",
       disposition,
       fullyRefundedInApp: true,
-      message: successMessageForDisposition("wallet", disposition, true),
+      labelVoid,
+      message: successMessageForDisposition("wallet", disposition, true, labelVoid),
     }
   }
 

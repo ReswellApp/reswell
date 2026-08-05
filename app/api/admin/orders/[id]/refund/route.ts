@@ -92,6 +92,7 @@ export async function POST(
     disposition: result.disposition,
     message: result.message,
     fullyRefundedInApp: result.fullyRefundedInApp,
+    labelVoid: result.labelVoid,
     ...(result.alreadyProcessedInStripe != null
       ? { alreadyProcessedInStripe: result.alreadyProcessedInStripe }
       : {}),

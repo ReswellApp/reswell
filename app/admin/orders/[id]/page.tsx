@@ -574,6 +574,7 @@ export default function AdminOrderDetailPage() {
                 orderId={o.id}
                 orderStatus={o.status}
                 amount={o.amount}
+                shippingAmount={o.shipping_amount}
                 paymentMethod={o.payment_method}
                 onComplete={bumpRefetch}
               />

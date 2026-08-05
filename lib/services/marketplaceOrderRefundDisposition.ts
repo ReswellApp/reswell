@@ -114,8 +114,8 @@ export const ADMIN_REFUND_DISPOSITION_OPTIONS: readonly AdminRefundDispositionOp
     value: "cancel_unshipped",
     label: "Cancel never shipped",
     description:
-      "Same as vacation hold, plus best-effort void of any unused outbound shipping label. Use when the parcel never left — do not buy a return label.",
-    recommendedWhen: "Order confirmed but never shipped / label unused.",
+      "Refunds the buyer the full order total (item + the shipping they paid). Voids any unused outbound ShipEngine label so Reswell can recover postage to the ShipEngine balance. Listing goes on seller vacation — no “buy it again” message. Does not buy a return label.",
+    recommendedWhen: "Order confirmed but never shipped / label purchased but unused.",
   },
   {
     value: "public_relist",
