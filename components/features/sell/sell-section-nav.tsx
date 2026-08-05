@@ -86,7 +86,7 @@ export function buildSellSectionNavItems(
 export const SELL_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[] = [
   {
     id: "sell-section-basics",
-    label: "Brand, model & shape",
+    label: "Brand, model & title",
     shortLabel: "Basics",
   },
   {
@@ -97,7 +97,7 @@ export const SELL_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[] = [
   { id: "sell-section-delivery", label: "Pickup & shipping", shortLabel: "Delivery" },
   {
     id: "sell-section-publish",
-    label: "Title, photos & publish",
+    label: "Photos & publish",
     shortLabel: "Publish",
   },
 ]
@@ -121,6 +121,9 @@ export function SellSectionNavHorizontal({
   onSelectSection?: (sectionId: string) => void
   className?: string
 }) {
+  const activeIndex = activeSectionId
+    ? items.findIndex((item) => item.id === activeSectionId)
+    : -1
   return (
     <nav
       aria-label="Listing form sections"
@@ -129,6 +132,11 @@ export function SellSectionNavHorizontal({
         className,
       )}
     >
+      {activeIndex >= 0 ? (
+        <p className="pb-2 text-center text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+          Step {activeIndex + 1} of {items.length}
+        </p>
+      ) : null}
       <div className="overflow-x-auto overscroll-x-contain [scrollbar-width:thin] [-webkit-overflow-scrolling:touch]">
         <ol className="mx-auto flex w-max min-w-full items-start justify-center gap-0 px-3 pb-0.5 pt-0.5 sm:px-4">
           {items.map((item, index) => {
@@ -215,12 +223,20 @@ export function SellSectionNav({
   onSelectSection?: (sectionId: string) => void
   className?: string
 }) {
+  const activeIndex = activeSectionId
+    ? items.findIndex((item) => item.id === activeSectionId)
+    : -1
   return (
     <nav
       aria-label="Listing form sections"
       className={cn("sticky top-24", className)}
     >
       <div className="w-full overflow-auto px-3 py-6 xl:px-4">
+        {activeIndex >= 0 ? (
+          <p className="mb-6 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Step {activeIndex + 1} of {items.length}
+          </p>
+        ) : null}
         <div className="relative">
           <div
             className="absolute bottom-3 left-3 top-3 w-[2px] -translate-x-1/2 bg-midgray/30"

@@ -2,6 +2,8 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { SELL_PRIMARY_BUTTON_CLASS } from "@/components/features/sell/sell-form-surface"
+import { cn } from "@/lib/utils"
 
 type BoardSellWizardFooterProps = {
   showBack: boolean
@@ -45,7 +47,7 @@ export function BoardSellWizardFooter({
         <Button
           type="button"
           size="lg"
-          className="gap-1.5"
+          className={cn("gap-1.5", SELL_PRIMARY_BUTTON_CLASS)}
           onClick={onNext}
           disabled={disabled}
         >

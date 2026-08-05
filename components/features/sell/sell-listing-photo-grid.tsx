@@ -47,6 +47,10 @@ export type SellListingPhotoGridProps = {
   /** When omitted, grid creates its own dnd sensors (same as surfboard sell flow). */
   photoDragSensors?: ReturnType<typeof useSensors>
   photoDescription?: string
+  /** Concrete shot suggestions shown as chips in the empty state (e.g. "Deck", "Bottom", "Any dings"). */
+  photoTips?: readonly string[]
+  /** Rendered between the Photos header and the upload grid (e.g. photo examples banner). */
+  aboveGrid?: React.ReactNode
   /** Minimum photos for the “ready” state. Defaults to 1. */
   minPhotos?: number
 }
@@ -284,10 +288,12 @@ function SellListingPhotoAddTile({
   fileInputId,
   onImageInputChange,
   compact,
+  photoTips,
 }: {
   fileInputId: string
   onImageInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void
   compact?: boolean
+  photoTips?: readonly string[]
 }) {
   if (compact) {
     return (
@@ -332,6 +338,18 @@ function SellListingPhotoAddTile({
             Drag and drop or click to browse. The first photo becomes your cover image.
           </p>
         </div>
+        {photoTips && photoTips.length > 0 ? (
+          <div className="flex max-w-sm flex-wrap items-center justify-center gap-1.5 pt-1">
+            {photoTips.map((tip) => (
+              <span
+                key={tip}
+                className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-muted-foreground ring-1 ring-inset ring-slate-200/80"
+              >
+                {tip}
+              </span>
+            ))}
+          </div>
+        ) : null}
       </div>
       <input
         id={fileInputId}
@@ -363,6 +381,8 @@ export function SellListingPhotoGrid({
   onRotate180,
   photoDragSensors: externalSensors,
   photoDescription = "Add photos, then drag to reorder — the first is your main image.",
+  photoTips,
+  aboveGrid,
   minPhotos = 1,
 }: SellListingPhotoGridProps) {
   const internalSensors = useSensors(
@@ -398,6 +418,8 @@ export function SellListingPhotoGrid({
         </div>
       </div>
 
+      {aboveGrid}
+
       <Label className="sr-only">Listing photos</Label>
       <div
         className={cn(
@@ -424,6 +446,7 @@ export function SellListingPhotoGrid({
           <SellListingPhotoAddTile
             fileInputId={fileInputId}
             onImageInputChange={onImageInputChange}
+            photoTips={photoTips}
           />
         ) : (
           <DndContext

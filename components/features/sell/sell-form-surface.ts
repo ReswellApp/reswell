@@ -32,6 +32,10 @@ export const SELL_CONTROL_CLASS =
 export const SELL_TEXTAREA_CLASS =
   "min-h-[7rem] rounded-lg border-input bg-card shadow-sm placeholder:text-muted-foreground focus-visible:ring-listingHeart focus-visible:border-listingHeart/50"
 
+/** Primary action (Next / Publish) — brand blue so the action color matches the progress color. */
+export const SELL_PRIMARY_BUTTON_CLASS =
+  "bg-listingHeart text-white hover:bg-listingHeart/90 focus-visible:ring-listingHeart"
+
 /** Complete / ready pill — uses brand `listingHeart`, not generic green. */
 export const SELL_COMPLETE_BADGE_CLASS =
   "inline-flex items-center gap-1.5 rounded-full bg-listingHeart/10 px-2.5 py-1 text-xs font-medium text-listingHeart ring-1 ring-inset ring-listingHeart/25"

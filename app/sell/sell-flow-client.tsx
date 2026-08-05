@@ -60,6 +60,7 @@ import {
 import {
   Loader2,
   X,
+  Check,
   ChevronRight,
   CheckCircle2,
   AlertCircle,
@@ -153,13 +154,15 @@ import {
   type BoardShippingCostMode,
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
-import { LISTING_CONDITION_SELL_OPTIONS, sellFormConditionValue } from "@/lib/listing-labels"
+import {
+  LISTING_CONDITION_LABELS,
+  LISTING_CONDITION_SELL_OPTIONS,
+  sellFormConditionValue,
+} from "@/lib/listing-labels"
 import {
   formatBoardLengthForTitle,
   normalizeBoardLengthInput,
   normalizeTapeStyleInchesInput,
-  normalizeVolumeLitersInput,
-  shouldShowLengthInchHint,
 } from "@/lib/board-measurements"
 import {
   boardBrowseFacetFieldsForDb,
@@ -190,6 +193,7 @@ import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
+import { SellBoardDimensionsPicker } from "@/components/features/sell/sell-board-dimensions-picker"
 import { SellBoardFacetFields } from "@/components/features/sell/sell-board-facet-fields"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
@@ -199,9 +203,12 @@ import {
   SELL_COMPLETE_BADGE_CLASS,
   SELL_CONTROL_CLASS,
   SELL_PAGE_GROUND_CLASS,
+  SELL_PRIMARY_BUTTON_CLASS,
   SELL_SECTION_CARD_CLASS,
   SELL_SECTION_DESCRIPTION_CLASS,
 } from "@/components/features/sell/sell-form-surface"
+import { SellListingPreviewCard } from "@/components/features/sell/sell-listing-preview-card"
+import { SellPhotoExamplesBanner } from "@/components/features/sell/sell-photo-examples-banner"
 import {
   SellSectionNav,
   SellSectionNavHorizontal,
@@ -874,14 +881,6 @@ function SellPageContentInner({
     )
   }, [formData.boardBrandId])
 
-  const boardDimLengthRef = useRef<HTMLInputElement>(null)
-  const boardDimWidthRef = useRef<HTMLInputElement>(null)
-  const boardDimThicknessRef = useRef<HTMLInputElement>(null)
-  const boardDimVolumeRef = useRef<HTMLInputElement>(null)
-  const prevBoardLengthRef = useRef<string | undefined>(undefined)
-  const prevBoardWidthRef = useRef<string | undefined>(undefined)
-  const prevBoardThicknessRef = useRef<string | undefined>(undefined)
-
   const [sellCategoryOptions, setSellCategoryOptions] = useState<SellCategoryOptionRow[]>([])
   const [sellCategoriesLoaded, setSellCategoriesLoaded] = useState(false)
 
@@ -903,6 +902,10 @@ function SellPageContentInner({
     draftHydrated: false,
   })
   const sellDraftPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /** Quiet autosave indicator so sellers know they can safely leave and come back. */
+  const [draftAutosaveState, setDraftAutosaveState] = useState<
+    "idle" | "saving" | "saved"
+  >("idle")
   const draftImageSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const draftPhotosPendingRef = useRef<ListingPhotoSlot[] | null>(null)
   /** Slots from IndexedDB restore — optimized in useLayoutEffect after `optimizeAndUploadSlot` exists. */
@@ -1934,12 +1937,18 @@ function SellPageContentInner({
       void (async () => {
         const r = sellDraftLatestRef.current
         if (r.editId || !r.draftHydrated) return
-        await persistSellListingDraftSnapshot({
-          listingType: r.listingType,
-          formData: r.formData,
-          images: r.images,
-          userId: sellDraftUserIdRef.current,
-        })
+        setDraftAutosaveState("saving")
+        try {
+          await persistSellListingDraftSnapshot({
+            listingType: r.listingType,
+            formData: r.formData,
+            images: r.images,
+            userId: sellDraftUserIdRef.current,
+          })
+          setDraftAutosaveState("saved")
+        } catch {
+          setDraftAutosaveState("idle")
+        }
       })()
     }, 600)
     return () => {
@@ -3525,6 +3534,21 @@ function SellPageContentInner({
                   activeSectionId={activeSellSectionId}
                   onSelectSection={goToSellSection}
                 />
+                <SellListingPreviewCard
+                  className="mt-6 px-3 xl:px-4"
+                  title={formData.title}
+                  brand={formData.brand}
+                  model={formData.model}
+                  conditionLabel={
+                    formData.condition
+                      ? LISTING_CONDITION_LABELS[formData.condition] ?? formData.condition
+                      : undefined
+                  }
+                  price={formData.price}
+                  imageSrc={
+                    images[0]?.thumbnailUrl?.trim() || images[0]?.previewUrl || undefined
+                  }
+                />
               </div>
               <div className="min-w-0 w-full max-w-2xl lg:w-auto lg:max-w-3xl lg:shrink-0">
                 <SellSectionNavHorizontal
@@ -3534,6 +3558,28 @@ function SellPageContentInner({
                   onSelectSection={goToSellSection}
                   className="mb-8 lg:hidden"
                 />
+                {!editId ? (
+                  <div
+                    className="-mt-4 mb-2 flex min-h-5 items-center justify-end gap-1.5 lg:-mt-2"
+                    aria-live="polite"
+                  >
+                    {draftAutosaveState !== "idle" ? (
+                      <>
+                        {draftAutosaveState === "saved" ? (
+                          <Check
+                            className="h-3.5 w-3.5 text-listingHeart"
+                            aria-hidden
+                          />
+                        ) : null}
+                        <span className="text-xs text-muted-foreground">
+                          {draftAutosaveState === "saving"
+                            ? "Saving draft…"
+                            : "Draft saved on this device"}
+                        </span>
+                      </>
+                    ) : null}
+                  </div>
+                ) : null}
                 <form
               ref={formRef}
               onSubmit={(e) => {
@@ -3550,8 +3596,8 @@ function SellPageContentInner({
                 {flowStep === "basics" ? (
                 <SellFormSection
                   sectionId="sell-section-basics"
-                  title="Brand, model & shape"
-                  description="Tell buyers what board you have — brand, model, shape, and condition."
+                  title="Brand, model & title"
+                  description="Tell buyers what board you have, give it a title, then set the shape and condition."
                   complete={sellSectionCompletion["sell-section-basics"] === true}
                 >
                     <div className="space-y-8">
@@ -3611,15 +3657,6 @@ function SellPageContentInner({
                               }}
                               onRequestBrand={openListingCatalogRequestFromBrand}
                             />
-                            <div className="space-y-1.5">
-                              <button
-                                type="button"
-                                className="text-left text-xs text-primary hover:text-primary/90"
-                                onClick={openListingCatalogRequestFromBrand}
-                              >
-                                Brand not listed? Request we add it
-                              </button>
-                            </div>
                           </div>
 
                           <div className="min-w-0 space-y-2">
@@ -3640,15 +3677,6 @@ function SellPageContentInner({
                               disabled={editLoading}
                               onRequestCatalogAdd={openListingCatalogRequestFromModel}
                             />
-                            <div className="space-y-1.5">
-                              <button
-                                type="button"
-                                className="text-left text-xs text-primary hover:text-primary/90"
-                                onClick={openListingCatalogRequestFromModel}
-                              >
-                                Model not listed? Request we add it
-                              </button>
-                            </div>
                           </div>
                         </div>
                         <RequestBrandModelDialog
@@ -3673,11 +3701,37 @@ function SellPageContentInner({
                             }))
                           }}
                         />
-                        <p className="text-xs text-muted-foreground">
-                          {
-                            "Brand and model are saved on your listing and power search and filters. Requesting a missing brand or model still goes through the separate request queue for our catalog team."
+                      </div>
+
+                      <Separator className="bg-border" />
+
+                      <div className="space-y-2">
+                        <div className="flex items-end justify-between gap-2">
+                          <Label htmlFor="listing-title">Title *</Label>
+                          <span
+                            className={cn(
+                              "text-xs tabular-nums",
+                              resolvedTitlePreview.length > LISTING_TITLE_MAX_LENGTH
+                                ? "font-medium text-destructive"
+                                : "text-muted-foreground",
+                            )}
+                            aria-live="polite"
+                          >
+                            {resolvedTitlePreview.length}/{LISTING_TITLE_MAX_LENGTH}
+                          </span>
+                        </div>
+                        <Input
+                          id="listing-title"
+                          className={SELL_CONTROL_CLASS}
+                          placeholder={`e.g., 6'0 CI Rookie — light use, fins included`}
+                          value={formData.title}
+                          onChange={(e) =>
+                            setFormData((f) => ({ ...f, title: e.target.value }))
                           }
-                        </p>
+                          autoComplete="off"
+                          required
+                          maxLength={LISTING_TITLE_MAX_LENGTH}
+                        />
                       </div>
 
                       <Separator className="bg-border" />
@@ -3769,181 +3823,19 @@ function SellPageContentInner({
                 >
                     <div className="space-y-8">
                       <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                        {/* Length */}
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">
-                            Length
-                            {deliveryFlags.shipping_available ? (
-                              <span className="text-destructive" aria-hidden="true">
-                                {" "}
-                                *
-                              </span>
-                            ) : null}
-                          </Label>
-                          <div className="flex items-center gap-1">
-                            <div
-                              className={cn(
-                                "flex min-h-11 min-w-0 max-w-[11rem] flex-1 items-center justify-center gap-0.5 rounded-md border border-foreground/20 bg-card px-1.5 shadow-sm ring-offset-background",
-                                "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-                              )}
-                            >
-                              <Input
-                                ref={boardDimLengthRef}
-                                type="text"
-                                inputMode="text"
-                                placeholder="6'2"
-                                value={formData.boardLength}
-                                onChange={(e) => {
-                                  const next = normalizeBoardLengthInput(e.target.value)
-                                  prevBoardLengthRef.current = next
-                                  setFormData((fd) => ({ ...fd, boardLength: next }))
-                                }}
-                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
-                                autoComplete="off"
-                                spellCheck={false}
-                                aria-label="Board length in feet and inches"
-                                aria-required={deliveryFlags.shipping_available || undefined}
-                                aria-describedby={
-                                  shouldShowLengthInchHint(formData.boardLength)
-                                    ? "sell-length-inches-hint-sr"
-                                    : undefined
-                                }
-                              />
-                              {shouldShowLengthInchHint(formData.boardLength) ? (
-                                <span id="sell-length-inches-hint-sr" className="sr-only">
-                                  {`Then type inches after the apostrophe (for example six foot two as 6'2).`}
-                                </span>
-                              ) : null}
-                            </div>
-                            {/* Reserve same width as &quot;in&quot; / &quot;L&quot; on other rows so the input matches on narrow screens */}
-                            <span
-                              className="inline-flex w-5 shrink-0 items-center justify-center text-xs tabular-nums text-transparent select-none"
-                              aria-hidden
-                            >
-                              in
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Width */}
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">
-                            Width
-                            {deliveryFlags.shipping_available ? (
-                              <span className="text-destructive" aria-hidden="true">
-                                {" "}
-                                *
-                              </span>
-                            ) : null}
-                          </Label>
-                          <div className="flex items-center gap-1">
-                            <div
-                              className={cn(
-                                "flex min-h-11 min-w-0 max-w-[11rem] flex-1 items-center justify-center rounded-md border border-foreground/20 bg-card px-1.5 shadow-sm ring-offset-background",
-                                "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-                              )}
-                            >
-                              <Input
-                                ref={boardDimWidthRef}
-                                type="text"
-                                inputMode="text"
-                                placeholder="19 1/4"
-                                value={formData.boardWidthInches}
-                                onChange={(e) => {
-                                  const next = normalizeTapeStyleInchesInput(e.target.value)
-                                  prevBoardWidthRef.current = next
-                                  setFormData((fd) => ({ ...fd, boardWidthInches: next }))
-                                }}
-                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
-                                autoComplete="off"
-                                spellCheck={false}
-                                aria-label="Board width in inches"
-                                aria-required={deliveryFlags.shipping_available || undefined}
-                              />
-                            </div>
-                            <span className="inline-flex w-5 shrink-0 items-center justify-center text-xs text-muted-foreground tabular-nums">
-                              in
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Thickness */}
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">
-                            Thickness
-                            {deliveryFlags.shipping_available ? (
-                              <span className="text-destructive" aria-hidden="true">
-                                {" "}
-                                *
-                              </span>
-                            ) : null}
-                          </Label>
-                          <div className="flex items-center gap-1">
-                            <div
-                              className={cn(
-                                "flex min-h-11 min-w-0 max-w-[11rem] flex-1 items-center justify-center rounded-md border border-foreground/20 bg-card px-1.5 shadow-sm ring-offset-background",
-                                "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-                              )}
-                            >
-                              <Input
-                                ref={boardDimThicknessRef}
-                                type="text"
-                                inputMode="text"
-                                placeholder="2 3/8"
-                                value={formData.boardThicknessInches}
-                                onChange={(e) => {
-                                  const next = normalizeTapeStyleInchesInput(e.target.value)
-                                  prevBoardThicknessRef.current = next
-                                  setFormData((fd) => ({ ...fd, boardThicknessInches: next }))
-                                }}
-                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
-                                autoComplete="off"
-                                spellCheck={false}
-                                aria-label="Board thickness in inches"
-                                aria-required={deliveryFlags.shipping_available || undefined}
-                              />
-                            </div>
-                            <span className="inline-flex w-5 shrink-0 items-center justify-center text-xs text-muted-foreground tabular-nums">
-                              in
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Volume */}
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">Volume</Label>
-                          <div className="flex items-center gap-1">
-                            <div
-                              className={cn(
-                                "flex min-h-11 min-w-0 max-w-[11rem] flex-1 items-center justify-center rounded-md border border-foreground/20 bg-card px-1.5 shadow-sm ring-offset-background",
-                                "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-                              )}
-                            >
-                              <Input
-                                ref={boardDimVolumeRef}
-                                type="text"
-                                inputMode="text"
-                                placeholder="30.4"
-                                value={formData.boardVolumeL}
-                                onChange={(e) =>
-                                  setFormData((fd) => ({
-                                    ...fd,
-                                    boardVolumeL: normalizeVolumeLitersInput(e.target.value),
-                                  }))
-                                }
-                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
-                                autoComplete="off"
-                                spellCheck={false}
-                                aria-label="Board volume in liters"
-                              />
-                            </div>
-                            <span className="inline-flex w-5 shrink-0 items-center justify-center text-xs text-muted-foreground tabular-nums">
-                              L
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+                      <SellBoardDimensionsPicker
+                        values={{
+                          boardLength: formData.boardLength,
+                          boardWidthInches: formData.boardWidthInches,
+                          boardThicknessInches: formData.boardThicknessInches,
+                          boardVolumeL: formData.boardVolumeL,
+                        }}
+                        onChange={(patch) =>
+                          setFormData((fd) => ({ ...fd, ...patch }))
+                        }
+                        dimensionsRequired={deliveryFlags.shipping_available}
+                        disabled={editLoading}
+                      />
 
                       <SellBoardFacetFields
                         boardFins={formData.boardFins}
@@ -3960,12 +3852,6 @@ function SellPageContentInner({
                         }
                         disabled={editLoading}
                       />
-
-                      <p className="text-xs text-muted-foreground pt-0.5">
-                        {deliveryFlags.shipping_available
-                          ? "Length, width, and thickness are required when you offer shipping so we can size the pack correctly. Volume is optional."
-                          : "Dimensions are optional for local pickup. When you fill them in, surfers can compare your board more confidently—often that helps listings move faster."}
-                      </p>
                     </div>
 
                     <Separator className="bg-border" />
@@ -4221,6 +4107,7 @@ function SellPageContentInner({
                                             <Input
                                               id="sell-surfboard-shipping-price"
                                               type="number"
+                                              inputMode="decimal"
                                               min="0"
                                               step="0.01"
                                               placeholder="0.00"
@@ -4433,42 +4320,11 @@ function SellPageContentInner({
                 {flowStep === "publish" ? (
                 <SellFormSection
                   sectionId="sell-section-publish"
-                  title={editId ? "Title, photos & price" : "Title, photos & publish"}
-                  description="Add a title and photos, set your price, then publish."
+                  title={editId ? "Photos & price" : "Photos & publish"}
+                  description="Add photos, set your price, then publish."
                   complete={sellSectionCompletion["sell-section-publish"] === true}
                 >
                 <div className="space-y-8">
-                  <div className="space-y-2">
-                    <div className="flex items-end justify-between gap-2">
-                      <Label htmlFor="listing-title">Title *</Label>
-                      <span
-                        className={cn(
-                          "text-xs tabular-nums",
-                          resolvedTitlePreview.length > LISTING_TITLE_MAX_LENGTH
-                            ? "font-medium text-destructive"
-                            : "text-muted-foreground",
-                        )}
-                        aria-live="polite"
-                      >
-                        {resolvedTitlePreview.length}/{LISTING_TITLE_MAX_LENGTH}
-                      </span>
-                    </div>
-                    <Input
-                      id="listing-title"
-                      className={SELL_CONTROL_CLASS}
-                      placeholder={`e.g., 6'0 CI Rookie — light use, fins included`}
-                      value={formData.title}
-                      onChange={(e) =>
-                        setFormData((f) => ({ ...f, title: e.target.value }))
-                      }
-                      autoComplete="off"
-                      required
-                      maxLength={LISTING_TITLE_MAX_LENGTH}
-                    />
-                  </div>
-
-                  <Separator className="bg-border" />
-
                   <SellPriceFields
                     listingPrice={formData.price}
                     onListingPriceChange={(value) =>
@@ -4531,6 +4387,7 @@ function SellPageContentInner({
                               <Input
                                 id="sell-auto-price-drop-floor"
                                 type="number"
+                                inputMode="decimal"
                                 min="0.01"
                                 step="0.01"
                                 placeholder="0.00"
@@ -4596,7 +4453,8 @@ function SellPageContentInner({
                     onRetry={handlePhotoTileRetry}
                     onRotate180={handlePhotoTileRotate}
                     photoDragSensors={photoDragSensors}
-                    photoDescription="Drop a few clear shots — deck, bottom, and any dings. Drag to reorder; the first is your cover."
+                    photoDescription="3+ clear photos help boards sell faster. Drag to reorder; the first is your cover."
+                    aboveGrid={<SellPhotoExamplesBanner />}
                   />
 
                   <Separator className="bg-border" />
@@ -4688,7 +4546,10 @@ function SellPageContentInner({
                   <Button
                     type="submit"
                     size="lg"
-                    className="w-full relative transition-shadow"
+                    className={cn(
+                      "w-full relative transition-shadow",
+                      SELL_PRIMARY_BUTTON_CLASS,
+                    )}
                   >
                     {editId ? (listingIsDraft ? "Publish listing" : "Save changes") : "Create Listing"}
                   </Button>

@@ -26,7 +26,7 @@ import {
 const PRICE_MIN = 0.01
 const PRICE_MAX = 999_999.99
 
-function photosTitleSectionComplete(form: SellFormValidationInput): boolean {
+function titleComplete(form: SellFormValidationInput): boolean {
   if (!form.title?.trim()) return false
   return buildResolvedListingTitle(form).length <= LISTING_TITLE_MAX_LENGTH
 }
@@ -181,12 +181,14 @@ export function computeSellSectionCompletion(
 ): Record<string, boolean> {
   return {
     "sell-section-basics":
-      brandModelComplete(form) && shapeSectionComplete(form) && conditionComplete(form),
+      titleComplete(form) &&
+      brandModelComplete(form) &&
+      shapeSectionComplete(form) &&
+      conditionComplete(form),
     "sell-section-details":
       dimensionsSectionComplete(form) && descriptionOnlyComplete(form),
     "sell-section-delivery": deliverySectionComplete(form),
     "sell-section-publish":
-      photosTitleSectionComplete(form) &&
       opts.imageCount >= LISTING_MIN_PHOTOS &&
       opts.imagesUploadReady &&
       pricePublishFieldsComplete(form),

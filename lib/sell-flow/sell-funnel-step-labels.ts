@@ -4,13 +4,13 @@ export function sellFunnelStepLabel(stepId: string): string {
   if (!trimmed) return "(unknown step)"
 
   const known: Record<string, string> = {
-    "sell-section-basics": "Brand, model & shape",
+    "sell-section-basics": "Brand, model & title",
     "sell-section-details": "Dimensions & details",
     "sell-section-photos-title": "Photos & title",
     "sell-section-board": "Board & description",
     "sell-section-delivery": "Pickup & shipping",
     "sell-section-reswell-package": "Shipping size",
-    "sell-section-publish": "Title, photos & publish",
+    "sell-section-publish": "Photos & publish",
     "sell-fins-section-photos-title": "Photos & title",
     "sell-fins-section-details": "Fin details",
     "sell-fins-section-delivery": "Shipping",
