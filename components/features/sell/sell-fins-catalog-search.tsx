@@ -511,7 +511,7 @@ export function SellFinsCatalogSearch({ onSelect, onSkip, onExit, className }: S
             </header>
 
             <form onSubmit={handleSubmit} className="space-y-3">
-              <div className="w-full min-w-0">
+              <div className="relative w-full min-w-0">
                 <label
                   htmlFor="sell-fins-catalog-search-input"
                   className="mb-1.5 block text-xs font-medium text-muted-foreground"
@@ -523,11 +523,6 @@ export function SellFinsCatalogSearch({ onSelect, onSkip, onExit, className }: S
                     "relative z-[1] h-12 min-h-12 gap-1.5 pl-2.5 pr-1 sm:h-auto sm:min-h-0 sm:gap-1 sm:pl-3 sm:pr-1.5",
                     "focus-within:border-cerulean/50 focus-within:ring-2 focus-within:ring-cerulean/25 focus-within:shadow-sm",
                     focusMode && "border-cerulean/45 bg-background shadow-md ring-2 ring-cerulean/20",
-                    showResultsPanel &&
-                      "rounded-t-2xl rounded-b-none border-b-transparent shadow-none ring-0 focus-within:shadow-none focus-within:ring-0 sm:rounded-t-full",
-                    showResultsPanel &&
-                      focusMode &&
-                      "border-cerulean/45 ring-2 ring-cerulean/20",
                   )}
                   actionSlot={
                     <SiteSearchFormSubmitButton
@@ -584,9 +579,8 @@ export function SellFinsCatalogSearch({ onSelect, onSkip, onExit, className }: S
                 {showResultsPanel ? (
                   <section
                     className={cn(
-                      "-mt-px w-full min-w-0 overflow-hidden rounded-b-2xl border border-border bg-card text-card-foreground shadow-md sm:rounded-b-xl",
-                      "rounded-t-none border-t-border/60",
-                      focusMode && "border-cerulean/35",
+                      "absolute left-0 right-0 top-full z-20 mt-1.5 w-full min-w-0 overflow-hidden border border-border/80 bg-popover text-popover-foreground shadow-xl shadow-black/10",
+                      "rounded-2xl max-sm:rounded-xl max-sm:shadow-2xl",
                     )}
                     aria-live="polite"
                     onMouseDown={(event) => {
