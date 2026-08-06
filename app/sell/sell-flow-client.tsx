@@ -161,6 +161,8 @@ import {
 } from "@/lib/listing-labels"
 import {
   formatBoardLengthForTitle,
+  isBoardLengthEntryComplete,
+  isTapeStyleInchesEntryComplete,
   normalizeBoardLengthInput,
   normalizeTapeStyleInchesInput,
 } from "@/lib/board-measurements"
@@ -194,6 +196,9 @@ import {
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
 import { SellBoardDimensionsPicker } from "@/components/features/sell/sell-board-dimensions-picker"
+import { SellBoardStockSizePicker } from "@/components/features/sell/sell-board-stock-size-picker"
+import { SellRequiredMark } from "@/components/features/sell/sell-required-mark"
+import type { SurfboardStockSizeOption } from "@/lib/types/board-stock-sizes"
 import {
   SellBoardFacetFields,
   SellFacetChipGroup,
@@ -235,6 +240,11 @@ import {
   sellPendingPublishKey,
 } from "@/lib/sell-flow/session-keys"
 import { takeSellCatalogHandoff } from "@/lib/sell-flow/catalog-handoff"
+import {
+  SellCatalogSelectionCard,
+  type SellCatalogSelectionCardData,
+} from "@/components/features/sell/sell-catalog-selection-card"
+import { sellCatalogSearchCategoryLabel } from "@/lib/types/sell-catalog-search"
 import {
   BOARD_SELL_SECTION_ID_BY_STEP,
   BOARD_SELL_STEP_BY_SECTION_ID,
@@ -653,6 +663,22 @@ async function persistSellListingDraftSnapshot(args: {
   else await clearGuestSellListingDraft()
 }
 
+/** Mirrors the flat-rate rule in `deliverySectionComplete` (sell-section-completion). */
+function flatShippingRateComplete(raw: string): boolean {
+  const t = raw.trim().replace(/,/g, "")
+  if (!t) return false
+  const n = Number.parseFloat(t)
+  return Number.isFinite(n) && n >= 0
+}
+
+/** Mirrors the auto-drop floor rule in `pricePublishFieldsComplete` (sell-section-completion). */
+function priceDropFloorComplete(floorRaw: string, priceRaw: string): boolean {
+  const floor = Number.parseFloat(floorRaw.trim().replace(/,/g, ""))
+  if (!Number.isFinite(floor) || floor < 0.01 || floor > 999_999.99) return false
+  const price = Number.parseFloat(priceRaw.trim().replace(/,/g, ""))
+  return Number.isFinite(price) ? floor < price : true
+}
+
 function createInitialSellFormData() {
   return {
     title: "",
@@ -870,17 +896,42 @@ function SellPageContentInner({
   const [listingCatalogRequestVariant, setListingCatalogRequestVariant] =
     useState<ListingCatalogRequestVariant | null>(null)
   const [formData, setFormData] = useState(createInitialSellFormData)
+  const formDataRef = useRef(formData)
+  useEffect(() => {
+    formDataRef.current = formData
+  }, [formData])
 
   // One-shot brand/model prefill from the /sell cross-category catalog search wall.
+  // Applied only after draft hydration: the IDB draft restore replaces the whole
+  // form state async, so applying earlier would let a stale draft clobber the
+  // catalog selection the seller just made.
   const catalogHandoffTakenRef = useRef(false)
+  const [catalogSelectionCard, setCatalogSelectionCard] = useState<
+    (SellCatalogSelectionCardData & { brandId: string }) | null
+  >(null)
   useEffect(() => {
-    if (catalogHandoffTakenRef.current || editId) return
+    if (!draftHydrated || catalogHandoffTakenRef.current || editId) return
     catalogHandoffTakenRef.current = true
     const handoff = takeSellCatalogHandoff("surfboards")
     if (!handoff) return
+    if (handoff.selectionKind !== "variant") {
+      setCatalogSelectionCard({
+        brandId: handoff.brandId,
+        brandName: handoff.brandName,
+        modelName: handoff.selectionKind === "model" ? handoff.modelName : null,
+        categoryLabel: sellCatalogSearchCategoryLabel(handoff.category),
+        imageUrl: handoff.imageUrl,
+        imageIsLogo: handoff.imageIsLogo,
+      })
+    }
     if (handoff.selectionKind === "brand") {
       setFormData((f) => ({
         ...f,
+        title: f.title.trim() ? f.title : handoff.suggestedTitle,
+        description:
+          f.description.trim() || !handoff.suggestedDescription
+            ? f.description
+            : handoff.suggestedDescription,
         brand: handoff.brandName,
         boardLinkedBrandName: handoff.brandName,
         boardBrandId: handoff.brandId,
@@ -889,17 +940,100 @@ function SellPageContentInner({
       return
     }
     if (handoff.selectionKind === "model") {
+      // Catalog models tagged with a board shape auto-select the matching
+      // "Board shape / category" chip (chip values are the fixed category UUIDs).
+      const handoffBoardCategoryId = handoff.boardCategorySlug
+        ? boardCategoryMap[handoff.boardCategorySlug] ?? ""
+        : ""
       setFormData((f) => ({
         ...f,
+        title: f.title.trim() ? f.title : handoff.suggestedTitle,
+        description:
+          f.description.trim() || !handoff.suggestedDescription
+            ? f.description
+            : handoff.suggestedDescription,
         brand: handoff.brandName,
         boardLinkedBrandName: handoff.brandName,
         boardBrandId: handoff.brandId,
         boardIndexBrandSlug: handoff.brandSlug,
         boardModelName: handoff.modelName,
         boardBrandModelId: handoff.brandModelId,
+        ...(handoffBoardCategoryId && !f.category.trim()
+          ? {
+              category: handoffBoardCategoryId,
+              boardType: handoff.boardCategorySlug ?? f.boardType,
+            }
+          : {}),
       }))
     }
-  }, [editId])
+  }, [editId, draftHydrated])
+
+  // Stock sizes for the linked catalog model: shown as a one-tap size wall in
+  // "Dimensions & details". Selecting one writes the same boardLength /
+  // boardWidthInches / boardThicknessInches / boardVolumeL fields the manual
+  // picker uses — storage and publish are unchanged.
+  const [modelStockSizes, setModelStockSizes] = useState<SurfboardStockSizeOption[]>([])
+  const [stockSizeMode, setStockSizeMode] = useState<"stock" | "custom">("stock")
+  const [selectedStockSizeId, setSelectedStockSizeId] = useState<string | null>(null)
+  const stockSizesModelId = formData.boardBrandModelId.trim()
+  useEffect(() => {
+    if (!stockSizesModelId) {
+      setModelStockSizes([])
+      setSelectedStockSizeId(null)
+      setStockSizeMode("stock")
+      return
+    }
+    const controller = new AbortController()
+    ;(async () => {
+      try {
+        const res = await fetch(
+          `/api/sell/board-model-stock-sizes?brand_model_id=${encodeURIComponent(stockSizesModelId)}`,
+          { signal: controller.signal },
+        )
+        if (!res.ok) return
+        const json = (await res.json().catch(() => null)) as {
+          data?: { sizes?: SurfboardStockSizeOption[] }
+        } | null
+        const sizes = json?.data?.sizes ?? []
+        setModelStockSizes(sizes)
+
+        // Reconcile with dims already in the form (draft restore / edit mode):
+        // matching dims select their stock card; non-matching dims mean the
+        // seller already entered a custom size, so keep the manual picker.
+        const fd = formDataRef.current
+        const match = sizes.find(
+          (s) =>
+            s.values.boardLength === fd.boardLength.trim() &&
+            s.values.boardWidthInches === fd.boardWidthInches.trim() &&
+            s.values.boardThicknessInches === fd.boardThicknessInches.trim(),
+        )
+        if (match) {
+          setSelectedStockSizeId(match.id)
+          setStockSizeMode("stock")
+        } else {
+          setSelectedStockSizeId(null)
+          const hasDims = [fd.boardLength, fd.boardWidthInches, fd.boardThicknessInches].some(
+            (v) => v.trim().length > 0,
+          )
+          setStockSizeMode(hasDims ? "custom" : "stock")
+        }
+      } catch {
+        /* aborted or offline — manual dimension picker still works */
+      }
+    })()
+    return () => controller.abort()
+  }, [stockSizesModelId])
+
+  const handleSelectStockSize = useCallback((size: SurfboardStockSizeOption) => {
+    setSelectedStockSizeId(size.id)
+    setStockSizeMode("stock")
+    setFormData((fd) => ({ ...fd, ...size.values }))
+  }, [])
+
+  const handleChooseCustomStockSize = useCallback(() => {
+    setStockSizeMode("custom")
+    setSelectedStockSizeId(null)
+  }, [])
 
   const openListingCatalogRequestFromBrand = useCallback(() => {
     setListingCatalogRequestVariant("full")
@@ -3627,6 +3761,24 @@ function SellPageContentInner({
                   complete={sellSectionCompletion["sell-section-basics"] === true}
                 >
                     <div className="space-y-8">
+                      {catalogSelectionCard &&
+                      formData.boardBrandId === catalogSelectionCard.brandId ? (
+                        <SellCatalogSelectionCard
+                          selection={catalogSelectionCard}
+                          onRemove={() => {
+                            setCatalogSelectionCard(null)
+                            setFormData((f) => ({
+                              ...f,
+                              boardBrandId: "",
+                              boardBrandModelId: "",
+                              boardIndexBrandSlug: "",
+                              boardIndexModelSlug: "",
+                              boardIndexLabel: "",
+                              boardLinkedBrandName: "",
+                            }))
+                          }}
+                        />
+                      ) : null}
                       <div className="space-y-3">
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-4 sm:gap-y-3">
                           <div className="min-w-0 space-y-2">
@@ -3735,9 +3887,12 @@ function SellPageContentInner({
                         <div className="flex items-end justify-between gap-2">
                           <Label htmlFor="listing-title">
                             Title{" "}
-                            <span className="text-destructive" aria-hidden="true">
-                              *
-                            </span>
+                            <SellRequiredMark
+                              complete={
+                                Boolean(formData.title.trim()) &&
+                                resolvedTitlePreview.length <= LISTING_TITLE_MAX_LENGTH
+                              }
+                            />
                           </Label>
                           <span
                             className={cn(
@@ -3770,9 +3925,7 @@ function SellPageContentInner({
                       <div className="max-w-md space-y-2">
                         <Label htmlFor="sell-condition">
                           Condition{" "}
-                          <span className="text-destructive" aria-hidden="true">
-                            *
-                          </span>
+                          <SellRequiredMark complete={Boolean(formData.condition.trim())} />
                         </Label>
                         <Select
                           value={formData.condition}
@@ -3803,28 +3956,45 @@ function SellPageContentInner({
                 >
                     <div className="space-y-8">
                       <div className="space-y-3">
-                      <SellBoardDimensionsPicker
-                        values={{
-                          boardLength: formData.boardLength,
-                          boardWidthInches: formData.boardWidthInches,
-                          boardThicknessInches: formData.boardThicknessInches,
-                          boardVolumeL: formData.boardVolumeL,
-                        }}
-                        onChange={(patch) =>
-                          setFormData((fd) => ({ ...fd, ...patch }))
-                        }
-                        dimensionsRequired={deliveryFlags.shipping_available}
-                        disabled={editLoading}
-                      />
+                      {modelStockSizes.length > 0 ? (
+                        <SellBoardStockSizePicker
+                          modelName={formData.boardModelName.trim() || null}
+                          sizes={modelStockSizes}
+                          selectedId={selectedStockSizeId}
+                          mode={stockSizeMode}
+                          onSelectSize={handleSelectStockSize}
+                          onChooseCustom={handleChooseCustomStockSize}
+                          required={deliveryFlags.shipping_available}
+                          complete={
+                            isBoardLengthEntryComplete(formData.boardLength) &&
+                            isTapeStyleInchesEntryComplete(formData.boardWidthInches) &&
+                            isTapeStyleInchesEntryComplete(formData.boardThicknessInches)
+                          }
+                          disabled={editLoading}
+                        />
+                      ) : null}
+                      {modelStockSizes.length === 0 || stockSizeMode === "custom" ? (
+                        <SellBoardDimensionsPicker
+                          values={{
+                            boardLength: formData.boardLength,
+                            boardWidthInches: formData.boardWidthInches,
+                            boardThicknessInches: formData.boardThicknessInches,
+                            boardVolumeL: formData.boardVolumeL,
+                          }}
+                          onChange={(patch) =>
+                            setFormData((fd) => ({ ...fd, ...patch }))
+                          }
+                          dimensionsRequired={deliveryFlags.shipping_available}
+                          disabled={editLoading}
+                        />
+                      ) : null}
 
                       <div className="space-y-1.5">
                         {!sellCategoriesLoaded ? (
                           <>
                             <Label className="text-xs font-medium text-foreground/85">
                               Board shape / category{" "}
-                              <span className="text-destructive" aria-hidden="true">
-                                *
-                              </span>
+                              <SellRequiredMark complete={Boolean(formData.category.trim())} />
                             </Label>
                             <p className="text-xs text-muted-foreground">Loading categories…</p>
                           </>
@@ -3832,9 +4002,7 @@ function SellPageContentInner({
                           <>
                             <Label className="text-xs font-medium text-foreground/85">
                               Board shape / category{" "}
-                              <span className="text-destructive" aria-hidden="true">
-                                *
-                              </span>
+                              <SellRequiredMark complete={Boolean(formData.category.trim())} />
                             </Label>
                             <p className="text-xs text-muted-foreground">
                               No board categories found — add rows with board = true in public.categories.
@@ -3845,9 +4013,9 @@ function SellPageContentInner({
                             label={
                               <>
                                 Board shape / category{" "}
-                                <span className="text-destructive" aria-hidden="true">
-                                  *
-                                </span>
+                                <SellRequiredMark
+                                  complete={Boolean(formData.category.trim())}
+                                />
                               </>
                             }
                             value={formData.category}
@@ -3947,9 +4115,11 @@ function SellPageContentInner({
                         <div>
                           <h3 className="text-sm font-semibold text-foreground">
                             Delivery options{" "}
-                            <span className="text-destructive" aria-hidden="true">
-                              *
-                            </span>
+                            <SellRequiredMark
+                              complete={
+                                deliveryFlags.local_pickup || deliveryFlags.shipping_available
+                              }
+                            />
                           </h3>
                           <p className="text-sm text-muted-foreground mt-1">
                             You can select both options.
@@ -4137,9 +4307,11 @@ function SellPageContentInner({
                                             className="text-sm font-semibold text-foreground"
                                           >
                                             Flat shipping rate{" "}
-                                            <span className="text-destructive" aria-hidden>
-                                              *
-                                            </span>
+                                            <SellRequiredMark
+                                              complete={flatShippingRateComplete(
+                                                formData.boardShippingPrice,
+                                              )}
+                                            />
                                           </Label>
                                           <div className="relative max-w-md">
                                             <span
@@ -4450,7 +4622,13 @@ function SellPageContentInner({
                           {formData.autoPriceDrop ? (
                             <div className="space-y-2 sm:pl-14">
                               <Label htmlFor="sell-auto-price-drop-floor">
-                                Lowest price after 2 weeks ($) *
+                                Lowest price after 2 weeks ($){" "}
+                                <SellRequiredMark
+                                  complete={priceDropFloorComplete(
+                                    formData.autoPriceDropFloor,
+                                    formData.price,
+                                  )}
+                                />
                               </Label>
                               <Input
                                 id="sell-auto-price-drop-floor"

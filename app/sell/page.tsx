@@ -1,5 +1,7 @@
 import { Suspense } from "react"
 import { SellStart } from "@/components/features/sell/sell-start"
+import type { SellTrendingBrand } from "@/components/features/sell/sell-trending-brands"
+import { getCachedHomeStableCatalog } from "@/lib/cache/home-public-catalog"
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import { createClient } from "@/lib/supabase/server"
 import SellFlowShell from "./sell-flow-client"
@@ -48,10 +50,22 @@ export default async function SellPage({
   }
 
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const [{ data: userData }, homeCatalog] = await Promise.all([
+    supabase.auth.getUser(),
+    // Same cached curation as the homepage "Trending brands" strip.
+    getCachedHomeStableCatalog(),
+  ])
+  const user = userData.user
   const isAdmin = user ? await fetchProfileIsAdmin(supabase, user.id) : false
 
-  return <SellStart isAdmin={isAdmin} />
+  const trendingBrands: SellTrendingBrand[] = homeCatalog.homeTrendingBrandRows.map(
+    (row) => ({
+      id: row.brand.id,
+      slug: row.brand.slug,
+      name: row.brand.name,
+      logoUrl: row.brand.logo_url,
+    }),
+  )
+
+  return <SellStart isAdmin={isAdmin} trendingBrands={trendingBrands} />
 }

@@ -11,7 +11,16 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { SELL_CONTROL_CLASS } from "@/components/features/sell/sell-form-surface"
+import { SellRequiredMark } from "@/components/features/sell/sell-required-mark"
 import { cn } from "@/lib/utils"
+
+/** Mirrors the listing-price rule in `pricePublishFieldsComplete` (sell-section-completion). */
+function listingPriceComplete(raw: string): boolean {
+  const t = raw.trim().replace(/,/g, "")
+  if (!t) return false
+  const n = Number.parseFloat(t)
+  return Number.isFinite(n) && n >= 0.01 && n <= 999_999.99
+}
 
 export interface SellPriceFieldsProps {
   listingPrice: string
@@ -42,9 +51,7 @@ export function SellPriceFields({
       <div className="space-y-2">
         <Label htmlFor="sell-listing-price" className="text-sm font-semibold text-foreground">
           Listing price{" "}
-          <span className="text-destructive" aria-hidden="true">
-            *
-          </span>
+          <SellRequiredMark complete={listingPriceComplete(listingPrice)} />
         </Label>
         <div className="relative">
           <span

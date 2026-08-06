@@ -10,12 +10,20 @@ import {
   deleteBrandModelVariant,
   insertBrandModelVariant,
   listBrandModelVariantsForAdmin,
+  listSurfboardStockSizeRowsForModel,
   maxSortOrderForBrandModel,
   updateBrandModelVariant,
   type BrandModelVariantRow,
   type FinBoxType,
   type FinBoxesType,
 } from "@/lib/db/brand-model-variants"
+import {
+  canonicalBoardLengthFilterToken,
+  parseBoardLengthParts,
+  parseBoardMeasurement,
+  parseVolumeLiters,
+} from "@/lib/board-measurements"
+import type { SurfboardStockSizeOption } from "@/lib/types/board-stock-sizes"
 import type { BrandModelVariantCondition, BrandModelVariantMaterial, FinCatalogVariantSize } from "@/lib/validations/brand-model-variants"
 import {
   deleteFinCatalogDocument,
@@ -23,6 +31,73 @@ import {
 } from "@/lib/elasticsearch/fin-catalog-index"
 
 export type { BrandModelVariantRow, FinBoxType, FinBoxesType, BrandModelVariantCondition, BrandModelVariantMaterial }
+
+/** Catalog inch label (`19 1/4"`, `2.5 in`) → sell-form value (`19 1/4`, `2.5`); "" when unparseable. */
+function sellInchesValueFromCatalogLabel(label: string): string {
+  const t = label
+    .trim()
+    .replace(/(?:"|″|”|in\.?|inches)\s*$/i, "")
+    .trim()
+  if (!t) return ""
+  const v = parseBoardMeasurement(t) ?? Number.parseFloat(t)
+  return Number.isFinite(v) && v > 0 ? t : ""
+}
+
+/** Catalog volume label (`32.5L`, `~34 L`) → sell-form liters string; "" when unparseable. */
+function sellVolumeValueFromCatalogLabel(label: string): string {
+  const v = parseVolumeLiters(label)
+  return v != null ? String(v) : ""
+}
+
+/**
+ * A model's surfboard stock sizes with labels pre-normalized into sell-form
+ * dimension values. Rows whose length/width/thickness can't be parsed are
+ * dropped — a stock size the form can't apply is worse than none.
+ */
+export async function listSurfboardStockSizesForSellService(
+  supabase: SupabaseClient,
+  brandModelId: string,
+): Promise<SurfboardStockSizeOption[]> {
+  const rows = await listSurfboardStockSizeRowsForModel(supabase, brandModelId)
+  const out: SurfboardStockSizeOption[] = []
+  const seen = new Set<string>()
+
+  for (const row of rows) {
+    const boardLength = canonicalBoardLengthFilterToken(row.length_label) ?? ""
+    const boardWidthInches = sellInchesValueFromCatalogLabel(row.width_label)
+    const boardThicknessInches = sellInchesValueFromCatalogLabel(row.thickness_label)
+    if (!boardLength || !boardWidthInches || !boardThicknessInches) continue
+
+    const boardVolumeL = sellVolumeValueFromCatalogLabel(row.volume_label)
+    const dedupeKey = `${boardLength}|${boardWidthInches}|${boardThicknessInches}|${boardVolumeL}`
+    if (seen.has(dedupeKey)) continue
+    seen.add(dedupeKey)
+
+    out.push({
+      id: row.id,
+      lengthLabel: row.length_label.trim(),
+      widthLabel: row.width_label.trim(),
+      thicknessLabel: row.thickness_label.trim(),
+      volumeLabel: row.volume_label.trim(),
+      values: { boardLength, boardWidthInches, boardThicknessInches, boardVolumeL },
+    })
+  }
+  // Admin sort_order reflects insertion, not size — sellers scan by length.
+  return out.sort(
+    (a, b) =>
+      boardLengthTotalInches(a.values.boardLength) -
+        boardLengthTotalInches(b.values.boardLength) ||
+      (parseBoardMeasurement(a.values.boardWidthInches) ?? 0) -
+        (parseBoardMeasurement(b.values.boardWidthInches) ?? 0),
+  )
+}
+
+function boardLengthTotalInches(boardLength: string): number {
+  const { feetStr, inchesStr } = parseBoardLengthParts(boardLength)
+  const feet = Number.parseInt(feetStr, 10)
+  const inches = parseBoardMeasurement(inchesStr) ?? Number.parseFloat(inchesStr)
+  return (Number.isFinite(feet) ? feet : 0) * 12 + (Number.isFinite(inches) ? inches : 0)
+}
 
 export async function listBrandModelVariantsAdminService(
   supabase: SupabaseClient,

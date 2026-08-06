@@ -26,9 +26,27 @@ async function loadSellCatalogSearch(
   return searchSellCatalogForSell(supabase, qNormalized, { categories })
 }
 
+/**
+ * Sentinel so empty results are never persisted: a transient backend failure
+ * (ES timeout, network blip) would otherwise pin "no matches" for a real
+ * catalog query for the full revalidate window. `unstable_cache` does not
+ * cache thrown errors, so empties are recomputed on every request instead.
+ */
+class EmptySellCatalogSearchResult extends Error {
+  constructor(readonly result: SellCatalogSearchResult) {
+    super("empty sell catalog search result")
+  }
+}
+
 const getCachedSellCatalogSearch = unstable_cache(
-  loadSellCatalogSearch,
-  ["sell-catalog-search-v2"],
+  async (qNormalized: string, categoriesKey: string): Promise<SellCatalogSearchResult> => {
+    const result = await loadSellCatalogSearch(qNormalized, categoriesKey)
+    if (result.results.length === 0 && result.similarResults.length === 0) {
+      throw new EmptySellCatalogSearchResult(result)
+    }
+    return result
+  },
+  ["sell-catalog-search-v3"],
   {
     revalidate: SELL_CATALOG_SEARCH_REVALIDATE_SECONDS,
     tags: [SELL_CATALOG_SEARCH_CACHE_TAG],
@@ -47,5 +65,10 @@ export async function getSellCatalogSearchCached(
       meta: { backend: "supabase", matchTier: "none" },
     }
   }
-  return getCachedSellCatalogSearch(q, [...categories].sort().join(","))
+  try {
+    return await getCachedSellCatalogSearch(q, [...categories].sort().join(","))
+  } catch (error) {
+    if (error instanceof EmptySellCatalogSearchResult) return error.result
+    throw error
+  }
 }

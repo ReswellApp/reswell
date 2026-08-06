@@ -15,6 +15,7 @@ const MODEL_SELECT = `
   description,
   image_url,
   product_category_slug,
+  board_category_slug,
   brands:brand_id ( id, name, slug, logo_url )
 `
 
@@ -26,6 +27,7 @@ type RawModelRow = {
   description: string | null
   image_url: string | null
   product_category_slug: BrandProductCategorySlug
+  board_category_slug: string | null
   brands: RawJoinedBrand | RawJoinedBrand[] | null
 }
 
@@ -53,6 +55,7 @@ function mapRow(row: RawModelRow): SellCatalogSearchModelRow | null {
     imageUrl: row.image_url?.trim() || null,
     description: row.description?.trim() || null,
     category: row.product_category_slug,
+    boardCategorySlug: row.board_category_slug?.trim() || null,
   }
 }
 
@@ -120,6 +123,36 @@ export async function searchSellCatalogModelRows(
   }
 
   return [...merged.values()].slice(0, limit)
+}
+
+/**
+ * Every catalog model for one brand (searchable categories only) — powers the
+ * `/sell` trending-brand drill-in ("Which {brand} model is it?").
+ */
+export async function listSellCatalogModelRowsByBrandId(
+  supabase: SupabaseClient,
+  brandId: string,
+  categories: readonly SellCatalogSearchCategory[],
+  limit = 120,
+): Promise<SellCatalogSearchModelRow[]> {
+  if (categories.length === 0) return []
+
+  const { data, error } = await supabase
+    .from("brand_models")
+    .select(MODEL_SELECT)
+    .eq("brand_id", brandId)
+    .in("product_category_slug", [...categories])
+    .order("name", { ascending: true })
+    .limit(limit)
+
+  if (error) {
+    console.error("listSellCatalogModelRowsByBrandId:", error.message)
+    return []
+  }
+
+  return ((data ?? []) as unknown as RawModelRow[])
+    .map(mapRow)
+    .filter((row): row is SellCatalogSearchModelRow => row !== null)
 }
 
 function pickSellCategoryForBrand(

@@ -3,6 +3,7 @@
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { SELL_TEXTAREA_CLASS } from "@/components/features/sell/sell-form-surface"
+import { SellRequiredMark } from "@/components/features/sell/sell-required-mark"
 import { cn } from "@/lib/utils"
 
 /** Shown under every peer listing description field — freeform; no minimum length enforced. */
@@ -38,10 +39,10 @@ export function SellListingDescriptionField({
       <Label htmlFor={id}>
         Description
         {required ? (
-          <span className="text-destructive" aria-hidden="true">
+          <>
             {" "}
-            *
-          </span>
+            <SellRequiredMark complete={value.trim().length > 0} />
+          </>
         ) : null}
       </Label>
       <p className="text-xs text-muted-foreground">{SELL_LISTING_DESCRIPTION_HINT}</p>

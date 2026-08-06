@@ -30,9 +30,12 @@ import {
   type BoardDimensionOption,
 } from "@/lib/board-dimension-options"
 import {
+  isBoardLengthEntryComplete,
+  isTapeStyleInchesEntryComplete,
   normalizeVolumeLitersInput,
   parseBoardMeasurement,
 } from "@/lib/board-measurements"
+import { SellRequiredMark } from "@/components/features/sell/sell-required-mark"
 import { cn } from "@/lib/utils"
 
 export type SellBoardDimensionsPickerValues = {
@@ -405,17 +408,19 @@ export function SellBoardDimensionsPicker({
   const widthDisplay = widthValue ? displayInchesOrRaw(widthValue) : ""
   const thicknessDisplay = thicknessValue ? displayInchesOrRaw(thicknessValue) : ""
 
-  const requiredMark = dimensionsRequired ? (
-    <span className="text-destructive" aria-hidden="true">
-      {" "}
-      *
-    </span>
-  ) : null
+  const lengthComplete = isBoardLengthEntryComplete(values.boardLength)
+  const widthComplete = isTapeStyleInchesEntryComplete(values.boardWidthInches)
+  const thicknessComplete = isTapeStyleInchesEntryComplete(values.boardThicknessInches)
 
-  const fieldLabel = (text: string, required: boolean) => (
+  const fieldLabel = (text: string, required: boolean, complete: boolean) => (
     <Label className="text-xs font-medium text-muted-foreground">
       {text}
-      {required ? requiredMark : null}
+      {required ? (
+        <>
+          {" "}
+          <SellRequiredMark complete={complete} />
+        </>
+      ) : null}
     </Label>
   )
 
@@ -505,8 +510,8 @@ export function SellBoardDimensionsPicker({
       <div className="space-y-3 sm:hidden">
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-x-2 text-xs text-muted-foreground">
-            {fieldLabel("Length", dimensionsRequired)}
-            {fieldLabel("Width", dimensionsRequired)}
+            {fieldLabel("Length", dimensionsRequired, lengthComplete)}
+            {fieldLabel("Width", dimensionsRequired, widthComplete)}
           </div>
           <div className={segmentedBoxClassName}>
             {lengthSelect}
@@ -515,8 +520,8 @@ export function SellBoardDimensionsPicker({
         </div>
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-x-2 text-xs text-muted-foreground">
-            {fieldLabel("Thickness", dimensionsRequired)}
-            {fieldLabel("Volume", false)}
+            {fieldLabel("Thickness", dimensionsRequired, thicknessComplete)}
+            {fieldLabel("Volume", false, false)}
           </div>
           <div className={segmentedBoxClassName}>
             {thicknessSelect}
@@ -528,10 +533,10 @@ export function SellBoardDimensionsPicker({
       {/* sm+: original single-row segmented control. */}
       <div className="hidden space-y-2 sm:block">
         <div className="grid grid-cols-4 gap-x-2 text-xs text-muted-foreground">
-          {fieldLabel("Length", dimensionsRequired)}
-          {fieldLabel("Width", dimensionsRequired)}
-          {fieldLabel("Thickness", dimensionsRequired)}
-          {fieldLabel("Volume", false)}
+          {fieldLabel("Length", dimensionsRequired, lengthComplete)}
+          {fieldLabel("Width", dimensionsRequired, widthComplete)}
+          {fieldLabel("Thickness", dimensionsRequired, thicknessComplete)}
+          {fieldLabel("Volume", false, false)}
         </div>
 
         <div

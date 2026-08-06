@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react"
 import { createPortal } from "react-dom"
 import Image from "next/image"
 import Link from "next/link"
@@ -208,6 +208,55 @@ interface SearchInputWithSuggestProps {
    * Used by main-nav search so dropdowns are flush with the search bar.
    */
   matchAnchorWidth?: boolean
+  /**
+   * Custom suggest source (e.g. `/sell` catalog search) while reusing the nav typeahead shell.
+   */
+  externalSuggest?: ExternalSuggestConfig<unknown>
+  /**
+   * Fuse the dropdown to the bottom of the search bar (no gap; shared border).
+   * Pair with rounded-b-none on the enclosing `SiteSearchBar` when open.
+   */
+  attachDropdownToBar?: boolean
+  /** When set with `attachDropdownToBar`, renders the panel into this host (inline, full bar width). */
+  dropdownHostRef?: RefObject<HTMLElement | null>
+  /**
+   * Panel sits inside a parent shell that already owns the outer border (e.g. `/sell` fused search).
+   * Omits panel side borders and shadow so bar + list read as one control.
+   */
+  attachedDropdownNested?: boolean
+  /** When set, external suggest state is mirrored here so the parent can render the panel inline. */
+  onExternalSuggestStateChange?: (state: {
+    panelOpen: boolean
+    query: string
+    loading: boolean
+    settled: boolean
+    error: string | null
+    data: unknown | null
+  }) => void
+}
+
+export type ExternalSuggestRenderContext<T> = {
+  query: string
+  loading: boolean
+  settled: boolean
+  error: string | null
+  data: T | null
+  dismissPanel: () => void
+}
+
+export type ExternalSuggestConfig<T> = {
+  minLength?: number
+  debounceMs?: number
+  fetch: (query: string) => Promise<T>
+  shouldShowPanel: (ctx: {
+    query: string
+    loading: boolean
+    settled: boolean
+    error: string | null
+    data: T | null
+  }) => boolean
+  renderPanel: (ctx: ExternalSuggestRenderContext<T>) => ReactNode
+  renderLoadingSkeleton?: () => ReactNode
 }
 
 function listingHref(listing: SuggestListing) {
@@ -273,7 +322,7 @@ function MarketplaceSuggestPanelSkeleton({
   )
 }
 
-function BrandsSuggestPanelSkeleton() {
+export function NavSuggestPanelSkeleton() {
   return (
     <>
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-muted/20 px-3 py-2 sm:px-4 sm:py-2.5">
@@ -375,12 +424,24 @@ export function SearchInputWithSuggest({
   id: inputId,
   disabled = false,
   matchAnchorWidth = false,
+  externalSuggest,
+  attachDropdownToBar = false,
+  dropdownHostRef,
+  attachedDropdownNested = false,
+  onExternalSuggestStateChange,
 }: SearchInputWithSuggestProps) {
-  const isBrands = suggestSource === "brands"
+  const useAttachedDropdown = attachDropdownToBar && dropdownHostRef != null && !onExternalSuggestStateChange
+  const isExternal = Boolean(externalSuggest)
+  const isBrands = !isExternal && suggestSource === "brands"
+  const effectiveMinLength = externalSuggest?.minLength ?? minLength
+  const effectiveDebounceMs = externalSuggest?.debounceMs ?? debounceMs
   const boardsTitleStyle = variant === "boards" && !isBrands
   const panelTopRounded = boardsTitleStyle ? "rounded-t-md" : "rounded-t-2xl"
   const [suggestions, setSuggestions] = useState<SuggestResult | null>(null)
   const [brandRows, setBrandRows] = useState<BrandCatalogSuggestRow[] | null>(null)
+  const [externalData, setExternalData] = useState<unknown | null>(null)
+  const [externalError, setExternalError] = useState<string | null>(null)
+  const [externalSettled, setExternalSettled] = useState(false)
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [dropdownRect, setDropdownRect] = useState<{
@@ -451,7 +512,7 @@ export function SearchInputWithSuggest({
   }
 
   useEffect(() => {
-    if (suggestSource === "brands" || disableSuggest) return
+    if (isExternal || suggestSource === "brands" || disableSuggest) return
     const q = value.trim()
     if (q.length < minLength) {
       invalidatePendingSuggest()
@@ -495,7 +556,7 @@ export function SearchInputWithSuggest({
   ])
 
   useEffect(() => {
-    if (suggestSource !== "brands" || disableSuggest) return
+    if (isExternal || suggestSource !== "brands" || disableSuggest) return
     const q = value.trim()
     if (q.length < minLength) {
       invalidatePendingSuggest()
@@ -555,6 +616,63 @@ export function SearchInputWithSuggest({
     autoOpenDropdownOnFetch,
   ])
 
+  useEffect(() => {
+    if (!externalSuggest || disableSuggest) return
+    const q = value.trim()
+    if (q.length < effectiveMinLength) {
+      invalidatePendingSuggest()
+      setExternalData(null)
+      setExternalError(null)
+      setExternalSettled(false)
+      setOpen(false)
+      setLoading(false)
+      return
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      const generation = ++suggestGenerationRef.current
+      void (async () => {
+        if (generation !== suggestGenerationRef.current) return
+        if (q.length < effectiveMinLength) return
+        setLoading(true)
+        setExternalSettled(false)
+        setExternalError(null)
+        setExternalData(null)
+        if (isSearchInputFocused()) setOpen(true)
+        try {
+          const data = await externalSuggest.fetch(q)
+          if (generation !== suggestGenerationRef.current) return
+          setExternalData(data)
+          setExternalSettled(true)
+          if (!autoOpenDropdownOnFetch) {
+            setOpen(false)
+            return
+          }
+          setOpen(isSearchInputFocused())
+        } catch {
+          if (generation !== suggestGenerationRef.current) return
+          setExternalData(null)
+          setExternalError("Could not search the catalog. Please try again.")
+          setExternalSettled(true)
+          setOpen(isSearchInputFocused())
+        } finally {
+          if (generation === suggestGenerationRef.current) setLoading(false)
+        }
+      })()
+    }, effectiveDebounceMs)
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [
+    value,
+    effectiveMinLength,
+    effectiveDebounceMs,
+    disableSuggest,
+    externalSuggest,
+    autoOpenDropdownOnFetch,
+    isExternal,
+  ])
+
   const listings = suggestions?.listings ?? []
   const listingTitlesLower = new Set(listings.map((l) => l.title.toLowerCase()))
   const extraTitles = (suggestions?.titles ?? []).filter((t) => !listingTitlesLower.has(t.toLowerCase()))
@@ -581,9 +699,39 @@ export function SearchInputWithSuggest({
     (listings.length > 0 || (suggestions.brands?.length ?? 0) > 0 || (suggestions.categories?.length ?? 0) > 0)
 
   const hasFallbackList = !disableSuggest && open && flatSuggestions.length > 0
-  const queryMeetsSuggestMin = value.trim().length >= minLength
+  const queryMeetsSuggestMin = value.trim().length >= (isExternal ? effectiveMinLength : minLength)
   const showLoadingPanel =
-    loading && !disableSuggest && open && queryMeetsSuggestMin
+    !isExternal && loading && !disableSuggest && open && queryMeetsSuggestMin
+  const externalPanelDelegated = Boolean(onExternalSuggestStateChange)
+  const showExternalLoadingPanel =
+    isExternal && !externalPanelDelegated && loading && !disableSuggest && open && queryMeetsSuggestMin
+  const showExternalResultsPanel = Boolean(
+    isExternal &&
+      !externalPanelDelegated &&
+      !showExternalLoadingPanel &&
+      !disableSuggest &&
+      open &&
+      externalSuggest?.shouldShowPanel({
+        query: value.trim(),
+        loading,
+        settled: externalSettled,
+        error: externalError,
+        data: externalData,
+      }),
+  )
+  const showExternalDelegatedPanel = Boolean(
+    externalPanelDelegated &&
+      isExternal &&
+      !disableSuggest &&
+      open &&
+      externalSuggest?.shouldShowPanel({
+        query: value.trim(),
+        loading,
+        settled: externalSettled,
+        error: externalError,
+        data: externalData,
+      }),
+  )
   const showMarketplacePanel =
     !showLoadingPanel &&
     suggestSource === "marketplace" &&
@@ -594,11 +742,38 @@ export function SearchInputWithSuggest({
     !disableSuggest &&
     open &&
     (brandRows?.length ?? 0) > 0
-  const showPanelForRect = showMarketplacePanel || showBrandsPanel || showLoadingPanel
+  const showPanelForRect =
+    showMarketplacePanel ||
+    showBrandsPanel ||
+    showLoadingPanel ||
+    showExternalLoadingPanel ||
+    showExternalResultsPanel ||
+    showExternalDelegatedPanel
 
   useEffect(() => {
     onOpenChange?.(showPanelForRect)
   }, [showPanelForRect, onOpenChange])
+
+  useEffect(() => {
+    if (!onExternalSuggestStateChange || !externalSuggest) return
+    onExternalSuggestStateChange({
+      panelOpen: showPanelForRect,
+      query: value.trim(),
+      loading,
+      settled: externalSettled,
+      error: externalError,
+      data: externalData,
+    })
+  }, [
+    onExternalSuggestStateChange,
+    externalSuggest,
+    showPanelForRect,
+    value,
+    loading,
+    externalSettled,
+    externalError,
+    externalData,
+  ])
 
   /** When listings share the panel with brands/categories/suggestions, flex so listings scroll instead of clipping the footer. */
   const listingsSharePanelWithFooter =
@@ -619,8 +794,8 @@ export function SearchInputWithSuggest({
     : "max-h-[min(36dvh,240px)] sm:max-h-[min(40vh,280px)]"
 
   useEffect(() => {
-    if (!showPanelForRect || !containerRef.current || typeof document === "undefined") {
-      setDropdownRect(null)
+    if (useAttachedDropdown || !showPanelForRect || !containerRef.current || typeof document === "undefined") {
+      if (useAttachedDropdown) setDropdownRect(null)
       return
     }
     const el = containerRef.current
@@ -633,7 +808,7 @@ export function SearchInputWithSuggest({
     const update = () => {
       const rect = el.getBoundingClientRect()
       const widthRect = widthAnchor === el ? rect : widthAnchor.getBoundingClientRect()
-      const dropTop = widthRect.bottom + 8
+      const dropTop = attachDropdownToBar ? widthRect.bottom - 2 : widthRect.bottom + 8
       let portalTop: number | null = null
       let portalLeft: number | null = null
       let portalWidth: number | null = null
@@ -668,7 +843,7 @@ export function SearchInputWithSuggest({
         vv.removeEventListener("scroll", update)
       }
     }
-  }, [showPanelForRect, suggestPortalContainer, matchAnchorWidth])
+  }, [showPanelForRect, suggestPortalContainer, matchAnchorWidth, attachDropdownToBar, useAttachedDropdown])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -885,7 +1060,50 @@ export function SearchInputWithSuggest({
         dropdownRect?.portalLeft != null,
     )
 
+  const attachedDropdownPanel =
+    useAttachedDropdown &&
+    showPanelForRect &&
+    dropdownHostRef?.current &&
+    typeof document !== "undefined" &&
+    createPortal(
+      <div
+        ref={dropdownRef}
+        id={listboxId}
+        role="listbox"
+        data-search-suggest-panel=""
+        className={cn(
+          "flex min-h-0 w-full min-w-0 max-h-[min(72dvh,520px)] flex-col overflow-hidden bg-popover text-popover-foreground touch-pan-y",
+          attachedDropdownNested
+            ? "rounded-none border-0 border-t border-border/60 shadow-none"
+            : "rounded-b-2xl border border-border/80 border-t-0 shadow-md max-sm:rounded-b-xl",
+        )}
+        aria-busy={showLoadingPanel || showExternalLoadingPanel}
+        onMouseDown={(event) => {
+          event.preventDefault()
+        }}
+      >
+        {showExternalLoadingPanel ? (
+          externalSuggest?.renderLoadingSkeleton?.() ?? <NavSuggestPanelSkeleton />
+        ) : null}
+        {showExternalResultsPanel && externalSuggest ? (
+          externalSuggest.renderPanel({
+            query: value.trim(),
+            loading,
+            settled: externalSettled,
+            error: externalError,
+            data: externalData,
+            dismissPanel: () => {
+              invalidatePendingSuggest()
+              setOpen(false)
+            },
+          })
+        ) : null}
+      </div>,
+      dropdownHostRef.current,
+    )
+
   const dropdownPanel =
+    !useAttachedDropdown &&
     showPanelForRect &&
     dropdownRect &&
     panelLayout &&
@@ -899,9 +1117,11 @@ export function SearchInputWithSuggest({
         className={cn(
           "flex min-h-0 flex-col overflow-hidden border bg-popover text-popover-foreground touch-pan-y pointer-events-auto",
           portaledInsideModal ? "absolute z-[80]" : "fixed z-[160]",
-          boardsTitleStyle
-            ? "rounded-md border-border shadow-md"
-            : "max-sm:rounded-xl rounded-2xl border-border/80 shadow-xl shadow-black/10 max-sm:shadow-2xl",
+          attachDropdownToBar
+            ? "rounded-t-none rounded-b-2xl border-border/80 border-t-border/60 shadow-md max-sm:rounded-b-xl"
+            : boardsTitleStyle
+              ? "rounded-md border-border shadow-md"
+              : "max-sm:rounded-xl rounded-2xl border-border/80 shadow-xl shadow-black/10 max-sm:shadow-2xl",
         )}
         style={
           portaledInsideModal
@@ -918,11 +1138,27 @@ export function SearchInputWithSuggest({
                 maxHeight: panelLayout.maxHeight,
               }
         }
-        aria-busy={showLoadingPanel}
+        aria-busy={showLoadingPanel || showExternalLoadingPanel}
       >
+        {showExternalLoadingPanel ? (
+          externalSuggest?.renderLoadingSkeleton?.() ?? <NavSuggestPanelSkeleton />
+        ) : null}
+        {showExternalResultsPanel && externalSuggest ? (
+          externalSuggest.renderPanel({
+            query: value.trim(),
+            loading,
+            settled: externalSettled,
+            error: externalError,
+            data: externalData,
+            dismissPanel: () => {
+              invalidatePendingSuggest()
+              setOpen(false)
+            },
+          })
+        ) : null}
         {showLoadingPanel ? (
           isBrands ? (
-            <BrandsSuggestPanelSkeleton />
+            <NavSuggestPanelSkeleton />
           ) : (
             <MarketplaceSuggestPanelSkeleton
               boardsTitleStyle={boardsTitleStyle}
@@ -1359,7 +1595,41 @@ export function SearchInputWithSuggest({
           onFocusProp?.()
           if (disableSuggest) return
           const q = value.trim()
-          if (q.length < minLength) return
+          const minQ = isExternal ? effectiveMinLength : minLength
+          if (q.length < minQ) return
+          if (isExternal && externalSuggest) {
+            if (externalSettled && (externalData !== null || externalError)) {
+              setOpen(true)
+              return
+            }
+            if (debounceRef.current) clearTimeout(debounceRef.current)
+            debounceRef.current = setTimeout(() => {
+              const gen = ++suggestGenerationRef.current
+              void (async () => {
+                if (gen !== suggestGenerationRef.current) return
+                if (q.length < effectiveMinLength) return
+                setLoading(true)
+                setOpen(true)
+                try {
+                  const data = await externalSuggest.fetch(q)
+                  if (gen !== suggestGenerationRef.current) return
+                  setExternalData(data)
+                  setExternalError(null)
+                  setExternalSettled(true)
+                  setOpen(isSearchInputFocused())
+                } catch {
+                  if (gen !== suggestGenerationRef.current) return
+                  setExternalData(null)
+                  setExternalError("Could not search the catalog. Please try again.")
+                  setExternalSettled(true)
+                  setOpen(isSearchInputFocused())
+                } finally {
+                  if (gen === suggestGenerationRef.current) setLoading(false)
+                }
+              })()
+            }, effectiveDebounceMs)
+            return
+          }
           if (suggestSource === "brands") {
             if ((brandRows?.length ?? 0) > 0) {
               setOpen(true)
@@ -1440,7 +1710,7 @@ export function SearchInputWithSuggest({
         )}
         autoComplete="off"
         aria-expanded={showPanelForRect}
-        aria-busy={showLoadingPanel}
+        aria-busy={showLoadingPanel || showExternalLoadingPanel}
         aria-controls={listboxId}
         aria-autocomplete="list"
         autoFocus={autoFocus}
@@ -1457,12 +1727,16 @@ export function SearchInputWithSuggest({
             setOpen(false)
             setSuggestions(null)
             setBrandRows(null)
+            setExternalData(null)
+            setExternalError(null)
+            setExternalSettled(false)
             setLoading(false)
           }}
         >
           <X className="h-4 w-4" />
         </button>
       )}
+      {attachedDropdownPanel}
       {dropdownPanel}
     </div>
   )

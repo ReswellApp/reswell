@@ -58,6 +58,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { BrandCatalogImagePickButton } from "@/components/brands/brand-catalog-image-picker-dialog"
+import {
+  SURFBOARD_SELL_CATEGORY_LABELS,
+  SURFBOARD_SELL_CATEGORY_ORDER,
+} from "@/lib/surfboard-sell-categories"
+
+/** Radix Select sentinel for "no board shape" — must not collide with a shape key. */
+const BOARD_CATEGORY_UNSET_VALUE = "__board_category_unset__"
 import { BrandModelVariantsEditor } from "@/components/brands/brand-model-variants-editor"
 import { FinBrandModelVariantsEditor } from "@/components/brands/fin-brand-model-variants-editor"
 import {
@@ -114,6 +121,7 @@ export function BrandModelEditorDialog({
   const [brandId, setBrandId] = React.useState<string>("")
   const [productCategorySlug, setProductCategorySlug] =
     React.useState<BrandProductCategorySlug>("surfboards")
+  const [boardCategorySlug, setBoardCategorySlug] = React.useState<string>("")
   const [brandProductCategories, setBrandProductCategories] = React.useState<
     BrandProductCategorySlug[]
   >([])
@@ -399,6 +407,10 @@ export function BrandModelEditorDialog({
           description: description.trim() || null,
           image_url: imageUrl,
           product_category_slug: productCategorySlug,
+          board_category_slug:
+            productCategorySlug === "surfboards" && boardCategorySlug
+              ? boardCategorySlug
+              : null,
         }),
       })
       const json = (await res.json().catch(() => ({}))) as {
@@ -451,6 +463,7 @@ export function BrandModelEditorDialog({
       }
       setModelName("")
       setDescription("")
+      setBoardCategorySlug("")
       if (modelImageInputRef.current) modelImageInputRef.current.value = ""
       setNewModelCatalogImageUrl(null)
       setPendingCreateVariants([])
@@ -673,6 +686,35 @@ export function BrandModelEditorDialog({
               board dimensions.
             </p>
           </div>
+
+          {productCategorySlug === "surfboards" ? (
+            <div className="space-y-2">
+              <Label htmlFor="brand-model-board-category">Board shape (optional)</Label>
+              <Select
+                value={boardCategorySlug || BOARD_CATEGORY_UNSET_VALUE}
+                onValueChange={(v) =>
+                  setBoardCategorySlug(v === BOARD_CATEGORY_UNSET_VALUE ? "" : v)
+                }
+                disabled={saving || !brandId}
+              >
+                <SelectTrigger id="brand-model-board-category" className="h-10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={BOARD_CATEGORY_UNSET_VALUE}>Not set</SelectItem>
+                  {SURFBOARD_SELL_CATEGORY_ORDER.map((key) => (
+                    <SelectItem key={key} value={key}>
+                      {SURFBOARD_SELL_CATEGORY_LABELS[key]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Auto-fills &ldquo;Board shape / category&rdquo; when a seller picks this model in
+                the /sell flow.
+              </p>
+            </div>
+          ) : null}
 
           <div className="space-y-2">
             <Label htmlFor="brand-model-image">Model image (optional)</Label>

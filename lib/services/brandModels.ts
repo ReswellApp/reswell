@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { BrandProductCategorySlug } from "@/lib/brand-product-categories"
+import type { SurfboardSellCategoryKey } from "@/lib/surfboard-sell-categories"
 import {
   deleteBrandModel,
   insertBrandModel,
@@ -39,6 +40,7 @@ export async function createBrandModelService(
     description: string | null
     image_url: string | null
     product_category_slug?: BrandProductCategorySlug
+    board_category_slug?: SurfboardSellCategoryKey | null
   },
 ): Promise<{ ok: true; row: BrandModelRow } | { ok: false; error: string; status?: number }> {
   const { data: brand, error: brandErr } = await supabase.from("brands").select("id").eq("id", input.brand_id).maybeSingle()
@@ -70,6 +72,7 @@ export async function updateBrandModelService(
     brand_id?: string
     image_url?: string | null
     product_category_slug?: BrandProductCategorySlug
+    board_category_slug?: SurfboardSellCategoryKey | null
   },
 ): Promise<{ ok: true } | { ok: false; error: string; status?: number }> {
   if (patch.brand_id) {

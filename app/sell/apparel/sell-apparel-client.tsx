@@ -82,6 +82,11 @@ import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-li
 import { finalizePeerListingCreate } from "@/lib/utils/admin-peer-listing-create-navigation"
 import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
 import { takeSellCatalogHandoff } from "@/lib/sell-flow/catalog-handoff"
+import {
+  SellCatalogSelectionCard,
+  type SellCatalogSelectionCardData,
+} from "@/components/features/sell/sell-catalog-selection-card"
+import { sellCatalogSearchCategoryLabel } from "@/lib/types/sell-catalog-search"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 import {
   SELL_SUBMIT_INTERRUPTED_MESSAGE,
@@ -219,13 +224,29 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
 
   // One-shot brand/model prefill from the /sell cross-category catalog search wall.
   const catalogHandoffTakenRef = useRef(false)
+  const [catalogSelectionCard, setCatalogSelectionCard] =
+    useState<SellCatalogSelectionCardData | null>(null)
   useEffect(() => {
     if (catalogHandoffTakenRef.current || editId) return
     catalogHandoffTakenRef.current = true
     const handoff = takeSellCatalogHandoff("apparel")
     if (!handoff) return
+    if (handoff.selectionKind !== "variant") {
+      setCatalogSelectionCard({
+        brandName: handoff.brandName,
+        modelName: handoff.selectionKind === "model" ? handoff.modelName : null,
+        categoryLabel: sellCatalogSearchCategoryLabel(handoff.category),
+        imageUrl: handoff.imageUrl,
+        imageIsLogo: handoff.imageIsLogo,
+      })
+    }
     setForm((prev) => ({
       ...prev,
+      title: prev.title.trim() ? prev.title : handoff.suggestedTitle,
+      description:
+        prev.description.trim() || !handoff.suggestedDescription
+          ? prev.description
+          : handoff.suggestedDescription,
       brand: handoff.brandName,
       model: handoff.selectionKind === "model" ? handoff.modelName : "",
     }))
@@ -1062,6 +1083,12 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
                 description="Category, condition, and details help buyers shop with confidence."
               >
                 <div className="space-y-8">
+                  {catalogSelectionCard && form.brand === catalogSelectionCard.brandName ? (
+                    <SellCatalogSelectionCard
+                      selection={catalogSelectionCard}
+                      onRemove={() => setCatalogSelectionCard(null)}
+                    />
+                  ) : null}
                   <SellApparelFacetFields
                     kind={form.kind}
                     condition={form.condition}

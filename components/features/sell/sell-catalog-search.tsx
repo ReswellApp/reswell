@@ -3,19 +3,19 @@
 import * as React from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { createPortal } from "react-dom"
-import { Loader2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { FocusScrim } from "@/components/focus-scrim"
 import {
-  NavSearchTopListingSectionHeader,
-  navSearchTopListingMetaClassName,
-  navSearchTopListingRowClassName,
   navSearchTopListingThumbClassName,
-  navSearchTopListingTitleClassName,
 } from "@/components/features/search/nav-search-top-listing-row"
-import { getSuggestPanelLayout } from "@/components/search-input-with-suggest"
 import {
-  SiteSearchBar,
+  NavSuggestPanelSkeleton,
+  SearchInputWithSuggest,
+  type ExternalSuggestConfig,
+  type ExternalSuggestRenderContext,
+} from "@/components/search-input-with-suggest"
+import {
+  SiteSearchFormSubmitButton,
   siteSearchInputClassName,
 } from "@/components/site-search-bar"
 import {
@@ -28,9 +28,17 @@ import {
   type SellCatalogSearchResultRow,
 } from "@/lib/types/sell-catalog-search"
 import {
+  useSellCatalogNlHelper,
+  type SellCatalogNlHelperState,
+} from "@/components/features/sell/hooks/use-sell-catalog-nl-helper"
+import {
   sellCatalogHandoffFromRow,
   writeSellCatalogHandoff,
 } from "@/lib/sell-flow/catalog-handoff"
+import {
+  SellTrendingBrandsSlider,
+  type SellTrendingBrand,
+} from "@/components/features/sell/sell-trending-brands"
 import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
 import { finCatalogSearchRowThumbUrl } from "@/lib/utils/fin-catalog-display-image"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
@@ -40,12 +48,11 @@ import { cn } from "@/lib/utils"
 
 const SEARCH_DEBOUNCE_MS = 250
 
-const SUGGEST_DROPDOWN_PANEL_CLASS =
-  "flex min-h-0 flex-col overflow-hidden border bg-popover text-popover-foreground touch-pan-y pointer-events-auto fixed z-[160] max-sm:rounded-xl rounded-2xl border-border/80 shadow-xl shadow-black/10 max-sm:shadow-2xl"
-
 export type SellCatalogSearchProps = {
   /** "List manually without searching" — reveals the product-type chooser. */
   onSkip: () => void
+  /** Homepage trending brands — tapping one drills into that brand's models. */
+  trendingBrands?: SellTrendingBrand[]
   className?: string
 }
 
@@ -196,22 +203,26 @@ function CatalogThumb({
   alt,
   fallbackLetter,
   isLogo,
+  className,
+  imageSizes = "(max-width:640px) 48px, 56px",
 }: {
   src: string | null | undefined
   alt: string
   fallbackLetter: string
   isLogo: boolean
+  className?: string
+  imageSizes?: string
 }) {
   const displaySrc = src?.trim() ? brandLogoDisplaySrc(src) : null
   return (
-    <div className={navSearchTopListingThumbClassName}>
+    <div className={cn(navSearchTopListingThumbClassName, className)}>
       {displaySrc ? (
         <Image
           src={displaySrc}
           alt={alt}
           fill
           className={cn(isLogo ? "object-contain p-1.5" : "object-cover")}
-          sizes="(max-width:640px) 48px, 56px"
+          sizes={imageSizes}
           unoptimized={listingImageShouldBypassOptimization(displaySrc)}
         />
       ) : (
@@ -240,10 +251,10 @@ function ProductRow({
   const isLogo = row.kind === "brand" || Boolean(brandLogo && thumb === brandLogo)
 
   return (
-    <li role="option">
+    <li role="option" className="min-w-0">
       <button
         type="button"
-        className={navSearchTopListingRowClassName}
+        className="flex h-full w-full cursor-pointer select-none items-center gap-3 rounded-xl border border-border/70 bg-background p-2.5 text-left outline-none transition-colors hover:border-cerulean/40 hover:bg-muted/40 focus-visible:border-cerulean/40 focus-visible:bg-muted/40 sm:p-3"
         onMouseDown={(e) => e.preventDefault()}
         onClick={() => onSelect(row)}
       >
@@ -252,19 +263,36 @@ function ProductRow({
           alt={title}
           fallbackLetter={title}
           isLogo={isLogo}
+          className="h-16 w-16 rounded-lg sm:h-20 sm:w-20 sm:rounded-xl"
+          imageSizes="(max-width:640px) 64px, 80px"
         />
-        <div className="min-w-0 flex-1 pt-0.5 sm:pt-0">
-          <p className={navSearchTopListingTitleClassName}>
+        <div className="min-w-0 flex-1">
+          <p className="line-clamp-2 text-sm font-semibold leading-snug text-foreground sm:text-base">
             {highlightQueryParts(title, query)}
           </p>
           {meta ? (
-            <p className={navSearchTopListingMetaClassName}>
+            <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
               {highlightQueryParts(meta, query)}
             </p>
           ) : null}
         </div>
       </button>
     </li>
+  )
+}
+
+/** Block-card grid for catalog product results — 2-up on desktop so images stay large. */
+const productGridClassName =
+  "grid min-h-0 max-h-[min(50dvh,340px)] grid-cols-1 gap-2 overflow-y-auto overscroll-contain px-3 pb-3 pt-1 sm:max-h-[min(56dvh,480px)] sm:grid-cols-2 sm:gap-2.5 sm:px-4"
+
+/** Quiet uppercase section label — lighter than the banded nav-search header. */
+function PanelSectionHeader({ title }: { title: string }) {
+  return (
+    <div className="flex shrink-0 items-center px-4 pb-1 pt-3">
+      <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {title}
+      </span>
+    </div>
   )
 }
 
@@ -283,9 +311,9 @@ function DropdownResults({
   return (
     <>
       {suggestions.length > 0 ? (
-        <div className={cn(products.length > 0 && "border-b border-border/60")}>
-          <NavSearchTopListingSectionHeader title="Suggestions" />
-          <ul className="min-h-0 max-h-[min(34dvh,220px)] overflow-y-auto overscroll-contain py-1 sm:max-h-[min(36dvh,240px)]">
+        <div>
+          <PanelSectionHeader title="Suggestions" />
+          <ul className="min-h-0 max-h-[min(34dvh,220px)] overflow-y-auto overscroll-contain pb-1 sm:max-h-[min(36dvh,240px)]">
             {suggestions.map((row) => (
               <SuggestionRow key={rowKey(row)} row={row} query={query} onSelect={onSelect} />
             ))}
@@ -295,8 +323,8 @@ function DropdownResults({
 
       {products.length > 0 ? (
         <div>
-          <NavSearchTopListingSectionHeader title="Catalog matches" />
-          <ul className="min-h-0 max-h-[min(42dvh,280px)] overflow-y-auto overscroll-contain py-1 sm:max-h-[min(45dvh,360px)]">
+          <PanelSectionHeader title="Catalog matches" />
+          <ul className={productGridClassName}>
             {products.map((row) => (
               <ProductRow key={rowKey(row)} row={row} query={query} onSelect={onSelect} />
             ))}
@@ -307,122 +335,397 @@ function DropdownResults({
   )
 }
 
-export function SellCatalogSearch({ onSkip, className }: SellCatalogSearchProps) {
+function NlHelperResults({
+  nlHelper,
+  shownKeys,
+  query,
+  onSelect,
+}: {
+  nlHelper: SellCatalogNlHelperState
+  shownKeys: ReadonlySet<string>
+  query: string
+  onSelect: (row: SellCatalogSearchResultRow) => void
+}) {
+  if (nlHelper.loading) {
+    return (
+      <div className="flex items-center gap-2 border-t border-border/60 px-4 py-3 text-xs text-muted-foreground">
+        <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-cerulean" />
+        Checking our catalog with AI…
+      </div>
+    )
+  }
+
+  const rows = (nlHelper.data?.rows ?? []).filter((row) => !shownKeys.has(rowKey(row)))
+  if (rows.length === 0) return null
+
+  const summary = nlHelper.data?.summary?.trim()
+  return (
+    <div className="border-t border-border/60">
+      <PanelSectionHeader
+        title={summary ? `AI matched: ${summary}` : "AI suggested matches"}
+      />
+      <ul className={productGridClassName}>
+        {rows.map((row) => (
+          <ProductRow key={rowKey(row)} row={row} query={query} onSelect={onSelect} />
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+/**
+ * Smoothly animates the dropdown between content heights: measures the inner
+ * content with a ResizeObserver and transitions an explicit pixel height, so
+ * result changes while typing glide instead of snapping the panel size.
+ */
+function AnimatedPanelHeight({ children }: { children: React.ReactNode }) {
+  const innerRef = React.useRef<HTMLDivElement>(null)
+  const [height, setHeight] = React.useState<number | null>(null)
+
+  React.useLayoutEffect(() => {
+    const el = innerRef.current
+    if (!el) return
+    setHeight(el.offsetHeight)
+    const observer = new ResizeObserver(() => {
+      setHeight(el.offsetHeight)
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
+  return (
+    <div
+      className="overflow-hidden transition-[height] duration-200 ease-out motion-reduce:transition-none"
+      style={{ height: height == null ? "auto" : `${height}px` }}
+    >
+      <div ref={innerRef}>{children}</div>
+    </div>
+  )
+}
+
+const EMPTY_NL_HELPER: SellCatalogNlHelperState = { loading: false, data: null }
+
+function SellCatalogSearchPanel({
+  ctx,
+  onSkip,
+  onSelect,
+  nlHelper = EMPTY_NL_HELPER,
+}: {
+  ctx: ExternalSuggestRenderContext<SellCatalogSearchResult>
+  onSkip: () => void
+  onSelect: (row: SellCatalogSearchResultRow) => void
+  nlHelper?: SellCatalogNlHelperState
+}) {
+  const { query, settled, error, data } = ctx
+  const matchTier = data?.meta.matchTier ?? "none"
+  const rankedRows =
+    matchTier === "similar" ? (data?.similarResults ?? []) : (data?.results ?? [])
+  const hasResults = rankedRows.length > 0
+  const showNoMatches = settled && !hasResults && !error
+  const showSimilarFallback = matchTier === "similar" && hasResults
+  const shownKeys = new Set(rankedRows.map(rowKey))
+  const nlHelperHasContent =
+    nlHelper.loading || (nlHelper.data?.rows ?? []).some((row) => !shownKeys.has(rowKey(row)))
+
+  if (error) {
+    return <div className="px-4 py-4 text-sm text-destructive sm:px-5 sm:py-5">{error}</div>
+  }
+
+  if (showSimilarFallback) {
+    return (
+      <>
+        <div className="border-b border-border/60 px-4 py-2.5 text-sm sm:px-4 sm:py-3">
+          <p className="text-muted-foreground">
+            No exact match for &ldquo;{query}&rdquo;. Closest catalog results:
+          </p>
+        </div>
+        <DropdownResults rows={rankedRows} query={query} onSelect={onSelect} />
+        <NlHelperResults
+          nlHelper={nlHelper}
+          shownKeys={shownKeys}
+          query={query}
+          onSelect={onSelect}
+        />
+        <div className="border-t border-border/60 px-4 py-3 sm:px-4">
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full min-h-touch md:w-auto"
+            onClick={onSkip}
+          >
+            Continue without a catalog match
+          </Button>
+        </div>
+      </>
+    )
+  }
+
+  if (showNoMatches) {
+    return (
+      <>
+        {nlHelperHasContent ? (
+          <NlHelperResults
+            nlHelper={nlHelper}
+            shownKeys={shownKeys}
+            query={query}
+            onSelect={onSelect}
+          />
+        ) : null}
+        <div className="space-y-3 px-4 py-5 text-sm sm:px-4">
+          <p className="text-muted-foreground">
+            {nlHelperHasContent && !nlHelper.loading
+              ? "Not what you're selling? You can still list your item manually — brand and model don't have to be in our directory."
+              : "No catalog matches for that search. You can still list your item manually — brand and model don't have to be in our directory."}
+          </p>
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full min-h-touch md:w-auto"
+            onClick={onSkip}
+          >
+            Choose a category manually
+          </Button>
+        </div>
+      </>
+    )
+  }
+
+  if (hasResults) {
+    return <DropdownResults rows={rankedRows} query={query} onSelect={onSelect} />
+  }
+
+  return null
+}
+
+async function fetchSellBrandCatalogModels(
+  brandId: string,
+): Promise<SellCatalogSearchResultRow[]> {
+  const res = await fetch(
+    `/api/sell/catalog-search/brand-models?${new URLSearchParams({ brand_id: brandId })}`,
+    { method: "GET", headers: { Accept: "application/json" } },
+  )
+  const body = (await res.json()) as {
+    data?: { rows: SellCatalogSearchResultRow[] }
+    error?: string
+  }
+  if (!res.ok || !body.data) {
+    throw new Error(body.error ?? "Could not load this brand's models.")
+  }
+  return body.data.rows
+}
+
+/**
+ * Trending-brand drill-in: "Which {brand} model is it?" — every catalog model
+ * for the tapped brand as clickable blocks. Picking one runs the same handoff
+ * as a search result, so it lands in the right sell flow prefilled.
+ */
+function SellBrandModelsPanel({
+  brand,
+  rows,
+  loading,
+  error,
+  onSelect,
+  onBack,
+  onSkip,
+}: {
+  brand: SellTrendingBrand
+  rows: SellCatalogSearchResultRow[] | null
+  loading: boolean
+  error: string | null
+  onSelect: (row: SellCatalogSearchResultRow) => void
+  onBack: () => void
+  onSkip: () => void
+}) {
+  const [filter, setFilter] = React.useState("")
+  const filterKey = compactSearchKey(filter)
+  const visibleRows = React.useMemo(() => {
+    if (!rows) return []
+    if (!filterKey) return rows
+    return rows.filter((row) =>
+      compactSearchKey(productTitleLine(row)).includes(filterKey),
+    )
+  }, [rows, filterKey])
+
+  return (
+    <section
+      className="overflow-hidden rounded-2xl border border-border bg-popover text-popover-foreground shadow-sm animate-in fade-in duration-150 ease-out motion-reduce:animate-none"
+      aria-label={`${brand.name} catalog models`}
+    >
+      <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2.5 sm:px-4">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 shrink-0 px-2 text-xs text-muted-foreground"
+          onClick={onBack}
+        >
+          ← All brands
+        </Button>
+        <p className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
+          Which {brand.name} model is it?
+        </p>
+      </div>
+
+      {rows && rows.length > 8 ? (
+        <div className="px-3 pt-3 sm:px-4">
+          <input
+            type="text"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder={`Filter ${brand.name} models`}
+            className="h-9 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none placeholder:text-muted-foreground/70 focus:border-cerulean/40 focus:ring-2 focus:ring-cerulean/15"
+            aria-label={`Filter ${brand.name} models`}
+          />
+        </div>
+      ) : null}
+
+      {loading || (!error && rows === null) ? (
+        <NavSuggestPanelSkeleton />
+      ) : error ? (
+        <div className="px-4 py-4 text-sm text-destructive">{error}</div>
+      ) : visibleRows.length > 0 ? (
+        <ul role="listbox" aria-label={`${brand.name} models`} className={productGridClassName}>
+          {visibleRows.map((row) => (
+            <ProductRow key={rowKey(row)} row={row} query={filter} onSelect={onSelect} />
+          ))}
+        </ul>
+      ) : (
+        <p className="px-4 py-5 text-sm text-muted-foreground">
+          {filterKey
+            ? `No ${brand.name} models match that filter.`
+            : `We don't have ${brand.name} models in the catalog yet.`}
+        </p>
+      )}
+
+      <div className="border-t border-border/60 px-3 py-2.5 sm:px-4">
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-auto px-2 py-1.5 text-xs text-muted-foreground"
+          onClick={onSkip}
+        >
+          Can&apos;t find it? List manually
+        </Button>
+      </div>
+    </section>
+  )
+}
+
+async function fetchSellCatalogSearch(query: string): Promise<SellCatalogSearchResult> {
+  const res = await fetch(
+    `/api/sell/catalog-search?${new URLSearchParams({ q: query })}`,
+    { method: "GET", headers: { Accept: "application/json" } },
+  )
+  const body = (await res.json()) as { data?: SellCatalogSearchResult; error?: string }
+  if (!res.ok || !body.data) {
+    throw new Error(body.error ?? "Could not search the catalog. Please try again.")
+  }
+  return body.data
+}
+
+export function SellCatalogSearch({
+  onSkip,
+  trendingBrands = [],
+  className,
+}: SellCatalogSearchProps) {
   const router = useRouter()
   const [query, setQuery] = React.useState("")
-  const [loading, setLoading] = React.useState(false)
-  const [searchSettled, setSearchSettled] = React.useState(false)
-  const [results, setResults] = React.useState<SellCatalogSearchResult | null>(null)
-  const [error, setError] = React.useState<string | null>(null)
-  const [hasSearched, setHasSearched] = React.useState(false)
-  const [panelOpen, setPanelOpen] = React.useState(false)
-  const [dropdownRect, setDropdownRect] = React.useState<{
-    dropTop: number
-    anchorLeft: number
-    anchorWidth: number
-  } | null>(null)
-  const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
-  const searchEpochRef = React.useRef(0)
-  const inputRef = React.useRef<HTMLInputElement>(null)
+  const [suggestOpen, setSuggestOpen] = React.useState(false)
+  const [suggestState, setSuggestState] = React.useState<{
+    panelOpen: boolean
+    query: string
+    loading: boolean
+    settled: boolean
+    error: string | null
+    data: SellCatalogSearchResult | null
+  }>({
+    panelOpen: false,
+    query: "",
+    loading: false,
+    settled: false,
+    error: null,
+    data: null,
+  })
   const formRef = React.useRef<HTMLFormElement>(null)
-  const dropdownRef = React.useRef<HTMLDivElement>(null)
+  const focusStageRef = React.useRef<HTMLDivElement>(null)
+  const searchEpochRef = React.useRef(0)
+  const [searchFocused, setSearchFocused] = React.useState(false)
 
-  const dismissSearchFocus = React.useCallback(() => {
-    setPanelOpen(false)
-    inputRef.current?.blur()
-  }, [])
-
-  React.useEffect(() => {
-    if (!panelOpen) return
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return
-      event.preventDefault()
-      dismissSearchFocus()
-    }
-    window.addEventListener("keydown", onKeyDown)
-    return () => window.removeEventListener("keydown", onKeyDown)
-  }, [dismissSearchFocus, panelOpen])
-
-  const runSearch = React.useCallback(async (q: string, epoch: number) => {
-    setLoading(true)
-    setSearchSettled(false)
-    setError(null)
-    try {
-      const res = await fetch(
-        `/api/sell/catalog-search?${new URLSearchParams({ q })}`,
-        { method: "GET", headers: { Accept: "application/json" } },
-      )
-      if (epoch !== searchEpochRef.current) return
-
-      const body = (await res.json()) as { data?: SellCatalogSearchResult; error?: string }
-      if (!res.ok || !body.data) {
-        setResults(null)
-        setError(body.error ?? "Could not search the catalog. Please try again.")
-        setSearchSettled(true)
-        return
-      }
-      setResults(body.data)
-      setSearchSettled(true)
-    } catch {
-      if (epoch !== searchEpochRef.current) return
-      setResults(null)
-      setError("Could not search the catalog. Please try again.")
-      setSearchSettled(true)
-    } finally {
-      if (epoch === searchEpochRef.current) {
-        setLoading(false)
-      }
-    }
-  }, [])
-
-  const queueSearch = React.useCallback(
-    (q: string) => {
-      const trimmed = q.trim()
-      if (trimmed.length < 1) {
-        searchEpochRef.current += 1
-        setLoading(false)
-        setSearchSettled(false)
-        setResults(null)
-        setError(null)
-        setHasSearched(false)
-        setPanelOpen(false)
-        return
-      }
-
-      setHasSearched(true)
-      setPanelOpen(true)
-      searchEpochRef.current += 1
-      const epoch = searchEpochRef.current
-      setLoading(true)
-      setResults(null)
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-      debounceRef.current = setTimeout(() => {
-        void runSearch(trimmed, epoch)
-      }, SEARCH_DEBOUNCE_MS)
-    },
-    [runSearch],
-  )
+  // Trending-brand drill-in: tapping a brand swaps the slider for that brand's
+  // model blocks (loaded once per brand; picking one reuses handleSelect).
+  const [focusBrand, setFocusBrand] = React.useState<SellTrendingBrand | null>(null)
+  const [brandModels, setBrandModels] = React.useState<SellCatalogSearchResultRow[] | null>(null)
+  const [brandModelsLoading, setBrandModelsLoading] = React.useState(false)
+  const [brandModelsError, setBrandModelsError] = React.useState<string | null>(null)
+  const brandFetchEpochRef = React.useRef(0)
 
   React.useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-    }
-  }, [])
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    const trimmed = query.trim()
-    if (trimmed.length < 1) {
-      inputRef.current?.focus()
+    if (!focusBrand) {
+      setBrandModels(null)
+      setBrandModelsError(null)
+      setBrandModelsLoading(false)
       return
     }
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    searchEpochRef.current += 1
-    const epoch = searchEpochRef.current
-    setHasSearched(true)
-    setPanelOpen(true)
-    void runSearch(trimmed, epoch)
-  }
+    // The main search unmounts while a brand is focused — clear its overlay
+    // state so the scrim doesn't linger when the search returns.
+    setSuggestOpen(false)
+    setSearchFocused(false)
+    brandFetchEpochRef.current += 1
+    const epoch = brandFetchEpochRef.current
+    setBrandModels(null)
+    setBrandModelsError(null)
+    setBrandModelsLoading(true)
+    fetchSellBrandCatalogModels(focusBrand.id)
+      .then((rows) => {
+        if (epoch !== brandFetchEpochRef.current) return
+        setBrandModels(rows)
+        setBrandModelsLoading(false)
+      })
+      .catch((err: unknown) => {
+        if (epoch !== brandFetchEpochRef.current) return
+        setBrandModelsError(
+          err instanceof Error ? err.message : "Could not load this brand's models.",
+        )
+        setBrandModelsLoading(false)
+      })
+  }, [focusBrand])
+
+  // Parallel AI helper: fires after the primary search settles without exact
+  // matches; suggestions render below the standard results, never blocking them.
+  const nlHelper = useSellCatalogNlHelper({
+    query: suggestState.query,
+    settled: suggestState.settled,
+    matchTier: suggestState.data?.meta.matchTier ?? "none",
+  })
+
+  const handleExternalSuggestStateChange = React.useCallback(
+    (state: {
+      panelOpen: boolean
+      query: string
+      loading: boolean
+      settled: boolean
+      error: string | null
+      data: unknown | null
+    }) => {
+      setSuggestState({
+        panelOpen: state.panelOpen,
+        query: state.query,
+        loading: state.loading,
+        settled: state.settled,
+        error: state.error,
+        data: (state.data as SellCatalogSearchResult | null) ?? null,
+      })
+    },
+    [],
+  )
+
+  const dismissSearchFocus = React.useCallback(() => {
+    setSuggestOpen(false)
+    setSearchFocused(false)
+    if (document.activeElement instanceof HTMLElement && formRef.current?.contains(document.activeElement)) {
+      document.activeElement.blur()
+    }
+  }, [])
 
   const handleSelect = React.useCallback(
     (row: SellCatalogSearchResultRow) => {
@@ -432,156 +735,56 @@ export function SellCatalogSearch({ onSkip, className }: SellCatalogSearchProps)
     [router],
   )
 
-  const matchTier = results?.meta.matchTier ?? "none"
-  const rankedRows =
-    matchTier === "similar" ? (results?.similarResults ?? []) : (results?.results ?? [])
-  const hasResults = rankedRows.length > 0
-  const trimmedQuery = query.trim()
-  const showResultsPanel = panelOpen && hasSearched && trimmedQuery.length >= 1
-  const showNoMatches =
-    showResultsPanel && searchSettled && !loading && !hasResults && !error
-  const showSimilarFallback = matchTier === "similar" && hasResults
-
-  React.useEffect(() => {
-    if (!showResultsPanel || !formRef.current) {
-      setDropdownRect(null)
-      return
-    }
-    const form = formRef.current
-    const update = () => {
-      const rect = form.getBoundingClientRect()
-      setDropdownRect({
-        dropTop: rect.bottom + 8,
-        anchorLeft: rect.left,
-        anchorWidth: rect.width,
-      })
-    }
-    update()
-    window.addEventListener("scroll", update, true)
-    window.addEventListener("resize", update)
-    const vv = window.visualViewport
-    if (vv) {
-      vv.addEventListener("resize", update)
-      vv.addEventListener("scroll", update)
-    }
-    return () => {
-      window.removeEventListener("scroll", update, true)
-      window.removeEventListener("resize", update)
-      if (vv) {
-        vv.removeEventListener("resize", update)
-        vv.removeEventListener("scroll", update)
+  const runSearch = React.useCallback(async (q: string) => {
+    const trimmed = q.trim()
+    if (trimmed.length < 1) return
+    searchEpochRef.current += 1
+    const epoch = searchEpochRef.current
+    try {
+      const data = await fetchSellCatalogSearch(trimmed)
+      if (epoch !== searchEpochRef.current) return
+      const matchTier = data.meta.matchTier ?? "none"
+      const rows = matchTier === "similar" ? (data.similarResults ?? []) : (data.results ?? [])
+      if (rows.length > 0) {
+        handleSelect(rows[0]!)
       }
+    } catch {
+      // Panel shows errors on type; submit with no match is a no-op.
     }
-  }, [showResultsPanel, rankedRows.length, loading, error])
+  }, [handleSelect])
 
-  React.useEffect(() => {
-    if (!showResultsPanel) return
-    function handleClickOutside(e: MouseEvent) {
-      const target = e.target as Node
-      if (formRef.current?.contains(target)) return
-      if (dropdownRef.current?.contains(target)) return
-      dismissSearchFocus()
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [showResultsPanel, dismissSearchFocus])
+  const externalSuggest = React.useMemo<
+    ExternalSuggestConfig<SellCatalogSearchResult>
+  >(
+    () => ({
+      minLength: 1,
+      debounceMs: SEARCH_DEBOUNCE_MS,
+      fetch: fetchSellCatalogSearch,
+      shouldShowPanel: ({ query, loading, settled, error, data }) =>
+        query.trim().length >= 1 && (loading || settled || Boolean(error) || data !== null),
+      renderLoadingSkeleton: () => <NavSuggestPanelSkeleton />,
+      renderPanel: (ctx) => (
+        <SellCatalogSearchPanel ctx={ctx} onSkip={onSkip} onSelect={handleSelect} />
+      ),
+    }),
+    [handleSelect, onSkip],
+  )
 
-  const panelLayout =
-    dropdownRect && typeof window !== "undefined"
-      ? getSuggestPanelLayout({
-          top: dropdownRect.dropTop,
-          anchorLeft: dropdownRect.anchorLeft,
-          anchorWidth: dropdownRect.anchorWidth,
-          portalRect: null,
-          matchAnchorWidth: true,
-        })
-      : null
-
-  const dropdownPanel =
-    showResultsPanel &&
-    dropdownRect &&
-    panelLayout &&
-    typeof document !== "undefined" &&
-    createPortal(
-      <div
-        ref={dropdownRef}
-        id="sell-catalog-search-listbox"
-        role="listbox"
-        className={SUGGEST_DROPDOWN_PANEL_CLASS}
-        style={{
-          top: dropdownRect.dropTop,
-          left: panelLayout.left,
-          width: panelLayout.width,
-          maxHeight: panelLayout.maxHeight,
-        }}
-        aria-live="polite"
-        aria-busy={loading && !hasResults}
-        onMouseDown={(event) => {
-          event.preventDefault()
-        }}
-      >
-        {loading && !hasResults ? (
-          <div className="flex items-center justify-center gap-2 px-4 py-8 text-sm text-muted-foreground sm:py-10">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            Searching catalog…
-          </div>
-        ) : null}
-
-        {error ? (
-          <div className="px-4 py-4 text-sm text-destructive sm:px-5 sm:py-5">{error}</div>
-        ) : null}
-
-        {showSimilarFallback ? (
-          <div className="border-b border-border/60 px-4 py-2.5 text-sm sm:px-4 sm:py-3">
-            <p className="text-muted-foreground">
-              No exact match for &ldquo;{trimmedQuery}&rdquo;. Closest catalog results:
-            </p>
-          </div>
-        ) : null}
-
-        {showNoMatches ? (
-          <div className="space-y-3 px-4 py-5 text-sm sm:px-4">
-            <p className="text-muted-foreground">
-              No catalog matches for that search. You can still list your item manually —
-              brand and model don&apos;t have to be in our directory.
-            </p>
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full min-h-touch md:w-auto"
-              onClick={onSkip}
-            >
-              Choose a category manually
-            </Button>
-          </div>
-        ) : null}
-
-        {hasResults ? (
-          <>
-            <DropdownResults rows={rankedRows} query={trimmedQuery} onSelect={handleSelect} />
-            {showSimilarFallback ? (
-              <div className="border-t border-border/60 px-4 py-3 sm:px-4">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="w-full min-h-touch md:w-auto"
-                  onClick={onSkip}
-                >
-                  Continue without a catalog match
-                </Button>
-              </div>
-            ) : null}
-          </>
-        ) : null}
-      </div>,
-      document.body,
-    )
+  const showFocusScrim = searchFocused || suggestOpen
+  const showResultsPanel = suggestState.panelOpen && suggestState.query.length >= 1
+  const focusMode = showFocusScrim
 
   return (
     <main className={cn("relative flex-1 bg-background pb-12 pt-8 sm:pt-12 sm:pb-16 md:pb-24", className)}>
       <div className="container relative mx-auto max-w-3xl px-4 sm:px-6">
-        <div className="mx-auto w-full max-w-xl space-y-8 sm:space-y-10">
-          <header className="space-y-2 text-center sm:space-y-3">
+        <div className="mx-auto w-full max-w-2xl space-y-8 sm:space-y-10">
+          <header
+            className={cn(
+              "space-y-2 text-center transition-opacity duration-300 ease-out motion-reduce:transition-none sm:space-y-3",
+              focusMode && "opacity-35",
+            )}
+            aria-hidden={focusMode || undefined}
+          >
             <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
               What are you listing?
             </h1>
@@ -591,61 +794,151 @@ export function SellCatalogSearch({ onSkip, className }: SellCatalogSearchProps)
             </p>
           </header>
 
-          <div className="relative w-full min-w-0">
-            <SiteSearchBar ref={formRef} onSubmit={handleSubmit} className="w-full shadow-surface">
-              <input
-                id="sell-catalog-search-input"
-                ref={inputRef}
-                type="search"
-                inputMode="search"
-                enterKeyHint="search"
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value)
-                  queueSearch(e.target.value)
+          {/* Brand drill-in replaces the main search — the panel has its own
+              filter, so two search inputs at once would compete. */}
+          {focusBrand ? null : (
+          <div
+            ref={focusStageRef}
+            className={cn(
+              "relative w-full min-w-0",
+              showFocusScrim && "relative z-[70]",
+            )}
+            onFocusCapture={() => setSearchFocused(true)}
+            onBlurCapture={(event) => {
+              const next = event.relatedTarget
+              if (next instanceof Node && focusStageRef.current?.contains(next)) return
+              setSearchFocused(false)
+            }}
+          >
+            <FocusScrim
+              open={showFocusScrim}
+              onDismiss={dismissSearchFocus}
+              ariaLabel="Dismiss search"
+            />
+            {/* Anchor for the results panel — excludes the hint text below so the
+                panel fuses directly to the bar's bottom edge. */}
+            <div className="relative w-full min-w-0">
+              <form
+                ref={formRef}
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  void runSearch(query)
                 }}
-                onFocus={() => {
-                  if (query.trim().length >= 1) setPanelOpen(true)
-                }}
-                placeholder="Search brand or model"
                 className={cn(
-                  siteSearchInputClassName(),
-                  trimmedQuery.length > 0 ? "pr-10" : undefined,
-                  "[&::-webkit-search-cancel-button]:hidden [&::-moz-search-clear]:hidden",
+                  "w-full min-w-0 overflow-hidden border border-border bg-background",
+                  "transition-[border-radius,box-shadow] duration-200 ease-out motion-reduce:transition-none",
+                  showResultsPanel
+                    ? // Open: the panel owns the shadow; no ring so bar + panel read as one card.
+                      "rounded-t-[1.75rem] rounded-b-none max-sm:rounded-t-3xl"
+                    : "rounded-full focus-within:border-cerulean/40 focus-within:ring-2 focus-within:ring-cerulean/15 focus-within:shadow-sm",
                 )}
-                autoComplete="off"
-                aria-label="Search brand or model"
-                aria-expanded={showResultsPanel}
-                aria-haspopup="listbox"
-                aria-controls={showResultsPanel ? "sell-catalog-search-listbox" : undefined}
-              />
-              {trimmedQuery.length > 0 ? (
-                <button
-                  type="button"
-                  aria-label="Clear search"
-                  className="absolute right-2 top-1/2 z-10 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => {
-                    setQuery("")
-                    queueSearch("")
-                    inputRef.current?.focus()
+              >
+                <div className="flex w-full min-w-0 items-center gap-1 pl-2 pr-1.5 py-0.5">
+                  <div className="relative min-w-0 flex-1">
+                    <SearchInputWithSuggest
+                      value={query}
+                      onChange={setQuery}
+                      listboxId="sell-catalog-search-listbox"
+                      inputClassName={siteSearchInputClassName()}
+                      placeholder="Search brand or model"
+                      showTextSuggestions={false}
+                      matchAnchorWidth
+                      attachedDropdownNested
+                      onOpenChange={setSuggestOpen}
+                      onExternalSuggestStateChange={handleExternalSuggestStateChange}
+                      externalSuggest={externalSuggest as ExternalSuggestConfig<unknown>}
+                    />
+                  </div>
+                  <SiteSearchFormSubmitButton type="submit">Search</SiteSearchFormSubmitButton>
+                </div>
+              </form>
+
+              {/* Results panel fused to the bar, but overlaid — it renders on top of
+                  the page instead of expanding in-flow, so opening never reflows
+                  surrounding content. */}
+              {showResultsPanel ? (
+                <div
+                  id="sell-catalog-search-listbox"
+                  role="listbox"
+                  aria-live="polite"
+                  aria-busy={suggestState.loading && !suggestState.settled}
+                  className={cn(
+                    "absolute inset-x-0 top-full z-[80] -mt-px overflow-hidden rounded-b-2xl border border-t border-border bg-popover text-popover-foreground shadow-md",
+                    "border-t-border/60 max-sm:rounded-b-xl",
+                    "max-h-[min(72dvh,520px)]",
+                    "animate-in fade-in duration-150 ease-out motion-reduce:animate-none",
+                  )}
+                  onMouseDown={(event) => {
+                    event.preventDefault()
                   }}
                 >
-                  <X className="h-4 w-4" aria-hidden />
-                </button>
+                  <AnimatedPanelHeight>
+                    {suggestState.loading &&
+                    !(suggestState.data?.results.length || suggestState.data?.similarResults?.length) ? (
+                      <NavSuggestPanelSkeleton />
+                    ) : (
+                      <SellCatalogSearchPanel
+                        ctx={{
+                          query: suggestState.query,
+                          loading: suggestState.loading,
+                          settled: suggestState.settled,
+                          error: suggestState.error,
+                          data: suggestState.data,
+                          dismissPanel: dismissSearchFocus,
+                        }}
+                        onSkip={onSkip}
+                        onSelect={handleSelect}
+                        nlHelper={nlHelper}
+                      />
+                    )}
+                  </AnimatedPanelHeight>
+                </div>
               ) : null}
-            </SiteSearchBar>
+            </div>
 
-            {!showResultsPanel ? (
-              <p className="mt-2 text-center text-xs text-muted-foreground/70">
-                Surfboards, fins, and wetsuits from our brand catalog
-              </p>
-            ) : null}
-
-            {dropdownPanel}
+            <p
+              className={cn(
+                "mt-2 text-center text-xs text-muted-foreground/70 transition-opacity duration-300 ease-out motion-reduce:transition-none",
+                showResultsPanel || focusMode
+                  ? "pointer-events-none opacity-0"
+                  : "opacity-100",
+              )}
+              aria-hidden={showResultsPanel || focusMode || undefined}
+            >
+              Surfboards, fins, and wetsuits from our brand catalog
+            </p>
           </div>
+          )}
 
-          <div className="text-center">
+          {focusBrand ? (
+            <SellBrandModelsPanel
+              key={focusBrand.id}
+              brand={focusBrand}
+              rows={brandModels}
+              loading={brandModelsLoading}
+              error={brandModelsError}
+              onSelect={handleSelect}
+              onBack={() => setFocusBrand(null)}
+              onSkip={onSkip}
+            />
+          ) : trendingBrands.length > 0 ? (
+            <div
+              className={cn(
+                "transition-opacity duration-300 ease-out motion-reduce:transition-none",
+                focusMode && "pointer-events-none opacity-35",
+              )}
+              aria-hidden={focusMode || undefined}
+            >
+              <SellTrendingBrandsSlider brands={trendingBrands} onSelect={setFocusBrand} />
+            </div>
+          ) : null}
+
+          <div
+            className={cn(
+              "text-center transition-opacity duration-300 ease-out motion-reduce:transition-none",
+              focusMode && "opacity-35",
+            )}
+          >
             <Button
               type="button"
               variant="ghost"

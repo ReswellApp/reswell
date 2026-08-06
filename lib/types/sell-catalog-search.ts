@@ -67,6 +67,8 @@ export type SellCatalogSearchModelRow = {
   imageUrl: string | null
   description: string | null
   category: SellCatalogSearchCategory
+  /** Surfboard shape key ("shortboard", "fish", …) — prefills the /sell board category. */
+  boardCategorySlug?: string | null
 }
 
 export type SellCatalogSearchVariantRow = {

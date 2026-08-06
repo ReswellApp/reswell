@@ -97,6 +97,35 @@ export async function listAllBrandModelVariantsForOverview(
   })) as BrandModelVariantRow[]
 }
 
+export type SurfboardStockSizeRow = {
+  id: string
+  length_label: string
+  width_label: string
+  thickness_label: string
+  volume_label: string
+}
+
+/** Public read (RLS select is open): a model's surfboard stock sizes for the /sell dims picker. */
+export async function listSurfboardStockSizeRowsForModel(
+  supabase: SupabaseClient,
+  brandModelId: string,
+): Promise<SurfboardStockSizeRow[]> {
+  const { data, error } = await supabase
+    .from("brand_model_variants")
+    .select("id, length_label, width_label, thickness_label, volume_label")
+    .eq("brand_model_id", brandModelId)
+    .eq("product_category_slug", "surfboards")
+    .order("sort_order", { ascending: true })
+    .order("length_label", { ascending: true })
+    .limit(60)
+
+  if (error) {
+    console.error("listSurfboardStockSizeRowsForModel:", error.message)
+    return []
+  }
+  return (data ?? []) as SurfboardStockSizeRow[]
+}
+
 export async function insertBrandModelVariant(
   supabase: SupabaseClient,
   input: {

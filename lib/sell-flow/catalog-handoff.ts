@@ -22,6 +22,9 @@ export type SellCatalogHandoff =
       brandSlug: string
       suggestedTitle: string
       suggestedDescription: string | null
+      /** Brand logo — shown on the destination form's catalog selection card. */
+      imageUrl: string | null
+      imageIsLogo: boolean
     }
   | {
       selectionKind: "model"
@@ -33,6 +36,11 @@ export type SellCatalogHandoff =
       modelName: string
       suggestedTitle: string
       suggestedDescription: string | null
+      /** Model photo (falls back to brand logo) for the catalog selection card. */
+      imageUrl: string | null
+      imageIsLogo: boolean
+      /** Surfboard shape key — auto-selects the boards "Board shape / category" chip. */
+      boardCategorySlug: string | null
     }
   | ({
       selectionKind: "variant"
@@ -51,10 +59,14 @@ export function sellCatalogHandoffFromRow(row: SellCatalogSearchResultRow): Sell
       brandSlug: row.slug,
       suggestedTitle: row.name,
       suggestedDescription: row.shortDescription,
+      imageUrl: row.logoUrl?.trim() || null,
+      imageIsLogo: true,
     }
   }
 
   if (row.kind === "model") {
+    const modelImage = row.imageUrl?.trim() || null
+    const brandLogo = row.brandLogoUrl?.trim() || null
     return {
       selectionKind: "model",
       category,
@@ -65,6 +77,9 @@ export function sellCatalogHandoffFromRow(row: SellCatalogSearchResultRow): Sell
       modelName: row.name,
       suggestedTitle: `${row.brandName} ${row.name}`.trim(),
       suggestedDescription: row.description,
+      imageUrl: modelImage ?? brandLogo,
+      imageIsLogo: !modelImage && Boolean(brandLogo),
+      boardCategorySlug: row.boardCategorySlug ?? null,
     }
   }
 
@@ -120,6 +135,8 @@ function parseHandoff(raw: string | null): SellCatalogHandoff | null {
         suggestedTitle: v.suggestedTitle,
         suggestedDescription:
           typeof v.suggestedDescription === "string" ? v.suggestedDescription : null,
+        imageUrl: typeof v.imageUrl === "string" && v.imageUrl ? v.imageUrl : null,
+        imageIsLogo: v.imageIsLogo === true,
       }
     }
 
@@ -142,6 +159,12 @@ function parseHandoff(raw: string | null): SellCatalogHandoff | null {
         suggestedTitle: v.suggestedTitle,
         suggestedDescription:
           typeof v.suggestedDescription === "string" ? v.suggestedDescription : null,
+        imageUrl: typeof v.imageUrl === "string" && v.imageUrl ? v.imageUrl : null,
+        imageIsLogo: v.imageIsLogo === true,
+        boardCategorySlug:
+          typeof v.boardCategorySlug === "string" && v.boardCategorySlug
+            ? v.boardCategorySlug
+            : null,
       }
     }
 
