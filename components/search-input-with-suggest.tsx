@@ -39,7 +39,7 @@ const SUGGEST_PANEL_COMPACT_VIEWPORT_PX = 768
 /** Log a suggest hover after the pointer rests on a row (reduces noise vs raw mousemove). */
 const SUGGEST_HOVER_DWELL_MS = 450
 
-function getSuggestPanelLayout(args: {
+export function getSuggestPanelLayout(args: {
   top: number
   /** Anchor (input wrapper) — used on non-compact layouts. */
   anchorLeft: number

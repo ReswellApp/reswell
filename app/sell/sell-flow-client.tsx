@@ -234,6 +234,7 @@ import {
   SELL_SUPPRESS_IDB_RESTORE_KEY,
   sellPendingPublishKey,
 } from "@/lib/sell-flow/session-keys"
+import { takeSellCatalogHandoff } from "@/lib/sell-flow/catalog-handoff"
 import {
   BOARD_SELL_SECTION_ID_BY_STEP,
   BOARD_SELL_STEP_BY_SECTION_ID,
@@ -869,6 +870,36 @@ function SellPageContentInner({
   const [listingCatalogRequestVariant, setListingCatalogRequestVariant] =
     useState<ListingCatalogRequestVariant | null>(null)
   const [formData, setFormData] = useState(createInitialSellFormData)
+
+  // One-shot brand/model prefill from the /sell cross-category catalog search wall.
+  const catalogHandoffTakenRef = useRef(false)
+  useEffect(() => {
+    if (catalogHandoffTakenRef.current || editId) return
+    catalogHandoffTakenRef.current = true
+    const handoff = takeSellCatalogHandoff("surfboards")
+    if (!handoff) return
+    if (handoff.selectionKind === "brand") {
+      setFormData((f) => ({
+        ...f,
+        brand: handoff.brandName,
+        boardLinkedBrandName: handoff.brandName,
+        boardBrandId: handoff.brandId,
+        boardIndexBrandSlug: handoff.brandSlug,
+      }))
+      return
+    }
+    if (handoff.selectionKind === "model") {
+      setFormData((f) => ({
+        ...f,
+        brand: handoff.brandName,
+        boardLinkedBrandName: handoff.brandName,
+        boardBrandId: handoff.brandId,
+        boardIndexBrandSlug: handoff.brandSlug,
+        boardModelName: handoff.modelName,
+        boardBrandModelId: handoff.brandModelId,
+      }))
+    }
+  }, [editId])
 
   const openListingCatalogRequestFromBrand = useCallback(() => {
     setListingCatalogRequestVariant("full")

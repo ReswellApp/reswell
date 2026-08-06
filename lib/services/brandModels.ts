@@ -12,6 +12,10 @@ import {
   deleteFinCatalogDocument,
   syncFinCatalogModelToIndex,
 } from "@/lib/elasticsearch/fin-catalog-index"
+import {
+  deleteSellCatalogDocument,
+  syncSellCatalogModelToIndex,
+} from "@/lib/elasticsearch/sell-catalog-index"
 
 export type { BrandModelAdminRow, BrandModelRow }
 
@@ -53,6 +57,7 @@ export async function createBrandModelService(
     return { ok: false, error: result.error, status }
   }
   void syncFinCatalogModelToIndex(supabase, result.row.id)
+  void syncSellCatalogModelToIndex(supabase, result.row.id)
   return { ok: true, row: result.row }
 }
 
@@ -84,6 +89,7 @@ export async function updateBrandModelService(
     return { ok: false, error: result.error, status }
   }
   void syncFinCatalogModelToIndex(supabase, id)
+  void syncSellCatalogModelToIndex(supabase, id)
   return { ok: true }
 }
 
@@ -97,5 +103,6 @@ export async function deleteBrandModelService(
     return { ok: false, error: result.error, status: isNotFound ? 404 : 500 }
   }
   void deleteFinCatalogDocument("model", id)
+  void deleteSellCatalogDocument("model", id)
   return { ok: true }
 }

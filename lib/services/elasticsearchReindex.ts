@@ -14,6 +14,10 @@ import {
   reindexFinCatalogFromSupabase,
 } from "@/lib/elasticsearch/fin-catalog-index"
 import {
+  ensureSellCatalogIndex,
+  reindexSellCatalogFromSupabase,
+} from "@/lib/elasticsearch/sell-catalog-index"
+import {
   ensureListingsIndex,
   indexListingDocument,
   listingRowToSearchDocFromRow,
@@ -46,6 +50,9 @@ export type ElasticsearchReindexSummary = {
   finCatalogModelsIndexed: number
   finCatalogVariantsIndexed: number
   finCatalogErrors: number
+  sellCatalogBrandsIndexed: number
+  sellCatalogModelsIndexed: number
+  sellCatalogErrors: number
   sellersIndexed: number
   sellersRemoved: number
   sellerErrors: number
@@ -84,6 +91,7 @@ export async function reindexElasticsearchFromSupabase(
     await ensureListingsIndex()
     await ensureBrandsIndex()
     await ensureFinCatalogIndex()
+    await ensureSellCatalogIndex()
     await ensureSellersIndex()
     await ensureForumThreadsIndex()
   } catch (err) {
@@ -180,6 +188,19 @@ export async function reindexElasticsearchFromSupabase(
   } catch (err) {
     console.error("[elasticsearchReindex] fin catalog reindex failed:", err)
     finCatalogErrors++
+  }
+
+  let sellCatalogBrandsIndexed = 0
+  let sellCatalogModelsIndexed = 0
+  let sellCatalogErrors = 0
+  try {
+    const sellCatalog = await reindexSellCatalogFromSupabase(supabase)
+    sellCatalogBrandsIndexed = sellCatalog.brandsIndexed
+    sellCatalogModelsIndexed = sellCatalog.modelsIndexed
+    sellCatalogErrors = sellCatalog.errors
+  } catch (err) {
+    console.error("[elasticsearchReindex] sell catalog reindex failed:", err)
+    sellCatalogErrors++
   }
 
   const activeListingUserIds = new Set<string>()
@@ -292,6 +313,9 @@ export async function reindexElasticsearchFromSupabase(
       finCatalogModelsIndexed,
       finCatalogVariantsIndexed,
       finCatalogErrors,
+      sellCatalogBrandsIndexed,
+      sellCatalogModelsIndexed,
+      sellCatalogErrors,
       sellersIndexed,
       sellersRemoved,
       sellerErrors,

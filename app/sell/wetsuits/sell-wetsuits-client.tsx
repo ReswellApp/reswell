@@ -22,6 +22,7 @@ import { LocationPicker } from "@/components/location-picker"
 import { SellFormSection } from "@/components/features/sell/sell-form-section"
 import { SellShippingCostModeRadios } from "@/components/features/sell/sell-shipping-cost-mode-radios"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
+import { takeSellCatalogHandoff } from "@/lib/sell-flow/catalog-handoff"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellWetsuitsFacetFields } from "@/components/features/sell/sell-wetsuits-facet-fields"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
@@ -172,6 +173,20 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
   const [submitting, setSubmitting] = useState(false)
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
   const [actorIsAdmin, setActorIsAdmin] = useState<boolean | null>(null)
+
+  // One-shot brand/model prefill from the /sell cross-category catalog search wall.
+  const catalogHandoffTakenRef = useRef(false)
+  useEffect(() => {
+    if (catalogHandoffTakenRef.current || editId) return
+    catalogHandoffTakenRef.current = true
+    const handoff = takeSellCatalogHandoff("wetsuits")
+    if (!handoff) return
+    setForm((prev) => ({
+      ...prev,
+      brand: handoff.brandName,
+      model: handoff.selectionKind === "model" ? handoff.modelName : "",
+    }))
+  }, [editId])
 
   const wetsuitSellReturnPath = useCallback(
     () =>

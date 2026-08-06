@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
 import { syncFinCatalogBrandToIndex } from "@/lib/elasticsearch/fin-catalog-index"
+import { syncSellCatalogBrandToIndex } from "@/lib/elasticsearch/sell-catalog-index"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import { isValidBrandSlug, slugifyBrandName } from "@/lib/brands/slug"
 import { BRANDS_BASE } from "@/lib/brands/routes"
@@ -120,6 +121,7 @@ export async function POST(request: NextRequest, ctx: Ctx) {
   if (inserted?.id) {
     void syncBrandToIndex(supabase, inserted.id)
     void syncFinCatalogBrandToIndex(supabase, inserted.id)
+    void syncSellCatalogBrandToIndex(supabase, inserted.id)
   }
   return NextResponse.json({ slug, ok: true })
 }
