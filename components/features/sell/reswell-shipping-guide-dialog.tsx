@@ -27,8 +27,7 @@ function topicIcon(topicId: ReswellShippingGuideTopicId) {
   if (topicId === "overview") return BookOpen
   if (
     topicId === "shortboard_compact" ||
-    topicId === "shortboard_standard" ||
-    topicId === "shortboard_max"
+    topicId === "shortboard_medium"
   ) {
     return Package
   }

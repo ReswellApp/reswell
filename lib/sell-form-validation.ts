@@ -16,8 +16,10 @@ import {
 import { isListingSellableCondition } from "@/lib/listing-labels"
 import {
   parseSurfboardShippingTierId,
-  validateSurfboardShippingTierParcelLimits,
 } from "@/lib/surfboard-shipping-tiers"
+import {
+  validateSurfboardLabelParcelLimits,
+} from "@/lib/shipping/surfboard-label-limits"
 import {
   parseSurfboardShippingPackBandId,
   surfboardShippingPackBandBoardSpecsError,
@@ -77,7 +79,7 @@ export type SellFormValidationInput = {
   surfboardShippingTier?: string
   /** Seller confirmed packed board fits the selected tier ceiling (Reswell mode). */
   surfboardShippingTierCeilingConfirmed?: boolean
-  /** Shortboard pack band (compact / standard / max). */
+  /** Shortboard pack band (compact / medium). */
   surfboardShippingPackBand?: string
   /** Seller confirmed packed board fits the selected shortboard pack band. */
   surfboardShippingPackBandCeilingConfirmed?: boolean
@@ -278,7 +280,7 @@ export function validateSellListingForm(
         })
         if (!limitCheck.ok) return limitCheck.error
       } else {
-        // Default Reswell path — UPS shortboard pack bands (Compact/Standard/Max).
+        // Default Reswell path — UPS shortboard pack bands (Compact/Medium).
         const tierId = parseSurfboardShippingTierId(form.surfboardShippingTier)
         if (tierId !== "shortboard") {
           return reswellUpsBlockedMessage
@@ -296,7 +298,7 @@ export function validateSellListingForm(
         })
         if (bandErr) return bandErr
         const band = surfboardShippingPackBandFixedParcel(bandId)
-        const limitCheck = validateSurfboardShippingTierParcelLimits(tierId, {
+        const limitCheck = validateSurfboardLabelParcelLimits({
           lengthIn: band.lengthIn,
           widthIn: band.widthIn,
           heightIn: band.heightIn,

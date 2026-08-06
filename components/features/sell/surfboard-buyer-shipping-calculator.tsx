@@ -40,7 +40,7 @@ export type SurfboardBuyerShippingCalculatorProps = {
   className?: string
   /** Selected size tier — required to show dollar amounts. */
   tierId: SurfboardShippingTierId | ""
-  /** Shortboard pack band — quotes that carton instead of Max. */
+  /** Shortboard pack band — quotes that carton instead of Medium. */
   packBandId?: SurfboardShippingPackBandId | ""
   /** Opens the full ZIP→ZIP ShipEngine estimator. */
   onOpenLiveEstimator?: () => void

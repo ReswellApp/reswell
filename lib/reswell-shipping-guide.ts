@@ -84,7 +84,7 @@ function tierTopic(tierId: SurfboardShippingTierId): ReswellShippingGuideTopic {
       },
       {
         title: "Pick a pack size next",
-        body: "After Shortboard, you’ll choose Compact, Standard, or Max. Smaller packs often avoid large-package fees.",
+        body: "After Shortboard, you’ll choose Compact or Medium. Smaller packs often avoid large-package fees.",
       },
       {
         title: "When to size up",
@@ -131,7 +131,7 @@ function tierTopic(tierId: SurfboardShippingTierId): ReswellShippingGuideTopic {
     bullets: extras[tierId],
     relatedIds:
       tierId === "shortboard"
-        ? ["shortboard_compact", "shortboard_standard", "shortboard_max", "overview"]
+        ? ["shortboard_compact", "shortboard_medium", "overview"]
         : ["overview", "shortboard"],
   }
 }
@@ -142,7 +142,7 @@ function packBandTopic(bandId: SurfboardShippingPackBandId): ReswellShippingGuid
     shortboard_compact: [
       {
         title: "Best for shorter, narrower packs",
-        body: "Use Compact when your packed board will stay within this box. It’s the cheapest Shortboard option for buyers when it fits.",
+        body: "Use Compact when your packed board will stay within 72×22×4. It’s the cheapest Shortboard option for buyers when it fits.",
       },
       {
         title: "Built to avoid large-package fees",
@@ -150,35 +150,21 @@ function packBandTopic(bandId: SurfboardShippingPackBandId): ReswellShippingGuid
       },
       {
         title: "Don’t force it",
-        body: "If padding pushes you over Compact, step up to Standard or Max. A crushed pack isn’t worth a cheaper quote.",
+        body: "If padding pushes you over Compact, step up to Medium. A crushed pack isn’t worth a cheaper quote.",
       },
     ],
-    shortboard_standard: [
+    shortboard_medium: [
       {
-        title: "Room for longer shortboards",
-        body: "Standard adds length over Compact while still targeting lower UPS fees when packed carefully.",
+        title: "For boards above 6′",
+        body: "Medium adds length over Compact (78×22×4) while staying at the 130″ UPS DIM ceiling — the largest shortboard pack Reswell quotes without large-package surcharges.",
       },
       {
         title: "Still a parcel size",
-        body: "Same Shortboard family as Compact/Max — ships UPS/FedEx parcel, not freight.",
+        body: "Same Shortboard family as Compact — ships UPS/FedEx parcel, not freight.",
       },
       {
-        title: "When Max is safer",
-        body: "Wider boards or bulky padding often need Max. If you’re unsure the packed board will fit, size up.",
-      },
-    ],
-    shortboard_max: [
-      {
-        title: "Full Shortboard ceiling",
-        body: "Max is the largest Shortboard pack — same outer size as the Shortboard shipping ceiling.",
-      },
-      {
-        title: "May trigger large-package rates",
-        body: "Bigger boxes often cost buyers more because carriers add large-package surcharges. Only use Max when you need the room.",
-      },
-      {
-        title: "Still under Shortboard",
-        body: "If even Max isn’t enough, switch the shipping size to Midlength or Longboard (freight).",
+        title: "When Midlength is safer",
+        body: "If even Medium isn’t enough (especially wide boards), switch the shipping size to Midlength or Longboard (freight).",
       },
     ],
   }

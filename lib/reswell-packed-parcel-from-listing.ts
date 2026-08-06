@@ -53,7 +53,7 @@ export type ListingPackedParcelSource = {
   shipping_packed_height_in?: number | string | null
   shipping_packed_weight_oz?: number | string | null
   shipping_package_tier?: string | null
-  /** Shortboard pack band; null with tier=shortboard means Max. */
+  /** Shortboard pack band; null with tier=shortboard means Medium. */
   shipping_package_band?: string | null
   /** Canonical board L×W×T×vol string — sole source for parcel L/W/H + weight heuristics. */
   dimensions?: string | null
@@ -202,7 +202,7 @@ export function listingUsesAdminCustomSurfboardCarton(
  *
  * Explicit pack band → fixed band carton.
  * Null band + usable stored dims → admin custom (or legacy persisted) carton.
- * Null shortboard band + no stored dims → Max (legacy).
+ * Null shortboard band + no stored dims → Medium (legacy).
  */
 function resolveSurfboardPackedParcelDims(
   row: ListingPackedParcelSource,
@@ -231,11 +231,11 @@ function resolveSurfboardPackedParcelDims(
     if (stored) return stored
 
     if (tierId === "shortboard") {
-      const max = surfboardShippingPackBandFixedParcel("shortboard_max")
+      const medium = surfboardShippingPackBandFixedParcel("shortboard_medium")
       return {
-        lengthIn: max.lengthIn,
-        widthIn: max.widthIn,
-        heightIn: max.heightIn,
+        lengthIn: medium.lengthIn,
+        widthIn: medium.widthIn,
+        heightIn: medium.heightIn,
       }
     }
 
@@ -258,9 +258,9 @@ function surfboardTierWeightOzFromListing(row: ListingPackedParcelSource): numbe
       return surfboardShippingPackBandFixedParcel(explicitBandId).weightLb * 16
     }
     // Custom carton weight comes from shipping_packed_weight_oz (caller prefers saved).
-    // Fall back to Max / tier defaults only when weight wasn't persisted.
+    // Fall back to Medium / tier defaults only when weight wasn't persisted.
     if (tierId === "shortboard") {
-      return surfboardShippingPackBandFixedParcel("shortboard_max").weightLb * 16
+      return surfboardShippingPackBandFixedParcel("shortboard_medium").weightLb * 16
     }
     return getSurfboardShippingTier(tierId).weightLb * 16
   }

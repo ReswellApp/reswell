@@ -1,9 +1,10 @@
 /**
  * Shortboard pack bands — fixed cartons under the Shortboard family.
  *
- * Checkout quotes and labels use the selected band carton (not always Max).
- * Band ceilings were chosen to sit relative to UPS 2026 LPS / AHC volume cliffs;
- * refine via the admin shortboard rate-cliff sweep if contract rates differ.
+ * Checkout quotes and labels use the selected band carton (not always Medium).
+ * Two sizes only, both at or under the 130″ UPS large-package DIM cliff:
+ *   Compact — 72×22×4 (DIM 124″)
+ *   Medium  — 78×22×4 (DIM 130″) for boards above 72″ packed length
  */
 
 import {
@@ -13,24 +14,24 @@ import {
 import {
   SURFBOARD_LABEL_MAX_UPS_DIMENSION_TOTAL_IN,
   surfboardShippingDimIn,
+  validateSurfboardLabelParcelLimits,
 } from "@/lib/shipping/surfboard-label-limits"
-import { upsParcelSurchargeFlags } from "@/lib/shipping/ups-parcel-surcharge-flags"
-import {
-  SURFBOARD_TIER_SHORTBOARD_MAX_BOX_LENGTH_IN,
-  SURFBOARD_TIER_SHORTBOARD_PROFILE_HEIGHT_IN,
-  SURFBOARD_TIER_SHORTBOARD_PROFILE_WIDTH_IN,
-  type SurfboardShippingTierId,
-} from "@/lib/surfboard-shipping-tiers"
+import { upsParcelSurchargeFlags, UPS_LARGE_PACKAGE_DIM_IN } from "@/lib/shipping/ups-parcel-surcharge-flags"
+import type { SurfboardShippingTierId } from "@/lib/surfboard-shipping-tiers"
 
-export type SurfboardShippingPackBandId =
-  | "shortboard_compact"
-  | "shortboard_standard"
-  | "shortboard_max"
+export type SurfboardShippingPackBandId = "shortboard_compact" | "shortboard_medium"
+
+/** Legacy DB / URL values mapped to the current two-band catalog. */
+const LEGACY_SURFBOARD_PACK_BAND_ALIASES: Partial<
+  Record<string, SurfboardShippingPackBandId>
+> = {
+  shortboard_standard: "shortboard_medium",
+  shortboard_max: "shortboard_medium",
+}
 
 export const SURFBOARD_SHIPPING_PACK_BAND_IDS: SurfboardShippingPackBandId[] = [
   "shortboard_compact",
-  "shortboard_standard",
-  "shortboard_max",
+  "shortboard_medium",
 ]
 
 export function isSurfboardShippingPackBandId(
@@ -44,7 +45,8 @@ export function parseSurfboardShippingPackBandId(
 ): SurfboardShippingPackBandId | null {
   if (typeof value !== "string") return null
   const trimmed = value.trim()
-  return isSurfboardShippingPackBandId(trimmed) ? trimmed : null
+  if (isSurfboardShippingPackBandId(trimmed)) return trimmed
+  return LEGACY_SURFBOARD_PACK_BAND_ALIASES[trimmed] ?? null
 }
 
 export type SurfboardShippingPackBand = {
@@ -66,9 +68,9 @@ export type SurfboardShippingPackBand = {
 }
 
 /**
- * Locked shortboard pack bands (provisional → production).
- * Compact/Standard stay at or under 130″ DIM and 10,368 in³ where possible.
- * Max matches the historical shortboard tier ceiling.
+ * Locked shortboard pack bands — every carton must stay at or under {@link UPS_LARGE_PACKAGE_DIM_IN}
+ * (130″ DIM) so Reswell UPS quotes avoid large-package surcharges, and under
+ * {@link SURFBOARD_LABEL_MAX_UPS_DIMENSION_TOTAL_IN} (160″ Reswell UPS parcel cap).
  */
 export const SURFBOARD_SHIPPING_PACK_BANDS: Record<
   SurfboardShippingPackBandId,
@@ -77,36 +79,24 @@ export const SURFBOARD_SHIPPING_PACK_BANDS: Record<
   shortboard_compact: {
     id: "shortboard_compact",
     label: "Compact",
-    summary: "Tight pack — usually avoids UPS large-package surcharges",
+    summary: "Tight pack — stays under UPS large-package DIM (130″)",
     lengthIn: 72,
     widthIn: 22,
-    heightIn: 6,
+    heightIn: 4,
     weightLb: 18,
     maxBoardLengthIn: 71,
     maxBoardWidthIn: 21,
   },
-  shortboard_standard: {
-    id: "shortboard_standard",
-    label: "Standard",
-    summary: "Longer shortboard pack — targets ≤130″ DIM to avoid large-package rates",
-    // 74 + 2×22 + 2×6 = 130″ DIM · 9,768 in³ (under AHC volume cliff)
-    lengthIn: 74,
+  shortboard_medium: {
+    id: "shortboard_medium",
+    label: "Medium",
+    summary: "Longer shortboard pack — max length at the 130″ UPS DIM ceiling",
+    lengthIn: 78,
     widthIn: 22,
-    heightIn: 6,
-    weightLb: 20,
-    maxBoardLengthIn: 73,
-    maxBoardWidthIn: 21,
-  },
-  shortboard_max: {
-    id: "shortboard_max",
-    label: "Max",
-    summary: "Full shortboard ceiling — same as today’s Shortboard max carton",
-    lengthIn: SURFBOARD_TIER_SHORTBOARD_MAX_BOX_LENGTH_IN,
-    widthIn: SURFBOARD_TIER_SHORTBOARD_PROFILE_WIDTH_IN,
-    heightIn: SURFBOARD_TIER_SHORTBOARD_PROFILE_HEIGHT_IN,
+    heightIn: 4,
     weightLb: 22,
     maxBoardLengthIn: 77,
-    maxBoardWidthIn: 26,
+    maxBoardWidthIn: 21,
   },
 }
 
@@ -161,16 +151,16 @@ export function surfboardShippingPackBandSurchargeHints(
 }
 
 /**
- * When parent tier is shortboard and band is missing, treat as Max (legacy listings).
+ * When parent tier is shortboard and band is missing, treat as Medium (legacy listings).
  * Prefer {@link parseSurfboardShippingPackBandId} when distinguishing admin custom cartons
- * (null band + stored packed dims) from legacy Max.
+ * (null band + stored packed dims) from legacy Medium.
  */
 export function resolveSurfboardShippingPackBandId(input: {
   tierId: SurfboardShippingTierId | null
   bandId: string | null | undefined
 }): SurfboardShippingPackBandId | null {
   if (input.tierId !== "shortboard") return null
-  return parseSurfboardShippingPackBandId(input.bandId) ?? "shortboard_max"
+  return parseSurfboardShippingPackBandId(input.bandId) ?? "shortboard_medium"
 }
 
 /** True when L×W×H match a pack-band carton exactly (weight ignored). */
@@ -231,7 +221,7 @@ export function surfboardShippingPackBandBoardSpecsError(input: {
 
 /**
  * Smallest shortboard pack band that fits estimated packed L/W from board specs.
- * Falls back to Max when length/width unknown.
+ * Falls back to Medium when length/width unknown.
  */
 export function resolveSurfboardShippingPackBandFromBoardSpecs(input: {
   boardLength: string
@@ -239,7 +229,7 @@ export function resolveSurfboardShippingPackBandFromBoardSpecs(input: {
 }): SurfboardShippingPackBandId {
   const lengthIn = totalBoardLengthInchesFromCombinedInput(input.boardLength)
   const widthIn = maxBoardWidthInchesFromInput(input.boardWidthInches ?? "")
-  if (lengthIn == null && widthIn == null) return "shortboard_max"
+  if (lengthIn == null && widthIn == null) return "shortboard_medium"
 
   const packedLengthNeed =
     lengthIn != null ? lengthIn + SHORTBOARD_PACK_BAND_LENGTH_PAD_IN : 0
@@ -252,15 +242,23 @@ export function resolveSurfboardShippingPackBandFromBoardSpecs(input: {
     if (packedWidthNeed > 0 && packedWidthNeed > band.widthIn) continue
     return bandId
   }
-  return "shortboard_max"
+  return "shortboard_medium"
 }
 
-/** True when the band carton stays within Reswell’s UPS DIM ceiling. */
+/** True when the band carton stays within Reswell’s UPS DIM ceiling (160″). */
 export function surfboardShippingPackBandWithinUpsDim(
   bandId: SurfboardShippingPackBandId,
 ): boolean {
   const p = surfboardShippingPackBandFixedParcel(bandId)
   return p.dimIn <= SURFBOARD_LABEL_MAX_UPS_DIMENSION_TOTAL_IN
+}
+
+/** True when the band carton stays at or under the UPS large-package DIM cliff (130″). */
+export function surfboardShippingPackBandWithinLargePackageDim(
+  bandId: SurfboardShippingPackBandId,
+): boolean {
+  const p = surfboardShippingPackBandFixedParcel(bandId)
+  return p.dimIn <= UPS_LARGE_PACKAGE_DIM_IN
 }
 
 export function surfboardShippingPackBandNextLarger(
@@ -308,3 +306,25 @@ export function resolveSurfboardUpsShippingAvailability(input: {
 
   return { shippingSupported: false, suggestedPackBandId: "" }
 }
+
+export function assertSurfboardShippingPackBandsWithinCarrierLimits(): void {
+  for (const bandId of SURFBOARD_SHIPPING_PACK_BAND_IDS) {
+    const parcel = surfboardShippingPackBandFixedParcel(bandId)
+    const upsCheck = validateSurfboardLabelParcelLimits({
+      lengthIn: parcel.lengthIn,
+      widthIn: parcel.widthIn,
+      heightIn: parcel.heightIn,
+      weightLb: parcel.weightLb,
+    })
+    if (!upsCheck.ok) {
+      throw new Error(`Surfboard pack band "${bandId}" exceeds UPS limits: ${upsCheck.error}`)
+    }
+    if (parcel.dimIn > UPS_LARGE_PACKAGE_DIM_IN) {
+      throw new Error(
+        `Surfboard pack band "${bandId}" exceeds UPS large-package DIM (${UPS_LARGE_PACKAGE_DIM_IN}" max, got ${parcel.dimIn}")`,
+      )
+    }
+  }
+}
+
+assertSurfboardShippingPackBandsWithinCarrierLimits()

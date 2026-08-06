@@ -147,7 +147,7 @@ function planSurfboardUpdate(row: ListingRow): { action: string; patch: Record<s
   }
 
   const bandId: SurfboardShippingPackBandId =
-    avail.suggestedPackBandId || "shortboard_max"
+    avail.suggestedPackBandId || "shortboard_medium"
   return { action: "to_reswell_pack_band", patch: reswellPackBandPatch(bandId) }
 }
 

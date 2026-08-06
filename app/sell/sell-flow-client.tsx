@@ -661,7 +661,7 @@ function createInitialSellFormData() {
     surfboardShippingTierCeilingConfirmed: false,
     surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
     surfboardShippingPackBandCeilingConfirmed: false,
-    /** Admin-only: quote from entered carton dims instead of Compact/Standard/Max. */
+    /** Admin-only: quote from entered carton dims instead of Compact/Medium. */
     adminCustomShippingCarton: false,
     reswellPackageLengthIn: "",
     reswellPackageWidthIn: "",
@@ -1179,7 +1179,7 @@ function SellPageContentInner({
             ? explicitPackBand
             : loadedAdminCustomCarton
               ? ""
-              : (matchedStoredBand ?? "shortboard_max")
+              : (matchedStoredBand ?? "shortboard_medium")
       const parsedDims = surfboardSellFormDimensionsFromListingRow(
         listing as {
           dimensions?: string | null
@@ -1627,7 +1627,7 @@ function SellPageContentInner({
   }, [actorIsAdmin, deliveryFlags.shipping_available, formData.boardShippingCostMode])
 
   /**
-   * Auto-pick the smallest UPS-safe shortboard pack (Compact → Standard → Max).
+   * Auto-pick the smallest UPS-safe shortboard pack (Compact → Medium).
    * Boards over the UPS DIM ceiling cannot use Reswell shipping — turn it off for sellers.
    * Admins may keep flat/free shipping on oversize boards (past inventory, special cases).
    *

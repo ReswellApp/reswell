@@ -9,7 +9,7 @@ export const buyerZoneShippingEstimateSchema = z.object({
   tierId: z.enum(["shortboard", "midlength", "longboard"]),
   /** Shortboard pack band — ignored for mid/long. */
   packBandId: z
-    .enum(["shortboard_compact", "shortboard_standard", "shortboard_max"])
+    .enum(["shortboard_compact", "shortboard_medium"])
     .optional()
     .nullable(),
   zone: z.enum(["california", "west", "rest_of_us", "hawaii"]),

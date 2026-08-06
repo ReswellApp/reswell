@@ -30,7 +30,7 @@ export type SellFulfillmentPersistInput = {
   category?: string
   /** Seller-selected Reswell surfboard shipping tier (shortboard / midlength / longboard). */
   surfboardShippingTier?: string
-  /** Shortboard pack band (compact / standard / max). */
+  /** Shortboard pack band (compact / medium). */
   surfboardShippingPackBand?: string
   /**
    * Admin-only: quote/label from entered L×W×H/weight instead of a pack band carton.

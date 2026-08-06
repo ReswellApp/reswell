@@ -322,7 +322,7 @@ export function ShortboardRateCliffSweep({
         </CardTitle>
         <CardDescription className="text-[14px] leading-relaxed">
           Rates a grid of shortboard cartons on a fixed lane via ShipEngine. Use this to lock Compact /
-          Standard / Max pack bands where price jumps (often at 130″ DIM / large-package). Current locked
+          Medium pack bands where price jumps (often at 130″ DIM / large-package). Current locked
           bands:{' '}
           {Object.values(SURFBOARD_SHIPPING_PACK_BANDS)
             .map(

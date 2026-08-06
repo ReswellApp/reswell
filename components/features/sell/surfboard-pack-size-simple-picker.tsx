@@ -37,7 +37,7 @@ export function SurfboardPackSizeSimplePicker({
       <RadioGroup
         value={value}
         onValueChange={(next) => onChange(next as SurfboardShippingPackBandId)}
-        className="grid gap-2 sm:grid-cols-3"
+        className="grid gap-2 sm:grid-cols-2"
       >
         {SURFBOARD_SHIPPING_PACK_BAND_IDS.map((bandId) => {
           const band = getSurfboardShippingPackBand(bandId)
@@ -81,9 +81,7 @@ export function SurfboardPackSizeSimplePicker({
               <p className="pl-6 text-xs text-muted-foreground/70 leading-relaxed">
                 {bandId === "shortboard_compact"
                   ? "Lowest rates when it fits"
-                  : bandId === "shortboard_standard"
-                    ? "A bit more room"
-                    : "Largest shortboard box"}
+                  : "For boards above 6′ — max length at 130″ UPS DIM"}
               </p>
             </label>
           )
