@@ -40,7 +40,7 @@ const CUSTOM_SIZE_VALUE = "__custom_dimensions__"
  * row's own content width and the columns would drift between rows.
  */
 const SIZE_GRID_CLASS =
-  "grid grid-cols-[3.5rem_5.5rem_5rem_auto] items-baseline justify-items-start gap-x-2 tabular-nums sm:gap-x-3"
+  "grid grid-cols-[3rem_4.75rem_4.25rem_auto] items-baseline justify-items-start gap-x-1.5 tabular-nums sm:grid-cols-[3.5rem_5.5rem_5rem_auto] sm:gap-x-3"
 
 /**
  * Stock-size dropdown shown above the manual dimension selects when the linked
@@ -96,7 +96,13 @@ export function SellBoardStockSizePicker({
         </SelectTrigger>
         {/* side + no collision flip: always opens downward; the viewport's
             available-height cap makes it shrink and scroll instead of flipping up. */}
-        <SelectContent side="bottom" avoidCollisions={false} className="max-h-[min(60vh,24rem)]">
+        {/* Width pinned to the trigger so the panel stays centered over the
+            field on phones instead of overflowing past the screen edge. */}
+        <SelectContent
+          side="bottom"
+          avoidCollisions={false}
+          className="max-h-[min(60vh,24rem)] w-[var(--radix-select-trigger-width)]"
+        >
           <div
             className={cn(
               SIZE_GRID_CLASS,
