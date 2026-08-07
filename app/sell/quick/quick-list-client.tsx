@@ -15,7 +15,7 @@ import React, {
   useRef,
   useState,
 } from "react"
-import Link from "next/link"
+import { SellModeToggle } from "@/components/features/sell/sell-mode-toggle"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { ChevronDown, MapPin } from "lucide-react"
@@ -730,18 +730,16 @@ export default function QuickListClient() {
         aria-busy={publishing}
         className="mx-auto w-full max-w-2xl px-4 pb-36 pt-8 sm:pt-10"
       >
-        <header className="mb-6 space-y-1.5 sm:mb-8">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            List your surfboard
-          </h1>
-          <p className="text-sm text-muted-foreground sm:text-base">
-            Photos first, six quick things, and it&rsquo;s live.{" "}
-            <Link
-              href="/sell?type=surfboard"
-              className="text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
-            >
-              Want the full step-by-step form?
-            </Link>
+        <header className="mb-6 sm:mb-8">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              List your surfboard
+            </h1>
+            <SellModeToggle active="quick" />
+          </div>
+          <p className="mt-1.5 text-sm text-muted-foreground sm:text-base">
+            Photos first, six quick things, and it&rsquo;s live. Need shipping setup or
+            drafts? Switch to Advanced any time.
           </p>
         </header>
 

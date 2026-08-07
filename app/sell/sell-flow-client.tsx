@@ -209,6 +209,7 @@ import {
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { useGeneratedListingDescription } from "@/components/features/sell/hooks/use-generated-listing-description"
+import { SellModeToggle } from "@/components/features/sell/sell-mode-toggle"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
 import { sellListingThumbLoadedSrcByClientId } from "@/components/features/sell/hooks/use-listing-photo-upload"
 import {
@@ -3789,6 +3790,7 @@ function SellPageContentInner({
           </h1>
           <div className="border-t border-neutral-200 pt-4 pb-4 mb-4 sm:pb-8 sm:mb-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <div className="flex flex-wrap items-center gap-3">
               <Breadcrumb>
                 <BreadcrumbList className="gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
                   <BreadcrumbItem>
@@ -3810,6 +3812,10 @@ function SellPageContentInner({
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
+              {!editId && !editLoading && !getImpersonation() ? (
+                <SellModeToggle active="advanced" />
+              ) : null}
+              </div>
               <div className="flex flex-col gap-1 shrink-0">
                 {(showBoardDraftControls ||
                   (!editLoading && (!editId || listingIsDraft) && !getImpersonation())) && (

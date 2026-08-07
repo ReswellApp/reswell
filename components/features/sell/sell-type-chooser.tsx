@@ -19,7 +19,7 @@ const SELL_TYPE_OPTIONS: readonly SellTypeOption[] = [
   {
     href: "/sell/quick",
     title: "Surfboard",
-    description: "List a board from your quiver.",
+    description: "Quick list in under a minute — or switch to the advanced form.",
     imageSrc: "/images/sell/surfboard.jpg",
     imageAlt: "Surfboard",
   },
