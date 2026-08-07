@@ -30,8 +30,9 @@ export function isPeerListingSection(
   return section != null && PEER_LISTING_SECTION_SET.has(section)
 }
 
-/** Dedicated /sell sub-flow routes for peer sections (surfboards use `/sell`). */
+/** Dedicated /sell sub-flow routes for peer sections. */
 const PEER_SELL_ROUTE_BY_SECTION: Partial<Record<PeerListingSection, string>> = {
+  surfboards: "/sell/boards",
   fins: "/sell/fins",
   wetsuits: "/sell/wetsuits",
   boardbags: "/sell/boardbags",
@@ -57,13 +58,7 @@ export const PEER_LISTING_SECTION_LABELS: Record<PeerListingSection, string> = {
 /** Sell-flow entry URL for admin bulk listing (includes `bulk` slot id). */
 export function peerSellCreateHref(section: PeerListingSection, bulkSlotId: string): string {
   const bulk = `bulk=${encodeURIComponent(bulkSlotId)}`
-  if (section === "surfboards") {
-    return `/sell?type=surfboard&${bulk}`
-  }
-  const base = PEER_SELL_ROUTE_BY_SECTION[section]
-  if (!base) {
-    return `/sell?type=surfboard&${bulk}`
-  }
+  const base = PEER_SELL_ROUTE_BY_SECTION[section] ?? "/sell/boards"
   if (section === "fins") {
     return `${base}?step=search&${bulk}`
   }

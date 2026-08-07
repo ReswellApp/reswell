@@ -609,6 +609,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
     const session = await resolveClientSessionForMutation(supabase)
     const user = session?.user
     if (!user || !session?.access_token) {
+      toast.message("Sign in to publish your listing")
       signIn("/sell/apparel")
       return
     }

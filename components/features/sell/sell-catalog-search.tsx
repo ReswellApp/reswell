@@ -35,6 +35,7 @@ import {
   sellCatalogHandoffFromRow,
   writeSellCatalogHandoff,
 } from "@/lib/sell-flow/catalog-handoff"
+import { setSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 import {
   SellTrendingBrandsSlider,
   type SellTrendingBrand,
@@ -53,6 +54,8 @@ export type SellCatalogSearchProps = {
   onSkip: () => void
   /** Homepage trending brands — tapping one drills into that brand's models. */
   trendingBrands?: SellTrendingBrand[]
+  /** Optional resume-draft prompt above the search hero. */
+  resumeBanner?: React.ReactNode
   className?: string
 }
 
@@ -626,6 +629,7 @@ async function fetchSellCatalogSearch(query: string): Promise<SellCatalogSearchR
 export function SellCatalogSearch({
   onSkip,
   trendingBrands = [],
+  resumeBanner,
   className,
 }: SellCatalogSearchProps) {
   const router = useRouter()
@@ -729,6 +733,7 @@ export function SellCatalogSearch({
 
   const handleSelect = React.useCallback(
     (row: SellCatalogSearchResultRow) => {
+      setSellEntryPoint("catalog_handoff")
       writeSellCatalogHandoff(sellCatalogHandoffFromRow(row))
       router.push(sellCatalogSearchCategorySellPath(sellCatalogSearchRowCategory(row)))
     },
@@ -738,20 +743,11 @@ export function SellCatalogSearch({
   const runSearch = React.useCallback(async (q: string) => {
     const trimmed = q.trim()
     if (trimmed.length < 1) return
-    searchEpochRef.current += 1
-    const epoch = searchEpochRef.current
-    try {
-      const data = await fetchSellCatalogSearch(trimmed)
-      if (epoch !== searchEpochRef.current) return
-      const matchTier = data.meta.matchTier ?? "none"
-      const rows = matchTier === "similar" ? (data.similarResults ?? []) : (data.results ?? [])
-      if (rows.length > 0) {
-        handleSelect(rows[0]!)
-      }
-    } catch {
-      // Panel shows errors on type; submit with no match is a no-op.
-    }
-  }, [handleSelect])
+    // Keep the suggest panel open — never auto-route on Enter. Sellers must
+    // explicitly pick a result so we never send them to the wrong listing.
+    setSuggestOpen(true)
+    setSearchFocused(true)
+  }, [])
 
   const externalSuggest = React.useMemo<
     ExternalSuggestConfig<SellCatalogSearchResult>
@@ -778,6 +774,7 @@ export function SellCatalogSearch({
     <main className={cn("relative flex-1 bg-background pb-12 pt-8 sm:pt-12 sm:pb-16 md:pb-24", className)}>
       <div className="container relative mx-auto max-w-3xl px-4 sm:px-6">
         <div className="mx-auto w-full max-w-2xl space-y-8 sm:space-y-10">
+          {resumeBanner && !focusMode ? resumeBanner : null}
           <header
             className={cn(
               "space-y-2 text-center transition-opacity duration-300 ease-out motion-reduce:transition-none sm:space-y-3",

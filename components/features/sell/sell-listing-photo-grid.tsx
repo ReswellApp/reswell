@@ -123,13 +123,15 @@ function SellListingPhotoTile({
   }
 }) {
   const isFailure = image.optimizePhase === "error" || image.uploadPhase === "error"
+  const isPendingAuth = image.uploadPhase === "pending_auth"
 
   const remote =
     image.uploadPhase === "done"
       ? (image.thumbnailUrl?.trim() || image.url?.trim() || "").trim()
       : ""
   const localPreview =
-    image.optimizePhase === "done" && image.previewUrl.startsWith("blob:")
+    (image.optimizePhase === "done" || isPendingAuth) &&
+    image.previewUrl.startsWith("blob:")
       ? image.previewUrl
       : ""
   const thumbSrc = remote ? (proxiedListingImageSrc(remote) ?? remote) : localPreview
@@ -251,10 +253,15 @@ function SellListingPhotoTile({
                 {photoReady ? "Loading thumbnail preview" : "Processing photo"}
               </span>
             ) : (
-              <div className="absolute bottom-1 left-1 z-[5] flex items-center gap-1 pointer-events-none">
+              <div className="absolute bottom-1 left-1 z-[5] flex flex-wrap items-center gap-1 pointer-events-none">
                 {index === 0 ? (
                   <span className="text-[10px] bg-primary text-primary-foreground px-1 rounded">
                     Main
+                  </span>
+                ) : null}
+                {isPendingAuth ? (
+                  <span className="text-[10px] bg-background/90 px-1 rounded text-foreground ring-1 ring-border">
+                    Sign in to upload
                   </span>
                 ) : null}
               </div>

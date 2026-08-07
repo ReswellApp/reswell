@@ -3,8 +3,8 @@
  * Quick List — photo-first, single-screen surfboard listing (the fast
  * alternative to the /sell wizard). Six essentials, one publish button.
  * The publish path mirrors the wizard's fresh non-admin create branch
- * field-for-field; drafts/IndexedDB persistence intentionally stay with
- * the wizard.
+ * field-for-field. Local drafts + pending-publish resume keep guest
+ * progress through the sign-in gate.
  */
 
 import React, {
@@ -15,10 +15,12 @@ import React, {
   useRef,
   useState,
 } from "react"
-import { SellModeToggle } from "@/components/features/sell/sell-mode-toggle"
-import { useRouter } from "next/navigation"
+import { SellBoardModeHeader } from "@/components/features/sell/sell-board-mode-header"
+import { useRouter, useSearchParams } from "next/navigation"
+import { goBackFromSellForm } from "@/lib/sell-flow/go-back-from-sell-form"
+import { logSellForkToFull } from "@/lib/sell-flow/log-sell-funnel-event"
 import { toast } from "sonner"
-import { ChevronDown, MapPin } from "lucide-react"
+import { ArrowLeft, ChevronDown, MapPin } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
@@ -35,7 +37,16 @@ import { QuickPhotoHero } from "@/components/features/sell/quick/quick-photo-her
 import { QuickPublishBar } from "@/components/features/sell/quick/quick-publish-bar"
 import { QuickPublishOverlay } from "@/components/features/sell/quick/quick-publish-overlay"
 import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
-import { useGeneratedListingDescription } from "@/components/features/sell/hooks/use-generated-listing-description"
+import { useSellAccessoryDraftRecovery } from "@/components/features/sell/hooks/use-sell-accessory-draft-recovery"
+import {
+  sellFormSnapshotLooksFilled,
+  useSellServerDraft,
+} from "@/components/features/sell/hooks/use-sell-server-draft"
+import { usePendingPublishResume } from "@/components/features/sell/hooks/use-pending-publish-resume"
+import { persistBoardSellFlowStep } from "@/lib/sell-flow/board-sell-flow-step"
+import { persistListingDraftSnapshot } from "@/lib/sell-flow/persist-listing-draft-snapshot"
+import { markPendingPublish } from "@/lib/sell-flow/session-keys"
+import type { SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellBoardDimensionsPicker } from "@/components/features/sell/sell-board-dimensions-picker"
 import {
@@ -96,7 +107,11 @@ import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listi
 import { revalidateNavSearchSuggestAfterListingPublished } from "@/app/actions/nav-search-suggest-cache"
 import { saveDefaultListingLocationAction } from "@/app/actions/sell-default-location"
 import { setJustPublishedListingMarker } from "@/lib/sell-flow/just-published"
-import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
+import {
+  logSellFieldInteracted,
+  logSellFunnelEvent,
+} from "@/lib/sell-flow/log-sell-funnel-event"
+import { resolveSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 import { listingDetailHref } from "@/lib/listing-href"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 import {
@@ -234,9 +249,12 @@ type QuickPublishPreview = {
 
 export default function QuickListClient() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const startFresh = searchParams.get("new") === "1"
   const supabase = useMemo(() => createClient(), [])
   const openSignIn = useSignInGate()
   const listingPhotosInputId = useId()
+  const formRef = useRef<HTMLFormElement | null>(null)
 
   const [formData, setFormData] = useState<QuickListFormData>(
     createInitialQuickListFormData,
@@ -253,14 +271,171 @@ export default function QuickListClient() {
   const publishInFlightRef = useRef(false)
 
   const signInReturnPath = useCallback(() => QUICK_LIST_PATH, [])
+  const flushDraftNowRef = useRef<() => Promise<void>>(async () => {})
+
   const photos = useListingPhotoUpload({
     maxPhotos: QUICK_LIST_MAX_PHOTOS,
     signInReturnPath,
     openSignIn,
     supabase,
     funnelListingType: "surfboards",
+    persistBeforeSignIn: () => flushDraftNowRef.current(),
   })
-  const { images, imagesUploadReady, uploadingCount } = photos
+  const {
+    images,
+    imagesUploadReady,
+    uploadingCount,
+    setImages,
+    handlePhotoTileRetry,
+    imagesRef,
+    removedImageIds,
+  } = photos
+  const removedImageIdsRef = useRef(removedImageIds)
+  removedImageIdsRef.current = removedImageIds
+
+  const restoreFormFromDraft = useCallback((snapshot: SellListingDraftFormSnapshot) => {
+    setFormData((prev) => {
+      const next = { ...prev }
+      for (const key of Object.keys(prev) as Array<keyof QuickListFormData>) {
+        const value = snapshot[key as string]
+        if (value === undefined) continue
+        if (typeof value === typeof prev[key]) {
+          ;(next as Record<string, unknown>)[key as string] = value
+        }
+      }
+      return next
+    })
+    const desc = typeof snapshot.description === "string" ? snapshot.description.trim() : ""
+    if (desc) setDetailsOpen(true)
+  }, [])
+
+  // Share the board IDB slot with Advanced so Quick ↔ Advanced preserves progress.
+  const { draftHydrated, clearRecoveredDraft, flushDraftNow } =
+    useSellAccessoryDraftRecovery({
+      listingType: "board",
+      editId: null,
+      startFresh,
+      formSnapshot: formData as SellListingDraftFormSnapshot,
+      images,
+      onRestoreForm: restoreFormFromDraft,
+      setImages,
+      retryPhotoSlot: handlePhotoTileRetry,
+    })
+
+  flushDraftNowRef.current = () => flushDraftNow({ includeInFlightPhotos: true })
+
+  const buildQuickDraftPayload = useCallback(
+    (listingId: string | null) => ({
+      section: "surfboards" as const,
+      listingId,
+      title: formData.title,
+      description: formData.description,
+      price: formData.price,
+      sellerPurchasePrice: formData.sellerPurchasePrice,
+      condition: formData.condition,
+      category: formData.category,
+      brand: formData.brand,
+      boardFulfillment: formData.boardFulfillment,
+      boardShippingCostMode: formData.boardShippingCostMode,
+      boardShippingPrice: formData.boardShippingPrice,
+      surfboardShippingTier: formData.surfboardShippingTier,
+      surfboardShippingPackBand: formData.surfboardShippingPackBand,
+      adminCustomShippingCarton: formData.adminCustomShippingCarton,
+      reswellPackageLengthIn: formData.reswellPackageLengthIn,
+      reswellPackageWidthIn: formData.reswellPackageWidthIn,
+      reswellPackageHeightIn: formData.reswellPackageHeightIn,
+      reswellPackageWeightLb: formData.reswellPackageWeightLb,
+      reswellPackageWeightOz: formData.reswellPackageWeightOz,
+      autoPriceDrop: formData.autoPriceDrop,
+      autoPriceDropFloor: formData.autoPriceDropFloor,
+      buyerOffers: formData.buyerOffers,
+      boardType: formData.boardType,
+      boardLength: formData.boardLength,
+      boardWidthInches: formData.boardWidthInches,
+      boardThicknessInches: formData.boardThicknessInches,
+      boardVolumeL: formData.boardVolumeL,
+      boardFins: formData.boardFins,
+      boardTail: formData.boardTail,
+      boardFinSystem: formData.boardFinSystem,
+      boardConstruction: formData.boardConstruction,
+      boardBrandId: formData.boardBrandId,
+      boardBrandModelId: formData.boardBrandModelId,
+      boardModelName: formData.boardModelName,
+      locationLat: formData.locationLat,
+      locationLng: formData.locationLng,
+      locationCity: formData.locationCity,
+      locationState: formData.locationState,
+    }),
+    [formData],
+  )
+
+  // Server draft (guest cookie or signed-in). IDB remains write-through cache.
+  const { draftSaveStatus: serverDraftSaveStatus } = useSellServerDraft({
+    section: "surfboards",
+    supabase,
+    editId: null,
+    editListingStatus: "draft",
+    editLoading: false,
+    draftHydrated,
+    loading: publishing,
+    formLooksFilled: () =>
+      sellFormSnapshotLooksFilled("board", formData as SellListingDraftFormSnapshot),
+    buildDraftPayload: buildQuickDraftPayload,
+    imagesRef,
+    removedImageIdsRef,
+    setImages,
+    allowUnsigned: true,
+    syncEditUrl: false,
+    autosaveMs: 800,
+    autosaveWatch: { formData, photoCount: images.length },
+    hideDraftControls: true,
+  })
+
+  const goToFullListing = useCallback(
+    async (forkMessage: string) => {
+      if (forkMessage === "add_shipping_cta") {
+        // Open Full on Delivery so shipping is one tap away after the handoff.
+        persistBoardSellFlowStep("delivery")
+      }
+      await flushDraftNow()
+      logSellForkToFull({ message: forkMessage })
+      router.push("/sell/boards")
+    },
+    [flushDraftNow, router],
+  )
+
+  usePendingPublishResume({
+    listingKind: "quick",
+    editId: null,
+    draftHydrated,
+    formRef,
+    imagesRef,
+  })
+
+  useEffect(() => {
+    if (!startFresh) return
+    router.replace(QUICK_LIST_PATH, { scroll: false })
+  }, [router, startFresh])
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem("reswell.sell.funnel.started.surfboards") === "1") return
+      sessionStorage.setItem("reswell.sell.funnel.started.surfboards", "1")
+    } catch {
+      /* continue */
+    }
+    const entryPoint = resolveSellEntryPoint()
+    logSellFunnelEvent({
+      listingType: "surfboards",
+      event: "flow_started",
+      message: "quick",
+      entryPoint,
+    })
+  }, [])
+
+  const trackField = useCallback((field: string) => {
+    logSellFieldInteracted({ listingType: "surfboards", field })
+  }, [])
 
   useEffect(() => {
     if (!publishing) return
@@ -409,29 +584,6 @@ export default function QuickListClient() {
     setCatalogRequestVariant(bid ? { modelOnlyWithDirectoryBrandId: bid } : "full")
   }, [])
 
-  const { generating: descriptionGenerating, generateDescription } =
-    useGeneratedListingDescription()
-  const handleGenerateDescription = useCallback(() => {
-    const fd = formDataRef.current
-    void generateDescription(
-      {
-        title: fd.title,
-        brand: fd.brand,
-        model: fd.boardModelName,
-        category: fd.category,
-        boardType: fd.boardType,
-        condition: fd.condition,
-        length: fd.boardLength,
-        width: fd.boardWidthInches,
-        thickness: fd.boardThicknessInches,
-        volume: fd.boardVolumeL,
-        price: fd.price,
-        location: [fd.locationCity, fd.locationState].filter(Boolean).join(", "),
-      },
-      (text) => setFormData((f) => ({ ...f, description: text })),
-    )
-  }, [generateDescription])
-
   const boardLengthFormatted = useMemo(
     () => formatBoardLengthForTitle(formData.boardLength),
     [formData.boardLength],
@@ -499,6 +651,13 @@ export default function QuickListClient() {
       const session = await resolveClientSessionForMutation(supabase)
       const user = session?.user
       if (!user || !session?.access_token) {
+        await persistListingDraftSnapshot({
+          listingType: "board",
+          formData: formDataRef.current as SellListingDraftFormSnapshot,
+          images: photos.imagesRef.current,
+          userId: null,
+        })
+        markPendingPublish("quick")
         toast.message("Sign in to publish your listing")
         openSignIn(QUICK_LIST_PATH)
         return
@@ -681,6 +840,8 @@ export default function QuickListClient() {
         }
       })
 
+      await clearRecoveredDraft()
+
       logSellFunnelEvent({
         listingType: "surfboards",
         event: "publish_succeeded",
@@ -725,24 +886,45 @@ export default function QuickListClient() {
     <main className={cn("min-h-screen w-full", SELL_PAGE_GROUND_CLASS)}>
       {publishing && publishPreview ? <QuickPublishOverlay {...publishPreview} /> : null}
 
-      <form
-        onSubmit={(e) => void handleSubmit(e)}
-        aria-busy={publishing}
-        className="mx-auto w-full max-w-2xl px-4 pb-36 pt-8 sm:pt-10"
-      >
-        <header className="mb-6 sm:mb-8">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+      <SellBoardModeHeader
+        active="quick"
+        onBeforeNavigateToAdvanced={() => flushDraftNow()}
+        leading={
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => goBackFromSellForm(router)}
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+              Back
+            </button>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem] sm:leading-tight">
               List your surfboard
             </h1>
-            <SellModeToggle active="quick" />
           </div>
-          <p className="mt-1.5 text-sm text-muted-foreground sm:text-base">
+        }
+        description={
+          <p className="text-sm text-muted-foreground sm:text-base">
             Photos first, six quick things, and it&rsquo;s live. Need shipping setup or
-            drafts? Switch to Advanced any time.
+            drafts? Switch to Advanced any time — your progress comes with you.
           </p>
-        </header>
+        }
+        status={
+          serverDraftSaveStatus === "saving"
+            ? "Saving draft…"
+            : serverDraftSaveStatus === "saved"
+              ? "Draft saved"
+              : null
+        }
+      />
 
+      <form
+        ref={formRef}
+        onSubmit={(e) => void handleSubmit(e)}
+        aria-busy={publishing}
+        className="mx-auto w-full max-w-2xl px-4 pb-36"
+      >
         <div className="space-y-4 sm:space-y-5">
           <QuickPhotoHero
             images={images}
@@ -783,6 +965,7 @@ export default function QuickListClient() {
                         : null
                     }
                     onChange={(v) => {
+                      trackField("brand")
                       setFormData((f) => {
                         const clear =
                           f.boardBrandId &&
@@ -844,6 +1027,7 @@ export default function QuickListClient() {
                 value={formData.category}
                 options={boardCategoryOptions}
                 onValueChange={(value) => {
+                  trackField("category")
                   if (!value) {
                     setFormData((f) => ({ ...f, category: "", boardType: "" }))
                     return
@@ -891,9 +1075,10 @@ export default function QuickListClient() {
               label={<span className="sr-only">Condition</span>}
               value={formData.condition}
               options={LISTING_CONDITION_SELL_OPTIONS}
-              onValueChange={(value) =>
+              onValueChange={(value) => {
+                trackField("condition")
                 setFormData((f) => ({ ...f, condition: value }))
-              }
+              }}
             />
           </QuickEssentialCard>
 
@@ -914,9 +1099,11 @@ export default function QuickListClient() {
                 aria-label="Listing price in dollars"
                 className={cn(SELL_CONTROL_CLASS, "pl-7 text-base")}
                 value={formData.price}
-                onChange={(e) =>
+                onChange={(e) => {
+                  trackField("price")
                   setFormData((f) => ({ ...f, price: e.target.value }))
-                }
+                }}
+                onFocus={() => trackField("price")}
               />
             </div>
             <SellEarningsBreakdown listingPrice={formData.price} className="mt-3" />
@@ -929,6 +1116,7 @@ export default function QuickListClient() {
           >
             <LocationPicker
               onLocationSelect={(loc) => {
+                trackField("location")
                 setFormData((f) => ({
                   ...f,
                   locationLat: loc.lat,
@@ -960,12 +1148,19 @@ export default function QuickListClient() {
           <QuickEssentialCard title="Delivery" complete>
             <div className="flex items-start gap-3 rounded-xl bg-muted/40 p-4">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-listingHeart" aria-hidden />
-              <div className="min-w-0 space-y-1">
+              <div className="min-w-0 space-y-2">
                 <p className="text-sm font-medium text-foreground">Local pickup</p>
                 <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                  Quick List publishes as pickup-only. Want to offer Reswell shipping
-                  too? Add it any time after publishing by editing your listing.
+                  Quick List publishes as pickup-only. Need shipping or more detail?
+                  Carry everything you&rsquo;ve entered into the full listing.
                 </p>
+                <button
+                  type="button"
+                  onClick={() => void goToFullListing("add_shipping_cta")}
+                  className="text-sm font-medium text-listingHeart underline-offset-4 hover:underline"
+                >
+                  Add shipping &amp; details
+                </button>
               </div>
             </div>
           </QuickEssentialCard>
@@ -1049,8 +1244,6 @@ export default function QuickListClient() {
                   }
                   placeholder="Describe your board — condition, wear, why you're selling…"
                   maxLength={1000}
-                  onGenerate={handleGenerateDescription}
-                  generating={descriptionGenerating}
                 />
                 <SellBoardDimensionsPicker
                   values={{

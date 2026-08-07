@@ -30,17 +30,20 @@ export default async function SellPage({
     edit?: string | string[]
     new?: string | string[]
     type?: string | string[]
+    choose?: string | string[]
   }>
 }) {
   const qs = await searchParams
   const editId = parseEditListingId(qs.edit)
   const type = firstParam(qs.type)
+  const wantsNew = firstParam(qs.new) === "1"
+  const chooseSurfboard = firstParam(qs.choose) === "surfboard"
 
   // Editing an existing listing or explicitly choosing surfboards goes straight
   // to the surfboard flow (/sell/boards is the canonical boards sell URL).
-  // A fresh /sell visit shows the product-type chooser.
   // Suspense fallback is null: the client form owns its own editLoading skeleton,
   // and a route-level skeleton was flashing on every `?edit=` draft switch.
+  // Note: `?choose=surfboard` is the Quick vs Full path picker — not the wizard.
   if (editId || type === "surfboard") {
     return (
       <Suspense fallback={null}>
@@ -67,5 +70,14 @@ export default async function SellPage({
     }),
   )
 
-  return <SellStart isAdmin={isAdmin} trendingBrands={trendingBrands} />
+  // Create listing CTAs use `?new=1` → type chooser. Bare `/sell` → catalog search.
+  // `?choose=surfboard` opens the Quick vs Full picker for entry only — never as a Back target.
+  return (
+    <SellStart
+      isAdmin={isAdmin}
+      trendingBrands={trendingBrands}
+      initialMode={wantsNew || chooseSurfboard ? "choose" : "search"}
+      initialSurfboardPath={chooseSurfboard}
+    />
+  )
 }

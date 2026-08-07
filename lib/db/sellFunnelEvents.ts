@@ -21,6 +21,7 @@ export async function insertSellFunnelEvent(
     message: row.message ?? null,
     listing_id: row.listingId ?? null,
     duration_ms: row.durationMs ?? null,
+    entry_point: row.entryPoint ?? null,
   })
   if (error) {
     throw new Error(error.message)

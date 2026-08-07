@@ -479,6 +479,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     const session = await resolveClientSessionForMutation(supabase)
     const user = session?.user
     if (!user || !session?.access_token) {
+      toast.message("Sign in to publish your listing")
       signIn("/sell/wetsuits")
       return
     }

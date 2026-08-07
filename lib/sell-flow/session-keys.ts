@@ -1,11 +1,13 @@
-export type SellFlowListingKind = "board" | "fins"
+export type SellFlowListingKind = "board" | "fins" | "quick"
 
 /** While set, IndexedDB restore must not run — coordinates with draft clear after `?new=1`. */
 export const SELL_SUPPRESS_IDB_RESTORE_KEY = "reswell.sell.suppressIdbRestoreOnce"
 
 /** Set when Publish is tapped while signed out — resume submit after sign-in. */
 export function sellPendingPublishKey(kind: SellFlowListingKind): string {
-  return kind === "fins" ? "reswell.sell.fins.pendingPublishOnce" : "reswell.sell.pendingPublishOnce"
+  if (kind === "fins") return "reswell.sell.fins.pendingPublishOnce"
+  if (kind === "quick") return "reswell.sell.quick.pendingPublishOnce"
+  return "reswell.sell.pendingPublishOnce"
 }
 
 export function sellFlowStepSessionKey(kind: SellFlowListingKind): string | null {

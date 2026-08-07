@@ -21,14 +21,6 @@ import { peerListingEditHref } from "@/lib/peer-listing-sections"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent } from "@/components/ui/card"
@@ -67,6 +59,7 @@ import {
   AlertCircle,
   RefreshCw,
   Zap,
+  ArrowLeft,
 } from "lucide-react"
 import { LocationPicker, type LocationPrefillSuggested } from "@/components/location-picker"
 import { listingDetailHref } from "@/lib/listing-href"
@@ -208,8 +201,8 @@ import {
 } from "@/components/features/sell/sell-board-facet-fields"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
-import { useGeneratedListingDescription } from "@/components/features/sell/hooks/use-generated-listing-description"
-import { SellModeToggle } from "@/components/features/sell/sell-mode-toggle"
+import { SellBoardModeHeader } from "@/components/features/sell/sell-board-mode-header"
+import { goBackFromSellForm } from "@/lib/sell-flow/go-back-from-sell-form"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
 import { sellListingThumbLoadedSrcByClientId } from "@/components/features/sell/hooks/use-listing-photo-upload"
 import {
@@ -655,11 +648,14 @@ async function persistSellListingDraftSnapshot(args: {
   formData: SellListingDraftFormSnapshot
   images: ListingPhotoSlot[]
   userId: string | null
+  includeInFlightPhotos?: boolean
 }): Promise<void> {
   const built = await buildSellListingDraft(
     args.listingType,
     args.formData,
-    listingPhotoSlotsForDraftPersist(args.images),
+    listingPhotoSlotsForDraftPersist(args.images, {
+      includeInFlight: args.includeInFlightPhotos,
+    }),
     null,
     args.userId,
     { allowGuest: !args.userId },
@@ -794,7 +790,7 @@ function SellPageContentInner({
   const openSignIn = useSignInGate()
   const supabase = useMemo(() => createClient(), [])
 
-  /** Strip `?new=1` from the URL after blank-listing setup; keep `type=surfboard` so /sell stays on the flow. */
+  /** Strip `?new=1` from the URL after blank-listing setup; stay on `/sell/boards`. */
   useLayoutEffect(() => {
     if (typeof window === "undefined") return
     if (startFresh) {
@@ -803,7 +799,7 @@ function SellPageContentInner({
       } catch {
         /* quota / private mode */
       }
-      router.replace("/sell?type=surfboard", { scroll: false })
+      router.replace("/sell/boards", { scroll: false })
     }
   }, [startFresh, router])
 
@@ -1155,7 +1151,7 @@ function SellPageContentInner({
       await clearGuestSellListingDraft()
       toast.message("Starting a new listing — saved drafts stay in your dashboard.")
       if (editId) {
-        router.replace("/sell?type=surfboard&new=1", { scroll: false })
+        router.replace("/sell/boards?new=1", { scroll: false })
       }
     } finally {
       setStartNewListingBusy(false)
@@ -1533,30 +1529,6 @@ function SellPageContentInner({
     () => formatBoardLengthForTitle(formData.boardLength),
     [formData.boardLength],
   )
-
-  const { generating: descriptionGenerating, generateDescription } =
-    useGeneratedListingDescription()
-
-  const handleGenerateDescription = useCallback(() => {
-    const fd = formDataRef.current
-    void generateDescription(
-      {
-        title: fd.title,
-        brand: fd.brand,
-        model: fd.boardModelName,
-        category: fd.category,
-        boardType: fd.boardType,
-        condition: fd.condition,
-        length: fd.boardLength,
-        width: fd.boardWidthInches,
-        thickness: fd.boardThicknessInches,
-        volume: fd.boardVolumeL,
-        price: fd.price,
-        location: [fd.locationCity, fd.locationState].filter(Boolean).join(", "),
-      },
-      (text) => setFormData((f) => ({ ...f, description: text })),
-    )
-  }, [generateDescription])
 
   /**
    * "Use my area" hint from the seller's last published listing — the locality
@@ -2415,20 +2387,14 @@ function SellPageContentInner({
       }
       if (!session?.access_token || !user) {
         if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
-        const authMsg = "Sign in again to upload this photo."
-        logSellFunnelEvent({
-          listingType: "surfboards",
-          event: "upload_failed",
-          message: authMsg,
-        })
         setImages((prev) =>
           prev.map((s) =>
             s.clientId === clientId
               ? {
                   ...s,
                   optimizePhase: "done",
-                  uploadPhase: "error",
-                  errorMessage: authMsg,
+                  uploadPhase: "pending_auth",
+                  errorMessage: undefined,
                 }
               : s,
           ),
@@ -2436,8 +2402,26 @@ function SellPageContentInner({
         if (!photoUploadSignInPromptedRef.current) {
           photoUploadSignInPromptedRef.current = true
           const ret = `/sell${sellSearchParams.toString() ? `?${sellSearchParams}` : ""}`
-          toast.error(authMsg)
-          openSignIn(ret)
+          void (async () => {
+            try {
+              await persistSellListingDraftSnapshot({
+                listingType: "board",
+                formData: {
+                  ...formDataRef.current,
+                  boardFlowStep: flowStep,
+                } as SellListingDraftFormSnapshot,
+                images: imagesRef.current,
+                userId: null,
+                includeInFlightPhotos: true,
+              })
+            } catch {
+              /* best-effort */
+            }
+            toast.message("Sign in to upload your photos", {
+              description: "Your selection is saved — you’ll pick up right here.",
+            })
+            openSignIn(ret)
+          })()
         }
         return
       }
@@ -3749,6 +3733,11 @@ function SellPageContentInner({
 
   /** Covers publish + rare early loading without preview; never while edit hydration is blocking. */
   const fullscreenSellBlocking = loading && (!!publishPreview || !editLoading)
+  const showBoardModeHeader = !editId && !editLoading && !getImpersonation()
+
+  const goBackInSellFlow = useCallback(() => {
+    goBackFromSellForm(router, editId ? sellListingsHubHref : "/sell")
+  }, [editId, router, sellListingsHubHref])
 
   if (editLoadError) {
     return (
@@ -3766,7 +3755,8 @@ function SellPageContentInner({
         className={cn(
           "flex-1 w-full",
           SELL_PAGE_GROUND_CLASS,
-          !fullscreenSellBlocking && "pt-8 pb-16 md:pb-20 lg:pb-24",
+          !fullscreenSellBlocking && "pb-16 md:pb-20 lg:pb-24",
+          !fullscreenSellBlocking && !showBoardModeHeader && "pt-8",
         )}
       >
         <AdminBulkListingBanner section="surfboards" bulkSlotId={bulkSlotId} />
@@ -3788,80 +3778,120 @@ function SellPageContentInner({
           <h1 className="sr-only">
             {editId ? "Edit listing" : "Create a Listing"}
           </h1>
-          <div className="border-t border-neutral-200 pt-4 pb-4 mb-4 sm:pb-8 sm:mb-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-              <div className="flex flex-wrap items-center gap-3">
-              <Breadcrumb>
-                <BreadcrumbList className="gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
-                  <BreadcrumbItem>
-                    <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                      <Link href="/">Home</Link>
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
-                  <BreadcrumbItem>
-                    <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                      <Link href="/sell">Listings</Link>
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage className="font-normal text-[#5c6b89]">
-                      {editId ? "Edit listing" : "Create a Listing"}
-                    </BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
-              {!editId && !editLoading && !getImpersonation() ? (
-                <SellModeToggle active="advanced" />
-              ) : null}
-              </div>
-              <div className="flex flex-col gap-1 shrink-0">
-                {(showBoardDraftControls ||
-                  (!editLoading && (!editId || listingIsDraft) && !getImpersonation())) && (
-                    <div className="flex w-full items-center gap-3 sm:w-auto sm:justify-end">
-                      {boardDraftControls}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="ml-auto sm:ml-0"
-                        aria-label="Exit listing form"
-                        asChild
-                      >
-                        <Link href={sellListingsHubHref}>
-                          <X className="h-4 w-4" aria-hidden />
-                        </Link>
-                      </Button>
-                    </div>
-                  )}
-                {/* Local-device autosave line is a fallback only — hidden once the
-                    server draft indicator next to the Drafts picker is active. */}
-                {!editId && serverDraftSaveStatus === "idle" ? (
-                  <div
-                    className="flex min-h-5 items-center gap-1.5 sm:justify-end"
-                    aria-live="polite"
+          {showBoardModeHeader ? (
+            <SellBoardModeHeader
+              active="advanced"
+              leading={
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={goBackInSellFlow}
+                    className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
                   >
-                    {draftAutosaveState !== "idle" ? (
-                      <>
-                        {draftAutosaveState === "saved" ? (
-                          <Check
-                            className="h-3.5 w-3.5 text-listingHeart"
-                            aria-hidden
-                          />
-                        ) : null}
-                        <span className="text-xs text-muted-foreground">
-                          {draftAutosaveState === "saving"
-                            ? "Saving draft…"
-                            : "Draft saved on this device"}
-                        </span>
-                      </>
+                    <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+                    Back
+                  </button>
+                  <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem] sm:leading-tight">
+                    Create a listing
+                  </h1>
+                </div>
+              }
+              actions={
+                showBoardDraftControls ||
+                (!editLoading && (!editId || listingIsDraft) && !getImpersonation()) ? (
+                  <>
+                    {boardDraftControls}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0 rounded-full text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                      aria-label="Exit listing form"
+                      asChild
+                    >
+                      <Link href={sellListingsHubHref}>
+                        <X className="h-4 w-4" aria-hidden />
+                      </Link>
+                    </Button>
+                  </>
+                ) : undefined
+              }
+              status={
+                !editId && serverDraftSaveStatus === "idle" && draftAutosaveState !== "idle" ? (
+                  <>
+                    {draftAutosaveState === "saved" ? (
+                      <Check className="h-3.5 w-3.5 text-listingHeart" aria-hidden />
                     ) : null}
-                  </div>
-                ) : null}
+                    <span>
+                      {draftAutosaveState === "saving"
+                        ? "Saving draft…"
+                        : "Draft saved on this device"}
+                    </span>
+                  </>
+                ) : undefined
+              }
+            />
+          ) : (
+            <div className="mx-auto w-full max-w-2xl px-4 pt-8 sm:pt-10">
+              <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                <div className="min-w-0 flex-1 space-y-3">
+                  <button
+                    type="button"
+                    onClick={goBackInSellFlow}
+                    className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+                    Back
+                  </button>
+                  <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem] sm:leading-tight">
+                    {editId ? "Edit listing" : "Create a listing"}
+                  </h1>
+                </div>
+                <div className="flex flex-col gap-1 shrink-0 sm:items-end">
+                  {(showBoardDraftControls ||
+                    (!editLoading && (!editId || listingIsDraft) && !getImpersonation())) && (
+                      <div className="flex w-full items-center gap-3 sm:w-auto sm:justify-end">
+                        {boardDraftControls}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="ml-auto sm:ml-0"
+                          aria-label="Exit listing form"
+                          asChild
+                        >
+                          <Link href={sellListingsHubHref}>
+                            <X className="h-4 w-4" aria-hidden />
+                          </Link>
+                        </Button>
+                      </div>
+                    )}
+                  {!editId && serverDraftSaveStatus === "idle" ? (
+                    <div
+                      className="flex min-h-5 items-center gap-1.5 sm:justify-end"
+                      aria-live="polite"
+                    >
+                      {draftAutosaveState !== "idle" ? (
+                        <>
+                          {draftAutosaveState === "saved" ? (
+                            <Check
+                              className="h-3.5 w-3.5 text-listingHeart"
+                              aria-hidden
+                            />
+                          ) : null}
+                          <span className="text-xs text-muted-foreground">
+                            {draftAutosaveState === "saving"
+                              ? "Saving draft…"
+                              : "Draft saved on this device"}
+                          </span>
+                        </>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {!editLoading && publishValidationBanner ? (
             <Alert
@@ -4281,8 +4311,6 @@ function SellPageContentInner({
                   onChange={(description) => setFormData({ ...formData, description })}
                   placeholder="Describe your board…"
                   maxLength={1000}
-                  onGenerate={handleGenerateDescription}
-                  generating={descriptionGenerating}
                 />
                     </div>
                     </div>

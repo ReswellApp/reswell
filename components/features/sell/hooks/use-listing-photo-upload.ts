@@ -52,6 +52,11 @@ export type UseListingPhotoUploadOptions = {
   supabase?: SupabaseClient
   /** Section for sell funnel instrumentation; upload failures are logged when set. */
   funnelListingType?: PeerListingSection
+  /**
+   * Flush local draft (including in-flight photo files) before opening sign-in
+   * so a full-page login remount does not eat the selection.
+   */
+  persistBeforeSignIn?: () => void | Promise<void>
 }
 
 export type UseListingPhotoUploadResult = {
@@ -85,6 +90,7 @@ export function useListingPhotoUpload({
   openSignIn,
   supabase: supabaseProp,
   funnelListingType,
+  persistBeforeSignIn,
 }: UseListingPhotoUploadOptions): UseListingPhotoUploadResult {
   const supabaseRef = useRef(supabaseProp ?? createClient())
   const [images, setImages] = useState<ListingPhotoSlot[]>([])
@@ -95,6 +101,8 @@ export function useListingPhotoUpload({
   const latestListingPhotoPrepareSeqRef = useRef<Map<string, number>>(new Map())
   const photoUploadSignInPromptedRef = useRef(false)
   const idbRestoreOptimizeQueueRef = useRef<ListingPhotoSlot[] | null>(null)
+  const persistBeforeSignInRef = useRef(persistBeforeSignIn)
+  persistBeforeSignInRef.current = persistBeforeSignIn
 
   imagesRef.current = images
 
@@ -159,30 +167,32 @@ export function useListingPhotoUpload({
         }
         if (!session?.access_token || !user) {
           if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
-          const authMsg = "Sign in again to upload this photo."
-          if (funnelListingType) {
-            logSellFunnelEvent({
-              listingType: funnelListingType,
-              event: "upload_failed",
-              message: authMsg,
-            })
-          }
+          // Keep selection as pending — not an error. Upload resumes after auth.
           setImages((prev) =>
             prev.map((s) =>
               s.clientId === clientId
                 ? {
                     ...s,
                     optimizePhase: "done",
-                    uploadPhase: "error",
-                    errorMessage: authMsg,
+                    uploadPhase: "pending_auth",
+                    errorMessage: undefined,
                   }
                 : s,
             ),
           )
           if (!photoUploadSignInPromptedRef.current) {
             photoUploadSignInPromptedRef.current = true
-            toast.error(authMsg)
-            openSignIn(signInReturnPath())
+            void (async () => {
+              try {
+                await persistBeforeSignInRef.current?.()
+              } catch {
+                /* best-effort; selection still lives in React state if modal stays open */
+              }
+              toast.message("Sign in to upload your photos", {
+                description: "Your selection is saved — you’ll pick up right here.",
+              })
+              openSignIn(signInReturnPath())
+            })()
           }
           return
         }
@@ -276,6 +286,7 @@ export function useListingPhotoUpload({
       for (const slot of imagesRef.current) {
         if (!slot.sourceFile) continue
         if (slot.uploadPhase === "done") continue
+        // pending_auth / error / idle all retry once the session is live.
         void optimizeAndUploadSlot(slot)
       }
     })

@@ -9,7 +9,7 @@ export type ListingPhotoSlot = {
   url?: string
   thumbnailUrl?: string
   optimizePhase: "idle" | "running" | "done" | "error"
-  uploadPhase: "idle" | "uploading" | "done" | "error"
+  uploadPhase: "idle" | "uploading" | "done" | "error" | "pending_auth"
   progressFull: number
   progressThumb: number
   errorMessage?: string
@@ -106,7 +106,8 @@ export function listingPhotosUploadingCount(slots: ListingPhotoSlot[]): number {
       p.uploadPhase === "uploading" ||
       (p.optimizePhase === "done" &&
         p.uploadPhase !== "done" &&
-        p.uploadPhase !== "error"),
+        p.uploadPhase !== "error" &&
+        p.uploadPhase !== "pending_auth"),
   ).length
 }
 
@@ -115,18 +116,20 @@ export function readyListingPhotoUrls(slots: ListingPhotoSlot[]): ListingPhotoSl
 }
 
 /**
- * Slots safe to snapshot into IndexedDB. Skips photos still decoding or uploading so
- * `file.arrayBuffer()` does not contend with the image pipeline (a common mobile OOM trigger).
+ * Slots safe to snapshot into IndexedDB. By default skips photos still decoding or
+ * uploading so `file.arrayBuffer()` does not contend with the image pipeline
+ * (a common mobile OOM trigger). Pass `includeInFlight` before an auth gate so
+ * selected files survive a remount / full-page login.
  */
 export function listingPhotoSlotsForDraftPersist(
   slots: ListingPhotoSlot[],
+  opts?: { includeInFlight?: boolean },
 ): { file?: File }[] {
   return slots
-    .filter(
-      (s) =>
-        s.sourceFile &&
-        s.optimizePhase !== "running" &&
-        s.uploadPhase !== "uploading",
-    )
+    .filter((s) => {
+      if (!s.sourceFile) return false
+      if (opts?.includeInFlight) return true
+      return s.optimizePhase !== "running" && s.uploadPhase !== "uploading"
+    })
     .map((s) => ({ file: s.sourceFile }))
 }

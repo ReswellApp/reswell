@@ -129,21 +129,30 @@ export function useSellAccessoryDraftRecovery({
     } = supabaseRef.current.auth.onAuthStateChange((_event, session) => {
       const uid = session?.user?.id ?? null
       userIdRef.current = uid
-      if (uid) void migrateGuestSellListingDraftToUser(uid, listingType)
+      if (uid) {
+        void migrateGuestSellListingDraftToUser(uid, listingType)
+        void import("@/lib/sell-flow/claim-guest-listing-drafts").then(({ claimGuestListingDraftsClient }) =>
+          claimGuestListingDraftsClient(),
+        )
+      }
     })
     return () => subscription.unsubscribe()
   }, [listingType])
 
-  const flushDraftNow = useCallback(async () => {
-    const r = latestRef.current
-    if (r.editId || !r.draftHydrated) return
-    await persistListingDraftSnapshot({
-      listingType,
-      formData: r.formSnapshot,
-      images: r.images,
-      userId: userIdRef.current,
-    })
-  }, [listingType])
+  const flushDraftNow = useCallback(
+    async (opts?: { includeInFlightPhotos?: boolean }) => {
+      const r = latestRef.current
+      if (r.editId || !r.draftHydrated) return
+      await persistListingDraftSnapshot({
+        listingType,
+        formData: r.formSnapshot,
+        images: r.images,
+        userId: userIdRef.current,
+        includeInFlightPhotos: opts?.includeInFlightPhotos,
+      })
+    },
+    [listingType],
+  )
 
   // Debounced autosave on any form/photo change.
   useEffect(() => {
@@ -182,5 +191,5 @@ export function useSellAccessoryDraftRecovery({
     await clearGuestSellListingDraft(listingType)
   }, [listingType])
 
-  return { draftHydrated, clearRecoveredDraft }
+  return { draftHydrated, clearRecoveredDraft, flushDraftNow }
 }

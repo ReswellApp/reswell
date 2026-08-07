@@ -53,6 +53,8 @@ interface DraftsPickerProps {
   saveDraftBusy?: boolean
   disabled?: boolean
   className?: string
+  /** Compact styling for the surfboard sell header toolbar. */
+  appearance?: "default" | "toolbar"
 }
 
 function draftDisplayTitle(draft: SellDraftItem): string {
@@ -87,6 +89,7 @@ export function DraftsPicker({
   saveDraftBusy,
   disabled,
   className,
+  appearance = "default",
 }: DraftsPickerProps) {
   const [open, setOpen] = useState(false)
   const [discardingId, setDiscardingId] = useState<string | null>(null)
@@ -117,22 +120,32 @@ export function DraftsPicker({
       <PopoverTrigger asChild>
         <Button
           type="button"
-          variant="outline"
+          variant={appearance === "toolbar" ? "ghost" : "outline"}
           size="sm"
           disabled={disabled}
-          className={cn("shrink-0", className)}
+          className={cn(
+            "shrink-0",
+            appearance === "toolbar" &&
+              "h-8 rounded-full px-2.5 text-[13px] font-medium shadow-none hover:bg-muted/80",
+            className,
+          )}
         >
-          <FileText className="h-4 w-4 mr-2" aria-hidden />
+          <FileText className="h-3.5 w-3.5 mr-1.5" aria-hidden />
           Drafts
           {count > 0 && (
             <span
               aria-hidden
-              className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-neutral-900 px-1.5 text-[11px] font-semibold leading-none text-white dark:bg-neutral-100 dark:text-neutral-900"
+              className={cn(
+                "ml-1.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-semibold leading-none",
+                appearance === "toolbar"
+                  ? "bg-muted text-foreground"
+                  : "bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900",
+              )}
             >
               {count}
             </span>
           )}
-          <ChevronDown className="ml-1.5 h-4 w-4 opacity-70" aria-hidden />
+          <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" aria-hidden />
         </Button>
       </PopoverTrigger>
       <PopoverContent

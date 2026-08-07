@@ -34,9 +34,9 @@ export function sellCatalogSearchCategorySellPath(
     case "fins":
       return "/sell/fins?new=1"
     case "wetsuits":
-      return "/sell/wetsuits"
+      return "/sell/wetsuits?new=1"
     case "apparel":
-      return "/sell/apparel"
+      return "/sell/apparel?new=1"
   }
 }
 

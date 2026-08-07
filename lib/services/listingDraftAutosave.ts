@@ -309,3 +309,93 @@ export async function upsertSurfboardListingDraft(
   }
   return { id: created.id as string }
 }
+
+/**
+ * Guest draft upsert via service-role client. Cookie hash is the sole owner key
+ * until claim. Caps create volume per token+section.
+ */
+export async function upsertGuestSurfboardListingDraft(
+  service: SupabaseClient,
+  tokenHash: string,
+  input: ListingDraftAutosaveInput,
+): Promise<{ id: string }> {
+  const {
+    countGuestDraftsForToken,
+    fetchGuestDraftById,
+    guestDraftLimitReached,
+  } = await import("@/lib/db/listingGuestDrafts")
+
+  const defaultCategoryId = await fetchDefaultBoardCategoryId(service)
+  if (!defaultCategoryId) {
+    throw new Error("No board category configured")
+  }
+
+  const row = buildSurfboardDraftListingRow(input, defaultCategoryId)
+  const listingId = input.listingId?.trim() || null
+
+  if (listingId) {
+    const existing = await fetchGuestDraftById(service, listingId)
+    if (!existing || existing.status !== "draft" || existing.user_id !== null) {
+      throw new Error("Draft not found")
+    }
+    if (existing.guest_token_hash !== tokenHash) {
+      throw new Error("Draft not found")
+    }
+    if (existing.section !== "surfboards") {
+      throw new Error("Draft not found")
+    }
+
+    let { error: upErr } = await service
+      .from("listings")
+      .update({ ...row, guest_token_hash: tokenHash, user_id: null })
+      .eq("id", listingId)
+    if (upErr && isListingDimensionDisplaySchemaCacheError(upErr)) {
+      const retry = await service
+        .from("listings")
+        .update({
+          ...withoutListingDimensionDisplayDbFields(row),
+          guest_token_hash: tokenHash,
+          user_id: null,
+        })
+        .eq("id", listingId)
+      upErr = retry.error
+    }
+    if (upErr) throw upErr
+    return { id: listingId }
+  }
+
+  const count = await countGuestDraftsForToken(service, tokenHash, "surfboards")
+  if (guestDraftLimitReached(count)) {
+    throw new Error("Guest draft limit reached")
+  }
+
+  const insertRow = {
+    user_id: null,
+    guest_token_hash: tokenHash,
+    ...row,
+  }
+  let { data: created, error: insErr } = await service
+    .from("listings")
+    .insert(insertRow)
+    .select("id")
+    .single()
+
+  if (insErr && isListingDimensionDisplaySchemaCacheError(insErr)) {
+    const retry = await service
+      .from("listings")
+      .insert({
+        user_id: null,
+        guest_token_hash: tokenHash,
+        ...withoutListingDimensionDisplayDbFields(row),
+      })
+      .select("id")
+      .single()
+    created = retry.data
+    insErr = retry.error
+  }
+
+  if (insErr || !created?.id) {
+    throw insErr ?? new Error("Failed to create draft")
+  }
+  return { id: created.id as string }
+}

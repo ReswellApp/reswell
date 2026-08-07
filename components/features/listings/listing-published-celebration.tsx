@@ -15,13 +15,14 @@ import {
   type ListingEnrichmentGap,
 } from "@/lib/sell-flow/listing-enrichment"
 import { peerListingEditHref } from "@/lib/peer-listing-sections"
+import { setSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 import { cn } from "@/lib/utils"
 
 /** Sell entry per listing section for the "List another" CTA. */
 function sellAgainHref(section: string): string {
   switch (section) {
     case "surfboards":
-      return "/sell?type=surfboard&new=1"
+      return "/sell/quick?new=1"
     case "fins":
       return "/sell/fins?new=1"
     case "wetsuits":
@@ -196,7 +197,10 @@ export function ListingPublishedCelebration({ listingParam }: { listingParam: st
             size="sm"
             className="flex-1 gap-1.5 bg-listingHeart text-white hover:bg-listingHeart/90"
           >
-            <Link href={sellAgainHref(marker.section)}>
+            <Link
+              href={sellAgainHref(marker.section)}
+              onClick={() => setSellEntryPoint("celebration")}
+            >
               <Plus className="size-4" aria-hidden />
               List another
             </Link>

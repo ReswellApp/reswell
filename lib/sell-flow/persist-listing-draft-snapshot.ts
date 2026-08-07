@@ -17,11 +17,15 @@ export async function persistListingDraftSnapshot(args: {
   formData: SellListingDraftFormSnapshot
   images: ListingPhotoSlot[]
   userId: string | null
+  /** Persist selected files even while optimize/upload is in flight (auth gate). */
+  includeInFlightPhotos?: boolean
 }): Promise<void> {
   const built = await buildSellListingDraft(
     args.listingType,
     args.formData,
-    listingPhotoSlotsForDraftPersist(args.images),
+    listingPhotoSlotsForDraftPersist(args.images, {
+      includeInFlight: args.includeInFlightPhotos,
+    }),
     null,
     args.userId,
     { allowGuest: !args.userId },

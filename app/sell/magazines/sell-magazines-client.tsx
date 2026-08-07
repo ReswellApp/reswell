@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
+import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
@@ -260,6 +261,14 @@ export default function SellMagazinesFlow({
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
+    if (submitting) return
+
+    const session = await resolveClientSessionForMutation(supabaseRef.current)
+    if (!session?.user || !session.access_token) {
+      toast.message("Sign in to publish your listing")
+      signIn(magazineSellReturnPath())
+      return
+    }
 
     const publishStartedAt = Date.now()
     logSellFunnelEvent({

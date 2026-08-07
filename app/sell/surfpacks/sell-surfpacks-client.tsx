@@ -561,6 +561,7 @@ export default function SellSurfpacksFlow({ editListingId = null }: { editListin
     const session = await resolveClientSessionForMutation(supabase)
     const user = session?.user
     if (!user || !session?.access_token) {
+      toast.message("Sign in to publish your listing")
       signIn("/sell/surfpacks")
       return
     }

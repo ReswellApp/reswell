@@ -205,7 +205,7 @@ export function SellFunnelAdminClient() {
         </Card>
       ) : summary ? (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <StatTile
               label="Publish attempts"
               value={fmt(summary.publishAttempts)}
@@ -230,6 +230,12 @@ export function SellFunnelAdminClient() {
               tone={summary.validationFailures > 0 ? "warn" : "neutral"}
             />
             <StatTile
+              label="Quick → Full forks"
+              value={fmt(summary.forkToFull)}
+              hint="Sellers who left Quick for Advanced"
+              tone={summary.forkToFull > 0 ? "warn" : "neutral"}
+            />
+            <StatTile
               label="Unique sellers"
               value={fmt(summary.uniqueUsers)}
               hint={
@@ -238,6 +244,86 @@ export function SellFunnelAdminClient() {
                   : "Median publish time unavailable"
               }
             />
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Entry points</CardTitle>
+                <CardDescription>
+                  How sellers entered `/sell` this window (header, hub, catalog, celebration…).
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!data?.byEntryPoint.length ? (
+                  <p className="text-sm text-muted-foreground">
+                    No entry-point data yet — apply the Phase 0.6 migration and wait for traffic.
+                  </p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Entry</TableHead>
+                        <TableHead className="text-right">Starts</TableHead>
+                        <TableHead className="text-right">Attempts</TableHead>
+                        <TableHead className="text-right">Success</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.byEntryPoint.map((row) => (
+                        <TableRow key={row.entryPoint}>
+                          <TableCell className="font-mono text-xs">{row.entryPoint}</TableCell>
+                          <TableCell className="text-right tabular-nums">{fmt(row.flowStarts)}</TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {fmt(row.publishAttempts)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {fmt(row.publishSuccesses)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Field interactions</CardTitle>
+                <CardDescription>
+                  Once-per-session field touches vs validation failures — drop-off signals.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!data?.topFields.length ? (
+                  <p className="text-sm text-muted-foreground">No field interaction events yet.</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Field</TableHead>
+                        <TableHead className="text-right">Interactions</TableHead>
+                        <TableHead className="text-right">Validation fails</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.topFields.map((row) => (
+                        <TableRow key={row.field}>
+                          <TableCell className="font-mono text-xs">{row.field}</TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {fmt(row.interactions)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {fmt(row.validationFailures)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
@@ -412,6 +498,7 @@ export function SellFunnelAdminClient() {
                     <TableRow>
                       <TableHead>When</TableHead>
                       <TableHead>Event</TableHead>
+                      <TableHead>Entry</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Field</TableHead>
                       <TableHead>User</TableHead>
@@ -424,6 +511,9 @@ export function SellFunnelAdminClient() {
                           {formatDistanceToNow(parseISO(row.createdAt), { addSuffix: true })}
                         </TableCell>
                         <TableCell className="font-mono text-xs">{row.event}</TableCell>
+                        <TableCell className="font-mono text-xs text-muted-foreground">
+                          {row.entryPoint ?? "—"}
+                        </TableCell>
                         <TableCell className="text-sm">{row.listingType}</TableCell>
                         <TableCell className="max-w-[200px] truncate font-mono text-xs">
                           {row.field ? sellFunnelStepLabel(row.field) : row.message ?? "—"}
