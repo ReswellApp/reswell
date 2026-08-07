@@ -84,6 +84,10 @@
     {
       "path": "/api/cron/link-guest-contact-messages",
       "schedule": "25 * * * *"
+    },
+    {
+      "path": "/api/cron/live-chat-escalate-unanswered",
+      "schedule": "40 * * * *"
     }
   ]
 }

@@ -44,6 +44,7 @@ export function computeContactMessagesStats(
   const channelCounts: Record<ContactMessageSource, number> = {
     contact_form: 0,
     messages_support: 0,
+    live_chat: 0,
   }
 
   const now = Date.now()

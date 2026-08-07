@@ -70,6 +70,15 @@ const nextConfig = {
     // Default is 60s which forces a re-optimization roughly every page load and
     // floods logs with `/_next/image` requests.
     minimumCacheTTL: 2678400,
+    // When `localPatterns` is set, all local `<Image />` src paths must match one of these.
+    localPatterns: [
+      {
+        pathname: '/media/**',
+      },
+      {
+        pathname: '/images/**',
+      },
+    ],
     remotePatterns: [
       // User listing + avatar photos (Supabase project subdomains)
       {

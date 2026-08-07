@@ -20,12 +20,16 @@ export async function fetchAdminNavBadgeCounts(
   supabase: SupabaseClient,
   options: { includeBrandRequests: boolean },
 ): Promise<AdminNavBadgeCounts> {
-  const [supportNewRes, fraudRes, opsOpenRes, brandPendingRes, labelFailuresRes, hiddenActiveRes] =
+  const [supportNewRes, liveChatOpenRes, fraudRes, opsOpenRes, brandPendingRes, labelFailuresRes, hiddenActiveRes] =
     await Promise.all([
       supabase
         .from('contact_messages')
         .select('*', { count: 'exact', head: true })
         .eq('support_status', 'new'),
+      supabase
+        .from('live_chat_sessions')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['open', 'assigned']),
       supabase.from('fraud_messages').select('*', { count: 'exact', head: true }),
       supabase
         .from('ops_groups')
@@ -53,6 +57,7 @@ export async function fetchAdminNavBadgeCounts(
 
   const counts: AdminNavBadgeCounts = {
     '/admin/contact-messages': take(supportNewRes),
+    '/admin/live-chat': take(liveChatOpenRes),
     '/admin/fraud-messages': take(fraudRes),
     '/admin/ops': take(opsOpenRes),
     '/admin/listings/hidden': hiddenActiveRes,

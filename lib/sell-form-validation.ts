@@ -31,7 +31,6 @@ import {
   parseReswellParcelLengthRawToCarrierInches,
   parseReswellParcelWidthHeightRawToCarrierInches,
 } from "@/lib/reswell-parcel-fields"
-import { validateSurfboardLabelParcelLimits } from "@/lib/shipping/surfboard-label-limits"
 
 const PRICE_MIN = 0.01
 const PRICE_MAX = 999_999.99

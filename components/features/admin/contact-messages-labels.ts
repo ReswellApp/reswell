@@ -36,11 +36,13 @@ export const STATUS_BAR_CLASS: Record<ContactMessageSupportStatus, string> = {
 export const CHANNEL_LABEL: Record<ContactMessageSource, string> = {
   contact_form: "Website",
   messages_support: "Messages",
+  live_chat: "Live chat",
 }
 
 export const CHANNEL_COLOR: Record<ContactMessageSource, string> = {
   contact_form: "#6366f1",
   messages_support: "#0d9488",
+  live_chat: "#2563eb",
 }
 
 export function statusBadgeVariant(

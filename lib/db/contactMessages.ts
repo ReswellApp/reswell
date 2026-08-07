@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 
 export type ContactMessageSupportStatus = "new" | "triaged" | "ticket_created" | "resolved"
 
-export type ContactMessageSource = "contact_form" | "messages_support"
+export type ContactMessageSource = "contact_form" | "messages_support" | "live_chat"
 
 export type ContactMessageRow = {
   id: string
@@ -31,8 +31,13 @@ export const CONTACT_MESSAGE_USER_SELECT =
 export type ContactMessageUserRow = Omit<ContactMessageRow, "internal_notes">
 
 export function normalizeContactMessageRow(raw: Record<string, unknown>): ContactMessageRow {
-  const source =
-    raw.source === "messages_support" ? "messages_support" : "contact_form"
+  const sourceRaw = raw.source
+  const source: ContactMessageSource =
+    sourceRaw === "messages_support"
+      ? "messages_support"
+      : sourceRaw === "live_chat"
+        ? "live_chat"
+        : "contact_form"
   return {
     id: String(raw.id),
     name: String(raw.name ?? ""),

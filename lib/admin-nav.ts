@@ -114,6 +114,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     items: [
       { href: '/admin/crm', label: 'CRM', icon: 'contactRound' },
       { href: '/admin/contact-messages', label: 'Support inbox', icon: 'messageSquare' },
+      { href: '/admin/live-chat', label: 'Live chat', icon: 'messageSquare' },
       { href: '/admin/messages', label: 'Marketplace messages', icon: 'messageSquare' },
       {
         href: '/admin/refund-thread-notifications',
