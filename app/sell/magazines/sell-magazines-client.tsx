@@ -4,6 +4,7 @@ import { useCallback, useId, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
+import { setJustPublishedListingMarker } from "@/lib/sell-flow/just-published"
 import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
 import {
   SELL_SUBMIT_INTERRUPTED_MESSAGE,
@@ -28,6 +29,8 @@ import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-ph
 import { SELL_PAGE_GROUND_CLASS, SELL_CONTROL_CLASS } from "@/components/features/sell/sell-form-surface"
 import { cn } from "@/lib/utils"
 import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
+import { useSellAccessoryDraftRecovery } from "@/components/features/sell/hooks/use-sell-accessory-draft-recovery"
+import type { SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
 import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
 import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
 import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
@@ -71,6 +74,20 @@ const INITIAL_STATE: MagazineFormState = {
   year: "",
 }
 
+/** Type-safe merge of an IndexedDB draft snapshot onto the magazine form state. */
+function magazineFormFromDraftSnapshot(snapshot: SellListingDraftFormSnapshot): MagazineFormState {
+  const next: MagazineFormState = { ...INITIAL_STATE }
+  for (const key of Object.keys(INITIAL_STATE) as Array<keyof MagazineFormState>) {
+    const value = snapshot[key]
+    if (value === undefined) continue
+    const initial = INITIAL_STATE[key]
+    if (typeof value === typeof initial) {
+      next[key] = value as never
+    }
+  }
+  return next
+}
+
 const CONDITION_UNSELECTED = "__magazine_condition_unselected__"
 
 export default function SellMagazinesFlow({
@@ -81,6 +98,7 @@ export default function SellMagazinesFlow({
   const router = useRouter()
   const searchParams = useSearchParams()
   const bulkSlotId = searchParams.get("bulk")?.trim() || null
+  const startFresh = searchParams.get("new") === "1"
   const signIn = useSignInGate()
   const fileInputId = useId()
   const supabaseRef = useRef(createClient())
@@ -108,6 +126,7 @@ export default function SellMagazinesFlow({
 
   const {
     images,
+    setImages,
     removedImageIds,
     photosFileDragActive,
     uploadingCount,
@@ -124,6 +143,21 @@ export default function SellMagazinesFlow({
     handlePhotoTileRotate,
     hydrateExistingImages,
   } = photoUpload
+
+  const restoreMagazineDraftForm = useCallback((snapshot: SellListingDraftFormSnapshot) => {
+    setForm(magazineFormFromDraftSnapshot(snapshot))
+  }, [])
+
+  const { clearRecoveredDraft } = useSellAccessoryDraftRecovery({
+    listingType: "magazines",
+    editId,
+    startFresh,
+    formSnapshot: form,
+    images,
+    onRestoreForm: restoreMagazineDraftForm,
+    setImages,
+    retryPhotoSlot: photoUpload.handlePhotoTileRetry,
+  })
 
   const setField = useCallback(<K extends keyof MagazineFormState>(key: K, value: MagazineFormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -293,6 +327,8 @@ export default function SellMagazinesFlow({
         return
       }
 
+      await clearRecoveredDraft()
+
       logSellFunnelEvent({
         listingType: "magazines",
         event: "publish_succeeded",
@@ -314,6 +350,11 @@ export default function SellMagazinesFlow({
         return
       }
 
+      setJustPublishedListingMarker({
+        listingId: result.listingId,
+        slug: result.slug,
+        section: "magazines",
+      })
       router.push(listingDetailHref({ id: result.listingId, slug: result.slug }))
       router.refresh()
     } catch (err) {

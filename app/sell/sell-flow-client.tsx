@@ -68,8 +68,9 @@ import {
   RefreshCw,
   Zap,
 } from "lucide-react"
-import { LocationPicker } from "@/components/location-picker"
+import { LocationPicker, type LocationPrefillSuggested } from "@/components/location-picker"
 import { listingDetailHref } from "@/lib/listing-href"
+import { setJustPublishedListingMarker } from "@/lib/sell-flow/just-published"
 import {
   boardFulfillmentFromChecks,
   boardFulfillmentFromFlags,
@@ -157,8 +158,10 @@ import {
 } from "@/lib/sell-form-validation"
 import {
   LISTING_CONDITION_SELL_OPTIONS,
+  formatCondition,
   sellFormConditionValue,
 } from "@/lib/listing-labels"
+import { SellListingPreviewCard } from "@/components/features/sell/sell-listing-preview-card"
 import {
   formatBoardLengthForTitle,
   isBoardLengthEntryComplete,
@@ -205,6 +208,7 @@ import {
 } from "@/components/features/sell/sell-board-facet-fields"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
+import { useGeneratedListingDescription } from "@/components/features/sell/hooks/use-generated-listing-description"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
 import { sellListingThumbLoadedSrcByClientId } from "@/components/features/sell/hooks/use-listing-photo-upload"
 import {
@@ -222,7 +226,12 @@ import {
   SELL_FORM_SECTION_NAV_ITEMS,
 } from "@/components/features/sell/sell-section-nav"
 import { BoardSellWizardFooter } from "@/components/features/sell/board-sell-wizard-footer"
-import { computeSellSectionCompletion } from "@/lib/sell-section-completion"
+import { SellStepChecklist } from "@/components/features/sell/sell-step-checklist"
+import {
+  computeSellSectionCompletion,
+  computeSellStepChecklist,
+  type SellStepChecklistItem,
+} from "@/lib/sell-section-completion"
 import {
   boardCategoryMap,
   boardTypeFromCategoryId,
@@ -1016,6 +1025,13 @@ function SellPageContentInner({
             (v) => v.trim().length > 0,
           )
           setStockSizeMode(hasDims ? "custom" : "stock")
+          // One stock size and a blank dimensions form: apply it so most
+          // catalog boards need zero dimension typing (still fully editable).
+          if (!hasDims && sizes.length === 1) {
+            const only = sizes[0]
+            setSelectedStockSizeId(only.id)
+            setFormData((f) => ({ ...f, ...only.values }))
+          }
         }
       } catch {
         /* aborted or offline — manual dimension picker still works */
@@ -1517,6 +1533,99 @@ function SellPageContentInner({
     [formData.boardLength],
   )
 
+  const { generating: descriptionGenerating, generateDescription } =
+    useGeneratedListingDescription()
+
+  const handleGenerateDescription = useCallback(() => {
+    const fd = formDataRef.current
+    void generateDescription(
+      {
+        title: fd.title,
+        brand: fd.brand,
+        model: fd.boardModelName,
+        category: fd.category,
+        boardType: fd.boardType,
+        condition: fd.condition,
+        length: fd.boardLength,
+        width: fd.boardWidthInches,
+        thickness: fd.boardThicknessInches,
+        volume: fd.boardVolumeL,
+        price: fd.price,
+        location: [fd.locationCity, fd.locationState].filter(Boolean).join(", "),
+      },
+      (text) => setFormData((f) => ({ ...f, description: text })),
+    )
+  }, [generateDescription])
+
+  /**
+   * "Use my area" hint from the seller's last published listing — the locality
+   * saved by `saveDefaultListingLocationAction` on publish. Pre-fills the
+   * location search only; the seller still confirms the pin.
+   */
+  const [locationPrefillSuggested, setLocationPrefillSuggested] =
+    useState<LocationPrefillSuggested | null>(null)
+  useEffect(() => {
+    if (editId) return
+    let cancelled = false
+    void (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user || cancelled) return
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("default_listing_city, default_listing_state")
+        .eq("id", user.id)
+        .maybeSingle()
+      if (cancelled) return
+      const city = (profile?.default_listing_city ?? "").trim()
+      if (!city) return
+      const state = (profile?.default_listing_state ?? "").trim()
+      setLocationPrefillSuggested({
+        city,
+        state,
+        displayLabel: [city, state].filter(Boolean).join(", "),
+      })
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [editId, supabase])
+
+  /**
+   * Auto-derived title: composes "6'0 Brand Model" from the catalog pick and
+   * keeps it in sync until the seller edits the title themselves. Cuts the
+   * most-skipped required field down to zero typing for catalog boards.
+   */
+  const lastAutoTitleRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (editId || !draftHydrated) return
+    const brand = formData.brand.trim()
+    const model = formData.boardModelName.trim()
+    if (!brand && !model) return
+    const lengthPart = isBoardLengthEntryComplete(formData.boardLength)
+      ? formatBoardLengthForTitle(formData.boardLength)
+      : ""
+    const suggestion = [lengthPart, brand, model].filter(Boolean).join(" ").trim()
+    if (!suggestion || suggestion.length > LISTING_TITLE_MAX_LENGTH) return
+    const current = formData.title
+    // Untouched = still exactly our last suggestion, or empty and never auto-filled.
+    // A seller who clears an auto title has opted out — don't fight the field.
+    const untouched =
+      current === lastAutoTitleRef.current ||
+      (current.trim() === "" && lastAutoTitleRef.current === null)
+    if (!untouched || current === suggestion) return
+    lastAutoTitleRef.current = suggestion
+    setFormData((f) => ({ ...f, title: suggestion }))
+  }, [
+    draftHydrated,
+    editId,
+    formData.brand,
+    formData.boardModelName,
+    formData.boardLength,
+    formData.title,
+  ])
+
   const sellValidationForm = useMemo(
     (): SellFormValidationInput => ({
       listingType: "board",
@@ -1587,6 +1696,79 @@ function SellPageContentInner({
   }, [pickupShippingStepperUxSatisfied, sellSectionCompletionBase])
 
   const activeSellSectionId = BOARD_SELL_SECTION_ID_BY_STEP[flowStep]
+
+  const sellStepChecklistBySection = useMemo(() => {
+    const checklist = computeSellStepChecklist(sellValidationForm, {
+      imageCount: images.length,
+      imagesUploadReady,
+    })
+    // The rail additionally requires an explicit LocationPicker commit before
+    // delivery counts as done — mirror that as a visible checklist row.
+    if (!pickupShippingStepperUxSatisfied) {
+      checklist["sell-section-delivery"] = [
+        ...(checklist["sell-section-delivery"] ?? []),
+        {
+          id: "map-confirm",
+          label: "Confirm your location on the map",
+          complete: false,
+          sectionId: "sell-section-delivery",
+        },
+      ]
+    }
+    return checklist
+  }, [sellValidationForm, images.length, imagesUploadReady, pickupShippingStepperUxSatisfied])
+
+  const activeSellChecklistItems = useMemo((): SellStepChecklistItem[] => {
+    if (flowStep === "publish") {
+      // On publish, surface anything still missing anywhere so submitting can
+      // never fail for a reason the seller hasn't already seen.
+      const earlier = SELL_FORM_SECTION_NAV_ITEMS.filter(
+        (item) => item.id !== "sell-section-publish",
+      ).flatMap((item) =>
+        (sellStepChecklistBySection[item.id] ?? []).filter((entry) => !entry.complete),
+      )
+      return [...earlier, ...(sellStepChecklistBySection["sell-section-publish"] ?? [])]
+    }
+    return sellStepChecklistBySection[activeSellSectionId] ?? []
+  }, [flowStep, activeSellSectionId, sellStepChecklistBySection])
+
+  const shippingSetupIncomplete = useMemo(
+    () =>
+      (sellStepChecklistBySection["sell-section-delivery"] ?? []).some(
+        (item) => item.id === "shipping-setup" && !item.complete,
+      ),
+    [sellStepChecklistBySection],
+  )
+
+  /**
+   * Quick publish path: flip to pickup-only and clear the shipping config so
+   * the seller isn't blocked on pack sizing. Shipping can be added anytime by
+   * editing the listing.
+   */
+  const handleSkipShippingForNow = useCallback(() => {
+    setFormData((fd) => ({
+      ...fd,
+      boardFulfillment: "pickup_only" as BoardFulfillmentChoice,
+      boardShippingCostMode: "reswell" as BoardShippingCostMode,
+      boardShippingPrice: "",
+      surfboardShippingTier: "" as SurfboardShippingTierId | "",
+      surfboardShippingTierCeilingConfirmed: false,
+      surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
+      surfboardShippingPackBandCeilingConfirmed: false,
+      adminCustomShippingCarton: false,
+      reswellPackageLengthIn: "",
+      reswellPackageWidthIn: "",
+      reswellPackageHeightIn: "",
+      reswellPackageWeightLb: "",
+      reswellPackageWeightOz: "",
+    }))
+  }, [])
+
+  const sellSectionLabelById = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const item of SELL_FORM_SECTION_NAV_ITEMS) map[item.id] = item.label
+    return map
+  }, [])
 
   const goToSellSection = useCallback(
     (sectionId: string) => {
@@ -3436,6 +3618,11 @@ function SellPageContentInner({
             durationMs: Date.now() - publishStartedAt,
           })
           retainPublishOverlayUntilNavigation = true
+          setJustPublishedListingMarker({
+            listingId,
+            slug: listingSlug ?? null,
+            section: "surfboards",
+          })
           router.push(detailPath)
           return
         }
@@ -3498,6 +3685,14 @@ function SellPageContentInner({
         ) {
           return
         }
+      }
+      // Fresh publish (new listing or draft going live) — never a plain edit.
+      if (listingId && (!editId || publishedDraftNeedsSideEffects)) {
+        setJustPublishedListingMarker({
+          listingId,
+          slug: listingSlug ?? null,
+          section: "surfboards",
+        })
       }
       router.push(detailPath)
     } catch (error: unknown) {
@@ -3725,12 +3920,26 @@ function SellPageContentInner({
               )}
             >
               <div className="hidden shrink-0 lg:block lg:w-52 xl:w-56">
-                <SellSectionNav
-                  items={SELL_FORM_SECTION_NAV_ITEMS}
-                  sectionCompletion={sellSectionCompletion}
-                  activeSectionId={activeSellSectionId}
-                  onSelectSection={goToSellSection}
-                />
+                <div className="lg:sticky lg:top-24 space-y-6">
+                  {/* Wrapper owns stickiness so the nav + buyer preview travel together. */}
+                  <SellSectionNav
+                    items={SELL_FORM_SECTION_NAV_ITEMS}
+                    sectionCompletion={sellSectionCompletion}
+                    activeSectionId={activeSellSectionId}
+                    onSelectSection={goToSellSection}
+                    className="!static"
+                  />
+                  <SellListingPreviewCard
+                    title={formData.title}
+                    brand={formData.brand}
+                    model={formData.boardModelName}
+                    conditionLabel={
+                      formData.condition ? formatCondition(formData.condition) : undefined
+                    }
+                    price={formData.price}
+                    imageSrc={images[0]?.previewUrl || undefined}
+                  />
+                </div>
               </div>
               <div className="min-w-0 w-full max-w-2xl lg:w-auto lg:max-w-3xl lg:shrink-0">
                 <SellSectionNavHorizontal
@@ -4066,6 +4275,8 @@ function SellPageContentInner({
                   onChange={(description) => setFormData({ ...formData, description })}
                   placeholder="Describe your board…"
                   maxLength={1000}
+                  onGenerate={handleGenerateDescription}
+                  generating={descriptionGenerating}
                 />
                     </div>
                     </div>
@@ -4104,6 +4315,7 @@ function SellPageContentInner({
                             locationDisplay: "",
                           }))
                         }}
+                        prefillSuggested={locationPrefillSuggested}
                         initialLat={formData.locationLat || undefined}
                         initialLng={formData.locationLng || undefined}
                         initialCity={formData.locationCity}
@@ -4529,6 +4741,22 @@ function SellPageContentInner({
                             </Label>
                           </div>
                         </div>
+                        {deliveryFlags.shipping_available && shippingSetupIncomplete ? (
+                          <div className="rounded-lg border border-dashed border-border bg-muted/40 px-4 py-3">
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              Not ready to set up shipping?{" "}
+                              <button
+                                type="button"
+                                onClick={handleSkipShippingForNow}
+                                className="font-medium text-foreground underline underline-offset-2 hover:text-listingHeart"
+                              >
+                                Skip it for now
+                              </button>{" "}
+                              and publish with local pickup only — you can add shipping anytime by
+                              editing your listing.
+                            </p>
+                          </div>
+                        ) : null}
                       </div>
 
                     </div>
@@ -4781,6 +5009,17 @@ function SellPageContentInner({
                 ) : null}
                 </div>
                 </SellFormSection>
+                ) : null}
+
+                {!editLoading ? (
+                  <SellStepChecklist
+                    items={activeSellChecklistItems}
+                    activeSectionId={activeSellSectionId}
+                    sectionLabelById={sellSectionLabelById}
+                    onGoToSection={goToSellSection}
+                    title={flowStep === "publish" ? "Before you publish" : "Still needed"}
+                    className="mt-6"
+                  />
                 ) : null}
 
                 <BoardSellWizardFooter

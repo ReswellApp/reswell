@@ -1,5 +1,8 @@
 "use client"
 
+import { Loader2, Sparkles } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { SELL_TEXTAREA_CLASS } from "@/components/features/sell/sell-form-surface"
@@ -19,6 +22,9 @@ export type SellListingDescriptionFieldProps = {
   rows?: number
   required?: boolean
   className?: string
+  /** When set, shows a "Write it for me" AI button next to the label. */
+  onGenerate?: () => void
+  generating?: boolean
 }
 
 export function SellListingDescriptionField({
@@ -30,21 +36,42 @@ export function SellListingDescriptionField({
   rows = 5,
   required = true,
   className,
+  onGenerate,
+  generating = false,
 }: SellListingDescriptionFieldProps) {
   const showCounter = maxLength != null && maxLength > 0
   const nearLimit = showCounter && value.length > maxLength * 0.9
 
   return (
     <div className={cn("space-y-2", className)}>
-      <Label htmlFor={id}>
-        Description
-        {required ? (
-          <>
-            {" "}
-            <SellRequiredMark complete={value.trim().length > 0} />
-          </>
+      <div className="flex items-end justify-between gap-2">
+        <Label htmlFor={id}>
+          Description
+          {required ? (
+            <>
+              {" "}
+              <SellRequiredMark complete={value.trim().length > 0} />
+            </>
+          ) : null}
+        </Label>
+        {onGenerate ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1.5 rounded-full px-2.5 text-xs font-medium text-listingHeart hover:bg-listingHeart/10 hover:text-listingHeart"
+            onClick={onGenerate}
+            disabled={generating}
+          >
+            {generating ? (
+              <Loader2 className="size-3.5 animate-spin" aria-hidden />
+            ) : (
+              <Sparkles className="size-3.5" aria-hidden />
+            )}
+            {generating ? "Writing…" : value.trim() ? "Rewrite it for me" : "Write it for me"}
+          </Button>
         ) : null}
-      </Label>
+      </div>
       <p className="text-xs text-muted-foreground">{SELL_LISTING_DESCRIPTION_HINT}</p>
       <Textarea
         id={id}

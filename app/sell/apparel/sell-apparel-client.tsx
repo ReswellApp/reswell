@@ -40,6 +40,8 @@ import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-ow
 import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
 import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
+import { useSellAccessoryDraftRecovery } from "@/components/features/sell/hooks/use-sell-accessory-draft-recovery"
+import type { SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import {
   assertListingOriginalSize,
@@ -48,7 +50,7 @@ import {
 import { ensureBrowserDecodableImageFile } from "@/lib/client-image-decode"
 import { friendlyListingPhotoErrorMessage } from "@/lib/utils/friendly-listing-photo-error"
 import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
-import { isListingPhotoFile } from "@/lib/sell-flow/listing-photo-slot"
+import { isListingPhotoFile, type ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
 import {
   APPAREL_LISTING_MAX_PHOTOS,
   APPAREL_LISTING_TITLE_MAX_LENGTH,
@@ -186,6 +188,35 @@ const INITIAL_STATE: ApparelFormState = {
   buyerOffers: true,
 }
 
+/** Type-safe merge of an IndexedDB draft snapshot onto the apparel form state. */
+function apparelFormFromDraftSnapshot(snapshot: SellListingDraftFormSnapshot): ApparelFormState {
+  const next: ApparelFormState = { ...INITIAL_STATE }
+  for (const key of Object.keys(INITIAL_STATE) as Array<keyof ApparelFormState>) {
+    const value = snapshot[key]
+    if (value === undefined) continue
+    const initial = INITIAL_STATE[key]
+    if (key === "locationLat" || key === "locationLng") {
+      if (value === null || typeof value === "number") {
+        next[key] = value as ApparelFormState["locationLat"]
+      }
+      continue
+    }
+    if (key === "shippingMode") {
+      if (value === "reswell" || value === "free" || value === "flat") next.shippingMode = value
+      continue
+    }
+    if (typeof value === typeof initial) {
+      next[key] = value as never
+    }
+  }
+  return next
+}
+
+/** This flow's photo pipeline predates the shared upload hook — draft recovery covers the form only. */
+const NO_DRAFT_PHOTO_SLOTS: ListingPhotoSlot[] = []
+const noopSetDraftImages = () => {}
+const noopRetryDraftPhotoSlot = () => {}
+
 function newClientId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
@@ -198,7 +229,9 @@ function scrollApparelSellSectionIntoView(sectionId: string) {
 
 export default function SellApparelFlow({ editListingId = null }: { editListingId?: string | null }) {
   const router = useRouter()
-  const bulkSlotId = useSearchParams().get("bulk")?.trim() || null
+  const searchParams = useSearchParams()
+  const bulkSlotId = searchParams.get("bulk")?.trim() || null
+  const startFresh = searchParams.get("new") === "1"
   const signIn = useSignInGate()
   const fileInputId = useId()
   const supabaseRef = useRef(createClient())
@@ -224,6 +257,8 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
 
   // One-shot brand/model prefill from the /sell cross-category catalog search wall.
   const catalogHandoffTakenRef = useRef(false)
+  /** A fresh catalog pick outranks any stashed IndexedDB draft — skip restore when set. */
+  const catalogHandoffAppliedRef = useRef(false)
   const [catalogSelectionCard, setCatalogSelectionCard] =
     useState<SellCatalogSelectionCardData | null>(null)
   useEffect(() => {
@@ -231,6 +266,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
     catalogHandoffTakenRef.current = true
     const handoff = takeSellCatalogHandoff("apparel")
     if (!handoff) return
+    catalogHandoffAppliedRef.current = true
     if (handoff.selectionKind !== "variant") {
       setCatalogSelectionCard({
         brandName: handoff.brandName,
@@ -251,6 +287,22 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       model: handoff.selectionKind === "model" ? handoff.modelName : "",
     }))
   }, [editId])
+
+  const restoreApparelDraftForm = useCallback((snapshot: SellListingDraftFormSnapshot) => {
+    setForm(apparelFormFromDraftSnapshot(snapshot))
+  }, [])
+
+  const { clearRecoveredDraft } = useSellAccessoryDraftRecovery({
+    listingType: "apparel",
+    editId,
+    startFresh,
+    formSnapshot: form,
+    images: NO_DRAFT_PHOTO_SLOTS,
+    onRestoreForm: restoreApparelDraftForm,
+    setImages: noopSetDraftImages,
+    retryPhotoSlot: noopRetryDraftPhotoSlot,
+    skipRestore: () => catalogHandoffAppliedRef.current,
+  })
 
   const hydrateApparelEdit = useCallback(
     (listing: OwnedListingForEditRow) => {
@@ -814,6 +866,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
         successToast: "Your apparel is live!",
         setSubmitting,
         directCreate: () => createApparelListingAction(payload),
+        onCreateSuccess: () => clearRecoveredDraft(),
       })
     } catch (err) {
       const aborted = isSellSubmitAbortError(err)

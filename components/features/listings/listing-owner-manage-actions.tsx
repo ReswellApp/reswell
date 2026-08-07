@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { EndListingButton } from "@/components/end-listing-button"
 import { QuickEditListingPriceDialog } from "@/components/features/listings/quick-edit-listing-price-dialog"
@@ -9,6 +10,7 @@ import {
   canUseListingVacationMode,
 } from "@/components/features/sell/listing-vacation-mode-button"
 import { peerListingEditHref } from "@/lib/peer-listing-sections"
+import type { ListingEnrichmentGap } from "@/lib/sell-flow/listing-enrichment"
 
 interface ListingOwnerManageActionsProps {
   listingId: string
@@ -17,6 +19,8 @@ interface ListingOwnerManageActionsProps {
   listingStatus: string
   hiddenFromSite?: boolean
   showQuickPriceEdit?: boolean
+  /** "Make it sell faster" quick wins — each links to the edit form. */
+  enrichmentGaps?: ListingEnrichmentGap[]
 }
 
 /** Seller controls on the listing detail page — edit, quick price, vacation, end. */
@@ -27,9 +31,12 @@ export function ListingOwnerManageActions({
   listingStatus,
   hiddenFromSite = false,
   showQuickPriceEdit = true,
+  enrichmentGaps = [],
 }: ListingOwnerManageActionsProps) {
   const isDelinquent = listingStatus === "delinquent"
   const showVacation = !isDelinquent && canUseListingVacationMode(listingStatus)
+  const editHref = peerListingEditHref(section, listingId)
+  const showEnrichment = !isDelinquent && enrichmentGaps.length > 0
 
   return (
     <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">
@@ -46,7 +53,7 @@ export function ListingOwnerManageActions({
         ) : null}
         <div className="flex min-w-0 flex-wrap gap-2">
           <Button asChild className="rounded-full">
-            <Link prefetch={false} href={peerListingEditHref(section, listingId)}>
+            <Link prefetch={false} href={editHref}>
               Edit listing
             </Link>
           </Button>
@@ -69,6 +76,26 @@ export function ListingOwnerManageActions({
             triggerClassName="rounded-full border-border/60 shadow-none"
           />
         </div>
+        {showEnrichment ? (
+          <div className="mt-1 w-full rounded-xl border border-listingHeart/20 bg-listingHeart/5 px-3.5 py-3">
+            <p className="flex items-center gap-1.5 text-[13px] font-medium text-foreground">
+              <Sparkles className="size-3.5 text-listingHeart" aria-hidden />
+              Make it sell faster
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {enrichmentGaps.map((gap) => (
+                <Link
+                  key={gap.id}
+                  prefetch={false}
+                  href={editHref}
+                  className="rounded-full border border-listingHeart/30 bg-white px-3 py-1 text-xs font-medium text-listingHeart transition-colors hover:bg-listingHeart hover:text-white dark:bg-transparent"
+                >
+                  {gap.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   )

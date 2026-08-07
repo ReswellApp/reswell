@@ -1,4 +1,3 @@
-import type { SellFlowListingKind } from "@/lib/sell-flow/session-keys"
 import {
   buildSellListingDraft,
   saveGuestSellListingDraft,
@@ -6,6 +5,7 @@ import {
   clearGuestSellListingDraft,
   clearSellListingDraft,
   type SellListingDraftFormSnapshot,
+  type SellListingDraftListingType,
 } from "@/lib/sell-listing-draft-idb"
 import {
   listingPhotoSlotsForDraftPersist,
@@ -13,7 +13,7 @@ import {
 } from "@/lib/sell-flow/listing-photo-slot"
 
 export async function persistListingDraftSnapshot(args: {
-  listingType: SellFlowListingKind
+  listingType: SellListingDraftListingType
   formData: SellListingDraftFormSnapshot
   images: ListingPhotoSlot[]
   userId: string | null

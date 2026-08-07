@@ -195,3 +195,115 @@ export function computeSellSectionCompletion(
       pricePublishFieldsComplete(form),
   }
 }
+
+export interface SellStepChecklistItem {
+  id: string
+  label: string
+  complete: boolean
+  /** Wizard section this requirement belongs to (for jump-to-fix from the publish step). */
+  sectionId: string
+}
+
+/**
+ * Itemized per-section requirements for the `/sell` board wizard, using the same
+ * predicates as {@link computeSellSectionCompletion} so the inline checklist can
+ * never disagree with the section checkmarks or publish validation.
+ */
+export function computeSellStepChecklist(
+  form: SellFormValidationInput,
+  opts: { imageCount: number; imagesUploadReady: boolean },
+): Record<string, SellStepChecklistItem[]> {
+  const shippingEnabled = flagsFromBoardFulfillment(form.boardFulfillment).shipping_available
+
+  const basics: SellStepChecklistItem[] = [
+    {
+      id: "brand-model",
+      label: "Brand and model",
+      complete: brandModelComplete(form),
+      sectionId: "sell-section-basics",
+    },
+    {
+      id: "title",
+      label: "Listing title",
+      complete: titleComplete(form),
+      sectionId: "sell-section-basics",
+    },
+    {
+      id: "condition",
+      label: "Condition",
+      complete: conditionComplete(form),
+      sectionId: "sell-section-basics",
+    },
+  ]
+
+  const details: SellStepChecklistItem[] = [
+    {
+      id: "board-type",
+      label: "Board type",
+      complete: shapeSectionComplete(form),
+      sectionId: "sell-section-details",
+    },
+    {
+      id: "dimensions",
+      label: shippingEnabled ? "Dimensions (required for shipping)" : "Dimensions",
+      complete: dimensionsSectionComplete(form),
+      sectionId: "sell-section-details",
+    },
+    {
+      id: "description",
+      label: "Description",
+      complete: descriptionOnlyComplete(form),
+      sectionId: "sell-section-details",
+    },
+  ]
+
+  const locationDone = Boolean(form.locationCity?.trim() && form.locationState?.trim())
+  const delivery: SellStepChecklistItem[] = [
+    {
+      id: "location",
+      label: "Pickup location",
+      complete: locationDone,
+      sectionId: "sell-section-delivery",
+    },
+  ]
+  if (shippingEnabled) {
+    // Isolate the shipping config from the location requirement so each
+    // checklist row flips independently (deliverySectionComplete checks both).
+    const shippingConfigComplete = deliverySectionComplete({
+      ...form,
+      locationCity: form.locationCity?.trim() ? form.locationCity : "x",
+      locationState: form.locationState?.trim() ? form.locationState : "x",
+    })
+    delivery.push({
+      id: "shipping-setup",
+      label: "Shipping setup",
+      complete: shippingConfigComplete,
+      sectionId: "sell-section-delivery",
+    })
+  }
+
+  const publish: SellStepChecklistItem[] = [
+    {
+      id: "photos",
+      label:
+        opts.imageCount >= LISTING_MIN_PHOTOS && !opts.imagesUploadReady
+          ? "Photos (finishing upload…)"
+          : `Photos (at least ${LISTING_MIN_PHOTOS})`,
+      complete: opts.imageCount >= LISTING_MIN_PHOTOS && opts.imagesUploadReady,
+      sectionId: "sell-section-publish",
+    },
+    {
+      id: "price",
+      label: form.autoPriceDrop ? "Price and price-drop floor" : "Price",
+      complete: pricePublishFieldsComplete(form),
+      sectionId: "sell-section-publish",
+    },
+  ]
+
+  return {
+    "sell-section-basics": basics,
+    "sell-section-details": details,
+    "sell-section-delivery": delivery,
+    "sell-section-publish": publish,
+  }
+}

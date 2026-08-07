@@ -32,6 +32,8 @@ import { SellListingDescriptionField } from "@/components/features/sell/sell-lis
 import { SellWetsuitsFacetFields } from "@/components/features/sell/sell-wetsuits-facet-fields"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
 import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
+import { useSellAccessoryDraftRecovery } from "@/components/features/sell/hooks/use-sell-accessory-draft-recovery"
+import type { SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
 import {
@@ -160,6 +162,30 @@ const INITIAL_STATE: WetsuitFormState = {
   buyerOffers: true,
 }
 
+/** Type-safe merge of an IndexedDB draft snapshot onto the wetsuit form state. */
+function wetsuitFormFromDraftSnapshot(snapshot: SellListingDraftFormSnapshot): WetsuitFormState {
+  const next: WetsuitFormState = { ...INITIAL_STATE }
+  for (const key of Object.keys(INITIAL_STATE) as Array<keyof WetsuitFormState>) {
+    const value = snapshot[key]
+    if (value === undefined) continue
+    const initial = INITIAL_STATE[key]
+    if (key === "locationLat" || key === "locationLng") {
+      if (value === null || typeof value === "number") {
+        next[key] = value as WetsuitFormState["locationLat"]
+      }
+      continue
+    }
+    if (key === "shippingMode") {
+      if (value === "reswell" || value === "free" || value === "flat") next.shippingMode = value
+      continue
+    }
+    if (typeof value === typeof initial) {
+      next[key] = value as never
+    }
+  }
+  return next
+}
+
 function scrollWetsuitSellSectionIntoView(sectionId: string) {
   const el = document.getElementById(sectionId)
   if (!el) return
@@ -168,7 +194,9 @@ function scrollWetsuitSellSectionIntoView(sectionId: string) {
 
 export default function SellWetsuitsFlow({ editListingId = null }: { editListingId?: string | null }) {
   const router = useRouter()
-  const bulkSlotId = useSearchParams().get("bulk")?.trim() || null
+  const searchParams = useSearchParams()
+  const bulkSlotId = searchParams.get("bulk")?.trim() || null
+  const startFresh = searchParams.get("new") === "1"
   const signIn = useSignInGate()
   const fileInputId = useId()
   const supabaseRef = useRef(createClient())
@@ -181,6 +209,8 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
 
   // One-shot brand/model prefill from the /sell cross-category catalog search wall.
   const catalogHandoffTakenRef = useRef(false)
+  /** A fresh catalog pick outranks any stashed IndexedDB draft — skip restore when set. */
+  const catalogHandoffAppliedRef = useRef(false)
   const [catalogSelectionCard, setCatalogSelectionCard] =
     useState<SellCatalogSelectionCardData | null>(null)
   useEffect(() => {
@@ -188,6 +218,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     catalogHandoffTakenRef.current = true
     const handoff = takeSellCatalogHandoff("wetsuits")
     if (!handoff) return
+    catalogHandoffAppliedRef.current = true
     if (handoff.selectionKind !== "variant") {
       setCatalogSelectionCard({
         brandName: handoff.brandName,
@@ -233,6 +264,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     uploadingCount,
     readyImages,
     images,
+    setImages,
     handleImageInputChange,
     handlePhotosFileDragEnter,
     handlePhotosFileDragLeave,
@@ -245,6 +277,22 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     handlePhotoTileRotate,
     hydrateExistingImages,
   } = photoUpload
+
+  const restoreWetsuitDraftForm = useCallback((snapshot: SellListingDraftFormSnapshot) => {
+    setForm(wetsuitFormFromDraftSnapshot(snapshot))
+  }, [])
+
+  const { clearRecoveredDraft } = useSellAccessoryDraftRecovery({
+    listingType: "wetsuits",
+    editId,
+    startFresh,
+    formSnapshot: form,
+    images,
+    onRestoreForm: restoreWetsuitDraftForm,
+    setImages,
+    retryPhotoSlot: photoUpload.handlePhotoTileRetry,
+    skipRestore: () => catalogHandoffAppliedRef.current,
+  })
 
   const hydrateWetsuitEdit = useCallback(
     (listing: OwnedListingForEditRow) => {
@@ -683,6 +731,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
         successToast: "Your wetsuit is live!",
         setSubmitting,
         directCreate: () => createWetsuitListingAction(payload),
+        onCreateSuccess: () => clearRecoveredDraft(),
       })
     } catch (err) {
       const aborted = isSellSubmitAbortError(err)

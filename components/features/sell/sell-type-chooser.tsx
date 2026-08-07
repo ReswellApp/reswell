@@ -17,7 +17,7 @@ type SellTypeOption = {
 /** Shown on /sell chooser. Other sell flows stay live at their routes until launch. */
 const SELL_TYPE_OPTIONS: readonly SellTypeOption[] = [
   {
-    href: "/sell/boards?new=1",
+    href: "/sell/quick",
     title: "Surfboard",
     description: "List a board from your quiver.",
     imageSrc: "/images/sell/surfboard.jpg",
