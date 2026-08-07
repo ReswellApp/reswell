@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server"
-import { escalateUnansweredLiveChatSessionsService } from "@/lib/services/liveChatEscalation"
+import {
+  escalateUnansweredLiveChatSessionsService,
+  resolveInactiveLiveChatSessionsService,
+} from "@/lib/services/liveChatEscalation"
 
 export const maxDuration = 60
 
 /**
  * Hourly: converts signed-in live chats with no agent reply for 24h into
- * support tickets (contact_messages) so they don't slip through the cracks.
+ * support tickets (contact_messages) so they don't slip through the cracks,
+ * and resolves chats that have been completely silent for 7 days.
  * Guest sessions stay in live chat only.
  *
  * Protected with CRON_SECRET (same pattern as other cron routes).
@@ -18,10 +22,11 @@ export async function GET(request: Request) {
   }
 
   try {
-    const summary = await escalateUnansweredLiveChatSessionsService()
+    const escalation = await escalateUnansweredLiveChatSessionsService()
+    const inactivity = await resolveInactiveLiveChatSessionsService()
     return NextResponse.json({
       ok: true,
-      summary,
+      summary: { escalation, inactivity },
       reference_time: new Date().toISOString(),
     })
   } catch (e) {

@@ -64,7 +64,8 @@ export async function createOrResumeLiveChatSessionService(raw: unknown): Promis
       parsed.data.resume_public_id,
       parsed.data.visitor_token,
     )
-    if (existing && existing.status !== "closed") {
+    // Resolved/closed chats stay in history; the visitor gets a fresh conversation.
+    if (existing && existing.status !== "closed" && existing.status !== "resolved") {
       const messages = await enrichMessagesWithAgentNames(
         svc,
         await listLiveChatMessagesForSession(svc, existing.id),

@@ -88,14 +88,19 @@ export function LiveChatHomeView({
           <button
             type="button"
             onClick={onSendMessage}
-            className={cn(liveChatCardClass, "group p-4 text-left hover:bg-muted/40")}
+            className={cn(liveChatCardClass, "group shrink-0 p-4 text-left hover:bg-muted/40")}
           >
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-listingHeart">
-              Recent message
-            </p>
-            <div className="mt-2 flex items-center gap-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-listingHeart">
+                Recent message
+              </p>
+              {recentMessage.fromAgent ? (
+                <span className="h-2 w-2 shrink-0 rounded-full bg-listingHeart" aria-hidden />
+              ) : null}
+            </div>
+            <div className="mt-2.5 flex items-start gap-3">
               {supportLead ? (
-                <LiveChatSupportLeadAvatar member={supportLead} size="sm" className="border-border/40" />
+                <LiveChatSupportLeadAvatar member={supportLead} className="border-border/40" />
               ) : null}
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline justify-between gap-2">
@@ -106,20 +111,19 @@ export function LiveChatHomeView({
                     {formatDistanceToNow(new Date(recentMessage.createdAt), { addSuffix: true })}
                   </span>
                 </div>
-                <div className="mt-0.5 flex items-center gap-2">
-                  <p className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
-                    {recentMessage.content}
-                  </p>
-                  {recentMessage.fromAgent ? (
-                    <span className="h-2 w-2 shrink-0 rounded-full bg-listingHeart" aria-hidden />
-                  ) : null}
-                </div>
+                <p className="mt-0.5 line-clamp-2 text-sm leading-snug text-muted-foreground">
+                  {recentMessage.content}
+                </p>
               </div>
+              <ChevronRight
+                className="mt-1.5 h-4 w-4 shrink-0 text-muted-foreground"
+                aria-hidden
+              />
             </div>
           </button>
         ) : null}
 
-        <button type="button" onClick={onSendMessage} className={cn(liveChatCardClass, liveChatCardButtonClass, "group")}>
+        <button type="button" onClick={onSendMessage} className={cn(liveChatCardClass, liveChatCardButtonClass, "group shrink-0")}>
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-listingHeart/10 text-listingHeart transition-colors group-hover:bg-listingHeart/15">
             <MessageCircle className="h-5 w-5" aria-hidden />
           </span>
@@ -132,7 +136,7 @@ export function LiveChatHomeView({
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
         </button>
 
-        <div className={liveChatCardClass}>
+        <div className={cn(liveChatCardClass, "shrink-0")}>
           <button
             type="button"
             onClick={onOpenHelp}

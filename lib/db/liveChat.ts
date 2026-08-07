@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { formatPersonName } from "@/lib/utils/person-name"
 import type { LiveChatSenderType, LiveChatSessionStatus } from "@/lib/validations/liveChat"
 
 export type LiveChatSessionRow = {
@@ -234,6 +235,47 @@ export async function listEscalationCandidateSessions(
   return data.map((row) => normalizeLiveChatSessionRow(row as Record<string, unknown>))
 }
 
+/** Open/assigned sessions linked to the given support tickets. */
+export async function listOpenLiveChatSessionsForContactMessages(
+  supabase: SupabaseClient,
+  contactMessageIds: string[],
+): Promise<LiveChatSessionRow[]> {
+  if (contactMessageIds.length === 0) return []
+  const { data, error } = await supabase
+    .from("live_chat_sessions")
+    .select(LIVE_CHAT_SESSION_SELECT)
+    .in("contact_message_id", contactMessageIds)
+    .in("status", ["open", "assigned"])
+
+  if (error || !data) {
+    if (error) console.error("listOpenLiveChatSessionsForContactMessages", error)
+    return []
+  }
+  return data.map((row) => normalizeLiveChatSessionRow(row as Record<string, unknown>))
+}
+
+/** Open/assigned sessions with no activity at all since the cutoff. */
+export async function listInactiveLiveChatSessions(
+  supabase: SupabaseClient,
+  cutoffIso: string,
+  limit = 200,
+): Promise<LiveChatSessionRow[]> {
+  const { data, error } = await supabase
+    .from("live_chat_sessions")
+    .select(LIVE_CHAT_SESSION_SELECT)
+    .in("status", ["open", "assigned"])
+    .not("last_message_at", "is", null)
+    .lt("last_message_at", cutoffIso)
+    .order("last_message_at", { ascending: true })
+    .limit(limit)
+
+  if (error || !data) {
+    if (error) console.error("listInactiveLiveChatSessions", error)
+    return []
+  }
+  return data.map((row) => normalizeLiveChatSessionRow(row as Record<string, unknown>))
+}
+
 export async function countOpenLiveChatSessions(supabase: SupabaseClient): Promise<number> {
   const { count, error } = await supabase
     .from("live_chat_sessions")
@@ -317,13 +359,18 @@ export async function getAgentDisplayNamesByIds(
   const unique = [...new Set(agentIds)]
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, display_name")
+    .select("id, display_name, first_name, last_name")
     .in("id", unique)
 
   if (error || !data) return new Map()
   const map = new Map<string, string>()
   for (const row of data) {
-    const name = String(row.display_name ?? "").trim()
+    // Prefer the person's real name over shop/display names in support chat.
+    const name = formatPersonName(
+      row.first_name as string | null,
+      row.last_name as string | null,
+      String(row.display_name ?? "").trim(),
+    )
     map.set(String(row.id), name || "Support")
   }
   return map

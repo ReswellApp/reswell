@@ -3,13 +3,24 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
   insertLiveChatMessage,
   listEscalationCandidateSessions,
+  listInactiveLiveChatSessions,
   listLiveChatMessagesForSession,
+  listOpenLiveChatSessionsForContactMessages,
   updateLiveChatSessionRow,
   type LiveChatSessionRow,
 } from "@/lib/db/liveChat"
 
 /** How long a signed-in chat can sit without an agent reply before it becomes a ticket. */
 const AUTO_ESCALATE_AFTER_HOURS = 24
+
+/** How long a chat can be completely silent before it auto-resolves. */
+const AUTO_RESOLVE_AFTER_DAYS = 7
+
+const RESOLVED_SYSTEM_MESSAGE =
+  "This conversation has been marked resolved. Start a new chat anytime you need help."
+
+const INACTIVITY_SYSTEM_MESSAGE =
+  "This conversation was closed due to inactivity. Start a new chat anytime you need help."
 
 /** Cap the transcript embedded in the ticket so contact_messages stays readable. */
 const TRANSCRIPT_MESSAGE_LIMIT = 30
@@ -121,6 +132,68 @@ export async function escalateLiveChatSessionToTicket(
   })
 
   return { success: true, contactMessageId, alreadyLinked: false }
+}
+
+async function resolveSessionWithNote(
+  svc: SupabaseClient,
+  sessionId: string,
+  note: string,
+): Promise<boolean> {
+  const ok = await updateLiveChatSessionRow(svc, sessionId, {
+    status: "resolved",
+    resolved_at: new Date().toISOString(),
+  })
+  if (!ok) return false
+  await insertLiveChatMessage(svc, {
+    session_id: sessionId,
+    sender_type: "system",
+    content: note,
+  })
+  return true
+}
+
+/**
+ * When support tickets are marked resolved, resolve any live chat sessions
+ * linked to them so the visitor's next chat starts fresh. Fire-and-forget
+ * safe: failures are logged, never thrown.
+ */
+export async function resolveLiveChatSessionsForTickets(
+  contactMessageIds: string[],
+): Promise<number> {
+  try {
+    const svc = createServiceRoleClient()
+    const sessions = await listOpenLiveChatSessionsForContactMessages(svc, contactMessageIds)
+    let resolved = 0
+    for (const session of sessions) {
+      if (await resolveSessionWithNote(svc, session.id, RESOLVED_SYSTEM_MESSAGE)) {
+        resolved += 1
+      }
+    }
+    return resolved
+  } catch (error) {
+    console.error("resolveLiveChatSessionsForTickets", { contactMessageIds, error })
+    return 0
+  }
+}
+
+/** Cron: resolves chats with no messages from anyone for AUTO_RESOLVE_AFTER_DAYS. */
+export async function resolveInactiveLiveChatSessionsService(): Promise<{
+  scanned: number
+  resolved: number
+}> {
+  const svc = createServiceRoleClient()
+  const cutoffIso = new Date(
+    Date.now() - AUTO_RESOLVE_AFTER_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString()
+  const sessions = await listInactiveLiveChatSessions(svc, cutoffIso)
+
+  let resolved = 0
+  for (const session of sessions) {
+    if (await resolveSessionWithNote(svc, session.id, INACTIVITY_SYSTEM_MESSAGE)) {
+      resolved += 1
+    }
+  }
+  return { scanned: sessions.length, resolved }
 }
 
 /**

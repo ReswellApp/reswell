@@ -1,5 +1,6 @@
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { escalateLiveChatSessionToTicket } from "@/lib/services/liveChatEscalation"
+import { formatPersonName } from "@/lib/utils/person-name"
 import {
   countOpenLiveChatSessions,
   getAgentDisplayNamesByIds,
@@ -31,7 +32,7 @@ async function requireStaffUser(): Promise<
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("is_admin, is_employee, display_name")
+    .select("is_admin, is_employee, display_name, first_name, last_name")
     .eq("id", user.id)
     .maybeSingle()
 
@@ -39,7 +40,9 @@ async function requireStaffUser(): Promise<
     return { ok: false, error: "Forbidden" }
   }
 
-  const displayName = (profile.display_name ?? "").trim() || "Support"
+  const displayName =
+    formatPersonName(profile.first_name, profile.last_name, (profile.display_name ?? "").trim()) ||
+    "Support"
   return { ok: true, userId: user.id, displayName }
 }
 

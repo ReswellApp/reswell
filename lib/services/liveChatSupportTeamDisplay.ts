@@ -2,6 +2,7 @@ import { LIVE_CHAT_SUPPORT_LEAD_FALLBACK } from "@/lib/live-chat/support-lead-di
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { resolveSellerProfileDisplayImageUrl } from "@/lib/sellers/profile-display-image"
 import { resolveSupportRecipientUserId } from "@/lib/services/resolveSupportRecipientUser"
+import { formatPersonName } from "@/lib/utils/person-name"
 
 export type LiveChatSupportTeamMember = {
   id: string
@@ -20,14 +21,18 @@ function initialsFromName(name: string): string {
 function toTeamMember(row: {
   id: string
   display_name: string | null
+  first_name: string | null
+  last_name: string | null
   shop_name: string | null
   is_shop: boolean | null
   shop_logo_url: string | null
   avatar_url: string | null
 }): LiveChatSupportTeamMember {
+  // Support faces show the person, not their shop.
   const name =
-    (row.is_shop && row.shop_name?.trim()) ||
+    formatPersonName(row.first_name, row.last_name) ||
     row.display_name?.trim() ||
+    (row.is_shop && row.shop_name?.trim()) ||
     "Reswell Support"
   const imageUrl = resolveSellerProfileDisplayImageUrl(row) || ""
   return {
@@ -47,7 +52,7 @@ export async function getLiveChatSupportTeamDisplayService(): Promise<LiveChatSu
 
     const { data: staffRows, error } = await svc
       .from("profiles")
-      .select("id, display_name, shop_name, is_shop, shop_logo_url, avatar_url, is_admin, is_employee")
+      .select("id, display_name, first_name, last_name, shop_name, is_shop, shop_logo_url, avatar_url, is_admin, is_employee")
       .or("is_admin.eq.true,is_employee.eq.true")
       .limit(12)
 
