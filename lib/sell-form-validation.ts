@@ -2,10 +2,6 @@ import {
   flagsFromBoardFulfillment,
   type BoardFulfillmentChoice,
 } from "@/lib/listing-fulfillment"
-
-/** How shipping cost is set when shipping is enabled (surfboard sell flow). */
-/** Surfboard /sell UI is Reswell-only; `free` / `flat` remain for legacy DB rows & other sell flows. */
-export type BoardShippingCostMode = "reswell" | "free" | "flat"
 import {
   formatDecimalDimension,
   parseBoardLengthParts,
@@ -14,12 +10,7 @@ import {
   parseVolumeLiters,
 } from "@/lib/board-measurements"
 import { isListingSellableCondition } from "@/lib/listing-labels"
-import {
-  parseSurfboardShippingTierId,
-} from "@/lib/surfboard-shipping-tiers"
-import {
-  validateSurfboardLabelParcelLimits,
-} from "@/lib/shipping/surfboard-label-limits"
+import { parseSurfboardShippingTierId } from "@/lib/surfboard-shipping-tiers"
 import {
   parseSurfboardShippingPackBandId,
   surfboardShippingPackBandBoardSpecsError,
@@ -32,6 +23,10 @@ import {
   parseReswellParcelWidthHeightRawToCarrierInches,
 } from "@/lib/reswell-parcel-fields"
 import { validateSurfboardLabelParcelLimits } from "@/lib/shipping/surfboard-label-limits"
+
+/** How shipping cost is set when shipping is enabled (surfboard sell flow). */
+/** Surfboard /sell UI is Reswell-only; `free` / `flat` remain for legacy DB rows & other sell flows. */
+export type BoardShippingCostMode = "reswell" | "free" | "flat"
 
 const PRICE_MIN = 0.01
 const PRICE_MAX = 999_999.99
