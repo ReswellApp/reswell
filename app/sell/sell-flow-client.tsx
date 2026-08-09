@@ -1046,13 +1046,6 @@ function SellPageContentInner({
             (v) => v.trim().length > 0,
           )
           setStockSizeMode(hasDims ? "custom" : "stock")
-          // One stock size and a blank dimensions form: apply it so most
-          // catalog boards need zero dimension typing (still fully editable).
-          if (!hasDims && sizes.length === 1) {
-            const only = sizes[0]
-            setSelectedStockSizeId(only.id)
-            setFormData((f) => ({ ...f, ...only.values }))
-          }
         }
       } catch {
         /* aborted or offline — manual dimension picker still works */
