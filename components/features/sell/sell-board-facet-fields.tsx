@@ -1,64 +1,68 @@
 "use client"
 
+import { Check } from "lucide-react"
+
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import {
   CONSTRUCTION_OPTIONS,
   FIN_SETUP_OPTIONS,
   FIN_SYSTEM_OPTIONS,
   type FacetOption,
 } from "@/lib/boards-browse-facets"
+import { cn } from "@/lib/utils"
 
-const UNSELECTED = "__unspecified__"
-
-type SellOptionalFacetSelectProps = {
-  id: string
-  label: string
-  hint?: string
+export type SellFacetChipGroupProps = {
+  label: React.ReactNode
+  /** Committed option value; empty string = not specified. */
   value: string
   options: readonly FacetOption[]
+  /** Called with "" when the selected chip is tapped again (clears the field). */
   onValueChange: (slug: string) => void
   disabled?: boolean
+  className?: string
 }
 
-function SellOptionalFacetSelect({
-  id,
+/**
+ * Single-select chip row for sell-form facets: every option is one tap away
+ * (no dropdown), and tapping the active chip clears it.
+ */
+export function SellFacetChipGroup({
   label,
-  hint,
   value,
   options,
   onValueChange,
   disabled,
-}: SellOptionalFacetSelectProps) {
+  className,
+}: SellFacetChipGroupProps) {
+  const committed = value.trim()
   return (
-    <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs font-medium text-foreground/85">
-        {label}
-      </Label>
-      <Select
-        value={value.trim() ? value : UNSELECTED}
-        onValueChange={(next) => onValueChange(next === UNSELECTED ? "" : next)}
-        disabled={disabled}
-      >
-        <SelectTrigger id={id} className="h-11 border-foreground/20 bg-card text-sm shadow-sm">
-          <SelectValue placeholder="Not specified" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={UNSELECTED}>Not specified</SelectItem>
-          {options.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value}>
+    <div className={cn("space-y-2", className)}>
+      <Label className="text-sm font-medium text-foreground">{label}</Label>
+      <div className="flex flex-wrap gap-2">
+        {options.map((opt) => {
+          const selected = committed === opt.value
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              disabled={disabled}
+              aria-pressed={selected}
+              onClick={() => onValueChange(selected ? "" : opt.value)}
+              className={cn(
+                "inline-flex h-10 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-all",
+                "active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
+                "disabled:cursor-not-allowed disabled:opacity-50",
+                selected
+                  ? "border-foreground bg-foreground text-background shadow-sm"
+                  : "border-foreground/20 bg-card text-foreground hover:border-foreground/40 hover:bg-muted/50",
+              )}
+            >
+              {selected ? <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden /> : null}
               {opt.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {hint ? <p className="text-[11px] leading-snug text-muted-foreground">{hint}</p> : null}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -87,30 +91,25 @@ export function SellBoardFacetFields({
       <div className="space-y-0.5">
         <p className="text-xs font-medium text-foreground/80">Fin setup & construction</p>
         <p className="text-xs text-muted-foreground">
-          Optional — helps surfers filter and compare your board on browse.
+          Optional — helps surfers filter and compare your board on browse. Tap again to clear.
         </p>
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <SellOptionalFacetSelect
-          id="sell-fin-setup"
+      <div className="space-y-3">
+        <SellFacetChipGroup
           label="Fin setup"
-          hint="How many fins the board is set up for (thruster, quad, etc.)."
           value={boardFins}
           options={FIN_SETUP_OPTIONS}
           onValueChange={onBoardFinsChange}
           disabled={disabled}
         />
-        <SellOptionalFacetSelect
-          id="sell-fin-system"
+        <SellFacetChipGroup
           label="Fin system"
-          hint="Plug or box type (Futures, FCS, glass-on, etc.)."
           value={boardFinSystem}
           options={FIN_SYSTEM_OPTIONS}
           onValueChange={onBoardFinSystemChange}
           disabled={disabled}
         />
-        <SellOptionalFacetSelect
-          id="sell-construction"
+        <SellFacetChipGroup
           label="Construction"
           value={boardConstruction}
           options={CONSTRUCTION_OPTIONS}

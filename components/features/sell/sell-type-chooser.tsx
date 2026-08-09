@@ -1,113 +1,104 @@
-import Image from "next/image"
+"use client"
+
 import Link from "next/link"
-import { ArrowRight } from "lucide-react"
 import { APPAREL_SELL_ADMIN_ONLY } from "@/lib/apparel-listing-config"
 import { cn } from "@/lib/utils"
+
+/** Search-first sell hub (preserves `?new=1` for analytics / blank-slate). */
+export const SELL_HUB_HREF = "/sell?new=1"
+
+/** Canonical surfboard create URL (full wizard — Quick list is retired). */
+export const SELL_SURFBOARD_PATH_HREF = "/sell/boards?new=1"
 
 type SellTypeOption = {
   href: string
   title: string
-  description: string
-  imageSrc: string | null
-  imageAlt: string
   /** When true, only shown to marketplace admins. */
   adminOnly?: boolean
 }
 
-/** Shown on /sell chooser. Other sell flows stay live at their routes until launch. */
+/** Product types available from the sell hub “list by type” row. */
 const SELL_TYPE_OPTIONS: readonly SellTypeOption[] = [
   {
-    href: "/sell/boards?new=1",
+    href: SELL_SURFBOARD_PATH_HREF,
     title: "Surfboard",
-    description: "List a board from your quiver.",
-    imageSrc: "/images/sell/surfboard.jpg",
-    imageAlt: "Surfboard",
   },
   {
     href: "/sell/fins?step=search&new=1",
     title: "Fins",
-    description: "List thrusters, quads, twins, or singles.",
-    imageSrc: "/images/sell/fins.jpg",
-    imageAlt: "Surfboard fin",
   },
   {
-    href: "/sell/wetsuits",
+    href: "/sell/wetsuits?new=1",
     title: "Wetsuits",
-    description: "List wetsuits for the marketplace.",
-    imageSrc: "/images/sell/wetsuits.jpg",
-    imageAlt: "Wetsuit",
   },
   {
-    href: "/sell/magazines",
+    href: "/sell/magazines?new=1",
     title: "Magazines",
-    description: "List vintage and collectible surf magazines.",
-    imageSrc: "/images/sell/magazines.jpg",
-    imageAlt: "Surf magazine",
   },
   {
-    href: "/sell/apparel",
+    href: "/sell/apparel?new=1",
     title: "Apparel",
-    description: "List boardshorts, hats, t-shirts, and more.",
-    imageSrc: null,
-    imageAlt: "Apparel",
     adminOnly: APPAREL_SELL_ADMIN_ONLY,
   },
 ]
 
-/** First step of /sell: pick a product type. */
-export function SellTypeChooser({ isAdmin = false }: { isAdmin?: boolean }) {
-  const options = SELL_TYPE_OPTIONS.filter((option) => !option.adminOnly || isAdmin)
+function sellTypeOptions(isAdmin: boolean): readonly SellTypeOption[] {
+  return SELL_TYPE_OPTIONS.filter((option) => !option.adminOnly || isAdmin)
+}
+
+/**
+ * Compact type links under catalog search (and in empty-result panels).
+ */
+export function SellListByTypeLinks({
+  isAdmin = false,
+  variant = "page",
+  className,
+}: {
+  isAdmin?: boolean
+  variant?: "page" | "panel"
+  className?: string
+}) {
+  const options = sellTypeOptions(isAdmin)
+  const linkClass =
+    variant === "panel"
+      ? "rounded-full border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:border-foreground/25 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      : "text-sm font-medium text-foreground underline-offset-4 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 
   return (
-    <main className="flex-1 bg-offwhite">
-      <div className="container mx-auto max-w-lg px-4 py-12 sm:py-16">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold sm:text-4xl">What are you listing?</h1>
-          <p className="mx-auto mt-3 max-w-sm text-muted-foreground">
-            Choose a product type to get started.
-          </p>
-        </div>
-
-        <div className="mt-10 space-y-3">
-          {options.map((option) => (
-            <Link
-              key={option.href}
-              href={option.href}
-              className={cn(
-                "group flex items-center gap-4 rounded-xl border border-border bg-background px-4 py-4 text-left shadow-sm transition-colors sm:px-5",
-                "hover:border-foreground/20 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-              )}
-            >
-              {option.imageSrc ? (
-                <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-muted">
-                  <Image
-                    src={option.imageSrc}
-                    alt={option.imageAlt ?? ""}
-                    fill
-                    sizes="56px"
-                    className="object-cover object-center"
-                  />
-                </div>
-              ) : (
-                <div
-                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-muted text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-                  aria-hidden
-                >
-                  {option.title.slice(0, 3)}
-                </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <h2 className="text-lg font-semibold">{option.title}</h2>
-                <p className="mt-0.5 text-sm text-muted-foreground">{option.description}</p>
-              </div>
-              <ArrowRight
-                className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground"
-                aria-hidden
-              />
+    <div
+      className={cn(
+        variant === "page" ? "space-y-3 text-center" : "space-y-2.5",
+        className,
+      )}
+    >
+      <p
+        className={cn(
+          "text-muted-foreground",
+          variant === "page" ? "text-sm" : "text-xs",
+        )}
+      >
+        {variant === "page" ? "Or list by type" : "Or pick a type"}
+      </p>
+      <nav
+        aria-label="List by product type"
+        className={cn(
+          "flex flex-wrap items-center gap-2",
+          variant === "page" && "justify-center gap-x-1 gap-y-2",
+        )}
+      >
+        {options.map((option, index) => (
+          <span key={option.title} className="inline-flex items-center gap-1">
+            {variant === "page" && index > 0 ? (
+              <span className="px-1.5 text-muted-foreground/35" aria-hidden>
+                ·
+              </span>
+            ) : null}
+            <Link href={option.href} className={linkClass}>
+              {option.title}
             </Link>
-          ))}
-        </div>
-      </div>
-    </main>
+          </span>
+        ))}
+      </nav>
+    </div>
   )
 }

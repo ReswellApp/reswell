@@ -14,6 +14,14 @@ export type LocationPrefillSuggested = {
   displayLabel: string
 }
 
+export type LocationPickerSavedLocation = {
+  city: string
+  state: string
+  lat: number
+  lng: number
+  displayName: string
+}
+
 interface LocationPickerProps {
   onLocationSelect: (location: {
     lat: number
@@ -29,6 +37,10 @@ interface LocationPickerProps {
    * fields empty until the user confirms (button, Enter, suggestion row, or “Use my area”).
    */
   prefillSuggested?: LocationPrefillSuggested | null
+  /**
+   * Previously used listing areas — shown as one-tap chips when no pin is committed yet.
+   */
+  savedLocations?: readonly LocationPickerSavedLocation[]
   initialLat?: number
   initialLng?: number
   initialCity?: string
@@ -85,6 +97,7 @@ export function LocationPicker({
   onLocationSelect,
   onLocationClear,
   prefillSuggested = null,
+  savedLocations = [],
   initialLat,
   initialLng,
   initialCity,
@@ -332,6 +345,33 @@ export function LocationPicker({
     !showSavedLocationCard &&
     (Boolean(prefillSuggested) || searchQuery.trim().length > 0)
 
+  const savedLocationChips = !showSavedLocationCard
+    ? savedLocations.filter(
+        (loc) =>
+          loc.city.trim() &&
+          hasCoords(loc.lat, loc.lng) &&
+          loc.displayName.trim().length > 0,
+      )
+    : []
+
+  const applySavedLocation = (loc: LocationPickerSavedLocation) => {
+    setSearchError(null)
+    setLat(loc.lat)
+    setLng(loc.lng)
+    setCity(loc.city)
+    setState(loc.state)
+    setDisplayName(loc.displayName)
+    userTypingRef.current = false
+    setSearchQuery(loc.displayName)
+    pushToListing({
+      lat: loc.lat,
+      lng: loc.lng,
+      city: loc.city,
+      state: loc.state,
+      displayName: loc.displayName,
+    })
+  }
+
   return (
     <div className="space-y-4 [contain:layout]">
       <Label className="text-base font-medium">
@@ -340,6 +380,34 @@ export function LocationPicker({
           *
         </span>
       </Label>
+
+      {savedLocationChips.length > 0 ? (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">Saved locations</p>
+          <div className="flex flex-wrap gap-2">
+            {savedLocationChips.map((loc) => {
+              const label =
+                loc.displayName.trim() ||
+                [loc.city, loc.state].filter(Boolean).join(", ")
+              return (
+                <button
+                  key={`${loc.lat}-${loc.lng}-${loc.city}-${loc.state}`}
+                  type="button"
+                  className={cn(
+                    "inline-flex max-w-full items-center rounded-full border border-border bg-background px-3 py-1.5",
+                    "text-left text-sm font-medium text-foreground shadow-sm",
+                    "transition-colors hover:border-listingHeart/40 hover:bg-muted/50",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-listingHeart/30",
+                  )}
+                  onClick={() => applySavedLocation(loc)}
+                >
+                  <span className="truncate">{label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      ) : null}
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-2">
         <div className="relative min-h-11 w-full min-w-0 flex-1">

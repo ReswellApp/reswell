@@ -18,13 +18,17 @@ export function usePendingPublishResume(options: {
 }): void {
   const pendingPublishHandledRef = useRef(false)
   const supabaseRef = useRef(createClient())
+  const optionsRef = useRef(options)
+  optionsRef.current = options
 
   useEffect(() => {
     if (!options.draftHydrated || options.editId || pendingPublishHandledRef.current) return
     let cancelled = false
 
-    void (async () => {
-      if (!isPendingPublish(options.listingKind)) return
+    const tryResume = async () => {
+      const opts = optionsRef.current
+      if (pendingPublishHandledRef.current || cancelled || opts.editId) return
+      if (!isPendingPublish(opts.listingKind)) return
 
       const {
         data: { user },
@@ -32,10 +36,10 @@ export function usePendingPublishResume(options: {
       if (!user || cancelled) return
 
       pendingPublishHandledRef.current = true
-      clearPendingPublish(options.listingKind)
+      clearPendingPublish(opts.listingKind)
 
       for (let i = 0; i < 120 && !cancelled; i++) {
-        const imgs = options.imagesRef.current
+        const imgs = opts.imagesRef.current
         const workLeft = imgs.some(
           (im) =>
             im.sourceFile &&
@@ -51,12 +55,21 @@ export function usePendingPublishResume(options: {
 
       if (cancelled) return
       window.requestAnimationFrame(() => {
-        options.formRef.current?.requestSubmit()
+        opts.formRef.current?.requestSubmit()
       })
-    })()
+    }
+
+    void tryResume()
+
+    const {
+      data: { subscription },
+    } = supabaseRef.current.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) void tryResume()
+    })
 
     return () => {
       cancelled = true
+      subscription.unsubscribe()
     }
-  }, [options.draftHydrated, options.editId, options.formRef, options.imagesRef, options.listingKind])
+  }, [options.draftHydrated, options.editId, options.listingKind])
 }

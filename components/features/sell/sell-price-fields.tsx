@@ -11,7 +11,17 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { SELL_CONTROL_CLASS } from "@/components/features/sell/sell-form-surface"
+import { SellEarningsBreakdown } from "@/components/features/sell/sell-earnings-breakdown"
+import { SellRequiredMark } from "@/components/features/sell/sell-required-mark"
 import { cn } from "@/lib/utils"
+
+/** Mirrors the listing-price rule in `pricePublishFieldsComplete` (sell-section-completion). */
+function listingPriceComplete(raw: string): boolean {
+  const t = raw.trim().replace(/,/g, "")
+  if (!t) return false
+  const n = Number.parseFloat(t)
+  return Number.isFinite(n) && n >= 0.01 && n <= 999_999.99
+}
 
 export interface SellPriceFieldsProps {
   listingPrice: string
@@ -34,7 +44,7 @@ export function SellPriceFields({
   purchaseAccordionDescription = "Keep track of what you paid for the board versus what it sells for. This info is for your benefit only.",
 }: SellPriceFieldsProps) {
   return (
-    <div className="max-w-lg space-y-4">
+    <div className="w-full space-y-4">
       <p className="text-sm leading-relaxed text-muted-foreground">
         Fair, competitive listings tend to sell faster on Reswell.
       </p>
@@ -42,9 +52,7 @@ export function SellPriceFields({
       <div className="space-y-2">
         <Label htmlFor="sell-listing-price" className="text-sm font-semibold text-foreground">
           Listing price{" "}
-          <span className="text-destructive" aria-hidden="true">
-            *
-          </span>
+          <SellRequiredMark complete={listingPriceComplete(listingPrice)} />
         </Label>
         <div className="relative">
           <span
@@ -66,6 +74,8 @@ export function SellPriceFields({
           />
         </div>
       </div>
+
+      <SellEarningsBreakdown listingPrice={listingPrice} />
 
       <div className="rounded-lg border border-slate-300 bg-slate-50/80">
         <Accordion type="single" collapsible className="w-full px-1">

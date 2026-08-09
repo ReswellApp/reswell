@@ -7,6 +7,7 @@ export type SellFunnelAnalyticsSummary = {
   uploadFailures: number
   publishFailures: number
   flowStarts: number
+  forkToFull: number
   uniqueUsers: number
   medianDurationMs: number | null
   successRate: number | null
@@ -24,6 +25,19 @@ export type SellFunnelListingTypeRow = {
   publishSuccesses: number
   validationFailures: number
   flowStarts: number
+}
+
+export type SellFunnelEntryPointRow = {
+  entryPoint: string
+  flowStarts: number
+  publishAttempts: number
+  publishSuccesses: number
+}
+
+export type SellFunnelFieldRow = {
+  field: string
+  interactions: number
+  validationFailures: number
 }
 
 export type SellFunnelValidationFailureRow = {
@@ -54,6 +68,7 @@ export type SellFunnelRecentEventRow = {
   message: string | null
   listingId: string | null
   durationMs: number | null
+  entryPoint: string | null
 }
 
 export type SellFunnelAnalyticsDashboard = {
@@ -62,6 +77,8 @@ export type SellFunnelAnalyticsDashboard = {
   summary: SellFunnelAnalyticsSummary
   byEvent: SellFunnelEventBreakdownRow[]
   byListingType: SellFunnelListingTypeRow[]
+  byEntryPoint: SellFunnelEntryPointRow[]
+  topFields: SellFunnelFieldRow[]
   topValidationFailures: SellFunnelValidationFailureRow[]
   stepFunnel: SellFunnelStepRow[]
   dailyTrend: SellFunnelDailyTrendRow[]

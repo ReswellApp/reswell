@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { toast } from "sonner"
-import { Heart, Loader2, Upload, X, Zap } from "lucide-react"
+import { Loader2, Upload, X, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -40,6 +40,8 @@ import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-ow
 import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
 import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
+import { useSellAccessoryDraftRecovery } from "@/components/features/sell/hooks/use-sell-accessory-draft-recovery"
+import type { SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import {
   assertListingOriginalSize,
@@ -48,7 +50,7 @@ import {
 import { ensureBrowserDecodableImageFile } from "@/lib/client-image-decode"
 import { friendlyListingPhotoErrorMessage } from "@/lib/utils/friendly-listing-photo-error"
 import { uploadListingImagePairToSupabase } from "@/lib/listing-image-storage"
-import { isListingPhotoFile } from "@/lib/sell-flow/listing-photo-slot"
+import { isListingPhotoFile, type ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
 import {
   APPAREL_LISTING_MAX_PHOTOS,
   APPAREL_LISTING_TITLE_MAX_LENGTH,
@@ -81,6 +83,12 @@ import { cn } from "@/lib/utils"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { finalizePeerListingCreate } from "@/lib/utils/admin-peer-listing-create-navigation"
 import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
+import { takeSellCatalogHandoff } from "@/lib/sell-flow/catalog-handoff"
+import {
+  SellCatalogSelectionCard,
+  type SellCatalogSelectionCardData,
+} from "@/components/features/sell/sell-catalog-selection-card"
+import { sellCatalogSearchCategoryLabel } from "@/lib/types/sell-catalog-search"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 import {
   SELL_SUBMIT_INTERRUPTED_MESSAGE,
@@ -180,6 +188,35 @@ const INITIAL_STATE: ApparelFormState = {
   buyerOffers: true,
 }
 
+/** Type-safe merge of an IndexedDB draft snapshot onto the apparel form state. */
+function apparelFormFromDraftSnapshot(snapshot: SellListingDraftFormSnapshot): ApparelFormState {
+  const next: ApparelFormState = { ...INITIAL_STATE }
+  for (const key of Object.keys(INITIAL_STATE) as Array<keyof ApparelFormState>) {
+    const value = snapshot[key]
+    if (value === undefined) continue
+    const initial = INITIAL_STATE[key]
+    if (key === "locationLat" || key === "locationLng") {
+      if (value === null || typeof value === "number") {
+        next[key] = value as ApparelFormState["locationLat"]
+      }
+      continue
+    }
+    if (key === "shippingMode") {
+      if (value === "reswell" || value === "free" || value === "flat") next.shippingMode = value
+      continue
+    }
+    if (typeof value === typeof initial) {
+      next[key] = value as never
+    }
+  }
+  return next
+}
+
+/** This flow's photo pipeline predates the shared upload hook — draft recovery covers the form only. */
+const NO_DRAFT_PHOTO_SLOTS: ListingPhotoSlot[] = []
+const noopSetDraftImages = () => {}
+const noopRetryDraftPhotoSlot = () => {}
+
 function newClientId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
@@ -192,7 +229,9 @@ function scrollApparelSellSectionIntoView(sectionId: string) {
 
 export default function SellApparelFlow({ editListingId = null }: { editListingId?: string | null }) {
   const router = useRouter()
-  const bulkSlotId = useSearchParams().get("bulk")?.trim() || null
+  const searchParams = useSearchParams()
+  const bulkSlotId = searchParams.get("bulk")?.trim() || null
+  const startFresh = searchParams.get("new") === "1"
   const signIn = useSignInGate()
   const fileInputId = useId()
   const supabaseRef = useRef(createClient())
@@ -215,6 +254,55 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       }
     }
   }, [])
+
+  // One-shot brand/model prefill from the /sell cross-category catalog search wall.
+  const catalogHandoffTakenRef = useRef(false)
+  /** A fresh catalog pick outranks any stashed IndexedDB draft — skip restore when set. */
+  const catalogHandoffAppliedRef = useRef(false)
+  const [catalogSelectionCard, setCatalogSelectionCard] =
+    useState<SellCatalogSelectionCardData | null>(null)
+  useEffect(() => {
+    if (catalogHandoffTakenRef.current || editId) return
+    catalogHandoffTakenRef.current = true
+    const handoff = takeSellCatalogHandoff("apparel")
+    if (!handoff) return
+    catalogHandoffAppliedRef.current = true
+    if (handoff.selectionKind !== "variant") {
+      setCatalogSelectionCard({
+        brandName: handoff.brandName,
+        modelName: handoff.selectionKind === "model" ? handoff.modelName : null,
+        categoryLabel: sellCatalogSearchCategoryLabel(handoff.category),
+        imageUrl: handoff.imageUrl,
+        imageIsLogo: handoff.imageIsLogo,
+      })
+    }
+    setForm((prev) => ({
+      ...prev,
+      title: prev.title.trim() ? prev.title : handoff.suggestedTitle,
+      description:
+        prev.description.trim() || !handoff.suggestedDescription
+          ? prev.description
+          : handoff.suggestedDescription,
+      brand: handoff.brandName,
+      model: handoff.selectionKind === "model" ? handoff.modelName : "",
+    }))
+  }, [editId])
+
+  const restoreApparelDraftForm = useCallback((snapshot: SellListingDraftFormSnapshot) => {
+    setForm(apparelFormFromDraftSnapshot(snapshot))
+  }, [])
+
+  const { clearRecoveredDraft } = useSellAccessoryDraftRecovery({
+    listingType: "apparel",
+    editId,
+    startFresh,
+    formSnapshot: form,
+    images: NO_DRAFT_PHOTO_SLOTS,
+    onRestoreForm: restoreApparelDraftForm,
+    setImages: noopSetDraftImages,
+    retryPhotoSlot: noopRetryDraftPhotoSlot,
+    skipRestore: () => catalogHandoffAppliedRef.current,
+  })
 
   const hydrateApparelEdit = useCallback(
     (listing: OwnedListingForEditRow) => {
@@ -521,6 +609,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
     const session = await resolveClientSessionForMutation(supabase)
     const user = session?.user
     if (!user || !session?.access_token) {
+      toast.message("Sign in to publish your listing")
       signIn("/sell/apparel")
       return
     }
@@ -778,6 +867,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
         successToast: "Your apparel is live!",
         setSubmitting,
         directCreate: () => createApparelListingAction(payload),
+        onCreateSuccess: () => clearRecoveredDraft(),
       })
     } catch (err) {
       const aborted = isSellSubmitAbortError(err)
@@ -996,17 +1086,6 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
                       ) : null}
                     </div>
                     )}
-                    <p className="space-y-1 text-xs text-muted-foreground">
-                      <span className="block">Thank you for listing on Reswell.</span>
-                      <span className="inline-flex flex-wrap items-center gap-1">
-                        <span>Made with</span>
-                        <Heart
-                          className="h-4 w-4 shrink-0 fill-listingHeart text-listingHeart"
-                          aria-hidden
-                        />
-                        <span>in Santa Barbara.</span>
-                      </span>
-                    </p>
                   </div>
 
                   <Separator className="bg-border" />
@@ -1047,6 +1126,12 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
                 description="Category, condition, and details help buyers shop with confidence."
               >
                 <div className="space-y-8">
+                  {catalogSelectionCard && form.brand === catalogSelectionCard.brandName ? (
+                    <SellCatalogSelectionCard
+                      selection={catalogSelectionCard}
+                      onRemove={() => setCatalogSelectionCard(null)}
+                    />
+                  ) : null}
                   <SellApparelFacetFields
                     kind={form.kind}
                     condition={form.condition}

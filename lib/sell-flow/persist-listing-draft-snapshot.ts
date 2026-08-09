@@ -1,4 +1,3 @@
-import type { SellFlowListingKind } from "@/lib/sell-flow/session-keys"
 import {
   buildSellListingDraft,
   saveGuestSellListingDraft,
@@ -6,6 +5,7 @@ import {
   clearGuestSellListingDraft,
   clearSellListingDraft,
   type SellListingDraftFormSnapshot,
+  type SellListingDraftListingType,
 } from "@/lib/sell-listing-draft-idb"
 import {
   listingPhotoSlotsForDraftPersist,
@@ -13,15 +13,19 @@ import {
 } from "@/lib/sell-flow/listing-photo-slot"
 
 export async function persistListingDraftSnapshot(args: {
-  listingType: SellFlowListingKind
+  listingType: SellListingDraftListingType
   formData: SellListingDraftFormSnapshot
   images: ListingPhotoSlot[]
   userId: string | null
+  /** Persist selected files even while optimize/upload is in flight (auth gate). */
+  includeInFlightPhotos?: boolean
 }): Promise<void> {
   const built = await buildSellListingDraft(
     args.listingType,
     args.formData,
-    listingPhotoSlotsForDraftPersist(args.images),
+    listingPhotoSlotsForDraftPersist(args.images, {
+      includeInFlight: args.includeInFlightPhotos,
+    }),
     null,
     args.userId,
     { allowGuest: !args.userId },

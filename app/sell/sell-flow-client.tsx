@@ -21,18 +21,11 @@ import { peerListingEditHref } from "@/lib/peer-listing-sections"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { SmoothCollapse } from "@/components/ui/smooth-collapse"
 import { Switch } from "@/components/ui/switch"
 import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
@@ -60,14 +53,16 @@ import {
 import {
   Loader2,
   X,
+  Check,
   ChevronRight,
   CheckCircle2,
   AlertCircle,
   RefreshCw,
   Zap,
 } from "lucide-react"
-import { LocationPicker } from "@/components/location-picker"
+import { LocationPicker, type LocationPrefillSuggested } from "@/components/location-picker"
 import { listingDetailHref } from "@/lib/listing-href"
+import { setJustPublishedListingMarker } from "@/lib/sell-flow/just-published"
 import {
   boardFulfillmentFromChecks,
   boardFulfillmentFromFlags,
@@ -134,6 +129,7 @@ import {
 import { clearSellServerDraftListingId, getSellServerDraftListingId, replaceSellDraftEditUrl, setSellServerDraftListingId } from "@/lib/sell-draft-local-meta"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { SellShippingCostModeRadios } from "@/components/features/sell/sell-shipping-cost-mode-radios"
+import { SellReswellCalculatedShippingDetails } from "@/components/features/sell/sell-reswell-calculated-shipping-details"
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
 import { SurfboardPackSizeSimplePicker } from "@/components/features/sell/surfboard-pack-size-simple-picker"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
@@ -142,6 +138,11 @@ import { listingDetailPath } from "@/lib/listing-query"
 import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listing-detail-cache"
 import { revalidateNavSearchSuggestAfterListingPublished } from "@/app/actions/nav-search-suggest-cache"
 import { saveDefaultListingLocationAction } from "@/app/actions/sell-default-location"
+import {
+  readSellSavedListingLocations,
+  rememberSellSavedListingLocation,
+  type SellSavedListingLocation,
+} from "@/lib/utils/sell-saved-listing-locations"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 import { listingPhotoSlotsForDraftPersist } from "@/lib/sell-flow/listing-photo-slot"
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
@@ -153,13 +154,16 @@ import {
   type BoardShippingCostMode,
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
-import { LISTING_CONDITION_SELL_OPTIONS, sellFormConditionValue } from "@/lib/listing-labels"
+import {
+  LISTING_CONDITION_SELL_OPTIONS,
+  sellFormConditionValue,
+} from "@/lib/listing-labels"
 import {
   formatBoardLengthForTitle,
+  isBoardLengthEntryComplete,
+  isTapeStyleInchesEntryComplete,
   normalizeBoardLengthInput,
   normalizeTapeStyleInchesInput,
-  normalizeVolumeLitersInput,
-  shouldShowLengthInchHint,
 } from "@/lib/board-measurements"
 import {
   boardBrowseFacetFieldsForDb,
@@ -190,25 +194,39 @@ import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
 } from "@/lib/listing-dimensions-display"
-import { SellBoardFacetFields } from "@/components/features/sell/sell-board-facet-fields"
+import { SellBoardDimensionsPicker } from "@/components/features/sell/sell-board-dimensions-picker"
+import { SellBoardStockSizePicker } from "@/components/features/sell/sell-board-stock-size-picker"
+import { SellRequiredMark } from "@/components/features/sell/sell-required-mark"
+import type { SurfboardStockSizeOption } from "@/lib/types/board-stock-sizes"
+import {
+  SellFacetChipGroup,
+} from "@/components/features/sell/sell-board-facet-fields"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
+import { SellBoardModeHeader } from "@/components/features/sell/sell-board-mode-header"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
 import { sellListingThumbLoadedSrcByClientId } from "@/components/features/sell/hooks/use-listing-photo-upload"
 import {
   SELL_COMPLETE_BADGE_CLASS,
   SELL_CONTROL_CLASS,
+  SELL_FORM_COLUMN_CLASS,
   SELL_PAGE_GROUND_CLASS,
+  SELL_PRIMARY_BUTTON_CLASS,
   SELL_SECTION_CARD_CLASS,
   SELL_SECTION_DESCRIPTION_CLASS,
 } from "@/components/features/sell/sell-form-surface"
+import { SellPhotoExamplesBanner } from "@/components/features/sell/sell-photo-examples-banner"
 import {
   SellSectionNav,
   SellSectionNavHorizontal,
   SELL_FORM_SECTION_NAV_ITEMS,
 } from "@/components/features/sell/sell-section-nav"
-import { BoardSellWizardFooter } from "@/components/features/sell/board-sell-wizard-footer"
-import { computeSellSectionCompletion } from "@/lib/sell-section-completion"
+import { SellSectionNavMobileProgress } from "@/components/features/sell/sell-section-nav-mobile-progress"
+import { BoardSellViewToolbar } from "@/components/features/sell/board-sell-view-toolbar"
+import {
+  computeSellSectionCompletion,
+  computeSellStepChecklist,
+} from "@/lib/sell-section-completion"
 import {
   boardCategoryMap,
   boardTypeFromCategoryId,
@@ -217,8 +235,6 @@ import {
 import {
   orderSurfboardSellCategoryOptions,
   staticSellBoardCategoryOptions,
-  SELL_BOARD_CATEGORY_UNSELECTED_LABEL,
-  SELL_BOARD_CATEGORY_UNSELECTED_VALUE,
   type SellCategoryOptionRow,
 } from "@/lib/surfboard-sell-categories"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
@@ -227,6 +243,12 @@ import {
   SELL_SUPPRESS_IDB_RESTORE_KEY,
   sellPendingPublishKey,
 } from "@/lib/sell-flow/session-keys"
+import { takeSellCatalogHandoff } from "@/lib/sell-flow/catalog-handoff"
+import {
+  SellCatalogSelectionCard,
+  type SellCatalogSelectionCardData,
+} from "@/components/features/sell/sell-catalog-selection-card"
+import { sellCatalogSearchCategoryLabel } from "@/lib/types/sell-catalog-search"
 import {
   BOARD_SELL_SECTION_ID_BY_STEP,
   BOARD_SELL_STEP_BY_SECTION_ID,
@@ -238,6 +260,11 @@ import {
   readStoredBoardSellFlowStep,
   type BoardSellFlowStep,
 } from "@/lib/sell-flow/board-sell-flow-step"
+import {
+  persistBoardSellViewMode,
+  readStoredBoardSellViewMode,
+  type BoardSellViewMode,
+} from "@/lib/sell-flow/board-sell-view-mode"
 
 /** True once the seller has pinned the board (coordinates used for drafts + validation). */
 function sellFormHasCommittedMapPins(fd: { locationLat: number; locationLng: number }): boolean {
@@ -292,28 +319,35 @@ function SellFormSection({
     <section
       id={sectionId}
       className={cn(
-        "space-y-4 lg:space-y-5",
-        sectionId && "scroll-mt-24",
+        "w-full space-y-4 sm:space-y-6",
+        sectionId && "scroll-mt-28",
       )}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3 sm:gap-4">
         <div className="min-w-0">
-          <h2 className="text-lg font-semibold tracking-tight text-foreground lg:text-xl">
+          <h2 className="text-[1.75rem] font-bold leading-tight tracking-tight text-foreground sm:text-[1.85rem] lg:text-3xl">
             {title}
           </h2>
           {description ? (
-            <p className={SELL_SECTION_DESCRIPTION_CLASS}>{description}</p>
+            <p
+              className={cn(
+                SELL_SECTION_DESCRIPTION_CLASS,
+                "text-[15px] sm:text-base lg:text-[17px]",
+              )}
+            >
+              {description}
+            </p>
           ) : null}
         </div>
         {complete ? (
-          <span className={cn("mt-0.5 shrink-0", SELL_COMPLETE_BADGE_CLASS)}>
+          <span className={cn("mt-1.5 hidden shrink-0 sm:inline-flex", SELL_COMPLETE_BADGE_CLASS)}>
             <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
             Done
           </span>
         ) : null}
       </div>
       <Card className={SELL_SECTION_CARD_CLASS}>
-        <CardContent className="p-6 lg:p-8 xl:p-10">{children}</CardContent>
+        <CardContent className="p-5 sm:p-9 lg:p-11">{children}</CardContent>
       </Card>
     </section>
   )
@@ -627,11 +661,14 @@ async function persistSellListingDraftSnapshot(args: {
   formData: SellListingDraftFormSnapshot
   images: ListingPhotoSlot[]
   userId: string | null
+  includeInFlightPhotos?: boolean
 }): Promise<void> {
   const built = await buildSellListingDraft(
     args.listingType,
     args.formData,
-    listingPhotoSlotsForDraftPersist(args.images),
+    listingPhotoSlotsForDraftPersist(args.images, {
+      includeInFlight: args.includeInFlightPhotos,
+    }),
     null,
     args.userId,
     { allowGuest: !args.userId },
@@ -643,6 +680,22 @@ async function persistSellListingDraftSnapshot(args: {
   }
   if (args.userId) await clearSellListingDraft(args.userId)
   else await clearGuestSellListingDraft()
+}
+
+/** Mirrors the flat-rate rule in `deliverySectionComplete` (sell-section-completion). */
+function flatShippingRateComplete(raw: string): boolean {
+  const t = raw.trim().replace(/,/g, "")
+  if (!t) return false
+  const n = Number.parseFloat(t)
+  return Number.isFinite(n) && n >= 0
+}
+
+/** Mirrors the auto-drop floor rule in `pricePublishFieldsComplete` (sell-section-completion). */
+function priceDropFloorComplete(floorRaw: string, priceRaw: string): boolean {
+  const floor = Number.parseFloat(floorRaw.trim().replace(/,/g, ""))
+  if (!Number.isFinite(floor) || floor < 0.01 || floor > 999_999.99) return false
+  const price = Number.parseFloat(priceRaw.trim().replace(/,/g, ""))
+  return Number.isFinite(price) ? floor < price : true
 }
 
 function createInitialSellFormData() {
@@ -750,7 +803,7 @@ function SellPageContentInner({
   const openSignIn = useSignInGate()
   const supabase = useMemo(() => createClient(), [])
 
-  /** Strip `?new=1` from the URL after blank-listing setup; keep `type=surfboard` so /sell stays on the flow. */
+  /** Strip `?new=1` from the URL after blank-listing setup; stay on `/sell/boards`. */
   useLayoutEffect(() => {
     if (typeof window === "undefined") return
     if (startFresh) {
@@ -759,7 +812,7 @@ function SellPageContentInner({
       } catch {
         /* quota / private mode */
       }
-      router.replace("/sell?type=surfboard", { scroll: false })
+      router.replace("/sell/boards", { scroll: false })
     }
   }, [startFresh, router])
 
@@ -788,14 +841,16 @@ function SellPageContentInner({
     ...LISTING_UPLOAD_STEP_LABELS,
   ])
   const [draftHydrated, setDraftHydrated] = useState(!!editId)
-  const [flowStep, setFlowStep] = useState<BoardSellFlowStep>(() => {
-    if (editId) return "basics"
-    if (typeof window === "undefined") return "basics"
-    return readStoredBoardSellFlowStep() ?? "basics"
-  })
+  /** Stable SSR defaults — sessionStorage restored after mount to avoid hydration mismatch. */
+  const [flowStep, setFlowStep] = useState<BoardSellFlowStep>("product")
   const setBoardFlowStep = useCallback((step: BoardSellFlowStep) => {
     setFlowStep(step)
     persistBoardSellFlowStep(step)
+  }, [])
+  const [viewMode, setViewModeState] = useState<BoardSellViewMode>("guided")
+  const setViewMode = useCallback((mode: BoardSellViewMode) => {
+    setViewModeState(mode)
+    persistBoardSellViewMode(mode)
   }, [])
   const [editListingStatus, setEditListingStatus] = useState<string | null>(null)
   const [signedInUserId, setSignedInUserId] = useState<string | null>(null)
@@ -832,8 +887,17 @@ function SellPageContentInner({
   /** Server / soft draft opens start on the first wizard step. */
   useEffect(() => {
     if (!editId) return
-    setFlowStep("basics")
-    persistBoardSellFlowStep("basics")
+    setFlowStep("product")
+    persistBoardSellFlowStep("product")
+  }, [editId])
+
+  /** Restore guided/advanced + step from session after mount (must not run during SSR). */
+  useEffect(() => {
+    if (editId) return
+    const storedStep = readStoredBoardSellFlowStep()
+    if (storedStep) setFlowStep(storedStep)
+    const storedMode = readStoredBoardSellViewMode()
+    if (storedMode) setViewModeState(storedMode)
   }, [editId])
 
   useEffect(() => {
@@ -862,6 +926,144 @@ function SellPageContentInner({
   const [listingCatalogRequestVariant, setListingCatalogRequestVariant] =
     useState<ListingCatalogRequestVariant | null>(null)
   const [formData, setFormData] = useState(createInitialSellFormData)
+  const formDataRef = useRef(formData)
+  useEffect(() => {
+    formDataRef.current = formData
+  }, [formData])
+
+  // One-shot brand/model prefill from the /sell cross-category catalog search wall.
+  // Applied only after draft hydration: the IDB draft restore replaces the whole
+  // form state async, so applying earlier would let a stale draft clobber the
+  // catalog selection the seller just made.
+  const catalogHandoffTakenRef = useRef(false)
+  const [catalogSelectionCard, setCatalogSelectionCard] = useState<
+    (SellCatalogSelectionCardData & { brandId: string }) | null
+  >(null)
+  useEffect(() => {
+    if (!draftHydrated || catalogHandoffTakenRef.current || editId) return
+    catalogHandoffTakenRef.current = true
+    const handoff = takeSellCatalogHandoff("surfboards")
+    if (!handoff) return
+    if (handoff.selectionKind !== "variant") {
+      setCatalogSelectionCard({
+        brandId: handoff.brandId,
+        brandName: handoff.brandName,
+        modelName: handoff.selectionKind === "model" ? handoff.modelName : null,
+        categoryLabel: sellCatalogSearchCategoryLabel(handoff.category),
+        imageUrl: handoff.imageUrl,
+        imageIsLogo: handoff.imageIsLogo,
+      })
+    }
+    if (handoff.selectionKind === "brand") {
+      setFormData((f) => ({
+        ...f,
+        title: f.title.trim() ? f.title : handoff.suggestedTitle,
+        description:
+          f.description.trim() || !handoff.suggestedDescription
+            ? f.description
+            : handoff.suggestedDescription,
+        brand: handoff.brandName,
+        boardLinkedBrandName: handoff.brandName,
+        boardBrandId: handoff.brandId,
+        boardIndexBrandSlug: handoff.brandSlug,
+      }))
+      return
+    }
+    if (handoff.selectionKind === "model") {
+      // Catalog models tagged with a board shape auto-select the matching
+      // "Board shape / category" chip (chip values are the fixed category UUIDs).
+      const handoffBoardCategoryId = handoff.boardCategorySlug
+        ? boardCategoryMap[handoff.boardCategorySlug] ?? ""
+        : ""
+      setFormData((f) => ({
+        ...f,
+        title: f.title.trim() ? f.title : handoff.suggestedTitle,
+        description:
+          f.description.trim() || !handoff.suggestedDescription
+            ? f.description
+            : handoff.suggestedDescription,
+        brand: handoff.brandName,
+        boardLinkedBrandName: handoff.brandName,
+        boardBrandId: handoff.brandId,
+        boardIndexBrandSlug: handoff.brandSlug,
+        boardModelName: handoff.modelName,
+        boardBrandModelId: handoff.brandModelId,
+        ...(handoffBoardCategoryId && !f.category.trim()
+          ? {
+              category: handoffBoardCategoryId,
+              boardType: handoff.boardCategorySlug ?? f.boardType,
+            }
+          : {}),
+      }))
+    }
+  }, [editId, draftHydrated])
+
+  // Stock sizes for the linked catalog model: shown as a one-tap size wall in
+  // "Dimensions & details". Selecting one writes the same boardLength /
+  // boardWidthInches / boardThicknessInches / boardVolumeL fields the manual
+  // picker uses — storage and publish are unchanged.
+  const [modelStockSizes, setModelStockSizes] = useState<SurfboardStockSizeOption[]>([])
+  const [stockSizeMode, setStockSizeMode] = useState<"stock" | "custom">("stock")
+  const [selectedStockSizeId, setSelectedStockSizeId] = useState<string | null>(null)
+  const stockSizesModelId = formData.boardBrandModelId.trim()
+  useEffect(() => {
+    if (!stockSizesModelId) {
+      setModelStockSizes([])
+      setSelectedStockSizeId(null)
+      setStockSizeMode("stock")
+      return
+    }
+    const controller = new AbortController()
+    ;(async () => {
+      try {
+        const res = await fetch(
+          `/api/sell/board-model-stock-sizes?brand_model_id=${encodeURIComponent(stockSizesModelId)}`,
+          { signal: controller.signal },
+        )
+        if (!res.ok) return
+        const json = (await res.json().catch(() => null)) as {
+          data?: { sizes?: SurfboardStockSizeOption[] }
+        } | null
+        const sizes = json?.data?.sizes ?? []
+        setModelStockSizes(sizes)
+
+        // Reconcile with dims already in the form (draft restore / edit mode):
+        // matching dims select their stock card; non-matching dims mean the
+        // seller already entered a custom size, so keep the manual picker.
+        const fd = formDataRef.current
+        const match = sizes.find(
+          (s) =>
+            s.values.boardLength === fd.boardLength.trim() &&
+            s.values.boardWidthInches === fd.boardWidthInches.trim() &&
+            s.values.boardThicknessInches === fd.boardThicknessInches.trim(),
+        )
+        if (match) {
+          setSelectedStockSizeId(match.id)
+          setStockSizeMode("stock")
+        } else {
+          setSelectedStockSizeId(null)
+          const hasDims = [fd.boardLength, fd.boardWidthInches, fd.boardThicknessInches].some(
+            (v) => v.trim().length > 0,
+          )
+          setStockSizeMode(hasDims ? "custom" : "stock")
+        }
+      } catch {
+        /* aborted or offline — manual dimension picker still works */
+      }
+    })()
+    return () => controller.abort()
+  }, [stockSizesModelId])
+
+  const handleSelectStockSize = useCallback((size: SurfboardStockSizeOption) => {
+    setSelectedStockSizeId(size.id)
+    setStockSizeMode("stock")
+    setFormData((fd) => ({ ...fd, ...size.values }))
+  }, [])
+
+  const handleChooseCustomStockSize = useCallback(() => {
+    setStockSizeMode("custom")
+    setSelectedStockSizeId(null)
+  }, [])
 
   const openListingCatalogRequestFromBrand = useCallback(() => {
     setListingCatalogRequestVariant("full")
@@ -873,14 +1075,6 @@ function SellPageContentInner({
       bid ? { modelOnlyWithDirectoryBrandId: bid } : "full",
     )
   }, [formData.boardBrandId])
-
-  const boardDimLengthRef = useRef<HTMLInputElement>(null)
-  const boardDimWidthRef = useRef<HTMLInputElement>(null)
-  const boardDimThicknessRef = useRef<HTMLInputElement>(null)
-  const boardDimVolumeRef = useRef<HTMLInputElement>(null)
-  const prevBoardLengthRef = useRef<string | undefined>(undefined)
-  const prevBoardWidthRef = useRef<string | undefined>(undefined)
-  const prevBoardThicknessRef = useRef<string | undefined>(undefined)
 
   const [sellCategoryOptions, setSellCategoryOptions] = useState<SellCategoryOptionRow[]>([])
   const [sellCategoriesLoaded, setSellCategoriesLoaded] = useState(false)
@@ -903,6 +1097,10 @@ function SellPageContentInner({
     draftHydrated: false,
   })
   const sellDraftPersistTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  /** Quiet autosave indicator so sellers know they can safely leave and come back. */
+  const [draftAutosaveState, setDraftAutosaveState] = useState<
+    "idle" | "saving" | "saved"
+  >("idle")
   const draftImageSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const draftPhotosPendingRef = useRef<ListingPhotoSlot[] | null>(null)
   /** Slots from IndexedDB restore — optimized in useLayoutEffect after `optimizeAndUploadSlot` exists. */
@@ -955,7 +1153,7 @@ function SellPageContentInner({
       }
       draftPhotosPendingRef.current = null
       setFormData(createInitialSellFormData())
-      setBoardFlowStep("basics")
+      setBoardFlowStep("product")
       clearPersistedBoardSellFlowStep()
       sellListingThumbLoadedSrcByClientId.clear()
       latestListingPhotoPrepareSeqRef.current.clear()
@@ -970,7 +1168,7 @@ function SellPageContentInner({
       await clearGuestSellListingDraft()
       toast.message("Starting a new listing — saved drafts stay in your dashboard.")
       if (editId) {
-        router.replace("/sell?type=surfboard&new=1", { scroll: false })
+        router.replace("/sell/boards?new=1", { scroll: false })
       }
     } finally {
       setStartNewListingBusy(false)
@@ -1298,7 +1496,7 @@ function SellPageContentInner({
     [editId, router],
   )
 
-  const { editLoading, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
+  const { editLoading, showEditSkeleton, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
     editId: loadListingId,
     supabase,
     signInReturnPath: loadListingId ? `/sell?edit=${loadListingId}` : "/sell",
@@ -1336,6 +1534,7 @@ function SellPageContentInner({
     localServerDraftId,
     draftControls: boardDraftControls,
     showDraftControls: showBoardDraftControls,
+    draftSaveStatus: serverDraftSaveStatus,
   } = serverDraft
   const effectiveEditId = editId ?? localServerDraftId
   const resumeDraftId = editId ?? (wantsBlankListing ? null : localServerDraftId)
@@ -1347,6 +1546,142 @@ function SellPageContentInner({
     () => formatBoardLengthForTitle(formData.boardLength),
     [formData.boardLength],
   )
+
+  /**
+   * Saved listing areas (profile last-used + local recent). Applied as chips in
+   * LocationPicker; the newest pin can auto-fill a brand-new form once.
+   */
+  const [locationPrefillSuggested, setLocationPrefillSuggested] =
+    useState<LocationPrefillSuggested | null>(null)
+  const [savedListingLocations, setSavedListingLocations] = useState<
+    SellSavedListingLocation[]
+  >([])
+  const savedLocationAutoAppliedRef = useRef(false)
+  useEffect(() => {
+    if (editId) return
+    let cancelled = false
+    const localSaved = readSellSavedListingLocations()
+    if (localSaved.length > 0) {
+      setSavedListingLocations(localSaved)
+    }
+    void (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user || cancelled) return
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select(
+          "default_listing_city, default_listing_state, default_listing_lat, default_listing_lng, default_listing_display",
+        )
+        .eq("id", user.id)
+        .maybeSingle()
+      if (cancelled) return
+      const city = (profile?.default_listing_city ?? "").trim()
+      if (!city) return
+      const state = (profile?.default_listing_state ?? "").trim()
+      const display =
+        (profile?.default_listing_display ?? "").trim() ||
+        [city, state].filter(Boolean).join(", ")
+      const lat =
+        typeof profile?.default_listing_lat === "number" &&
+        Number.isFinite(profile.default_listing_lat)
+          ? profile.default_listing_lat
+          : null
+      const lng =
+        typeof profile?.default_listing_lng === "number" &&
+        Number.isFinite(profile.default_listing_lng)
+          ? profile.default_listing_lng
+          : null
+
+      setLocationPrefillSuggested({
+        city,
+        state,
+        displayLabel: display,
+      })
+
+      if (lat != null && lng != null && !(lat === 0 && lng === 0)) {
+        const profileLoc: SellSavedListingLocation = {
+          city,
+          state,
+          lat,
+          lng,
+          displayName: display,
+        }
+        const merged = rememberSellSavedListingLocation(profileLoc)
+        if (!cancelled) setSavedListingLocations(merged)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [editId, supabase])
+
+  /** One-time auto-apply of the newest saved pin on a brand-new listing (no draft location yet). */
+  useEffect(() => {
+    if (editId || !draftHydrated || savedLocationAutoAppliedRef.current) return
+    if (savedListingLocations.length === 0) return
+    if (sellFormHasCommittedMapPins(formData)) {
+      savedLocationAutoAppliedRef.current = true
+      return
+    }
+    const loc = savedListingLocations[0]
+    if (!loc) return
+    savedLocationAutoAppliedRef.current = true
+    setPickupShippingLocationUserCommits((c) => (c > 0 ? c : 1))
+    setFormData((f) => {
+      if (sellFormHasCommittedMapPins(f)) return f
+      return {
+        ...f,
+        locationLat: loc.lat,
+        locationLng: loc.lng,
+        locationCity: loc.city,
+        locationState: loc.state,
+        locationDisplay: loc.displayName,
+      }
+    })
+  }, [
+    editId,
+    draftHydrated,
+    savedListingLocations,
+    formData.locationLat,
+    formData.locationLng,
+    formData.locationCity,
+  ])
+
+  /**
+   * Auto-derived title: composes "6'0 Brand Model" from the catalog pick and
+   * keeps it in sync until the seller edits the title themselves. Cuts the
+   * most-skipped required field down to zero typing for catalog boards.
+   */
+  const lastAutoTitleRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (editId || !draftHydrated) return
+    const brand = formData.brand.trim()
+    const model = formData.boardModelName.trim()
+    if (!brand && !model) return
+    const lengthPart = isBoardLengthEntryComplete(formData.boardLength)
+      ? formatBoardLengthForTitle(formData.boardLength)
+      : ""
+    const suggestion = [lengthPart, brand, model].filter(Boolean).join(" ").trim()
+    if (!suggestion || suggestion.length > LISTING_TITLE_MAX_LENGTH) return
+    const current = formData.title
+    // Untouched = still exactly our last suggestion, or empty and never auto-filled.
+    // A seller who clears an auto title has opted out — don't fight the field.
+    const untouched =
+      current === lastAutoTitleRef.current ||
+      (current.trim() === "" && lastAutoTitleRef.current === null)
+    if (!untouched || current === suggestion) return
+    lastAutoTitleRef.current = suggestion
+    setFormData((f) => ({ ...f, title: suggestion }))
+  }, [
+    draftHydrated,
+    editId,
+    formData.brand,
+    formData.boardModelName,
+    formData.boardLength,
+    formData.title,
+  ])
 
   const sellValidationForm = useMemo(
     (): SellFormValidationInput => ({
@@ -1410,25 +1745,71 @@ function SellPageContentInner({
     (pickupShippingSectionEnteredOnce && pickupShippingLocationUserCommits > 0)
 
   const sellSectionCompletion = useMemo((): Record<string, boolean> => {
-    const deliveryDataComplete = sellSectionCompletionBase["sell-section-delivery"] === true
+    const deliveryDataComplete = sellSectionCompletionBase["sell-section-shipping"] === true
     return {
       ...sellSectionCompletionBase,
-      "sell-section-delivery": deliveryDataComplete && pickupShippingStepperUxSatisfied,
+      "sell-section-shipping": deliveryDataComplete && pickupShippingStepperUxSatisfied,
     }
   }, [pickupShippingStepperUxSatisfied, sellSectionCompletionBase])
 
   const activeSellSectionId = BOARD_SELL_SECTION_ID_BY_STEP[flowStep]
+
+  const sellStepChecklistBySection = useMemo(
+    () =>
+      computeSellStepChecklist(sellValidationForm, {
+        imageCount: images.length,
+        imagesUploadReady,
+      }),
+    [sellValidationForm, images.length, imagesUploadReady],
+  )
+  const shippingSetupIncomplete = useMemo(
+    () =>
+      (sellStepChecklistBySection["sell-section-shipping"] ?? []).some(
+        (item) => item.id === "shipping-setup" && !item.complete,
+      ),
+    [sellStepChecklistBySection],
+  )
+
+  /**
+   * Quick publish path: flip to pickup-only and clear the shipping config so
+   * the seller isn't blocked on pack sizing. Shipping can be added anytime by
+   * editing the listing.
+   */
+  const handleSkipShippingForNow = useCallback(() => {
+    setFormData((fd) => ({
+      ...fd,
+      boardFulfillment: "pickup_only" as BoardFulfillmentChoice,
+      boardShippingCostMode: "reswell" as BoardShippingCostMode,
+      boardShippingPrice: "",
+      surfboardShippingTier: "" as SurfboardShippingTierId | "",
+      surfboardShippingTierCeilingConfirmed: false,
+      surfboardShippingPackBand: "" as SurfboardShippingPackBandId | "",
+      surfboardShippingPackBandCeilingConfirmed: false,
+      adminCustomShippingCarton: false,
+      reswellPackageLengthIn: "",
+      reswellPackageWidthIn: "",
+      reswellPackageHeightIn: "",
+      reswellPackageWeightLb: "",
+      reswellPackageWeightOz: "",
+    }))
+  }, [])
 
   const goToSellSection = useCallback(
     (sectionId: string) => {
       const step = BOARD_SELL_STEP_BY_SECTION_ID[sectionId]
       if (!step) return
       setBoardFlowStep(step)
-      if (typeof window !== "undefined") {
-        window.scrollTo({ top: 0, behavior: "smooth" })
+      if (typeof window === "undefined") return
+      if (viewMode === "advanced") {
+        const el = document.getElementById(sectionId)
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" })
+          return
+        }
       }
+      window.scrollTo({ top: 0, behavior: "smooth" })
     },
-    [setBoardFlowStep],
+    [setBoardFlowStep, viewMode],
   )
 
   const goToNextSellStep = useCallback(() => {
@@ -1477,14 +1858,14 @@ function SellPageContentInner({
   })
 
   useEffect(() => {
-    if (flowStep === "delivery") {
+    if (viewMode === "advanced" || flowStep === "shipping") {
       setPickupShippingSectionEnteredOnce(true)
     }
-  }, [flowStep])
+  }, [flowStep, viewMode])
 
   useEffect(() => {
     if (skipPickupShippingStepperInteractionUx || editLoading) return
-    if (flowStep !== "delivery") return
+    if (viewMode !== "advanced" && flowStep !== "shipping") return
 
     let cancelled = false
     let raf = 0
@@ -1493,7 +1874,7 @@ function SellPageContentInner({
 
     const attach = () => {
       if (cancelled) return
-      const el = document.getElementById("sell-section-delivery")
+      const el = document.getElementById("sell-section-shipping")
       if (!el) {
         attempts += 1
         if (attempts > 150) return
@@ -1529,7 +1910,7 @@ function SellPageContentInner({
       window.cancelAnimationFrame(raf)
       detach?.()
     }
-  }, [editLoading, flowStep, skipPickupShippingStepperInteractionUx])
+  }, [editLoading, flowStep, viewMode, skipPickupShippingStepperInteractionUx])
   const resolvedTitlePreview = useMemo(
     () => buildResolvedListingTitle(sellValidationForm),
     [sellValidationForm],
@@ -1791,7 +2172,7 @@ function SellPageContentInner({
     }
     draftPhotosPendingRef.current = null
     setFormData(createInitialSellFormData())
-    setBoardFlowStep("basics")
+    setBoardFlowStep("product")
     clearPersistedBoardSellFlowStep()
     sellListingThumbLoadedSrcByClientId.clear()
     latestListingPhotoPrepareSeqRef.current.clear()
@@ -1934,12 +2315,18 @@ function SellPageContentInner({
       void (async () => {
         const r = sellDraftLatestRef.current
         if (r.editId || !r.draftHydrated) return
-        await persistSellListingDraftSnapshot({
-          listingType: r.listingType,
-          formData: r.formData,
-          images: r.images,
-          userId: sellDraftUserIdRef.current,
-        })
+        setDraftAutosaveState("saving")
+        try {
+          await persistSellListingDraftSnapshot({
+            listingType: r.listingType,
+            formData: r.formData,
+            images: r.images,
+            userId: sellDraftUserIdRef.current,
+          })
+          setDraftAutosaveState("saved")
+        } catch {
+          setDraftAutosaveState("idle")
+        }
       })()
     }, 600)
     return () => {
@@ -2057,20 +2444,14 @@ function SellPageContentInner({
       }
       if (!session?.access_token || !user) {
         if (!listingPhotoPrepareSeqInSync(clientId, prepareSeq)) return
-        const authMsg = "Sign in again to upload this photo."
-        logSellFunnelEvent({
-          listingType: "surfboards",
-          event: "upload_failed",
-          message: authMsg,
-        })
         setImages((prev) =>
           prev.map((s) =>
             s.clientId === clientId
               ? {
                   ...s,
                   optimizePhase: "done",
-                  uploadPhase: "error",
-                  errorMessage: authMsg,
+                  uploadPhase: "pending_auth",
+                  errorMessage: undefined,
                 }
               : s,
           ),
@@ -2078,8 +2459,26 @@ function SellPageContentInner({
         if (!photoUploadSignInPromptedRef.current) {
           photoUploadSignInPromptedRef.current = true
           const ret = `/sell${sellSearchParams.toString() ? `?${sellSearchParams}` : ""}`
-          toast.error(authMsg)
-          openSignIn(ret)
+          void (async () => {
+            try {
+              await persistSellListingDraftSnapshot({
+                listingType: "board",
+                formData: {
+                  ...formDataRef.current,
+                  boardFlowStep: flowStep,
+                } as SellListingDraftFormSnapshot,
+                images: imagesRef.current,
+                userId: null,
+                includeInFlightPhotos: true,
+              })
+            } catch {
+              /* best-effort */
+            }
+            toast.message("Sign in to upload your photos", {
+              description: "Your selection is saved — you’ll pick up right here.",
+            })
+            openSignIn(ret)
+          })()
         }
         return
       }
@@ -2849,6 +3248,9 @@ function SellPageContentInner({
         void saveDefaultListingLocationAction({
           city: boardLocationCity,
           state: (boardLocationState ?? "").trim() || undefined,
+          lat: boardLocationLat ?? undefined,
+          lng: boardLocationLng ?? undefined,
+          display: fd.locationDisplay.trim() || undefined,
         })
       }
 
@@ -3261,6 +3663,11 @@ function SellPageContentInner({
             durationMs: Date.now() - publishStartedAt,
           })
           retainPublishOverlayUntilNavigation = true
+          setJustPublishedListingMarker({
+            listingId,
+            slug: listingSlug ?? null,
+            section: "surfboards",
+          })
           router.push(detailPath)
           return
         }
@@ -3324,6 +3731,14 @@ function SellPageContentInner({
           return
         }
       }
+      // Fresh publish (new listing or draft going live) — never a plain edit.
+      if (listingId && (!editId || publishedDraftNeedsSideEffects)) {
+        setJustPublishedListingMarker({
+          listingId,
+          slug: listingSlug ?? null,
+          section: "surfboards",
+        })
+      }
       router.push(detailPath)
     } catch (error: unknown) {
       const aborted = isSellSubmitAbortError(error)
@@ -3378,6 +3793,7 @@ function SellPageContentInner({
 
   /** Covers publish + rare early loading without preview; never while edit hydration is blocking. */
   const fullscreenSellBlocking = loading && (!!publishPreview || !editLoading)
+  const showBoardModeHeader = !editId && !editLoading && !getImpersonation()
 
   if (editLoadError) {
     return (
@@ -3395,11 +3811,12 @@ function SellPageContentInner({
         className={cn(
           "flex-1 w-full",
           SELL_PAGE_GROUND_CLASS,
-          !fullscreenSellBlocking && "pt-8 pb-16 md:pb-20 lg:pb-24",
+          !fullscreenSellBlocking && "pb-20 md:pb-20 lg:pb-24",
+          !fullscreenSellBlocking && !showBoardModeHeader && "pt-8",
         )}
       >
         <AdminBulkListingBanner section="surfboards" bulkSlotId={bulkSlotId} />
-        <div className="container relative mx-auto max-w-2xl min-h-[50vh] lg:max-w-6xl">
+        <div className="container relative mx-auto max-w-3xl min-h-[50vh] px-4 sm:px-6 lg:max-w-6xl">
           {loading && publishPreview ? (
             <SellFlowPublishingFullscreenPortal
               preview={publishPreview}
@@ -3417,50 +3834,101 @@ function SellPageContentInner({
           <h1 className="sr-only">
             {editId ? "Edit listing" : "Create a Listing"}
           </h1>
-          <div className="border-t border-neutral-200 pt-4 pb-8 mb-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-              <Breadcrumb>
-                <BreadcrumbList className="gap-1.5 text-sm font-normal text-[#5c6b89] sm:gap-2">
-                  <BreadcrumbItem>
-                    <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                      <Link href="/">Home</Link>
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
-                  <BreadcrumbItem>
-                    <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                      <Link href={sellListingsHubHref}>Listings</Link>
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage className="font-normal text-[#5c6b89]">
-                      {editId ? "Edit listing" : "Create a Listing"}
-                    </BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-              </Breadcrumb>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-3 shrink-0">
-                {(showBoardDraftControls ||
-                  (!editLoading && (!editId || listingIsDraft) && !getImpersonation())) && (
-                    <div className="flex items-center gap-3">
-                      {boardDraftControls}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Exit listing form"
-                        asChild
-                      >
-                        <Link href={sellListingsHubHref}>
-                          <X className="h-4 w-4" aria-hidden />
-                        </Link>
-                      </Button>
+          {showBoardModeHeader ? (
+            <SellBoardModeHeader
+              leading={
+                <h1 className="hidden text-3xl font-bold tracking-tight text-foreground sm:block sm:text-4xl sm:leading-tight">
+                  Create a listing
+                </h1>
+              }
+              actions={
+                showBoardDraftControls ||
+                (!editLoading && (!editId || listingIsDraft) && !getImpersonation()) ? (
+                  <>
+                    {boardDraftControls}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0 rounded-full text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                      aria-label="Exit listing form"
+                      asChild
+                    >
+                      <Link href={sellListingsHubHref}>
+                        <X className="h-4 w-4" aria-hidden />
+                      </Link>
+                    </Button>
+                  </>
+                ) : undefined
+              }
+              status={
+                !editId && serverDraftSaveStatus === "idle" && draftAutosaveState !== "idle" ? (
+                  <>
+                    {draftAutosaveState === "saved" ? (
+                      <Check className="h-3.5 w-3.5 text-listingHeart" aria-hidden />
+                    ) : null}
+                    <span>
+                      {draftAutosaveState === "saving"
+                        ? "Saving draft…"
+                        : "Draft saved on this device"}
+                    </span>
+                  </>
+                ) : undefined
+              }
+            />
+          ) : (
+            <div className={cn("mx-auto px-4 pt-10 sm:pt-12", SELL_FORM_COLUMN_CLASS)}>
+              <div className="mb-8 flex flex-col gap-5 sm:mb-10 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
+                <div className="min-w-0 flex-1">
+                  <h1 className="hidden text-3xl font-bold tracking-tight text-foreground sm:block sm:text-4xl sm:leading-tight">
+                    {editId ? "Edit listing" : "Create a listing"}
+                  </h1>
+                </div>
+                <div className="flex flex-col gap-1 shrink-0 sm:items-end">
+                  {(showBoardDraftControls ||
+                    (!editLoading && (!editId || listingIsDraft) && !getImpersonation())) && (
+                      <div className="flex w-full items-center gap-3 sm:w-auto sm:justify-end">
+                        {boardDraftControls}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="ml-auto sm:ml-0"
+                          aria-label="Exit listing form"
+                          asChild
+                        >
+                          <Link href={sellListingsHubHref}>
+                            <X className="h-4 w-4" aria-hidden />
+                          </Link>
+                        </Button>
+                      </div>
+                    )}
+                  {!editId && serverDraftSaveStatus === "idle" ? (
+                    <div
+                      className="flex min-h-5 items-center gap-1.5 sm:justify-end"
+                      aria-live="polite"
+                    >
+                      {draftAutosaveState !== "idle" ? (
+                        <>
+                          {draftAutosaveState === "saved" ? (
+                            <Check
+                              className="h-3.5 w-3.5 text-listingHeart"
+                              aria-hidden
+                            />
+                          ) : null}
+                          <span className="text-xs text-muted-foreground">
+                            {draftAutosaveState === "saving"
+                              ? "Saving draft…"
+                              : "Draft saved on this device"}
+                          </span>
+                        </>
+                      ) : null}
                     </div>
-                  )}
+                  ) : null}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {!editLoading && publishValidationBanner ? (
             <Alert
@@ -3508,7 +3976,7 @@ function SellPageContentInner({
             </Alert>
           ) : null}
 
-          {editLoading ? (
+          {showEditSkeleton ? (
             <div
               role="status"
               aria-label="Loading listing editor"
@@ -3517,53 +3985,89 @@ function SellPageContentInner({
               <SellFlowFormColumnSkeleton />
             </div>
           ) : (
-            <div className="flex w-full flex-col gap-8 lg:mx-auto lg:w-max lg:max-w-full lg:flex-row lg:items-start lg:gap-10 xl:gap-14">
-              <div className="hidden shrink-0 lg:block lg:w-52 xl:w-56">
-                <SellSectionNav
+            <div
+              aria-busy={editLoading || undefined}
+              className={cn(
+                "flex w-full flex-col gap-10 transition-opacity lg:flex-row lg:items-stretch lg:gap-12 xl:gap-16",
+                editLoading && "pointer-events-none opacity-60",
+              )}
+            >
+              <aside className="hidden shrink-0 lg:block lg:w-56 xl:w-64">
+                <div className="sticky top-24">
+                  <SellSectionNav
+                    items={SELL_FORM_SECTION_NAV_ITEMS}
+                    sectionCompletion={sellSectionCompletion}
+                    activeSectionId={activeSellSectionId}
+                    onSelectSection={goToSellSection}
+                    className="static"
+                  />
+                </div>
+              </aside>
+              <div className={cn("min-w-0", SELL_FORM_COLUMN_CLASS)}>
+                <SellSectionNavMobileProgress
                   items={SELL_FORM_SECTION_NAV_ITEMS}
-                  sectionCompletion={sellSectionCompletion}
                   activeSectionId={activeSellSectionId}
-                  onSelectSection={goToSellSection}
+                  className={cn("mb-6 sm:hidden", viewMode === "advanced" && "hidden")}
                 />
-              </div>
-              <div className="min-w-0 w-full max-w-2xl lg:w-auto lg:max-w-3xl lg:shrink-0">
                 <SellSectionNavHorizontal
                   items={SELL_FORM_SECTION_NAV_ITEMS}
                   sectionCompletion={sellSectionCompletion}
                   activeSectionId={activeSellSectionId}
                   onSelectSection={goToSellSection}
-                  className="mb-8 lg:hidden"
+                  className={cn(
+                    "mb-8 hidden sm:block lg:hidden",
+                    viewMode === "advanced" && "sm:hidden",
+                  )}
                 />
                 <form
               ref={formRef}
               onSubmit={(e) => {
-                if (flowStep !== "publish") {
+                if (viewMode === "guided" && flowStep !== "shipping") {
                   e.preventDefault()
                   goToNextSellStep()
                   return
                 }
                 void handleSubmit(e)
               }}
-              className="space-y-10 lg:space-y-12"
+              className="space-y-12 lg:space-y-14"
               aria-busy={loading}
             >
-                {flowStep === "basics" ? (
+                {viewMode === "advanced" || flowStep === "product" ? (
                 <SellFormSection
-                  sectionId="sell-section-basics"
-                  title="Brand, model & shape"
-                  description="Tell buyers what board you have — brand, model, shape, and condition."
-                  complete={sellSectionCompletion["sell-section-basics"] === true}
+                  sectionId="sell-section-product"
+                  title="Product Info"
+                  description="Brand, model, title, condition, and board details."
+                  complete={sellSectionCompletion["sell-section-product"] === true}
                 >
                     <div className="space-y-8">
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-4 sm:gap-y-3">
-                          <div className="min-w-0 space-y-2">
-                            <div className="flex items-end justify-between gap-2">
-                              <Label htmlFor="listing-brand">Brand</Label>
-                            </div>
+                      {catalogSelectionCard &&
+                      formData.boardBrandId === catalogSelectionCard.brandId ? (
+                        <SellCatalogSelectionCard
+                          selection={catalogSelectionCard}
+                          onRemove={() => {
+                            setCatalogSelectionCard(null)
+                            setFormData((f) => ({
+                              ...f,
+                              boardBrandId: "",
+                              boardBrandModelId: "",
+                              boardIndexBrandSlug: "",
+                              boardIndexModelSlug: "",
+                              boardIndexLabel: "",
+                              boardLinkedBrandName: "",
+                            }))
+                          }}
+                        />
+                      ) : null}
+                      <div className="space-y-4">
+                          <div className="space-y-3">
+                          <div className="min-w-0 space-y-1.5">
+                            <Label htmlFor="listing-brand">
+                              Brand{" "}
+                              <SellRequiredMark complete={Boolean(formData.brand.trim())} />
+                            </Label>
                             <SurfboardTitleIndexInput
                               id="listing-brand"
-                              placeholder="e.g., Channel Islands"
+                              placeholder=""
                               value={formData.brand}
                               committedDirectoryBrandLabel={
                                 formData.boardBrandId
@@ -3611,46 +4115,26 @@ function SellPageContentInner({
                               }}
                               onRequestBrand={openListingCatalogRequestFromBrand}
                             />
-                            <div className="space-y-1.5">
-                              <button
-                                type="button"
-                                className="text-left text-xs text-primary hover:text-primary/90"
-                                onClick={openListingCatalogRequestFromBrand}
-                              >
-                                Brand not listed? Request we add it
-                              </button>
-                            </div>
                           </div>
 
-                          <div className="min-w-0 space-y-2">
-                            <SellBoardModelField
-                              directoryBrandId={formData.boardBrandId}
-                              linkedBrandDisplayName={
-                                formData.boardLinkedBrandName.trim() || formData.brand.trim()
-                              }
-                              modelName={formData.boardModelName}
-                              modelCatalogSlug={formData.boardIndexModelSlug}
-                              boardIndexBrandSlug={formData.boardIndexBrandSlug}
-                              onCatalogModelChange={(patch) =>
-                                setFormData((f) => ({
-                                  ...f,
-                                  ...patch,
-                                }))
-                              }
-                              disabled={editLoading}
-                              onRequestCatalogAdd={openListingCatalogRequestFromModel}
-                            />
-                            <div className="space-y-1.5">
-                              <button
-                                type="button"
-                                className="text-left text-xs text-primary hover:text-primary/90"
-                                onClick={openListingCatalogRequestFromModel}
-                              >
-                                Model not listed? Request we add it
-                              </button>
-                            </div>
+                          <SellBoardModelField
+                            directoryBrandId={formData.boardBrandId}
+                            linkedBrandDisplayName={
+                              formData.boardLinkedBrandName.trim() || formData.brand.trim()
+                            }
+                            modelName={formData.boardModelName}
+                            modelCatalogSlug={formData.boardIndexModelSlug}
+                            boardIndexBrandSlug={formData.boardIndexBrandSlug}
+                            onCatalogModelChange={(patch) =>
+                              setFormData((f) => ({
+                                ...f,
+                                ...patch,
+                              }))
+                            }
+                            disabled={editLoading}
+                            onRequestCatalogAdd={openListingCatalogRequestFromModel}
+                          />
                           </div>
-                        </div>
                         <RequestBrandModelDialog
                           open={listingCatalogRequestVariant !== null}
                           onOpenChange={(next) => {
@@ -3673,73 +4157,53 @@ function SellPageContentInner({
                             }))
                           }}
                         />
-                        <p className="text-xs text-muted-foreground">
-                          {
-                            "Brand and model are saved on your listing and power search and filters. Requesting a missing brand or model still goes through the separate request queue for our catalog team."
+
+                      <Separator className="bg-border" />
+
+                      <div className="space-y-1.5">
+                        <div className="flex items-end justify-between gap-2">
+                          <Label htmlFor="listing-title">
+                            Title{" "}
+                            <SellRequiredMark
+                              complete={
+                                Boolean(formData.title.trim()) &&
+                                resolvedTitlePreview.length <= LISTING_TITLE_MAX_LENGTH
+                              }
+                            />
+                          </Label>
+                          <span
+                            className={cn(
+                              "text-xs tabular-nums",
+                              resolvedTitlePreview.length > LISTING_TITLE_MAX_LENGTH
+                                ? "font-medium text-destructive"
+                                : "text-muted-foreground",
+                            )}
+                            aria-live="polite"
+                          >
+                            {resolvedTitlePreview.length}/{LISTING_TITLE_MAX_LENGTH}
+                          </span>
+                        </div>
+                        <Input
+                          id="listing-title"
+                          className={SELL_CONTROL_CLASS}
+                          placeholder={`e.g., 6'0 CI Rookie — light use, fins included`}
+                          value={formData.title}
+                          onChange={(e) =>
+                            setFormData((f) => ({ ...f, title: e.target.value }))
                           }
-                        </p>
+                          autoComplete="off"
+                          required
+                          maxLength={LISTING_TITLE_MAX_LENGTH}
+                        />
                       </div>
 
                       <Separator className="bg-border" />
 
-                      <div className="space-y-2">
-                        <Label>Board shape / category *</Label>
-                        <Select
-                          value={
-                            formData.category.trim()
-                              ? formData.category
-                              : SELL_BOARD_CATEGORY_UNSELECTED_VALUE
-                          }
-                          disabled={editLoading}
-                          onValueChange={(value) => {
-                            if (value === SELL_BOARD_CATEGORY_UNSELECTED_VALUE) {
-                              setFormData((prev) => ({
-                                ...prev,
-                                category: "",
-                                boardType: "",
-                              }))
-                              return
-                            }
-                            setFormData((prev) => ({
-                              ...prev,
-                              category: value,
-                              boardType: boardTypeFromCategoryId(value),
-                            }))
-                          }}
-                        >
-                          <SelectTrigger
-                            aria-label="Board shape or category"
-                            className={SELL_CONTROL_CLASS}
-                          >
-                            <SelectValue placeholder={SELL_BOARD_CATEGORY_UNSELECTED_LABEL} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {!sellCategoriesLoaded ? (
-                              <SelectItem value="__loading__" disabled>
-                                Loading categories…
-                              </SelectItem>
-                            ) : boardCategoryOptions.length === 0 ? (
-                              <SelectItem value="__empty__" disabled>
-                                No board categories found — add rows with board = true in public.categories.
-                              </SelectItem>
-                            ) : (
-                              <>
-                                <SelectItem value={SELL_BOARD_CATEGORY_UNSELECTED_VALUE}>
-                                  {SELL_BOARD_CATEGORY_UNSELECTED_LABEL}
-                                </SelectItem>
-                                {boardCategoryOptions.map((cat) => (
-                                  <SelectItem key={cat.value} value={cat.value}>
-                                    {cat.label}
-                                  </SelectItem>
-                                ))}
-                              </>
-                            )}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="max-w-md space-y-2">
-                        <Label htmlFor="sell-condition">Condition *</Label>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="sell-condition">
+                          Condition{" "}
+                          <SellRequiredMark complete={Boolean(formData.condition.trim())} />
+                        </Label>
                         <Select
                           value={formData.condition}
                           onValueChange={(value) => setFormData({ ...formData, condition: value })}
@@ -3756,243 +4220,384 @@ function SellPageContentInner({
                           </SelectContent>
                         </Select>
                       </div>
+                      </div>
+
+                      <Separator className="bg-border" />
+
+                      <div className="space-y-5">
+                      <div className="space-y-2">
+                        {!sellCategoriesLoaded ? (
+                          <>
+                            <Label className="text-sm font-medium text-foreground">
+                              Board shape / category{" "}
+                              <SellRequiredMark complete={Boolean(formData.category.trim())} />
+                            </Label>
+                            <p className="text-sm text-muted-foreground">Loading categories…</p>
+                          </>
+                        ) : boardCategoryOptions.length === 0 ? (
+                          <>
+                            <Label className="text-sm font-medium text-foreground">
+                              Board shape / category{" "}
+                              <SellRequiredMark complete={Boolean(formData.category.trim())} />
+                            </Label>
+                            <p className="text-sm text-muted-foreground">
+                              No board categories found — add rows with board = true in public.categories.
+                            </p>
+                          </>
+                        ) : (
+                          <SellFacetChipGroup
+                            label={
+                              <>
+                                Board shape / category{" "}
+                                <SellRequiredMark
+                                  complete={Boolean(formData.category.trim())}
+                                />
+                              </>
+                            }
+                            value={formData.category}
+                            options={boardCategoryOptions}
+                            onValueChange={(value) => {
+                              if (!value) {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  category: "",
+                                  boardType: "",
+                                }))
+                                return
+                              }
+                              setFormData((prev) => ({
+                                ...prev,
+                                category: value,
+                                boardType: boardTypeFromCategoryId(value),
+                              }))
+                            }}
+                            disabled={editLoading}
+                          />
+                        )}
+                      </div>
+                    </div>
                     </div>
                 </SellFormSection>
                 ) : null}
 
-                {flowStep === "details" ? (
+                {viewMode === "advanced" || flowStep === "photos" ? (
                 <SellFormSection
-                  sectionId="sell-section-details"
-                  title="Dimensions & details"
-                  description="Add measurements, fin setup, construction, and a short description."
-                  complete={sellSectionCompletion["sell-section-details"] === true}
+                  sectionId="sell-section-photos"
+                  title="Photos & Description"
+                  description="Add photos, board size, and a short description."
+                  complete={sellSectionCompletion["sell-section-photos"] === true}
                 >
-                    <div className="space-y-8">
-                      <div className="space-y-3">
-                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                        {/* Length */}
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">
-                            Length
-                            {deliveryFlags.shipping_available ? (
-                              <span className="text-destructive" aria-hidden="true">
-                                {" "}
-                                *
-                              </span>
-                            ) : null}
-                          </Label>
-                          <div className="flex items-center gap-1">
-                            <div
-                              className={cn(
-                                "flex min-h-11 min-w-0 max-w-[11rem] flex-1 items-center justify-center gap-0.5 rounded-md border border-foreground/20 bg-card px-1.5 shadow-sm ring-offset-background",
-                                "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-                              )}
-                            >
-                              <Input
-                                ref={boardDimLengthRef}
-                                type="text"
-                                inputMode="text"
-                                placeholder="6'2"
-                                value={formData.boardLength}
-                                onChange={(e) => {
-                                  const next = normalizeBoardLengthInput(e.target.value)
-                                  prevBoardLengthRef.current = next
-                                  setFormData((fd) => ({ ...fd, boardLength: next }))
-                                }}
-                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
-                                autoComplete="off"
-                                spellCheck={false}
-                                aria-label="Board length in feet and inches"
-                                aria-required={deliveryFlags.shipping_available || undefined}
-                                aria-describedby={
-                                  shouldShowLengthInchHint(formData.boardLength)
-                                    ? "sell-length-inches-hint-sr"
-                                    : undefined
-                                }
-                              />
-                              {shouldShowLengthInchHint(formData.boardLength) ? (
-                                <span id="sell-length-inches-hint-sr" className="sr-only">
-                                  {`Then type inches after the apostrophe (for example six foot two as 6'2).`}
-                                </span>
-                              ) : null}
-                            </div>
-                            {/* Reserve same width as &quot;in&quot; / &quot;L&quot; on other rows so the input matches on narrow screens */}
-                            <span
-                              className="inline-flex w-5 shrink-0 items-center justify-center text-xs tabular-nums text-transparent select-none"
-                              aria-hidden
-                            >
-                              in
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Width */}
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">
-                            Width
-                            {deliveryFlags.shipping_available ? (
-                              <span className="text-destructive" aria-hidden="true">
-                                {" "}
-                                *
-                              </span>
-                            ) : null}
-                          </Label>
-                          <div className="flex items-center gap-1">
-                            <div
-                              className={cn(
-                                "flex min-h-11 min-w-0 max-w-[11rem] flex-1 items-center justify-center rounded-md border border-foreground/20 bg-card px-1.5 shadow-sm ring-offset-background",
-                                "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-                              )}
-                            >
-                              <Input
-                                ref={boardDimWidthRef}
-                                type="text"
-                                inputMode="text"
-                                placeholder="19 1/4"
-                                value={formData.boardWidthInches}
-                                onChange={(e) => {
-                                  const next = normalizeTapeStyleInchesInput(e.target.value)
-                                  prevBoardWidthRef.current = next
-                                  setFormData((fd) => ({ ...fd, boardWidthInches: next }))
-                                }}
-                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
-                                autoComplete="off"
-                                spellCheck={false}
-                                aria-label="Board width in inches"
-                                aria-required={deliveryFlags.shipping_available || undefined}
-                              />
-                            </div>
-                            <span className="inline-flex w-5 shrink-0 items-center justify-center text-xs text-muted-foreground tabular-nums">
-                              in
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Thickness */}
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">
-                            Thickness
-                            {deliveryFlags.shipping_available ? (
-                              <span className="text-destructive" aria-hidden="true">
-                                {" "}
-                                *
-                              </span>
-                            ) : null}
-                          </Label>
-                          <div className="flex items-center gap-1">
-                            <div
-                              className={cn(
-                                "flex min-h-11 min-w-0 max-w-[11rem] flex-1 items-center justify-center rounded-md border border-foreground/20 bg-card px-1.5 shadow-sm ring-offset-background",
-                                "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-                              )}
-                            >
-                              <Input
-                                ref={boardDimThicknessRef}
-                                type="text"
-                                inputMode="text"
-                                placeholder="2 3/8"
-                                value={formData.boardThicknessInches}
-                                onChange={(e) => {
-                                  const next = normalizeTapeStyleInchesInput(e.target.value)
-                                  prevBoardThicknessRef.current = next
-                                  setFormData((fd) => ({ ...fd, boardThicknessInches: next }))
-                                }}
-                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
-                                autoComplete="off"
-                                spellCheck={false}
-                                aria-label="Board thickness in inches"
-                                aria-required={deliveryFlags.shipping_available || undefined}
-                              />
-                            </div>
-                            <span className="inline-flex w-5 shrink-0 items-center justify-center text-xs text-muted-foreground tabular-nums">
-                              in
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Volume */}
-                        <div className="space-y-1.5">
-                          <Label className="text-xs text-muted-foreground">Volume</Label>
-                          <div className="flex items-center gap-1">
-                            <div
-                              className={cn(
-                                "flex min-h-11 min-w-0 max-w-[11rem] flex-1 items-center justify-center rounded-md border border-foreground/20 bg-card px-1.5 shadow-sm ring-offset-background",
-                                "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-                              )}
-                            >
-                              <Input
-                                ref={boardDimVolumeRef}
-                                type="text"
-                                inputMode="text"
-                                placeholder="30.4"
-                                value={formData.boardVolumeL}
-                                onChange={(e) =>
-                                  setFormData((fd) => ({
-                                    ...fd,
-                                    boardVolumeL: normalizeVolumeLitersInput(e.target.value),
-                                  }))
-                                }
-                                className="min-w-0 flex-1 border-0 bg-transparent px-1 text-center text-base shadow-none tabular-nums placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0 md:text-sm"
-                                autoComplete="off"
-                                spellCheck={false}
-                                aria-label="Board volume in liters"
-                              />
-                            </div>
-                            <span className="inline-flex w-5 shrink-0 items-center justify-center text-xs text-muted-foreground tabular-nums">
-                              L
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <SellBoardFacetFields
-                        boardFins={formData.boardFins}
-                        boardFinSystem={formData.boardFinSystem}
-                        boardConstruction={formData.boardConstruction}
-                        onBoardFinsChange={(value) =>
-                          setFormData((fd) => ({ ...fd, boardFins: value }))
-                        }
-                        onBoardFinSystemChange={(value) =>
-                          setFormData((fd) => ({ ...fd, boardFinSystem: value }))
-                        }
-                        onBoardConstructionChange={(value) =>
-                          setFormData((fd) => ({ ...fd, boardConstruction: value }))
-                        }
-                        disabled={editLoading}
-                      />
-
-                      <p className="text-xs text-muted-foreground pt-0.5">
-                        {deliveryFlags.shipping_available
-                          ? "Length, width, and thickness are required when you offer shipping so we can size the pack correctly. Volume is optional."
-                          : "Dimensions are optional for local pickup. When you fill them in, surfers can compare your board more confidently—often that helps listings move faster."}
+                  <div className="space-y-8">
+                    <div className="space-y-1.5">
+                      <p className="text-[15px] font-semibold text-foreground">
+                        Upload photos of your board{" "}
+                        <span className="text-destructive" aria-hidden>
+                          *
+                        </span>
                       </p>
+                      <p className="text-[15px] leading-relaxed text-muted-foreground">
+                        Clear, well-lit shots sell faster. Square photos work best — the first
+                        becomes your cover.
+                      </p>
+                    </div>
+                    <SellListingPhotoGrid
+                      images={images}
+                      maxPhotos={12}
+                      fileInputId={listingPhotosInputId}
+                      photosFileDragActive={photosFileDragActive}
+                      onImageInputChange={handleImageChange}
+                      onDragEnter={handlePhotosFileDragEnter}
+                      onDragLeave={handlePhotosFileDragLeave}
+                      onDragOver={handlePhotosFileDragOver}
+                      onDrop={handlePhotosFileDrop}
+                      onDragEnd={handlePhotosDragEnd}
+                      onRemove={handlePhotoTileRemove}
+                      onRetry={handlePhotoTileRetry}
+                      onRotate180={handlePhotoTileRotate}
+                      photoDragSensors={photoDragSensors}
+                      hideHeader
+                      belowGrid={<SellPhotoExamplesBanner />}
+                    />
+
+                    <Separator className="bg-border" />
+
+                    <div className="space-y-5">
+                      {modelStockSizes.length > 0 ? (
+                        <SellBoardStockSizePicker
+                          modelName={formData.boardModelName.trim() || null}
+                          sizes={modelStockSizes}
+                          selectedId={selectedStockSizeId}
+                          mode={stockSizeMode}
+                          onSelectSize={handleSelectStockSize}
+                          onChooseCustom={handleChooseCustomStockSize}
+                          required={deliveryFlags.shipping_available}
+                          complete={
+                            isBoardLengthEntryComplete(formData.boardLength) &&
+                            isTapeStyleInchesEntryComplete(formData.boardWidthInches) &&
+                            isTapeStyleInchesEntryComplete(formData.boardThicknessInches)
+                          }
+                          disabled={editLoading}
+                        />
+                      ) : null}
+                      {modelStockSizes.length === 0 || stockSizeMode === "custom" ? (
+                        <SellBoardDimensionsPicker
+                          values={{
+                            boardLength: formData.boardLength,
+                            boardWidthInches: formData.boardWidthInches,
+                            boardThicknessInches: formData.boardThicknessInches,
+                            boardVolumeL: formData.boardVolumeL,
+                          }}
+                          onChange={(patch) =>
+                            setFormData((fd) => ({ ...fd, ...patch }))
+                          }
+                          dimensionsRequired={deliveryFlags.shipping_available}
+                          disabled={editLoading}
+                        />
+                      ) : null}
                     </div>
 
                     <Separator className="bg-border" />
 
-                    <div className="space-y-6">
-                <SellListingDescriptionField
-                  id="description"
-                  value={formData.description}
-                  onChange={(description) => setFormData({ ...formData, description })}
-                  placeholder="Describe your board…"
-                  maxLength={1000}
-                />
-                    </div>
-                    </div>
+                    <SellListingDescriptionField
+                      id="description"
+                      value={formData.description}
+                      onChange={(description) => setFormData({ ...formData, description })}
+                      placeholder="Describe your board…"
+                      maxLength={1000}
+                    />
+                  </div>
                 </SellFormSection>
                 ) : null}
 
-                {flowStep === "delivery" ? (
+                {viewMode === "advanced" || flowStep === "pricing" ? (
                 <SellFormSection
-                  sectionId="sell-section-delivery"
-                  title="Pickup & shipping"
-                  description="Pin where the board is and choose delivery options."
-                  complete={sellSectionCompletion["sell-section-delivery"] === true}
+                  sectionId="sell-section-pricing"
+                  title="Pricing"
+                  description="Set your list price and optional offer settings."
+                  complete={sellSectionCompletion["sell-section-pricing"] === true}
                 >
-                  <div className="space-y-8">
+                <div className="space-y-10">
+                  <SellPriceFields
+                    listingPrice={formData.price}
+                    onListingPriceChange={(value) =>
+                      setFormData({ ...formData, price: value })
+                    }
+                    sellerPurchasePrice={formData.sellerPurchasePrice}
+                    onSellerPurchasePriceChange={(value) =>
+                      setFormData({ ...formData, sellerPurchasePrice: value })
+                    }
+                    afterListingPrice={
+                      <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-sm">
+                        <div className="flex gap-3">
+                          <div
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-foreground text-background"
+                            aria-hidden
+                          >
+                            <Zap className="h-4 w-4" strokeWidth={2.5} />
+                          </div>
+                          <div className="min-w-0 space-y-1">
+                            <h3 className="text-sm font-semibold text-foreground">
+                              Sell your board even faster
+                            </h3>
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              Increase your chances of selling with price drops and offers.
+                            </p>
+                          </div>
+                        </div>
+
+                        <Separator className="my-5" />
+
+                        <div className="space-y-4">
+                          <div className="flex gap-4">
+                            <Switch
+                              id="sell-auto-price-drop"
+                              checked={formData.autoPriceDrop}
+                              onCheckedChange={(v) =>
+                                setFormData({ ...formData, autoPriceDrop: v === true })
+                              }
+                              className="mt-0.5 shrink-0 data-[state=checked]:bg-listingHeart"
+                              aria-label="Drop the price in 2 weeks if not sold"
+                            />
+                            <div className="min-w-0 space-y-1">
+                              <Label
+                                htmlFor="sell-auto-price-drop"
+                                className="text-sm font-medium text-foreground cursor-pointer"
+                              >
+                                Drop the price in 2 weeks
+                              </Label>
+                              <p className="text-sm text-muted-foreground leading-relaxed">
+                                If it hasn&apos;t sold, we can lower your list price after two weeks.
+                                You choose the floor — we won&apos;t go below that price.
+                              </p>
+                            </div>
+                          </div>
+                          {formData.autoPriceDrop ? (
+                            <div className="space-y-2 sm:pl-14">
+                              <Label htmlFor="sell-auto-price-drop-floor">
+                                Lowest price after 2 weeks ($){" "}
+                                <SellRequiredMark
+                                  complete={priceDropFloorComplete(
+                                    formData.autoPriceDropFloor,
+                                    formData.price,
+                                  )}
+                                />
+                              </Label>
+                              <Input
+                                id="sell-auto-price-drop-floor"
+                                type="number"
+                                inputMode="decimal"
+                                min="0.01"
+                                step="0.01"
+                                placeholder="0.00"
+                                value={formData.autoPriceDropFloor}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    autoPriceDropFloor: e.target.value,
+                                  })
+                                }
+                                className="h-11 border-foreground/20 bg-card shadow-sm placeholder:text-muted-foreground"
+                              />
+                              <p className="text-xs text-muted-foreground leading-relaxed">
+                                Must be less than your list price. When automation ships, this is the
+                                minimum your listing will show after the scheduled drop.
+                              </p>
+                            </div>
+                          ) : null}
+                        </div>
+
+                        <Separator className="my-5" />
+
+                        <div className="flex gap-4">
+                          <Switch
+                            id="sell-buyer-offers"
+                            checked={formData.buyerOffers}
+                            onCheckedChange={(v) =>
+                              setFormData({ ...formData, buyerOffers: v === true })
+                            }
+                            className="mt-0.5 shrink-0 data-[state=checked]:bg-listingHeart"
+                            aria-label="Allow buyers to make offers"
+                          />
+                          <div className="min-w-0 space-y-1">
+                            <Label
+                              htmlFor="sell-buyer-offers"
+                              className="text-sm font-medium text-foreground cursor-pointer"
+                            >
+                              Allow buyers to make offers
+                            </Label>
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              Lets you negotiate a final price with buyers before checkout.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  />
+
+                  <Separator className="bg-border" />
+
+                {publishPreview && !loading && (
+                  <div
+                    className={cn(
+                      "rounded-xl border p-4 flex gap-4 transition-colors",
+                      publishPreview.status === "publishing" && "border-primary/25 bg-primary/[0.04]",
+                      publishPreview.status === "live" && "border-emerald-500/30 bg-emerald-500/[0.06]",
+                      publishPreview.status === "error" && "border-destructive/40 bg-destructive/[0.06]",
+                    )}
+                  >
+                    <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted">
+                      <Image
+                        src={proxiedListingImageSrc(publishPreview.coverUrl) || "/placeholder.svg"}
+                        alt=""
+                        fill
+                        className="object-cover object-center"
+                        unoptimized
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold text-foreground truncate">{publishPreview.title}</p>
+                        {publishPreview.status === "publishing" && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Publishing...
+                          </span>
+                        )}
+                        {publishPreview.status === "live" && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Live ✓
+                          </span>
+                        )}
+                        {publishPreview.status === "error" && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-medium text-destructive">
+                            <AlertCircle className="h-3 w-3" />
+                            Failed
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        ${publishPreview.price}
+                        {publishPreview.detailHref && publishPreview.status === "live" && (
+                          <>
+                            {" · "}
+                            <Link
+                              href={publishPreview.detailHref}
+                              className="text-primary underline-offset-4 hover:underline"
+                            >
+                              View listing
+                            </Link>
+                          </>
+                        )}
+                      </p>
+                      {publishPreview.status === "error" && (
+                        <div className="pt-2 space-y-2">
+                          <p className="text-xs text-muted-foreground">
+                            {publishPreview.failedStepLabel ? (
+                              <>
+                                <span className="font-medium text-foreground">
+                                  {publishPreview.failedStepLabel}
+                                </span>
+                                {" — "}
+                              </>
+                            ) : null}
+                            {publishPreview.errorMessage}
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5"
+                            onClick={() => formRef.current?.requestSubmit()}
+                          >
+                            <RefreshCw className="h-3.5 w-3.5" />
+                            Retry
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                </div>
+                </SellFormSection>
+                ) : null}
+
+                {viewMode === "advanced" || flowStep === "shipping" ? (
+                <SellFormSection
+                  sectionId="sell-section-shipping"
+                  title="Shipping"
+                  description="Pin where the board is, then choose pickup or shipping."
+                  complete={sellSectionCompletion["sell-section-shipping"] === true}
+                >
+                  <div className="space-y-10">
                     <div className="space-y-6">
                       <LocationPicker
+                        key={
+                          sellFormHasCommittedMapPins(formData)
+                            ? `loc-${formData.locationLat.toFixed(5)}-${formData.locationLng.toFixed(5)}`
+                            : "loc-empty"
+                        }
                         onLocationSelect={(loc) => {
                           setPickupShippingLocationUserCommits((c) => c + 1)
                           setFormData((f) => ({
@@ -4003,6 +4608,23 @@ function SellPageContentInner({
                             locationState: loc.state,
                             locationDisplay: loc.displayName,
                           }))
+                          const saved = rememberSellSavedListingLocation({
+                            city: loc.city,
+                            state: loc.state,
+                            lat: loc.lat,
+                            lng: loc.lng,
+                            displayName: loc.displayName,
+                          })
+                          setSavedListingLocations(saved)
+                          if (!getImpersonation() && loc.city.trim()) {
+                            void saveDefaultListingLocationAction({
+                              city: loc.city.trim(),
+                              state: loc.state.trim() || undefined,
+                              lat: loc.lat,
+                              lng: loc.lng,
+                              display: loc.displayName.trim() || undefined,
+                            })
+                          }
                         }}
                         onLocationClear={() => {
                           setPickupShippingLocationUserCommits(0)
@@ -4015,6 +4637,8 @@ function SellPageContentInner({
                             locationDisplay: "",
                           }))
                         }}
+                        prefillSuggested={locationPrefillSuggested}
+                        savedLocations={savedListingLocations}
                         initialLat={formData.locationLat || undefined}
                         initialLng={formData.locationLng || undefined}
                         initialCity={formData.locationCity}
@@ -4022,20 +4646,38 @@ function SellPageContentInner({
                         initialDisplay={formData.locationDisplay}
                       />
 
-                      <div className="rounded-xl border border-border bg-card p-5 sm:p-6 space-y-4 shadow-sm">
-                        <div>
-                          <h3 className="text-sm font-semibold text-foreground">
-                            Delivery options{" "}
-                            <span className="text-destructive" aria-hidden="true">
-                              *
-                            </span>
-                          </h3>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            You can select both options.
-                          </p>
+                      <div className="space-y-3 rounded-xl border border-border bg-card p-3.5 shadow-sm sm:space-y-5 sm:p-6">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div className="min-w-0 space-y-0.5 sm:space-y-1">
+                            <h3 className="text-sm font-semibold text-foreground sm:text-base">
+                              How will buyers get this board?
+                            </h3>
+                            <p className="text-xs text-muted-foreground sm:text-sm">
+                              You can offer shipping, local pickup, or both.
+                            </p>
+                          </div>
+                          <SellRequiredMark
+                            complete={
+                              deliveryFlags.local_pickup || deliveryFlags.shipping_available
+                            }
+                          />
                         </div>
-                        <div className="space-y-4">
-                          <div className="flex items-start gap-3">
+                        <div className="space-y-2 sm:space-y-3">
+                          <div
+                            className={cn(
+                              "rounded-lg border p-3 transition-colors sm:rounded-xl sm:p-5",
+                              deliveryFlags.shipping_available
+                                ? "border-foreground bg-background shadow-sm"
+                                : "border-border",
+                              formData.boardLength.trim() &&
+                                !sellReswellShipping.shippingSupported &&
+                                actorIsAdmin === false &&
+                                !impersonation
+                                ? "opacity-70"
+                                : null,
+                            )}
+                          >
+                          <div className="flex items-start gap-2.5 sm:gap-3">
                             <Checkbox
                               id="sell-delivery-shipping"
                               checked={deliveryFlags.shipping_available}
@@ -4112,12 +4754,12 @@ function SellPageContentInner({
                               }}
                               className="mt-0.5"
                             />
-                            <div className="min-w-0 flex-1 space-y-3">
+                            <div className="min-w-0 flex-1 space-y-2 sm:space-y-3">
                               <div className="space-y-1">
                                 <Label
                                   htmlFor="sell-delivery-shipping"
                                   className={cn(
-                                    "text-sm font-medium leading-snug flex flex-wrap items-center gap-2",
+                                    "flex flex-wrap items-center gap-1.5 text-xs font-semibold leading-snug sm:gap-2 sm:text-sm",
                                     formData.boardLength.trim() &&
                                       !sellReswellShipping.shippingSupported &&
                                       actorIsAdmin === false &&
@@ -4127,31 +4769,41 @@ function SellPageContentInner({
                                   )}
                                 >
                                   {actorIsAdmin === true || Boolean(impersonation) ? (
-                                    <span>Offer shipping to buyers</span>
+                                    <>
+                                      <span>Offer shipping to buyers</span>
+                                      <Badge
+                                        variant="default"
+                                        className="h-auto border-0 bg-listingHeart px-1.5 py-0 text-[9px] font-bold uppercase tracking-wide text-white hover:bg-[#2a4170] sm:px-2 sm:py-0.5 sm:text-[10px]"
+                                      >
+                                        Recommended
+                                      </Badge>
+                                    </>
                                   ) : (
-                                    <span>
-                                      Reswell shipping{" "}
-                                      <span className="font-bold uppercase tracking-wide text-foreground">
-                                        (BUYER PAYS SHIPPING)
-                                      </span>
-                                    </span>
+                                    <>
+                                      <span>Have Reswell calculate the shipping cost for buyers</span>
+                                      <Badge
+                                        variant="default"
+                                        className="h-auto border-0 bg-listingHeart px-1.5 py-0 text-[9px] font-bold uppercase tracking-wide text-white hover:bg-[#2a4170] sm:px-2 sm:py-0.5 sm:text-[10px]"
+                                      >
+                                        Recommended
+                                      </Badge>
+                                    </>
                                   )}
-                                  {!(actorIsAdmin === true || Boolean(impersonation)) ? (
-                                    <Badge
-                                      variant="default"
-                                      className="border-0 bg-listingHeart text-white font-bold uppercase tracking-wide text-[10px] px-2 py-0.5 h-auto hover:bg-[#2a4170]"
-                                    >
-                                      Recommended to sell your board faster
-                                    </Badge>
-                                  ) : null}
                                 </Label>
-                                {deliveryFlags.shipping_available &&
-                                !(actorIsAdmin === true || Boolean(impersonation)) ? (
-                                  <p className="text-sm text-muted-foreground leading-relaxed">
-                                    Buyer pays for shipping at checkout. We handle the calculations
-                                    for you so you don&apos;t have to worry about shipping cost —
-                                    we&apos;ll email you the label after the sale.
-                                  </p>
+                                {!(actorIsAdmin === true || Boolean(impersonation)) ? (
+                                  <SmoothCollapse open={deliveryFlags.shipping_available}>
+                                    <div className="pt-1.5 sm:pt-2">
+                                      <SellReswellCalculatedShippingDetails
+                                        originCity={formData.locationCity}
+                                        originState={formData.locationState}
+                                        packageLengthIn={formData.reswellPackageLengthIn}
+                                        packageWidthIn={formData.reswellPackageWidthIn}
+                                        packageHeightIn={formData.reswellPackageHeightIn}
+                                        packageWeightLb={formData.reswellPackageWeightLb}
+                                        packageWeightOz={formData.reswellPackageWeightOz}
+                                      />
+                                    </div>
+                                  </SmoothCollapse>
                                 ) : null}
                                 {formData.boardLength.trim() &&
                                 !sellReswellShipping.shippingSupported &&
@@ -4162,18 +4814,23 @@ function SellPageContentInner({
                                     exceeds size limits. Use local pickup.
                                   </p>
                                 ) : null}
-                                {deliveryFlags.shipping_available &&
-                                (actorIsAdmin === true || Boolean(impersonation)) ? (
-                                  <div className="space-y-2 pt-1">
-                                    <p className="text-sm text-muted-foreground leading-relaxed">
-                                      Choose how shipping is priced. Reswell uses UPS labels; free and
-                                      flat-rate are separate — you fulfill with any carrier.
-                                    </p>
+                                {actorIsAdmin === true || Boolean(impersonation) ? (
+                                  <SmoothCollapse open={deliveryFlags.shipping_available}>
+                                  <div className="space-y-4 pt-2">
                                     <SellShippingCostModeRadios
                                       idPrefix="sell-surfboard"
                                       value={formData.boardShippingCostMode}
                                       // Admins can always pick Reswell and enter a custom carton.
                                       reswellAvailable
+                                      reswellDetails={{
+                                        originCity: formData.locationCity,
+                                        originState: formData.locationState,
+                                        packageLengthIn: formData.reswellPackageLengthIn,
+                                        packageWidthIn: formData.reswellPackageWidthIn,
+                                        packageHeightIn: formData.reswellPackageHeightIn,
+                                        packageWeightLb: formData.reswellPackageWeightLb,
+                                        packageWeightOz: formData.reswellPackageWeightOz,
+                                      }}
                                       onChange={(mode) => {
                                         const clearReswellPack =
                                           mode === "free" || mode === "flat"
@@ -4207,9 +4864,11 @@ function SellPageContentInner({
                                             className="text-sm font-semibold text-foreground"
                                           >
                                             Flat shipping rate{" "}
-                                            <span className="text-destructive" aria-hidden>
-                                              *
-                                            </span>
+                                            <SellRequiredMark
+                                              complete={flatShippingRateComplete(
+                                                formData.boardShippingPrice,
+                                              )}
+                                            />
                                           </Label>
                                           <div className="relative max-w-md">
                                             <span
@@ -4221,6 +4880,7 @@ function SellPageContentInner({
                                             <Input
                                               id="sell-surfboard-shipping-price"
                                               type="number"
+                                              inputMode="decimal"
                                               min="0"
                                               step="0.01"
                                               placeholder="0.00"
@@ -4237,7 +4897,9 @@ function SellPageContentInner({
                                         </div>
                                       }
                                     />
-                                    {formData.boardShippingCostMode === "reswell" ? (
+                                    <SmoothCollapse
+                                      open={formData.boardShippingCostMode === "reswell"}
+                                    >
                                       <div className="space-y-3 rounded-lg border border-border bg-background p-4 sm:p-5">
                                         <div className="space-y-1">
                                           <p className="text-sm font-semibold text-foreground">
@@ -4380,13 +5042,22 @@ function SellPageContentInner({
                                           />
                                         )}
                                       </div>
-                                    ) : null}
+                                    </SmoothCollapse>
                                   </div>
+                                  </SmoothCollapse>
                                 ) : null}
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-start gap-3">
+                          </div>
+                          <div
+                            className={cn(
+                              "flex items-start gap-2.5 rounded-lg border p-3 sm:gap-3 sm:rounded-xl sm:p-5",
+                              deliveryFlags.local_pickup
+                                ? "border-foreground bg-background shadow-sm"
+                                : "border-border",
+                            )}
+                          >
                             <Checkbox
                               id="sell-delivery-pickup"
                               checked={deliveryFlags.local_pickup}
@@ -4417,291 +5088,56 @@ function SellPageContentInner({
                             />
                             <Label
                               htmlFor="sell-delivery-pickup"
-                              className="text-sm font-medium leading-snug cursor-pointer pt-0.5"
+                              className="cursor-pointer pt-0.5 text-xs font-semibold leading-snug sm:text-sm"
                             >
                               Local pickup
                             </Label>
                           </div>
                         </div>
-                      </div>
-
-                    </div>
-                  </div>
-                </SellFormSection>
-                ) : null}
-
-                {flowStep === "publish" ? (
-                <SellFormSection
-                  sectionId="sell-section-publish"
-                  title={editId ? "Title, photos & price" : "Title, photos & publish"}
-                  description="Add a title and photos, set your price, then publish."
-                  complete={sellSectionCompletion["sell-section-publish"] === true}
-                >
-                <div className="space-y-8">
-                  <div className="space-y-2">
-                    <div className="flex items-end justify-between gap-2">
-                      <Label htmlFor="listing-title">Title *</Label>
-                      <span
-                        className={cn(
-                          "text-xs tabular-nums",
-                          resolvedTitlePreview.length > LISTING_TITLE_MAX_LENGTH
-                            ? "font-medium text-destructive"
-                            : "text-muted-foreground",
-                        )}
-                        aria-live="polite"
-                      >
-                        {resolvedTitlePreview.length}/{LISTING_TITLE_MAX_LENGTH}
-                      </span>
-                    </div>
-                    <Input
-                      id="listing-title"
-                      className={SELL_CONTROL_CLASS}
-                      placeholder={`e.g., 6'0 CI Rookie — light use, fins included`}
-                      value={formData.title}
-                      onChange={(e) =>
-                        setFormData((f) => ({ ...f, title: e.target.value }))
-                      }
-                      autoComplete="off"
-                      required
-                      maxLength={LISTING_TITLE_MAX_LENGTH}
-                    />
-                  </div>
-
-                  <Separator className="bg-border" />
-
-                  <SellPriceFields
-                    listingPrice={formData.price}
-                    onListingPriceChange={(value) =>
-                      setFormData({ ...formData, price: value })
-                    }
-                    sellerPurchasePrice={formData.sellerPurchasePrice}
-                    onSellerPurchasePriceChange={(value) =>
-                      setFormData({ ...formData, sellerPurchasePrice: value })
-                    }
-                    afterListingPrice={
-                      <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-sm">
-                        <div className="flex gap-3">
-                          <div
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-foreground text-background"
-                            aria-hidden
-                          >
-                            <Zap className="h-4 w-4" strokeWidth={2.5} />
-                          </div>
-                          <div className="min-w-0 space-y-1">
-                            <h3 className="text-sm font-semibold text-foreground">
-                              Sell your board even faster
-                            </h3>
-                            <p className="text-sm text-muted-foreground leading-relaxed">
-                              Increase your chances of selling with price drops and offers.
-                            </p>
-                          </div>
-                        </div>
-
-                        <Separator className="my-5" />
-
-                        <div className="space-y-4">
-                          <div className="flex gap-4">
-                            <Switch
-                              id="sell-auto-price-drop"
-                              checked={formData.autoPriceDrop}
-                              onCheckedChange={(v) =>
-                                setFormData({ ...formData, autoPriceDrop: v === true })
-                              }
-                              className="mt-0.5 shrink-0 data-[state=checked]:bg-listingHeart"
-                              aria-label="Drop the price in 2 weeks if not sold"
-                            />
-                            <div className="min-w-0 space-y-1">
-                              <Label
-                                htmlFor="sell-auto-price-drop"
-                                className="text-sm font-medium text-foreground cursor-pointer"
+                        {deliveryFlags.shipping_available && shippingSetupIncomplete ? (
+                          <div className="rounded-lg border border-dashed border-border bg-muted/40 px-3 py-2.5 sm:px-4 sm:py-3">
+                            <p className="text-xs leading-snug text-muted-foreground sm:text-sm sm:leading-relaxed">
+                              Not ready to set up shipping?{" "}
+                              <button
+                                type="button"
+                                onClick={handleSkipShippingForNow}
+                                className="font-medium text-foreground underline underline-offset-2 hover:text-listingHeart"
                               >
-                                Drop the price in 2 weeks
-                              </Label>
-                              <p className="text-sm text-muted-foreground leading-relaxed">
-                                If it hasn&apos;t sold, we can lower your list price after two weeks.
-                                You choose the floor — we won&apos;t go below that price.
-                              </p>
-                            </div>
-                          </div>
-                          {formData.autoPriceDrop ? (
-                            <div className="space-y-2 sm:pl-14">
-                              <Label htmlFor="sell-auto-price-drop-floor">
-                                Lowest price after 2 weeks ($) *
-                              </Label>
-                              <Input
-                                id="sell-auto-price-drop-floor"
-                                type="number"
-                                min="0.01"
-                                step="0.01"
-                                placeholder="0.00"
-                                value={formData.autoPriceDropFloor}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    autoPriceDropFloor: e.target.value,
-                                  })
-                                }
-                                className="h-11 border-foreground/20 bg-card shadow-sm placeholder:text-muted-foreground"
-                              />
-                              <p className="text-xs text-muted-foreground leading-relaxed">
-                                Must be less than your list price. When automation ships, this is the
-                                minimum your listing will show after the scheduled drop.
-                              </p>
-                            </div>
-                          ) : null}
-                        </div>
-
-                        <Separator className="my-5" />
-
-                        <div className="flex gap-4">
-                          <Switch
-                            id="sell-buyer-offers"
-                            checked={formData.buyerOffers}
-                            onCheckedChange={(v) =>
-                              setFormData({ ...formData, buyerOffers: v === true })
-                            }
-                            className="mt-0.5 shrink-0 data-[state=checked]:bg-listingHeart"
-                            aria-label="Allow buyers to make offers"
-                          />
-                          <div className="min-w-0 space-y-1">
-                            <Label
-                              htmlFor="sell-buyer-offers"
-                              className="text-sm font-medium text-foreground cursor-pointer"
-                            >
-                              Allow buyers to make offers
-                            </Label>
-                            <p className="text-sm text-muted-foreground leading-relaxed">
-                              Lets you negotiate a final price with buyers before checkout.
+                                Skip it for now
+                              </button>{" "}
+                              and publish with local pickup only — you can add shipping anytime by
+                              editing your listing.
                             </p>
                           </div>
-                        </div>
+                        ) : null}
                       </div>
-                    }
-                  />
 
-                  <Separator className="bg-border" />
-
-                  <SellListingPhotoGrid
-                    images={images}
-                    maxPhotos={12}
-                    fileInputId={listingPhotosInputId}
-                    photosFileDragActive={photosFileDragActive}
-                    onImageInputChange={handleImageChange}
-                    onDragEnter={handlePhotosFileDragEnter}
-                    onDragLeave={handlePhotosFileDragLeave}
-                    onDragOver={handlePhotosFileDragOver}
-                    onDrop={handlePhotosFileDrop}
-                    onDragEnd={handlePhotosDragEnd}
-                    onRemove={handlePhotoTileRemove}
-                    onRetry={handlePhotoTileRetry}
-                    onRotate180={handlePhotoTileRotate}
-                    photoDragSensors={photoDragSensors}
-                    photoDescription="Drop a few clear shots — deck, bottom, and any dings. Drag to reorder; the first is your cover."
-                  />
-
-                  <Separator className="bg-border" />
-
-                {publishPreview && !loading && (
-                  <div
-                    className={cn(
-                      "rounded-xl border p-4 flex gap-4 transition-colors",
-                      publishPreview.status === "publishing" && "border-primary/25 bg-primary/[0.04]",
-                      publishPreview.status === "live" && "border-emerald-500/30 bg-emerald-500/[0.06]",
-                      publishPreview.status === "error" && "border-destructive/40 bg-destructive/[0.06]",
-                    )}
-                  >
-                    <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted">
-                      <Image
-                        src={proxiedListingImageSrc(publishPreview.coverUrl) || "/placeholder.svg"}
-                        alt=""
-                        fill
-                        className="object-cover object-center"
-                        unoptimized
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold text-foreground truncate">{publishPreview.title}</p>
-                        {publishPreview.status === "publishing" && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Publishing...
-                          </span>
-                        )}
-                        {publishPreview.status === "live" && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
-                            <CheckCircle2 className="h-3 w-3" />
-                            Live ✓
-                          </span>
-                        )}
-                        {publishPreview.status === "error" && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-medium text-destructive">
-                            <AlertCircle className="h-3 w-3" />
-                            Failed
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        ${publishPreview.price}
-                        {publishPreview.detailHref && publishPreview.status === "live" && (
-                          <>
-                            {" · "}
-                            <Link
-                              href={publishPreview.detailHref}
-                              className="text-primary underline-offset-4 hover:underline"
-                            >
-                              View listing
-                            </Link>
-                          </>
-                        )}
-                      </p>
-                      {publishPreview.status === "error" && (
-                        <div className="pt-2 space-y-2">
-                          <p className="text-xs text-muted-foreground">
-                            {publishPreview.failedStepLabel ? (
-                              <>
-                                <span className="font-medium text-foreground">
-                                  {publishPreview.failedStepLabel}
-                                </span>
-                                {" — "}
-                              </>
-                            ) : null}
-                            {publishPreview.errorMessage}
-                          </p>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="gap-1.5"
-                            onClick={() => formRef.current?.requestSubmit()}
-                          >
-                            <RefreshCw className="h-3.5 w-3.5" />
-                            Retry
-                          </Button>
-                        </div>
-                      )}
                     </div>
                   </div>
-                )}
 
                 {!loading ? (
                   <Button
                     type="submit"
                     size="lg"
-                    className="w-full relative transition-shadow"
+                    className={cn(
+                      "w-full relative transition-shadow",
+                      SELL_PRIMARY_BUTTON_CLASS,
+                    )}
                   >
                     {editId ? (listingIsDraft ? "Publish listing" : "Save changes") : "Create Listing"}
                   </Button>
                 ) : null}
-                </div>
                 </SellFormSection>
                 ) : null}
 
-                <BoardSellWizardFooter
-                  showBack={flowStep !== "basics"}
-                  showNext={flowStep !== "publish"}
+                <BoardSellViewToolbar
+                  viewMode={viewMode}
+                  onViewModeChange={setViewMode}
+                  searchAgainHref={editId ? null : "/sell"}
+                  showBack={viewMode === "guided" && flowStep !== "product"}
+                  showContinue={viewMode === "guided" && flowStep !== "shipping"}
                   onBack={goToPrevSellStep}
-                  onNext={goToNextSellStep}
+                  onContinue={goToNextSellStep}
                   disabled={loading || editLoading}
                 />
                 </form>

@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Label } from "@/components/ui/label"
+import { SellRequiredMark } from "@/components/features/sell/sell-required-mark"
 import { cn } from "@/lib/utils"
 import {
   getBrandModelsCatalogForSellForm,
@@ -115,27 +116,18 @@ export function SellBoardModelField({
 
   const catalogReady = !loading && !loadError
 
-  const modelPlaceholder = (() => {
-    if (loading) return "e.g., Step Deck Noserider — type the model as you know it"
-    if (directoryId) {
-      return modelsForPicker.length > 0
-        ? brandForLabel
-          ? `Search ${brandForLabel} models`
-          : "Search models for this brand"
-        : brandForLabel
-          ? `No ${brandForLabel} models in catalog yet — type yours`
-          : "No models for this brand in catalog yet — type yours"
-    }
-    if (models.length > 0) {
-      return "Search models — pick a brand above to narrow the list"
-    }
-    return "e.g., Step Deck Noserider — type the model as you know it"
-  })()
-
   return (
-    <div className="space-y-2">
+    <div className="min-w-0 space-y-1.5">
       <div className="flex items-end justify-between gap-2">
-        <Label htmlFor="listing-board-model-select">Model</Label>
+        <Label htmlFor="listing-board-model-select">
+          Model{" "}
+          <SellRequiredMark
+            complete={
+              Boolean(modelName.trim()) &&
+              modelName.length <= LISTING_BOARD_MODEL_MAX_LENGTH
+            }
+          />
+        </Label>
         <span
           className={cn(
             "text-xs tabular-nums",
@@ -153,7 +145,7 @@ export function SellBoardModelField({
 
       <SurfboardModelCatalogInput
         id="listing-board-model-select"
-        placeholder={modelPlaceholder}
+        placeholder=""
         disabled={disabled}
         catalogReady={catalogReady}
         value={modelName}

@@ -1,5 +1,8 @@
 import { Suspense } from "react"
-import { SellTypeChooser } from "@/components/features/sell/sell-type-chooser"
+import { redirect } from "next/navigation"
+import { SellStart } from "@/components/features/sell/sell-start"
+import type { SellTrendingBrand } from "@/components/features/sell/sell-trending-brands"
+import { getCachedHomeStableCatalog } from "@/lib/cache/home-public-catalog"
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import { createClient } from "@/lib/supabase/server"
 import SellFlowShell from "./sell-flow-client"
@@ -28,15 +31,21 @@ export default async function SellPage({
     edit?: string | string[]
     new?: string | string[]
     type?: string | string[]
+    choose?: string | string[]
   }>
 }) {
   const qs = await searchParams
   const editId = parseEditListingId(qs.edit)
   const type = firstParam(qs.type)
+  const chooseSurfboard = firstParam(qs.choose) === "surfboard"
+
+  // Legacy Quick vs Full entry — send straight to the full wizard.
+  if (chooseSurfboard && !editId && type !== "surfboard") {
+    redirect("/sell/boards?new=1")
+  }
 
   // Editing an existing listing or explicitly choosing surfboards goes straight
   // to the surfboard flow (/sell/boards is the canonical boards sell URL).
-  // A fresh /sell visit shows the product-type chooser.
   // Suspense fallback is null: the client form owns its own editLoading skeleton,
   // and a route-level skeleton was flashing on every `?edit=` draft switch.
   if (editId || type === "surfboard") {
@@ -48,10 +57,23 @@ export default async function SellPage({
   }
 
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const [{ data: userData }, homeCatalog] = await Promise.all([
+    supabase.auth.getUser(),
+    // Same cached curation as the homepage "Trending brands" strip.
+    getCachedHomeStableCatalog(),
+  ])
+  const user = userData.user
   const isAdmin = user ? await fetchProfileIsAdmin(supabase, user.id) : false
 
-  return <SellTypeChooser isAdmin={isAdmin} />
+  const trendingBrands: SellTrendingBrand[] = homeCatalog.homeTrendingBrandRows.map(
+    (row) => ({
+      id: row.brand.id,
+      slug: row.brand.slug,
+      name: row.brand.name,
+      logoUrl: row.brand.logo_url,
+    }),
+  )
+
+  // `/sell` and `/sell?new=1` land on catalog search (+ compact type links).
+  return <SellStart isAdmin={isAdmin} trendingBrands={trendingBrands} />
 }

@@ -1,6 +1,9 @@
 /**
  * Shared contrast tokens for /sell listing forms.
  * Palette-only: lightgray ground, white cards, listingHeart for progress/complete.
+ *
+ * Scale bias: roomy Reverb-like density — taller controls, airy section titles,
+ * generous card padding. Avoid cramming fields into tight stacks.
  */
 
 /**
@@ -10,28 +13,38 @@
  */
 export const SELL_PAGE_GROUND_CLASS = "bg-muted"
 
-/** Section card plane: white surface, hairline edge, whisper of elevation, soft corners. */
-export const SELL_SECTION_CARD_CLASS =
-  "rounded-xl border-border bg-white shadow-surface"
+/**
+ * Primary form column width: full-bleed on small screens, wider on desktop so
+ * Mac / large viewports use more of the page (same width on every guided step).
+ */
+export const SELL_FORM_COLUMN_CLASS = "w-full max-w-3xl lg:max-w-4xl"
 
-/** Blurb under section titles — secondary but readable (no ultra-low opacity). */
+/** Section card plane: white surface, soft edge, whisper of elevation. */
+export const SELL_SECTION_CARD_CLASS =
+  "w-full rounded-2xl border-border bg-white shadow-surface"
+
+/** Blurb under section titles — secondary but readable. */
 export const SELL_SECTION_DESCRIPTION_CLASS =
-  "mt-1 text-sm leading-relaxed text-muted-foreground lg:mt-1.5 lg:text-base"
+  "mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-[17px]"
 
 /** Field labels — full-contrast and readable so each question is instantly scannable. */
-export const SELL_FIELD_LABEL_CLASS = "text-sm font-medium text-foreground"
+export const SELL_FIELD_LABEL_CLASS = "text-[15px] font-medium text-foreground"
 
 /** Helper / hint copy under fields — quiet, with relaxed leading. */
 export const SELL_FIELD_HINT_CLASS = "leading-relaxed text-muted-foreground"
 
 /** Taller, softer inputs & selects; brand-blue focus so attention lands where you type. */
 export const SELL_CONTROL_CLASS =
-  "h-12 rounded-lg border-input bg-card shadow-sm placeholder:text-muted-foreground focus-visible:ring-listingHeart focus-visible:border-listingHeart/50"
+  "h-14 rounded-xl border-input bg-card text-base shadow-sm placeholder:text-muted-foreground focus-visible:ring-listingHeart focus-visible:border-listingHeart/50"
 
 /** Textareas on sell forms. */
 export const SELL_TEXTAREA_CLASS =
-  "min-h-[7rem] rounded-lg border-input bg-card shadow-sm placeholder:text-muted-foreground focus-visible:ring-listingHeart focus-visible:border-listingHeart/50"
+  "min-h-[9rem] rounded-xl border-input bg-card text-base shadow-sm placeholder:text-muted-foreground focus-visible:ring-listingHeart focus-visible:border-listingHeart/50"
+
+/** Primary action (Next / Publish) — brand blue so the action color matches the progress color. */
+export const SELL_PRIMARY_BUTTON_CLASS =
+  "h-12 bg-listingHeart px-6 text-base text-white hover:bg-listingHeart/90 focus-visible:ring-listingHeart"
 
 /** Complete / ready pill — uses brand `listingHeart`, not generic green. */
 export const SELL_COMPLETE_BADGE_CLASS =
-  "inline-flex items-center gap-1.5 rounded-full bg-listingHeart/10 px-2.5 py-1 text-xs font-medium text-listingHeart ring-1 ring-inset ring-listingHeart/25"
+  "inline-flex items-center gap-1.5 rounded-full bg-listingHeart/10 px-3 py-1.5 text-xs font-medium text-listingHeart ring-1 ring-inset ring-listingHeart/25"

@@ -17,7 +17,16 @@ const DB_VERSION = 3
 
 export const SELL_LISTING_DRAFT_VERSION = 7
 
-export type SellListingDraftListingType = "board" | "fins"
+export type SellListingDraftListingType =
+  | "board"
+  | "fins"
+  | "wetsuits"
+  | "magazines"
+  | "apparel"
+  | "boardbags"
+  | "surfpacks"
+  | "leashes"
+  | "accessories"
 
 export type SellListingDraftFormSnapshot = Record<string, unknown>
 
@@ -75,6 +84,15 @@ function sellDraftFormLooksFilledForFins(formData: SellListingDraftFormSnapshot)
   return false
 }
 
+/** Accessory-style sell forms (wetsuits, apparel, bags, …) share a flat title/brand/model shape. */
+function sellDraftFormLooksFilledForAccessory(formData: SellListingDraftFormSnapshot): boolean {
+  if (str(formData, "title") || str(formData, "description")) return true
+  if (str(formData, "brand")) return true
+  if (str(formData, "model")) return true
+  if (str(formData, "price")) return true
+  return false
+}
+
 /**
  * True when the user entered at least one “substantive” listing field worth persisting drafts.
  */
@@ -82,9 +100,9 @@ export function sellDraftFormLooksFilled(
   listingType: SellListingDraftListingType,
   formData: SellListingDraftFormSnapshot,
 ): boolean {
-  return listingType === "fins"
-    ? sellDraftFormLooksFilledForFins(formData)
-    : sellDraftFormLooksFilledForBoard(formData)
+  if (listingType === "board") return sellDraftFormLooksFilledForBoard(formData)
+  if (listingType === "fins") return sellDraftFormLooksFilledForFins(formData)
+  return sellDraftFormLooksFilledForAccessory(formData)
 }
 
 function openDb(): Promise<IDBDatabase> {

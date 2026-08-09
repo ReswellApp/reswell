@@ -33,7 +33,8 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
     body.name === undefined &&
     body.description === undefined &&
     body.brand_id === undefined &&
-    body.image_url === undefined
+    body.image_url === undefined &&
+    body.board_category_slug === undefined
   ) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 })
   }
@@ -43,6 +44,7 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
     description: body.description,
     brand_id: body.brand_id,
     image_url: body.image_url,
+    board_category_slug: body.board_category_slug,
   })
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status ?? 500 })

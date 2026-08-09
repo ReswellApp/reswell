@@ -480,7 +480,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     forceReleaseBodyScrollLock()
   }, [])
 
-  const { openLogin, openSignUp } = useAuthModal()
+  const { openLogin } = useAuthModal()
   const isMobileViewport = useIsMobile()
 
   const resolvedDisplayName = useMemo(
@@ -1101,7 +1101,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                         className="h-10 w-10 shrink-0 text-foreground hover:bg-black/5"
                       >
                         <Link
-                          href="/sell?new=1"
+                          href="/sell?new=1&from=nav"
                           aria-label="Create listing"
                         >
                           <Plus className="h-[22px] w-[22px]" aria-hidden />
@@ -1128,7 +1128,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                         Log in
                       </Link>
                       <Link
-                        href={authLandingHref("/auth/sign-up", "/sell?new=1")}
+                        href="/sell?new=1&from=nav"
                         className="shrink-0 whitespace-nowrap px-1 py-2 text-[15px] font-medium text-foreground"
                       >
                         Sell
@@ -1227,7 +1227,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 size="icon"
                 className="h-10 w-10 shrink-0 text-foreground hover:bg-muted"
               >
-                <Link href="/sell?new=1" aria-label="Create listing">
+                <Link href="/sell?new=1&from=nav" aria-label="Create listing">
                   <Plus className="h-[22px] w-[22px]" aria-hidden />
                 </Link>
               </Button>
@@ -1239,16 +1239,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 variant="outline"
                 className={cn(listYourBoardNavButtonClassName, "hidden lg:mr-10 lg:inline-flex")}
               >
-                <Link
-                  href={authLandingHref("/auth/sign-up", "/sell?new=1")}
-                  onClick={(e) => {
-                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                    e.preventDefault()
-                    openSignUp("/sell?new=1")
-                  }}
-                >
-                  List your gear
-                </Link>
+                <Link href="/sell?new=1&from=nav">List your gear</Link>
               </Button>
             ) : null}
 
@@ -1315,16 +1306,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   variant="outline"
                   className={cn(listYourBoardNavButtonClassName, "hidden sm:inline-flex lg:hidden")}
                 >
-                  <Link
-                    href={authLandingHref("/auth/sign-up", "/sell?new=1")}
-                    onClick={(e) => {
-                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                      e.preventDefault()
-                      openSignUp("/sell?new=1")
-                    }}
-                  >
-                    List your gear
-                  </Link>
+                  <Link href="/sell?new=1&from=nav">List your gear</Link>
                 </Button>
                 <div className="hidden items-center gap-2 lg:flex">
                   <Button

@@ -23,6 +23,7 @@ import {
 } from "@/lib/listing-detail-page-load"
 import { ShareButton } from "@/components/share-button"
 import { ListingOwnerManageActions } from "@/components/features/listings/listing-owner-manage-actions"
+import { computeListingEnrichmentGaps } from "@/lib/sell-flow/listing-enrichment"
 import { Hourglass, Flag, Truck } from "lucide-react"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ImageGallery } from "@/components/image-gallery"
@@ -740,6 +741,13 @@ export async function SurfboardListingDetailPage({
                   currentPriceUsd={listPriceNum}
                   listingStatus={String(board.status ?? "")}
                   hiddenFromSite={board.hidden_from_site === true}
+                  enrichmentGaps={computeListingEnrichmentGaps({
+                    section: "surfboards",
+                    description: board.description,
+                    dimensions: (board as { dimensions?: string | null }).dimensions,
+                    shippingAvailable: board.shipping_available,
+                    photoCount: images.length,
+                  })}
                 />
               ) : null}
             </div>

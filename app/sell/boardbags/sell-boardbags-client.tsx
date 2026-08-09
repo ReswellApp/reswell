@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
 import { toast } from "sonner"
-import { Heart, Loader2, Upload, X, Zap } from "lucide-react"
+import { Loader2, Upload, X, Zap } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -40,6 +40,9 @@ import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-ow
 import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
 import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
+import { useSellAccessoryDraftRecovery } from "@/components/features/sell/hooks/use-sell-accessory-draft-recovery"
+import type { SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
+import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import {
   assertListingOriginalSize,
@@ -177,6 +180,35 @@ const INITIAL_STATE: BoardbagFormState = {
   buyerOffers: true,
 }
 
+/** Type-safe merge of an IndexedDB draft snapshot onto the boardbag form state. */
+function boardbagFormFromDraftSnapshot(snapshot: SellListingDraftFormSnapshot): BoardbagFormState {
+  const next: BoardbagFormState = { ...INITIAL_STATE }
+  for (const key of Object.keys(INITIAL_STATE) as Array<keyof BoardbagFormState>) {
+    const value = snapshot[key]
+    if (value === undefined) continue
+    const initial = INITIAL_STATE[key]
+    if (key === "locationLat" || key === "locationLng") {
+      if (value === null || typeof value === "number") {
+        next[key] = value as BoardbagFormState["locationLat"]
+      }
+      continue
+    }
+    if (key === "shippingMode") {
+      if (value === "reswell" || value === "free" || value === "flat") next.shippingMode = value
+      continue
+    }
+    if (typeof value === typeof initial) {
+      next[key] = value as never
+    }
+  }
+  return next
+}
+
+/** This flow's photo pipeline predates the shared upload hook — draft recovery covers the form only. */
+const NO_DRAFT_PHOTO_SLOTS: ListingPhotoSlot[] = []
+const noopSetDraftImages = () => {}
+const noopRetryDraftPhotoSlot = () => {}
+
 function newClientId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
@@ -189,7 +221,9 @@ function scrollBoardbagSellSectionIntoView(sectionId: string) {
 
 export default function SellBoardbagsFlow({ editListingId = null }: { editListingId?: string | null }) {
   const router = useRouter()
-  const bulkSlotId = useSearchParams().get("bulk")?.trim() || null
+  const searchParams = useSearchParams()
+  const bulkSlotId = searchParams.get("bulk")?.trim() || null
+  const startFresh = searchParams.get("new") === "1"
   const signIn = useSignInGate()
   const fileInputId = useId()
   const supabaseRef = useRef(createClient())
@@ -212,6 +246,21 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
       }
     }
   }, [])
+
+  const restoreBoardbagDraftForm = useCallback((snapshot: SellListingDraftFormSnapshot) => {
+    setForm(boardbagFormFromDraftSnapshot(snapshot))
+  }, [])
+
+  const { clearRecoveredDraft } = useSellAccessoryDraftRecovery({
+    listingType: "boardbags",
+    editId,
+    startFresh,
+    formSnapshot: form,
+    images: NO_DRAFT_PHOTO_SLOTS,
+    onRestoreForm: restoreBoardbagDraftForm,
+    setImages: noopSetDraftImages,
+    retryPhotoSlot: noopRetryDraftPhotoSlot,
+  })
 
   const hydrateBoardbagEdit = useCallback(
     (listing: OwnedListingForEditRow) => {
@@ -512,6 +561,7 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
     const session = await resolveClientSessionForMutation(supabase)
     const user = session?.user
     if (!user || !session?.access_token) {
+      toast.message("Sign in to publish your listing")
       signIn("/sell/boardbags")
       return
     }
@@ -763,6 +813,7 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
         successToast: "Your boardbag is live!",
         setSubmitting,
         directCreate: () => createBoardbagListingAction(payload),
+        onCreateSuccess: () => clearRecoveredDraft(),
       })
     } catch (err) {
       const aborted = isSellSubmitAbortError(err)
@@ -981,17 +1032,6 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
                       ) : null}
                     </div>
                     )}
-                    <p className="space-y-1 text-xs text-muted-foreground">
-                      <span className="block">Thank you for listing on Reswell.</span>
-                      <span className="inline-flex flex-wrap items-center gap-1">
-                        <span>Made with</span>
-                        <Heart
-                          className="h-4 w-4 shrink-0 fill-listingHeart text-listingHeart"
-                          aria-hidden
-                        />
-                        <span>in Santa Barbara.</span>
-                      </span>
-                    </p>
                   </div>
 
                   <Separator className="bg-border" />

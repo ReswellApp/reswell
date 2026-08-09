@@ -3,6 +3,7 @@ import { revalidateListingDetailAfterListingMutation } from "@/app/actions/listi
 import type { ImpersonationData } from "@/lib/impersonation"
 import { listingDetailHref } from "@/lib/listing-href"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
+import { setJustPublishedListingMarker } from "@/lib/sell-flow/just-published"
 import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
 import { sellActionErrorMessage } from "@/lib/sell-flow/sell-submit-error"
 import { resolveAdminBulkListingAfterCreate } from "@/lib/utils/admin-bulk-listing-navigation"
@@ -50,6 +51,8 @@ export async function finalizePeerListingCreate(params: {
   directCreate: () => Promise<DirectCreateResult>
   successToast: string
   setSubmitting: (value: boolean) => void
+  /** Runs after a successful create, before navigation (e.g. clear local draft stash). */
+  onCreateSuccess?: (created: { listingId: string; slug: string }) => void | Promise<void>
   /** When set, publish outcome funnel events include elapsed time from this timestamp. */
   publishStartedAt?: number
 }): Promise<void> {
@@ -80,6 +83,7 @@ export async function finalizePeerListingCreate(params: {
       durationMs: funnelDurationMs(),
     })
     toast.success(params.successToast)
+    await params.onCreateSuccess?.({ listingId: impResult.listingId, slug: impResult.slug })
     if (
       resolveAdminBulkListingAfterCreate(params.router, {
         bulkSlotId: params.bulkSlotId,
@@ -117,6 +121,7 @@ export async function finalizePeerListingCreate(params: {
     durationMs: funnelDurationMs(),
   })
   toast.success(params.successToast)
+  await params.onCreateSuccess?.({ listingId: result.listingId, slug: result.slug })
   if (
     resolveAdminBulkListingAfterCreate(params.router, {
       bulkSlotId: params.bulkSlotId,
@@ -129,5 +134,11 @@ export async function finalizePeerListingCreate(params: {
   ) {
     return
   }
+  // Seller's own fresh publish — hand off the PDP "listing is live" celebration.
+  setJustPublishedListingMarker({
+    listingId: result.listingId,
+    slug: result.slug,
+    section: params.section,
+  })
   await navigateToPublishedListing(params.router, result.listingId, result.slug)
 }

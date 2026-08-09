@@ -15,6 +15,7 @@ import { ListingDetailDynamicGate } from "@/components/features/listings/listing
 import { ListingDetailPublicOrAuthenticated } from "@/components/features/listings/listing-detail-public-or-authenticated"
 import type { PublicListingRow } from "@/components/features/listings/listing-detail-public-body"
 import { ListingDetailRouteSkeleton } from "@/components/listing-detail-page-loading"
+import { ListingPublishedCelebration } from "@/components/features/listings/listing-published-celebration"
 
 /** ISR shell — keep in sync with `LISTING_PUBLIC_DETAIL_REVALIDATE_SECONDS`. */
 export const revalidate = 3600
@@ -70,23 +71,29 @@ export default async function ListingDetailPage(props: {
     }
 
     return (
-      <Suspense fallback={<ListingDetailRouteSkeleton />}>
-        <ListingDetailPublicOrAuthenticated
-          listingParam={listingParam}
-          listing={listing as PublicListingRow}
-          redirectSlug={redirectSlug}
-        />
-      </Suspense>
+      <>
+        <Suspense fallback={<ListingDetailRouteSkeleton />}>
+          <ListingDetailPublicOrAuthenticated
+            listingParam={listingParam}
+            listing={listing as PublicListingRow}
+            redirectSlug={redirectSlug}
+          />
+        </Suspense>
+        <ListingPublishedCelebration listingParam={listingParam} />
+      </>
     )
   }
 
   return (
-    <Suspense fallback={<ListingDetailRouteSkeleton />}>
-      <ListingDetailDynamicGate
-        listingParam={listingParam}
-        prefetchedListing={(listing as Record<string, unknown> | null) ?? null}
-        prefetchedRedirectSlug={redirectSlug}
-      />
-    </Suspense>
+    <>
+      <Suspense fallback={<ListingDetailRouteSkeleton />}>
+        <ListingDetailDynamicGate
+          listingParam={listingParam}
+          prefetchedListing={(listing as Record<string, unknown> | null) ?? null}
+          prefetchedRedirectSlug={redirectSlug}
+        />
+      </Suspense>
+      <ListingPublishedCelebration listingParam={listingParam} />
+    </>
   )
 }

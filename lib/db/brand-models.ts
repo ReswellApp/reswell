@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { BrandProductCategorySlug } from "@/lib/brand-product-categories"
+import type { SurfboardSellCategoryKey } from "@/lib/surfboard-sell-categories"
 
 export type BrandModelRow = {
   id: string
@@ -8,6 +9,8 @@ export type BrandModelRow = {
   description: string | null
   image_url: string | null
   product_category_slug: BrandProductCategorySlug
+  /** Surfboard shape key — prefills the /sell "Board shape / category" chips. */
+  board_category_slug: SurfboardSellCategoryKey | null
   created_at: string
   updated_at: string
 }
@@ -37,6 +40,7 @@ const LIST_SELECT = `
   description,
   image_url,
   product_category_slug,
+  board_category_slug,
   created_at,
   updated_at,
   brands:brand_id ( id, name, slug )
@@ -273,6 +277,7 @@ export async function listBrandModelsForAdmin(
       description: row.description,
       image_url: row.image_url ?? null,
       product_category_slug: row.product_category_slug ?? "surfboards",
+      board_category_slug: row.board_category_slug ?? null,
       created_at: row.created_at,
       updated_at: row.updated_at,
       brand: { id: b.id, name: b.name, slug: b.slug },
@@ -289,6 +294,7 @@ export async function insertBrandModel(
     description: string | null
     image_url: string | null
     product_category_slug?: BrandProductCategorySlug
+    board_category_slug?: SurfboardSellCategoryKey | null
   },
 ): Promise<{ ok: true; row: BrandModelRow } | { ok: false; error: string; code?: string }> {
   const now = new Date().toISOString()
@@ -300,10 +306,11 @@ export async function insertBrandModel(
       description: input.description?.trim() || null,
       image_url: input.image_url,
       product_category_slug: input.product_category_slug ?? "surfboards",
+      board_category_slug: input.board_category_slug ?? null,
       updated_at: now,
     })
     .select(
-      "id, brand_id, name, description, image_url, product_category_slug, created_at, updated_at",
+      "id, brand_id, name, description, image_url, product_category_slug, board_category_slug, created_at, updated_at",
     )
     .single()
 
@@ -329,6 +336,7 @@ export async function updateBrandModel(
     brand_id?: string
     image_url?: string | null
     product_category_slug?: BrandProductCategorySlug
+    board_category_slug?: SurfboardSellCategoryKey | null
   },
 ): Promise<{ ok: true } | { ok: false; error: string; code?: string }> {
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
@@ -338,6 +346,9 @@ export async function updateBrandModel(
   if (patch.image_url !== undefined) updates.image_url = patch.image_url
   if (patch.product_category_slug !== undefined) {
     updates.product_category_slug = patch.product_category_slug
+  }
+  if (patch.board_category_slug !== undefined) {
+    updates.board_category_slug = patch.board_category_slug
   }
 
   const { error } = await supabase.from("brand_models").update(updates).eq("id", id)

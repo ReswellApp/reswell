@@ -1,10 +1,19 @@
 import type { Metadata } from "next"
 import type { ReactNode } from "react"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
-import { SellUnsignedAccess } from "@/components/features/sell/sell-unsigned-access"
 import { SellerBanSellBlocked } from "@/components/features/sell/seller-ban-sell-blocked"
+import { SellPageFooter } from "@/components/features/sell/sell-page-footer"
 import { fetchSellerBanState, isSellerBanActive } from "@/lib/db/sellerBan"
 import { createClient } from "@/lib/supabase/server"
+
+function SellLayoutFrame({ children }: { children: ReactNode }) {
+  return (
+    <>
+      {children}
+      <SellPageFooter />
+    </>
+  )
+}
 
 const title = "Sell surf gear — Reswell"
 const description =
@@ -40,9 +49,11 @@ export const metadata: Metadata = {
 }
 
 export default async function SellLayout({ children }: { children: ReactNode }) {
+  // Guests can browse and fill sell forms; auth is required at publish (and
+  // photo upload). Signed-in sellers who are banned are blocked here.
   const { user } = await getCachedRequestSession()
   if (!user) {
-    return <SellUnsignedAccess>{children}</SellUnsignedAccess>
+    return <SellLayoutFrame>{children}</SellLayoutFrame>
   }
 
   const supabase = await createClient()
@@ -51,5 +62,5 @@ export default async function SellLayout({ children }: { children: ReactNode }) 
     return <SellerBanSellBlocked />
   }
 
-  return children
+  return <SellLayoutFrame>{children}</SellLayoutFrame>
 }

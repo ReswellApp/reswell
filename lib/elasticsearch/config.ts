@@ -15,6 +15,10 @@ export const ELASTICSEARCH_BRANDS_INDEX =
 export const ELASTICSEARCH_FIN_CATALOG_INDEX =
   process.env.ELASTICSEARCH_FIN_CATALOG_INDEX || "reswell_fin_catalog"
 
+/** Cross-category brand/model catalog for the `/sell` "Find a match" search wall. */
+export const ELASTICSEARCH_SELL_CATALOG_INDEX =
+  process.env.ELASTICSEARCH_SELL_CATALOG_INDEX || "reswell_sell_catalog"
+
 export const ELASTICSEARCH_FORUM_THREADS_INDEX =
   process.env.ELASTICSEARCH_FORUM_THREADS_INDEX || "reswell_forum_threads"
 
