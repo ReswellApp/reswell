@@ -27,13 +27,13 @@ export function BoardSellWizardFooter({
   if (!showBack && !showNext) return null
 
   return (
-    <div className="flex items-center justify-between gap-3 border-t border-border pt-6">
+    <div className="flex items-center justify-between gap-4 border-t border-border pt-6 sm:pt-10">
       {showBack ? (
         <Button
           type="button"
           variant="outline"
           size="lg"
-          className="gap-1.5"
+          className="h-12 min-w-[5.5rem] gap-1.5 px-4 text-base sm:px-5"
           onClick={onBack}
           disabled={disabled}
         >
@@ -47,7 +47,7 @@ export function BoardSellWizardFooter({
         <Button
           type="button"
           size="lg"
-          className={cn("gap-1.5", SELL_PRIMARY_BUTTON_CLASS)}
+          className={cn("h-12 min-w-[7rem] flex-1 gap-1.5 px-6 text-base sm:flex-none", SELL_PRIMARY_BUTTON_CLASS)}
           onClick={onNext}
           disabled={disabled}
         >

@@ -432,7 +432,7 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
         clearSellServerDraftListingId(options.section)
         setLocalServerDraftId(null)
         if (options.editId) {
-          // Stay on the board sell flow — bare `/sell?new=1` shows the type chooser.
+          // Stay on the board sell flow — bare `/sell?new=1` is the catalog search hub.
           router.replace(blankListingHref(options.section), { scroll: false })
         } else {
           await options.onStartNewListing?.()

@@ -38,8 +38,8 @@ function initiallyHidden(): boolean {
 }
 
 /**
- * "Examples" strip above the photo uploader — shows the shots that make a
- * surfboard listing sell (Reverb-style). Hideable, and stays hidden per device.
+ * Photo shot examples under the uploader — Reverb-style 2-up on mobile,
+ * wider on desktop. Hideable; stays hidden per device.
  */
 export function SellPhotoExamplesBanner({ className }: { className?: string }) {
   const [hidden, setHidden] = useState(initiallyHidden)
@@ -58,27 +58,29 @@ export function SellPhotoExamplesBanner({ className }: { className?: string }) {
   }
 
   return (
-    <div className={cn("space-y-2", className)}>
+    <div className={cn("space-y-3", className)}>
       <div className="flex items-center justify-between gap-3">
-        <h4 className="text-sm font-semibold text-foreground">Examples</h4>
+        <h4 className="text-[15px] font-semibold text-foreground">Examples</h4>
         <button
           type="button"
           onClick={toggle}
-          className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          className="text-[15px] font-medium text-listingHeart transition-colors hover:text-listingHeart/80"
           aria-expanded={!hidden}
         >
           {hidden ? "Show" : "Hide"}
         </button>
       </div>
       {!hidden ? (
-        <ul className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {SURFBOARD_PHOTO_EXAMPLES.map(({ label, Icon }) => (
             <li
               key={label}
-              className="flex flex-col items-center gap-1.5 rounded-lg border border-border bg-white px-2 pb-2.5 pt-3"
+              className="flex flex-col overflow-hidden rounded-xl border border-border bg-white"
             >
-              <Icon className="h-12 w-12 text-midgray/70" />
-              <span className="text-center text-xs leading-tight text-foreground">
+              <div className="flex aspect-square items-center justify-center bg-muted/40 p-4">
+                <Icon className="h-16 w-16 text-midgray/65 sm:h-14 sm:w-14" />
+              </div>
+              <span className="px-2 py-2.5 text-center text-sm leading-tight text-foreground">
                 {label}
               </span>
             </li>

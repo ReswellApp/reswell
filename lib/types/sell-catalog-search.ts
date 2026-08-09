@@ -5,7 +5,7 @@ import {
 
 /**
  * Categories the `/sell` cross-category catalog search can route into.
- * Must stay in sync with the sell paths exposed by the `/sell` type chooser.
+ * Must stay in sync with the sell paths exposed by the `/sell` “list by type” links.
  */
 export const SELL_CATALOG_SEARCH_CATEGORIES = [
   "surfboards",

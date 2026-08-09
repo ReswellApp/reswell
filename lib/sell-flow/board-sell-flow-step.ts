@@ -1,39 +1,60 @@
 import { sellFlowStepSessionKey } from "@/lib/sell-flow/session-keys"
 
+/** Reverb-style 4-tier board sell wizard. */
 export const BOARD_SELL_FLOW_STEPS = [
-  "basics",
-  "details",
-  "delivery",
-  "publish",
+  "product",
+  "photos",
+  "pricing",
+  "shipping",
 ] as const
 
 export type BoardSellFlowStep = (typeof BOARD_SELL_FLOW_STEPS)[number]
 
 export const BOARD_SELL_SECTION_ID_BY_STEP: Record<BoardSellFlowStep, string> = {
-  basics: "sell-section-basics",
-  details: "sell-section-details",
-  delivery: "sell-section-delivery",
-  publish: "sell-section-publish",
+  product: "sell-section-product",
+  photos: "sell-section-photos",
+  pricing: "sell-section-pricing",
+  shipping: "sell-section-shipping",
 }
 
 export const BOARD_SELL_STEP_BY_SECTION_ID: Record<string, BoardSellFlowStep> = {
-  "sell-section-basics": "basics",
-  "sell-section-details": "details",
-  "sell-section-delivery": "delivery",
-  "sell-section-publish": "publish",
+  "sell-section-product": "product",
+  "sell-section-photos": "photos",
+  "sell-section-pricing": "pricing",
+  "sell-section-shipping": "shipping",
 }
 
 const BOARD_FLOW_STEP_KEY =
   sellFlowStepSessionKey("board") ?? "reswell.sell.board.flowStep"
 
+/** Map legacy 5-step draft/session values onto the 4-tier wizard. */
+function migrateLegacyBoardSellFlowStep(value: string): BoardSellFlowStep | null {
+  switch (value) {
+    case "basics":
+    case "details":
+      return "product"
+    case "photos":
+      return "photos"
+    case "publish":
+      return "pricing"
+    case "delivery":
+      return "shipping"
+    default:
+      return null
+  }
+}
+
 export function parseBoardSellFlowStep(value: unknown): BoardSellFlowStep | null {
   if (
-    value === "basics" ||
-    value === "details" ||
-    value === "delivery" ||
-    value === "publish"
+    value === "product" ||
+    value === "photos" ||
+    value === "pricing" ||
+    value === "shipping"
   ) {
     return value
+  }
+  if (typeof value === "string") {
+    return migrateLegacyBoardSellFlowStep(value)
   }
   return null
 }

@@ -98,7 +98,7 @@ export function SellContinueDrafts({ className }: { className?: string }) {
         const label = [length, brand].filter(Boolean).join(" ") || "Surfboard draft"
         push({
           id: "idb-board",
-          href: "/sell/quick",
+          href: "/sell/boards",
           title: label,
           subtitle: "On this device",
         })

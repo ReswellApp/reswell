@@ -21,7 +21,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { CheckCircle2, Heart, RefreshCw, RotateCw, Upload, X } from "lucide-react"
+import { CheckCircle2, Heart, Plus, RefreshCw, RotateCw, Upload, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
@@ -49,8 +49,12 @@ export type SellListingPhotoGridProps = {
   photoDescription?: string
   /** Concrete shot suggestions shown as chips in the empty state (e.g. "Deck", "Bottom", "Any dings"). */
   photoTips?: readonly string[]
-  /** Rendered between the Photos header and the upload grid (e.g. photo examples banner). */
+  /** Rendered between the Photos header and the upload grid (e.g. tips link). */
   aboveGrid?: React.ReactNode
+  /** Rendered under the upload grid (e.g. photo examples). */
+  belowGrid?: React.ReactNode
+  /** When the parent already owns the section title / required copy. */
+  hideHeader?: boolean
   /** Minimum photos for the “ready” state. Defaults to 1. */
   minPhotos?: number
 }
@@ -309,7 +313,7 @@ function SellListingPhotoAddTile({
           className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center px-2"
           aria-hidden
         >
-          <Upload className="h-6 w-6 text-muted-foreground" />
+          <Plus className="h-6 w-6 text-muted-foreground" strokeWidth={2} />
           <span className="mt-1 text-xs font-medium text-foreground/80">Add</span>
         </div>
         <input
@@ -327,48 +331,75 @@ function SellListingPhotoAddTile({
   }
 
   return (
-    <div
-      className={cn(
-        "relative flex min-h-[13.5rem] w-full flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-slate-400/80 bg-slate-50/80 px-6 py-10 text-center transition-colors sm:min-h-[16rem]",
-        "hover:border-primary/50 hover:bg-primary/[0.03]",
-      )}
-    >
-      <div className="pointer-events-none flex flex-col items-center gap-3" aria-hidden>
-        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-card shadow-sm ring-1 ring-slate-900/5">
-          <Upload className="h-7 w-7 text-foreground/70" strokeWidth={1.75} />
-        </span>
-        <div className="space-y-1">
-          <p className="text-base font-semibold tracking-tight text-foreground">
-            Add photos of your item
-          </p>
-          <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-            Drag and drop or click to browse. The first photo becomes your cover image.
-          </p>
+    <>
+      {/* Mobile: Reverb-style full-width dashed upload button */}
+      <div className="relative sm:hidden">
+        <div
+          className={cn(
+            "flex h-14 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-foreground/35 bg-muted/50 px-4 transition-colors",
+            "hover:border-foreground/50 hover:bg-muted/70",
+          )}
+          aria-hidden
+        >
+          <Plus className="h-5 w-5 text-foreground" strokeWidth={2.25} />
+          <span className="text-[15px] font-medium text-foreground">Upload Photo</span>
         </div>
-        {photoTips && photoTips.length > 0 ? (
-          <div className="flex max-w-sm flex-wrap items-center justify-center gap-1.5 pt-1">
-            {photoTips.map((tip) => (
-              <span
-                key={tip}
-                className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-muted-foreground ring-1 ring-inset ring-slate-200/80"
-              >
-                {tip}
-              </span>
-            ))}
-          </div>
-        ) : null}
+        <input
+          id={fileInputId}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={onImageInputChange}
+          aria-label="Upload photo"
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0 touch-manipulation"
+          onPointerDown={(e) => e.stopPropagation()}
+        />
       </div>
-      <input
-        id={fileInputId}
-        type="file"
-        accept="image/*"
-        multiple
-        onChange={onImageInputChange}
-        aria-label="Add listing photos"
-        className="absolute inset-0 h-full w-full cursor-pointer opacity-0 touch-manipulation"
-        onPointerDown={(e) => e.stopPropagation()}
-      />
-    </div>
+
+      {/* Desktop / tablet: larger drop zone */}
+      <div
+        className={cn(
+          "relative hidden min-h-[15rem] w-full flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-slate-400/80 bg-slate-50/80 px-6 py-10 text-center transition-colors sm:flex sm:min-h-[16rem]",
+          "hover:border-primary/50 hover:bg-primary/[0.03]",
+        )}
+      >
+        <div className="pointer-events-none flex flex-col items-center gap-3.5" aria-hidden>
+          <span className="flex h-14 w-14 items-center justify-center rounded-full bg-card shadow-sm ring-1 ring-slate-900/5">
+            <Upload className="h-7 w-7 text-foreground/70" strokeWidth={1.75} />
+          </span>
+          <div className="space-y-1.5">
+            <p className="text-base font-semibold tracking-tight text-foreground sm:text-lg">
+              Add photos of your item
+            </p>
+            <p className="max-w-sm text-[15px] leading-relaxed text-muted-foreground">
+              Drag and drop or click to browse. The first photo becomes your cover image.
+            </p>
+          </div>
+          {photoTips && photoTips.length > 0 ? (
+            <div className="flex max-w-sm flex-wrap items-center justify-center gap-1.5 pt-1">
+              {photoTips.map((tip) => (
+                <span
+                  key={tip}
+                  className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-muted-foreground ring-1 ring-inset ring-slate-200/80"
+                >
+                  {tip}
+                </span>
+              ))}
+            </div>
+          ) : null}
+        </div>
+        <input
+          id={`${fileInputId}-desktop`}
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={onImageInputChange}
+          aria-label="Add listing photos"
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0 touch-manipulation"
+          onPointerDown={(e) => e.stopPropagation()}
+        />
+      </div>
+    </>
   )
 }
 
@@ -390,6 +421,8 @@ export function SellListingPhotoGrid({
   photoDescription = "Add photos, then drag to reorder — the first is your main image.",
   photoTips,
   aboveGrid,
+  belowGrid,
+  hideHeader = false,
   minPhotos = 1,
 }: SellListingPhotoGridProps) {
   const internalSensors = useSensors(
@@ -405,30 +438,32 @@ export function SellListingPhotoGrid({
     images.length === 1 ? "1 photo" : `${images.length} photos`
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
-          <h3 className="text-sm font-semibold text-foreground">
-            Photos{" "}
-            <span className="text-destructive" aria-hidden="true">
-              *
-            </span>
-          </h3>
-          <p className="text-xs text-muted-foreground sm:text-sm">{photoDescription}</p>
+    <div className="space-y-5">
+      {!hideHeader ? (
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1">
+            <h3 className="text-sm font-semibold text-foreground">
+              Photos{" "}
+              <span className="text-destructive" aria-hidden="true">
+                *
+              </span>
+            </h3>
+            <p className="text-xs text-muted-foreground sm:text-sm">{photoDescription}</p>
+          </div>
+          <div className="shrink-0 pt-0.5" aria-live="polite">
+            {photosReady ? (
+              <span className={SELL_COMPLETE_BADGE_CLASS}>
+                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
+                {photoCountLabel} · Ready
+              </span>
+            ) : (
+              <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-muted-foreground ring-1 ring-inset ring-slate-200/80">
+                Add at least {minPhotos}
+              </span>
+            )}
+          </div>
         </div>
-        <div className="shrink-0 pt-0.5" aria-live="polite">
-          {photosReady ? (
-            <span className={SELL_COMPLETE_BADGE_CLASS}>
-              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
-              {photoCountLabel} · Ready
-            </span>
-          ) : (
-            <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-muted-foreground ring-1 ring-inset ring-slate-200/80">
-              Add at least {minPhotos}
-            </span>
-          )}
-        </div>
-      </div>
+      ) : null}
 
       {aboveGrid}
 
@@ -493,6 +528,14 @@ export function SellListingPhotoGrid({
           </DndContext>
         )}
       </div>
+
+      {belowGrid}
+
+      {hideHeader && photosReady ? (
+        <p className="text-sm text-muted-foreground" aria-live="polite">
+          {photoCountLabel} ready — drag to reorder; first is cover.
+        </p>
+      ) : null}
 
       <p className="space-y-1 text-xs text-muted-foreground">
         <span className="block">Thank you for listing on Reswell.</span>

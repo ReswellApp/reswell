@@ -85,20 +85,24 @@ export function buildSellSectionNavItems(
 
 export const SELL_FORM_SECTION_NAV_ITEMS: readonly SellSectionNavItem[] = [
   {
-    id: "sell-section-basics",
-    label: "Brand, model & title",
-    shortLabel: "Basics",
+    id: "sell-section-product",
+    label: "Product Info",
+    shortLabel: "Product",
   },
   {
-    id: "sell-section-details",
-    label: "Dimensions & details",
-    shortLabel: "Details",
+    id: "sell-section-photos",
+    label: "Photos & Description",
+    shortLabel: "Photos",
   },
-  { id: "sell-section-delivery", label: "Pickup & shipping", shortLabel: "Delivery" },
   {
-    id: "sell-section-publish",
-    label: "Photos & publish",
-    shortLabel: "Publish",
+    id: "sell-section-pricing",
+    label: "Pricing",
+    shortLabel: "Pricing",
+  },
+  {
+    id: "sell-section-shipping",
+    label: "Shipping",
+    shortLabel: "Shipping",
   },
 ]
 
@@ -233,7 +237,7 @@ export function SellSectionNav({
     >
       <div className="w-full overflow-auto px-3 py-6 xl:px-4">
         {activeIndex >= 0 ? (
-          <p className="mb-6 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <p className="mb-8 text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Step {activeIndex + 1} of {items.length}
           </p>
         ) : null}
@@ -242,7 +246,7 @@ export function SellSectionNav({
             className="absolute bottom-3 left-3 top-3 w-[2px] -translate-x-1/2 bg-midgray/30"
             aria-hidden
           />
-          <ul className="relative m-0 list-none space-y-8 p-0">
+          <ul className="relative m-0 list-none space-y-11 p-0">
             {items.map((item) => {
               const complete = sectionCompletion?.[item.id] === true
               const active = activeSectionId === item.id
@@ -256,13 +260,13 @@ export function SellSectionNav({
                       complete ? `${item.label}, completed` : `Go to ${item.label}`
                     }
                     className={cn(
-                      "group flex w-full items-start gap-3 rounded-sm text-left",
+                      "group flex w-full items-start gap-3.5 rounded-sm text-left",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     )}
                   >
                     <span
                       className={cn(
-                        "relative z-10 mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white transition-all",
+                        "relative z-10 mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white transition-all",
                         "group-hover:opacity-90",
                         complete
                           ? "bg-listingHeart"
@@ -284,7 +288,7 @@ export function SellSectionNav({
                     </span>
                     <span
                       className={cn(
-                        "min-w-0 max-w-[13rem] pt-1 text-sm leading-snug text-black group-hover:underline group-hover:underline-offset-4",
+                        "min-w-0 max-w-[14rem] pt-1 text-[15px] leading-snug text-black group-hover:underline group-hover:underline-offset-4",
                         active && "font-semibold",
                       )}
                     >

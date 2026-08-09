@@ -37,18 +37,18 @@ export function SellStepChecklist({
   return (
     <SmoothCollapse open={open} className={className}>
       <div
-        className="rounded-lg border border-border bg-muted/60 px-4 py-3"
+        className="rounded-xl border border-border bg-muted/60 px-5 py-4"
         role="status"
         aria-live="polite"
       >
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {title}
         </p>
-        <ul className="mt-2 space-y-1.5">
+        <ul className="mt-3 space-y-2.5">
           {items.map((item) => {
             const offStep = item.sectionId !== activeSectionId
             return (
-              <li key={`${item.sectionId}:${item.id}`} className="flex items-center gap-2 text-sm">
+              <li key={`${item.sectionId}:${item.id}`} className="flex items-center gap-2.5 text-[15px]">
                 {item.complete ? (
                   <CheckCircle2 className="size-4 shrink-0 text-listingHeart" aria-hidden />
                 ) : (

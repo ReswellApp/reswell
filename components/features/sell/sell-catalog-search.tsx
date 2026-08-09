@@ -40,6 +40,7 @@ import {
   SellTrendingBrandsSlider,
   type SellTrendingBrand,
 } from "@/components/features/sell/sell-trending-brands"
+import { SellListByTypeLinks } from "@/components/features/sell/sell-type-chooser"
 import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
 import { finCatalogSearchRowThumbUrl } from "@/lib/utils/fin-catalog-display-image"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
@@ -50,8 +51,8 @@ import { cn } from "@/lib/utils"
 const SEARCH_DEBOUNCE_MS = 250
 
 export type SellCatalogSearchProps = {
-  /** "List manually without searching" — reveals the product-type chooser. */
-  onSkip: () => void
+  /** Show admin-only sell types (e.g. apparel) in the “list by type” row. */
+  isAdmin?: boolean
   /** Homepage trending brands — tapping one drills into that brand's models. */
   trendingBrands?: SellTrendingBrand[]
   /** Optional resume-draft prompt above the search hero. */
@@ -410,12 +411,12 @@ const EMPTY_NL_HELPER: SellCatalogNlHelperState = { loading: false, data: null }
 
 function SellCatalogSearchPanel({
   ctx,
-  onSkip,
+  isAdmin = false,
   onSelect,
   nlHelper = EMPTY_NL_HELPER,
 }: {
   ctx: ExternalSuggestRenderContext<SellCatalogSearchResult>
-  onSkip: () => void
+  isAdmin?: boolean
   onSelect: (row: SellCatalogSearchResultRow) => void
   nlHelper?: SellCatalogNlHelperState
 }) {
@@ -450,14 +451,7 @@ function SellCatalogSearchPanel({
           onSelect={onSelect}
         />
         <div className="border-t border-border/60 px-4 py-3 sm:px-4">
-          <Button
-            type="button"
-            variant="secondary"
-            className="w-full min-h-touch md:w-auto"
-            onClick={onSkip}
-          >
-            Continue without a catalog match
-          </Button>
+          <SellListByTypeLinks isAdmin={isAdmin} variant="panel" />
         </div>
       </>
     )
@@ -477,17 +471,10 @@ function SellCatalogSearchPanel({
         <div className="space-y-3 px-4 py-5 text-sm sm:px-4">
           <p className="text-muted-foreground">
             {nlHelperHasContent && !nlHelper.loading
-              ? "Not what you're selling? You can still list your item manually — brand and model don't have to be in our directory."
-              : "No catalog matches for that search. You can still list your item manually — brand and model don't have to be in our directory."}
+              ? "Not what you're selling? You can still list without a catalog match — brand and model don't have to be in our directory."
+              : "No catalog matches for that search. You can still list without a catalog match — brand and model don't have to be in our directory."}
           </p>
-          <Button
-            type="button"
-            variant="secondary"
-            className="w-full min-h-touch md:w-auto"
-            onClick={onSkip}
-          >
-            Choose a category manually
-          </Button>
+          <SellListByTypeLinks isAdmin={isAdmin} variant="panel" />
         </div>
       </>
     )
@@ -529,7 +516,7 @@ function SellBrandModelsPanel({
   error,
   onSelect,
   onBack,
-  onSkip,
+  isAdmin = false,
 }: {
   brand: SellTrendingBrand
   rows: SellCatalogSearchResultRow[] | null
@@ -537,7 +524,7 @@ function SellBrandModelsPanel({
   error: string | null
   onSelect: (row: SellCatalogSearchResultRow) => void
   onBack: () => void
-  onSkip: () => void
+  isAdmin?: boolean
 }) {
   const [filter, setFilter] = React.useState("")
   const filterKey = compactSearchKey(filter)
@@ -601,14 +588,7 @@ function SellBrandModelsPanel({
       )}
 
       <div className="border-t border-border/60 px-3 py-2.5 sm:px-4">
-        <Button
-          type="button"
-          variant="ghost"
-          className="h-auto px-2 py-1.5 text-xs text-muted-foreground"
-          onClick={onSkip}
-        >
-          Can&apos;t find it? List manually
-        </Button>
+        <SellListByTypeLinks isAdmin={isAdmin} variant="panel" />
       </div>
     </section>
   )
@@ -627,7 +607,7 @@ async function fetchSellCatalogSearch(query: string): Promise<SellCatalogSearchR
 }
 
 export function SellCatalogSearch({
-  onSkip,
+  isAdmin = false,
   trendingBrands = [],
   resumeBanner,
   className,
@@ -760,10 +740,10 @@ export function SellCatalogSearch({
         query.trim().length >= 1 && (loading || settled || Boolean(error) || data !== null),
       renderLoadingSkeleton: () => <NavSuggestPanelSkeleton />,
       renderPanel: (ctx) => (
-        <SellCatalogSearchPanel ctx={ctx} onSkip={onSkip} onSelect={handleSelect} />
+        <SellCatalogSearchPanel ctx={ctx} isAdmin={isAdmin} onSelect={handleSelect} />
       ),
     }),
-    [handleSelect, onSkip],
+    [handleSelect, isAdmin],
   )
 
   const showFocusScrim = searchFocused || suggestOpen
@@ -883,7 +863,7 @@ export function SellCatalogSearch({
                           data: suggestState.data,
                           dismissPanel: dismissSearchFocus,
                         }}
-                        onSkip={onSkip}
+                        isAdmin={isAdmin}
                         onSelect={handleSelect}
                         nlHelper={nlHelper}
                       />
@@ -916,7 +896,7 @@ export function SellCatalogSearch({
               error={brandModelsError}
               onSelect={handleSelect}
               onBack={() => setFocusBrand(null)}
-              onSkip={onSkip}
+              isAdmin={isAdmin}
             />
           ) : trendingBrands.length > 0 ? (
             <div
@@ -932,18 +912,11 @@ export function SellCatalogSearch({
 
           <div
             className={cn(
-              "text-center transition-opacity duration-300 ease-out motion-reduce:transition-none",
+              "transition-opacity duration-300 ease-out motion-reduce:transition-none",
               focusMode && "opacity-35",
             )}
           >
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-auto px-4 py-2 text-sm text-muted-foreground"
-              onClick={onSkip}
-            >
-              List manually without searching
-            </Button>
+            <SellListByTypeLinks isAdmin={isAdmin} variant="page" />
           </div>
         </div>
       </div>

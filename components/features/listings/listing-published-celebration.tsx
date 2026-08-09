@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils"
 function sellAgainHref(section: string): string {
   switch (section) {
     case "surfboards":
-      return "/sell/quick?new=1"
+      return "/sell/boards?new=1"
     case "fins":
       return "/sell/fins?new=1"
     case "wetsuits":

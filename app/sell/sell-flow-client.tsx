@@ -151,10 +151,8 @@ import {
 } from "@/lib/sell-form-validation"
 import {
   LISTING_CONDITION_SELL_OPTIONS,
-  formatCondition,
   sellFormConditionValue,
 } from "@/lib/listing-labels"
-import { SellListingPreviewCard } from "@/components/features/sell/sell-listing-preview-card"
 import {
   formatBoardLengthForTitle,
   isBoardLengthEntryComplete,
@@ -219,12 +217,11 @@ import {
   SellSectionNavHorizontal,
   SELL_FORM_SECTION_NAV_ITEMS,
 } from "@/components/features/sell/sell-section-nav"
+import { SellSectionNavMobileProgress } from "@/components/features/sell/sell-section-nav-mobile-progress"
 import { BoardSellWizardFooter } from "@/components/features/sell/board-sell-wizard-footer"
-import { SellStepChecklist } from "@/components/features/sell/sell-step-checklist"
 import {
   computeSellSectionCompletion,
   computeSellStepChecklist,
-  type SellStepChecklistItem,
 } from "@/lib/sell-section-completion"
 import {
   boardCategoryMap,
@@ -313,28 +310,35 @@ function SellFormSection({
     <section
       id={sectionId}
       className={cn(
-        "space-y-4 lg:space-y-5",
-        sectionId && "scroll-mt-24",
+        "space-y-4 sm:space-y-6",
+        sectionId && "scroll-mt-28",
       )}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3 sm:gap-4">
         <div className="min-w-0">
-          <h2 className="text-lg font-semibold tracking-tight text-foreground lg:text-xl">
+          <h2 className="text-[1.75rem] font-bold leading-tight tracking-tight text-foreground sm:text-[1.85rem] lg:text-3xl">
             {title}
           </h2>
           {description ? (
-            <p className={SELL_SECTION_DESCRIPTION_CLASS}>{description}</p>
+            <p
+              className={cn(
+                SELL_SECTION_DESCRIPTION_CLASS,
+                "text-[15px] sm:text-base lg:text-[17px]",
+              )}
+            >
+              {description}
+            </p>
           ) : null}
         </div>
         {complete ? (
-          <span className={cn("mt-0.5 shrink-0", SELL_COMPLETE_BADGE_CLASS)}>
+          <span className={cn("mt-1.5 hidden shrink-0 sm:inline-flex", SELL_COMPLETE_BADGE_CLASS)}>
             <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
             Done
           </span>
         ) : null}
       </div>
       <Card className={SELL_SECTION_CARD_CLASS}>
-        <CardContent className="p-6 lg:p-8 xl:p-10">{children}</CardContent>
+        <CardContent className="p-5 sm:p-9 lg:p-11">{children}</CardContent>
       </Card>
     </section>
   )
@@ -829,9 +833,9 @@ function SellPageContentInner({
   ])
   const [draftHydrated, setDraftHydrated] = useState(!!editId)
   const [flowStep, setFlowStep] = useState<BoardSellFlowStep>(() => {
-    if (editId) return "basics"
-    if (typeof window === "undefined") return "basics"
-    return readStoredBoardSellFlowStep() ?? "basics"
+    if (editId) return "product"
+    if (typeof window === "undefined") return "product"
+    return readStoredBoardSellFlowStep() ?? "product"
   })
   const setBoardFlowStep = useCallback((step: BoardSellFlowStep) => {
     setFlowStep(step)
@@ -872,8 +876,8 @@ function SellPageContentInner({
   /** Server / soft draft opens start on the first wizard step. */
   useEffect(() => {
     if (!editId) return
-    setFlowStep("basics")
-    persistBoardSellFlowStep("basics")
+    setFlowStep("product")
+    persistBoardSellFlowStep("product")
   }, [editId])
 
   useEffect(() => {
@@ -1136,7 +1140,7 @@ function SellPageContentInner({
       }
       draftPhotosPendingRef.current = null
       setFormData(createInitialSellFormData())
-      setBoardFlowStep("basics")
+      setBoardFlowStep("product")
       clearPersistedBoardSellFlowStep()
       sellListingThumbLoadedSrcByClientId.clear()
       latestListingPhotoPrepareSeqRef.current.clear()
@@ -1661,53 +1665,26 @@ function SellPageContentInner({
     (pickupShippingSectionEnteredOnce && pickupShippingLocationUserCommits > 0)
 
   const sellSectionCompletion = useMemo((): Record<string, boolean> => {
-    const deliveryDataComplete = sellSectionCompletionBase["sell-section-delivery"] === true
+    const deliveryDataComplete = sellSectionCompletionBase["sell-section-shipping"] === true
     return {
       ...sellSectionCompletionBase,
-      "sell-section-delivery": deliveryDataComplete && pickupShippingStepperUxSatisfied,
+      "sell-section-shipping": deliveryDataComplete && pickupShippingStepperUxSatisfied,
     }
   }, [pickupShippingStepperUxSatisfied, sellSectionCompletionBase])
 
   const activeSellSectionId = BOARD_SELL_SECTION_ID_BY_STEP[flowStep]
 
-  const sellStepChecklistBySection = useMemo(() => {
-    const checklist = computeSellStepChecklist(sellValidationForm, {
-      imageCount: images.length,
-      imagesUploadReady,
-    })
-    // The rail additionally requires an explicit LocationPicker commit before
-    // delivery counts as done — mirror that as a visible checklist row.
-    if (!pickupShippingStepperUxSatisfied) {
-      checklist["sell-section-delivery"] = [
-        ...(checklist["sell-section-delivery"] ?? []),
-        {
-          id: "map-confirm",
-          label: "Confirm your location on the map",
-          complete: false,
-          sectionId: "sell-section-delivery",
-        },
-      ]
-    }
-    return checklist
-  }, [sellValidationForm, images.length, imagesUploadReady, pickupShippingStepperUxSatisfied])
-
-  const activeSellChecklistItems = useMemo((): SellStepChecklistItem[] => {
-    if (flowStep === "publish") {
-      // On publish, surface anything still missing anywhere so submitting can
-      // never fail for a reason the seller hasn't already seen.
-      const earlier = SELL_FORM_SECTION_NAV_ITEMS.filter(
-        (item) => item.id !== "sell-section-publish",
-      ).flatMap((item) =>
-        (sellStepChecklistBySection[item.id] ?? []).filter((entry) => !entry.complete),
-      )
-      return [...earlier, ...(sellStepChecklistBySection["sell-section-publish"] ?? [])]
-    }
-    return sellStepChecklistBySection[activeSellSectionId] ?? []
-  }, [flowStep, activeSellSectionId, sellStepChecklistBySection])
-
+  const sellStepChecklistBySection = useMemo(
+    () =>
+      computeSellStepChecklist(sellValidationForm, {
+        imageCount: images.length,
+        imagesUploadReady,
+      }),
+    [sellValidationForm, images.length, imagesUploadReady],
+  )
   const shippingSetupIncomplete = useMemo(
     () =>
-      (sellStepChecklistBySection["sell-section-delivery"] ?? []).some(
+      (sellStepChecklistBySection["sell-section-shipping"] ?? []).some(
         (item) => item.id === "shipping-setup" && !item.complete,
       ),
     [sellStepChecklistBySection],
@@ -1735,12 +1712,6 @@ function SellPageContentInner({
       reswellPackageWeightLb: "",
       reswellPackageWeightOz: "",
     }))
-  }, [])
-
-  const sellSectionLabelById = useMemo(() => {
-    const map: Record<string, string> = {}
-    for (const item of SELL_FORM_SECTION_NAV_ITEMS) map[item.id] = item.label
-    return map
   }, [])
 
   const goToSellSection = useCallback(
@@ -1801,14 +1772,14 @@ function SellPageContentInner({
   })
 
   useEffect(() => {
-    if (flowStep === "delivery") {
+    if (flowStep === "shipping") {
       setPickupShippingSectionEnteredOnce(true)
     }
   }, [flowStep])
 
   useEffect(() => {
     if (skipPickupShippingStepperInteractionUx || editLoading) return
-    if (flowStep !== "delivery") return
+    if (flowStep !== "shipping") return
 
     let cancelled = false
     let raf = 0
@@ -1817,7 +1788,7 @@ function SellPageContentInner({
 
     const attach = () => {
       if (cancelled) return
-      const el = document.getElementById("sell-section-delivery")
+      const el = document.getElementById("sell-section-shipping")
       if (!el) {
         attempts += 1
         if (attempts > 150) return
@@ -2115,7 +2086,7 @@ function SellPageContentInner({
     }
     draftPhotosPendingRef.current = null
     setFormData(createInitialSellFormData())
-    setBoardFlowStep("basics")
+    setBoardFlowStep("product")
     clearPersistedBoardSellFlowStep()
     sellListingThumbLoadedSrcByClientId.clear()
     latestListingPhotoPrepareSeqRef.current.clear()
@@ -3755,12 +3726,12 @@ function SellPageContentInner({
         className={cn(
           "flex-1 w-full",
           SELL_PAGE_GROUND_CLASS,
-          !fullscreenSellBlocking && "pb-16 md:pb-20 lg:pb-24",
+          !fullscreenSellBlocking && "pb-20 md:pb-20 lg:pb-24",
           !fullscreenSellBlocking && !showBoardModeHeader && "pt-8",
         )}
       >
         <AdminBulkListingBanner section="surfboards" bulkSlotId={bulkSlotId} />
-        <div className="container relative mx-auto max-w-2xl min-h-[50vh] lg:max-w-6xl">
+        <div className="container relative mx-auto max-w-3xl min-h-[50vh] px-4 sm:px-6 lg:max-w-6xl">
           {loading && publishPreview ? (
             <SellFlowPublishingFullscreenPortal
               preview={publishPreview}
@@ -3780,7 +3751,6 @@ function SellPageContentInner({
           </h1>
           {showBoardModeHeader ? (
             <SellBoardModeHeader
-              active="advanced"
               leading={
                 <div className="space-y-3">
                   <button
@@ -3791,7 +3761,7 @@ function SellPageContentInner({
                     <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
                     Back
                   </button>
-                  <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem] sm:leading-tight">
+                  <h1 className="hidden text-3xl font-bold tracking-tight text-foreground sm:block sm:text-4xl sm:leading-tight">
                     Create a listing
                   </h1>
                 </div>
@@ -3832,8 +3802,8 @@ function SellPageContentInner({
               }
             />
           ) : (
-            <div className="mx-auto w-full max-w-2xl px-4 pt-8 sm:pt-10">
-              <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+            <div className="mx-auto w-full max-w-3xl px-4 pt-10 sm:pt-12">
+              <div className="mb-8 flex flex-col gap-5 sm:mb-10 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
                 <div className="min-w-0 flex-1 space-y-3">
                   <button
                     type="button"
@@ -3843,7 +3813,7 @@ function SellPageContentInner({
                     <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
                     Back
                   </button>
-                  <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem] sm:leading-tight">
+                  <h1 className="hidden text-3xl font-bold tracking-tight text-foreground sm:block sm:text-4xl sm:leading-tight">
                     {editId ? "Edit listing" : "Create a listing"}
                   </h1>
                 </div>
@@ -3951,13 +3921,12 @@ function SellPageContentInner({
             <div
               aria-busy={editLoading || undefined}
               className={cn(
-                "flex w-full flex-col gap-8 transition-opacity lg:mx-auto lg:w-max lg:max-w-full lg:flex-row lg:items-start lg:gap-10 xl:gap-14",
+                "flex w-full flex-col gap-10 transition-opacity lg:mx-auto lg:w-max lg:max-w-full lg:flex-row lg:items-start lg:gap-12 xl:gap-16",
                 editLoading && "pointer-events-none opacity-60",
               )}
             >
-              <div className="hidden shrink-0 lg:block lg:w-52 xl:w-56">
-                <div className="lg:sticky lg:top-24 space-y-6">
-                  {/* Wrapper owns stickiness so the nav + buyer preview travel together. */}
+              <div className="hidden shrink-0 lg:block lg:w-56 xl:w-64">
+                <div className="lg:sticky lg:top-24">
                   <SellSectionNav
                     items={SELL_FORM_SECTION_NAV_ITEMS}
                     sectionCompletion={sellSectionCompletion}
@@ -3965,47 +3934,42 @@ function SellPageContentInner({
                     onSelectSection={goToSellSection}
                     className="!static"
                   />
-                  <SellListingPreviewCard
-                    title={formData.title}
-                    brand={formData.brand}
-                    model={formData.boardModelName}
-                    conditionLabel={
-                      formData.condition ? formatCondition(formData.condition) : undefined
-                    }
-                    price={formData.price}
-                    imageSrc={images[0]?.previewUrl || undefined}
-                  />
                 </div>
               </div>
-              <div className="min-w-0 w-full max-w-2xl lg:w-auto lg:max-w-3xl lg:shrink-0">
+              <div className="min-w-0 w-full max-w-3xl lg:w-auto lg:max-w-4xl lg:shrink-0">
+                <SellSectionNavMobileProgress
+                  items={SELL_FORM_SECTION_NAV_ITEMS}
+                  activeSectionId={activeSellSectionId}
+                  className="mb-6 sm:hidden"
+                />
                 <SellSectionNavHorizontal
                   items={SELL_FORM_SECTION_NAV_ITEMS}
                   sectionCompletion={sellSectionCompletion}
                   activeSectionId={activeSellSectionId}
                   onSelectSection={goToSellSection}
-                  className="mb-4 sm:mb-8 lg:hidden"
+                  className="mb-8 hidden sm:block lg:hidden"
                 />
                 <form
               ref={formRef}
               onSubmit={(e) => {
-                if (flowStep !== "publish") {
+                if (flowStep !== "shipping") {
                   e.preventDefault()
                   goToNextSellStep()
                   return
                 }
                 void handleSubmit(e)
               }}
-              className="space-y-10 lg:space-y-12"
+              className="space-y-12 lg:space-y-14"
               aria-busy={loading}
             >
-                {flowStep === "basics" ? (
+                {flowStep === "product" ? (
                 <SellFormSection
-                  sectionId="sell-section-basics"
-                  title="Brand, model & title"
-                  description="Tell buyers what board you have, give it a title, then set the condition."
-                  complete={sellSectionCompletion["sell-section-basics"] === true}
+                  sectionId="sell-section-product"
+                  title="Product Info"
+                  description="Brand, model, title, condition, dimensions, and board details."
+                  complete={sellSectionCompletion["sell-section-product"] === true}
                 >
-                    <div className="space-y-8">
+                    <div className="space-y-10">
                       {catalogSelectionCard &&
                       formData.boardBrandId === catalogSelectionCard.brandId ? (
                         <SellCatalogSelectionCard
@@ -4024,9 +3988,9 @@ function SellPageContentInner({
                           }}
                         />
                       ) : null}
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-x-4 sm:gap-y-3">
-                          <div className="min-w-0 space-y-2">
+                      <div className="space-y-5">
+                        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-5">
+                          <div className="min-w-0 space-y-2.5">
                             <div className="flex items-end justify-between gap-2">
                               <Label htmlFor="listing-brand">Brand</Label>
                             </div>
@@ -4082,7 +4046,7 @@ function SellPageContentInner({
                             />
                           </div>
 
-                          <div className="min-w-0 space-y-2">
+                          <div className="min-w-0 space-y-2.5">
                             <SellBoardModelField
                               directoryBrandId={formData.boardBrandId}
                               linkedBrandDisplayName={
@@ -4128,7 +4092,7 @@ function SellPageContentInner({
 
                       <Separator className="bg-border" />
 
-                      <div className="space-y-2">
+                      <div className="space-y-2.5">
                         <div className="flex items-end justify-between gap-2">
                           <Label htmlFor="listing-title">
                             Title{" "}
@@ -4167,7 +4131,7 @@ function SellPageContentInner({
 
                       <Separator className="bg-border" />
 
-                      <div className="max-w-md space-y-2">
+                      <div className="max-w-md space-y-2.5">
                         <Label htmlFor="sell-condition">
                           Condition{" "}
                           <SellRequiredMark complete={Boolean(formData.condition.trim())} />
@@ -4188,19 +4152,10 @@ function SellPageContentInner({
                           </SelectContent>
                         </Select>
                       </div>
-                    </div>
-                </SellFormSection>
-                ) : null}
 
-                {flowStep === "details" ? (
-                <SellFormSection
-                  sectionId="sell-section-details"
-                  title="Dimensions & details"
-                  description="Add measurements, board shape, fin setup, construction, and a short description."
-                  complete={sellSectionCompletion["sell-section-details"] === true}
-                >
-                    <div className="space-y-8">
-                      <div className="space-y-3">
+                      <Separator className="bg-border" />
+
+                      <div className="space-y-5">
                       {modelStockSizes.length > 0 ? (
                         <SellBoardStockSizePicker
                           modelName={formData.boardModelName.trim() || null}
@@ -4301,30 +4256,284 @@ function SellPageContentInner({
                         disabled={editLoading}
                       />
                     </div>
-
-                    <Separator className="bg-border" />
-
-                    <div className="space-y-6">
-                <SellListingDescriptionField
-                  id="description"
-                  value={formData.description}
-                  onChange={(description) => setFormData({ ...formData, description })}
-                  placeholder="Describe your board…"
-                  maxLength={1000}
-                />
-                    </div>
                     </div>
                 </SellFormSection>
                 ) : null}
 
-                {flowStep === "delivery" ? (
+                {flowStep === "photos" ? (
                 <SellFormSection
-                  sectionId="sell-section-delivery"
-                  title="Pickup & shipping"
-                  description="Pin where the board is and choose delivery options."
-                  complete={sellSectionCompletion["sell-section-delivery"] === true}
+                  sectionId="sell-section-photos"
+                  title="Photos & Description"
+                  description="Add clear photos and tell buyers about the board."
+                  complete={sellSectionCompletion["sell-section-photos"] === true}
                 >
                   <div className="space-y-8">
+                    <div className="space-y-1.5">
+                      <p className="text-[15px] font-semibold text-foreground">
+                        Upload photos of your board{" "}
+                        <span className="text-destructive" aria-hidden>
+                          *
+                        </span>
+                      </p>
+                      <p className="text-[15px] leading-relaxed text-muted-foreground">
+                        Clear, well-lit shots sell faster. Square photos work best — the first
+                        becomes your cover.
+                      </p>
+                    </div>
+                    <SellListingPhotoGrid
+                      images={images}
+                      maxPhotos={12}
+                      fileInputId={listingPhotosInputId}
+                      photosFileDragActive={photosFileDragActive}
+                      onImageInputChange={handleImageChange}
+                      onDragEnter={handlePhotosFileDragEnter}
+                      onDragLeave={handlePhotosFileDragLeave}
+                      onDragOver={handlePhotosFileDragOver}
+                      onDrop={handlePhotosFileDrop}
+                      onDragEnd={handlePhotosDragEnd}
+                      onRemove={handlePhotoTileRemove}
+                      onRetry={handlePhotoTileRetry}
+                      onRotate180={handlePhotoTileRotate}
+                      photoDragSensors={photoDragSensors}
+                      hideHeader
+                      belowGrid={<SellPhotoExamplesBanner />}
+                    />
+
+                    <Separator className="bg-border" />
+
+                    <SellListingDescriptionField
+                      id="description"
+                      value={formData.description}
+                      onChange={(description) => setFormData({ ...formData, description })}
+                      placeholder="Describe your board…"
+                      maxLength={1000}
+                    />
+                  </div>
+                </SellFormSection>
+                ) : null}
+
+                {flowStep === "pricing" ? (
+                <SellFormSection
+                  sectionId="sell-section-pricing"
+                  title="Pricing"
+                  description="Set your list price and optional offer settings."
+                  complete={sellSectionCompletion["sell-section-pricing"] === true}
+                >
+                <div className="space-y-10">
+                  <SellPriceFields
+                    listingPrice={formData.price}
+                    onListingPriceChange={(value) =>
+                      setFormData({ ...formData, price: value })
+                    }
+                    sellerPurchasePrice={formData.sellerPurchasePrice}
+                    onSellerPurchasePriceChange={(value) =>
+                      setFormData({ ...formData, sellerPurchasePrice: value })
+                    }
+                    afterListingPrice={
+                      <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-sm">
+                        <div className="flex gap-3">
+                          <div
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-foreground text-background"
+                            aria-hidden
+                          >
+                            <Zap className="h-4 w-4" strokeWidth={2.5} />
+                          </div>
+                          <div className="min-w-0 space-y-1">
+                            <h3 className="text-sm font-semibold text-foreground">
+                              Sell your board even faster
+                            </h3>
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              Increase your chances of selling with price drops and offers.
+                            </p>
+                          </div>
+                        </div>
+
+                        <Separator className="my-5" />
+
+                        <div className="space-y-4">
+                          <div className="flex gap-4">
+                            <Switch
+                              id="sell-auto-price-drop"
+                              checked={formData.autoPriceDrop}
+                              onCheckedChange={(v) =>
+                                setFormData({ ...formData, autoPriceDrop: v === true })
+                              }
+                              className="mt-0.5 shrink-0 data-[state=checked]:bg-listingHeart"
+                              aria-label="Drop the price in 2 weeks if not sold"
+                            />
+                            <div className="min-w-0 space-y-1">
+                              <Label
+                                htmlFor="sell-auto-price-drop"
+                                className="text-sm font-medium text-foreground cursor-pointer"
+                              >
+                                Drop the price in 2 weeks
+                              </Label>
+                              <p className="text-sm text-muted-foreground leading-relaxed">
+                                If it hasn&apos;t sold, we can lower your list price after two weeks.
+                                You choose the floor — we won&apos;t go below that price.
+                              </p>
+                            </div>
+                          </div>
+                          {formData.autoPriceDrop ? (
+                            <div className="space-y-2 sm:pl-14">
+                              <Label htmlFor="sell-auto-price-drop-floor">
+                                Lowest price after 2 weeks ($){" "}
+                                <SellRequiredMark
+                                  complete={priceDropFloorComplete(
+                                    formData.autoPriceDropFloor,
+                                    formData.price,
+                                  )}
+                                />
+                              </Label>
+                              <Input
+                                id="sell-auto-price-drop-floor"
+                                type="number"
+                                inputMode="decimal"
+                                min="0.01"
+                                step="0.01"
+                                placeholder="0.00"
+                                value={formData.autoPriceDropFloor}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    autoPriceDropFloor: e.target.value,
+                                  })
+                                }
+                                className="h-11 border-foreground/20 bg-card shadow-sm placeholder:text-muted-foreground"
+                              />
+                              <p className="text-xs text-muted-foreground leading-relaxed">
+                                Must be less than your list price. When automation ships, this is the
+                                minimum your listing will show after the scheduled drop.
+                              </p>
+                            </div>
+                          ) : null}
+                        </div>
+
+                        <Separator className="my-5" />
+
+                        <div className="flex gap-4">
+                          <Switch
+                            id="sell-buyer-offers"
+                            checked={formData.buyerOffers}
+                            onCheckedChange={(v) =>
+                              setFormData({ ...formData, buyerOffers: v === true })
+                            }
+                            className="mt-0.5 shrink-0 data-[state=checked]:bg-listingHeart"
+                            aria-label="Allow buyers to make offers"
+                          />
+                          <div className="min-w-0 space-y-1">
+                            <Label
+                              htmlFor="sell-buyer-offers"
+                              className="text-sm font-medium text-foreground cursor-pointer"
+                            >
+                              Allow buyers to make offers
+                            </Label>
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              Lets you negotiate a final price with buyers before checkout.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  />
+
+                  <Separator className="bg-border" />
+
+                {publishPreview && !loading && (
+                  <div
+                    className={cn(
+                      "rounded-xl border p-4 flex gap-4 transition-colors",
+                      publishPreview.status === "publishing" && "border-primary/25 bg-primary/[0.04]",
+                      publishPreview.status === "live" && "border-emerald-500/30 bg-emerald-500/[0.06]",
+                      publishPreview.status === "error" && "border-destructive/40 bg-destructive/[0.06]",
+                    )}
+                  >
+                    <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted">
+                      <Image
+                        src={proxiedListingImageSrc(publishPreview.coverUrl) || "/placeholder.svg"}
+                        alt=""
+                        fill
+                        className="object-cover object-center"
+                        unoptimized
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold text-foreground truncate">{publishPreview.title}</p>
+                        {publishPreview.status === "publishing" && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Publishing...
+                          </span>
+                        )}
+                        {publishPreview.status === "live" && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Live ✓
+                          </span>
+                        )}
+                        {publishPreview.status === "error" && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-medium text-destructive">
+                            <AlertCircle className="h-3 w-3" />
+                            Failed
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        ${publishPreview.price}
+                        {publishPreview.detailHref && publishPreview.status === "live" && (
+                          <>
+                            {" · "}
+                            <Link
+                              href={publishPreview.detailHref}
+                              className="text-primary underline-offset-4 hover:underline"
+                            >
+                              View listing
+                            </Link>
+                          </>
+                        )}
+                      </p>
+                      {publishPreview.status === "error" && (
+                        <div className="pt-2 space-y-2">
+                          <p className="text-xs text-muted-foreground">
+                            {publishPreview.failedStepLabel ? (
+                              <>
+                                <span className="font-medium text-foreground">
+                                  {publishPreview.failedStepLabel}
+                                </span>
+                                {" — "}
+                              </>
+                            ) : null}
+                            {publishPreview.errorMessage}
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5"
+                            onClick={() => formRef.current?.requestSubmit()}
+                          >
+                            <RefreshCw className="h-3.5 w-3.5" />
+                            Retry
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                </div>
+                </SellFormSection>
+                ) : null}
+
+                {flowStep === "shipping" ? (
+                <SellFormSection
+                  sectionId="sell-section-shipping"
+                  title="Shipping"
+                  description="Pin where the board is and choose pickup or shipping."
+                  complete={sellSectionCompletion["sell-section-shipping"] === true}
+                >
+                  <div className="space-y-10">
                     <div className="space-y-6">
                       <LocationPicker
                         onLocationSelect={(loc) => {
@@ -4795,239 +5004,6 @@ function SellPageContentInner({
 
                     </div>
                   </div>
-                </SellFormSection>
-                ) : null}
-
-                {flowStep === "publish" ? (
-                <SellFormSection
-                  sectionId="sell-section-publish"
-                  title={editId ? "Photos & price" : "Photos & publish"}
-                  description="Add photos, set your price, then publish."
-                  complete={sellSectionCompletion["sell-section-publish"] === true}
-                >
-                <div className="space-y-8">
-                  <SellListingPhotoGrid
-                    images={images}
-                    maxPhotos={12}
-                    fileInputId={listingPhotosInputId}
-                    photosFileDragActive={photosFileDragActive}
-                    onImageInputChange={handleImageChange}
-                    onDragEnter={handlePhotosFileDragEnter}
-                    onDragLeave={handlePhotosFileDragLeave}
-                    onDragOver={handlePhotosFileDragOver}
-                    onDrop={handlePhotosFileDrop}
-                    onDragEnd={handlePhotosDragEnd}
-                    onRemove={handlePhotoTileRemove}
-                    onRetry={handlePhotoTileRetry}
-                    onRotate180={handlePhotoTileRotate}
-                    photoDragSensors={photoDragSensors}
-                    photoDescription="3+ clear photos help boards sell faster. Drag to reorder; the first is your cover."
-                    aboveGrid={<SellPhotoExamplesBanner />}
-                  />
-
-                  <Separator className="bg-border" />
-
-                  <SellPriceFields
-                    listingPrice={formData.price}
-                    onListingPriceChange={(value) =>
-                      setFormData({ ...formData, price: value })
-                    }
-                    sellerPurchasePrice={formData.sellerPurchasePrice}
-                    onSellerPurchasePriceChange={(value) =>
-                      setFormData({ ...formData, sellerPurchasePrice: value })
-                    }
-                    afterListingPrice={
-                      <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-sm">
-                        <div className="flex gap-3">
-                          <div
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-foreground text-background"
-                            aria-hidden
-                          >
-                            <Zap className="h-4 w-4" strokeWidth={2.5} />
-                          </div>
-                          <div className="min-w-0 space-y-1">
-                            <h3 className="text-sm font-semibold text-foreground">
-                              Sell your board even faster
-                            </h3>
-                            <p className="text-sm text-muted-foreground leading-relaxed">
-                              Increase your chances of selling with price drops and offers.
-                            </p>
-                          </div>
-                        </div>
-
-                        <Separator className="my-5" />
-
-                        <div className="space-y-4">
-                          <div className="flex gap-4">
-                            <Switch
-                              id="sell-auto-price-drop"
-                              checked={formData.autoPriceDrop}
-                              onCheckedChange={(v) =>
-                                setFormData({ ...formData, autoPriceDrop: v === true })
-                              }
-                              className="mt-0.5 shrink-0 data-[state=checked]:bg-listingHeart"
-                              aria-label="Drop the price in 2 weeks if not sold"
-                            />
-                            <div className="min-w-0 space-y-1">
-                              <Label
-                                htmlFor="sell-auto-price-drop"
-                                className="text-sm font-medium text-foreground cursor-pointer"
-                              >
-                                Drop the price in 2 weeks
-                              </Label>
-                              <p className="text-sm text-muted-foreground leading-relaxed">
-                                If it hasn&apos;t sold, we can lower your list price after two weeks.
-                                You choose the floor — we won&apos;t go below that price.
-                              </p>
-                            </div>
-                          </div>
-                          {formData.autoPriceDrop ? (
-                            <div className="space-y-2 sm:pl-14">
-                              <Label htmlFor="sell-auto-price-drop-floor">
-                                Lowest price after 2 weeks ($){" "}
-                                <SellRequiredMark
-                                  complete={priceDropFloorComplete(
-                                    formData.autoPriceDropFloor,
-                                    formData.price,
-                                  )}
-                                />
-                              </Label>
-                              <Input
-                                id="sell-auto-price-drop-floor"
-                                type="number"
-                                inputMode="decimal"
-                                min="0.01"
-                                step="0.01"
-                                placeholder="0.00"
-                                value={formData.autoPriceDropFloor}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    autoPriceDropFloor: e.target.value,
-                                  })
-                                }
-                                className="h-11 border-foreground/20 bg-card shadow-sm placeholder:text-muted-foreground"
-                              />
-                              <p className="text-xs text-muted-foreground leading-relaxed">
-                                Must be less than your list price. When automation ships, this is the
-                                minimum your listing will show after the scheduled drop.
-                              </p>
-                            </div>
-                          ) : null}
-                        </div>
-
-                        <Separator className="my-5" />
-
-                        <div className="flex gap-4">
-                          <Switch
-                            id="sell-buyer-offers"
-                            checked={formData.buyerOffers}
-                            onCheckedChange={(v) =>
-                              setFormData({ ...formData, buyerOffers: v === true })
-                            }
-                            className="mt-0.5 shrink-0 data-[state=checked]:bg-listingHeart"
-                            aria-label="Allow buyers to make offers"
-                          />
-                          <div className="min-w-0 space-y-1">
-                            <Label
-                              htmlFor="sell-buyer-offers"
-                              className="text-sm font-medium text-foreground cursor-pointer"
-                            >
-                              Allow buyers to make offers
-                            </Label>
-                            <p className="text-sm text-muted-foreground leading-relaxed">
-                              Lets you negotiate a final price with buyers before checkout.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    }
-                  />
-
-                  <Separator className="bg-border" />
-
-                {publishPreview && !loading && (
-                  <div
-                    className={cn(
-                      "rounded-xl border p-4 flex gap-4 transition-colors",
-                      publishPreview.status === "publishing" && "border-primary/25 bg-primary/[0.04]",
-                      publishPreview.status === "live" && "border-emerald-500/30 bg-emerald-500/[0.06]",
-                      publishPreview.status === "error" && "border-destructive/40 bg-destructive/[0.06]",
-                    )}
-                  >
-                    <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted">
-                      <Image
-                        src={proxiedListingImageSrc(publishPreview.coverUrl) || "/placeholder.svg"}
-                        alt=""
-                        fill
-                        className="object-cover object-center"
-                        unoptimized
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold text-foreground truncate">{publishPreview.title}</p>
-                        {publishPreview.status === "publishing" && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Publishing...
-                          </span>
-                        )}
-                        {publishPreview.status === "live" && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
-                            <CheckCircle2 className="h-3 w-3" />
-                            Live ✓
-                          </span>
-                        )}
-                        {publishPreview.status === "error" && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-medium text-destructive">
-                            <AlertCircle className="h-3 w-3" />
-                            Failed
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        ${publishPreview.price}
-                        {publishPreview.detailHref && publishPreview.status === "live" && (
-                          <>
-                            {" · "}
-                            <Link
-                              href={publishPreview.detailHref}
-                              className="text-primary underline-offset-4 hover:underline"
-                            >
-                              View listing
-                            </Link>
-                          </>
-                        )}
-                      </p>
-                      {publishPreview.status === "error" && (
-                        <div className="pt-2 space-y-2">
-                          <p className="text-xs text-muted-foreground">
-                            {publishPreview.failedStepLabel ? (
-                              <>
-                                <span className="font-medium text-foreground">
-                                  {publishPreview.failedStepLabel}
-                                </span>
-                                {" — "}
-                              </>
-                            ) : null}
-                            {publishPreview.errorMessage}
-                          </p>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="gap-1.5"
-                            onClick={() => formRef.current?.requestSubmit()}
-                          >
-                            <RefreshCw className="h-3.5 w-3.5" />
-                            Retry
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
 
                 {!loading ? (
                   <Button
@@ -5041,24 +5017,12 @@ function SellPageContentInner({
                     {editId ? (listingIsDraft ? "Publish listing" : "Save changes") : "Create Listing"}
                   </Button>
                 ) : null}
-                </div>
                 </SellFormSection>
                 ) : null}
 
-                {!editLoading ? (
-                  <SellStepChecklist
-                    items={activeSellChecklistItems}
-                    activeSectionId={activeSellSectionId}
-                    sectionLabelById={sellSectionLabelById}
-                    onGoToSection={goToSellSection}
-                    title={flowStep === "publish" ? "Before you publish" : "Still needed"}
-                    className="mt-6"
-                  />
-                ) : null}
-
                 <BoardSellWizardFooter
-                  showBack={flowStep !== "basics"}
-                  showNext={flowStep !== "publish"}
+                  showBack={flowStep !== "product"}
+                  showNext={flowStep !== "shipping"}
                   onBack={goToPrevSellStep}
                   onNext={goToNextSellStep}
                   disabled={loading || editLoading}
