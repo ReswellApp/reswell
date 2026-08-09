@@ -184,14 +184,14 @@ export function computeSellSectionCompletion(
       titleComplete(form) &&
       brandModelComplete(form) &&
       conditionComplete(form) &&
-      shapeSectionComplete(form) &&
-      dimensionsSectionComplete(form),
+      shapeSectionComplete(form),
     "sell-section-photos":
       opts.imageCount >= LISTING_MIN_PHOTOS &&
       opts.imagesUploadReady &&
       descriptionOnlyComplete(form),
     "sell-section-pricing": pricePublishFieldsComplete(form),
-    "sell-section-shipping": deliverySectionComplete(form),
+    "sell-section-shipping":
+      dimensionsSectionComplete(form) && deliverySectionComplete(form),
   }
 }
 
@@ -239,12 +239,6 @@ export function computeSellStepChecklist(
       complete: shapeSectionComplete(form),
       sectionId: "sell-section-product",
     },
-    {
-      id: "dimensions",
-      label: shippingEnabled ? "Dimensions (required for shipping)" : "Dimensions",
-      complete: dimensionsSectionComplete(form),
-      sectionId: "sell-section-product",
-    },
   ]
 
   const photos: SellStepChecklistItem[] = [
@@ -276,6 +270,12 @@ export function computeSellStepChecklist(
 
   const locationDone = Boolean(form.locationCity?.trim() && form.locationState?.trim())
   const shipping: SellStepChecklistItem[] = [
+    {
+      id: "dimensions",
+      label: shippingEnabled ? "Dimensions (required for shipping)" : "Dimensions",
+      complete: dimensionsSectionComplete(form),
+      sectionId: "sell-section-shipping",
+    },
     {
       id: "location",
       label: "Pickup location",

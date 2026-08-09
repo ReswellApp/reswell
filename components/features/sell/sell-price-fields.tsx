@@ -44,7 +44,7 @@ export function SellPriceFields({
   purchaseAccordionDescription = "Keep track of what you paid for the board versus what it sells for. This info is for your benefit only.",
 }: SellPriceFieldsProps) {
   return (
-    <div className="max-w-lg space-y-4">
+    <div className="w-full space-y-4">
       <p className="text-sm leading-relaxed text-muted-foreground">
         Fair, competitive listings tend to sell faster on Reswell.
       </p>

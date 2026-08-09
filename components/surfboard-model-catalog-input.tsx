@@ -127,7 +127,13 @@ export function SurfboardModelCatalogInput({
     }
     const el = containerRef.current
     const update = () => {
-      setDropdownRect(computeBelowFieldDropdownLayout(el))
+      setDropdownRect(
+        computeBelowFieldDropdownLayout(el, {
+          gap: 2,
+          minListWidth: 0,
+          maxListWidth: Number.POSITIVE_INFINITY,
+        }),
+      )
     }
     update()
     window.addEventListener("scroll", update, true)
@@ -163,16 +169,16 @@ export function SurfboardModelCatalogInput({
   const showResultsList = filtered.length > 0
 
   const listAreaClassName = cn(
-    "overscroll-contain py-1",
+    "divide-y divide-border overscroll-contain",
     anchoredBelowInputMobile
       ? "min-h-0 flex-1 overflow-y-auto"
       : "max-h-[min(45dvh,320px)] overflow-y-auto",
   )
 
   const dropdownShellClassName = cn(
-    "overflow-hidden rounded-md border border-border bg-popover text-popover-foreground shadow-md",
+    "overflow-hidden rounded-xl border border-border bg-background text-foreground shadow-[0_4px_16px_rgba(15,23,42,0.08)]",
     anchoredBelowInputMobile
-      ? "absolute left-0 right-0 top-full z-[400] mt-1 flex max-h-[min(42dvh,280px)] w-full flex-col"
+      ? "absolute left-0 right-0 top-full z-[400] mt-0.5 flex max-h-[min(42dvh,280px)] w-full flex-col"
       : "fixed z-[400]",
   )
 
@@ -194,9 +200,6 @@ export function SurfboardModelCatalogInput({
           : undefined
       }
     >
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/60 bg-muted/20 px-3 py-2">
-        <span className="text-xs font-semibold tracking-tight text-foreground sm:text-sm">Models</span>
-      </div>
       {showResultsList ? (
         <ul className={listAreaClassName}>
           {filtered.map((row, i) => (
@@ -204,8 +207,8 @@ export function SurfboardModelCatalogInput({
               <button
                 type="button"
                 className={cn(
-                  "mx-1 flex w-[calc(100%-0.5rem)] cursor-pointer select-none items-center rounded-lg px-2 py-2.5 text-left text-sm outline-none min-h-touch transition-colors",
-                  i === highlight ? "bg-muted/90" : "hover:bg-muted/80",
+                  "flex w-full cursor-pointer select-none flex-col gap-0.5 px-3 py-3.5 text-left outline-none min-h-touch transition-colors",
+                  i === highlight ? "bg-muted" : "hover:bg-muted/60",
                 )}
                 aria-selected={i === highlight}
                 onMouseEnter={() => setHighlight(i)}
@@ -214,9 +217,11 @@ export function SurfboardModelCatalogInput({
                   commitPick(row)
                 }}
               >
-                <span className="flex flex-col gap-0.5 text-left">
-                  <span className="font-medium leading-tight">{row.name}</span>
-                  <span className="text-xs font-normal text-muted-foreground leading-tight">{row.brandName}</span>
+                <span className="truncate text-[15px] font-bold leading-snug text-foreground">
+                  {row.name}
+                </span>
+                <span className="truncate text-xs font-normal leading-tight text-muted-foreground">
+                  {row.brandName}
                 </span>
               </button>
             </li>

@@ -13,9 +13,15 @@
  */
 export const SELL_PAGE_GROUND_CLASS = "bg-muted"
 
+/**
+ * Primary form column width: full-bleed on small screens, wider on desktop so
+ * Mac / large viewports use more of the page (same width on every guided step).
+ */
+export const SELL_FORM_COLUMN_CLASS = "w-full max-w-3xl lg:max-w-4xl"
+
 /** Section card plane: white surface, soft edge, whisper of elevation. */
 export const SELL_SECTION_CARD_CLASS =
-  "rounded-2xl border-border bg-white shadow-surface"
+  "w-full rounded-2xl border-border bg-white shadow-surface"
 
 /** Blurb under section titles — secondary but readable. */
 export const SELL_SECTION_DESCRIPTION_CLASS =

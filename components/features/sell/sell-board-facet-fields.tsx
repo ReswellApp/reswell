@@ -36,9 +36,9 @@ export function SellFacetChipGroup({
 }: SellFacetChipGroupProps) {
   const committed = value.trim()
   return (
-    <div className={cn("space-y-1.5", className)}>
-      <Label className="text-xs font-medium text-foreground/85">{label}</Label>
-      <div className="flex flex-wrap gap-1.5">
+    <div className={cn("space-y-2", className)}>
+      <Label className="text-sm font-medium text-foreground">{label}</Label>
+      <div className="flex flex-wrap gap-2">
         {options.map((opt) => {
           const selected = committed === opt.value
           return (
@@ -49,7 +49,7 @@ export function SellFacetChipGroup({
               aria-pressed={selected}
               onClick={() => onValueChange(selected ? "" : opt.value)}
               className={cn(
-                "inline-flex h-8 items-center gap-1 rounded-full border px-3 text-xs font-medium transition-all",
+                "inline-flex h-10 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium transition-all",
                 "active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
                 "disabled:cursor-not-allowed disabled:opacity-50",
                 selected
@@ -57,7 +57,7 @@ export function SellFacetChipGroup({
                   : "border-foreground/20 bg-card text-foreground hover:border-foreground/40 hover:bg-muted/50",
               )}
             >
-              {selected ? <Check className="h-3 w-3" strokeWidth={3} aria-hidden /> : null}
+              {selected ? <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden /> : null}
               {opt.label}
             </button>
           )

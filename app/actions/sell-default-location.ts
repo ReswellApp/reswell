@@ -9,11 +9,15 @@ import { createClient } from "@/lib/supabase/server"
 const saveDefaultListingLocationSchema = z.object({
   city: z.string().trim().min(1).max(200),
   state: z.string().trim().max(80).optional(),
+  lat: z.number().finite().optional(),
+  lng: z.number().finite().optional(),
+  display: z.string().trim().max(300).optional(),
 })
 
 /**
- * Called after a successful live listing publish. Saves locality only (no street)
- * to the member profile for /sell prefill. Ignored for impersonation (caller must not invoke).
+ * Saves locality (+ optional map pin) to the member profile for /sell reuse.
+ * Call after the seller confirms a listing area. Ignored for impersonation
+ * (caller must not invoke).
  */
 export async function saveDefaultListingLocationAction(raw: unknown) {
   const parsed = saveDefaultListingLocationSchema.safeParse(raw)
@@ -33,6 +37,9 @@ export async function saveDefaultListingLocationAction(raw: unknown) {
   const { error } = await updateProfileDefaultListingLocality(supabase, user.id, {
     city: parsed.data.city.trim(),
     state: stateTrimmed ? stateTrimmed : null,
+    lat: parsed.data.lat ?? null,
+    lng: parsed.data.lng ?? null,
+    display: parsed.data.display?.trim() || null,
   })
 
   if (error) {
@@ -40,5 +47,6 @@ export async function saveDefaultListingLocationAction(raw: unknown) {
   }
 
   revalidatePath("/sell")
+  revalidatePath("/sell/boards")
   return { success: true as const }
 }

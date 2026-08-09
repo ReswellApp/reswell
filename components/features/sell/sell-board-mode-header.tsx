@@ -1,6 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
+import { SELL_FORM_COLUMN_CLASS } from "@/components/features/sell/sell-form-surface"
 import { cn } from "@/lib/utils"
 
 type SellBoardModeHeaderProps = {
@@ -17,7 +18,7 @@ type SellBoardModeHeaderProps = {
 
 /**
  * Surfboard sell header for the full listing wizard.
- * (Quick list / Advanced mode toggle is retired — one create flow.)
+ * Guided vs Advanced live in {@link BoardSellViewToolbar}.
  */
 export function SellBoardModeHeader({
   leading,
@@ -27,7 +28,13 @@ export function SellBoardModeHeader({
   className,
 }: SellBoardModeHeaderProps) {
   return (
-    <div className={cn("mx-auto w-full max-w-3xl px-4 pt-5 sm:pt-12 lg:max-w-none lg:px-0", className)}>
+    <div
+      className={cn(
+        "mx-auto px-4 pt-5 sm:pt-12 lg:mx-0 lg:max-w-none lg:px-0",
+        SELL_FORM_COLUMN_CLASS,
+        className,
+      )}
+    >
       <header className="mb-5 sm:mb-10">
         <div className="flex flex-row items-start justify-between gap-3 sm:gap-8">
           <div className="min-w-0 flex-1 space-y-2">

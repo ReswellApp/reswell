@@ -21,7 +21,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { CheckCircle2, Heart, Plus, RefreshCw, RotateCw, Upload, X } from "lucide-react"
+import { CheckCircle2, Plus, RefreshCw, RotateCw, Upload, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
@@ -536,15 +536,6 @@ export function SellListingPhotoGrid({
           {photoCountLabel} ready — drag to reorder; first is cover.
         </p>
       ) : null}
-
-      <p className="space-y-1 text-xs text-muted-foreground">
-        <span className="block">Thank you for listing on Reswell.</span>
-        <span className="inline-flex flex-wrap items-center gap-1">
-          <span>Made with</span>
-          <Heart className="h-4 w-4 shrink-0 fill-listingHeart text-listingHeart" aria-hidden />
-          <span>in Santa Barbara.</span>
-        </span>
-      </p>
     </div>
   )
 }
