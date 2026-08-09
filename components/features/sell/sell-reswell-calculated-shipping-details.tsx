@@ -101,7 +101,7 @@ export function SellReswellCalculatedShippingDetails({
                 packageSummary
               ) : (
                 <>
-                  Estimated from board dimensions above
+                  Estimated from your board dimensions
                   <span className="hidden sm:inline">
                     {" "}
                     — no measuring tape needed

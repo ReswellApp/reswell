@@ -59,7 +59,6 @@ import {
   AlertCircle,
   RefreshCw,
   Zap,
-  ArrowLeft,
 } from "lucide-react"
 import { LocationPicker, type LocationPrefillSuggested } from "@/components/location-picker"
 import { listingDetailHref } from "@/lib/listing-href"
@@ -205,7 +204,6 @@ import {
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellBoardModeHeader } from "@/components/features/sell/sell-board-mode-header"
-import { goBackFromSellForm } from "@/lib/sell-flow/go-back-from-sell-form"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
 import { sellListingThumbLoadedSrcByClientId } from "@/components/features/sell/hooks/use-listing-photo-upload"
 import {
@@ -3804,10 +3802,6 @@ function SellPageContentInner({
   const fullscreenSellBlocking = loading && (!!publishPreview || !editLoading)
   const showBoardModeHeader = !editId && !editLoading && !getImpersonation()
 
-  const goBackInSellFlow = useCallback(() => {
-    goBackFromSellForm(router, editId ? sellListingsHubHref : "/sell")
-  }, [editId, router, sellListingsHubHref])
-
   if (editLoadError) {
     return (
       <SellEditLoadError
@@ -3850,19 +3844,9 @@ function SellPageContentInner({
           {showBoardModeHeader ? (
             <SellBoardModeHeader
               leading={
-                <div className="space-y-3">
-                  <button
-                    type="button"
-                    onClick={goBackInSellFlow}
-                    className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-                    Back
-                  </button>
-                  <h1 className="hidden text-3xl font-bold tracking-tight text-foreground sm:block sm:text-4xl sm:leading-tight">
-                    Create a listing
-                  </h1>
-                </div>
+                <h1 className="hidden text-3xl font-bold tracking-tight text-foreground sm:block sm:text-4xl sm:leading-tight">
+                  Create a listing
+                </h1>
               }
               actions={
                 showBoardDraftControls ||
@@ -3902,15 +3886,7 @@ function SellPageContentInner({
           ) : (
             <div className={cn("mx-auto px-4 pt-10 sm:pt-12", SELL_FORM_COLUMN_CLASS)}>
               <div className="mb-8 flex flex-col gap-5 sm:mb-10 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
-                <div className="min-w-0 flex-1 space-y-3">
-                  <button
-                    type="button"
-                    onClick={goBackInSellFlow}
-                    className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-                    Back
-                  </button>
+                <div className="min-w-0 flex-1">
                   <h1 className="hidden text-3xl font-bold tracking-tight text-foreground sm:block sm:text-4xl sm:leading-tight">
                     {editId ? "Edit listing" : "Create a listing"}
                   </h1>
@@ -4315,7 +4291,7 @@ function SellPageContentInner({
                 <SellFormSection
                   sectionId="sell-section-photos"
                   title="Photos & Description"
-                  description="Add clear photos and tell buyers about the board."
+                  description="Add photos, board size, and a short description."
                   complete={sellSectionCompletion["sell-section-photos"] === true}
                 >
                   <div className="space-y-8">
@@ -4349,6 +4325,43 @@ function SellPageContentInner({
                       hideHeader
                       belowGrid={<SellPhotoExamplesBanner />}
                     />
+
+                    <Separator className="bg-border" />
+
+                    <div className="space-y-5">
+                      {modelStockSizes.length > 0 ? (
+                        <SellBoardStockSizePicker
+                          modelName={formData.boardModelName.trim() || null}
+                          sizes={modelStockSizes}
+                          selectedId={selectedStockSizeId}
+                          mode={stockSizeMode}
+                          onSelectSize={handleSelectStockSize}
+                          onChooseCustom={handleChooseCustomStockSize}
+                          required={deliveryFlags.shipping_available}
+                          complete={
+                            isBoardLengthEntryComplete(formData.boardLength) &&
+                            isTapeStyleInchesEntryComplete(formData.boardWidthInches) &&
+                            isTapeStyleInchesEntryComplete(formData.boardThicknessInches)
+                          }
+                          disabled={editLoading}
+                        />
+                      ) : null}
+                      {modelStockSizes.length === 0 || stockSizeMode === "custom" ? (
+                        <SellBoardDimensionsPicker
+                          values={{
+                            boardLength: formData.boardLength,
+                            boardWidthInches: formData.boardWidthInches,
+                            boardThicknessInches: formData.boardThicknessInches,
+                            boardVolumeL: formData.boardVolumeL,
+                          }}
+                          onChange={(patch) =>
+                            setFormData((fd) => ({ ...fd, ...patch }))
+                          }
+                          dimensionsRequired={deliveryFlags.shipping_available}
+                          disabled={editLoading}
+                        />
+                      ) : null}
+                    </div>
 
                     <Separator className="bg-border" />
 
@@ -4581,47 +4594,10 @@ function SellPageContentInner({
                 <SellFormSection
                   sectionId="sell-section-shipping"
                   title="Shipping"
-                  description="Add dimensions, pin where the board is, then choose pickup or shipping."
+                  description="Pin where the board is, then choose pickup or shipping."
                   complete={sellSectionCompletion["sell-section-shipping"] === true}
                 >
                   <div className="space-y-10">
-                    <div className="space-y-5">
-                      {modelStockSizes.length > 0 ? (
-                        <SellBoardStockSizePicker
-                          modelName={formData.boardModelName.trim() || null}
-                          sizes={modelStockSizes}
-                          selectedId={selectedStockSizeId}
-                          mode={stockSizeMode}
-                          onSelectSize={handleSelectStockSize}
-                          onChooseCustom={handleChooseCustomStockSize}
-                          required={deliveryFlags.shipping_available}
-                          complete={
-                            isBoardLengthEntryComplete(formData.boardLength) &&
-                            isTapeStyleInchesEntryComplete(formData.boardWidthInches) &&
-                            isTapeStyleInchesEntryComplete(formData.boardThicknessInches)
-                          }
-                          disabled={editLoading}
-                        />
-                      ) : null}
-                      {modelStockSizes.length === 0 || stockSizeMode === "custom" ? (
-                        <SellBoardDimensionsPicker
-                          values={{
-                            boardLength: formData.boardLength,
-                            boardWidthInches: formData.boardWidthInches,
-                            boardThicknessInches: formData.boardThicknessInches,
-                            boardVolumeL: formData.boardVolumeL,
-                          }}
-                          onChange={(patch) =>
-                            setFormData((fd) => ({ ...fd, ...patch }))
-                          }
-                          dimensionsRequired={deliveryFlags.shipping_available}
-                          disabled={editLoading}
-                        />
-                      ) : null}
-                    </div>
-
-                    <Separator className="bg-border" />
-
                     <div className="space-y-6">
                       <LocationPicker
                         key={
