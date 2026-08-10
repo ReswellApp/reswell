@@ -256,6 +256,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     openSignIn: signIn,
     supabase: supabaseRef.current,
     funnelListingType: "wetsuits",
+    promptSignInOnUpload: false,
   })
 
   const {
@@ -479,8 +480,10 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     const session = await resolveClientSessionForMutation(supabase)
     const user = session?.user
     if (!user || !session?.access_token) {
-      toast.message("Sign in to publish your listing")
-      signIn("/sell/wetsuits")
+      toast.message("Create a free account to publish", {
+        description: "Your form stays here — sign up and we’ll finish publishing.",
+      })
+      signIn("/sell/wetsuits", { preferSignUp: true, skipSessionProbe: true })
       return
     }
 

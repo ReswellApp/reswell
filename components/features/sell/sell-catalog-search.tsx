@@ -55,6 +55,8 @@ export type SellCatalogSearchProps = {
   isAdmin?: boolean
   /** Homepage trending brands — tapping one drills into that brand's models. */
   trendingBrands?: SellTrendingBrand[]
+  /** Experience-based surfboard create URL (Quick vs Guided). */
+  surfboardSellHref: string
   /** Optional resume-draft prompt above the search hero. */
   resumeBanner?: React.ReactNode
   className?: string
@@ -354,7 +356,7 @@ function NlHelperResults({
     return (
       <div className="flex items-center gap-2 border-t border-border/60 px-4 py-3 text-xs text-muted-foreground">
         <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-cerulean" />
-        Checking our catalog with AI…
+        Checking our catalog…
       </div>
     )
   }
@@ -366,7 +368,7 @@ function NlHelperResults({
   return (
     <div className="border-t border-border/60">
       <PanelSectionHeader
-        title={summary ? `AI matched: ${summary}` : "AI suggested matches"}
+        title={summary ? `Suggested: ${summary}` : "Suggested matches"}
       />
       <ul className={productGridClassName}>
         {rows.map((row) => (
@@ -412,11 +414,13 @@ const EMPTY_NL_HELPER: SellCatalogNlHelperState = { loading: false, data: null }
 function SellCatalogSearchPanel({
   ctx,
   isAdmin = false,
+  surfboardSellHref,
   onSelect,
   nlHelper = EMPTY_NL_HELPER,
 }: {
   ctx: ExternalSuggestRenderContext<SellCatalogSearchResult>
   isAdmin?: boolean
+  surfboardSellHref: string
   onSelect: (row: SellCatalogSearchResultRow) => void
   nlHelper?: SellCatalogNlHelperState
 }) {
@@ -451,7 +455,11 @@ function SellCatalogSearchPanel({
           onSelect={onSelect}
         />
         <div className="border-t border-border/60 px-4 py-3 sm:px-4">
-          <SellListByTypeLinks isAdmin={isAdmin} variant="panel" />
+          <SellListByTypeLinks
+            isAdmin={isAdmin}
+            surfboardHref={surfboardSellHref}
+            variant="panel"
+          />
         </div>
       </>
     )
@@ -474,7 +482,11 @@ function SellCatalogSearchPanel({
               ? "Not what you're selling? You can still list without a catalog match — brand and model don't have to be in our directory."
               : "No catalog matches for that search. You can still list without a catalog match — brand and model don't have to be in our directory."}
           </p>
-          <SellListByTypeLinks isAdmin={isAdmin} variant="panel" />
+          <SellListByTypeLinks
+            isAdmin={isAdmin}
+            surfboardHref={surfboardSellHref}
+            variant="panel"
+          />
         </div>
       </>
     )
@@ -517,6 +529,7 @@ function SellBrandModelsPanel({
   onSelect,
   onBack,
   isAdmin = false,
+  surfboardSellHref,
 }: {
   brand: SellTrendingBrand
   rows: SellCatalogSearchResultRow[] | null
@@ -525,6 +538,7 @@ function SellBrandModelsPanel({
   onSelect: (row: SellCatalogSearchResultRow) => void
   onBack: () => void
   isAdmin?: boolean
+  surfboardSellHref: string
 }) {
   const [filter, setFilter] = React.useState("")
   const filterKey = compactSearchKey(filter)
@@ -588,7 +602,11 @@ function SellBrandModelsPanel({
       )}
 
       <div className="border-t border-border/60 px-3 py-2.5 sm:px-4">
-        <SellListByTypeLinks isAdmin={isAdmin} variant="panel" />
+        <SellListByTypeLinks
+          isAdmin={isAdmin}
+          surfboardHref={surfboardSellHref}
+          variant="panel"
+        />
       </div>
     </section>
   )
@@ -609,6 +627,7 @@ async function fetchSellCatalogSearch(query: string): Promise<SellCatalogSearchR
 export function SellCatalogSearch({
   isAdmin = false,
   trendingBrands = [],
+  surfboardSellHref,
   resumeBanner,
   className,
 }: SellCatalogSearchProps) {
@@ -715,9 +734,13 @@ export function SellCatalogSearch({
     (row: SellCatalogSearchResultRow) => {
       setSellEntryPoint("catalog_handoff")
       writeSellCatalogHandoff(sellCatalogHandoffFromRow(row))
-      router.push(sellCatalogSearchCategorySellPath(sellCatalogSearchRowCategory(row)))
+      router.push(
+        sellCatalogSearchCategorySellPath(sellCatalogSearchRowCategory(row), {
+          surfboardHref: surfboardSellHref,
+        }),
+      )
     },
-    [router],
+    [router, surfboardSellHref],
   )
 
   const runSearch = React.useCallback(async (q: string) => {
@@ -740,10 +763,15 @@ export function SellCatalogSearch({
         query.trim().length >= 1 && (loading || settled || Boolean(error) || data !== null),
       renderLoadingSkeleton: () => <NavSuggestPanelSkeleton />,
       renderPanel: (ctx) => (
-        <SellCatalogSearchPanel ctx={ctx} isAdmin={isAdmin} onSelect={handleSelect} />
+        <SellCatalogSearchPanel
+          ctx={ctx}
+          isAdmin={isAdmin}
+          surfboardSellHref={surfboardSellHref}
+          onSelect={handleSelect}
+        />
       ),
     }),
-    [handleSelect, isAdmin],
+    [handleSelect, isAdmin, surfboardSellHref],
   )
 
   const showFocusScrim = searchFocused || suggestOpen
@@ -864,6 +892,7 @@ export function SellCatalogSearch({
                           dismissPanel: dismissSearchFocus,
                         }}
                         isAdmin={isAdmin}
+                        surfboardSellHref={surfboardSellHref}
                         onSelect={handleSelect}
                         nlHelper={nlHelper}
                       />
@@ -894,7 +923,11 @@ export function SellCatalogSearch({
                 focusMode && "opacity-35",
               )}
             >
-              <SellListByTypeLinks isAdmin={isAdmin} variant="page" />
+              <SellListByTypeLinks
+                isAdmin={isAdmin}
+                surfboardHref={surfboardSellHref}
+                variant="page"
+              />
             </div>
           )}
 
@@ -908,6 +941,7 @@ export function SellCatalogSearch({
               onSelect={handleSelect}
               onBack={() => setFocusBrand(null)}
               isAdmin={isAdmin}
+              surfboardSellHref={surfboardSellHref}
             />
           ) : trendingBrands.length > 0 ? (
             <div

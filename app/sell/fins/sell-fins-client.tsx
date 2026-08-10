@@ -280,6 +280,7 @@ export default function SellFinsFlow({
     openSignIn: signIn,
     supabase: supabaseRef.current,
     funnelListingType: "fins",
+    promptSignInOnUpload: false,
   })
 
   const {
@@ -769,10 +770,13 @@ export default function SellFinsFlow({
         formData: { ...form, finFlowStep: flowStep } as SellListingDraftFormSnapshot,
         images,
         userId: null,
+        includeInFlightPhotos: true,
       })
       markPendingPublish("fins")
-      toast.message("Sign in to publish your listing")
-      signIn(finSellReturnPath())
+      toast.message("Listing saved on this device", {
+        description: "Create a free account to publish — you’ll pick up right here.",
+      })
+      signIn(finSellReturnPath(), { preferSignUp: true, skipSessionProbe: true })
     }
 
     if (!user || !session?.access_token) {

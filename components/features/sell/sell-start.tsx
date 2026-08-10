@@ -8,14 +8,17 @@ import { resolveSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 
 /**
  * `/sell` hub — drafts + catalog search, type links, then trending brands.
- * Surfboard type links go to the primary boards form (`/sell/boards`).
+ * Surfboard entry is experience-based (Quick for guests/first listing, Guided after).
  */
 export function SellStart({
   isAdmin = false,
   trendingBrands = [],
+  surfboardSellHref,
 }: {
   isAdmin?: boolean
   trendingBrands?: SellTrendingBrand[]
+  /** From {@link resolveDefaultSurfboardSellCreatePath}. */
+  surfboardSellHref: string
 }) {
   React.useEffect(() => {
     // Stamp session entry once so downstream flow_started rows join cleanly.
@@ -28,7 +31,11 @@ export function SellStart({
       <div className="mx-auto w-full max-w-2xl px-4 pt-8 sm:pt-10">
         <SellContinueDrafts className="mb-8" />
       </div>
-      <SellCatalogSearch isAdmin={isAdmin} trendingBrands={trendingBrands} />
+      <SellCatalogSearch
+        isAdmin={isAdmin}
+        trendingBrands={trendingBrands}
+        surfboardSellHref={surfboardSellHref}
+      />
     </div>
   )
 }

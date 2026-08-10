@@ -179,8 +179,10 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
       if (getImpersonation()) return { ok: false }
       const session = await resolveClientSessionForMutation(options.supabase)
       const signedIn = Boolean(session?.user && session.access_token)
+      // Guests either save via guest-token drafts (`allowUnsigned`) or keep a
+      // local IDB snapshot — never interrupt the form with an auth toast here.
+      // Explicit "Save draft" uses {@link handleSaveDraft} for messaging.
       if (!signedIn && !allowUnsigned) {
-        toast.message("Sign in to save a draft")
         return { ok: false }
       }
       if (options.editId && !listingIsDraft) return { ok: false }
@@ -306,6 +308,15 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
       toast.message("Add at least one detail or photo before saving a draft.")
       return
     }
+    if (!allowUnsigned) {
+      const session = await resolveClientSessionForMutation(options.supabase)
+      if (!session?.user || !session.access_token) {
+        toast.message("Your progress is saved on this device", {
+          description: "Sign in when you’re ready to publish — nothing to do right now.",
+        })
+        return
+      }
+    }
     const result = await persistServerDraft()
     if (!result.ok) {
       toast.error("Failed to save draft — please try again")
@@ -323,7 +334,14 @@ export function useSellServerDraft(options: UseSellServerDraftOptions): UseSellS
       return
     }
     toast.success("Draft saved")
-  }, [options.formLooksFilled, options.imagesRef, persistServerDraft, syncDraftImages])
+  }, [
+    allowUnsigned,
+    options.formLooksFilled,
+    options.imagesRef,
+    options.supabase,
+    persistServerDraft,
+    syncDraftImages,
+  ])
 
   const navigateToDraft = useCallback(
     (draftId: string) => {

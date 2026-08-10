@@ -1,5 +1,9 @@
 import { Suspense } from "react"
 import type { Metadata } from "next"
+import { redirect } from "next/navigation"
+import { resolveDefaultSurfboardSellCreatePath } from "@/lib/services/surfboardSellEntry"
+import { isSurfboardQuickCreatePath } from "@/lib/sell-flow/surfboard-sell-paths"
+import { createClient } from "@/lib/supabase/server"
 import SellFlowShell from "../sell-flow-client"
 
 const title = "Sell your surfboard — Reswell"
@@ -37,6 +41,12 @@ function parseEditListingId(value: string | string[] | undefined): string | null
   return null
 }
 
+function firstParam(value: string | string[] | undefined): string | undefined {
+  if (typeof value === "string") return value
+  if (Array.isArray(value)) return value[0]
+  return undefined
+}
+
 export default async function SellBoardsPage({
   searchParams,
 }: {
@@ -44,6 +54,20 @@ export default async function SellBoardsPage({
 }) {
   const qs = await searchParams
   const editId = parseEditListingId(qs.edit)
+  const wantsNew = firstParam(qs.new) === "1"
+
+  // Fresh create only — guests / first-time publishers start on Quick List.
+  // Mode switches from Quick use `/sell/boards` without `?new=1`, so they stay here.
+  if (!editId && wantsNew) {
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    const defaultPath = await resolveDefaultSurfboardSellCreatePath(supabase, user?.id)
+    if (isSurfboardQuickCreatePath(defaultPath)) {
+      redirect(defaultPath)
+    }
+  }
 
   // Null fallback: client owns editLoading; route skeleton was flashing on draft switches.
   return (

@@ -57,6 +57,11 @@ export type UseListingPhotoUploadOptions = {
    * so a full-page login remount does not eat the selection.
    */
   persistBeforeSignIn?: () => void | Promise<void>
+  /**
+   * When false, unsigned photo picks stay local (`pending_auth`) without opening
+   * sign-in — auth is gated at Publish instead. Default true.
+   */
+  promptSignInOnUpload?: boolean
 }
 
 export type UseListingPhotoUploadResult = {
@@ -91,6 +96,7 @@ export function useListingPhotoUpload({
   supabase: supabaseProp,
   funnelListingType,
   persistBeforeSignIn,
+  promptSignInOnUpload = true,
 }: UseListingPhotoUploadOptions): UseListingPhotoUploadResult {
   const supabaseRef = useRef(supabaseProp ?? createClient())
   const [images, setImages] = useState<ListingPhotoSlot[]>([])
@@ -103,6 +109,8 @@ export function useListingPhotoUpload({
   const idbRestoreOptimizeQueueRef = useRef<ListingPhotoSlot[] | null>(null)
   const persistBeforeSignInRef = useRef(persistBeforeSignIn)
   persistBeforeSignInRef.current = persistBeforeSignIn
+  const promptSignInOnUploadRef = useRef(promptSignInOnUpload)
+  promptSignInOnUploadRef.current = promptSignInOnUpload
 
   imagesRef.current = images
 
@@ -180,7 +188,7 @@ export function useListingPhotoUpload({
                 : s,
             ),
           )
-          if (!photoUploadSignInPromptedRef.current) {
+          if (promptSignInOnUploadRef.current && !photoUploadSignInPromptedRef.current) {
             photoUploadSignInPromptedRef.current = true
             void (async () => {
               try {
@@ -193,6 +201,9 @@ export function useListingPhotoUpload({
               })
               openSignIn(signInReturnPath())
             })()
+          } else if (!promptSignInOnUploadRef.current) {
+            // Keep local previews; flush IDB so Publish → account doesn't lose files.
+            void persistBeforeSignInRef.current?.()
           }
           return
         }

@@ -11,6 +11,8 @@ import { createClient } from "@/lib/supabase/client"
 type SignInGateOptions = {
   /** Skip the client session probe when the server already knows the viewer is signed out. */
   skipSessionProbe?: boolean
+  /** Prefer the create-account panel (publish / first-time seller gates). */
+  preferSignUp?: boolean
 }
 
 /**
@@ -35,7 +37,13 @@ export function useSignInGate() {
       const openGate = () => {
         const fullPath = resolveRedirect()
         if (authModal) {
-          authModal.openLogin(fullPath)
+          if (options?.preferSignUp) {
+            authModal.openSignUp(fullPath)
+          } else {
+            authModal.openLogin(fullPath)
+          }
+        } else if (options?.preferSignUp) {
+          router.push(`/auth/sign-up?redirect=${encodeURIComponent(fullPath)}`)
         } else {
           router.push(`/auth/login?redirect=${encodeURIComponent(fullPath)}`)
         }

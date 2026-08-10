@@ -123,6 +123,7 @@ export default function SellMagazinesFlow({
     openSignIn: signIn,
     supabase: supabaseRef.current,
     funnelListingType: "magazines",
+    promptSignInOnUpload: false,
   })
 
   const {
@@ -265,8 +266,10 @@ export default function SellMagazinesFlow({
 
     const session = await resolveClientSessionForMutation(supabaseRef.current)
     if (!session?.user || !session.access_token) {
-      toast.message("Sign in to publish your listing")
-      signIn(magazineSellReturnPath())
+      toast.message("Create a free account to publish", {
+        description: "Your form stays here — sign up and we’ll finish publishing.",
+      })
+      signIn(magazineSellReturnPath(), { preferSignUp: true, skipSessionProbe: true })
       return
     }
 

@@ -4,6 +4,7 @@ import { SellStart } from "@/components/features/sell/sell-start"
 import type { SellTrendingBrand } from "@/components/features/sell/sell-trending-brands"
 import { getCachedHomeStableCatalog } from "@/lib/cache/home-public-catalog"
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
+import { resolveDefaultSurfboardSellCreatePath } from "@/lib/services/surfboardSellEntry"
 import { createClient } from "@/lib/supabase/server"
 import SellFlowShell from "./sell-flow-client"
 
@@ -39,9 +40,13 @@ export default async function SellPage({
   const type = firstParam(qs.type)
   const chooseSurfboard = firstParam(qs.choose) === "surfboard"
 
-  // Legacy choose=surfboard entry — send to the primary boards form.
+  const supabase = await createClient()
+  const { data: userData } = await supabase.auth.getUser()
+  const user = userData.user
+
+  // Legacy choose=surfboard — experience-based Quick vs Guided.
   if (chooseSurfboard && !editId && type !== "surfboard") {
-    redirect("/sell/boards?new=1")
+    redirect(await resolveDefaultSurfboardSellCreatePath(supabase, user?.id))
   }
 
   // Editing an existing listing or explicitly choosing surfboards goes straight
@@ -56,14 +61,12 @@ export default async function SellPage({
     )
   }
 
-  const supabase = await createClient()
-  const [{ data: userData }, homeCatalog] = await Promise.all([
-    supabase.auth.getUser(),
+  const [isAdmin, homeCatalog, surfboardSellHref] = await Promise.all([
+    user ? fetchProfileIsAdmin(supabase, user.id) : Promise.resolve(false),
     // Same cached curation as the homepage "Trending brands" strip.
     getCachedHomeStableCatalog(),
+    resolveDefaultSurfboardSellCreatePath(supabase, user?.id),
   ])
-  const user = userData.user
-  const isAdmin = user ? await fetchProfileIsAdmin(supabase, user.id) : false
 
   const trendingBrands: SellTrendingBrand[] = homeCatalog.homeTrendingBrandRows.map(
     (row) => ({
@@ -75,5 +78,11 @@ export default async function SellPage({
   )
 
   // `/sell` and `/sell?new=1` land on catalog search (+ compact type links).
-  return <SellStart isAdmin={isAdmin} trendingBrands={trendingBrands} />
+  return (
+    <SellStart
+      isAdmin={isAdmin}
+      trendingBrands={trendingBrands}
+      surfboardSellHref={surfboardSellHref}
+    />
+  )
 }

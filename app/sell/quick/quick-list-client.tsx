@@ -1,7 +1,7 @@
 "use client"
 /**
  * Quick List — one-screen surfboard listing: photo, title, description,
- * price, and pickup / shipping. Publish mirrors the wizard create path.
+ * price, and local pickup. Publish mirrors the wizard create path.
  */
 
 import React, {
@@ -17,12 +17,11 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { goBackFromSellForm } from "@/lib/sell-flow/go-back-from-sell-form"
 import { logSellForkToFull } from "@/lib/sell-flow/log-sell-funnel-event"
 import { toast } from "sonner"
-import { ArrowLeft, MapPin, Truck } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 
 import {
   SELL_CONTROL_CLASS,
@@ -58,7 +57,6 @@ import { persistListingDraftSnapshot } from "@/lib/sell-flow/persist-listing-dra
 import { markPendingPublish } from "@/lib/sell-flow/session-keys"
 import type { SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
-import { SellBoardDimensionsPicker } from "@/components/features/sell/sell-board-dimensions-picker"
 import { SellFacetChipGroup } from "@/components/features/sell/sell-board-facet-fields"
 import { SellEarningsBreakdown } from "@/components/features/sell/sell-earnings-breakdown"
 import { LocationPicker, type LocationPrefillSuggested } from "@/components/location-picker"
@@ -75,15 +73,8 @@ import {
   LISTING_CONDITION_SELL_OPTIONS,
   isListingSellableCondition,
 } from "@/lib/listing-labels"
-import {
-  boardFulfillmentFromChecks,
-  flagsFromBoardFulfillment,
-  type BoardFulfillmentChoice,
-} from "@/lib/listing-fulfillment"
-import {
-  reswellPackageFieldsToDb,
-  resolveListingFulfillmentFlagsForSellSubmit,
-} from "@/lib/sell-listing-fulfillment-flags"
+import { type BoardFulfillmentChoice } from "@/lib/listing-fulfillment"
+import { reswellPackageFieldsToDb } from "@/lib/sell-listing-fulfillment-flags"
 import { listingDimensionsColumnFromSurfboardSellForm } from "@/lib/listing-dimensions-storage"
 import {
   boardBrowseFacetFieldsForDb,
@@ -241,41 +232,6 @@ type QuickPublishPreview = {
   coverUrl: string
 }
 
-function DeliveryToggle({
-  pressed,
-  onPressedChange,
-  icon,
-  label,
-  hint,
-}: {
-  pressed: boolean
-  onPressedChange: (next: boolean) => void
-  icon: React.ReactNode
-  label: string
-  hint: string
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={pressed}
-      onClick={() => onPressedChange(!pressed)}
-      className={cn(
-        "flex min-h-[4.5rem] flex-1 flex-col items-start gap-1 rounded-xl border px-4 py-3 text-left transition-colors",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-listingHeart focus-visible:ring-offset-2",
-        pressed
-          ? "border-listingHeart/50 bg-listingHeart/5 ring-1 ring-listingHeart/25"
-          : "border-border bg-background hover:border-foreground/20 hover:bg-muted/30",
-      )}
-    >
-      <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
-        {icon}
-        {label}
-      </span>
-      <span className="text-xs leading-snug text-muted-foreground">{hint}</span>
-    </button>
-  )
-}
-
 export default function QuickListClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -306,6 +262,8 @@ export default function QuickListClient() {
     supabase,
     funnelListingType: "surfboards",
     persistBeforeSignIn: () => flushDraftNowRef.current(),
+    // Keep photos local until Publish — don't interrupt mid-form with auth.
+    promptSignInOnUpload: false,
   })
   const {
     images,
@@ -419,9 +377,6 @@ export default function QuickListClient() {
 
   const goToFullListing = useCallback(
     async (forkMessage: string, mode: BoardSellViewMode = "guided") => {
-      if (forkMessage === "add_shipping_cta") {
-        persistBoardSellFlowStep("shipping")
-      }
       persistBoardSellViewMode(mode)
       await flushDraftNow()
       logSellForkToFull({ message: forkMessage })
@@ -547,10 +502,6 @@ export default function QuickListClient() {
     }
   }, [supabase])
 
-  const fulfillmentFlags = flagsFromBoardFulfillment(formData.boardFulfillment)
-  const shippingOn = fulfillmentFlags.shipping_available
-  const pickupOn = fulfillmentFlags.local_pickup
-
   const priceValid = useMemo(() => {
     const n = Number.parseFloat(formData.price.trim().replace(/,/g, ""))
     return Number.isFinite(n) && n > 0
@@ -560,6 +511,16 @@ export default function QuickListClient() {
     formData.locationCity.trim() && formData.locationState.trim(),
   )
 
+  // Quick List is pickup-only — coerce any restored draft that had shipping on.
+  useEffect(() => {
+    if (formData.boardFulfillment === "pickup_only") return
+    setFormData((f) =>
+      f.boardFulfillment === "pickup_only"
+        ? f
+        : { ...f, boardFulfillment: "pickup_only" },
+    )
+  }, [formData.boardFulfillment])
+
   const missingEssentials = useMemo(() => {
     const items: string[] = []
     if (images.length < LISTING_MIN_PHOTOS) items.push("a photo")
@@ -568,28 +529,14 @@ export default function QuickListClient() {
     if (!priceValid) items.push("price")
     if (!isListingSellableCondition(formData.condition)) items.push("condition")
     if (!locationSet) items.push("location")
-    if (!pickupOn && !shippingOn) items.push("pickup or shipping")
-    if (shippingOn) {
-      if (!formData.boardLength.trim()) items.push("board length")
-      if (!formData.boardWidthInches.trim()) items.push("width")
-      if (!formData.boardThicknessInches.trim()) items.push("thickness")
-      const flat = Number.parseFloat(formData.boardShippingPrice.trim().replace(/,/g, ""))
-      if (!Number.isFinite(flat) || flat < 0) items.push("shipping price")
-    }
     return items
   }, [
     images.length,
     formData.title,
     formData.description,
     formData.condition,
-    formData.boardLength,
-    formData.boardWidthInches,
-    formData.boardThicknessInches,
-    formData.boardShippingPrice,
     priceValid,
     locationSet,
-    pickupOn,
-    shippingOn,
   ])
 
   const sellSectionCompletion = useMemo(
@@ -600,29 +547,14 @@ export default function QuickListClient() {
       "sell-section-photos":
         images.length >= LISTING_MIN_PHOTOS && Boolean(formData.description.trim()),
       "sell-section-pricing": priceValid,
-      "sell-section-shipping":
-        (pickupOn || shippingOn) &&
-        locationSet &&
-        (!shippingOn ||
-          (Boolean(formData.boardLength.trim()) &&
-            Boolean(formData.boardWidthInches.trim()) &&
-            Boolean(formData.boardThicknessInches.trim()) &&
-            Number.isFinite(
-              Number.parseFloat(formData.boardShippingPrice.trim().replace(/,/g, "")),
-            ))),
+      "sell-section-shipping": locationSet,
     }),
     [
       formData.title,
       formData.condition,
       formData.description,
-      formData.boardLength,
-      formData.boardWidthInches,
-      formData.boardThicknessInches,
-      formData.boardShippingPrice,
       images.length,
       priceValid,
-      pickupOn,
-      shippingOn,
       locationSet,
     ],
   )
@@ -635,18 +567,6 @@ export default function QuickListClient() {
         block: "center",
       })
     })
-  }
-
-  function setDelivery(nextPickup: boolean, nextShipping: boolean) {
-    // Always keep at least one fulfillment option on.
-    const pickup = nextPickup || (!nextPickup && !nextShipping)
-    const shipping = nextShipping
-    trackField("fulfillment")
-    setFormData((f) => ({
-      ...f,
-      boardFulfillment: boardFulfillmentFromChecks(shipping, pickup),
-      boardShippingCostMode: shipping ? "flat" : f.boardShippingCostMode,
-    }))
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -672,14 +592,23 @@ export default function QuickListClient() {
           formData: formDataRef.current as SellListingDraftFormSnapshot,
           images: photos.imagesRef.current,
           userId: null,
+          includeInFlightPhotos: true,
         })
         markPendingPublish("quick")
-        toast.message("Sign in to publish your listing")
-        openSignIn(QUICK_LIST_PATH)
+        toast.message("Listing saved on this device", {
+          description: "Create a free account to publish — you’ll pick up right here.",
+        })
+        openSignIn(QUICK_LIST_PATH, {
+          preferSignUp: true,
+          skipSessionProbe: true,
+        })
         return
       }
 
-      const fd = formDataRef.current
+      const fd = {
+        ...formDataRef.current,
+        boardFulfillment: "pickup_only" as BoardFulfillmentChoice,
+      }
       const imagesUploadReadyNow = !photos.imagesRef.current.some(
         (im) => im.uploadPhase !== "done" || !im.url?.trim() || !im.thumbnailUrl?.trim(),
       )
@@ -717,17 +646,19 @@ export default function QuickListClient() {
           slots[0]?.thumbnailUrl || slots[0]?.url || slots[0]?.previewUrl || "/placeholder.svg",
       })
 
-      const flags = resolveListingFulfillmentFlagsForSellSubmit(fd)
-      const shippingCostMode = flags.shipping_available ? fd.boardShippingCostMode : null
-      const shippingPriceForPersist = flags.shipping_available
-        ? Number.parseFloat(fd.boardShippingPrice.trim().replace(/,/g, "")) || 0
-        : null
+      // Quick List publishes pickup-only; shipping is configured on the full form.
       const boardLocationLat = fd.locationLat ? fd.locationLat : null
       const boardLocationLng = fd.locationLng ? fd.locationLng : null
       const boardLocationCity = fd.locationCity.trim() || null
       const boardLocationState = fd.locationState.trim() || null
-      const dimensionsStored = listingDimensionsColumnFromSurfboardSellForm(fd)
-      const packedRow = reswellPackageFieldsToDb(fd)
+      const dimensionsStored = listingDimensionsColumnFromSurfboardSellForm({
+        ...fd,
+        boardFulfillment: "pickup_only",
+      })
+      const packedRow = reswellPackageFieldsToDb({
+        ...fd,
+        boardFulfillment: "pickup_only",
+      })
 
       const listingFields = {
         title: resolvedListingTitle,
@@ -748,10 +679,10 @@ export default function QuickListClient() {
         longitude: boardLocationLng,
         city: boardLocationCity,
         state: boardLocationState,
-        shipping_available: flags.shipping_available,
-        local_pickup: flags.local_pickup,
-        shipping_price: shippingPriceForPersist,
-        board_shipping_cost_mode: shippingCostMode,
+        shipping_available: false,
+        local_pickup: true,
+        shipping_price: null,
+        board_shipping_cost_mode: null,
         ...packedRow,
         auto_price_drop_floor: fd.autoPriceDrop
           ? parseFloat(fd.autoPriceDropFloor.trim().replace(/,/g, ""))
@@ -909,7 +840,7 @@ export default function QuickListClient() {
     <main className={cn("min-h-screen w-full", SELL_PAGE_GROUND_CLASS)}>
       {publishing && publishPreview ? <QuickPublishOverlay {...publishPreview} /> : null}
 
-      <div className="container relative mx-auto max-w-3xl px-4 pb-40 pt-8 sm:px-6 sm:pt-10 lg:max-w-6xl">
+      <div className="container relative mx-auto max-w-3xl px-4 pb-16 pt-8 sm:px-6 sm:pb-20 sm:pt-10 lg:max-w-6xl">
         <header className={cn("mb-6 space-y-3 sm:mb-8", SELL_FORM_COLUMN_CLASS, "mx-auto lg:mx-0")}>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 space-y-3">
@@ -1087,7 +1018,7 @@ export default function QuickListClient() {
 
           <QuickEssentialCard
             title="Location"
-            hint="City + state for pickup or where you ship from."
+            hint="City + state for local pickup."
             complete={locationSet}
           >
             <LocationPicker
@@ -1121,83 +1052,11 @@ export default function QuickListClient() {
             />
           </QuickEssentialCard>
 
-          <QuickEssentialCard
-            title="Delivery"
-            complete={pickupOn || shippingOn}
-          >
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <DeliveryToggle
-                pressed={pickupOn}
-                onPressedChange={(next) => setDelivery(next, shippingOn)}
-                icon={<MapPin className="h-4 w-4 text-listingHeart" aria-hidden />}
-                label="Local pickup"
-                hint="Meet nearby"
-              />
-              <DeliveryToggle
-                pressed={shippingOn}
-                onPressedChange={(next) => setDelivery(pickupOn, next)}
-                icon={<Truck className="h-4 w-4 text-listingHeart" aria-hidden />}
-                label="Shipping"
-                hint="Flat rate to buyers"
-              />
-            </div>
-
-            {shippingOn ? (
-              <div className="mt-4 space-y-4 border-t border-border/70 pt-4">
-                <SellBoardDimensionsPicker
-                  values={{
-                    boardLength: formData.boardLength,
-                    boardWidthInches: formData.boardWidthInches,
-                    boardThicknessInches: formData.boardThicknessInches,
-                    boardVolumeL: formData.boardVolumeL,
-                  }}
-                  onChange={(patch) => {
-                    trackField("dimensions")
-                    setFormData((f) => ({ ...f, ...patch }))
-                  }}
-                  dimensionsRequired
-                />
-                <div className="space-y-2">
-                  <Label htmlFor="quick-flat-shipping">Flat shipping price</Label>
-                  <div className="relative max-w-[12rem]">
-                    <span
-                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground"
-                      aria-hidden
-                    >
-                      $
-                    </span>
-                    <Input
-                      id="quick-flat-shipping"
-                      type="text"
-                      inputMode="decimal"
-                      autoComplete="off"
-                      placeholder="85"
-                      className={cn(SELL_CONTROL_CLASS, "pl-7")}
-                      value={formData.boardShippingPrice}
-                      onChange={(e) => {
-                        trackField("shipping_price")
-                        setFormData((f) => ({
-                          ...f,
-                          boardShippingPrice: e.target.value,
-                          boardShippingCostMode: "flat",
-                        }))
-                      }}
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Want calculated Reswell shipping?{" "}
-                    <button
-                      type="button"
-                      onClick={() => void goToFullListing("add_shipping_cta")}
-                      className="font-medium text-foreground underline-offset-4 hover:underline"
-                    >
-                      Open full listing
-                    </button>
-                  </p>
-                </div>
-              </div>
-            ) : null}
-          </QuickEssentialCard>
+          <QuickPublishBar
+            missing={missingEssentials}
+            uploadingPhotos={uploadingCount > 0 || (images.length > 0 && !imagesUploadReady)}
+            publishing={publishing}
+          />
 
           {validationBanner ? (
             <div
@@ -1223,12 +1082,6 @@ export default function QuickListClient() {
                 onBack={() => {}}
                 onContinue={() => {}}
                 disabled={publishing}
-              />
-
-              <QuickPublishBar
-                missing={missingEssentials}
-                uploadingPhotos={uploadingCount > 0 || (images.length > 0 && !imagesUploadReady)}
-                publishing={publishing}
               />
             </form>
           </div>

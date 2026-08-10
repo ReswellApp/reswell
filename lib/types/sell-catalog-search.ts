@@ -27,10 +27,11 @@ export function isSellCatalogSearchCategory(
 /** Sell-flow entry URL for a catalog search selection in the given category. */
 export function sellCatalogSearchCategorySellPath(
   category: SellCatalogSearchCategory,
+  opts?: { surfboardHref?: string },
 ): string {
   switch (category) {
     case "surfboards":
-      return "/sell/boards?new=1"
+      return opts?.surfboardHref ?? "/sell/boards?new=1"
     case "fins":
       return "/sell/fins?new=1"
     case "wetsuits":

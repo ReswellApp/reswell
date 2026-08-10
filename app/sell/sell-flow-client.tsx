@@ -833,8 +833,6 @@ function SellPageContentInner({
   /** Prevents concurrent publishes (double-tap / stacked submits before `loading` flips). */
   const publishInFlightRef = useRef(false)
   const pendingPublishHandledRef = useRef(false)
-  /** Avoid stacking sign-in modals when several photos are added while signed out. */
-  const photoUploadSignInPromptedRef = useRef(false)
   const uploadToastIdRef = useRef<string | number | null>(null)
   const uploadPhaseLabelsRef = useRef<string[]>([...LISTING_UPLOAD_STEP_LABELS])
   const [uploadPhaseLabels, setUploadPhaseLabels] = useState<string[]>(() => [
@@ -1528,6 +1526,8 @@ function SellPageContentInner({
     optimizingAny: images.some((im) => im.optimizePhase === "running"),
     extraDisabled: boardCategoryOptions.length === 0,
     onOpenDraft: onSoftOpenDraft,
+    // Guest cookie drafts — same as Quick. Avoids "Sign in to save a draft" nags.
+    allowUnsigned: !editId,
   })
 
   const {
@@ -2325,7 +2325,6 @@ function SellPageContentInner({
       setSignedInUserId(uid)
       void loadActorAdmin(uid)
       if (!uid) return
-      photoUploadSignInPromptedRef.current = false
       void migrateGuestSellListingDraftToUser(uid)
       for (const slot of imagesRef.current) {
         if (!slot.sourceFile) continue
@@ -2485,30 +2484,19 @@ function SellPageContentInner({
               : s,
           ),
         )
-        if (!photoUploadSignInPromptedRef.current) {
-          photoUploadSignInPromptedRef.current = true
-          const ret = `/sell${sellSearchParams.toString() ? `?${sellSearchParams}` : ""}`
-          void (async () => {
-            try {
-              await persistSellListingDraftSnapshot({
-                listingType: "board",
-                formData: {
-                  ...formDataRef.current,
-                  boardFlowStep: flowStep,
-                } as SellListingDraftFormSnapshot,
-                images: imagesRef.current,
-                userId: null,
-                includeInFlightPhotos: true,
-              })
-            } catch {
-              /* best-effort */
-            }
-            toast.message("Sign in to upload your photos", {
-              description: "Your selection is saved — you’ll pick up right here.",
-            })
-            openSignIn(ret)
-          })()
-        }
+        // Keep local previews for guests — auth is gated at Publish, not mid-upload.
+        void persistSellListingDraftSnapshot({
+          listingType: "board",
+          formData: {
+            ...formDataRef.current,
+            boardFlowStep: flowStep,
+          } as SellListingDraftFormSnapshot,
+          images: imagesRef.current,
+          userId: null,
+          includeInFlightPhotos: true,
+        }).catch(() => {
+          /* best-effort */
+        })
         return
       }
 
@@ -2642,7 +2630,6 @@ function SellPageContentInner({
   }, [draftHydrated, editId, supabase])
 
   function retryListingPhotoUpload(clientId: string) {
-    photoUploadSignInPromptedRef.current = false
     const live = imagesRef.current.find((s) => s.clientId === clientId)
     if (!live) return
     const nextSeq = (live.prepareSeq ?? 0) + 1
@@ -3064,15 +3051,18 @@ function SellPageContentInner({
           formData: formData as SellListingDraftFormSnapshot,
           images,
           userId: null,
+          includeInFlightPhotos: true,
         })
         try {
           sessionStorage.setItem(SELL_PENDING_PUBLISH_KEY, "1")
         } catch {
           /* quota / private mode */
         }
-        const ret = `/sell${sellSearchParams.toString() ? `?${sellSearchParams}` : ""}`
-        toast.message("Sign in to publish your listing")
-        openSignIn(ret)
+        const ret = `/sell/boards${sellSearchParams.toString() ? `?${sellSearchParams}` : ""}`
+        toast.message("Listing saved on this device", {
+          description: "Create a free account to publish — you’ll pick up right here.",
+        })
+        openSignIn(ret, { preferSignUp: true, skipSessionProbe: true })
         return
       }
 

@@ -1,11 +1,8 @@
 "use client"
 
-import { Loader2, Sparkles } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-  SELL_FORM_COLUMN_CLASS,
-  SELL_PRIMARY_BUTTON_CLASS,
-} from "@/components/features/sell/sell-form-surface"
+import { SELL_PRIMARY_BUTTON_CLASS } from "@/components/features/sell/sell-form-surface"
 import { cn } from "@/lib/utils"
 
 export interface QuickPublishBarProps {
@@ -23,7 +20,7 @@ function joinFriendly(items: string[]): string {
 }
 
 /**
- * Sticky publish bar for Quick List — same primary button treatment as
+ * In-form publish block for Quick List — same primary button treatment as
  * Guided / Advanced (`SELL_PRIMARY_BUTTON_CLASS`, full width).
  */
 export function QuickPublishBar({
@@ -34,40 +31,35 @@ export function QuickPublishBar({
   const ready = missing.length === 0 && !uploadingPhotos
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/75">
-      <div className={cn("mx-auto space-y-2.5 px-4 py-3 sm:py-4", SELL_FORM_COLUMN_CLASS)}>
-        <p
-          className={cn(
-            "text-center text-xs leading-snug sm:text-sm",
-            ready ? "font-medium text-listingHeart" : "text-muted-foreground",
-          )}
-          aria-live="polite"
-        >
-          {uploadingPhotos
-            ? "Photos are still uploading…"
-            : ready
-              ? "Everything's set — ready when you are."
-              : `${joinFriendly(missing)} still needed`}
-        </p>
-        <Button
-          type="submit"
-          size="lg"
-          disabled={publishing}
-          className={cn("w-full relative transition-shadow", SELL_PRIMARY_BUTTON_CLASS)}
-        >
-          {publishing ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-              Publishing…
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-4 w-4" aria-hidden />
-              Publish listing
-            </>
-          )}
-        </Button>
-      </div>
+    <div className="space-y-2.5 border-t border-border pt-6 sm:pt-8">
+      <p
+        className={cn(
+          "text-center text-xs leading-snug sm:text-sm",
+          ready ? "font-medium text-listingHeart" : "text-muted-foreground",
+        )}
+        aria-live="polite"
+      >
+        {uploadingPhotos
+          ? "Photos are still uploading…"
+          : ready
+            ? "Everything's set — ready when you are."
+            : `${joinFriendly(missing)} still needed`}
+      </p>
+      <Button
+        type="submit"
+        size="lg"
+        disabled={publishing}
+        className={cn("w-full relative transition-shadow", SELL_PRIMARY_BUTTON_CLASS)}
+      >
+        {publishing ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            Publishing…
+          </>
+        ) : (
+          "Publish listing"
+        )}
+      </Button>
     </div>
   )
 }

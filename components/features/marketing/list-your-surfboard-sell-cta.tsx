@@ -6,7 +6,8 @@ import { ArrowRight } from "lucide-react"
 import { Button, type ButtonProps } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-export const LIST_YOUR_SURFBOARD_SELL_HREF = "/sell?new=1&from=nav"
+/** Guest / first-list CTA — Quick List. Returning publishers hitting `?new=1` are redirected to Guided. */
+export const LIST_YOUR_SURFBOARD_SELL_HREF = "/sell/quick?new=1&from=nav"
 
 type ListYourSurfboardSellCtaProps = {
   /** @deprecated Unused — sell flow is public; auth is required at publish. */
