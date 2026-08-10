@@ -8,7 +8,7 @@ export const AUTH_MODAL_OVERLAY_CLASS =
   "z-[100] touch-none bg-black/80"
 
 export const AUTH_MODAL_CONTENT_CLASS =
-  "z-[101] max-h-[min(90vh,720px)] w-[calc(100%-2rem)] max-w-md overflow-y-auto border-0 p-6 sm:p-8"
+  "z-[101] max-h-[min(92vh,780px)] w-[calc(100%-2rem)] max-w-md overflow-y-auto border-0 p-5 sm:p-6"
 
 /** Flatten nested Card inside auth modals — dialog shell is the only surface. */
 export const AUTH_MODAL_INNER_CARD_CLASS =

@@ -180,9 +180,11 @@ export function SignUpFormPanel({
 
   const showPageHeader = variant !== "modal"
   const isLanding = variant === "landing"
+  const isModal = variant === "modal"
+  const fieldGapClass = isModal ? "gap-1.5" : "gap-2.5"
 
   const inner = (
-    <div className="flex flex-col gap-8">
+    <div className={cn("flex flex-col", isModal ? "gap-4" : "gap-8")}>
       {showPageHeader ? (
         <div className={cn(isLanding ? "space-y-3" : "space-y-2")}>
           <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -204,9 +206,14 @@ export function SignUpFormPanel({
 
       <AuthFormOrDivider />
 
-      <form onSubmit={handleSignUp} className="space-y-5">
-        <div className="grid gap-4 sm:grid-cols-2 sm:gap-5">
-          <div className="grid gap-2.5">
+      <form onSubmit={handleSignUp} className={cn(isModal ? "space-y-3" : "space-y-5")}>
+        <div
+          className={cn(
+            "grid sm:grid-cols-2",
+            isModal ? "gap-3 sm:gap-3" : "gap-4 sm:gap-5",
+          )}
+        >
+          <div className={cn("grid", fieldGapClass)}>
             <Label htmlFor="signup-first-name" className="text-sm font-semibold text-foreground">
               First name <RequiredMark />
             </Label>
@@ -219,7 +226,7 @@ export function SignUpFormPanel({
               onChange={(e) => setFirstName(e.target.value)}
             />
           </div>
-          <div className="grid gap-2.5">
+          <div className={cn("grid", fieldGapClass)}>
             <Label htmlFor="signup-last-name" className="text-sm font-semibold text-foreground">
               Last name <RequiredMark />
             </Label>
@@ -234,7 +241,7 @@ export function SignUpFormPanel({
           </div>
         </div>
 
-        <div className="grid gap-2.5">
+        <div className={cn("grid", fieldGapClass)}>
           <Label htmlFor="signup-username" className="text-sm font-semibold text-foreground">
             Username{" "}
             <span className="font-normal text-muted-foreground">(optional)</span>
@@ -249,7 +256,7 @@ export function SignUpFormPanel({
           />
         </div>
 
-        <div className="grid gap-2.5">
+        <div className={cn("grid", fieldGapClass)}>
           <Label htmlFor="signup-email" className="text-sm font-semibold text-foreground">
             Email <RequiredMark />
           </Label>
@@ -263,7 +270,7 @@ export function SignUpFormPanel({
           />
         </div>
 
-        <div className="grid gap-2.5">
+        <div className={cn("grid", fieldGapClass)}>
           <Label htmlFor="signup-password" className="text-sm font-semibold text-foreground">
             Password <RequiredMark />
           </Label>
@@ -286,7 +293,7 @@ export function SignUpFormPanel({
               {showPassword ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
             </button>
           </div>
-          <p className="text-xs leading-relaxed text-muted-foreground">{SIGN_UP_PASSWORD_HINT}</p>
+          <p className="text-xs leading-snug text-muted-foreground">{SIGN_UP_PASSWORD_HINT}</p>
         </div>
 
         {error ? <p className="text-sm text-neutral-700">{error}</p> : null}
@@ -294,19 +301,22 @@ export function SignUpFormPanel({
         <Button
           type="submit"
           disabled={isLoading}
-          className="h-12 w-full rounded-full bg-neutral-500 text-base font-semibold text-white hover:bg-neutral-600"
+          className={cn(
+            "w-full rounded-full bg-neutral-500 text-base font-semibold text-white hover:bg-neutral-600",
+            isModal ? "h-11" : "h-12",
+          )}
         >
           {isLoading ? "Creating account…" : "Sign Up"}
         </Button>
 
-        <div className="space-y-4 pt-1">
+        <div className={cn(isModal ? "space-y-2.5" : "space-y-4 pt-1")}>
           <label className="flex cursor-pointer items-start gap-3">
             <Checkbox
               checked={marketingOptIn}
               onCheckedChange={(checked) => setMarketingOptIn(checked === true)}
               className="mt-0.5"
             />
-            <span className="text-sm leading-relaxed text-foreground">
+            <span className="text-sm leading-snug text-foreground">
               Get the latest news and promotions via email
             </span>
           </label>
@@ -320,7 +330,10 @@ export function SignUpFormPanel({
               aria-required="true"
             />
             <div className="min-w-0 flex-1">
-              <label htmlFor="signup-accept-terms" className="cursor-pointer text-sm leading-relaxed text-foreground">
+              <label
+                htmlFor="signup-accept-terms"
+                className="cursor-pointer text-sm leading-snug text-foreground"
+              >
                 By clicking Sign Up, I expressly agree to accept Reswell&apos;s{" "}
                 <Link href="/terms" className="underline underline-offset-4 hover:text-cerulean">
                   Terms of Use
