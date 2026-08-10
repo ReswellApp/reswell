@@ -78,3 +78,24 @@ export function peerListingEditHref(
 
 /** Mutable copy for Supabase `.in("section", …)` filters. */
 export const PEER_LISTING_SECTIONS_FILTER: string[] = [...PEER_LISTING_SECTIONS]
+
+/**
+ * Seller shop “All categories” display order.
+ * Unlisted peer sections (apparel, etc.) sort after these, then by the active sort.
+ */
+export const SELLER_PROFILE_SECTION_SORT_ORDER = [
+  "surfboards",
+  "fins",
+  "wetsuits",
+  "magazines",
+] as const
+
+export function sellerProfileSectionSortRank(
+  section: string | null | undefined,
+): number {
+  if (!section) return SELLER_PROFILE_SECTION_SORT_ORDER.length
+  const index = (SELLER_PROFILE_SECTION_SORT_ORDER as readonly string[]).indexOf(
+    section,
+  )
+  return index === -1 ? SELLER_PROFILE_SECTION_SORT_ORDER.length : index
+}

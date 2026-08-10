@@ -14,10 +14,8 @@ import React, {
 } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { goBackFromSellForm } from "@/lib/sell-flow/go-back-from-sell-form"
 import { logSellForkToFull } from "@/lib/sell-flow/log-sell-funnel-event"
 import { toast } from "sonner"
-import { ArrowLeft } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
@@ -267,7 +265,6 @@ export default function QuickListClient() {
   })
   const {
     images,
-    imagesUploadReady,
     uploadingCount,
     setImages,
     handlePhotoTileRetry,
@@ -587,20 +584,23 @@ export default function QuickListClient() {
       const session = await resolveClientSessionForMutation(supabase)
       const user = session?.user
       if (!user || !session?.access_token) {
-        await persistListingDraftSnapshot({
+        // Open auth immediately — draft persist (esp. in-flight photos) can take seconds.
+        markPendingPublish("quick")
+        openSignIn(QUICK_LIST_PATH, {
+          preferSignUp: true,
+          skipSessionProbe: true,
+        })
+        toast.message("Listing saved on this device", {
+          description: "Create a free account to publish — you’ll pick up right here.",
+        })
+        void persistListingDraftSnapshot({
           listingType: "board",
           formData: formDataRef.current as SellListingDraftFormSnapshot,
           images: photos.imagesRef.current,
           userId: null,
           includeInFlightPhotos: true,
-        })
-        markPendingPublish("quick")
-        toast.message("Listing saved on this device", {
-          description: "Create a free account to publish — you’ll pick up right here.",
-        })
-        openSignIn(QUICK_LIST_PATH, {
-          preferSignUp: true,
-          skipSessionProbe: true,
+        }).catch(() => {
+          /* best-effort; form state still holds the listing for resume */
         })
         return
       }
@@ -843,19 +843,9 @@ export default function QuickListClient() {
       <div className="container relative mx-auto max-w-3xl px-4 pb-16 pt-8 sm:px-6 sm:pb-20 sm:pt-10 lg:max-w-6xl">
         <header className={cn("mb-6 space-y-3 sm:mb-8", SELL_FORM_COLUMN_CLASS, "mx-auto lg:mx-0")}>
           <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 space-y-3">
-              <button
-                type="button"
-                onClick={() => goBackFromSellForm(router)}
-                className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
-                Back
-              </button>
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem] sm:leading-tight">
-                Quick list a board
-              </h1>
-            </div>
+            <h1 className="min-w-0 text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem] sm:leading-tight">
+              Quick list a board
+            </h1>
             {serverDraftSaveStatus === "saving" || serverDraftSaveStatus === "saved" ? (
               <p className="shrink-0 pt-1 text-xs text-muted-foreground" aria-live="polite">
                 {serverDraftSaveStatus === "saving" ? "Saving…" : "Draft saved"}
@@ -1054,7 +1044,8 @@ export default function QuickListClient() {
 
           <QuickPublishBar
             missing={missingEssentials}
-            uploadingPhotos={uploadingCount > 0 || (images.length > 0 && !imagesUploadReady)}
+            // Guests keep photos local (`pending_auth`) until sign-up — that is not uploading.
+            uploadingPhotos={uploadingCount > 0}
             publishing={publishing}
           />
 

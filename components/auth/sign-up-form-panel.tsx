@@ -247,10 +247,6 @@ export function SignUpFormPanel({
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Choose a public username"
           />
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            Shown to other members instead of your email. Leave blank to use your last initial plus
-            first name (e.g. John Doe becomes DJohn).
-          </p>
         </div>
 
         <div className="grid gap-2.5">

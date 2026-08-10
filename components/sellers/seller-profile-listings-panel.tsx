@@ -23,6 +23,7 @@ import {
 import { listingCardImageSrc } from "@/lib/listing-image-display"
 import { listingDetailHref } from "@/lib/listing-href"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { sellerProfileSectionSortRank } from "@/lib/peer-listing-sections"
 import type { SellerDirectoryTileMeta } from "@/lib/sellers/directory-tile-meta"
 import {
   sellerProfileListingsGridClassName,
@@ -241,6 +242,12 @@ export function SellerProfileListingsPanel({
     })
 
     result = [...result].sort((a, b) => {
+      if (sectionFilter === "all") {
+        const sectionRank =
+          sellerProfileSectionSortRank(a.section) -
+          sellerProfileSectionSortRank(b.section)
+        if (sectionRank !== 0) return sectionRank
+      }
       if (sort === "price_asc") return listingPrice(a) - listingPrice(b)
       if (sort === "price_desc") return listingPrice(b) - listingPrice(a)
       if (sort === "newest") {
