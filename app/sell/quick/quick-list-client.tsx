@@ -56,7 +56,6 @@ import { markPendingPublish } from "@/lib/sell-flow/session-keys"
 import type { SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellFacetChipGroup } from "@/components/features/sell/sell-board-facet-fields"
-import { SellEarningsBreakdown } from "@/components/features/sell/sell-earnings-breakdown"
 import { LocationPicker, type LocationPrefillSuggested } from "@/components/location-picker"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 
@@ -988,7 +987,6 @@ export default function QuickListClient() {
                 onFocus={() => trackField("price")}
               />
             </div>
-            <SellEarningsBreakdown listingPrice={formData.price} className="mt-3" />
           </QuickEssentialCard>
 
           <QuickEssentialCard

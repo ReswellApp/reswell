@@ -142,7 +142,7 @@ function packBandTopic(bandId: SurfboardShippingPackBandId): ReswellShippingGuid
     shortboard_compact: [
       {
         title: "Best for shorter, narrower packs",
-        body: "Use Compact when your packed board will stay within 72×22×4. It’s the cheapest Shortboard option for buyers when it fits.",
+        body: "Use Compact when your packed board will stay within 72×22×5. It’s the cheapest Shortboard option for buyers when it fits.",
       },
       {
         title: "Built to avoid large-package fees",
@@ -155,8 +155,8 @@ function packBandTopic(bandId: SurfboardShippingPackBandId): ReswellShippingGuid
     ],
     shortboard_medium: [
       {
-        title: "For boards above 6′",
-        body: "Medium adds length over Compact (78×22×4) while staying at the 130″ UPS DIM ceiling — the largest shortboard pack Reswell quotes without large-package surcharges.",
+        title: "For packed boards above 72″",
+        body: "Medium is the larger shortboard carton (78×25.5×7.25) when Compact’s 72″ length won’t fit. Expect higher buyer rates — this size sits above the common 130″ UPS large-package DIM trigger.",
       },
       {
         title: "Still a parcel size",

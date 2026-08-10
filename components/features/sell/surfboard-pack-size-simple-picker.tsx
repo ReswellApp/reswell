@@ -81,7 +81,7 @@ export function SurfboardPackSizeSimplePicker({
               <p className="pl-6 text-xs text-muted-foreground/70 leading-relaxed">
                 {bandId === "shortboard_compact"
                   ? "Lowest rates when it fits"
-                  : "For boards above 6′ — max length at 130″ UPS DIM"}
+                  : "For packed boards above 72″ — wider/taller carton"}
               </p>
             </label>
           )
