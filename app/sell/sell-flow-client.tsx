@@ -1836,6 +1836,7 @@ function SellPageContentInner({
       const r = sellDraftLatestRef.current
       if (!r.editId && r.draftHydrated) {
         try {
+          // Local IDB flush so /sell/quick can hydrate the same draft.
           await persistSellListingDraftSnapshot({
             listingType: r.listingType,
             formData: r.formData,
@@ -1847,17 +1848,14 @@ function SellPageContentInner({
           /* still navigate — Quick List recovers what it can */
         }
       }
-      try {
-        await persistServerDraftRef.current?.({ keepalive: true })
-      } catch {
-        /* ignore */
-      }
       logSellFunnelEvent({
         listingType: "surfboards",
         event: "fork_to_quick",
         message: viewMode,
       })
       router.push("/sell/quick")
+      // Don't await network draft — keepalive can stall and block navigation.
+      void persistServerDraftRef.current?.({ keepalive: true }).catch(() => {})
     })()
   }, [persistServerDraftRef, router, viewMode])
 

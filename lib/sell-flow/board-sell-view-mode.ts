@@ -30,6 +30,9 @@ export function persistBoardSellViewMode(mode: BoardSellViewMode): void {
   }
 }
 
-export function boardSellViewModeLabel(mode: BoardSellViewMode): string {
+export type BoardSellPickerMode = BoardSellViewMode | "quick"
+
+export function boardSellViewModeLabel(mode: BoardSellPickerMode): string {
+  if (mode === "quick") return "Quick list"
   return mode === "guided" ? "Guided view" : "Advanced view"
 }

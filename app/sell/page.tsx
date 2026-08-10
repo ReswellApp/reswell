@@ -39,9 +39,9 @@ export default async function SellPage({
   const type = firstParam(qs.type)
   const chooseSurfboard = firstParam(qs.choose) === "surfboard"
 
-  // Legacy Quick vs Full entry — send straight to Quick List.
+  // Legacy choose=surfboard entry — send to the primary boards form.
   if (chooseSurfboard && !editId && type !== "surfboard") {
-    redirect("/sell/quick?new=1")
+    redirect("/sell/boards?new=1")
   }
 
   // Editing an existing listing or explicitly choosing surfboards goes straight

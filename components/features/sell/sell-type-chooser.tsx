@@ -7,9 +7,12 @@ import { cn } from "@/lib/utils"
 /** Search-first sell hub (preserves `?new=1` for analytics / blank-slate). */
 export const SELL_HUB_HREF = "/sell?new=1"
 
-/** Canonical surfboard create URL — Quick List one-screen form. */
-export const SELL_SURFBOARD_PATH_HREF = "/sell/quick?new=1"
-export const SELL_SURFBOARD_FULL_PATH_HREF = "/sell/boards?new=1"
+/** Canonical surfboard create URL — full Guided / Advanced form. */
+export const SELL_SURFBOARD_PATH_HREF = "/sell/boards?new=1"
+/** @deprecated Prefer SELL_SURFBOARD_PATH_HREF — same destination. */
+export const SELL_SURFBOARD_FULL_PATH_HREF = SELL_SURFBOARD_PATH_HREF
+/** Quick List one-screen form (reachable via view-mode picker). */
+export const SELL_SURFBOARD_QUICK_PATH_HREF = "/sell/quick?new=1"
 
 type SellTypeOption = {
   href: string

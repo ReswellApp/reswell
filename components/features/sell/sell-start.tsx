@@ -8,7 +8,7 @@ import { resolveSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 
 /**
  * `/sell` hub — drafts + catalog search, type links, then trending brands.
- * Surfboard type links go to Quick List (`/sell/quick`).
+ * Surfboard type links go to the primary boards form (`/sell/boards`).
  */
 export function SellStart({
   isAdmin = false,

@@ -1,11 +1,12 @@
 "use client"
 
 import Link from "next/link"
-import { Check, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Circle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
@@ -13,12 +14,13 @@ import {
 import { SELL_PRIMARY_BUTTON_CLASS } from "@/components/features/sell/sell-form-surface"
 import {
   boardSellViewModeLabel,
+  type BoardSellPickerMode,
   type BoardSellViewMode,
 } from "@/lib/sell-flow/board-sell-view-mode"
 import { cn } from "@/lib/utils"
 
 type BoardSellViewToolbarProps = {
-  viewMode: BoardSellViewMode
+  viewMode: BoardSellPickerMode
   onViewModeChange: (mode: BoardSellViewMode) => void
   /**
    * When set, shows Quick list in the view picker and runs this on select
@@ -78,12 +80,8 @@ export function BoardSellViewToolbar({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="min-w-[12rem]">
           <DropdownMenuRadioGroup
-            value={viewMode}
+            value={viewMode === "quick" ? "" : viewMode}
             onValueChange={(value) => {
-              if (value === "quick") {
-                onSelectQuickList?.()
-                return
-              }
               const next = value === "advanced" ? "advanced" : "guided"
               onViewModeChange(next)
             }}
@@ -104,17 +102,27 @@ export function BoardSellViewToolbar({
                 </span>
               </span>
             </DropdownMenuRadioItem>
-            {onSelectQuickList ? (
-              <DropdownMenuRadioItem value="quick" className="gap-2 pl-8">
-                <span className="flex flex-col gap-0.5">
-                  <span className="font-medium">Quick list</span>
-                  <span className="text-xs font-normal text-muted-foreground">
-                    Photo, price, publish
-                  </span>
-                </span>
-              </DropdownMenuRadioItem>
-            ) : null}
           </DropdownMenuRadioGroup>
+          {onSelectQuickList ? (
+            <DropdownMenuItem
+              className="relative gap-2 pl-8"
+              onSelect={() => {
+                onSelectQuickList()
+              }}
+            >
+              {viewMode === "quick" ? (
+                <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                  <Circle className="h-2 w-2 fill-current" aria-hidden />
+                </span>
+              ) : null}
+              <span className="flex flex-col gap-0.5">
+                <span className="font-medium">Quick list</span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  Photo, price, publish
+                </span>
+              </span>
+            </DropdownMenuItem>
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -170,10 +178,15 @@ export function BoardSellViewToolbar({
               </Button>
             ) : null}
           </div>
-        ) : (
+        ) : viewMode === "advanced" ? (
           <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm">
             <Check className="h-3.5 w-3.5 text-listingHeart" aria-hidden />
             Full form
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm">
+            <Check className="h-3.5 w-3.5 text-listingHeart" aria-hidden />
+            Photo, price, publish
           </span>
         )}
       </div>

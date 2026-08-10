@@ -29,6 +29,12 @@ import {
   SELL_FORM_COLUMN_CLASS,
   SELL_PAGE_GROUND_CLASS,
 } from "@/components/features/sell/sell-form-surface"
+import { BoardSellViewToolbar } from "@/components/features/sell/board-sell-view-toolbar"
+import {
+  SELL_FORM_SECTION_NAV_ITEMS,
+  SellSectionNav,
+  SellSectionNavHorizontal,
+} from "@/components/features/sell/sell-section-nav"
 import { QuickEssentialCard } from "@/components/features/sell/quick/quick-essential-card"
 import { QuickPhotoHero } from "@/components/features/sell/quick/quick-photo-hero"
 import { QuickPublishBar } from "@/components/features/sell/quick/quick-publish-bar"
@@ -40,7 +46,14 @@ import {
   useSellServerDraft,
 } from "@/components/features/sell/hooks/use-sell-server-draft"
 import { usePendingPublishResume } from "@/components/features/sell/hooks/use-pending-publish-resume"
-import { persistBoardSellFlowStep } from "@/lib/sell-flow/board-sell-flow-step"
+import {
+  BOARD_SELL_STEP_BY_SECTION_ID,
+  persistBoardSellFlowStep,
+} from "@/lib/sell-flow/board-sell-flow-step"
+import {
+  persistBoardSellViewMode,
+  type BoardSellViewMode,
+} from "@/lib/sell-flow/board-sell-view-mode"
 import { persistListingDraftSnapshot } from "@/lib/sell-flow/persist-listing-draft-snapshot"
 import { markPendingPublish } from "@/lib/sell-flow/session-keys"
 import type { SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
@@ -405,15 +418,25 @@ export default function QuickListClient() {
   })
 
   const goToFullListing = useCallback(
-    async (forkMessage: string) => {
+    async (forkMessage: string, mode: BoardSellViewMode = "guided") => {
       if (forkMessage === "add_shipping_cta") {
         persistBoardSellFlowStep("shipping")
       }
+      persistBoardSellViewMode(mode)
       await flushDraftNow()
       logSellForkToFull({ message: forkMessage })
       router.push("/sell/boards")
     },
     [flushDraftNow, router],
+  )
+
+  const goToGuidedStep = useCallback(
+    (sectionId: string) => {
+      const step = BOARD_SELL_STEP_BY_SECTION_ID[sectionId]
+      if (step) persistBoardSellFlowStep(step)
+      void goToFullListing(`step_${step ?? "product"}`, "guided")
+    },
+    [goToFullListing],
   )
 
   usePendingPublishResume({
@@ -568,6 +591,41 @@ export default function QuickListClient() {
     pickupOn,
     shippingOn,
   ])
+
+  const sellSectionCompletion = useMemo(
+    () => ({
+      "sell-section-product":
+        Boolean(formData.title.trim()) &&
+        isListingSellableCondition(formData.condition),
+      "sell-section-photos":
+        images.length >= LISTING_MIN_PHOTOS && Boolean(formData.description.trim()),
+      "sell-section-pricing": priceValid,
+      "sell-section-shipping":
+        (pickupOn || shippingOn) &&
+        locationSet &&
+        (!shippingOn ||
+          (Boolean(formData.boardLength.trim()) &&
+            Boolean(formData.boardWidthInches.trim()) &&
+            Boolean(formData.boardThicknessInches.trim()) &&
+            Number.isFinite(
+              Number.parseFloat(formData.boardShippingPrice.trim().replace(/,/g, "")),
+            ))),
+    }),
+    [
+      formData.title,
+      formData.condition,
+      formData.description,
+      formData.boardLength,
+      formData.boardWidthInches,
+      formData.boardThicknessInches,
+      formData.boardShippingPrice,
+      images.length,
+      priceValid,
+      pickupOn,
+      shippingOn,
+      locationSet,
+    ],
+  )
 
   function showValidationBanner(message: string) {
     setValidationBanner(message)
@@ -851,8 +909,8 @@ export default function QuickListClient() {
     <main className={cn("min-h-screen w-full", SELL_PAGE_GROUND_CLASS)}>
       {publishing && publishPreview ? <QuickPublishOverlay {...publishPreview} /> : null}
 
-      <div className={cn("mx-auto px-4 pt-8 sm:pt-10", SELL_FORM_COLUMN_CLASS)}>
-        <header className="mb-6 space-y-3 sm:mb-8">
+      <div className="container relative mx-auto max-w-3xl px-4 pb-40 pt-8 sm:px-6 sm:pt-10 lg:max-w-6xl">
+        <header className={cn("mb-6 space-y-3 sm:mb-8", SELL_FORM_COLUMN_CLASS, "mx-auto lg:mx-0")}>
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 space-y-3">
               <button
@@ -879,7 +937,7 @@ export default function QuickListClient() {
               href="/sell/boards"
               onClick={(e) => {
                 e.preventDefault()
-                void goToFullListing("advanced_link")
+                void goToFullListing("advanced_link", "advanced")
               }}
               className="font-medium text-foreground underline-offset-4 hover:underline"
             >
@@ -887,15 +945,33 @@ export default function QuickListClient() {
             </Link>
           </p>
         </header>
-      </div>
 
-      <form
-        ref={formRef}
-        onSubmit={(e) => void handleSubmit(e)}
-        aria-busy={publishing}
-        className={cn("mx-auto px-4 pb-40", SELL_FORM_COLUMN_CLASS)}
-      >
-        <div className="space-y-4 sm:space-y-5">
+        <div className="flex w-full flex-col gap-10 lg:flex-row lg:items-stretch lg:gap-12 xl:gap-16">
+          <aside className="hidden shrink-0 lg:block lg:w-56 xl:w-64">
+            <div className="sticky top-24">
+              <SellSectionNav
+                items={SELL_FORM_SECTION_NAV_ITEMS}
+                sectionCompletion={sellSectionCompletion}
+                onSelectSection={goToGuidedStep}
+                className="static"
+              />
+            </div>
+          </aside>
+
+          <div className={cn("min-w-0", SELL_FORM_COLUMN_CLASS)}>
+            <SellSectionNavHorizontal
+              items={SELL_FORM_SECTION_NAV_ITEMS}
+              sectionCompletion={sellSectionCompletion}
+              onSelectSection={goToGuidedStep}
+              className="mb-8 lg:hidden"
+            />
+
+            <form
+              ref={formRef}
+              onSubmit={(e) => void handleSubmit(e)}
+              aria-busy={publishing}
+              className="space-y-4 sm:space-y-5"
+            >
           <QuickPhotoHero
             images={images}
             maxPhotos={QUICK_LIST_MAX_PHOTOS}
@@ -1132,14 +1208,32 @@ export default function QuickListClient() {
               {validationBanner}
             </div>
           ) : null}
-        </div>
 
-        <QuickPublishBar
-          missing={missingEssentials}
-          uploadingPhotos={uploadingCount > 0 || (images.length > 0 && !imagesUploadReady)}
-          publishing={publishing}
-        />
-      </form>
+              <BoardSellViewToolbar
+                viewMode="quick"
+                onViewModeChange={(mode) => {
+                  void goToFullListing(`mode_${mode}`, mode)
+                }}
+                onSelectQuickList={() => {
+                  /* already on Quick */
+                }}
+                searchAgainHref="/sell"
+                showBack={false}
+                showContinue={false}
+                onBack={() => {}}
+                onContinue={() => {}}
+                disabled={publishing}
+              />
+
+              <QuickPublishBar
+                missing={missingEssentials}
+                uploadingPhotos={uploadingCount > 0 || (images.length > 0 && !imagesUploadReady)}
+                publishing={publishing}
+              />
+            </form>
+          </div>
+        </div>
+      </div>
     </main>
   )
 }
