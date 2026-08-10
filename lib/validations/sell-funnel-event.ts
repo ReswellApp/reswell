@@ -32,6 +32,7 @@ export const sellFunnelEventSchema = z.object({
     "step_completed",
     "field_interacted",
     "fork_to_full",
+    "fork_to_quick",
     "publish_attempt",
     "validation_failed",
     "upload_failed",

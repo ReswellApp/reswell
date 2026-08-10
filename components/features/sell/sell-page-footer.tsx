@@ -15,11 +15,11 @@ export function SellPageFooter({ className }: SellPageFooterProps) {
       )}
     >
       <div className="container mx-auto px-4 sm:px-6">
-        <div className="space-y-1 text-sm text-muted-foreground">
+        <div className="mx-auto flex w-full flex-col items-center space-y-1 text-center text-sm text-muted-foreground">
           <p>Thank you for listing on Reswell.</p>
           <MadeWithLoveSantaBarbara
             variant="light"
-            className="justify-start gap-1.5 text-sm"
+            className="justify-center gap-1.5 text-sm"
           />
         </div>
       </div>

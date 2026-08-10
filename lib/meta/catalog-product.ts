@@ -16,6 +16,7 @@ export type MetaListingImage = {
 
 export type MetaListingProductSource = {
   id: string
+  user_id?: string | null
   slug?: string | null
   title?: string | null
   description?: string | null
@@ -42,6 +43,13 @@ export type MetaCatalogFeedItem = {
   google_product_category: string
   additional_image_link?: string
   identifier_exists: "no"
+  /** Product-set filter for Meta Ads — e.g. Hayden Garfield shop only. */
+  custom_label_0?: string
+}
+
+/** Optional feed-build context (seller → custom_label_0). */
+export type MetaCatalogFeedContext = {
+  haydenShopUserId: string | null
 }
 
 const MAX_DESCRIPTION_LENGTH = 5000
@@ -88,6 +96,37 @@ export function getMetaCatalogGoogleProductCategoryForSection(section: string): 
   if (section === "fins") return getMetaCatalogFinsGoogleProductCategory()
   if (section === "magazines") return getMetaCatalogMagazinesGoogleProductCategory()
   return getMetaCatalogGoogleProductCategory()
+}
+
+/** Default `custom_label_0` for Hayden Garfield’s shop (Meta product-set / ads filter). */
+export const META_CATALOG_DEFAULT_HAYDEN_SHOP_CUSTOM_LABEL = "HaydenGarfield"
+
+/** Profile email for Hayden Garfield’s seller shop (fallback when USER_ID env unset). */
+export const META_CATALOG_HAYDEN_SHOP_SELLER_EMAIL = "haydensbsb@gmail.com"
+
+/**
+ * Meta Commerce `custom_label_0` for Hayden Garfield shop listings.
+ * Override with `META_CATALOG_HAYDEN_SHOP_CUSTOM_LABEL`.
+ */
+export function getMetaCatalogHaydenShopCustomLabel(): string {
+  return (
+    process.env.META_CATALOG_HAYDEN_SHOP_CUSTOM_LABEL?.trim() ||
+    META_CATALOG_DEFAULT_HAYDEN_SHOP_CUSTOM_LABEL
+  )
+}
+
+/**
+ * `custom_label_0` for a listing — Hayden’s shop when `user_id` matches, else omitted.
+ * Use in Meta Ads: Catalog → Product sets → filter Custom Label 0 = HaydenGarfield.
+ */
+export function getMetaCatalogCustomLabel0ForListing(
+  listing: Pick<MetaListingProductSource, "user_id">,
+  context: MetaCatalogFeedContext | undefined,
+): string | undefined {
+  const haydenId = context?.haydenShopUserId?.trim()
+  const ownerId = typeof listing.user_id === "string" ? listing.user_id.trim() : ""
+  if (!haydenId || !ownerId || ownerId !== haydenId) return undefined
+  return getMetaCatalogHaydenShopCustomLabel()
 }
 
 export function parseMetaListingPrice(
@@ -208,6 +247,7 @@ export function isMetaCatalogEligibleListing(listing: MetaListingProductSource):
 
 export function listingToMetaCatalogFeedItem(
   listing: MetaListingProductSource,
+  context?: MetaCatalogFeedContext,
 ): MetaCatalogFeedItem | null {
   if (!isMetaCatalogEligibleListing(listing)) return null
 
@@ -218,6 +258,7 @@ export function listingToMetaCatalogFeedItem(
   if (!imageLink) return null
 
   const brand = typeof listing.brand === "string" ? listing.brand.trim() : ""
+  const customLabel0 = getMetaCatalogCustomLabel0ForListing(listing, context)
 
   return {
     id: listing.id,
@@ -234,5 +275,6 @@ export function listingToMetaCatalogFeedItem(
     ),
     additional_image_link: additionalImageLinks(listing, imageLink),
     identifier_exists: "no",
+    ...(customLabel0 ? { custom_label_0: customLabel0 } : {}),
   }
 }

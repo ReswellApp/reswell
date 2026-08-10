@@ -2,7 +2,10 @@
 
 import { Loader2, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { SELL_PRIMARY_BUTTON_CLASS } from "@/components/features/sell/sell-form-surface"
+import {
+  SELL_FORM_COLUMN_CLASS,
+  SELL_PRIMARY_BUTTON_CLASS,
+} from "@/components/features/sell/sell-form-surface"
 import { cn } from "@/lib/utils"
 
 export interface QuickPublishBarProps {
@@ -20,8 +23,8 @@ function joinFriendly(items: string[]): string {
 }
 
 /**
- * Sticky publish bar for Quick List: one big primary action plus a compact
- * live readout of what's still needed before the listing can go live.
+ * Sticky publish bar for Quick List — same primary button treatment as
+ * Guided / Advanced (`SELL_PRIMARY_BUTTON_CLASS`, full width).
  */
 export function QuickPublishBar({
   missing,
@@ -32,10 +35,10 @@ export function QuickPublishBar({
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/75">
-      <div className="mx-auto flex w-full max-w-2xl items-center gap-4 px-4 py-3 sm:py-4">
+      <div className={cn("mx-auto space-y-2.5 px-4 py-3 sm:py-4", SELL_FORM_COLUMN_CLASS)}>
         <p
           className={cn(
-            "min-w-0 flex-1 text-xs leading-snug sm:text-sm",
+            "text-center text-xs leading-snug sm:text-sm",
             ready ? "font-medium text-listingHeart" : "text-muted-foreground",
           )}
           aria-live="polite"
@@ -50,10 +53,7 @@ export function QuickPublishBar({
           type="submit"
           size="lg"
           disabled={publishing}
-          className={cn(
-            "h-12 shrink-0 rounded-xl px-6 text-base font-semibold shadow-sm sm:px-8",
-            SELL_PRIMARY_BUTTON_CLASS,
-          )}
+          className={cn("w-full relative transition-shadow", SELL_PRIMARY_BUTTON_CLASS)}
         >
           {publishing ? (
             <>

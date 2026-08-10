@@ -887,6 +887,17 @@ export function SellCatalogSearch({
           </div>
           )}
 
+          {focusBrand ? null : (
+            <div
+              className={cn(
+                "transition-opacity duration-300 ease-out motion-reduce:transition-none",
+                focusMode && "opacity-35",
+              )}
+            >
+              <SellListByTypeLinks isAdmin={isAdmin} variant="page" />
+            </div>
+          )}
+
           {focusBrand ? (
             <SellBrandModelsPanel
               key={focusBrand.id}
@@ -909,15 +920,6 @@ export function SellCatalogSearch({
               <SellTrendingBrandsSlider brands={trendingBrands} onSelect={setFocusBrand} />
             </div>
           ) : null}
-
-          <div
-            className={cn(
-              "transition-opacity duration-300 ease-out motion-reduce:transition-none",
-              focusMode && "opacity-35",
-            )}
-          >
-            <SellListByTypeLinks isAdmin={isAdmin} variant="page" />
-          </div>
         </div>
       </div>
     </main>

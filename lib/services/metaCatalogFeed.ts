@@ -1,9 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { z } from "zod"
 import { fetchMetaCatalogFeedPage } from "@/lib/db/metaCatalogFeed"
 import {
   listingToMetaCatalogFeedItem,
+  META_CATALOG_HAYDEN_SHOP_SELLER_EMAIL,
   type MetaCatalogFeedItem,
 } from "@/lib/meta/catalog-product"
+import { findUserIdByEmail } from "@/lib/services/resolveUserIdByEmail"
 
 const DEFAULT_MAX_ITEMS = 10_000
 
@@ -20,7 +23,31 @@ const META_CATALOG_CSV_HEADERS = [
   "google_product_category",
   "additional_image_link",
   "identifier_exists",
+  "custom_label_0",
 ] as const
+
+/**
+ * Resolves Hayden Garfield’s seller profile id for Meta `custom_label_0`.
+ * Prefer `META_CATALOG_HAYDEN_SHOP_USER_ID`, else email
+ * (`META_CATALOG_HAYDEN_SHOP_SELLER_EMAIL` or haydensbsb@gmail.com).
+ */
+export async function resolveMetaCatalogHaydenShopUserId(
+  supabase: SupabaseClient,
+): Promise<string | null> {
+  const byIdRaw = process.env.META_CATALOG_HAYDEN_SHOP_USER_ID?.trim()
+  if (byIdRaw) {
+    const parsed = z.string().uuid().safeParse(byIdRaw)
+    if (parsed.success) return parsed.data
+    console.warn(
+      "[meta] META_CATALOG_HAYDEN_SHOP_USER_ID is not a valid UUID; falling back to email lookup",
+    )
+  }
+
+  const email =
+    process.env.META_CATALOG_HAYDEN_SHOP_SELLER_EMAIL?.trim() ||
+    META_CATALOG_HAYDEN_SHOP_SELLER_EMAIL
+  return findUserIdByEmail(supabase, email)
+}
 
 function catalogFeedMaxItems(): number {
   const raw = process.env.META_CATALOG_FEED_MAX_ITEMS?.trim()
@@ -41,6 +68,8 @@ export async function buildMetaCatalogFeed(
   supabase: SupabaseClient,
 ): Promise<MetaCatalogFeedItem[]> {
   const maxItems = catalogFeedMaxItems()
+  const haydenShopUserId = await resolveMetaCatalogHaydenShopUserId(supabase)
+  const feedContext = { haydenShopUserId }
   const items: MetaCatalogFeedItem[] = []
   let offset = 0
 
@@ -50,7 +79,7 @@ export async function buildMetaCatalogFeed(
 
     for (const row of page.rows) {
       if (items.length >= maxItems) break
-      const item = listingToMetaCatalogFeedItem(row)
+      const item = listingToMetaCatalogFeedItem(row, feedContext)
       if (item) items.push(item)
     }
 

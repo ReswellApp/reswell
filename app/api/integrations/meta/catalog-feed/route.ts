@@ -18,6 +18,7 @@ import {
  *
  * Product `id` matches listing UUID — align Meta Pixel `content_ids` with this value for dynamic ads.
  * Includes active peer listings (`section` surfboards | fins | magazines).
+ * Hayden Garfield shop listings get `custom_label_0=HaydenGarfield` for Meta product-set ads.
  */
 export async function GET(request: Request) {
   if (!isMetaCatalogFeedAuthorized(request)) {

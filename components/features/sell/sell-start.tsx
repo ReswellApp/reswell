@@ -7,8 +7,8 @@ import { SellContinueDrafts } from "@/components/features/sell/sell-continue-dra
 import { resolveSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 
 /**
- * `/sell` hub — drafts + catalog search first, with compact type links.
- * Surfboard type links go straight to the full `/sell/boards` wizard.
+ * `/sell` hub — drafts + catalog search, type links, then trending brands.
+ * Surfboard type links go to Quick List (`/sell/quick`).
  */
 export function SellStart({
   isAdmin = false,

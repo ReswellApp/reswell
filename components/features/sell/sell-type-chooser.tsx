@@ -7,8 +7,9 @@ import { cn } from "@/lib/utils"
 /** Search-first sell hub (preserves `?new=1` for analytics / blank-slate). */
 export const SELL_HUB_HREF = "/sell?new=1"
 
-/** Canonical surfboard create URL (full wizard — Quick list is retired). */
-export const SELL_SURFBOARD_PATH_HREF = "/sell/boards?new=1"
+/** Canonical surfboard create URL — Quick List one-screen form. */
+export const SELL_SURFBOARD_PATH_HREF = "/sell/quick?new=1"
+export const SELL_SURFBOARD_FULL_PATH_HREF = "/sell/boards?new=1"
 
 type SellTypeOption = {
   href: string
@@ -47,7 +48,8 @@ function sellTypeOptions(isAdmin: boolean): readonly SellTypeOption[] {
 }
 
 /**
- * Compact type links under catalog search (and in empty-result panels).
+ * Compact type links between catalog search and trending brands
+ * (and in empty-result panels).
  */
 export function SellListByTypeLinks({
   isAdmin = false,

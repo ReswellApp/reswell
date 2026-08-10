@@ -1535,6 +1535,7 @@ function SellPageContentInner({
     draftControls: boardDraftControls,
     showDraftControls: showBoardDraftControls,
     draftSaveStatus: serverDraftSaveStatus,
+    persistServerDraftRef,
   } = serverDraft
   const effectiveEditId = editId ?? localServerDraftId
   const resumeDraftId = editId ?? (wantsBlankListing ? null : localServerDraftId)
@@ -1829,6 +1830,36 @@ function SellPageContentInner({
       window.scrollTo({ top: 0, behavior: "smooth" })
     }
   }, [flowStep, setBoardFlowStep])
+
+  const goToQuickList = useCallback(() => {
+    void (async () => {
+      const r = sellDraftLatestRef.current
+      if (!r.editId && r.draftHydrated) {
+        try {
+          await persistSellListingDraftSnapshot({
+            listingType: r.listingType,
+            formData: r.formData,
+            images: r.images,
+            userId: sellDraftUserIdRef.current,
+            includeInFlightPhotos: true,
+          })
+        } catch {
+          /* still navigate — Quick List recovers what it can */
+        }
+      }
+      try {
+        await persistServerDraftRef.current?.({ keepalive: true })
+      } catch {
+        /* ignore */
+      }
+      logSellFunnelEvent({
+        listingType: "surfboards",
+        event: "fork_to_quick",
+        message: viewMode,
+      })
+      router.push("/sell/quick")
+    })()
+  }, [persistServerDraftRef, router, viewMode])
 
   const firstIncompleteSellSectionId = useMemo(() => {
     for (const item of SELL_FORM_SECTION_NAV_ITEMS) {
@@ -5133,6 +5164,7 @@ function SellPageContentInner({
                 <BoardSellViewToolbar
                   viewMode={viewMode}
                   onViewModeChange={setViewMode}
+                  onSelectQuickList={editId ? undefined : goToQuickList}
                   searchAgainHref={editId ? null : "/sell"}
                   showBack={viewMode === "guided" && flowStep !== "product"}
                   showContinue={viewMode === "guided" && flowStep !== "shipping"}

@@ -58,6 +58,7 @@ export function useSellAccessoryDraftRecovery({
 }: UseSellAccessoryDraftRecoveryOptions): {
   draftHydrated: boolean
   clearRecoveredDraft: () => Promise<void>
+  flushDraftNow: (opts?: { includeInFlightPhotos?: boolean }) => Promise<void>
 } {
   const supabaseRef = useRef(createClient())
   const [draftHydrated, setDraftHydrated] = useState(false)
