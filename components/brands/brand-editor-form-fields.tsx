@@ -249,7 +249,7 @@ export function BrandEditorFormFields({
             onChange={(e) => onModelCountChange(e.target.value.replace(/\D/g, ""))}
           />
           <p className="text-xs text-muted-foreground">
-            Display badge on the public brand page. Add the actual models below or from the catalog explorer.
+            Internal catalog count. Managed automatically when models are imported or edited.
           </p>
         </div>
       </FieldSection>
