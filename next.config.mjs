@@ -135,14 +135,31 @@ const nextConfig = {
     ],
   },
   async headers() {
-    const staticHeroCacheControl =
+    // Static marketing photos (content-hashed via next/image imports; public path
+    // still needs long Cache-Control for direct hits). Swap file → new deploy/hash busts cache.
+    const staticMarketingImageCacheControl =
       'public, max-age=31536000, s-maxage=31536000, immutable, stale-while-revalidate=86400'
+
+    const categoryBrowseAtmosphereImages = [
+      '/images/brand/boards-browse-barrel.jpg',
+      '/images/brand/fiji-underboard.jpg',
+      '/images/brand/wetsuits-browse-atmosphere.jpg',
+      '/images/brand/apparel-browse-atmosphere.jpg',
+    ]
 
     return [
       {
         source: '/images/home/hero-backdrop-mesa-v2.jpg',
-        headers: [{ key: 'Cache-Control', value: staticHeroCacheControl }],
+        headers: [{ key: 'Cache-Control', value: staticMarketingImageCacheControl }],
       },
+      {
+        source: '/images/home/hero-backdrop-tahiti.jpg',
+        headers: [{ key: 'Cache-Control', value: staticMarketingImageCacheControl }],
+      },
+      ...categoryBrowseAtmosphereImages.map((source) => ({
+        source,
+        headers: [{ key: 'Cache-Control', value: staticMarketingImageCacheControl }],
+      })),
       {
         source: '/embed/:path*',
         headers: [

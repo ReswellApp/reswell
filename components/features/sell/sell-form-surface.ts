@@ -7,11 +7,10 @@
  */
 
 /**
- * Page canvas behind section cards.
- * Near-white `muted` — a whisper of cool tint so white cards separate via hairlines,
- * not heavy contrast. Sleek/minimal: depth comes from borders, not shadows.
+ * Page canvas behind section cards — white with brand near-black at low opacity
+ * (`BRAND_NEAR_BLACK` / `#04070E` @ ~4%) for a soft grey cast without leaving the palette.
  */
-export const SELL_PAGE_GROUND_CLASS = "bg-muted"
+export const SELL_PAGE_GROUND_CLASS = "bg-[#04070E]/[0.04]"
 
 /**
  * Primary form column width: full-bleed on small screens, wider on desktop so
