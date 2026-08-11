@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { LiveChatHomeView } from "@/components/features/live-chat/live-chat-home-view"
+import { LiveChatHelpArticleView } from "@/components/features/live-chat/live-chat-help-article-view"
 import { LiveChatHelpView } from "@/components/features/live-chat/live-chat-help-view"
 import {
   LiveChatMessagesView,
@@ -24,6 +25,7 @@ import {
 import { useLiveChatSupportOnlineStatus } from "@/components/features/live-chat/hooks/use-live-chat-agent-presence"
 import { useLiveChatSupportLead } from "@/components/features/live-chat/hooks/use-live-chat-support-lead"
 import { getStoredLiveChatSessionPublicId } from "@/lib/live-chat/visitor-storage"
+import type { LiveChatHelpArticleRef } from "@/lib/live-chat/widget-config"
 import { liveChatShellClass } from "@/lib/live-chat/widget-ui"
 
 const VISITOR_EMAIL_KEY = "reswell-live-chat-visitor-email"
@@ -42,6 +44,10 @@ function setStoredVisitorEmail(email: string): void {
   localStorage.setItem(VISITOR_EMAIL_KEY, email.trim())
 }
 
+function articleKey(article: LiveChatHelpArticleRef): string {
+  return `${article.topicId}/${article.slug}`
+}
+
 export function LiveChatWidget({ className }: LiveChatWidgetProps) {
   const [open, setOpen] = useState(false)
   // Panel mounts lazily on first open, then stays mounted so open/close can animate.
@@ -53,11 +59,15 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
   const [signedInEmail, setSignedInEmail] = useState<string | null>(null)
   const [isSignedIn, setIsSignedIn] = useState(false)
   const [agentPreview, setAgentPreview] = useState<LiveChatUiMessage | null>(null)
+  const [helpArticleStack, setHelpArticleStack] = useState<LiveChatHelpArticleRef[]>([])
+  const [helpReturnTab, setHelpReturnTab] = useState<LiveChatWidgetTab>("help")
   const messagesInitRef = useRef(false)
   const handoffBootstrapRef = useRef(false)
   const broadcastRef = useRef<(message: LiveChatUiMessage) => void>(() => {})
   const openRef = useRef(open)
   openRef.current = open
+
+  const activeHelpArticle = helpArticleStack[helpArticleStack.length - 1] ?? null
 
   const session = useLiveChatSession({
     onVisitorMessageConfirmed: (message) => broadcastRef.current(message),
@@ -85,7 +95,7 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
 
   const { typingName, publishTyping } = useLiveChatTyping(
     session.sessionId,
-    open && tab === "messages" && messageMode === "human" && session.sessionReady,
+    open && tab === "messages" && messageMode === "human" && session.sessionReady && !activeHelpArticle,
     "agent",
   )
 
@@ -125,10 +135,41 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
     void session.bootstrapSession()
   }, [messageMode, session])
 
+  function clearHelpArticleStack() {
+    setHelpArticleStack([])
+  }
+
+  function openHelpArticle(article: LiveChatHelpArticleRef, fromTab: LiveChatWidgetTab = tab) {
+    setHelpReturnTab(fromTab)
+    setHelpArticleStack((prev) => {
+      const current = prev[prev.length - 1]
+      if (current && articleKey(current) === articleKey(article)) return prev
+      return [...prev, article]
+    })
+  }
+
+  function openRelatedHelpArticle(article: LiveChatHelpArticleRef) {
+    setHelpArticleStack((prev) => {
+      const current = prev[prev.length - 1]
+      if (current && articleKey(current) === articleKey(article)) return prev
+      return [...prev, article]
+    })
+  }
+
+  function backFromHelpArticle() {
+    if (helpArticleStack.length <= 1) {
+      clearHelpArticleStack()
+      setTab(helpReturnTab)
+      return
+    }
+    setHelpArticleStack((prev) => prev.slice(0, -1))
+  }
+
   function openWidget() {
     setAgentPreview(null)
     setTab("messages")
     setMessageMode("human")
+    clearHelpArticleStack()
     if (!messagesInitRef.current) {
       messagesInitRef.current = true
       void ensureMessagesViewState()
@@ -154,6 +195,7 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
   }
 
   function openMessagesFromHome() {
+    clearHelpArticleStack()
     setTab("messages")
     setMessageMode("human")
     if (!messagesInitRef.current) {
@@ -163,6 +205,22 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
     if (!handoffBootstrapRef.current) {
       handoffBootstrapRef.current = true
       void session.bootstrapSession()
+    }
+  }
+
+  function changeTab(next: LiveChatWidgetTab) {
+    clearHelpArticleStack()
+    setTab(next)
+    if (next === "messages") {
+      setMessageMode("human")
+      if (!messagesInitRef.current) {
+        messagesInitRef.current = true
+        void ensureMessagesViewState()
+      }
+      if (!handoffBootstrapRef.current) {
+        handoffBootstrapRef.current = true
+        void session.bootstrapSession()
+      }
     }
   }
 
@@ -208,22 +266,33 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
           aria-label="Reswell support"
         >
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            {tab === "home" ? (
+            {activeHelpArticle ? (
+              <LiveChatHelpArticleView
+                articleRef={activeHelpArticle}
+                onBack={backFromHelpArticle}
+                onClose={closeWidget}
+                onOpenArticle={openRelatedHelpArticle}
+              />
+            ) : null}
+
+            {!activeHelpArticle && tab === "home" ? (
               <LiveChatHomeView
                 isSupportOnline={isSupportOnline}
                 onSendMessage={openMessagesFromHome}
-                onOpenHelp={() => setTab("help")}
+                onOpenHelp={() => changeTab("help")}
+                onOpenArticle={(article) => openHelpArticle(article, "home")}
                 onClose={closeWidget}
                 recentMessage={recentMessage}
                 supportLead={supportLead}
               />
             ) : null}
 
-            {tab === "messages" ? (
+            {!activeHelpArticle && tab === "messages" ? (
               <LiveChatMessagesView
                 mode={messageMode}
                 onModeChange={setMessageMode}
-                onBack={() => setTab("home")}
+                onBack={() => changeTab("home")}
+                onOpenArticle={(article) => openHelpArticle(article, "messages")}
                 botMessages={botMessages}
                 onBotMessagesChange={setBotMessages}
                 serverMessages={session.messages}
@@ -244,7 +313,7 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
               />
             ) : null}
 
-            {tab === "help" ? (
+            {!activeHelpArticle && tab === "help" ? (
               <div className="flex items-center justify-between border-b border-border/50 bg-background px-4 py-3">
                 <p className="text-sm font-semibold">Help guides</p>
                 <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={closeWidget} aria-label="Close">
@@ -253,25 +322,14 @@ export function LiveChatWidget({ className }: LiveChatWidgetProps) {
               </div>
             ) : null}
 
-            {tab === "help" ? <LiveChatHelpView /> : null}
+            {!activeHelpArticle && tab === "help" ? (
+              <LiveChatHelpView onOpenArticle={(article) => openHelpArticle(article, "help")} />
+            ) : null}
           </div>
 
           <LiveChatWidgetNav
             active={tab}
-            onChange={(next) => {
-              setTab(next)
-              if (next === "messages") {
-                setMessageMode("human")
-                if (!messagesInitRef.current) {
-                  messagesInitRef.current = true
-                  void ensureMessagesViewState()
-                }
-                if (!handoffBootstrapRef.current) {
-                  handoffBootstrapRef.current = true
-                  void session.bootstrapSession()
-                }
-              }
-            }}
+            onChange={changeTab}
             hasUnreadMessages={
               session.messages.some((m) => m.sender_type === "agent") && tab !== "messages"
             }

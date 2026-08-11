@@ -1,5 +1,6 @@
 import { getHelpArticleHref } from "@/lib/help-center/registry"
 import { helpCenterTopArticlesByTab } from "@/lib/help-center/top-articles"
+import type { HelpCenterTabId } from "@/lib/help-center/types"
 
 export const RESEWELL_BOT_NAME = "Reswell Bot"
 
@@ -52,12 +53,25 @@ export const LIVE_CHAT_QUICK_ACTIONS = [
 export type LiveChatHelpLink = {
   title: string
   href: string
+  topicId: HelpCenterTabId
+  slug: string
 }
 
-function toHelpLink(article: { title: string; slug: string; topicId: "buying" | "selling" | "accounts" }): LiveChatHelpLink {
+export type LiveChatHelpArticleRef = {
+  topicId: HelpCenterTabId
+  slug: string
+}
+
+function toHelpLink(article: {
+  title: string
+  slug: string
+  topicId: HelpCenterTabId
+}): LiveChatHelpLink {
   return {
     title: article.title,
     href: getHelpArticleHref({ topicId: article.topicId, slug: article.slug }),
+    topicId: article.topicId,
+    slug: article.slug,
   }
 }
 

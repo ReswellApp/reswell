@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import Link from "next/link"
 import { ArrowLeft, ChevronRight } from "lucide-react"
 import { format } from "date-fns"
 import { z } from "zod"
@@ -21,6 +20,7 @@ import {
   LIVE_CHAT_QUICK_ACTIONS,
   LIVE_CHAT_STARTER_TOPICS,
   RESEWELL_BOT_NAME,
+  type LiveChatHelpArticleRef,
   type LiveChatHelpLink,
 } from "@/lib/live-chat/widget-config"
 import { liveChatThreadSurfaceClass } from "@/lib/live-chat/widget-ui"
@@ -41,6 +41,7 @@ interface LiveChatMessagesViewProps {
   mode: MessageMode
   onModeChange: (mode: MessageMode) => void
   onBack: () => void
+  onOpenArticle: (article: LiveChatHelpArticleRef) => void
   botMessages: BotUiMessage[]
   onBotMessagesChange: (messages: BotUiMessage[]) => void
   serverMessages: LiveChatUiMessage[]
@@ -61,9 +62,11 @@ interface LiveChatMessagesViewProps {
 function BotBubble({
   message,
   showMeta = true,
+  onOpenArticle,
 }: {
   message: BotUiMessage
   showMeta?: boolean
+  onOpenArticle: (article: LiveChatHelpArticleRef) => void
 }) {
   return (
     <div className="flex flex-col items-start gap-1">
@@ -74,16 +77,15 @@ function BotBubble({
             <p className="text-xs font-medium text-muted-foreground">In the meantime, these articles might help:</p>
             <ul className="space-y-1">
               {message.helpLinks.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between gap-2 rounded-lg bg-background/80 px-2 py-1.5 text-xs text-foreground hover:bg-background"
+                <li key={`${link.topicId}/${link.slug}`}>
+                  <button
+                    type="button"
+                    onClick={() => onOpenArticle({ topicId: link.topicId, slug: link.slug })}
+                    className="flex w-full items-center justify-between gap-2 rounded-lg bg-background/80 px-2 py-1.5 text-left text-xs text-foreground hover:bg-background"
                   >
                     <span className="line-clamp-2">{link.title}</span>
                     <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                  </Link>
+                  </button>
                 </li>
               ))}
             </ul>
@@ -113,6 +115,7 @@ export function LiveChatMessagesView({
   mode,
   onModeChange,
   onBack,
+  onOpenArticle,
   botMessages,
   onBotMessagesChange,
   serverMessages,
@@ -274,7 +277,7 @@ export function LiveChatMessagesView({
           if (message.kind === "user_choice") {
             return <UserChoiceBubble key={message.id} label={message.content} />
           }
-          return <BotBubble key={message.id} message={message} />
+          return <BotBubble key={message.id} message={message} onOpenArticle={onOpenArticle} />
         })}
 
         {mode === "human" ? (

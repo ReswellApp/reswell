@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
 import { ChevronRight, MessageCircle, ShieldCheck, X } from "lucide-react"
 import { LiveChatSupportLeadAvatar } from "@/components/features/live-chat/live-chat-support-lead-avatar"
@@ -18,6 +17,7 @@ import {
   LIVE_CHAT_HOME_SUBGREETING,
   LIVE_CHAT_HOME_TAGLINE,
   LIVE_CHAT_HOME_TRUST,
+  type LiveChatHelpArticleRef,
 } from "@/lib/live-chat/widget-config"
 import {
   liveChatCardButtonClass,
@@ -36,6 +36,7 @@ interface LiveChatHomeViewProps {
   isSupportOnline: boolean
   onSendMessage: () => void
   onOpenHelp: () => void
+  onOpenArticle: (article: LiveChatHelpArticleRef) => void
   onClose: () => void
   recentMessage?: LiveChatHomeRecentMessage | null
   supportLead?: LiveChatSupportTeamMember
@@ -45,6 +46,7 @@ export function LiveChatHomeView({
   isSupportOnline,
   onSendMessage,
   onOpenHelp,
+  onOpenArticle,
   onClose,
   recentMessage,
   supportLead,
@@ -150,16 +152,15 @@ export function LiveChatHomeView({
           </p>
           <ul className="divide-y divide-border/40">
             {LIVE_CHAT_HOME_HELP_PREVIEW.map((article) => (
-              <li key={article.href}>
-                <Link
-                  href={article.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between gap-2 px-4 py-3 text-sm text-foreground/90 transition-colors hover:bg-muted/60"
+              <li key={`${article.topicId}/${article.slug}`}>
+                <button
+                  type="button"
+                  onClick={() => onOpenArticle({ topicId: article.topicId, slug: article.slug })}
+                  className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left text-sm text-foreground/90 transition-colors hover:bg-muted/60"
                 >
                   <span className="line-clamp-2 leading-snug">{article.title}</span>
                   <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-                </Link>
+                </button>
               </li>
             ))}
           </ul>
