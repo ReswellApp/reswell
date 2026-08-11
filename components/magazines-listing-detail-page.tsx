@@ -25,10 +25,8 @@ import { ShareButton } from "@/components/share-button"
 import { ListingOwnerManageActions } from "@/components/features/listings/listing-owner-manage-actions"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ImageGallery } from "@/components/image-gallery"
-import {
-  ListingPdpVideo,
-  primaryListingVideo,
-} from "@/components/features/listings/listing-pdp-video"
+import { ListingPdpVideo } from "@/components/features/listings/listing-pdp-video"
+import { primaryListingVideo } from "@/lib/primary-listing-video"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
 import { listingTileFavoriteButtonChromeClassName } from "@/components/favorite-button-card-overlay"
