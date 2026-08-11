@@ -180,6 +180,7 @@ export async function updateLiveChatSessionRow(
     contact_message_id: string | null
     resolved_at: string | null
     user_id: string | null
+    metadata: Record<string, unknown>
   }>,
 ): Promise<boolean> {
   const { error } = await supabase.from("live_chat_sessions").update(patch).eq("id", sessionId)
@@ -188,6 +189,17 @@ export async function updateLiveChatSessionRow(
     return false
   }
   return true
+}
+
+/** Merge keys into session.metadata without clobbering unrelated fields. */
+export async function mergeLiveChatSessionMetadata(
+  supabase: SupabaseClient,
+  session: LiveChatSessionRow,
+  patch: Record<string, unknown>,
+): Promise<boolean> {
+  return updateLiveChatSessionRow(supabase, session.id, {
+    metadata: { ...session.metadata, ...patch },
+  })
 }
 
 export async function listOpenLiveChatSessions(

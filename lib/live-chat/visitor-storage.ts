@@ -1,6 +1,7 @@
 const VISITOR_TOKEN_KEY = "reswell-live-chat-visitor-token"
 const SESSION_PUBLIC_ID_KEY = "reswell-live-chat-session-public-id"
 const VISITOR_NAME_KEY = "reswell-live-chat-visitor-name"
+const VISITOR_EMAIL_KEY = "reswell-live-chat-visitor-email"
 
 export function getOrCreateLiveChatVisitorToken(): string {
   if (typeof localStorage === "undefined") {
@@ -38,4 +39,26 @@ export function getStoredLiveChatVisitorName(): string | null {
 export function setStoredLiveChatVisitorName(name: string): void {
   if (typeof localStorage === "undefined") return
   localStorage.setItem(VISITOR_NAME_KEY, name.trim())
+}
+
+export function getStoredLiveChatVisitorEmail(): string {
+  if (typeof localStorage === "undefined") return ""
+  return localStorage.getItem(VISITOR_EMAIL_KEY)?.trim() ?? ""
+}
+
+export function setStoredLiveChatVisitorEmail(email: string): void {
+  if (typeof localStorage === "undefined") return
+  localStorage.setItem(VISITOR_EMAIL_KEY, email.trim())
+}
+
+/**
+ * Drop browser resume keys so the next open starts a new guest thread.
+ * Call on sign-out — sessions are device-local and otherwise survive auth changes.
+ */
+export function clearLiveChatBrowserState(): void {
+  if (typeof localStorage === "undefined") return
+  localStorage.removeItem(SESSION_PUBLIC_ID_KEY)
+  localStorage.removeItem(VISITOR_NAME_KEY)
+  localStorage.removeItem(VISITOR_TOKEN_KEY)
+  localStorage.removeItem(VISITOR_EMAIL_KEY)
 }

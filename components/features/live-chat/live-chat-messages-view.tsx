@@ -10,7 +10,11 @@ import { LiveChatWaitingBanner } from "@/components/features/live-chat/live-chat
 import { LiveChatWordmark } from "@/components/features/live-chat/live-chat-wordmark"
 import { cn } from "@/lib/utils"
 import {
-  LIVE_CHAT_BOT_AI_STUB,
+  LIVE_CHAT_AI_FOLLOW_UP_ACTIONS,
+  LIVE_CHAT_AI_FOLLOW_UP_PROMPT,
+  LIVE_CHAT_AI_HANDOFF_CTA,
+  LIVE_CHAT_AI_OFFLINE_NOTE,
+  LIVE_CHAT_BOT_AI_READY,
   LIVE_CHAT_BOT_HANDOFF,
   LIVE_CHAT_BOT_INTRO,
   LIVE_CHAT_BOT_MISSION,
@@ -29,13 +33,13 @@ import type { LiveChatSupportTeamMember } from "@/lib/services/liveChatSupportTe
 
 export type BotUiMessage = {
   id: string
-  kind: "mission" | "intro" | "ai_stub" | "handoff" | "user_choice"
+  kind: "mission" | "intro" | "ai_ready" | "handoff" | "user_choice"
   content: string
   created_at: string
   helpLinks?: LiveChatHelpLink[]
 }
 
-type MessageMode = "bot" | "human"
+export type MessageMode = "bot" | "ai" | "human"
 
 interface LiveChatMessagesViewProps {
   mode: MessageMode
@@ -47,14 +51,20 @@ interface LiveChatMessagesViewProps {
   serverMessages: LiveChatUiMessage[]
   typingName: string | null
   sending: boolean
+  /** True while Reswell AI is generating a reply. */
+  aiThinking?: boolean
   error: string | null
   onSendHumanMessage: (content: string, email: string | null) => Promise<boolean>
+  onSendAiMessage: (content: string) => Promise<boolean>
+  onActivateAi: () => Promise<boolean>
+  onRequestHandoff: () => Promise<boolean>
   onPublishTyping: (isTyping: boolean) => void
   visitorEmail: string | null
   isSignedIn: boolean
   showEmailField: boolean
   emailDraft: string
   onEmailDraftChange: (value: string) => void
+  emailLocked?: boolean
   isSupportOnline: boolean
   supportLead: LiveChatSupportTeamMember
 }
@@ -74,7 +84,7 @@ function BotBubble({
         <p className="whitespace-pre-wrap">{message.content}</p>
         {message.helpLinks?.length ? (
           <div className="mt-3 space-y-2 border-t border-border/50 pt-3">
-            <p className="text-xs font-medium text-muted-foreground">In the meantime, these articles might help:</p>
+            <p className="text-xs font-medium text-muted-foreground">These articles might help:</p>
             <ul className="space-y-1">
               {message.helpLinks.map((link) => (
                 <li key={`${link.topicId}/${link.slug}`}>
@@ -94,7 +104,7 @@ function BotBubble({
       </div>
       {showMeta ? (
         <span className="px-1 text-[10px] text-muted-foreground">
-          {RESEWELL_BOT_NAME} · AI Agent · {format(new Date(message.created_at), "h:mm a")}
+          {RESEWELL_BOT_NAME} · AI Agent · {formatBotTimestamp(message.created_at)}
         </span>
       ) : null}
     </div>
@@ -104,11 +114,31 @@ function BotBubble({
 function UserChoiceBubble({ label }: { label: string }) {
   return (
     <div className="flex justify-end">
-      <span className="rounded-2xl rounded-br-md bg-listingHeart px-3 py-2 text-sm font-medium text-white">
+      <span className="rounded-full bg-listingHeart px-4 py-2 text-sm font-medium text-white shadow-sm">
         {label}
       </span>
     </div>
   )
+}
+
+function formatBotTimestamp(iso: string): string {
+  return Date.now() - new Date(iso).getTime() < 60_000
+    ? "Just now"
+    : format(new Date(iso), "h:mm a")
+}
+
+const OFFLINE_NOTE_SPLIT =
+  /\n*—\s*\n*A Reswell teammate will also see this conversation and can follow up\.?\s*$/i
+
+function splitBotMessageContent(content: string): { body: string; showOfflineNote: boolean } {
+  const showOfflineNote = OFFLINE_NOTE_SPLIT.test(content) || content.includes(LIVE_CHAT_AI_OFFLINE_NOTE)
+  const body = content
+    .replace(/\n*—\s*\n*A Reswell teammate will also see this conversation and can follow up\.?/gi, "")
+    .trim()
+  return {
+    body: body.length > 0 ? body : content.trim(),
+    showOfflineNote,
+  }
 }
 
 export function LiveChatMessagesView({
@@ -121,19 +151,29 @@ export function LiveChatMessagesView({
   serverMessages,
   typingName,
   sending,
+  aiThinking = false,
   error,
   onSendHumanMessage,
+  onSendAiMessage,
+  onActivateAi,
+  onRequestHandoff,
   onPublishTyping,
   visitorEmail,
   isSignedIn,
   showEmailField,
   emailDraft,
   onEmailDraftChange,
+  emailLocked = false,
   isSupportOnline,
   supportLead,
 }: LiveChatMessagesViewProps) {
   const [draft, setDraft] = useState("")
   const [emailError, setEmailError] = useState<string | null>(null)
+  const [activatingAi, setActivatingAi] = useState(false)
+  /** Hide follow-up until the visitor sends another message (then bot replies again). */
+  const [followUpDismissedUntilVisitorSend, setFollowUpDismissedUntilVisitorSend] = useState(false)
+  /** After "Wait for a Human", never show the AI follow-up card again in this view. */
+  const [aiFollowUpSuppressedForHandoff, setAiFollowUpSuppressedForHandoff] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const emailInputRef = useRef<HTMLInputElement>(null)
@@ -142,19 +182,19 @@ export function LiveChatMessagesView({
     const el = scrollRef.current
     if (!el) return
     el.scrollTop = el.scrollHeight
-  }, [botMessages, serverMessages, typingName])
+  }, [botMessages, serverMessages, typingName, sending, aiThinking])
 
   useEffect(() => {
-    if (mode !== "human") return
+    if (mode !== "human" && mode !== "ai") return
     const timer = window.setTimeout(() => {
-      if (showEmailField) {
+      if (mode === "human" && showEmailField && !emailLocked) {
         emailInputRef.current?.focus()
       } else {
         inputRef.current?.focus()
       }
     }, 50)
     return () => window.clearTimeout(timer)
-  }, [mode, showEmailField])
+  }, [emailLocked, mode, showEmailField])
 
   function appendBot(partial: Omit<BotUiMessage, "id" | "created_at">) {
     onBotMessagesChange([
@@ -167,10 +207,22 @@ export function LiveChatMessagesView({
     ])
   }
 
-  function handleQuickAction(actionId: "ask_ai" | "wait_team", label: string) {
+  async function handleQuickAction(actionId: "ask_ai" | "wait_team", label: string) {
     appendBot({ kind: "user_choice", content: label })
     if (actionId === "ask_ai") {
-      appendBot({ kind: "ai_stub", content: LIVE_CHAT_BOT_AI_STUB, helpLinks: LIVE_CHAT_HANDOFF_HELP_PREVIEW })
+      setAiFollowUpSuppressedForHandoff(false)
+      setActivatingAi(true)
+      const ok = await onActivateAi()
+      setActivatingAi(false)
+      if (ok) {
+        onModeChange("ai")
+      } else {
+        appendBot({
+          kind: "ai_ready",
+          content: LIVE_CHAT_BOT_AI_READY,
+          helpLinks: LIVE_CHAT_HANDOFF_HELP_PREVIEW,
+        })
+      }
       return
     }
     onModeChange("human")
@@ -183,11 +235,18 @@ export function LiveChatMessagesView({
 
   async function handleSend() {
     const content = draft.trim()
-    if (!content || sending) return
+    if (!content || sending || activatingAi) return
+
+    if (mode === "ai") {
+      setDraft("")
+      const ok = await onSendAiMessage(content)
+      if (!ok) setDraft(content)
+      return
+    }
 
     if (mode === "human") {
       setEmailError(null)
-      let email: string | null = isSignedIn ? visitorEmail : emailDraft.trim() || null
+      const email: string | null = isSignedIn ? visitorEmail : emailDraft.trim() || null
 
       if (!isSignedIn) {
         if (!email) {
@@ -208,9 +267,19 @@ export function LiveChatMessagesView({
     }
   }
 
+  async function handleHandoffClick() {
+    setAiFollowUpSuppressedForHandoff(true)
+    const ok = await onRequestHandoff()
+    if (ok) {
+      onModeChange("human")
+      return
+    }
+    setAiFollowUpSuppressedForHandoff(false)
+  }
+
   function handleStarterTopic(starter: string) {
     if (starter) setDraft(starter)
-    if (showEmailField && !emailDraft.trim()) {
+    if (showEmailField && !emailLocked && !emailDraft.trim()) {
       emailInputRef.current?.focus()
     } else {
       inputRef.current?.focus()
@@ -227,14 +296,52 @@ export function LiveChatMessagesView({
   const showQuickActions =
     mode === "bot" && !botMessages.some((m) => m.kind === "user_choice" || m.kind === "handoff")
 
-  const visibleHumanMessages = serverMessages.filter(
+  const visibleThreadMessages = serverMessages.filter(
     (m) => m.sender_type !== "system" || serverMessages.indexOf(m) > 0,
   )
-  const showHumanEmptyState = mode === "human" && visibleHumanMessages.length === 0
-  const hasConfirmedVisitorMessage = visibleHumanMessages.some(
+  const showHumanEmptyState = mode === "human" && visibleThreadMessages.length === 0
+  const showAiComposer = mode === "ai"
+  const showHumanComposer = mode === "human"
+  const hasConfirmedVisitorMessage = visibleThreadMessages.some(
     (m) => m.sender_type === "visitor" && !m.pending,
   )
   const replyEmail = isSignedIn ? visitorEmail : emailDraft.trim() || null
+
+  const lastThreadMessage = [...visibleThreadMessages].reverse().find(
+    (m) => m.sender_type === "visitor" || m.sender_type === "bot" || m.sender_type === "agent",
+  )
+  const lastIsVisitor = lastThreadMessage?.sender_type === "visitor"
+  // Re-enable follow-up once the visitor sends again (bot will reply after).
+  useEffect(() => {
+    if (lastIsVisitor && followUpDismissedUntilVisitorSend) {
+      setFollowUpDismissedUntilVisitorSend(false)
+    }
+  }, [followUpDismissedUntilVisitorSend, lastIsVisitor, lastThreadMessage?.id])
+
+  const showAiFollowUp =
+    !aiThinking &&
+    !activatingAi &&
+    !sending &&
+    !followUpDismissedUntilVisitorSend &&
+    !aiFollowUpSuppressedForHandoff &&
+    (mode === "ai" || mode === "human") &&
+    lastThreadMessage?.sender_type === "bot"
+
+  async function handleFollowUpAction(actionId: "another_question" | "wait_human") {
+    if (actionId === "wait_human") {
+      await handleHandoffClick()
+      return
+    }
+    setAiFollowUpSuppressedForHandoff(false)
+    setFollowUpDismissedUntilVisitorSend(true)
+    if (mode !== "ai") {
+      setActivatingAi(true)
+      const ok = await onActivateAi()
+      setActivatingAi(false)
+      if (ok) onModeChange("ai")
+    }
+    window.setTimeout(() => inputRef.current?.focus(), 50)
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-muted/20">
@@ -245,7 +352,11 @@ export function LiveChatMessagesView({
         <div className="min-w-0 flex-1">
           <LiveChatWordmark className="max-h-5" />
           <p className="truncate text-[11px] text-muted-foreground">
-            {mode === "human" ? LIVE_CHAT_MESSAGES_REPLY_NOTE : "Browse guides or message our team"}
+            {mode === "ai"
+              ? `${RESEWELL_BOT_NAME} · Ask about policies or orders`
+              : mode === "human"
+                ? LIVE_CHAT_MESSAGES_REPLY_NOTE
+                : "Browse guides or message our team"}
           </p>
         </div>
       </div>
@@ -273,6 +384,7 @@ export function LiveChatMessagesView({
           </div>
         ) : null}
 
+        {/* Prologue stays visible after choosing AI or human (intro + selection pill). */}
         {botMessages.map((message) => {
           if (message.kind === "user_choice") {
             return <UserChoiceBubble key={message.id} label={message.content} />
@@ -280,58 +392,131 @@ export function LiveChatMessagesView({
           return <BotBubble key={message.id} message={message} onOpenArticle={onOpenArticle} />
         })}
 
-        {mode === "human" ? (
-          <>
-            {visibleHumanMessages.map((message) => {
-                const isVisitor = message.sender_type === "visitor"
-                const isSystem = message.sender_type === "system"
-                if (isSystem) {
-                  return (
-                    <p key={message.id} className="text-center text-xs text-muted-foreground">
-                      {message.content}
-                    </p>
-                  )
-                }
+        {mode === "ai" || mode === "human"
+          ? visibleThreadMessages.map((message) => {
+              const isVisitor = message.sender_type === "visitor"
+              const isSystem = message.sender_type === "system"
+              const isBot = message.sender_type === "bot"
+              if (isSystem) {
                 return (
-                  <div
-                    key={message.id}
-                    className={cn("flex flex-col gap-1", isVisitor ? "items-end" : "items-start")}
-                  >
-                    {!isVisitor ? (
-                      <span className="px-1 text-[11px] text-muted-foreground">
-                        {message.agent_display_name ?? "Support"}
-                      </span>
-                    ) : null}
-                    <div
-                      className={cn(
-                        "max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed transition-opacity",
-                        isVisitor
-                          ? "rounded-br-md bg-listingHeart text-white"
-                          : "rounded-bl-md border border-border/50 bg-background text-foreground",
-                        message.pending && "opacity-80",
-                      )}
-                    >
-                      {message.content}
-                    </div>
-                  </div>
+                  <p key={message.id} className="text-center text-xs text-muted-foreground">
+                    {message.content}
+                  </p>
                 )
-              })}
-            {typingName ? (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 rounded-2xl rounded-bl-md border border-border/50 bg-background px-3 py-2.5 shadow-sm">
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:-0.3s]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:-0.15s]" />
-                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60" />
+              }
+              return (
+                <div
+                  key={message.id}
+                  className={cn("flex flex-col gap-1", isVisitor ? "items-end" : "items-start")}
+                >
+                  {!isVisitor && !isBot ? (
+                    <span className="px-1 text-[11px] text-muted-foreground">
+                      {message.agent_display_name ?? "Support"}
+                    </span>
+                  ) : null}
+                  <div
+                    className={cn(
+                      "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed transition-opacity",
+                      isVisitor
+                        ? "rounded-2xl rounded-br-md bg-listingHeart text-white"
+                        : isBot
+                          ? "rounded-2xl rounded-bl-md bg-muted text-foreground"
+                          : "rounded-2xl rounded-bl-md border border-border/50 bg-background text-foreground",
+                      message.pending && "opacity-80",
+                    )}
+                  >
+                    {isBot ? (
+                      (() => {
+                        const { body, showOfflineNote } = splitBotMessageContent(message.content)
+                        return (
+                          <>
+                            <p className="whitespace-pre-wrap">{body}</p>
+                            {showOfflineNote ? (
+                              <p className="mt-2 border-t border-border/50 pt-2 text-xs text-muted-foreground">
+                                {LIVE_CHAT_AI_OFFLINE_NOTE}
+                              </p>
+                            ) : null}
+                          </>
+                        )
+                      })()
+                    ) : (
+                      <p className="whitespace-pre-wrap">{message.content}</p>
+                    )}
+                  </div>
+                  {isBot ? (
+                    <span className="px-1 text-[10px] text-muted-foreground">
+                      {RESEWELL_BOT_NAME} · AI Agent · {formatBotTimestamp(message.created_at)}
+                    </span>
+                  ) : null}
                 </div>
-                <span className="text-[11px] text-muted-foreground">{typingName}</span>
-              </div>
-            ) : null}
-            {hasConfirmedVisitorMessage && replyEmail ? (
-              <p className="pt-1 text-center text-[11px] leading-relaxed text-muted-foreground">
-                We&apos;ll reply here and email you at <span className="font-medium text-foreground/80">{replyEmail}</span>
-              </p>
-            ) : null}
-          </>
+              )
+            })
+          : null}
+
+        {showAiFollowUp ? (
+          <div className="mx-1 mt-1 space-y-2 rounded-2xl border border-border/50 bg-background px-3 py-3">
+            <p className="text-sm font-medium text-foreground">{LIVE_CHAT_AI_FOLLOW_UP_PROMPT}</p>
+            <p className="text-xs text-muted-foreground">
+              Ask another question, or leave a note for a human teammate.
+            </p>
+            <div className="flex flex-wrap gap-2 pt-0.5">
+              {LIVE_CHAT_AI_FOLLOW_UP_ACTIONS.map((action) => (
+                <Button
+                  key={action.id}
+                  type="button"
+                  variant={action.id === "another_question" ? "default" : "outline"}
+                  size="sm"
+                  className="rounded-full"
+                  disabled={sending || activatingAi}
+                  onClick={() => void handleFollowUpAction(action.id)}
+                >
+                  {action.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {(aiThinking || activatingAi) && (mode === "ai" || mode === "human") ? (
+          <div className="flex items-center gap-2" aria-live="polite" aria-label={`${RESEWELL_BOT_NAME} is typing`}>
+            <div className="flex items-center gap-1 rounded-2xl rounded-bl-md border border-border/50 bg-background px-3 py-2.5 shadow-sm">
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:-0.3s]" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:-0.15s]" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60" />
+            </div>
+            <span className="text-[11px] text-muted-foreground">
+              {RESEWELL_BOT_NAME} is typing…
+            </span>
+          </div>
+        ) : null}
+
+        {sending && !aiThinking && !activatingAi && mode === "human" ? (
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 rounded-2xl rounded-bl-md border border-border/50 bg-background px-3 py-2.5 shadow-sm">
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:-0.3s]" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:-0.15s]" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60" />
+            </div>
+            <span className="text-[11px] text-muted-foreground">Sending…</span>
+          </div>
+        ) : null}
+
+        {mode === "human" && typingName && !aiThinking ? (
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 rounded-2xl rounded-bl-md border border-border/50 bg-background px-3 py-2.5 shadow-sm">
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:-0.3s]" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:-0.15s]" />
+              <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground/60" />
+            </div>
+            <span className="text-[11px] text-muted-foreground">{typingName}</span>
+          </div>
+        ) : null}
+
+        {mode === "human" && hasConfirmedVisitorMessage && replyEmail ? (
+          <p className="pt-1 text-center text-[11px] leading-relaxed text-muted-foreground">
+            We&apos;ll reply here and email you at{" "}
+            <span className="font-medium text-foreground/80">{replyEmail}</span>
+          </p>
         ) : null}
       </div>
 
@@ -344,7 +529,8 @@ export function LiveChatMessagesView({
               variant="outline"
               size="sm"
               className="rounded-full"
-              onClick={() => handleQuickAction(action.id, action.label)}
+              disabled={activatingAi}
+              onClick={() => void handleQuickAction(action.id, action.label)}
             >
               {action.label}
             </Button>
@@ -352,7 +538,40 @@ export function LiveChatMessagesView({
         </div>
       ) : null}
 
-      {mode === "human" ? (
+      {showAiComposer ? (
+        <>
+          {/* Handoff lives in the follow-up card after AI replies — only show here otherwise. */}
+          {!showAiFollowUp ? (
+            <div className="flex flex-wrap gap-2 border-t border-border/60 px-3 py-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+                disabled={sending || activatingAi}
+                onClick={() => void handleHandoffClick()}
+              >
+                {LIVE_CHAT_AI_HANDOFF_CTA}
+              </Button>
+            </div>
+          ) : null}
+          {error ? <p className="px-4 pt-1 text-xs text-destructive">{error}</p> : null}
+          <LiveChatComposer
+            draft={draft}
+            onDraftChange={setDraft}
+            onSend={() => void handleSend()}
+            sending={sending || activatingAi}
+            showEmailField={false}
+            emailDraft=""
+            onEmailDraftChange={() => {}}
+            emailError={null}
+            inputRef={inputRef}
+            emailInputRef={emailInputRef}
+          />
+        </>
+      ) : null}
+
+      {showHumanComposer ? (
         <>
           <LiveChatWaitingBanner lead={supportLead} isSupportOnline={isSupportOnline} />
           {error ? <p className="px-4 pt-2 text-xs text-destructive">{error}</p> : null}
@@ -363,6 +582,7 @@ export function LiveChatMessagesView({
             sending={sending}
             showEmailField={showEmailField}
             emailDraft={emailDraft}
+            emailLocked={emailLocked}
             onEmailDraftChange={(value) => {
               setEmailError(null)
               onEmailDraftChange(value)

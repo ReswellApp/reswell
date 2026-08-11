@@ -111,9 +111,11 @@ export async function loadLiveChatAdminThreadService(sessionId: string): Promise
   const enrichedMessages: LiveChatAdminMessage[] = messages.map((m) => ({
     ...m,
     agent_display_name:
-      m.sender_type === "agent" && m.sender_agent_id
-        ? (agentNames.get(m.sender_agent_id) ?? "Support")
-        : null,
+      m.sender_type === "bot"
+        ? "Reswell AI"
+        : m.sender_type === "agent" && m.sender_agent_id
+          ? (agentNames.get(m.sender_agent_id) ?? "Support")
+          : null,
   }))
 
   const lastContent = messages.length > 0 ? messages[messages.length - 1]?.content : null

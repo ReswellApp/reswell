@@ -12,6 +12,8 @@ interface LiveChatComposerProps {
   emailDraft?: string
   onEmailDraftChange?: (value: string) => void
   showEmailField?: boolean
+  /** After the visitor confirms an email, keep it visible but not editable. */
+  emailLocked?: boolean
   emailError?: string | null
   inputRef?: React.RefObject<HTMLTextAreaElement | null>
   emailInputRef?: React.RefObject<HTMLInputElement | null>
@@ -25,6 +27,7 @@ export function LiveChatComposer({
   emailDraft = "",
   onEmailDraftChange,
   showEmailField = false,
+  emailLocked = false,
   emailError = null,
   inputRef,
   emailInputRef,
@@ -40,10 +43,21 @@ export function LiveChatComposer({
             ref={emailInputRef}
             type="email"
             value={emailDraft}
-            onChange={(e) => onEmailDraftChange?.(e.target.value)}
+            onChange={(e) => {
+              if (emailLocked) return
+              onEmailDraftChange?.(e.target.value)
+            }}
             placeholder="Your email"
             autoComplete="email"
-            className="w-full border-0 border-b border-border/60 bg-transparent px-4 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-0"
+            readOnly={emailLocked}
+            aria-readonly={emailLocked}
+            tabIndex={emailLocked ? -1 : undefined}
+            className={cn(
+              "w-full border-0 border-b border-border/60 bg-transparent px-4 py-2.5 text-sm outline-none placeholder:text-muted-foreground focus:ring-0",
+              emailLocked
+                ? "cursor-default text-muted-foreground"
+                : "text-foreground",
+            )}
           />
         ) : null}
         <textarea

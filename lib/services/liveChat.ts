@@ -31,9 +31,11 @@ async function enrichMessagesWithAgentNames(
   return messages.map((m) => ({
     ...m,
     agent_display_name:
-      m.sender_type === "agent" && m.sender_agent_id
-        ? (names.get(m.sender_agent_id) ?? "Support")
-        : null,
+      m.sender_type === "bot"
+        ? "Reswell AI"
+        : m.sender_type === "agent" && m.sender_agent_id
+          ? (names.get(m.sender_agent_id) ?? "Support")
+          : null,
   }))
 }
 
@@ -58,6 +60,11 @@ export async function createOrResumeLiveChatSessionService(raw: unknown): Promis
   const svc = createServiceRoleClient()
   const visitorName = parsed.data.visitor_name?.trim() || "Guest"
 
+  const authSupabase = await createClient()
+  const {
+    data: { user },
+  } = await authSupabase.auth.getUser()
+
   if (parsed.data.resume_public_id) {
     const existing = await getLiveChatSessionForVisitor(
       svc,
@@ -65,7 +72,14 @@ export async function createOrResumeLiveChatSessionService(raw: unknown): Promis
       parsed.data.visitor_token,
     )
     // Resolved/closed chats stay in history; the visitor gets a fresh conversation.
-    if (existing && existing.status !== "closed" && existing.status !== "resolved") {
+    // Member-linked threads must not resume for anonymous visitors (or a different user)
+    // even if localStorage still has the public id after sign-out.
+    const canResumeAsCurrentVisitor =
+      existing &&
+      existing.status !== "closed" &&
+      existing.status !== "resolved" &&
+      (!existing.user_id || existing.user_id === user?.id)
+    if (canResumeAsCurrentVisitor && existing) {
       const messages = await enrichMessagesWithAgentNames(
         svc,
         await listLiveChatMessagesForSession(svc, existing.id),
@@ -82,11 +96,6 @@ export async function createOrResumeLiveChatSessionService(raw: unknown): Promis
       }
     }
   }
-
-  const authSupabase = await createClient()
-  const {
-    data: { user },
-  } = await authSupabase.auth.getUser()
 
   // Signed-in members resume their latest open chat across devices, even
   // without a stored public id. Adopt the current visitor token so

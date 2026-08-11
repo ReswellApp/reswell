@@ -178,7 +178,10 @@ function ThreadPane({
           sender_agent_id: message.sender_type === "agent" ? staff.userId : null,
           content: message.content,
           created_at: message.created_at,
-          agent_display_name: message.agent_display_name ?? null,
+          agent_display_name:
+            message.sender_type === "bot"
+              ? "Reswell AI"
+              : (message.agent_display_name ?? null),
         },
       ]
     })
@@ -319,6 +322,7 @@ function ThreadPane({
       <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
         {localMessages.map((message) => {
           const isAgent = message.sender_type === "agent"
+          const isBot = message.sender_type === "bot"
           const isSystem = message.sender_type === "system"
           if (isSystem) {
             return (
@@ -328,20 +332,32 @@ function ThreadPane({
             )
           }
           return (
-            <div key={message.id} className={cn("flex flex-col gap-1", isAgent ? "items-end" : "items-start")}>
-              {!isAgent ? (
-                <span className="px-1 text-[11px] text-muted-foreground">{session.visitor_name}</span>
-              ) : (
+            <div
+              key={message.id}
+              className={cn(
+                "flex flex-col gap-1",
+                isAgent ? "items-end" : "items-start",
+              )}
+            >
+              {isAgent ? (
                 <span className="px-1 text-[11px] text-muted-foreground">
                   {message.agent_display_name ?? staff.displayName}
                 </span>
+              ) : isBot ? (
+                <span className="px-1 text-[11px] font-medium text-muted-foreground">
+                  Reswell AI
+                </span>
+              ) : (
+                <span className="px-1 text-[11px] text-muted-foreground">{session.visitor_name}</span>
               )}
               <div
                 className={cn(
-                  "max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed",
+                  "max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap",
                   isAgent
                     ? "rounded-br-md bg-primary text-primary-foreground"
-                    : "rounded-bl-md bg-muted text-foreground",
+                    : isBot
+                      ? "rounded-bl-md border border-dashed border-border bg-muted/80 text-foreground"
+                      : "rounded-bl-md bg-muted text-foreground",
                 )}
               >
                 {message.content}

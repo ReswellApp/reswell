@@ -3,7 +3,7 @@ import { z } from "zod"
 export const liveChatSessionStatusSchema = z.enum(["open", "assigned", "resolved", "closed"])
 export type LiveChatSessionStatus = z.infer<typeof liveChatSessionStatusSchema>
 
-export const liveChatSenderTypeSchema = z.enum(["visitor", "agent", "system"])
+export const liveChatSenderTypeSchema = z.enum(["visitor", "agent", "system", "bot"])
 export type LiveChatSenderType = z.infer<typeof liveChatSenderTypeSchema>
 
 export const createLiveChatSessionSchema = z.object({

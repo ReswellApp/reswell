@@ -1,7 +1,7 @@
 "use client"
 
 import { formatDistanceToNow } from "date-fns"
-import { ChevronRight, MessageCircle, ShieldCheck, X } from "lucide-react"
+import { Bot, ChevronRight, MessageCircle, ShieldCheck, X } from "lucide-react"
 import { LiveChatSupportLeadAvatar } from "@/components/features/live-chat/live-chat-support-lead-avatar"
 import { LiveChatWordmark } from "@/components/features/live-chat/live-chat-wordmark"
 import type { LiveChatSupportTeamMember } from "@/lib/services/liveChatSupportTeamDisplay"
@@ -29,6 +29,8 @@ export interface LiveChatHomeRecentMessage {
   content: string
   createdAt: string
   fromAgent: boolean
+  /** When true, show Reswell AI mark instead of the support-lead photo. */
+  fromBot?: boolean
   senderName: string
 }
 
@@ -101,7 +103,11 @@ export function LiveChatHomeView({
               ) : null}
             </div>
             <div className="mt-2.5 flex items-start gap-3">
-              {supportLead ? (
+              {recentMessage.fromBot ? (
+                <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/40 bg-listingHeart/10 text-listingHeart">
+                  <Bot className="h-4 w-4" aria-hidden />
+                </span>
+              ) : supportLead ? (
                 <LiveChatSupportLeadAvatar member={supportLead} className="border-border/40" />
               ) : null}
               <div className="min-w-0 flex-1">

@@ -63,7 +63,12 @@ async function buildTranscript(svc: SupabaseClient, sessionId: string): Promise<
   const recent = conversational.slice(-TRANSCRIPT_MESSAGE_LIMIT)
 
   const lines = recent.map((m) => {
-    const who = m.sender_type === "visitor" ? "Member" : "Reswell"
+    const who =
+      m.sender_type === "visitor"
+        ? "Member"
+        : m.sender_type === "bot"
+          ? "Reswell AI"
+          : "Reswell"
     return `${who}: ${m.content}`
   })
   if (conversational.length > recent.length) {

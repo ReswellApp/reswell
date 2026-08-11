@@ -9,7 +9,7 @@ export type LiveChatBroadcastMessage = {
   message: {
     id: string
     session_id: string
-    sender_type: "visitor" | "agent" | "system"
+    sender_type: "visitor" | "agent" | "system" | "bot"
     sender_agent_id: string | null
     content: string
     created_at: string

@@ -10,7 +10,7 @@ import {
 
 export type LiveChatUiMessage = {
   id: string
-  sender_type: "visitor" | "agent" | "system"
+  sender_type: "visitor" | "agent" | "system" | "bot"
   content: string
   created_at: string
   agent_display_name?: string | null

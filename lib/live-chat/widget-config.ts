@@ -31,23 +31,37 @@ export const LIVE_CHAT_STARTER_TOPICS = [
 ]
 
 export const LIVE_CHAT_BOT_MISSION =
-  "We're building the best marketplace for surfers — boards, wetsuits, fins, and more. Ask us anything!"
+  "We're on a mission to build the best marketplace for surfers — boards, wetsuits, fins, and more. Ask us anything!"
 
-export const LIVE_CHAT_BOT_INTRO = `Hi! I'm ${RESEWELL_BOT_NAME}, a friendly assistant here to help you on Reswell. Our human teammates may not always be online, but I can point you to answers — and you can always leave a message for the team.
+export const LIVE_CHAT_BOT_INTRO = `Hey there! I'm ${RESEWELL_BOT_NAME}, your friendly AI support assistant. My human teammates may not be readily available at the moment, but I'm here to help answer your questions.
 
-AI answers trained on Reswell are coming soon. For now, browse help articles or connect with our team below.`
+I can help with buying and selling on Reswell, shipping, fees, purchase protection, and looking up your orders when you're signed in. Just keep in mind that as an AI, I might occasionally make mistakes or have outdated information. If I can't answer your question or you need more assistance, a member of the Reswell team will be in touch as soon as possible!
 
-export const LIVE_CHAT_BOT_AI_STUB = `${RESEWELL_BOT_NAME} AI is coming soon — we're training it on Reswell policies, shipping, payouts, and purchase protection.
+How can I assist you today?`
 
-In the meantime, try the help articles below or tap "Wait for the team" to message a human.`
+export const LIVE_CHAT_BOT_AI_READY = "Great! How can I help?"
 
 export const LIVE_CHAT_BOT_HANDOFF = `Our team is small but mighty! We typically reply within one business day.
 
 Share your question below — include an order number, listing link, or screenshots if you have them.`
 
 export const LIVE_CHAT_QUICK_ACTIONS = [
-  { id: "ask_ai" as const, label: "Ask Reswell AI" },
-  { id: "wait_team" as const, label: "Wait for the team 👤" },
+  { id: "ask_ai" as const, label: "Talk to Reswell AI" },
+  { id: "wait_team" as const, label: "Wait for a Human" },
+]
+
+export const LIVE_CHAT_AI_HANDOFF_CTA = "Wait for a Human"
+
+/** Appended under offline-assist AI replies (also used when rendering the thread). */
+export const LIVE_CHAT_AI_OFFLINE_NOTE =
+  "A Reswell teammate will also see this conversation and can follow up."
+
+/** Shown under the latest AI answer when the visitor may still need help. */
+export const LIVE_CHAT_AI_FOLLOW_UP_PROMPT = "Anything else I can help with?"
+
+export const LIVE_CHAT_AI_FOLLOW_UP_ACTIONS = [
+  { id: "another_question" as const, label: "I have another question" },
+  { id: "wait_human" as const, label: "Wait for a Human" },
 ]
 
 export type LiveChatHelpLink = {
