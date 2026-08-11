@@ -3,6 +3,7 @@
  * All tiles delegate to {@link ListingTile} with shared scroll styles from `@/lib/home-listing-scroll-styles`.
  */
 import type { ReactNode } from "react"
+import { Truck } from "lucide-react"
 import { ListingTile } from "@/components/listing-tile"
 import { ListingTileAddToCartServerIcon } from "@/components/listing-tile-add-to-cart-server-icon"
 import { capitalizeWords, formatHomePeerListingConditionLine } from "@/lib/listing-labels"
@@ -101,6 +102,7 @@ export function HomePeerListingScrollTile({
     local_pickup: listing.local_pickup,
     shipping_available: listing.shipping_available,
   })
+  const ships = !!listing.shipping_available
 
   const conditionLine = formatHomePeerListingConditionLine(listing.condition)
 
@@ -153,14 +155,28 @@ export function HomePeerListingScrollTile({
             <p className={compact ? homeMostViewedCompactPriceClass : homePeerTilePriceClass}>
               ${Number(listing.price).toFixed(2)}
             </p>
-            {cart?.type === "addToCartServer" ? (
-              <ListingTileAddToCartServerIcon listingId={cart.listingId} isLoggedIn={cart.isLoggedIn} />
-            ) : (
-              <span
-                className={cn(compact ? homeCompactTileCartSlotClass : homeScrollTileCartSlotClass)}
-                aria-hidden
-              />
-            )}
+            <div className="flex shrink-0 items-center gap-1.5">
+              {ships ? (
+                <span
+                  className="inline-flex shrink-0 items-center justify-center text-muted-foreground"
+                  title="Ships"
+                  aria-label="Ships"
+                >
+                  <Truck
+                    className={cn("shrink-0", compact ? "h-3.5 w-3.5" : "h-4 w-4")}
+                    aria-hidden
+                  />
+                </span>
+              ) : null}
+              {cart?.type === "addToCartServer" ? (
+                <ListingTileAddToCartServerIcon listingId={cart.listingId} isLoggedIn={cart.isLoggedIn} />
+              ) : (
+                <span
+                  className={cn(compact ? homeCompactTileCartSlotClass : homeScrollTileCartSlotClass)}
+                  aria-hidden
+                />
+              )}
+            </div>
           </div>
           {footerTrailing ?? null}
         </div>
