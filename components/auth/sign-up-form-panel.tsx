@@ -181,13 +181,19 @@ export function SignUpFormPanel({
   const showPageHeader = variant !== "modal"
   const isLanding = variant === "landing"
   const isModal = variant === "modal"
-  const fieldGapClass = isModal ? "gap-1.5" : "gap-2.5"
+  const compact = isLanding || isModal
+  const fieldGapClass = compact ? "gap-1.5" : "gap-2.5"
 
   const inner = (
-    <div className={cn("flex flex-col", isModal ? "gap-4" : "gap-8")}>
+    <div className={cn("flex flex-col", compact ? "gap-4" : "gap-8")}>
       {showPageHeader ? (
-        <div className={cn(isLanding ? "space-y-3" : "space-y-2")}>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+        <div className={cn(compact ? "space-y-1" : "space-y-2")}>
+          <h1
+            className={cn(
+              "font-bold tracking-tight text-foreground",
+              isLanding ? "text-xl" : "text-3xl sm:text-4xl",
+            )}
+          >
             Create an account
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -206,11 +212,11 @@ export function SignUpFormPanel({
 
       <AuthFormOrDivider />
 
-      <form onSubmit={handleSignUp} className={cn(isModal ? "space-y-3" : "space-y-5")}>
+      <form onSubmit={handleSignUp} className={cn(compact ? "space-y-3" : "space-y-5")}>
         <div
           className={cn(
             "grid sm:grid-cols-2",
-            isModal ? "gap-3 sm:gap-3" : "gap-4 sm:gap-5",
+            compact ? "gap-3 sm:gap-3" : "gap-4 sm:gap-5",
           )}
         >
           <div className={cn("grid", fieldGapClass)}>
@@ -302,8 +308,8 @@ export function SignUpFormPanel({
           type="submit"
           disabled={isLoading}
           className={cn(
-            "w-full rounded-full bg-neutral-500 text-base font-semibold text-white hover:bg-neutral-600",
-            isModal ? "h-11" : "h-12",
+            "w-full rounded-full bg-neutral-500 font-semibold text-white hover:bg-neutral-600",
+            compact ? "h-10 text-sm" : "h-12 text-base",
           )}
         >
           {isLoading ? "Creating account…" : "Sign Up"}

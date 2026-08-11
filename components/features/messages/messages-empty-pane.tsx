@@ -1,8 +1,11 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { MessageSquare } from "lucide-react"
+import { wideShimmer } from "@/lib/image-shimmer"
 import { cn } from "@/lib/utils"
+import emptyStateImage from "@/public/images/brand/fiji-underboard.jpg"
 
 interface MessagesEmptyPaneProps {
   variant?: "pane" | "banner"
@@ -38,8 +41,18 @@ export function MessagesEmptyPane({ variant = "pane", className }: MessagesEmpty
         className,
       )}
     >
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-        <MessageSquare className="h-7 w-7 text-muted-foreground" strokeWidth={1.5} />
+      <div className="relative mb-5 h-36 w-full max-w-sm overflow-hidden rounded-2xl border border-border/60 lg:max-w-md">
+        <Image
+          src={emptyStateImage}
+          alt=""
+          fill
+          sizes="(max-width: 1024px) 24rem, 28rem"
+          className="object-cover object-[center_35%]"
+          placeholder="blur"
+          blurDataURL={wideShimmer}
+          aria-hidden
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" aria-hidden />
       </div>
       <p className="text-[17px] font-semibold text-foreground">Select a conversation</p>
       <p className="mt-2 max-w-sm text-[14px] leading-relaxed text-muted-foreground">

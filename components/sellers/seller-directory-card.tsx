@@ -96,7 +96,7 @@ function SellerDirectoryMosaic({
 
 function PolicyIcon({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-primary">
+    <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-primary">
       {children}
     </span>
   )
@@ -125,26 +125,28 @@ export function SellerDirectoryCard({
       <SellerDirectoryMosaic slots={mosaicSlots} href={href} />
 
       <div className="px-2.5 pb-2 pt-2.5">
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-2">
           <Link
             href={href}
             className="shrink-0 outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <Avatar className="h-10 w-10">
+            <Avatar className="h-8 w-8">
               <AvatarImage src={avatarSrc} alt="" />
-              <AvatarFallback className="bg-muted text-sm font-semibold text-foreground">
+              <AvatarFallback className="bg-muted text-xs font-semibold text-foreground">
                 {label.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
           </Link>
 
           <div className="min-w-0 flex-1 pt-0.5">
-            <div className="flex min-w-0 items-start gap-2">
+            <div className="flex min-w-0 flex-col items-start gap-1.5">
               <Link
                 href={href}
-                className="min-w-0 flex-1 outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+                className="min-w-0 w-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <h2 className="truncate text-[15px] font-bold leading-tight text-foreground">{label}</h2>
+                <h2 className="break-words text-[15px] font-bold leading-snug text-foreground">
+                  {label}
+                </h2>
               </Link>
 
               <SellerDirectoryTileFollow
@@ -164,7 +166,7 @@ export function SellerDirectoryCard({
                 aria-label={`${avgRating.toFixed(1)} out of 5 stars from ${reviewCount} reviews`}
               >
                 <SellerRatingStarRow value={avgRating} size="sm" className="shrink-0" />
-                <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
+                <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
                   ({reviewCount})
                 </span>
               </div>
@@ -173,25 +175,29 @@ export function SellerDirectoryCard({
         </div>
       </div>
 
-      <div className="space-y-1.5 px-2.5 pb-2.5 pt-0">
+      <div className="space-y-1 px-2.5 pb-2.5 pt-0">
         {tileMeta.offersShipping ? (
           <>
             {tileMeta.shipFromState ? (
-              <p className="text-[15px] font-bold leading-snug text-primary">
+              <p className="text-[11px] font-medium leading-snug text-muted-foreground">
                 Ships from {tileMeta.shipFromState}
               </p>
             ) : null}
             {tileMeta.shippingLine ? (
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-1.5">
                 <PolicyIcon>
-                  <Truck className="h-3.5 w-3.5" aria-hidden />
+                  <Truck className="h-3 w-3" aria-hidden />
                 </PolicyIcon>
-                <p className="text-[15px] font-bold leading-snug text-primary">{tileMeta.shippingLine}</p>
+                <p className="text-[11px] font-medium leading-snug text-muted-foreground">
+                  {tileMeta.shippingLine}
+                </p>
               </div>
             ) : null}
           </>
         ) : tileMeta.locatedInLabel ? (
-          <p className="text-[15px] font-bold leading-snug text-primary">{tileMeta.locatedInLabel}</p>
+          <p className="text-[11px] font-medium leading-snug text-muted-foreground">
+            {tileMeta.locatedInLabel}
+          </p>
         ) : null}
       </div>
     </article>

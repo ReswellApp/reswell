@@ -3,6 +3,7 @@
 import * as React from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FocusScrim } from "@/components/focus-scrim"
 import {
@@ -779,24 +780,24 @@ export function SellCatalogSearch({
   const focusMode = showFocusScrim
 
   return (
-    <main className={cn("relative flex-1 bg-background pb-12 pt-8 sm:pt-12 sm:pb-16 md:pb-24", className)}>
+    <main
+      id="sell-catalog-search"
+      className={cn("relative flex-1 scroll-mt-4 bg-background pb-10 pt-6 sm:pb-12 sm:pt-10", className)}
+    >
       <div className="container relative mx-auto max-w-3xl px-4 sm:px-6">
-        <div className="mx-auto w-full max-w-2xl space-y-8 sm:space-y-10">
+        <div className="mx-auto w-full max-w-2xl space-y-4 sm:space-y-8">
           {resumeBanner && !focusMode ? resumeBanner : null}
           <header
             className={cn(
-              "space-y-2 text-center transition-opacity duration-300 ease-out motion-reduce:transition-none sm:space-y-3",
+              "space-y-1 text-left transition-opacity duration-300 ease-out motion-reduce:transition-none",
               focusMode && "opacity-35",
             )}
             aria-hidden={focusMode || undefined}
           >
-            <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-              What are you listing?
-            </h1>
-            <p className="mx-auto max-w-md text-sm leading-relaxed text-muted-foreground sm:text-base">
-              Search our catalog by brand or model — pick the closest match and we&apos;ll
-              start your listing in the right category.
-            </p>
+            <p className="text-sm text-muted-foreground">Step 1 of 2</p>
+            <h2 className="font-headline text-2xl font-bold tracking-tight text-[#001A4A] sm:text-3xl">
+              Tell us what you&apos;re selling
+            </h2>
           </header>
 
           {/* Brand drill-in replaces the main search — the panel has its own
@@ -820,8 +821,6 @@ export function SellCatalogSearch({
               onDismiss={dismissSearchFocus}
               ariaLabel="Dismiss search"
             />
-            {/* Anchor for the results panel — excludes the hint text below so the
-                panel fuses directly to the bar's bottom edge. */}
             <div className="relative w-full min-w-0">
               <form
                 ref={formRef}
@@ -838,7 +837,7 @@ export function SellCatalogSearch({
                     : "rounded-full focus-within:border-cerulean/40 focus-within:ring-2 focus-within:ring-cerulean/15 focus-within:shadow-sm",
                 )}
               >
-                <div className="flex w-full min-w-0 items-center gap-1 pl-2 pr-1.5 py-0.5">
+                <div className="flex w-full min-w-0 items-center gap-0.5 pl-1 pr-1 py-0.5 sm:gap-1 sm:pl-2 sm:pr-1.5">
                   <div className="relative min-w-0 flex-1">
                     <SearchInputWithSuggest
                       value={query}
@@ -854,7 +853,19 @@ export function SellCatalogSearch({
                       externalSuggest={externalSuggest as ExternalSuggestConfig<unknown>}
                     />
                   </div>
-                  <SiteSearchFormSubmitButton type="submit">Search</SiteSearchFormSubmitButton>
+                  {/* Mobile: quiet icon submit (Reverb-like). sm+: labeled Search pill. */}
+                  <Button
+                    type="submit"
+                    size="icon"
+                    variant="ghost"
+                    aria-label="Search"
+                    className="h-11 w-11 shrink-0 rounded-full text-foreground hover:bg-muted/60 sm:hidden"
+                  >
+                    <Search className="h-5 w-5" strokeWidth={2} aria-hidden />
+                  </Button>
+                  <SiteSearchFormSubmitButton type="submit" className="hidden sm:inline-flex">
+                    Search
+                  </SiteSearchFormSubmitButton>
                 </div>
               </form>
 
@@ -901,18 +912,6 @@ export function SellCatalogSearch({
                 </div>
               ) : null}
             </div>
-
-            <p
-              className={cn(
-                "mt-2 text-center text-xs text-muted-foreground/70 transition-opacity duration-300 ease-out motion-reduce:transition-none",
-                showResultsPanel || focusMode
-                  ? "pointer-events-none opacity-0"
-                  : "opacity-100",
-              )}
-              aria-hidden={showResultsPanel || focusMode || undefined}
-            >
-              Surfboards, fins, and wetsuits from our brand catalog
-            </p>
           </div>
           )}
 

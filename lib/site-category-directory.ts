@@ -1,5 +1,5 @@
 /**
- * Canonical category links for the /categories page and header dropdown.
+ * Canonical category links for the header Categories dropdown and footer.
  * Surfboard types match the board style facet in `lib/boards-browse-facets` (`type`/`style` query params).
  */
 
@@ -22,7 +22,7 @@ export const surfboardBrowseLinks: CategoryLink[] = [
   { label: "Other", href: "/boards?type=other" },
 ]
 
-/** All peer gear browse routes (footer, /categories, sitemap — routes stay live). */
+/** All peer gear browse routes (footer, sitemap — routes stay live). */
 export const siteHeaderPeerProductNavLinks: CategoryLink[] = [
   { label: "Fins", href: "/fins" },
   { label: "Wetsuits", href: "/wetsuits" },
@@ -43,7 +43,7 @@ export const siteHeaderMainPeerProductNavLinks: CategoryLink[] = [
 
 /**
  * Full category rail — desktop header (Surfboards root, then Fins, Wetsuits, Apparel, Magazines).
- * Shape browse links (`/boards?type=…`) stay on /categories and filters — not in the top rail.
+ * Shape browse links (`/boards?type=…`) stay in filters — not in the top rail.
  */
 export const siteHeaderDesktopCategoryNavLinks: CategoryLink[] = [
   surfboardBrowseLinks[0],
@@ -55,12 +55,12 @@ export const siteHeaderDesktopCategoryNavLinks: CategoryLink[] = [
  * Same category links as desktop (Surfboards + peer gear only).
  */
 export const siteHeaderMobileCategoryNavLinks: CategoryLink[] = siteHeaderDesktopCategoryNavLinks
-/** Header Categories dropdown + /categories page: surfboards only. */
+/** Header Categories dropdown: surfboards only. */
 export const allCategoriesForNav: CategoryLink[] = surfboardBrowseLinks
 
 /**
  * Footer Categories column — Surfboards root plus peer gear (same as the header rail).
- * Shape browse links (`/boards?type=…`) stay on /categories and filters.
+ * Shape browse links (`/boards?type=…`) stay in filters.
  */
 export const footerCategoryLinks: CategoryLink[] = [
   surfboardBrowseLinks[0],
@@ -198,7 +198,7 @@ export function siteHeaderSecondaryNavItemIsActive(pathname: string | null, href
 }
 
 /* ------------------------------------------------------------------ */
-/*  Advanced category directory — used by /categories page             */
+/*  Advanced category directory — header Categories dropdown source      */
 /* ------------------------------------------------------------------ */
 
 export type SubcategoryGroup = {
@@ -326,21 +326,21 @@ const HEADER_CATEGORIES_DROPDOWN_IDS = new Set([
   "accessories",
 ])
 
-/** Surfboard shapes shown in the header Categories dropdown only (full list stays on /categories). */
+/** Surfboard shapes shown in the header Categories dropdown. */
 const headerSurfboardsDropdownShapes: CategoryLink[] = [
   { label: "Shortboard", href: "/boards?type=shortboard" },
   { label: "Groveler", href: "/boards?type=groveler" },
   { label: "Longboard", href: "/boards?type=longboard" },
 ]
 
-/** Fin setups shown in the header Categories dropdown only (full list stays on /categories). */
+/** Fin setups shown in the header Categories dropdown. */
 const headerFinsDropdownSetups: CategoryLink[] = [
   { label: "Thruster", href: "/fins?fin=thruster" },
   { label: "Twin", href: "/fins?fin=twin_only" },
   { label: "Quad", href: "/fins?fin=quad" },
 ]
 
-/** Subcategory submenus in the header Categories dropdown only (all sections remain on /categories). */
+/** Subcategory submenus in the header Categories dropdown. */
 export const headerCategoriesDropdownSections: AdvancedCategorySection[] =
   advancedCategorySections
     .filter((s) => HEADER_CATEGORIES_DROPDOWN_IDS.has(s.id))

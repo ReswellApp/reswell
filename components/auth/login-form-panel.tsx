@@ -209,12 +209,18 @@ export function LoginFormPanel({
 
   const showPageHeader = variant !== "modal"
   const isLanding = variant === "landing"
+  const compact = isLanding || variant === "modal"
 
   const inner = (
-    <div className="flex flex-col gap-8">
+    <div className={cn("flex flex-col", compact ? "gap-4" : "gap-8")}>
       {showPageHeader ? (
-        <div className={cn(isLanding ? "space-y-3" : "space-y-2")}>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+        <div className={cn(compact ? "space-y-1" : "space-y-2")}>
+          <h1
+            className={cn(
+              "font-bold tracking-tight text-foreground",
+              isLanding ? "text-xl" : "text-3xl sm:text-4xl",
+            )}
+          >
             Welcome back
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -231,9 +237,15 @@ export function LoginFormPanel({
 
       <AuthFormOrDivider />
 
-      <form onSubmit={handleLogin} className="space-y-5">
-        <div className="grid gap-2.5">
-          <Label htmlFor="login-email" className="text-sm font-semibold text-foreground">
+      <form onSubmit={handleLogin} className={cn(compact ? "space-y-3" : "space-y-5")}>
+        <div className={cn("grid", compact ? "gap-1.5" : "gap-2.5")}>
+          <Label
+            htmlFor="login-email"
+            className={cn(
+              "font-semibold text-foreground",
+              compact ? "text-xs" : "text-sm",
+            )}
+          >
             Email <RequiredMark />
           </Label>
           <Input
@@ -243,11 +255,18 @@ export function LoginFormPanel({
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            className={compact ? "h-10" : undefined}
           />
         </div>
 
-        <div className="grid gap-2.5">
-          <Label htmlFor="login-password" className="text-sm font-semibold text-foreground">
+        <div className={cn("grid", compact ? "gap-1.5" : "gap-2.5")}>
+          <Label
+            htmlFor="login-password"
+            className={cn(
+              "font-semibold text-foreground",
+              compact ? "text-xs" : "text-sm",
+            )}
+          >
             Password <RequiredMark />
           </Label>
           <div className="relative">
@@ -258,7 +277,7 @@ export function LoginFormPanel({
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="pr-11"
+              className={cn("pr-11", compact && "h-10")}
             />
             <button
               type="button"
@@ -292,12 +311,15 @@ export function LoginFormPanel({
         <Button
           type="submit"
           disabled={isLoading}
-          className="h-12 w-full rounded-full bg-neutral-500 text-base font-semibold text-white hover:bg-neutral-600"
+          className={cn(
+            "w-full rounded-full bg-neutral-500 font-semibold text-white hover:bg-neutral-600",
+            compact ? "h-10 text-sm" : "h-12 text-base",
+          )}
         >
           {isLoading ? "Logging in…" : "Log In"}
         </Button>
 
-        <label className="flex cursor-pointer items-center gap-3">
+        <label className="flex cursor-pointer items-center gap-2.5">
           <Checkbox
             checked={staySignedIn}
             onCheckedChange={(checked) => setStaySignedIn(checked === true)}

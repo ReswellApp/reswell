@@ -175,7 +175,7 @@ export function boardsBrowseIndexableSnapshot(sp: BoardsBrowseSearchParams): {
   return { title, description, canonicalUrl: canonical.toString() }
 }
 
-/** @internal Used by /categories and similar when a slug maps to a category name. */
+/** @internal Used when a slug maps to a category name. */
 export function metadataForCategoryName(categoryName: string): Metadata {
   const label = formatCategory(categoryName)
   const title = `${label} | Reswell`

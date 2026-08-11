@@ -12,6 +12,7 @@ import { FinsBrowseFacetControls } from "@/components/fins-browse-facet-controls
 import { useFinsFilterState } from "@/components/fins-browse-filter-state"
 import { FIN_FACET_PARAM_KEYS, finFacetOptionLabel } from "@/lib/fins-browse-facets"
 import { cn } from "@/lib/utils"
+import finsBrowseAtmosphere from "@/public/images/brand/fiji-underboard.jpg"
 
 type ActiveChip = { id: string; label: string; onRemove: () => void }
 
@@ -73,6 +74,7 @@ export function FinsBrowseClient({
       <CategoryBrowsePageHeader
         title={title}
         description={description}
+        atmosphereImage={finsBrowseAtmosphere}
         action={
           <CategoryBrowseFilterButton
             category="fins"

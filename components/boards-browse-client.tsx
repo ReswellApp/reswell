@@ -16,6 +16,7 @@ import { BoardsSaveSearchPanel } from "@/components/boards-save-search-panel"
 import { facetOptionLabel, FACET_PARAM_KEYS } from "@/lib/boards-browse-facets"
 import { logBrowseButtonClick } from "@/lib/log-browse-button-click"
 import { cn } from "@/lib/utils"
+import boardsBrowseAtmosphere from "@/public/images/brand/boards-browse-barrel.jpg"
 
 type FacetCountsMap = Record<string, Record<string, number>>
 
@@ -115,6 +116,9 @@ export function BoardsBrowseClient({
       <CategoryBrowsePageHeader
         title={title}
         description={description}
+        atmosphereImage={title ? boardsBrowseAtmosphere : undefined}
+        // Wave/barrel sits mid-frame — bias down from the sky-heavy top crop.
+        atmosphereImageClassName="object-[38%_72%] md:object-[40%_60%]"
         action={
           <div className="flex flex-wrap items-center gap-2">
             <Button

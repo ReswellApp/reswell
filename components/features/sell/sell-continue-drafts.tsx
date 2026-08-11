@@ -127,9 +127,9 @@ export function SellContinueDrafts({ className }: { className?: string }) {
   if (drafts.length === 0) return null
 
   return (
-    <section className={cn("space-y-3", className)} aria-label="Continue listing">
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 className="text-sm font-semibold tracking-tight text-foreground">Continue</h2>
+    <section className={cn("space-y-3 border-t border-border/50 pt-8", className)} aria-label="Continue listing">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-base font-semibold tracking-tight text-foreground">Your drafts</h2>
         {drafts.length >= 3 ? (
           <Link
             href="/sell/boards"
@@ -139,22 +139,22 @@ export function SellContinueDrafts({ className }: { className?: string }) {
           </Link>
         ) : null}
       </div>
-      <ul className="flex gap-2.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <ul className="flex gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {drafts.map((d) => (
           <li key={d.id} className="shrink-0">
             <Link
               href={d.href}
-              className="flex aspect-square w-[7.25rem] flex-col items-center justify-center gap-2 rounded-2xl border border-border/80 bg-background px-2.5 py-3 text-center shadow-sm transition-colors hover:border-foreground/20 hover:bg-muted/30 sm:w-32"
+              className="flex aspect-square w-[6.25rem] flex-col items-center justify-center gap-1.5 rounded-xl border border-border/80 bg-background px-2 py-2.5 text-center transition-colors hover:border-foreground/20 hover:bg-muted/30 sm:w-28"
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-foreground">
-                <FileText className="h-4 w-4" aria-hidden />
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-foreground">
+                <FileText className="h-3.5 w-3.5" aria-hidden />
               </span>
               <span className="min-w-0 w-full">
-                <span className="block truncate text-sm font-medium text-foreground">
+                <span className="block truncate text-xs font-medium text-foreground sm:text-sm">
                   {d.title}
                 </span>
                 {d.subtitle ? (
-                  <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                  <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
                     {d.subtitle}
                   </span>
                 ) : null}

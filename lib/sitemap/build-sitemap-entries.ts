@@ -119,7 +119,6 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     { url: `${BASE}/apparel`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
     { url: `${BASE}/accessories`, lastModified: now, changeFrequency: "daily", priority: 0.75 },
     { url: `${BASE}/magazines`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
-    { url: `${BASE}/categories`, lastModified: now, changeFrequency: "weekly", priority: 0.65 },
     {
       url: `${BASE}/what-is-reswell`,
       lastModified: now,

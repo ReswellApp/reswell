@@ -24,7 +24,6 @@ import { SellShippingCostModeRadios } from "@/components/features/sell/sell-ship
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellFinsFacetFields } from "@/components/features/sell/sell-fins-facet-fields"
-import { SellFinsCatalogSearch } from "@/components/features/sell/sell-fins-catalog-search"
 import type { FinCatalogSearchSelection } from "@/lib/types/fin-catalog-search"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
@@ -186,18 +185,7 @@ const INITIAL_STATE: FinFormState = {
 
 const FIN_FLOW_STEP_KEY = sellFlowStepSessionKey("fins") ?? "reswell.sell.fins.flowStep"
 
-function readStoredFinSellFlowStep(): "search" | "form" | null {
-  if (typeof window === "undefined") return null
-  try {
-    const value = sessionStorage.getItem(FIN_FLOW_STEP_KEY)
-    if (value === "form" || value === "search") return value
-  } catch {
-    /* quota / private mode */
-  }
-  return null
-}
-
-function persistFinSellFlowStep(step: "search" | "form"): void {
+function persistFinSellFlowStep(step: "form"): void {
   try {
     sessionStorage.setItem(FIN_FLOW_STEP_KEY, step)
   } catch {
@@ -215,11 +203,9 @@ function clearPersistedFinSellFlowStep(): void {
 
 export default function SellFinsFlow({
   editListingId = null,
-  startAtSearch = false,
   startFresh = false,
 }: {
   editListingId?: string | null
-  startAtSearch?: boolean
   startFresh?: boolean
 }) {
   const router = useRouter()
@@ -243,11 +229,8 @@ export default function SellFinsFlow({
   const draftPhotosPendingRef = useRef<ListingPhotoSlot[] | null>(null)
   const removedImageIdsRef = useRef<string[]>([])
 
-  const [flowStep, setFlowStep] = useState<"search" | "form">(() => {
-    if (editId) return "form"
-    if (startAtSearch) return "search"
-    return readStoredFinSellFlowStep() ?? "search"
-  })
+  // Fins listing form only — dedicated catalog-search step removed; /sell handoff prefills the form.
+  const [flowStep, setFlowStep] = useState<"form">("form")
 
   const onSoftOpenDraft = useCallback((draftId: string) => {
     if (!draftId) return
@@ -344,11 +327,8 @@ export default function SellFinsFlow({
       locationLng:
         typeof snapshot.locationLng === "number" ? snapshot.locationLng : prev.locationLng,
     }))
-    const storedStep = snapshot.finFlowStep
-    if (storedStep === "form" || storedStep === "search") {
-      setFlowStep(storedStep)
-      persistFinSellFlowStep(storedStep)
-    }
+    setFlowStep("form")
+    persistFinSellFlowStep("form")
   }, [])
 
   useSellListingDraftPersistence({
@@ -393,7 +373,8 @@ export default function SellFinsFlow({
       }
       draftPhotosPendingRef.current = null
       clearPersistedFinSellFlowStep()
-      setFlowStep("search")
+      setFlowStep("form")
+      persistFinSellFlowStep("form")
       setForm(INITIAL_STATE)
       setImages([])
       setPublishValidationBanner(null)
@@ -663,12 +644,6 @@ export default function SellFinsFlow({
     draftPhotosPendingRef.current = null
   }, [draftHydrated, editId])
 
-  useEffect(() => {
-    if (!startAtSearch || editId) return
-    setFlowStep("search")
-    persistFinSellFlowStep("search")
-  }, [startAtSearch, editId])
-
   const setField = useCallback(<K extends keyof FinFormState>(key: K, value: FinFormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
   }, [])
@@ -706,11 +681,6 @@ export default function SellFinsFlow({
   const enterFormStep = useCallback(() => {
     setFlowStep("form")
     persistFinSellFlowStep("form")
-  }, [])
-
-  const enterSearchStep = useCallback(() => {
-    setFlowStep("search")
-    persistFinSellFlowStep("search")
   }, [])
 
   const exitSellFlow = useCallback(() => {
@@ -1127,16 +1097,6 @@ export default function SellFinsFlow({
     return <SellFlowRouteSkeleton />
   }
 
-  if (flowStep === "search") {
-    return (
-      <SellFinsCatalogSearch
-        onSelect={applyCatalogSelection}
-        onSkip={enterFormStep}
-        onExit={exitSellFlow}
-      />
-    )
-  }
-
   return (
     <main
       aria-busy={editLoading || undefined}
@@ -1166,18 +1126,6 @@ export default function SellFinsFlow({
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
-                {!editId ? (
-                  <>
-                    <BreadcrumbItem>
-                      <BreadcrumbLink asChild className="text-[#5c6b89] hover:text-[#4a5768]">
-                        <button type="button" onClick={enterSearchStep}>
-                          Catalog search
-                        </button>
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator className="text-[#5c6b89] [&>svg]:stroke-[1.25]" />
-                  </>
-                ) : null}
                 <BreadcrumbItem>
                   <BreadcrumbPage className="font-normal text-[#5c6b89]">
                     {editId ? "Edit fin listing" : "List fins"}

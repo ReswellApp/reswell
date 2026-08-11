@@ -59,9 +59,6 @@ export const PEER_LISTING_SECTION_LABELS: Record<PeerListingSection, string> = {
 export function peerSellCreateHref(section: PeerListingSection, bulkSlotId: string): string {
   const bulk = `bulk=${encodeURIComponent(bulkSlotId)}`
   const base = PEER_SELL_ROUTE_BY_SECTION[section] ?? "/sell/boards"
-  if (section === "fins") {
-    return `${base}?step=search&${bulk}`
-  }
   return `${base}?${bulk}`
 }
 

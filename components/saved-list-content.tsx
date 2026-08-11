@@ -1,12 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ListingTileGridSkeleton } from '@/components/listing-tile-skeleton'
 import { Heart, MapPin } from 'lucide-react'
+import { wideShimmer } from '@/lib/image-shimmer'
+import emptyStateWave from '@/public/images/brand/empty-state-wave.jpg'
 import { VerifiedBadge } from '@/components/verified-badge'
 import { getPublicSellerDisplayName } from '@/lib/listing-labels'
 import { isListingVisibleInSavedList } from '@/lib/listing-public-visibility'
@@ -105,21 +108,44 @@ export function SavedListContent() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-foreground mb-2">Favorites</h1>
-      <p className="text-muted-foreground mb-6">Your collection of favorite gear and boards</p>
+      <div className="relative mb-6 h-40 w-full overflow-hidden rounded-2xl border border-border/60 sm:h-48">
+        <Image
+          src={emptyStateWave}
+          alt=""
+          fill
+          priority
+          sizes="(max-width: 1280px) 100vw, 1100px"
+          className="object-cover object-[center_35%]"
+          placeholder="blur"
+          blurDataURL={wideShimmer}
+          aria-hidden
+        />
+        <div
+          className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/35 to-black/15"
+          aria-hidden
+        />
+        <div className="absolute inset-x-0 bottom-0 z-10 px-5 pb-5 pt-10 sm:px-6 sm:pb-6">
+          <h1 className="text-2xl font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.35)] sm:text-3xl">
+            Favorites
+          </h1>
+          <p className="mt-1 text-sm text-white/90 [text-shadow:0_1px_2px_rgba(0,0,0,0.3)] sm:text-base">
+            Your collection of favorite gear and boards
+          </p>
+        </div>
+      </div>
 
       {loading ? (
         <ListingTileGridSkeleton count={6} footerTrailingLines={2} ariaLabel="Loading favorites" />
       ) : favorites.length === 0 ? (
         <Card>
-          <CardContent className="p-12 text-center">
-            <Heart className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-foreground mb-2">No favorites yet</h3>
-            <p className="text-muted-foreground mb-4">
-              Items you favorite will appear here for easy access
+          <CardContent className="p-8 text-center sm:p-10">
+            <Heart className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+            <h3 className="mb-2 text-lg font-semibold text-foreground">No favorites yet</h3>
+            <p className="mb-5 text-muted-foreground">
+              Save boards you love — they&apos;ll wait here for your next session.
             </p>
-            <Link href="/gear">
-              <Button>Browse Listings</Button>
+            <Link href="/boards">
+              <Button>Browse boards</Button>
             </Link>
           </CardContent>
         </Card>

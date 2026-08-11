@@ -36,7 +36,7 @@ function sellTypeOptions(
       title: "Surfboard",
     },
     {
-      href: "/sell/fins?step=search&new=1",
+      href: "/sell/fins?new=1",
       title: "Fins",
     },
     {
@@ -74,43 +74,24 @@ export function SellListByTypeLinks({
 }) {
   const options = sellTypeOptions(isAdmin, surfboardHref)
   const linkClass =
-    variant === "panel"
-      ? "rounded-full border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:border-foreground/25 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-      : "text-sm font-medium text-foreground underline-offset-4 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+    "inline-flex h-9 items-center gap-1.5 rounded-full border border-foreground/15 bg-card px-3 text-sm font-medium text-foreground transition-all hover:border-foreground/40 hover:bg-muted/50 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 sm:h-10 sm:border-foreground/20 sm:px-3.5"
 
   return (
-    <div
-      className={cn(
-        variant === "page" ? "space-y-3 text-center" : "space-y-2.5",
-        className,
-      )}
-    >
-      <p
-        className={cn(
-          "text-muted-foreground",
-          variant === "page" ? "text-sm" : "text-xs",
-        )}
-      >
-        {variant === "page" ? "Or list by type" : "Or pick a type"}
-      </p>
+    <div className={cn(variant === "panel" && "space-y-2", className)}>
+      {variant === "panel" ? (
+        <p className="text-xs text-muted-foreground">Or pick a type</p>
+      ) : null}
       <nav
         aria-label="List by product type"
         className={cn(
           "flex flex-wrap items-center gap-2",
-          variant === "page" && "justify-center gap-x-1 gap-y-2",
+          variant === "page" ? "justify-start" : undefined,
         )}
       >
-        {options.map((option, index) => (
-          <span key={option.title} className="inline-flex items-center gap-1">
-            {variant === "page" && index > 0 ? (
-              <span className="px-1.5 text-muted-foreground/35" aria-hidden>
-                ·
-              </span>
-            ) : null}
-            <Link href={option.href} className={linkClass}>
-              {option.title}
-            </Link>
-          </span>
+        {options.map((option) => (
+          <Link key={option.title} href={option.href} className={linkClass}>
+            {option.title}
+          </Link>
         ))}
       </nav>
     </div>

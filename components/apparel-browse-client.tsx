@@ -12,6 +12,7 @@ import { ApparelBrowseFacetControls } from "@/components/apparel-browse-facet-co
 import { useApparelFilterState } from "@/components/apparel-browse-filter-state"
 import { APPAREL_FACET_PARAM_KEYS, apparelFacetOptionLabel } from "@/lib/apparel-browse-facets"
 import { cn } from "@/lib/utils"
+import apparelBrowseAtmosphere from "@/public/images/brand/apparel-browse-atmosphere.jpg"
 
 type ActiveChip = { id: string; label: string; onRemove: () => void }
 
@@ -68,6 +69,8 @@ export function ApparelBrowseClient({
       <CategoryBrowsePageHeader
         title={title}
         description={description}
+        atmosphereImage={apparelBrowseAtmosphere}
+        atmosphereImageClassName="object-[center_46%] md:object-[center_44%]"
         action={
           <CategoryBrowseFilterButton
             category="apparel"

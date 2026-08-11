@@ -215,6 +215,8 @@ const nextConfig = {
       { source: "/used/:path*", destination: "/boards", permanent: true },
       { source: "/gear", destination: "/boards", permanent: true },
       { source: "/gear/:path*", destination: "/boards", permanent: true },
+      { source: "/categories", destination: "/boards", permanent: true },
+      { source: "/categories/:path*", destination: "/boards", permanent: true },
       { source: "/board-bags", destination: "/boardbags", permanent: true },
       { source: "/board-bags/:path*", destination: "/boardbags", permanent: true },
       { source: "/backpacks", destination: "/surfpacks", permanent: true },

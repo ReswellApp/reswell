@@ -8,6 +8,8 @@ import {
 } from "@/components/features/marketing/marketing-headline-hero"
 import { Button } from "@/components/ui/button"
 import { shimmerDataUrl } from "@/lib/image-shimmer"
+import aboutHeadlineAtmosphere from "@/public/images/about/headline-oz-aerial.jpg"
+import ourStoryBeachFilm from "@/public/images/about/our-story-beach-film.jpg"
 
 const WHY_SURFERS_LOVE = [
   {
@@ -78,6 +80,8 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
     <>
       <MarketingHeadlineHero
         heroListingImages={heroListingImages}
+        atmosphereImage={aboutHeadlineAtmosphere}
+        hideBoardStack
         headline={
           <h1 className={marketingHeadlineTitleClass}>
             We&apos;re creating{" "}
@@ -90,21 +94,23 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
 
       <section className="border-b border-border/70 bg-background">
         <div className="container mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 sm:py-16 lg:grid-cols-2 lg:items-center lg:gap-16 lg:py-20">
-          <div className="mx-auto w-full max-w-md lg:mx-0">
+          <div className="order-2 mx-auto w-full max-w-md lg:order-1 lg:mx-0">
             <div className="overflow-hidden rounded-[2rem] border border-border/80 bg-white shadow-sm">
               <Image
-                src="/images/home/how-it-works-sell-connect.png"
-                alt="Surfers connecting on Reswell"
-                width={640}
-                height={480}
-                className="h-auto w-full object-cover"
+                src={ourStoryBeachFilm}
+                alt="Film photograph of a breaking wave on a sandy beach"
+                width={2000}
+                height={2000}
+                sizes="(max-width: 1024px) 100vw, 448px"
+                className="h-auto w-full"
                 placeholder="blur"
-                blurDataURL={shimmerDataUrl(640, 480)}
+                blurDataURL={shimmerDataUrl(800, 800)}
+                quality={90}
               />
             </div>
           </div>
 
-          <div>
+          <div className="order-1 lg:order-2">
             <h2 className="font-headline text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
               Our story
             </h2>

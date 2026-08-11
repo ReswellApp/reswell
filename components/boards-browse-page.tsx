@@ -34,7 +34,6 @@ import {
 import { listBoardsBrowseTopPickListingIdsOrdered } from "@/lib/db/boards-browse-top-picks"
 import {
   boardsBrowseBoardTypeLabel,
-  boardsBrowseHeroSubtext,
   BOARDS_BROWSE_DEFAULT_SORT,
   isBoardsBrowseShippingAvailableParam,
   type BoardsBrowseSearchParams,
@@ -781,7 +780,6 @@ export async function BoardsBrowsePage(props: {
   }
   const typeCrumb = boardsBrowseBoardTypeLabel(searchParams.type)
   const pageTitle = typeCrumb ?? surfboardsBrowseRootLabel
-  const pageDescription = boardsBrowseHeroSubtext(searchParams.type)
 
   return (
     <main className="flex-1">
@@ -819,7 +817,7 @@ export async function BoardsBrowsePage(props: {
       <section
         className={cn(
           "min-w-0 pb-4",
-          props.showListYourSurfboardCta ? "pt-8 sm:pt-10" : "bg-offwhite pt-4 sm:pt-5",
+          props.showListYourSurfboardCta ? "pt-8 sm:pt-10" : "bg-offwhite pt-2 sm:pt-5",
         )}
       >
         <div className="container mx-auto min-w-0">
@@ -832,7 +830,7 @@ export async function BoardsBrowsePage(props: {
             <BoardsBrowseFiltersSection
               searchParams={searchParamsPromise}
               title={props.showListYourSurfboardCta ? undefined : pageTitle}
-              description={props.showListYourSurfboardCta ? undefined : pageDescription}
+              description={undefined}
             >
               <Suspense fallback={<ListingTileGridSkeleton count={10} ariaLabel="Loading surfboards" />}>
                 <BoardListings searchParams={searchParamsPromise} />

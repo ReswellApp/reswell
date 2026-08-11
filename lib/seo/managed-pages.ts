@@ -276,12 +276,6 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Browse the latest surfboard listings on Reswell — a curated feed from active sellers.",
     path: "/search/recent",
   }),
-  page("categories", "marketplace", "Categories", {
-    title: "Browse categories — Reswell",
-    description:
-      "Browse surfboard categories on Reswell — explore shapes and jump into live peer-to-peer listings from local sellers.",
-    path: "/categories",
-  }),
   page("brands", "marketplace", "Brands directory", {
     title: "Surf brands directory — Reswell",
     description: "Explore shapers and surfboard brands on Reswell — profiles from our catalog.",

@@ -1,5 +1,7 @@
 import type { ReactNode } from "react"
+import Image, { type StaticImageData } from "next/image"
 import { AboutHeroBoardStack } from "@/components/features/marketing/about-hero-board-stack"
+import { wideShimmer } from "@/lib/image-shimmer"
 import { cn } from "@/lib/utils"
 
 export const marketingHeadlineTitleClass =
@@ -17,6 +19,11 @@ type MarketingHeadlineHeroProps = {
   mobileOneScreen?: boolean
   /** White canvas — no muted card fill (e.g. /listyoursurfboard). */
   plainSurface?: boolean
+  /** Optional atmospheric photo behind the headline card. */
+  atmosphereImage?: StaticImageData | string
+  atmosphereCredit?: string
+  /** Hide the listing board photo stack (e.g. about atmosphere-only hero). */
+  hideBoardStack?: boolean
 }
 
 export function MarketingHeadlineHero({
@@ -28,7 +35,13 @@ export function MarketingHeadlineHero({
   compactTop = false,
   mobileOneScreen = false,
   plainSurface = false,
+  atmosphereImage,
+  atmosphereCredit,
+  hideBoardStack = false,
 }: MarketingHeadlineHeroProps) {
+  const hasAtmosphere = Boolean(atmosphereImage)
+  const showBoardStack = !hideBoardStack
+
   return (
     <section
       data-lys-hero={mobileOneScreen ? true : undefined}
@@ -51,17 +64,41 @@ export function MarketingHeadlineHero({
         <div
           data-lys-hero-card={mobileOneScreen ? true : undefined}
           className={cn(
-            "overflow-hidden rounded-[2rem] px-6 sm:px-10 lg:px-14",
-            plainSurface ? "bg-background" : "bg-muted/70",
+            "relative overflow-hidden rounded-[2rem] px-6 sm:px-10 lg:px-14",
+            !hasAtmosphere && (plainSurface ? "bg-background" : "bg-muted/70"),
             compactTop ? "py-8 sm:py-10 lg:py-12" : "py-10 sm:py-12 lg:py-16",
             mobileOneScreen &&
               "max-lg:flex max-lg:min-h-0 max-lg:flex-1 max-lg:flex-col max-lg:rounded-2xl max-lg:px-0 max-lg:py-0 sm:px-10",
           )}
         >
+          {hasAtmosphere && atmosphereImage ? (
+            <>
+              <Image
+                src={atmosphereImage}
+                alt=""
+                fill
+                priority
+                quality={90}
+                sizes="(max-width: 1280px) 100vw, 1100px"
+                className="object-cover object-[center_42%]"
+                placeholder="blur"
+                blurDataURL={wideShimmer}
+                aria-hidden
+              />
+              {/* Frost keeps the existing dark headline type readable. */}
+              <div
+                className="pointer-events-none absolute inset-0 bg-gradient-to-r from-white/90 via-white/84 to-white/72"
+                aria-hidden
+              />
+            </>
+          ) : null}
+
           <div
             data-lys-hero-grid={mobileOneScreen ? true : undefined}
             className={cn(
-              "grid items-center gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-12",
+              "relative z-10 grid items-center gap-10",
+              showBoardStack && "lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-12",
+              !showBoardStack && "max-w-3xl",
               mobileOneScreen && "max-lg:min-h-0 max-lg:flex-1 lg:gap-12",
             )}
           >
@@ -70,17 +107,22 @@ export function MarketingHeadlineHero({
               className={cn(mobileOneScreen && "max-lg:min-w-0")}
             >
               {headline}
+              {atmosphereCredit ? (
+                <p className="mt-4 text-xs text-muted-foreground">{atmosphereCredit}</p>
+              ) : null}
             </div>
-            <div
-              data-lys-hero-media={mobileOneScreen ? true : undefined}
-              className={cn(mobileOneScreen && "max-lg:min-h-0 max-lg:min-w-0")}
-            >
-              <AboutHeroBoardStack
-                images={heroListingImages}
-                listingImagesOnly={listingImagesOnly}
-                compactMobile={mobileOneScreen}
-              />
-            </div>
+            {showBoardStack ? (
+              <div
+                data-lys-hero-media={mobileOneScreen ? true : undefined}
+                className={cn(mobileOneScreen && "max-lg:min-h-0 max-lg:min-w-0")}
+              >
+                <AboutHeroBoardStack
+                  images={heroListingImages}
+                  listingImagesOnly={listingImagesOnly}
+                  compactMobile={mobileOneScreen}
+                />
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

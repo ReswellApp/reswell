@@ -11,7 +11,6 @@ import { fetchApparelBrowsePage, APPAREL_BROWSE_PAGE_SIZE } from "@/lib/db/appar
 import { apparelFacetSelectionsFromParams } from "@/lib/apparel-browse-facets"
 import {
   apparelBrowseFilterHeadline,
-  apparelBrowseHeroSubtext,
   apparelBrowseRootLabel,
   type ApparelBrowseSearchParams,
 } from "@/lib/apparel-browse-metadata"
@@ -144,11 +143,10 @@ export async function ApparelBrowsePage(props: {
         </div>
       </section>
 
-      <section className="min-w-0 bg-offwhite pt-4 pb-4 sm:pt-5">
+      <section className="min-w-0 bg-offwhite pt-2 pb-4 sm:pt-5">
         <div className="container mx-auto min-w-0">
           <ApparelBrowseClient
             title={filterCrumb ?? apparelBrowseRootLabel}
-            description={apparelBrowseHeroSubtext(searchParams)}
           >
             <Suspense fallback={<ListingTileGridSkeleton count={10} ariaLabel="Loading apparel" />}>
               <ApparelListings searchParams={props.searchParams} />

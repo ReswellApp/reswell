@@ -10,7 +10,6 @@ import { fetchFinsBrowsePage, FINS_BROWSE_PAGE_SIZE } from "@/lib/db/fin-listing
 import { finFacetSelectionsFromParams } from "@/lib/fins-browse-facets"
 import {
   finsBrowseFilterHeadline,
-  finsBrowseHeroSubtext,
   finsBrowseRootLabel,
   type FinsBrowseSearchParams,
 } from "@/lib/fins-browse-metadata"
@@ -155,12 +154,11 @@ export async function FinsBrowsePage(props: {
         </div>
       </section>
 
-      <section className="min-w-0 bg-offwhite pt-4 pb-4 sm:pt-5">
+      <section className="min-w-0 bg-offwhite pt-2 pb-4 sm:pt-5">
         <div className="container mx-auto min-w-0">
           <FinsBrowseClient
             counts={facetCounts}
             title={filterCrumb ?? finsBrowseRootLabel}
-            description={finsBrowseHeroSubtext(searchParams)}
           >
             <Suspense fallback={<ListingTileGridSkeleton count={10} ariaLabel="Loading fins" />}>
               <FinListings searchParams={props.searchParams} />
