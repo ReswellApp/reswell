@@ -27,10 +27,8 @@ import { computeListingEnrichmentGaps } from "@/lib/sell-flow/listing-enrichment
 import { Hourglass, Flag, Truck } from "lucide-react"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ImageGallery } from "@/components/image-gallery"
-import {
-  ListingPdpVideo,
-  primaryListingVideo,
-} from "@/components/features/listings/listing-pdp-video"
+import { ListingPdpVideo } from "@/components/features/listings/listing-pdp-video"
+import { primaryListingVideo } from "@/lib/primary-listing-video"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
 import { ContactSellerForm } from "@/components/contact-seller-form"

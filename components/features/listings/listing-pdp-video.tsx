@@ -2,14 +2,10 @@
 
 import { useMemo } from "react"
 import { listingDirectPublicImageUrl } from "@/lib/listing-media-proxy-url"
+import type { ListingPdpVideoSource } from "@/lib/primary-listing-video"
 import { cn } from "@/lib/utils"
 
-export type ListingPdpVideoSource = {
-  id?: string
-  url: string
-  thumbnail_url?: string | null
-  content_type?: string | null
-}
+export type { ListingPdpVideoSource }
 
 type ListingPdpVideoProps = {
   video: ListingPdpVideoSource
@@ -53,21 +49,4 @@ export function ListingPdpVideo({ video, title, className }: ListingPdpVideoProp
       </video>
     </div>
   )
-}
-
-export function primaryListingVideo<T extends ListingPdpVideoSource>(
-  videos: T[] | null | undefined,
-): T | null {
-  if (!videos?.length) return null
-  const sorted = [...videos].sort((a, b) => {
-    const ao = "sort_order" in a && typeof (a as { sort_order?: number | null }).sort_order === "number"
-      ? ((a as { sort_order?: number | null }).sort_order ?? 0)
-      : 0
-    const bo = "sort_order" in b && typeof (b as { sort_order?: number | null }).sort_order === "number"
-      ? ((b as { sort_order?: number | null }).sort_order ?? 0)
-      : 0
-    return ao - bo
-  })
-  const first = sorted.find((v) => v.url?.trim())
-  return first ?? null
 }
