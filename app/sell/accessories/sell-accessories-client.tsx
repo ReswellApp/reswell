@@ -24,9 +24,12 @@ import {
 import { LocationPicker } from "@/components/location-picker"
 import { SellFormSection } from "@/components/features/sell/sell-form-section"
 import { SellListingPhotoEmptyDropzone } from "@/components/features/sell/sell-listing-photo-empty-dropzone"
+import {
+  SellListingVideoAddTile,
+  SellListingVideoFilledTile,
+} from "@/components/features/sell/sell-listing-photo-grid"
 import { SellShippingCostModeRadios } from "@/components/features/sell/sell-shipping-cost-mode-radios"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
-import { SellListingVideoField } from "@/components/features/sell/sell-listing-video-field"
 import { useListingVideoUpload } from "@/components/features/sell/hooks/use-listing-video-upload"
 import { createEmptyListingVideoSlot } from "@/lib/sell-flow/listing-video-slot"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
@@ -993,10 +996,10 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 space-y-1">
-                        <h3 className="text-sm font-semibold text-foreground">Photos</h3>
+                        <h3 className="text-sm font-semibold text-foreground">Photos & video</h3>
                         <p className="text-xs text-muted-foreground sm:text-sm">
                           Add clear photos. The first image is your main photo — tap the star on any
-                          other photo to make it the cover.
+                          other photo to make it the cover. Optional: add one short video.
                         </p>
                       </div>
                       <div className="shrink-0 pt-0.5" aria-live="polite">
@@ -1013,10 +1016,23 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
                     </div>
                     <Label className="sr-only">Listing photos</Label>
                     {photos.length === 0 ? (
-                      <SellListingPhotoEmptyDropzone
-                        fileInputId={fileInputId}
-                        onFilesSelected={addFiles}
-                      />
+                      <div className="space-y-3">
+                        <SellListingPhotoEmptyDropzone
+                          fileInputId={fileInputId}
+                          onFilesSelected={addFiles}
+                        />
+                        {video ? (
+                          <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+                            <SellListingVideoFilledTile
+                              video={video}
+                              fileInputId={videoFileInputId}
+                              onInputChange={handleVideoInputChange}
+                              onRemove={handleVideoRemove}
+                              onRetry={handleVideoRetry}
+                            />
+                          </div>
+                        ) : null}
+                      </div>
                     ) : (
                     <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
                       {photos.map((photo, index) => (
@@ -1073,6 +1089,20 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
                           </div>
                         </div>
                       ))}
+                      {video ? (
+                        <SellListingVideoFilledTile
+                          video={video}
+                          fileInputId={videoFileInputId}
+                          onInputChange={handleVideoInputChange}
+                          onRemove={handleVideoRemove}
+                          onRetry={handleVideoRetry}
+                        />
+                      ) : (
+                        <SellListingVideoAddTile
+                          fileInputId={videoFileInputId}
+                          onInputChange={handleVideoInputChange}
+                        />
+                      )}
                       {photos.length < ACCESSORY_LISTING_MAX_PHOTOS ? (
                         <div className="relative aspect-square overflow-hidden rounded-lg border-2 border-dashed border-border transition-colors hover:border-primary/50">
                           <label
@@ -1107,15 +1137,6 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
                     </div>
                     )}
                   </div>
-
-
-                  <SellListingVideoField
-                    video={video}
-                    fileInputId={videoFileInputId}
-                    onInputChange={handleVideoInputChange}
-                    onRemove={handleVideoRemove}
-                    onRetry={handleVideoRetry}
-                  />
 
                   <Separator className="bg-border" />
 

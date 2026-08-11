@@ -27,7 +27,6 @@ import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-sessi
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
-import { SellListingVideoField } from "@/components/features/sell/sell-listing-video-field"
 import { SELL_PAGE_GROUND_CLASS, SELL_CONTROL_CLASS } from "@/components/features/sell/sell-form-surface"
 import { cn } from "@/lib/utils"
 import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
@@ -503,15 +502,12 @@ export default function SellMagazinesFlow({
           onRetry={handlePhotoTileRetry}
           onRotate180={handlePhotoTileRotate}
           photoDragSensors={photoDragSensors}
-          photoDescription="Add cover and interior shots. Drag to reorder — the first photo is the main image on browse tiles."
-        />
-
-        <SellListingVideoField
+          photoDescription="Add cover and interior shots. Drag to reorder — the first photo is the main image on browse tiles. Optional: add one short video."
           video={video}
-          fileInputId={videoFileInputId}
-          onInputChange={handleVideoInputChange}
-          onRemove={handleVideoRemove}
-          onRetry={handleVideoRetry}
+          videoFileInputId={videoFileInputId}
+          onVideoInputChange={handleVideoInputChange}
+          onVideoRemove={handleVideoRemove}
+          onVideoRetry={handleVideoRetry}
         />
 
         <div className="space-y-2">

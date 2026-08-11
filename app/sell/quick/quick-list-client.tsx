@@ -38,7 +38,6 @@ import { QuickPublishBar } from "@/components/features/sell/quick/quick-publish-
 import { QuickPublishOverlay } from "@/components/features/sell/quick/quick-publish-overlay"
 import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
 import { useListingVideoUpload } from "@/components/features/sell/hooks/use-listing-video-upload"
-import { SellListingVideoField } from "@/components/features/sell/sell-listing-video-field"
 import { useSellAccessoryDraftRecovery } from "@/components/features/sell/hooks/use-sell-accessory-draft-recovery"
 import {
   sellFormSnapshotLooksFilled,
@@ -954,14 +953,11 @@ export default function QuickListClient() {
             onRotate180={photos.handlePhotoTileRotate}
             photoDragSensors={photos.photoDragSensors}
             minPhotos={LISTING_MIN_PHOTOS}
-          />
-
-          <SellListingVideoField
             video={video}
-            fileInputId={listingVideoInputId}
-            onInputChange={handleVideoInputChange}
-            onRemove={handleVideoRemove}
-            onRetry={handleVideoRetry}
+            videoFileInputId={listingVideoInputId}
+            onVideoInputChange={handleVideoInputChange}
+            onVideoRemove={handleVideoRemove}
+            onVideoRetry={handleVideoRetry}
           />
 
           <QuickEssentialCard

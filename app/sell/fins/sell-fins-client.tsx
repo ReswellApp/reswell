@@ -36,7 +36,6 @@ import {
 import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
 import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
-import { SellListingVideoField } from "@/components/features/sell/sell-listing-video-field"
 import { SellPublishValidationBanner } from "@/components/features/sell/sell-publish-validation-banner"
 import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
 import { useListingVideoUpload } from "@/components/features/sell/hooks/use-listing-video-upload"
@@ -1260,14 +1259,11 @@ export default function SellFinsFlow({
                     onRetry={handlePhotoTileRetry}
                     onRotate180={handlePhotoTileRotate}
                     photoDragSensors={photoDragSensors}
-                  />
-
-                  <SellListingVideoField
                     video={video}
-                    fileInputId={videoFileInputId}
-                    onInputChange={handleVideoInputChange}
-                    onRemove={handleVideoRemove}
-                    onRetry={handleVideoRetry}
+                    videoFileInputId={videoFileInputId}
+                    onVideoInputChange={handleVideoInputChange}
+                    onVideoRemove={handleVideoRemove}
+                    onVideoRetry={handleVideoRetry}
                   />
 
                   <Separator className="bg-border" />

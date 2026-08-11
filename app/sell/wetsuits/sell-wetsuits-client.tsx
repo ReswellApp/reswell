@@ -31,7 +31,6 @@ import { sellCatalogSearchCategoryLabel } from "@/lib/types/sell-catalog-search"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellWetsuitsFacetFields } from "@/components/features/sell/sell-wetsuits-facet-fields"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
-import { SellListingVideoField } from "@/components/features/sell/sell-listing-video-field"
 import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
 import { useListingVideoUpload } from "@/components/features/sell/hooks/use-listing-video-upload"
 import { createEmptyListingVideoSlot } from "@/lib/sell-flow/listing-video-slot"
@@ -917,15 +916,12 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
                     onRetry={handlePhotoTileRetry}
                     onRotate180={handlePhotoTileRotate}
                     photoDragSensors={photoDragSensors}
-                    photoDescription="Add clear photos. Drag to reorder — the first image is your main photo on browse tiles."
-                  />
-
-                  <SellListingVideoField
+                    photoDescription="Add clear photos. Drag to reorder — the first image is your main photo on browse tiles. Optional: add one short video."
                     video={video}
-                    fileInputId={videoFileInputId}
-                    onInputChange={handleVideoInputChange}
-                    onRemove={handleVideoRemove}
-                    onRetry={handleVideoRetry}
+                    videoFileInputId={videoFileInputId}
+                    onVideoInputChange={handleVideoInputChange}
+                    onVideoRemove={handleVideoRemove}
+                    onVideoRetry={handleVideoRetry}
                   />
 
                   <Separator className="bg-border" />

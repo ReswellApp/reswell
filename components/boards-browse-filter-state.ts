@@ -256,8 +256,12 @@ export function useBoardsFilterState(
         detail: trimmed ? "set" : "clear",
       })
       navigate((params) => {
-        if (trimmed) params.set("location", trimmed)
-        else {
+        if (trimmed) {
+          params.set("location", trimmed)
+          // Text-only updates must not keep a previous place's coordinates.
+          params.delete("lat")
+          params.delete("lng")
+        } else {
           params.delete("location")
           params.delete("lat")
           params.delete("lng")

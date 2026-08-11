@@ -205,7 +205,6 @@ import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellBoardModeHeader } from "@/components/features/sell/sell-board-mode-header"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
-import { SellListingVideoField } from "@/components/features/sell/sell-listing-video-field"
 import { sellListingThumbLoadedSrcByClientId } from "@/components/features/sell/hooks/use-listing-photo-upload"
 import { useListingVideoUpload } from "@/components/features/sell/hooks/use-listing-video-upload"
 import { createEmptyListingVideoSlot } from "@/lib/sell-flow/listing-video-slot"
@@ -4481,7 +4480,7 @@ function SellPageContentInner({
                       </p>
                       <p className="text-[15px] leading-relaxed text-muted-foreground">
                         Clear, well-lit shots sell faster. Square photos work best — the first
-                        becomes your cover.
+                        becomes your cover. Optional: add one short video beside your photos.
                       </p>
                     </div>
                     <SellListingPhotoGrid
@@ -4501,14 +4500,11 @@ function SellPageContentInner({
                       photoDragSensors={photoDragSensors}
                       hideHeader
                       belowGrid={<SellPhotoExamplesBanner />}
-                    />
-
-                    <SellListingVideoField
                       video={video}
-                      fileInputId={listingVideoInputId}
-                      onInputChange={handleVideoInputChange}
-                      onRemove={handleVideoRemove}
-                      onRetry={handleVideoRetry}
+                      videoFileInputId={listingVideoInputId}
+                      onVideoInputChange={handleVideoInputChange}
+                      onVideoRemove={handleVideoRemove}
+                      onVideoRetry={handleVideoRetry}
                     />
 
                     <Separator className="bg-border" />

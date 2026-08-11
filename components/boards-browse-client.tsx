@@ -239,6 +239,35 @@ export function BoardsBrowseClient({
         <SheetContent
           side="left"
           className="flex w-full max-w-full flex-col gap-0 p-0 sm:max-w-full md:hidden"
+          onPointerDownOutside={(e) => {
+            const t = e.target as HTMLElement | null
+            // Location suggestions + Select menus portal outside the Sheet node; without this,
+            // Radix treats taps as “outside” and dismisses before the pick can apply.
+            if (
+              t?.closest("[data-location-suggest]") ||
+              t?.closest("[data-radix-popper-content-wrapper]")
+            ) {
+              e.preventDefault()
+            }
+          }}
+          onFocusOutside={(e) => {
+            const t = e.target as HTMLElement | null
+            if (
+              t?.closest("[data-location-suggest]") ||
+              t?.closest("[data-radix-popper-content-wrapper]")
+            ) {
+              e.preventDefault()
+            }
+          }}
+          onInteractOutside={(e) => {
+            const t = e.target as HTMLElement | null
+            if (
+              t?.closest("[data-location-suggest]") ||
+              t?.closest("[data-radix-popper-content-wrapper]")
+            ) {
+              e.preventDefault()
+            }
+          }}
         >
           <div className="flex items-center justify-between border-b px-4 py-3.5">
             <div className="flex items-center gap-2">

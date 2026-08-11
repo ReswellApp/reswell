@@ -27,7 +27,13 @@ const LISTING_VIDEO_NAME_RE = /\.(mp4|mov|webm)$/i
 
 export function isAcceptedListingVideoFile(file: File): boolean {
   const mime = (file.type || "").toLowerCase()
-  if (mime === "video/mp4" || mime === "video/quicktime" || mime === "video/webm") {
+  if (
+    mime === "video/mp4" ||
+    mime.startsWith("video/mp4;") ||
+    mime === "video/quicktime" ||
+    mime === "video/webm" ||
+    mime.startsWith("video/webm;")
+  ) {
     return true
   }
   return LISTING_VIDEO_NAME_RE.test(file.name)
@@ -94,7 +100,9 @@ export async function assertListingVideoDuration(file: File): Promise<number | n
 export function normalizeListingVideoMimeType(file: File): ListingVideoMimeType {
   const type = file.type.toLowerCase()
   if (type === "video/quicktime" || /\.mov$/i.test(file.name)) return "video/quicktime"
-  if (type === "video/webm" || /\.webm$/i.test(file.name)) return "video/webm"
+  if (type === "video/webm" || type.startsWith("video/webm;") || /\.webm$/i.test(file.name)) {
+    return "video/webm"
+  }
   return "video/mp4"
 }
 
@@ -144,7 +152,8 @@ export function captureListingVideoPosterBlob(file: File): Promise<{
             fail()
             return
           }
-          const maxLong = 640
+          // Sharper sell-grid / PDP posters (was 640 — looked soft on retina tiles).
+          const maxLong = 1280
           const long = Math.max(w, h)
           const scale = long > maxLong ? maxLong / long : 1
           const canvas = document.createElement("canvas")
@@ -173,11 +182,11 @@ export function captureListingVideoPosterBlob(file: File): Promise<{
                   resolve({ blob: jpegBlob, contentType: "image/jpeg", ext: "jpg" })
                 },
                 "image/jpeg",
-                0.85,
+                0.92,
               )
             },
             "image/webp",
-            0.85,
+            0.92,
           )
         } catch {
           fail()
