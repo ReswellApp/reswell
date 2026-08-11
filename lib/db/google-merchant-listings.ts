@@ -28,7 +28,8 @@ const GOOGLE_MERCHANT_LISTING_SELECT = `
   city,
   state,
   local_pickup,
-  listing_images ( url, thumbnail_url, is_primary, sort_order )
+  listing_images ( url, thumbnail_url, is_primary, sort_order ),
+  listing_videos ( url, thumbnail_url, sort_order, duration_seconds )
 `
 
 export async function getGoogleMerchantListingById(

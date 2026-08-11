@@ -27,6 +27,10 @@ import { computeListingEnrichmentGaps } from "@/lib/sell-flow/listing-enrichment
 import { Hourglass, Flag, Truck } from "lucide-react"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ImageGallery } from "@/components/image-gallery"
+import {
+  ListingPdpVideo,
+  primaryListingVideo,
+} from "@/components/features/listings/listing-pdp-video"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
 import { ContactSellerForm } from "@/components/contact-seller-form"
@@ -209,6 +213,20 @@ export async function SurfboardListingDetailPage({
   const images = board.listing_images?.sort((a: { is_primary: boolean; sort_order?: number }, b: { is_primary: boolean; sort_order?: number }) => 
     (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || (a.sort_order ?? 0) - (b.sort_order ?? 0)
   ) || []
+
+  const video = primaryListingVideo(
+    (
+      board as {
+        listing_videos?: Array<{
+          id: string
+          url: string
+          thumbnail_url?: string | null
+          content_type?: string | null
+          sort_order?: number | null
+        }>
+      }
+    ).listing_videos,
+  )
 
   const metaCatalogEligible = isMetaCatalogEligibleListing(board)
 
@@ -455,6 +473,11 @@ export async function SurfboardListingDetailPage({
                 <ListingPhotosPendingBanner imageCount={images.length} isOwner={isOwnListing} />
               )}
               <div className="relative isolate">
+                {video ? (
+                  <div className="mb-3 md:mb-4">
+                    <ListingPdpVideo video={video} title={listingTitle} />
+                  </div>
+                ) : null}
                 <ImageGallery
                   images={images}
                   title={capitalizeWords(board.title)}

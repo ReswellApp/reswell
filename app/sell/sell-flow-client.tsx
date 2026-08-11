@@ -205,7 +205,11 @@ import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellBoardModeHeader } from "@/components/features/sell/sell-board-mode-header"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
+import { SellListingVideoField } from "@/components/features/sell/sell-listing-video-field"
 import { sellListingThumbLoadedSrcByClientId } from "@/components/features/sell/hooks/use-listing-photo-upload"
+import { useListingVideoUpload } from "@/components/features/sell/hooks/use-listing-video-upload"
+import { createEmptyListingVideoSlot } from "@/lib/sell-flow/listing-video-slot"
+import { syncListingDraftVideosClient } from "@/lib/sell-flow/sync-listing-draft-videos-client"
 import {
   SELL_COMPLETE_BADGE_CLASS,
   SELL_CONTROL_CLASS,
@@ -796,12 +800,20 @@ function SellPageContentInner({
   onSoftOpenDraft,
 }: SellPageContentProps) {
   const listingPhotosInputId = useId()
+  const listingVideoInputId = useId()
   const router = useRouter()
   const sellSearchParams = useSearchParams()
   const bulkSlotId = sellSearchParams.get("bulk")?.trim() || null
   const wantsBlankListing = startFresh || sellSearchParams.get("new") === "1"
   const openSignIn = useSignInGate()
   const supabase = useMemo(() => createClient(), [])
+  const boardSellReturnPath = useCallback(
+    () =>
+      typeof window === "undefined"
+        ? "/sell/boards"
+        : `${window.location.pathname}${window.location.search}`,
+    [],
+  )
 
   /** Strip `?new=1` from the URL after blank-listing setup; stay on `/sell/boards`. */
   useLayoutEffect(() => {
@@ -921,6 +933,27 @@ function SellPageContentInner({
   useEffect(() => {
     removedImageIdsRef.current = removedImageIds
   }, [removedImageIds])
+
+  const videoUpload = useListingVideoUpload({
+    signInReturnPath: boardSellReturnPath,
+    openSignIn,
+    supabase,
+    promptSignInOnUpload: false,
+  })
+  const {
+    video,
+    setVideo,
+    removedVideoIds,
+    setRemovedVideoIds,
+    videoUploadReady,
+    videoUploading,
+    readyVideo,
+    handleVideoInputChange,
+    handleVideoRemove,
+    handleVideoRetry,
+    hydrateExistingVideo,
+  } = videoUpload
+
   const [listingCatalogRequestVariant, setListingCatalogRequestVariant] =
     useState<ListingCatalogRequestVariant | null>(null)
   const [formData, setFormData] = useState(createInitialSellFormData)
@@ -1489,9 +1522,46 @@ function SellPageContentInner({
       latestListingPhotoPrepareSeqRef.current.clear()
       setImages(existingImages)
       setRemovedImageIds([])
+
+      const existingVideos = (
+        (
+          listing as {
+            listing_videos?: Array<{
+              id: string
+              url: string
+              thumbnail_url?: string | null
+              content_type?: string | null
+              duration_seconds?: number | null
+              byte_size?: number | null
+              sort_order?: number | null
+            }> | null
+          }
+        ).listing_videos ?? []
+      )
+        .slice()
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      const firstVideo = existingVideos[0]
+      if (firstVideo?.url?.trim()) {
+        const thumb = firstVideo.thumbnail_url?.trim() || null
+        hydrateExistingVideo(
+          createEmptyListingVideoSlot({
+            id: firstVideo.id,
+            status: "ready",
+            url: firstVideo.url,
+            thumbnailUrl: thumb,
+            previewUrl: thumb || firstVideo.url,
+            contentType: firstVideo.content_type ?? null,
+            durationSeconds: firstVideo.duration_seconds ?? null,
+            byteSize: firstVideo.byte_size ?? null,
+          }),
+        )
+      } else {
+        hydrateExistingVideo(null)
+      }
+
       return { status: "ready" as const }
     },
-    [editId, router],
+    [editId, hydrateExistingVideo, router],
   )
 
   const { editLoading, showEditSkeleton, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
@@ -2420,6 +2490,42 @@ function SellPageContentInner({
     }
   }, [treatAsDraftForSync, draftRowForImages, editLoading, images])
 
+  useEffect(() => {
+    if (!treatAsDraftForSync || !draftRowForImages || editLoading) return
+    if (!videoUploadReady || videoUploading) return
+    if (!readyVideo && removedVideoIds.length === 0) return
+    const timer = window.setTimeout(() => {
+      void syncListingDraftVideosClient(
+        supabase,
+        draftRowForImages,
+        video,
+        removedVideoIds,
+      )
+        .then(({ nextVideo }) => {
+          setVideo(nextVideo)
+          setRemovedVideoIds([])
+        })
+        .catch((e) => {
+          if (process.env.NODE_ENV === "development") {
+            console.warn("[sell] draft listing_videos sync", e)
+          }
+        })
+    }, 1200)
+    return () => window.clearTimeout(timer)
+  }, [
+    treatAsDraftForSync,
+    draftRowForImages,
+    editLoading,
+    videoUploadReady,
+    videoUploading,
+    readyVideo,
+    removedVideoIds,
+    video,
+    setVideo,
+    setRemovedVideoIds,
+    supabase,
+  ])
+
   function listingPhotoPrepareSeqInSync(clientId: string, prepareSeq: number): boolean {
     return (latestListingPhotoPrepareSeqRef.current.get(clientId) ?? 0) === prepareSeq
   }
@@ -3118,6 +3224,21 @@ function SellPageContentInner({
           !im.thumbnailUrl?.trim(),
       )
 
+      if (!videoUploadReady || videoUploading) {
+        logSellFunnelEvent({
+          listingType: "surfboards",
+          event: "validation_failed",
+          message: "Video still uploading",
+        })
+        setPublishValidationBanner("Hang tight — your video is still uploading.")
+        window.requestAnimationFrame(() => {
+          document
+            .getElementById("sell-publish-validation-banner")
+            ?.scrollIntoView({ behavior: "smooth", block: "center" })
+        })
+        return
+      }
+
       const sellerPurchaseRaw = submitForm.sellerPurchasePrice?.trim() ?? ""
       if (
         sellerPurchaseRaw &&
@@ -3483,6 +3604,8 @@ function SellPageContentInner({
               listing: editListingFields,
               removedImageIds,
               images: imageOps,
+              removedVideoIds,
+              videos: readyVideo ? [readyVideo] : [],
               catalog_snapshot: boardCatalogSnapshotFromSellForm(fd),
               publishFromDraft: listingIsDraft,
             }),
@@ -3556,6 +3679,18 @@ function SellPageContentInner({
             body: JSON.stringify({
               listing: listingFields,
               images: imagePayload,
+              videos: readyVideo
+                ? [
+                    {
+                      url: readyVideo.url,
+                      thumbnail_url: readyVideo.thumbnailUrl,
+                      content_type: readyVideo.contentType,
+                      duration_seconds: readyVideo.durationSeconds,
+                      byte_size: readyVideo.byteSize,
+                      sort_order: readyVideo.sortOrder,
+                    },
+                  ]
+                : [],
               catalog_snapshot: boardCatalogSnapshotFromSellForm(fd),
             }),
           })
@@ -3628,6 +3763,28 @@ function SellPageContentInner({
             listingId = null
             throw new Error(sellSubmitErrorMessage(imagesInsertError, "Failed to save listing photos"))
           }
+          if (readyVideo) {
+            const { error: videoInsertError } = await supabase.from("listing_videos").insert({
+              listing_id: listingId,
+              url: readyVideo.url,
+              thumbnail_url: readyVideo.thumbnailUrl,
+              content_type: readyVideo.contentType,
+              duration_seconds: readyVideo.durationSeconds,
+              byte_size: readyVideo.byteSize,
+              sort_order: 0,
+            })
+            if (videoInsertError) {
+              await supabase
+                .from("listings")
+                .delete()
+                .eq("id", listing.id)
+                .eq("user_id", user.id)
+              listingId = null
+              throw new Error(
+                sellSubmitErrorMessage(videoInsertError, "Failed to save listing video"),
+              )
+            }
+          }
           requestKlaviyoListingCreated(String(listing.id))
           void applyBoardListingPublishedSideEffectsAction(String(listing.id)).catch((err) => {
             if (process.env.NODE_ENV === "development") {
@@ -3694,6 +3851,14 @@ function SellPageContentInner({
           const willSyncNewPhotos = images.some((im) => !im.id && im.url)
           if (willSyncNewPhotos) goSubmitStep(1)
           await syncListingImages(listingId)
+          const { nextVideo } = await syncListingDraftVideosClient(
+            supabase,
+            listingId,
+            video,
+            removedVideoIds,
+          )
+          setVideo(nextVideo)
+          setRemovedVideoIds([])
           goSubmitStep(2)
         }
         if (publishedDraftNeedsSideEffects) {
@@ -4336,6 +4501,14 @@ function SellPageContentInner({
                       photoDragSensors={photoDragSensors}
                       hideHeader
                       belowGrid={<SellPhotoExamplesBanner />}
+                    />
+
+                    <SellListingVideoField
+                      video={video}
+                      fileInputId={listingVideoInputId}
+                      onInputChange={handleVideoInputChange}
+                      onRemove={handleVideoRemove}
+                      onRetry={handleVideoRetry}
                     />
 
                     <Separator className="bg-border" />

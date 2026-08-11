@@ -24,6 +24,7 @@ const META_CATALOG_CSV_HEADERS = [
   "additional_image_link",
   "identifier_exists",
   "custom_label_0",
+  "video[0].url",
 ] as const
 
 /**

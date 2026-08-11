@@ -36,8 +36,11 @@ import {
 import { SellFlowRouteSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
 import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
+import { SellListingVideoField } from "@/components/features/sell/sell-listing-video-field"
 import { SellPublishValidationBanner } from "@/components/features/sell/sell-publish-validation-banner"
 import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
+import { useListingVideoUpload } from "@/components/features/sell/hooks/use-listing-video-upload"
+import { createEmptyListingVideoSlot } from "@/lib/sell-flow/listing-video-slot"
 import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
 import { useSellListingDraftPersistence } from "@/components/features/sell/hooks/use-sell-listing-draft-persistence"
 import {
@@ -306,6 +309,25 @@ export default function SellFinsFlow({
     hydrateExistingImages,
   } = photoUpload
 
+  const videoUpload = useListingVideoUpload({
+    signInReturnPath: finSellReturnPath,
+    openSignIn: signIn,
+    supabase: supabaseRef.current,
+    promptSignInOnUpload: false,
+  })
+  const {
+    video,
+    removedVideoIds,
+    videoUploadReady,
+    videoUploading,
+    readyVideo,
+    handleVideoInputChange,
+    handleVideoRemove,
+    handleVideoRetry,
+    hydrateExistingVideo,
+  } = videoUpload
+  const videoFileInputId = useId()
+
   useEffect(() => {
     removedImageIdsRef.current = removedImageIds
   }, [removedImageIds])
@@ -538,12 +560,44 @@ export default function SellFinsFlow({
           }
         })
 
+      const existingVideos = (
+        (listing.listing_videos as Array<{
+          id: string
+          url: string
+          thumbnail_url?: string | null
+          content_type?: string | null
+          duration_seconds?: number | null
+          byte_size?: number | null
+          sort_order?: number | null
+        }> | null) ?? []
+      )
+        .slice()
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      const firstVideo = existingVideos[0]
+      if (firstVideo?.url?.trim()) {
+        const thumb = firstVideo.thumbnail_url?.trim() || null
+        hydrateExistingVideo(
+          createEmptyListingVideoSlot({
+            id: firstVideo.id,
+            status: "ready",
+            url: firstVideo.url,
+            thumbnailUrl: thumb,
+            previewUrl: thumb || firstVideo.url,
+            contentType: firstVideo.content_type ?? null,
+            durationSeconds: firstVideo.duration_seconds ?? null,
+            byteSize: firstVideo.byte_size ?? null,
+          }),
+        )
+      } else {
+        hydrateExistingVideo(null)
+      }
+
       setFlowStep("form")
       persistFinSellFlowStep("form")
       hydrateExistingImages(existingImages)
       return { status: "ready" as const }
     },
-    [editId, hydrateExistingImages, router],
+    [editId, hydrateExistingImages, hydrateExistingVideo, router],
   )
 
   const { editLoading, showEditSkeleton, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
@@ -795,6 +849,7 @@ export default function SellFinsFlow({
     const validationMessage = validateFinListingForm(form, {
       imageCount: images.length,
       imagesUploadReady,
+      videoUploadReady,
     })
     if (validationMessage) {
       logSellFunnelEvent({
@@ -803,6 +858,17 @@ export default function SellFinsFlow({
         message: validationMessage,
       })
       setPublishValidationBanner(validationMessage)
+      scrollPublishValidationBannerIntoView()
+      return
+    }
+    if (videoUploading) {
+      const message = "Hang tight — your video is still uploading."
+      logSellFunnelEvent({
+        listingType: "fins",
+        event: "validation_failed",
+        message,
+      })
+      setPublishValidationBanner(message)
       scrollPublishValidationBannerIntoView()
       return
     }
@@ -844,6 +910,7 @@ export default function SellFinsFlow({
         isPrimary: index === 0,
         sortOrder: index,
       })),
+      videos: readyVideo ? [readyVideo] : [],
     }
 
     setSubmitting(true)
@@ -906,6 +973,8 @@ export default function SellFinsFlow({
               listing: buildFinListingPersistFields(payload, { allowPrivilegedShippingModes: true }),
               removedImageIds,
               images: imageOps,
+              removedVideoIds,
+              videos: payload.videos,
               publishFromDraft: listingIsDraft,
             }),
           })
@@ -958,6 +1027,7 @@ export default function SellFinsFlow({
           ...payload,
           listingId: effectiveEditId,
           removedImageIds,
+          removedVideoIds,
         })
         if ("error" in result) {
           const message = sellActionErrorMessage(result.error)
@@ -999,6 +1069,7 @@ export default function SellFinsFlow({
           url: img.url,
           thumbnailUrl: img.thumbnailUrl,
         })),
+        videos: payload.videos,
         title: payload.title,
         section: "fins",
         bulkSlotId,
@@ -1189,6 +1260,14 @@ export default function SellFinsFlow({
                     onRetry={handlePhotoTileRetry}
                     onRotate180={handlePhotoTileRotate}
                     photoDragSensors={photoDragSensors}
+                  />
+
+                  <SellListingVideoField
+                    video={video}
+                    fileInputId={videoFileInputId}
+                    onInputChange={handleVideoInputChange}
+                    onRemove={handleVideoRemove}
+                    onRetry={handleVideoRetry}
                   />
 
                   <Separator className="bg-border" />
@@ -1469,6 +1548,11 @@ export default function SellFinsFlow({
                   {uploadingCount > 0 ? (
                     <p className="text-center text-xs text-muted-foreground">
                       {uploadingCount} photo{uploadingCount > 1 ? "s" : ""} still uploading…
+                    </p>
+                  ) : null}
+                  {videoUploading ? (
+                    <p className="text-center text-xs text-muted-foreground">
+                      Video still uploading…
                     </p>
                   ) : null}
                 </div>

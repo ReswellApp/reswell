@@ -1,4 +1,8 @@
 import { addReswellPackedWeightZodIssues } from "@/lib/validations/reswell-packed-weight"
+import {
+  listingRemovedVideoIdsSchema,
+  listingVideosFieldSchema,
+} from "@/lib/validations/listing-video"
 import { z } from "zod"
 import {
   FIN_SETUP_OPTIONS,
@@ -82,6 +86,7 @@ const finListingBaseObject = z.object({
     .array(finListingImageSchema)
     .min(FIN_LISTING_MIN_PHOTOS, "Add at least one photo")
     .max(FIN_LISTING_MAX_PHOTOS),
+  videos: listingVideosFieldSchema,
 })
 
 function withFinReswellPackageDefaultsTransform<T extends z.ZodTypeAny>(schema: T) {
@@ -167,6 +172,7 @@ export const updateFinListingSchema = withFinListingRefinements(
     finListingBaseObject.extend({
       listingId: z.string().uuid(),
       removedImageIds: z.array(z.string().uuid()).optional().default([]),
+      removedVideoIds: listingRemovedVideoIdsSchema,
     }),
   ),
 )

@@ -11,6 +11,11 @@ import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { FINS_SECTION } from "@/lib/fin-listing-config"
 import { buildFinListingPersistFields } from "@/lib/fin-listing-persist-fields"
 import { removeListingImageFilesFromStorage } from "@/lib/services/listingStorageCleanup"
+import {
+  insertListingVideos,
+  listingVideosToUpdateOps,
+  syncListingVideos,
+} from "@/lib/services/sync-listing-videos"
 import type { CreateFinListingInput, UpdateFinListingInput } from "@/lib/validations/fin-listing"
 
 export type CreateFinListingResult = { listingId: string; slug: string }
@@ -150,6 +155,12 @@ export async function updateFinListing(
   }))
 
   await syncFinListingImages(supabase, listingId, input.removedImageIds ?? [], imageOps)
+  await syncListingVideos(
+    supabase,
+    listingId,
+    input.removedVideoIds ?? [],
+    listingVideosToUpdateOps(input.videos ?? []),
+  )
 
   return { slug: (updated.slug as string) ?? (existing.slug as string) }
 }
@@ -195,6 +206,17 @@ export async function createFinListing(
   if (imageError) {
     await supabase.from("listings").delete().eq("id", listingId)
     throw new Error(imageError.message)
+  }
+
+  try {
+    await insertListingVideos(
+      supabase,
+      listingId,
+      listingVideosToUpdateOps(input.videos ?? []),
+    )
+  } catch (err) {
+    await supabase.from("listings").delete().eq("id", listingId)
+    throw err instanceof Error ? err : new Error("Failed to insert listing videos")
   }
 
   return { listingId, slug: (inserted.slug as string) ?? slug }

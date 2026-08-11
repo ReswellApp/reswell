@@ -13,6 +13,11 @@ import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { SURFPACKS_SECTION } from "@/lib/surfpack-listing-config"
 import { buildSurfpackListingPersistFields } from "@/lib/surfpack-listing-persist-fields"
 import { removeListingImageFilesFromStorage } from "@/lib/services/listingStorageCleanup"
+import {
+  insertListingVideos,
+  listingVideosToUpdateOps,
+  syncListingVideos,
+} from "@/lib/services/sync-listing-videos"
 import type {
   CreateSurfpackListingInput,
   UpdateSurfpackListingInput,
@@ -140,6 +145,12 @@ export async function updateSurfpackListing(
   }))
 
   await syncSurfpackListingImages(supabase, listingId, input.removedImageIds ?? [], imageOps)
+  await syncListingVideos(
+    supabase,
+    listingId,
+    input.removedVideoIds ?? [],
+    listingVideosToUpdateOps(input.videos ?? []),
+  )
 
   return { slug: (updated.slug as string) ?? (existing.slug as string) }
 }
@@ -185,6 +196,17 @@ export async function createSurfpackListing(
   if (imageError) {
     await supabase.from("listings").delete().eq("id", listingId)
     throw new Error(imageError.message)
+  }
+
+  try {
+    await insertListingVideos(
+      supabase,
+      listingId,
+      listingVideosToUpdateOps(input.videos ?? []),
+    )
+  } catch (err) {
+    await supabase.from("listings").delete().eq("id", listingId)
+    throw err instanceof Error ? err : new Error("Failed to insert listing videos")
   }
 
   return { listingId, slug: (inserted.slug as string) ?? slug }

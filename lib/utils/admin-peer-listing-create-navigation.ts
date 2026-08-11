@@ -10,6 +10,7 @@ import { resolveAdminBulkListingAfterCreate } from "@/lib/utils/admin-bulk-listi
 import {
   createImpersonatedListingViaApi,
   listingImagesToImpersonatedPayload,
+  listingVideosToImpersonatedPayload,
 } from "@/lib/utils/admin-impersonated-listing-create"
 
 type RouterLike = {
@@ -44,6 +45,14 @@ export async function finalizePeerListingCreate(params: {
   listingImpersonation: ImpersonationData | null
   listingFields: Record<string, unknown>
   images: { url: string; thumbnailUrl?: string | null }[]
+  videos?: Array<{
+    url: string
+    thumbnailUrl?: string | null
+    contentType?: string | null
+    durationSeconds?: number | null
+    byteSize?: number | null
+    sortOrder?: number
+  }>
   title: string
   section: PeerListingSection
   bulkSlotId: string | null
@@ -63,6 +72,7 @@ export async function finalizePeerListingCreate(params: {
     const impResult = await createImpersonatedListingViaApi({
       listing: params.listingFields,
       images: listingImagesToImpersonatedPayload(params.images),
+      videos: listingVideosToImpersonatedPayload(params.videos ?? []),
     })
     if (!impResult.ok) {
       const message = sellActionErrorMessage(impResult.error)

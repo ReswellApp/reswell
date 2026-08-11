@@ -56,12 +56,19 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { listing: listingData, images: imagesRaw = [], catalog_snapshot } = body as {
+  const {
+    listing: listingData,
+    images: imagesRaw = [],
+    videos: videosRaw = [],
+    catalog_snapshot,
+  } = body as {
     listing?: Record<string, unknown>
     images?: unknown
+    videos?: unknown
     catalog_snapshot?: SellFormBoardCatalogSlice
   }
   const images = Array.isArray(imagesRaw) ? imagesRaw : []
+  const videos = Array.isArray(videosRaw) ? videosRaw : []
 
   if (!listingData?.title || listingData?.price == null) {
     return NextResponse.json({ error: "Missing required listing fields" }, { status: 400 })
@@ -160,6 +167,35 @@ export async function POST(request: NextRequest) {
     const { error: imgErr } = await service.from("listing_images").insert(imageInserts)
     if (imgErr) {
       console.error("[impersonate] listing_images insert error:", imgErr)
+    }
+  }
+
+  if (videos.length > 0) {
+    const videoInserts = (
+      videos as Array<{
+        url: string
+        thumbnail_url?: string | null
+        content_type?: string | null
+        duration_seconds?: number | null
+        byte_size?: number | null
+        sort_order?: number
+      }>
+    )
+      .filter((row) => typeof row.url === "string" && row.url.trim())
+      .map((row, index) => ({
+        listing_id: listing.id,
+        url: row.url.trim(),
+        thumbnail_url: row.thumbnail_url ?? null,
+        content_type: row.content_type ?? null,
+        duration_seconds: row.duration_seconds ?? null,
+        byte_size: row.byte_size ?? null,
+        sort_order: row.sort_order ?? index,
+      }))
+    if (videoInserts.length > 0) {
+      const { error: videoErr } = await service.from("listing_videos").insert(videoInserts)
+      if (videoErr) {
+        console.error("[impersonate] listing_videos insert error:", videoErr)
+      }
     }
   }
 

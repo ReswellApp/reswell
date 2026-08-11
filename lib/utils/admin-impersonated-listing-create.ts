@@ -5,9 +5,19 @@ export type ImpersonatedListingImagePayload = {
   sort_order: number
 }
 
+export type ImpersonatedListingVideoPayload = {
+  url: string
+  thumbnail_url?: string | null
+  content_type?: string | null
+  duration_seconds?: number | null
+  byte_size?: number | null
+  sort_order: number
+}
+
 export async function createImpersonatedListingViaApi(params: {
   listing: Record<string, unknown>
   images: ImpersonatedListingImagePayload[]
+  videos?: ImpersonatedListingVideoPayload[]
 }): Promise<
   | { ok: true; listingId: string; slug: string }
   | { ok: false; error: string }
@@ -19,6 +29,7 @@ export async function createImpersonatedListingViaApi(params: {
     body: JSON.stringify({
       listing: params.listing,
       images: params.images,
+      videos: params.videos ?? [],
     }),
   })
   const data = (await res.json().catch(() => ({}))) as {
@@ -49,5 +60,25 @@ export function listingImagesToImpersonatedPayload(
     thumbnail_url: img.thumbnailUrl ?? null,
     is_primary: index === 0,
     sort_order: index,
+  }))
+}
+
+export function listingVideosToImpersonatedPayload(
+  videos: Array<{
+    url: string
+    thumbnailUrl?: string | null
+    contentType?: string | null
+    durationSeconds?: number | null
+    byteSize?: number | null
+    sortOrder?: number
+  }>,
+): ImpersonatedListingVideoPayload[] {
+  return videos.map((video, index) => ({
+    url: video.url,
+    thumbnail_url: video.thumbnailUrl ?? null,
+    content_type: video.contentType ?? null,
+    duration_seconds: video.durationSeconds ?? null,
+    byte_size: video.byteSize ?? null,
+    sort_order: video.sortOrder ?? index,
   }))
 }

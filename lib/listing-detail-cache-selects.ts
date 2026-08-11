@@ -9,6 +9,7 @@ export const LISTING_ROUTE_SHELL_SELECT =
 export const SURFBOARD_LISTING_SELECT = `
         *,
         listing_images (id, url, thumbnail_url, is_primary, sort_order),
+        listing_videos (id, url, thumbnail_url, content_type, duration_seconds, sort_order),
         ${LISTING_SELLER_PROFILES_EMBED} (id, seller_slug, is_shop, shop_name, shop_logo_url, display_name, avatar_url, location, created_at, shop_verified, sales_count, follower_count)
       `
 

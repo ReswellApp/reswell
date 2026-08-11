@@ -37,6 +37,8 @@ import { QuickPhotoHero } from "@/components/features/sell/quick/quick-photo-her
 import { QuickPublishBar } from "@/components/features/sell/quick/quick-publish-bar"
 import { QuickPublishOverlay } from "@/components/features/sell/quick/quick-publish-overlay"
 import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
+import { useListingVideoUpload } from "@/components/features/sell/hooks/use-listing-video-upload"
+import { SellListingVideoField } from "@/components/features/sell/sell-listing-video-field"
 import { useSellAccessoryDraftRecovery } from "@/components/features/sell/hooks/use-sell-accessory-draft-recovery"
 import {
   sellFormSnapshotLooksFilled,
@@ -272,6 +274,24 @@ export default function QuickListClient() {
   } = photos
   const removedImageIdsRef = useRef(removedImageIds)
   removedImageIdsRef.current = removedImageIds
+
+  const videoUpload = useListingVideoUpload({
+    signInReturnPath,
+    openSignIn,
+    supabase,
+    persistBeforeSignIn: () => flushDraftNowRef.current(),
+    promptSignInOnUpload: false,
+  })
+  const {
+    video,
+    videoUploadReady,
+    videoUploading,
+    readyVideo,
+    handleVideoInputChange,
+    handleVideoRemove,
+    handleVideoRetry,
+  } = videoUpload
+  const listingVideoInputId = useId()
 
   const restoreFormFromDraft = useCallback((snapshot: SellListingDraftFormSnapshot) => {
     setFormData((prev) => {
@@ -611,6 +631,16 @@ export default function QuickListClient() {
       const imagesUploadReadyNow = !photos.imagesRef.current.some(
         (im) => im.uploadPhase !== "done" || !im.url?.trim() || !im.thumbnailUrl?.trim(),
       )
+      if (!videoUploadReady || videoUploading) {
+        const message = "Hang tight — your video is still uploading."
+        logSellFunnelEvent({
+          listingType: "surfboards",
+          event: "validation_failed",
+          message,
+        })
+        showValidationBanner(message)
+        return
+      }
       const validationMessage = validateSellListingForm(
         { listingType: "board", ...fd },
         {
@@ -755,6 +785,22 @@ export default function QuickListClient() {
       if (imagesInsertError) {
         await supabase.from("listings").delete().eq("id", listingId).eq("user_id", user.id)
         throw new Error(sellSubmitErrorMessage(imagesInsertError, "Failed to save listing photos"))
+      }
+
+      if (readyVideo) {
+        const { error: videoInsertError } = await supabase.from("listing_videos").insert({
+          listing_id: listingId,
+          url: readyVideo.url,
+          thumbnail_url: readyVideo.thumbnailUrl,
+          content_type: readyVideo.contentType,
+          duration_seconds: readyVideo.durationSeconds,
+          byte_size: readyVideo.byteSize,
+          sort_order: 0,
+        })
+        if (videoInsertError) {
+          await supabase.from("listings").delete().eq("id", listingId).eq("user_id", user.id)
+          throw new Error(sellSubmitErrorMessage(videoInsertError, "Failed to save listing video"))
+        }
       }
 
       requestKlaviyoListingCreated(listingId)
@@ -910,6 +956,14 @@ export default function QuickListClient() {
             minPhotos={LISTING_MIN_PHOTOS}
           />
 
+          <SellListingVideoField
+            video={video}
+            fileInputId={listingVideoInputId}
+            onInputChange={handleVideoInputChange}
+            onRemove={handleVideoRemove}
+            onRetry={handleVideoRetry}
+          />
+
           <QuickEssentialCard
             title="Title"
             complete={
@@ -1043,7 +1097,7 @@ export default function QuickListClient() {
           <QuickPublishBar
             missing={missingEssentials}
             // Guests keep photos local (`pending_auth`) until sign-up — that is not uploading.
-            uploadingPhotos={uploadingCount > 0}
+            uploadingPhotos={uploadingCount > 0 || videoUploading}
             publishing={publishing}
           />
 

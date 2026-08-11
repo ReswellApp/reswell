@@ -26,6 +26,9 @@ import { SellFormSection } from "@/components/features/sell/sell-form-section"
 import { SellListingPhotoEmptyDropzone } from "@/components/features/sell/sell-listing-photo-empty-dropzone"
 import { SellShippingCostModeRadios } from "@/components/features/sell/sell-shipping-cost-mode-radios"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
+import { SellListingVideoField } from "@/components/features/sell/sell-listing-video-field"
+import { useListingVideoUpload } from "@/components/features/sell/hooks/use-listing-video-upload"
+import { createEmptyListingVideoSlot } from "@/lib/sell-flow/listing-video-slot"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellApparelFacetFields } from "@/components/features/sell/sell-apparel-facet-fields"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
@@ -244,6 +247,35 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
   const [actorIsAdmin, setActorIsAdmin] = useState<boolean | null>(null)
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
 
+  const sellVideoReturnPath = useCallback(
+    () =>
+      typeof window === "undefined"
+        ? editId
+          ? `/sell/apparel?edit=${editId}`
+          : "/sell/apparel"
+        : `${window.location.pathname}${window.location.search}`,
+    [editId],
+  )
+  const videoUpload = useListingVideoUpload({
+    signInReturnPath: sellVideoReturnPath,
+    openSignIn: signIn,
+    supabase: supabaseRef.current,
+    promptSignInOnUpload: false,
+  })
+  const {
+    video,
+    removedVideoIds,
+    videoUploadReady,
+    videoUploading,
+    readyVideo,
+    handleVideoInputChange,
+    handleVideoRemove,
+    handleVideoRetry,
+    hydrateExistingVideo,
+  } = videoUpload
+  const videoFileInputId = useId()
+
+
   const photosRef = useRef<PhotoSlot[]>([])
   photosRef.current = photos
 
@@ -402,11 +434,44 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
           }
         })
 
+
+      const existingVideos = (
+        (listing.listing_videos as Array<{
+          id: string
+          url: string
+          thumbnail_url?: string | null
+          content_type?: string | null
+          duration_seconds?: number | null
+          byte_size?: number | null
+          sort_order?: number | null
+        }> | null) ?? []
+      )
+        .slice()
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      const firstVideo = existingVideos[0]
+      if (firstVideo?.url?.trim()) {
+        const thumb = firstVideo.thumbnail_url?.trim() || null
+        hydrateExistingVideo(
+          createEmptyListingVideoSlot({
+            id: firstVideo.id,
+            status: "ready",
+            url: firstVideo.url,
+            thumbnailUrl: thumb,
+            previewUrl: thumb || firstVideo.url,
+            contentType: firstVideo.content_type ?? null,
+            durationSeconds: firstVideo.duration_seconds ?? null,
+            byteSize: firstVideo.byte_size ?? null,
+          }),
+        )
+      } else {
+        hydrateExistingVideo(null)
+      }
+
       setPhotos(existingImages)
       setRemovedImageIds([])
       return { status: "ready" as const }
     },
-    [router],
+    [hydrateExistingVideo, router],
   )
 
   const { editLoading, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
@@ -642,6 +707,10 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       failValidation("Hang tight — your photos are still uploading.")
       return
     }
+    if (!videoUploadReady || videoUploading) {
+      failValidation("Hang tight — your video is still uploading.")
+      return
+    }
     if (!form.title.trim()) {
       failValidation("Add a title.")
       scrollApparelSellSectionIntoView("sell-apparel-section-photos-title")
@@ -734,6 +803,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
         isPrimary: index === 0,
         sortOrder: index,
       })),
+      videos: readyVideo ? [readyVideo] : [],
     }
 
     setSubmitting(true)
@@ -785,6 +855,8 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
               listing: buildApparelListingPersistFields(payload, { allowPrivilegedShippingModes: true }),
               removedImageIds,
               images: imageOps,
+              removedVideoIds,
+              videos: payload.videos,
             }),
           })
           const data = (await res.json().catch(() => ({}))) as { error?: string; slug?: string }
@@ -825,6 +897,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
           ...payload,
           listingId: editId,
           removedImageIds,
+          removedVideoIds,
         })
         if ("error" in result) {
           const message = sellActionErrorMessage(result.error)
@@ -859,6 +932,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
           url: img.url,
           thumbnailUrl: img.thumbnailUrl,
         })),
+        videos: payload.videos,
         title: payload.title,
         section: "apparel",
         bulkSlotId,
@@ -1087,6 +1161,15 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
                     </div>
                     )}
                   </div>
+
+
+                  <SellListingVideoField
+                    video={video}
+                    fileInputId={videoFileInputId}
+                    onInputChange={handleVideoInputChange}
+                    onRemove={handleVideoRemove}
+                    onRetry={handleVideoRetry}
+                  />
 
                   <Separator className="bg-border" />
 
@@ -1418,6 +1501,11 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
                   {uploadingCount > 0 ? (
                     <p className="text-center text-xs text-muted-foreground">
                       {uploadingCount} photo{uploadingCount > 1 ? "s" : ""} still uploading…
+                    </p>
+                  ) : null}
+                  {videoUploading ? (
+                    <p className="text-center text-xs text-muted-foreground">
+                      Video still uploading…
                     </p>
                   ) : null}
                 </div>

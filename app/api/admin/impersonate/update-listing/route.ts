@@ -10,6 +10,10 @@ import {
 } from "@/lib/listing-dimensions-display"
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
 import { syncListingImages } from "@/lib/services/sync-listing-images"
+import {
+  listingVideosToUpdateOps,
+  syncListingVideos,
+} from "@/lib/services/sync-listing-videos"
 import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalog-snapshot"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import {
@@ -64,6 +68,8 @@ export async function PUT(request: NextRequest) {
     listing: listingData,
     removedImageIds = [],
     images = [],
+    removedVideoIds = [],
+    videos = [],
     catalog_snapshot,
     publishFromDraft = false,
   } = body as {
@@ -77,6 +83,16 @@ export async function PUT(request: NextRequest) {
       is_primary: boolean
       sort_order: number
     }[]
+    removedVideoIds?: string[]
+    videos?: Array<{
+      id?: string
+      url: string
+      thumbnailUrl?: string | null
+      contentType?: string | null
+      durationSeconds?: number | null
+      byteSize?: number | null
+      sortOrder?: number
+    }>
     catalog_snapshot?: SellFormBoardCatalogSlice
     publishFromDraft?: boolean
   }
@@ -234,6 +250,15 @@ export async function PUT(request: NextRequest) {
       sortOrder: img.sort_order,
     })),
   )
+
+  if (removedVideoIds.length > 0 || videos.length > 0) {
+    await syncListingVideos(
+      service,
+      listingId,
+      removedVideoIds,
+      listingVideosToUpdateOps(videos),
+    )
+  }
 
   if (
     String(listingData?.section ?? "") === "surfboards" &&

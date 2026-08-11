@@ -8,6 +8,16 @@ export type OwnedListingImageRow = {
   sort_order?: number | null
 }
 
+export type OwnedListingVideoRow = {
+  id: string
+  url: string
+  thumbnail_url?: string | null
+  content_type?: string | null
+  duration_seconds?: number | null
+  byte_size?: number | null
+  sort_order?: number | null
+}
+
 /** Listing row shape returned for sell-flow edit hydration. */
 export type OwnedListingForEditRow = {
   id: string
@@ -48,6 +58,7 @@ export type OwnedListingForEditRow = {
   category_id?: string | null
   board_type?: string | null
   listing_images?: OwnedListingImageRow[] | null
+  listing_videos?: OwnedListingVideoRow[] | null
   user_listing_board_model_data?:
     | {
         model_name?: string | null
@@ -89,6 +100,7 @@ export async function fetchOwnedListingForEdit(
       `
       *,
       listing_images (id, url, thumbnail_url, is_primary, sort_order),
+      listing_videos (id, url, thumbnail_url, content_type, duration_seconds, byte_size, sort_order),
       user_listing_board_model_data ( model_name, catalog_model_slug, catalog_brand_slug ),
       brand_models ( id, name, brands ( slug ) )
     `,

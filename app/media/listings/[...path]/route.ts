@@ -20,6 +20,9 @@ const PUBLIC_LISTINGS_MARKER = "/storage/v1/object/public/listings/"
 function contentTypeFallback(filename: string): string {
   const lower = filename.toLowerCase()
   if (lower.endsWith(".webp")) return "image/webp"
+  if (lower.endsWith(".mp4")) return "video/mp4"
+  if (lower.endsWith(".mov")) return "video/quicktime"
+  if (lower.endsWith(".webm")) return "video/webm"
   return "image/jpeg"
 }
 

@@ -18,7 +18,8 @@ const CATALOG_LISTING_SELECT = `
   hidden_from_site,
   brand,
   condition,
-  listing_images ( url, thumbnail_url, is_primary, sort_order )
+  listing_images ( url, thumbnail_url, is_primary, sort_order ),
+  listing_videos ( url, thumbnail_url, sort_order, duration_seconds )
 `.trim()
 
 export type MetaCatalogFeedPageResult = {

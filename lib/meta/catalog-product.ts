@@ -4,7 +4,10 @@
 
 import { listingDetailHref } from "@/lib/listing-href"
 import { primaryListingImageUrl } from "@/lib/listing-metadata"
-import { absoluteProxiedListingMediaUrl } from "@/lib/listing-media-proxy-url"
+import {
+  absoluteProxiedListingMediaUrl,
+  listingDirectPublicImageUrl,
+} from "@/lib/listing-media-proxy-url"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 
 export type MetaListingImage = {
@@ -12,6 +15,13 @@ export type MetaListingImage = {
   thumbnail_url?: string | null
   is_primary?: boolean | null
   sort_order?: number | null
+}
+
+export type MetaListingVideo = {
+  url?: string | null
+  thumbnail_url?: string | null
+  sort_order?: number | null
+  duration_seconds?: number | null
 }
 
 export type MetaListingProductSource = {
@@ -27,6 +37,7 @@ export type MetaListingProductSource = {
   status?: string | null
   hidden_from_site?: boolean | null
   listing_images?: MetaListingImage[] | null
+  listing_videos?: MetaListingVideo[] | null
 }
 
 /** Meta Commerce catalog row (required fields for dynamic ads / catalog sales). */
@@ -45,6 +56,8 @@ export type MetaCatalogFeedItem = {
   identifier_exists: "no"
   /** Product-set filter for Meta Ads — e.g. Hayden Garfield shop only. */
   custom_label_0?: string
+  /** Direct downloadable video file URL (Meta Advantage+ catalog ads). */
+  "video[0].url"?: string
 }
 
 /** Optional feed-build context (seller → custom_label_0). */
@@ -218,6 +231,23 @@ function additionalImageLinks(listing: MetaListingProductSource, primary: string
   return unique.join(",")
 }
 
+/** Direct public storage URL — Meta requires a downloadable file, not a player page. */
+function absoluteCatalogVideoUrl(raw: string | null | undefined): string | null {
+  if (!raw?.trim()) return null
+  return listingDirectPublicImageUrl(raw.trim()) ?? absoluteProxiedListingMediaUrl(raw.trim()) ?? null
+}
+
+function primaryVideoLink(listing: MetaListingProductSource): string | undefined {
+  const videos = listing.listing_videos ?? []
+  if (videos.length === 0) return undefined
+  const sorted = videos.slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+  for (const video of sorted) {
+    const link = absoluteCatalogVideoUrl(video.url)
+    if (link) return link
+  }
+  return undefined
+}
+
 function catalogDescription(listing: MetaListingProductSource): string {
   const raw =
     typeof listing.description === "string" ? listing.description.trim() : ""
@@ -259,6 +289,7 @@ export function listingToMetaCatalogFeedItem(
 
   const brand = typeof listing.brand === "string" ? listing.brand.trim() : ""
   const customLabel0 = getMetaCatalogCustomLabel0ForListing(listing, context)
+  const videoLink = primaryVideoLink(listing)
 
   return {
     id: listing.id,
@@ -276,5 +307,6 @@ export function listingToMetaCatalogFeedItem(
     additional_image_link: additionalImageLinks(listing, imageLink),
     identifier_exists: "no",
     ...(customLabel0 ? { custom_label_0: customLabel0 } : {}),
+    ...(videoLink ? { "video[0].url": videoLink } : {}),
   }
 }

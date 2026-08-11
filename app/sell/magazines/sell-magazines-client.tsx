@@ -27,9 +27,12 @@ import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-sessi
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
+import { SellListingVideoField } from "@/components/features/sell/sell-listing-video-field"
 import { SELL_PAGE_GROUND_CLASS, SELL_CONTROL_CLASS } from "@/components/features/sell/sell-form-surface"
 import { cn } from "@/lib/utils"
 import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
+import { useListingVideoUpload } from "@/components/features/sell/hooks/use-listing-video-upload"
+import { createEmptyListingVideoSlot } from "@/lib/sell-flow/listing-video-slot"
 import { useSellAccessoryDraftRecovery } from "@/components/features/sell/hooks/use-sell-accessory-draft-recovery"
 import type { SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
 import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
@@ -146,6 +149,25 @@ export default function SellMagazinesFlow({
     hydrateExistingImages,
   } = photoUpload
 
+  const videoUpload = useListingVideoUpload({
+    signInReturnPath: magazineSellReturnPath,
+    openSignIn: signIn,
+    supabase: supabaseRef.current,
+    promptSignInOnUpload: false,
+  })
+  const {
+    video,
+    removedVideoIds,
+    videoUploadReady,
+    videoUploading,
+    readyVideo,
+    handleVideoInputChange,
+    handleVideoRemove,
+    handleVideoRetry,
+    hydrateExistingVideo,
+  } = videoUpload
+  const videoFileInputId = useId()
+
   const restoreMagazineDraftForm = useCallback((snapshot: SellListingDraftFormSnapshot) => {
     setForm(magazineFormFromDraftSnapshot(snapshot))
   }, [])
@@ -226,10 +248,42 @@ export default function SellMagazinesFlow({
           }),
         )
 
+      const existingVideos = (
+        (listing.listing_videos as Array<{
+          id: string
+          url: string
+          thumbnail_url?: string | null
+          content_type?: string | null
+          duration_seconds?: number | null
+          byte_size?: number | null
+          sort_order?: number | null
+        }> | null) ?? []
+      )
+        .slice()
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      const firstVideo = existingVideos[0]
+      if (firstVideo?.url?.trim()) {
+        const thumb = firstVideo.thumbnail_url?.trim() || null
+        hydrateExistingVideo(
+          createEmptyListingVideoSlot({
+            id: firstVideo.id,
+            status: "ready",
+            url: firstVideo.url,
+            thumbnailUrl: thumb,
+            previewUrl: thumb || firstVideo.url,
+            contentType: firstVideo.content_type ?? null,
+            durationSeconds: firstVideo.duration_seconds ?? null,
+            byteSize: firstVideo.byte_size ?? null,
+          }),
+        )
+      } else {
+        hydrateExistingVideo(null)
+      }
+
       hydrateExistingImages(existingImages)
       return { status: "ready" as const }
     },
-    [hydrateExistingImages, router],
+    [hydrateExistingImages, hydrateExistingVideo, router],
   )
 
   const { editLoading, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
@@ -258,6 +312,7 @@ export default function SellMagazinesFlow({
       isPrimary: index === 0,
       sortOrder: index,
     })),
+    videos: readyVideo ? [readyVideo] : [],
   })
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -292,6 +347,10 @@ export default function SellMagazinesFlow({
       failValidation("Hang tight — your photos are still uploading.")
       return
     }
+    if (!videoUploadReady || videoUploading) {
+      failValidation("Hang tight — your video is still uploading.")
+      return
+    }
 
     setSubmitting(true)
     try {
@@ -302,6 +361,7 @@ export default function SellMagazinesFlow({
           ...payload,
           listingId: editId,
           removedImageIds,
+          removedVideoIds,
         })
         if ("error" in result) {
           const message = sellActionErrorMessage(result.error)
@@ -446,6 +506,14 @@ export default function SellMagazinesFlow({
           photoDescription="Add cover and interior shots. Drag to reorder — the first photo is the main image on browse tiles."
         />
 
+        <SellListingVideoField
+          video={video}
+          fileInputId={videoFileInputId}
+          onInputChange={handleVideoInputChange}
+          onRemove={handleVideoRemove}
+          onRetry={handleVideoRetry}
+        />
+
         <div className="space-y-2">
           <Label htmlFor="magazine-title">Title *</Label>
           <Input
@@ -568,7 +636,7 @@ export default function SellMagazinesFlow({
         </div>
 
         <div className="flex flex-wrap items-center gap-3 pt-2">
-          <Button type="submit" disabled={submitting || uploadingCount > 0}>
+          <Button type="submit" disabled={submitting || uploadingCount > 0 || videoUploading}>
             {submitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />

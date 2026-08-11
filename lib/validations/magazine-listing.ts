@@ -1,5 +1,9 @@
 import { z } from "zod"
 import { magazineListingFixedReswellPackageFormFields } from "@/lib/magazine-listing-config"
+import {
+  listingRemovedVideoIdsSchema,
+  listingVideosFieldSchema,
+} from "@/lib/validations/listing-video"
 
 export const MAGAZINE_LISTING_TITLE_MAX_LENGTH = 120
 export const MAGAZINE_LISTING_MIN_PHOTOS = 1
@@ -34,11 +38,13 @@ const magazineListingBaseSchema = z.object({
     .array(magazineListingImageSchema)
     .min(MAGAZINE_LISTING_MIN_PHOTOS, "Add at least one photo")
     .max(MAGAZINE_LISTING_MAX_PHOTOS),
+  videos: listingVideosFieldSchema,
 })
 
 const magazineListingUpdateBaseSchema = magazineListingBaseSchema.extend({
   listingId: z.string().uuid(),
   removedImageIds: z.array(z.string().uuid()).optional().default([]),
+  removedVideoIds: listingRemovedVideoIdsSchema,
 })
 
 const applyMagazineFixedPackageFields = <T extends z.infer<typeof magazineListingBaseSchema>>(

@@ -4,6 +4,8 @@ import {
   googleMerchantListingImageUrl,
 } from "@/lib/google-merchant/product-image-link"
 import type { ListingImageForCard } from "@/lib/listing-image-display"
+import { listingDirectPublicImageUrl } from "@/lib/listing-media-proxy-url"
+import { LISTING_VIDEO_MIN_DURATION_SECONDS } from "@/lib/listing-video-constants"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
 import {
@@ -51,6 +53,12 @@ export type GoogleMerchantListingRow = {
   state?: string | null
   local_pickup?: boolean | null
   listing_images?: GoogleMerchantListingImage[] | null
+  listing_videos?: Array<{
+    url?: string | null
+    thumbnail_url?: string | null
+    sort_order?: number | null
+    duration_seconds?: number | null
+  }> | null
 }
 
 type GoogleMerchantPrice = {
@@ -80,6 +88,7 @@ export type GoogleMerchantProductInputPayload = {
     link: string
     imageLink: string
     additionalImageLinks?: string[]
+    videoLinks?: string[]
     availability: "IN_STOCK" | "OUT_OF_STOCK"
     condition: GoogleMerchantCondition
     price: GoogleMerchantPrice
@@ -154,6 +163,30 @@ function additionalImageLinks(
   const unique = [...new Set(extras)]
   if (unique.length === 0) return undefined
   return unique.slice(0, maxAdditional)
+}
+
+function listingVideoLinks(listing: GoogleMerchantListingRow): string[] | undefined {
+  const videos = listing.listing_videos ?? []
+  if (videos.length === 0) return undefined
+
+  const sorted = videos.slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+  const links: string[] = []
+  for (const video of sorted) {
+    const duration = video.duration_seconds
+    if (
+      typeof duration === "number" &&
+      Number.isFinite(duration) &&
+      duration < LISTING_VIDEO_MIN_DURATION_SECONDS
+    ) {
+      continue
+    }
+    const raw = video.url?.trim()
+    if (!raw) continue
+    const link = listingDirectPublicImageUrl(raw) ?? absoluteImageUrl(raw)
+    if (link) links.push(link)
+  }
+  if (links.length === 0) return undefined
+  return links.slice(0, 10)
 }
 
 function listingBrand(listing: GoogleMerchantListingRow): string | null {
@@ -273,6 +306,7 @@ export function mapListingToProductInput(
   const shipping = mapListingShippingAttributes(listing)
   const taxes = mapListingTaxAttributes()
   const additionalImages = additionalImageLinks(listing, imageLink)
+  const videoLinks = listingVideoLinks(listing)
   const customLabel0 = getGoogleMerchantCustomLabel0ForSection(listing.section)
 
   return {
@@ -285,6 +319,7 @@ export function mapListingToProductInput(
       link,
       imageLink,
       ...(additionalImages ? { additionalImageLinks: additionalImages } : {}),
+      ...(videoLinks ? { videoLinks } : {}),
       availability: "IN_STOCK",
       condition: mapListingConditionToGoogleMerchant(listing.condition),
       price: {

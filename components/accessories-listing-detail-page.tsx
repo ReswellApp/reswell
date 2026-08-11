@@ -26,6 +26,10 @@ import { ShareButton } from "@/components/share-button"
 import { ListingOwnerManageActions } from "@/components/features/listings/listing-owner-manage-actions"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ImageGallery } from "@/components/image-gallery"
+import {
+  ListingPdpVideo,
+  primaryListingVideo,
+} from "@/components/features/listings/listing-pdp-video"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
@@ -191,6 +195,20 @@ export async function AccessoriesListingDetailPage({
           (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) ||
           (a.sort_order ?? 0) - (b.sort_order ?? 0),
       ) || []
+
+  const video = primaryListingVideo(
+    (
+      accessory as {
+        listing_videos?: Array<{
+          id: string
+          url: string
+          thumbnail_url?: string | null
+          content_type?: string | null
+          sort_order?: number | null
+        }>
+      }
+    ).listing_videos,
+  )
 
   const isOwnListing = user?.id === accessory.user_id
 
@@ -372,6 +390,11 @@ export async function AccessoriesListingDetailPage({
               <ListingPhotosPendingBanner imageCount={images.length} isOwner={isOwnListing} />
             )}
             <div className="relative isolate">
+              {video ? (
+                <div className="mb-3 md:mb-4">
+                  <ListingPdpVideo video={video} title={listingTitle} />
+                </div>
+              ) : null}
               <ImageGallery
                 images={images}
                 title={listingTitle}

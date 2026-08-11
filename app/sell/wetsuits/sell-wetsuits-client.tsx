@@ -31,7 +31,10 @@ import { sellCatalogSearchCategoryLabel } from "@/lib/types/sell-catalog-search"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellWetsuitsFacetFields } from "@/components/features/sell/sell-wetsuits-facet-fields"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
+import { SellListingVideoField } from "@/components/features/sell/sell-listing-video-field"
 import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-listing-photo-upload"
+import { useListingVideoUpload } from "@/components/features/sell/hooks/use-listing-video-upload"
+import { createEmptyListingVideoSlot } from "@/lib/sell-flow/listing-video-slot"
 import { useSellAccessoryDraftRecovery } from "@/components/features/sell/hooks/use-sell-accessory-draft-recovery"
 import type { SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
@@ -279,6 +282,25 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     hydrateExistingImages,
   } = photoUpload
 
+  const videoUpload = useListingVideoUpload({
+    signInReturnPath: wetsuitSellReturnPath,
+    openSignIn: signIn,
+    supabase: supabaseRef.current,
+    promptSignInOnUpload: false,
+  })
+  const {
+    video,
+    removedVideoIds,
+    videoUploadReady,
+    videoUploading,
+    readyVideo,
+    handleVideoInputChange,
+    handleVideoRemove,
+    handleVideoRetry,
+    hydrateExistingVideo,
+  } = videoUpload
+  const videoFileInputId = useId()
+
   const restoreWetsuitDraftForm = useCallback((snapshot: SellListingDraftFormSnapshot) => {
     setForm(wetsuitFormFromDraftSnapshot(snapshot))
   }, [])
@@ -392,10 +414,42 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
           }),
         )
 
+      const existingVideos = (
+        (listing.listing_videos as Array<{
+          id: string
+          url: string
+          thumbnail_url?: string | null
+          content_type?: string | null
+          duration_seconds?: number | null
+          byte_size?: number | null
+          sort_order?: number | null
+        }> | null) ?? []
+      )
+        .slice()
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+      const firstVideo = existingVideos[0]
+      if (firstVideo?.url?.trim()) {
+        const thumb = firstVideo.thumbnail_url?.trim() || null
+        hydrateExistingVideo(
+          createEmptyListingVideoSlot({
+            id: firstVideo.id,
+            status: "ready",
+            url: firstVideo.url,
+            thumbnailUrl: thumb,
+            previewUrl: thumb || firstVideo.url,
+            contentType: firstVideo.content_type ?? null,
+            durationSeconds: firstVideo.duration_seconds ?? null,
+            byteSize: firstVideo.byte_size ?? null,
+          }),
+        )
+      } else {
+        hydrateExistingVideo(null)
+      }
+
       hydrateExistingImages(existingImages)
       return { status: "ready" as const }
     },
-    [hydrateExistingImages, router],
+    [hydrateExistingImages, hydrateExistingVideo, router],
   )
 
   const { editLoading, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
@@ -515,6 +569,10 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
       failValidation("Hang tight — your photos are still uploading.")
       return
     }
+    if (!videoUploadReady || videoUploading) {
+      failValidation("Hang tight — your video is still uploading.")
+      return
+    }
     if (!form.title.trim()) {
       failValidation("Add a title.")
       scrollWetsuitSellSectionIntoView("sell-wetsuits-section-photos-title")
@@ -592,6 +650,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
         isPrimary: index === 0,
         sortOrder: index,
       })),
+      videos: readyVideo ? [readyVideo] : [],
     }
 
     setSubmitting(true)
@@ -643,6 +702,8 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
               listing: buildWetsuitListingPersistFields(payload, { allowPrivilegedShippingModes: true }),
               removedImageIds,
               images: imageOps,
+              removedVideoIds,
+              videos: payload.videos,
             }),
           })
           const data = (await res.json().catch(() => ({}))) as { error?: string; slug?: string }
@@ -688,6 +749,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
           ...payload,
           listingId: editId,
           removedImageIds,
+          removedVideoIds,
         })
         if ("error" in result) {
           const message = sellActionErrorMessage(result.error)
@@ -727,6 +789,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
           url: img.url,
           thumbnailUrl: img.thumbnailUrl,
         })),
+        videos: payload.videos,
         title: payload.title,
         section: "wetsuits",
         bulkSlotId,
@@ -855,6 +918,14 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
                     onRotate180={handlePhotoTileRotate}
                     photoDragSensors={photoDragSensors}
                     photoDescription="Add clear photos. Drag to reorder — the first image is your main photo on browse tiles."
+                  />
+
+                  <SellListingVideoField
+                    video={video}
+                    fileInputId={videoFileInputId}
+                    onInputChange={handleVideoInputChange}
+                    onRemove={handleVideoRemove}
+                    onRetry={handleVideoRetry}
                   />
 
                   <Separator className="bg-border" />
@@ -1106,6 +1177,11 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
                   {uploadingCount > 0 ? (
                     <p className="text-center text-xs text-muted-foreground">
                       {uploadingCount} photo{uploadingCount > 1 ? "s" : ""} still uploading…
+                    </p>
+                  ) : null}
+                  {videoUploading ? (
+                    <p className="text-center text-xs text-muted-foreground">
+                      Video still uploading…
                     </p>
                   ) : null}
                 </div>

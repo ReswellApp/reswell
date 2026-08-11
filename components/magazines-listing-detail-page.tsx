@@ -25,6 +25,10 @@ import { ShareButton } from "@/components/share-button"
 import { ListingOwnerManageActions } from "@/components/features/listings/listing-owner-manage-actions"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ImageGallery } from "@/components/image-gallery"
+import {
+  ListingPdpVideo,
+  primaryListingVideo,
+} from "@/components/features/listings/listing-pdp-video"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
 import { listingTileFavoriteButtonChromeClassName } from "@/components/favorite-button-card-overlay"
@@ -179,6 +183,20 @@ export async function MagazinesListingDetailPage({
           (a.sort_order ?? 0) - (b.sort_order ?? 0),
       ) || []
 
+  const video = primaryListingVideo(
+    (
+      magazine as {
+        listing_videos?: Array<{
+          id: string
+          url: string
+          thumbnail_url?: string | null
+          content_type?: string | null
+          sort_order?: number | null
+        }>
+      }
+    ).listing_videos,
+  )
+
   const isOwnListing = user?.id === magazine.user_id
 
   const shippingOffered = !!magazine.shipping_available
@@ -327,6 +345,11 @@ export async function MagazinesListingDetailPage({
               <ListingPhotosPendingBanner imageCount={images.length} isOwner={isOwnListing} />
             )}
             <div className="relative isolate">
+              {video ? (
+                <div className="mb-3 md:mb-4">
+                  <ListingPdpVideo video={video} title={listingTitle} />
+                </div>
+              ) : null}
               <ImageGallery
                 images={images}
                 title={listingTitle}
