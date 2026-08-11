@@ -115,6 +115,12 @@ export const GOOGLE_MERCHANT_DEFAULT_WETSUITS_CUSTOM_LABEL = "Wetsuits"
 export const GOOGLE_MERCHANT_DEFAULT_MAGAZINES_CUSTOM_LABEL = "Magazines"
 export const GOOGLE_MERCHANT_DEFAULT_FINS_CUSTOM_LABEL = "Fins"
 
+/** Default customLabel1 for OutSurfing shop listings (Shopping / PMax seller filter). */
+export const GOOGLE_MERCHANT_DEFAULT_OUTSURFING_SHOP_CUSTOM_LABEL = "OutSurfing"
+
+/** Profile email for OutSurfing’s seller shop (fallback when USER_ID env unset). */
+export const GOOGLE_MERCHANT_OUTSURFING_SHOP_SELLER_EMAIL = "davidacason@gmail.com"
+
 /**
  * Merchant Center `customLabel0` for a listing section.
  * Used to segment surfboards, wetsuits, magazines, and fins in Google Ads.
@@ -144,6 +150,18 @@ export function getGoogleMerchantCustomLabel0ForSection(section: string): string
     default:
       return undefined
   }
+}
+
+/**
+ * Merchant Center `customLabel1` for OutSurfing shop listings.
+ * Override with `GOOGLE_MERCHANT_OUTSURFING_SHOP_CUSTOM_LABEL`.
+ * Use in Google Ads: listing group / asset group filter Custom label 1 = OutSurfing.
+ */
+export function getGoogleMerchantOutSurfingShopCustomLabel(): string {
+  return (
+    process.env.GOOGLE_MERCHANT_OUTSURFING_SHOP_CUSTOM_LABEL?.trim() ||
+    GOOGLE_MERCHANT_DEFAULT_OUTSURFING_SHOP_CUSTOM_LABEL
+  )
 }
 
 export function getGoogleMerchantDeveloperEmail(): string | null {

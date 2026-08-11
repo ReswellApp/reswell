@@ -12,11 +12,6 @@ import {
   LISTING_TITLE_MAX_LENGTH,
   type SellFormValidationInput,
 } from "@/lib/sell-form-validation"
-import { parseSurfboardShippingTierId } from "@/lib/surfboard-shipping-tiers"
-import {
-  parseSurfboardShippingPackBandId,
-  surfboardShippingPackBandBoardSpecsError,
-} from "@/lib/surfboard-shipping-pack-bands"
 import {
   isReswellPackedWeightComplete,
   parseReswellParcelLengthRawToCarrierInches,
@@ -31,16 +26,10 @@ function titleComplete(form: SellFormValidationInput): boolean {
   return buildResolvedListingTitle(form).length <= LISTING_TITLE_MAX_LENGTH
 }
 
-function brandModelComplete(form: SellFormValidationInput): boolean {
-  const model = form.boardModelName?.trim() ?? ""
-  if (
-    !form.brand?.trim() ||
-    !model ||
-    model.length > LISTING_BOARD_MODEL_MAX_LENGTH
-  ) {
-    return false
-  }
-  return true
+/** Brand/model are optional; only block when free-text model exceeds the max length. */
+function brandModelWithinLimits(form: SellFormValidationInput): boolean {
+  const model = form.boardModelName ?? ""
+  return model.length <= LISTING_BOARD_MODEL_MAX_LENGTH
 }
 
 function shapeSectionComplete(form: SellFormValidationInput): boolean {
@@ -118,29 +107,13 @@ function deliverySectionComplete(form: SellFormValidationInput): boolean {
       const raw = String(form.boardShippingPrice ?? "").trim().replace(/,/g, "")
       const n = Number.parseFloat(raw)
       if (!raw || !Number.isFinite(n) || n < 0) return false
-    } else if (form.adminCustomShippingCarton === true) {
-      // Admin custom carton — packed L×W×H + weight.
-      if (!form.boardLength.trim()) return false
+    } else {
+      // Reswell — seller-entered packed L×W×H + weight (no pack-band autofill).
       const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
       const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
       const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
       if (L == null || L <= 0 || W == null || W <= 0 || H == null || H <= 0) return false
       if (!isReswellPackedWeightComplete(form.reswellPackageWeightLb, form.reswellPackageWeightOz)) {
-        return false
-      }
-    } else {
-      // Reswell mode only — UPS shortboard pack bands (free/flat skip this).
-      if (!form.boardLength.trim()) return false
-      if (parseSurfboardShippingTierId(form.surfboardShippingTier) !== "shortboard") return false
-      const bandId = parseSurfboardShippingPackBandId(form.surfboardShippingPackBand)
-      if (!bandId) return false
-      if (
-        surfboardShippingPackBandBoardSpecsError({
-          bandId,
-          boardLength: form.boardLength,
-          boardWidthInches: form.boardWidthInches,
-        })
-      ) {
         return false
       }
     }
@@ -182,7 +155,7 @@ export function computeSellSectionCompletion(
   return {
     "sell-section-product":
       titleComplete(form) &&
-      brandModelComplete(form) &&
+      brandModelWithinLimits(form) &&
       conditionComplete(form) &&
       shapeSectionComplete(form),
     "sell-section-photos":
@@ -215,12 +188,6 @@ export function computeSellStepChecklist(
   const shippingEnabled = flagsFromBoardFulfillment(form.boardFulfillment).shipping_available
 
   const product: SellStepChecklistItem[] = [
-    {
-      id: "brand-model",
-      label: "Brand and model",
-      complete: brandModelComplete(form),
-      sectionId: "sell-section-product",
-    },
     {
       id: "title",
       label: "Listing title",
@@ -291,7 +258,7 @@ export function computeSellStepChecklist(
     })
     shipping.push({
       id: "shipping-setup",
-      label: "Shipping setup",
+      label: "Package size and weight",
       complete: shippingConfigComplete,
       sectionId: "sell-section-shipping",
     })

@@ -1,20 +1,56 @@
 import { after } from "next/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { z } from "zod"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
   getGoogleMerchantListingById,
   listGoogleMerchantListingBatch,
 } from "@/lib/db/google-merchant-listings"
-import { isGoogleMerchantConfigured } from "@/lib/google-merchant/config"
+import {
+  GOOGLE_MERCHANT_OUTSURFING_SHOP_SELLER_EMAIL,
+  isGoogleMerchantConfigured,
+} from "@/lib/google-merchant/config"
 import {
   isGoogleMerchantEligibleListing,
   mapListingToProductInput,
+  type GoogleMerchantProductInputContext,
 } from "@/lib/google-merchant/map-listing-to-product-input"
 import {
   deleteGoogleMerchantProductInput,
   insertGoogleMerchantProductInput,
   listAllGoogleMerchantProducts,
 } from "@/lib/services/googleMerchantSetup"
+import { findUserIdByEmail } from "@/lib/services/resolveUserIdByEmail"
+
+/**
+ * Resolves OutSurfing’s seller profile id for Google Merchant `customLabel1`.
+ * Prefer `GOOGLE_MERCHANT_OUTSURFING_SHOP_USER_ID`, else email
+ * (`GOOGLE_MERCHANT_OUTSURFING_SHOP_SELLER_EMAIL` or davidacason@gmail.com).
+ */
+export async function resolveGoogleMerchantOutSurfingShopUserId(
+  supabase: SupabaseClient,
+): Promise<string | null> {
+  const byIdRaw = process.env.GOOGLE_MERCHANT_OUTSURFING_SHOP_USER_ID?.trim()
+  if (byIdRaw) {
+    const parsed = z.string().uuid().safeParse(byIdRaw)
+    if (parsed.success) return parsed.data
+    console.warn(
+      "[google-merchant] GOOGLE_MERCHANT_OUTSURFING_SHOP_USER_ID is not a valid UUID; falling back to email lookup",
+    )
+  }
+
+  const email =
+    process.env.GOOGLE_MERCHANT_OUTSURFING_SHOP_SELLER_EMAIL?.trim() ||
+    GOOGLE_MERCHANT_OUTSURFING_SHOP_SELLER_EMAIL
+  return findUserIdByEmail(supabase, email)
+}
+
+async function googleMerchantProductInputContext(
+  supabase: SupabaseClient,
+): Promise<GoogleMerchantProductInputContext> {
+  const outSurfingShopUserId = await resolveGoogleMerchantOutSurfingShopUserId(supabase)
+  return { outSurfingShopUserId }
+}
 
 export type GoogleMerchantSyncListingResult =
   | { action: "inserted" | "deleted" | "skipped"; offerId: string }
@@ -101,7 +137,8 @@ export async function syncListingToGoogleMerchant(
     return { action: "deleted", offerId: listingId }
   }
 
-  const productInput = mapListingToProductInput(listing)
+  const context = await googleMerchantProductInputContext(supabase)
+  const productInput = mapListingToProductInput(listing, context)
   if (!productInput) {
     const deleted = await deleteGoogleMerchantProductInput(listing.id)
     if (!deleted.ok && deleted.status !== 404) {
@@ -202,6 +239,7 @@ export async function syncAllActiveListingsToGoogleMerchant(
     return summary
   }
 
+  const context = await googleMerchantProductInputContext(supabase)
   const eligibleOfferIds = await collectEligibleOfferIds(supabase)
   const pageSize = 100
   let from = 0
@@ -217,7 +255,7 @@ export async function syncAllActiveListingsToGoogleMerchant(
         continue
       }
 
-      const productInput = mapListingToProductInput(listing)
+      const productInput = mapListingToProductInput(listing, context)
       if (!productInput) {
         summary.skipped += 1
         continue

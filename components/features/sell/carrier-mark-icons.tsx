@@ -19,6 +19,23 @@ export function UpsMark({ className }: { className?: string }) {
 }
 
 /**
+ * Compact USPS-style mark using brand palette (not a downloadable trademark asset).
+ */
+export function UspsMark({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn(
+        "flex h-9 min-w-[3.25rem] shrink-0 items-center justify-center rounded-md bg-[#333366] px-2 text-[10px] font-bold tracking-[0.08em] text-white",
+        className,
+      )}
+      aria-hidden
+    >
+      USPS
+    </div>
+  )
+}
+
+/**
  * FedEx-style purple / orange wordmark blocks (brand colors; stylized, not the official vector).
  */
 export function FedExMark({ className }: { className?: string }) {

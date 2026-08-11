@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { Label } from "@/components/ui/label"
-import { SellRequiredMark } from "@/components/features/sell/sell-required-mark"
 import { cn } from "@/lib/utils"
 import {
   getBrandModelsCatalogForSellForm,
@@ -119,15 +118,7 @@ export function SellBoardModelField({
   return (
     <div className="min-w-0 space-y-1.5">
       <div className="flex items-end justify-between gap-2">
-        <Label htmlFor="listing-board-model-select">
-          Model{" "}
-          <SellRequiredMark
-            complete={
-              Boolean(modelName.trim()) &&
-              modelName.length <= LISTING_BOARD_MODEL_MAX_LENGTH
-            }
-          />
-        </Label>
+        <Label htmlFor="listing-board-model-select">Model</Label>
         <span
           className={cn(
             "text-xs tabular-nums",

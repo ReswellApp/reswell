@@ -4,6 +4,7 @@ import type { GoogleMerchantListingRow } from "@/lib/google-merchant/map-listing
 
 const GOOGLE_MERCHANT_LISTING_SELECT = `
   id,
+  user_id,
   slug,
   title,
   description,

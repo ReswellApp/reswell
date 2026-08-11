@@ -10,12 +10,6 @@ import {
   parseVolumeLiters,
 } from "@/lib/board-measurements"
 import { isListingSellableCondition } from "@/lib/listing-labels"
-import { parseSurfboardShippingTierId } from "@/lib/surfboard-shipping-tiers"
-import {
-  parseSurfboardShippingPackBandId,
-  surfboardShippingPackBandBoardSpecsError,
-  surfboardShippingPackBandFixedParcel,
-} from "@/lib/surfboard-shipping-pack-bands"
 import {
   isReswellPackedWeightComplete,
   parseReswellPackedWeightToTotalOz,
@@ -78,7 +72,10 @@ export type SellFormValidationInput = {
   surfboardShippingPackBand?: string
   /** Seller confirmed packed board fits the selected shortboard pack band. */
   surfboardShippingPackBandCeilingConfirmed?: boolean
-  /** Admin-only: custom L×W×H/weight carton instead of a pack band. */
+  /**
+   * Manual packed L×W×H/weight carton (board `/sell` always uses this for Reswell shipping).
+   * Field name is historical.
+   */
   adminCustomShippingCarton?: boolean
   /** Scheduled price drop (2 weeks) — seller sets floor via `autoPriceDropFloor`. */
   autoPriceDrop: boolean
@@ -247,61 +244,31 @@ export function validateSellListingForm(
         return "Enter a flat shipping rate."
       }
     } else if (shippingMode !== "free") {
-      const reswellUpsBlockedMessage = allowPrivilegedShipping
-        ? "Reswell UPS shipping isn’t available for this board size. Select Free shipping or Flat-rate shipping (other carrier), or use local pickup."
-        : "Reswell UPS shipping isn’t available for this board — it exceeds size limits. Use local pickup."
-
-      // Admin custom carton — validate entered packed dims against UPS parcel limits.
-      if (allowPrivilegedShipping && form.adminCustomShippingCarton === true) {
-        const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
-        const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
-        const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
-        if (L == null || L <= 0) return "Enter packed box length in inches."
-        if (W == null || W <= 0) return "Enter packed box width in inches."
-        if (H == null || H <= 0) return "Enter packed box height in inches."
-        if (!isReswellPackedWeightComplete(form.reswellPackageWeightLb, form.reswellPackageWeightOz)) {
-          return "Enter packed box weight (lb and oz)."
-        }
-        const totalOz = parseReswellPackedWeightToTotalOz(
-          form.reswellPackageWeightLb,
-          form.reswellPackageWeightOz,
-        )
-        if (totalOz == null) return "Enter packed box weight (lb and oz)."
-        const limitCheck = validateSurfboardLabelParcelLimits({
-          lengthIn: L,
-          widthIn: W,
-          heightIn: H,
-          weightLb: totalOz / 16,
-        })
-        if (!limitCheck.ok) return limitCheck.error
-      } else {
-        // Default Reswell path — UPS shortboard pack bands (Compact/Medium).
-        const tierId = parseSurfboardShippingTierId(form.surfboardShippingTier)
-        if (tierId !== "shortboard") {
-          return reswellUpsBlockedMessage
-        }
-        const bandId = parseSurfboardShippingPackBandId(form.surfboardShippingPackBand)
-        if (!bandId) {
-          return allowPrivilegedShipping
-            ? "Reswell shipping isn’t set up for this board. Choose a pack size, enter a custom carton, or select Free / Flat-rate shipping."
-            : "Reswell shipping is still setting up — wait a moment or re-enter board length."
-        }
-        const bandErr = surfboardShippingPackBandBoardSpecsError({
-          bandId,
-          boardLength: form.boardLength,
-          boardWidthInches: form.boardWidthInches,
-        })
-        if (bandErr) return bandErr
-        const band = surfboardShippingPackBandFixedParcel(bandId)
-        const limitCheck = validateSurfboardLabelParcelLimits({
-          lengthIn: band.lengthIn,
-          widthIn: band.widthIn,
-          heightIn: band.heightIn,
-          weightLb: band.weightLb,
-        })
-        if (!limitCheck.ok) {
-          return reswellUpsBlockedMessage
-        }
+      // Board `/sell` Reswell shipping — seller-entered packed box only (no pack-band autofill).
+      const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
+      const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
+      const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
+      if (L == null || L <= 0) return "Enter packed box length in inches."
+      if (W == null || W <= 0) return "Enter packed box width in inches."
+      if (H == null || H <= 0) return "Enter packed box height in inches."
+      if (!isReswellPackedWeightComplete(form.reswellPackageWeightLb, form.reswellPackageWeightOz)) {
+        return "Enter packed box weight (lb and oz)."
+      }
+      const totalOz = parseReswellPackedWeightToTotalOz(
+        form.reswellPackageWeightLb,
+        form.reswellPackageWeightOz,
+      )
+      if (totalOz == null) return "Enter packed box weight (lb and oz)."
+      const limitCheck = validateSurfboardLabelParcelLimits({
+        lengthIn: L,
+        widthIn: W,
+        heightIn: H,
+        weightLb: totalOz / 16,
+      })
+      if (!limitCheck.ok) {
+        return allowPrivilegedShipping
+          ? `${limitCheck.error} Or select Free / Flat-rate shipping.`
+          : limitCheck.error
       }
     }
   }

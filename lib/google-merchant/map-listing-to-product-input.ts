@@ -14,6 +14,7 @@ import {
   getGoogleMerchantCustomLabel0ForSection,
   getGoogleMerchantEstimatedShippingUsdForSection,
   getGoogleMerchantFeedLabel,
+  getGoogleMerchantOutSurfingShopCustomLabel,
   getGoogleMerchantProductCategoryForSection,
   getGoogleMerchantUsTaxRate,
   isGoogleMerchantPeerSection,
@@ -28,6 +29,7 @@ export type GoogleMerchantListingImage = ListingImageForCard & {
 
 export type GoogleMerchantListingRow = {
   id: string
+  user_id?: string | null
   slug: string | null
   title: string
   description: string | null
@@ -59,6 +61,11 @@ export type GoogleMerchantListingRow = {
     sort_order?: number | null
     duration_seconds?: number | null
   }> | null
+}
+
+/** Optional sync context (seller → customLabel1). */
+export type GoogleMerchantProductInputContext = {
+  outSurfingShopUserId: string | null
 }
 
 type GoogleMerchantPrice = {
@@ -97,9 +104,25 @@ export type GoogleMerchantProductInputPayload = {
     identifierExists: boolean
     googleProductCategory: string
     customLabel0?: string
+    /** Seller shop filter for Google Ads — e.g. OutSurfing only. */
+    customLabel1?: string
     shipping?: GoogleMerchantShipping[]
     taxes?: GoogleMerchantTax[]
   }
+}
+
+/**
+ * `customLabel1` for a listing — OutSurfing when `user_id` matches, else omitted.
+ * Use in Google Ads: listing groups / asset groups → Custom label 1 = OutSurfing.
+ */
+export function getGoogleMerchantCustomLabel1ForListing(
+  listing: Pick<GoogleMerchantListingRow, "user_id">,
+  context: GoogleMerchantProductInputContext | undefined,
+): string | undefined {
+  const outSurfingId = context?.outSurfingShopUserId?.trim()
+  const ownerId = typeof listing.user_id === "string" ? listing.user_id.trim() : ""
+  if (!outSurfingId || !ownerId || ownerId !== outSurfingId) return undefined
+  return getGoogleMerchantOutSurfingShopCustomLabel()
 }
 
 const MAX_MPN_LENGTH = 70
@@ -293,6 +316,7 @@ export function isGoogleMerchantEligibleListing(listing: GoogleMerchantListingRo
 
 export function mapListingToProductInput(
   listing: GoogleMerchantListingRow,
+  context?: GoogleMerchantProductInputContext,
 ): GoogleMerchantProductInputPayload | null {
   if (!isGoogleMerchantEligibleListing(listing)) return null
 
@@ -308,6 +332,7 @@ export function mapListingToProductInput(
   const additionalImages = additionalImageLinks(listing, imageLink)
   const videoLinks = listingVideoLinks(listing)
   const customLabel0 = getGoogleMerchantCustomLabel0ForSection(listing.section)
+  const customLabel1 = getGoogleMerchantCustomLabel1ForListing(listing, context)
 
   return {
     offerId: listing.id,
@@ -331,6 +356,7 @@ export function mapListingToProductInput(
       identifierExists: identifiers.identifierExists,
       googleProductCategory: getGoogleMerchantProductCategoryForSection(listing.section),
       ...(customLabel0 ? { customLabel0 } : {}),
+      ...(customLabel1 ? { customLabel1 } : {}),
       ...(shipping ? { shipping } : {}),
       ...(taxes ? { taxes } : {}),
     },
