@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { setPendingPromoCode, clearPendingPromoCode } from "@/lib/promo-pending-storage"
 import { cn } from "@/lib/utils"
+import { normalizeNewsletterPromoCodeInput } from "@/lib/utils/normalize-newsletter-promo-code"
 
 function formatMoney(n: number) {
   return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -71,7 +72,7 @@ export function CartOrderSummary({
   const hasCheckout = checkoutActions.length > 0 && itemCount > 0 && !checkoutPending
 
   async function applyPromo() {
-    const t = promo.trim()
+    const t = normalizeNewsletterPromoCodeInput(promo)
     if (!t) {
       setPromoError(false)
       setPromoHint("Enter a code first")
@@ -84,6 +85,7 @@ export function CartOrderSummary({
       return
     }
 
+    setPromo(t)
     setPromoApplying(true)
     setPromoHint(null)
     setPromoError(false)
@@ -154,6 +156,16 @@ export function CartOrderSummary({
             setPromoHint(null)
             setPromoError(false)
           }}
+          onPaste={(e) => {
+            const pasted = e.clipboardData.getData("text")
+            if (!pasted) return
+            e.preventDefault()
+            setPromo(normalizeNewsletterPromoCodeInput(pasted))
+            setPromoHint(null)
+            setPromoError(false)
+          }}
+          autoComplete="off"
+          spellCheck={false}
           className="h-11 flex-1 rounded-lg border-neutral-200 bg-white text-[15px] uppercase placeholder:normal-case dark:border-white/15 dark:bg-background"
           aria-label="Promo code"
         />

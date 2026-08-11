@@ -17,6 +17,7 @@ import {
   clearPendingPromoCode,
   getPendingPromoCode,
 } from "@/lib/promo-pending-storage"
+import { normalizeNewsletterPromoCodeInput } from "@/lib/utils/normalize-newsletter-promo-code"
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { listingDetailHref } from "@/lib/listing-href"
 import { capitalizeWords } from "@/lib/listing-labels"
@@ -319,9 +320,10 @@ export function CheckoutClient({
 
   const applyPromoCode = useCallback(
     async (rawCode: string) => {
-      const code = rawCode.trim()
+      const code = normalizeNewsletterPromoCodeInput(rawCode)
       if (!code) return
 
+      setPromoCodeInput(code)
       setPromoApplying(true)
       setPromoError(null)
 

@@ -10,6 +10,7 @@ import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-
 import { resolvePayableAmount } from "@/lib/purchase-amount"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { cn } from "@/lib/utils"
+import { normalizeNewsletterPromoCodeInput } from "@/lib/utils/normalize-newsletter-promo-code"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { CheckoutListing, CheckoutSeller } from "@/components/checkout-types"
@@ -151,8 +152,17 @@ export function CheckoutOrderSummaryAside({
             <Input
               value={promoCodeInput}
               onChange={(e) => onPromoCodeInputChange?.(e.target.value)}
+              onPaste={(e) => {
+                if (!onPromoCodeInputChange) return
+                const pasted = e.clipboardData.getData("text")
+                if (!pasted) return
+                e.preventDefault()
+                onPromoCodeInputChange(normalizeNewsletterPromoCodeInput(pasted))
+              }}
               placeholder="Discount code"
               disabled={!promoInteractive || promoApplying || Boolean(appliedPromo)}
+              autoComplete="off"
+              spellCheck={false}
               className="h-11 min-w-0 flex-1 rounded-[6px] border-neutral-200 bg-white text-[13px] uppercase placeholder:normal-case placeholder:text-neutral-400"
               aria-label="Discount code"
             />
