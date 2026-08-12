@@ -9,6 +9,8 @@ export type AppLlmFeatureId =
   | "marketplace_nl_search"
   | "sell_catalog_nl_search"
   | "listing_description"
+  | "business_intelligence"
+  | "search_daily_report"
 
 export interface AppLlmFeatureDefinition {
   id: AppLlmFeatureId
@@ -70,6 +72,47 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     enabledEnvVar: null,
     surfaces: ["POST /api/listings/generate-description"],
     sourceFiles: ["app/api/listings/generate-description/route.ts"],
+  },
+  {
+    id: "search_daily_report",
+    name: "Search daily report",
+    purpose:
+      "Once a day, Gemini reads marketplace searches, dropdown picks, and zero-result queries and writes an operator briefing (inventory, search quality, buyer/seller actions).",
+    gatewayFeatureTag: "feature:search-daily-report",
+    transport: "vercel_ai_gateway",
+    defaultModel: "google/gemini-2.5-pro",
+    modelEnvVar: "SEARCH_DAILY_REPORT_MODEL",
+    enabledEnvVar: "SEARCH_DAILY_REPORT_ENABLED",
+    surfaces: [
+      "/admin/search-daily-report",
+      "GET /api/cron/search-daily-report",
+      "POST /api/admin/search-daily-report",
+    ],
+    sourceFiles: [
+      "lib/services/searchDailyReport.ts",
+      "app/api/cron/search-daily-report/route.ts",
+    ],
+  },
+  {
+    id: "business_intelligence",
+    name: "Business intelligence briefings",
+    purpose:
+      "Turns admin marketplace, traffic, and growth snapshots into saved daily/weekly/monthly operating reports with projections and recommendations.",
+    gatewayFeatureTag: "feature:business-intelligence",
+    transport: "vercel_ai_gateway",
+    defaultModel: "google/gemini-2.5-pro",
+    modelEnvVar: "BUSINESS_INTELLIGENCE_MODEL",
+    enabledEnvVar: "BUSINESS_INTELLIGENCE_ENABLED",
+    surfaces: [
+      "/admin/intelligence",
+      "GET /api/cron/intelligence-report",
+      "POST /api/admin/intelligence/reports",
+    ],
+    sourceFiles: [
+      "lib/services/businessIntelligence.ts",
+      "lib/services/businessIntelligenceLlm.ts",
+      "lib/services/businessIntelligenceSnapshot.ts",
+    ],
   },
 ] as const
 

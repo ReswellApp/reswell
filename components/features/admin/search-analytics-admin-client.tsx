@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import Link from "next/link"
 import { format, formatDistanceToNow, parseISO } from "date-fns"
 import {
   Area,
@@ -2098,6 +2099,17 @@ export function SearchAnalyticsAdminClient() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 border-slate-200 bg-white"
+                    asChild
+                  >
+                    <Link href="/admin/search-daily-report">
+                      <Sparkles className="h-4 w-4" />
+                      <span className="ml-2">Daily report</span>
+                    </Link>
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"

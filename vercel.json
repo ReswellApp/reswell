@@ -70,6 +70,14 @@
       "schedule": "0 15 * * 1"
     },
     {
+      "path": "/api/cron/search-daily-report",
+      "schedule": "30 14 * * *"
+    },
+    {
+      "path": "/api/cron/intelligence-report",
+      "schedule": "0 15 * * *"
+    },
+    {
       "path": "/api/cron/backfill-listing-brand-model",
       "schedule": "0 11 * * *"
     },

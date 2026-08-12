@@ -31,6 +31,9 @@ import {
   Code,
   RotateCcw,
   Sparkles,
+  FileText,
+  Brain,
+  Megaphone,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -97,6 +100,12 @@ function AdminNavItemIcon({ icon }: { icon: AdminNavIconKey }) {
       return <DollarSign className={NAV_ICON_CLASS} aria-hidden />
     case 'sparkles':
       return <Sparkles className={NAV_ICON_CLASS} aria-hidden />
+    case 'fileText':
+      return <FileText className={NAV_ICON_CLASS} aria-hidden />
+    case 'brain':
+      return <Brain className={NAV_ICON_CLASS} aria-hidden />
+    case 'megaphone':
+      return <Megaphone className={NAV_ICON_CLASS} aria-hidden />
     case 'bellRing':
       return <BellRing className={NAV_ICON_CLASS} aria-hidden />
     case 'code':

@@ -38,6 +38,11 @@ import { reemitPurchaseSuccessfulForOrder } from "@/lib/klaviyo/reemit-purchase-
 import { trackMetaPurchaseServerEvent } from "@/lib/meta/track-purchase-server-event"
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
+import {
+  parseStripeAttributionMetadata,
+  STRIPE_AD_ATTR_METADATA_KEY,
+} from "@/lib/ads/attribution"
+import { insertOrderAdAttribution } from "@/lib/db/orderAdAttribution"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
 import { touchUserLastActive } from "@/lib/db/userActivity"
 import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
@@ -788,6 +793,14 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       }
     }
     return { ok: false, error: "Could not create order lines", status: 500 }
+  }
+
+  if (!isAdminTerminalSale) {
+    void insertOrderAdAttribution(
+      serviceSupabase,
+      purchase.id,
+      parseStripeAttributionMetadata(pi.metadata?.[STRIPE_AD_ATTR_METADATA_KEY]),
+    )
   }
 
   if (promoCodeId && promoKind) {

@@ -24,6 +24,8 @@ import { notifySellerOrderCheckoutKlaviyo } from "@/lib/services/notifySellerOrd
 import { evaluateUserPurchase } from "@/lib/services/accountRestrictions"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
+import { readAdAttributionFromCookies } from "@/lib/ads/read-request-attribution"
+import { insertOrderAdAttribution } from "@/lib/db/orderAdAttribution"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -181,6 +183,12 @@ export async function POST(request: NextRequest) {
     console.error("[wallet/purchase] order insert:", orderErr)
     return NextResponse.json({ error: "Could not create order" }, { status: 500 })
   }
+
+  void insertOrderAdAttribution(
+    serviceSupabase,
+    purchase.id,
+    await readAdAttributionFromCookies(),
+  )
 
   let { data: sellerWallet } = await serviceSupabase
     .from("wallets")

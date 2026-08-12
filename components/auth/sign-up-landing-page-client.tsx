@@ -15,7 +15,7 @@ function SignUpLandingForm() {
   const marketingFromUrl = parseMarketingOptInParam(searchParams.get(MARKETING_OPT_IN_PARAM))
 
   return (
-    <AuthLandingShell>
+    <AuthLandingShell size="wide">
       <SignUpFormPanel
         variant="landing"
         redirectTo={redirectTo}

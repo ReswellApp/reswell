@@ -36,6 +36,8 @@ import { createServiceRoleClient } from "@/lib/supabase/server"
 import { normalizeNewsletterPromoCodeInput } from "@/lib/utils/newsletter-promo-code"
 import { verifyCheckoutShippingQuoteToken, type CheckoutShippingQuoteTokenPayload } from "@/lib/services/checkoutShippingQuoteToken"
 import { ensureCheckoutBuyerPhone } from "@/lib/services/checkoutBuyerPhone"
+import { readAdAttributionFromCookies } from "@/lib/ads/read-request-attribution"
+import { stripeAdAttributionMetadata } from "@/lib/ads/attribution"
 
 const JSON_NO_STORE_HEADERS = {
   "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -494,6 +496,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const adAttribution = await readAdAttributionFromCookies()
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amountCents,
       currency: "usd",
@@ -507,6 +511,7 @@ export async function POST(request: NextRequest) {
         fulfillment: impliedFulfillment,
         amount_cents: String(amountCents),
         bundle_line_count: String(listingIdsOrdered.length),
+        ...stripeAdAttributionMetadata(adAttribution),
         ...(validatedOfferId ? { offer_id: validatedOfferId } : {}),
         ...(addressId ? { address_id: addressId } : {}),
         ...(promoCodeId && promoKind

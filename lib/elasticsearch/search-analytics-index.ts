@@ -763,3 +763,177 @@ export async function listNavBarMarketplaceKeywordEvents(
     return []
   }
 }
+
+export type MarketplaceSearchEventHit = {
+  id: string
+  occurredAt: string
+  queryDisplay: string
+  resultCount: number
+  originSurface: string | null
+}
+
+/**
+ * Marketplace listing-search events in a range, newest first.
+ * Used by the daily Gemini report so the model sees individual queries, not only tops.
+ */
+export async function listMarketplaceSearchEvents(
+  fromIso: string,
+  toIsoExclusive: string,
+  limit: number,
+): Promise<MarketplaceSearchEventHit[]> {
+  const es = getElasticsearchClient()
+  if (!es || limit < 1) return []
+
+  try {
+    const res = await es.search({
+      index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
+      size: limit,
+      sort: [{ occurred_at: { order: "desc" } }],
+      _source: ["occurred_at", "query_display", "result_count", "origin_surface"],
+      query: {
+        bool: {
+          filter: [
+            { range: { occurred_at: { gte: fromIso, lt: toIsoExclusive } } },
+            MARKETPLACE_SURFACE_FILTER as unknown as Record<string, unknown>,
+          ],
+        },
+      },
+    })
+
+    const out: MarketplaceSearchEventHit[] = []
+    for (const hit of res.hits.hits ?? []) {
+      const src = hit._source as
+        | {
+            occurred_at?: string
+            query_display?: string
+            result_count?: number
+            origin_surface?: string
+          }
+        | undefined
+      const occurredAt = typeof src?.occurred_at === "string" ? src.occurred_at : ""
+      const queryDisplay =
+        typeof src?.query_display === "string" && src.query_display.trim()
+          ? src.query_display.trim()
+          : ""
+      if (!occurredAt || !queryDisplay) continue
+      const resultCount =
+        typeof src?.result_count === "number" && Number.isFinite(src.result_count)
+          ? src.result_count
+          : 0
+      const originSurface =
+        typeof src?.origin_surface === "string" && src.origin_surface.trim()
+          ? src.origin_surface.trim()
+          : null
+      out.push({
+        id: typeof hit._id === "string" ? hit._id : `${occurredAt}:${queryDisplay}`,
+        occurredAt,
+        queryDisplay,
+        resultCount,
+        originSurface,
+      })
+    }
+    return out
+  } catch (e) {
+    const status = (e as { meta?: { statusCode?: number } })?.meta?.statusCode
+    if (status === 404) return []
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] listMarketplaceSearchEvents failed:", msg)
+    return []
+  }
+}
+
+export type MarketplaceQueryTerms = {
+  topQueries: { query: string; count: number }[]
+  zeroResultQueries: { query: string; count: number }[]
+  uniqueQueriesApprox: number
+  totalSearches: number
+  zeroResultEventCount: number
+  avgResultCount: number | null
+}
+
+/** Larger terms aggregations for a single-day Gemini briefing (vs the dashboard caps). */
+export async function aggregateMarketplaceQueriesForDailyReport(
+  fromIso: string,
+  toIsoExclusive: string,
+): Promise<MarketplaceQueryTerms | null> {
+  const es = getElasticsearchClient()
+  if (!es) return null
+
+  try {
+    const res = await es.search({
+      index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
+      size: 0,
+      track_total_hits: true,
+      query: {
+        bool: {
+          filter: [
+            { range: { occurred_at: { gte: fromIso, lt: toIsoExclusive } } },
+            MARKETPLACE_SURFACE_FILTER as unknown as Record<string, unknown>,
+          ],
+        },
+      },
+      aggs: {
+        unique_queries: {
+          cardinality: { field: "query_normalized", precision_threshold: 4000 },
+        },
+        avg_results: { avg: { field: "result_count" } },
+        top_queries: {
+          terms: { field: "query_normalized", size: 120, order: { _count: "desc" } },
+        },
+        zero_hits: {
+          filter: { term: { result_count: 0 } },
+          aggs: {
+            zq: {
+              terms: { field: "query_normalized", size: 80, order: { _count: "desc" } },
+            },
+          },
+        },
+      },
+    })
+
+    const aggs = res.aggregations as
+      | {
+          unique_queries?: { value?: number }
+          avg_results?: { value?: number | null }
+          top_queries?: { buckets?: Array<{ key: string | number; doc_count: number }> }
+          zero_hits?: {
+            doc_count?: number
+            zq?: { buckets?: Array<{ key: string | number; doc_count: number }> }
+          }
+        }
+      | undefined
+
+    const hitsTotal = res.hits?.total
+    const total =
+      typeof hitsTotal === "number"
+        ? hitsTotal
+        : typeof hitsTotal === "object" && hitsTotal && "value" in hitsTotal
+          ? hitsTotal.value
+          : 0
+
+    const avg = aggs?.avg_results?.value
+    return {
+      topQueries: bucketTerms(aggs?.top_queries?.buckets),
+      zeroResultQueries: bucketTerms(aggs?.zero_hits?.zq?.buckets),
+      uniqueQueriesApprox: aggs?.unique_queries?.value ?? 0,
+      totalSearches: total,
+      zeroResultEventCount: aggs?.zero_hits?.doc_count ?? 0,
+      avgResultCount: avg != null && Number.isFinite(avg) ? avg : null,
+    }
+  } catch (e) {
+    const status = (e as { meta?: { statusCode?: number } })?.meta?.statusCode
+    if (status === 404) {
+      return {
+        topQueries: [],
+        zeroResultQueries: [],
+        uniqueQueriesApprox: 0,
+        totalSearches: 0,
+        zeroResultEventCount: 0,
+        avgResultCount: null,
+      }
+    }
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] aggregateMarketplaceQueriesForDailyReport failed:", msg)
+    return null
+  }
+}

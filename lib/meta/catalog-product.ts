@@ -2,6 +2,7 @@
  * Listing → Meta Commerce catalog feed item (CSV / JSON scheduled data feeds).
  */
 
+import { withMetaCatalogTracking } from "@/lib/ads/tracking-urls"
 import { listingDetailHref } from "@/lib/listing-href"
 import { primaryListingImageUrl } from "@/lib/listing-metadata"
 import {
@@ -193,7 +194,7 @@ function absoluteListingUrl(listing: MetaListingProductSource): string {
     slug: listing.slug ?? undefined,
     section,
   })
-  return `${publicSiteOrigin()}${path}`
+  return withMetaCatalogTracking(`${publicSiteOrigin()}${path}`, listing.id)
 }
 
 function absoluteCatalogImageUrl(raw: string | null | undefined): string | null {

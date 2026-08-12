@@ -22,6 +22,7 @@ import {
 import { waitForClientSession } from "@/lib/auth/wait-for-client-session"
 import { buildEmailSignUpSuccessPath } from "@/lib/google-ads/sign-up-success-path"
 import { resolveSignUpDisplayName } from "@/lib/auth/sign-up-display-name"
+import { LegalDocumentDialog, type LegalDocumentId } from "@/components/features/legal/legal-document-dialog"
 import { cn } from "@/lib/utils"
 
 function RequiredMark() {
@@ -56,6 +57,7 @@ export function SignUpFormPanel({
   const [showPassword, setShowPassword] = useState(false)
   const [marketingOptIn, setMarketingOptIn] = useState(initialMarketingOptIn ?? true)
   const [acceptedTerms, setAcceptedTerms] = useState(true)
+  const [legalDocument, setLegalDocument] = useState<LegalDocumentId | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
@@ -182,45 +184,181 @@ export function SignUpFormPanel({
   const isLanding = variant === "landing"
   const isModal = variant === "modal"
   const compact = isLanding || isModal
-  const fieldGapClass = compact ? "gap-1.5" : "gap-2.5"
+  const fieldGapClass = isLanding ? "gap-1" : compact ? "gap-1.5" : "gap-2.5"
+  const labelClass = cn(
+    "font-semibold text-foreground",
+    isLanding ? "text-xs" : "text-sm",
+  )
 
-  const inner = (
-    <div className={cn("flex flex-col", compact ? "gap-4" : "gap-8")}>
-      {showPageHeader ? (
-        <div className={cn(compact ? "space-y-1" : "space-y-2")}>
-          <h1
+  const legalLinkClass = "underline underline-offset-4 hover:text-cerulean"
+
+  function openLegalDocument(event: React.MouseEvent, doc: LegalDocumentId) {
+    event.preventDefault()
+    event.stopPropagation()
+    setLegalDocument(doc)
+  }
+
+  const consentFields = (
+    <div className={cn(isLanding ? "space-y-1.5" : isModal ? "space-y-2.5" : "space-y-4 pt-1")}>
+      <label className={cn("flex cursor-pointer items-start", isLanding ? "gap-2" : "gap-3")}>
+        <Checkbox
+          checked={marketingOptIn}
+          onCheckedChange={(checked) => setMarketingOptIn(checked === true)}
+          className="mt-0.5"
+        />
+        <span
+          className={cn(
+            "leading-snug text-foreground",
+            isLanding ? "text-xs" : "text-sm",
+          )}
+        >
+          Get the latest news and promotions via email
+        </span>
+      </label>
+
+      <div className={cn("flex items-start", isLanding ? "gap-2" : "gap-3")}>
+        <Checkbox
+          id="signup-accept-terms"
+          checked={acceptedTerms}
+          onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+          className="mt-0.5"
+          aria-required="true"
+        />
+        <div className="min-w-0 flex-1">
+          <label
+            htmlFor="signup-accept-terms"
             className={cn(
-              "font-bold tracking-tight text-foreground",
-              isLanding ? "text-xl" : "text-3xl sm:text-4xl",
+              "cursor-pointer leading-snug text-foreground",
+              isLanding ? "text-xs" : "text-sm",
             )}
           >
-            Create an account
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Already have an account? {signInLink}
-          </p>
+            {isLanding ? (
+              <>
+                I agree to Reswell&apos;s{" "}
+                <button
+                  type="button"
+                  className={legalLinkClass}
+                  onClick={(event) => openLegalDocument(event, "terms")}
+                >
+                  Terms of Use
+                </button>{" "}
+                and{" "}
+                <button
+                  type="button"
+                  className={legalLinkClass}
+                  onClick={(event) => openLegalDocument(event, "privacy")}
+                >
+                  Privacy Policy
+                </button>
+                . <RequiredMark />
+              </>
+            ) : (
+              <>
+                By clicking Sign Up, I expressly agree to accept Reswell&apos;s{" "}
+                <button
+                  type="button"
+                  className={legalLinkClass}
+                  onClick={(event) => openLegalDocument(event, "terms")}
+                >
+                  Terms of Use
+                </button>{" "}
+                and{" "}
+                <button
+                  type="button"
+                  className={legalLinkClass}
+                  onClick={(event) => openLegalDocument(event, "privacy")}
+                >
+                  Privacy Policy
+                </button>
+                .
+              </>
+            )}
+          </label>
+        </div>
+        <span
+          className={cn(
+            "shrink-0 rounded border border-border bg-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground",
+            isLanding && "hidden",
+          )}
+        >
+          Required
+        </span>
+      </div>
+    </div>
+  )
+
+  const googleButton = (
+    <GoogleOAuthButton
+      nextPath={redirectTo}
+      autoStart={googleAutoStart}
+      handoffMode="sign-up"
+      layout="full"
+      marketingOptIn={marketingOptIn}
+      className={isLanding ? "sm:w-auto sm:shrink-0" : undefined}
+      buttonClassName={isLanding ? "h-10 text-sm sm:w-auto sm:px-6" : undefined}
+    />
+  )
+
+  const inner = (
+    <>
+    <div className={cn("flex flex-col", isLanding ? "gap-2.5" : compact ? "gap-4" : "gap-8")}>
+      {showPageHeader ? (
+        <div
+          className={cn(
+            isLanding
+              ? "flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+              : compact
+                ? "space-y-1"
+                : "space-y-2",
+          )}
+        >
+          <div
+            className={cn(
+              isLanding
+                ? "flex min-w-0 flex-1 items-baseline justify-between gap-3 sm:block sm:space-y-0.5"
+                : compact
+                  ? "space-y-1"
+                  : "space-y-2",
+            )}
+          >
+            <h1
+              className={cn(
+                "font-bold tracking-tight text-foreground",
+                isLanding ? "text-lg sm:text-xl" : "text-3xl sm:text-4xl",
+              )}
+            >
+              Create an account
+            </h1>
+            <p
+              className={cn(
+                "text-muted-foreground",
+                isLanding ? "shrink-0 text-xs sm:mt-0.5" : "text-sm",
+              )}
+            >
+              <span className={cn(isLanding && "hidden sm:inline")}>
+                Already have an account?{" "}
+              </span>
+              {signInLink}
+            </p>
+          </div>
+          {isLanding ? googleButton : null}
         </div>
       ) : null}
 
-      <GoogleOAuthButton
-        nextPath={redirectTo}
-        autoStart={googleAutoStart}
-        handoffMode="sign-up"
-        layout="full"
-        marketingOptIn={marketingOptIn}
-      />
+      {!isLanding ? googleButton : null}
 
-      <AuthFormOrDivider />
+      <AuthFormOrDivider className={isLanding ? "py-0" : undefined} />
 
-      <form onSubmit={handleSignUp} className={cn(compact ? "space-y-3" : "space-y-5")}>
+      <form onSubmit={handleSignUp} className={cn(isLanding ? "space-y-2" : compact ? "space-y-3" : "space-y-5")}>
         <div
           className={cn(
-            "grid sm:grid-cols-2",
-            compact ? "gap-3 sm:gap-3" : "gap-4 sm:gap-5",
+            "grid grid-cols-2",
+            isLanding ? "gap-2.5" : compact ? "gap-3" : "gap-4 sm:gap-5",
+            !isLanding && "max-sm:grid-cols-1",
           )}
         >
-          <div className={cn("grid", fieldGapClass)}>
-            <Label htmlFor="signup-first-name" className="text-sm font-semibold text-foreground">
+          <div className={cn("grid min-w-0", fieldGapClass)}>
+            <Label htmlFor="signup-first-name" className={labelClass}>
               First name <RequiredMark />
             </Label>
             <Input
@@ -232,8 +370,8 @@ export function SignUpFormPanel({
               onChange={(e) => setFirstName(e.target.value)}
             />
           </div>
-          <div className={cn("grid", fieldGapClass)}>
-            <Label htmlFor="signup-last-name" className="text-sm font-semibold text-foreground">
+          <div className={cn("grid min-w-0", fieldGapClass)}>
+            <Label htmlFor="signup-last-name" className={labelClass}>
               Last name <RequiredMark />
             </Label>
             <Input
@@ -247,39 +385,48 @@ export function SignUpFormPanel({
           </div>
         </div>
 
-        <div className={cn("grid", fieldGapClass)}>
-          <Label htmlFor="signup-username" className="text-sm font-semibold text-foreground">
-            Username{" "}
-            <span className="font-normal text-muted-foreground">(optional)</span>
-          </Label>
-          <Input
-            id="signup-username"
-            type="text"
-            autoComplete="username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="Choose a public username"
-          />
+        <div className={cn(isLanding ? "grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-2.5" : "contents")}>
+          <div className={cn("grid min-w-0", fieldGapClass)}>
+            <Label htmlFor="signup-username" className={labelClass}>
+              Username{" "}
+              <span className="font-normal text-muted-foreground">(optional)</span>
+            </Label>
+            <Input
+              id="signup-username"
+              type="text"
+              autoComplete="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder={isLanding ? "Public username" : "Choose a public username"}
+            />
+          </div>
+
+          <div className={cn("grid min-w-0", fieldGapClass)}>
+            <Label htmlFor="signup-email" className={labelClass}>
+              Email <RequiredMark />
+            </Label>
+            <Input
+              id="signup-email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
         </div>
 
         <div className={cn("grid", fieldGapClass)}>
-          <Label htmlFor="signup-email" className="text-sm font-semibold text-foreground">
-            Email <RequiredMark />
-          </Label>
-          <Input
-            id="signup-email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-
-        <div className={cn("grid", fieldGapClass)}>
-          <Label htmlFor="signup-password" className="text-sm font-semibold text-foreground">
-            Password <RequiredMark />
-          </Label>
+          <div className={cn("flex items-baseline justify-between gap-2", !isLanding && "contents")}>
+            <Label htmlFor="signup-password" className={labelClass}>
+              Password <RequiredMark />
+            </Label>
+            {isLanding ? (
+              <span className="max-w-[58%] text-right text-[10px] leading-tight text-muted-foreground sm:max-w-none sm:leading-none">
+                {SIGN_UP_PASSWORD_HINT}
+              </span>
+            ) : null}
+          </div>
           <div className="relative">
             <Input
               id="signup-password"
@@ -299,63 +446,39 @@ export function SignUpFormPanel({
               {showPassword ? <EyeOff className="h-4 w-4" aria-hidden /> : <Eye className="h-4 w-4" aria-hidden />}
             </button>
           </div>
-          <p className="text-xs leading-snug text-muted-foreground">{SIGN_UP_PASSWORD_HINT}</p>
+          {!isLanding ? (
+            <p className="text-xs leading-snug text-muted-foreground">{SIGN_UP_PASSWORD_HINT}</p>
+          ) : null}
         </div>
 
         {error ? <p className="text-sm text-neutral-700">{error}</p> : null}
 
-        <Button
-          type="submit"
-          disabled={isLoading}
-          className={cn(
-            "w-full rounded-full bg-neutral-500 font-semibold text-white hover:bg-neutral-600",
-            compact ? "h-10 text-sm" : "h-12 text-base",
-          )}
-        >
-          {isLoading ? "Creating account…" : "Sign Up"}
-        </Button>
-
-        <div className={cn(isModal ? "space-y-2.5" : "space-y-4 pt-1")}>
-          <label className="flex cursor-pointer items-start gap-3">
-            <Checkbox
-              checked={marketingOptIn}
-              onCheckedChange={(checked) => setMarketingOptIn(checked === true)}
-              className="mt-0.5"
-            />
-            <span className="text-sm leading-snug text-foreground">
-              Get the latest news and promotions via email
-            </span>
-          </label>
-
-          <div className="flex items-start gap-3">
-            <Checkbox
-              id="signup-accept-terms"
-              checked={acceptedTerms}
-              onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
-              className="mt-0.5"
-              aria-required="true"
-            />
-            <div className="min-w-0 flex-1">
-              <label
-                htmlFor="signup-accept-terms"
-                className="cursor-pointer text-sm leading-snug text-foreground"
-              >
-                By clicking Sign Up, I expressly agree to accept Reswell&apos;s{" "}
-                <Link href="/terms" className="underline underline-offset-4 hover:text-cerulean">
-                  Terms of Use
-                </Link>{" "}
-                and{" "}
-                <Link href="/privacy" className="underline underline-offset-4 hover:text-cerulean">
-                  Privacy Policy
-                </Link>
-                .
-              </label>
-            </div>
-            <span className="shrink-0 rounded border border-border bg-muted px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-              Required
-            </span>
+        {isLanding ? (
+          <div className="grid gap-2.5 sm:grid-cols-[1fr_auto] sm:items-start sm:gap-4">
+            {consentFields}
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="h-10 w-full rounded-full bg-neutral-500 text-sm font-semibold text-white hover:bg-neutral-600 sm:min-w-[10rem] sm:px-8"
+            >
+              {isLoading ? "Creating account…" : "Sign Up"}
+            </Button>
           </div>
-        </div>
+        ) : (
+          <>
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className={cn(
+                "w-full rounded-full bg-neutral-500 font-semibold text-white hover:bg-neutral-600",
+                compact ? "h-10 text-sm" : "h-12 text-base",
+              )}
+            >
+              {isLoading ? "Creating account…" : "Sign Up"}
+            </Button>
+            {consentFields}
+          </>
+        )}
 
         {!showPageHeader ? (
           <p className="text-center text-sm text-muted-foreground">
@@ -364,6 +487,14 @@ export function SignUpFormPanel({
         ) : null}
       </form>
     </div>
+    <LegalDocumentDialog
+      open={legalDocument !== null}
+      document={legalDocument ?? "terms"}
+      onOpenChange={(open) => {
+        if (!open) setLegalDocument(null)
+      }}
+    />
+    </>
   )
 
   if (variant === "page") {

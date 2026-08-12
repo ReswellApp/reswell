@@ -17,6 +17,7 @@ import { KlaviyoOnsite } from '@/components/klaviyo-onsite'
 import { KlaviyoPageViewTracker } from '@/components/klaviyo-page-view-tracker'
 import { MetaPixel } from '@/components/meta-pixel'
 import { MetaCapiParamBootstrap } from '@/components/meta/meta-capi-param-bootstrap'
+import { AdClickAttributionBootstrap } from '@/components/ads/ad-click-attribution-bootstrap'
 import { MetaPixelPageViewTracker } from '@/components/meta-pixel-page-view-tracker'
 import { JsonLd } from '@/components/seo/json-ld'
 import { organizationSchema, webSiteSchema } from '@/lib/seo/structured-data'
@@ -91,6 +92,7 @@ export default function RootLayout({
         <MetaPixel />
         <LocaleProvider>
           <Suspense fallback={null}>
+            <AdClickAttributionBootstrap />
             <MetaCapiParamBootstrap />
             <KlaviyoPageViewTracker />
             <MetaPixelPageViewTracker />

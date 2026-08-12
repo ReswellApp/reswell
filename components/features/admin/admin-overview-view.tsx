@@ -1164,6 +1164,12 @@ export function AdminOverviewView({
             Search analytics
           </Link>
           <Link
+            href="/admin/search-daily-report"
+            className="text-muted-foreground transition-colors hover:text-foreground hover:underline"
+          >
+            Search daily report
+          </Link>
+          <Link
             href="/admin/catalog-overview"
             className="text-muted-foreground transition-colors hover:text-foreground hover:underline"
           >

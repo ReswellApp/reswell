@@ -1,3 +1,4 @@
+import { withGoogleShoppingTracking } from "@/lib/ads/tracking-urls"
 import { googleMerchantProductLink } from "@/lib/google-merchant/product-link"
 import {
   googleMerchantListingImageSourceUrl,
@@ -324,7 +325,7 @@ export function mapListingToProductInput(
   const imageLink = absoluteImageLink(listing)
   if (!imageLink) return null
 
-  const link = googleMerchantProductLink(listing, origin)
+  const link = withGoogleShoppingTracking(googleMerchantProductLink(listing, origin), listing.id)
   const description = buildGoogleMerchantProductDescription(listing)
   const identifiers = productIdentifiers(listing)
   const shipping = mapListingShippingAttributes(listing)

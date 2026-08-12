@@ -31,6 +31,9 @@ export type AdminNavIconKey =
   | 'rotateCcw'
   | 'activityPulse'
   | 'sparkles'
+  | 'fileText'
+  | 'brain'
+  | 'megaphone'
 
 export interface AdminNavItemConfig {
   href: string
@@ -52,6 +55,7 @@ const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
   '/admin/seo',
   '/admin/google-merchant',
   '/admin/google-analytics',
+  '/admin/ad-sales',
   '/admin/search-curation',
   '/admin/partner-embeds',
   '/admin/shipping',
@@ -59,6 +63,7 @@ const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
   '/admin/site-assets',
   '/admin/pnl',
   '/admin/llm-usage',
+  '/admin/intelligence',
   '/admin/listings/brand-requests',
   '/admin/listings/board-catalog-data',
   '/admin/fbcatalog',
@@ -92,12 +97,15 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     id: 'analytics',
     label: 'Analytics',
     items: [
+      { href: '/admin/intelligence', label: 'Intelligence', icon: 'brain' },
       { href: '/admin/live', label: 'Live', icon: 'activity' },
       { href: '/admin/google-merchant', label: 'Google Merchant', icon: 'shoppingCart' },
       { href: '/admin/google-analytics', label: 'Google Analytics', icon: 'lineChart' },
+      { href: '/admin/ad-sales', label: 'Ad sales', icon: 'megaphone' },
       { href: '/admin/used-board-market-dashboard', label: 'Used board market', icon: 'waves' },
       { href: '/admin/catalog-overview', label: 'Brand catalog explorer', icon: 'folderTree' },
       { href: '/admin/search-analytics', label: 'Search analytics', icon: 'lineChart' },
+      { href: '/admin/search-daily-report', label: 'Search daily report', icon: 'fileText' },
       { href: '/admin/llm-usage', label: 'LLM usage', icon: 'sparkles' },
       { href: '/admin/listing-views', label: 'Listing views', icon: 'activity' },
       { href: '/admin/sell-funnel', label: 'Sell funnel', icon: 'lineChart' },

@@ -426,3 +426,76 @@ export async function listHeaderNavSuggestPickEvents(
     return []
   }
 }
+
+export type SearchSuggestSelectionRow = {
+  label: string
+  kind: string
+  count: number
+}
+
+/** Top typeahead dropdown selections (clicks) for the daily Gemini report. */
+export async function aggregateSearchSuggestTopSelections(
+  fromIso: string,
+  toIsoExclusive: string,
+  size = 40,
+): Promise<SearchSuggestSelectionRow[]> {
+  const es = getElasticsearchClient()
+  if (!es || size < 1) return []
+
+  try {
+    const res = await es.search({
+      index: ELASTICSEARCH_SEARCH_SUGGEST_ANALYTICS_INDEX,
+      size: 0,
+      query: {
+        bool: {
+          filter: [
+            { range: { occurred_at: { gte: fromIso, lt: toIsoExclusive } } },
+            CLICK_INTERACTION_FILTER as unknown as Record<string, unknown>,
+          ],
+        },
+      },
+      aggs: {
+        by_label: {
+          terms: { field: "selection_label", size, order: { _count: "desc" } },
+          aggs: {
+            sample: {
+              top_hits: {
+                size: 1,
+                sort: [{ occurred_at: { order: "desc" } }],
+                _source: { includes: ["pick_kind"] },
+              },
+            },
+          },
+        },
+      },
+    })
+
+    const aggs = res.aggregations as
+      | {
+          by_label?: {
+            buckets?: Array<{
+              key: string | number
+              doc_count: number
+              sample?: { hits?: { hits?: Array<{ _source?: { pick_kind?: string } }> } }
+            }>
+          }
+        }
+      | undefined
+
+    const out: SearchSuggestSelectionRow[] = []
+    for (const b of aggs?.by_label?.buckets ?? []) {
+      const label = String(b.key).trim()
+      if (!label) continue
+      const kindRaw = b.sample?.hits?.hits?.[0]?._source?.pick_kind
+      const kind = typeof kindRaw === "string" && kindRaw.trim() ? kindRaw.trim() : "—"
+      out.push({ label, kind, count: b.doc_count })
+    }
+    return out
+  } catch (e) {
+    const status = (e as { meta?: { statusCode?: number } })?.meta?.statusCode
+    if (status === 404) return []
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] aggregateSearchSuggestTopSelections failed:", msg)
+    return []
+  }
+}

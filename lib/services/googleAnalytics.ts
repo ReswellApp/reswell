@@ -338,14 +338,22 @@ function toNumber(value: string | number | null | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-interface GaRunReportRequest {
+export interface GoogleAnalyticsReportRequest {
   dateRanges: { startDate: string; endDate: string }[]
   dimensions?: { name: string }[]
   metrics: { name: string }[]
   dimensionFilter?: unknown
+  metricFilter?: unknown
   orderBys?: unknown[]
   limit?: number
 }
+
+export interface GoogleAnalyticsReportRow {
+  dimensionValues: string[]
+  metricValues: number[]
+}
+
+type GaRunReportRequest = GoogleAnalyticsReportRequest
 
 interface GaRow {
   dimensionValues?: { value?: string }[]
@@ -857,6 +865,40 @@ function mergeEmbedStats(
   return withEmbedClickThroughRates(
     [...bySlug.values()].sort((a, b) => b.sessions - a.sessions || b.clicks - a.clicks),
   )
+}
+
+export function googleAnalyticsDateWindow(days: number): { startDate: string; endDate: string } {
+  return { startDate: isoDaysAgo(days), endDate: isoDaysAgo(1) }
+}
+
+/**
+ * Low-level GA4 Data API report. Returns `{ ok: false }` when credentials/property
+ * are missing or the API rejects the request — never throws for those cases.
+ */
+export async function runGoogleAnalyticsReport(
+  body: GoogleAnalyticsReportRequest,
+): Promise<
+  | { ok: false; reason: string }
+  | { ok: true; propertyId: string; rows: GoogleAnalyticsReportRow[] }
+> {
+  try {
+    const access = await loadGoogleAnalyticsAccessToken()
+    if (!access.ok) return { ok: false, reason: access.reason }
+    const rows = await runReport(access.token, access.property, body)
+    return {
+      ok: true,
+      propertyId: access.property,
+      rows: rows.map((row) => ({
+        dimensionValues: (row.dimensionValues ?? []).map((d) => d.value ?? ""),
+        metricValues: (row.metricValues ?? []).map((m) => toNumber(m.value)),
+      })),
+    }
+  } catch (e) {
+    return {
+      ok: false,
+      reason: e instanceof Error ? e.message : "Could not load Google Analytics data.",
+    }
+  }
 }
 
 async function loadGoogleAnalyticsAccessToken(): Promise<
