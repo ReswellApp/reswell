@@ -7,6 +7,8 @@ const CURATION_LISTING_SELECT = `
   id,
   slug,
   title,
+  price,
+  board_type,
   status,
   hidden_from_site,
   listing_images (url, thumbnail_url, is_primary)
@@ -16,6 +18,8 @@ type JoinedListing = {
   id: string
   slug: string
   title: string
+  price: number | null
+  board_type: string | null
   status: string | null
   hidden_from_site: boolean | null
   listing_images: ListingImageForCard[] | null
@@ -36,6 +40,8 @@ export type BoardsBrowseTopPickCurationRow = {
     id: string
     slug: string
     title: string
+    price: number | null
+    board_type: string | null
     status: string | null
     hidden_from_site: boolean | null
     primary_image_url: string | null
@@ -54,6 +60,8 @@ function hydrateRow(row: RawCurationRow): BoardsBrowseTopPickCurationRow | null 
       id: listing.id,
       slug: listing.slug,
       title: listing.title,
+      price: typeof listing.price === "number" ? listing.price : null,
+      board_type: listing.board_type ?? null,
       status: listing.status,
       hidden_from_site: listing.hidden_from_site,
       primary_image_url: listingHeroSlideSrc(listing.listing_images),
@@ -104,19 +112,19 @@ export async function listBoardsBrowseTopPickListingIdsOrdered(
   return (data ?? []).map((r) => String((r as { listing_id: string }).listing_id))
 }
 
-async function readMaxSortOrder(supabase: SupabaseClient): Promise<number> {
+async function readMinSortOrder(supabase: SupabaseClient): Promise<number | null> {
   const { data, error } = await supabase
     .from(CURATION_TABLE)
     .select("sort_order")
-    .order("sort_order", { ascending: false })
+    .order("sort_order", { ascending: true })
     .limit(1)
     .maybeSingle()
 
   if (error) {
-    console.error("readMaxSortOrder (boards top picks):", error.message)
-    return -1
+    console.error("readMinSortOrder (boards top picks):", error.message)
+    return null
   }
-  return typeof data?.sort_order === "number" ? data.sort_order : -1
+  return typeof data?.sort_order === "number" ? data.sort_order : null
 }
 
 export type InsertBoardsBrowseTopPickResult =
@@ -141,10 +149,12 @@ export async function insertBoardsBrowseTopPickListing(
     return { ok: false, error: "Listing is already a Top Pick", alreadyExists: true }
   }
 
-  const maxOrder = await readMaxSortOrder(supabase)
+  // Prepend so newly curated boards appear first on /boards.
+  const minOrder = await readMinSortOrder(supabase)
+  const sortOrder = minOrder == null ? 0 : minOrder - 1
   const { data, error } = await supabase
     .from(CURATION_TABLE)
-    .insert({ listing_id: listingId, sort_order: maxOrder + 1 })
+    .insert({ listing_id: listingId, sort_order: sortOrder })
     .select("id")
     .single()
 
@@ -193,6 +203,8 @@ export type BoardsBrowseTopPickSearchHit = {
   id: string
   slug: string
   title: string
+  price: number | null
+  board_type: string | null
   primary_image_url: string | null
   status: string | null
   hidden_from_site: boolean | null
@@ -208,7 +220,7 @@ export async function searchListingsForBoardsBrowseTopPickPicker(
   let builder = supabase
     .from("listings")
     .select(
-      `id, slug, title, status, hidden_from_site,
+      `id, slug, title, price, board_type, status, hidden_from_site,
        listing_images (url, thumbnail_url, is_primary)`,
     )
     .eq("status", "active")
@@ -232,6 +244,8 @@ export async function searchListingsForBoardsBrowseTopPickPicker(
     id: string
     slug: string
     title: string
+    price: number | null
+    board_type: string | null
     status: string | null
     hidden_from_site: boolean | null
     listing_images: ListingImageForCard[] | null
@@ -255,9 +269,41 @@ export async function searchListingsForBoardsBrowseTopPickPicker(
     id: r.id,
     slug: r.slug,
     title: r.title,
+    price: typeof r.price === "number" ? r.price : null,
+    board_type: r.board_type ?? null,
     status: r.status,
     hidden_from_site: r.hidden_from_site,
     primary_image_url: listingHeroSlideSrc(r.listing_images),
     already_curated: curatedIds.has(r.id),
   }))
+}
+
+/** Deletes Top Pick curation rows whose listings are inactive or hidden from site. */
+export async function deleteStaleBoardsBrowseTopPickListingRows(
+  supabase: SupabaseClient,
+): Promise<{ ok: true; removed: number } | { ok: false; error: string }> {
+  const rows = await listBoardsBrowseTopPickCurationRows(supabase)
+  const staleIds = rows
+    .filter(
+      (row) =>
+        row.listing.status !== "active" || row.listing.hidden_from_site === true,
+    )
+    .map((row) => row.id)
+
+  if (staleIds.length === 0) {
+    return { ok: true, removed: 0 }
+  }
+
+  const { data, error } = await supabase
+    .from(CURATION_TABLE)
+    .delete()
+    .in("id", staleIds)
+    .select("id")
+
+  if (error) {
+    console.error("deleteStaleBoardsBrowseTopPickListingRows:", error.message)
+    return { ok: false, error: error.message || "Cleanup failed" }
+  }
+
+  return { ok: true, removed: Array.isArray(data) ? data.length : staleIds.length }
 }

@@ -17,6 +17,8 @@ const ADMIN_SURFBOARD_PICKER_SELECT = `
   id,
   slug,
   title,
+  price,
+  board_type,
   status,
   hidden_from_site,
   suppressed_on_boards_browse,
@@ -27,6 +29,8 @@ export type BoardsBrowseSuppressedAdminRow = {
   id: string
   slug: string
   title: string
+  price: number | null
+  board_type: string | null
   status: string | null
   hidden_from_site: boolean | null
   suppressed_on_boards_browse: boolean | null
@@ -37,6 +41,8 @@ function mapPickerRow(row: {
   id: string
   slug: string
   title: string
+  price: number | null
+  board_type: string | null
   status: string | null
   hidden_from_site: boolean | null
   suppressed_on_boards_browse: boolean | null
@@ -46,6 +52,8 @@ function mapPickerRow(row: {
     id: row.id,
     slug: row.slug,
     title: row.title,
+    price: typeof row.price === "number" ? row.price : null,
+    board_type: row.board_type ?? null,
     status: row.status,
     hidden_from_site: row.hidden_from_site,
     suppressed_on_boards_browse: row.suppressed_on_boards_browse,

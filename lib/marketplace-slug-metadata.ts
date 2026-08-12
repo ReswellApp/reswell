@@ -53,12 +53,14 @@ export function boardsBrowseBoardTypeLabel(type: string | undefined | null): str
 
 const BOARDS_CONDITION_LABELS = LISTING_CONDITION_LABELS
 
-/** Admin-curated Top Picks sort (Query: `sort=top-picks`). */
+/**
+ * Default surfboards browse sort: admin Top Picks first, then newest
+ * (Query: `sort` omitted or `sort=top-picks`).
+ */
 export const BOARDS_BROWSE_TOP_PICKS_SORT = "top-picks" as const
-/** Newest-first browse sort (Query: `sort` omitted or `sort=newest`). */
+export const BOARDS_BROWSE_DEFAULT_SORT = BOARDS_BROWSE_TOP_PICKS_SORT
+/** Newest-first browse sort (Query: `sort=newest`). */
 export const BOARDS_BROWSE_NEWEST_SORT = "newest" as const
-/** Default surfboards browse sort when `sort` is omitted from the URL. */
-export const BOARDS_BROWSE_DEFAULT_SORT = BOARDS_BROWSE_NEWEST_SORT
 
 export type BoardsBrowseSearchParams = {
   type?: string

@@ -26,6 +26,8 @@ type BoardsBrowseClientProps = {
   /** Page H1 — rendered with Filter in one header band. Omit when the page supplies its own heading. */
   title?: string
   description?: string
+  /** Optional admin CMS control (e.g. Top Picks curator) shown in the header action row. */
+  headerAction?: ReactNode
 }
 
 type ActiveChip = { id: string; label: string; onRemove: () => void }
@@ -35,6 +37,7 @@ export function BoardsBrowseClient({
   counts,
   title,
   description,
+  headerAction,
 }: BoardsBrowseClientProps) {
   const [isPending, startTransition] = useTransition()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -121,6 +124,7 @@ export function BoardsBrowseClient({
         atmosphereImageClassName="object-[38%_72%] md:object-[40%_60%]"
         action={
           <div className="flex flex-wrap items-center gap-2">
+            {headerAction}
             <Button
               type="button"
               variant="outline"

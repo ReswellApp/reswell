@@ -5,6 +5,7 @@ import { ListingTileGridSkeleton } from "@/components/listing-tile-skeleton"
 import { ListYourSurfboardMarketplaceReviewsSection } from "@/components/features/marketing/list-your-surfboard-buyer-reviews-section"
 import type { MarketplaceShowcaseReviewRow } from "@/lib/db/marketplace-reviews-showcase"
 import { CategoryBrowseBreadcrumbs } from "@/components/category-browse-breadcrumbs"
+import { BoardsBrowseAdminCurator } from "@/components/boards-browse-admin-curator"
 
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { createAnonSupabaseClient } from "@/lib/supabase/anon"
@@ -62,16 +63,34 @@ import {
   boardsBrowseHasSidebarFilters,
 } from "@/lib/boards-browse-sidebar-filters"
 
+async function BoardsBrowseAdminCuratorGate() {
+  const { supabase, user } = await getCachedRequestSession()
+  if (!user) return null
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", user.id)
+    .maybeSingle()
+  return (
+    <BoardsBrowseAdminCurator
+      isAdmin={profile?.is_admin === true}
+      className="border-white/55 bg-white/95 text-[#001A4A] shadow-sm hover:bg-white"
+    />
+  )
+}
+
 async function BoardsBrowseFiltersSection({
   searchParams: searchParamsPromise,
   children,
   title,
   description,
+  headerAction,
 }: {
   searchParams: Promise<BoardsBrowseSearchParams>
   children: ReactNode
   title?: string
   description?: string
+  headerAction?: ReactNode
 }) {
   const searchParams = await searchParamsPromise
   const facetCounts = await getBoardsBrowseFacetCountsMapCached(searchParams)
@@ -80,6 +99,7 @@ async function BoardsBrowseFiltersSection({
       counts={facetCounts}
       title={title}
       description={description}
+      headerAction={headerAction}
     >
       {children}
     </BoardsBrowseClient>
@@ -831,6 +851,13 @@ export async function BoardsBrowsePage(props: {
               searchParams={searchParamsPromise}
               title={props.showListYourSurfboardCta ? undefined : pageTitle}
               description={undefined}
+              headerAction={
+                props.showListYourSurfboardCta ? undefined : (
+                  <Suspense fallback={null}>
+                    <BoardsBrowseAdminCuratorGate />
+                  </Suspense>
+                )
+              }
             >
               <Suspense fallback={<ListingTileGridSkeleton count={10} ariaLabel="Loading surfboards" />}>
                 <BoardListings searchParams={searchParamsPromise} />
