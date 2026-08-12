@@ -6,8 +6,9 @@ export const dynamic = "force-dynamic"
 export const maxDuration = 120
 
 /**
- * Daily (and weekly/monthly when due) Reswell Intelligence briefing.
- * Protected with CRON_SECRET.
+ * Runs every 24 hours (`0 15 * * *` in vercel.json).
+ * Always writes yesterday’s Pacific daily briefing; also writes weekly on Monday
+ * and monthly on the 1st. Protected with CRON_SECRET.
  */
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization")

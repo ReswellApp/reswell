@@ -8,7 +8,7 @@ export const maxDuration = 60
 export const metadata = privatePageMetadata({
   title: "Intelligence — Admin — Reswell",
   description:
-    "Unified Reswell operating dashboard: GMV, users, listings, orders, top URLs, and saved daily, weekly, and monthly Gemini briefings.",
+    "Daily Gemini operating briefing first, then live GMV, users, listings, orders, top URLs, and saved weekly / monthly reports.",
   path: "/admin/intelligence",
 })
 

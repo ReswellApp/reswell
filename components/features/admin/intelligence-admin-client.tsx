@@ -100,18 +100,11 @@ export function IntelligenceAdminClient({ initial }: { initial: IntelligenceLive
             Intelligence
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            One operating picture: GMV, users, listings, orders, top URLs, and saved daily / weekly /
-            monthly briefings with projections.
+            Daily briefing first, then live GMV, users, listings, orders, and top URLs. Weekly and
+            monthly reports stay below.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <GenerateButton
-            label="Daily"
-            kind="daily"
-            pendingKind={pendingKind}
-            generating={generating}
-            onGenerate={generate}
-          />
           <GenerateButton
             label="Weekly"
             kind="weekly"
@@ -139,6 +132,25 @@ export function IntelligenceAdminClient({ initial }: { initial: IntelligenceLive
         <p className="text-sm text-muted-foreground">{dashboard.insightsError}</p>
       ) : null}
 
+      <section className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">Daily briefing</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Yesterday in Pacific time. A cron generates this every 24 hours at 15:00 UTC.
+            </p>
+          </div>
+          <GenerateButton
+            label="Daily"
+            kind="daily"
+            pendingKind={pendingKind}
+            generating={generating}
+            onGenerate={generate}
+          />
+        </div>
+        <BriefingOrEmpty row={dashboard.latest.daily} kind="daily" />
+      </section>
+
       {dashboard.insights ? <IntelligenceKpiGrid insights={dashboard.insights} /> : null}
 
       {dashboard.insights ? (
@@ -151,16 +163,12 @@ export function IntelligenceAdminClient({ initial }: { initial: IntelligenceLive
 
       <IntelligenceTrafficPanel pages={dashboard.topPages} source={dashboard.topPagesSource} />
 
-      <Tabs defaultValue="daily">
+      <Tabs defaultValue="weekly">
         <TabsList>
-          <TabsTrigger value="daily">Daily</TabsTrigger>
           <TabsTrigger value="weekly">Weekly</TabsTrigger>
           <TabsTrigger value="monthly">Monthly</TabsTrigger>
           <TabsTrigger value="archive">Saved reports</TabsTrigger>
         </TabsList>
-        <TabsContent value="daily" className="mt-4">
-          <BriefingOrEmpty row={dashboard.latest.daily} kind="daily" />
-        </TabsContent>
         <TabsContent value="weekly" className="mt-4">
           <BriefingOrEmpty row={dashboard.latest.weekly} kind="weekly" />
         </TabsContent>
