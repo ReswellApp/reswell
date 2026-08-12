@@ -44,7 +44,7 @@ export type MarketplaceParsedQuery = {
   /** Noise-stripped query used for residual matching. */
   cleaned: string
   brand: MarketplaceParsedBrand | null
-  /** Best catalog model match (longest / exact). */
+  /** Best catalog model match (exact / phrase / unique completion). Null when sibling variants share the query. */
   model: MarketplaceParsedModel | null
   /** All catalog models matching the model phrase (e.g. Dumpster Diver + Dumpster Diver 2). */
   modelIds: string[]
@@ -279,11 +279,23 @@ async function resolveBrandForParse(
   return null
 }
 
+/**
+ * Catalog tokens the shopper did not type. Size letters ("L") are ignored so
+ * "John John Florence (L)" stays a family match for "john john florence".
+ */
+function extraDistinctiveModelTokens(name: string, query: string): string[] {
+  const queryTokens = new Set(modelQueryTokens(query))
+  return modelQueryTokens(name).filter(
+    (t) => !queryTokens.has(t) && t.length >= 3 && !MODEL_QUERY_LENGTH_UNIT_STOPWORDS.has(t),
+  )
+}
+
 function pickBestModel(
   q: string,
   candidates: MarketplaceParsedModel[],
 ): MarketplaceParsedModel | null {
   if (candidates.length === 0) return null
+  if (candidates.length === 1) return candidates[0] ?? null
   const lower = q.toLowerCase()
   const exact = candidates.find((c) => c.name.toLowerCase() === lower)
   if (exact) return exact
@@ -294,8 +306,20 @@ function pickBestModel(
   if (matched) {
     return candidates.find((c) => c.id === matched.id) ?? null
   }
-  // Prefer longer catalog names so "Dumpster Diver 2" wins over a short partial when both match.
-  return [...candidates].sort((a, b) => b.name.length - a.name.length)[0] ?? null
+  // Sibling variants share a prefix ("John John Florence Techflex" vs
+  // "… Vapor Core Scimitar"). Longest-name wins used to pick one sibling,
+  // then ES required that variant's extra tokens and dropped the others.
+  const scored = candidates.map((c) => ({
+    model: c,
+    extra: extraDistinctiveModelTokens(c.name, q).length,
+  }))
+  const minExtra = Math.min(...scored.map((s) => s.extra))
+  const closest = scored.filter((s) => s.extra === minExtra)
+  if (closest.length === 1) return closest[0]?.model ?? null
+  if (minExtra > 0) return null
+  return (
+    [...closest].sort((a, b) => a.model.name.length - b.model.name.length)[0]?.model ?? null
+  )
 }
 
 async function resolveModelsForParse(
@@ -486,8 +510,10 @@ export async function parseMarketplaceQuery(
         (synonymMapsToBrand && residual.length === 0)),
   )
 
-  // Always keep keyword text so listings missing brand_model_id still match on title/model.
-  const textQuery = residual || model?.name || cleaned || raw
+  // Keyword text is what the shopper typed, never a longer catalog variant.
+  // Falling back to model.name turned "john john florence" into
+  // "John John Florence Vapor Core Scimitar (L)" and ES dropped Techflex.
+  const textQuery = residual || residualAfterBrand || cleaned || raw
 
   return {
     raw,

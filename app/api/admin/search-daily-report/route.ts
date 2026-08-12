@@ -6,6 +6,7 @@ import {
   pacificCalendarDate,
   previousPacificCalendarDate,
   runSearchDailyReport,
+  toSearchDailyReportIndexItem,
 } from "@/lib/services/searchDailyReport"
 import {
   searchDailyReportGenerateSchema,
@@ -33,25 +34,23 @@ export async function GET(request: NextRequest) {
   try {
     const defaultDate = previousPacificCalendarDate()
     const todayPacific = pacificCalendarDate()
-    const recent = await listSearchDailyReportsService(parsed.data.limit)
+    const rows = await listSearchDailyReportsService(parsed.data.limit)
+    const days = rows.map(toSearchDailyReportIndexItem)
     const requestedDate = parsed.data.date
-    const preferredDate = requestedDate ?? recent[0]?.report_date ?? defaultDate
-    const fromRecent = recent.find((r) => r.report_date === preferredDate) ?? null
-    const report = fromRecent ?? (await getSearchDailyReportService(preferredDate))
+    const fromList = requestedDate
+      ? rows.find((r) => r.report_date === requestedDate) ?? null
+      : null
+    const report =
+      requestedDate == null
+        ? null
+        : fromList ?? (await getSearchDailyReportService(requestedDate))
 
     return NextResponse.json({
       data: {
-        date: preferredDate,
         defaultDate,
         todayPacific,
+        days,
         report,
-        recent: recent.map((r) => ({
-          date: r.report_date,
-          status: r.status,
-          generatedAt: r.generated_at,
-          totalSearches: r.snapshot.totalSearches,
-          zeroResultEventCount: r.snapshot.zeroResultEventCount,
-        })),
       },
     })
   } catch (e) {

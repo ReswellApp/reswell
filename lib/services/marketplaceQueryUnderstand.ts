@@ -13,6 +13,8 @@ import {
   type MarketplaceNlSearchIntent,
 } from "@/lib/validations/marketplaceNlSearch"
 import type { MarketplaceParsedQuery } from "@/lib/services/marketplaceQueryParse"
+import { isMarketplaceSearchNoiseToken } from "@/lib/utils/marketplace-brand-query"
+import { compactSearchCurationKey } from "@/lib/validations/searchCuration"
 import {
   constructionLabel,
   extractConstructionsFromQuery,
@@ -31,8 +33,9 @@ import {
   tailShapeLabel,
 } from "@/lib/utils/marketplace-tail-query"
 
-const NL_CACHE_TAG = "marketplace-nl-search"
+export const MARKETPLACE_NL_SEARCH_CACHE_TAG = "marketplace-nl-search"
 const NL_CACHE_SECONDS = 60 * 30
+const MAX_SYNONYM_HINTS = 12
 
 /** Default: Gemini Flash via Vercel AI Gateway (`AI_GATEWAY_API_KEY` or OIDC). */
 function nlSearchModelId(): string {
@@ -76,16 +79,56 @@ export function marketplaceQueryLikelyNeedsLlm(
 
   if (nlSignals) return true
 
-  // Multi-token queries with no structured brand/model hit still benefit from NL.
   const tokens = lower.match(/[\w']+/g) ?? []
-  if (tokens.length >= 3 && !rulesParsed.model && rulesParsed.modelIds.length === 0) {
+  const hasModel = Boolean(rulesParsed.model || rulesParsed.modelIds.length > 0)
+
+  // Multi-token queries with no structured brand/model hit still benefit from NL.
+  if (tokens.length >= 3 && !hasModel) return true
+
+  // Curated synonym/typo recovery — expansions matched but the typed query isn't already
+  // the canonical catalog name (skip "channel islands"; keep "ci 6 foot" / "chanel islands").
+  if (
+    tokens.length >= 2 &&
+    (rulesParsed.expansions?.length ?? 0) > 0 &&
+    !hasModel &&
+    !queryMatchesCanonicalExpansion(q, rulesParsed.expansions)
+  ) {
+    return true
+  }
+
+  // Two-token proper-name-looking queries with no catalog hit (e.g. "dumpstr diver").
+  if (!hasModel && !rulesParsed.brand && looksLikeCatalogNameQuery(tokens)) {
     return true
   }
 
   return false
 }
 
-async function callGeminiForNlIntent(rawQuery: string): Promise<MarketplaceNlSearchIntent | null> {
+/** Distinctive 2–4 token phrases that look like a mistyped brand/model, not filter chatter. */
+function looksLikeCatalogNameQuery(tokens: string[]): boolean {
+  if (tokens.length < 2 || tokens.length > 4) return false
+  const meaningful = tokens.filter((t) => t.length >= 4 && !isMarketplaceSearchNoiseToken(t))
+  return meaningful.length >= 2
+}
+
+function queryMatchesCanonicalExpansion(rawQuery: string, expansions: string[]): boolean {
+  const q = compactSearchCurationKey(rawQuery)
+  if (q.length < 4) return false
+  return expansions.some((expansion) => compactSearchCurationKey(expansion) === q)
+}
+
+function synonymHintBlock(expansions: string[]): string {
+  if (expansions.length === 0) return ""
+  const lines = expansions.map((e) => `- ${e}`).join("\n")
+  return `
+Known catalog names for this query (from search synonyms). If the user mistyped or used a nickname, set brandText/modelText to these canonical names. Do not invent names that are not in this list or clearly named in the query:
+${lines}`
+}
+
+async function callGeminiForNlIntent(
+  rawQuery: string,
+  synonymExpansions: string[],
+): Promise<MarketplaceNlSearchIntent | null> {
   const q = rawQuery.trim()
   if (q.length < 2) return null
 
@@ -104,14 +147,14 @@ Map casual language:
 - Tail shapes: "round tail" / "round" → round; "squash" → squash; "pin" / "pintail" → pin; "swallow" → swallow
 - Construction: "epoxy" → eps_epoxy; "poly" / "pu" → pu_poly; "carbon" → carbon
 If a field is not mentioned, use null or [].
-CRITICAL: Never invent brandText or modelText. Only set them when the user clearly named that brand or model. Queries like "6 foot board" / "6 foot surfboard" are length-only — brandText and modelText must be null, lengthToken "6'0", residualText "".
+CRITICAL: Never invent brandText or modelText the user did not refer to. Obvious misspellings of well-known surf brands/models are allowed (e.g. "chanel islands" → Channel Islands, "dumpstr diver" → Dumpster Diver). If a Known catalog names list is provided, prefer those. Queries like "6 foot board" / "6 foot surfboard" are length-only — brandText and modelText must be null, lengthToken "6'0", residualText "".
 Split the query into:
 1) structured filters (brand/model/price/condition/fins/tail/construction/location/shipping/style)
 2) residualText = ONLY leftover model words that help rank listings (e.g. "puddle jumper", "sub driver").
 Never put brand names, prices, fin/tail words (fcs, thruster, round tail, …), "under"/"over"/"near", shipping, condition words, or generic words like "boards"/"surfboards"/"board" into residualText.
 If the query is only filters (e.g. "lost under $800", "boards with fcs", "6 foot board"), residualText must be "".
 Prices are USD integers.`,
-      prompt: `Extract search filters from this query:\n"""${q}"""`,
+      prompt: `Extract search filters from this query:\n"""${q}"""${synonymHintBlock(synonymExpansions)}`,
       temperature: 0,
       providerOptions: {
         gateway: {
@@ -158,11 +201,22 @@ function uniqueStrings(values: string[]): string[] {
 }
 
 const getCachedNlIntent = unstable_cache(
-  async (normalizedQuery: string): Promise<MarketplaceNlSearchIntent | null> => {
-    return callGeminiForNlIntent(normalizedQuery)
+  async (normalizedQuery: string, expansionKey: string): Promise<MarketplaceNlSearchIntent | null> => {
+    let expansions: string[] = []
+    if (expansionKey) {
+      try {
+        const parsed: unknown = JSON.parse(expansionKey)
+        if (Array.isArray(parsed)) {
+          expansions = parsed.filter((item): item is string => typeof item === "string")
+        }
+      } catch {
+        expansions = []
+      }
+    }
+    return callGeminiForNlIntent(normalizedQuery, expansions)
   },
-  ["marketplace-nl-search-v5"],
-  { revalidate: NL_CACHE_SECONDS, tags: [NL_CACHE_TAG] },
+  ["marketplace-nl-search-v6"],
+  { revalidate: NL_CACHE_SECONDS, tags: [MARKETPLACE_NL_SEARCH_CACHE_TAG] },
 )
 
 /**
@@ -182,7 +236,8 @@ export async function understandMarketplaceQueryWithLlm(
   if (!options?.force && !marketplaceQueryLikelyNeedsLlm(q, rulesParsed)) return null
 
   const key = q.toLowerCase().replace(/\s+/g, " ")
-  return getCachedNlIntent(key)
+  const expansions = uniqueStrings((rulesParsed.expansions ?? []).slice(0, MAX_SYNONYM_HINTS))
+  return getCachedNlIntent(key, JSON.stringify(expansions))
 }
 
 /** Human-readable chips for the results banner. */

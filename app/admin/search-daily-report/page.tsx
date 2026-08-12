@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import { SearchDailyReportAdminClient } from "@/components/features/admin/search-daily-report-admin-client"
 
@@ -11,8 +12,10 @@ export const metadata = privatePageMetadata({
 export default function AdminSearchDailyReportPage() {
   return (
     <>
-      <h1 className="sr-only">Search daily report</h1>
-      <SearchDailyReportAdminClient />
+      <h1 className="sr-only">Search daily reports</h1>
+      <Suspense fallback={<p className="text-sm text-muted-foreground">Loading daily reports…</p>}>
+        <SearchDailyReportAdminClient />
+      </Suspense>
     </>
   )
 }

@@ -237,3 +237,40 @@ export async function listRecentlySoldListingsForBrand(
 
   return ordered
 }
+
+/**
+ * Active listing ids linked to catalog models — same recall path nav typeahead
+ * uses when Elasticsearch over-constrains a shared model prefix.
+ */
+export async function listActiveListingIdsByBrandModelIds(
+  supabase: SupabaseClient,
+  modelIds: string[],
+  options: { limit: number; sections?: string[] },
+): Promise<string[]> {
+  const ids = [...new Set(modelIds.map((id) => id.trim()).filter(Boolean))]
+  if (ids.length === 0) return []
+
+  let q = supabase
+    .from("listings")
+    .select("id")
+    .eq("status", "active")
+    .eq("hidden_from_site", false)
+    .in("brand_model_id", ids)
+    .order("created_at", { ascending: false })
+    .limit(options.limit)
+
+  if (options.sections?.length) {
+    q = q.in("section", options.sections)
+  } else {
+    q = q.in("section", PEER_LISTING_SECTIONS_FILTER)
+  }
+
+  const { data, error } = await q
+  if (error) {
+    console.error("[listActiveListingIdsByBrandModelIds]", error.message)
+    return []
+  }
+  return ((data ?? []) as { id: string }[])
+    .map((row) => row.id)
+    .filter((id) => id.length > 0)
+}

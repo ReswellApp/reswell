@@ -3,7 +3,7 @@
  *
  * Does not run on the boards browse critical path — the client calls
  * `/api/search/nl-helper` after first paint to refine filters that rules miss
- * (condition, construction, location, shipping, fuzzy brand/model).
+ * (condition, construction, location, shipping, fuzzy brand/model, synonym typos).
  */
 
 import "server-only"

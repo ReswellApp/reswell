@@ -20,7 +20,10 @@ import {
   stripMarketplaceSearchNoiseWords,
 } from "@/lib/utils/marketplace-brand-query"
 import { hydrateListingsByIds } from "@/lib/search/hydrate-listings"
-import { listActiveListingsForBrand } from "@/lib/db/brand-listings"
+import {
+  listActiveListingIdsByBrandModelIds,
+  listActiveListingsForBrand,
+} from "@/lib/db/brand-listings"
 import { fetchCuratedRecentListings } from "@/lib/db/curatedRecentListings"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
 import { resolveDirectoryBrandRowFromLabel } from "@/lib/services/brandDirectorySearch"
@@ -245,7 +248,7 @@ export async function SearchPageView({
           <p className="mt-1 text-sm text-muted-foreground">
             {brandUnknown ? (
               <>Check the spelling or search from the header — that slug is not in our brand directory.</>
-            ) : matchedModel && rawQuery.trim() ? (
+            ) : parsedQuery?.model && rawQuery.trim() ? (
               <>
                 Matching catalog model
                 {parsedQuery?.lengthToken ? <> · length {parsedQuery.lengthToken}</> : null}
@@ -461,6 +464,16 @@ async function resolveSearchListings(
         })
       }
       listings = await hydrateListingsByIds(supabase, ids)
+      // Stale ES hits (deleted/hidden) skip relaxation because ids.length > 0.
+      if (listings.length === 0 && ids.length > 0) {
+        ids = await runEs({
+          q: rawQuery.trim(),
+          brandModelIds: null,
+          brandId: null,
+          lengthInches: null,
+        })
+        listings = await hydrateListingsByIds(supabase, ids)
+      }
       backend = "elasticsearch"
     } catch (err) {
       console.error("[search] Elasticsearch error, falling back to Supabase:", err)
@@ -476,6 +489,18 @@ async function resolveSearchListings(
       listings = retry.listings
     }
     backend = "supabase"
+  }
+
+  // Same recall path as nav typeahead: listings linked to the matched catalog models.
+  if (listings.length === 0 && brandModelIds.length > 0) {
+    const pinnedIds = await listActiveListingIdsByBrandModelIds(supabase, brandModelIds, {
+      limit: LIMIT,
+      sections,
+    })
+    if (pinnedIds.length > 0) {
+      listings = await hydrateListingsByIds(supabase, pinnedIds)
+      if (listings.length > 0) backend = "supabase"
+    }
   }
 
   // Final safety net: admin-pinned listings for queries that still found nothing.

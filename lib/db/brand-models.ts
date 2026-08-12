@@ -381,3 +381,30 @@ export async function deleteBrandModel(
   }
   return { ok: true }
 }
+
+export async function searchBrandsByName(
+  supabase: SupabaseClient,
+  qRaw: string,
+  limit = 8,
+): Promise<{ id: string; name: string; slug: string }[]> {
+  const q = qRaw.trim()
+  if (q.length < 1) return []
+  const safe = escapeIlikeToken(q)
+  const pattern = q.length < 4 ? `${safe}%` : `%${safe}%`
+  const { data, error } = await supabase
+    .from("brands")
+    .select("id, name, slug")
+    .ilike("name", pattern)
+    .order("name", { ascending: true })
+    .limit(limit)
+
+  if (error) {
+    console.error("searchBrandsByName:", error.message)
+    return []
+  }
+  return ((data ?? []) as { id: string; name: string; slug: string }[]).map((row) => ({
+    id: row.id,
+    name: row.name.trim(),
+    slug: row.slug.trim(),
+  }))
+}

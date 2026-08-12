@@ -40,6 +40,13 @@ import {
   searchDailyLlmReportSchema,
   type SearchDailyLlmReport,
 } from "@/lib/validations/search-daily-report"
+import {
+  applySearchDailySynonymForQuery,
+  applySearchDailySynonymProposals,
+  loadCatalogHintsForQueries,
+  loadExistingSynonymSummaries,
+  type CatalogHint,
+} from "@/lib/services/searchDailyReportSynonyms"
 
 export const SEARCH_DAILY_REPORT_TZ = "America/Los_Angeles"
 
@@ -163,12 +170,14 @@ function emptyLlmReport(reason: string): SearchDailyLlmReport {
     buyerExperience: [],
     recurringFromPriorDays: [],
     topActions: [],
+    synonymProposals: [],
   }
 }
 
 type DailyReportCorpus = {
   snapshot: SearchDailyReportSnapshot
   promptPayload: Record<string, unknown>
+  catalogHints: CatalogHint[]
 }
 
 async function collectDailyReportCorpus(
@@ -283,7 +292,15 @@ async function collectDailyReportCorpus(
     demandCapture,
   }
 
-  return { snapshot, promptPayload }
+  const zeroQueries = (dayQueries?.zeroResultQueries ?? []).map((row) => row.query)
+  const [catalogHints, existingSynonyms] = await Promise.all([
+    loadCatalogHintsForQueries(zeroQueries),
+    loadExistingSynonymSummaries(),
+  ])
+  promptPayload.catalogHints = catalogHints
+  promptPayload.existingSynonyms = existingSynonyms
+
+  return { snapshot, promptPayload, catalogHints }
 }
 
 type PriorBrief = {
@@ -340,6 +357,7 @@ Rules:
 - Prefer actions a small marketplace team can do this week.
 - If prior-day briefs are provided, call out recurring unmet demand in recurringFromPriorDays.
 - likelyCause for empty searches: no_inventory if the term looks like a real board/brand with no listings; synonym_gap if it is likely a spelling/alias of something we sell; typo_or_spelling for obvious typos; nl_parse_miss for natural-language filters that probably failed; wrong_category if they searched the wrong surface; unknown otherwise.
+- synonymProposals: for every empty search that is an alias, nickname, or spacing variant of a catalogHints brand/model (e.g. "pod mod" / "podmod" → Channel Islands Pod Mod; "mini magic" → Walden Mini Magic), emit a structured rule. Set apply=true only when catalogHints lists that brand/model. Set apply=false when the board is not in the catalog (inventory gap). Do not duplicate existingSynonyms. Leave applied and skippedReason unset.
 - topActions: 3–7 concrete next steps, highest leverage first.
 - Keep executiveSummary readable in an email (no markdown headings).`,
     prompt: `Pacific calendar date: ${reportDate} (${SEARCH_DAILY_REPORT_TZ})
@@ -538,6 +556,15 @@ export async function runSearchDailyReport(opts: {
 
   try {
     const report = await callGeminiForDailyReport(date, fromIso, toExclusiveIso, corpus, prior)
+    const proposals = (report.synonymProposals ?? []).map((proposal) => ({
+      ...proposal,
+      applied: undefined,
+      skippedReason: undefined,
+    }))
+    const withSynonyms = await applySearchDailySynonymProposals(
+      { ...report, synonymProposals: proposals },
+      corpus.catalogHints,
+    )
     const rowRes = await upsertSearchDailyReport(supabase, {
       reportDate: date,
       generatedAt,
@@ -546,7 +573,7 @@ export async function runSearchDailyReport(opts: {
       fromIso,
       toIso: toExclusiveIso,
       snapshot: corpus.snapshot,
-      report,
+      report: withSynonyms,
       error: null,
     })
     if (rowRes.error) throw rowRes.error
@@ -584,6 +611,45 @@ export async function runSearchDailyReport(opts: {
   }
 }
 
+export async function applySearchDailyReportSynonym(opts: {
+  date: string
+  query: string
+  createdBy?: string | null
+}): Promise<
+  | { ok: true; row: SearchDailyReportRow }
+  | { ok: false; error: string }
+> {
+  const supabase = createServiceRoleClient()
+  const { row, error } = await getSearchDailyReportByDate(supabase, opts.date)
+  if (error) return { ok: false, error: error.message }
+  if (!row?.report) return { ok: false, error: "No report for that date." }
+
+  const nextReport = await applySearchDailySynonymForQuery(
+    {
+      ...row.report,
+      synonymProposals: row.report.synonymProposals ?? [],
+    },
+    opts.query,
+    [],
+    opts.createdBy,
+  )
+  const saved = await upsertSearchDailyReport(supabase, {
+    reportDate: row.report_date,
+    generatedAt: row.generated_at,
+    model: row.model,
+    status: row.status,
+    fromIso: row.from_iso,
+    toIso: row.to_iso,
+    snapshot: row.snapshot,
+    report: nextReport,
+    error: row.error,
+  })
+  if (saved.error || !saved.row) {
+    return { ok: false, error: saved.error?.message ?? "Could not save the report." }
+  }
+  return { ok: true, row: saved.row }
+}
+
 export async function getSearchDailyReportService(date: string): Promise<SearchDailyReportRow | null> {
   const supabase = createServiceRoleClient()
   const { row, error } = await getSearchDailyReportByDate(supabase, date)
@@ -598,6 +664,43 @@ export async function listSearchDailyReportsService(
   const { rows, error } = await listSearchDailyReports(supabase, limit)
   if (error) throw error
   return rows
+}
+
+export type SearchDailyReportIndexItem = {
+  date: string
+  status: SearchDailyReportRow["status"]
+  generatedAt: string
+  totalSearches: number
+  uniqueQueriesApprox: number
+  zeroResultEventCount: number
+  zeroResultShare: number | null
+  dropdownClicks: number
+  demandCaptureTotal: number
+  executiveSummary: string | null
+  synonymAppliedCount: number
+  emptyFixCount: number
+  error: string | null
+}
+
+export function toSearchDailyReportIndexItem(
+  row: SearchDailyReportRow,
+): SearchDailyReportIndexItem {
+  const proposals = row.report?.synonymProposals ?? []
+  return {
+    date: row.report_date,
+    status: row.status,
+    generatedAt: row.generated_at,
+    totalSearches: row.snapshot.totalSearches,
+    uniqueQueriesApprox: row.snapshot.uniqueQueriesApprox,
+    zeroResultEventCount: row.snapshot.zeroResultEventCount,
+    zeroResultShare: row.snapshot.zeroResultShare,
+    dropdownClicks: row.snapshot.dropdownClicks,
+    demandCaptureTotal: row.snapshot.demandCaptureTotal,
+    executiveSummary: row.report?.executiveSummary ?? null,
+    synonymAppliedCount: proposals.filter((p) => p.applied).length,
+    emptyFixCount: row.report?.emptySearchFixes.length ?? 0,
+    error: row.error,
+  }
 }
 
 export type { SearchDailyReportRow, SearchDailyReportSnapshot } from "@/lib/db/searchDailyReports"

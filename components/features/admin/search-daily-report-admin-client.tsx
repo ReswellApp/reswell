@@ -1,63 +1,40 @@
 "use client"
 
-import type { ReactNode } from "react"
-import { useCallback, useEffect, useState, useTransition } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react"
 import Link from "next/link"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import {
   AlertTriangle,
-  ArrowRight,
-  ClipboardList,
+  ChevronDown,
   Loader2,
-  Package,
   RefreshCw,
-  Search,
   Sparkles,
-  Store,
-  Users,
-  Wand2,
+  X,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import type { SearchDailyReportRow } from "@/lib/services/searchDailyReport"
-import type { SearchDailyLlmReport } from "@/lib/validations/search-daily-report"
-
-type RecentRow = {
-  date: string
-  status: SearchDailyReportRow["status"]
-  generatedAt: string
-  totalSearches: number
-  zeroResultEventCount: number
-}
+import {
+  SearchDailyReportBody,
+  SearchDailyReportKpis,
+} from "@/components/features/admin/search-daily-report-body"
+import type {
+  SearchDailyReportIndexItem,
+  SearchDailyReportRow,
+} from "@/lib/services/searchDailyReport"
 
 type DashboardPayload = {
-  date: string
   defaultDate: string
   todayPacific: string
+  days: SearchDailyReportIndexItem[]
   report: SearchDailyReportRow | null
-  recent: RecentRow[]
 }
 
-const OWNER_LABEL: Record<string, string> = {
-  inventory: "Inventory",
-  search: "Search",
-  sellers: "Sellers",
-  buyers: "Buyers",
-  ops: "Ops",
-}
+const STRIP_DAYS = 28
 
-const CAUSE_LABEL: Record<string, string> = {
-  no_inventory: "No inventory",
-  synonym_gap: "Synonym gap",
-  typo_or_spelling: "Typo / spelling",
-  wrong_category: "Wrong category",
-  nl_parse_miss: "NL parse miss",
-  unknown: "Unknown",
-}
-
-const PRIORITY_TINT: Record<string, string> = {
-  high: "bg-rose-50 text-rose-700",
-  medium: "bg-amber-50 text-amber-800",
-  low: "bg-slate-100 text-slate-600",
+function shiftYmd(ymd: string, days: number): string {
+  const [year, month, day] = ymd.split("-").map(Number)
+  const dt = new Date(Date.UTC(year, month - 1, day + days))
+  return dt.toISOString().slice(0, 10)
 }
 
 function formatDateLabel(ymd: string): string {
@@ -71,226 +48,83 @@ function formatDateLabel(ymd: string): string {
   })
 }
 
-function pct(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(n)) return "—"
-  return `${Math.round(n * 1000) / 10}%`
+function formatMonthLabel(yearMonth: string): string {
+  const [year, month] = yearMonth.split("-").map(Number)
+  return new Date(year, month - 1, 1).toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  })
 }
 
-function KpiCard({
-  label,
-  value,
-  subtitle,
-}: {
-  label: string
-  value: string
-  subtitle?: string
-}) {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="mt-1.5 text-2xl font-bold tabular-nums text-slate-900">{value}</p>
-      {subtitle ? <p className="mt-1 text-xs text-slate-500">{subtitle}</p> : null}
-    </div>
-  )
+function weekdayShort(ymd: string): string {
+  const d = new Date(`${ymd}T12:00:00`)
+  if (Number.isNaN(d.getTime())) return ""
+  return d.toLocaleDateString("en-US", { weekday: "short" })
 }
 
-function SectionCard({
-  title,
-  icon,
-  children,
-}: {
-  title: string
-  icon: ReactNode
-  children: ReactNode
-}) {
-  return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-      <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-slate-600">
-          {icon}
-        </span>
-        {title}
-      </h3>
-      <div className="mt-4">{children}</div>
-    </section>
-  )
+function dayNumber(ymd: string): string {
+  return String(Number(ymd.slice(8, 10)))
 }
 
-function EmptyHint({ children }: { children: ReactNode }) {
-  return <p className="text-sm text-slate-500">{children}</p>
+function emptyTone(share: number | null, hasReport: boolean): string {
+  if (!hasReport) return "border-dashed border-slate-200 bg-white text-slate-400"
+  if (share == null || share <= 0) return "border-emerald-200 bg-emerald-50 text-emerald-800"
+  if (share < 0.15) return "border-amber-200 bg-amber-50 text-amber-900"
+  return "border-rose-200 bg-rose-50 text-rose-900"
 }
 
-function ActionList({
-  items,
-}: {
-  items: { finding: string; action: string }[]
-}) {
-  if (items.length === 0) return <EmptyHint>Nothing flagged for this day.</EmptyHint>
-  return (
-    <ul className="space-y-3">
-      {items.map((item) => (
-        <li key={item.finding} className="rounded-lg border border-slate-100 bg-slate-50/60 p-3">
-          <p className="text-sm font-medium text-slate-900">{item.finding}</p>
-          <p className="mt-1 text-sm text-slate-600">{item.action}</p>
-        </li>
-      ))}
-    </ul>
-  )
+function statusLabel(status: SearchDailyReportIndexItem["status"]): string {
+  if (status === "complete") return "Ready"
+  if (status === "empty") return "Quiet day"
+  if (status === "failed") return "Failed"
+  return "Generating"
 }
 
-function ReportBody({ report }: { report: SearchDailyLlmReport }) {
-  return (
-    <div className="space-y-6">
-      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-          Executive summary
-        </h3>
-        <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
-          {report.executiveSummary}
-        </p>
-      </section>
-
-      {report.topActions.length > 0 ? (
-        <SectionCard title="Top actions" icon={<ClipboardList className="h-4 w-4" />}>
-          <ol className="space-y-3">
-            {report.topActions.map((a, i) => (
-              <li key={a.title} className="flex gap-3">
-                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
-                  {i + 1}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-900">{a.title}</p>
-                  <p className="mt-0.5 text-sm text-slate-600">{a.why}</p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {OWNER_LABEL[a.owner] ?? a.owner} · {a.effort} effort
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </SectionCard>
-      ) : null}
-
-      {report.emptySearchFixes.length > 0 ? (
-        <SectionCard title="Empty / no-result searches" icon={<Search className="h-4 w-4" />}>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
-                  <th className="py-2 pr-3 font-medium">Query</th>
-                  <th className="py-2 pr-3 font-medium">Count</th>
-                  <th className="py-2 pr-3 font-medium">Cause</th>
-                  <th className="py-2 pr-3 font-medium">Inventory</th>
-                  <th className="py-2 font-medium">Search</th>
-                </tr>
-              </thead>
-              <tbody>
-                {report.emptySearchFixes.map((row) => (
-                  <tr key={`${row.query}-${row.searchCount}`} className="border-b border-slate-100 align-top">
-                    <td className="py-2.5 pr-3 font-medium text-slate-900">“{row.query}”</td>
-                    <td className="py-2.5 pr-3 tabular-nums text-slate-700">{row.searchCount}</td>
-                    <td className="py-2.5 pr-3 text-slate-600">
-                      {CAUSE_LABEL[row.likelyCause] ?? row.likelyCause}
-                    </td>
-                    <td className="py-2.5 pr-3 text-slate-600">{row.inventoryAction}</td>
-                    <td className="py-2.5 text-slate-600">{row.searchAction}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </SectionCard>
-      ) : null}
-
-      {report.inventoryOpportunities.length > 0 ? (
-        <SectionCard title="Inventory to source" icon={<Package className="h-4 w-4" />}>
-          <ul className="space-y-3">
-            {report.inventoryOpportunities.map((item) => (
-              <li
-                key={item.item}
-                className="rounded-lg border border-slate-100 bg-slate-50/60 p-3"
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm font-medium text-slate-900">{item.item}</p>
-                  <span
-                    className={cn(
-                      "rounded-full px-2 py-0.5 text-[11px] font-medium capitalize",
-                      PRIORITY_TINT[item.priority] ?? PRIORITY_TINT.low,
-                    )}
-                  >
-                    {item.priority}
-                  </span>
-                </div>
-                <p className="mt-1 text-sm text-slate-600">{item.demandSignal}</p>
-                <p className="mt-1 text-sm text-slate-700">{item.sellerPlay}</p>
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
-      ) : null}
-
-      {report.demandThemes.length > 0 ? (
-        <SectionCard title="Demand themes" icon={<Wand2 className="h-4 w-4" />}>
-          <ul className="space-y-3">
-            {report.demandThemes.map((t) => (
-              <li key={t.theme} className="rounded-lg border border-slate-100 bg-slate-50/60 p-3">
-                <p className="text-sm font-medium text-slate-900">{t.theme}</p>
-                <p className="mt-1 text-sm text-slate-600">{t.buyerIntent}</p>
-                <p className="mt-1 text-xs text-slate-500">{t.evidence}</p>
-                <p className="mt-2 text-sm text-slate-700">{t.recommendation}</p>
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
-      ) : null}
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <SectionCard title="Dropdown / typeahead" icon={<ArrowRight className="h-4 w-4" />}>
-          <ActionList items={report.dropdownInsights} />
-        </SectionCard>
-        <SectionCard title="Search quality" icon={<Search className="h-4 w-4" />}>
-          <ActionList items={report.searchQuality} />
-        </SectionCard>
-        <SectionCard title="Seller opportunities" icon={<Store className="h-4 w-4" />}>
-          <ActionList items={report.sellerOpportunities} />
-        </SectionCard>
-        <SectionCard title="Buyer experience" icon={<Users className="h-4 w-4" />}>
-          <ActionList items={report.buyerExperience} />
-        </SectionCard>
-      </div>
-
-      {report.recurringFromPriorDays.length > 0 ? (
-        <SectionCard title="Recurring from prior days" icon={<RefreshCw className="h-4 w-4" />}>
-          <ul className="space-y-3">
-            {report.recurringFromPriorDays.map((r) => (
-              <li key={r.theme} className="rounded-lg border border-slate-100 bg-slate-50/60 p-3">
-                <p className="text-sm font-medium text-slate-900">{r.theme}</p>
-                <p className="mt-0.5 text-xs text-slate-500">Seen across {r.daysSeen} days</p>
-                <p className="mt-1 text-sm text-slate-600">{r.nextStep}</p>
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
-      ) : null}
-    </div>
-  )
+function groupByMonth(days: SearchDailyReportIndexItem[]): { month: string; rows: SearchDailyReportIndexItem[] }[] {
+  const groups: { month: string; rows: SearchDailyReportIndexItem[] }[] = []
+  for (const row of days) {
+    const month = row.date.slice(0, 7)
+    const last = groups[groups.length - 1]
+    if (last && last.month === month) last.rows.push(row)
+    else groups.push({ month, rows: [row] })
+  }
+  return groups
 }
 
 export function SearchDailyReportAdminClient() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const openDate = searchParams.get("date")
+
   const [payload, setPayload] = useState<DashboardPayload | null>(null)
+  const [cache, setCache] = useState<Record<string, SearchDailyReportRow>>({})
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const [generating, setGenerating] = useState(false)
+  const [applyingQuery, setApplyingQuery] = useState<string | null>(null)
 
-  const load = useCallback((date?: string) => {
+  const setOpenDate = useCallback(
+    (date: string | null) => {
+      const params = new URLSearchParams(searchParams.toString())
+      if (date) params.set("date", date)
+      else params.delete("date")
+      const qs = params.toString()
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+    },
+    [pathname, router, searchParams],
+  )
+
+  const load = useCallback((date?: string | null) => {
     startTransition(async () => {
       setError(null)
       try {
-        const qs = date ? `?date=${encodeURIComponent(date)}` : ""
-        const res = await fetch(`/api/admin/search-daily-report${qs}`, { cache: "no-store" })
+        const params = new URLSearchParams({ limit: "90" })
+        if (date) params.set("date", date)
+        const res = await fetch(`/api/admin/search-daily-report?${params}`, { cache: "no-store" })
         const json = (await res.json()) as { data?: DashboardPayload; error?: string }
         if (!res.ok) {
-          setError(json.error ?? "Could not load daily report")
+          setError(json.error ?? "Could not load daily reports")
           return
         }
         if (!json.data) {
@@ -298,15 +132,32 @@ export function SearchDailyReportAdminClient() {
           return
         }
         setPayload(json.data)
+        if (json.data.report) {
+          setCache((prev) => ({ ...prev, [json.data!.report!.report_date]: json.data!.report! }))
+        }
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Could not load daily report")
+        setError(e instanceof Error ? e.message : "Could not load daily reports")
       }
     })
   }, [])
 
+  const cacheRef = useRef(cache)
+  cacheRef.current = cache
+  const skipNextOpenFetch = useRef(true)
+
   useEffect(() => {
-    load()
+    load(openDate)
   }, [load])
+
+  useEffect(() => {
+    if (skipNextOpenFetch.current) {
+      skipNextOpenFetch.current = false
+      return
+    }
+    if (!openDate) return
+    if (cacheRef.current[openDate]?.report) return
+    load(openDate)
+  }, [openDate, load])
 
   const generate = useCallback(
     async (date: string, force: boolean) => {
@@ -326,20 +177,82 @@ export function SearchDailyReportAdminClient() {
           setError(json.error ?? "Could not generate report")
           return
         }
-        await load(json.data?.date ?? date)
+        const nextDate = json.data?.date ?? date
+        if (json.data?.row) {
+          setCache((prev) => ({ ...prev, [nextDate]: json.data!.row! }))
+        }
+        setOpenDate(nextDate)
+        load(nextDate)
       } catch (e) {
         setError(e instanceof Error ? e.message : "Could not generate report")
       } finally {
         setGenerating(false)
       }
     },
-    [load],
+    [load, setOpenDate],
   )
 
-  const row = payload?.report ?? null
-  const activeDate = payload?.date ?? payload?.defaultDate ?? ""
-  const snapshot = row?.snapshot
-  const busy = pending || generating
+  const applySynonym = useCallback(
+    async (query: string) => {
+      if (!openDate || applyingQuery) return
+      setApplyingQuery(query)
+      setError(null)
+      try {
+        const res = await fetch("/api/admin/search-daily-report/synonyms", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ date: openDate, query }),
+        })
+        const json = (await res.json()) as {
+          data?: { report: SearchDailyReportRow }
+          error?: string
+        }
+        if (!res.ok || !json.data?.report) {
+          setError(json.error ?? "Could not add synonym")
+          return
+        }
+        const updated = json.data.report
+        setCache((prev) => ({ ...prev, [updated.report_date]: updated }))
+        setPayload((prev) => {
+          if (!prev) return prev
+          return {
+            ...prev,
+            report: updated,
+            days: prev.days.map((day) =>
+              day.date === updated.report_date
+                ? {
+                    ...day,
+                    executiveSummary: updated.report?.executiveSummary ?? day.executiveSummary,
+                    synonymAppliedCount: (updated.report?.synonymProposals ?? []).filter(
+                      (p) => p.applied,
+                    ).length,
+                    emptyFixCount: updated.report?.emptySearchFixes.length ?? day.emptyFixCount,
+                  }
+                : day,
+            ),
+          }
+        })
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Could not add synonym")
+      } finally {
+        setApplyingQuery(null)
+      }
+    },
+    [openDate, applyingQuery],
+  )
+
+  const days = payload?.days ?? []
+  const byDate = useMemo(() => new Map(days.map((d) => [d.date, d])), [days])
+  const monthGroups = useMemo(() => groupByMonth(days), [days])
+  const stripDates = useMemo(() => {
+    const end = payload?.todayPacific
+    if (!end) return []
+    return Array.from({ length: STRIP_DAYS }, (_, i) => shiftYmd(end, -(STRIP_DAYS - 1 - i)))
+  }, [payload?.todayPacific])
+
+  const openRow = openDate ? cache[openDate] ?? payload?.report ?? null : null
+  const openIndex = openDate ? byDate.get(openDate) ?? null : null
+  const busy = pending || generating || applyingQuery != null
 
   return (
     <div className="min-h-[60vh] w-full max-w-[1100px] space-y-6">
@@ -350,62 +263,52 @@ export function SearchDailyReportAdminClient() {
               <Sparkles className="h-3.5 w-3.5" />
               Gemini 2.5 · Pacific day
             </p>
-            <h2 className="mt-1 text-2xl font-semibold text-slate-900">Search daily report</h2>
+            <h2 className="mt-1 text-2xl font-semibold text-slate-900">Search daily reports</h2>
             <p className="mt-1 max-w-xl text-sm text-slate-500">
-              Each morning Gemini reads that day’s searches, dropdown clicks, and empty-result
-              queries, then recommends inventory, search, and marketplace moves.
+              One card per day. Open a report to read it, close it to get back to the calendar.
             </p>
             <p className="mt-2 text-xs text-slate-500">
               <Link href="/admin/search-analytics" className="underline underline-offset-2">
-                Open search analytics
+                Search analytics
               </Link>
               {" · "}
-              Cron runs at 14:30 UTC for the previous Pacific day.
+              <Link href="/admin/search-curation" className="underline underline-offset-2">
+                Search curation
+              </Link>
+              {" · "}
+              Cron 14:30 UTC
             </p>
           </div>
-          <div className="flex flex-col items-stretch gap-2 sm:items-end">
-            <label className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              Report date
-              <input
-                type="date"
-                className="mt-1 block h-9 w-full rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-900 sm:w-[180px]"
-                value={activeDate}
-                max={payload?.todayPacific}
-                onChange={(e) => {
-                  const next = e.target.value
-                  if (next) void load(next)
-                }}
-              />
-            </label>
-            <div className="flex flex-wrap justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9"
-                disabled={busy || !activeDate}
-                onClick={() => activeDate && void load(activeDate)}
-              >
-                {pending && !generating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
-                <span className="ml-2">Reload</span>
-              </Button>
-              <Button
-                size="sm"
-                className="h-9"
-                disabled={busy || !activeDate}
-                onClick={() => activeDate && void generate(activeDate, true)}
-              >
-                {generating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
-                <span className="ml-2">{row ? "Regenerate" : "Generate"}</span>
-              </Button>
-            </div>
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9"
+              disabled={busy}
+              onClick={() => load(openDate)}
+            >
+              {pending && !generating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              <span className="ml-2">Reload</span>
+            </Button>
+            <Button
+              size="sm"
+              className="h-9"
+              disabled={busy || !payload}
+              onClick={() => payload && void generate(openDate ?? payload.defaultDate, true)}
+            >
+              {generating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              <span className="ml-2">
+                {openDate && byDate.has(openDate) ? "Regenerate day" : "Generate yesterday"}
+              </span>
+            </Button>
           </div>
         </div>
       </div>
@@ -416,98 +319,206 @@ export function SearchDailyReportAdminClient() {
         </p>
       ) : null}
 
-      {busy && !row ? (
-        <div className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-20 text-sm text-slate-500 shadow-sm">
+      {stripDates.length > 0 ? (
+        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold text-slate-900">Last {STRIP_DAYS} days</h3>
+            <p className="text-[11px] text-slate-500">Color = empty-result rate. Click a day to open.</p>
+          </div>
+          <div className="flex gap-1 overflow-x-auto pb-1">
+            {stripDates.map((ymd) => {
+              const item = byDate.get(ymd)
+              const selected = openDate === ymd
+              return (
+                <button
+                  key={ymd}
+                  type="button"
+                  title={formatDateLabel(ymd)}
+                  onClick={() => setOpenDate(selected ? null : ymd)}
+                  className={cn(
+                    "flex h-16 w-11 shrink-0 flex-col items-center justify-center rounded-lg border text-[11px] transition-colors",
+                    emptyTone(item?.zeroResultShare ?? null, Boolean(item)),
+                    selected && "ring-2 ring-slate-900 ring-offset-1",
+                  )}
+                >
+                  <span className="font-semibold tabular-nums">{dayNumber(ymd)}</span>
+                  <span className="text-[10px] uppercase tracking-wide">{weekdayShort(ymd).slice(0, 2)}</span>
+                </button>
+              )
+            })}
+          </div>
+        </section>
+      ) : null}
+
+      {pending && days.length === 0 ? (
+        <div className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-16 text-sm text-slate-500 shadow-sm">
           <Loader2 className="h-4 w-4 animate-spin" />
-          {generating ? "Gemini is reading yesterday’s searches…" : "Loading daily report…"}
+          Loading reports…
         </div>
       ) : null}
 
-      {row?.status === "failed" ? (
-        <div className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-          <div>
-            <p className="font-medium">Report did not complete</p>
-            <p className="mt-1">{row.error ?? "Unknown error"}</p>
+      {monthGroups.map((group) => (
+        <section key={group.month} className="space-y-2">
+          <h3 className="px-1 text-sm font-semibold text-slate-900">{formatMonthLabel(group.month)}</h3>
+          <ul className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            {group.rows.map((item) => {
+              const isOpen = openDate === item.date
+              return (
+                <li key={item.date} className={cn("border-b border-slate-100 last:border-b-0", isOpen && "bg-slate-50/40")}>
+                  <div className="flex items-stretch">
+                    <button
+                      type="button"
+                      className="flex min-w-0 flex-1 items-start gap-3 px-4 py-3 text-left hover:bg-slate-50"
+                      onClick={() => setOpenDate(isOpen ? null : item.date)}
+                      aria-expanded={isOpen}
+                    >
+                      <ChevronDown
+                        className={cn(
+                          "mt-1 h-4 w-4 shrink-0 text-slate-400 transition-transform",
+                          isOpen && "rotate-180 text-slate-700",
+                        )}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-semibold text-slate-900">{formatDateLabel(item.date)}</p>
+                          <span
+                            className={cn(
+                              "rounded-full px-2 py-0.5 text-[11px] font-medium",
+                              item.status === "complete" && "bg-emerald-50 text-emerald-800",
+                              item.status === "failed" && "bg-rose-50 text-rose-800",
+                              item.status === "empty" && "bg-slate-100 text-slate-600",
+                              item.status === "generating" && "bg-amber-50 text-amber-800",
+                            )}
+                          >
+                            {statusLabel(item.status)}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs tabular-nums text-slate-500">
+                          {item.totalSearches.toLocaleString()} searches · {item.zeroResultEventCount} empty
+                          {item.synonymAppliedCount > 0 ? ` · ${item.synonymAppliedCount} synonyms added` : ""}
+                          {item.emptyFixCount > 0 ? ` · ${item.emptyFixCount} empty-query fixes` : ""}
+                        </p>
+                        {item.executiveSummary ? (
+                          <p className={cn("mt-1 text-sm text-slate-600", isOpen ? "" : "line-clamp-2")}>
+                            {item.executiveSummary}
+                          </p>
+                        ) : null}
+                      </div>
+                    </button>
+                    {isOpen ? (
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 px-4 text-sm text-slate-500 hover:text-slate-900"
+                        onClick={() => setOpenDate(null)}
+                      >
+                        <X className="h-4 w-4" />
+                        Close
+                      </button>
+                    ) : (
+                      <span className="hidden items-center px-4 text-xs font-medium text-slate-400 sm:flex">
+                        Open
+                      </span>
+                    )}
+                  </div>
+
+                  {isOpen ? (
+                    <div className="space-y-4 border-t border-slate-100 px-4 py-4">
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8"
+                          disabled={busy}
+                          onClick={() => void generate(item.date, true)}
+                        >
+                          {generating ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-3.5 w-3.5" />
+                          )}
+                          <span className="ml-1.5">Regenerate</span>
+                        </Button>
+                        <Button variant="outline" size="sm" className="h-8" onClick={() => setOpenDate(null)}>
+                          <X className="h-3.5 w-3.5" />
+                          <span className="ml-1.5">Close report</span>
+                        </Button>
+                      </div>
+
+                      {openRow?.status === "failed" ? (
+                        <div className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                          <div>
+                            <p className="font-medium">Report did not complete</p>
+                            <p className="mt-1">{openRow.error ?? openIndex?.error ?? "Unknown error"}</p>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {pending && !openRow ? (
+                        <div className="flex items-center gap-2 py-8 text-sm text-slate-500">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Opening report…
+                        </div>
+                      ) : null}
+
+                      {openRow?.snapshot ? <SearchDailyReportKpis snapshot={openRow.snapshot} /> : null}
+
+                      {openRow?.report ? (
+                        <SearchDailyReportBody
+                          report={openRow.report}
+                          applyingQuery={applyingQuery}
+                          onApplySynonym={(query) => void applySynonym(query)}
+                        />
+                      ) : null}
+
+                      {generating ? (
+                        <p className="flex items-center gap-2 text-sm text-slate-500">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Regenerating with Gemini — this can take up to a minute.
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      ))}
+
+      {openDate && !byDate.has(openDate) && payload ? (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
+          <p className="text-sm font-medium text-slate-900">No report for {formatDateLabel(openDate)}</p>
+          <p className="mt-1 text-sm text-slate-500">
+            Generate one from that day’s logged searches, dropdown picks, and empty results.
+          </p>
+          <div className="mt-4 flex justify-center gap-2">
+            <Button disabled={busy} onClick={() => void generate(openDate, true)}>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Generate with Gemini
+            </Button>
+            <Button variant="outline" onClick={() => setOpenDate(null)}>
+              Close
+            </Button>
           </div>
         </div>
       ) : null}
 
-      {snapshot ? (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <KpiCard
-            label="Searches"
-            value={snapshot.totalSearches.toLocaleString()}
-            subtitle={`${snapshot.uniqueQueriesApprox.toLocaleString()} unique queries`}
-          />
-          <KpiCard
-            label="Empty results"
-            value={snapshot.zeroResultEventCount.toLocaleString()}
-            subtitle={pct(snapshot.zeroResultShare)}
-          />
-          <KpiCard
-            label="Dropdown clicks"
-            value={snapshot.dropdownClicks.toLocaleString()}
-            subtitle={`${snapshot.navFreeFormSubmits.toLocaleString()} nav submits`}
-          />
-          <KpiCard
-            label="Demand capture"
-            value={snapshot.demandCaptureTotal.toLocaleString()}
-            subtitle="Notify-me requests"
-          />
-        </div>
-      ) : null}
-
-      {row?.report ? <ReportBody report={row.report} /> : null}
-
-      {!busy && payload && !row ? (
+      {!pending && payload && days.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
-          <p className="text-sm font-medium text-slate-900">No report for {formatDateLabel(activeDate)}</p>
+          <p className="text-sm font-medium text-slate-900">No daily reports yet</p>
           <p className="mt-1 text-sm text-slate-500">
-            Generate one from this day’s logged searches, dropdown picks, and empty results.
+            Generate yesterday’s briefing, or wait for the 14:30 UTC cron.
           </p>
           <Button
             className="mt-4"
             disabled={busy}
-            onClick={() => activeDate && void generate(activeDate, true)}
+            onClick={() => void generate(payload.defaultDate, true)}
           >
             <Sparkles className="mr-2 h-4 w-4" />
-            Generate with Gemini
+            Generate yesterday
           </Button>
         </div>
-      ) : null}
-
-      {payload?.recent && payload.recent.length > 0 ? (
-        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-900">Recent reports</h3>
-          <ul className="mt-3 divide-y divide-slate-100">
-            {payload.recent.map((r) => (
-              <li key={r.date}>
-                <button
-                  type="button"
-                  className={cn(
-                    "flex w-full items-center justify-between gap-3 py-2.5 text-left text-sm",
-                    r.date === activeDate ? "text-slate-900" : "text-slate-600 hover:text-slate-900",
-                  )}
-                  onClick={() => void load(r.date)}
-                >
-                  <span className="font-medium">{formatDateLabel(r.date)}</span>
-                  <span className="text-xs text-slate-500">
-                    {r.totalSearches.toLocaleString()} searches · {r.zeroResultEventCount} empty ·{" "}
-                    {r.status}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      {generating && row ? (
-        <p className="flex items-center gap-2 text-sm text-slate-500">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Regenerating with Gemini — this can take up to a minute.
-        </p>
       ) : null}
     </div>
   )

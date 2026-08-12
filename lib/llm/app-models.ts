@@ -32,7 +32,7 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     id: "marketplace_nl_search",
     name: "Marketplace NL search",
     purpose:
-      "Turns free-text /boards queries into structured facet filters (brand, price, fins, length, etc.). Elasticsearch still does retrieval.",
+      "Turns free-text /boards queries into structured facet filters (brand, price, fins, length, etc.). Uses curated search synonyms to recover aliases and typos. Elasticsearch still does retrieval.",
     gatewayFeatureTag: "feature:marketplace-nl-search",
     transport: "vercel_ai_gateway",
     defaultModel: "google/gemini-2.5-flash",
@@ -42,6 +42,7 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     sourceFiles: [
       "lib/services/marketplaceQueryUnderstand.ts",
       "lib/services/marketplaceNlHelper.ts",
+      "lib/services/searchSynonyms.ts",
     ],
   },
   {
@@ -77,7 +78,7 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     id: "search_daily_report",
     name: "Search daily report",
     purpose:
-      "Once a day, Gemini reads marketplace searches, dropdown picks, and zero-result queries and writes an operator briefing (inventory, search quality, buyer/seller actions).",
+      "Once a day, Gemini reads marketplace searches, dropdown picks, and zero-result queries, writes an operator briefing, and adds catalog-validated search synonyms for alias/typo empty searches.",
     gatewayFeatureTag: "feature:search-daily-report",
     transport: "vercel_ai_gateway",
     defaultModel: "google/gemini-2.5-pro",
@@ -87,9 +88,11 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
       "/admin/search-daily-report",
       "GET /api/cron/search-daily-report",
       "POST /api/admin/search-daily-report",
+      "POST /api/admin/search-daily-report/synonyms",
     ],
     sourceFiles: [
       "lib/services/searchDailyReport.ts",
+      "lib/services/searchDailyReportSynonyms.ts",
       "app/api/cron/search-daily-report/route.ts",
     ],
   },

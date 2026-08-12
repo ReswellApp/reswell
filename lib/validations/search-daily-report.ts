@@ -11,9 +11,14 @@ export const searchDailyReportGenerateSchema = z.object({
   force: z.boolean().optional().default(false),
 })
 
+export const searchDailyReportApplySynonymSchema = z.object({
+  date: searchDailyReportDateSchema,
+  query: z.string().trim().min(1).max(200),
+})
+
 export const searchDailyReportQuerySchema = z.object({
   date: searchDailyReportDateSchema.optional(),
-  limit: z.coerce.number().int().min(1).max(60).optional().default(30),
+  limit: z.coerce.number().int().min(1).max(120).optional().default(90),
 })
 
 const likelyCauseValues = [
@@ -124,7 +129,45 @@ export const searchDailyLlmReportSchema = z.object({
       }),
     )
     .max(7),
+  synonymProposals: z
+    .array(
+      z.object({
+        query: z
+          .string()
+          .describe("Exact shopper query from the telemetry (e.g. pod mod)."),
+        term: z
+          .string()
+          .describe("Normalized synonym key to match, lowercase (e.g. pod mod)."),
+        expansions: z
+          .array(z.string().trim().min(1).max(100))
+          .min(1)
+          .max(8)
+          .describe(
+            "Canonical catalog names to OR into search, e.g. Channel Islands Pod Mod, podmod.",
+          ),
+        reason: z.string().describe("Why this mapping recovers the empty search."),
+        apply: z
+          .boolean()
+          .describe(
+            "True only when catalogHints shows this is an alias/typo of a brand or model we already sell. False when the board is missing from inventory.",
+          ),
+        applied: z
+          .boolean()
+          .optional()
+          .describe("Set by the server after writing the synonym. Leave unset."),
+        skippedReason: z
+          .string()
+          .optional()
+          .describe("Set by the server when apply was skipped. Leave unset."),
+      }),
+    )
+    .max(20)
+    .default([])
+    .describe(
+      "Structured synonym rules for empty searches that are aliases of catalog boards (pod mod → Channel Islands Pod Mod).",
+    ),
 })
 
 export type SearchDailyLlmReport = z.infer<typeof searchDailyLlmReportSchema>
+export type SearchDailySynonymProposal = SearchDailyLlmReport["synonymProposals"][number]
 export type SearchDailyReportGenerateInput = z.infer<typeof searchDailyReportGenerateSchema>

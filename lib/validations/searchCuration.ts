@@ -5,6 +5,11 @@ export function normalizeSearchCurationKey(raw: string): string {
   return raw.trim().toLowerCase().replace(/\s+/g, " ").slice(0, 200)
 }
 
+/** Space-stripped synonym key so "podmod" matches "pod mod". */
+export function compactSearchCurationKey(raw: string): string {
+  return normalizeSearchCurationKey(raw).replace(/ /g, "")
+}
+
 const expansionTerm = z.string().trim().min(1).max(100)
 
 export const createSearchSynonymSchema = z.object({

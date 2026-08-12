@@ -454,7 +454,8 @@ export function buildListingsRankBoostShouldClauses(rawQuery: string): object[] 
 /**
  * Builds a bool query: requires a majority of meaningful terms (not lone digits),
  * plus optional phrase boosts so exact titles rank higher. Admin `expansions`
- * (synonyms) are added as additional satisfying clauses so aliases/typos recover results.
+ * (synonyms, including compacted aliases and close typos) are added as additional
+ * satisfying clauses so aliases/typos recover results.
  *
  * Shared by `/search` and `/boards` browse keyword search.
  */

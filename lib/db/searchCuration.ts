@@ -68,6 +68,68 @@ export async function listEnabledSearchSynonyms(
   return (data ?? []) as SearchSynonymRow[]
 }
 
+export async function findSearchSynonymByTerm(
+  supabase: SupabaseClient,
+  term: string,
+): Promise<{ data: SearchSynonymRow | null; error: Error | null }> {
+  const needle = term.trim()
+  if (!needle) return { data: null, error: null }
+  const { data, error } = await supabase
+    .from("search_synonyms")
+    .select("id, term, expansions, enabled, created_at, updated_at")
+    .ilike("term", needle.replace(/[%_]/g, ""))
+    .maybeSingle()
+
+  if (error) return { data: null, error: new Error(error.message) }
+  return { data: (data as SearchSynonymRow | null) ?? null, error: null }
+}
+
+/** Insert or merge expansions for a term. `createdBy` may be null for cron writes. */
+export async function upsertSearchSynonymExpansions(
+  supabase: SupabaseClient,
+  input: { term: string; expansions: string[]; createdBy?: string | null },
+): Promise<{ data: SearchSynonymRow | null; created: boolean; error: Error | null }> {
+  const term = input.term.trim()
+  const expansions = input.expansions.map((e) => e.trim()).filter(Boolean)
+  if (!term || expansions.length === 0) {
+    return { data: null, created: false, error: new Error("Term and expansions are required") }
+  }
+
+  const existing = await findSearchSynonymByTerm(supabase, term)
+  if (existing.error) return { data: null, created: false, error: existing.error }
+
+  if (existing.data) {
+    const seen = new Set(existing.data.expansions.map((e) => e.trim().toLowerCase()))
+    const merged = [...existing.data.expansions]
+    for (const expansion of expansions) {
+      const key = expansion.toLowerCase()
+      if (seen.has(key)) continue
+      seen.add(key)
+      merged.push(expansion)
+    }
+    const updated = await updateSearchSynonym(supabase, existing.data.id, {
+      expansions: merged,
+      enabled: true,
+    })
+    return { data: updated.data, created: false, error: updated.error }
+  }
+
+  const { data, error } = await supabase
+    .from("search_synonyms")
+    .insert({
+      term,
+      expansions,
+      enabled: true,
+      created_by: input.createdBy ?? null,
+      updated_at: new Date().toISOString(),
+    })
+    .select("id, term, expansions, enabled, created_at, updated_at")
+    .maybeSingle()
+
+  if (error) return { data: null, created: false, error: new Error(error.message) }
+  return { data: data as SearchSynonymRow | null, created: true, error: null }
+}
+
 export async function insertSearchSynonym(
   supabase: SupabaseClient,
   userId: string,
