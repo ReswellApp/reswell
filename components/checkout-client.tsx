@@ -714,6 +714,7 @@ export function CheckoutClient({
                   submitButtonLabel="Pay now"
                   submitButtonClassName={payButtonClassName}
                   hideStripeFooter
+                  buyerEmail={buyerEmail ?? null}
                 />
                 <p className="mt-3 text-center text-[12px] text-neutral-500">
                   Secure payment processed by{" "}

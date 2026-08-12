@@ -21,11 +21,11 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
   },
   {
     q: "What are my payment options?",
-    a: "Peer marketplace purchases use secure card checkout (Stripe) when the seller has payments enabled. You’ll complete payment on the checkout screen.",
+    a: "Peer marketplace purchases use secure Stripe checkout. You can pay with card, Link, Apple Pay, or Google Pay where those options are available. You’ll complete payment on the checkout screen.",
   },
   {
     q: "What are my financing options?",
-    a: "Reswell does not offer financing today. You pay the listing total (and shipping when applicable) at checkout with your card.",
+    a: "Reswell does not offer financing today. You pay the listing total (and shipping when applicable) at checkout.",
   },
   {
     q: "When I buy on Reswell, what condition should I expect?",

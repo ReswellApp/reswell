@@ -353,8 +353,8 @@ export const buyingHelpArticles: HelpArticle[] = [
     groupTitle: "Paying at checkout",
     title: "How do I pay for a purchase?",
     description:
-      "Pay securely at checkout with your card through Stripe. We also support Link and Klarna. Off platform payments are not accepted.",
-    keywords: ["pay", "card", "checkout", "stripe"],
+      "Pay securely at checkout through Stripe with card, Link, Apple Pay, Google Pay, or Klarna. Off platform payments are not accepted.",
+    keywords: ["pay", "card", "checkout", "stripe", "apple pay", "google pay", "link"],
     relatedSlugs: ["wallet-balance-at-checkout", "how-do-i-buy-a-board", "why-charged-tax"],
     sections: [
       {
@@ -368,6 +368,8 @@ export const buyingHelpArticles: HelpArticle[] = [
               items={[
                 <>Debit or credit card</>,
                 <>Link (Stripe&apos;s saved payment experience)</>,
+                <>Apple Pay (Safari and supported Apple devices)</>,
+                <>Google Pay (Chrome and supported Android devices)</>,
                 <>Klarna (where available)</>,
               ]}
             />
