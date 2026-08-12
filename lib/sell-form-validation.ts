@@ -217,21 +217,15 @@ export function validateSellListingForm(
 
   const fulfillmentFlags = flagsFromBoardFulfillment(form.boardFulfillment)
   if (fulfillmentFlags.shipping_available && !relaxed) {
-    // Shipping needs full board dims for pack sizing (length/width) and listing accuracy.
+    // Shipping needs board length for pack sizing; width/thickness stay optional.
     if (!lenRaw) {
-      return "Enter board length, width, and thickness when offering shipping."
+      return "Enter board length when offering shipping."
     }
     {
       const lenErr = validateFilledLength()
       if (lenErr) {
         return "Board length: enter feet and inches (e.g. 6'2)."
       }
-    }
-    if (!form.boardWidthInches?.trim()) {
-      return "Enter board width when offering shipping."
-    }
-    if (!form.boardThicknessInches?.trim()) {
-      return "Enter board thickness when offering shipping."
     }
 
     const shippingMode = form.boardShippingCostMode ?? "reswell"

@@ -49,7 +49,7 @@ type SellBoardDimensionsPickerProps = {
   values: SellBoardDimensionsPickerValues
   onChange: (patch: Partial<SellBoardDimensionsPickerValues>) => void
   className?: string
-  /** When shipping is on, length/width/thickness are required. */
+  /** When shipping is on, board length is required (width/thickness stay optional). */
   dimensionsRequired?: boolean
   disabled?: boolean
   volumeInputRef?: Ref<HTMLInputElement>
@@ -450,7 +450,7 @@ export function SellBoardDimensionsPicker({
       placeholder="—"
       ariaLabel="Board width in inches"
       disabled={disabled}
-      required={dimensionsRequired}
+      required={false}
     />
   )
   const thicknessSelect = (
@@ -462,7 +462,7 @@ export function SellBoardDimensionsPicker({
       placeholder="—"
       ariaLabel="Board thickness in inches"
       disabled={disabled}
-      required={dimensionsRequired}
+      required={false}
     />
   )
   /** Rendered once per breakpoint layout; `volumeInputRef` ends up on the sm+ instance. */
@@ -511,7 +511,7 @@ export function SellBoardDimensionsPicker({
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-x-2 text-xs text-muted-foreground">
             {fieldLabel("Length", dimensionsRequired, lengthComplete)}
-            {fieldLabel("Width", dimensionsRequired, widthComplete)}
+            {fieldLabel("Width", false, widthComplete)}
           </div>
           <div className={segmentedBoxClassName}>
             {lengthSelect}
@@ -520,7 +520,7 @@ export function SellBoardDimensionsPicker({
         </div>
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-x-2 text-xs text-muted-foreground">
-            {fieldLabel("Thickness", dimensionsRequired, thicknessComplete)}
+            {fieldLabel("Thickness", false, thicknessComplete)}
             {fieldLabel("Volume", false, false)}
           </div>
           <div className={segmentedBoxClassName}>
@@ -534,8 +534,8 @@ export function SellBoardDimensionsPicker({
       <div className="hidden space-y-2 sm:block">
         <div className="grid grid-cols-4 gap-x-2 text-xs text-muted-foreground">
           {fieldLabel("Length", dimensionsRequired, lengthComplete)}
-          {fieldLabel("Width", dimensionsRequired, widthComplete)}
-          {fieldLabel("Thickness", dimensionsRequired, thicknessComplete)}
+          {fieldLabel("Width", false, widthComplete)}
+          {fieldLabel("Thickness", false, thicknessComplete)}
           {fieldLabel("Volume", false, false)}
         </div>
 
