@@ -302,6 +302,11 @@ export function SignUpFormPanel({
   const inner = (
     <>
     <div className={cn("flex flex-col", isLanding ? "gap-2.5" : compact ? "gap-4" : "gap-8")}>
+      {isModal ? (
+        <h1 className="pr-10 text-xl font-bold tracking-tight text-foreground">
+          Create an account
+        </h1>
+      ) : null}
       {showPageHeader ? (
         <div
           className={cn(

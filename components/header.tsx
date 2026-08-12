@@ -107,7 +107,7 @@ function HeaderMobileNavActionsSkeleton() {
       aria-busy="true"
       aria-label="Loading navigation"
     >
-      <Skeleton className="h-4 w-14 shrink-0 rounded" />
+      <Skeleton className="h-4 w-12 shrink-0 rounded" />
       <Skeleton className="h-4 w-8 shrink-0 rounded" />
       <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
     </div>
@@ -481,7 +481,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     forceReleaseBodyScrollLock()
   }, [])
 
-  const { openLogin } = useAuthModal()
+  const { openLogin, openSignUp } = useAuthModal()
   const isMobileViewport = useIsMobile()
 
   const resolvedDisplayName = useMemo(
@@ -1118,7 +1118,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   ) : (
                     <>
                       <Link
-                        href="/auth/login"
+                        href={authLandingHref("/auth/login")}
                         onClick={(e) => {
                           if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                           e.preventDefault()
@@ -1397,18 +1397,32 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               </Button>
             </div>
             {!user && authLoaded && (
-              <Link
-                href="/auth/login"
-                onClick={(e) => {
-                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                  e.preventDefault()
-                  openLogin()
-                  setMobileMenuOpen(false)
-                }}
-                className="mb-6 flex min-h-touch items-center justify-center rounded-lg bg-primary px-4 py-3 text-base font-medium text-primary-foreground no-underline transition-colors hover:bg-primary/90 hover:no-underline"
-              >
-                Sign in or create account
-              </Link>
+              <div className="mb-6 flex flex-col gap-2">
+                <Link
+                  href={authLandingHref("/auth/sign-up")}
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                    e.preventDefault()
+                    openSignUp()
+                    setMobileMenuOpen(false)
+                  }}
+                  className="flex min-h-touch items-center justify-center rounded-lg bg-primary px-4 py-3 text-base font-medium text-primary-foreground no-underline transition-colors hover:bg-primary/90 hover:no-underline"
+                >
+                  Sign up
+                </Link>
+                <Link
+                  href={authLandingHref("/auth/login")}
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                    e.preventDefault()
+                    openLogin()
+                    setMobileMenuOpen(false)
+                  }}
+                  className="flex min-h-touch items-center justify-center rounded-lg border border-border bg-background px-4 py-3 text-base font-medium text-foreground no-underline transition-colors hover:bg-muted hover:no-underline"
+                >
+                  Log in
+                </Link>
+              </div>
             )}
             {user && authLoaded && (
               <>

@@ -3,7 +3,8 @@
  * in lib/supabase/proxy.ts). Keep in sync when adding protected routes.
  *
  * `/sell` is public — guests fill forms; sign-in is required at publish (client gate).
- * `/cart` and `/favorites` are gated in the client via sign-in gates (modal).
+ * `/favorites` is gated in the client via a sign-in gate (modal).
+ * `/cart` is public — guests see an empty cart.
  * Do not use pathname.startsWith("/sell") here — that would also match "/sellers".
  */
 export function pathnameRequiresAuthSession(pathname: string): boolean {

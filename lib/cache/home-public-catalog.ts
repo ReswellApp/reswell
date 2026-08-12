@@ -16,10 +16,28 @@ import { loadHomeMostViewedMosaic, type HomeMostViewedMosaicLayout } from "@/lib
 import { loadHomeRecentlyListedGridRows } from "@/lib/services/homeRecentlyListedGridSection"
 import { loadHomeRecentlySoldSurfboardRows } from "@/lib/services/homeRecentlySoldStrip"
 import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import {
+  BRAND_MEDIA_PROXY_PATH_PREFIX,
+  brandAssetsStorageObjectPathFromUrl,
+} from "@/lib/brand-media-proxy-url"
+import {
+  BRAND_REQUEST_MEDIA_PROXY_PATH_PREFIX,
+  brandRequestLogosStorageObjectPathFromUrl,
+} from "@/lib/brand-request-media-proxy-url"
+import {
+  getCachedPublicStorageObject,
+  type PublicStorageBucket,
+} from "@/lib/cache/public-storage-object"
 
-/** Admin-curated + stable homepage sections (hero, new gear, shops, brands). */
+/** Admin-curated + stable homepage sections (hero, new gear, shops). */
 export const HOME_STABLE_CATALOG_CACHE_TAG = "home-public-catalog-stable"
 export const HOME_STABLE_CATALOG_REVALIDATE_SECONDS = 60 * 60 * 24 * 7
+
+/**
+ * Homepage “Trending brands” strip. No time-based TTL — `revalidateTag` only
+ * when the curation changes or a featured brand’s logo/name/slug is updated.
+ */
+export const HOME_TRENDING_BRANDS_CACHE_TAG = "home-public-catalog-trending-brands"
 
 /** Auto-generated recently sold strip — refreshes on a short TTL. */
 export const HOME_RECENTLY_SOLD_CACHE_TAG = "home-public-catalog-recently-sold"
@@ -94,10 +112,13 @@ export type HomeFeaturedNewItem = {
 
 export type HomeStableCatalog = {
   heroSlideUrls: string[]
-  homeTrendingBrandRows: HomeTrendingBrandRow[]
   featuredShops: HomeFeaturedShop[] | null
   featuredNew: HomeFeaturedNewItem[]
   featuredListingIds: string[]
+}
+
+export type HomeTrendingBrandsCatalog = {
+  homeTrendingBrandRows: HomeTrendingBrandRow[]
 }
 
 export type HomeRecentlyAddedSurfboardsCatalog = {
@@ -163,12 +184,10 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
 
   const [
     curatedHeroUrls,
-    homeTrendingBrandRows,
     featuredShopsRes,
     newGearRes,
   ] = await Promise.all([
     listHomeHeroCuratedSlideUrls(supabase),
-    listHomeTrendingBrandsForPublicService(supabase),
     supabase
       .from("profiles")
       .select(profilePublicFields)
@@ -226,11 +245,85 @@ async function loadHomeStableCatalogUncached(): Promise<HomeStableCatalog> {
 
   return {
     heroSlideUrls: buildHeroSlideUrls(curatedHeroUrls, heroListingsRes.data),
-    homeTrendingBrandRows,
     featuredShops: (featuredShopsRes.data as HomeFeaturedShop[] | null) ?? null,
     featuredNew,
     featuredListingIds,
   }
+}
+
+const TRENDING_BRAND_LOGO_PUBLIC_MARKER: Record<
+  Extract<PublicStorageBucket, "brand-assets" | "brand-request-logos">,
+  string
+> = {
+  "brand-assets": "/storage/v1/object/public/brand-assets/",
+  "brand-request-logos": "/storage/v1/object/public/brand-request-logos/",
+}
+
+function objectPathFromProxiedMediaSrc(src: string, prefix: string): string | null {
+  if (!src.startsWith(prefix)) return null
+  const raw = src.slice(prefix.length).split(/[?#]/)[0] ?? ""
+  try {
+    const decoded = raw
+      .split("/")
+      .filter(Boolean)
+      .map((segment) => decodeURIComponent(segment))
+      .join("/")
+    if (!decoded || decoded.includes("..")) return null
+    return decoded
+  } catch {
+    return null
+  }
+}
+
+function resolveTrendingBrandLogoStorage(
+  logoUrl: string,
+): {
+  bucket: Extract<PublicStorageBucket, "brand-assets" | "brand-request-logos">
+  objectPath: string
+} | null {
+  const brandAssetsPath =
+    brandAssetsStorageObjectPathFromUrl(logoUrl) ??
+    objectPathFromProxiedMediaSrc(logoUrl, BRAND_MEDIA_PROXY_PATH_PREFIX)
+  if (brandAssetsPath) return { bucket: "brand-assets", objectPath: brandAssetsPath }
+
+  const requestPath =
+    brandRequestLogosStorageObjectPathFromUrl(logoUrl) ??
+    objectPathFromProxiedMediaSrc(logoUrl, BRAND_REQUEST_MEDIA_PROXY_PATH_PREFIX)
+  if (requestPath) return { bucket: "brand-request-logos", objectPath: requestPath }
+
+  return null
+}
+
+/** Fill Next.js Data Cache for `/media/brands` so homepage logos skip Supabase on origin hits. */
+async function warmTrendingBrandLogo(logoUrl: string | null): Promise<void> {
+  const trimmed = logoUrl?.trim()
+  if (!trimmed) return
+
+  const resolved = resolveTrendingBrandLogoStorage(trimmed)
+  if (!resolved) return
+
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "")
+  if (!base) return
+
+  const encodedPath = resolved.objectPath
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join("/")
+  const upstreamUrl = `${base}${TRENDING_BRAND_LOGO_PUBLIC_MARKER[resolved.bucket]}${encodedPath}`
+
+  try {
+    await getCachedPublicStorageObject(resolved.bucket, resolved.objectPath, upstreamUrl)
+  } catch (e) {
+    console.error("warmTrendingBrandLogo:", e)
+  }
+}
+
+async function loadHomeTrendingBrandsCatalogUncached(): Promise<HomeTrendingBrandsCatalog> {
+  const supabase = createAnonSupabaseClient()
+  const homeTrendingBrandRows = await listHomeTrendingBrandsForPublicService(supabase)
+  await Promise.all(homeTrendingBrandRows.map((row) => warmTrendingBrandLogo(row.brand.logo_url)))
+  return { homeTrendingBrandRows }
 }
 
 async function loadHomeRecentlyAddedSurfboardsCatalogUncached(): Promise<HomeRecentlyAddedSurfboardsCatalog> {
@@ -270,10 +363,19 @@ async function loadHomeRecentlySoldCatalogUncached(): Promise<HomeRecentlySoldCa
 
 export const getCachedHomeStableCatalog = unstable_cache(
   loadHomeStableCatalogUncached,
-  ["home-stable-catalog-v5"],
+  ["home-stable-catalog-v6"],
   {
     revalidate: HOME_STABLE_CATALOG_REVALIDATE_SECONDS,
     tags: [HOME_STABLE_CATALOG_CACHE_TAG],
+  },
+)
+
+export const getCachedHomeTrendingBrandsCatalog = unstable_cache(
+  loadHomeTrendingBrandsCatalogUncached,
+  ["home-trending-brands-catalog-v1"],
+  {
+    revalidate: false,
+    tags: [HOME_TRENDING_BRANDS_CACHE_TAG],
   },
 )
 

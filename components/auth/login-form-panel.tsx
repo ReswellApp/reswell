@@ -213,19 +213,21 @@ export function LoginFormPanel({
 
   const inner = (
     <div className={cn("flex flex-col", compact ? "gap-4" : "gap-8")}>
-      {showPageHeader ? (
+      {showPageHeader || variant === "modal" ? (
         <div className={cn(compact ? "space-y-1" : "space-y-2")}>
           <h1
             className={cn(
               "font-bold tracking-tight text-foreground",
-              isLanding ? "text-xl" : "text-3xl sm:text-4xl",
+              compact ? "text-xl pr-10" : "text-3xl sm:text-4xl",
             )}
           >
             Welcome back
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Don&apos;t have an account yet? {signUpLink}
-          </p>
+          {showPageHeader ? (
+            <p className="text-sm text-muted-foreground">
+              Don&apos;t have an account yet? {signUpLink}
+            </p>
+          ) : null}
         </div>
       ) : null}
 

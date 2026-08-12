@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/brands/admin-server"
-import { revalidateHomePublicCatalog } from "@/lib/cache/revalidate-home-public-catalog"
+import { revalidateHomeTrendingBrandsCatalog } from "@/lib/cache/revalidate-home-public-catalog"
 import { adminHomeTrendingBrandBodySchema } from "@/lib/validations/home-trending-brands"
 import {
   addHomeTrendingBrandService,
@@ -40,6 +40,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: result.error }, { status: result.status ?? 500 })
   }
 
-  revalidateHomePublicCatalog()
+  revalidateHomeTrendingBrandsCatalog()
   return NextResponse.json({ data: { id: result.id } }, { status: 201 })
 }

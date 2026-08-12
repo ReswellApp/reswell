@@ -36,35 +36,35 @@ import {
   getCachedHomeRecentlySoldCatalog,
   getCachedHomeRecentlyListedGridCatalog,
   getCachedHomeStableCatalog,
+  getCachedHomeTrendingBrandsCatalog,
 } from "@/lib/cache/home-public-catalog"
 
 export async function generateMetadata() {
   return resolvePageMetadata("home")
 }
 
-/** Page ISR matches recently sold strip TTL; stable sections use a longer `unstable_cache` TTL. */
+/** Page ISR matches recently sold strip TTL; stable sections use a longer `unstable_cache` TTL. Trending brands are tag-only. */
 export const revalidate = 3600
 
 export default async function HomePage() {
   const [
     stableCatalog,
+    trendingBrandsCatalog,
     recentlyAddedSurfboardsCatalog,
     recentlyAddedFinsCatalog,
     recentlySoldCatalog,
     recentlyListedGridCatalog,
   ] = await Promise.all([
     getCachedHomeStableCatalog(),
+    getCachedHomeTrendingBrandsCatalog(),
     getCachedHomeRecentlyAddedSurfboardsCatalog(),
     getCachedHomeRecentlyAddedFinsCatalog(),
     getCachedHomeRecentlySoldCatalog(),
     getCachedHomeRecentlyListedGridCatalog(),
   ])
 
-  const {
-    homeTrendingBrandRows,
-    featuredShops,
-    featuredNew,
-  } = stableCatalog
+  const { featuredShops, featuredNew } = stableCatalog
+  const { homeTrendingBrandRows } = trendingBrandsCatalog
 
   const { featuredBoards } = recentlyAddedSurfboardsCatalog
   const { featuredFins } = recentlyAddedFinsCatalog

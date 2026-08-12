@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { createClient } from "@/lib/supabase/server"
 import { getCartPageItems } from "@/app/actions/cart"
 import { getFavoriteListingIds } from "@/app/actions/favorites"
+import { CartEmptyState } from "@/components/features/cart/cart-empty-state"
 import { CartPageView } from "@/components/cart-page-view"
 import { getFavoriteListingsForCartCarousel } from "@/lib/db/favorites"
 import { pageSeoMetadata } from "@/lib/site-metadata"
@@ -20,7 +21,7 @@ export default async function CartPage() {
   } = await supabase.auth.getUser()
 
   if (!user) {
-    return null
+    return <CartEmptyState />
   }
 
   const { items, error } = await getCartPageItems()

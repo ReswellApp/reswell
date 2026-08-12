@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
+import { revalidateHomeTrendingBrandsCatalog } from "@/lib/cache/revalidate-home-public-catalog"
 import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
 import { syncFinCatalogBrandToIndex } from "@/lib/elasticsearch/fin-catalog-index"
 import { syncSellCatalogBrandToIndex } from "@/lib/elasticsearch/sell-catalog-index"
@@ -152,6 +153,13 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ slug: str
   revalidatePath(BRANDS_BASE)
   revalidatePath(`${BRANDS_BASE}/${currentSlug}`)
   revalidatePath(`${BRANDS_BASE}/${data.slug}`)
+  if (
+    body.logo_url !== undefined ||
+    body.name !== undefined ||
+    body.slug !== undefined
+  ) {
+    revalidateHomeTrendingBrandsCatalog()
+  }
   void syncBrandToIndex(supabase, data.id)
   void syncFinCatalogBrandToIndex(supabase, data.id)
   void syncSellCatalogBrandToIndex(supabase, data.id)

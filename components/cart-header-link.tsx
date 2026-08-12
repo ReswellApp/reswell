@@ -6,7 +6,6 @@ import { ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 
@@ -35,7 +34,6 @@ export function CartHeaderLink({
   authResolved?: boolean
   userId?: string | null
 }) {
-  const openSignIn = useSignInGate()
   const [count, setCount] = useState<number | null>(null)
   const visibility = showOnNarrowScreens
     ? "inline-flex"
@@ -102,20 +100,13 @@ export function CartHeaderLink({
   }
 
   return (
-    <Link
-      href="/cart"
-      className={cn("relative", visibility)}
-      onClick={
-        authResolved && userId === null
-          ? (e) => {
-              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-              e.preventDefault()
-              openSignIn("/cart")
-            }
-          : undefined
-      }
+    <Button
+      asChild
+      variant="ghost"
+      size="icon"
+      className={cn("relative h-10 w-10 text-foreground hover:bg-pacific/5", visibility)}
     >
-      <Button variant="ghost" size="icon" className="h-10 w-10 text-foreground hover:bg-pacific/5">
+      <Link href="/cart">
         <ShoppingCart className="h-6 w-6" />
         {count > 0 && (
           <Badge
@@ -126,7 +117,7 @@ export function CartHeaderLink({
           </Badge>
         )}
         <span className="sr-only">Cart{count > 0 ? `, ${count} items` : ""}</span>
-      </Button>
-    </Link>
+      </Link>
+    </Button>
   )
 }

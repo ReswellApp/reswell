@@ -2,7 +2,7 @@ import { Suspense } from "react"
 import { redirect } from "next/navigation"
 import { SellStart } from "@/components/features/sell/sell-start"
 import type { SellTrendingBrand } from "@/components/features/sell/sell-trending-brands"
-import { getCachedHomeStableCatalog } from "@/lib/cache/home-public-catalog"
+import { getCachedHomeTrendingBrandsCatalog } from "@/lib/cache/home-public-catalog"
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
 import { resolveDefaultSurfboardSellCreatePath } from "@/lib/services/surfboardSellEntry"
 import { createClient } from "@/lib/supabase/server"
@@ -61,14 +61,13 @@ export default async function SellPage({
     )
   }
 
-  const [isAdmin, homeCatalog, surfboardSellHref] = await Promise.all([
+  const [isAdmin, trendingBrandsCatalog, surfboardSellHref] = await Promise.all([
     user ? fetchProfileIsAdmin(supabase, user.id) : Promise.resolve(false),
-    // Same cached curation as the homepage "Trending brands" strip.
-    getCachedHomeStableCatalog(),
+    getCachedHomeTrendingBrandsCatalog(),
     resolveDefaultSurfboardSellCreatePath(supabase, user?.id),
   ])
 
-  const trendingBrands: SellTrendingBrand[] = homeCatalog.homeTrendingBrandRows.map(
+  const trendingBrands: SellTrendingBrand[] = trendingBrandsCatalog.homeTrendingBrandRows.map(
     (row) => ({
       id: row.brand.id,
       slug: row.brand.slug,

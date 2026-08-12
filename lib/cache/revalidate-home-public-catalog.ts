@@ -5,6 +5,7 @@ import {
   HOME_RECENTLY_ADDED_SURFBOARDS_CACHE_TAG,
   HOME_RECENTLY_SOLD_CACHE_TAG,
   HOME_STABLE_CATALOG_CACHE_TAG,
+  HOME_TRENDING_BRANDS_CACHE_TAG,
 } from "@/lib/cache/home-public-catalog"
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
 
@@ -13,6 +14,13 @@ export function revalidateHomeStableCatalog(): void {
   revalidateTag(HOME_STABLE_CATALOG_CACHE_TAG, 'max')
   revalidatePath("/", "layout")
   revalidatePath("/", "page")
+}
+
+/** Bust the homepage /sell “Trending brands” strip after curation or featured-brand logo edits. */
+export function revalidateHomeTrendingBrandsCatalog(): void {
+  revalidateTag(HOME_TRENDING_BRANDS_CACHE_TAG, "max")
+  revalidatePath("/", "page")
+  revalidatePath("/sell", "page")
 }
 
 /** Bust the auto-generated recently sold strip (e.g. after homepage hide on a sold listing). */
