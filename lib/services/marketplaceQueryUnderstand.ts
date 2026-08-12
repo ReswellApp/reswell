@@ -7,6 +7,7 @@
 
 import { unstable_cache } from "next/cache"
 import { generateText, Output } from "ai"
+import { gatewayTagsForFeature } from "@/lib/llm/app-models"
 import {
   marketplaceNlSearchIntentSchema,
   type MarketplaceNlSearchIntent,
@@ -112,6 +113,11 @@ If the query is only filters (e.g. "lost under $800", "boards with fcs", "6 foot
 Prices are USD integers.`,
       prompt: `Extract search filters from this query:\n"""${q}"""`,
       temperature: 0,
+      providerOptions: {
+        gateway: {
+          tags: gatewayTagsForFeature("marketplace_nl_search"),
+        },
+      },
     })
 
     if (!output) return null

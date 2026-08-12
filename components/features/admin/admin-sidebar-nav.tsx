@@ -30,6 +30,7 @@ import {
   BellRing,
   Code,
   RotateCcw,
+  Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -94,6 +95,8 @@ function AdminNavItemIcon({ icon }: { icon: AdminNavIconKey }) {
       return <Wrench className={NAV_ICON_CLASS} aria-hidden />
     case 'dollarSign':
       return <DollarSign className={NAV_ICON_CLASS} aria-hidden />
+    case 'sparkles':
+      return <Sparkles className={NAV_ICON_CLASS} aria-hidden />
     case 'bellRing':
       return <BellRing className={NAV_ICON_CLASS} aria-hidden />
     case 'code':

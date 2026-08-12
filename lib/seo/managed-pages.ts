@@ -122,9 +122,9 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/1260e45d-5bbd-4e3e-9e02-9b7995b2f23e.jpg",
   }),
   page("about", "core", "About", {
-    title: "About Reswell | Peer-to-Peer Surf Marketplace",
+    title: "About Reswell | Nationwide Surfboard Marketplace",
     description:
-      "Learn how Reswell connects surfers to buy and sell surfboards and gear safely. Trusted marketplace with secure checkout and buyer protection.",
+      "Reswell connects surfers nationwide to buy and sell surfboards with built in shipping, checkout on the site, and Purchase Protection for eligible purchases.",
     path: "/about",
     ogImageUrl:
       "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/e4235355-97b9-4331-b9e0-8cca85c9644b.jpg",

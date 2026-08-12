@@ -9,6 +9,7 @@
 
 import { unstable_cache } from "next/cache"
 import { generateText, Output } from "ai"
+import { gatewayTagsForFeature } from "@/lib/llm/app-models"
 import {
   sellCatalogNlSearchIntentSchema,
   type SellCatalogNlSearchIntent,
@@ -91,6 +92,11 @@ Rules:
 - summary is a short interpretation like "Gato Heroi Dagger surfboard" or "9'6 longboard".`,
       prompt: `Extract the catalog intent from this seller search:\n"""${q}"""`,
       temperature: 0,
+      providerOptions: {
+        gateway: {
+          tags: gatewayTagsForFeature("sell_catalog_nl_search"),
+        },
+      },
     })
 
     if (!output) return null

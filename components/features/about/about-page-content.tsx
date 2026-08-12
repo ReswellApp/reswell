@@ -7,49 +7,55 @@ import {
   marketingHeadlineTitleClass,
 } from "@/components/features/marketing/marketing-headline-hero"
 import { Button } from "@/components/ui/button"
+import { RESWELL_CONTACT_EMAIL, RESWELL_CONTACT_MAILTO } from "@/lib/constants/contact"
 import { shimmerDataUrl } from "@/lib/image-shimmer"
+import { reswellProtectionCardClassName } from "@/lib/reswell-protection-surface"
 import aboutHeadlineAtmosphere from "@/public/images/about/headline-oz-aerial.jpg"
 import ourStoryBeachFilm from "@/public/images/about/our-story-beach-film.jpg"
 
-const WHY_SURFERS_LOVE = [
+const WHY_SURFERS_USE = [
   {
-    title: "Easy to sell",
+    title: "Nationwide, with shipping",
     href: "/sell",
-    description: "List with photos, set pickup or shipping, and manage offers from one place.",
+    description:
+      "List a board once and reach surfers outside your zip code. Built in shipping means the deal doesn't stop at local pickup.",
   },
   {
-    title: "Honest deals",
+    title: "One place for the board you want",
     href: "/boards",
-    description: "Browse real listings from other surfers, with messaging built in.",
+    description:
+      "Used boards and gear sit scattered across apps and shop floors. Reswell is a dedicated marketplace so searching and selling stays in one spot.",
   },
   {
     title: "Purchase Protection",
     href: "/protection-policy",
-    description: "Eligible checkout purchases can be covered when something goes wrong.",
+    description:
+      "Eligible checkout purchases are covered for buyers when something goes wrong. Sellers aren't charged an extra protection fee.",
   },
   {
-    title: "Surfer community",
-    href: "/sellers",
-    description: "Meet sellers, follow listings, and keep gear moving within the lineup.",
+    title: "Buy and sell on the site",
+    href: "/boards",
+    description:
+      "Message the other person, agree on a price, and check out on Reswell. Shipping is built in when local pickup isn't the right fit.",
   },
 ] as const
 
-const VALUE_PILLARS = [
+const WHO_ITS_FOR = [
   {
-    title: "Real support",
-    body: "When you write in, a person on our team reads it. No scripts, no runaround.",
+    title: "Surfers who know what they want",
+    body: "If your local options are thin, even outside the deep inventory of Southern California, you shouldn't have to settle. Browse boards from across the country.",
   },
   {
-    title: "Your next setup is out there",
-    body: "That board or wetsuit sitting in your quiver might be someone else's dream setup. List what you are ready to move on from, or browse until you find what you have been hunting for.",
+    title: "People who buy and sell often",
+    body: "Trying a lot of setups, rotating a quiver, or selling boards on the side. Reswell is meant to feel professional enough for that kind of volume.",
   },
   {
-    title: "Trust on both sides",
-    body: "Buyers ask questions. Sellers describe honestly. Checkout stays on Reswell when it counts.",
+    title: "Sellers who want a wider audience",
+    body: "A board that sits for months on a local listing might be exactly what someone elsewhere is hunting for. We help you reach them.",
   },
   {
-    title: "Surfer to surfer marketplace",
-    body: "Surfers buy and sell directly with each other, so the whole marketplace stays in one spot.",
+    title: "Buyers and sellers who care about trust",
+    body: "Checkout stays on Reswell when it counts. Purchase Protection and clear rules are how we try to make the exchange feel fair on both sides.",
   },
 ] as const
 
@@ -67,7 +73,7 @@ type AboutPageContentProps = {
 function StatCell({ value, label }: { value: string; label: string }) {
   return (
     <div className="text-center">
-      <p className="font-headline text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+      <p className="font-headline text-3xl font-bold tracking-tight text-listingHeart sm:text-4xl">
         {value}
       </p>
       <p className="mt-2 text-sm text-muted-foreground">{label}</p>
@@ -84,10 +90,8 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
         hideBoardStack
         headline={
           <h1 className={marketingHeadlineTitleClass}>
-            We&apos;re creating{" "}
-            <span className="text-listingHeart">the easiest</span> and{" "}
-            <span className="text-listingHeart">most enjoyable</span> place to buy and sell
-            surf gear
+            Connecting surfers nationwide to buy and sell{" "}
+            <span className="text-listingHeart">surfboards</span>
           </h1>
         }
       />
@@ -116,23 +120,27 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
             </h2>
             <div className="mt-6 space-y-5 text-base leading-relaxed text-muted-foreground sm:text-lg">
               <p>
-                Buying used surf gear usually means juggling DMs, Venmo, and a lot of trust. Sellers
-                post a photo somewhere, answer the same questions ten times, and hope the buyer
-                actually shows up. Buyers wire money or meet a stranger with no backup if the item
-                is not what they expected. We built Reswell because that process breaks too often.
+                Some boards move fine on Facebook Marketplace or Craigslist. Others sit for months.
+                Someone out there might be looking for that same board, and they just aren&apos;t in your
+                town. Reswell came from a simple idea: buying and selling surfboards doesn&apos;t have to
+                stop at local pickup.
               </p>
               <p>
-                Reswell is a marketplace for surfboards and surf gear — fins, wetsuits, and more.
-                List what you have, browse what is out there, message the seller, and checkout on the
-                site when you are ready. Payments, offers, shipping labels, and seller payouts live
-                in one place instead of spread across five apps. If a covered purchase goes wrong,
-                there is a policy for that too.
+                We wanted one dedicated place for surfboards and surf gear. Finding the board you want
+                should be straightforward, and sellers should be able to reach buyers who are looking for
+                what they have. Trust and connection are the point.
               </p>
               <p>
-                We&apos;re a small team. We use Reswell ourselves, read your support messages, and
-                push fixes when something&apos;s off. We&apos;re not trying to reinvent surfing. We
-                just want buying and selling gear to feel simple enough that you actually close
-                the deal.
+                We&apos;re based in Santa Barbara. Even here, it can be hard to find the board you want if
+                you don&apos;t have Southern California&apos;s inventory around the corner. Reswell is for
+                surfers who know what they want, and for people who buy and sell boards often, whether
+                they&apos;re trying new setups or selling as a side hustle.
+              </p>
+              <p>
+                We&apos;re not another Facebook Marketplace, Boardal, or Craigslist. Those places are
+                useful for plenty of things, and they&apos;ll keep existing. For serious buyers and
+                sellers, we want something more focused: ship the board, skip the meetup logistics,
+                and build a marketplace around trust.
               </p>
             </div>
           </div>
@@ -141,27 +149,27 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
 
       <AboutFoundersSection />
 
-      <section className="border-b border-border/70 bg-muted/40">
+      <section className="border-b border-border/70 bg-[#F9F9F2]">
         <div className="container mx-auto max-w-4xl px-4 py-16 text-center sm:px-6 sm:py-20">
           <h2 className="font-headline text-[clamp(1.65rem,3.5vw,2.5rem)] font-bold uppercase leading-tight tracking-tight text-foreground">
-            Reswell was built
+            Find the board.
             <br />
-            for surfers by surfers
+            Sell it farther.
           </h2>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-            We know how personal gear can be. That is why we built a marketplace with messaging,
-            checkout, shipping tools, and real support, so you can handle the whole thing in one
-            place.
+            We want buyers to get the boards and gear they&apos;re looking for, and sellers to reach more
+            surfers and move boards faster. Nationwide, with shipping built in, and a community
+            grounded in trust.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button size="lg" asChild>
               <Link href="/boards">
-                Browse the marketplace
+                Browse boards
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link href="/sell">List your gear</Link>
+              <Link href="/sell">List a board</Link>
             </Button>
           </div>
         </div>
@@ -180,10 +188,10 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
       <section className="border-b border-border/70 bg-background">
         <div className="container mx-auto px-4 py-14 sm:px-6 sm:py-16">
           <h2 className="text-center font-headline text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            Why surfers love Reswell
+            What we&apos;re building toward
           </h2>
           <div className="mx-auto mt-10 grid max-w-5xl gap-4 md:grid-cols-2">
-            {WHY_SURFERS_LOVE.map((item) => (
+            {WHY_SURFERS_USE.map((item) => (
               <Link
                 key={item.title}
                 href={item.href}
@@ -203,44 +211,40 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
       </section>
 
       <section className="border-b border-border/70 bg-background">
-        <div className="container mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 sm:py-16 lg:grid-cols-2 lg:gap-12">
-          <div className="rounded-[1.75rem] border border-border/80 bg-muted/30 p-8 sm:p-10">
+        <div className="container mx-auto max-w-6xl px-4 py-14 sm:px-6 sm:py-16">
+          <div className={`mx-auto max-w-3xl rounded-[1.75rem] ${reswellProtectionCardClassName} p-8 sm:p-10`}>
             <h2 className="font-headline text-2xl font-bold tracking-tight text-foreground">
-              We stand behind covered purchases
+              Purchase Protection is central to what we do
             </h2>
-            <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-              We are here when you need help. Buy through Reswell checkout on a qualifying sale and{" "}
-              <Link href="/protection-policy" className="text-foreground underline underline-offset-4">
-                Purchase Protection
-              </Link>{" "}
-              can step in if something covered goes wrong. No extra cost to buyers.
-            </p>
+            <div className="mt-4 space-y-4 text-base leading-relaxed text-muted-foreground">
+              <p>
+                Trust is the most important part of this business.{" "}
+                <Link
+                  href="/protection-policy"
+                  className="text-foreground underline underline-offset-4"
+                >
+                  Purchase Protection
+                </Link>{" "}
+                is how we stand behind eligible purchases paid through Reswell checkout.
+              </p>
+              <p>
+                For buyers, that means coverage when something covered goes wrong: the item never
+                arrives, isn&apos;t as described in a material way, or arrives damaged in transit. When a
+                claim is approved, there is a path to a refund. There&apos;s no extra protection fee on
+                eligible purchases.
+              </p>
+              <p>
+                For sellers, eligible sales are under the same program, and you aren&apos;t charged an
+                additional protection fee on your payout. Claims follow a clear policy, we review
+                them with the evidence on record, and returns (when required) use a documented flow
+                with tracking.
+              </p>
+            </div>
             <Link
-              href="/help"
+              href="/protection-policy"
               className="mt-6 inline-flex items-center gap-2 font-medium text-foreground underline-offset-4 hover:underline"
             >
-              Explore our Help Center
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-
-          <div className="rounded-[1.75rem] border border-border/80 bg-muted/30 p-8 sm:p-10">
-            <h2 className="font-headline text-2xl font-bold tracking-tight text-foreground">
-              Keeping gear in the water
-            </h2>
-            <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-              Surfers list boards, fins, wetsuits, and more here when they are ready to sell. Browse
-              what is nearby, get shipping when a seller offers it, and check{" "}
-              <Link href="/sold" className="text-foreground underline underline-offset-4">
-                recently sold
-              </Link>{" "}
-              if you want a read on what similar setups are going for.
-            </p>
-            <Link
-              href="/boards"
-              className="mt-6 inline-flex items-center gap-2 font-medium text-foreground underline-offset-4 hover:underline"
-            >
-              Explore the marketplace
+              Read the full protection policy
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
@@ -250,13 +254,13 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
       <section className="bg-background">
         <div className="container mx-auto px-4 py-14 sm:px-6 sm:py-16">
           <h2 className="text-center font-headline text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            What keeps us going
+            Who Reswell is for
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-base leading-relaxed text-muted-foreground">
-            Reswell is still growing, and we are building it with the community, not apart from it.
+            We&apos;re early. We&apos;re working on this every day, honestly, and without the flash.
           </p>
           <div className="mx-auto mt-10 grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {VALUE_PILLARS.map(({ title, body }) => (
+            {WHO_ITS_FOR.map(({ title, body }) => (
               <div
                 key={title}
                 className="rounded-2xl border border-border/80 bg-card p-6 text-center sm:text-left"
@@ -269,15 +273,15 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
 
           <div className="mx-auto mt-14 max-w-2xl rounded-[1.75rem] border border-border/80 bg-muted/30 px-6 py-8 text-center sm:px-10">
             <p className="text-base leading-relaxed text-muted-foreground">
-              Questions, ideas, or something that does not look right? We want to hear it.{" "}
+              Questions or something that doesn&apos;t look right? Tell us.{" "}
               <Link href="/contact" className="text-foreground underline underline-offset-4">
                 Contact us
               </Link>{" "}
               or email{" "}
-              <a href="mailto:help@reswell.app" className="text-foreground underline underline-offset-4">
-                help@reswell.app
+              <a href={RESWELL_CONTACT_MAILTO} className="text-foreground underline underline-offset-4">
+                {RESWELL_CONTACT_EMAIL}
               </a>
-              . Thanks for being here. Now go find your next setup.
+              .
             </p>
           </div>
         </div>

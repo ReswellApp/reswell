@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { ContactForm } from "./contact-form"
+import { RESWELL_CONTACT_EMAIL, RESWELL_CONTACT_MAILTO } from "@/lib/constants/contact"
 import { wideShimmer } from "@/lib/image-shimmer"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 import { cn } from "@/lib/utils"
@@ -98,10 +99,10 @@ export default function ContactPage() {
                 Good for attachments, forwarding receipts, or if you just prefer your inbox.
               </p>
               <a
-                href="mailto:help@reswell.app"
+                href={RESWELL_CONTACT_MAILTO}
                 className="mt-5 inline-flex min-h-touch min-w-0 items-center justify-center rounded-xl border border-border bg-background px-4 py-3 text-center text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                help@reswell.app
+                {RESWELL_CONTACT_EMAIL}
               </a>
             </CardContent>
           </Card>

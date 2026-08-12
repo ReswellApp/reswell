@@ -5,6 +5,7 @@ type FounderProfileData = {
   name: string
   role: string
   title?: string
+  bio: string
   imageSrc?: string
   imageAlt?: string
 }
@@ -12,21 +13,23 @@ type FounderProfileData = {
 const FOUNDERS: readonly FounderProfileData[] = [
   {
     name: "Hayden Garfield",
-    role: "Co-founder",
-    title: "CEO & Full Stack Engineer",
+    role: "Cofounder",
+    title: "Product Engineer",
+    bio: "Surf photographer and filmmaker who has traveled the world documenting surf. A cancer survivor and surfer himself.",
     imageSrc: "/images/about/hayden-garfield.png",
-    imageAlt: "Hayden Garfield, co-founder of Reswell",
+    imageAlt: "Hayden Garfield, cofounder of Reswell",
   },
   {
     name: "David Kalt",
-    role: "Co-founder",
-    title: "Full Stack Engineer",
+    role: "Cofounder",
+    title: "Product Engineer",
+    bio: "Founder of Reverb.com. Currently also runs Pangobooks.com.",
     imageSrc: "/images/about/david-kalt.png",
-    imageAlt: "David Kalt, co-founder of Reswell",
+    imageAlt: "David Kalt, cofounder of Reswell",
   },
 ]
 
-function FounderProfile({ name, role, title, imageSrc, imageAlt }: FounderProfileData) {
+function FounderProfile({ name, role, title, bio, imageSrc, imageAlt }: FounderProfileData) {
   return (
     <article className="flex flex-col items-center text-center">
       {imageSrc && imageAlt ? (
@@ -42,7 +45,7 @@ function FounderProfile({ name, role, title, imageSrc, imageAlt }: FounderProfil
           />
         </div>
       ) : null}
-      <div className={imageSrc ? "mt-5 max-w-xs" : "max-w-xs"}>
+      <div className={imageSrc ? "mt-5 max-w-sm" : "max-w-sm"}>
         <h3 className="font-headline text-xl font-bold tracking-tight text-foreground">{name}</h3>
         <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           {role}
@@ -50,6 +53,7 @@ function FounderProfile({ name, role, title, imageSrc, imageAlt }: FounderProfil
         {title ? (
           <p className="mt-1.5 text-sm font-medium text-foreground">{title}</p>
         ) : null}
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{bio}</p>
       </div>
     </article>
   )
@@ -67,11 +71,11 @@ export function AboutFoundersSection() {
             Meet the founders
           </h2>
           <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
-            A small team building the marketplace we wished existed.
+            A small team building a surf marketplace we thought should exist.
           </p>
         </div>
 
-        <div className="mx-auto mt-10 flex max-w-2xl flex-col items-center gap-10 sm:flex-row sm:justify-center sm:gap-16 lg:gap-20">
+        <div className="mx-auto mt-10 flex max-w-3xl flex-col items-center gap-12 sm:flex-row sm:items-start sm:justify-center sm:gap-16 lg:gap-20">
           {FOUNDERS.map((founder) => (
             <FounderProfile key={founder.name} {...founder} />
           ))}
