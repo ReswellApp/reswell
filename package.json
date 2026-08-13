@@ -66,6 +66,7 @@
     "d3-geo": "^3.1.1",
     "date-fns": "4.1.0",
     "embla-carousel-react": "8.5.1",
+    "exceljs": "^4.4.0",
     "google-auth-library": "^10.6.2",
     "heic-convert": "^2.1.0",
     "heic-to": "^1.5.2",

@@ -67,6 +67,7 @@ const EMPLOYEE_EXCLUDED_HREFS = new Set<string>([
   '/admin/listings/brand-requests',
   '/admin/listings/board-catalog-data',
   '/admin/fbcatalog',
+  '/admin/facebook-marketplace-bulk',
   '/admin/listings/brand-model-autofills',
   '/admin/orders/test-purchase',
   '/admin/orders/terminal',
@@ -117,6 +118,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/listings/brand-model-autofills', label: 'Brand/model autofills', icon: 'tag' },
       { href: '/admin/listings/board-catalog-data', label: 'User Listings Board Data', icon: 'layers' },
       { href: '/admin/fbcatalog', label: 'FB Marketplace catalog', icon: 'store' },
+      { href: '/admin/facebook-marketplace-bulk', label: 'FB Marketplace export', icon: 'fileText' },
     ],
   },
   {

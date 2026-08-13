@@ -52,6 +52,12 @@ const brandCatalogImageHosts = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingRoot: path.join(__dirname),
+  serverExternalPackages: ['exceljs'],
+  outputFileTracingIncludes: {
+    '/app/api/admin/facebook-marketplace-bulk/export/route': [
+      './lib/facebook-marketplace/templates/**',
+    ],
+  },
   env: {
     NEXT_PUBLIC_SITE_WORDMARK_USE_VECTOR_SVG,
   },
