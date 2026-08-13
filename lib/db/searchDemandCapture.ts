@@ -29,6 +29,7 @@ export async function aggregateDemandCaptureByQuery(
   service: SupabaseClient,
   fromIso: string,
   toIso?: string,
+  byQueryLimit = 30,
 ): Promise<DemandCaptureAggregate> {
   let q = service
     .from("board_listing_requests")
@@ -88,7 +89,7 @@ export async function aggregateDemandCaptureByQuery(
       lastAt: v.lastAt,
     }))
     .sort((a, b) => b.count - a.count || b.people - a.people)
-    .slice(0, 30)
+    .slice(0, Math.min(Math.max(byQueryLimit, 1), 200))
 
   return { total, uniquePeople: allEmails.size, byQuery: list }
 }

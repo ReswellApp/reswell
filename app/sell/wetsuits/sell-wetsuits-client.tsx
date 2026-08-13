@@ -35,6 +35,8 @@ import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-list
 import { useListingVideoUpload } from "@/components/features/sell/hooks/use-listing-video-upload"
 import { createEmptyListingVideoSlot } from "@/lib/sell-flow/listing-video-slot"
 import { useSellAccessoryDraftRecovery } from "@/components/features/sell/hooks/use-sell-accessory-draft-recovery"
+import { usePendingPublishResume } from "@/components/features/sell/hooks/use-pending-publish-resume"
+import { beginGuestListingPublishAuth } from "@/lib/sell-flow/guest-publish-auth"
 import type { SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
 import { ReswellPackageDimensionsCard } from "@/components/features/sell/reswell-package-dimensions-card"
@@ -202,6 +204,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
   const signIn = useSignInGate()
   const fileInputId = useId()
   const supabaseRef = useRef(createClient())
+  const formRef = useRef<HTMLFormElement | null>(null)
   const editId = editListingId?.trim() || null
 
   const [form, setForm] = useState<WetsuitFormState>(INITIAL_STATE)
@@ -279,6 +282,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     handlePhotoTileRetry,
     handlePhotoTileRotate,
     hydrateExistingImages,
+    imagesRef,
   } = photoUpload
 
   const videoUpload = useListingVideoUpload({
@@ -304,7 +308,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     setForm(wetsuitFormFromDraftSnapshot(snapshot))
   }, [])
 
-  const { clearRecoveredDraft } = useSellAccessoryDraftRecovery({
+  const { clearRecoveredDraft, flushDraftNow, draftHydrated } = useSellAccessoryDraftRecovery({
     listingType: "wetsuits",
     editId,
     startFresh,
@@ -461,6 +465,14 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     onHydrate: hydrateWetsuitEdit,
   })
 
+  usePendingPublishResume({
+    listingKind: "wetsuits",
+    draftHydrated,
+    formRef,
+    imagesRef,
+    editLoading,
+  })
+
   const setField = useCallback(<K extends keyof WetsuitFormState>(key: K, value: WetsuitFormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
   }, [])
@@ -533,10 +545,12 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     const session = await resolveClientSessionForMutation(supabase)
     const user = session?.user
     if (!user || !session?.access_token) {
-      toast.message("Create a free account to publish", {
-        description: "Your form stays here — sign up and we’ll finish publishing.",
+      await beginGuestListingPublishAuth({
+        kind: "wetsuits",
+        returnPath: "/sell/wetsuits",
+        openSignIn: signIn,
+        persistDraft: () => flushDraftNow({ includeInFlightPhotos: true }),
       })
-      signIn("/sell/wetsuits", { preferSignUp: true, skipSessionProbe: true })
       return
     }
 
@@ -893,7 +907,12 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
               className="mb-8 hidden md:block lg:hidden"
             />
 
-            <form onSubmit={handleSubmit} className="space-y-10 lg:space-y-12" aria-busy={submitting}>
+            <form
+              ref={formRef}
+              onSubmit={handleSubmit}
+              className="space-y-10 lg:space-y-12"
+              aria-busy={submitting}
+            >
               <SellFormSection
                 sectionId="sell-wetsuits-section-photos-title"
                 title="Photos & title"

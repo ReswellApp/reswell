@@ -29,11 +29,12 @@ function catalogLabelKey(value: string): string {
 
 export async function loadCatalogHintsForQueries(
   queries: readonly string[],
+  limit = 20,
 ): Promise<CatalogHint[]> {
   const db = createServiceRoleClient()
   const unique = [...new Set(queries.map((q) => q.trim()).filter((q) => q.length >= 2))].slice(
     0,
-    20,
+    Math.min(Math.max(limit, 1), 80),
   )
   const hints: CatalogHint[] = []
 

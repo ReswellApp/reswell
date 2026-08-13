@@ -33,6 +33,8 @@ import { useListingPhotoUpload } from "@/components/features/sell/hooks/use-list
 import { useListingVideoUpload } from "@/components/features/sell/hooks/use-listing-video-upload"
 import { createEmptyListingVideoSlot } from "@/lib/sell-flow/listing-video-slot"
 import { useSellAccessoryDraftRecovery } from "@/components/features/sell/hooks/use-sell-accessory-draft-recovery"
+import { usePendingPublishResume } from "@/components/features/sell/hooks/use-pending-publish-resume"
+import { beginGuestListingPublishAuth } from "@/lib/sell-flow/guest-publish-auth"
 import type { SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
 import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
 import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
@@ -105,6 +107,7 @@ export default function SellMagazinesFlow({
   const signIn = useSignInGate()
   const fileInputId = useId()
   const supabaseRef = useRef(createClient())
+  const formRef = useRef<HTMLFormElement | null>(null)
   const editId = editListingId?.trim() || null
   const [form, setForm] = useState<MagazineFormState>(INITIAL_STATE)
   const [submitting, setSubmitting] = useState(false)
@@ -146,6 +149,7 @@ export default function SellMagazinesFlow({
     handlePhotoTileRetry,
     handlePhotoTileRotate,
     hydrateExistingImages,
+    imagesRef,
   } = photoUpload
 
   const videoUpload = useListingVideoUpload({
@@ -171,7 +175,7 @@ export default function SellMagazinesFlow({
     setForm(magazineFormFromDraftSnapshot(snapshot))
   }, [])
 
-  const { clearRecoveredDraft } = useSellAccessoryDraftRecovery({
+  const { clearRecoveredDraft, flushDraftNow, draftHydrated } = useSellAccessoryDraftRecovery({
     listingType: "magazines",
     editId,
     startFresh,
@@ -295,6 +299,14 @@ export default function SellMagazinesFlow({
     onHydrate: hydrateMagazineEdit,
   })
 
+  usePendingPublishResume({
+    listingKind: "magazines",
+    draftHydrated,
+    formRef,
+    imagesRef,
+    editLoading,
+  })
+
   const buildPayload = () => ({
     title: form.title,
     description: form.description,
@@ -320,10 +332,12 @@ export default function SellMagazinesFlow({
 
     const session = await resolveClientSessionForMutation(supabaseRef.current)
     if (!session?.user || !session.access_token) {
-      toast.message("Create a free account to publish", {
-        description: "Your form stays here — sign up and we’ll finish publishing.",
+      await beginGuestListingPublishAuth({
+        kind: "magazines",
+        returnPath: magazineSellReturnPath(),
+        openSignIn: signIn,
+        persistDraft: () => flushDraftNow({ includeInFlightPhotos: true }),
       })
-      signIn(magazineSellReturnPath(), { preferSignUp: true, skipSessionProbe: true })
       return
     }
 
@@ -486,7 +500,7 @@ export default function SellMagazinesFlow({
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-8">
         <SellListingPhotoGrid
           images={images}
           maxPhotos={MAGAZINE_LISTING_MAX_PHOTOS}

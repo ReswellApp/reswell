@@ -78,7 +78,7 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     id: "search_daily_report",
     name: "Search daily report",
     purpose:
-      "Once a day, Gemini reads marketplace searches, dropdown picks, and zero-result queries, writes an operator briefing, and adds catalog-validated search synonyms for alias/typo empty searches.",
+      "Gemini reads marketplace searches, dropdown picks, and zero-result queries for a day, month, or all-time window, writes an operator briefing with a ranked demand list, and adds catalog-validated search synonyms for alias/typo empty searches.",
     gatewayFeatureTag: "feature:search-daily-report",
     transport: "vercel_ai_gateway",
     defaultModel: "google/gemini-2.5-pro",
@@ -87,13 +87,17 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     surfaces: [
       "/admin/search-daily-report",
       "GET /api/cron/search-daily-report",
+      "GET /api/cron/search-period-report",
       "POST /api/admin/search-daily-report",
+      "POST /api/admin/search-period-report",
       "POST /api/admin/search-daily-report/synonyms",
     ],
     sourceFiles: [
       "lib/services/searchDailyReport.ts",
+      "lib/services/searchPeriodReport.ts",
       "lib/services/searchDailyReportSynonyms.ts",
       "app/api/cron/search-daily-report/route.ts",
+      "app/api/cron/search-period-report/route.ts",
     ],
   },
   {

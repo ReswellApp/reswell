@@ -88,10 +88,11 @@ import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-sessi
 import { persistListingDraftSnapshot } from "@/lib/sell-flow/persist-listing-draft-snapshot"
 import {
   clearPendingPublish,
-  markPendingPublish,
+  isPendingPublish,
   sellFlowStepSessionKey,
   SELL_SUPPRESS_IDB_RESTORE_KEY,
 } from "@/lib/sell-flow/session-keys"
+import { beginGuestListingPublishAuth } from "@/lib/sell-flow/guest-publish-auth"
 import { takeSellCatalogHandoff, sellCatalogHandoffToFinSelection } from "@/lib/sell-flow/catalog-handoff"
 import {
   clearSellListingDraft,
@@ -344,21 +345,15 @@ export default function SellFinsFlow({
     draftPhotosPendingRef,
   })
 
-  usePendingPublishResume({
-    listingKind: "fins",
-    editId,
-    draftHydrated,
-    formRef,
-    imagesRef,
-  })
-
   useLayoutEffect(() => {
     if (typeof window === "undefined") return
     if (startFresh) {
-      try {
-        sessionStorage.setItem(SELL_SUPPRESS_IDB_RESTORE_KEY, "1")
-      } catch {
-        /* quota / private mode */
+      if (!isPendingPublish("fins")) {
+        try {
+          sessionStorage.setItem(SELL_SUPPRESS_IDB_RESTORE_KEY, "1")
+        } catch {
+          /* quota / private mode */
+        }
       }
       clearSellServerDraftListingId("fins")
       router.replace("/sell/fins", { scroll: false })
@@ -593,6 +588,14 @@ export default function SellFinsFlow({
     onHydrate: hydrateFinEdit,
   })
 
+  usePendingPublishResume({
+    listingKind: "fins",
+    draftHydrated,
+    formRef,
+    imagesRef,
+    editLoading,
+  })
+
   const serverDraft = useSellServerDraft({
     section: "fins",
     supabase: supabaseRef.current,
@@ -788,18 +791,19 @@ export default function SellFinsFlow({
     const user = session?.user
 
     const persistDraftForSignIn = async () => {
-      await persistListingDraftSnapshot({
-        listingType: "fins",
-        formData: { ...form, finFlowStep: flowStep } as SellListingDraftFormSnapshot,
-        images,
-        userId: null,
-        includeInFlightPhotos: true,
+      await beginGuestListingPublishAuth({
+        kind: "fins",
+        returnPath: finSellReturnPath(),
+        openSignIn: signIn,
+        persistDraft: () =>
+          persistListingDraftSnapshot({
+            listingType: "fins",
+            formData: { ...form, finFlowStep: flowStep } as SellListingDraftFormSnapshot,
+            images,
+            userId: null,
+            includeInFlightPhotos: true,
+          }),
       })
-      markPendingPublish("fins")
-      toast.message("Listing saved on this device", {
-        description: "Create a free account to publish — you’ll pick up right here.",
-      })
-      signIn(finSellReturnPath(), { preferSignUp: true, skipSessionProbe: true })
     }
 
     if (!user || !session?.access_token) {

@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react"
 import { AuthModal } from "@/components/auth/auth-modal"
+import { sellPostAuthReturnPath } from "@/lib/sell-flow/post-auth-return-path"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 
 type Mode = "login" | "sign-up" | "forgot-password"
@@ -29,19 +30,19 @@ export function AuthModalProvider({ children }: { children: ReactNode }) {
 
   const openLogin = useCallback((redirect?: string | null) => {
     setMode("login")
-    setRedirectTo(safeRedirectPath(redirect ?? null))
+    setRedirectTo(sellPostAuthReturnPath(safeRedirectPath(redirect ?? null)))
     setOpen(true)
   }, [])
 
   const openSignUp = useCallback((redirect?: string | null) => {
     setMode("sign-up")
-    setRedirectTo(safeRedirectPath(redirect ?? null))
+    setRedirectTo(sellPostAuthReturnPath(safeRedirectPath(redirect ?? null)))
     setOpen(true)
   }, [])
 
   const openForgotPassword = useCallback((redirect?: string | null) => {
     setMode("forgot-password")
-    setRedirectTo(safeRedirectPath(redirect ?? null))
+    setRedirectTo(sellPostAuthReturnPath(safeRedirectPath(redirect ?? null)))
     setOpen(true)
   }, [])
 

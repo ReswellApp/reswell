@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation"
 
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
 import { resolveSellEditUser } from "@/lib/sell-flow/resolve-sell-edit-user"
+import { sellPostAuthReturnPath } from "@/lib/sell-flow/post-auth-return-path"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { createClient } from "@/lib/supabase/client"
 
@@ -28,10 +29,10 @@ export function useSignInGate() {
     (redirectOverride?: string | null, options?: SignInGateOptions) => {
       const resolveRedirect = (): string => {
         const raw = redirectOverride != null ? String(redirectOverride).trim() : ""
-        if (raw !== "") return safeRedirectPath(raw)
+        if (raw !== "") return sellPostAuthReturnPath(safeRedirectPath(raw))
         const p = pathname != null && pathname !== "" ? pathname : "/"
         const q = typeof window !== "undefined" ? window.location.search : ""
-        return safeRedirectPath(p + q)
+        return sellPostAuthReturnPath(safeRedirectPath(p + q))
       }
 
       const openGate = () => {

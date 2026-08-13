@@ -8,13 +8,15 @@ import {
   type SellFlowListingKind,
 } from "@/lib/sell-flow/session-keys"
 import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
+import { claimGuestListingDraftsClient } from "@/lib/sell-flow/claim-guest-listing-drafts"
 
 export function usePendingPublishResume(options: {
   listingKind: SellFlowListingKind
-  editId: string | null
   draftHydrated: boolean
   formRef: React.RefObject<HTMLFormElement | null>
   imagesRef: React.MutableRefObject<ListingPhotoSlot[]>
+  /** Wait until an existing draft/edit row has loaded before auto-submitting. */
+  editLoading?: boolean
 }): void {
   const pendingPublishHandledRef = useRef(false)
   const supabaseRef = useRef(createClient())
@@ -22,12 +24,14 @@ export function usePendingPublishResume(options: {
   optionsRef.current = options
 
   useEffect(() => {
-    if (!options.draftHydrated || options.editId || pendingPublishHandledRef.current) return
+    if (!options.draftHydrated || options.editLoading || pendingPublishHandledRef.current) {
+      return
+    }
     let cancelled = false
 
     const tryResume = async () => {
       const opts = optionsRef.current
-      if (pendingPublishHandledRef.current || cancelled || opts.editId) return
+      if (pendingPublishHandledRef.current || cancelled || opts.editLoading) return
       if (!isPendingPublish(opts.listingKind)) return
 
       const {
@@ -37,6 +41,9 @@ export function usePendingPublishResume(options: {
 
       pendingPublishHandledRef.current = true
       clearPendingPublish(opts.listingKind)
+
+      await claimGuestListingDraftsClient()
+      if (cancelled) return
 
       for (let i = 0; i < 120 && !cancelled; i++) {
         const imgs = opts.imagesRef.current
@@ -71,5 +78,5 @@ export function usePendingPublishResume(options: {
       cancelled = true
       subscription.unsubscribe()
     }
-  }, [options.draftHydrated, options.editId, options.listingKind])
+  }, [options.draftHydrated, options.editLoading, options.listingKind])
 }

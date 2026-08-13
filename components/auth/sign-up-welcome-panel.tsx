@@ -1,8 +1,9 @@
 "use client"
 
+import { useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { CheckCircle2 } from "lucide-react"
+import { CheckCircle2, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/card"
 import { clearGoogleNewSignupCookie } from "@/lib/actions/clear-google-new-signup-cookie"
 import { GOOGLE_NEW_SIGNUP_WELCOME_COMPLETED_KEY } from "@/lib/auth/google-sign-up-welcome"
+import { isSellFlowReturnPath } from "@/lib/auth/is-sell-flow-return-path"
 import { navigateAfterClientAuth } from "@/lib/auth/navigate-after-client-auth"
 
 const WELCOME_ITEMS = [
@@ -38,8 +40,12 @@ export function SignUpWelcomePanel({
 }: SignUpWelcomePanelProps) {
   const router = useRouter()
   const headline = firstName ? `Welcome, ${firstName}!` : "Welcome to Reswell!"
+  const resumeListing = isSellFlowReturnPath(nextPath)
+  const continueStartedRef = useRef(false)
 
   const handleContinue = () => {
+    if (continueStartedRef.current) return
+    continueStartedRef.current = true
     void (async () => {
       if (clearGoogleNewSignupCookieOnContinue) {
         try {
@@ -51,6 +57,45 @@ export function SignUpWelcomePanel({
       }
       await navigateAfterClientAuth(nextPath, router)
     })()
+  }
+
+  useEffect(() => {
+    if (!resumeListing) return
+    const timer = window.setTimeout(() => {
+      handleContinue()
+    }, 400)
+    return () => window.clearTimeout(timer)
+    // Continue once for this landing — nextPath is stable for the page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeListing])
+
+  if (resumeListing) {
+    return (
+      <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+        <div className="w-full max-w-md">
+          <Card>
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-listingHeart/10">
+                <Loader2 className="h-7 w-7 animate-spin text-listingHeart" aria-hidden />
+              </div>
+              <CardTitle className="text-2xl">Taking you back to your listing</CardTitle>
+              <CardDescription className="text-base">
+                Your account is ready. We saved your listing on this device — next we will publish it.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                type="button"
+                className="h-12 w-full rounded-full bg-listingHeart text-white hover:bg-[#2a4170]"
+                onClick={handleContinue}
+              >
+                Continue to listing
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
   }
 
   return (

@@ -74,6 +74,10 @@
       "schedule": "30 14 * * *"
     },
     {
+      "path": "/api/cron/search-period-report",
+      "schedule": "0 15 1 * *"
+    },
+    {
       "path": "/api/cron/intelligence-report",
       "schedule": "0 15 * * *"
     },

@@ -234,8 +234,11 @@ import type { SellFormBoardCatalogSlice } from "@/lib/utils/listing-board-catalo
 import { upsertUserListingBoardModelDataFromSellForm } from "@/lib/db/user-listing-board-model-data"
 import {
   SELL_SUPPRESS_IDB_RESTORE_KEY,
+  isPendingPublish,
   sellPendingPublishKey,
 } from "@/lib/sell-flow/session-keys"
+import { beginGuestListingPublishAuth } from "@/lib/sell-flow/guest-publish-auth"
+import { usePendingPublishResume } from "@/components/features/sell/hooks/use-pending-publish-resume"
 import { takeSellCatalogHandoff } from "@/lib/sell-flow/catalog-handoff"
 import {
   SellCatalogSelectionCard,
@@ -783,10 +786,12 @@ function SellPageContentInner({
   useLayoutEffect(() => {
     if (typeof window === "undefined") return
     if (startFresh) {
-      try {
-        sessionStorage.setItem(SELL_SUPPRESS_IDB_RESTORE_KEY, "1")
-      } catch {
-        /* quota / private mode */
+      if (!isPendingPublish("board")) {
+        try {
+          sessionStorage.setItem(SELL_SUPPRESS_IDB_RESTORE_KEY, "1")
+        } catch {
+          /* quota / private mode */
+        }
       }
       router.replace("/sell/boards", { scroll: false })
     }
@@ -808,7 +813,6 @@ function SellPageContentInner({
   const formRef = useRef<HTMLFormElement>(null)
   /** Prevents concurrent publishes (double-tap / stacked submits before `loading` flips). */
   const publishInFlightRef = useRef(false)
-  const pendingPublishHandledRef = useRef(false)
   const uploadToastIdRef = useRef<string | number | null>(null)
   const uploadPhaseLabelsRef = useRef<string[]>([...LISTING_UPLOAD_STEP_LABELS])
   const [uploadPhaseLabels, setUploadPhaseLabels] = useState<string[]>(() => [
@@ -2031,6 +2035,7 @@ function SellPageContentInner({
    */
   useEffect(() => {
     if (!startFresh) return
+    if (isPendingPublish("board")) return
     for (const im of imagesRef.current) {
       if (im.previewUrl?.startsWith("blob:")) URL.revokeObjectURL(im.previewUrl)
     }
@@ -2089,9 +2094,10 @@ function SellPageContentInner({
           }
         })()
 
+      const pendingPublishResume = isPendingPublish("board")
+
       if (
-        !wantsBlankListing &&
-        !suppressIdbForNewListing &&
+        (pendingPublishResume || (!wantsBlankListing && !suppressIdbForNewListing)) &&
         !getImpersonation()
       ) {
         const {
@@ -2448,57 +2454,13 @@ function SellPageContentInner({
     for (const s of q) void optimizeAndUploadSlot(s)
   }, [draftHydrated])
 
-  /** After guest Publish → sign-in, resume submit once photos finish uploading. */
-  useEffect(() => {
-    if (!draftHydrated || editId || pendingPublishHandledRef.current) return
-    let cancelled = false
-
-    void (async () => {
-      let pending = false
-      try {
-        pending = sessionStorage.getItem(SELL_PENDING_PUBLISH_KEY) === "1"
-      } catch {
-        /* ignore */
-      }
-      if (!pending) return
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user || cancelled) return
-
-      pendingPublishHandledRef.current = true
-      try {
-        sessionStorage.removeItem(SELL_PENDING_PUBLISH_KEY)
-      } catch {
-        /* ignore */
-      }
-
-      for (let i = 0; i < 120 && !cancelled; i++) {
-        const imgs = imagesRef.current
-        const workLeft = imgs.some(
-          (im) =>
-            im.sourceFile &&
-            (im.optimizePhase === "running" ||
-              im.uploadPhase === "uploading" ||
-              (im.optimizePhase === "done" &&
-                im.uploadPhase !== "done" &&
-                im.uploadPhase !== "error")),
-        )
-        if (!workLeft) break
-        await new Promise((resolve) => setTimeout(resolve, 500))
-      }
-
-      if (cancelled) return
-      window.requestAnimationFrame(() => {
-        formRef.current?.requestSubmit()
-      })
-    })()
-
-    return () => {
-      cancelled = true
-    }
-  }, [draftHydrated, editId, supabase])
+  usePendingPublishResume({
+    listingKind: "board",
+    draftHydrated,
+    formRef,
+    imagesRef,
+    editLoading,
+  })
 
   function retryListingPhotoUpload(clientId: string) {
     const live = imagesRef.current.find((s) => s.clientId === clientId)
@@ -2917,23 +2879,19 @@ function SellPageContentInner({
       const user = session?.user
       const accessToken = session?.access_token
       if (!user || !accessToken) {
-        await persistSellListingDraftSnapshot({
-          listingType: "board",
-          formData: formData as SellListingDraftFormSnapshot,
-          images,
-          userId: null,
-          includeInFlightPhotos: true,
+        await beginGuestListingPublishAuth({
+          kind: "board",
+          returnPath: "/sell/boards",
+          openSignIn,
+          persistDraft: () =>
+            persistSellListingDraftSnapshot({
+              listingType: "board",
+              formData: formData as SellListingDraftFormSnapshot,
+              images,
+              userId: null,
+              includeInFlightPhotos: true,
+            }),
         })
-        try {
-          sessionStorage.setItem(SELL_PENDING_PUBLISH_KEY, "1")
-        } catch {
-          /* quota / private mode */
-        }
-        const ret = `/sell/boards${sellSearchParams.toString() ? `?${sellSearchParams}` : ""}`
-        toast.message("Listing saved on this device", {
-          description: "Create a free account to publish — you’ll pick up right here.",
-        })
-        openSignIn(ret, { preferSignUp: true, skipSessionProbe: true })
         return
       }
 

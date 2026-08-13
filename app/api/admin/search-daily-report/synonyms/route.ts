@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import { applySearchDailyReportSynonym } from "@/lib/services/searchDailyReport"
+import { applySearchPeriodReportSynonym } from "@/lib/services/searchPeriodReport"
 import { searchDailyReportApplySynonymSchema } from "@/lib/validations/search-daily-report"
 
 export const dynamic = "force-dynamic"
 
 /**
  * POST /api/admin/search-daily-report/synonyms
- * Body: { date, query }
+ * Body: { date, query } or { periodKind, periodKey, query }
  * Writes a catalog-validated synonym for that empty-search query.
  */
 export async function POST(request: NextRequest) {
@@ -27,8 +28,25 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const result = await applySearchDailyReportSynonym({
-      date: parsed.data.date,
+    if (parsed.data.date) {
+      const result = await applySearchDailyReportSynonym({
+        date: parsed.data.date,
+        query: parsed.data.query,
+        createdBy: gate.ctx.user.id,
+      })
+      if (!result.ok) {
+        return NextResponse.json({ error: result.error }, { status: 400 })
+      }
+      return NextResponse.json({ data: { report: result.row } }, { status: 200 })
+    }
+
+    if (!parsed.data.periodKind || !parsed.data.periodKey) {
+      return NextResponse.json({ error: "Invalid body" }, { status: 400 })
+    }
+
+    const result = await applySearchPeriodReportSynonym({
+      kind: parsed.data.periodKind,
+      key: parsed.data.periodKey,
       query: parsed.data.query,
       createdBy: gate.ctx.user.id,
     })

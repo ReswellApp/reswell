@@ -1167,7 +1167,7 @@ export function AdminOverviewView({
             href="/admin/search-daily-report"
             className="text-muted-foreground transition-colors hover:text-foreground hover:underline"
           >
-            Search daily report
+            Search reports
           </Link>
           <Link
             href="/admin/catalog-overview"

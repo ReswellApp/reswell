@@ -210,7 +210,7 @@ function boardbagFormFromDraftSnapshot(snapshot: SellListingDraftFormSnapshot): 
   return next
 }
 
-/** This flow's photo pipeline predates the shared upload hook â€” draft recovery covers the form only. */
+/** This flow's photo pipeline predates the shared upload hook — draft recovery covers the form only. */
 const NO_DRAFT_PHOTO_SLOTS: ListingPhotoSlot[] = []
 const noopSetDraftImages = () => {}
 const noopRetryDraftPhotoSlot = () => {}
@@ -286,7 +286,7 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
     setForm(boardbagFormFromDraftSnapshot(snapshot))
   }, [])
 
-  const { clearRecoveredDraft } = useSellAccessoryDraftRecovery({
+  const { clearRecoveredDraft, flushDraftNow } = useSellAccessoryDraftRecovery({
     listingType: "boardbags",
     editId,
     startFresh,
@@ -302,7 +302,7 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
       const imp = getImpersonation()
 
       if ((listing as { status?: string }).status === "sold") {
-        toast.message("This listing has sold â€” it can't be edited.")
+        toast.message("This listing has sold — it can't be edited.")
         router.replace(
           listingDetailHref({
             id: String(listing.id),
@@ -629,8 +629,11 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
     const session = await resolveClientSessionForMutation(supabase)
     const user = session?.user
     if (!user || !session?.access_token) {
-      toast.message("Sign in to publish your listing")
-      signIn("/sell/boardbags")
+      toast.message("Listing saved on this device", {
+        description: "Create a free account to publish — you’ll pick up right here.",
+      })
+      signIn("/sell/boardbags", { preferSignUp: true, skipSessionProbe: true })
+      void flushDraftNow({ includeInFlightPhotos: true })
       return
     }
 
@@ -659,11 +662,11 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
       return
     }
     if (uploadingCount > 0) {
-      failValidation("Hang tight â€” your photos are still uploading.")
+      failValidation("Hang tight — your photos are still uploading.")
       return
     }
     if (!videoUploadReady || videoUploading) {
-      failValidation("Hang tight â€” your video is still uploading.")
+      failValidation("Hang tight — your video is still uploading.")
       return
     }
     if (!form.title.trim()) {
@@ -998,7 +1001,7 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
                       <div className="min-w-0 space-y-1">
                         <h3 className="text-sm font-semibold text-foreground">Photos & video</h3>
                         <p className="text-xs text-muted-foreground sm:text-sm">
-                          Add clear photos. The first image is your main photo â€” tap the star on any
+                          Add clear photos. The first image is your main photo — tap the star on any
                           other photo to make it the cover. Optional: add one short video.
                         </p>
                       </div>
@@ -1074,7 +1077,7 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
                                 title="Make main photo"
                                 aria-label="Make main photo"
                               >
-                                â˜…
+                                ?
                               </button>
                             ) : null}
                             <button
@@ -1158,7 +1161,7 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
                     <Input
                       id="boardbag-title"
                       className="h-11 border-foreground/20 bg-card shadow-sm placeholder:text-muted-foreground"
-                      placeholder="e.g. Rip Curl Flashbomb 3/2 Steamer â€” Medium"
+                      placeholder="e.g. Rip Curl Flashbomb 3/2 Steamer — Medium"
                       value={form.title}
                       maxLength={BOARDBAG_LISTING_TITLE_MAX_LENGTH}
                       onChange={(e) => setField("title", e.target.value)}
@@ -1193,7 +1196,7 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
                     id="boardbag-description"
                     value={form.description}
                     onChange={(v) => setField("description", v)}
-                    placeholder="Thickness, seams, any wear or repairs, why you're sellingâ€¦"
+                    placeholder="Thickness, seams, any wear or repairs, why you're selling…"
                   />
                 </div>
               </SellFormSection>
@@ -1449,7 +1452,7 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
                     {submitting ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        {editId ? "Savingâ€¦" : "Publishingâ€¦"}
+                        {editId ? "Saving…" : "Publishing…"}
                       </>
                     ) : editId ? (
                       "Save changes"
@@ -1459,12 +1462,12 @@ export default function SellBoardbagsFlow({ editListingId = null }: { editListin
                   </Button>
                   {uploadingCount > 0 ? (
                     <p className="text-center text-xs text-muted-foreground">
-                      {uploadingCount} photo{uploadingCount > 1 ? "s" : ""} still uploadingâ€¦
+                      {uploadingCount} photo{uploadingCount > 1 ? "s" : ""} still uploading…
                     </p>
                   ) : null}
                   {videoUploading ? (
                     <p className="text-center text-xs text-muted-foreground">
-                      Video still uploadingâ€¦
+                      Video still uploading…
                     </p>
                   ) : null}
                 </div>

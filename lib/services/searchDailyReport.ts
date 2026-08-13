@@ -9,24 +9,10 @@
 import { generateText, Output } from "ai"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import {
-  aggregateMarketplaceQueriesForDailyReport,
-  aggregateNavBarMarketplaceKeywordAnalytics,
-  aggregateSearchAnalytics,
-  listMarketplaceSearchEvents,
-} from "@/lib/elasticsearch/search-analytics-index"
-import {
-  aggregateHeaderNavSuggestClickAnalytics,
-  aggregateSearchSuggestPicks,
-  aggregateSearchSuggestTopSelections,
-  listHeaderNavSuggestPickEvents,
-} from "@/lib/elasticsearch/search-suggest-analytics-index"
-import { aggregateDemandCaptureByQuery } from "@/lib/db/searchDemandCapture"
-import {
   getSearchDailyReportByDate,
   listSearchDailyReports,
   upsertSearchDailyReport,
   type SearchDailyReportRow,
-  type SearchDailyReportSnapshot,
 } from "@/lib/db/searchDailyReports"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import {
@@ -43,16 +29,16 @@ import {
 import {
   applySearchDailySynonymForQuery,
   applySearchDailySynonymProposals,
-  loadCatalogHintsForQueries,
-  loadExistingSynonymSummaries,
-  type CatalogHint,
 } from "@/lib/services/searchDailyReportSynonyms"
+import {
+  collectSearchReportCorpus,
+  SEARCH_REPORT_DAILY_CORPUS,
+  type SearchReportCorpus,
+} from "@/lib/services/searchReportCorpus"
 
 export const SEARCH_DAILY_REPORT_TZ = "America/Los_Angeles"
 
 const DIGEST_METRIC = "Search Daily Report"
-const EVENT_SAMPLE_CAP = 200
-const DROPDOWN_EVENT_CAP = 120
 const PRIOR_REPORTS_FOR_MEMORY = 7
 
 function searchDailyReportFeature() {
@@ -158,6 +144,42 @@ export function pacificDayBounds(ymd: string): { fromIso: string; toExclusiveIso
   return { fromIso: from.toISOString(), toExclusiveIso: toExclusive.toISOString() }
 }
 
+/** YYYY-MM in America/Los_Angeles. */
+export function pacificYearMonth(at: Date = new Date()): string {
+  return pacificCalendarDate(at).slice(0, 7)
+}
+
+/** Previous complete Pacific calendar month. */
+export function previousPacificYearMonth(at: Date = new Date()): string {
+  const [year, month] = pacificYearMonth(at).split("-").map(Number)
+  if (!year || !month) throw new Error("Invalid Pacific year-month")
+  if (month === 1) return `${year - 1}-12`
+  return `${year}-${String(month - 1).padStart(2, "0")}`
+}
+
+export function pacificMonthBounds(yearMonth: string): { fromIso: string; toExclusiveIso: string } {
+  if (!/^\d{4}-\d{2}$/.test(yearMonth)) {
+    throw new Error(`Invalid year-month: ${yearMonth}`)
+  }
+  const [year, month] = yearMonth.split("-").map(Number)
+  const startYmd = `${yearMonth}-01`
+  const nextMonth = month === 12 ? 1 : month + 1
+  const nextYear = month === 12 ? year + 1 : year
+  const nextYmd = `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`
+  const from = zonedDateTimeToUtc(startYmd, 0, 0, 0, SEARCH_DAILY_REPORT_TZ)
+  const toExclusive = zonedDateTimeToUtc(nextYmd, 0, 0, 0, SEARCH_DAILY_REPORT_TZ)
+  return { fromIso: from.toISOString(), toExclusiveIso: toExclusive.toISOString() }
+}
+
+type DailyReportCorpus = SearchReportCorpus
+
+function collectDailyReportCorpus(
+  fromIso: string,
+  toExclusiveIso: string,
+): Promise<DailyReportCorpus> {
+  return collectSearchReportCorpus(fromIso, toExclusiveIso, SEARCH_REPORT_DAILY_CORPUS)
+}
+
 function emptyLlmReport(reason: string): SearchDailyLlmReport {
   return {
     executiveSummary: reason,
@@ -171,136 +193,8 @@ function emptyLlmReport(reason: string): SearchDailyLlmReport {
     recurringFromPriorDays: [],
     topActions: [],
     synonymProposals: [],
+    demandList: [],
   }
-}
-
-type DailyReportCorpus = {
-  snapshot: SearchDailyReportSnapshot
-  promptPayload: Record<string, unknown>
-  catalogHints: CatalogHint[]
-}
-
-async function collectDailyReportCorpus(
-  fromIso: string,
-  toExclusiveIso: string,
-): Promise<DailyReportCorpus> {
-  const toInclusiveIso = new Date(new Date(toExclusiveIso).getTime() - 1).toISOString()
-
-  const [
-    dayQueries,
-    mainAgg,
-    suggestPicks,
-    topSelections,
-    navMp,
-    navSuggest,
-    searchEvents,
-    dropdownEvents,
-  ] = await Promise.all([
-    aggregateMarketplaceQueriesForDailyReport(fromIso, toExclusiveIso),
-    aggregateSearchAnalytics(fromIso, toInclusiveIso),
-    aggregateSearchSuggestPicks(fromIso, toInclusiveIso),
-    aggregateSearchSuggestTopSelections(fromIso, toExclusiveIso, 40),
-    aggregateNavBarMarketplaceKeywordAnalytics(fromIso, toInclusiveIso),
-    aggregateHeaderNavSuggestClickAnalytics(fromIso, toInclusiveIso),
-    listMarketplaceSearchEvents(fromIso, toExclusiveIso, EVENT_SAMPLE_CAP),
-    listHeaderNavSuggestPickEvents(fromIso, toInclusiveIso, DROPDOWN_EVENT_CAP),
-  ])
-
-  let demandCapture = { total: 0, uniquePeople: 0, byQuery: [] as { query: string; count: number; people: number }[] }
-  try {
-    const service = createServiceRoleClient()
-    const raw = await aggregateDemandCaptureByQuery(service, fromIso, toExclusiveIso)
-    demandCapture = {
-      total: raw.total,
-      uniquePeople: raw.uniquePeople,
-      byQuery: raw.byQuery.slice(0, 30).map((q) => ({
-        query: q.query,
-        count: q.count,
-        people: q.people,
-      })),
-    }
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e)
-    console.error("[searchDailyReport] demand capture failed:", msg)
-  }
-
-  const totalSearches = dayQueries?.totalSearches ?? 0
-  const zeroCount = dayQueries?.zeroResultEventCount ?? 0
-  const snapshot: SearchDailyReportSnapshot = {
-    totalSearches,
-    uniqueQueriesApprox: dayQueries?.uniqueQueriesApprox ?? 0,
-    zeroResultEventCount: zeroCount,
-    zeroResultShare: totalSearches > 0 ? zeroCount / totalSearches : null,
-    avgResultCount: dayQueries?.avgResultCount ?? null,
-    dropdownClicks: suggestPicks?.totalClicks ?? 0,
-    dropdownHovers: suggestPicks?.totalHovers ?? 0,
-    navFreeFormSubmits: navMp?.totalSubmits ?? 0,
-    navDropdownSelections: navSuggest?.totalClicks ?? 0,
-    brandDirectorySearches: mainAgg?.brandDirectory.totalSearches ?? 0,
-    brandDirectoryZeroResults: mainAgg?.brandDirectory.zeroResultEventCount ?? 0,
-    demandCaptureTotal: demandCapture.total,
-    eventSampleCount: searchEvents.length,
-  }
-
-  const promptPayload: Record<string, unknown> = {
-    marketplace: {
-      totalSearches: snapshot.totalSearches,
-      uniqueQueriesApprox: snapshot.uniqueQueriesApprox,
-      zeroResultEventCount: snapshot.zeroResultEventCount,
-      zeroResultShare: snapshot.zeroResultShare,
-      avgResultCount: snapshot.avgResultCount,
-      topQueries: dayQueries?.topQueries ?? [],
-      zeroResultQueries: dayQueries?.zeroResultQueries ?? [],
-      resultCountDistribution: mainAgg?.resultCountDistribution ?? [],
-      topCategorySlugs: mainAgg?.topCategorySlugs ?? [],
-      recentSearchEvents: searchEvents.map((e) => ({
-        at: e.occurredAt,
-        query: e.queryDisplay,
-        resultCount: e.resultCount,
-        origin: e.originSurface,
-      })),
-    },
-    dropdown: {
-      totalClicks: snapshot.dropdownClicks,
-      totalHovers: snapshot.dropdownHovers,
-      byKind: suggestPicks?.byKind ?? [],
-      byTrace: suggestPicks?.byTrace ?? [],
-      topQueryPrefixes: suggestPicks?.topQueryPrefixesClicks ?? [],
-      topSelections,
-      topListingClicks: (suggestPicks?.topListingClicks ?? []).map((r) => ({
-        title: r.title,
-        count: r.count,
-      })),
-      recentPicks: dropdownEvents.map((e) => ({
-        at: e.occurredAt,
-        typed: e.queryPrefix,
-        selected: e.selectionLabel,
-        kind: e.pickKind,
-      })),
-    },
-    headerNav: {
-      freeFormSubmits: snapshot.navFreeFormSubmits,
-      dropdownSelections: snapshot.navDropdownSelections,
-      topFreeFormQueries: navMp?.topQueries ?? [],
-    },
-    brandDirectory: {
-      totalSearches: snapshot.brandDirectorySearches,
-      zeroResultEventCount: snapshot.brandDirectoryZeroResults,
-      topQueries: mainAgg?.brandDirectory.topQueries ?? [],
-      zeroResultQueries: mainAgg?.brandDirectory.zeroResultQueries ?? [],
-    },
-    demandCapture,
-  }
-
-  const zeroQueries = (dayQueries?.zeroResultQueries ?? []).map((row) => row.query)
-  const [catalogHints, existingSynonyms] = await Promise.all([
-    loadCatalogHintsForQueries(zeroQueries),
-    loadExistingSynonymSummaries(),
-  ])
-  promptPayload.catalogHints = catalogHints
-  promptPayload.existingSynonyms = existingSynonyms
-
-  return { snapshot, promptPayload, catalogHints }
 }
 
 type PriorBrief = {
@@ -359,6 +253,7 @@ Rules:
 - likelyCause for empty searches: no_inventory if the term looks like a real board/brand with no listings; synonym_gap if it is likely a spelling/alias of something we sell; typo_or_spelling for obvious typos; nl_parse_miss for natural-language filters that probably failed; wrong_category if they searched the wrong surface; unknown otherwise.
 - synonymProposals: for every empty search that is an alias, nickname, or spacing variant of a catalogHints brand/model (e.g. "pod mod" / "podmod" → Channel Islands Pod Mod; "mini magic" → Walden Mini Magic), emit a structured rule. Set apply=true only when catalogHints lists that brand/model. Set apply=false when the board is not in the catalog (inventory gap). Do not duplicate existingSynonyms. Leave applied and skippedReason unset.
 - topActions: 3–7 concrete next steps, highest leverage first.
+- demandList: ranked 5–12 most-searched items to source, citing actual query counts.
 - Keep executiveSummary readable in an email (no markdown headings).`,
     prompt: `Pacific calendar date: ${reportDate} (${SEARCH_DAILY_REPORT_TZ})
 Window UTC: ${fromIso} → ${toExclusiveIso}

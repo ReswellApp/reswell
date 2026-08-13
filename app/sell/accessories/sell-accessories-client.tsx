@@ -286,7 +286,7 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
     setForm(accessoryFormFromDraftSnapshot(snapshot))
   }, [])
 
-  const { clearRecoveredDraft } = useSellAccessoryDraftRecovery({
+  const { clearRecoveredDraft, flushDraftNow } = useSellAccessoryDraftRecovery({
     listingType: "accessories",
     editId,
     startFresh,
@@ -629,8 +629,11 @@ export default function SellAccessoriesFlow({ editListingId = null }: { editList
     const session = await resolveClientSessionForMutation(supabase)
     const user = session?.user
     if (!user || !session?.access_token) {
-      toast.message("Sign in to publish your listing")
-      signIn("/sell/accessories")
+      toast.message("Listing saved on this device", {
+        description: "Create a free account to publish — you’ll pick up right here.",
+      })
+      signIn("/sell/accessories", { preferSignUp: true, skipSessionProbe: true })
+      void flushDraftNow({ includeInFlightPhotos: true })
       return
     }
 

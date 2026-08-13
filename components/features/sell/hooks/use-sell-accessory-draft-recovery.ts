@@ -17,6 +17,7 @@ import {
   type ListingPhotoSlot,
 } from "@/lib/sell-flow/listing-photo-slot"
 import { persistListingDraftSnapshot } from "@/lib/sell-flow/persist-listing-draft-snapshot"
+import { isPendingPublishForDraftType } from "@/lib/sell-flow/session-keys"
 
 export type UseSellAccessoryDraftRecoveryOptions = {
   listingType: SellListingDraftListingType
@@ -83,7 +84,7 @@ export function useSellAccessoryDraftRecovery({
       } = await supabaseRef.current.auth.getUser()
       userIdRef.current = user?.id ?? null
 
-      if (startFresh) {
+      if (startFresh && !isPendingPublishForDraftType(listingType)) {
         if (user?.id) await clearSellListingDraft(user.id, listingType)
         await clearGuestSellListingDraft(listingType)
         if (!cancelled) setDraftHydrated(true)

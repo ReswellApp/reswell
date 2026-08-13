@@ -851,13 +851,24 @@ export type MarketplaceQueryTerms = {
   avgResultCount: number | null
 }
 
-/** Larger terms aggregations for a single-day Gemini briefing (vs the dashboard caps). */
+export type MarketplaceQueryAggOptions = {
+  topSize?: number
+  zeroSize?: number
+  uniquePrecision?: number
+}
+
+/** Larger terms aggregations for Gemini search briefings (vs the dashboard caps). */
 export async function aggregateMarketplaceQueriesForDailyReport(
   fromIso: string,
   toIsoExclusive: string,
+  opts?: MarketplaceQueryAggOptions,
 ): Promise<MarketplaceQueryTerms | null> {
   const es = getElasticsearchClient()
   if (!es) return null
+
+  const topSize = Math.min(Math.max(opts?.topSize ?? 120, 1), 400)
+  const zeroSize = Math.min(Math.max(opts?.zeroSize ?? 80, 1), 300)
+  const uniquePrecision = Math.min(Math.max(opts?.uniquePrecision ?? 4000, 100), 40000)
 
   try {
     const res = await es.search({
@@ -874,17 +885,17 @@ export async function aggregateMarketplaceQueriesForDailyReport(
       },
       aggs: {
         unique_queries: {
-          cardinality: { field: "query_normalized", precision_threshold: 4000 },
+          cardinality: { field: "query_normalized", precision_threshold: uniquePrecision },
         },
         avg_results: { avg: { field: "result_count" } },
         top_queries: {
-          terms: { field: "query_normalized", size: 120, order: { _count: "desc" } },
+          terms: { field: "query_normalized", size: topSize, order: { _count: "desc" } },
         },
         zero_hits: {
           filter: { term: { result_count: 0 } },
           aggs: {
             zq: {
-              terms: { field: "query_normalized", size: 80, order: { _count: "desc" } },
+              terms: { field: "query_normalized", size: zeroSize, order: { _count: "desc" } },
             },
           },
         },

@@ -9,6 +9,7 @@ import {
   GOOGLE_NEW_SIGNUP_WELCOME_REDIRECT_ATTEMPTED_KEY,
   shouldShowGoogleSignUpWelcome,
 } from "@/lib/auth/google-sign-up-welcome"
+import { isSellFlowReturnPath } from "@/lib/auth/is-sell-flow-return-path"
 import { buildGoogleSignUpSuccessPath, GOOGLE_SIGN_UP_SUCCESS_PATH } from "@/lib/google-ads/sign-up-success-path"
 
 /**
@@ -24,6 +25,8 @@ export function GoogleSignUpWelcomeRedirect(): null {
     if (handledRef.current) return
     if (pathname === GOOGLE_SIGN_UP_SUCCESS_PATH) return
     if (pathname === "/auth/callback") return
+    // In-progress listing: stay on /sell so the draft can restore and auto-publish.
+    if (isSellFlowReturnPath(pathname ?? "/")) return
 
     const supabase = createClient()
 

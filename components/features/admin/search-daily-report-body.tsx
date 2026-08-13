@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { SearchDailyReportSnapshot } from "@/lib/services/searchDailyReport"
+import type { SearchPeriodReportSnapshot } from "@/lib/db/searchPeriodReports"
 import type { SearchDailyLlmReport, SearchDailySynonymProposal } from "@/lib/validations/search-daily-report"
 
 const OWNER_LABEL: Record<string, string> = {
@@ -91,8 +92,14 @@ function EmptyHint({ children }: { children: ReactNode }) {
   return <p className="text-sm text-slate-500">{children}</p>
 }
 
-function ActionList({ items }: { items: { finding: string; action: string }[] }) {
-  if (items.length === 0) return <EmptyHint>Nothing flagged for this day.</EmptyHint>
+function ActionList({
+  items,
+  emptyLabel = "Nothing flagged for this day.",
+}: {
+  items: { finding: string; action: string }[]
+  emptyLabel?: string
+}) {
+  if (items.length === 0) return <EmptyHint>{emptyLabel}</EmptyHint>
   return (
     <ul className="space-y-3">
       {items.map((item) => (
@@ -193,11 +200,16 @@ export function SearchDailyReportBody({
   report,
   applyingQuery,
   onApplySynonym,
+  emptyLabel = "Nothing flagged for this day.",
+  recurringNoun = "days",
 }: {
   report: SearchDailyLlmReport
   applyingQuery: string | null
   onApplySynonym: (query: string) => void
+  emptyLabel?: string
+  recurringNoun?: string
 }) {
+  const demandList = report.demandList ?? []
   return (
     <div className="space-y-6">
       <section className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
@@ -227,6 +239,39 @@ export function SearchDailyReportBody({
               </li>
             ))}
           </ol>
+        </SectionCard>
+      ) : null}
+
+      {demandList.length > 0 ? (
+        <SectionCard title="Demand list" icon={<Package className="h-4 w-4" />}>
+          <ul className="space-y-3">
+            {demandList.map((item) => (
+              <li key={`${item.item}-${item.searchCount}`} className="rounded-lg border border-slate-100 bg-slate-50/60 p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-medium text-slate-900">{item.item}</p>
+                  <span
+                    className={cn(
+                      "rounded-full px-2 py-0.5 text-[11px] font-medium capitalize",
+                      PRIORITY_TINT[item.priority] ?? PRIORITY_TINT.low,
+                    )}
+                  >
+                    {item.priority}
+                  </span>
+                  {item.inventoryGap ? (
+                    <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-700">
+                      Inventory gap
+                    </span>
+                  ) : null}
+                </div>
+                <p className="mt-1 text-xs tabular-nums text-slate-500">
+                  {item.searchCount.toLocaleString()} searches
+                  {item.emptyCount > 0 ? ` · ${item.emptyCount.toLocaleString()} empty` : ""}
+                </p>
+                <p className="mt-1 text-sm text-slate-600">{item.demandSignal}</p>
+                <p className="mt-1 text-sm text-slate-700">{item.sellerPlay}</p>
+              </li>
+            ))}
+          </ul>
         </SectionCard>
       ) : null}
 
@@ -341,27 +386,167 @@ export function SearchDailyReportBody({
 
       <div className="grid gap-6 lg:grid-cols-2">
         <SectionCard title="Dropdown / typeahead" icon={<ArrowRight className="h-4 w-4" />}>
-          <ActionList items={report.dropdownInsights} />
+          <ActionList items={report.dropdownInsights} emptyLabel={emptyLabel} />
         </SectionCard>
         <SectionCard title="Search quality" icon={<Search className="h-4 w-4" />}>
-          <ActionList items={report.searchQuality} />
+          <ActionList items={report.searchQuality} emptyLabel={emptyLabel} />
         </SectionCard>
         <SectionCard title="Seller opportunities" icon={<Store className="h-4 w-4" />}>
-          <ActionList items={report.sellerOpportunities} />
+          <ActionList items={report.sellerOpportunities} emptyLabel={emptyLabel} />
         </SectionCard>
         <SectionCard title="Buyer experience" icon={<Users className="h-4 w-4" />}>
-          <ActionList items={report.buyerExperience} />
+          <ActionList items={report.buyerExperience} emptyLabel={emptyLabel} />
         </SectionCard>
       </div>
 
       {report.recurringFromPriorDays.length > 0 ? (
-        <SectionCard title="Recurring from prior days" icon={<RefreshCw className="h-4 w-4" />}>
+        <SectionCard title={`Recurring from prior ${recurringNoun}`} icon={<RefreshCw className="h-4 w-4" />}>
           <ul className="space-y-3">
             {report.recurringFromPriorDays.map((r) => (
               <li key={r.theme} className="rounded-lg border border-slate-100 bg-slate-50/60 p-3">
                 <p className="text-sm font-medium text-slate-900">{r.theme}</p>
-                <p className="mt-0.5 text-xs text-slate-500">Seen across {r.daysSeen} days</p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Seen across {r.daysSeen} {recurringNoun}
+                </p>
                 <p className="mt-1 text-sm text-slate-600">{r.nextStep}</p>
+              </li>
+            ))}
+          </ul>
+        </SectionCard>
+      ) : null}
+    </div>
+  )
+}
+
+type RankedDemandRow = {
+  rank: number
+  query: string
+  searches: number
+  empty: number
+  notify: number
+  people: number
+}
+
+function rankedDemandRows(
+  snapshot: SearchPeriodReportSnapshot,
+  limit: number,
+): RankedDemandRow[] {
+  const emptyBy = new Map(
+    (snapshot.zeroResultQueries ?? []).map((row) => [row.query.trim().toLowerCase(), row.count]),
+  )
+  const notifyBy = new Map(
+    (snapshot.demandCaptureByQuery ?? []).map((row) => [row.query.trim().toLowerCase(), row]),
+  )
+  return (snapshot.topQueries ?? []).slice(0, limit).map((row, index) => {
+    const key = row.query.trim().toLowerCase()
+    const notify = notifyBy.get(key)
+    return {
+      rank: index + 1,
+      query: row.query,
+      searches: row.count,
+      empty: emptyBy.get(key) ?? 0,
+      notify: notify?.count ?? 0,
+      people: notify?.people ?? 0,
+    }
+  })
+}
+
+export function SearchPeriodRankedTables({
+  snapshot,
+}: {
+  snapshot: SearchPeriodReportSnapshot
+}) {
+  const demandRows = rankedDemandRows(snapshot, 40)
+  const emptyRows = (snapshot.zeroResultQueries ?? []).slice(0, 25)
+  const dropdownRows = (snapshot.topDropdownSelections ?? []).slice(0, 20)
+  const notifyRows = (snapshot.demandCaptureByQuery ?? []).slice(0, 20)
+
+  return (
+    <div className="space-y-6">
+      <SectionCard title="Most searched" icon={<Search className="h-4 w-4" />}>
+        {demandRows.length === 0 ? (
+          <EmptyHint>No ranked searches in this window.</EmptyHint>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+                  <th className="py-2 pr-3 font-medium">#</th>
+                  <th className="py-2 pr-3 font-medium">Query</th>
+                  <th className="py-2 pr-3 font-medium">Searches</th>
+                  <th className="py-2 pr-3 font-medium">Empty</th>
+                  <th className="py-2 font-medium">Notify me</th>
+                </tr>
+              </thead>
+              <tbody>
+                {demandRows.map((row) => (
+                  <tr key={`${row.rank}-${row.query}`} className="border-b border-slate-100">
+                    <td className="py-2 pr-3 tabular-nums text-slate-500">{row.rank}</td>
+                    <td className="py-2 pr-3 font-medium text-slate-900">“{row.query}”</td>
+                    <td className="py-2 pr-3 tabular-nums text-slate-700">
+                      {row.searches.toLocaleString()}
+                    </td>
+                    <td className="py-2 pr-3 tabular-nums text-slate-700">
+                      {row.empty > 0 ? row.empty.toLocaleString() : "—"}
+                    </td>
+                    <td className="py-2 tabular-nums text-slate-700">
+                      {row.notify > 0
+                        ? `${row.notify.toLocaleString()}${row.people > 0 ? ` · ${row.people} people` : ""}`
+                        : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </SectionCard>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <SectionCard title="Empty-result queries" icon={<Search className="h-4 w-4" />}>
+          {emptyRows.length === 0 ? (
+            <EmptyHint>No empty-result queries in this window.</EmptyHint>
+          ) : (
+            <ul className="space-y-2">
+              {emptyRows.map((row) => (
+                <li key={row.query} className="flex items-baseline justify-between gap-3 text-sm">
+                  <span className="min-w-0 truncate font-medium text-slate-900">“{row.query}”</span>
+                  <span className="shrink-0 tabular-nums text-slate-500">
+                    {row.count.toLocaleString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SectionCard>
+        <SectionCard title="Dropdown picks" icon={<ArrowRight className="h-4 w-4" />}>
+          {dropdownRows.length === 0 ? (
+            <EmptyHint>No dropdown selections in this window.</EmptyHint>
+          ) : (
+            <ul className="space-y-2">
+              {dropdownRows.map((row) => (
+                <li key={`${row.label}-${row.kind}`} className="flex items-baseline justify-between gap-3 text-sm">
+                  <span className="min-w-0 truncate font-medium text-slate-900">{row.label}</span>
+                  <span className="shrink-0 tabular-nums text-slate-500">
+                    {row.count.toLocaleString()}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SectionCard>
+      </div>
+
+      {notifyRows.length > 0 ? (
+        <SectionCard title="Notify-me demand" icon={<Users className="h-4 w-4" />}>
+          <ul className="space-y-2">
+            {notifyRows.map((row) => (
+              <li key={row.query} className="flex items-baseline justify-between gap-3 text-sm">
+                <span className="min-w-0 truncate font-medium text-slate-900">“{row.query}”</span>
+                <span className="shrink-0 tabular-nums text-slate-500">
+                  {row.count.toLocaleString()}
+                  {row.people > 0 ? ` · ${row.people} people` : ""}
+                </span>
               </li>
             ))}
           </ul>

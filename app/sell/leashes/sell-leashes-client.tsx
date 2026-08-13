@@ -286,7 +286,7 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
     setForm(leashFormFromDraftSnapshot(snapshot))
   }, [])
 
-  const { clearRecoveredDraft } = useSellAccessoryDraftRecovery({
+  const { clearRecoveredDraft, flushDraftNow } = useSellAccessoryDraftRecovery({
     listingType: "leashes",
     editId,
     startFresh,
@@ -629,8 +629,11 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
     const session = await resolveClientSessionForMutation(supabase)
     const user = session?.user
     if (!user || !session?.access_token) {
-      toast.message("Sign in to publish your listing")
-      signIn("/sell/leashes")
+      toast.message("Listing saved on this device", {
+        description: "Create a free account to publish — you’ll pick up right here.",
+      })
+      signIn("/sell/leashes", { preferSignUp: true, skipSessionProbe: true })
+      void flushDraftNow({ includeInFlightPhotos: true })
       return
     }
 

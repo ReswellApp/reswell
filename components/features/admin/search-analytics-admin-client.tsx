@@ -2107,7 +2107,7 @@ export function SearchAnalyticsAdminClient() {
                   >
                     <Link href="/admin/search-daily-report">
                       <Sparkles className="h-4 w-4" />
-                      <span className="ml-2">Daily report</span>
+                      <span className="ml-2">Search reports</span>
                     </Link>
                   </Button>
                   <Button

@@ -53,7 +53,7 @@ import {
   type BoardSellViewMode,
 } from "@/lib/sell-flow/board-sell-view-mode"
 import { persistListingDraftSnapshot } from "@/lib/sell-flow/persist-listing-draft-snapshot"
-import { markPendingPublish } from "@/lib/sell-flow/session-keys"
+import { beginGuestListingPublishAuth } from "@/lib/sell-flow/guest-publish-auth"
 import type { SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellFacetChipGroup } from "@/components/features/sell/sell-board-facet-fields"
@@ -411,7 +411,6 @@ export default function QuickListClient() {
 
   usePendingPublishResume({
     listingKind: "quick",
-    editId: null,
     draftHydrated,
     formRef,
     imagesRef,
@@ -602,23 +601,18 @@ export default function QuickListClient() {
       const session = await resolveClientSessionForMutation(supabase)
       const user = session?.user
       if (!user || !session?.access_token) {
-        // Open auth immediately — draft persist (esp. in-flight photos) can take seconds.
-        markPendingPublish("quick")
-        openSignIn(QUICK_LIST_PATH, {
-          preferSignUp: true,
-          skipSessionProbe: true,
-        })
-        toast.message("Listing saved on this device", {
-          description: "Create a free account to publish — you’ll pick up right here.",
-        })
-        void persistListingDraftSnapshot({
-          listingType: "board",
-          formData: formDataRef.current as SellListingDraftFormSnapshot,
-          images: photos.imagesRef.current,
-          userId: null,
-          includeInFlightPhotos: true,
-        }).catch(() => {
-          /* best-effort; form state still holds the listing for resume */
+        await beginGuestListingPublishAuth({
+          kind: "quick",
+          returnPath: QUICK_LIST_PATH,
+          openSignIn,
+          persistDraft: () =>
+            persistListingDraftSnapshot({
+              listingType: "board",
+              formData: formDataRef.current as SellListingDraftFormSnapshot,
+              images: photos.imagesRef.current,
+              userId: null,
+              includeInFlightPhotos: true,
+            }),
         })
         return
       }
