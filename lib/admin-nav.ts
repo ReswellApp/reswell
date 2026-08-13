@@ -34,6 +34,7 @@ export type AdminNavIconKey =
   | 'fileText'
   | 'brain'
   | 'megaphone'
+  | 'mapPin'
 
 export interface AdminNavItemConfig {
   href: string
@@ -103,6 +104,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/google-merchant', label: 'Google Merchant', icon: 'shoppingCart' },
       { href: '/admin/google-analytics', label: 'Google Analytics', icon: 'lineChart' },
       { href: '/admin/ad-sales', label: 'Ad sales', icon: 'megaphone' },
+      { href: '/admin/pickup-only-boards', label: 'Pickup-only boards', icon: 'mapPin' },
       { href: '/admin/used-board-market-dashboard', label: 'Used board market', icon: 'waves' },
       { href: '/admin/catalog-overview', label: 'Brand catalog explorer', icon: 'folderTree' },
       { href: '/admin/search-analytics', label: 'Search analytics', icon: 'lineChart' },
