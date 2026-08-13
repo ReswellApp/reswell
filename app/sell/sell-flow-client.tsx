@@ -63,6 +63,7 @@ import {
 import { LocationPicker, type LocationPrefillSuggested } from "@/components/location-picker"
 import { listingDetailHref } from "@/lib/listing-href"
 import { setJustPublishedListingMarker } from "@/lib/sell-flow/just-published"
+import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
 import {
   boardFulfillmentFromChecks,
   boardFulfillmentFromFlags,
@@ -3553,7 +3554,7 @@ function SellPageContentInner({
             slug: listingSlug ?? null,
             section: "surfboards",
           })
-          router.push(detailPath)
+          navigateAfterListingSave(detailPath)
           return
         }
         if (editId && !usedImpersonationListingApi) {
@@ -3632,7 +3633,7 @@ function SellPageContentInner({
           section: "surfboards",
         })
       }
-      router.push(detailPath)
+      navigateAfterListingSave(detailPath)
     } catch (error: unknown) {
       const aborted = isSellSubmitAbortError(error)
       const msg = sellSubmitErrorMessage(error, "Failed to create listing")

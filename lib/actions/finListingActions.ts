@@ -1,8 +1,8 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { createClient } from "@/lib/supabase/server"
+import { revalidateListingMutationPaths } from "@/lib/cache/revalidate-listing-mutation-paths"
 import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
 import { createFinListingSchema, updateFinListingSchema } from "@/lib/validations/fin-listing"
 import { createFinListing, updateFinListing } from "@/lib/services/finListing"
@@ -92,8 +92,7 @@ export async function createFinListingAction(
       sellerUserId: user.id,
       sellerEmail: user.email ?? null,
     })
-    revalidatePath("/fins")
-    revalidatePath(`/l/${result.slug}`)
+    revalidateListingMutationPaths("/fins", result.slug)
     return { success: true, listingId: result.listingId, slug: result.slug }
   } catch (error) {
     console.error("createFinListingAction:", error instanceof Error ? error.message : error)
@@ -125,8 +124,7 @@ export async function updateFinListingAction(
   try {
     const result = await updateFinListing(supabase, parsed.data.listingId, user.id, parsed.data)
     void syncListingToGoogleMerchantBestEffort(supabase, parsed.data.listingId)
-    revalidatePath("/fins")
-    revalidatePath(`/l/${result.slug}`)
+    revalidateListingMutationPaths("/fins", result.slug)
     return { success: true, slug: result.slug }
   } catch (error) {
     console.error("updateFinListingAction:", error instanceof Error ? error.message : error)

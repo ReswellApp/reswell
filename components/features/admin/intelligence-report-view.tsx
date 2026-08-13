@@ -40,9 +40,13 @@ export function IntelligenceReportView({ row }: { row: BusinessIntelligenceRepor
       </div>
 
       {snap.commerce ? (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <MiniStat label="GMV" value={compactUsd(snap.commerce.gmv.current)} />
           <MiniStat label="Revenue" value={compactUsd(snap.commerce.platformRevenue.current)} />
+          <MiniStat
+            label="Promo"
+            value={compactUsd(snap.commerce.marketingExpense?.current ?? 0)}
+          />
           <MiniStat label="Orders" value={formatCount(snap.commerce.orders.current)} />
           <MiniStat
             label="New users"

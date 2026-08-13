@@ -1,7 +1,7 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { revalidateListingMutationPaths } from "@/lib/cache/revalidate-listing-mutation-paths"
 import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
 import {
   createMagazineListingSchema,
@@ -46,8 +46,7 @@ export async function createMagazineListingAction(
       sellerUserId: user.id,
       sellerEmail: user.email ?? null,
     })
-    revalidatePath("/magazines")
-    revalidatePath(`/l/${result.slug}`)
+    revalidateListingMutationPaths("/magazines", result.slug)
     return { success: true, listingId: result.listingId, slug: result.slug }
   } catch (error) {
     console.error("createMagazineListingAction:", error instanceof Error ? error.message : error)
@@ -79,8 +78,7 @@ export async function updateMagazineListingAction(
       user.id,
       parsed.data,
     )
-    revalidatePath("/magazines")
-    revalidatePath(`/l/${result.slug}`)
+    revalidateListingMutationPaths("/magazines", result.slug)
     return { success: true, slug: result.slug }
   } catch (error) {
     console.error("updateMagazineListingAction:", error instanceof Error ? error.message : error)

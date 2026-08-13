@@ -1,6 +1,6 @@
 import Link from 'next/link'
 
-import type { AdminMonthlyRevenueRow } from '@/lib/services/adminBusinessInsights'
+import type { AdminMonthlyRevenueRow } from '@/lib/types/adminBusinessInsights'
 import { formatMonthKey } from '@/lib/pnl-calc'
 import { cn } from '@/lib/utils'
 
@@ -32,7 +32,7 @@ export function AdminMonthlyRevenueTable({
           Revenue by month
         </h3>
         <p className="text-xs text-muted-foreground">
-          Confirmed orders in UTC calendar months · click a row to filter the dashboard
+          Confirmed orders in UTC calendar months · 7% take on listing price · promo as marketing
         </p>
       </div>
       {!hasAnySales ? (
@@ -41,12 +41,13 @@ export function AdminMonthlyRevenueTable({
         </p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[480px] text-sm">
+          <table className="w-full min-w-[560px] text-sm">
             <thead>
               <tr className="border-b border-border text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 <th className="px-5 py-3">Month</th>
                 <th className="px-5 py-3 text-right">GMV</th>
                 <th className="px-5 py-3 text-right">Platform revenue</th>
+                <th className="px-5 py-3 text-right">Promo (marketing)</th>
                 <th className="px-5 py-3 text-right">Orders</th>
               </tr>
             </thead>
@@ -78,6 +79,9 @@ export function AdminMonthlyRevenueTable({
                     </td>
                     <td className="px-5 py-3 text-right tabular-nums text-emerald-600 dark:text-emerald-400">
                       {formatUsd(row.platformRevenue)}
+                    </td>
+                    <td className="px-5 py-3 text-right tabular-nums text-rose-600 dark:text-rose-400">
+                      {formatUsd(row.marketingExpense ?? 0)}
                     </td>
                     <td className="px-5 py-3 text-right tabular-nums text-muted-foreground">
                       {row.orders}

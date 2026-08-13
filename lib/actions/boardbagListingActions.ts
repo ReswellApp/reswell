@@ -1,7 +1,7 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { revalidateListingMutationPaths } from "@/lib/cache/revalidate-listing-mutation-paths"
 import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
 import {
   createBoardbagListingSchema,
@@ -47,8 +47,7 @@ export async function createBoardbagListingAction(
 
   try {
     const result = await createBoardbagListing(supabase, user.id, parsed.data)
-    revalidatePath("/boardbags")
-    revalidatePath(`/l/${result.slug}`)
+    revalidateListingMutationPaths("/boardbags", result.slug)
     return { success: true, listingId: result.listingId, slug: result.slug }
   } catch (error) {
     console.error("createBoardbagListingAction:", error instanceof Error ? error.message : error)
@@ -79,8 +78,7 @@ export async function updateBoardbagListingAction(
 
   try {
     const result = await updateBoardbagListing(supabase, parsed.data.listingId, user.id, parsed.data)
-    revalidatePath("/boardbags")
-    revalidatePath(`/l/${result.slug}`)
+    revalidateListingMutationPaths("/boardbags", result.slug)
     return { success: true, slug: result.slug }
   } catch (error) {
     console.error("updateBoardbagListingAction:", error instanceof Error ? error.message : error)

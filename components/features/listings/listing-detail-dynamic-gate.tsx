@@ -1,10 +1,10 @@
 import { headers } from "next/headers"
 import { notFound, redirect } from "next/navigation"
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { findListingByParam } from "@/lib/listing-query"
-import { SURFBOARD_LISTING_SELECT } from "@/lib/listing-detail-cache"
+import { SURFBOARD_LISTING_SELECT } from "@/lib/listing-detail-cache-selects"
 import { canViewHiddenListing } from "@/lib/listing-site-access"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
-import { createClient } from "@/lib/supabase/server"
 import { isGoogleMerchantLandingPageCrawler } from "@/lib/google-merchant/landing-page-crawler"
 import {
   isGoogleMerchantEligibleListing,
@@ -33,7 +33,7 @@ function rejectMerchantCrawlerLandingPage(
 }
 
 async function loadUnavailableListingContext(
-  supabase: Awaited<ReturnType<typeof createClient>>,
+  supabase: SupabaseClient,
   listingParam: string,
 ): Promise<UnavailableListingContextRow | null> {
   const { listing } = await findListingByParam(supabase, listingParam, {
@@ -45,7 +45,7 @@ async function loadUnavailableListingContext(
 }
 
 /**
- * Live lookup + auth gates for sold, hidden, or cache-miss PDPs.
+ * Live lookup + auth gates for signed-in viewers, plus sold, hidden, or cache-miss PDPs.
  * Kept out of the hourly ISR shell so anonymous catalog crawlers stay on the edge cache.
  */
 export async function ListingDetailDynamicGate({
@@ -62,14 +62,18 @@ export async function ListingDetailDynamicGate({
   let listing = prefetchedListing
   let redirectSlug = prefetchedRedirectSlug
 
-  if (!listing) {
+  // Signed-in viewers (sellers returning from Edit → Save) must not reuse the
+  // hourly ISR snapshot. Guest/crawler hits keep the prefetch when present.
+  if (user || !listing) {
     const live = await findListingByParam(supabase, listingParam, {
       select: SURFBOARD_LISTING_SELECT,
       section: undefined,
       includeHiddenListings: true,
     })
-    listing = live.listing as Record<string, unknown> | null
-    redirectSlug = live.redirectSlug
+    if (user || live.listing || !listing) {
+      listing = live.listing as Record<string, unknown> | null
+      redirectSlug = live.redirectSlug
+    }
   }
 
   if (!listing) {

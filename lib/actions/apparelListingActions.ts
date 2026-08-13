@@ -1,7 +1,7 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { revalidateListingMutationPaths } from "@/lib/cache/revalidate-listing-mutation-paths"
 import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
 import { APPAREL_SELL_ADMIN_ONLY } from "@/lib/apparel-listing-config"
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
@@ -70,8 +70,7 @@ export async function createApparelListingAction(
       sellerUserId: user.id,
       sellerEmail: user.email ?? null,
     })
-    revalidatePath("/apparel")
-    revalidatePath(`/l/${result.slug}`)
+    revalidateListingMutationPaths("/apparel", result.slug)
     return { success: true, listingId: result.listingId, slug: result.slug }
   } catch (error) {
     console.error("createApparelListingAction:", error instanceof Error ? error.message : error)
@@ -105,8 +104,7 @@ export async function updateApparelListingAction(
 
   try {
     const result = await updateApparelListing(supabase, parsed.data.listingId, user.id, parsed.data)
-    revalidatePath("/apparel")
-    revalidatePath(`/l/${result.slug}`)
+    revalidateListingMutationPaths("/apparel", result.slug)
     return { success: true, slug: result.slug }
   } catch (error) {
     console.error("updateApparelListingAction:", error instanceof Error ? error.message : error)

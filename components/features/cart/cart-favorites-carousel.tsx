@@ -4,8 +4,11 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowRight } from "lucide-react"
-import { HomeListingScrollRow, HomePeerListingScrollTile } from "@/components/features/home"
-import type { HomePeerScrollListing } from "@/components/features/home"
+import { HomeListingScrollRow } from "@/components/features/home/home-listing-scroll-row"
+import {
+  HomePeerListingScrollTile,
+  type HomePeerScrollListing,
+} from "@/components/features/home/home-peer-listing-scroll-tile"
 import { Button } from "@/components/ui/button"
 import type { CartCarouselFavoriteListing } from "@/lib/db/favorites"
 

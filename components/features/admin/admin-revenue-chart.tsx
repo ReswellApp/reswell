@@ -20,7 +20,7 @@ import {
   formatBusinessDayKeyShort,
 } from '@/lib/utils/business-timezone'
 
-import type { AdminInsightsDailyPoint } from '@/lib/services/adminBusinessInsights'
+import type { AdminInsightsDailyPoint } from '@/lib/types/adminBusinessInsights'
 
 type Metric = 'gmv' | 'orders'
 

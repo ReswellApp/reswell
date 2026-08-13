@@ -96,6 +96,7 @@ import {
 } from "@/lib/sell-flow/log-sell-funnel-event"
 import { resolveSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 import { listingDetailHref } from "@/lib/listing-href"
+import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 import {
   SELL_SUBMIT_INTERRUPTED_MESSAGE,
@@ -848,7 +849,7 @@ export default function QuickListClient() {
         slug: listingSlug,
         section: "surfboards",
       })
-      router.push(
+      navigateAfterListingSave(
         listingDetailHref({ id: listingId, slug: listingSlug, section: "surfboards" }),
       )
     } catch (error: unknown) {

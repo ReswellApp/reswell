@@ -1,6 +1,7 @@
 import type { ComponentType } from "react"
 import {
   DollarSign,
+  Megaphone,
   Package,
   Receipt,
   ShoppingBag,
@@ -9,11 +10,11 @@ import {
   UserPlus,
 } from "lucide-react"
 
-import type { AdminBusinessInsights, TrendMetric } from "@/lib/services/adminBusinessInsights"
+import type { AdminBusinessInsights, TrendMetric } from "@/lib/types/adminBusinessInsights"
 import { compactUsd, formatCount, formatPct } from "@/components/features/admin/intelligence-format"
 import { cn } from "@/lib/utils"
 
-function DeltaBadge({ delta }: { delta: TrendMetric }) {
+function DeltaBadge({ delta, invert }: { delta: TrendMetric; invert?: boolean }) {
   if (delta.deltaPct === null) {
     return (
       <span className="inline-flex items-center rounded-full bg-secondary px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
@@ -21,10 +22,10 @@ function DeltaBadge({ delta }: { delta: TrendMetric }) {
       </span>
     )
   }
-  const positive = delta.deltaPct >= 0
-  const Icon = positive ? TrendingUp : TrendingDown
+  const positive = invert ? delta.deltaPct <= 0 : delta.deltaPct >= 0
+  const Icon = delta.deltaPct >= 0 ? TrendingUp : TrendingDown
   const mag = Math.abs(delta.deltaPct)
-  const text = `${positive ? "+" : "−"}${mag >= 10 ? mag.toFixed(0) : mag.toFixed(1)}%`
+  const text = `${delta.deltaPct >= 0 ? "+" : "−"}${mag >= 10 ? mag.toFixed(0) : mag.toFixed(1)}%`
   return (
     <span
       className={cn(
@@ -46,12 +47,14 @@ function KpiCard({
   value,
   delta,
   footnote,
+  invertDelta,
 }: {
   icon: ComponentType<{ className?: string }>
   label: string
   value: string
   delta: TrendMetric
   footnote: string
+  invertDelta?: boolean
 }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
@@ -63,7 +66,7 @@ function KpiCard({
       </div>
       <p className="mt-3 font-headline text-2xl font-semibold tabular-nums tracking-tight">{value}</p>
       <div className="mt-2 flex items-center justify-between gap-2">
-        <DeltaBadge delta={delta} />
+        <DeltaBadge delta={delta} invert={invertDelta} />
         <span className="text-[11px] text-muted-foreground">{footnote}</span>
       </div>
     </div>
@@ -86,8 +89,18 @@ export function IntelligenceKpiGrid({ insights }: { insights: AdminBusinessInsig
         value={compactUsd(insights.revenue.platformRevenue.current)}
         delta={insights.revenue.platformRevenue}
         footnote={
-          insights.takeRatePct == null ? "Take rate —" : `${formatPct(insights.takeRatePct)} take rate`
+          insights.takeRatePct == null
+            ? "7% marketplace take"
+            : `${formatPct(insights.takeRatePct)} marketplace take`
         }
+      />
+      <KpiCard
+        icon={Megaphone}
+        label="Promo (marketing)"
+        value={compactUsd(insights.revenue.marketingExpense.current)}
+        delta={insights.revenue.marketingExpense}
+        invertDelta
+        footnote="Reswell-funded discounts"
       />
       <KpiCard
         icon={ShoppingBag}

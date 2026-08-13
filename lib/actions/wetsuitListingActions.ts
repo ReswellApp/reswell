@@ -1,8 +1,7 @@
 "use server"
 
-import { after } from "next/server"
-import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { revalidateListingMutationPaths } from "@/lib/cache/revalidate-listing-mutation-paths"
 import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
 import {
   createWetsuitListingSchema,
@@ -54,8 +53,7 @@ export async function createWetsuitListingAction(
       sellerUserId: user.id,
       sellerEmail: user.email ?? null,
     })
-    revalidatePath("/wetsuits")
-    revalidatePath(`/l/${result.slug}`)
+    revalidateListingMutationPaths("/wetsuits", result.slug)
     return { success: true, listingId: result.listingId, slug: result.slug }
   } catch (error) {
     console.error("createWetsuitListingAction:", error instanceof Error ? error.message : error)
@@ -91,12 +89,8 @@ export async function updateWetsuitListingAction(
       user.id,
       parsed.data,
     )
-    const slug = result.slug
-    after(() => {
-      revalidatePath("/wetsuits")
-      revalidatePath(`/l/${slug}`)
-    })
-    return { success: true, slug }
+    revalidateListingMutationPaths("/wetsuits", result.slug)
+    return { success: true, slug: result.slug }
   } catch (error) {
     console.error("updateWetsuitListingAction:", error instanceof Error ? error.message : error)
     return {

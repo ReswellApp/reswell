@@ -75,3 +75,49 @@ export function pendingSaleFeeClause(platformFeeUsd: number): string {
   const fee = Math.max(0, platformFeeUsd)
   return `${MARKETPLACE_FEE_PERCENT}% fee: $${fee.toFixed(2)}`
 }
+
+export type MarketplaceListingItemGmvOrder = {
+  amount: number
+  shipping_amount?: number | string | null
+  platform_fee?: number | string | null
+  seller_earnings?: number | string | null
+  promo_discount_usd?: number | string | null
+}
+
+function moneyOrZero(value: number | string | null | undefined): number {
+  const n = Number(value ?? 0)
+  return Number.isFinite(n) && n > 0 ? n : 0
+}
+
+/**
+ * Listing item GMV used for take-rate math — the 7% marketplace fee base.
+ *
+ * Prefer `seller_earnings + platform_fee` (full listing price). That amount is
+ * not reduced by Reswell-funded promo codes and does not include shipping.
+ * Shop lines (no peer earnings and no fee) contribute $0 so they do not dilute
+ * marketplace take rate. When seller earnings were never stored, fall back to
+ * buyer-paid item + promo discount.
+ */
+export function marketplaceListingItemGmvUsd(order: MarketplaceListingItemGmvOrder): number {
+  const fee = moneyOrZero(order.platform_fee)
+  const earningsRaw = order.seller_earnings
+  const hasEarnings =
+    earningsRaw != null && earningsRaw !== "" && Number.isFinite(Number(earningsRaw))
+
+  if (hasEarnings) {
+    const earnings = Math.max(0, Number(earningsRaw))
+    return Math.max(0, Math.round((earnings + fee) * 100) / 100)
+  }
+
+  const shipping = moneyOrZero(order.shipping_amount)
+  const promo = moneyOrZero(order.promo_discount_usd)
+  const amount = moneyOrZero(order.amount)
+  return Math.max(0, Math.round((amount - shipping + promo) * 100) / 100)
+}
+
+/** Reswell-funded checkout promo discount (newsletter + admin-issued codes). */
+export function marketplacePromoMarketingUsd(order: {
+  promo_discount_usd?: number | string | null
+}): number {
+  return moneyOrZero(order.promo_discount_usd)
+}

@@ -1,4 +1,4 @@
-import type { AdminInsightsDailyPoint, AdminMonthlyRevenueRow } from "@/lib/services/adminBusinessInsights"
+import type { AdminInsightsDailyPoint, AdminMonthlyRevenueRow } from "@/lib/types/adminBusinessInsights"
 import { AdminRevenueChart } from "@/components/features/admin/admin-revenue-chart"
 import { compactUsd, formatCount, formatMonthKey } from "@/components/features/admin/intelligence-format"
 import { BUSINESS_TIMEZONE_LABEL } from "@/lib/utils/business-timezone"
@@ -28,7 +28,7 @@ export function IntelligenceCharts({
       <div className="rounded-2xl border border-border bg-card">
         <div className="border-b border-border px-5 py-4">
           <h3 className="font-headline text-base font-semibold">Month over month</h3>
-          <p className="text-xs text-muted-foreground">Confirmed GMV, revenue, and orders</p>
+          <p className="text-xs text-muted-foreground">Confirmed GMV, 7% take, and promo marketing</p>
         </div>
         {!hasSales ? (
           <p className="px-5 py-8 text-center text-sm text-muted-foreground">
@@ -36,12 +36,13 @@ export function IntelligenceCharts({
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[360px] text-sm">
+            <table className="w-full min-w-[520px] text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                   <th className="px-5 py-3">Month</th>
                   <th className="px-5 py-3 text-right">GMV</th>
                   <th className="px-5 py-3 text-right">Revenue</th>
+                  <th className="px-5 py-3 text-right">Promo</th>
                   <th className="px-5 py-3 text-right">Orders</th>
                   <th className="px-5 py-3 text-right">MoM</th>
                 </tr>
@@ -57,6 +58,9 @@ export function IntelligenceCharts({
                       <td className="px-5 py-2.5 text-right tabular-nums">{compactUsd(row.gmv)}</td>
                       <td className="px-5 py-2.5 text-right tabular-nums">
                         {compactUsd(row.platformRevenue)}
+                      </td>
+                      <td className="px-5 py-2.5 text-right tabular-nums text-rose-600 dark:text-rose-400">
+                        {compactUsd(row.marketingExpense ?? 0)}
                       </td>
                       <td className="px-5 py-2.5 text-right tabular-nums">
                         {formatCount(row.orders)}

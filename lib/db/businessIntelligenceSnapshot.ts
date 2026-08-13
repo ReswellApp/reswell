@@ -8,6 +8,7 @@ import type {
   IntelligenceMonthlyHistoryRow,
   IntelligenceTopPath,
 } from "@/lib/types/businessIntelligence"
+import { marketplaceListingItemGmvUsd, marketplacePromoMarketingUsd } from "@/lib/seller-fees"
 import { businessDayKey } from "@/lib/utils/business-timezone"
 import type { IntelligencePeriodResolved } from "@/lib/utils/businessIntelligencePeriod"
 import { intelligenceTrend } from "@/lib/utils/intelligence-trend"
@@ -21,6 +22,8 @@ type OrderRow = {
   amount: number
   platform_fee: number
   shipping_amount: number
+  seller_earnings: number | null
+  promo_discount_usd: number
   status: string
   created_at: string
   listing_id: string | null
@@ -58,7 +61,9 @@ export async function fetchIntelligenceCommerce(
 ): Promise<IntelligenceCommerceSnapshot> {
   const { data, error } = await db
     .from("orders")
-    .select("id, amount, platform_fee, shipping_amount, status, created_at, listing_id")
+    .select(
+      "id, amount, platform_fee, shipping_amount, seller_earnings, promo_discount_usd, status, created_at, listing_id",
+    )
     .eq("is_admin_test", false)
     .gte("created_at", period.prevFromIso)
     .lt("created_at", period.toIsoExclusive)
@@ -77,6 +82,8 @@ export async function fetchIntelligenceCommerce(
         amount: num(r.amount),
         platform_fee: num(r.platform_fee),
         shipping_amount: num(r.shipping_amount),
+        seller_earnings: r.seller_earnings == null ? null : num(r.seller_earnings),
+        promo_discount_usd: num(r.promo_discount_usd),
         status: String(r.status ?? ""),
         created_at: String(r.created_at ?? ""),
         listing_id: r.listing_id == null ? null : String(r.listing_id),
@@ -91,9 +98,11 @@ export async function fetchIntelligenceCommerce(
 
   let gmvCur = 0
   let gmvPrev = 0
-  let itemGmvCur = 0
+  let listingItemGmvCur = 0
   let feesCur = 0
   let feesPrev = 0
+  let promoCur = 0
+  let promoPrev = 0
   let ordersCur = 0
   let ordersPrev = 0
   let refundedCur = 0
@@ -109,8 +118,9 @@ export async function fetchIntelligenceCommerce(
 
     if (confirmed && inCurrent) {
       gmvCur += o.amount
-      itemGmvCur += Math.max(0, o.amount - o.shipping_amount)
+      listingItemGmvCur += marketplaceListingItemGmvUsd(o)
       feesCur += o.platform_fee
+      promoCur += marketplacePromoMarketingUsd(o)
       ordersCur += 1
       const day = businessDayKey(o.created_at)
       const bucket = dailyMap.get(day) ?? { date: day, gmv: 0, fees: 0, orders: 0 }
@@ -127,6 +137,7 @@ export async function fetchIntelligenceCommerce(
     } else if (confirmed && inPrevious) {
       gmvPrev += o.amount
       feesPrev += o.platform_fee
+      promoPrev += marketplacePromoMarketingUsd(o)
       ordersPrev += 1
     } else if (refunded && inCurrent) {
       refundedCur += 1
@@ -172,9 +183,10 @@ export async function fetchIntelligenceCommerce(
   return {
     gmv: intelligenceTrend(gmvCur, gmvPrev),
     platformRevenue: intelligenceTrend(feesCur, feesPrev),
+    marketingExpense: intelligenceTrend(promoCur, promoPrev),
     orders: intelligenceTrend(ordersCur, ordersPrev),
     aov: intelligenceTrend(aovCur, aovPrev),
-    takeRatePct: itemGmvCur > 0 ? (feesCur / itemGmvCur) * 100 : null,
+    takeRatePct: listingItemGmvCur > 0 ? (feesCur / listingItemGmvCur) * 100 : null,
     refundRatePct: refundDenom > 0 ? (refundedCur / refundDenom) * 100 : 0,
     refundCount: refundedCur,
     topBrands,
@@ -302,7 +314,7 @@ export async function fetchIntelligenceMonthlyHistory(
   const [ordersRes, usersRes, listingsRes] = await Promise.all([
     db
       .from("orders")
-      .select("amount, platform_fee, created_at, status")
+      .select("amount, platform_fee, promo_discount_usd, created_at, status")
       .eq("is_admin_test", false)
       .eq("status", "confirmed")
       .gte("created_at", sinceIso)
@@ -317,6 +329,7 @@ export async function fetchIntelligenceMonthlyHistory(
       yearMonth,
       gmv: 0,
       platformRevenue: 0,
+      marketingExpense: 0,
       orders: 0,
       users: 0,
       listings: 0,
@@ -341,6 +354,9 @@ export async function fetchIntelligenceMonthlyHistory(
     if (!b) continue
     b.gmv += num(r.amount)
     b.platformRevenue += num(r.platform_fee)
+    b.marketingExpense += marketplacePromoMarketingUsd({
+      promo_discount_usd: num(r.promo_discount_usd),
+    })
     b.orders += 1
   }
   for (const row of usersRes.data ?? []) {
@@ -360,6 +376,7 @@ export async function fetchIntelligenceMonthlyHistory(
         yearMonth,
         gmv: 0,
         platformRevenue: 0,
+        marketingExpense: 0,
         orders: 0,
         users: 0,
         listings: 0,

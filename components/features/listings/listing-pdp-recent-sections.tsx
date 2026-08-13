@@ -2,11 +2,11 @@
 
 import { useLayoutEffect, useState } from "react"
 import { ListingTileSkeleton } from "@/components/listing-tile-skeleton"
+import { HomeListingScrollRow } from "@/components/features/home/home-listing-scroll-row"
 import {
-  HomeListingScrollRow,
   HomePeerListingScrollTile,
   type HomePeerScrollListing,
-} from "@/components/features/home"
+} from "@/components/features/home/home-peer-listing-scroll-tile"
 import type { PdpRecentStripListingWithFavorite } from "@/lib/pdp-recent-strip-listing"
 import {
   pushRecentSurfboardListingId,

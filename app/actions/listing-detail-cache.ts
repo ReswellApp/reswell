@@ -1,10 +1,15 @@
 "use server"
 
+import { after } from "next/server"
+import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
 import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
 import { revalidateNavSuggestedSurfboards } from "@/lib/cache/revalidate-nav-suggested-surfboards"
-import { revalidateSellerProfileAndDirectoryCatalog } from "@/lib/cache/revalidate-sellers-directory-catalog"
+import {
+  revalidateSellerProfileAndDirectoryCatalog,
+  revalidateSellersDirectoryCatalog,
+} from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 
@@ -60,17 +65,30 @@ export async function revalidateListingDetailAfterListingMutation(
     return { ok: false, error: "Unauthorized" }
   }
 
-  revalidateListingDetailPage(listingId, slug ?? null)
-  revalidateBoardsBrowseCatalog()
-  revalidateNavSuggestedSurfboards()
-  await revalidateSellerProfileAndDirectoryCatalog(supabase, user.id)
+  const sellerUserId = user.id
+  const { data: sellerProfile } = await supabase
+    .from("profiles")
+    .select("seller_slug")
+    .eq("id", sellerUserId)
+    .maybeSingle()
+  const sellerSlug =
+    typeof sellerProfile?.seller_slug === "string" ? sellerProfile.seller_slug.trim() : ""
 
-  try {
-    const serviceSupabase = createServiceRoleClient()
-    syncListingToGoogleMerchantBestEffort(serviceSupabase, listingId)
-  } catch {
-    // Service role optional in local dev; GMC sync also runs via DB webhook when configured.
-  }
+  after(() => {
+    revalidateListingDetailPage(listingId, slug ?? null)
+    revalidateBoardsBrowseCatalog()
+    revalidateNavSuggestedSurfboards()
+    if (sellerSlug) {
+      revalidatePath(`/sellers/${sellerSlug}`, "page")
+    }
+    revalidateSellersDirectoryCatalog()
+    try {
+      const serviceSupabase = createServiceRoleClient()
+      syncListingToGoogleMerchantBestEffort(serviceSupabase, listingId)
+    } catch {
+      // Service role optional in local dev; GMC sync also runs via DB webhook when configured.
+    }
+  })
 
   return { ok: true }
 }

@@ -4,6 +4,7 @@ import type { ImpersonationData } from "@/lib/impersonation"
 import { listingDetailHref } from "@/lib/listing-href"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import { setJustPublishedListingMarker } from "@/lib/sell-flow/just-published"
+import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
 import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
 import { sellActionErrorMessage } from "@/lib/sell-flow/sell-submit-error"
 import { resolveAdminBulkListingAfterCreate } from "@/lib/utils/admin-bulk-listing-navigation"
@@ -27,7 +28,6 @@ function peerListingDetailPath(listingId: string, slug: string): string {
 }
 
 async function navigateToPublishedListing(
-  router: RouterLike,
   listingId: string,
   slug: string,
 ): Promise<void> {
@@ -36,8 +36,7 @@ async function navigateToPublishedListing(
       console.warn("[sell] listing-detail cache revalidation:", err)
     }
   })
-  router.push(peerListingDetailPath(listingId, slug))
-  router.refresh?.()
+  navigateAfterListingSave(peerListingDetailPath(listingId, slug))
 }
 
 /** Shared create + bulk redirect for peer `/sell/*` flows. */
@@ -106,7 +105,7 @@ export async function finalizePeerListingCreate(params: {
     ) {
       return
     }
-    await navigateToPublishedListing(params.router, impResult.listingId, impResult.slug)
+    await navigateToPublishedListing(impResult.listingId, impResult.slug)
     return
   }
 
@@ -150,5 +149,5 @@ export async function finalizePeerListingCreate(params: {
     slug: result.slug,
     section: params.section,
   })
-  await navigateToPublishedListing(params.router, result.listingId, result.slug)
+  await navigateToPublishedListing(result.listingId, result.slug)
 }

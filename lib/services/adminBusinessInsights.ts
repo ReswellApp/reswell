@@ -10,15 +10,50 @@ import type {
 } from '@/lib/db/adminOverview'
 import type { ContactMessageSupportStatus } from '@/lib/db/contactMessages'
 import { createServiceRoleClient } from '@/lib/supabase/server'
+import type {
+  AdminBusinessInsights,
+  AdminInsightsBrandRow,
+  AdminInsightsDailyPoint,
+  AdminInsightsOrderPreview,
+  AdminInsightsSectionRow,
+  AdminInsightsTopSeller,
+  AdminMomentumMatrix,
+  AdminMonthlyRevenueRow,
+  LoadAdminBusinessInsightsOptions,
+  MomentumComparison,
+  MomentumFormat,
+  MomentumMetric,
+  MomentumMetricKey,
+  TrendMetric,
+} from '@/lib/types/adminBusinessInsights'
 import {
   resolveAdminInsightsPeriod,
   utcMonthStartIso,
   utcYearMonthChoices,
-  type AdminInsightsPeriodMode,
 } from '@/lib/utils/adminInsightsPeriod'
+import {
+  marketplaceListingItemGmvUsd,
+  marketplacePromoMarketingUsd,
+} from '@/lib/seller-fees'
 import { buildBusinessDayKeys, businessDayKey } from '@/lib/utils/business-timezone'
 
 export { ADMIN_INSIGHTS_PERIOD_DAYS } from '@/lib/utils/adminInsightsPeriod'
+export type {
+  AdminBusinessInsights,
+  AdminInsightsBrandRow,
+  AdminInsightsDailyPoint,
+  AdminInsightsOrderPreview,
+  AdminInsightsSectionRow,
+  AdminInsightsTopSeller,
+  AdminMomentumMatrix,
+  AdminMonthlyRevenueRow,
+  LoadAdminBusinessInsightsOptions,
+  MomentumComparison,
+  MomentumFormat,
+  MomentumMetric,
+  MomentumMetricKey,
+  TrendMetric,
+} from '@/lib/types/adminBusinessInsights'
 
 /**
  * Marketplace-wide business intelligence for the admin overview.
@@ -29,9 +64,12 @@ export { ADMIN_INSIGHTS_PERIOD_DAYS } from '@/lib/utils/adminInsightsPeriod'
  * `is_admin_test = false` filtering used by `adminPlatformFees.ts`.
  *
  * Money is treated as USD (no `currency` column on `orders`/`listings`).
- * "GMV" is gross merchandise value = sum of `orders.amount` (item + shipping)
- * for confirmed, non-test orders. "Sale time" is `orders.created_at` (there is
- * no `listings.sold_at`). Daily chart buckets use Pacific Time.
+ * "GMV" is buyer-paid order totals = sum of `orders.amount` (item + shipping,
+ * net of Reswell promo). Take rate uses listing item GMV (seller earnings +
+ * platform fee) — the 7% fee base — so promo codes do not dilute the rate.
+ * Promo discounts are reported as marketing expense. "Sale time" is
+ * `orders.created_at` (there is no `listings.sold_at`). Daily chart buckets
+ * use Pacific Time.
  */
 
 const ORDERS_FETCH_CAP = 20000
@@ -39,109 +77,14 @@ const LISTING_LOOKUP_CHUNK = 200
 const TOP_SELLERS_LIMIT = 6
 const TOP_BRANDS_LIMIT = 6
 
-export type TrendMetric = {
-  current: number
-  previous: number
-  /** Percentage change vs the prior period. `null` when the prior period was 0. */
-  deltaPct: number | null
-}
-
-export type AdminInsightsDailyPoint = {
-  date: string
-  gmv: number
-  fees: number
-  orders: number
-}
-
-export type AdminInsightsTopSeller = {
-  id: string
-  name: string
-  gmv: number
-  orders: number
-}
-
-export type AdminInsightsBrandRow = {
-  brand: string
-  gmv: number
-  orders: number
-}
-
-export type AdminInsightsSectionRow = {
-  section: string
-  gmv: number
-  orders: number
-  share: number
-}
-
-export type AdminInsightsOrderPreview = {
-  id: string
-  order_num: string | null
-  status: string
-  amount: number
-  created_at: string
-}
-
-export type AdminMonthlyRevenueRow = {
-  yearMonth: string
-  gmv: number
-  platformRevenue: number
-  orders: number
-}
-
-export type AdminBusinessInsights = {
-  periodMode: AdminInsightsPeriodMode
-  periodLabel: string
-  comparePeriodLabel: string
-  selectedYearMonth: string | null
-  periodDays: number
-  revenue: {
-    gmv: TrendMetric
-    platformRevenue: TrendMetric
-    orders: TrendMetric
-    aov: TrendMetric
-  }
-  /** Platform fee ÷ item GMV (GMV minus shipping), as a percentage. */
-  takeRatePct: number | null
-  /** Refunded ÷ (confirmed + refunded) within the current window, as a percentage. */
-  refundRatePct: number
-  refundCount: number
-  daily: AdminInsightsDailyPoint[]
-  growth: {
-    newMembers: TrendMetric
-    newListings: TrendMetric
-    newSupportThreads: TrendMetric
-  }
-  supply: {
-    activeListings: number
-    activeSurfboards: number
-    soldInPeriod: number
-    /** sold(period) ÷ (sold(period) + active surfboards), as a percentage. */
-    sellThroughPct: number | null
-  }
-  topSellers: AdminInsightsTopSeller[]
-  topBrands: AdminInsightsBrandRow[]
-  sectionMix: AdminInsightsSectionRow[]
-  offers: {
-    created: TrendMetric
-    accepted: number
-    /** accepted ÷ resolved offers (accepted + declined + expired), as a percentage. */
-    acceptanceRatePct: number | null
-  }
-  recentOrders: AdminInsightsOrderPreview[]
-  /** Listings created in the selected period (newest first). */
-  recentListings: AdminOverviewListingPreview[]
-  /** Profiles created in the selected period (newest first). */
-  recentUsers: AdminOverviewUserPreview[]
-  /** Support tickets created in the selected period (newest first). */
-  recentSupport: AdminOverviewSupportPreview[]
-}
-
 type OrderRow = {
   id: string
   order_num: string | null
   amount: number
   platform_fee: number
   shipping_amount: number
+  seller_earnings: number | null
+  promo_discount_usd: number
   status: string
   created_at: string
   seller_id: string | null
@@ -261,11 +204,6 @@ async function fetchSellerNames(
   return names
 }
 
-export type LoadAdminBusinessInsightsOptions = {
-  /** `YYYY-MM` calendar month (UTC). Omit for the rolling window. */
-  yearMonth?: string | null
-}
-
 export async function loadAdminBusinessInsights(
   options?: LoadAdminBusinessInsightsOptions,
 ): Promise<
@@ -307,7 +245,7 @@ export async function loadAdminBusinessInsights(
       db
         .from('orders')
         .select(
-          'id, order_num, amount, platform_fee, shipping_amount, status, created_at, seller_id, listing_id',
+          'id, order_num, amount, platform_fee, shipping_amount, seller_earnings, promo_discount_usd, status, created_at, seller_id, listing_id',
         )
         .eq('is_admin_test', false)
         .gte('created_at', sinceFetch)
@@ -389,6 +327,8 @@ export async function loadAdminBusinessInsights(
           amount: num(r.amount),
           platform_fee: num(r.platform_fee),
           shipping_amount: num(r.shipping_amount),
+          seller_earnings: r.seller_earnings == null ? null : num(r.seller_earnings),
+          promo_discount_usd: num(r.promo_discount_usd),
           status: String(r.status ?? ''),
           created_at: String(r.created_at ?? ''),
           seller_id: r.seller_id == null ? null : String(r.seller_id),
@@ -400,9 +340,11 @@ export async function loadAdminBusinessInsights(
     // Partition by window + status.
     let gmvCur = 0
     let gmvPrev = 0
-    let itemGmvCur = 0
+    let listingItemGmvCur = 0
     let feesCur = 0
     let feesPrev = 0
+    let promoCur = 0
+    let promoPrev = 0
     let ordersCur = 0
     let ordersPrev = 0
     let refundedCur = 0
@@ -425,8 +367,9 @@ export async function loadAdminBusinessInsights(
       if (confirmed) {
         if (inCurrent) {
           gmvCur += o.amount
-          itemGmvCur += Math.max(0, o.amount - o.shipping_amount)
+          listingItemGmvCur += marketplaceListingItemGmvUsd(o)
           feesCur += o.platform_fee
+          promoCur += marketplacePromoMarketingUsd(o)
           ordersCur += 1
 
           const bucket = dailyMap.get(businessDayKey(o.created_at))
@@ -450,6 +393,7 @@ export async function loadAdminBusinessInsights(
         } else if (inPrevious) {
           gmvPrev += o.amount
           feesPrev += o.platform_fee
+          promoPrev += marketplacePromoMarketingUsd(o)
           ordersPrev += 1
         }
       } else if (refunded && inCurrent) {
@@ -463,7 +407,7 @@ export async function loadAdminBusinessInsights(
 
     const aovCur = ordersCur > 0 ? gmvCur / ordersCur : 0
     const aovPrev = ordersPrev > 0 ? gmvPrev / ordersPrev : 0
-    const takeRatePct = itemGmvCur > 0 ? (feesCur / itemGmvCur) * 100 : null
+    const takeRatePct = listingItemGmvCur > 0 ? (feesCur / listingItemGmvCur) * 100 : null
     const refundDenom = ordersCur + refundedCur
     const refundRatePct = refundDenom > 0 ? (refundedCur / refundDenom) * 100 : 0
 
@@ -572,6 +516,7 @@ export async function loadAdminBusinessInsights(
         revenue: {
           gmv: trend(gmvCur, gmvPrev),
           platformRevenue: trend(feesCur, feesPrev),
+          marketingExpense: trend(promoCur, promoPrev),
           orders: trend(ordersCur, ordersPrev),
           aov: trend(aovCur, aovPrev),
         },
@@ -632,47 +577,6 @@ const MOMENTUM_ROW_FETCH_CAP = 50000
 
 /** Largest window drives how far back we fetch rows. */
 const MOMENTUM_LOOKBACK_DAYS = Math.max(...ADMIN_MOMENTUM_WINDOWS) + 1
-
-export type MomentumFormat = 'count' | 'usd'
-
-export type MomentumComparison = {
-  /** Size of the trailing baseline window in days. */
-  windowDays: number
-  /** Human label, e.g. "vs yesterday" / "vs 7-day avg". */
-  label: string
-  /** Total over the trailing window (excludes the most recent 24h). */
-  windowTotal: number
-  /** Average per-day run-rate across the trailing window. */
-  baselinePerDay: number
-  /** Today vs the trailing per-day baseline, as a percentage. `null` when baseline is 0. */
-  deltaPct: number | null
-}
-
-export type MomentumMetricKey =
-  | 'newUsers'
-  | 'newListings'
-  | 'paidOrders'
-  | 'searches'
-  | 'gmv'
-  | 'platformRevenue'
-
-export type MomentumMetric = {
-  key: MomentumMetricKey
-  label: string
-  description: string
-  format: MomentumFormat
-  /** Most recent 24h value. */
-  today: number
-  comparisons: MomentumComparison[]
-}
-
-export type AdminMomentumMatrix = {
-  generatedAt: string
-  /** Whether search volume could be measured (Elasticsearch configured). */
-  searchesTracked: boolean
-  windows: number[]
-  metrics: MomentumMetric[]
-}
 
 function momentumWindowLabel(windowDays: number): string {
   if (windowDays === 1) return 'vs yesterday'
@@ -908,7 +812,7 @@ export async function loadAdminMonthlyRevenueBreakdown(
 
     const { data: orderRows, error } = await db
       .from('orders')
-      .select('amount, platform_fee, created_at, status')
+      .select('amount, platform_fee, promo_discount_usd, created_at, status')
       .eq('is_admin_test', false)
       .eq('status', 'confirmed')
       .gte('created_at', sinceIso)
@@ -919,28 +823,39 @@ export async function loadAdminMonthlyRevenueBreakdown(
       return { ok: false, error: 'Could not load monthly revenue breakdown.' }
     }
 
-    const bucket = new Map<string, { gmv: number; platformRevenue: number; orders: number }>()
+    const bucket = new Map<
+      string,
+      { gmv: number; platformRevenue: number; marketingExpense: number; orders: number }
+    >()
     for (const ym of months) {
-      bucket.set(ym, { gmv: 0, platformRevenue: 0, orders: 0 })
+      bucket.set(ym, { gmv: 0, platformRevenue: 0, marketingExpense: 0, orders: 0 })
     }
 
     for (const row of orderRows ?? []) {
       const r = row as Record<string, unknown>
-      if (isHiddenFromAdminOverviewReport(r)) continue
-      const ym = String(r.created_at ?? '').slice(0, 7)
+      const amount = num(r.amount)
+      const createdAt = String(r.created_at ?? '')
+      const status = String(r.status ?? '')
+      if (isHiddenFromAdminOverviewReport({ amount, created_at: createdAt, status })) continue
+      const ym = createdAt.slice(0, 7)
       const b = bucket.get(ym)
       if (!b) continue
-      b.gmv += num(r.amount)
+      b.gmv += amount
       b.platformRevenue += num(r.platform_fee)
+      b.marketingExpense += marketplacePromoMarketingUsd({
+        promo_discount_usd: num(r.promo_discount_usd),
+      })
       b.orders += 1
     }
 
     const data: AdminMonthlyRevenueRow[] = months.map((yearMonth) => {
-      const v = bucket.get(yearMonth) ?? { gmv: 0, platformRevenue: 0, orders: 0 }
+      const v =
+        bucket.get(yearMonth) ?? { gmv: 0, platformRevenue: 0, marketingExpense: 0, orders: 0 }
       return {
         yearMonth,
         gmv: v.gmv,
         platformRevenue: v.platformRevenue,
+        marketingExpense: v.marketingExpense,
         orders: v.orders,
       }
     })

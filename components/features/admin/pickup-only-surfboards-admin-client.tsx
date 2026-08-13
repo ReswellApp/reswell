@@ -19,8 +19,8 @@ import type {
   PickupOnlyLocality,
   PickupOnlySurfboardListing,
   PickupOnlySurfboardsDashboard,
-} from "@/lib/services/pickupOnlySurfboards"
-import { PICKUP_AD_RADIUS_MILES } from "@/lib/services/pickupOnlySurfboards"
+} from "@/lib/types/pickupOnlySurfboards"
+import { PICKUP_AD_RADIUS_MILES } from "@/lib/types/pickupOnlySurfboards"
 import { PickupOnlySurfboardsListingTable } from "@/components/features/admin/pickup-only-surfboards-listing-table"
 
 const PickupOnlySurfboardsMap = dynamic(

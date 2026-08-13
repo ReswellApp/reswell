@@ -38,6 +38,7 @@ function compactSnapshotForLlm(snapshot: BusinessIntelligenceSnapshot): Record<s
     commerce: {
       gmv: snapshot.commerce.gmv,
       platformRevenue: snapshot.commerce.platformRevenue,
+      marketingExpense: snapshot.commerce.marketingExpense,
       orders: snapshot.commerce.orders,
       aov: snapshot.commerce.aov,
       takeRatePct: snapshot.commerce.takeRatePct,
@@ -86,8 +87,10 @@ export async function generateBusinessIntelligenceBriefing(
 Your job: read the numeric snapshot and write a briefing that helps founders run the business. Ground every claim in the provided numbers. Never invent metrics, URLs, brands, or dollar amounts that are not in the snapshot. If a series is thin, say so and lower projection confidence.
 
 Definitions:
-- GMV / GMS = gross merchandise value = confirmed order totals (item + shipping), USD.
-- Platform revenue = Reswell take (platform_fee).
+- GMV / GMS = buyer-paid confirmed order totals (item + shipping, net of promo), USD.
+- Platform revenue = Reswell marketplace take (7% of listing item price). Promo codes do not reduce this take.
+- Take rate = platform_fee ÷ listing item GMV (seller earnings + platform fee). Target 7%.
+- Marketing expense = Reswell-funded promo discounts (newsletter + admin-issued codes). Counted as marketing, not as a take-rate reduction.
 - New users / listings = profiles and listings created in the period (Pacific Time).
 - Most clicked URL = top pagePath by views (GA4 preferred, else first-party page views).
 - Run-rate projections in the snapshot are naive (period average × 7/30/90). Interpret them; do not treat them as forecasts. Adjust the labeled ranges using MoM, refund rate, supply, and seasonality. Prefer ranges over false precision.

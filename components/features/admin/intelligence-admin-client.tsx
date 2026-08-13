@@ -10,7 +10,7 @@ import { IntelligenceReportView } from "@/components/features/admin/intelligence
 import { IntelligenceTrafficPanel } from "@/components/features/admin/intelligence-traffic-panel"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import type { IntelligenceLiveDashboard } from "@/lib/services/businessIntelligence"
+import type { IntelligenceLiveDashboard } from "@/lib/types/businessIntelligence"
 import type {
   BusinessIntelligenceReportListItem,
   BusinessIntelligenceReportRow,

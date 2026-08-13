@@ -4,7 +4,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { ArrowUpRight, Clock, Eye } from "lucide-react"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
-import type { PickupOnlySurfboardListing } from "@/lib/services/pickupOnlySurfboards"
+import type { PickupOnlySurfboardListing } from "@/lib/types/pickupOnlySurfboards"
 
 function formatUsd(value: number): string {
   return value.toLocaleString("en-US", {

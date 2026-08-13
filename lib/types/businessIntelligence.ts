@@ -1,3 +1,7 @@
+import type {
+  AdminBusinessInsights,
+  AdminMonthlyRevenueRow,
+} from "@/lib/types/adminBusinessInsights"
 import type { BusinessIntelligenceLlmReport } from "@/lib/validations/businessIntelligence"
 import type { BusinessIntelligencePeriodKind } from "@/lib/validations/businessIntelligence"
 
@@ -24,8 +28,11 @@ export type IntelligenceTopPath = {
 export type IntelligenceCommerceSnapshot = {
   gmv: IntelligenceTrend
   platformRevenue: IntelligenceTrend
+  /** Reswell-funded promo discounts (newsletter + admin-issued codes). */
+  marketingExpense: IntelligenceTrend
   orders: IntelligenceTrend
   aov: IntelligenceTrend
+  /** Platform fee ÷ listing item GMV (seller earnings + fee). Target 7%. */
   takeRatePct: number | null
   refundRatePct: number
   refundCount: number
@@ -74,6 +81,7 @@ export type IntelligenceMonthlyHistoryRow = {
   yearMonth: string
   gmv: number
   platformRevenue: number
+  marketingExpense: number
   orders: number
   users: number
   listings: number
@@ -154,4 +162,21 @@ export type BusinessIntelligenceReportListItem = {
   status: BusinessIntelligenceReportStatus
   error: string | null
   executiveSummary: string | null
+}
+
+export type IntelligenceLiveDashboard = {
+  generatedAt: string
+  insights: AdminBusinessInsights | null
+  insightsError: string | null
+  monthlyRevenue: AdminMonthlyRevenueRow[]
+  monthlyRevenueError: string | null
+  topPages: IntelligenceTopPath[]
+  topPagesSource: "ga4" | "none"
+  latest: {
+    daily: BusinessIntelligenceReportRow | null
+    weekly: BusinessIntelligenceReportRow | null
+    monthly: BusinessIntelligenceReportRow | null
+  }
+  archive: BusinessIntelligenceReportListItem[]
+  llmEnabled: boolean
 }

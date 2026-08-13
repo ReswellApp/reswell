@@ -1,7 +1,7 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { revalidateListingMutationPaths } from "@/lib/cache/revalidate-listing-mutation-paths"
 import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
 import {
   createLeashListingSchema,
@@ -47,8 +47,7 @@ export async function createLeashListingAction(
 
   try {
     const result = await createLeashListing(supabase, user.id, parsed.data)
-    revalidatePath("/leashes")
-    revalidatePath(`/l/${result.slug}`)
+    revalidateListingMutationPaths("/leashes", result.slug)
     return { success: true, listingId: result.listingId, slug: result.slug }
   } catch (error) {
     console.error("createLeashListingAction:", error instanceof Error ? error.message : error)
@@ -79,8 +78,7 @@ export async function updateLeashListingAction(
 
   try {
     const result = await updateLeashListing(supabase, parsed.data.listingId, user.id, parsed.data)
-    revalidatePath("/leashes")
-    revalidatePath(`/l/${result.slug}`)
+    revalidateListingMutationPaths("/leashes", result.slug)
     return { success: true, slug: result.slug }
   } catch (error) {
     console.error("updateLeashListingAction:", error instanceof Error ? error.message : error)

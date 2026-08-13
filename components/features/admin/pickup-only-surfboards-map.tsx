@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { Loader2 } from "lucide-react"
-import type { PickupOnlyLocality } from "@/lib/services/pickupOnlySurfboards"
-import { PICKUP_AD_RADIUS_MILES } from "@/lib/services/pickupOnlySurfboards"
+import type { PickupOnlyLocality } from "@/lib/types/pickupOnlySurfboards"
+import { PICKUP_AD_RADIUS_MILES } from "@/lib/types/pickupOnlySurfboards"
 
 const AD_RADIUS_METERS = PICKUP_AD_RADIUS_MILES * 1609.344
 const US_CENTER: [number, number] = [39.8, -98.5]

@@ -1,7 +1,7 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { revalidateListingMutationPaths } from "@/lib/cache/revalidate-listing-mutation-paths"
 import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
 import {
   createAccessoryListingSchema,
@@ -47,8 +47,7 @@ export async function createAccessoryListingAction(
 
   try {
     const result = await createAccessoryListing(supabase, user.id, parsed.data)
-    revalidatePath("/accessories")
-    revalidatePath(`/l/${result.slug}`)
+    revalidateListingMutationPaths("/accessories", result.slug)
     return { success: true, listingId: result.listingId, slug: result.slug }
   } catch (error) {
     console.error("createAccessoryListingAction:", error instanceof Error ? error.message : error)
@@ -79,8 +78,7 @@ export async function updateAccessoryListingAction(
 
   try {
     const result = await updateAccessoryListing(supabase, parsed.data.listingId, user.id, parsed.data)
-    revalidatePath("/accessories")
-    revalidatePath(`/l/${result.slug}`)
+    revalidateListingMutationPaths("/accessories", result.slug)
     return { success: true, slug: result.slug }
   } catch (error) {
     console.error("updateAccessoryListingAction:", error instanceof Error ? error.message : error)

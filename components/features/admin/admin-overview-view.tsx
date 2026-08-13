@@ -11,6 +11,7 @@ import {
   DollarSign,
   Gauge,
   Layers,
+  Megaphone,
   MessageSquare,
   Package,
   Receipt,
@@ -32,7 +33,7 @@ import type {
   AdminInsightsSectionRow,
   AdminInsightsTopSeller,
   TrendMetric,
-} from '@/lib/services/adminBusinessInsights'
+} from '@/lib/types/adminBusinessInsights'
 import type {
   AdminOverviewListingPreview,
   AdminOverviewOrderPreview,
@@ -50,7 +51,7 @@ import { AdminRevenueChart } from '@/components/features/admin/admin-revenue-cha
 import type {
   AdminMomentumMatrix as AdminMomentumMatrixData,
   AdminMonthlyRevenueRow,
-} from '@/lib/services/adminBusinessInsights'
+} from '@/lib/types/adminBusinessInsights'
 import { listingDetailHref } from '@/lib/listing-href'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { BUSINESS_TIMEZONE_LABEL } from '@/lib/utils/business-timezone'
@@ -135,7 +136,7 @@ function sectionLabel(section: string): string {
   return capitalizeWords(section.replace(/_/g, ' '))
 }
 
-type Accent = 'neutral' | 'emerald' | 'amber' | 'sky' | 'violet'
+type Accent = 'neutral' | 'emerald' | 'amber' | 'sky' | 'violet' | 'rose'
 
 const ACCENT_CHIP: Record<Accent, string> = {
   neutral: 'bg-secondary text-foreground',
@@ -143,6 +144,7 @@ const ACCENT_CHIP: Record<Accent, string> = {
   amber: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
   sky: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
   violet: 'bg-violet-500/10 text-violet-600 dark:text-violet-400',
+  rose: 'bg-rose-500/10 text-rose-600 dark:text-rose-400',
 }
 
 const SECTION_BAR: Record<string, string> = {
@@ -683,7 +685,7 @@ export function AdminOverviewView({
       {insights ? (
         <>
           {/* Financial KPIs */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <KpiCard
               icon={DollarSign}
               accent="emerald"
@@ -700,9 +702,18 @@ export function AdminOverviewView({
               delta={insights.revenue.platformRevenue}
               footnote={
                 insights.takeRatePct != null
-                  ? `${formatPct(insights.takeRatePct)} effective take rate`
-                  : 'Fees on confirmed orders'
+                  ? `${formatPct(insights.takeRatePct)} marketplace take`
+                  : '7% fee on listing item price'
               }
+            />
+            <KpiCard
+              icon={Megaphone}
+              accent="rose"
+              label="Promo (marketing)"
+              value={compactUsd(insights.revenue.marketingExpense.current)}
+              delta={insights.revenue.marketingExpense}
+              invertDelta
+              footnote={`${compareFootnote} · Reswell-funded discounts`}
             />
             <KpiCard
               icon={ShoppingBag}
@@ -835,13 +846,19 @@ export function AdminOverviewView({
           {/* Business health */}
           <section className="space-y-3">
             <h2 className="font-headline text-lg font-semibold text-foreground">Business health</h2>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <RatioTile
                 icon={BadgePercent}
                 label="Take rate"
                 value={insights.takeRatePct != null ? formatPct(insights.takeRatePct) : '—'}
-                description="Platform fees ÷ item GMV"
+                description="Platform fees ÷ listing item GMV (7% take; promos excluded)"
                 tone="good"
+              />
+              <RatioTile
+                icon={Megaphone}
+                label="Promo spend"
+                value={compactUsd(insights.revenue.marketingExpense.current)}
+                description="Reswell-funded codes, counted as marketing"
               />
               <RatioTile
                 icon={Receipt}

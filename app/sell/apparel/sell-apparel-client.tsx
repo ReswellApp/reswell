@@ -70,6 +70,7 @@ import { buildApparelListingPersistFields } from "@/lib/apparel-listing-persist-
 import { computeApparelSellSectionCompletion } from "@/lib/apparel-sell-section-completion"
 import { sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
+import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import {
   clearImpersonation,
@@ -887,7 +888,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
             durationMs: Date.now() - publishStartedAt,
           })
           toast.success("Listing updated")
-          router.push(`/l/${data.slug ?? editId}`)
+          navigateAfterListingSave(`/l/${data.slug ?? editId}`)
           return
         }
 
@@ -924,7 +925,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
           durationMs: Date.now() - publishStartedAt,
         })
         toast.success("Listing updated")
-        router.push(`/l/${result.slug}`)
+        navigateAfterListingSave(`/l/${result.slug}`)
         return
       }
 

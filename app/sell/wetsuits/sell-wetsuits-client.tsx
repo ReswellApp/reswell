@@ -65,6 +65,7 @@ import { buildWetsuitListingPersistFields } from "@/lib/wetsuit-listing-persist-
 import { computeWetsuitSellSectionCompletion } from "@/lib/wetsuit-sell-section-completion"
 import { sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
+import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import {
   clearImpersonation,
@@ -741,7 +742,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
             durationMs: Date.now() - publishStartedAt,
           })
           toast.success("Listing updated")
-          router.replace(
+          navigateAfterListingSave(
             listingDetailHref({
               id: editId,
               slug: data.slug ?? null,
@@ -783,7 +784,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
           durationMs: Date.now() - publishStartedAt,
         })
         toast.success("Listing updated")
-        router.replace(
+        navigateAfterListingSave(
           listingDetailHref({
             id: editId,
             slug: result.slug,

@@ -13,14 +13,13 @@ import {
 import {
   loadAdminBusinessInsights,
   loadAdminMonthlyRevenueBreakdown,
-  type AdminBusinessInsights,
-  type AdminMonthlyRevenueRow,
 } from "@/lib/services/adminBusinessInsights"
 import { isGoogleAnalyticsConfigured, runGoogleAnalyticsReport } from "@/lib/services/googleAnalytics"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import type {
   BusinessIntelligenceReportListItem,
   BusinessIntelligenceReportRow,
+  IntelligenceLiveDashboard,
   IntelligenceTopPath,
 } from "@/lib/types/businessIntelligence"
 import { BUSINESS_TIMEZONE, businessDayKeyFromMs } from "@/lib/utils/business-timezone"
@@ -30,22 +29,7 @@ import {
 } from "@/lib/utils/businessIntelligencePeriod"
 import type { BusinessIntelligencePeriodKind } from "@/lib/validations/businessIntelligence"
 
-export type IntelligenceLiveDashboard = {
-  generatedAt: string
-  insights: AdminBusinessInsights | null
-  insightsError: string | null
-  monthlyRevenue: AdminMonthlyRevenueRow[]
-  monthlyRevenueError: string | null
-  topPages: IntelligenceTopPath[]
-  topPagesSource: "ga4" | "none"
-  latest: {
-    daily: BusinessIntelligenceReportRow | null
-    weekly: BusinessIntelligenceReportRow | null
-    monthly: BusinessIntelligenceReportRow | null
-  }
-  archive: BusinessIntelligenceReportListItem[]
-  llmEnabled: boolean
-}
+export type { IntelligenceLiveDashboard } from "@/lib/types/businessIntelligence"
 
 export async function loadIntelligenceDashboard(): Promise<IntelligenceLiveDashboard> {
   const db = createServiceRoleClient()

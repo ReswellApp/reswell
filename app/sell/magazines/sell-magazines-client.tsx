@@ -56,6 +56,7 @@ import {
 } from "@/lib/validations/magazine-listing"
 import { LISTING_CONDITION_SELL_OPTIONS, sellFormConditionValue } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
+import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
 import { resolveAdminBulkListingAfterCreate } from "@/lib/utils/admin-bulk-listing-navigation"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
@@ -394,8 +395,7 @@ export default function SellMagazinesFlow({
           durationMs: Date.now() - publishStartedAt,
         })
         toast.success("Magazine listing updated.")
-        router.push(listingDetailHref({ id: editId, slug: result.slug }))
-        router.refresh()
+        navigateAfterListingSave(listingDetailHref({ id: editId, slug: result.slug }))
         return
       }
 
@@ -440,8 +440,7 @@ export default function SellMagazinesFlow({
         slug: result.slug,
         section: "magazines",
       })
-      router.push(listingDetailHref({ id: result.listingId, slug: result.slug }))
-      router.refresh()
+      navigateAfterListingSave(listingDetailHref({ id: result.listingId, slug: result.slug }))
     } catch (err) {
       const aborted = isSellSubmitAbortError(err)
       if (!aborted) {
