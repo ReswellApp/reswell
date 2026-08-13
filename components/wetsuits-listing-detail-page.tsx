@@ -67,6 +67,11 @@ import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
 import { getListingFavoriteCount } from "@/lib/db/listing-favorite-count"
 import { formatDistanceToNow } from "date-fns"
 import { WETSUITS_SECTION, wetsuitSizeLabel } from "@/lib/wetsuit-listing-config"
+import { MetaViewContentTracker } from "@/components/meta/meta-view-content-tracker"
+import {
+  isMetaCatalogEligibleListing,
+  type MetaListingProductSource,
+} from "@/lib/meta/catalog-product"
 
 type AboutSellerProfilesProp = ComponentProps<typeof ListingAboutSellerSection>["profiles"]
 
@@ -227,6 +232,9 @@ export async function WetsuitsListingDetailPage({
   const sizeLabel = wetsuitSizeLabel(wetsuit.wetsuit_size as string | null)
 
   const listingTitle = capitalizeWords(wetsuit.title as string)
+  const metaCatalogEligible = isMetaCatalogEligibleListing(
+    wetsuit as unknown as MetaListingProductSource,
+  )
 
   const listPriceNum =
     typeof wetsuit.price === "number" ? wetsuit.price : Number.parseFloat(String(wetsuit.price)) || 0
@@ -350,6 +358,13 @@ export async function WetsuitsListingDetailPage({
 
   return (
     <main className="relative flex-1 w-full min-w-0 max-w-full overflow-x-clip bg-background pb-16 pt-5 sm:pb-24 sm:pt-8">
+      {metaCatalogEligible ? (
+        <MetaViewContentTracker
+          listingId={wetsuit.id as string}
+          value={listPriceNum}
+          contentName={listingTitle}
+        />
+      ) : null}
       <div className="container mx-auto w-full min-w-0 max-w-full px-4 sm:px-6 lg:px-8 lg:!max-w-[min(100%,1320px)] xl:!max-w-[min(100%,1480px)] 2xl:!max-w-[min(100%,1680px)]">
         <div className="mb-3 min-w-0 max-w-full pt-0.5 max-lg:mb-4 lg:mb-8">
           <Breadcrumb>

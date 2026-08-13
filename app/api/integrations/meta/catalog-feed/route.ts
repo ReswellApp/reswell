@@ -17,7 +17,7 @@ import {
  * When `META_CATALOG_FEED_SECRET` is set, pass it as `?token=` or `Authorization: Bearer`.
  *
  * Product `id` matches listing UUID — align Meta Pixel `content_ids` with this value for dynamic ads.
- * Includes active peer listings (`section` surfboards | fins | magazines).
+ * Includes active peer listings (`section` surfboards | fins | wetsuits | magazines).
  * Shop listings get `custom_label_0` for Meta product-set ads:
  * HaydenGarfield (Hayden Garfield) and OutSurfing.
  */

@@ -71,7 +71,7 @@ const MAX_DESCRIPTION_LENGTH = 5000
 const DEFAULT_GOOGLE_PRODUCT_CATEGORY = "499811"
 
 /** Peer listing sections synced to the Meta Commerce catalog feed. */
-export const META_CATALOG_PEER_SECTIONS = ["surfboards", "fins", "magazines"] as const
+export const META_CATALOG_PEER_SECTIONS = ["surfboards", "fins", "wetsuits", "magazines"] as const
 
 export type MetaCatalogPeerSection = (typeof META_CATALOG_PEER_SECTIONS)[number]
 
@@ -84,6 +84,9 @@ export const META_CATALOG_DEFAULT_FINS_GOOGLE_PRODUCT_CATEGORY = "3525"
 
 /** Google taxonomy: Media > Magazines & Newspapers > Magazines (784). */
 export const META_CATALOG_DEFAULT_MAGAZINES_GOOGLE_PRODUCT_CATEGORY = "784"
+
+/** Google taxonomy: Sporting Goods > … > Boating & Water Sport Apparel (499813). */
+export const META_CATALOG_DEFAULT_WETSUITS_GOOGLE_PRODUCT_CATEGORY = "499813"
 
 function stripHtml(text: string): string {
   return text.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim()
@@ -107,9 +110,17 @@ export function getMetaCatalogMagazinesGoogleProductCategory(): string {
   )
 }
 
+export function getMetaCatalogWetsuitsGoogleProductCategory(): string {
+  return (
+    process.env.META_CATALOG_WETSUITS_GOOGLE_PRODUCT_CATEGORY?.trim() ||
+    META_CATALOG_DEFAULT_WETSUITS_GOOGLE_PRODUCT_CATEGORY
+  )
+}
+
 export function getMetaCatalogGoogleProductCategoryForSection(section: string): string {
   if (section === "fins") return getMetaCatalogFinsGoogleProductCategory()
   if (section === "magazines") return getMetaCatalogMagazinesGoogleProductCategory()
+  if (section === "wetsuits") return getMetaCatalogWetsuitsGoogleProductCategory()
   return getMetaCatalogGoogleProductCategory()
 }
 
