@@ -159,6 +159,13 @@ export function listStaticSiteAssets(): SiteAssetEntry[] {
     publicImage("sell/sell-hub-backdrop.jpg", "Unused sell hub atmosphere strip", "orphan", [], {
       status: "orphan",
     }),
+    publicImage(
+      "marketing/list-your-surfboard-share.jpg",
+      "List your surfboard — Open Graph share image",
+      "marketing",
+      ["/listyoursurfboard"],
+      { notes: "og:image / twitter:image for /listyoursurfboard. Cropped from brand/fiji-underboard.jpg." },
+    ),
     publicImage("sell/surfboard.jpg", "Sell type — surfboard", "sell", ["/sell"]),
     publicImage("sell/fins.jpg", "Sell type — fins", "sell", ["/sell"]),
 

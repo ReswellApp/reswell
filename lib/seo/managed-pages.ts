@@ -382,6 +382,7 @@ export const MANAGED_PAGES: ManagedPage[] = [
     description:
       "List your surfboard on Reswell — reach surfers locally and nationwide with photos, messaging, and secure checkout. Free to post.",
     path: "/listyoursurfboard",
+    ogImageUrl: "/images/marketing/list-your-surfboard-share.jpg",
   }),
   page("shipping-estimator", "marketing", "Shipping estimator", {
     title: "Shipping label cost estimator — Reswell",

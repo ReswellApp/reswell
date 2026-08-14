@@ -1,9 +1,13 @@
 import { z } from "zod"
-import { magazineListingFixedReswellPackageFormFields } from "@/lib/magazine-listing-config"
+import { addReswellPackedWeightZodIssues } from "@/lib/validations/reswell-packed-weight"
 import {
   listingRemovedVideoIdsSchema,
   listingVideosFieldSchema,
 } from "@/lib/validations/listing-video"
+import {
+  parseReswellParcelLengthRawToCarrierInches,
+  parseReswellParcelWidthHeightRawToCarrierInches,
+} from "@/lib/reswell-parcel-fields"
 
 export const MAGAZINE_LISTING_TITLE_MAX_LENGTH = 120
 export const MAGAZINE_LISTING_MIN_PHOTOS = 1
@@ -31,8 +35,18 @@ const magazineListingBaseSchema = z.object({
     .min(1900, "Year must be 1900 or later")
     .max(2100, "Year must be 2100 or earlier"),
 
+  locationCity: z.string().trim().min(1, "Add your location"),
+  locationState: z.string().trim().min(1, "Add your location"),
+  locationLat: z.coerce.number().optional(),
+  locationLng: z.coerce.number().optional(),
+
   shippingCostMode: z.enum(["reswell", "flat", "free"]).default("reswell"),
   shippingPrice: z.coerce.number().nonnegative().nullable().optional(),
+  reswellPackageLengthIn: z.string().optional().default(""),
+  reswellPackageWidthIn: z.string().optional().default(""),
+  reswellPackageHeightIn: z.string().optional().default(""),
+  reswellPackageWeightLb: z.string().optional().default(""),
+  reswellPackageWeightOz: z.string().optional().default(""),
 
   images: z
     .array(magazineListingImageSchema)
@@ -41,28 +55,49 @@ const magazineListingBaseSchema = z.object({
   videos: listingVideosFieldSchema,
 })
 
+function withMagazineListingRefinements<T extends z.ZodType>(schema: T) {
+  return schema.superRefine((data, ctx) => {
+    const L = parseReswellParcelLengthRawToCarrierInches(data.reswellPackageLengthIn)
+    if (L == null || L <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Enter packed box length in inches.",
+        path: ["reswellPackageLengthIn"],
+      })
+    }
+    const W = parseReswellParcelWidthHeightRawToCarrierInches(data.reswellPackageWidthIn)
+    if (W == null || W <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Enter packed box width in inches.",
+        path: ["reswellPackageWidthIn"],
+      })
+    }
+    const H = parseReswellParcelWidthHeightRawToCarrierInches(data.reswellPackageHeightIn)
+    if (H == null || H <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Enter packed box height in inches.",
+        path: ["reswellPackageHeightIn"],
+      })
+    }
+
+    addReswellPackedWeightZodIssues(data.reswellPackageWeightLb, data.reswellPackageWeightOz, ctx)
+  })
+}
+
 const magazineListingUpdateBaseSchema = magazineListingBaseSchema.extend({
   listingId: z.string().uuid(),
   removedImageIds: z.array(z.string().uuid()).optional().default([]),
   removedVideoIds: listingRemovedVideoIdsSchema,
 })
 
-const applyMagazineFixedPackageFields = <T extends z.infer<typeof magazineListingBaseSchema>>(
-  data: T,
-) => ({
-  ...data,
-  shippingCostMode: "reswell" as const,
-  ...magazineListingFixedReswellPackageFormFields(),
-})
+export const createMagazineListingSchema = withMagazineListingRefinements(magazineListingBaseSchema)
 
-export const createMagazineListingSchema = magazineListingBaseSchema.transform(
-  applyMagazineFixedPackageFields,
+export type CreateMagazineListingInput = z.infer<typeof magazineListingBaseSchema>
+
+export const updateMagazineListingSchema = withMagazineListingRefinements(
+  magazineListingUpdateBaseSchema,
 )
 
-export type CreateMagazineListingInput = z.infer<typeof createMagazineListingSchema>
-
-export const updateMagazineListingSchema = magazineListingUpdateBaseSchema.transform(
-  applyMagazineFixedPackageFields,
-)
-
-export type UpdateMagazineListingInput = z.infer<typeof updateMagazineListingSchema>
+export type UpdateMagazineListingInput = z.infer<typeof magazineListingUpdateBaseSchema>
