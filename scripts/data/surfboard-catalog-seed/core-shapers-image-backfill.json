@@ -1,0 +1,185 @@
+{
+  "purpose": "Strict image backfill for curated core-shaper models (surfboards only)",
+  "brands": [
+    {
+      "slug": "cj-nelson-designs",
+      "models": [
+        {
+          "id": "516bc748-0953-43b7-b9d2-ab2dad9181dc",
+          "name": "The Paragon",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/CJ-Nelson-Designs-Paragon-Thunderbolt-Silver-Surfboard-Avacado-Deck.jpg"
+        },
+        {
+          "id": "4a70404f-3bcc-4a5b-9915-10f6f08fe6ff",
+          "name": "The Outlier",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/CJ-Nelson-Designs-Outlier-X-Thunderbolt-Red-Army-Deck.jpg"
+        }
+      ]
+    },
+    {
+      "slug": "emery-surfboards",
+      "models": [
+        {
+          "id": "dea9b1f5-a71b-425b-aae9-47b94b5cc9c2",
+          "name": "Step-Up",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Harry-Step-Up_01.png"
+        },
+        {
+          "id": "9cf0ad38-676b-4e75-a4be-a9d5cfe9fc1c",
+          "name": "Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Harry-Fish_01.png"
+        }
+      ]
+    },
+    {
+      "slug": "hawaiian-pro-designs",
+      "models": [
+        {
+          "id": "787819f0-bebc-4e5f-80da-d2ca3757b315",
+          "name": "Egg",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/2023_TAKAYAMA_EGG_0702_BOTH.jpg"
+        },
+        {
+          "id": "f19d222a-9f96-4b82-8750-52e3b60fc6a0",
+          "name": "DT-1",
+          "image_url": "https://image.jimcdn.com/app/cms/image/transf/dimension=4096x4096:format=jpg/path/s5fe9262bdb7f5eec/image/ia3cb7c612d7619fb/version/1674713946/image.jpg"
+        }
+      ]
+    },
+    {
+      "slug": "lib-tech-surfboards",
+      "models": [
+        {
+          "id": "30b52257-9127-4bed-9ecb-638a593fdaeb",
+          "name": "Pickup Stick",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/Lib-Tech-26SU02170-Pickup-Stick-7-0-Surfboard-Deck.jpg"
+        }
+      ]
+    },
+    {
+      "slug": "machado-surfboards",
+      "models": [
+        {
+          "id": "97eb71ec-19b8-4140-8ac4-6bba10af545f",
+          "name": "Sunday",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/firewire-machado-sunday-helium-volcanic-repreve-surfboard-deck.jpg"
+        },
+        {
+          "id": "e7a051e9-1b58-4427-be72-4c5def51c146",
+          "name": "Seaside",
+          "image_url": "https://cdn.shopify.com/s/files/1/0399/4923/8317/files/Seaside_Helium0000_1958d839-6517-43fc-8889-5e0806778893.png"
+        },
+        {
+          "id": "8295da3d-e401-474a-ba62-68891eb39134",
+          "name": "Cado",
+          "image_url": "https://cdn.shopify.com/s/files/1/0399/4923/8317/files/Xtra_Cado_Helium0000_9b102633-01f9-4d60-a164-0530af6a9397.png"
+        }
+      ]
+    },
+    {
+      "slug": "nsp-surfboards",
+      "models": [
+        {
+          "id": "b08bc73f-699c-4b4d-953b-46b5828bbe76",
+          "name": "Shortboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/0515/4993/products/nsp-hybrid-short-surf-ef.jpg"
+        },
+        {
+          "id": "f946b3d7-9f82-4098-ae54-531b6e2e2cf8",
+          "name": "Elements Funboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/2489/2950/files/FUNBOARDELEMENTS-01.png"
+        },
+        {
+          "id": "eebcdc3c-0e3d-4224-8e8a-02f2f1924305",
+          "name": "Longboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/0630/1538/7388/files/1600x1600_Longboard_Elements_Color_Deck.webp"
+        },
+        {
+          "id": "d55af2c5-1d3c-42f2-8100-75648ce816e5",
+          "name": "Protech Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0630/1538/7388/files/1600x1600_Fish_Elements_Color_Deck.webp"
+        },
+        {
+          "id": "78a91de6-548e-4df4-98cc-67d87fa3f7a2",
+          "name": "Hybrid",
+          "image_url": "https://cdn.shopify.com/s/files/1/0515/4993/products/nsp-hybrid-short-surf-ef.jpg"
+        }
+      ]
+    },
+    {
+      "slug": "softech-surfboards",
+      "models": [
+        {
+          "id": "d0d9bcf6-704c-4df8-82e8-b587b04409c2",
+          "name": "Roller",
+          "image_url": "https://cdn.shopify.com/s/files/1/0003/1902/9309/files/softech_roller_grn_055bbcbe-41fa-420d-82a5-c6bb9c735cc2.jpg"
+        },
+        {
+          "id": "ab033f8b-11ce-4657-925f-94146a139952",
+          "name": "Bomber",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/Softech-BOMIIGDR610-D-Bomber-6-10-Soft-Surfboard-Gray-Dusty-Red-Deck.jpg"
+        }
+      ]
+    },
+    {
+      "slug": "takayama-surfboards",
+      "models": [
+        {
+          "id": "ce637637-a790-4c10-ba97-56fcd4078778",
+          "name": "Scorpion",
+          "image_url": "https://cdn.shopify.com/s/files/1/0003/1902/9309/files/scorpion_1.jpg"
+        },
+        {
+          "id": "f9f7d061-fa86-41f6-9c69-539e18081dc0",
+          "name": "DT-2",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/2023_takayama_dt2_0906_top.jpg"
+        },
+        {
+          "id": "db63cb28-304f-4d16-a9fa-ff9d84aa88e4",
+          "name": "In The Pink",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/Donald-Takayama-In-The-Pink-Xtrasoft-Softboard-Surfboard.jpg"
+        },
+        {
+          "id": "fd9acb71-8731-415c-8d54-4e5f61ce6fb7",
+          "name": "Model T",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/2023_TAKAYAMA_MODELT_BOTH.jpg"
+        }
+      ]
+    },
+    {
+      "slug": "torq-surfboards",
+      "models": [
+        {
+          "id": "3986e2e0-6b79-47f8-8fcf-546615cd3bad",
+          "name": "Tec Multiplier",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/521584008_18338670943167429_7679345042211833283_n.jpg"
+        },
+        {
+          "id": "470ed1e4-b268-4269-8291-afb03ca22922",
+          "name": "Longboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/2489/2950/files/TETLONGBOARD-03.png"
+        },
+        {
+          "id": "eaa005e2-1340-42d1-b30a-3b1f395cc49f",
+          "name": "Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0003/1902/9309/files/mody_fish_1b.jpg"
+        },
+        {
+          "id": "6e6a463a-a3b5-471e-adca-57a6acae576b",
+          "name": "Pond Scum",
+          "image_url": "https://cdn.shopify.com/s/files/1/0003/1902/9309/files/pod_mod_lt_blu_3.jpg"
+        }
+      ]
+    },
+    {
+      "slug": "chemistry-surfboards",
+      "models": [
+        {
+          "id": "f5283c84-611b-46ac-ac07-d6a5c2a7fe41",
+          "name": "Twin",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/c/h/chem-twin-fut-bwk.png"
+        }
+      ]
+    }
+  ]
+}

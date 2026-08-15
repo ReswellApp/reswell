@@ -1,0 +1,490 @@
+{
+  "purpose": "Add real named models with product images for core shapers whose curated lists lacked photos",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "town-and-country-surfboards",
+      "name": "Town & Country",
+      "models": [
+        {
+          "name": "CV-1",
+          "image_url": "https://cdn.shopify.com/s/files/1/2683/3942/files/CV-Top.jpg"
+        },
+        {
+          "name": "MF-2",
+          "image_url": "https://cdn.shopify.com/s/files/1/2683/3942/files/MF2-red-Top.jpg"
+        },
+        {
+          "name": "M16",
+          "image_url": "https://cdn.shopify.com/s/files/1/2683/3942/files/M16-top.jpg"
+        },
+        {
+          "name": "Viper",
+          "image_url": "https://cdn.shopify.com/s/files/1/2683/3942/files/Viper2-Top.jpg"
+        },
+        {
+          "name": "Uhu",
+          "image_url": "https://cdn.shopify.com/s/files/1/2683/3942/files/Hunter-UHU-Top.jpg"
+        },
+        {
+          "name": "Regulator",
+          "image_url": "https://cdn.shopify.com/s/files/1/2683/3942/files/Hunter-Regulator-Top.jpg"
+        },
+        {
+          "name": "Thundercat",
+          "image_url": "https://cdn.shopify.com/s/files/1/2683/3942/files/Hunter-Thundercat-Top.jpg"
+        },
+        {
+          "name": "Firefly",
+          "image_url": "https://cdn.shopify.com/s/files/1/2683/3942/files/Firefly-Flames-Top.jpg"
+        },
+        {
+          "name": "Afterburner",
+          "image_url": "https://cdn.shopify.com/s/files/1/2683/3942/files/Afterburner-Top-375748.jpg"
+        },
+        {
+          "name": "MONEY PRO (M PRO 2)",
+          "image_url": "https://cdn.shopify.com/s/files/1/2683/3942/files/MPRO-TOP-119302.jpg"
+        },
+        {
+          "name": "MDL",
+          "image_url": "https://cdn.shopify.com/s/files/1/2683/3942/products/MDL-Pang-Top-123398.jpg"
+        },
+        {
+          "name": "W-4XT",
+          "image_url": "https://cdn.shopify.com/s/files/1/2683/3942/products/W4X-orng-top-613798.jpg"
+        },
+        {
+          "name": "W4",
+          "image_url": "https://cdn.shopify.com/s/files/1/2683/3942/products/W4-top-683751.jpg"
+        },
+        {
+          "name": "Missing Link Mid-Length",
+          "image_url": "https://cdn.shopify.com/s/files/1/2683/3942/products/MissLinkMid-top-249431.jpg"
+        },
+        {
+          "name": "Soul Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/2683/3942/products/SoulFishBurg-top-264398.jpg"
+        },
+        {
+          "name": "Missing Link",
+          "image_url": "https://cdn.shopify.com/s/files/1/2683/3942/products/MissingLink-top-674698.jpg"
+        },
+        {
+          "name": "CSU",
+          "image_url": "https://cdn.shopify.com/s/files/1/2683/3942/products/CSU-top-369422.jpg"
+        },
+        {
+          "name": "S-4VF",
+          "image_url": "https://cdn.shopify.com/s/files/1/2683/3942/products/S4VF-top-753798.jpg"
+        }
+      ]
+    },
+    {
+      "slug": "timmy-patterson-surfboards",
+      "name": "Timmy Patterson Surfboards",
+      "models": [
+        {
+          "name": "Blue Fin Fusion HD",
+          "image_url": "https://cdn.shopify.com/s/files/1/0003/1902/9309/files/bluefin_1.jpg"
+        },
+        {
+          "name": "Devil Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0003/1902/9309/files/devil_1_f3e8afbf-1a02-46f0-a987-1b323fb051ea.jpg"
+        },
+        {
+          "name": "Synthetic '84",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/2024_PATTERSON_SYNTHETIC_BOTH.webp"
+        },
+        {
+          "name": "Gas Pedal",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/2024_PATTERSON_GASPEDAL_BOTH.webp"
+        },
+        {
+          "name": "S-Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/Timmy-Patterson-S-Twin-Fusion-Pro-Surfboard-01.jpg"
+        },
+        {
+          "name": "Alley Rat",
+          "image_url": "https://cdn.shopify.com/s/files/1/2489/2950/files/9fe53b8e-61be-49ff-b211-39e454cb065fTIMMYPATTERSON_ALLEYRAT_FUSIONPRO_BOTH.jpg"
+        }
+      ]
+    },
+    {
+      "slug": "torq-surfboards",
+      "name": "Torq Surfboards",
+      "models": [
+        {
+          "name": "Egg Not",
+          "image_url": "https://cdn.shopify.com/s/files/1/0003/1902/9309/files/egg_not_3b.jpg"
+        },
+        {
+          "name": "Delpero Classic",
+          "image_url": "https://cdn.shopify.com/s/files/1/0003/1902/9309/files/torq_lb_TAN_1.jpg"
+        },
+        {
+          "name": "Mod Fun",
+          "image_url": "https://cdn.shopify.com/s/files/1/0003/1902/9309/files/mod_fun_lag_1.jpg"
+        },
+        {
+          "name": "Mod Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0003/1902/9309/files/mod_fish_gry_1.jpg"
+        },
+        {
+          "name": "Pod Mod",
+          "image_url": "https://cdn.shopify.com/s/files/1/0003/1902/9309/files/pod_mod_lt_blu_3.jpg"
+        },
+        {
+          "name": "Chancho",
+          "image_url": "https://cdn.shopify.com/s/files/1/0003/1902/9309/files/chancho_blu_33405f18-f0ea-4569-8548-b02ec850a94c.jpg"
+        },
+        {
+          "name": "M23",
+          "image_url": "https://cdn.shopify.com/s/files/1/0003/1902/9309/files/m23_tan_1_fc639db8-a655-4fd4-9cc3-8f43cfed6be3.jpg"
+        },
+        {
+          "name": "Mod Fun V+",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/Torq-TQBCD0802-Fun-V-Plus-8-2-Surfboard-Electric-Blue-Deck.jpg"
+        },
+        {
+          "name": "Multiplier",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/521584008_18338670943167429_7679345042211833283_n.jpg"
+        }
+      ]
+    },
+    {
+      "slug": "softech-surfboards",
+      "name": "Softech",
+      "models": [
+        {
+          "name": "Mason Ho Coaster",
+          "image_url": "https://cdn.shopify.com/s/files/1/0003/1902/9309/files/mason_ho_gry_0bf68d70-b4d5-40da-a051-0e1117f31595.jpg"
+        },
+        {
+          "name": "Roller 2.0",
+          "image_url": "https://cdn.shopify.com/s/files/1/0003/1902/9309/files/softech_roller_grn_055bbcbe-41fa-420d-82a5-c6bb9c735cc2.jpg"
+        }
+      ]
+    },
+    {
+      "slug": "nsp-surfboards",
+      "name": "NSP Surfboards",
+      "models": [
+        {
+          "name": "Fun Elements",
+          "image_url": "https://cdn.shopify.com/s/files/1/0003/1902/9309/files/fnel_1.jpg"
+        },
+        {
+          "name": "Fish Elements",
+          "image_url": "https://cdn.shopify.com/s/files/1/0003/1902/9309/files/nsp_fish_1.jpg"
+        },
+        {
+          "name": "Elements Long",
+          "image_url": "https://cdn.shopify.com/s/files/1/0515/4993/products/NSP-05-Elements-Longboard-Deck.jpg"
+        },
+        {
+          "name": "Funboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/2489/2950/files/P2SOFT-01.png"
+        },
+        {
+          "name": "Butter Knife",
+          "image_url": "https://cdn.shopify.com/s/files/1/2489/2950/files/06541d43-1d0f-4460-8fdc-42b04c9e364a1600x1600_Butter_Knife_8_0_Mint_HDT_3in1.jpg"
+        },
+        {
+          "name": "Overdrive",
+          "image_url": "https://cdn.shopify.com/s/files/1/2489/2950/files/b5fa7b8c-5972-4c14-9692-af082f6d22311600x1600_Overdrive_9_1_White_-_HDT_-_Deck_e6041f4d-d75d-4ce6-adce-2918a0977dac.jpg"
+        },
+        {
+          "name": "Unicorn",
+          "image_url": "https://cdn.shopify.com/s/files/1/2489/2950/files/f5b1305b-c59c-43dd-8103-34470d4ab11b1600x1600UnicornWhite9_1x223_8-HDT-3in1.png"
+        },
+        {
+          "name": "Kingfish Protech 2",
+          "image_url": "https://cdn.shopify.com/s/files/1/2489/2950/files/3eb100f0-4b74-43b8-8399-33de4f9f4bae1600x1600KingfishBluePowder6_0x201_2-Protech2-3in1.png"
+        }
+      ]
+    },
+    {
+      "slug": "lib-tech-surfboards",
+      "name": "Lib Tech Surfboards",
+      "models": [
+        {
+          "name": "Lost Pisces FC",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/Lib-Tech-26SU01060-Lost-Pisces-FC-6-0-Surfboard-Deck.jpg"
+        },
+        {
+          "name": "Lost Party Platter",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/Lib-Tech-26SU002510-Lost-Party-Platter-5-10-Surfboard-Deck.jpg"
+        },
+        {
+          "name": "Lost Hydra",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/629374607_18365252914167429_9162434034027913153_n.png"
+        },
+        {
+          "name": "Lost Big Rig Driver",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/Lib-Tech-26SU00766-Lost-Big-Rig-Driver-Surfboard-Clear-6-6-Deck.jpg"
+        },
+        {
+          "name": "Lost Super Smooth Operator",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/Lib-Tech-26SU019606-Lost-Super-Smooth-Operator-Surfboard-Clear-6-6-Deck.jpg"
+        },
+        {
+          "name": "Air E Ola",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/587693183_18357754519167429_4646815041723173771_n.jpg"
+        },
+        {
+          "name": "Lost RNF",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/587009470_18355140382167429_9150477564376338238_n.jpg"
+        }
+      ]
+    },
+    {
+      "slug": "cj-nelson-designs",
+      "name": "CJ Nelson Designs",
+      "models": [
+        {
+          "name": "Parallax Plus",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/CJ-Nelson-Designs-CJPLXPR909VOLAN-Parallax-Plus-9-9-Surfboard-Volan-Deck.jpg"
+        },
+        {
+          "name": "Oracle",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/CJ-Nelson-Designs-Oracle-Thunderbolt-Silver-Volan-Deck.jpg"
+        },
+        {
+          "name": "Slasher Low Pro",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/CJ-Nelson-Designs-Slasher-Low-Pro-Thunderbolt-Black-Surfboard-Tan-Brushed-Carbon-Deck.jpg"
+        },
+        {
+          "name": "Outlier X",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/CJ-Nelson-Designs-Outlier-X-Thunderbolt-Red-Army-Deck.jpg"
+        },
+        {
+          "name": "Outlier 2 + 1",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/CJ-Nelson-Designs-Outlier-Thunderbolt-Red-Surfboard-Volan-Deck.jpg"
+        },
+        {
+          "name": "Milo",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/CJ-Nelson-Designs-Milo-Thunderbolt-Red-Surfboard-Deep-Blue-Deck.jpg"
+        },
+        {
+          "name": "Chameleon",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/CJ-Nelson-Designs-Chameleon-Thunderbolt-Red-Surfboard-Volan-Deck.jpg"
+        },
+        {
+          "name": "Sprout 2.0",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/CJ-Nelson-Designs-Sprout-2-0-Thunderbolt-Silver-Surfboard-Dark-Gold-Deck.jpg"
+        }
+      ]
+    },
+    {
+      "slug": "machado-surfboards",
+      "name": "Machado Surfboards",
+      "models": [
+        {
+          "name": "Seaside Limited Edition",
+          "image_url": "https://cdn.shopify.com/s/files/1/0003/1902/9309/files/539886_1.jpg"
+        },
+        {
+          "name": "Machadocado",
+          "image_url": "https://cdn.shopify.com/s/files/1/0399/4923/8317/files/MachadoCado_Helium0000_a9bd73f5-9907-4e04-bf4f-16829d737909.png"
+        },
+        {
+          "name": "Seaside & Beyond",
+          "image_url": "https://cdn.shopify.com/s/files/1/0399/4923/8317/files/SAB_Volcanic0000.png"
+        }
+      ]
+    },
+    {
+      "slug": "takayama-surfboards",
+      "name": "Takayama Surfboards",
+      "models": [
+        {
+          "name": "Scorpion II",
+          "image_url": "https://cdn.shopify.com/s/files/1/0003/1902/9309/files/scorpion_1.jpg"
+        },
+        {
+          "name": "Beach Break",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/2023_TAKAYAMA_BEACHBREAK_0900_BOTH.jpg"
+        },
+        {
+          "name": "Egg",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/2023_TAKAYAMA_EGG_0702_BOTH.jpg"
+        },
+        {
+          "name": "Humu Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/2023_takayama_humufish_both.jpg"
+        },
+        {
+          "name": "Prince Kuhio",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/2023_TAKAYAMA_PRINCEKUHIO_BOTH.jpg"
+        },
+        {
+          "name": "Noah Comp",
+          "image_url": "https://cdn.shopify.com/s/files/1/0584/0299/6258/files/2023_takayama_noahcomp_both_29abdeec-8d09-4423-b221-3e8f08b4077d.jpg"
+        }
+      ]
+    },
+    {
+      "slug": "emery-surfboards",
+      "name": "Emery Surfboards",
+      "models": [
+        {
+          "name": "Retro Bay Single Mid",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Retro-Bay-Single-Fin_MID_Rust.png"
+        },
+        {
+          "name": "Retro Bay Twin Mid",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Retro-Bay-Twin-Mid_Honey.png"
+        },
+        {
+          "name": "Haz Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Harry-Twin_01.png"
+        },
+        {
+          "name": "Haz Shorter",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Harry-Shorter_01.png"
+        },
+        {
+          "name": "Retro Bay Mal",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Mal-Peaches_CL.png"
+        },
+        {
+          "name": "Raven",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Raven_da9e01fc-62c2-4dc5-8f7d-b616982505f2.png"
+        },
+        {
+          "name": "Wedge Tail",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Wedge-Tail_9499de0d-1234-483c-80db-2cde9ebe1087.png"
+        },
+        {
+          "name": "Press Play",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Press-Play.png"
+        },
+        {
+          "name": "Black Angel",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Black-Angel_993dda6c-0185-4ea5-a304-a0954f9ea46a.png"
+        },
+        {
+          "name": "The Dime",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_The-Dime.png"
+        }
+      ]
+    },
+    {
+      "slug": "chemistry-surfboards",
+      "name": "Chemistry Surfboards",
+      "models": [
+        {
+          "name": "D3",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/d/3/d3-tb.png"
+        },
+        {
+          "name": "Beaker Comp",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/b/e/beaker-comp-both.png"
+        },
+        {
+          "name": "Beaker",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/b/e/beaker-tb.png"
+        },
+        {
+          "name": "Robotwo",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/r/o/robo-2-tb_1_.png"
+        },
+        {
+          "name": "Nucleus",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/n/e/neucleus-web-both-082122.jpg"
+        },
+        {
+          "name": "Alchemist Remix",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/r/e/remix3up_1.png"
+        },
+        {
+          "name": "Boombastik",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/b/o/boombastik-tb.png"
+        },
+        {
+          "name": "Honey Dip",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/h/o/honey-dip-1_1_.png"
+        },
+        {
+          "name": "Liquid Sword",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/l/i/liquid-sword-tb.png"
+        },
+        {
+          "name": "Marzo Mix",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/m/a/marzos-mix-web-both-082122.jpg"
+        },
+        {
+          "name": "Flash Point",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/f/l/flashpoint-web-both-080122.jpg"
+        },
+        {
+          "name": "R2",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/r/2/r2-both.png"
+        },
+        {
+          "name": "Chem ZenAgain",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/c/h/chem-zenagain-tb.png"
+        },
+        {
+          "name": "Disk 2",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/d/i/disk-2-tb_1_.png"
+        },
+        {
+          "name": "Disk",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/d/i/disk3up.png"
+        },
+        {
+          "name": "Chem Zen",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/c/h/chem-zen-tb.png"
+        },
+        {
+          "name": "Solution",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/s/o/solution-tb.png"
+        },
+        {
+          "name": "Compression",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/b/o/board_model_images_compression_2.png"
+        }
+      ]
+    },
+    {
+      "slug": "simon-anderson-surfboards",
+      "name": "Simon Anderson Surfboards",
+      "models": [
+        {
+          "name": "Alley",
+          "image_url": "https://simonandersonsurfboards.com/wp-content/uploads/2026/07/alley.jpg"
+        },
+        {
+          "name": "Early Bird",
+          "image_url": "https://simonandersonsurfboards.com/wp-content/uploads/2026/07/early-bird-2.jpg-1-2.jpg"
+        },
+        {
+          "name": "Mollusc",
+          "image_url": "https://simonandersonsurfboards.com/wp-content/uploads/2026/07/mollusc-shop.jpg.webp"
+        },
+        {
+          "name": "Mollusc Robo",
+          "image_url": "https://simonandersonsurfboards.com/wp-content/uploads/2026/07/mollusc-robo-shop.jpg"
+        },
+        {
+          "name": "Face Dancer Step Up",
+          "image_url": "https://simonandersonsurfboards.com/wp-content/uploads/2026/07/face-dancer-step-up-shop.jpg-1.webp"
+        },
+        {
+          "name": "NXFC",
+          "image_url": "https://simonandersonsurfboards.com/wp-content/uploads/2026/07/shop-surfboards-615x300-nxfc2-2.jpg"
+        },
+        {
+          "name": "5 Spark",
+          "image_url": "https://simonandersonsurfboards.com/wp-content/uploads/2026/07/shop-surfboards-615x300-5spark.jpg.webp"
+        },
+        {
+          "name": "Varmit",
+          "image_url": "https://simonandersonsurfboards.com/wp-content/uploads/2026/07/shop-surfboards-615x300-varmit.jpg.webp"
+        }
+      ]
+    }
+  ]
+}
