@@ -1,0 +1,203 @@
+{
+  "purpose": "Add missing surfboard models scraped from brand Shopify catalogs (Pyzel, Christenson, JS, DHD, Channel Islands, Hayden Shapes)",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "pyzel-surfboards",
+      "name": "Pyzel Surfboards",
+      "models": [
+        {
+          "name": "Next Ghost",
+          "image_url": "https://cdn.shopify.com/s/files/1/0856/4126/5442/files/IMG_3635.jpg"
+        },
+        {
+          "name": "Score Lord",
+          "image_url": "https://cdn.shopify.com/s/files/1/0856/4126/5442/files/138502933269a2_86966b74-2a38-46e0-9df9-ae738875fe5e.jpg"
+        }
+      ]
+    },
+    {
+      "slug": "christenson-surfboards",
+      "name": "Chris Christenson",
+      "models": [
+        {
+          "name": "Cafe Racer 1.0",
+          "image_url": "https://cdn.shopify.com/s/files/1/0770/9596/0623/files/IMG_9166_984ee066-97ef-4e67-bd93-c0b7ab308ece.webp"
+        },
+        {
+          "name": "Cafe Racer 2.0",
+          "image_url": "https://cdn.shopify.com/s/files/1/0770/9596/0623/files/IMG_0632.webp"
+        },
+        {
+          "name": "Carrera",
+          "image_url": "https://cdn.shopify.com/s/files/1/0770/9596/0623/files/IMG_0344.jpg"
+        },
+        {
+          "name": "Crotalus",
+          "image_url": "https://cdn.shopify.com/s/files/1/0770/9596/0623/files/IMG_0061_09fcf93e-2b26-4acd-b73f-9f1beb485123.webp"
+        },
+        {
+          "name": "Easy Wind",
+          "image_url": "https://cdn.shopify.com/s/files/1/0770/9596/0623/files/IMG_0575.webp"
+        },
+        {
+          "name": "Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0770/9596/0623/files/IMG_0124_344e05e2-6505-4e7f-bbda-417ab1a483c3.jpg"
+        },
+        {
+          "name": "Lane Splitter",
+          "image_url": "https://cdn.shopify.com/s/files/1/0770/9596/0623/files/IMG_0049_4ec0857d-e02e-4cd3-91a6-4c65a356a691.webp"
+        },
+        {
+          "name": "Lane Splitter Swallow",
+          "image_url": "https://cdn.shopify.com/s/files/1/0770/9596/0623/files/IMG_0049_4ec0857d-e02e-4cd3-91a6-4c65a356a691.webp"
+        },
+        {
+          "name": "Mitch Abshere Model",
+          "image_url": "https://cdn.shopify.com/s/files/1/0770/9596/0623/files/IMG_5732.webp"
+        },
+        {
+          "name": "Nautilus",
+          "image_url": "https://cdn.shopify.com/s/files/1/0770/9596/0623/files/IMG_0707.webp"
+        },
+        {
+          "name": "OP1",
+          "image_url": "https://cdn.shopify.com/s/files/1/0770/9596/0623/files/IMG_0492.webp"
+        },
+        {
+          "name": "OP2",
+          "image_url": "https://cdn.shopify.com/s/files/1/0770/9596/0623/files/IMG_5672.webp"
+        },
+        {
+          "name": "Osprey",
+          "image_url": "https://cdn.shopify.com/s/files/1/0770/9596/0623/files/IMG_0703.webp"
+        },
+        {
+          "name": "Outlaw",
+          "image_url": "https://cdn.shopify.com/s/files/1/0770/9596/0623/files/IMG_9291.webp"
+        },
+        {
+          "name": "Scarlet Begonia",
+          "image_url": "https://cdn.shopify.com/s/files/1/0770/9596/0623/files/IMG_9282.webp"
+        },
+        {
+          "name": "Sportsman",
+          "image_url": "https://cdn.shopify.com/s/files/1/0770/9596/0623/files/IMG_9279_334660f9-e52b-4cf9-9a5f-ec7919819557.webp"
+        },
+        {
+          "name": "Submariner 2.0",
+          "image_url": "https://cdn.shopify.com/s/files/1/0770/9596/0623/files/IMG_4113.webp"
+        },
+        {
+          "name": "Ultra Tracker",
+          "image_url": "https://cdn.shopify.com/s/files/1/0770/9596/0623/files/IMG_0681.jpg"
+        }
+      ]
+    },
+    {
+      "slug": "js-surfboards",
+      "name": "JS Surfboards",
+      "models": [
+        {
+          "name": "Air 17 X",
+          "image_url": "https://cdn.shopify.com/s/files/1/0607/3945/3141/files/air-17-X-full-js-industries-surfboards.jpg"
+        },
+        {
+          "name": "Baron Flyer",
+          "image_url": "https://cdn.shopify.com/s/files/1/0607/3945/3141/files/baron-flyer-hyfi3-jsindustries-surfboards.jpg"
+        },
+        {
+          "name": "Black Baron 2.1",
+          "image_url": "https://cdn.shopify.com/s/files/1/0607/3945/3141/files/black-baron-21-hyfi3-jsindustries-surfboards.jpg"
+        },
+        {
+          "name": "Black Eagle 2",
+          "image_url": "https://cdn.shopify.com/s/files/1/0607/3945/3141/files/black-eagle-2-jsindustries.jpg"
+        },
+        {
+          "name": "Bullseye",
+          "image_url": "https://cdn.shopify.com/s/files/1/0607/3945/3141/files/bullseye-full-jsindustries-surfboards.jpg"
+        },
+        {
+          "name": "Forget Me Not II",
+          "image_url": "https://cdn.shopify.com/s/files/1/0607/3945/3141/files/fmn-2-full-jsindustries-surfboards.jpg"
+        },
+        {
+          "name": "Forget Me Not II Step Up",
+          "image_url": "https://cdn.shopify.com/s/files/1/0607/3945/3141/files/fmn-2-stepup-full-jsindustries-surfboards.jpg"
+        },
+        {
+          "name": "Monsta 10",
+          "image_url": "https://cdn.shopify.com/s/files/1/0607/3945/3141/files/monsta-10-youth-spray-pu-js-industries-surfboards.jpg"
+        },
+        {
+          "name": "Monsta 2020",
+          "image_url": "https://cdn.shopify.com/s/files/1/0607/3945/3141/products/monsta-2020-youth-pe-green-full-js-industries-surfboards.jpg"
+        },
+        {
+          "name": "Nitro",
+          "image_url": "https://cdn.shopify.com/s/files/1/0607/3945/3141/files/NITRO-full-jsindustries-surfboards.jpg"
+        },
+        {
+          "name": "Red Baron",
+          "image_url": "https://cdn.shopify.com/s/files/1/0607/3945/3141/files/red-baron-full-jsindustries-surfboards.jpg"
+        },
+        {
+          "name": "Step Off",
+          "image_url": "https://cdn.shopify.com/s/files/1/0607/3945/3141/products/step-off-all-js-industries.jpg"
+        },
+        {
+          "name": "The Eagle",
+          "image_url": "https://cdn.shopify.com/s/files/1/0607/3945/3141/products/the-eagle-foil-all-js-surfboards.jpg"
+        },
+        {
+          "name": "Xero Fusion Swallow",
+          "image_url": "https://cdn.shopify.com/s/files/1/0607/3945/3141/files/xero-fusion-swallow-pu-js-industries-surfboards-26.jpg"
+        }
+      ]
+    },
+    {
+      "slug": "channel-islands-surfboards",
+      "name": "Channel Islands Surfboards",
+      "models": [
+        {
+          "name": "Chancho",
+          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/chancho-deck-shape-3d-mock-up-white.png"
+        },
+        {
+          "name": "Classic Soft Top",
+          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/files/softdeck.jpg"
+        },
+        {
+          "name": "Motor Boat Too",
+          "image_url": "https://cdn.shopify.com/s/files/1/1442/7982/products/motor-boat-too-deck-300.jpg"
+        }
+      ]
+    },
+    {
+      "slug": "hayden-shapes",
+      "name": "Hayden Shapes",
+      "models": [
+        {
+          "name": "Distressed Chrome",
+          "image_url": "https://cdn.shopify.com/s/files/1/0406/8205/products/IMG_2613_20_1.jpg"
+        },
+        {
+          "name": "Golden Gun",
+          "image_url": "https://cdn.shopify.com/s/files/1/0406/8205/files/STUDIO-TEXT-LOGO-SQUARE-BLACK-1000_cdee1594-cae0-4219-bfe3-21a688d2f05f.jpg"
+        },
+        {
+          "name": "Raven",
+          "image_url": "https://cdn.shopify.com/s/files/1/0406/8205/files/STUDIO-TEXT-LOGO-SQUARE-BLACK-1000_40842881-90a2-46ab-b22c-d9bcdbb36dcb.jpg"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "pyzel-surfboards": 2,
+    "christenson-surfboards": 18,
+    "js-surfboards": 14,
+    "channel-islands-surfboards": 3,
+    "hayden-shapes": 3
+  }
+}
