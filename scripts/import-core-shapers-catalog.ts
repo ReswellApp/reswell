@@ -315,11 +315,23 @@ async function main(): Promise<void> {
       ? resolve(args[backfillArgIdx + 1])
       : DEFAULT_BACKFILL
 
-  const url =
-    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || process.env.SUPABASE_URL?.trim()
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
-  if (!url || !key) {
-    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL) or SUPABASE_SERVICE_ROLE_KEY")
+  const urlCandidate =
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ||
+    process.env.Next_Public_Supabase_Url?.trim() ||
+    process.env.SUPABASE_URL?.trim() ||
+    ""
+  // Prefer known production host if a non-URL placeholder was stored under the public key name.
+  const url = /^https?:\/\//i.test(urlCandidate)
+    ? urlCandidate
+    : "https://lqwsewptsirsglasnwmn.supabase.co"
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
+    process.env.Supabase_Service_Role_Key?.trim() ||
+    ""
+  if (!key) {
+    throw new Error(
+      "Missing SUPABASE_SERVICE_ROLE_KEY (or Supabase_Service_Role_Key)",
+    )
   }
 
   const brands = loadSeedFile(seedPath)
