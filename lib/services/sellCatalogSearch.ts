@@ -5,6 +5,7 @@ import { listFinCatalogBrandIds } from "@/lib/db/fin-catalog-search"
 import {
   getSellCatalogBrandRowsByIds,
   getSellCatalogModelRowsByIds,
+  listSellCatalogModelRowsByBrandIds,
   searchSellCatalogBrandRows,
   searchSellCatalogModelRows,
   searchSellCatalogModelRowsBroad,
@@ -173,8 +174,9 @@ function emptyResult(
 /**
  * Non-fin brand/model recall via the sell catalog Elasticsearch index
  * (synonyms, edge-prefix, fuzzy, multi-token brand+model matching).
- * Returns `null` when ES is unavailable or has no hits — callers fall
- * back to the Supabase `ilike` path.
+ * Returns `null` when ES is unavailable or has no hits — callers still
+ * merge Supabase `ilike` rows so newly-imported models are not hidden
+ * behind a stale index.
  */
 async function loadNonFinRowsFromElasticsearch(
   supabase: SupabaseClient,
@@ -193,21 +195,38 @@ async function loadNonFinRowsFromElasticsearch(
     const brandIds = hits.filter((h) => h.kind === "brand").map((h) => h.id)
     const modelIds = hits.filter((h) => h.kind === "model").map((h) => h.id)
 
-    const [brands, models] = await Promise.all([
+    const [brands, models, modelsForBrands] = await Promise.all([
       getSellCatalogBrandRowsByIds(supabase, brandIds, nonFinCategories),
       getSellCatalogModelRowsByIds(supabase, modelIds, nonFinCategories),
+      // Mirror fin catalog: when ES resolves a brand (incl. synonyms), pull
+      // that brand's models from Postgres so recent imports appear before the
+      // hourly `reswell_sell_catalog` reindex catches up.
+      brandIds.length > 0
+        ? listSellCatalogModelRowsByBrandIds(supabase, brandIds, nonFinCategories, 40)
+        : Promise.resolve([]),
     ])
 
     const byKey = new Map<string, SellCatalogSearchResultRow>()
-    for (const row of [...brands, ...models]) {
+    for (const row of [...brands, ...models, ...modelsForBrands]) {
       byKey.set(`${row.kind}-${row.id}`, row)
     }
 
-    // Preserve ES relevance order after hydration.
+    // Preserve ES relevance order after hydration, then append Postgres-only models.
     const rows: SellCatalogSearchResultRow[] = []
+    const seen = new Set<string>()
     for (const hit of hits) {
-      const row = byKey.get(`${hit.kind}-${hit.id}`)
-      if (row) rows.push(row)
+      const key = `${hit.kind}-${hit.id}`
+      const row = byKey.get(key)
+      if (row) {
+        rows.push(row)
+        seen.add(key)
+      }
+    }
+    for (const row of modelsForBrands) {
+      const key = `${row.kind}-${row.id}`
+      if (seen.has(key)) continue
+      rows.push(row)
+      seen.add(key)
     }
 
     return rows.length > 0 ? rows : null
@@ -239,7 +258,12 @@ async function loadExactCandidates(
 
   if (nonFinEsRows) {
     rows.push(...nonFinEsRows)
-  } else if (nonFinCategories.length > 0) {
+  }
+
+  // Always merge Supabase recall for non-fin categories. ES alone skips models
+  // that exist in `brand_models` but are not yet in `reswell_sell_catalog`
+  // (common after catalog import scripts that insert without live ES sync).
+  if (nonFinCategories.length > 0) {
     const [brands, models] = await Promise.all([
       searchSellCatalogBrandRows(supabase, q, nonFinCategories),
       searchSellCatalogModelRows(supabase, q, nonFinCategories),
@@ -269,7 +293,9 @@ async function loadSimilarCandidates(
 
   if (nonFinEsRows) {
     rows.push(...nonFinEsRows)
-  } else if (nonFinCategories.length > 0) {
+  }
+
+  if (nonFinCategories.length > 0) {
     const [brands, broadModels] = await Promise.all([
       searchSellCatalogBrandRows(supabase, q, nonFinCategories),
       searchSellCatalogModelRowsBroad(supabase, q, nonFinCategories),

@@ -135,18 +135,32 @@ export async function listSellCatalogModelRowsByBrandId(
   categories: readonly SellCatalogSearchCategory[],
   limit = 120,
 ): Promise<SellCatalogSearchModelRow[]> {
-  if (categories.length === 0) return []
+  return listSellCatalogModelRowsByBrandIds(supabase, [brandId], categories, limit)
+}
+
+/**
+ * Catalog models for one or more brands (sell categories only). Used to
+ * backfill models after Elasticsearch brand hits so newly-imported rows that
+ * are not yet in `reswell_sell_catalog` still appear in `/sell` search.
+ */
+export async function listSellCatalogModelRowsByBrandIds(
+  supabase: SupabaseClient,
+  brandIds: readonly string[],
+  categories: readonly SellCatalogSearchCategory[],
+  limit = 120,
+): Promise<SellCatalogSearchModelRow[]> {
+  if (brandIds.length === 0 || categories.length === 0) return []
 
   const { data, error } = await supabase
     .from("brand_models")
     .select(MODEL_SELECT)
-    .eq("brand_id", brandId)
+    .in("brand_id", [...brandIds])
     .in("product_category_slug", [...categories])
     .order("name", { ascending: true })
     .limit(limit)
 
   if (error) {
-    console.error("listSellCatalogModelRowsByBrandId:", error.message)
+    console.error("listSellCatalogModelRowsByBrandIds:", error.message)
     return []
   }
 
