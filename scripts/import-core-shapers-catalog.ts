@@ -15,6 +15,12 @@
  *   npx tsx scripts/import-core-shapers-catalog.ts \
  *     --seed scripts/data/surfboard-catalog-seed/core-shapers-models-supplement.json \
  *     --backfill /dev/null
+ *
+ * Add 25 more popular small brands:
+ *   npx tsx scripts/scrape-core-shapers-25-more.py
+ *   npx tsx scripts/import-core-shapers-catalog.ts \
+ *     --seed scripts/data/surfboard-catalog-seed/core-shapers-25-more.json \
+ *     --backfill /dev/null
  */
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
