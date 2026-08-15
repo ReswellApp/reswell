@@ -7,6 +7,14 @@
  *   npx tsx scripts/import-core-shapers-catalog.ts [--dry-run] [--skip-images]
  *     [--seed scripts/data/surfboard-catalog-seed/core-shapers-50.json]
  *     [--backfill scripts/data/surfboard-catalog-seed/existing-empty-shapers-backfill.json]
+ *
+ * Image-only updates for existing model rows:
+ *   npx tsx scripts/backfill-core-shaper-model-images.ts
+ *
+ * Add real named models (with photos) onto existing core shaper brands:
+ *   npx tsx scripts/import-core-shapers-catalog.ts \
+ *     --seed scripts/data/surfboard-catalog-seed/core-shapers-models-supplement.json \
+ *     --backfill /dev/null
  */
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
