@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { BrandProductCategorySlug } from "@/lib/brand-product-categories"
 import type { SurfboardSellCategoryKey } from "@/lib/surfboard-sell-categories"
+import { revalidateSellCatalogSearch } from "@/lib/cache/revalidate-sell-catalog-search"
 import {
   deleteBrandModel,
   insertBrandModel,
@@ -60,6 +61,7 @@ export async function createBrandModelService(
   }
   void syncFinCatalogModelToIndex(supabase, result.row.id)
   void syncSellCatalogModelToIndex(supabase, result.row.id)
+  revalidateSellCatalogSearch()
   return { ok: true, row: result.row }
 }
 
@@ -93,6 +95,7 @@ export async function updateBrandModelService(
   }
   void syncFinCatalogModelToIndex(supabase, id)
   void syncSellCatalogModelToIndex(supabase, id)
+  revalidateSellCatalogSearch()
   return { ok: true }
 }
 
@@ -107,5 +110,6 @@ export async function deleteBrandModelService(
   }
   void deleteFinCatalogDocument("model", id)
   void deleteSellCatalogDocument("model", id)
+  revalidateSellCatalogSearch()
   return { ok: true }
 }

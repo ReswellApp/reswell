@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
+import { revalidateSellCatalogSearch } from "@/lib/cache/revalidate-sell-catalog-search"
 import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
 import { syncFinCatalogBrandToIndex } from "@/lib/elasticsearch/fin-catalog-index"
 import { syncSellCatalogBrandToIndex } from "@/lib/elasticsearch/sell-catalog-index"
@@ -122,6 +123,7 @@ export async function POST(request: NextRequest, ctx: Ctx) {
     void syncBrandToIndex(supabase, inserted.id)
     void syncFinCatalogBrandToIndex(supabase, inserted.id)
     void syncSellCatalogBrandToIndex(supabase, inserted.id)
+    revalidateSellCatalogSearch()
   }
   return NextResponse.json({ slug, ok: true })
 }

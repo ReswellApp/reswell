@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { revalidateHomeTrendingBrandsCatalog } from "@/lib/cache/revalidate-home-public-catalog"
+import { revalidateSellCatalogSearch } from "@/lib/cache/revalidate-sell-catalog-search"
 import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
 import { syncFinCatalogBrandToIndex } from "@/lib/elasticsearch/fin-catalog-index"
 import { syncSellCatalogBrandToIndex } from "@/lib/elasticsearch/sell-catalog-index"
@@ -163,5 +164,6 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ slug: str
   void syncBrandToIndex(supabase, data.id)
   void syncFinCatalogBrandToIndex(supabase, data.id)
   void syncSellCatalogBrandToIndex(supabase, data.id)
+  revalidateSellCatalogSearch()
   return NextResponse.json({ slug: data.slug })
 }

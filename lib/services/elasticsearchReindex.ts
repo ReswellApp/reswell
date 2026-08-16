@@ -4,6 +4,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { revalidateSellCatalogSearch } from "@/lib/cache/revalidate-sell-catalog-search"
 import {
   brandRowToSearchDoc,
   ensureBrandsIndex,
@@ -198,6 +199,7 @@ export async function reindexElasticsearchFromSupabase(
     sellCatalogBrandsIndexed = sellCatalog.brandsIndexed
     sellCatalogModelsIndexed = sellCatalog.modelsIndexed
     sellCatalogErrors = sellCatalog.errors
+    revalidateSellCatalogSearch()
   } catch (err) {
     console.error("[elasticsearchReindex] sell catalog reindex failed:", err)
     sellCatalogErrors++
