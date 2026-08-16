@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import Image from "next/image"
 import Link from "next/link"
 import { toast } from "sonner"
 import { Loader2, Upload, X, Zap } from "lucide-react"
@@ -24,6 +23,8 @@ import {
 import { LocationPicker } from "@/components/location-picker"
 import { SellFormSection } from "@/components/features/sell/sell-form-section"
 import { SellListingPhotoEmptyDropzone } from "@/components/features/sell/sell-listing-photo-empty-dropzone"
+import { SellSimplePhotoTile } from "@/components/features/sell/sell-simple-photo-tile"
+import { useSimpleListingPhotoRotate } from "@/components/features/sell/hooks/use-simple-listing-photo-rotate"
 import { SellShippingCostModeRadios } from "@/components/features/sell/sell-shipping-cost-mode-radios"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import {
@@ -49,6 +50,7 @@ import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { useSellAccessoryDraftRecovery } from "@/components/features/sell/hooks/use-sell-accessory-draft-recovery"
 import type { SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
 import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
+import { listingPhotoPreviewFromPrepared } from "@/lib/sell-flow/simple-listing-photo-rotate"
 import type { OwnedListingForEditRow } from "@/lib/db/listingEdit"
 import {
   assertListingOriginalSize,
@@ -112,6 +114,7 @@ type PhotoSlot = {
   thumbnailUrl?: string
   phase: PhotoPhase
   progress: number
+  userRotate180?: boolean
 }
 
 function shippingPriceToFormValue(v: unknown): string {
@@ -488,8 +491,11 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
       if (!slot.file) return
       try {
         const decodable = await ensureBrowserDecodableImageFile(slot.file)
-        const prepared = await prepareListingImagePairFromFile(decodable)
-        updateSlot(slot.clientId, { phase: "uploading", progress: 5 })
+        const prepared = await prepareListingImagePairFromFile(decodable, {
+          rotate180: Boolean(slot.userRotate180),
+        })
+        const nextPreviewUrl = listingPhotoPreviewFromPrepared(slot.previewUrl, prepared.thumb)
+        updateSlot(slot.clientId, { phase: "uploading", progress: 5, previewUrl: nextPreviewUrl })
 
         const supabase = supabaseRef.current
         const session = await resolveClientSessionForMutation(supabase)
@@ -588,6 +594,12 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
       return next
     })
   }, [])
+
+  const rotatePhoto180 = useSimpleListingPhotoRotate({
+    photosRef,
+    setPhotos,
+    uploadSlot,
+  })
 
   const uploadingCount = photos.filter((p) => p.phase !== "done" && p.phase !== "error").length
   const readyPhotos = photos.filter((p) => p.phase === "done" && p.url)
@@ -1003,7 +1015,8 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
                         <h3 className="text-sm font-semibold text-foreground">Photos & video</h3>
                         <p className="text-xs text-muted-foreground sm:text-sm">
                           Add clear photos. The first image is your main photo — tap the star on any
-                          other photo to make it the cover. Optional: add one short video.
+                          other photo to make it the cover. Tap rotate if a photo is upside down.
+                          Optional: add one short video.
                         </p>
                       </div>
                       <div className="shrink-0 pt-0.5" aria-live="polite">
@@ -1040,58 +1053,14 @@ export default function SellLeashesFlow({ editListingId = null }: { editListingI
                     ) : (
                     <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
                       {photos.map((photo, index) => (
-                        <div
+                        <SellSimplePhotoTile
                           key={photo.clientId}
-                          className="relative aspect-square overflow-hidden rounded-lg border border-transparent bg-muted"
-                        >
-                          <Image
-                            src={photo.previewUrl}
-                            alt={`Photo ${index + 1}`}
-                            fill
-                            sizes="120px"
-                            className="object-cover object-center"
-                            unoptimized
-                          />
-                          {photo.phase !== "done" ? (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-background/70 text-xs text-muted-foreground">
-                              {photo.phase === "error" ? (
-                                <span className="text-destructive">Failed</span>
-                              ) : (
-                                <>
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                  {photo.progress > 0 ? `${photo.progress}%` : null}
-                                </>
-                              )}
-                            </div>
-                          ) : null}
-                          {index === 0 ? (
-                            <span className="absolute left-1.5 top-1.5 rounded bg-foreground px-1.5 py-0.5 text-[10px] font-medium text-background">
-                              Main
-                            </span>
-                          ) : null}
-                          <div className="absolute right-1 top-1 flex gap-1">
-                            {index !== 0 && photo.phase === "done" ? (
-                              <button
-                                type="button"
-                                onClick={() => makePrimary(photo.clientId)}
-                                className="rounded-full bg-background/90 p-1 text-foreground shadow-sm hover:bg-background"
-                                title="Make main photo"
-                                aria-label="Make main photo"
-                              >
-                                ★
-                              </button>
-                            ) : null}
-                            <button
-                              type="button"
-                              onClick={() => removePhoto(photo.clientId)}
-                              className="rounded-full bg-background/90 p-1 text-foreground shadow-sm hover:bg-background"
-                              title="Remove photo"
-                              aria-label="Remove photo"
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </div>
+                          photo={photo}
+                          index={index}
+                          onRotate180={rotatePhoto180}
+                          onMakePrimary={makePrimary}
+                          onRemove={removePhoto}
+                        />
                       ))}
                       {video ? (
                         <SellListingVideoFilledTile
