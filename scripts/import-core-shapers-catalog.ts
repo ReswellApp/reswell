@@ -27,12 +27,26 @@
  *   npx tsx scripts/import-core-shapers-catalog.ts \
  *     --seed scripts/data/surfboard-catalog-seed/major-brands-gap-fill.json \
  *     --backfill /dev/null
+ *
+ * Add small/indie fin brands:
+ *   python3 scripts/scrape-small-fin-brands.py
+ *   npx tsx scripts/import-core-shapers-catalog.ts \
+ *     --seed scripts/data/surfboard-catalog-seed/small-fin-brands.json \
+ *     --backfill /dev/null \
+ *     --category fins
  */
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
+import {
+  isBrandProductCategorySlug,
+  type BrandProductCategorySlug,
+} from "@/lib/brand-product-categories"
 import { insertBrandModel, updateBrandModel } from "@/lib/db/brand-models"
-import { syncBrandProductCategories } from "@/lib/db/brand-product-categories"
+import {
+  listBrandProductCategoriesByBrandIds,
+  syncBrandProductCategories,
+} from "@/lib/db/brand-product-categories"
 import { isValidBrandSlug, slugifyBrandName } from "@/lib/brands/slug"
 import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
 import { syncSellCatalogBrandToIndex } from "@/lib/elasticsearch/sell-catalog-index"
@@ -99,26 +113,52 @@ function loadEnvFile(relativePath: string): void {
   }
 }
 
-function loadSeedFile(path: string): SeedBrand[] {
+function loadSeedFile(path: string): {
+  brands: SeedBrand[]
+  productCategorySlug: BrandProductCategorySlug | null
+} {
   const raw = JSON.parse(readFileSync(path, "utf8")) as SeedFile | SeedBrand[]
   const brands = Array.isArray(raw) ? raw : raw.brands
+  const fromFile =
+    !Array.isArray(raw) && typeof raw.product_category_slug === "string"
+      ? raw.product_category_slug.trim()
+      : null
+  const productCategorySlug =
+    fromFile && isBrandProductCategorySlug(fromFile) ? fromFile : null
   if (!Array.isArray(brands)) {
     throw new Error(`Invalid seed file (expected brands array): ${path}`)
   }
-  return brands
-    .map((b) => ({
-      ...b,
-      slug: (b.slug || slugifyBrandName(b.name)).trim(),
-      name: b.name.trim(),
-      models: (b.models ?? [])
-        .map((m) => ({
-          name: m.name.trim(),
-          image_url: m.image_url ?? null,
-          description: m.description ?? null,
-        }))
-        .filter((m) => m.name.length > 0),
-    }))
-    .filter((b) => b.name.length > 0 && isValidBrandSlug(b.slug))
+  return {
+    productCategorySlug,
+    brands: brands
+      .map((b) => ({
+        ...b,
+        slug: (b.slug || slugifyBrandName(b.name)).trim(),
+        name: b.name.trim(),
+        models: (b.models ?? [])
+          .map((m) => ({
+            name: m.name.trim(),
+            image_url: m.image_url ?? null,
+            description: m.description ?? null,
+          }))
+          .filter((m) => m.name.length > 0),
+      }))
+      .filter((b) => b.name.length > 0 && isValidBrandSlug(b.slug)),
+  }
+}
+
+async function mergeBrandProductCategories(
+  supabase: SupabaseClient,
+  brandId: string,
+  nextCategories: readonly BrandProductCategorySlug[],
+): Promise<void> {
+  const existingMap = await listBrandProductCategoriesByBrandIds(supabase, [brandId])
+  const existing = existingMap.get(brandId) ?? []
+  const merged = [...new Set([...existing, ...nextCategories])]
+  const result = await syncBrandProductCategories(supabase, brandId, merged)
+  if (!result.ok) {
+    throw new Error(result.error)
+  }
 }
 
 function loadBackfillFile(path: string): Map<string, SeedModel[]> {
@@ -148,6 +188,7 @@ async function ensureBrand(
   supabase: SupabaseClient,
   brand: SeedBrand,
   dryRun: boolean,
+  categories: readonly BrandProductCategorySlug[],
 ): Promise<{ id: string; created: boolean }> {
   const { data: existing, error } = await supabase
     .from("brands")
@@ -161,20 +202,26 @@ async function ensureBrand(
 
   if (existing?.id) {
     if (!dryRun) {
+      const { data: current } = await supabase
+        .from("brands")
+        .select("short_description, website_url, founder_name, lead_shaper_name, location_label")
+        .eq("id", existing.id)
+        .maybeSingle()
+
       await supabase
         .from("brands")
         .update({
           name: brand.name,
-          short_description: brand.short_description ?? null,
-          website_url: brand.website_url ?? null,
-          founder_name: brand.founder_name ?? null,
-          lead_shaper_name: brand.lead_shaper_name ?? null,
-          location_label: brand.location_label ?? null,
+          short_description: current?.short_description || brand.short_description || null,
+          website_url: current?.website_url || brand.website_url || null,
+          founder_name: current?.founder_name || brand.founder_name || null,
+          lead_shaper_name: current?.lead_shaper_name || brand.lead_shaper_name || null,
+          location_label: current?.location_label || brand.location_label || null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", existing.id)
 
-      await syncBrandProductCategories(supabase, existing.id, ["surfboards"])
+      await mergeBrandProductCategories(supabase, existing.id, categories)
     }
     return { id: existing.id, created: false }
   }
@@ -208,7 +255,7 @@ async function ensureBrand(
     )
   }
 
-  const categorySync = await syncBrandProductCategories(supabase, data.id, ["surfboards"])
+  const categorySync = await syncBrandProductCategories(supabase, data.id, categories)
   if (!categorySync.ok) {
     await supabase.from("brands").delete().eq("id", data.id)
     throw new Error(`Brand category sync failed (${brand.slug}): ${categorySync.error}`)
@@ -226,6 +273,7 @@ async function upsertModelsForBrand(opts: {
   dryRun: boolean
   skipImages: boolean
   imageCache: ReturnType<typeof createBrandCatalogImageMirrorCache>
+  productCategorySlug: BrandProductCategorySlug
 }): Promise<{ created: number; updated: number; skipped: number; errors: string[] }> {
   let created = 0
   let updated = 0
@@ -255,7 +303,7 @@ async function upsertModelsForBrand(opts: {
       name: model.name,
       description: model.description ?? null,
       image_url: imageUrl,
-      product_category_slug: "surfboards",
+      product_category_slug: opts.productCategorySlug,
     })
 
     if (insertResult.ok) {
@@ -328,12 +376,15 @@ async function main(): Promise<void> {
   const skipImages = args.includes("--skip-images")
   const seedArgIdx = args.indexOf("--seed")
   const backfillArgIdx = args.indexOf("--backfill")
+  const categoryArgIdx = args.indexOf("--category")
   const seedPath =
     seedArgIdx >= 0 && args[seedArgIdx + 1] ? resolve(args[seedArgIdx + 1]) : DEFAULT_SEED
   const backfillPath =
     backfillArgIdx >= 0 && args[backfillArgIdx + 1]
       ? resolve(args[backfillArgIdx + 1])
       : DEFAULT_BACKFILL
+  const categoryArg =
+    categoryArgIdx >= 0 && args[categoryArgIdx + 1] ? args[categoryArgIdx + 1].trim() : null
 
   const urlCandidate =
     process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ||
@@ -341,9 +392,16 @@ async function main(): Promise<void> {
     process.env.SUPABASE_URL?.trim() ||
     ""
   // Prefer known production host if a non-URL placeholder was stored under the public key name.
-  const url = /^https?:\/\//i.test(urlCandidate)
-    ? urlCandidate
-    : "https://lqwsewptsirsglasnwmn.supabase.co"
+  // app.reswell.app is a frontend host — catalog imports need the Supabase API host.
+  const url = (() => {
+    if (
+      /^https?:\/\//i.test(urlCandidate) &&
+      !/app\.reswell\.app/i.test(urlCandidate)
+    ) {
+      return urlCandidate
+    }
+    return "https://lqwsewptsirsglasnwmn.supabase.co"
+  })()
   const key =
     process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
     process.env.Supabase_Service_Role_Key?.trim() ||
@@ -354,8 +412,13 @@ async function main(): Promise<void> {
     )
   }
 
-  const brands = loadSeedFile(seedPath)
+  const seed = loadSeedFile(seedPath)
+  const brands = seed.brands
   const backfill = loadBackfillFile(backfillPath)
+  const productCategorySlug: BrandProductCategorySlug =
+    (categoryArg && isBrandProductCategorySlug(categoryArg) ? categoryArg : null) ||
+    seed.productCategorySlug ||
+    "surfboards"
   const supabase = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
   })
@@ -368,6 +431,7 @@ async function main(): Promise<void> {
         skipImages,
         seedPath,
         backfillPath,
+        productCategorySlug,
         brandCount: brands.length,
         modelCount: brands.reduce((n, b) => n + b.models.length, 0),
         backfillBrandCount: backfill.size,
@@ -386,7 +450,7 @@ async function main(): Promise<void> {
 
   for (const brand of brands) {
     try {
-      const ensured = await ensureBrand(supabase, brand, dryRun)
+      const ensured = await ensureBrand(supabase, brand, dryRun, [productCategorySlug])
       if (ensured.created) brandsCreated++
       else brandsExisting++
 
@@ -399,6 +463,7 @@ async function main(): Promise<void> {
         dryRun,
         skipImages,
         imageCache,
+        productCategorySlug,
       })
       modelsCreated += result.created
       modelsUpdated += result.updated
@@ -440,7 +505,7 @@ async function main(): Promise<void> {
     }
 
     if (!dryRun) {
-      await syncBrandProductCategories(supabase, existing.id, ["surfboards"])
+      await mergeBrandProductCategories(supabase, existing.id, [productCategorySlug])
     }
 
     const result = await upsertModelsForBrand({
@@ -452,6 +517,7 @@ async function main(): Promise<void> {
       dryRun,
       skipImages,
       imageCache,
+      productCategorySlug,
     })
     modelsCreated += result.created
     modelsUpdated += result.updated
