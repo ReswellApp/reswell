@@ -21,6 +21,12 @@
  *   npx tsx scripts/import-core-shapers-catalog.ts \
  *     --seed scripts/data/surfboard-catalog-seed/core-shapers-25-more.json \
  *     --backfill /dev/null
+ *
+ * Fill major brand model/image gaps:
+ *   python3 scripts/scrape-major-brand-catalog-gaps.py
+ *   npx tsx scripts/import-core-shapers-catalog.ts \
+ *     --seed scripts/data/surfboard-catalog-seed/major-brands-gap-fill.json \
+ *     --backfill /dev/null
  */
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
