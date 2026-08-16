@@ -43,9 +43,11 @@ type BrandLogo = {
 
 const brandLogos: BrandLogo[] = [
   { slug: 'bing-surfboards', filename: 'bing-logo.png', storagePath: 'logos/bing-surfboards.png' },
+  { slug: 'channel-islands-surfboards', filename: 'channel-islands-logo.png', storagePath: 'logos/channel-islands-surfboards.png' },
   { slug: 'chilli-surfboards', filename: 'chilli-logo.png', storagePath: 'logos/chilli-surfboards.png' },
   { slug: 'dhd-surfboards', filename: 'dhd-logo.png', storagePath: 'logos/dhd-surfboards.png' },
   { slug: 'hayden-shapes', filename: 'haydenshapes-logo.png', storagePath: 'logos/hayden-shapes.png' },
+  { slug: 'js-surfboards', filename: 'js-logo.jpg', storagePath: 'logos/js-surfboards.jpg' },
   { slug: 'lost-surfboards', filename: 'lost-logo.jpg', storagePath: 'logos/lost-surfboards.jpg' },
   { slug: 'lovelace-machine', filename: 'lovelace-logo.png', storagePath: 'logos/lovelace-machine.png' },
   { slug: 'pyzel-surfboards', filename: 'pyzel-logo.png', storagePath: 'logos/pyzel-surfboards.png' },

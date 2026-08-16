@@ -2,12 +2,13 @@
 
 This folder contains brand logos downloaded from official brand websites for use in the Reswell brands directory.
 
-## Logos Included
+## Logos Included (10 brands)
 
 - **Bing Surfboards** - bing-logo.png (18KB)
 - **Chilli Surfboards** - chilli-logo.png (2.3KB)
-- **DHD Surfboards** - dhd-logo.png (9.7KB)
-- **Hayden Shapes** - haydenshapes-logo.png (7KB)
+- **DHD Surfboards** - dhd-logo.png (9.7KB) - 2025 modern logo
+- **Hayden Shapes** - haydenshapes-logo.png (7KB) - 2026 official logo
+- **JS Industries** - js-logo.jpg (19KB) - Current logo from database
 - **Lost Surfboards** - lost-logo.jpg (63KB)
 - **Lovelace Machine** - lovelace-logo.png (217KB)
 - **Pyzel Surfboards** - pyzel-logo.png (36KB)
@@ -16,32 +17,24 @@ This folder contains brand logos downloaded from official brand websites for use
 
 ## Logos Still Using External URLs
 
-The following brands still reference external CDN URLs (region-locked or require specific headers):
+The following brands still reference external CDN URLs:
 
-- **Album Surf** - Using Shopify CDN
-- **Channel Islands Surfboards** - Region selection required
-- **JS Industries** - Region selection required
+- **Album Surf** - Original URL is 404, needs manual update
+- **Channel Islands Surfboards** - Original URL points to 5MB+ surfboard product image, not logo
 
-## Uploading to Supabase
+## Uploaded to Supabase
 
-To upload these logos to Supabase storage and update the database:
-
-1. Ensure you have `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` set in `.env.local`
-2. Run: `npx tsx scripts/upload-brand-logos.ts`
-
-The script will:
-- Upload logos to the `brand-assets` storage bucket under `logos/`
-- Update each brand's `logo_url` in the database to point to the Supabase storage URL
-- Handle existing files by removing and re-uploading
+✅ All 10 logos above have been successfully uploaded to Supabase `brand-assets` storage bucket and the database has been updated.
 
 ## Sources
 
-All logos were downloaded from the brands' official websites between August 2026:
+All logos were downloaded from the brands' official websites in August 2026:
 
 - Bing: https://bingsurf.com
 - Chilli: https://www.chillisurfboards.com
 - DHD: https://dhdsurf.com (2025 modern logo)
 - Hayden Shapes: https://www.haydenshapes.com (2026 logo)
+- JS: Current database URL (bull-run product image used as temporary logo)
 - Lost: https://lostsurfboards.net
 - Lovelace: https://lovemachinesurfboards.com
 - Pyzel: https://pyzelsurfboards.com
