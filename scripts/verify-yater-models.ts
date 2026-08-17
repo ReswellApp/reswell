@@ -49,6 +49,11 @@ async function main() {
   models?.forEach((model, i) => {
     console.log(`${i + 1}. ${model.name}`)
     console.log(`   ${model.description}`)
+    if (model.image_url) {
+      console.log(`   🖼️  Image: ${model.image_url}`)
+    } else {
+      console.log(`   ❌ No image`)
+    }
     console.log('')
   })
 }
