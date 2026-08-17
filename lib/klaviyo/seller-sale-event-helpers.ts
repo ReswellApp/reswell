@@ -138,7 +138,7 @@ export function sellerShippingLabelWorkflowInstructions(
       "Reswell is preparing your shipping label for this order.",
       "You'll receive another email when the label is ready to download and print from your sale page.",
       "Package the item securely, attach the label, and drop off with the carrier.",
-      "After drop-off, confirm shipment on your sale page so tracking updates for the buyer.",
+      "After drop-off, tracking updates automatically for the buyer. Earnings release 24 hours after delivery.",
     ].join(" ")
   }
 

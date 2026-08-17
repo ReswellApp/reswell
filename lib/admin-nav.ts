@@ -35,6 +35,7 @@ export type AdminNavIconKey =
   | 'brain'
   | 'megaphone'
   | 'mapPin'
+  | 'ticket'
 
 export interface AdminNavItemConfig {
   href: string
@@ -160,6 +161,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     label: 'Admin tools',
     items: [
       { href: '/admin/pnl', label: 'P&L Tracker', icon: 'dollarSign' },
+      { href: '/admin/reswelltickets', label: 'Reswell tickets', icon: 'ticket' },
       { href: '/admin/tools', label: 'Admin tools', icon: 'wrench' },
       { href: '/admin/site-assets', label: 'Site assets', icon: 'layers' },
       { href: '/admin/settings', label: 'Settings', icon: 'settings' },

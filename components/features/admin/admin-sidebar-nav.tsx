@@ -35,6 +35,7 @@ import {
   Brain,
   Megaphone,
   MapPin,
+  Ticket,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -109,6 +110,8 @@ function AdminNavItemIcon({ icon }: { icon: AdminNavIconKey }) {
       return <Megaphone className={NAV_ICON_CLASS} aria-hidden />
     case 'mapPin':
       return <MapPin className={NAV_ICON_CLASS} aria-hidden />
+    case 'ticket':
+      return <Ticket className={NAV_ICON_CLASS} aria-hidden />
     case 'bellRing':
       return <BellRing className={NAV_ICON_CLASS} aria-hidden />
     case 'code':
