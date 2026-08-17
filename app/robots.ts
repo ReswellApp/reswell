@@ -43,12 +43,12 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
       ...GOOGLE_MERCHANT_USER_AGENTS.map((userAgent) => ({
         userAgent,
         /** Explicit `/sellers` allow — `Disallow: /sell` otherwise matches `/sellers` by prefix. */
-        allow: ["/", "/sellers", "/sellers/", ...settings.extraAllow],
+        allow: ["/", "/sellers", "/sellers/", "/api/public/", ...settings.extraAllow],
         disallow: [...BLOCKED_APP_PATHS, ...settings.extraDisallow],
       })),
       {
         userAgent: "*",
-        allow: ["/sellers", "/sellers/", ...settings.extraAllow],
+        allow: ["/sellers", "/sellers/", "/api/public/", ...settings.extraAllow],
         disallow: [
           /** Listing photo proxy — not indexable; other crawlers stay off `/media/`. Google uses rules above. */
           "/media/",

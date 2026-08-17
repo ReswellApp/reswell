@@ -24,6 +24,7 @@ export const siteFooterNavLinks: {
     { name: "Shipping Guide", href: "/shipping" },
     { name: "Shipping label estimator", href: "/shipping-estimator" },
     { name: "Contact Us", href: "/contact" },
+    { name: "Public API", href: "/public-api" },
   ],
   legal: [
     { name: "Privacy Policy", href: "/privacy" },

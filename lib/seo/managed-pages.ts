@@ -287,6 +287,12 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Explore surf sellers on Reswell — support fellow surfers and find shops near you or who ship to your area.",
     path: "/sellers",
   }),
+  page("public-api", "marketplace", "Public research API", {
+    title: "Public research API — Reswell",
+    description:
+      "JSON API for Reswell listings, used-board pricing comps, and catalog search. Built for LLMs and research bots.",
+    path: "/public-api",
+  }),
   // ---- Content & community ----
   page("blog", "content", "Blog index", {
     title: "Surfboard Guides & Marketplace Tips | Reswell",

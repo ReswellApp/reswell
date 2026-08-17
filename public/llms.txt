@@ -1,0 +1,93 @@
+# Reswell
+
+> Reswell is a peer-to-peer marketplace for physical used surfboards and surf gear (boards, fins, wetsuits, and more).
+> Use the public research API below instead of scraping HTML — especially for pricing and search.
+
+Website: https://www.reswell.app
+Human docs / try-it: https://www.reswell.app/public-api
+Sitemap: https://www.reswell.app/sitemap.xml
+
+## Preferred research flow
+
+1. Search models (or listings)
+2. Fetch pricing by brand + model and/or a specific listing by id or slug
+3. Link humans to the canonical HTML URLs returned in `urls`
+
+## Public research API
+
+No API key required. CORS open (`Access-Control-Allow-Origin: *`).
+Response shape: `{ "success": true, "data": { ... } }`
+
+### Rate limits
+
+| Tier | Limit | Auth |
+|------|-------|------|
+| Free | 10 requests / minute (per IP) | None |
+| Registered | 30 requests / minute (per account) | `Authorization: Bearer <auth_token>` from a free Reswell account |
+
+Over limit → HTTP `429` + `Retry-After`, with JSON like:
+
+```json
+{
+  "error": "Too many requests",
+  "message": "Free public API limit is 10 requests per minute. Create a free Reswell account and send Authorization: Bearer <auth_token> for 30 requests per minute. Docs: https://www.reswell.app/public-api",
+  "tier": "free",
+  "limit_per_minute": 10,
+  "retry_after": 60,
+  "upgrade": {
+    "limit_per_minute": 30,
+    "how": "Send Authorization: Bearer <auth_token> from a registered Reswell account",
+    "docs": "https://www.reswell.app/public-api"
+  }
+}
+```
+
+### Search (find a model or listing)
+- `GET https://www.reswell.app/api/public/search?q={query}&type=models&limit=5`
+- `type`: `models` (default, preferred) or `listings`
+- `limit`: 1–10 (default 5). No deep pagination — page 1 only.
+
+### Market pricing (brand / model comps / sold prices)
+- `GET https://www.reswell.app/api/public/pricing?brand={brand}&model={model}`
+- `brand` is required (slug or name). `model` is optional (name or slug).
+- Prefer this over crawling `/search` or `/boards` HTML for comps.
+- Returns asking + sold min/max/avg/median USD (last 365 days), recent sold comps, and canonical HTML links.
+
+### Listing detail (buy a specific copy)
+- `GET https://www.reswell.app/api/public/listings/{id}`
+- `{id}` may be a listing slug or UUID.
+- HTML equivalent: https://www.reswell.app/l/{id}
+
+### Catalog
+- `GET https://www.reswell.app/api/public` — machine-readable endpoint index
+
+## Examples
+
+```
+GET https://www.reswell.app/api/public/search?q=channel+islands+twin+pin&type=models&limit=5
+GET https://www.reswell.app/api/public/pricing?brand=channel-islands&model=twin-pin
+GET https://www.reswell.app/api/public/listings/{listingId}
+
+# Registered tier (30/min)
+GET https://www.reswell.app/api/public/pricing?brand=channel-islands&model=twin-pin
+Authorization: Bearer <auth_token>
+```
+
+## HTML surfaces (optional)
+
+- Search: https://www.reswell.app/search?q={query}
+- Boards browse: https://www.reswell.app/boards
+- Brand pages: https://www.reswell.app/brands/{brandSlug}
+- Recently sold: https://www.reswell.app/sold
+- Listings: https://www.reswell.app/l/{slug}
+
+## Please do not
+
+- Hammer HTML `/search` or paginate search results for research
+- Scrape `/boards` or `/sold` HTML when the pricing API is available
+- Bypass rate limits or ignore `Retry-After`
+- Request unbounded result sets (use `limit` ≤ 10)
+
+## Contact
+
+https://www.reswell.app/help
