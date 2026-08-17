@@ -1,6 +1,7 @@
 import { boardsBrowseBoardTypeLabel } from "@/lib/marketplace-slug-metadata"
 import { formatCondition, capitalizeWords } from "@/lib/listing-labels"
 import { finSetupLabel, finSystemLabel, finSizeLabel } from "@/lib/fin-listing-config"
+import { apparelKindLabel, apparelSizeLabel } from "@/lib/apparel-listing-config"
 import { wetsuitSizeLabel } from "@/lib/wetsuit-listing-config"
 import { boardFulfillmentDetailLabels } from "@/lib/listing-fulfillment"
 import { buildBoardCatalogDimensionLabelsFromListingRow } from "@/lib/utils/listing-board-catalog-snapshot"
@@ -24,6 +25,8 @@ export type GoogleMerchantListingDescriptionInput = {
   fin_system?: string | null
   fin_size?: string | null
   wetsuit_size?: string | null
+  apparel_kind?: string | null
+  apparel_size?: string | null
   magazine_year?: number | null
   city?: string | null
   state?: string | null
@@ -73,6 +76,7 @@ function productCategoryLabel(section: string): string {
   if (section === "fins") return "surfboard fins"
   if (section === "magazines") return "surf magazine"
   if (section === "wetsuits") return "wetsuit"
+  if (section === "apparel") return "surf apparel"
   return "surfboard"
 }
 
@@ -127,6 +131,15 @@ function wetsuitSpecSentences(listing: GoogleMerchantListingDescriptionInput): s
   return sentences
 }
 
+function apparelSpecSentences(listing: GoogleMerchantListingDescriptionInput): string[] {
+  const sentences: string[] = []
+  const kind = apparelKindLabel(listing.apparel_kind)
+  const size = apparelSizeLabel(listing.apparel_size)
+  if (kind) sentences.push(`Apparel type: ${kind}.`)
+  if (size) sentences.push(`Size: ${size}.`)
+  return sentences
+}
+
 function fulfillmentSentence(listing: GoogleMerchantListingDescriptionInput): string | null {
   const labels = boardFulfillmentDetailLabels(
     listing.local_pickup,
@@ -169,6 +182,7 @@ function marketplaceTail(listing: GoogleMerchantListingDescriptionInput): string
 function visualDetailTail(listing: GoogleMerchantListingDescriptionInput): string {
   if (listing.section === "magazines") return MAGAZINE_VISUAL_DETAIL_TAIL
   if (listing.section === "wetsuits") return WETSUITS_VISUAL_DETAIL_TAIL
+  if (listing.section === "apparel") return APPAREL_VISUAL_DETAIL_TAIL
   return VISUAL_DETAIL_TAIL
 }
 
@@ -191,6 +205,9 @@ const MAGAZINE_VISUAL_DETAIL_TAIL =
 const WETSUITS_VISUAL_DETAIL_TAIL =
   "Review the listing photos for thickness, seams, zippers, and any wear described by the seller."
 
+const APPAREL_VISUAL_DETAIL_TAIL =
+  "Review the listing photos for fit, fabric, graphics, and any wear described by the seller."
+
 /**
  * Builds a Merchant Center `description` that meets Google's length guidance by
  * combining the seller's notes with structured product attributes.
@@ -210,6 +227,8 @@ export function buildGoogleMerchantProductDescription(
     blocks.push(...magazineSpecSentences(listing))
   } else if (listing.section === "wetsuits") {
     blocks.push(...wetsuitSpecSentences(listing))
+  } else if (listing.section === "apparel") {
+    blocks.push(...apparelSpecSentences(listing))
   } else {
     blocks.push(...surfboardSpecSentences(listing))
   }
