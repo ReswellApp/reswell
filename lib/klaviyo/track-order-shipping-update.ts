@@ -19,6 +19,10 @@
  * `sms_milestone` is empty (email can still send on every actionable scan).
  * Suggested SMS: `Reswell: {{ event.status_label }} — {{ event.Title }}. {{ event.order_url }}`
  * Requires profile phone + SMS transactional consent in Klaviyo.
+ *
+ * Bootstrap (surface `sms_milestone` in filters):  
+ * `POST /api/integrations/klaviyo/bootstrap-order-shipping-update-metric`  
+ * (Bearer `CRON_SECRET` when set).
  */
 
 import { carrierTrackingIndicatesDelivered, resolveCarrierStatusHeadline } from "@/lib/shipping/carrier-status-display"
