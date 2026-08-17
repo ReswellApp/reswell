@@ -6,6 +6,7 @@ import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
 import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
 import { notifyBoardSavedSearchMatchesForListing } from "@/lib/services/notifyBoardSavedSearchMatches"
+import { notifyFollowersNewListingKlaviyo } from "@/lib/services/notifyFollowersNewListingKlaviyo"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { revalidateAfterListingSiteModeration } from "@/lib/services/listingSiteModerationRevalidation"
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
@@ -97,6 +98,12 @@ export async function applyPublishedListingSideEffects(
 
   try {
     await notifyBoardSavedSearchMatchesForListing(listingId)
+  } catch {
+    // best-effort
+  }
+
+  try {
+    await notifyFollowersNewListingKlaviyo(listingId)
   } catch {
     // best-effort
   }

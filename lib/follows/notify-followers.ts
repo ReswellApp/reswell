@@ -16,21 +16,29 @@ export async function notifyFollowersOfNewListing(
     sellerId: string
     listingId: string
     listingTitle: string
+    /** When set, only these followers get an in-app row (e.g. after pref filter). */
+    followerIds?: string[]
   }
 ) {
-  const { sellerId, listingId, listingTitle } = params
+  const { sellerId, listingId, listingTitle, followerIds: followerIdsOverride } = params
 
-  // Get all follower IDs
-  const { data: follows, error: followErr } = await supabase
-    .from('seller_follows')
-    .select('follower_id')
-    .eq('seller_id', sellerId)
+  let followerIds: string[]
+  if (followerIdsOverride) {
+    followerIds = followerIdsOverride.filter((id) => id && id !== sellerId)
+  } else {
+    const { data: follows, error: followErr } = await supabase
+      .from('seller_follows')
+      .select('follower_id')
+      .eq('seller_id', sellerId)
 
-  if (followErr || !follows || follows.length === 0) return
+    if (followErr || !follows || follows.length === 0) return
+    followerIds = follows.map((f) => f.follower_id)
+  }
 
-  // Fan out notifications in a single batch insert
-  const notifications = follows.map((f) => ({
-    user_id: f.follower_id,
+  if (followerIds.length === 0) return
+
+  const notifications = followerIds.map((followerId) => ({
+    user_id: followerId,
     type: 'new_listing_from_followed' as const,
     listing_id: listingId,
     actor_id: sellerId,

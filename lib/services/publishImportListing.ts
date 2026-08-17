@@ -12,6 +12,7 @@ import { listingDimensionsColumnTrim } from "@/lib/listing-dimensions-storage"
 import { trackKlaviyoListingCreated } from "@/lib/klaviyo/track-listing-created"
 import { trackFirstTimeSellerForListingIfNeeded } from "@/lib/services/klaviyoFirstTimeSeller"
 import { notifyBoardSavedSearchMatchesForListing } from "@/lib/services/notifyBoardSavedSearchMatches"
+import { notifyFollowersNewListingKlaviyo } from "@/lib/services/notifyFollowersNewListingKlaviyo"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { mirrorExternalListingImagesToStorage } from "@/lib/services/importListingImages"
 import { slugify } from "@/lib/slugify"
@@ -161,6 +162,7 @@ export async function publishImportListing(opts: {
     sellerEmail: userEmail,
   })
   void notifyBoardSavedSearchMatchesForListing(listing.id)
+  void notifyFollowersNewListingKlaviyo(listing.id)
 
   revalidateBoardsBrowseCatalog()
   await revalidateSellersAfterListingChange(supabase, userId)

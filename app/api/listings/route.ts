@@ -9,6 +9,7 @@ import { slugify } from '@/lib/slugify'
 import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
 import { trackFirstTimeSellerForListingIfNeeded } from '@/lib/services/klaviyoFirstTimeSeller'
 import { notifyBoardSavedSearchMatchesForListing } from '@/lib/services/notifyBoardSavedSearchMatches'
+import { notifyFollowersNewListingKlaviyo } from '@/lib/services/notifyFollowersNewListingKlaviyo'
 import { evaluateSellerCanSell } from '@/lib/services/sellerBan'
 import { LISTING_TITLE_MAX_LENGTH } from '@/lib/sell-form-validation'
 import {
@@ -266,6 +267,7 @@ export async function POST(request: NextRequest) {
     sellerEmail: user.email ?? null,
   })
   void notifyBoardSavedSearchMatchesForListing(listing.id)
+  void notifyFollowersNewListingKlaviyo(listing.id)
 
   if (section === 'surfboards') {
     revalidateBoardsBrowseCatalog()

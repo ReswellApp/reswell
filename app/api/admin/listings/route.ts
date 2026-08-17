@@ -5,6 +5,7 @@ import { slugify } from '@/lib/slugify'
 import { trackKlaviyoListingCreated } from '@/lib/klaviyo/track-listing-created'
 import { trackFirstTimeSellerForListingIfNeeded } from '@/lib/services/klaviyoFirstTimeSeller'
 import { notifyBoardSavedSearchMatchesForListing } from '@/lib/services/notifyBoardSavedSearchMatches'
+import { notifyFollowersNewListingKlaviyo } from '@/lib/services/notifyFollowersNewListingKlaviyo'
 import {
   isListingDimensionDisplaySchemaCacheError,
   withoutListingDimensionDisplayDbFields,
@@ -351,6 +352,7 @@ export async function POST(request: NextRequest) {
     sellerEmail: null,
   })
   void notifyBoardSavedSearchMatchesForListing(listing.id)
+  void notifyFollowersNewListingKlaviyo(listing.id)
 
   return NextResponse.json({ success: true, listing_id: listing.id })
 }
