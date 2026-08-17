@@ -2,7 +2,10 @@ import { Suspense } from "react"
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { resolveDefaultSurfboardSellCreatePath } from "@/lib/services/surfboardSellEntry"
-import { isSurfboardQuickCreatePath } from "@/lib/sell-flow/surfboard-sell-paths"
+import {
+  isSurfboardCatalogHandoffFromParam,
+  isSurfboardQuickCreatePath,
+} from "@/lib/sell-flow/surfboard-sell-paths"
 import { createClient } from "@/lib/supabase/server"
 import SellFlowShell from "../sell-flow-client"
 
@@ -50,15 +53,21 @@ function firstParam(value: string | string[] | undefined): string | undefined {
 export default async function SellBoardsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string | string[]; new?: string | string[] }>
+  searchParams: Promise<{
+    edit?: string | string[]
+    new?: string | string[]
+    from?: string | string[]
+  }>
 }) {
   const qs = await searchParams
   const editId = parseEditListingId(qs.edit)
   const wantsNew = firstParam(qs.new) === "1"
+  const fromCatalog = isSurfboardCatalogHandoffFromParam(firstParam(qs.from))
 
   // Fresh create only — guests / first-time publishers start on Quick List.
   // Mode switches from Quick use `/sell/boards` without `?new=1`, so they stay here.
-  if (!editId && wantsNew) {
+  // Catalog search selections always stay on Guided (`from=catalog`).
+  if (!editId && wantsNew && !fromCatalog) {
     const supabase = await createClient()
     const {
       data: { user },

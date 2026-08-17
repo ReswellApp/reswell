@@ -2,6 +2,7 @@ import {
   brandProductCategoryLabel,
   type BrandProductCategorySlug,
 } from "@/lib/brand-product-categories"
+import { SURFBOARD_SELL_CATALOG_HANDOFF_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
 
 /**
  * Categories the `/sell` cross-category catalog search can route into.
@@ -24,14 +25,16 @@ export function isSellCatalogSearchCategory(
   return CATEGORY_SET.has(value)
 }
 
-/** Sell-flow entry URL for a catalog search selection in the given category. */
+/**
+ * Sell-flow entry URL for a catalog search selection.
+ * Surfboards always open Guided boards — never the experience-based Quick List.
+ */
 export function sellCatalogSearchCategorySellPath(
   category: SellCatalogSearchCategory,
-  opts?: { surfboardHref?: string },
 ): string {
   switch (category) {
     case "surfboards":
-      return opts?.surfboardHref ?? "/sell/boards?new=1"
+      return SURFBOARD_SELL_CATALOG_HANDOFF_HREF
     case "fins":
       return "/sell/fins?new=1"
     case "wetsuits":

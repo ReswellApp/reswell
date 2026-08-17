@@ -770,13 +770,9 @@ export function SellCatalogSearch({
     (row: SellCatalogSearchResultRow) => {
       setSellEntryPoint("catalog_handoff")
       writeSellCatalogHandoff(sellCatalogHandoffFromRow(row))
-      router.push(
-        sellCatalogSearchCategorySellPath(sellCatalogSearchRowCategory(row), {
-          surfboardHref: surfboardSellHref,
-        }),
-      )
+      router.push(sellCatalogSearchCategorySellPath(sellCatalogSearchRowCategory(row)))
     },
-    [router, surfboardSellHref],
+    [router],
   )
 
   const runSearch = React.useCallback(async (q: string) => {

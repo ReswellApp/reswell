@@ -52,6 +52,8 @@ import {
   persistBoardSellViewMode,
   type BoardSellViewMode,
 } from "@/lib/sell-flow/board-sell-view-mode"
+import { peekSellCatalogHandoff } from "@/lib/sell-flow/catalog-handoff"
+import { SURFBOARD_SELL_CATALOG_HANDOFF_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
 import { persistListingDraftSnapshot } from "@/lib/sell-flow/persist-listing-draft-snapshot"
 import { beginGuestListingPublishAuth } from "@/lib/sell-flow/guest-publish-auth"
 import type { SellListingDraftFormSnapshot } from "@/lib/sell-listing-draft-idb"
@@ -236,6 +238,14 @@ export default function QuickListClient() {
   const searchParams = useSearchParams()
   const startFresh = searchParams.get("new") === "1"
   const supabase = useMemo(() => createClient(), [])
+
+  // Catalog search selections always belong on Guided boards — bounce even if
+  // a guest / first-time seller landed here via the experience-based default.
+  useEffect(() => {
+    if (!peekSellCatalogHandoff("surfboards")) return
+    persistBoardSellViewMode("guided")
+    router.replace(SURFBOARD_SELL_CATALOG_HANDOFF_HREF)
+  }, [router])
   const openSignIn = useSignInGate()
   const listingPhotosInputId = useId()
   const formRef = useRef<HTMLFormElement | null>(null)

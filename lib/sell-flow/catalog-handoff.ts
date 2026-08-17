@@ -238,19 +238,32 @@ function parseHandoff(raw: string | null): SellCatalogHandoff | null {
   }
 }
 
-/** Read and clear the pending handoff if it targets the given category. */
-export function takeSellCatalogHandoff(
+/** Peek at a pending handoff without clearing it. */
+export function peekSellCatalogHandoff(
   category: SellCatalogSearchCategory,
 ): SellCatalogHandoff | null {
   if (typeof window === "undefined") return null
   try {
     const handoff = parseHandoff(sessionStorage.getItem(SELL_CATALOG_HANDOFF_KEY))
     if (!handoff || handoff.category !== category) return null
-    sessionStorage.removeItem(SELL_CATALOG_HANDOFF_KEY)
     return handoff
   } catch {
     return null
   }
+}
+
+/** Read and clear the pending handoff if it targets the given category. */
+export function takeSellCatalogHandoff(
+  category: SellCatalogSearchCategory,
+): SellCatalogHandoff | null {
+  const handoff = peekSellCatalogHandoff(category)
+  if (!handoff) return null
+  try {
+    sessionStorage.removeItem(SELL_CATALOG_HANDOFF_KEY)
+  } catch {
+    /* quota / private mode */
+  }
+  return handoff
 }
 
 export function sellCatalogHandoffToFinSelection(

@@ -240,7 +240,10 @@ import {
 } from "@/lib/sell-flow/session-keys"
 import { beginGuestListingPublishAuth } from "@/lib/sell-flow/guest-publish-auth"
 import { usePendingPublishResume } from "@/components/features/sell/hooks/use-pending-publish-resume"
-import { takeSellCatalogHandoff } from "@/lib/sell-flow/catalog-handoff"
+import {
+  peekSellCatalogHandoff,
+  takeSellCatalogHandoff,
+} from "@/lib/sell-flow/catalog-handoff"
 import {
   SellCatalogSelectionCard,
   type SellCatalogSelectionCardData,
@@ -873,6 +876,14 @@ function SellPageContentInner({
   /** Restore guided/advanced + step from session after mount (must not run during SSR). */
   useEffect(() => {
     if (editId) return
+    // Catalog search selections always open Guided from the first step.
+    if (peekSellCatalogHandoff("surfboards")) {
+      setFlowStep("product")
+      persistBoardSellFlowStep("product")
+      setViewModeState("guided")
+      persistBoardSellViewMode("guided")
+      return
+    }
     const storedStep = readStoredBoardSellFlowStep()
     if (storedStep) setFlowStep(storedStep)
     const storedMode = readStoredBoardSellViewMode()
@@ -944,6 +955,8 @@ function SellPageContentInner({
     catalogHandoffTakenRef.current = true
     const handoff = takeSellCatalogHandoff("surfboards")
     if (!handoff) return
+    setViewModeState("guided")
+    persistBoardSellViewMode("guided")
     if (handoff.selectionKind !== "variant") {
       setCatalogSelectionCard({
         brandId: handoff.brandId,
