@@ -25,6 +25,7 @@ import {
   sellCatalogSearchRowBrandName,
   sellCatalogSearchRowCategory,
   sellCatalogSearchRowModelName,
+  type SellCatalogSearchCategory,
   type SellCatalogSearchResult,
   type SellCatalogSearchResultRow,
 } from "@/lib/types/sell-catalog-search"
@@ -303,6 +304,24 @@ function PanelSectionHeader({ title }: { title: string }) {
   )
 }
 
+function groupProductRowsByCategory(
+  products: SellCatalogSearchResultRow[],
+): { category: SellCatalogSearchCategory; rows: SellCatalogSearchResultRow[] }[] {
+  const groups: { category: SellCatalogSearchCategory; rows: SellCatalogSearchResultRow[] }[] = []
+  const indexByCategory = new Map<SellCatalogSearchCategory, number>()
+  for (const row of products) {
+    const category = sellCatalogSearchRowCategory(row)
+    const existing = indexByCategory.get(category)
+    if (existing != null) {
+      groups[existing]?.rows.push(row)
+      continue
+    }
+    indexByCategory.set(category, groups.length)
+    groups.push({ category, rows: [row] })
+  }
+  return groups
+}
+
 function DropdownResults({
   rows,
   query,
@@ -314,6 +333,9 @@ function DropdownResults({
 }) {
   const { suggestions, products } = partitionDropdownRows(rows)
   if (suggestions.length === 0 && products.length === 0) return null
+
+  const productGroups = groupProductRowsByCategory(products)
+  const showCategoryHeadings = productGroups.length > 1
 
   return (
     <>
@@ -331,11 +353,24 @@ function DropdownResults({
       {products.length > 0 ? (
         <div>
           <PanelSectionHeader title="Catalog matches" />
-          <ul className={productGridClassName}>
-            {products.map((row) => (
-              <ProductRow key={rowKey(row)} row={row} query={query} onSelect={onSelect} />
-            ))}
-          </ul>
+          {showCategoryHeadings
+            ? productGroups.map((group) => (
+                <div key={group.category}>
+                  <PanelSectionHeader title={sellCatalogSearchCategoryLabel(group.category)} />
+                  <ul className={productGridClassName}>
+                    {group.rows.map((row) => (
+                      <ProductRow key={rowKey(row)} row={row} query={query} onSelect={onSelect} />
+                    ))}
+                  </ul>
+                </div>
+              ))
+            : (
+                <ul className={productGridClassName}>
+                  {products.map((row) => (
+                    <ProductRow key={rowKey(row)} row={row} query={query} onSelect={onSelect} />
+                  ))}
+                </ul>
+              )}
         </div>
       ) : null}
     </>
@@ -844,7 +879,7 @@ export function SellCatalogSearch({
                       onChange={setQuery}
                       listboxId="sell-catalog-search-listbox"
                       inputClassName={siteSearchInputClassName()}
-                      placeholder="Search brand or model"
+                      placeholder="Brand, model, or something close"
                       showTextSuggestions={false}
                       matchAnchorWidth
                       attachedDropdownNested

@@ -25,6 +25,7 @@ import type {
   SellCatalogSearchCategory,
   SellCatalogSearchResultRow,
 } from "@/lib/types/sell-catalog-search"
+import { parseSellCatalogSearchIntent } from "@/lib/utils/sell-catalog-search-intent"
 
 const MAX_HELPER_ROWS = 8
 
@@ -51,12 +52,17 @@ export async function runSellCatalogNlHelper(
     return emptySellCatalogNlHelperResponse("llm_unavailable")
   }
 
+  const rulesIntent = parseSellCatalogSearchIntent(q)
   const brandText = intent.brandText?.trim() || null
   const modelText = intent.modelText?.trim() || null
-  const category =
+  const llmCategory =
     intent.category && allowedCategories.includes(intent.category)
       ? intent.category
       : null
+  const rulesCategory = rulesIntent.lockedCategory ?? rulesIntent.preferredCategory
+  const category =
+    llmCategory ??
+    (rulesCategory && allowedCategories.includes(rulesCategory) ? rulesCategory : null)
 
   const lookup = [brandText, modelText].filter(Boolean).join(" ").trim()
   if (lookup.length < 2) {

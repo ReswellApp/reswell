@@ -22,12 +22,14 @@ import { LocationPicker } from "@/components/location-picker"
 import { SellFormSection } from "@/components/features/sell/sell-form-section"
 import { SellShippingCostModeRadios } from "@/components/features/sell/sell-shipping-cost-mode-radios"
 import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
-import { takeSellCatalogHandoff } from "@/lib/sell-flow/catalog-handoff"
+import {
+  takeSellCatalogHandoff,
+  sellCatalogHandoffToSelectionCard,
+} from "@/lib/sell-flow/catalog-handoff"
 import {
   SellCatalogSelectionCard,
   type SellCatalogSelectionCardData,
 } from "@/components/features/sell/sell-catalog-selection-card"
-import { sellCatalogSearchCategoryLabel } from "@/lib/types/sell-catalog-search"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellWetsuitsFacetFields } from "@/components/features/sell/sell-wetsuits-facet-fields"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
@@ -225,15 +227,7 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
     const handoff = takeSellCatalogHandoff("wetsuits")
     if (!handoff) return
     catalogHandoffAppliedRef.current = true
-    if (handoff.selectionKind !== "variant") {
-      setCatalogSelectionCard({
-        brandName: handoff.brandName,
-        modelName: handoff.selectionKind === "model" ? handoff.modelName : null,
-        categoryLabel: sellCatalogSearchCategoryLabel(handoff.category),
-        imageUrl: handoff.imageUrl,
-        imageIsLogo: handoff.imageIsLogo,
-      })
-    }
+    setCatalogSelectionCard(sellCatalogHandoffToSelectionCard(handoff))
     setForm((prev) => ({
       ...prev,
       title: prev.title.trim() ? prev.title : handoff.suggestedTitle,
@@ -921,6 +915,12 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
                 complete={sellSectionCompletion["sell-wetsuits-section-photos-title"] === true}
               >
                 <div className="space-y-8">
+                  {catalogSelectionCard && form.brand === catalogSelectionCard.brandName ? (
+                    <SellCatalogSelectionCard
+                      selection={catalogSelectionCard}
+                      onRemove={() => setCatalogSelectionCard(null)}
+                    />
+                  ) : null}
                   <SellListingPhotoGrid
                     images={images}
                     maxPhotos={WETSUIT_LISTING_MAX_PHOTOS}
@@ -981,12 +981,6 @@ export default function SellWetsuitsFlow({ editListingId = null }: { editListing
                 description="Condition and details help buyers shop with confidence."
               >
                 <div className="space-y-8">
-                  {catalogSelectionCard && form.brand === catalogSelectionCard.brandName ? (
-                    <SellCatalogSelectionCard
-                      selection={catalogSelectionCard}
-                      onRemove={() => setCatalogSelectionCard(null)}
-                    />
-                  ) : null}
                   <SellWetsuitsFacetFields
                     condition={form.condition}
                     size={form.size}

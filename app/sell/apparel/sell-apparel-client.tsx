@@ -92,12 +92,14 @@ import { cn } from "@/lib/utils"
 import { AdminBulkListingBanner } from "@/components/features/sell/admin-bulk-listing-banner"
 import { finalizePeerListingCreate } from "@/lib/utils/admin-peer-listing-create-navigation"
 import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
-import { takeSellCatalogHandoff } from "@/lib/sell-flow/catalog-handoff"
+import {
+  takeSellCatalogHandoff,
+  sellCatalogHandoffToSelectionCard,
+} from "@/lib/sell-flow/catalog-handoff"
 import {
   SellCatalogSelectionCard,
   type SellCatalogSelectionCardData,
 } from "@/components/features/sell/sell-catalog-selection-card"
-import { sellCatalogSearchCategoryLabel } from "@/lib/types/sell-catalog-search"
 import { resolveClientSessionForMutation } from "@/lib/auth/resolve-client-session-for-mutation"
 import {
   SELL_SUBMIT_INTERRUPTED_MESSAGE,
@@ -306,15 +308,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
     const handoff = takeSellCatalogHandoff("apparel")
     if (!handoff) return
     catalogHandoffAppliedRef.current = true
-    if (handoff.selectionKind !== "variant") {
-      setCatalogSelectionCard({
-        brandName: handoff.brandName,
-        modelName: handoff.selectionKind === "model" ? handoff.modelName : null,
-        categoryLabel: sellCatalogSearchCategoryLabel(handoff.category),
-        imageUrl: handoff.imageUrl,
-        imageIsLogo: handoff.imageIsLogo,
-      })
-    }
+    setCatalogSelectionCard(sellCatalogHandoffToSelectionCard(handoff))
     setForm((prev) => ({
       ...prev,
       title: prev.title.trim() ? prev.title : handoff.suggestedTitle,
@@ -1063,6 +1057,12 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
                 complete={sellSectionCompletion["sell-apparel-section-photos-title"] === true}
               >
                 <div className="space-y-8">
+                  {catalogSelectionCard && form.brand === catalogSelectionCard.brandName ? (
+                    <SellCatalogSelectionCard
+                      selection={catalogSelectionCard}
+                      onRemove={() => setCatalogSelectionCard(null)}
+                    />
+                  ) : null}
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 space-y-1">
@@ -1203,12 +1203,6 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
                 description="Category, condition, and details help buyers shop with confidence."
               >
                 <div className="space-y-8">
-                  {catalogSelectionCard && form.brand === catalogSelectionCard.brandName ? (
-                    <SellCatalogSelectionCard
-                      selection={catalogSelectionCard}
-                      onRemove={() => setCatalogSelectionCard(null)}
-                    />
-                  ) : null}
                   <SellApparelFacetFields
                     kind={form.kind}
                     condition={form.condition}

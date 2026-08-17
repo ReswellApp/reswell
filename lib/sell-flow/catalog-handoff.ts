@@ -1,10 +1,12 @@
 import type { FinCatalogSearchSelection } from "@/lib/types/fin-catalog-search"
 import {
   isSellCatalogSearchCategory,
+  sellCatalogSearchCategoryLabel,
   sellCatalogSearchRowCategory,
   type SellCatalogSearchCategory,
   type SellCatalogSearchResultRow,
 } from "@/lib/types/sell-catalog-search"
+import { finCatalogSearchRowThumbUrl } from "@/lib/utils/fin-catalog-display-image"
 
 /**
  * One-shot handoff from the `/sell` catalog search wall into a category sell
@@ -45,6 +47,10 @@ export type SellCatalogHandoff =
   | ({
       selectionKind: "variant"
       category: "fins"
+      brandSlug: string
+      /** Variant / model photo (falls back to brand logo) for the catalog selection card. */
+      imageUrl: string | null
+      imageIsLogo: boolean
     } & Extract<FinCatalogSearchSelection, { kind: "variant" }>)
 
 export function sellCatalogHandoffFromRow(row: SellCatalogSearchResultRow): SellCatalogHandoff {
@@ -83,12 +89,21 @@ export function sellCatalogHandoffFromRow(row: SellCatalogSearchResultRow): Sell
     }
   }
 
+  const variantThumb = finCatalogSearchRowThumbUrl({
+    kind: "variant",
+    imageUrl: row.imageUrl,
+    modelImageUrl: row.modelImageUrl,
+    brandLogoUrl: row.brandLogoUrl,
+  })
+  const brandLogo = row.brandLogoUrl?.trim() || null
+
   return {
     selectionKind: "variant",
     category: "fins",
     kind: "variant",
     brandId: row.brandId,
     brandName: row.brandName,
+    brandSlug: row.brandSlug,
     brandModelId: row.brandModelId,
     modelName: row.modelName,
     finSetup: row.finSetup,
@@ -96,6 +111,25 @@ export function sellCatalogHandoffFromRow(row: SellCatalogSearchResultRow): Sell
     finSize: row.finSize,
     suggestedTitle: row.suggestedTitle,
     suggestedDescription: row.modelDescription,
+    imageUrl: variantThumb,
+    imageIsLogo: Boolean(variantThumb && brandLogo && variantThumb === brandLogo),
+  }
+}
+
+/** Catalog-match card payload for the destination sell form. */
+export function sellCatalogHandoffToSelectionCard(handoff: SellCatalogHandoff): {
+  brandName: string
+  modelName: string | null
+  categoryLabel: string
+  imageUrl: string | null
+  imageIsLogo: boolean
+} {
+  return {
+    brandName: handoff.brandName,
+    modelName: handoff.selectionKind === "brand" ? null : handoff.modelName,
+    categoryLabel: sellCatalogSearchCategoryLabel(handoff.category),
+    imageUrl: handoff.imageUrl,
+    imageIsLogo: handoff.imageIsLogo,
   }
 }
 
@@ -184,6 +218,7 @@ function parseHandoff(raw: string | null): SellCatalogHandoff | null {
         kind: "variant",
         brandId: v.brandId,
         brandName: v.brandName,
+        brandSlug: v.brandSlug,
         brandModelId: v.brandModelId,
         modelName: v.modelName,
         finSetup: v.finSetup,
@@ -192,6 +227,8 @@ function parseHandoff(raw: string | null): SellCatalogHandoff | null {
         suggestedTitle: v.suggestedTitle,
         suggestedDescription:
           typeof v.suggestedDescription === "string" ? v.suggestedDescription : null,
+        imageUrl: typeof v.imageUrl === "string" && v.imageUrl ? v.imageUrl : null,
+        imageIsLogo: v.imageIsLogo === true,
       }
     }
 

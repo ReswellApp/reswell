@@ -17,6 +17,11 @@ import {
   compactSearchKey,
   rankFinCatalogSearchResults,
 } from "@/lib/utils/fin-catalog-search-rank"
+import {
+  parseSellCatalogSearchIntent,
+  resolveSellCatalogSearchCategories,
+  sellCatalogSearchCategoryRank,
+} from "@/lib/utils/sell-catalog-search-intent"
 import type { FinCatalogSearchResultRow } from "@/lib/types/fin-catalog-search"
 import {
   SELL_CATALOG_SEARCH_CATEGORIES,
@@ -137,11 +142,17 @@ function rankSellCatalogResults(
   limit: number,
   mode: "strict" | "relaxed",
 ): SellCatalogSearchResultRow[] {
-  const finCandidates = rows
+  const intent = parseSellCatalogSearchIntent(q)
+  const scoped =
+    intent.lockedCategory && rows.some((row) => row.category === intent.lockedCategory)
+      ? rows.filter((row) => row.category === intent.lockedCategory)
+      : rows
+
+  const finCandidates = scoped
     .map(sellRowToFinRankRow)
     .filter((row): row is FinCatalogSearchResultRow => row !== null)
-  const rankedFin = rankFinCatalogSearchResults(q, finCandidates, limit, mode)
-  const byKey = new Map(rows.map((row) => [`${row.kind}-${row.id}`, row] as const))
+  const rankedFin = rankFinCatalogSearchResults(q, finCandidates, limit * 3, mode)
+  const byKey = new Map(scoped.map((row) => [`${row.kind}-${row.id}`, row] as const))
 
   const out: SellCatalogSearchResultRow[] = []
   for (const finRow of rankedFin) {
@@ -149,16 +160,25 @@ function rankSellCatalogResults(
     if (sellRow) out.push(sellRow)
   }
 
-  if (out.length >= limit) return out.slice(0, limit)
+  const preferred = intent.lockedCategory ?? intent.preferredCategory
+  const hasPreferredProduct = Boolean(
+    preferred && out.some((row) => row.category === preferred && row.kind !== "brand"),
+  )
+  const narrowed =
+    preferred && hasPreferredProduct
+      ? out.filter((row) => row.kind === "brand" || row.category === preferred)
+      : out
 
-  for (const row of rows) {
-    const key = `${row.kind}-${row.id}`
-    if (out.some((existing) => `${existing.kind}-${existing.id}` === key)) continue
-    out.push(row)
-    if (out.length >= limit) break
+  if (preferred) {
+    narrowed.sort((a, b) => {
+      return (
+        sellCatalogSearchCategoryRank(a.category, intent) -
+        sellCatalogSearchCategoryRank(b.category, intent)
+      )
+    })
   }
 
-  return out.slice(0, limit)
+  return narrowed.slice(0, limit)
 }
 
 function emptyResult(
@@ -317,7 +337,11 @@ export async function searchSellCatalogForSell(
   options?: { categories?: readonly SellCatalogSearchCategory[] },
 ): Promise<SellCatalogSearchResult> {
   const q = qRaw.trim()
-  const categories = options?.categories ?? SELL_CATALOG_SEARCH_CATEGORIES
+  const intent = parseSellCatalogSearchIntent(q)
+  const categories = resolveSellCatalogSearchCategories(
+    options?.categories ?? SELL_CATALOG_SEARCH_CATEGORIES,
+    intent,
+  )
   if (q.length < 1 || categories.length === 0) {
     return emptyResult()
   }
@@ -354,8 +378,15 @@ export async function searchSellCatalogForSell(
     "relaxed",
   )
 
-  // Trust ES relevance order when the local ranker is too strict on fuzzy hits.
-  if (similarResults.length === 0 && nonFinEsRows && nonFinEsRows.length > 0) {
+  // Trust ES relevance order when the local ranker is too strict — but never
+  // dump other-category keyword hits (e.g. "Keel" surfboards for "hobie keels").
+  if (
+    similarResults.length === 0 &&
+    nonFinEsRows &&
+    nonFinEsRows.length > 0 &&
+    !intent.lockedCategory &&
+    !intent.preferredCategory
+  ) {
     similarResults = nonFinEsRows.slice(0, MAX_RANKED_RESULTS)
   }
 

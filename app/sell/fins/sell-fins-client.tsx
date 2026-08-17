@@ -94,7 +94,15 @@ import {
   SELL_SUPPRESS_IDB_RESTORE_KEY,
 } from "@/lib/sell-flow/session-keys"
 import { beginGuestListingPublishAuth } from "@/lib/sell-flow/guest-publish-auth"
-import { takeSellCatalogHandoff, sellCatalogHandoffToFinSelection } from "@/lib/sell-flow/catalog-handoff"
+import {
+  takeSellCatalogHandoff,
+  sellCatalogHandoffToFinSelection,
+  sellCatalogHandoffToSelectionCard,
+} from "@/lib/sell-flow/catalog-handoff"
+import {
+  SellCatalogSelectionCard,
+  type SellCatalogSelectionCardData,
+} from "@/components/features/sell/sell-catalog-selection-card"
 import {
   clearSellListingDraft,
   type SellListingDraftFormSnapshot,
@@ -721,11 +729,14 @@ export default function SellFinsFlow({
 
   // One-shot prefill from the /sell cross-category catalog search wall.
   const catalogHandoffTakenRef = useRef(false)
+  const [catalogSelectionCard, setCatalogSelectionCard] =
+    useState<SellCatalogSelectionCardData | null>(null)
   useEffect(() => {
     if (catalogHandoffTakenRef.current || editId) return
     catalogHandoffTakenRef.current = true
     const handoff = takeSellCatalogHandoff("fins")
     if (!handoff) return
+    setCatalogSelectionCard(sellCatalogHandoffToSelectionCard(handoff))
     const selection = sellCatalogHandoffToFinSelection(handoff)
     if (selection) applyCatalogSelection(selection)
   }, [editId, applyCatalogSelection])
@@ -1197,6 +1208,19 @@ export default function SellFinsFlow({
                 complete={sellSectionCompletion["sell-fins-section-photos-title"] === true}
               >
                 <div className="space-y-8">
+                  {catalogSelectionCard && form.brand === catalogSelectionCard.brandName ? (
+                    <SellCatalogSelectionCard
+                      selection={catalogSelectionCard}
+                      onRemove={() => {
+                        setCatalogSelectionCard(null)
+                        setForm((prev) => ({
+                          ...prev,
+                          brandId: null,
+                          brandModelId: null,
+                        }))
+                      }}
+                    />
+                  ) : null}
                   <SellListingPhotoGrid
                     images={images}
                     maxPhotos={FIN_LISTING_MAX_PHOTOS}

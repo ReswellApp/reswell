@@ -79,7 +79,7 @@ Extract the brand name, model name, and product category from the seller's searc
 
 Categories (use exactly one, or null when unclear):
 - "surfboards": longboards, shortboards, logs, fish, mid-lengths, eggs, guns
-- "fins": surfboard fins, keels, side bites, fin sets (FCS, Futures, glass-on)
+- "fins": surfboard fins, keels, side bites, fin sets (FCS, Futures, glass-on). "keel"/"keels" almost always means fins (e.g. True Ames Hobie Fish keels), not a surfboard with "Keel" in the name.
 - "wetsuits": fullsuits, springsuits, steamers, tops, thickness like 4/3 or 3/2
 - "apparel": tees, hoodies, hats, boardshorts, clothing
 

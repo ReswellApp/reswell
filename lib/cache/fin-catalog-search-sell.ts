@@ -20,7 +20,7 @@ async function loadFinCatalogSearchSell(qNormalized: string): Promise<FinCatalog
 
 const getCachedFinCatalogSearchSell = unstable_cache(
   loadFinCatalogSearchSell,
-  ["fin-catalog-search-sell"],
+  ["fin-catalog-search-sell-v2"],
   {
     revalidate: FIN_CATALOG_SEARCH_SELL_REVALIDATE_SECONDS,
     tags: [FIN_CATALOG_SEARCH_SELL_CACHE_TAG],

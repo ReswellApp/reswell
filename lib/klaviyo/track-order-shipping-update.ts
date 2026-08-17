@@ -10,6 +10,8 @@
  * `{{ event.tracking_number }}`, `{{ event.tracking_carrier }}`, `{{ event.estimated_delivery_date }}`,
  * `{{ event.is_delivered }}`, `{{ event.order_url }}`, `{{ event.sms_milestone }}`,
  * `{{ event.has_sms_phone }}`.
+ * Buyer email HTML: `KLAVIYO_ORDER_SHIPPING_UPDATE_EMAIL_HTML` in
+ * `order-shipping-update-email-liquid.ts`.
  *
  * Profile on the event is the **buyer**. When a phone is on file it is attached as `phone_number`
  * so Klaviyo SMS actions can send.

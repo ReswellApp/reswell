@@ -46,7 +46,7 @@ const getCachedSellCatalogSearch = unstable_cache(
     }
     return result
   },
-  ["sell-catalog-search-v4"],
+  ["sell-catalog-search-v5"],
   {
     revalidate: SELL_CATALOG_SEARCH_REVALIDATE_SECONDS,
     tags: [SELL_CATALOG_SEARCH_CACHE_TAG],
