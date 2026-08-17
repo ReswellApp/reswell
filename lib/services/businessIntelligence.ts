@@ -4,6 +4,7 @@ import {
   listBusinessIntelligenceReports,
   upsertBusinessIntelligenceReport,
 } from "@/lib/db/businessIntelligenceReports"
+import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
 import { buildBusinessIntelligenceSnapshot } from "@/lib/services/businessIntelligenceSnapshot"
 import {
   businessIntelligenceModelId,
@@ -30,6 +31,61 @@ import {
 import type { BusinessIntelligencePeriodKind } from "@/lib/validations/businessIntelligence"
 
 export type { IntelligenceLiveDashboard } from "@/lib/types/businessIntelligence"
+
+/** Klaviyo metric — build a flow triggered on this name for admin digests. */
+const DIGEST_METRIC = "Intelligence Report"
+
+/** Comma/space/semicolon-separated admin recipients (`ADMIN_DIGEST_EMAILS`). */
+function digestRecipients(): string[] {
+  const raw = process.env.ADMIN_DIGEST_EMAILS ?? ""
+  return Array.from(
+    new Set(
+      raw
+        .split(/[,;\s]+/)
+        .map((e) => e.trim().toLowerCase())
+        .filter((e) => e.includes("@")),
+    ),
+  )
+}
+
+async function notifyIntelligenceAdmins(
+  row: BusinessIntelligenceReportRow,
+): Promise<{ sent: number; skipped: number }> {
+  const recipients = digestRecipients()
+  if (recipients.length === 0 || !row.report) {
+    return { sent: 0, skipped: 0 }
+  }
+
+  let sent = 0
+  let skipped = 0
+  const properties = {
+    period_kind: row.period_kind,
+    period_key: row.period_key,
+    period_start: row.period_start,
+    period_end: row.period_end,
+    generated_at: row.generated_at,
+    model: row.model,
+    executive_summary: row.report.executiveSummary,
+    period_recap: row.report.periodRecap,
+    recommendations: row.report.recommendations.slice(0, 8),
+    risks: row.report.risks.slice(0, 6),
+    opportunities: row.report.opportunities.slice(0, 6),
+    watch_next_period: row.report.watchNextPeriod.slice(0, 6),
+    dashboard_url: "/admin/intelligence",
+  }
+
+  for (const email of recipients) {
+    const res = await sendKlaviyoServerEvent({
+      metricName: DIGEST_METRIC,
+      properties,
+      profile: { email },
+      uniqueId: `intelligence-report:${row.period_kind}:${row.period_key}:${email}`,
+    })
+    if (res.ok) sent += 1
+    else skipped += 1
+  }
+  return { sent, skipped }
+}
 
 export async function loadIntelligenceDashboard(): Promise<IntelligenceLiveDashboard> {
   const db = createServiceRoleClient()
@@ -182,10 +238,12 @@ export async function runScheduledIntelligenceReports(nowMs = Date.now()): Promi
   generated: { kind: BusinessIntelligencePeriodKind; periodKey: string }[]
   skipped: { kind: BusinessIntelligencePeriodKind; periodKey: string; reason: string }[]
   failed: { kind: BusinessIntelligencePeriodKind; periodKey: string; error: string }[]
+  notify: { sent: number; skipped: number }
 }> {
   const generated: { kind: BusinessIntelligencePeriodKind; periodKey: string }[] = []
   const skipped: { kind: BusinessIntelligencePeriodKind; periodKey: string; reason: string }[] = []
   const failed: { kind: BusinessIntelligencePeriodKind; periodKey: string; error: string }[] = []
+  const notify = { sent: 0, skipped: 0 }
 
   const todayDate = businessDayKeyFromMs(nowMs)
   const weekday = new Intl.DateTimeFormat("en-US", {
@@ -215,8 +273,11 @@ export async function runScheduledIntelligenceReports(nowMs = Date.now()): Promi
       skipped.push({ ...job, reason: "already complete" })
     } else {
       generated.push(job)
+      const notifyResult = await notifyIntelligenceAdmins(result.data)
+      notify.sent += notifyResult.sent
+      notify.skipped += notifyResult.skipped
     }
   }
 
-  return { generated, skipped, failed }
+  return { generated, skipped, failed, notify }
 }

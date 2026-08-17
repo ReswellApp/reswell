@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
+import { resolveProfilePhoneE164 } from "@/lib/db/profilePersonalInfo"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { trackKlaviyoOrderShipped } from "@/lib/klaviyo/track-order-shipped"
 import { normalizeTrackingNumberForCarrier } from "@/lib/shipping/normalize-tracking-number"
@@ -108,10 +109,13 @@ async function postOrderShippedNotification(
     .eq("id", conv.id)
 
   let buyerEmail: string | null = null
+  let buyerPhoneE164: string | null = null
   try {
     const svc = createServiceRoleClient()
     const { data: buyerAuth } = await svc.auth.admin.getUserById(ctx.buyer_id)
     buyerEmail = buyerAuth?.user?.email ?? null
+    const authPhone = buyerAuth?.user?.phone?.trim() || null
+    buyerPhoneE164 = await resolveProfilePhoneE164(svc, ctx.buyer_id, authPhone)
   } catch {
     /* non-critical */
   }
@@ -119,6 +123,7 @@ async function postOrderShippedNotification(
   void trackKlaviyoOrderShipped({
     buyerUserId: ctx.buyer_id,
     buyerEmail,
+    buyerPhoneE164,
     orderId: ctx.id,
     listingTitle,
     trackingNumber,

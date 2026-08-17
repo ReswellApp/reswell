@@ -8,7 +8,8 @@ export const maxDuration = 120
 /**
  * Runs every 24 hours (`0 15 * * *` in vercel.json).
  * Always writes yesterday’s Pacific daily briefing; also writes weekly on Monday
- * and monthly on the 1st. Protected with CRON_SECRET.
+ * and monthly on the 1st. Newly completed reports email ADMIN_DIGEST_EMAILS via
+ * Klaviyo ("Intelligence Report"). Protected with CRON_SECRET.
  */
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization")
