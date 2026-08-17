@@ -1,7 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { revalidateMessagesInboxForParticipants } from "@/lib/cache/revalidate-messages-inbox"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
-import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import {
   parseOrderRefundedMessageMetadata,
@@ -185,16 +184,6 @@ export async function postOrderRefundedThreadNotification(
   } catch {
     // No-op outside Next.js request context (e.g. backfill scripts).
   }
-
-  void trackKlaviyoMessageSent({
-    senderUserId: params.buyerId,
-    receiverUserId: params.sellerId,
-    message: content,
-    conversationId: conv.id,
-    listingId: params.primaryListingId,
-    messageId: inserted.id,
-    sentAt: inserted.created_at,
-  })
 }
 
 /** Loads order context and posts the refund thread message to the seller. */

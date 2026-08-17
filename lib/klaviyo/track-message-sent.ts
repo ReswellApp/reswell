@@ -116,6 +116,11 @@ export type KlaviyoMessageSentPayload = {
  *
  * **Profile = receiver** so metric-triggered flows default to emailing the person who was
  * messaged (not the sender). Sender details stay on the event as properties for the template.
+ *
+ * Call only for person-to-person marketplace chat (and media). System thread cards
+ * (`order_placed`, `order_refunded`, `order_shipped`, `order_completed`,
+ * `order_exclusive_repurchase`, `review_requested`) must not call this — they have
+ * their own Klaviyo metrics.
  */
 export async function trackKlaviyoMessageSent(
   payload: KlaviyoMessageSentPayload,
