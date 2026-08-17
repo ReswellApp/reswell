@@ -49,7 +49,9 @@ function hideFooter(pathname: string | null): boolean {
     pathname.startsWith("/messages/") ||
     pathname === "/sell" ||
     pathname.startsWith("/sell/") ||
-    pathname.startsWith("/import/")
+    pathname.startsWith("/import/") ||
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/")
   )
 }
 

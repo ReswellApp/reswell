@@ -88,6 +88,7 @@ export function shouldShowSiteTopCategoryBar(pathname: string | null): boolean {
   }
   if (pathname === "/sell" || pathname.startsWith("/sell/")) return false
   if (pathname === "/checkout" || pathname.startsWith("/checkout/")) return false
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return false
   // Keep the category slider on the /messages inbox (like other dashboard
   // pages), but hide it inside the full-height conversation thread shell.
   if (isMessageThreadDetailRoute(pathname)) return false

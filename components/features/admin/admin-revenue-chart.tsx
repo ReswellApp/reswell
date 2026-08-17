@@ -24,7 +24,6 @@ import type { AdminInsightsDailyPoint } from '@/lib/types/adminBusinessInsights'
 
 type Metric = 'gmv' | 'orders'
 
-const CHART_HEIGHT = 240
 const GRID_STROKE = '#e2e8f0'
 const TICK_FILL = '#64748b'
 
@@ -95,7 +94,20 @@ export function AdminRevenueChart({
     return () => cancelAnimationFrame(frame)
   }, [])
 
-  const hasData = useMemo(() => data.some((d) => d.gmv > 0 || d.orders > 0), [data])
+  const points = useMemo(
+    () =>
+      data.map((d) => ({
+        date: d.date,
+        gmv: Number(d.gmv) || 0,
+        fees: Number(d.fees) || 0,
+        orders: Number(d.orders) || 0,
+      })),
+    [data],
+  )
+  const hasData = useMemo(
+    () => points.some((d) => d.gmv > 0 || d.orders > 0),
+    [points],
+  )
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
@@ -141,10 +153,10 @@ export function AdminRevenueChart({
         ) : !chartReady ? (
           <div className="h-full w-full animate-pulse rounded-lg bg-muted/30" aria-hidden />
         ) : (
-          <ResponsiveContainer width="100%" height={CHART_HEIGHT} minWidth={0}>
+          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
             <ComposedChart
-              data={data}
-              margin={{ top: 8, right: 12, left: -4, bottom: 0 }}
+              data={points}
+              margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
             >
               <defs>
                 <linearGradient id={gmvFillId} x1="0" y1="0" x2="0" y2="1">
@@ -168,13 +180,12 @@ export function AdminRevenueChart({
                 tick={{ fontSize: 11, fill: TICK_FILL }}
               />
               <YAxis
-                yAxisId="primary"
                 tickFormatter={(value: number) =>
                   metric === 'gmv' ? formatCompactUsd(value) : String(value)
                 }
                 tickLine={false}
                 axisLine={false}
-                width={52}
+                width={48}
                 allowDecimals={metric !== 'orders'}
                 tick={{ fontSize: 11, fill: TICK_FILL }}
               />
@@ -182,30 +193,32 @@ export function AdminRevenueChart({
               {metric === 'gmv' ? (
                 <>
                   <Area
-                    yAxisId="primary"
                     type="monotone"
                     dataKey="gmv"
                     stroke="#10b981"
                     strokeWidth={2}
                     fill={`url(#${gmvFillId})`}
+                    dot={false}
+                    isAnimationActive={false}
                   />
                   <Line
-                    yAxisId="primary"
                     type="monotone"
                     dataKey="fees"
                     stroke="#0ea5e9"
                     strokeWidth={1.5}
                     dot={false}
+                    isAnimationActive={false}
                   />
                 </>
               ) : (
                 <Area
-                  yAxisId="primary"
                   type="monotone"
                   dataKey="orders"
                   stroke="#0ea5e9"
                   strokeWidth={2}
                   fill={`url(#${ordersFillId})`}
+                  dot={false}
+                  isAnimationActive={false}
                 />
               )}
             </ComposedChart>

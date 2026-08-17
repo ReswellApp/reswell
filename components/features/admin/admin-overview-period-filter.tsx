@@ -40,7 +40,7 @@ export function AdminOverviewPeriodFilter({
       params.set('month', next)
     }
     const qs = params.toString()
-    router.push(qs ? `/admin?${qs}` : '/admin')
+    router.push(qs ? `/admin/overview?${qs}` : '/admin/overview')
   }
 
   return (

@@ -122,8 +122,9 @@ function AdminNavItemIcon({ icon }: { icon: AdminNavIconKey }) {
 
 function isNavActive(pathname: string, href: string): boolean {
   const norm = pathname.replace(/\/$/, '') || '/'
-  if (href === '/admin') {
-    return norm === '/admin'
+  // Exact-only for home/overview roots so they don't steal child routes.
+  if (href === '/admin/home' || href === '/admin/overview') {
+    return norm === href
   }
   return norm === href || norm.startsWith(`${href}/`)
 }
@@ -139,13 +140,12 @@ export function AdminSidebarNav({ groups, badgeCounts = {} }: AdminSidebarNavPro
   return (
     <div className="space-y-2" key={pathname}>
       {groups.map((group) => {
-        const isOpen = group.items.some((item) => isNavActive(pathname, item.href))
         const groupBadgeCount = sumAdminNavBadgeCounts(
           badgeCounts,
           group.items.map((item) => item.href),
         )
         return (
-          <Collapsible key={group.id} defaultOpen={isOpen}>
+          <Collapsible key={group.id} defaultOpen={false}>
             <CollapsibleTrigger asChild>
               <Button
                 variant="ghost"

@@ -1010,6 +1010,39 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
       pathname === "/checkout" ||
       pathname.startsWith("/checkout/"))
 
+  const isAdminChrome =
+    pathname !== null && (pathname === "/admin" || pathname.startsWith("/admin/"))
+
+  if (isAdminChrome) {
+    return (
+      <header
+        ref={headerShellRef}
+        onClick={onHeaderShellClick}
+        className="relative z-50 w-full border-b border-border bg-background shadow-sm"
+      >
+        <div className="container mx-auto flex min-h-[56px] min-w-0 items-center justify-between gap-4 px-4 py-2 sm:min-h-[64px] md:min-h-[80px] sm:px-6">
+          <SiteWordmarkLink href="/admin/home" />
+          <div className="flex shrink-0 items-center justify-end">
+            {!authLoaded ? (
+              <Skeleton className="h-9 w-9 shrink-0 rounded-full" aria-hidden />
+            ) : user && accountMenu ? (
+              accountMenu
+            ) : authLoaded ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 shrink-0 text-foreground"
+                onClick={() => openLogin()}
+                aria-label="Log in or sign up"
+              >
+                <User className="h-6 w-6" />
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </header>
+    )
+  }
 
   if (isMinimalNavChrome) {
     return (

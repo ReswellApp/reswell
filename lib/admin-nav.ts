@@ -83,7 +83,8 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
     id: 'overview',
     label: 'Overview',
     items: [
-      { href: '/admin', label: 'Overview', icon: 'layoutDashboard' },
+      { href: '/admin/home', label: 'Home', icon: 'layoutDashboard' },
+      { href: '/admin/overview', label: 'Overview', icon: 'activity' },
       { href: '/admin/listings', label: 'Listings', icon: 'package' },
       { href: '/admin/listings/hidden', label: 'Hidden listings', icon: 'package' },
       { href: '/admin/shop', label: 'Reswell', icon: 'store' },
@@ -93,6 +94,16 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/partner-embeds', label: 'Partner embeds', icon: 'code' },
       { href: '/admin/users', label: 'Users', icon: 'users' },
       { href: '/admin/wallets', label: 'Wallet balances', icon: 'wallet' },
+    ],
+  },
+  {
+    id: 'orders-shipping',
+    label: 'Orders and shipping',
+    items: [
+      { href: '/admin/orders', label: 'Orders', icon: 'shoppingBag' },
+      { href: '/admin/orders/test-purchase', label: 'Test purchase', icon: 'shoppingBag' },
+      { href: '/admin/orders/terminal', label: 'In-person checkout', icon: 'shoppingBag' },
+      { href: '/admin/shipping', label: 'Shipping', icon: 'truck' },
     ],
   },
   {
@@ -142,16 +153,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       },
       { href: '/admin/ops', label: 'Platform ops', icon: 'activityPulse' },
       { href: '/admin/listings/brand-requests', label: 'Brand & model requests', icon: 'tag' },
-    ],
-  },
-  {
-    id: 'orders-shipping',
-    label: 'Orders and shipping',
-    items: [
-      { href: '/admin/orders', label: 'Orders', icon: 'shoppingBag' },
-      { href: '/admin/orders/test-purchase', label: 'Test purchase', icon: 'shoppingBag' },
-      { href: '/admin/orders/terminal', label: 'In-person checkout', icon: 'shoppingBag' },
-      { href: '/admin/shipping', label: 'Shipping', icon: 'truck' },
     ],
   },
   {

@@ -54,7 +54,7 @@ export function AdminMonthlyRevenueTable({
             <tbody>
               {rows.map((row) => {
                 const active = selectedYearMonth === row.yearMonth
-                const href = `/admin?month=${encodeURIComponent(row.yearMonth)}`
+                const href = `/admin/overview?month=${encodeURIComponent(row.yearMonth)}`
                 return (
                   <tr
                     key={row.yearMonth}

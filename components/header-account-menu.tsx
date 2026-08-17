@@ -113,7 +113,7 @@ function HeaderAccountMenuInner({
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/admin" className="flex items-center text-foreground">
+              <Link href="/admin/home" className="flex items-center text-foreground">
                 <User className="mr-2 h-4 w-4" />
                 Admin Panel
               </Link>

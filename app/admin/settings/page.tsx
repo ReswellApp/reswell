@@ -71,11 +71,22 @@ const CAPABILITY_GROUPS: CapabilityGroup[] = [
     id: 'overview',
     label: 'Overview',
     items: [
-      { href: '/admin', label: 'Overview', description: 'Site stats & recent activity', icon: LayoutDashboard },
+      { href: '/admin/home', label: 'Home', description: 'Jump to any admin page', icon: LayoutDashboard },
+      { href: '/admin/overview', label: 'Overview', description: 'Site stats & recent activity', icon: Activity },
       { href: '/admin/listings', label: 'Listings', description: 'Search, moderate, restore', icon: Package },
       { href: '/admin/seo', label: 'SEO', description: 'Page metadata & sitemaps', icon: Search },
       { href: '/admin/users', label: 'Users', description: 'Accounts, roles & access', icon: Users },
       { href: '/admin/wallets', label: 'Wallets', description: 'Balances & payouts', icon: Wallet },
+    ],
+  },
+  {
+    id: 'orders-shipping',
+    label: 'Orders & shipping',
+    items: [
+      { href: '/admin/orders', label: 'Orders', description: 'All marketplace orders', icon: ShoppingBag },
+      { href: '/admin/orders/test-purchase', label: 'Test purchase', description: 'Run a test checkout', icon: ShoppingBag },
+      { href: '/admin/orders/terminal', label: 'In-person checkout', description: 'Terminal tap-to-pay or card checkout', icon: ShoppingBag },
+      { href: '/admin/shipping', label: 'Shipping', description: 'Carriers & rates', icon: Truck },
     ],
   },
   {
@@ -102,16 +113,6 @@ const CAPABILITY_GROUPS: CapabilityGroup[] = [
       { href: '/admin/messages', label: 'Marketplace messages', description: 'Buyer/seller threads', icon: MessageSquare },
       { href: '/admin/fraud-messages', label: 'Fraud messages', description: 'Flagged conversations', icon: Shield },
       { href: '/admin/listings/brand-requests', label: 'Brand requests', description: 'Brand & model requests', icon: Tag },
-    ],
-  },
-  {
-    id: 'orders-shipping',
-    label: 'Orders & shipping',
-    items: [
-      { href: '/admin/orders', label: 'Orders', description: 'All marketplace orders', icon: ShoppingBag },
-      { href: '/admin/orders/test-purchase', label: 'Test purchase', description: 'Run a test checkout', icon: ShoppingBag },
-      { href: '/admin/orders/terminal', label: 'In-person checkout', description: 'Terminal tap-to-pay or card checkout', icon: ShoppingBag },
-      { href: '/admin/shipping', label: 'Shipping', description: 'Carriers & rates', icon: Truck },
     ],
   },
   {
