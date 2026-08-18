@@ -14,6 +14,7 @@ export const SELL_ENTRY_POINTS = [
   "mode_toggle",
   "direct_quick",
   "direct_boards",
+  "giveaway",
   "unknown",
 ] as const
 

@@ -15,11 +15,9 @@ export function Footer() {
   return (
     <footer className="border-t border-white/15 bg-listingHeart pb-[env(safe-area-inset-bottom)] text-white">
       <div className="container mx-auto py-10 sm:py-14">
-        <FooterNewsletterSignup />
-
-        <div className="mt-10 grid grid-cols-2 gap-8 md:mt-12 md:grid-cols-4 lg:grid-cols-5 md:gap-10">
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5 md:gap-10">
           {/* Brand */}
-          <div className="col-span-2 lg:col-span-1">
+          <div className="col-span-2 order-1 lg:col-span-1 md:order-none">
             <SiteWordmarkLink
               variant="footer"
               className="-ml-1 px-0 sm:ml-0"
@@ -39,8 +37,12 @@ export function Footer() {
             </a>
           </div>
 
+          <div className="col-span-2 order-2 md:order-first md:col-span-full md:mb-2">
+            <FooterNewsletterSignup />
+          </div>
+
           {/* Marketplace */}
-          <div>
+          <div className="order-3 md:order-none">
             <h3 className="text-sm font-semibold text-white">Marketplace</h3>
             <ul className="mt-4 space-y-3">
               {siteFooterNavLinks.marketplace.map((link) => (
@@ -58,7 +60,7 @@ export function Footer() {
           </div>
 
           {/* Categories */}
-          <div>
+          <div className="order-3 md:order-none">
             <h3 className="text-sm font-semibold text-white">Categories</h3>
             <ul className="mt-4 space-y-3">
               {footerCategoryLinks.map((link) => (
@@ -76,7 +78,7 @@ export function Footer() {
           </div>
 
           {/* Help */}
-          <div>
+          <div className="order-3 md:order-none">
             <h3 className="text-sm font-semibold text-white">Help</h3>
             <ul className="mt-4 space-y-3">
               {siteFooterNavLinks.help.map((link) => (
@@ -90,7 +92,7 @@ export function Footer() {
           </div>
 
           {/* Legal */}
-          <div>
+          <div className="order-3 md:order-none">
             <h3 className="text-sm font-semibold text-white">Legal</h3>
             <ul className="mt-4 space-y-3">
               {siteFooterNavLinks.legal.map((link) => (

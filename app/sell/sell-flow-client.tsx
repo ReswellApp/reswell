@@ -241,7 +241,10 @@ import {
 import { beginGuestListingPublishAuth } from "@/lib/sell-flow/guest-publish-auth"
 import { usePendingPublishResume } from "@/components/features/sell/hooks/use-pending-publish-resume"
 import {
+  clearSellCatalogSearchAgain,
+  markSellCatalogSearchAgain,
   peekSellCatalogHandoff,
+  sellListingCameFromCatalogSearch,
   takeSellCatalogHandoff,
 } from "@/lib/sell-flow/catalog-handoff"
 import {
@@ -786,10 +789,27 @@ function SellPageContentInner({
     [],
   )
 
+  /**
+   * “Search again” only after a /sell catalog pick. Capture `from=catalog`
+   * before `?new=1` is stripped so type-chooser / direct `/sell/boards` stays hidden.
+   */
+  const [cameFromCatalogSearch, setCameFromCatalogSearch] = useState(() =>
+    sellListingCameFromCatalogSearch(startFresh),
+  )
+
   /** Strip `?new=1` from the URL after blank-listing setup; stay on `/sell/boards`. */
   useLayoutEffect(() => {
     if (typeof window === "undefined") return
     if (startFresh) {
+      const fromCatalog =
+        new URLSearchParams(window.location.search).get("from") === "catalog"
+      if (fromCatalog) {
+        markSellCatalogSearchAgain()
+        setCameFromCatalogSearch(true)
+      } else {
+        clearSellCatalogSearchAgain()
+        setCameFromCatalogSearch(false)
+      }
       if (!isPendingPublish("board")) {
         try {
           sessionStorage.setItem(SELL_SUPPRESS_IDB_RESTORE_KEY, "1")
@@ -955,6 +975,8 @@ function SellPageContentInner({
     catalogHandoffTakenRef.current = true
     const handoff = takeSellCatalogHandoff("surfboards")
     if (!handoff) return
+    markSellCatalogSearchAgain()
+    setCameFromCatalogSearch(true)
     setViewModeState("guided")
     persistBoardSellViewMode("guided")
     if (handoff.selectionKind !== "variant") {
@@ -1176,6 +1198,9 @@ function SellPageContentInner({
       setRemovedImageIds([])
       setPublishPreview(null)
       clearSellServerDraftListingId("surfboards")
+      clearSellCatalogSearchAgain()
+      setCameFromCatalogSearch(false)
+      setCatalogSelectionCard(null)
       const {
         data: { user },
       } = await supabase.auth.getUser()
@@ -4066,7 +4091,6 @@ function SellPageContentInner({
                         <Input
                           id="listing-title"
                           className={SELL_CONTROL_CLASS}
-                          placeholder={`e.g., 6'0 CI Rookie — light use, fins included`}
                           value={formData.title}
                           onChange={(e) =>
                             setFormData((f) => ({ ...f, title: e.target.value }))
@@ -4271,6 +4295,7 @@ function SellPageContentInner({
                     onSellerPurchasePriceChange={(value) =>
                       setFormData({ ...formData, sellerPurchasePrice: value })
                     }
+                    showPurchasePrice={false}
                     afterListingPrice={
                       <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-sm">
                         <div className="flex gap-3">
@@ -4862,7 +4887,9 @@ function SellPageContentInner({
                 <BoardSellViewToolbar
                   viewMode={viewMode}
                   onViewModeChange={setViewMode}
-                  searchAgainHref={editId ? null : "/sell"}
+                  searchAgainHref={
+                    !editId && cameFromCatalogSearch ? "/sell" : null
+                  }
                   showBack={viewMode === "guided" && flowStep !== "product"}
                   showContinue={viewMode === "guided" && flowStep !== "shipping"}
                   onBack={goToPrevSellStep}

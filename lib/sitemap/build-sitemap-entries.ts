@@ -11,6 +11,7 @@ import { fetchBrandSlugRowsForSitemap } from "@/lib/db/sitemap-brands"
 import { fetchSellerProfileSitemapEntries } from "@/lib/db/sitemap-seller-profiles"
 import { fetchForumThreadSitemapEntries } from "@/lib/db/sitemap-forum-threads"
 import { fetchPublishedBlogPostSitemapEntries } from "@/lib/db/sitemap-blog-posts-published"
+import { fetchPriceGuideSitemapPaths } from "@/lib/db/sitemap-price-guide"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { getNoindexManagedPaths } from "@/lib/seo/resolve-page-seo"
@@ -101,11 +102,12 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
   const now = new Date()
   const supabase = await supabaseForSitemapPublicRead()
 
-  const [brandRows, sellerEntries, forumEntries, blogEntries] = await Promise.all([
+  const [brandRows, sellerEntries, forumEntries, blogEntries, priceGuidePaths] = await Promise.all([
     fetchBrandSlugRowsForSitemap(supabase),
     fetchSellerProfileSitemapEntries(supabase),
     fetchForumThreadSitemapEntries(supabase),
     fetchPublishedBlogPostSitemapEntries(supabase),
+    fetchPriceGuideSitemapPaths(supabase),
   ])
 
   const staticPages: SitemapUrlEntry[] = [
@@ -135,6 +137,14 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     { url: `${BASE}/jamboards`, lastModified: now, changeFrequency: "daily", priority: 0.5 },
     { url: `${BASE}/sellers`, lastModified: now, changeFrequency: "weekly", priority: 0.4 },
     { url: `${BASE}/cities/top`, lastModified: now, changeFrequency: "daily", priority: 0.55 },
+    { url: `${BASE}/priceguide`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
+    { url: `${BASE}/giveaways`, lastModified: now, changeFrequency: "weekly", priority: 0.55 },
+    {
+      url: `${BASE}/giveaways/win-a-custom-surfboard`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.5,
+    },
     { url: `${BASE}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.45 },
     { url: `${BASE}/faq`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
     { url: `${BASE}/public-api`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
@@ -179,6 +189,13 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     priority: 0.4,
   }))
 
+  const priceGuidePages: SitemapUrlEntry[] = priceGuidePaths.map((e) => ({
+    url: `${BASE}${e.path}`,
+    lastModified: now,
+    changeFrequency: "weekly",
+    priority: e.path === "/priceguide" ? 0.7 : 0.55,
+  }))
+
   const merged = [
     ...staticPages,
     ...boardFilterPages(now),
@@ -186,6 +203,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     ...sellerPages,
     ...forumPages,
     ...blogPages,
+    ...priceGuidePages,
   ]
 
   // Drop any managed page the admin flipped to no-index in the SEO panel.

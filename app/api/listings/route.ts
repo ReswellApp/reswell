@@ -11,6 +11,7 @@ import { trackFirstTimeSellerForListingIfNeeded } from '@/lib/services/klaviyoFi
 import { notifyBoardSavedSearchMatchesForListing } from '@/lib/services/notifyBoardSavedSearchMatches'
 import { notifyFollowersNewListingKlaviyo } from '@/lib/services/notifyFollowersNewListingKlaviyo'
 import { evaluateSellerCanSell } from '@/lib/services/sellerBan'
+import { qualifyPublishedListingForGiveaways } from '@/lib/services/giveawayEntry'
 import { LISTING_TITLE_MAX_LENGTH } from '@/lib/sell-form-validation'
 import {
   composeListingDimensionsFromSplitListingFields,
@@ -274,6 +275,12 @@ export async function POST(request: NextRequest) {
   }
   await revalidateSellersAfterListingChange(supabase, user.id)
   revalidateNavSearchSuggest()
+  void qualifyPublishedListingForGiveaways(
+    supabase,
+    listing.id,
+    user.id,
+    user.email ?? null,
+  )
 
   return NextResponse.json({ success: true, listing_id: listing.id })
 }

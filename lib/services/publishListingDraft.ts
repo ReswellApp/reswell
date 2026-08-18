@@ -12,6 +12,7 @@ import { revalidateAfterListingSiteModeration } from "@/lib/services/listingSite
 import { generateUniqueListingSlug } from "@/lib/services/listing-slug"
 import { recordListingVisibilityEvent } from "@/lib/services/listingVisibilityAudit"
 import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
+import { qualifyPublishedListingForGiveaways } from "@/lib/services/giveawayEntry"
 
 const PRICE_MIN = 0.01
 
@@ -112,6 +113,12 @@ export async function applyPublishedListingSideEffects(
   revalidateBoardsBrowseCatalog()
   revalidateNavSearchSuggest()
   await revalidateSellersAfterListingChange(supabase, sellerUserId)
+
+  try {
+    await qualifyPublishedListingForGiveaways(supabase, listingId, sellerUserId)
+  } catch {
+    // Giveaway qualification is best-effort — never block publish.
+  }
 }
 
 async function fetchDraftListingForPublish(

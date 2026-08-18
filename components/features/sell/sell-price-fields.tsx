@@ -31,6 +31,7 @@ export interface SellPriceFieldsProps {
   afterListingPrice?: ReactNode
   purchaseAccordionTitle?: string
   purchaseAccordionDescription?: string
+  showPurchasePrice?: boolean
 }
 
 export function SellPriceFields({
@@ -41,6 +42,7 @@ export function SellPriceFields({
   afterListingPrice,
   purchaseAccordionTitle = "What you paid for the board",
   purchaseAccordionDescription = "Keep track of what you paid for the board versus what it sells for. This info is for your benefit only.",
+  showPurchasePrice = true,
 }: SellPriceFieldsProps) {
   return (
     <div className="w-full space-y-4">
@@ -74,44 +76,46 @@ export function SellPriceFields({
         </div>
       </div>
 
-      <div className="rounded-lg border border-slate-300 bg-slate-50/80">
-        <Accordion type="single" collapsible className="w-full px-1">
-          <AccordionItem value="purchase" className="border-0">
-            <AccordionTrigger className="px-3 py-3 text-left text-sm font-semibold hover:no-underline [&[data-state=open]]:pb-1">
-              {purchaseAccordionTitle}
-            </AccordionTrigger>
-            <AccordionContent className="px-3 pb-3 pt-0">
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                {purchaseAccordionDescription}
-              </p>
-              <div className="mt-4 space-y-2">
-                <Label htmlFor="sell-seller-purchase-price" className="text-sm font-semibold">
-                  What you paid
-                </Label>
-                <div className="relative">
-                  <span
-                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground"
-                    aria-hidden
-                  >
-                    $
-                  </span>
-                  <Input
-                    id="sell-seller-purchase-price"
-                    type="text"
-                    inputMode="decimal"
-                    autoComplete="off"
-                    placeholder="0.00"
-                    value={sellerPurchasePrice}
-                    onChange={(e) => onSellerPurchasePriceChange(e.target.value)}
-                    className={cn(SELL_CONTROL_CLASS, "pl-8 tabular-nums")}
-                  />
+      {showPurchasePrice ? (
+        <div className="rounded-lg border border-slate-300 bg-slate-50/80">
+          <Accordion type="single" collapsible className="w-full px-1">
+            <AccordionItem value="purchase" className="border-0">
+              <AccordionTrigger className="px-3 py-3 text-left text-sm font-semibold hover:no-underline [&[data-state=open]]:pb-1">
+                {purchaseAccordionTitle}
+              </AccordionTrigger>
+              <AccordionContent className="px-3 pb-3 pt-0">
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  {purchaseAccordionDescription}
+                </p>
+                <div className="mt-4 space-y-2">
+                  <Label htmlFor="sell-seller-purchase-price" className="text-sm font-semibold">
+                    What you paid
+                  </Label>
+                  <div className="relative">
+                    <span
+                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground"
+                      aria-hidden
+                    >
+                      $
+                    </span>
+                    <Input
+                      id="sell-seller-purchase-price"
+                      type="text"
+                      inputMode="decimal"
+                      autoComplete="off"
+                      placeholder="0.00"
+                      value={sellerPurchasePrice}
+                      onChange={(e) => onSellerPurchasePriceChange(e.target.value)}
+                      className={cn(SELL_CONTROL_CLASS, "pl-8 tabular-nums")}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Not shown publicly.</p>
                 </div>
-                <p className="text-xs text-muted-foreground">Not shown publicly.</p>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
+      ) : null}
 
       {afterListingPrice}
     </div>

@@ -13,6 +13,7 @@ export const siteFooterNavLinks: {
     { name: "Sell your gear", href: "/sell" },
     { name: "Sellers", href: "/sellers" },
     { name: "Cities", href: "/cities/top" },
+    { name: "Giveaways", href: "/giveaways" },
     { name: "Blog", href: "/blog" },
   ],
   help: [

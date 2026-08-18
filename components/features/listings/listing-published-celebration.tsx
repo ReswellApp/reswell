@@ -167,6 +167,19 @@ export function ListingPublishedCelebration({ listingParam }: { listingParam: st
             </p>
             <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
               Buyers can see it right now. Share it to sell faster.
+              {marker.section === "surfboards" ? (
+                <>
+                  {" "}
+                  You&apos;re also in the{" "}
+                  <Link
+                    href="/giveaways/win-a-custom-surfboard"
+                    className="font-medium text-listingHeart underline-offset-2 hover:underline"
+                  >
+                    custom surfboard raffle
+                  </Link>
+                  .
+                </>
+              ) : null}
             </p>
           </div>
           <button

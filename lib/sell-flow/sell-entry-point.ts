@@ -52,6 +52,8 @@ export function resolveSellEntryPoint(hint?: SellEntryPoint | null): SellEntryPo
       const from = params.get("from")?.trim()
       if (from === "nav" || from === "header") {
         resolved = "header_cta"
+      } else if (from === "giveaway") {
+        resolved = "giveaway"
       } else if (params.get("new") === "1") {
         resolved = "new_param"
       } else {

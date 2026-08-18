@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Eye, EyeOff } from "lucide-react"
+import { Check, Eye, EyeOff } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { AuthFormOrDivider } from "@/components/auth/auth-form-or-divider"
 import { GoogleOAuthButton } from "@/components/auth/google-oauth-button"
@@ -25,7 +25,20 @@ import { resolveSignUpDisplayName } from "@/lib/auth/sign-up-display-name"
 import { LegalDocumentDialog, type LegalDocumentId } from "@/components/features/legal/legal-document-dialog"
 import { cn } from "@/lib/utils"
 
-function RequiredMark() {
+function isCompleteEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
+}
+
+function RequiredMark({ complete }: { complete: boolean }) {
+  if (complete) {
+    return (
+      <Check
+        className="inline-block h-3.5 w-3.5 -translate-y-px text-listingHeart"
+        strokeWidth={3}
+        aria-hidden="true"
+      />
+    )
+  }
   return (
     <span className="text-destructive" aria-hidden="true">
       *
@@ -61,6 +74,11 @@ export function SignUpFormPanel({
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+
+  const firstNameComplete = firstName.trim().length > 0
+  const lastNameComplete = lastName.trim().length > 0
+  const emailComplete = isCompleteEmail(email)
+  const passwordComplete = validateSignUpPassword(password).valid
 
   useEffect(() => {
     const supabase = createClient()
@@ -250,7 +268,7 @@ export function SignUpFormPanel({
                 >
                   Privacy Policy
                 </button>
-                . <RequiredMark />
+                . <RequiredMark complete={acceptedTerms} />
               </>
             ) : (
               <>
@@ -270,7 +288,7 @@ export function SignUpFormPanel({
                 >
                   Privacy Policy
                 </button>
-                .
+                . <RequiredMark complete={acceptedTerms} />
               </>
             )}
           </label>
@@ -364,7 +382,7 @@ export function SignUpFormPanel({
         >
           <div className={cn("grid min-w-0", fieldGapClass)}>
             <Label htmlFor="signup-first-name" className={labelClass}>
-              First name <RequiredMark />
+              First name <RequiredMark complete={firstNameComplete} />
             </Label>
             <Input
               id="signup-first-name"
@@ -377,7 +395,7 @@ export function SignUpFormPanel({
           </div>
           <div className={cn("grid min-w-0", fieldGapClass)}>
             <Label htmlFor="signup-last-name" className={labelClass}>
-              Last name <RequiredMark />
+              Last name <RequiredMark complete={lastNameComplete} />
             </Label>
             <Input
               id="signup-last-name"
@@ -408,7 +426,7 @@ export function SignUpFormPanel({
 
           <div className={cn("grid min-w-0", fieldGapClass)}>
             <Label htmlFor="signup-email" className={labelClass}>
-              Email <RequiredMark />
+              Email <RequiredMark complete={emailComplete} />
             </Label>
             <Input
               id="signup-email"
@@ -424,7 +442,7 @@ export function SignUpFormPanel({
         <div className={cn("grid", fieldGapClass)}>
           <div className={cn("flex items-baseline justify-between gap-2", !isLanding && "contents")}>
             <Label htmlFor="signup-password" className={labelClass}>
-              Password <RequiredMark />
+              Password <RequiredMark complete={passwordComplete} />
             </Label>
             {isLanding ? (
               <span className="max-w-[58%] text-right text-[10px] leading-tight text-muted-foreground sm:max-w-none sm:leading-none">

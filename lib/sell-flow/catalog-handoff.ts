@@ -14,6 +14,8 @@ import { finCatalogSearchRowThumbUrl } from "@/lib/utils/fin-catalog-display-ima
  * clears) it on mount to prefill brand/model.
  */
 const SELL_CATALOG_HANDOFF_KEY = "reswell.sell.catalogHandoffOnce"
+/** Survives the one-shot handoff take + `?new=1` URL strip so “Search again” stays accurate. */
+const SELL_CATALOG_SEARCH_AGAIN_KEY = "reswell.sell.catalogSearchAgain"
 
 export type SellCatalogHandoff =
   | {
@@ -133,9 +135,49 @@ export function sellCatalogHandoffToSelectionCard(handoff: SellCatalogHandoff): 
   }
 }
 
+export function markSellCatalogSearchAgain(): void {
+  if (typeof window === "undefined") return
+  try {
+    sessionStorage.setItem(SELL_CATALOG_SEARCH_AGAIN_KEY, "1")
+  } catch {
+    /* quota / private mode */
+  }
+}
+
+export function clearSellCatalogSearchAgain(): void {
+  if (typeof window === "undefined") return
+  try {
+    sessionStorage.removeItem(SELL_CATALOG_SEARCH_AGAIN_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
+export function peekSellCatalogSearchAgain(): boolean {
+  if (typeof window === "undefined") return false
+  try {
+    return sessionStorage.getItem(SELL_CATALOG_SEARCH_AGAIN_KEY) === "1"
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Whether this listing was started by picking a catalog result on `/sell`.
+ * `?new=1` without `from=catalog` is the type-chooser / direct boards path.
+ */
+export function sellListingCameFromCatalogSearch(startFresh: boolean): boolean {
+  if (typeof window === "undefined") return false
+  const from = new URLSearchParams(window.location.search).get("from")
+  if (from === "catalog") return true
+  if (startFresh) return false
+  return peekSellCatalogSearchAgain()
+}
+
 export function writeSellCatalogHandoff(handoff: SellCatalogHandoff): void {
   try {
     sessionStorage.setItem(SELL_CATALOG_HANDOFF_KEY, JSON.stringify(handoff))
+    sessionStorage.setItem(SELL_CATALOG_SEARCH_AGAIN_KEY, "1")
   } catch {
     /* quota / private mode — flow still opens, just without prefill */
   }

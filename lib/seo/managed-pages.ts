@@ -287,6 +287,18 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Explore surf sellers on Reswell — support fellow surfers and find shops near you or who ship to your area.",
     path: "/sellers",
   }),
+  page("priceguide", "marketplace", "Price Guide", {
+    title: "Surfboard & surf gear price guide — Reswell",
+    description:
+      "See what used surfboards and surf gear are worth. Typical values, sold comps, and live asking prices from the Reswell marketplace.",
+    path: "/priceguide",
+    keywords: [
+      "surfboard price guide",
+      "used surfboard values",
+      "surf gear pricing",
+      "what is my surfboard worth",
+    ],
+  }),
   page("cities-top", "marketplace", "Top cities directory", {
     title: "Top cities for surf gear — Reswell",
     description:
@@ -403,6 +415,28 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Estimate US surfboard shipping label costs by ship-from ZIP, receiver ZIP, weight, and package dimensions with live carrier quotes.",
     path: "/shipping-estimator",
   }),
+  page("giveaways", "marketing", "Giveaways", {
+    title: "Surfboard Giveaways | Reswell",
+    description:
+      "Current Reswell giveaways for sellers. List a surfboard for a chance to win a custom from Channel Islands, Mayhem, JS, Sharpeye, Hayden Shapes, or Lovemachine.",
+    path: "/giveaways",
+    keywords: ["surfboard giveaway", "win a surfboard", "list surfboard raffle"],
+  }),
+  page("giveaway-win-a-custom-surfboard", "marketing", "Win a custom surfboard", {
+    title: "List a surfboard to win a surfboard | Reswell",
+    description:
+      "Publish a surfboard on Reswell and you’re entered to win a custom from Channel Islands, Mayhem, JS, Sharpeye, Hayden Shapes, or Lovemachine — you pick the brand.",
+    path: "/giveaways/win-a-custom-surfboard",
+    keywords: [
+      "custom surfboard giveaway",
+      "Channel Islands",
+      "Mayhem",
+      "JS",
+      "Sharpeye",
+      "Hayden Shapes",
+      "Lovemachine",
+    ],
+  }, { note: "Active list-to-win raffle." }),
   page("ratereswell", "marketing", "Rate Reswell", {
     title: "Rate Reswell",
     description:
