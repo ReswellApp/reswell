@@ -1,55 +1,41 @@
 import Link from 'next/link'
+import { ArrowUpRight } from 'lucide-react'
 import type { AdminNavGroupConfig } from '@/lib/admin-nav'
 import type { AdminNavBadgeCounts } from '@/lib/admin-nav-badge-counts'
 import { AdminHomeGreeting } from '@/components/features/admin/admin-home-greeting'
 import { AdminHomeIcon } from '@/components/features/admin/admin-home-icon'
 import { cn } from '@/lib/utils'
 
-const TILE_CLASSES = [
-  'bg-[#FF6B4A] hover:bg-[#E85A3C] hover:shadow-[#FF6B4A]/40',
-  'bg-[#2EC4B6] hover:bg-[#22A99D] hover:shadow-[#2EC4B6]/40',
-  'bg-[#7C5CFF] hover:bg-[#6548E8] hover:shadow-[#7C5CFF]/40',
-  'bg-[#FF8C42] hover:bg-[#E67A32] hover:shadow-[#FF8C42]/40',
-  'bg-[#F43F8A] hover:bg-[#D92F76] hover:shadow-[#F43F8A]/40',
-  'bg-[#3B82F6] hover:bg-[#2563EB] hover:shadow-[#3B82F6]/40',
-  'bg-[#10B981] hover:bg-[#059669] hover:shadow-[#10B981]/40',
-  'bg-[#F59E0B] hover:bg-[#D97706] hover:shadow-[#F59E0B]/40',
-  'bg-[#06B6D4] hover:bg-[#0891B2] hover:shadow-[#06B6D4]/40',
-  'bg-[#8B5CF6] hover:bg-[#7C3AED] hover:shadow-[#8B5CF6]/40',
-  'bg-[#EF4444] hover:bg-[#DC2626] hover:shadow-[#EF4444]/40',
-  'bg-[#14B8A6] hover:bg-[#0D9488] hover:shadow-[#14B8A6]/40',
-] as const
-
 const GROUP_THEMES: Record<
   string,
-  { chip: string; panel: string; emoji: string }
+  { chipDot: string; wells: readonly string[] }
 > = {
   overview: {
-    chip: 'bg-[#DBEAFE] text-[#1D4ED8]',
-    panel: 'bg-gradient-to-br from-[#EFF6FF] via-white to-[#DBEAFE]',
-    emoji: '✦',
+    chipDot: 'bg-[#355185]',
+    wells: ['bg-[#163060]', 'bg-[#355185]', 'bg-[#5574AD]', 'bg-[#7F9DD5]'],
   },
   'orders-shipping': {
-    chip: 'bg-[#FFEDD5] text-[#C2410C]',
-    panel: 'bg-gradient-to-br from-[#FFF7ED] via-white to-[#FFEDD5]',
-    emoji: '◎',
+    chipDot: 'bg-[#C45C3E]',
+    wells: ['bg-[#9A3B24]', 'bg-[#C45C3E]', 'bg-[#D9784A]', 'bg-[#355185]'],
   },
   analytics: {
-    chip: 'bg-[#EDE9FE] text-[#6D28D9]',
-    panel: 'bg-gradient-to-br from-[#F5F3FF] via-white to-[#EDE9FE]',
-    emoji: '◈',
+    chipDot: 'bg-[#2A7A72]',
+    wells: ['bg-[#1F5C56]', 'bg-[#2A7A72]', 'bg-[#3D9A8F]', 'bg-[#5574AD]'],
   },
   'customer-service': {
-    chip: 'bg-[#FCE7F3] text-[#BE185D]',
-    panel: 'bg-gradient-to-br from-[#FDF2F8] via-white to-[#FCE7F3]',
-    emoji: '♡',
+    chipDot: 'bg-[#5574AD]',
+    wells: ['bg-[#355185]', 'bg-[#5574AD]', 'bg-[#6B8BC0]', 'bg-[#7F9DD5]'],
   },
   'admin-tools': {
-    chip: 'bg-[#D1FAE5] text-[#047857]',
-    panel: 'bg-gradient-to-br from-[#ECFDF5] via-white to-[#D1FAE5]',
-    emoji: '⚙',
+    chipDot: 'bg-[#001A4A]',
+    wells: ['bg-[#001A4A]', 'bg-[#163060]', 'bg-[#355185]', 'bg-[#8A734A]'],
   },
 }
+
+const FALLBACK_THEME = {
+  chipDot: 'bg-[#355185]',
+  wells: ['bg-[#163060]', 'bg-[#355185]', 'bg-[#5574AD]', 'bg-[#7F9DD5]'],
+} as const
 
 interface AdminHomeDashboardProps {
   groups: AdminNavGroupConfig[]
@@ -62,87 +48,86 @@ export function AdminHomeDashboard({
   badgeCounts = {},
   displayName,
 }: AdminHomeDashboardProps) {
-  let colorIndex = 0
-
   return (
-    <div className="space-y-5">
-      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#8BA4C8] via-[#B8A9C9] to-[#E8B4A8] px-6 py-7 text-white shadow-sm">
-        <div
-          className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/20"
-          aria-hidden
-        />
-        <div
-          className="pointer-events-none absolute -bottom-16 left-16 h-36 w-36 rounded-full bg-[#C5D5C0]/35"
-          aria-hidden
-        />
-        <AdminHomeGreeting displayName={displayName} />
-        <p className="relative mt-2 text-sm font-semibold uppercase tracking-[0.18em] text-white/90">
+    <div className="space-y-6">
+      <header className="px-1 py-1 sm:px-1.5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#5574AD]">
+          Reswell admin
+        </p>
+        <div className="mt-2 text-[#163060]">
+          <AdminHomeGreeting displayName={displayName} />
+        </div>
+        <p className="mt-2 max-w-md text-sm font-medium tracking-wide text-muted-foreground">
           Go big or go home
         </p>
       </header>
 
-        {groups.map((group) => {
-          const theme = GROUP_THEMES[group.id] ?? {
-            chip: 'bg-muted text-foreground',
-            panel: 'bg-muted/40',
-            emoji: '•',
-          }
+      {groups.map((group) => {
+        const theme = GROUP_THEMES[group.id] ?? FALLBACK_THEME
 
-          return (
-            <section
-              key={group.id}
-              className={cn('rounded-3xl p-4 shadow-sm ring-1 ring-black/5 sm:p-5', theme.panel)}
-            >
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <span
-                  className={cn(
-                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold',
-                    theme.chip,
-                  )}
-                >
-                  <span aria-hidden>{theme.emoji}</span>
-                  {group.label}
-                </span>
-                <span className="text-[11px] font-medium text-muted-foreground">
-                  {group.items.length}
-                </span>
-              </div>
+        return (
+          <section
+            key={group.id}
+            className="rounded-[2rem] border border-black/[0.04] bg-[#F9F9F2] p-4 shadow-soft dark:border-white/10 dark:bg-muted/40 sm:p-5"
+          >
+            <div className="mb-4 flex items-center justify-between gap-3 px-0.5">
+              <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#163060] shadow-sm ring-1 ring-black/[0.05] dark:bg-card dark:text-foreground dark:ring-white/10">
+                <span className={cn('h-1.5 w-1.5 rounded-full', theme.chipDot)} aria-hidden />
+                {group.label}
+              </span>
+              <span className="text-[11px] font-medium tabular-nums text-muted-foreground">
+                {group.items.length}
+              </span>
+            </div>
 
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-                {group.items.map((item) => {
-                  const tileClass = TILE_CLASSES[colorIndex % TILE_CLASSES.length]
-                  colorIndex += 1
-                  const badge = badgeCounts[item.href] ?? 0
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 lg:grid-cols-4">
+              {group.items.map((item, index) => {
+                const wellClass = theme.wells[index % theme.wells.length]
+                const badge = badgeCounts[item.href] ?? 0
 
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(
+                      'group relative flex min-h-[5.75rem] flex-col items-start justify-between rounded-3xl border border-black/[0.05] bg-white px-3.5 py-3',
+                      'shadow-soft transition-all duration-200 ease-out',
+                      'hover:-translate-y-0.5 hover:border-[#5574AD]/25 hover:shadow-soft-hover',
+                      'active:translate-y-0 active:scale-[0.98]',
+                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5574AD] focus-visible:ring-offset-2',
+                      'dark:border-white/10 dark:bg-card dark:hover:border-[#7F9DD5]/35',
+                    )}
+                  >
+                    {badge > 0 ? (
+                      <span className="absolute right-2.5 top-2.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#C45C3E] px-1 text-[10px] font-bold text-white">
+                        {badge > 99 ? '99+' : badge}
+                      </span>
+                    ) : (
+                      <ArrowUpRight
+                        className="absolute right-3 top-3 h-3.5 w-3.5 text-[#7F9DD5] opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+                        aria-hidden
+                      />
+                    )}
+                    <span
                       className={cn(
-                        'relative flex min-h-[4.5rem] flex-col items-start justify-between rounded-2xl px-3 py-2.5 text-white shadow-sm transition-all duration-200',
-                        'hover:-translate-y-0.5 hover:shadow-lg',
-                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#7C5CFF]',
-                        tileClass,
+                        'flex h-9 w-9 items-center justify-center rounded-2xl text-white shadow-sm',
+                        wellClass,
                       )}
                     >
-                      {badge > 0 ? (
-                        <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold text-[#F43F8A] shadow">
-                          {badge > 99 ? '99+' : badge}
-                        </span>
-                      ) : null}
-                      <AdminHomeIcon icon={item.icon} />
-                      <span className="text-[13px] font-semibold leading-snug">
-                        {item.label}
-                      </span>
-                    </Link>
-                  )
-                })}
-              </div>
-            </section>
-          )
-        })}
+                      <AdminHomeIcon icon={item.icon} className="h-[18px] w-[18px]" />
+                    </span>
+                    <span className="pr-4 text-[13px] font-semibold leading-snug tracking-tight text-[#163060] dark:text-foreground">
+                      {item.label}
+                    </span>
+                  </Link>
+                )
+              })}
+            </div>
+          </section>
+        )
+      })}
     </div>
   )
 }
