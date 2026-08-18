@@ -9,6 +9,7 @@ import {
   FolderTree,
   Layers,
   LayoutDashboard,
+  LifeBuoy,
   LineChart,
   MapPin,
   Megaphone,
@@ -24,6 +25,7 @@ import {
   Store,
   Tag,
   Target,
+  Ticket,
   Truck,
   Users,
   Wallet,
@@ -31,72 +33,83 @@ import {
   Wrench,
 } from 'lucide-react'
 import type { AdminNavIconKey } from '@/lib/admin-nav'
+import { cn } from '@/lib/utils'
 
-export function AdminHomeIcon({ icon }: { icon: AdminNavIconKey }) {
-  const className = 'h-4 w-4 shrink-0'
+export function AdminHomeIcon({
+  icon,
+  className,
+}: {
+  icon: AdminNavIconKey
+  className?: string
+}) {
+  const iconClassName = cn('h-4 w-4 shrink-0', className)
   switch (icon) {
     case 'layoutDashboard':
-      return <LayoutDashboard className={className} aria-hidden />
+      return <LayoutDashboard className={iconClassName} aria-hidden />
     case 'waves':
-      return <Waves className={className} aria-hidden />
+      return <Waves className={iconClassName} aria-hidden />
     case 'activity':
     case 'activityPulse':
-      return <Activity className={className} aria-hidden />
+      return <Activity className={iconClassName} aria-hidden />
     case 'lineChart':
-      return <LineChart className={className} aria-hidden />
+      return <LineChart className={iconClassName} aria-hidden />
     case 'package':
-      return <Package className={className} aria-hidden />
+      return <Package className={iconClassName} aria-hidden />
     case 'layers':
-      return <Layers className={className} aria-hidden />
+      return <Layers className={iconClassName} aria-hidden />
     case 'folderTree':
-      return <FolderTree className={className} aria-hidden />
+      return <FolderTree className={iconClassName} aria-hidden />
     case 'tag':
-      return <Tag className={className} aria-hidden />
+      return <Tag className={iconClassName} aria-hidden />
     case 'users':
-      return <Users className={className} aria-hidden />
+      return <Users className={iconClassName} aria-hidden />
     case 'wallet':
-      return <Wallet className={className} aria-hidden />
+      return <Wallet className={iconClassName} aria-hidden />
     case 'shoppingBag':
-      return <ShoppingBag className={className} aria-hidden />
+      return <ShoppingBag className={iconClassName} aria-hidden />
     case 'shoppingCart':
-      return <ShoppingCart className={className} aria-hidden />
+      return <ShoppingCart className={iconClassName} aria-hidden />
     case 'store':
-      return <Store className={className} aria-hidden />
+      return <Store className={iconClassName} aria-hidden />
+    case 'lifeBuoy':
+      return <LifeBuoy className={iconClassName} aria-hidden />
     case 'messageSquare':
-      return <MessageSquare className={className} aria-hidden />
+      return <MessageSquare className={iconClassName} aria-hidden />
     case 'shield':
-      return <Shield className={className} aria-hidden />
+      return <Shield className={iconClassName} aria-hidden />
     case 'truck':
-      return <Truck className={className} aria-hidden />
+      return <Truck className={iconClassName} aria-hidden />
     case 'settings':
-      return <Settings className={className} aria-hidden />
+      return <Settings className={iconClassName} aria-hidden />
     case 'target':
-      return <Target className={className} aria-hidden />
+      return <Target className={iconClassName} aria-hidden />
     case 'contactRound':
-      return <ContactRound className={className} aria-hidden />
+      return <ContactRound className={iconClassName} aria-hidden />
     case 'search':
-      return <Search className={className} aria-hidden />
+      return <Search className={iconClassName} aria-hidden />
     case 'wrench':
-      return <Wrench className={className} aria-hidden />
+      return <Wrench className={iconClassName} aria-hidden />
     case 'dollarSign':
-      return <DollarSign className={className} aria-hidden />
+      return <DollarSign className={iconClassName} aria-hidden />
     case 'sparkles':
-      return <Sparkles className={className} aria-hidden />
+      return <Sparkles className={iconClassName} aria-hidden />
     case 'fileText':
-      return <FileText className={className} aria-hidden />
+      return <FileText className={iconClassName} aria-hidden />
     case 'brain':
-      return <Brain className={className} aria-hidden />
+      return <Brain className={iconClassName} aria-hidden />
     case 'megaphone':
-      return <Megaphone className={className} aria-hidden />
+      return <Megaphone className={iconClassName} aria-hidden />
     case 'mapPin':
-      return <MapPin className={className} aria-hidden />
+      return <MapPin className={iconClassName} aria-hidden />
+    case 'ticket':
+      return <Ticket className={iconClassName} aria-hidden />
     case 'bellRing':
-      return <BellRing className={className} aria-hidden />
+      return <BellRing className={iconClassName} aria-hidden />
     case 'code':
-      return <Code className={className} aria-hidden />
+      return <Code className={iconClassName} aria-hidden />
     case 'rotateCcw':
-      return <RotateCcw className={className} aria-hidden />
+      return <RotateCcw className={iconClassName} aria-hidden />
     default:
-      return <LayoutDashboard className={className} aria-hidden />
+      return <LayoutDashboard className={iconClassName} aria-hidden />
   }
 }

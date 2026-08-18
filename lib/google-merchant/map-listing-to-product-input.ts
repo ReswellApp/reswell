@@ -51,6 +51,8 @@ export type GoogleMerchantListingRow = {
   fin_system?: string | null
   fin_size?: string | null
   wetsuit_size?: string | null
+  apparel_kind?: string | null
+  apparel_size?: string | null
   magazine_year?: number | null
   city?: string | null
   state?: string | null

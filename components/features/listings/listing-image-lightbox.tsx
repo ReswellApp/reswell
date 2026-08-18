@@ -29,6 +29,13 @@ import { portraitShimmer } from "@/lib/image-shimmer"
 import { cn } from "@/lib/utils"
 
 const ZOOM_TOLERANCE = 0.015
+const DEFAULT_ASPECT_RATIO = 3 / 4
+
+const LIGHTBOX_IMAGE_SIZES =
+  "(max-width: 768px) 100vw, (max-width: 1280px) 92vw, 90vw"
+
+const CHROME_BUTTON_CLASS =
+  "h-11 w-11 shrink-0 rounded-full border border-border/55 bg-background/90 text-foreground shadow-sm backdrop-blur-md hover:bg-muted/40 [&_svg]:size-5"
 
 function useMaxMd() {
   const [match, setMatch] = useState(() =>
@@ -62,14 +69,30 @@ function usePrefersCoarsePointer() {
   return coarse
 }
 
+function huggingFrameStyle(aspectRatio: number, isMaxMd: boolean): CSSProperties {
+  const maxHeight = isMaxMd
+    ? "min(90dvh, calc(100dvh - 6.5rem))"
+    : "min(92dvh, calc(100dvh - 8.25rem))"
+  const maxWidth = isMaxMd ? "calc(100vw - 1.25rem)" : "calc(100vw - 8.5rem)"
+  return {
+    aspectRatio,
+    width: `min(${maxWidth}, calc(${maxHeight} * ${aspectRatio}))`,
+    maxWidth,
+    maxHeight,
+  }
+}
+
 interface LightboxSlideProps {
   src: string
   title: string
   slideIndex: number
   isActive: boolean
   coarsePointer: boolean
+  isMaxMd: boolean
+  initialAspectRatio: number
   priority?: boolean
   onScaleChange: (scale: number) => void
+  onBackdropClick: () => void
   registerPinchRef: (index: number, ref: ReactZoomPanPinchContentRef | null) => void
 }
 
@@ -79,12 +102,16 @@ function LightboxSlide({
   slideIndex,
   isActive,
   coarsePointer,
+  isMaxMd,
+  initialAspectRatio,
   priority = false,
   onScaleChange,
+  onBackdropClick,
   registerPinchRef,
 }: LightboxSlideProps) {
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null)
   const [placeholderLoaded, setPlaceholderLoaded] = useState(false)
+  const [aspectRatio, setAspectRatio] = useState(initialAspectRatio)
   const pinchRef = useRef<ReactZoomPanPinchContentRef | null>(null)
 
   const setPinchRef = useCallback(
@@ -99,6 +126,10 @@ function LightboxSlide({
     () => (src && src !== "/placeholder.svg" ? withListingMediaPdpVariant(src) : ""),
     [src],
   )
+
+  useEffect(() => {
+    setAspectRatio(initialAspectRatio)
+  }, [initialAspectRatio])
 
   useEffect(() => {
     if (!isActive) {
@@ -159,96 +190,128 @@ function LightboxSlide({
   const slideReady = loadedSrc === src || placeholderLoaded
   const [scale, setScale] = useState(1)
   const isZoomedOut = scale <= 1 + ZOOM_TOLERANCE
+  const scaleRef = useRef(1)
+  scaleRef.current = scale
+  const frameStyle = useMemo(
+    () => huggingFrameStyle(aspectRatio, isMaxMd),
+    [aspectRatio, isMaxMd],
+  )
+
+  useEffect(() => {
+    if (!isActive) return
+    if (scaleRef.current > 1 + ZOOM_TOLERANCE) return
+    const id = requestAnimationFrame(() => {
+      pinchRef.current?.centerView(1, 0)
+    })
+    return () => cancelAnimationFrame(id)
+  }, [aspectRatio, isActive, isMaxMd])
+
+  const rememberAspectRatio = (naturalWidth: number, naturalHeight: number) => {
+    if (naturalWidth <= 0 || naturalHeight <= 0) return
+    const next = naturalWidth / naturalHeight
+    setAspectRatio((prev) => (Math.abs(prev - next) < 0.001 ? prev : next))
+  }
 
   return (
-    <>
-      <ListingTileShimmer
-        aria-hidden
-        className={cn(
-          "listing-tile-shimmer-overlay absolute inset-0 z-[1] rounded-xl sm:rounded-2xl",
-          slideReady && "pointer-events-none opacity-0",
-        )}
-      />
-      <TransformWrapper
-        ref={setPinchRef}
-        disabled={!isActive}
-        initialScale={1}
-        minScale={1}
-        maxScale={5}
-        centerOnInit
-        centerZoomedOut
-        limitToBounds
-        smooth
-        wheel={{ step: 0.12, disabled: !isActive }}
-        panning={{
-          disabled: isZoomedOut,
-          allowLeftClickPan: !isZoomedOut,
-          velocityDisabled: coarsePointer,
-        }}
-        pinch={{
-          step: 5,
-          allowPanning: true,
-          disabled: !isActive,
-        }}
-        doubleClick={{ mode: "toggle", step: 2.2, disabled: !isActive }}
-        onTransform={(_ctx, state) => {
-          setScale(state.scale)
-          if (isActive) onScaleChange(state.scale)
-        }}
+    <div
+      className="flex h-full w-full items-center justify-center"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onBackdropClick()
+      }}
+    >
+      <div
+        style={frameStyle}
+        className="relative shrink-0 overflow-hidden rounded-xl bg-[#f5f5f7] shadow-sm ring-1 ring-black/[0.06] sm:rounded-2xl dark:bg-muted dark:ring-white/[0.08]"
+        onClick={(event) => event.stopPropagation()}
       >
-        <TransformComponent
-          wrapperClass="!h-full !w-full"
-          contentClass="!relative !h-full !w-full"
+        <ListingTileShimmer
+          aria-hidden
+          className={cn(
+            "listing-tile-shimmer-overlay absolute inset-0 z-[1] rounded-xl sm:rounded-2xl",
+            slideReady && "pointer-events-none opacity-0",
+          )}
+        />
+        <TransformWrapper
+          ref={setPinchRef}
+          disabled={!isActive}
+          initialScale={1}
+          minScale={1}
+          maxScale={5}
+          centerOnInit
+          centerZoomedOut
+          limitToBounds
+          smooth
+          wheel={{ step: 0.12, disabled: !isActive }}
+          panning={{
+            disabled: isZoomedOut,
+            allowLeftClickPan: !isZoomedOut,
+            velocityDisabled: coarsePointer,
+          }}
+          pinch={{
+            step: 5,
+            allowPanning: true,
+            disabled: !isActive,
+          }}
+          doubleClick={{ mode: "toggle", step: 2.2, disabled: !isActive }}
+          onTransform={(_ctx, state) => {
+            setScale(state.scale)
+            if (isActive) onScaleChange(state.scale)
+          }}
         >
-          {placeholderSrc ? (
+          <TransformComponent
+            wrapperClass="!h-full !w-full"
+            contentClass="!relative !h-full !w-full"
+          >
+            {placeholderSrc ? (
+              <Image
+                key={placeholderSrc}
+                aria-hidden
+                src={placeholderSrc}
+                alt=""
+                fill
+                unoptimized={listingImageShouldBypassOptimization(placeholderSrc)}
+                draggable={false}
+                placeholder="blur"
+                blurDataURL={portraitShimmer}
+                className={cn(
+                  "pointer-events-none select-none object-contain object-center transition-opacity duration-300 ease-out",
+                  loadedSrc === src ? "opacity-0" : "opacity-100",
+                )}
+                sizes={LIGHTBOX_IMAGE_SIZES}
+                priority={priority}
+                onLoadingComplete={(img) => {
+                  setPlaceholderLoaded(true)
+                  rememberAspectRatio(img.naturalWidth, img.naturalHeight)
+                }}
+              />
+            ) : null}
             <Image
-              key={placeholderSrc}
-              aria-hidden
-              src={placeholderSrc}
-              alt=""
+              key={src}
+              src={src}
+              alt={`${title} — full size ${slideIndex + 1}`}
               fill
-              unoptimized={listingImageShouldBypassOptimization(placeholderSrc)}
+              unoptimized
               draggable={false}
-              placeholder="blur"
-              blurDataURL={portraitShimmer}
               className={cn(
-                "pointer-events-none select-none object-contain transition-opacity duration-300 ease-out",
-                "md:object-cover md:object-center",
-                loadedSrc === src ? "opacity-0" : "opacity-100",
+                "select-none object-contain object-center transition-opacity duration-300 ease-out",
+                loadedSrc === src ? "opacity-100" : "opacity-0",
               )}
-              sizes="(max-width: 768px) 100vw, (max-width: 1280px) 29rem, 32rem"
+              sizes={LIGHTBOX_IMAGE_SIZES}
               priority={priority}
-              onLoadingComplete={() => {
-                setPlaceholderLoaded(true)
+              onLoadingComplete={(img) => {
+                setLoadedSrc(src)
+                rememberAspectRatio(img.naturalWidth, img.naturalHeight)
+                if (isActive) {
+                  requestAnimationFrame(() => {
+                    pinchRef.current?.centerView(1, 0)
+                  })
+                }
               }}
             />
-          ) : null}
-          <Image
-            key={src}
-            src={src}
-            alt={`${title} — full size ${slideIndex + 1}`}
-            fill
-            unoptimized
-            draggable={false}
-            className={cn(
-              "select-none object-contain transition-opacity duration-300 ease-out",
-              "md:object-cover md:object-center",
-              loadedSrc === src ? "opacity-100" : "opacity-0",
-            )}
-            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 29rem, 32rem"
-            priority={priority}
-            onLoadingComplete={() => {
-              setLoadedSrc(src)
-              if (isActive) {
-                requestAnimationFrame(() => {
-                  pinchRef.current?.centerView(1, 0)
-                })
-              }
-            }}
-          />
-        </TransformComponent>
-      </TransformWrapper>
-    </>
+          </TransformComponent>
+        </TransformWrapper>
+      </div>
+    </div>
   )
 }
 
@@ -260,8 +323,8 @@ interface ListingImageLightboxProps {
   /** Index controlled by parent (opening slide). */
   index: number
   onIndexChange: (next: number) => void
-  /** Natural width/height for the active slide — reserves mobile frame before decode. */
-  mobileAspectRatio?: number
+  /** Natural width/height per slide — sizes the photo frame before decode. */
+  aspectRatios?: Record<number, number>
 }
 
 export function ListingImageLightbox({
@@ -271,7 +334,7 @@ export function ListingImageLightbox({
   title,
   index,
   onIndexChange,
-  mobileAspectRatio = 3 / 4,
+  aspectRatios,
 }: ListingImageLightboxProps) {
   const [scale, setScale] = useState(1)
   const pinchRefs = useRef<Map<number, ReactZoomPanPinchContentRef | null>>(new Map())
@@ -347,6 +410,11 @@ export function ListingImageLightbox({
     [index, onOpenChange],
   )
 
+  const closeIfZoomedOut = useCallback(() => {
+    if (!isZoomedOutRef.current) return
+    handleOpenChange(false)
+  }, [handleOpenChange])
+
   const goPrev = useCallback(() => {
     if (emblaApi && useSwipeCarousel) {
       emblaApi.scrollPrev()
@@ -367,20 +435,20 @@ export function ListingImageLightbox({
     onIndexChange(index === count - 1 ? 0 : index + 1)
   }, [count, emblaApi, index, onIndexChange, useSwipeCarousel])
 
+  useEffect(() => {
+    if (!open || count <= 1) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return
+      if (!isZoomedOutRef.current) return
+      event.preventDefault()
+      if (event.key === "ArrowLeft") goPrev()
+      else goNext()
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [count, goNext, goPrev, open])
+
   const activePinchRef = pinchRefs.current.get(index) ?? null
-
-  const mobileFrameStyle = useMemo(
-    () =>
-      ({
-        aspectRatio: mobileAspectRatio,
-        width: `min(calc(100vw - 1rem), calc(min(88dvh, calc(100dvh - 10rem)) * ${mobileAspectRatio}))`,
-        maxWidth: "calc(100vw - 1rem)",
-        maxHeight: "min(88dvh, calc(100dvh - 10rem))",
-      }) as CSSProperties,
-    [mobileAspectRatio],
-  )
-
-  const frameStyle = isMaxMd ? mobileFrameStyle : undefined
 
   const renderSlide = (slideIndex: number, priority: boolean) => {
     const src = proxiedUrls[slideIndex]
@@ -392,8 +460,11 @@ export function ListingImageLightbox({
         slideIndex={slideIndex}
         isActive={slideIndex === index}
         coarsePointer={coarsePointer}
+        isMaxMd={isMaxMd}
+        initialAspectRatio={aspectRatios?.[slideIndex] ?? DEFAULT_ASPECT_RATIO}
         priority={priority}
         onScaleChange={handleActiveScaleChange}
+        onBackdropClick={closeIfZoomedOut}
         registerPinchRef={registerPinchRef}
       />
     )
@@ -421,87 +492,77 @@ export function ListingImageLightbox({
             {title} — photo {index + 1} of {Math.max(count, 1)}
           </DialogTitle>
 
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col pt-[max(env(safe-area-inset-top),0.75rem)]">
-            <div className="relative flex min-h-0 min-w-0 flex-1 items-center justify-center px-10 sm:px-12 md:px-16">
-              {count > 0 ? (
-                <div className="relative mx-auto flex shrink-0 flex-col gap-2 sm:gap-2.5">
-                  <div className="flex items-center justify-between gap-3">
-                    {count > 1 ? (
-                      <p className="min-w-0 truncate text-[15px] font-medium tabular-nums text-foreground/80">
-                        {index + 1} / {count}
-                      </p>
-                    ) : (
-                      <span aria-hidden />
-                    )}
-                    <DialogClose asChild>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="secondary"
-                        className="h-11 w-11 shrink-0 rounded-full border border-border/55 bg-background/90 text-foreground shadow-sm backdrop-blur-md hover:bg-muted/40 [&_svg]:size-6"
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-3 px-4 pt-[max(env(safe-area-inset-top),0.75rem)] sm:px-5">
+            {count > 1 ? (
+              <p className="pointer-events-none min-w-0 truncate text-sm font-medium tabular-nums text-foreground/55">
+                {index + 1}
+                <span className="px-1 font-normal text-foreground/35">/</span>
+                {count}
+              </p>
+            ) : (
+              <span aria-hidden />
+            )}
+            <DialogClose asChild>
+              <Button
+                type="button"
+                size="icon"
+                variant="secondary"
+                className={cn("pointer-events-auto", CHROME_BUTTON_CLASS)}
+              >
+                <X className="stroke-[2]" />
+                <span className="sr-only">Close</span>
+              </Button>
+            </DialogClose>
+          </div>
+
+          <div className="relative min-h-0 min-w-0 flex-1">
+            {count > 1 ? (
+              <>
+                <ListingImageCarouselNavButton
+                  direction="prev"
+                  variant="chrome"
+                  sideClassName="pointer-events-auto left-3 hidden sm:left-4 md:left-5 md:inline-flex"
+                  srLabel="Previous photo"
+                  onClick={goPrev}
+                />
+                <ListingImageCarouselNavButton
+                  direction="next"
+                  variant="chrome"
+                  sideClassName="pointer-events-auto right-3 hidden md:right-5 md:inline-flex"
+                  srLabel="Next photo"
+                  onClick={goNext}
+                />
+              </>
+            ) : null}
+
+            {count > 0 ? (
+              useSwipeCarousel ? (
+                <div ref={emblaRef} className="absolute inset-0 overflow-hidden">
+                  <div className="flex h-full touch-pan-y will-change-transform">
+                    {proxiedUrls.map((url, slideIndex) => (
+                      <div
+                        key={`${url}-${slideIndex}`}
+                        className="relative h-full min-w-0 shrink-0 grow-0 basis-full"
+                        aria-hidden={slideIndex !== index}
                       >
-                        <X className="stroke-[2]" />
-                        <span className="sr-only">Close</span>
-                      </Button>
-                    </DialogClose>
-                  </div>
-
-                  <div
-                    style={frameStyle}
-                    className={cn(
-                      "relative shrink-0 overflow-hidden rounded-xl bg-muted sm:rounded-2xl",
-                      "md:aspect-[3/4] md:h-auto md:w-[29rem] md:max-w-[min(29rem,calc(100vw-3rem))] xl:w-[32rem] xl:max-w-[min(32rem,calc(100vw-3rem))]",
-                    )}
-                  >
-                    {count > 1 ? (
-                      <>
-                        <ListingImageCarouselNavButton
-                          direction="prev"
-                          variant="lightbox"
-                          sideClassName="pointer-events-auto left-3 z-20 sm:left-4 md:left-5"
-                          srLabel="Previous photo"
-                          onClick={goPrev}
-                        />
-                        <ListingImageCarouselNavButton
-                          direction="next"
-                          variant="lightbox"
-                          sideClassName="pointer-events-auto right-3 z-20 sm:right-4 md:right-5"
-                          srLabel="Next photo"
-                          onClick={goNext}
-                        />
-                      </>
-                    ) : null}
-
-                    {useSwipeCarousel ? (
-                      <div ref={emblaRef} className="absolute inset-0 overflow-hidden">
-                        <div className="flex h-full touch-pan-y will-change-transform">
-                          {proxiedUrls.map((url, slideIndex) => (
-                            <div
-                              key={`${url}-${slideIndex}`}
-                              className="relative h-full min-w-0 shrink-0 grow-0 basis-full"
-                              aria-hidden={slideIndex !== index}
-                            >
-                              {renderSlide(slideIndex, slideIndex === index)}
-                            </div>
-                          ))}
-                        </div>
+                        {renderSlide(slideIndex, slideIndex === index)}
                       </div>
-                    ) : (
-                      <div className="absolute inset-0">{renderSlide(0, true)}</div>
-                    )}
+                    ))}
                   </div>
                 </div>
-              ) : null}
+              ) : (
+                <div className="absolute inset-0">{renderSlide(0, true)}</div>
+              )
+            ) : null}
 
-              <div className="pointer-events-none absolute inset-x-10 bottom-0 z-20 hidden justify-center sm:inset-x-12 md:flex md:inset-x-16">
-                <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-border/60 bg-background/90 p-1.5 shadow-sm backdrop-blur-md">
-                  <ZoomToolbar
-                    onZoomIn={() => activePinchRef?.zoomIn(0.18, 200)}
-                    onZoomOut={() => activePinchRef?.zoomOut(0.18, 200)}
-                    onReset={() => activePinchRef?.resetTransform(220)}
-                    disableZoomOut={isZoomedOut}
-                  />
-                </div>
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 hidden justify-center pb-[max(env(safe-area-inset-bottom),1rem)] md:flex">
+              <div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-border/50 bg-background/90 p-1 shadow-sm backdrop-blur-md">
+                <ZoomToolbar
+                  onZoomIn={() => activePinchRef?.zoomIn(0.18, 200)}
+                  onZoomOut={() => activePinchRef?.zoomOut(0.18, 200)}
+                  onReset={() => activePinchRef?.resetTransform(220)}
+                  disableZoomOut={isZoomedOut}
+                />
               </div>
             </div>
           </div>
@@ -528,32 +589,32 @@ function ZoomToolbar({
         type="button"
         size="icon"
         variant="ghost"
-        className="h-10 w-10 rounded-full text-foreground hover:bg-muted/60 hover:text-foreground"
+        className="h-9 w-9 rounded-full text-foreground hover:bg-muted/60 hover:text-foreground"
         onClick={onZoomOut}
         disabled={disableZoomOut}
         aria-label="Zoom out"
       >
-        <Minus className="size-5 stroke-[2]" />
+        <Minus className="size-4 stroke-[2]" />
       </Button>
       <Button
         type="button"
         size="icon"
         variant="ghost"
-        className="h-10 w-10 rounded-full text-foreground hover:bg-muted/60 hover:text-foreground"
+        className="h-9 w-9 rounded-full text-foreground hover:bg-muted/60 hover:text-foreground"
         onClick={onReset}
         aria-label="Reset zoom"
       >
-        <RotateCcw className="size-5 stroke-[2]" />
+        <RotateCcw className="size-4 stroke-[2]" />
       </Button>
       <Button
         type="button"
         size="icon"
         variant="ghost"
-        className="h-10 w-10 rounded-full text-foreground hover:bg-muted/60 hover:text-foreground"
+        className="h-9 w-9 rounded-full text-foreground hover:bg-muted/60 hover:text-foreground"
         onClick={onZoomIn}
         aria-label="Zoom in"
       >
-        <Plus className="size-5 stroke-[2]" />
+        <Plus className="size-4 stroke-[2]" />
       </Button>
     </>
   )

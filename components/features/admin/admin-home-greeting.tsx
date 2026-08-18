@@ -33,6 +33,8 @@ export function AdminHomeGreeting({ displayName }: AdminHomeGreetingProps) {
   const headline = displayName ? `${greeting}, ${displayName}` : greeting
 
   return (
-    <h1 className="relative text-3xl font-bold tracking-tight">{headline}!</h1>
+    <h1 className="relative font-headline text-[1.85rem] font-bold tracking-tight sm:text-4xl">
+      {headline}
+    </h1>
   )
 }

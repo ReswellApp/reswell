@@ -16,21 +16,19 @@ import { ListingTileShimmer } from "@/components/ui/skeleton"
 
 function ListingImageLightboxLoadingShell() {
   return (
-    <div
-      className="fixed inset-0 z-[70] flex min-h-0 flex-col bg-background pt-[max(env(safe-area-inset-top),0.75rem)]"
-      aria-hidden
-    >
-      <div className="flex min-h-0 flex-1 items-center justify-center px-10">
+    <div className="fixed inset-0 z-[70] bg-background" aria-hidden>
+      <div className="flex h-full items-center justify-center px-6 py-16 md:px-16">
         <div
-          className="relative overflow-hidden rounded-xl bg-muted"
+          className="relative overflow-hidden rounded-2xl bg-muted shadow-sm ring-1 ring-black/[0.06]"
           style={{
             aspectRatio: 3 / 4,
-            width: "min(calc(100vw - 1rem), calc(min(88dvh, calc(100dvh - 10rem)) * 0.75))",
-            maxWidth: "calc(100vw - 1rem)",
-            maxHeight: "min(88dvh, calc(100dvh - 10rem))",
+            width:
+              "min(calc(100vw - 8.5rem), calc(min(92dvh, calc(100dvh - 8.25rem)) * 0.75))",
+            maxWidth: "calc(100vw - 1.25rem)",
+            maxHeight: "min(92dvh, calc(100dvh - 8.25rem))",
           }}
         >
-          <ListingTileShimmer className="absolute inset-0 rounded-xl" />
+          <ListingTileShimmer className="absolute inset-0 rounded-2xl" />
         </div>
       </div>
     </div>
@@ -207,7 +205,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
           title={title}
           index={lightboxIndex}
           onIndexChange={setLightboxIndex}
-          mobileAspectRatio={imageAspectRatios[lightboxIndex] ?? 3 / 4}
+          aspectRatios={imageAspectRatios}
         />
       ) : null}
 
@@ -257,11 +255,9 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
           </div>
         ) : null}
 
-        <div className="pointer-events-none absolute bottom-3 left-3 z-[8] rounded-full bg-background/75 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur-md tabular-nums">
-          <span className="inline-flex items-center gap-1.5">
-            <Maximize2 className="size-3.5 shrink-0 opacity-70" aria-hidden />
-            Enlarge
-          </span>
+        <div className="pointer-events-none absolute bottom-3 left-3 z-[8] flex size-8 items-center justify-center rounded-full bg-background/75 text-foreground shadow-sm backdrop-blur-md">
+          <Maximize2 className="size-3.5 opacity-70" aria-hidden />
+          <span className="sr-only">Enlarge</span>
         </div>
 
         <div
