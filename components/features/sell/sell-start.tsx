@@ -20,7 +20,6 @@ export function SellStart({
 }: {
   isAdmin?: boolean
   trendingBrands?: SellTrendingBrand[]
-  /** From {@link resolveDefaultSurfboardSellCreatePath}. */
   surfboardSellHref: string
 }) {
   React.useEffect(() => {

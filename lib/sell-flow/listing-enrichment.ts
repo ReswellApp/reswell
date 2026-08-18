@@ -1,8 +1,8 @@
 /**
  * Post-publish enrichment: which quick wins would make a live listing sell
- * faster? Quick List (and pickup-only publishes generally) intentionally defer
- * description, dimensions, and shipping — these gaps drive the "make it sell
- * faster" prompts on the publish celebration card and the owner's PDP panel.
+ * faster? Pickup-only publishes often defer description, dimensions, and
+ * shipping — these gaps drive the "make it sell faster" prompts on the
+ * publish celebration card and the owner's PDP panel.
  */
 
 export interface ListingEnrichmentGap {

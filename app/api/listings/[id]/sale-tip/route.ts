@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
-import { markSellerListingSoldOffPlatform } from "@/lib/services/listingMarkSold"
 import { resolveServerAuth } from "@/lib/auth/get-safe-server-user"
-import { markListingSoldBodySchema } from "@/lib/validations/mark-listing-sold"
+import { createSellerSaleTipPaymentIntent } from "@/lib/services/sellerSaleTip"
+import { saleTipBodySchema } from "@/lib/validations/mark-listing-sold"
 
 const listingIdParamSchema = z.string().uuid("Invalid listing id")
 
@@ -21,7 +21,6 @@ export async function POST(
     if (!idParsed.success) {
       return NextResponse.json({ error: "Invalid listing id" }, { status: 400 })
     }
-    const listingId = idParsed.data
 
     let body: unknown
     try {
@@ -30,29 +29,30 @@ export async function POST(
       return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
     }
 
-    const parsed = markListingSoldBodySchema.safeParse(body)
+    const parsed = saleTipBodySchema.safeParse(body)
     if (!parsed.success) {
-      const detailIssue = parsed.error.flatten().fieldErrors.detail?.[0]
+      const amountIssue = parsed.error.flatten().fieldErrors.amountCents?.[0]
       return NextResponse.json(
-        { error: detailIssue ?? "Invalid input", details: parsed.error.flatten() },
+        { error: amountIssue ?? "Invalid tip amount" },
         { status: 400 },
       )
     }
 
-    const result = await markSellerListingSoldOffPlatform(supabase, {
-      listingId,
+    const result = await createSellerSaleTipPaymentIntent(supabase, {
+      listingId: idParsed.data,
       sellerUserId: user.id,
       sellerEmail: user.email,
-      channel: parsed.data.channel,
-      detail: parsed.data.detail,
-      reswellHelpedFindBuyer: parsed.data.reswellHelpedFindBuyer,
+      amountCents: parsed.data.amountCents,
     })
 
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: result.status })
     }
 
-    return NextResponse.json({ data: { ok: true } }, { status: 200 })
+    return NextResponse.json(
+      { data: { clientSecret: result.clientSecret, amountCents: result.amountCents } },
+      { status: 200 },
+    )
   } catch (e) {
     const message = e instanceof Error ? e.message : "Request failed"
     return NextResponse.json({ error: message }, { status: 500 })

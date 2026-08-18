@@ -271,6 +271,8 @@ const nextConfig = {
       { source: "/wax-room/:slug", destination: "/threads/:slug", permanent: true },
       { source: "/wax-room", destination: "/threads", permanent: true },
       { source: "/threads/whats-new", destination: "/threads", permanent: true },
+      { source: "/sell/quick", destination: "/sell/boards", permanent: true },
+      { source: "/sell/quick/:path*", destination: "/sell/boards", permanent: true },
       { source: "/feed", destination: "/sold", permanent: true },
       { source: "/surfers", destination: "/", permanent: true },
       { source: "/surfers/:path*", destination: "/", permanent: true },

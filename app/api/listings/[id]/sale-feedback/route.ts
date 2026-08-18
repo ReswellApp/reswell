@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
-import { markSellerListingSoldOffPlatform } from "@/lib/services/listingMarkSold"
 import { resolveServerAuth } from "@/lib/auth/get-safe-server-user"
-import { markListingSoldBodySchema } from "@/lib/validations/mark-listing-sold"
+import { saveListingSaleFeedback } from "@/lib/services/listingSaleFeedback"
+import { listingSaleFeedbackBodySchema } from "@/lib/validations/mark-listing-sold"
 
 const listingIdParamSchema = z.string().uuid("Invalid listing id")
 
@@ -21,7 +21,6 @@ export async function POST(
     if (!idParsed.success) {
       return NextResponse.json({ error: "Invalid listing id" }, { status: 400 })
     }
-    const listingId = idParsed.data
 
     let body: unknown
     try {
@@ -30,7 +29,7 @@ export async function POST(
       return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
     }
 
-    const parsed = markListingSoldBodySchema.safeParse(body)
+    const parsed = listingSaleFeedbackBodySchema.safeParse(body)
     if (!parsed.success) {
       const detailIssue = parsed.error.flatten().fieldErrors.detail?.[0]
       return NextResponse.json(
@@ -39,8 +38,8 @@ export async function POST(
       )
     }
 
-    const result = await markSellerListingSoldOffPlatform(supabase, {
-      listingId,
+    const result = await saveListingSaleFeedback(supabase, {
+      listingId: idParsed.data,
       sellerUserId: user.id,
       sellerEmail: user.email,
       channel: parsed.data.channel,

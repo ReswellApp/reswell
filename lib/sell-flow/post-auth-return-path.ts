@@ -3,8 +3,7 @@ import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 
 /**
  * Sell auth return URL with `?new=1` stripped.
- * Landing on `?new=1` after sign-up wipes the in-progress draft (and can bounce
- * first-time publishers from Guided boards onto empty Quick List).
+ * Landing on `?new=1` after sign-up wipes the in-progress draft.
  */
 export function sellPostAuthReturnPath(href: string): string {
   const safe = safeRedirectPath(href)

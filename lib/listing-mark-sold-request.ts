@@ -1,13 +1,14 @@
 import type { SoldOffPlatformChannel } from "@/lib/validations/mark-listing-sold"
 
 export type MarkListingSoldInput = {
-  channel: SoldOffPlatformChannel
+  channel?: SoldOffPlatformChannel
   detail?: string
+  reswellHelpedFindBuyer?: boolean
 }
 
 export async function postMarkListingSold(
   listingId: string,
-  input: MarkListingSoldInput,
+  input: MarkListingSoldInput = {},
 ): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
   const res = await fetch(`/api/listings/${listingId}/mark-sold`, {
     method: "POST",

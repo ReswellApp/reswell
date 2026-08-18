@@ -287,6 +287,13 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Explore surf sellers on Reswell — support fellow surfers and find shops near you or who ship to your area.",
     path: "/sellers",
   }),
+  page("cities-top", "marketplace", "Top cities directory", {
+    title: "Top cities for surf gear — Reswell",
+    description:
+      "Browse every city with active surfboard and gear listings on Reswell, see how many are listed there, and jump into local boards.",
+    path: "/cities/top",
+    keywords: ["surfboard cities", "used surfboards near me", "surf marketplace cities"],
+  }),
   page("public-api", "marketplace", "Public research API", {
     title: "Public research API — Reswell",
     description:

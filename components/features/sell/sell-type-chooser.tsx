@@ -2,21 +2,16 @@
 
 import Link from "next/link"
 import { APPAREL_SELL_ADMIN_ONLY } from "@/lib/apparel-listing-config"
-import {
-  SURFBOARD_SELL_BOARDS_CREATE_HREF,
-  SURFBOARD_SELL_QUICK_CREATE_HREF,
-} from "@/lib/sell-flow/surfboard-sell-paths"
+import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
 import { cn } from "@/lib/utils"
 
 /** Search-first sell hub (preserves `?new=1` for analytics / blank-slate). */
 export const SELL_HUB_HREF = "/sell?new=1"
 
-/** Returning-publisher default — Guided / Advanced boards form. */
+/** Guided / Advanced boards form. */
 export const SELL_SURFBOARD_PATH_HREF = SURFBOARD_SELL_BOARDS_CREATE_HREF
 /** @deprecated Prefer SELL_SURFBOARD_PATH_HREF — same destination. */
 export const SELL_SURFBOARD_FULL_PATH_HREF = SELL_SURFBOARD_PATH_HREF
-/** First-time / guest default — Quick List (also reachable via view-mode picker). */
-export const SELL_SURFBOARD_QUICK_PATH_HREF = SURFBOARD_SELL_QUICK_CREATE_HREF
 
 type SellTypeOption = {
   href: string
@@ -67,7 +62,6 @@ export function SellListByTypeLinks({
   className,
 }: {
   isAdmin?: boolean
-  /** Experience-based default from {@link resolveDefaultSurfboardSellCreatePath}. */
   surfboardHref?: string
   variant?: "page" | "panel"
   className?: string

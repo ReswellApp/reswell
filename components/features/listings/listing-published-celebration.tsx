@@ -15,6 +15,7 @@ import {
   type ListingEnrichmentGap,
 } from "@/lib/sell-flow/listing-enrichment"
 import { peerListingEditHref } from "@/lib/peer-listing-sections"
+import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
 import { setSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 import { cn } from "@/lib/utils"
 
@@ -22,7 +23,7 @@ import { cn } from "@/lib/utils"
 function sellAgainHref(section: string): string {
   switch (section) {
     case "surfboards":
-      return "/sell/boards?new=1"
+      return SURFBOARD_SELL_BOARDS_CREATE_HREF
     case "fins":
       return "/sell/fins?new=1"
     case "wetsuits":

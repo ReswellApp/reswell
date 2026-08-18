@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Instagram, ShieldCheck } from "lucide-react"
+import { FooterNewsletterSignup } from "@/components/features/marketing/footer-newsletter-signup"
 import { SiteWordmarkLink } from "@/components/site-wordmark-link"
 import { MadeWithLoveSantaBarbara } from "@/components/made-with-love-santa-barbara"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
@@ -14,7 +15,9 @@ export function Footer() {
   return (
     <footer className="border-t border-white/15 bg-listingHeart pb-[env(safe-area-inset-bottom)] text-white">
       <div className="container mx-auto py-10 sm:py-14">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5 md:gap-10">
+        <FooterNewsletterSignup />
+
+        <div className="mt-10 grid grid-cols-2 gap-8 md:mt-12 md:grid-cols-4 lg:grid-cols-5 md:gap-10">
           {/* Brand */}
           <div className="col-span-2 lg:col-span-1">
             <SiteWordmarkLink
@@ -72,11 +75,11 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Support */}
+          {/* Help */}
           <div>
-            <h3 className="text-sm font-semibold text-white">Support</h3>
+            <h3 className="text-sm font-semibold text-white">Help</h3>
             <ul className="mt-4 space-y-3">
-              {siteFooterNavLinks.support.map((link) => (
+              {siteFooterNavLinks.help.map((link) => (
                 <li key={link.name}>
                   <Link href={link.href} className={footerLinkClassName}>
                     {link.name}

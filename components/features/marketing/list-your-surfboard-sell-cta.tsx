@@ -4,10 +4,11 @@ import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 
 import { Button, type ButtonProps } from "@/components/ui/button"
+import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
 import { cn } from "@/lib/utils"
 
-/** Nav / marketing "List your gear" CTAs — category picker on `/sell`. */
-export const LIST_YOUR_SURFBOARD_SELL_HREF = "/sell"
+/** Marketing “List a board” CTAs — Guided boards form. */
+export const LIST_YOUR_SURFBOARD_SELL_HREF = SURFBOARD_SELL_BOARDS_CREATE_HREF
 
 type ListYourSurfboardSellCtaProps = {
   /** @deprecated Unused — sell flow is public; auth is required at publish. */

@@ -8,6 +8,7 @@ import {
 } from "@/components/features/marketing/marketing-headline-hero"
 import { Button } from "@/components/ui/button"
 import { RESWELL_CONTACT_EMAIL, RESWELL_CONTACT_MAILTO } from "@/lib/constants/contact"
+import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
 import { shimmerDataUrl } from "@/lib/image-shimmer"
 import { reswellProtectionCardClassName } from "@/lib/reswell-protection-surface"
 import aboutHeadlineAtmosphere from "@/public/images/about/headline-oz-aerial.jpg"
@@ -16,7 +17,7 @@ import ourStoryBeachFilm from "@/public/images/about/our-story-beach-film.jpg"
 const WHY_SURFERS_USE = [
   {
     title: "Nationwide, with shipping",
-    href: "/sell",
+    href: SURFBOARD_SELL_BOARDS_CREATE_HREF,
     description:
       "List a board once and reach surfers outside your zip code. Built in shipping means the deal doesn't stop at local pickup.",
   },
@@ -169,7 +170,7 @@ export function AboutPageContent({ stats, heroListingImages }: AboutPageContentP
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild>
-              <Link href="/sell">List a board</Link>
+              <Link href={SURFBOARD_SELL_BOARDS_CREATE_HREF}>List a board</Link>
             </Button>
           </div>
         </div>

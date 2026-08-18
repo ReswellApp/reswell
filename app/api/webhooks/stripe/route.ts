@@ -10,6 +10,10 @@ import {
   completeSellerShippingLabelFromPaymentIntent,
   isSellerShippingLabelPaymentIntent,
 } from "@/lib/services/sellerShippingLabelCheckout"
+import {
+  completeSellerSaleTipFromPaymentIntent,
+  isSellerSaleTipPaymentIntent,
+} from "@/lib/services/sellerSaleTip"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { tryHandleStripeConnectEvent } from "@/lib/services/stripeConnectWebhook"
 import {
@@ -95,6 +99,34 @@ export async function POST(request: Request) {
 
   if (pi.status !== "succeeded") {
     return NextResponse.json({ received: true, skipped: "not_succeeded" })
+  }
+
+  if (isSellerSaleTipPaymentIntent(pi)) {
+    let serviceSupabase
+    try {
+      serviceSupabase = createServiceRoleClient()
+    } catch (e) {
+      console.error("[stripe webhook] service role client for sale tip:", e)
+      return NextResponse.json({ error: "server_config" }, { status: 503 })
+    }
+
+    const result = await completeSellerSaleTipFromPaymentIntent({
+      supabase: serviceSupabase,
+      paymentIntent: pi,
+    })
+    if (!result.ok) {
+      console.error("[stripe webhook] sale tip failed:", result.error, { pi: pi.id })
+      if (result.status >= 500) {
+        return NextResponse.json({ error: result.error }, { status: 500 })
+      }
+      return NextResponse.json({ received: true, skipped: "sale_tip_failed", detail: result.error })
+    }
+
+    return NextResponse.json({
+      received: true,
+      saleTip: true,
+      alreadyProcessed: result.alreadyProcessed,
+    })
   }
 
   if (isSellerShippingLabelPaymentIntent(pi)) {

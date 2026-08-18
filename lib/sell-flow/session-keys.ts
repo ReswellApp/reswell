@@ -1,6 +1,6 @@
 import type { SellListingDraftListingType } from "@/lib/sell-listing-draft-idb"
 
-export type SellFlowListingKind = SellListingDraftListingType | "quick"
+export type SellFlowListingKind = SellListingDraftListingType
 
 /** While set, IndexedDB restore must not run — coordinates with draft clear after `?new=1`. */
 export const SELL_SUPPRESS_IDB_RESTORE_KEY = "reswell.sell.suppressIdbRestoreOnce"
@@ -41,15 +41,8 @@ export function isPendingPublish(kind: SellFlowListingKind): boolean {
   }
 }
 
-/**
- * Quick List stores the same IndexedDB slot as Guided boards (`board`).
- * Either pending-publish flag must keep that snapshot.
- */
 export function isPendingPublishForDraftType(
   listingType: SellListingDraftListingType,
 ): boolean {
-  if (listingType === "board") {
-    return isPendingPublish("board") || isPendingPublish("quick")
-  }
   return isPendingPublish(listingType)
 }

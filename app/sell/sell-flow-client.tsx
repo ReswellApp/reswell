@@ -876,8 +876,8 @@ function SellPageContentInner({
   /** Restore guided/advanced + step from session after mount (must not run during SSR). */
   useEffect(() => {
     if (editId) return
-    // Catalog search selections always open Guided from the first step.
-    if (peekSellCatalogHandoff("surfboards")) {
+    // New listings and catalog handoffs always open Guided from the first step.
+    if (startFresh || peekSellCatalogHandoff("surfboards")) {
       setFlowStep("product")
       persistBoardSellFlowStep("product")
       setViewModeState("guided")
@@ -888,7 +888,7 @@ function SellPageContentInner({
     if (storedStep) setFlowStep(storedStep)
     const storedMode = readStoredBoardSellViewMode()
     if (storedMode) setViewModeState(storedMode)
-  }, [editId])
+  }, [editId, startFresh])
 
   useEffect(() => {
     if (!loading) return
@@ -1167,6 +1167,8 @@ function SellPageContentInner({
       draftPhotosPendingRef.current = null
       setFormData(createInitialSellFormData())
       setBoardFlowStep("product")
+      setViewModeState("guided")
+      persistBoardSellViewMode("guided")
       clearPersistedBoardSellFlowStep()
       sellListingThumbLoadedSrcByClientId.clear()
       latestListingPhotoPrepareSeqRef.current.clear()
@@ -1866,34 +1868,6 @@ function SellPageContentInner({
     }
   }, [flowStep, setBoardFlowStep])
 
-  const goToQuickList = useCallback(() => {
-    void (async () => {
-      const r = sellDraftLatestRef.current
-      if (!r.editId && r.draftHydrated) {
-        try {
-          // Local IDB flush so /sell/quick can hydrate the same draft.
-          await persistSellListingDraftSnapshot({
-            listingType: r.listingType,
-            formData: r.formData,
-            images: r.images,
-            userId: sellDraftUserIdRef.current,
-            includeInFlightPhotos: true,
-          })
-        } catch {
-          /* still navigate — Quick List recovers what it can */
-        }
-      }
-      logSellFunnelEvent({
-        listingType: "surfboards",
-        event: "fork_to_quick",
-        message: viewMode,
-      })
-      router.push("/sell/quick")
-      // Don't await network draft — keepalive can stall and block navigation.
-      void persistServerDraftRef.current?.({ keepalive: true }).catch(() => {})
-    })()
-  }, [persistServerDraftRef, router, viewMode])
-
   const firstIncompleteSellSectionId = useMemo(() => {
     for (const item of SELL_FORM_SECTION_NAV_ITEMS) {
       if (sellSectionCompletion[item.id] !== true) return item.id
@@ -2056,6 +2030,8 @@ function SellPageContentInner({
     draftPhotosPendingRef.current = null
     setFormData(createInitialSellFormData())
     setBoardFlowStep("product")
+    setViewModeState("guided")
+    persistBoardSellViewMode("guided")
     clearPersistedBoardSellFlowStep()
     sellListingThumbLoadedSrcByClientId.clear()
     latestListingPhotoPrepareSeqRef.current.clear()
@@ -4886,7 +4862,6 @@ function SellPageContentInner({
                 <BoardSellViewToolbar
                   viewMode={viewMode}
                   onViewModeChange={setViewMode}
-                  onSelectQuickList={editId ? undefined : goToQuickList}
                   searchAgainHref={editId ? null : "/sell"}
                   showBack={viewMode === "guided" && flowStep !== "product"}
                   showContinue={viewMode === "guided" && flowStep !== "shipping"}

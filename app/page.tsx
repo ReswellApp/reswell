@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { ProfileBannerImage } from "@/components/features/dashboard/profile-banner-image"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
+import { authLandingHref } from "@/lib/auth/auth-landing-href"
 import { boardsBrowseLinkPrefetch } from "@/lib/boards-link-prefetch"
 import { FadeInSection } from "@/components/fade-in-section"
 import {
@@ -129,20 +130,26 @@ export default async function HomePage() {
                 Used surfboard marketplace
               </Badge>
               <h1 className="text-[1.75rem] font-bold leading-tight tracking-tight text-foreground text-balance sm:text-4xl md:text-[2.375rem] lg:text-4xl lg:leading-tight xl:text-[2.625rem]">
-                Buy and Sell Surfboards
+                The marketplace for surfers
               </h1>
               <p className="mt-4 text-base text-muted-foreground text-pretty sm:mt-5 sm:text-lg lg:mt-4 lg:text-base">
-                Find surfboards locally or from sellers that offer shipping, list your own boards with photos and dimensions, and buy straight from surfers.
+                Join surfers buying and selling surf gear.
               </p>
               <div className="mt-6 flex flex-col items-stretch justify-center gap-3 sm:mt-7 sm:gap-3.5 lg:mt-6 lg:justify-start">
-                <Button size="lg" className="w-full" asChild>
+                {user ? (
+                  <Button size="lg" className="w-full" asChild>
+                    <Link href="/sell">Start Selling</Link>
+                  </Button>
+                ) : (
+                  <Button size="lg" className="w-full" asChild>
+                    <Link href={authLandingHref("/auth/sign-up")}>Sign up</Link>
+                  </Button>
+                )}
+                <Button size="lg" variant="outline" className="w-full lg:w-full" asChild>
                   <Link href="/boards" prefetch={boardsBrowseLinkPrefetch("/boards")}>
                     Browse surfboards
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
-                </Button>
-                <Button size="lg" variant="outline" className="w-full lg:w-full" asChild>
-                  <Link href="/sell">Start Selling</Link>
                 </Button>
               </div>
             </div>
@@ -302,10 +309,9 @@ export default async function HomePage() {
             <div className={marketingCtaBannerPanelClassName}>
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div className="min-w-0">
-                  <p className={marketingCtaBannerTitleClassName}>Ready to get started?</p>
+                  <p className={marketingCtaBannerTitleClassName}>Come find a board</p>
                   <p className={marketingCtaBannerDescriptionClassName}>
-                    Browse boards, fins, wetsuits, and more from locals and shops — or list yours with photos and
-                    pickup options in a few minutes.
+                    Browse used boards and gear from surfers — or list one and send it on its next session.
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center">

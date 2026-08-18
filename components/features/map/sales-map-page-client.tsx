@@ -63,9 +63,17 @@ function hexToRgba(hex: string, alpha: number): string {
 type UsaSalesFlowMapProps = {
   data: MarketplaceSalesMapPayload
   className?: string
+  /** Compact height for directory embeds; default matches `/map`. */
+  size?: "default" | "compact"
 }
 
-export function UsaSalesFlowMap({ data, className }: UsaSalesFlowMapProps) {
+export function UsaSalesFlowMap({
+  data,
+  className,
+  size = "default",
+}: UsaSalesFlowMapProps) {
+  const isCompact = size === "compact"
+  const svgIdPrefix = isCompact ? "cities-map" : "sales-map"
   const isMobileView = useMobileMapView()
   const [selection, setSelection] = useState<MapSelection>(null)
   const { geometry } = data
@@ -131,7 +139,14 @@ export function UsaSalesFlowMap({ data, className }: UsaSalesFlowMapProps) {
   return (
     <div className={cn("relative", className)}>
       <div className="overflow-hidden rounded-xl border border-border/80 bg-gradient-to-b from-muted/30 via-background to-background shadow-sm sm:rounded-2xl">
-        <div className="relative h-[480px] w-full sm:h-[520px] md:h-[560px] lg:h-[600px]">
+        <div
+          className={cn(
+            "relative w-full",
+            isCompact
+              ? "h-[220px] sm:h-[260px] md:h-[280px]"
+              : "h-[480px] sm:h-[520px] md:h-[560px] lg:h-[600px]",
+          )}
+        >
           <svg
             viewBox={`0 0 ${geometry.width} ${geometry.height}`}
             className={cn("h-full w-full", isMobileView && "touch-manipulation")}
@@ -140,12 +155,12 @@ export function UsaSalesFlowMap({ data, className }: UsaSalesFlowMapProps) {
             aria-label="United States map showing Reswell sales flowing from seller states to buyer states"
           >
             <defs>
-              <linearGradient id="map-surface" x1="0%" y1="0%" x2="100%" y2="100%">
+              <linearGradient id={`${svgIdPrefix}-surface`} x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="hsl(var(--background))" />
                 <stop offset="100%" stopColor="hsl(var(--muted) / 0.35)" />
               </linearGradient>
               <marker
-                id="flow-arrow"
+                id={`${svgIdPrefix}-flow-arrow`}
                 viewBox="0 0 10 10"
                 refX="8"
                 refY="5"
@@ -160,7 +175,7 @@ export function UsaSalesFlowMap({ data, className }: UsaSalesFlowMapProps) {
             <rect
               width={geometry.width}
               height={geometry.height}
-              fill="url(#map-surface)"
+              fill={`url(#${svgIdPrefix}-surface)`}
               onClick={() => {
                 if (isMobileView) setSelection(null)
               }}
@@ -226,7 +241,7 @@ export function UsaSalesFlowMap({ data, className }: UsaSalesFlowMapProps) {
                   stroke="#dc2626"
                   strokeWidth={isSelected ? flow.width + 1.2 : flow.width}
                   strokeOpacity={isSelected ? 0.95 : flow.opacity}
-                  markerEnd="url(#flow-arrow)"
+                  markerEnd={`url(#${svgIdPrefix}-flow-arrow)`}
                   className={cn(
                     "transition-[stroke-width,stroke-opacity] duration-200",
                     isMobileView && "cursor-pointer",
@@ -288,26 +303,28 @@ export function UsaSalesFlowMap({ data, className }: UsaSalesFlowMapProps) {
             </div>
           ) : null}
 
-          <div className="pointer-events-none absolute bottom-2 left-2 right-2 rounded-lg border border-border/70 bg-background/90 px-2 py-1.5 shadow-sm backdrop-blur-sm sm:bottom-3 sm:left-3 sm:right-auto sm:rounded-xl sm:px-2.5 sm:py-2">
-            <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[10px] text-muted-foreground sm:justify-start sm:gap-x-3 sm:text-xs">
-              {isMobileView && !selection ? (
-                <span className="w-full text-center font-medium text-foreground/80 sm:w-auto">
-                  Tap a state for stats
+          {!isCompact ? (
+            <div className="pointer-events-none absolute bottom-2 left-2 right-2 rounded-lg border border-border/70 bg-background/90 px-2 py-1.5 shadow-sm backdrop-blur-sm sm:bottom-3 sm:left-3 sm:right-auto sm:rounded-xl sm:px-2.5 sm:py-2">
+              <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-[10px] text-muted-foreground sm:justify-start sm:gap-x-3 sm:text-xs">
+                {isMobileView && !selection ? (
+                  <span className="w-full text-center font-medium text-foreground/80 sm:w-auto">
+                    Tap a state for stats
+                  </span>
+                ) : null}
+                <span className="inline-flex items-center gap-1">
+                  <span className="h-2 w-4 rounded-full bg-[#dc2626]/70 sm:h-2.5 sm:w-6" />
+                  Flow
                 </span>
-              ) : null}
-              <span className="inline-flex items-center gap-1">
-                <span className="h-2 w-4 rounded-full bg-[#dc2626]/70 sm:h-2.5 sm:w-6" />
-                Flow
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <span
-                  className="h-2 w-2 rounded-full sm:h-2.5 sm:w-2.5"
-                  style={{ backgroundColor: BRAND_CTA_BLUE }}
-                />
-                Active states
-              </span>
+                <span className="inline-flex items-center gap-1">
+                  <span
+                    className="h-2 w-2 rounded-full sm:h-2.5 sm:w-2.5"
+                    style={{ backgroundColor: BRAND_CTA_BLUE }}
+                  />
+                  Active states
+                </span>
+              </div>
             </div>
-          </div>
+          ) : null}
         </div>
 
         {selectionLabel && isMobileView ? (

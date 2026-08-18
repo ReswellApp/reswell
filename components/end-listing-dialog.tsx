@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -13,16 +12,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { MarkSoldFollowUp } from "@/components/features/listings/mark-sold-follow-up"
 import { toast } from "sonner"
 import { postEndListing } from "@/lib/listing-end-request"
 import { postMarkListingSold } from "@/lib/listing-mark-sold-request"
-import {
-  SOLD_OFF_PLATFORM_CHANNEL_LABELS,
-  type SoldOffPlatformChannel,
-} from "@/lib/validations/mark-listing-sold"
+import { cn } from "@/lib/utils"
 
 type EndChoice = "delete" | "archive" | "mark_sold" | null
-type DialogStep = "main" | "sold_channel"
+type DialogStep = "main" | "sold_survey"
 
 export type EndListingDialogResult =
   | { mode: "archive"; message?: string }
@@ -44,16 +41,12 @@ export function EndListingDialog({
 }: EndListingDialogProps) {
   const [step, setStep] = useState<DialogStep>("main")
   const [choice, setChoice] = useState<EndChoice>(null)
-  const [soldChannel, setSoldChannel] = useState<SoldOffPlatformChannel | null>(null)
-  const [elsewhereDetail, setElsewhereDetail] = useState("")
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
   function resetState() {
     setStep("main")
     setChoice(null)
-    setSoldChannel(null)
-    setElsewhereDetail("")
     setLoading(false)
   }
 
@@ -64,47 +57,21 @@ export function EndListingDialog({
     onOpenChange(nextOpen)
   }
 
-  function selectMainChoice(nextChoice: Exclude<EndChoice, null>) {
-    setChoice(nextChoice)
-    if (nextChoice === "mark_sold") {
-      setSoldChannel(null)
-      setElsewhereDetail("")
-      setStep("sold_channel")
-    }
-  }
-
-  function handleBack() {
-    setStep("main")
-    setSoldChannel(null)
-    setElsewhereDetail("")
-    setChoice(null)
-  }
-
-  const elsewhereDetailValid =
-    soldChannel !== "elsewhere" || elsewhereDetail.trim().length >= 2
-
-  const canConfirmSoldChannel =
-    !!soldChannel && elsewhereDetailValid && !loading
-
   async function handleConfirm() {
     if (!listingId || !choice) return
 
     if (choice === "mark_sold") {
-      if (!soldChannel || !elsewhereDetailValid) return
       setLoading(true)
       try {
-        const result = await postMarkListingSold(listingId, {
-          channel: soldChannel,
-          detail: soldChannel === "elsewhere" ? elsewhereDetail.trim() : undefined,
-        })
+        const result = await postMarkListingSold(listingId)
         if (!result.ok) {
           toast.error(result.error)
           return
         }
         toast.success("Listing marked as sold")
         onComplete?.({ mode: "mark_sold" })
-        handleDialogOpenChange(false)
         router.refresh()
+        setStep("sold_survey")
       } finally {
         setLoading(false)
       }
@@ -136,8 +103,24 @@ export function EndListingDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={handleDialogOpenChange}>
-      <AlertDialogContent>
-        {step === "main" ? (
+      <AlertDialogContent
+        className={cn(step === "sold_survey" && "max-h-[90vh] overflow-y-auto")}
+      >
+        {step === "sold_survey" && listingId ? (
+          <>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Congrats on the sale</AlertDialogTitle>
+              <AlertDialogDescription className="sr-only">
+                Optional follow-up about where you sold, whether Reswell helped find a buyer,
+                and an optional tip.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <MarkSoldFollowUp
+              listingId={listingId}
+              onClose={() => handleDialogOpenChange(false)}
+            />
+          </>
+        ) : (
           <>
             <AlertDialogHeader>
               <AlertDialogTitle>End listing</AlertDialogTitle>
@@ -154,7 +137,7 @@ export function EndListingDialog({
                 variant={choice === "archive" ? "default" : "outline"}
                 className="justify-start"
                 type="button"
-                onClick={() => selectMainChoice("archive")}
+                onClick={() => setChoice("archive")}
               >
                 Archive listing
               </Button>
@@ -162,7 +145,7 @@ export function EndListingDialog({
                 variant={choice === "mark_sold" ? "default" : "outline"}
                 className="justify-start"
                 type="button"
-                onClick={() => selectMainChoice("mark_sold")}
+                onClick={() => setChoice("mark_sold")}
               >
                 Mark as sold
               </Button>
@@ -170,7 +153,7 @@ export function EndListingDialog({
                 variant={choice === "delete" ? "destructive" : "outline"}
                 className="justify-start"
                 type="button"
-                onClick={() => selectMainChoice("delete")}
+                onClick={() => setChoice("delete")}
               >
                 Delete listing
               </Button>
@@ -180,73 +163,22 @@ export function EndListingDialog({
               <Button
                 type="button"
                 variant={choice === "delete" ? "destructive" : "default"}
-                disabled={!choice || choice === "mark_sold" || loading}
+                disabled={!choice || loading}
                 onClick={() => void handleConfirm()}
               >
                 {loading
                   ? choice === "delete"
                     ? "Deleting…"
-                    : "Archiving…"
+                    : choice === "mark_sold"
+                      ? "Saving…"
+                      : "Archiving…"
                   : choice === "delete"
                     ? "Delete listing"
                     : choice === "archive"
                       ? "Archive listing"
-                      : "Continue"}
-              </Button>
-            </AlertDialogFooter>
-          </>
-        ) : (
-          <>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Where did you sell it?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This helps us understand how sellers close deals. Your listing stays on Reswell as sold
-                for your records.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="flex flex-col gap-2 py-2">
-              {(Object.keys(SOLD_OFF_PLATFORM_CHANNEL_LABELS) as SoldOffPlatformChannel[]).map(
-                (channel) => (
-                  <Button
-                    key={channel}
-                    variant={soldChannel === channel ? "default" : "outline"}
-                    className="justify-start"
-                    type="button"
-                    onClick={() => setSoldChannel(channel)}
-                  >
-                    {SOLD_OFF_PLATFORM_CHANNEL_LABELS[channel]}
-                  </Button>
-                ),
-              )}
-              {soldChannel === "elsewhere" ? (
-                <div className="space-y-2 pt-1">
-                  <Input
-                    value={elsewhereDetail}
-                    onChange={(e) => setElsewhereDetail(e.target.value)}
-                    placeholder="Where did you sell it?"
-                    maxLength={200}
-                    disabled={loading}
-                    aria-invalid={!elsewhereDetailValid}
-                  />
-                  {!elsewhereDetailValid ? (
-                    <p className="text-sm text-destructive">
-                      Please tell us where you sold this item.
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-            <AlertDialogFooter>
-              <Button type="button" variant="outline" disabled={loading} onClick={handleBack}>
-                Back
-              </Button>
-              <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-              <Button
-                type="button"
-                disabled={!canConfirmSoldChannel}
-                onClick={() => void handleConfirm()}
-              >
-                {loading ? "Saving…" : "Mark as sold"}
+                      : choice === "mark_sold"
+                        ? "Mark as sold"
+                        : "Continue"}
               </Button>
             </AlertDialogFooter>
           </>

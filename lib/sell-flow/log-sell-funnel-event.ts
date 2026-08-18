@@ -31,18 +31,6 @@ export function logSellFunnelEvent(event: SellFunnelEventInput): void {
     })
 }
 
-/** Quick → Full fork regret. Call when the seller opts into shipping/details. */
-export function logSellForkToFull(opts?: {
-  listingType?: PeerListingSection
-  message?: string
-}): void {
-  logSellFunnelEvent({
-    listingType: opts?.listingType ?? "surfboards",
-    event: "fork_to_full",
-    message: opts?.message ?? "quick_to_full",
-  })
-}
-
 const FIELD_INTERACTED_PREFIX = "reswell.sell.funnel.fieldInteracted."
 
 /** Once-per-session field focus/blur — feeds per-field drop-off in admin. */

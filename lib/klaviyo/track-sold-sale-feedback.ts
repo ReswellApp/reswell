@@ -1,20 +1,17 @@
 /**
- * Server-only: Klaviyo Events API — fires when a seller marks a listing sold off-platform.
+ * Server-only: Klaviyo Events API — fires when a seller answers the post-sale survey.
  *
- * **Metric name in Klaviyo:** `marked as sold`
+ * **Metric name in Klaviyo:** `sold sale feedback`
  */
 
-import { absoluteKlaviyoListingPhotoUrl } from "@/lib/klaviyo/catalog-product"
 import { getAuthEmailForUserId } from "@/lib/klaviyo/auth-user-email"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
-import { listingDetailHref } from "@/lib/listing-href"
-import { publicSiteOrigin } from "@/lib/public-site-origin"
 import {
   SOLD_OFF_PLATFORM_CHANNEL_LABELS,
   type SoldOffPlatformChannel,
 } from "@/lib/validations/mark-listing-sold"
 
-export type KlaviyoMarkedAsSoldPayload = {
+export type KlaviyoSoldSaleFeedbackPayload = {
   sellerUserId: string
   sellerEmail?: string | null
   listingId: string
@@ -22,7 +19,6 @@ export type KlaviyoMarkedAsSoldPayload = {
   price: number
   section: string
   slug?: string | null
-  photoUrl?: string | null
   channel?: SoldOffPlatformChannel | null
   channelDetail?: string | null
   reswellHelpedFindBuyer?: boolean | null
@@ -40,8 +36,8 @@ function resolveSaleChannelLabel(
   return SOLD_OFF_PLATFORM_CHANNEL_LABELS[channel]
 }
 
-export async function trackKlaviyoMarkedAsSold(
-  payload: KlaviyoMarkedAsSoldPayload,
+export async function trackKlaviyoSoldSaleFeedback(
+  payload: KlaviyoSoldSaleFeedbackPayload,
 ): Promise<void> {
   const sellerEmail =
     payload.sellerEmail !== undefined
@@ -49,33 +45,28 @@ export async function trackKlaviyoMarkedAsSold(
       : await getAuthEmailForUserId(payload.sellerUserId)
 
   const priceNum = typeof payload.price === "number" ? payload.price : Number(payload.price)
-  const origin = publicSiteOrigin()
-  const listingPath = listingDetailHref({
-    id: payload.listingId,
-    slug: payload.slug ?? undefined,
-    section: payload.section,
-  })
-  const listingUrl = `${origin}${listingPath}`
-  const saleChannelLabel = resolveSaleChannelLabel(payload.channel, payload.channelDetail)
 
   await sendKlaviyoServerEvent({
-    metricName: "marked as sold",
+    metricName: "sold sale feedback",
     profile: {
       external_id: payload.sellerUserId,
       email: sellerEmail,
     },
-    uniqueId: `marked-as-sold-${payload.listingId}`,
+    uniqueId: `sold-sale-feedback-${payload.listingId}-${payload.channel ?? "na"}-${
+      payload.reswellHelpedFindBuyer === true
+        ? "yes"
+        : payload.reswellHelpedFindBuyer === false
+          ? "no"
+          : "na"
+    }`,
     value: Number.isFinite(priceNum) ? priceNum : undefined,
     valueCurrency: "USD",
     properties: {
       listing_id: payload.listingId,
       Title: payload.title,
       Price: Number.isFinite(priceNum) ? priceNum : payload.price,
-      listing_url: listingUrl,
-      photo_url: payload.photoUrl ? absoluteKlaviyoListingPhotoUrl(payload.photoUrl) : "",
-      sold_off_platform: true,
       sale_channel: payload.channel ?? "unspecified",
-      sale_channel_label: saleChannelLabel,
+      sale_channel_label: resolveSaleChannelLabel(payload.channel, payload.channelDetail),
       sale_channel_detail:
         payload.channel === "elsewhere" ? (payload.channelDetail?.trim() ?? "") : "",
       reswell_helped_find_buyer:

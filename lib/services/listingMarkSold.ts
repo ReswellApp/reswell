@@ -57,7 +57,7 @@ function primaryPhotoUrl(
 
 /**
  * Seller marks a live listing sold off-platform. Keeps the listing record, sets status to sold,
- * and records the reported sale channel for analytics and Klaviyo.
+ * and optionally records the reported sale channel / whether Reswell helped find a buyer.
  */
 export async function markSellerListingSoldOffPlatform(
   supabase: SupabaseClient,
@@ -65,11 +65,12 @@ export async function markSellerListingSoldOffPlatform(
     listingId: string
     sellerUserId: string
     sellerEmail?: string | null
-    channel: SoldOffPlatformChannel
+    channel?: SoldOffPlatformChannel | null
     detail?: string | null
+    reswellHelpedFindBuyer?: boolean | null
   },
 ): Promise<MarkSellerListingSoldOffPlatformResult> {
-  const { listingId, sellerUserId, channel, detail } = params
+  const { listingId, sellerUserId, channel, detail, reswellHelpedFindBuyer } = params
 
   const row = await loadListingForMarkSold(supabase, listingId)
   if (!row) {
@@ -94,17 +95,29 @@ export async function markSellerListingSoldOffPlatform(
 
   const soldAt = new Date().toISOString()
   const channelDetail = channel === "elsewhere" ? (detail?.trim() ?? "") : null
+  const listingUpdate: {
+    status: string
+    sold_off_platform: boolean
+    sold_off_platform_channel: SoldOffPlatformChannel | null
+    sold_off_platform_detail: string | null
+    sold_off_platform_at: string
+    updated_at: string
+    sold_reswell_helped_find_buyer?: boolean
+  } = {
+    status: "sold",
+    sold_off_platform: true,
+    sold_off_platform_channel: channel ?? null,
+    sold_off_platform_detail: channelDetail,
+    sold_off_platform_at: soldAt,
+    updated_at: soldAt,
+  }
+  if (typeof reswellHelpedFindBuyer === "boolean") {
+    listingUpdate.sold_reswell_helped_find_buyer = reswellHelpedFindBuyer
+  }
 
   const { error } = await supabase
     .from("listings")
-    .update({
-      status: "sold",
-      sold_off_platform: true,
-      sold_off_platform_channel: channel,
-      sold_off_platform_detail: channelDetail,
-      sold_off_platform_at: soldAt,
-      updated_at: soldAt,
-    })
+    .update(listingUpdate)
     .eq("id", listingId)
     .eq("user_id", sellerUserId)
 
@@ -141,8 +154,10 @@ export async function markSellerListingSoldOffPlatform(
     section: row.section,
     slug: row.slug,
     photoUrl: primaryPhotoUrl(row.listing_images),
-    channel,
+    channel: channel ?? null,
     channelDetail,
+    reswellHelpedFindBuyer:
+      typeof reswellHelpedFindBuyer === "boolean" ? reswellHelpedFindBuyer : null,
   })
 
   return { ok: true }

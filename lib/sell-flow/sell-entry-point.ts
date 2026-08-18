@@ -56,9 +56,7 @@ export function resolveSellEntryPoint(hint?: SellEntryPoint | null): SellEntryPo
         resolved = "new_param"
       } else {
         const path = window.location.pathname
-        if (path === "/sell/quick" || path.startsWith("/sell/quick/")) {
-          resolved = "direct_quick"
-        } else if (path === "/sell/boards" || path.startsWith("/sell/boards/")) {
+        if (path === "/sell/boards" || path.startsWith("/sell/boards/")) {
           resolved = "direct_boards"
         } else if (path === "/sell") {
           resolved = "bare_sell"

@@ -11,36 +11,6 @@ function serviceOrFallback(supabase: SupabaseClient): SupabaseClient {
 }
 
 /**
- * True when the seller has at least one non-draft listing (any section).
- * Used to pick Quick List vs Guided boards for first-time publishers.
- */
-export async function sellerHasAnyPublishedListing(
-  supabase: SupabaseClient,
-  sellerUserId: string,
-): Promise<boolean> {
-  const uid = sellerUserId.trim()
-  if (!uid) return false
-
-  const client = serviceOrFallback(supabase)
-  const { count, error } = await client
-    .from("listings")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", uid)
-    .neq("status", "draft")
-
-  if (error) {
-    console.error(
-      "[sellerFirstListing] any published listing count failed:",
-      error.message,
-    )
-    // Fail open to Guided — returning publishers should not be forced into Quick.
-    return true
-  }
-
-  return (count ?? 0) > 0
-}
-
-/**
  * Returns true when the seller has already published at least one non-draft
  * listing in `section` other than `excludeListingId` (the listing just created).
  * Drafts do not count — first publish of a category still qualifies.

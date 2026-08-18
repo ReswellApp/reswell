@@ -37,7 +37,7 @@ import {
 } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { SITE_FILTER_BAR_HEIGHT } from "@/components/site-search-bar"
-import { LIST_YOUR_SURFBOARD_SELL_HREF } from "@/components/features/marketing/list-your-surfboard-sell-cta"
+import { SELL_HUB_HREF } from "@/components/features/sell/sell-type-chooser"
 import { cn } from "@/lib/utils"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { forceReleaseBodyScrollLock, useBodyScrollLock } from "@/hooks/use-body-scroll-lock"
@@ -1135,7 +1135,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                         className="h-10 w-10 shrink-0 text-foreground hover:bg-black/5"
                       >
                         <Link
-                          href={LIST_YOUR_SURFBOARD_SELL_HREF}
+                          href={SELL_HUB_HREF}
                           aria-label="Create listing"
                         >
                           <Plus className="h-[22px] w-[22px]" aria-hidden />
@@ -1162,7 +1162,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                         Log in
                       </Link>
                       <Link
-                        href={LIST_YOUR_SURFBOARD_SELL_HREF}
+                        href={SELL_HUB_HREF}
                         className="shrink-0 whitespace-nowrap px-1 py-2 text-[15px] font-medium text-foreground"
                       >
                         Sell
@@ -1261,7 +1261,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 size="icon"
                 className="h-10 w-10 shrink-0 text-foreground hover:bg-muted"
               >
-                <Link href={LIST_YOUR_SURFBOARD_SELL_HREF} aria-label="Create listing">
+                <Link href={SELL_HUB_HREF} aria-label="Create listing">
                   <Plus className="h-[22px] w-[22px]" aria-hidden />
                 </Link>
               </Button>
@@ -1273,7 +1273,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 variant="outline"
                 className={cn(listYourBoardNavButtonClassName, "hidden lg:mr-10 lg:inline-flex")}
               >
-                <Link href={LIST_YOUR_SURFBOARD_SELL_HREF}>List your gear</Link>
+                <Link href={SELL_HUB_HREF}>List your gear</Link>
               </Button>
             ) : null}
 
@@ -1340,7 +1340,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   variant="outline"
                   className={cn(listYourBoardNavButtonClassName, "hidden sm:inline-flex lg:hidden")}
                 >
-                  <Link href={LIST_YOUR_SURFBOARD_SELL_HREF}>List your gear</Link>
+                  <Link href={SELL_HUB_HREF}>List your gear</Link>
                 </Button>
                 <div className="hidden items-center gap-2 lg:flex">
                   <Button
@@ -1536,7 +1536,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                     title: "Marketplace",
                     links: siteFooterNavLinks.marketplace.filter((link) => link.href !== "/boards"),
                   },
-                  { title: "Support", links: siteFooterNavLinks.support },
+                  { title: "Help", links: siteFooterNavLinks.help },
                   { title: "Legal", links: siteFooterNavLinks.legal },
                 ] as const
               ).map((section, sectionIndex) => (

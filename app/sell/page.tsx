@@ -4,7 +4,7 @@ import { SellStart } from "@/components/features/sell/sell-start"
 import type { SellTrendingBrand } from "@/components/features/sell/sell-trending-brands"
 import { getCachedHomeTrendingBrandsCatalog } from "@/lib/cache/home-public-catalog"
 import { fetchProfileIsAdmin } from "@/lib/db/profileAdmin"
-import { resolveDefaultSurfboardSellCreatePath } from "@/lib/services/surfboardSellEntry"
+import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
 import { createClient } from "@/lib/supabase/server"
 import SellFlowShell from "./sell-flow-client"
 
@@ -44,9 +44,9 @@ export default async function SellPage({
   const { data: userData } = await supabase.auth.getUser()
   const user = userData.user
 
-  // Legacy choose=surfboard — experience-based Quick vs Guided.
+  // Legacy choose=surfboard — send to Guided boards.
   if (chooseSurfboard && !editId && type !== "surfboard") {
-    redirect(await resolveDefaultSurfboardSellCreatePath(supabase, user?.id))
+    redirect(SURFBOARD_SELL_BOARDS_CREATE_HREF)
   }
 
   // Editing an existing listing or explicitly choosing surfboards goes straight
@@ -61,10 +61,9 @@ export default async function SellPage({
     )
   }
 
-  const [isAdmin, trendingBrandsCatalog, surfboardSellHref] = await Promise.all([
+  const [isAdmin, trendingBrandsCatalog] = await Promise.all([
     user ? fetchProfileIsAdmin(supabase, user.id) : Promise.resolve(false),
     getCachedHomeTrendingBrandsCatalog(),
-    resolveDefaultSurfboardSellCreatePath(supabase, user?.id),
   ])
 
   const trendingBrands: SellTrendingBrand[] = trendingBrandsCatalog.homeTrendingBrandRows.map(
@@ -81,7 +80,7 @@ export default async function SellPage({
     <SellStart
       isAdmin={isAdmin}
       trendingBrands={trendingBrands}
-      surfboardSellHref={surfboardSellHref}
+      surfboardSellHref={SURFBOARD_SELL_BOARDS_CREATE_HREF}
     />
   )
 }

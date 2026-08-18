@@ -48,6 +48,5 @@ export async function saveDefaultListingLocationAction(raw: unknown) {
 
   revalidatePath("/sell")
   revalidatePath("/sell/boards")
-  revalidatePath("/sell/quick")
   return { success: true as const }
 }

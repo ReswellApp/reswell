@@ -27,7 +27,7 @@ export function isSellCatalogSearchCategory(
 
 /**
  * Sell-flow entry URL for a catalog search selection.
- * Surfboards always open Guided boards — never the experience-based Quick List.
+ * Surfboards always open Guided boards.
  */
 export function sellCatalogSearchCategorySellPath(
   category: SellCatalogSearchCategory,
