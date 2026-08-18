@@ -172,7 +172,7 @@ export function ListingPublishedCelebration({ listingParam }: { listingParam: st
                   {" "}
                   You&apos;re also in the{" "}
                   <Link
-                    href="/giveaways/win-a-custom-surfboard"
+                    href="/giveaways"
                     className="font-medium text-listingHeart underline-offset-2 hover:underline"
                   >
                     custom surfboard raffle

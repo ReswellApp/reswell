@@ -71,7 +71,7 @@ export function listStaticSiteAssets(): SiteAssetEntry[] {
 
     publicImage("home/hero-backdrop-tahiti.jpg", "Homepage and giveaway hero backdrop", "home", [
       "/",
-      "/giveaways/win-a-custom-surfboard",
+      "/giveaways",
     ]),
     publicImage("home/hero-backdrop-mesa-v2.jpg", "Legacy homepage hero backdrop", "orphan", [], {
       status: "orphan",

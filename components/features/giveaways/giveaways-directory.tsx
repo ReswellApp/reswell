@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { ArrowRight, Sparkles } from "lucide-react"
 import { resolveGiveawayStatus } from "@/lib/giveaways/catalog"
-import { giveawayDetailHref } from "@/lib/giveaways/paths"
+import { GIVEAWAYS_INDEX_HREF } from "@/lib/giveaways/paths"
 import type { Giveaway } from "@/lib/types/giveaways"
 import { Badge } from "@/components/ui/badge"
 
@@ -25,7 +25,7 @@ export function GiveawaysDirectory({ giveaways }: GiveawaysDirectoryProps) {
         </div>
         <h2 className="text-lg font-semibold text-foreground">No giveaways right now</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          Check back soon — we run raffles for sellers who list on Reswell.
+          Check back soon. We run raffles for sellers who list on Reswell.
         </p>
       </section>
     )
@@ -38,7 +38,7 @@ export function GiveawaysDirectory({ giveaways }: GiveawaysDirectoryProps) {
           return (
             <li key={giveaway.slug}>
               <Link
-                href={giveawayDetailHref(giveaway.slug)}
+                href={GIVEAWAYS_INDEX_HREF}
                 className="block rounded-2xl border border-foreground/15 bg-white p-6 transition-colors hover:bg-neutral-50/80"
               >
                 <div className="flex flex-wrap items-center gap-2">

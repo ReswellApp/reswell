@@ -1,24 +1,41 @@
+"use client"
+
+import { useState } from "react"
 import Link from "next/link"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, Check } from "lucide-react"
 import { FadeInSection } from "@/components/fade-in-section"
+import { GiveawayEnterBrandDialog } from "@/components/features/giveaways/giveaway-enter-brand-dialog"
 import { GiveawayHero } from "@/components/features/giveaways/giveaway-hero"
 import { GiveawaysDirectory } from "@/components/features/giveaways/giveaways-directory"
+import {
+  SELL_PAGE_GROUND_CLASS,
+  SELL_PRIMARY_BUTTON_CLASS,
+  SELL_SECTION_CARD_CLASS,
+} from "@/components/features/sell/sell-form-surface"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   giveawayPrizeBrandsFor,
   isGiveawayOpen,
 } from "@/lib/giveaways/catalog"
-import { giveawayDetailHref } from "@/lib/giveaways/paths"
-import type { Giveaway } from "@/lib/types/giveaways"
+import { writeGiveawayEntryIntent } from "@/lib/giveaways/intent-storage"
+import { logGiveawayEvent } from "@/lib/giveaways/log-event"
+import { giveawayCtaHref } from "@/lib/giveaways/paths"
+import { submitGiveawayEntry } from "@/lib/giveaways/submit-entry"
+import { setSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
+import { cn } from "@/lib/utils"
+import type { Giveaway, GiveawayPrizeBrandId } from "@/lib/types/giveaways"
 
 const PROOF_POINTS = [
   { label: "Free to enter", detail: "Just list a board" },
-  { label: "You pick", detail: "Six custom brands" },
+  { label: "Choose from", detail: "any of the brands below" },
   { label: "No sale needed", detail: "Listing is the ticket" },
 ] as const
 
 type GiveawaysHubProps = {
   giveaways: Giveaway[]
+  isLoggedIn: boolean
+  initialBrand?: GiveawayPrizeBrandId | null
 }
 
 function daysLeftLabel(endsAt: string): string | null {
@@ -29,16 +46,69 @@ function daysLeftLabel(endsAt: string): string | null {
   return days === 1 ? "1 day left to enter" : `${days} days left to enter`
 }
 
-export function GiveawaysHub({ giveaways }: GiveawaysHubProps) {
+export function GiveawaysHub({
+  giveaways,
+  isLoggedIn,
+  initialBrand = null,
+}: GiveawaysHubProps) {
   const featured = giveaways.find((giveaway) => isGiveawayOpen(giveaway)) ?? giveaways[0]
+  const [brand, setBrand] = useState<GiveawayPrizeBrandId | null>(initialBrand)
+  const [pickerOpen, setPickerOpen] = useState(false)
+
   if (!featured) {
     return <GiveawaysDirectory giveaways={giveaways} />
   }
 
   const brands = giveawayPrizeBrandsFor(featured)
-  const enterHref = giveawayDetailHref(featured.slug, { hash: "enter" })
   const moreGiveaways = giveaways.filter((giveaway) => giveaway.slug !== featured.slug)
   const daysLeft = daysLeftLabel(featured.endsAt)
+
+  const persistBrand = (next: GiveawayPrizeBrandId) => {
+    setBrand(next)
+    writeGiveawayEntryIntent({ slug: featured.slug, brand: next })
+    logGiveawayEvent({
+      slug: featured.slug,
+      event: "brand_click",
+      surface: "giveaway_page",
+      preferredBrand: next,
+    })
+    if (isLoggedIn) {
+      void submitGiveawayEntry({
+        slug: featured.slug,
+        preferredBrand: next,
+      })
+    }
+  }
+
+  const goEnter = (nextBrand: GiveawayPrizeBrandId) => {
+    writeGiveawayEntryIntent({
+      slug: featured.slug,
+      brand: nextBrand,
+      fromCta: !isLoggedIn,
+    })
+    logGiveawayEvent({
+      slug: featured.slug,
+      event: "cta_click",
+      surface: "giveaway_page",
+      preferredBrand: nextBrand,
+    })
+    if (isLoggedIn) {
+      setSellEntryPoint("giveaway")
+      void submitGiveawayEntry({
+        slug: featured.slug,
+        preferredBrand: nextBrand,
+      })
+    }
+    window.location.assign(giveawayCtaHref({ isLoggedIn, brand: nextBrand }))
+  }
+
+  const handleEnter = () => {
+    if (!brand) {
+      setPickerOpen(true)
+      return
+    }
+    goEnter(brand)
+  }
 
   return (
     <>
@@ -49,11 +119,14 @@ export function GiveawaysHub({ giveaways }: GiveawaysHubProps) {
           </p>
         ) : null}
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Button size="lg" className="h-12 rounded-full px-6" asChild>
-            <Link href={enterHref}>
-              Enter the raffle
-              <ArrowRight className="h-4 w-4" aria-hidden />
-            </Link>
+          <Button
+            size="lg"
+            type="button"
+            className={cn("rounded-full", SELL_PRIMARY_BUTTON_CLASS)}
+            onClick={handleEnter}
+          >
+            Enter the raffle
+            <ArrowRight className="h-4 w-4" aria-hidden />
           </Button>
           <Link
             href="#how-to-enter"
@@ -64,99 +137,126 @@ export function GiveawaysHub({ giveaways }: GiveawaysHubProps) {
         </div>
       </GiveawayHero>
 
-      <section className="relative z-10 -mt-6 rounded-t-3xl bg-background sm:-mt-8">
-        <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
+      <div
+        className={cn(
+          "relative z-10 -mt-6 rounded-t-3xl sm:-mt-8",
+          SELL_PAGE_GROUND_CLASS,
+        )}
+      >
+        <div className="mx-auto max-w-3xl space-y-10 px-4 py-10 sm:px-6 sm:py-14">
           <FadeInSection>
             <div className="grid grid-cols-3 gap-3">
               {PROOF_POINTS.map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-2xl border border-foreground/10 bg-offwhite px-3 py-4 text-center sm:px-4"
-                >
-                  <p className="text-sm font-semibold text-foreground">{item.label}</p>
-                  <p className="mt-1 text-xs text-muted-foreground sm:text-sm">{item.detail}</p>
-                </div>
+                <Card key={item.label} className={cn(SELL_SECTION_CARD_CLASS, "shadow-surface")}>
+                  <CardContent className="px-3 py-4 text-center sm:px-4">
+                    <p className="text-sm font-semibold text-foreground">{item.label}</p>
+                    <p className="mt-1 text-xs text-muted-foreground sm:text-sm">{item.detail}</p>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           </FadeInSection>
 
-          <FadeInSection className="mt-12">
+          <FadeInSection>
             <h2 className="font-headline text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
               The custom you could win
             </h2>
             <p className="mt-2 text-pretty text-muted-foreground">
-              One raffle. One custom. You choose the brand — they shape it to
-              your specs.
+              Win a custom from any of the brands below.
             </p>
             <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {brands.map((brand) => (
-                <li key={brand.id}>
-                  <Link
-                    href={giveawayDetailHref(featured.slug, {
-                      brand: brand.id,
-                      hash: "enter",
-                    })}
-                    className="flex h-full flex-col rounded-2xl border border-foreground/15 bg-white px-4 py-4 transition-colors hover:border-foreground/30 hover:bg-neutral-50/80"
-                  >
-                    <p className="font-semibold text-foreground">{brand.name}</p>
-                    <p className="mt-1 text-sm leading-snug text-muted-foreground">
-                      {brand.tagline}
-                    </p>
-                  </Link>
-                </li>
-              ))}
+              {brands.map((item) => {
+                const selected = brand === item.id
+                return (
+                  <li key={item.id}>
+                    <button
+                      type="button"
+                      onClick={() => persistBrand(item.id)}
+                      className={cn(
+                        SELL_SECTION_CARD_CLASS,
+                        "flex h-full w-full flex-col px-4 py-4 text-left transition-colors",
+                        selected
+                          ? "border-listingHeart bg-listingHeart text-white"
+                          : "hover:bg-white/80",
+                      )}
+                    >
+                      <p className="flex items-center justify-between gap-2 font-semibold">
+                        <span>{item.name}</span>
+                        {selected ? <Check className="h-3.5 w-3.5 shrink-0" aria-hidden /> : null}
+                      </p>
+                      <p
+                        className={cn(
+                          "mt-1 text-sm leading-snug",
+                          selected ? "text-white/80" : "text-muted-foreground",
+                        )}
+                      >
+                        {item.tagline}
+                      </p>
+                    </button>
+                  </li>
+                )
+              })}
             </ul>
+            <p className="mt-4 text-xs text-muted-foreground sm:text-sm">
+              You can change your brand later if you want.
+            </p>
           </FadeInSection>
 
-          <FadeInSection className="mt-12">
+          <FadeInSection>
             <section id="how-to-enter" className="scroll-mt-28">
               <h2 className="font-headline text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                 How to enter
               </h2>
               <ol className="mt-6 grid gap-3 sm:grid-cols-3">
                 {featured.howItWorks.map((step, index) => (
-                  <li
-                    key={step.title}
-                    className="rounded-2xl border border-foreground/10 bg-offwhite px-4 py-5"
-                  >
-                    <span
-                      className="flex h-8 w-8 items-center justify-center rounded-full bg-listingHeart text-sm font-semibold text-white"
-                      aria-hidden
-                    >
-                      {index + 1}
-                    </span>
-                    <p className="mt-3 font-semibold text-foreground">{step.title}</p>
-                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                      {step.body}
-                    </p>
+                  <li key={step.title}>
+                    <Card className={cn(SELL_SECTION_CARD_CLASS, "h-full shadow-surface")}>
+                      <CardContent className="px-4 py-5">
+                        <span
+                          className="flex h-8 w-8 items-center justify-center rounded-full bg-listingHeart text-sm font-semibold text-white"
+                          aria-hidden
+                        >
+                          {index + 1}
+                        </span>
+                        <p className="mt-3 font-semibold text-foreground">{step.title}</p>
+                        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                          {step.body}
+                        </p>
+                      </CardContent>
+                    </Card>
                   </li>
                 ))}
               </ol>
             </section>
           </FadeInSection>
 
-          <FadeInSection className="mt-12">
-            <div className="rounded-3xl border border-foreground/15 bg-offwhite px-6 py-8 sm:px-8">
-              <p className="text-xs font-semibold uppercase tracking-widest text-listingHeart">
-                {featured.scheduleLabel}
-              </p>
-              <h2 className="mt-3 font-headline text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                List a surfboard. You&apos;re in.
-              </h2>
-              <p className="mt-2 max-w-md text-pretty text-muted-foreground">
-                {featured.summary}
-              </p>
-              <Button size="lg" className="mt-6 h-12 rounded-full px-6" asChild>
-                <Link href={enterHref}>
+          <FadeInSection>
+            <Card className={cn(SELL_SECTION_CARD_CLASS, "shadow-surface")}>
+              <CardContent className="px-6 py-8 sm:px-8">
+                <p className="text-xs font-semibold uppercase tracking-widest text-listingHeart">
+                  {featured.scheduleLabel}
+                </p>
+                <h2 className="mt-3 font-headline text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                  List a surfboard. You&apos;re in.
+                </h2>
+                <p className="mt-2 max-w-md text-pretty text-muted-foreground">
+                  {featured.summary}
+                </p>
+                <Button
+                  size="lg"
+                  type="button"
+                  className={cn("mt-6 rounded-full", SELL_PRIMARY_BUTTON_CLASS)}
+                  onClick={handleEnter}
+                >
                   Enter the raffle
                   <ArrowRight className="h-4 w-4" aria-hidden />
-                </Link>
-              </Button>
-            </div>
+                </Button>
+              </CardContent>
+            </Card>
           </FadeInSection>
 
           {moreGiveaways.length > 0 ? (
-            <div className="mt-12">
+            <div>
               <h2 className="font-headline text-xl font-bold tracking-tight text-foreground">
                 More raffles
               </h2>
@@ -164,7 +264,20 @@ export function GiveawaysHub({ giveaways }: GiveawaysHubProps) {
             </div>
           ) : null}
         </div>
-      </section>
+      </div>
+
+      <GiveawayEnterBrandDialog
+        open={pickerOpen}
+        brands={brands}
+        value={brand}
+        isLoggedIn={isLoggedIn}
+        onOpenChange={setPickerOpen}
+        onBrandChange={persistBrand}
+        onContinue={(next) => {
+          setPickerOpen(false)
+          goEnter(next)
+        }}
+      />
     </>
   )
 }

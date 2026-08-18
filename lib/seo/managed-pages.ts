@@ -425,7 +425,7 @@ export const MANAGED_PAGES: ManagedPage[] = [
   page("giveaway-win-a-custom-surfboard", "marketing", "Win a custom surfboard", {
     title: "List a surfboard to win a surfboard | Reswell",
     description:
-      "Publish a surfboard on Reswell and you’re entered to win a custom from Channel Islands, Mayhem, JS, Sharpeye, Hayden Shapes, or Lovemachine — you pick the brand.",
+      "Publish a surfboard on Reswell and you’re entered to win a custom from Channel Islands, Mayhem, JS, Sharpeye, Hayden Shapes, or Lovemachine. You pick the brand.",
     path: "/giveaways/win-a-custom-surfboard",
     keywords: [
       "custom surfboard giveaway",
@@ -436,7 +436,7 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Hayden Shapes",
       "Lovemachine",
     ],
-  }, { note: "Active list-to-win raffle." }),
+  }, { note: "Redirects to /giveaways." }),
   page("ratereswell", "marketing", "Rate Reswell", {
     title: "Rate Reswell",
     description:
