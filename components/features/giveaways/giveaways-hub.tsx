@@ -200,6 +200,17 @@ export function GiveawaysHub({
             <p className="mt-4 text-xs text-muted-foreground sm:text-sm">
               You can change your brand later if you want.
             </p>
+            {brand ? (
+              <Button
+                size="lg"
+                type="button"
+                className={cn("mt-5 rounded-full", SELL_PRIMARY_BUTTON_CLASS)}
+                onClick={() => goEnter(brand)}
+              >
+                Enter raffle
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Button>
+            ) : null}
           </FadeInSection>
 
           <FadeInSection>

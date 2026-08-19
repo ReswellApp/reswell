@@ -35,7 +35,7 @@ SITE = "reswell.com/giveaways"
 
 BRANDS = [
     "Channel Islands",
-    "Mayhem",
+    "Lost",
     "JS",
     "Sharpeye",
     "Hayden Shapes",

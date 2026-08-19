@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card"
 import {
   GIVEAWAY_PRIZE_BRAND_LIST_COPY,
+  getGiveawayPrizeBrand,
   giveawayPrizeBrandsFor,
 } from "@/lib/giveaways/catalog"
 import type { Giveaway, GiveawayPrizeBrandId } from "@/lib/types/giveaways"
@@ -20,6 +21,8 @@ type SignUpGiveawayScreenProps = {
   giveaway: Giveaway
   firstName?: string | null
   initialBrand?: GiveawayPrizeBrandId | null
+  /** Hide the picker when they already chose a brand on /giveaways. */
+  hideBrandPicker?: boolean
   onBrandChange?: (brand: GiveawayPrizeBrandId) => void
   onList: (brand: GiveawayPrizeBrandId | null) => void
   onDecline: () => void
@@ -29,6 +32,7 @@ export function SignUpGiveawayScreen({
   giveaway,
   firstName,
   initialBrand = null,
+  hideBrandPicker = false,
   onBrandChange,
   onList,
   onDecline,
@@ -36,6 +40,7 @@ export function SignUpGiveawayScreen({
   const [brand, setBrand] = useState<GiveawayPrizeBrandId | null>(initialBrand)
   const brands = giveawayPrizeBrandsFor(giveaway)
   const greeting = firstName ? `Welcome, ${firstName}` : "You're in"
+  const savedBrandName = brand ? getGiveawayPrizeBrand(brand)?.name : null
 
   const handleBrand = (next: GiveawayPrizeBrandId) => {
     setBrand(next)
@@ -54,17 +59,19 @@ export function SignUpGiveawayScreen({
               List a surfboard to win a surfboard
             </CardTitle>
             <CardDescription className="text-base">
-              {greeting}. Publish a board and you&apos;re entered for a custom from{" "}
-              {GIVEAWAY_PRIZE_BRAND_LIST_COPY}.
+              {greeting}. Publish a board and you&apos;re entered for a custom
+              {savedBrandName ? ` ${savedBrandName}.` : ` from ${GIVEAWAY_PRIZE_BRAND_LIST_COPY}.`}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-5">
-            <div>
-              <p className="mb-2.5 text-left text-sm font-medium text-foreground">
-                Which custom do you want to win?
-              </p>
-              <GiveawayBrandPicker brands={brands} value={brand} onChange={handleBrand} />
-            </div>
+            {hideBrandPicker ? null : (
+              <div>
+                <p className="mb-2.5 text-left text-sm font-medium text-foreground">
+                  Which custom do you want to win?
+                </p>
+                <GiveawayBrandPicker brands={brands} value={brand} onChange={handleBrand} />
+              </div>
+            )}
             <div className="flex flex-col gap-2.5">
               <Button
                 type="button"

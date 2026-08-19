@@ -14,9 +14,9 @@ export const GIVEAWAY_PRIZE_BRANDS: readonly GiveawayPrizeBrand[] = [
   },
   {
     id: "mayhem",
-    name: "Mayhem",
-    shortName: "Mayhem",
-    tagline: "A custom Mayhem.",
+    name: "Lost",
+    shortName: "Lost",
+    tagline: "A custom Lost.",
   },
   {
     id: "js",
@@ -45,7 +45,7 @@ export const GIVEAWAY_PRIZE_BRANDS: readonly GiveawayPrizeBrand[] = [
 ] as const
 
 export const GIVEAWAY_PRIZE_BRAND_LIST_COPY =
-  "Channel Islands, Mayhem, JS, Sharpeye, Hayden Shapes, or Lovemachine"
+  "Channel Islands, Lost, JS, Sharpeye, Hayden Shapes, or Lovemachine"
 
 export const WIN_A_SURFBOARD_GIVEAWAY_SLUG = "win-a-custom-surfboard"
 

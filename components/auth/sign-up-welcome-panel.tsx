@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useRef } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { CheckCircle2, Loader2 } from "lucide-react"
@@ -27,7 +27,9 @@ import {
   WIN_A_SURFBOARD_GIVEAWAY_SLUG,
 } from "@/lib/giveaways/catalog"
 import {
+  clearGiveawayEntryIntent,
   parseGiveawayBrandParam,
+  readGiveawayEntryIntent,
   writeGiveawayEntryIntent,
 } from "@/lib/giveaways/intent-storage"
 import { logGiveawayEvent } from "@/lib/giveaways/log-event"
@@ -70,6 +72,9 @@ export function SignUpWelcomePanel({
   const giveaway = getGiveawayBySlug(WIN_A_SURFBOARD_GIVEAWAY_SLUG)
   const showGiveawayOffer = Boolean(giveaway && isGiveawayOpen(giveaway) && !resumeListing)
   const continueStartedRef = useRef(false)
+  const urlBrand = parseGiveawayBrandParam(nextPathSearchParams(nextPath).get("brand"))
+  const [storedBrand, setStoredBrand] = useState<GiveawayPrizeBrandId | null>(null)
+  const savedBrand = urlBrand ?? storedBrand
 
   const leaveWelcome = useCallback(
     (dest: string) => {
@@ -155,9 +160,16 @@ export function SignUpWelcomePanel({
   }, [])
 
   const handleDeclineGiveaway = useCallback(() => {
+    clearGiveawayEntryIntent()
     dismissGiveawaySignupPopup()
-    leaveWelcome(nextPath)
-  }, [leaveWelcome, nextPath])
+    leaveWelcome("/")
+  }, [leaveWelcome])
+
+  useEffect(() => {
+    if (urlBrand) return
+    const stored = readGiveawayEntryIntent()?.brand ?? null
+    if (stored) setStoredBrand(stored)
+  }, [urlBrand])
 
   useEffect(() => {
     if (!goToSell || showGiveawayOffer) return
@@ -169,12 +181,13 @@ export function SignUpWelcomePanel({
   }, [goToSell, handleContinue, nextPath, showGiveawayOffer])
 
   if (showGiveawayOffer && giveaway) {
-    const initialBrand = parseGiveawayBrandParam(nextPathSearchParams(nextPath).get("brand"))
     return (
       <SignUpGiveawayScreen
+        key={savedBrand ?? "choose"}
         giveaway={giveaway}
         firstName={firstName}
-        initialBrand={initialBrand}
+        initialBrand={savedBrand}
+        hideBrandPicker={Boolean(savedBrand)}
         onBrandChange={handleGiveawayBrand}
         onList={handleListSurfboard}
         onDecline={handleDeclineGiveaway}
