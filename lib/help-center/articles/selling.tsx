@@ -225,12 +225,13 @@ export const sellingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Tap <strong>End listing</strong> on any active or draft listing. You can:
+              Tap <strong>End listing</strong> on any active listing. You can:
             </p>
             <BulletList
               items={[
+                <><strong>Vacation mode</strong> to hide a live listing until you go live again.</>,
                 <><strong>Archive listing</strong> to take it off the public site. Archived listings stay in your account for 30 days.</>,
-                <><strong>Delete listing</strong> to remove it immediately, when allowed. If the listing is tied to an order, archiving may be required instead.</>,
+                <><strong>Delete listing</strong> to remove it immediately, only when the listing is not tied to an order or payment. Listings with sale history show Archive instead.</>,
               ]}
             />
             <p>

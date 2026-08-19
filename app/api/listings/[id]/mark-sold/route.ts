@@ -52,7 +52,10 @@ export async function POST(
       return NextResponse.json({ error: result.error }, { status: result.status })
     }
 
-    return NextResponse.json({ data: { ok: true } }, { status: 200 })
+    return NextResponse.json(
+      { data: { ok: true, priceUsd: result.priceUsd } },
+      { status: 200 },
+    )
   } catch (e) {
     const message = e instanceof Error ? e.message : "Request failed"
     return NextResponse.json({ error: message }, { status: 500 })

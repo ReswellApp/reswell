@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
+  Archive,
   Package,
   Eye,
   ShoppingCart,
@@ -34,12 +35,13 @@ import {
   formatHomePeerListingConditionLine,
 } from "@/lib/listing-labels"
 import { EndListingDialog } from "@/components/end-listing-dialog"
-import {
-  ListingVacationModeButton,
-  canUseListingVacationMode,
-} from "@/components/features/sell/listing-vacation-mode-button"
 import { SellerBanRestrictedPanel } from "@/components/features/sell/seller-ban-restricted-panel"
-import { peerListingEditHref } from "@/lib/peer-listing-sections"
+import {
+  isPeerListingSection,
+  PEER_LISTING_SECTION_LABELS,
+  peerListingEditHref,
+  sellerProfileSectionSortRank,
+} from "@/lib/peer-listing-sections"
 import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
 import type { MyListingRow, MyListingsDashboardStats } from "@/lib/db/my-listings"
 import { cn } from "@/lib/utils"
@@ -52,6 +54,34 @@ import {
 
 type SortOption = "recent" | "oldest" | "price_desc" | "price_asc" | "views"
 type EngagementFilter = "all" | "in_carts" | "saved"
+type StatusFilter = "all" | "draft" | "active" | "sold"
+
+function listingTypeLabel(section: string): string {
+  if (isPeerListingSection(section)) return PEER_LISTING_SECTION_LABELS[section]
+  if (section === "used") return "Surfboard"
+  if (section === "new") return "Shop"
+  return capitalizeWords(section.replace(/[-_]/g, " "))
+}
+
+function emptyListingsMessage({
+  statusFilter,
+  sectionFilter,
+  engagementFilter,
+}: {
+  statusFilter: StatusFilter
+  sectionFilter: string
+  engagementFilter: EngagementFilter
+}): string {
+  if (statusFilter === "draft") return "No draft listings."
+  if (statusFilter === "active") return "No active listings."
+  if (statusFilter === "sold") return "No sold listings."
+  if (sectionFilter !== "all") {
+    return `No ${listingTypeLabel(sectionFilter).toLowerCase()} listings.`
+  }
+  if (engagementFilter === "in_carts") return "No listings are in anyone's cart right now."
+  if (engagementFilter === "saved") return "No listings have been saved yet."
+  return "No listings match your search."
+}
 
 interface MyListingsClientProps {
   listings: MyListingRow[]
@@ -180,8 +210,21 @@ export function MyListingsClient({
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
   const [sort, setSort] = useState<SortOption>("recent")
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
+  const [sectionFilter, setSectionFilter] = useState("all")
   const [engagementFilter, setEngagementFilter] = useState<EngagementFilter>("all")
   const [endListingId, setEndListingId] = useState<string | null>(null)
+
+  const listingTypeOptions = useMemo(() => {
+    const unique = new Set(
+      listings.map((listing) => listing.section).filter((section) => section.length > 0),
+    )
+    return [...unique].sort((a, b) => {
+      const rank = sellerProfileSectionSortRank(a) - sellerProfileSectionSortRank(b)
+      if (rank !== 0) return rank
+      return listingTypeLabel(a).localeCompare(listingTypeLabel(b))
+    })
+  }, [listings])
 
   function toggleEngagementFilter(next: Exclude<EngagementFilter, "all">) {
     setEngagementFilter((current) => (current === next ? "all" : next))
@@ -207,6 +250,10 @@ export function MyListingsClient({
     const filtered = listings.filter((listing) => {
       if (engagementFilter === "in_carts" && listing.cartCount <= 0) return false
       if (engagementFilter === "saved" && listing.favoriteCount <= 0) return false
+      if (statusFilter === "draft" && listing.status !== "draft") return false
+      if (statusFilter === "active" && listing.status !== "active") return false
+      if (statusFilter === "sold" && listing.status !== "sold") return false
+      if (sectionFilter !== "all" && listing.section !== sectionFilter) return false
       if (!q) return true
       const haystack = [
         listing.title,
@@ -214,6 +261,7 @@ export function MyListingsClient({
         listing.model,
         listing.status,
         listing.section,
+        listingTypeLabel(listing.section),
       ]
         .filter(Boolean)
         .join(" ")
@@ -221,10 +269,13 @@ export function MyListingsClient({
       return haystack.includes(q)
     })
     return sortListings(filtered, sort)
-  }, [listings, searchQuery, sort, engagementFilter])
+  }, [listings, searchQuery, sort, engagementFilter, statusFilter, sectionFilter])
 
   const listingCountLabel =
     visibleListings.length === 1 ? "1 listing" : `${visibleListings.length} listings`
+  const endListing = endListingId
+    ? listings.find((listing) => listing.id === endListingId)
+    : undefined
 
   return (
     <div className="space-y-6">
@@ -233,12 +284,17 @@ export function MyListingsClient({
         description="Summary of your listing inventory and performance."
         actions={
           <>
-            <Link
-              href="/dashboard/listings/archived"
-              className="text-[14px] font-medium text-primary hover:underline sm:text-[15px]"
+            <Button
+              asChild
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 rounded-full"
             >
-              Archived listings
-            </Link>
+              <Link href="/dashboard/listings/archived" title="Archived listings">
+                <Archive className="h-4 w-4" aria-hidden />
+                <span className="sr-only">Archived listings</span>
+              </Link>
+            </Button>
             {!sellerBanned ? (
               <Button asChild size="sm" className="rounded-full">
                 <Link href="/sell?new=1">
@@ -272,7 +328,7 @@ export function MyListingsClient({
         />
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative min-w-0 flex-1">
           <Search
             className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
@@ -287,18 +343,53 @@ export function MyListingsClient({
             aria-label="Search your listings"
           />
         </div>
-        <Select value={sort} onValueChange={(value) => setSort(value as SortOption)}>
-          <SelectTrigger className={dashboardFilterSelectClass} aria-label="Sort listings">
-            <SelectValue placeholder="Sort" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="recent">Sort: Most Recent</SelectItem>
-            <SelectItem value="oldest">Sort: Oldest First</SelectItem>
-            <SelectItem value="price_desc">Sort: Price High to Low</SelectItem>
-            <SelectItem value="price_asc">Sort: Price Low to High</SelectItem>
-            <SelectItem value="views">Sort: Most Views</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <Select value={sectionFilter} onValueChange={setSectionFilter}>
+            <SelectTrigger
+              className={cn(dashboardFilterSelectClass, "sm:w-[180px]")}
+              aria-label="Filter by listing type"
+            >
+              <SelectValue placeholder="Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Type: All</SelectItem>
+              {listingTypeOptions.map((section) => (
+                <SelectItem key={section} value={section}>
+                  Type: {listingTypeLabel(section)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={statusFilter}
+            onValueChange={(value) => setStatusFilter(value as StatusFilter)}
+          >
+            <SelectTrigger
+              className={cn(dashboardFilterSelectClass, "sm:w-[180px]")}
+              aria-label="Filter by listing status"
+            >
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Status: All</SelectItem>
+              <SelectItem value="draft">Status: Drafts</SelectItem>
+              <SelectItem value="active">Status: Active</SelectItem>
+              <SelectItem value="sold">Status: Sold</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={sort} onValueChange={(value) => setSort(value as SortOption)}>
+            <SelectTrigger className={dashboardFilterSelectClass} aria-label="Sort listings">
+              <SelectValue placeholder="Sort" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recent">Sort: Most Recent</SelectItem>
+              <SelectItem value="oldest">Sort: Oldest First</SelectItem>
+              <SelectItem value="price_desc">Sort: Price High to Low</SelectItem>
+              <SelectItem value="price_asc">Sort: Price Low to High</SelectItem>
+              <SelectItem value="views">Sort: Most Views</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {fetchError && (
@@ -331,11 +422,7 @@ export function MyListingsClient({
 
           {visibleListings.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
-              {engagementFilter === "in_carts"
-                ? "No listings are in anyone's cart right now."
-                : engagementFilter === "saved"
-                  ? "No listings have been saved yet."
-                  : "No listings match your search."}
+              {emptyListingsMessage({ statusFilter, sectionFilter, engagementFilter })}
             </p>
           ) : (
             <div className="divide-y divide-border/80">
@@ -346,7 +433,6 @@ export function MyListingsClient({
                   getListingHref={getListingHref}
                   onDiscardDraft={handleDiscardDraft}
                   onEndListing={setEndListingId}
-                  onVacationChange={() => router.refresh()}
                 />
               ))}
             </div>
@@ -356,6 +442,10 @@ export function MyListingsClient({
 
       <EndListingDialog
         listingId={endListingId}
+        listingPriceUsd={endListing?.price}
+        listingStatus={endListing?.status}
+        vacationMode={endListing?.hidden_from_site === true}
+        canDelete={endListing?.canDelete === true}
         open={!!endListingId}
         onOpenChange={(open) => {
           if (!open) setEndListingId(null)
@@ -370,19 +460,16 @@ function ListingRow({
   getListingHref,
   onDiscardDraft,
   onEndListing,
-  onVacationChange,
 }: {
   listing: MyListingRow
   getListingHref: (section: string, id: string, slug?: string | null) => string
   onDiscardDraft: (id: string) => void
   onEndListing: (id: string) => void
-  onVacationChange: () => void
 }) {
   const imageSrc = listingRowImageSrc(listing)
   const isDraft = listing.status === "draft"
   const isSold = listing.status === "sold"
   const isDelinquent = listing.status === "delinquent"
-  const showVacation = !isDelinquent && canUseListingVacationMode(listing.status)
   const editHref = peerListingEditHref(listing.section, listing.id)
   const cardHref = isDraft ? editHref : getListingHref(listing.section, listing.id, listing.slug)
   const brandLine = listingBrandLine(listing)
@@ -442,7 +529,7 @@ function ListingRow({
           </p>
         ) : listing.hidden_from_site && !isDraft && !isSold ? (
           <p className="mt-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400">
-            On vacation — hidden from site
+            On vacation — hidden from site. Use End to go live.
           </p>
         ) : null}
         {!isDraft && !isDelinquent && listing.status !== "active" && !isSold ? (
@@ -484,13 +571,6 @@ function ListingRow({
             </Link>
           </Button>
         )}
-        {showVacation ? (
-          <ListingVacationModeButton
-            listingId={listing.id}
-            vacationMode={listing.hidden_from_site === true}
-            onVacationModeChange={() => onVacationChange()}
-          />
-        ) : null}
         {isDraft ? (
           <Button
             type="button"

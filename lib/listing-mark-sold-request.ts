@@ -9,7 +9,10 @@ export type MarkListingSoldInput = {
 export async function postMarkListingSold(
   listingId: string,
   input: MarkListingSoldInput = {},
-): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
+): Promise<
+  | { ok: true; priceUsd: number }
+  | { ok: false; error: string; status: number }
+> {
   const res = await fetch(`/api/listings/${listingId}/mark-sold`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -18,7 +21,16 @@ export async function postMarkListingSold(
   })
 
   if (res.ok) {
-    return { ok: true }
+    const json: unknown = await res.json().catch(() => null)
+    const data =
+      json && typeof json === "object" && "data" in json
+        ? (json as { data?: { priceUsd?: unknown } }).data
+        : null
+    const priceUsd =
+      data && typeof data.priceUsd === "number" && Number.isFinite(data.priceUsd)
+        ? data.priceUsd
+        : 0
+    return { ok: true, priceUsd }
   }
 
   let error = "Request failed"

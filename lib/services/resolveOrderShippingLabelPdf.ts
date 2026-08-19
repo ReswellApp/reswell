@@ -86,6 +86,67 @@ export async function orderHasAccessibleShippingLabelPdf(
   return Boolean(resolved?.label_pdf_url || resolved?.label_storage_path)
 }
 
+const LABEL_BUCKET = "order-shipping-labels"
+
+export type LoadShippingLabelPdfBytesResult =
+  | { ok: true; bytes: Uint8Array; contentType: string }
+  | { ok: false; reason: "not_found" | "storage" | "fetch" }
+
+/** Downloads the resolved label PDF bytes from storage or the carrier URL. */
+export async function loadShippingLabelPdfBytes(
+  supabase: SupabaseClient,
+  input: { orderId: string; trackingNumber: string | null },
+): Promise<LoadShippingLabelPdfBytesResult> {
+  const label = await resolveOrderShippingLabelPdf(supabase, input)
+  if (!label) return { ok: false, reason: "not_found" }
+
+  if (label.shipEngineLabel) {
+    await backfillMarketplaceLabelFromShipEngine({
+      supabase,
+      orderId: input.orderId,
+      label: label.shipEngineLabel,
+    })
+  }
+
+  if (label.label_storage_path?.trim()) {
+    const { data: blob, error: dlErr } = await supabase.storage
+      .from(LABEL_BUCKET)
+      .download(label.label_storage_path.trim())
+
+    if (dlErr || !blob) {
+      console.error("[shipping-label pdf] storage:", dlErr)
+      return { ok: false, reason: "storage" }
+    }
+
+    const buf = await blob.arrayBuffer()
+    return { ok: true, bytes: new Uint8Array(buf), contentType: "application/pdf" }
+  }
+
+  const pdfUrl = label.label_pdf_url?.trim()
+  if (!pdfUrl) return { ok: false, reason: "not_found" }
+
+  let pdfRes: Response
+  try {
+    pdfRes = await fetch(pdfUrl, {
+      redirect: "follow",
+      signal: AbortSignal.timeout(60_000),
+      headers: { Accept: "application/pdf,*/*" },
+    })
+  } catch (e) {
+    console.error("[shipping-label pdf] fetch pdf:", e)
+    return { ok: false, reason: "fetch" }
+  }
+
+  if (!pdfRes.ok) return { ok: false, reason: "fetch" }
+
+  const buf = await pdfRes.arrayBuffer()
+  return {
+    ok: true,
+    bytes: new Uint8Array(buf),
+    contentType: pdfRes.headers.get("content-type") ?? "application/pdf",
+  }
+}
+
 /** Persist a ShipEngine label on the order when automation missed writing the PDF row. */
 export async function backfillMarketplaceLabelFromShipEngine(params: {
   supabase: SupabaseClient

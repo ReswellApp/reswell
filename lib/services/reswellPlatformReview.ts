@@ -1,10 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import {
   getReswellPlatformReviewByUserId,
+  getReswellReviewAuthorName,
   upsertReswellPlatformReview,
   type ReswellPlatformReviewRow,
 } from "@/lib/db/reswellPlatformReviews"
-import type { ReswellPlatformReviewInput } from "@/lib/validations/reswellPlatformReview"
+import type {
+  ReswellPlatformReviewInput,
+  SoldFlowReswellReviewInput,
+} from "@/lib/validations/reswellPlatformReview"
 
 type SubmitResult =
   | { ok: true; review: ReswellPlatformReviewRow; isUpdate: boolean }
@@ -33,4 +37,17 @@ export async function submitReswellPlatformReviewService(
   }
 
   return { ok: true, review: data, isUpdate: !!existing }
+}
+
+export async function submitSoldFlowReswellReviewService(
+  supabase: SupabaseClient,
+  userId: string,
+  input: SoldFlowReswellReviewInput,
+): Promise<SubmitResult> {
+  const fullName = await getReswellReviewAuthorName(supabase, userId)
+  return submitReswellPlatformReviewService(supabase, userId, {
+    fullName,
+    description: input.description,
+    rating: input.rating,
+  })
 }

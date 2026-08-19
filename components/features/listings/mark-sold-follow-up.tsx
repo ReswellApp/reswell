@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import dynamic from "next/dynamic"
+import { ChevronLeft } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
   MarkSoldChannelStep,
   MarkSoldHelpedStep,
+  MarkSoldReviewStep,
   MarkSoldThanksStep,
   MarkSoldTipAmountStep,
 } from "@/components/features/listings/mark-sold-survey-steps"
@@ -21,14 +23,17 @@ const MarkSoldTipCheckout = dynamic(
     loading: () => <p className="text-sm text-muted-foreground">Loading payment…</p>,
   },
 )
+import { submitSoldFlowReswellReviewAction } from "@/lib/actions/reswellPlatformReview"
 import { postListingSaleFeedback, postListingSaleTip } from "@/lib/listing-sale-feedback-request"
 import {
   SALE_TIP_MAX_CENTS,
   SALE_TIP_MIN_CENTS,
+  SALE_TIP_PRESET_PERCENTS,
+  saleTipPresetCents,
   type SoldOffPlatformChannel,
 } from "@/lib/validations/mark-listing-sold"
 
-type FollowUpStep = "channel" | "helped" | "tip" | "thanks"
+type FollowUpStep = "channel" | "helped" | "tip" | "review" | "thanks"
 
 function parseCustomTipCents(raw: string): number | null {
   const trimmed = raw.trim().replace(/^\$/, "")
@@ -42,9 +47,11 @@ function parseCustomTipCents(raw: string): number | null {
 
 export function MarkSoldFollowUp({
   listingId,
+  listingPriceUsd,
   onClose,
 }: {
   listingId: string
+  listingPriceUsd: number | null
   onClose: () => void
 }) {
   const [step, setStep] = useState<FollowUpStep>("channel")
@@ -54,11 +61,21 @@ export function MarkSoldFollowUp({
   const [customTip, setCustomTip] = useState("")
   const [selectedTipCents, setSelectedTipCents] = useState<number | null>(null)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
+  const [reviewRating, setReviewRating] = useState<number | null>(null)
+  const [reviewText, setReviewText] = useState("")
+  const [tipped, setTipped] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const elsewhereDetailValid =
     soldChannel !== "elsewhere" || elsewhereDetail.trim().length >= 2
   const customTipCents = parseCustomTipCents(customTip)
+  const tipPresets = useMemo(() => {
+    if (listingPriceUsd == null || listingPriceUsd <= 0) return []
+    return SALE_TIP_PRESET_PERCENTS.flatMap((percent) => {
+      const cents = saleTipPresetCents(listingPriceUsd, percent)
+      return cents == null ? [] : [{ percent, cents }]
+    })
+  }, [listingPriceUsd])
 
   async function saveChannelAndContinue() {
     if (!soldChannel || !elsewhereDetailValid) return
@@ -89,7 +106,7 @@ export function MarkSoldFollowUp({
         toast.error(result.error)
         return
       }
-      setStep("tip")
+      setStep(reswellHelped ? "tip" : "review")
     } finally {
       setLoading(false)
     }
@@ -110,18 +127,59 @@ export function MarkSoldFollowUp({
     }
   }
 
+  function goToReview() {
+    setClientSecret(null)
+    setSelectedTipCents(null)
+    setStep("review")
+  }
+
+  async function submitReview() {
+    if (reviewRating == null) return
+    setLoading(true)
+    try {
+      const result = await submitSoldFlowReswellReviewAction({
+        rating: reviewRating,
+        description: reviewText,
+      })
+      if ("error" in result) {
+        toast.error(result.error)
+        return
+      }
+      setStep("thanks")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (step === "thanks") {
-    return <MarkSoldThanksStep onClose={onClose} />
+    return <MarkSoldThanksStep tipped={tipped} onClose={onClose} />
+  }
+
+  if (step === "review") {
+    return (
+      <MarkSoldReviewStep
+        rating={reviewRating}
+        review={reviewText}
+        loading={loading}
+        onRatingChange={setReviewRating}
+        onReviewChange={setReviewText}
+        onBack={() => setStep(reswellHelped ? "tip" : "helped")}
+        onContinue={() => void submitReview()}
+        stepCurrent={reswellHelped ? 4 : 3}
+        stepTotal={reswellHelped ? 4 : 3}
+      />
+    )
   }
 
   if (step === "helped") {
     return (
       <MarkSoldHelpedStep
-        reswellHelped={reswellHelped}
+        selected={reswellHelped}
         loading={loading}
         onHelpedChange={setReswellHelped}
-        onSkip={() => setStep("tip")}
+        onBack={() => setStep("channel")}
         onContinue={() => void saveHelpedAndContinue()}
+        stepTotal={reswellHelped ? 4 : 3}
       />
     )
   }
@@ -129,29 +187,38 @@ export function MarkSoldFollowUp({
   if (step === "tip" && clientSecret && selectedTipCents) {
     return (
       <div className="space-y-3">
+        <div className="space-y-1.5">
+          <h3 className="text-lg font-semibold">Complete your tip</h3>
+          <p className="text-sm text-muted-foreground">
+            Secure checkout with Stripe. You can change the amount or skip.
+          </p>
+        </div>
         <MarkSoldTipCheckout
           clientSecret={clientSecret}
           amountCents={selectedTipCents}
           onSuccess={() => {
-            toast.success("Tip sent — thank you")
-            setStep("thanks")
+            toast.success("Tip sent. Thank you.")
+            setTipped(true)
+            goToReview()
           }}
         />
-        <Button
-          type="button"
-          variant="ghost"
-          className="w-full"
-          disabled={loading}
-          onClick={() => {
-            setClientSecret(null)
-            setSelectedTipCents(null)
-          }}
-        >
-          Change amount
-        </Button>
-        <Button type="button" variant="ghost" className="w-full" disabled={loading} onClick={onClose}>
-          No thanks
-        </Button>
+        <div className="flex items-center justify-between gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={loading}
+            onClick={() => {
+              setClientSecret(null)
+              setSelectedTipCents(null)
+            }}
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden />
+            Back
+          </Button>
+          <Button type="button" variant="ghost" disabled={loading} onClick={goToReview}>
+            No thanks
+          </Button>
+        </div>
       </div>
     )
   }
@@ -160,6 +227,8 @@ export function MarkSoldFollowUp({
     return (
       <MarkSoldTipAmountStep
         reswellHelped={reswellHelped}
+        listingPriceUsd={listingPriceUsd}
+        presets={tipPresets}
         customTip={customTip}
         customTipCents={customTipCents}
         loading={loading}
@@ -168,7 +237,12 @@ export function MarkSoldFollowUp({
         onSubmitCustom={() => {
           if (customTipCents !== null) void startTip(customTipCents)
         }}
-        onSkip={onClose}
+        onBack={() => {
+          setClientSecret(null)
+          setSelectedTipCents(null)
+          setStep("helped")
+        }}
+        onNoThanks={goToReview}
       />
     )
   }
@@ -181,7 +255,6 @@ export function MarkSoldFollowUp({
       loading={loading}
       onChannelChange={setSoldChannel}
       onDetailChange={setElsewhereDetail}
-      onSkip={() => setStep("helped")}
       onContinue={() => void saveChannelAndContinue()}
     />
   )

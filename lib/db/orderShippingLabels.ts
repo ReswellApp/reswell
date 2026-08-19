@@ -197,3 +197,46 @@ export async function fetchOrderIdsWithPreparedShippingLabels(
 
   return prepared
 }
+
+function rowHasPrintablePdf(row: {
+  order_id?: string
+  label_pdf_url?: string | null
+  label_storage_path?: string | null
+}): string | null {
+  const orderId = row.order_id
+  if (!orderId) return null
+  if (row.label_pdf_url?.trim() || row.label_storage_path?.trim()) return orderId
+  return null
+}
+
+/** Order ids that have a downloadable marketplace or admin label PDF (not QR-only). */
+export async function fetchOrderIdsWithPrintableShippingLabelPdfs(
+  supabase: SupabaseClient,
+  orderIds: string[],
+): Promise<Set<string>> {
+  const ids = [...new Set(orderIds.filter(Boolean))]
+  const printable = new Set<string>()
+  if (ids.length === 0) return printable
+
+  const [marketplaceRes, adminRes] = await Promise.all([
+    supabase
+      .from("order_shipping_labels")
+      .select("order_id, label_pdf_url, label_storage_path")
+      .in("order_id", ids),
+    supabase
+      .from("order_admin_shipping_labels")
+      .select("order_id, label_pdf_url, label_storage_path")
+      .in("order_id", ids),
+  ])
+
+  for (const row of marketplaceRes.data ?? []) {
+    const orderId = rowHasPrintablePdf(row as Parameters<typeof rowHasPrintablePdf>[0])
+    if (orderId) printable.add(orderId)
+  }
+  for (const row of adminRes.data ?? []) {
+    const orderId = rowHasPrintablePdf(row as Parameters<typeof rowHasPrintablePdf>[0])
+    if (orderId) printable.add(orderId)
+  }
+
+  return printable
+}

@@ -256,6 +256,8 @@ export default async function PurchasesPage() {
             trackingNumber: row.tracking_number,
             trackingDetail: parseOrderTrackingDetail(row.tracking_detail),
             returnSummary: returnSummaries.get(row.id) ?? null,
+            fulfillmentMethod: row.fulfillment_method,
+            hasShippingAddress: !!addrBlock,
           })
 
           return (

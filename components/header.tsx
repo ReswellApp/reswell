@@ -1011,12 +1011,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
     ) : null
 
   /** Sell flow and checkout: logo + account only (no main nav / search / cart). */
+  const isSellFlowPath =
+    pathname !== null && (pathname === "/sell" || pathname.startsWith("/sell/"))
   const isMinimalNavChrome =
-    pathname !== null &&
-    (pathname === "/sell" ||
-      pathname.startsWith("/sell/") ||
-      pathname === "/checkout" ||
-      pathname.startsWith("/checkout/"))
+    isSellFlowPath ||
+    (pathname !== null && (pathname === "/checkout" || pathname.startsWith("/checkout/")))
 
   const isAdminChrome =
     pathname !== null && (pathname === "/admin" || pathname.startsWith("/admin/"))
@@ -1075,15 +1074,30 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 {accountMenu}
               </>
             ) : authLoaded ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 shrink-0 text-foreground"
-                onClick={() => openLogin()}
-                aria-label="Log in or sign up"
-              >
-                <User className="h-6 w-6" />
-              </Button>
+              isSellFlowPath ? (
+                <Button asChild variant="outline" className={listYourBoardNavButtonClassName}>
+                  <Link
+                    href={authLandingHref("/auth/sign-up", pathname)}
+                    onClick={(e) => {
+                      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+                      e.preventDefault()
+                      openSignUp(pathname)
+                    }}
+                  >
+                    Sign up
+                  </Link>
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 shrink-0 text-foreground"
+                  onClick={() => openLogin()}
+                  aria-label="Log in or sign up"
+                >
+                  <User className="h-6 w-6" />
+                </Button>
+              )
             ) : null}
           </div>
         </div>

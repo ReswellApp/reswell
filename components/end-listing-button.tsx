@@ -6,11 +6,22 @@ import { EndListingDialog } from "@/components/end-listing-dialog"
 
 interface EndListingButtonProps {
   listingId: string
+  listingPriceUsd?: number
+  listingStatus?: string | null
+  vacationMode?: boolean
+  canDelete?: boolean
   /** Applied to the primary trigger button only (dialog buttons unchanged). */
   triggerClassName?: string
 }
 
-export function EndListingButton({ listingId, triggerClassName }: EndListingButtonProps) {
+export function EndListingButton({
+  listingId,
+  listingPriceUsd,
+  listingStatus,
+  vacationMode,
+  canDelete,
+  triggerClassName,
+}: EndListingButtonProps) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -22,7 +33,15 @@ export function EndListingButton({ listingId, triggerClassName }: EndListingButt
       >
         End listing
       </Button>
-      <EndListingDialog listingId={listingId} open={open} onOpenChange={setOpen} />
+      <EndListingDialog
+        listingId={listingId}
+        listingPriceUsd={listingPriceUsd}
+        listingStatus={listingStatus}
+        vacationMode={vacationMode}
+        canDelete={canDelete}
+        open={open}
+        onOpenChange={setOpen}
+      />
     </>
   )
 }

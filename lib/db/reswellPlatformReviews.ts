@@ -58,6 +58,29 @@ async function getReswellPlatformReviewSummaryLegacy(
   return { avgRating, reviewCount }
 }
 
+export async function getReswellReviewAuthorName(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<string> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("display_name, shop_name, first_name, last_name")
+    .eq("id", userId)
+    .maybeSingle()
+
+  if (error || !data) return "Reswell seller"
+
+  const shop = typeof data.shop_name === "string" ? data.shop_name.trim() : ""
+  if (shop.length >= 2) return shop
+  const display = typeof data.display_name === "string" ? data.display_name.trim() : ""
+  if (display.length >= 2) return display
+  const first = typeof data.first_name === "string" ? data.first_name.trim() : ""
+  const last = typeof data.last_name === "string" ? data.last_name.trim() : ""
+  const combined = [first, last].filter(Boolean).join(" ")
+  if (combined.length >= 2) return combined
+  return "Reswell seller"
+}
+
 export async function getReswellPlatformReviewByUserId(
   supabase: SupabaseClient,
   userId: string,

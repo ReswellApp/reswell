@@ -1,3 +1,4 @@
+import { Fragment, Suspense } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { privatePageMetadata } from "@/lib/site-metadata"
@@ -14,7 +15,10 @@ import {
   orderStatusIsRefundInProgress,
 } from "@/lib/order-status"
 import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
-import { fetchOrderIdsWithPreparedShippingLabels } from "@/lib/db/orderShippingLabels"
+import {
+  fetchOrderIdsWithPreparedShippingLabels,
+  fetchOrderIdsWithPrintableShippingLabelPdfs,
+} from "@/lib/db/orderShippingLabels"
 import { resolveSaleCardStatusDisplay } from "@/lib/sale-card-status"
 import { getOrderReturnSummariesByOrderIds } from "@/lib/db/orderReturnStatusSummary"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
@@ -23,6 +27,21 @@ import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { OrdersListRealtimeRefresh } from "@/components/order-realtime-refresh"
 import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
+import { SalesFulfillmentFilters } from "@/components/features/sales/sales-fulfillment-filters"
+import {
+  PrintShippingLabelsModule,
+  type PrintableShippingLabelSale,
+} from "@/components/features/sales/print-shipping-labels-module"
+import {
+  compareSalesForSellerList,
+  parseSalesListFilter,
+  saleHasPrintableOpenLabel,
+  saleIsPendingPickup,
+  saleIsPendingShipment,
+  saleMatchesListFilter,
+  saleNeedsFulfillment,
+  type SaleFulfillmentFilterInput,
+} from "@/lib/sale-fulfillment-filters"
 import { REAL_MARKETPLACE_SALES_FILTER } from "@/lib/order-admin-test"
 import { resolveMarketplaceOrderBuyerLabel } from "@/lib/order-buyer-display"
 import { resolveSellerOrderDisplayAmounts } from "@/lib/seller-order-display-amounts"
@@ -119,13 +138,20 @@ function fulfillmentLabel(method: string | null, hasShipAddr: boolean): string {
   return hasShipAddr ? "Ship to buyer" : "Local pickup"
 }
 
-export default async function SalesPage() {
+export default async function SalesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ filter?: string }>
+}) {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
   if (!user) return null
+
+  const params = await searchParams
+  const activeFilter = parseSalesListFilter(params.filter)
 
   const { data: sales, error } = await supabase
     .from("orders")
@@ -174,10 +200,11 @@ export default async function SalesPage() {
 
   const list = (sales ?? []) as unknown as SaleRow[]
 
-  const preparedLabelOrderIds = await fetchOrderIdsWithPreparedShippingLabels(
-    supabase,
-    list.map((s) => s.id),
-  )
+  const orderIds = list.map((s) => s.id)
+  const [preparedLabelOrderIds, printablePdfOrderIds] = await Promise.all([
+    fetchOrderIdsWithPreparedShippingLabels(supabase, orderIds),
+    fetchOrderIdsWithPrintableShippingLabelPdfs(supabase, orderIds),
+  ])
   const returnSummaries = await getOrderReturnSummariesByOrderIds(
     supabase,
     list.map((s) => s.id),
@@ -212,6 +239,48 @@ export default async function SalesPage() {
     (buyerProfiles ?? []).map((p) => [p.id, p.display_name?.trim() || ""]),
   )
 
+  function saleFilterInput(sale: SaleRow): SaleFulfillmentFilterInput {
+    const ship = sale.shipping_address
+    return {
+      fulfillmentMethod: sale.fulfillment_method,
+      deliveryStatus: sale.delivery_status ?? "pending",
+      orderStatus: sale.status,
+      hasShippingAddress: Boolean(ship?.address && formatAddress(ship.address)),
+      hasPreparedShippingLabel: preparedLabelOrderIds.has(sale.id),
+    }
+  }
+
+  const pendingShipmentCount = list.filter((sale) => saleIsPendingShipment(saleFilterInput(sale))).length
+  const pendingPickupCount = list.filter((sale) => saleIsPendingPickup(saleFilterInput(sale))).length
+  const visibleList = list
+    .filter((sale) => saleMatchesListFilter(saleFilterInput(sale), activeFilter))
+    .sort((a, b) =>
+      compareSalesForSellerList(
+        { createdAt: a.created_at, filterInput: saleFilterInput(a) },
+        { createdAt: b.created_at, filterInput: saleFilterInput(b) },
+      ),
+    )
+
+  const printableLabelSales: PrintableShippingLabelSale[] = list
+    .filter((sale) => saleIsPendingShipment(saleFilterInput(sale)))
+    .map((sale) => {
+      const listing = Array.isArray(sale.listings) ? sale.listings[0] : sale.listings
+      const buyerDisplay = sale.buyer_id ? buyerNameById.get(sale.buyer_id)?.trim() : ""
+      return {
+        orderId: sale.id,
+        orderNum: formatOrderNumForCustomer(sale.order_num, sale.id),
+        title: listing?.title ? capitalizeWords(listing.title) : "Item (listing removed)",
+        imageUrl: primaryImage(listing?.listing_images ?? null),
+        buyerName: resolveMarketplaceOrderBuyerLabel({
+          buyerId: sale.buyer_id,
+          profileDisplayName: buyerDisplay,
+          shippingAddress: sale.shipping_address,
+        }),
+        hasPrintableLabel:
+          saleHasPrintableOpenLabel(saleFilterInput(sale)) && printablePdfOrderIds.has(sale.id),
+      }
+    })
+
   return (
     <div className="space-y-6">
       <OrdersListRealtimeRefresh role="seller" />
@@ -219,6 +288,20 @@ export default async function SalesPage() {
         title="Sales"
         description="Card and wallet purchases of your listings. Shipping addresses appear here when the buyer paid with a card and chose delivery."
       />
+
+      {!error && list.length > 0 && (printableLabelSales.length > 0 || pendingShipmentCount > 0) ? (
+        <PrintShippingLabelsModule sales={printableLabelSales} />
+      ) : null}
+
+      {!error && list.length > 0 ? (
+        <Suspense fallback={<div className="h-10 w-full max-w-md animate-pulse rounded-md bg-muted" />}>
+          <SalesFulfillmentFilters
+            activeFilter={activeFilter}
+            pendingShipmentCount={pendingShipmentCount}
+            pendingPickupCount={pendingPickupCount}
+          />
+        </Suspense>
+      ) : null}
 
       {error && (
         <div className="space-y-1 text-sm text-destructive">
@@ -245,8 +328,23 @@ export default async function SalesPage() {
         </Card>
       )}
 
+      {!error && list.length > 0 && visibleList.length === 0 && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <PackageCheck className="h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground max-w-sm">
+              {activeFilter === "pending-shipment"
+                ? "No open orders are waiting to ship."
+                : activeFilter === "pending-pickup"
+                  ? "No open orders are waiting for pickup."
+                  : "No sales match this filter."}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="space-y-4">
-        {list.map((sale) => {
+        {visibleList.map((sale, index) => {
           const listing = Array.isArray(sale.listings) ? sale.listings[0] : sale.listings
           const title = listing?.title
             ? capitalizeWords(listing.title)
@@ -261,6 +359,15 @@ export default async function SalesPage() {
             shippingAddress: ship,
           })
           const fulfill = fulfillmentLabel(sale.fulfillment_method, !!addrBlock)
+          const filterInput = saleFilterInput(sale)
+          const needsFulfillment = saleNeedsFulfillment(filterInput)
+          const prevSale = index > 0 ? visibleList[index - 1] : undefined
+          const prevNeedsFulfillment = prevSale
+            ? saleNeedsFulfillment(saleFilterInput(prevSale))
+            : false
+          const showOpenHeading = activeFilter === "all" && needsFulfillment && index === 0
+          const showEarlierHeading =
+            activeFilter === "all" && !needsFulfillment && (index === 0 || prevNeedsFulfillment)
           const statusDisplay = resolveSaleCardStatusDisplay({
             orderStatus: sale.status,
             deliveryStatus: sale.delivery_status ?? "pending",
@@ -268,12 +375,20 @@ export default async function SalesPage() {
             trackingDetail: trackingDetailByOrderId.get(sale.id) ?? null,
             hasPreparedShippingLabel: preparedLabelOrderIds.has(sale.id),
             returnSummary: returnSummaries.get(sale.id) ?? null,
+            fulfillmentMethod: sale.fulfillment_method,
+            hasShippingAddress: !!addrBlock,
           })
           const amounts = resolveSellerOrderDisplayAmounts(sale)
 
           return (
+            <Fragment key={sale.id}>
+              {showOpenHeading ? (
+                <p className="pt-1 text-sm font-semibold text-foreground">Needs fulfillment</p>
+              ) : null}
+              {showEarlierHeading ? (
+                <p className="pt-2 text-sm font-semibold text-muted-foreground">Earlier sales</p>
+              ) : null}
             <Link
-              key={sale.id}
               href={`/dashboard/sales/${sale.id}`}
               className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
@@ -283,7 +398,9 @@ export default async function SalesPage() {
                     ? "border-destructive/20 bg-destructive/[0.02]"
                     : orderStatusIsRefundInProgress(sale.status)
                       ? "border-amber-500/25 bg-amber-500/[0.03]"
-                      : "hover:bg-muted/40 hover:border-primary/25"
+                      : needsFulfillment
+                        ? "border-amber-500/35 bg-amber-500/[0.04] hover:border-amber-500/50"
+                        : "hover:bg-muted/40 hover:border-primary/25"
                 }`}
               >
                 <CardHeader className="pb-3">
@@ -403,6 +520,7 @@ export default async function SalesPage() {
                 </CardContent>
               </Card>
             </Link>
+            </Fragment>
           )
         })}
       </div>

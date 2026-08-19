@@ -23,7 +23,7 @@ type ListingMarkSoldRow = {
 }
 
 export type MarkSellerListingSoldOffPlatformResult =
-  | { ok: true }
+  | { ok: true; priceUsd: number }
   | { ok: false; status: number; error: string }
 
 async function loadListingForMarkSold(
@@ -160,5 +160,6 @@ export async function markSellerListingSoldOffPlatform(
       typeof reswellHelpedFindBuyer === "boolean" ? reswellHelpedFindBuyer : null,
   })
 
-  return { ok: true }
+  const priceUsd = Number(row.price)
+  return { ok: true, priceUsd: Number.isFinite(priceUsd) ? priceUsd : 0 }
 }

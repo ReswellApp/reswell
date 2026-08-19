@@ -340,6 +340,8 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     trackingDetail: carrierTracking,
     hasPreparedShippingLabel: hasPreparedShippingLabel || (isReswellShippingOrder && hasShippingTracking),
     returnSummary: returnSummaries.get(id) ?? null,
+    fulfillmentMethod: sale.fulfillment_method,
+    hasShippingAddress: !!addrBlock,
   })
 
   const convRow = sale.buyer_id

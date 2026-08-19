@@ -8,6 +8,7 @@ type ReswellPlatformStarBoxProps = {
   fill: number
   size?: "sm" | "md" | "lg"
   className?: string
+  starClassName?: string
 }
 
 const sizeClasses = {
@@ -20,6 +21,7 @@ export function ReswellPlatformStarBox({
   fill,
   size = "md",
   className,
+  starClassName,
 }: ReswellPlatformStarBoxProps) {
   const clamped = Math.min(1, Math.max(0, fill))
 
@@ -37,7 +39,10 @@ export function ReswellPlatformStarBox({
         style={{ width: `${clamped * 100}%` }}
         aria-hidden
       />
-      <Star className="star-icon absolute inset-0 m-auto fill-white text-white" strokeWidth={0} />
+      <Star
+        className={cn("star-icon absolute inset-0 m-auto fill-white text-white", starClassName)}
+        strokeWidth={0}
+      />
     </span>
   )
 }

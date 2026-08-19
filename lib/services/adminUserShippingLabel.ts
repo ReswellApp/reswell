@@ -3,7 +3,6 @@ import { fetchProfileAddresses } from "@/lib/db/profile-addresses"
 import { insertAdminUserShippingLabel } from "@/lib/db/adminUserShippingLabels"
 import { startStaffOutboundMarketplaceConversation } from "@/lib/services/adminStartMarketplaceConversation"
 import { purchaseLabelWithRateId } from "@/lib/services/orderShippingLabel"
-import { shipEngineRequest } from "@/lib/shipengine/client"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import {
   fetchShipEngineRatesForSurfboard,
@@ -39,27 +38,17 @@ export type AdminUserLabelContext = {
   }
 }
 
-export const RESWELL_FALLBACK_SHIP_FROM: RateQuoteAddressFields = {
+export const RESWELL_SHIP_FROM: RateQuoteAddressFields = {
   name: "Reswell",
   phone: "",
   company_name: "Reswell",
-  address_line1: "4301 Bull Creek Road",
+  address_line1: "915 De La Vina",
   address_line2: "",
-  city_locality: "Austin",
-  state_province: "TX",
-  postal_code: "78731",
+  city_locality: "Santa Barbara",
+  state_province: "CA",
+  postal_code: "93101",
   country_code: "US",
   residential: "no",
-}
-
-function asRecord(v: unknown): Record<string, unknown> | null {
-  return v != null && typeof v === "object" && !Array.isArray(v)
-    ? (v as Record<string, unknown>)
-    : null
-}
-
-function str(v: unknown): string {
-  return typeof v === "string" ? v.trim() : ""
 }
 
 function formatAddressOneLine(a: RateQuoteAddressFields): string {
@@ -83,59 +72,8 @@ function shipToToRateQuoteAddress(shipTo: AdminUserShippingLabelShipTo): RateQuo
   }
 }
 
-function warehouseOriginToShipFrom(raw: unknown): RateQuoteAddressFields | null {
-  const origin = asRecord(raw)
-  if (!origin) return null
-  const line1 = str(origin.address_line1)
-  const city = str(origin.city_locality)
-  const postal = str(origin.postal_code)
-  if (!line1 || !city || !postal) return null
-  const residentialRaw = str(origin.address_residential_indicator).toLowerCase()
-  const residential: RateQuoteAddressFields["residential"] =
-    residentialRaw === "yes" || residentialRaw === "no" ? residentialRaw : "no"
-  return {
-    name: str(origin.name) || "Reswell",
-    phone: str(origin.phone),
-    company_name: str(origin.company_name) || "Reswell",
-    address_line1: line1,
-    address_line2: str(origin.address_line2),
-    city_locality: city,
-    state_province: str(origin.state_province),
-    postal_code: postal,
-    country_code: str(origin.country_code) || "US",
-    residential,
-  }
-}
-
-async function resolveReswellShipFrom(): Promise<RateQuoteAddressFields> {
-  if (!isShipEngineConfigured()) {
-    return RESWELL_FALLBACK_SHIP_FROM
-  }
-  try {
-    const res = await shipEngineRequest("/warehouses")
-    if (!res.ok) {
-      return RESWELL_FALLBACK_SHIP_FROM
-    }
-    const raw = await res.text()
-    let data: unknown = null
-    if (raw) {
-      try {
-        data = JSON.parse(raw) as unknown
-      } catch {
-        data = null
-      }
-    }
-    const root = asRecord(data)
-    const warehouses = Array.isArray(root?.warehouses) ? root.warehouses : Array.isArray(data) ? data : []
-    for (const w of warehouses) {
-      const row = asRecord(w)
-      const parsed = warehouseOriginToShipFrom(row?.origin_address ?? row?.address)
-      if (parsed) return parsed
-    }
-  } catch (e) {
-    console.warn("[adminUserShippingLabel] warehouse lookup failed:", e)
-  }
-  return RESWELL_FALLBACK_SHIP_FROM
+function resolveReswellShipFrom(): RateQuoteAddressFields {
+  return RESWELL_SHIP_FROM
 }
 
 function buildPackageOnTheWayMessage(params: {

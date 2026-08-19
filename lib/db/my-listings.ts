@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { listingIdsBlockedFromPermanentDelete } from "@/lib/db/listingDeleteEligibility"
 
 export type MyListingImageRow = {
   url: string
@@ -22,6 +23,7 @@ export type MyListingRow = {
   created_at: string
   archived_at: string | null
   hidden_from_site: boolean | null
+  canDelete: boolean
   listing_images: MyListingImageRow[] | null
 }
 
@@ -119,16 +121,23 @@ export async function fetchMyListings(
     return { listings: [], stats: EMPTY_STATS, error: listingsRes.error.message }
   }
 
-  const listings = ((listingsRes.data ?? []) as Omit<MyListingRow, "cartCount" | "favoriteCount">[]).map(
-    (listing) => {
-      const engagement = engagementCounts.get(listing.id)
-      return {
-        ...listing,
-        cartCount: engagement?.cartCount ?? 0,
-        favoriteCount: engagement?.favoriteCount ?? 0,
-      }
-    },
+  const listingRows = (listingsRes.data ?? []) as Omit<
+    MyListingRow,
+    "cartCount" | "favoriteCount" | "canDelete"
+  >[]
+  const blockedIds = await listingIdsBlockedFromPermanentDelete(
+    supabase,
+    listingRows.map((listing) => listing.id),
   )
+  const listings = listingRows.map((listing) => {
+    const engagement = engagementCounts.get(listing.id)
+    return {
+      ...listing,
+      cartCount: engagement?.cartCount ?? 0,
+      favoriteCount: engagement?.favoriteCount ?? 0,
+      canDelete: !blockedIds.has(listing.id),
+    }
+  })
 
   return { listings, stats }
 }

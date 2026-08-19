@@ -245,6 +245,7 @@ export function BuyerPurchasesTab() {
             deliveryStatus: row.delivery_status ?? "pending",
             trackingNumber: row.tracking_number,
             trackingDetail: parseOrderTrackingDetail(row.tracking_detail),
+            fulfillmentMethod: row.fulfillment_method,
           })
 
           return (
