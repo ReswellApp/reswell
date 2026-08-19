@@ -1,17 +1,17 @@
 "use client"
 
 import { type CSSProperties, type PointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react"
-import Image from "next/image"
+import { preload } from "react-dom"
 import dynamic from "next/dynamic"
 import useEmblaCarousel from "embla-carousel-react"
 import { cn } from "@/lib/utils"
-import { portraitShimmer, squareShimmer } from "@/lib/image-shimmer"
+import { listingTileImageSrcFromRow } from "@/lib/listing-image-display"
 import {
-  listingImageShouldBypassOptimization,
   proxiedListingImageSrc,
   withListingMediaPdpVariant,
 } from "@/lib/listing-media-proxy-url"
 import { Maximize2 } from "lucide-react"
+import { ListingGalleryPhoto } from "@/components/features/listings/listing-gallery-photo"
 import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
 
 function preloadListingImageLightbox() {
@@ -114,10 +114,26 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
     [proxiedUrls],
   )
 
+  const previewUrls = useMemo(
+    () =>
+      images.map((img, i) => {
+        const preview = listingTileImageSrcFromRow(img)
+        const hero = heroUrls[i]
+        if (!preview || preview === hero || preview === "/placeholder.svg") return ""
+        return preview
+      }),
+    [heroUrls, images],
+  )
+
   const galleryUrls = useMemo(
     () => heroUrls.filter((u) => u && u !== "/placeholder.svg"),
     [heroUrls],
   )
+
+  const firstHero = heroUrls[0]
+  if (firstHero && firstHero !== "/placeholder.svg") {
+    preload(firstHero, { as: "image", fetchPriority: "high" })
+  }
 
   /** Stable primitive — never pass `images`/`proxiedUrls` arrays as effect deps (fixed length). */
   const galleryUrlsKey = useMemo(() => galleryUrls.join("|"), [galleryUrls])
@@ -267,6 +283,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
           onIndexChange={setLightboxIndex}
           aspectRatios={imageAspectRatios}
           dimensionsLine={dimensionsLine}
+          previewUrls={previewUrls}
         />
       ) : null}
 
@@ -337,21 +354,15 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
                   className="relative h-full min-w-0 shrink-0 grow-0 basis-full bg-[#f5f5f7] dark:bg-muted"
                   aria-hidden={!isSelected}
                 >
-                  <Image
+                  <ListingGalleryPhoto
                     src={heroUrls[i] || "/placeholder.svg"}
+                    previewSrc={previewUrls[i]}
                     alt={`${title} - Image ${i + 1}`}
-                    fill
-                    unoptimized={listingImageShouldBypassOptimization(heroUrls[i])}
-                    draggable={false}
-                    className="pointer-events-none select-none object-cover object-center"
                     priority={i === 0 && selectedIndex === 0}
                     fetchPriority={isSelected ? "high" : "auto"}
                     loading={nearSelected ? "eager" : "lazy"}
                     sizes="(max-width: 1024px) 100svw, 50svw"
-                    placeholder="blur"
-                    blurDataURL={portraitShimmer}
-                    onLoadingComplete={({ naturalWidth, naturalHeight }) => {
-                      if (naturalWidth <= 0 || naturalHeight <= 0) return
+                    onLoaded={({ naturalWidth, naturalHeight }) => {
                       const ratio = naturalWidth / naturalHeight
                       setImageAspectRatios((prev) => {
                         if (prev[i] === ratio) return prev
@@ -443,24 +454,17 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
                 style={{ paddingBottom: "133.33%" }}
               >
                 <span className="absolute inset-0">
-                  <Image
+                  <ListingGalleryPhoto
                     src={
+                      listingTileImageSrcFromRow(image) ||
                       proxiedListingImageSrc(
                         image.thumbnail_url?.trim() || image.url,
-                      ) || "/placeholder.svg"
+                      ) ||
+                      "/placeholder.svg"
                     }
                     alt={`${title} - Thumbnail ${index + 1}`}
-                    fill
-                    unoptimized={listingImageShouldBypassOptimization(
-                      proxiedListingImageSrc(
-                        image.thumbnail_url?.trim() || image.url,
-                      ),
-                    )}
                     loading={Math.abs(index - selectedIndex) <= 1 ? "eager" : "lazy"}
-                    className="object-cover object-center"
                     sizes="64px"
-                    placeholder="blur"
-                    blurDataURL={squareShimmer}
                   />
                 </span>
               </span>

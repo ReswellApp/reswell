@@ -5,17 +5,18 @@
  * 1. Flows → Create flow → Metric → **Giveaway Entered**.
  * 2. Trigger filter: `reswell_metric_seed` is not true.
  * 3. Send immediately. Split on `qualified`:
- *    - Yes → “You’re in the raffle.”
- *    - No → “List a surfboard to complete your entry.” CTA: `{{ event.List_URL }}`.
+ *    - Yes → paste `giveaway-entered-confirmation-email.html` (“You’re in the raffle.”)
+ *    - No → paste `giveaway-entered-need-listing-email.html`. CTA: `{{ event.List_URL }}`.
  *
  * **Giveaway Listing Reminder** — cron/admin for pending entries with no listing.
  * 1. Metric → **Giveaway Listing Reminder**.
  * 2. Filter `reswell_metric_seed` is not true.
  * 3. Conditional split: profile has done **Giveaway Qualified** or **Listing**
- *    since this flow started → Yes → exit. No → send “Finish listing your board”.
+ *    since this flow started → Yes → exit. No → paste `giveaway-listing-reminder-email.html`.
  * 4. CTA: `{{ event.List_URL }}`.
  *
  * **Giveaway Qualified** — they published a surfboard; listing is their ticket.
+ * Same confirmation HTML: `giveaway-entered-confirmation-email.html`.
  *
  * Cron: `GET /api/cron/klaviyo-giveaway-listing-reminders`
  * Admin send: `POST /api/admin/giveaways/listing-reminders/run`

@@ -81,6 +81,8 @@ function usePrefersCoarsePointer() {
 
 interface LightboxSlideProps {
   src: string
+  /** Browse/tile URL — paint immediately when the feed image is already cached. */
+  previewSrc?: string
   title: string
   slideIndex: number
   isActive: boolean
@@ -95,6 +97,7 @@ interface LightboxSlideProps {
 
 function LightboxSlide({
   src,
+  previewSrc = "",
   title,
   slideIndex,
   isActive,
@@ -113,14 +116,14 @@ function LightboxSlide({
   const [loadedSrc, setLoadedSrc] = useState<string | null>(() =>
     isCachedImageSrc(src) ? src : null,
   )
-  const [placeholderLoaded, setPlaceholderLoaded] = useState(
-    () => Boolean(placeholderSrc) && (isActive || isCachedImageSrc(placeholderSrc)),
+  const [placeholderLoaded, setPlaceholderLoaded] = useState(() =>
+    Boolean(placeholderSrc) && isCachedImageSrc(placeholderSrc),
   )
   const [trackedSrc, setTrackedSrc] = useState(src)
   if (src !== trackedSrc) {
     setTrackedSrc(src)
     setLoadedSrc(isCachedImageSrc(src) ? src : null)
-    setPlaceholderLoaded(Boolean(placeholderSrc) && (isActive || isCachedImageSrc(placeholderSrc)))
+    setPlaceholderLoaded(Boolean(placeholderSrc) && isCachedImageSrc(placeholderSrc))
   }
   const [aspectRatio, setAspectRatio] = useState(initialAspectRatio)
   const pinchRef = useRef<ReactZoomPanPinchContentRef | null>(null)
@@ -188,7 +191,11 @@ function LightboxSlide({
     return () => img.removeEventListener("load", markFullLoaded)
   }, [isActive, isMaxMd, src])
 
-  const slideReady = Boolean(placeholderSrc) || loadedSrc === src || placeholderLoaded
+  const cachedPreview =
+    previewSrc && previewSrc !== src && isCachedImageSrc(previewSrc) ? previewSrc : ""
+  const paintUnderlay =
+    placeholderLoaded && placeholderSrc ? placeholderSrc : cachedPreview
+  const slideReady = loadedSrc === src || placeholderLoaded || Boolean(cachedPreview)
   const [scale, setScale] = useState(1)
   const isZoomedOut = scale <= 1 + ZOOM_TOLERANCE
   const scaleRef = useRef(1)
@@ -217,9 +224,9 @@ function LightboxSlide({
           height: `min(100cqh, calc(100cqi / ${aspectRatio}))`,
         }
       : {}),
-    ...(placeholderSrc && loadedSrc !== src
+    ...(paintUnderlay && loadedSrc !== src
       ? {
-          backgroundImage: `url("${placeholderSrc}")`,
+          backgroundImage: `url("${paintUnderlay}")`,
           backgroundSize: fitCard ? "contain" : "112% auto",
           backgroundPosition: fitCard ? "center" : "top center",
           backgroundRepeat: "no-repeat",
@@ -248,15 +255,13 @@ function LightboxSlide({
         style={frameStyle}
         onClick={(event) => event.stopPropagation()}
       >
-        {!placeholderSrc ? (
-          <ListingTileShimmer
-            aria-hidden
-            className={cn(
-              "listing-tile-shimmer-overlay absolute inset-0 z-[1]",
-              slideReady && "pointer-events-none opacity-0",
-            )}
-          />
-        ) : null}
+        <ListingTileShimmer
+          aria-hidden
+          className={cn(
+            "listing-tile-shimmer-overlay absolute inset-0 z-[1] rounded-none",
+            slideReady && "pointer-events-none opacity-0",
+          )}
+        />
         <TransformWrapper
           ref={setPinchRef}
           disabled={!isActive}
@@ -353,6 +358,8 @@ interface ListingImageLightboxProps {
   aspectRatios?: Record<number, number>
   /** Length × width × thickness · volume — shown above the thumbnail slider. */
   dimensionsLine?: string | null
+  /** Browse/tile URLs aligned with `proxiedUrls` — first paint when already cached. */
+  previewUrls?: string[]
 }
 
 export function ListingImageLightbox({
@@ -364,6 +371,7 @@ export function ListingImageLightbox({
   onIndexChange,
   aspectRatios,
   dimensionsLine,
+  previewUrls,
 }: ListingImageLightboxProps) {
   const [scale, setScale] = useState(1)
   const pinchRefs = useRef<Map<number, ReactZoomPanPinchContentRef | null>>(new Map())
@@ -491,6 +499,7 @@ export function ListingImageLightbox({
     return (
       <LightboxSlide
         src={src}
+        previewSrc={previewUrls?.[slideIndex]}
         title={title}
         slideIndex={slideIndex}
         isActive={slideIndex === index}
