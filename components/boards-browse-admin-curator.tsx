@@ -309,7 +309,8 @@ export function BoardsBrowseAdminCurator({ isAdmin, className }: BoardsBrowseAdm
             <DialogTitle>/boards CMS</DialogTitle>
             <DialogDescription className="text-pretty [overflow-wrap:anywhere]">
               Suppress boards to the bottom of /boards, or hide listings from the site entirely.
-              Unfiltered /boards shuffles automatically every 24 hours.
+              Unfiltered /boards shuffles automatically every 24 hours. Boards listed during the
+              current window appear at the top without reshuffling the rest.
             </DialogDescription>
           </DialogHeader>
 

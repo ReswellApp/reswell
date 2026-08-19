@@ -35,8 +35,8 @@ async function loadBoardsBrowseCategoryTypePage(
 
 const getCachedBoardsBrowseCategoryTypePage = unstable_cache(
   loadBoardsBrowseCategoryTypePage,
-  // `v3` includes the 24h rotate seed so unfiltered `/boards` reshuffles on a new day.
-  ["boards-browse-category-type", "v3-daily-rotate"],
+  // `v4` pins listings created in the current 24h window above the seeded shuffle.
+  ["boards-browse-category-type", "v4-daily-rotate"],
   {
     revalidate: BOARDS_BROWSE_REVALIDATE_SECONDS,
     tags: [BOARDS_BROWSE_CACHE_TAG],

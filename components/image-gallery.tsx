@@ -13,36 +13,15 @@ import {
 } from "@/lib/listing-media-proxy-url"
 import { Maximize2 } from "lucide-react"
 import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
-import { ListingTileShimmer } from "@/components/ui/skeleton"
 
-function ListingImageLightboxLoadingShell() {
-  return (
-    <div className="fixed inset-0 z-[70] bg-background" aria-hidden>
-      <div className="flex h-full items-center justify-center px-6 py-16 md:px-16">
-        <div
-          className="relative overflow-hidden rounded-2xl bg-muted shadow-sm ring-1 ring-black/[0.06]"
-          style={{
-            aspectRatio: 3 / 4,
-            width:
-              "min(calc(100vw - 8.5rem), calc(min(92dvh, calc(100dvh - 8.25rem)) * 0.75))",
-            maxWidth: "calc(100vw - 1.25rem)",
-            maxHeight: "min(92dvh, calc(100dvh - 8.25rem))",
-          }}
-        >
-          <ListingTileShimmer className="absolute inset-0 rounded-2xl" />
-        </div>
-      </div>
-    </div>
-  )
+function preloadListingImageLightbox() {
+  return import("@/components/features/listings/listing-image-lightbox")
 }
 
 /** Zoom/pan library only loads once the user first enlarges a photo. */
 const ListingImageLightbox = dynamic(
-  () =>
-    import("@/components/features/listings/listing-image-lightbox").then(
-      (m) => m.ListingImageLightbox,
-    ),
-  { ssr: false, loading: ListingImageLightboxLoadingShell },
+  () => preloadListingImageLightbox().then((m) => m.ListingImageLightbox),
+  { ssr: false, loading: () => null },
 )
 
 interface ImageGalleryProps {
@@ -96,8 +75,8 @@ function gallerySlideNearSelected(i: number, selected: number, total: number): b
 export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, dimensionsLine }: ImageGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
-  /** Mount the lightbox (and its zoom library chunk) only after the first enlarge. */
-  const [lightboxEverOpened, setLightboxEverOpened] = useState(false)
+  /** Mount once the zoom chunk is ready so the first enlarge is a state change, not a white shell. */
+  const [lightboxMounted, setLightboxMounted] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
   /** Natural width/height per slide — mobile hero uses this instead of a fixed crop frame. */
   const [imageAspectRatios, setImageAspectRatios] = useState<Record<number, number>>({})
@@ -191,20 +170,20 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
     row.scrollTo({ left: Math.max(0, nextLeft), behavior: "smooth" })
   }, [selectedIndex])
 
-  // Preload the lightbox (and its zoom library chunk) while idle so the first enlarge is instant.
+  // Preload and mount the lightbox while idle so the first enlarge is a state change, not a remount.
   useEffect(() => {
-    const preload = () => {
-      void import("@/components/features/listings/listing-image-lightbox")
+    const mount = () => {
+      void preloadListingImageLightbox().then(() => setLightboxMounted(true))
     }
     const w = window as Window & {
       requestIdleCallback?: (cb: () => void) => number
       cancelIdleCallback?: (id: number) => void
     }
     if (w.requestIdleCallback) {
-      const id = w.requestIdleCallback(preload)
+      const id = w.requestIdleCallback(mount)
       return () => w.cancelIdleCallback?.(id)
     }
-    const id = window.setTimeout(preload, 1200)
+    const id = window.setTimeout(mount, 400)
     return () => window.clearTimeout(id)
   }, [])
 
@@ -238,6 +217,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
   function onHeroPointerDown(event: PointerEvent<HTMLDivElement>) {
     pointerStartRef.current = { x: event.clientX, y: event.clientY }
     suppressHeroClickRef.current = false
+    void preloadListingImageLightbox().then(() => setLightboxMounted(true))
   }
 
   function onHeroPointerMove(event: PointerEvent<HTMLDivElement>) {
@@ -258,7 +238,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
   function openLightbox() {
     for (const url of proxiedUrls) warmListingImageSrc(url)
     setLightboxIndex(selectedIndex)
-    setLightboxEverOpened(true)
+    setLightboxMounted(true)
     setLightboxOpen(true)
   }
 
@@ -269,7 +249,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
         compactMobile ? "max-md:space-y-2.5 md:space-y-5" : "space-y-5",
       )}
     >
-      {lightboxEverOpened ? (
+      {lightboxMounted ? (
         <ListingImageLightbox
           open={lightboxOpen}
           onOpenChange={(o) => {
@@ -329,6 +309,9 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
           aria-haspopup="dialog"
           aria-expanded={lightboxOpen}
           aria-label="View enlarged photos"
+          onPointerEnter={() => {
+            void preloadListingImageLightbox().then(() => setLightboxMounted(true))
+          }}
           onPointerDown={onHeroPointerDown}
           onPointerMove={onHeroPointerMove}
           onPointerUp={onHeroPointerUp}

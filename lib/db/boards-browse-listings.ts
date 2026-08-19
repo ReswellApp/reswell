@@ -12,7 +12,8 @@ import {
 import { sortRecordsByIdOrder } from "@/lib/utils/sort-by-id-order"
 import {
   boardsBrowseDailyRotateSeed,
-  compareIdsByDailyRotateSeed,
+  compareRotateIdRowsForDailyRotate,
+  listingCreatedAtMs,
   orderListingIdsForDailyRotate,
 } from "@/lib/utils/boards-browse-daily-rotate"
 import { isBoardsBrowseSuppressionSortAvailable } from "@/lib/db/boards-browse-suppressed-admin"
@@ -125,15 +126,25 @@ export function isBoardsBrowseTopPicksSort(sort: string): boolean {
   return sort === BOARDS_BROWSE_TOP_PICKS_SORT
 }
 
-/** Seeded daily shuffle; suppressed listings sort last. */
+/** Seeded daily shuffle; new-this-window listings first; suppressed last. */
 export function compareBoardBrowseRowsDailyRotate(
   a: BoardBrowseListingRow,
   b: BoardBrowseListingRow,
   seed: string,
 ): number {
-  const supDiff = suppressedBrowseRank(a) - suppressedBrowseRank(b)
-  if (supDiff !== 0) return supDiff
-  return compareIdsByDailyRotateSeed(a.id, b.id, seed)
+  return compareRotateIdRowsForDailyRotate(
+    {
+      id: a.id,
+      suppressed: a.suppressed_on_boards_browse === true,
+      createdAtMs: listingCreatedAtMs(a.created_at),
+    },
+    {
+      id: b.id,
+      suppressed: b.suppressed_on_boards_browse === true,
+      createdAtMs: listingCreatedAtMs(b.created_at),
+    },
+    seed,
+  )
 }
 
 export type SurfboardBrowseFilterParams = {
@@ -163,8 +174,10 @@ async function listSurfboardBrowseRotateIdRows(
   params: { boardType: string; condition: string },
 ): Promise<{ id: string; suppressed: boolean }[]> {
   const includeSuppressed = await isBoardsBrowseSuppressionSortAvailable(supabase)
-  const selectColumns = includeSuppressed ? "id, suppressed_on_boards_browse" : "id"
-  const rows: { id: string; suppressed: boolean }[] = []
+  const selectColumns = includeSuppressed
+    ? "id, created_at, suppressed_on_boards_browse"
+    : "id, created_at"
+  const rows: { id: string; suppressed: boolean; createdAtMs: number }[] = []
   let from = 0
   while (from < ROTATE_ID_MAX) {
     const to = from + ROTATE_ID_PAGE_SIZE - 1
@@ -186,12 +199,14 @@ async function listSurfboardBrowseRotateIdRows(
 
     const batch = (data ?? []) as Array<{
       id: string
+      created_at?: string | null
       suppressed_on_boards_browse?: boolean | null
     }>
     for (const row of batch) {
       rows.push({
         id: row.id,
         suppressed: row.suppressed_on_boards_browse === true,
+        createdAtMs: listingCreatedAtMs(row.created_at),
       })
     }
     if (batch.length < ROTATE_ID_PAGE_SIZE) break

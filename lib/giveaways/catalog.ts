@@ -89,7 +89,7 @@ const WIN_A_SURFBOARD_GIVEAWAY: Giveaway = {
     },
   ],
   rules: [
-    "Open to people 18 or older with a Reswell account.",
+    "Open to people 18 or older who live in the United States. Only surfers in the USA can win.",
     "One entry per person. Publishing a surfboard listing during the giveaway window enters you.",
     "Choose one prize brand when you enter. You can change it any time before the giveaway ends, and again if you win and want a different maker.",
     "Listings must be real surfboards offered for sale on Reswell. Drafts do not count.",

@@ -35,7 +35,11 @@ import {
 import { categoryIdsForBrowseBoardTypes } from "@/lib/utils/board-type-from-category-id"
 import type { BoardsBrowseFacetCounts } from "@/lib/services/boardsBrowseFacetCounts"
 import { isUuidString } from "@/lib/utils/isUuid"
-import { boardsBrowseDailyRotateSeed, hashStringCyrb53 } from "@/lib/utils/boards-browse-daily-rotate"
+import {
+  boardsBrowseDailyRotateSeed,
+  boardsBrowseDailyRotateWindowStartMs,
+  hashStringCyrb53,
+} from "@/lib/utils/boards-browse-daily-rotate"
 import {
   TAIL_SHAPE_LABELS,
   type TailShapeTagSlug,
@@ -438,13 +442,27 @@ function buildSort(params: BoardsBrowseEsSearchParams): object[] {
 
   if (params.sort === BOARDS_BROWSE_TOP_PICKS_SORT) {
     const seed = boardsBrowseDailyRotateSeed()
+    const windowStart = boardsBrowseDailyRotateWindowStartMs(seed)
+    const createdMsPainless =
+      "long created = 0L; if (doc.containsKey('created_at') && doc['created_at'].size() != 0) { created = doc['created_at'].value.toInstant().toEpochMilli(); }"
     sort.push({
       _script: {
         type: "number",
         script: {
           lang: "painless",
-          source: "doc['id'].value.hashCode() ^ params.seed",
-          params: { seed: hashRotateSeedForEs(seed) },
+          source: `${createdMsPainless} return created >= params.windowStart ? 0 : 1;`,
+          params: { windowStart },
+        },
+        order: "asc",
+      },
+    })
+    sort.push({
+      _script: {
+        type: "number",
+        script: {
+          lang: "painless",
+          source: `${createdMsPainless} if (created >= params.windowStart) { return -created; } return doc['id'].value.hashCode() ^ params.seed;`,
+          params: { windowStart, seed: hashRotateSeedForEs(seed) },
         },
         order: "asc",
       },

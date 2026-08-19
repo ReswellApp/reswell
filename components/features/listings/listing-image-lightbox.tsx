@@ -11,7 +11,7 @@ import {
   useState,
   type CSSProperties,
 } from "react"
-import { Minus, Plus, RotateCcw, X } from "lucide-react"
+import { X } from "lucide-react"
 import {
   TransformComponent,
   TransformWrapper,
@@ -25,13 +25,21 @@ import {
   listingImageShouldBypassOptimization,
   withListingMediaPdpVariant,
 } from "@/lib/listing-media-proxy-url"
-import { portraitShimmer } from "@/lib/image-shimmer"
 import { cn } from "@/lib/utils"
 
 const ZOOM_TOLERANCE = 0.015
 const DEFAULT_ASPECT_RATIO = 3 / 4
+/** Matches the PDP hero canvas so enlarge never pops to a white sheet. */
+const LIGHTBOX_SURFACE_CLASS = "bg-[#f5f5f7] dark:bg-muted"
 /** Mobile: a little larger than contain, well short of full cover, so edges stay mostly visible. */
 const MOBILE_OVERSCAN_CLASS = "origin-top object-top scale-[1.12]"
+
+function isCachedImageSrc(src: string): boolean {
+  if (!src || typeof window === "undefined") return false
+  const probe = new window.Image()
+  probe.src = src
+  return probe.complete && probe.naturalWidth > 0
+}
 
 const LIGHTBOX_IMAGE_SIZES =
   "(max-width: 768px) 100vw, (max-width: 1280px) 70vw, 60vw"
@@ -98,8 +106,22 @@ function LightboxSlide({
   onBackdropClick,
   registerPinchRef,
 }: LightboxSlideProps) {
-  const [loadedSrc, setLoadedSrc] = useState<string | null>(null)
-  const [placeholderLoaded, setPlaceholderLoaded] = useState(false)
+  const placeholderSrc = useMemo(
+    () => (src && src !== "/placeholder.svg" ? withListingMediaPdpVariant(src) : ""),
+    [src],
+  )
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(() =>
+    isCachedImageSrc(src) ? src : null,
+  )
+  const [placeholderLoaded, setPlaceholderLoaded] = useState(
+    () => Boolean(placeholderSrc) && (isActive || isCachedImageSrc(placeholderSrc)),
+  )
+  const [trackedSrc, setTrackedSrc] = useState(src)
+  if (src !== trackedSrc) {
+    setTrackedSrc(src)
+    setLoadedSrc(isCachedImageSrc(src) ? src : null)
+    setPlaceholderLoaded(Boolean(placeholderSrc) && (isActive || isCachedImageSrc(placeholderSrc)))
+  }
   const [aspectRatio, setAspectRatio] = useState(initialAspectRatio)
   const pinchRef = useRef<ReactZoomPanPinchContentRef | null>(null)
 
@@ -109,11 +131,6 @@ function LightboxSlide({
       registerPinchRef(slideIndex, node)
     },
     [registerPinchRef, slideIndex],
-  )
-
-  const placeholderSrc = useMemo(
-    () => (src && src !== "/placeholder.svg" ? withListingMediaPdpVariant(src) : ""),
-    [src],
   )
 
   useEffect(() => {
@@ -126,11 +143,6 @@ function LightboxSlide({
       onScaleChange(1)
     }
   }, [isActive, onScaleChange])
-
-  useEffect(() => {
-    setLoadedSrc(null)
-    setPlaceholderLoaded(false)
-  }, [src])
 
   useEffect(() => {
     if (!placeholderSrc) return
@@ -176,7 +188,7 @@ function LightboxSlide({
     return () => img.removeEventListener("load", markFullLoaded)
   }, [isActive, isMaxMd, src])
 
-  const slideReady = loadedSrc === src || placeholderLoaded
+  const slideReady = Boolean(placeholderSrc) || loadedSrc === src || placeholderLoaded
   const [scale, setScale] = useState(1)
   const isZoomedOut = scale <= 1 + ZOOM_TOLERANCE
   const scaleRef = useRef(1)
@@ -197,13 +209,23 @@ function LightboxSlide({
   }
 
   const fitCard = !isMaxMd
-  const frameStyle: CSSProperties | undefined = fitCard
-    ? {
-        aspectRatio,
-        width: `min(100cqi, calc(100cqh * ${aspectRatio}))`,
-        height: `min(100cqh, calc(100cqi / ${aspectRatio}))`,
-      }
-    : undefined
+  const frameStyle: CSSProperties = {
+    ...(fitCard
+      ? {
+          aspectRatio,
+          width: `min(100cqi, calc(100cqh * ${aspectRatio}))`,
+          height: `min(100cqh, calc(100cqi / ${aspectRatio}))`,
+        }
+      : {}),
+    ...(placeholderSrc && loadedSrc !== src
+      ? {
+          backgroundImage: `url("${placeholderSrc}")`,
+          backgroundSize: fitCard ? "contain" : "112% auto",
+          backgroundPosition: fitCard ? "center" : "top center",
+          backgroundRepeat: "no-repeat",
+        }
+      : {}),
+  }
 
   return (
     <div
@@ -217,7 +239,8 @@ function LightboxSlide({
     >
       <div
         className={cn(
-          "relative overflow-hidden bg-background",
+          "relative overflow-hidden",
+          LIGHTBOX_SURFACE_CLASS,
           fitCard
             ? "rounded-2xl shadow-sm ring-1 ring-black/[0.06] dark:ring-white/[0.06]"
             : "h-full w-full",
@@ -225,13 +248,15 @@ function LightboxSlide({
         style={frameStyle}
         onClick={(event) => event.stopPropagation()}
       >
-        <ListingTileShimmer
-          aria-hidden
-          className={cn(
-            "listing-tile-shimmer-overlay absolute inset-0 z-[1]",
-            slideReady && "pointer-events-none opacity-0",
-          )}
-        />
+        {!placeholderSrc ? (
+          <ListingTileShimmer
+            aria-hidden
+            className={cn(
+              "listing-tile-shimmer-overlay absolute inset-0 z-[1]",
+              slideReady && "pointer-events-none opacity-0",
+            )}
+          />
+        ) : null}
         <TransformWrapper
           ref={setPinchRef}
           disabled={!isActive}
@@ -260,8 +285,8 @@ function LightboxSlide({
           }}
         >
           <TransformComponent
-            wrapperClass="!h-full !w-full"
-            contentClass="!relative !h-full !w-full"
+            wrapperClass="!h-full !w-full !bg-transparent"
+            contentClass="!relative !h-full !w-full !bg-transparent"
           >
             {placeholderSrc ? (
               <Image
@@ -272,10 +297,8 @@ function LightboxSlide({
                 fill
                 unoptimized={listingImageShouldBypassOptimization(placeholderSrc)}
                 draggable={false}
-                placeholder="blur"
-                blurDataURL={portraitShimmer}
                 className={cn(
-                  "pointer-events-none select-none object-contain object-center transition-opacity duration-300 ease-out",
+                  "pointer-events-none select-none object-contain object-center",
                   !fitCard && MOBILE_OVERSCAN_CLASS,
                   loadedSrc === src ? "opacity-0" : "opacity-100",
                 )}
@@ -353,13 +376,21 @@ export function ListingImageLightbox({
   isZoomedOutRef.current = isZoomedOut
   const useSwipeCarousel = count > 1
 
+  /** Freeze Embla startIndex on open. Passing the live index re-inits mid-swipe and kills drag. */
+  const emblaStartIndexRef = useRef(index)
+  const wasOpenRef = useRef(open)
+  if (open && !wasOpenRef.current) {
+    emblaStartIndexRef.current = index
+  }
+  wasOpenRef.current = open
+
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: count > 1,
-    startIndex: index,
-    align: "center",
-    duration: 28,
+    startIndex: emblaStartIndexRef.current,
+    align: "start",
+    duration: 22,
     dragThreshold: 8,
-    watchDrag: () => isZoomedOutRef.current,
+    watchDrag: useSwipeCarousel ? () => isZoomedOutRef.current : false,
   })
 
   const registerPinchRef = useCallback(
@@ -454,8 +485,6 @@ export function ListingImageLightbox({
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [count, goNext, goPrev, open])
 
-  const activePinchRef = pinchRefs.current.get(index) ?? null
-
   const renderSlide = (slideIndex: number, priority: boolean) => {
     const src = proxiedUrls[slideIndex]
     if (!src) return null
@@ -479,7 +508,12 @@ export function ListingImageLightbox({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogPortal>
-        <DialogOverlay className="z-[70] touch-none bg-background" />
+        <DialogOverlay
+          className={cn(
+            "z-[70] touch-none data-[state=open]:!animate-none data-[state=closed]:duration-200",
+            LIGHTBOX_SURFACE_CLASS,
+          )}
+        />
         <DialogPrimitive.Content
           aria-describedby={undefined}
           onPointerDownOutside={(e) => {
@@ -489,9 +523,9 @@ export function ListingImageLightbox({
             if (!isZoomedOut) e.preventDefault()
           }}
           className={cn(
-            "fixed inset-x-0 top-0 z-[70] flex h-dvh max-h-dvh min-h-0 min-w-0 flex-col overflow-hidden bg-background outline-none",
-            "duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+            "fixed inset-x-0 top-0 z-[70] flex h-dvh max-h-dvh min-h-0 min-w-0 flex-col overflow-hidden outline-none",
+            LIGHTBOX_SURFACE_CLASS,
+            "data-[state=open]:!animate-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:duration-200",
           )}
         >
           <DialogTitle className="sr-only">
@@ -501,7 +535,7 @@ export function ListingImageLightbox({
           <div className="relative min-h-0 min-w-0 flex-1">
             {count > 0 ? (
               useSwipeCarousel ? (
-                <div ref={emblaRef} className="absolute inset-0 overflow-hidden">
+                <div ref={emblaRef} className="absolute inset-0 overflow-hidden overscroll-x-contain">
                   <div className="flex h-full touch-pan-y will-change-transform">
                     {proxiedUrls.map((url, slideIndex) => (
                       <div
@@ -535,20 +569,10 @@ export function ListingImageLightbox({
               </Button>
             </DialogClose>
 
-            <div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 hidden justify-center xl:flex [@media(pointer:coarse)]:hidden">
-              <div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-border/50 bg-background/90 p-1 shadow-sm backdrop-blur-md">
-                <ZoomToolbar
-                  onZoomIn={() => activePinchRef?.zoomIn(0.18, 200)}
-                  onZoomOut={() => activePinchRef?.zoomOut(0.18, 200)}
-                  onReset={() => activePinchRef?.resetTransform(220)}
-                  disableZoomOut={isZoomedOut}
-                />
-              </div>
-            </div>
           </div>
 
           {count > 1 || dimensionsLine ? (
-            <div className="relative z-30 flex shrink-0 flex-col gap-2 border-t border-border/40 bg-background px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2 md:px-2">
+            <div className={cn("relative z-30 flex shrink-0 flex-col gap-2 border-t border-border/40 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2 md:px-2", LIGHTBOX_SURFACE_CLASS)}>
               {dimensionsLine ? (
                 <p className="text-center font-sans text-[15px] font-medium tabular-nums leading-snug text-foreground">
                   {dimensionsLine}
@@ -626,7 +650,7 @@ function LightboxThumbRow({
     <div className="min-w-0 flex-1">
       <div
         ref={rowRef}
-        className="flex snap-x snap-mandatory gap-1.5 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden"
+        className="flex justify-start snap-x snap-mandatory gap-1.5 overflow-x-auto overscroll-x-contain pb-1 md:justify-center [-ms-overflow-style:none] [scrollbar-width:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden"
       >
         {urls.map((url, thumbIndex) => {
           const src = url && url !== "/placeholder.svg" ? withListingMediaPdpVariant(url) : url
@@ -663,53 +687,5 @@ function LightboxThumbRow({
         })}
       </div>
     </div>
-  )
-}
-
-function ZoomToolbar({
-  onZoomIn,
-  onZoomOut,
-  onReset,
-  disableZoomOut,
-}: {
-  onZoomIn: () => void
-  onZoomOut: () => void
-  onReset: () => void
-  disableZoomOut: boolean
-}) {
-  return (
-    <>
-      <Button
-        type="button"
-        size="icon"
-        variant="ghost"
-        className="h-9 w-9 rounded-full text-foreground hover:bg-muted/60 hover:text-foreground"
-        onClick={onZoomOut}
-        disabled={disableZoomOut}
-        aria-label="Zoom out"
-      >
-        <Minus className="size-4 stroke-[2]" />
-      </Button>
-      <Button
-        type="button"
-        size="icon"
-        variant="ghost"
-        className="h-9 w-9 rounded-full text-foreground hover:bg-muted/60 hover:text-foreground"
-        onClick={onReset}
-        aria-label="Reset zoom"
-      >
-        <RotateCcw className="size-4 stroke-[2]" />
-      </Button>
-      <Button
-        type="button"
-        size="icon"
-        variant="ghost"
-        className="h-9 w-9 rounded-full text-foreground hover:bg-muted/60 hover:text-foreground"
-        onClick={onZoomIn}
-        aria-label="Zoom in"
-      >
-        <Plus className="size-4 stroke-[2]" />
-      </Button>
-    </>
   )
 }

@@ -266,6 +266,30 @@ export function GiveawaysHub({
             </Card>
           </FadeInSection>
 
+          <FadeInSection>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Only surfers in the USA can win.
+            </p>
+            <details className="group mt-3">
+              <summary className="cursor-pointer list-none text-sm font-medium text-foreground marker:content-none [&::-webkit-details-marker]:hidden">
+                <span className="flex items-center justify-between gap-3">
+                  Official rules
+                  <span className="text-muted-foreground group-open:hidden" aria-hidden>
+                    +
+                  </span>
+                  <span className="hidden text-muted-foreground group-open:inline" aria-hidden>
+                    –
+                  </span>
+                </span>
+              </summary>
+              <ul className="mt-4 list-disc space-y-2 pl-5 text-sm leading-relaxed text-muted-foreground">
+                {featured.rules.map((rule) => (
+                  <li key={rule}>{rule}</li>
+                ))}
+              </ul>
+            </details>
+          </FadeInSection>
+
           {moreGiveaways.length > 0 ? (
             <div>
               <h2 className="font-headline text-xl font-bold tracking-tight text-foreground">
