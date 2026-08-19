@@ -1,6 +1,7 @@
 /**
- * Full Elasticsearch reindex from Supabase (listings, brands, fin catalog,
- * sellers, forum threads). Shared by admin Tools and the hourly cron.
+ * Elasticsearch reindex from Supabase (listings, brands, fin catalog,
+ * sellers, forum threads). Admin Tools runs a full rebuild; the hourly cron
+ * passes `catchUpSince` for recent listings/sellers/threads only.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js"
@@ -19,10 +20,11 @@ import {
   reindexSellCatalogFromSupabase,
 } from "@/lib/elasticsearch/sell-catalog-index"
 import {
+  bulkIndexListingDocuments,
   ensureListingsIndex,
-  indexListingDocument,
   listingRowToSearchDocFromRow,
   LISTING_SEARCH_DOC_SELECT,
+  type ListingSearchDoc,
   type ListingSearchDocRow,
 } from "@/lib/elasticsearch/listings-index"
 import {
@@ -67,12 +69,24 @@ export type ElasticsearchReindexResult =
 
 const PAGE_SIZE = 200
 
+/** Hourly cron lookback: covers a missed run plus same-day live-sync gaps. */
+export const ELASTICSEARCH_CATCH_UP_LOOKBACK_MS = 26 * 60 * 60 * 1000
+
+export type ElasticsearchReindexOptions = {
+  /**
+   * When set, only reindex listings/threads/sellers touched since this instant.
+   * Skips full brand + catalog rebuilds (those have live sync + admin reindex).
+   */
+  catchUpSince?: Date
+}
+
 /**
- * Reindex all searchable Elasticsearch surfaces from Supabase.
+ * Reindex searchable Elasticsearch surfaces from Supabase.
  * Callers must pass a service-role (or otherwise privileged) client.
  */
 export async function reindexElasticsearchFromSupabase(
   supabase: SupabaseClient,
+  options?: ElasticsearchReindexOptions,
 ): Promise<ElasticsearchReindexResult> {
   if (!isElasticsearchConfigured()) {
     return {
@@ -100,12 +114,16 @@ export async function reindexElasticsearchFromSupabase(
     return { ok: false, status: 503, error: `Elasticsearch index setup failed: ${msg}` }
   }
 
+  const catchUpSince = options?.catchUpSince
+  const catchUpIso = catchUpSince?.toISOString()
+  const isCatchUp = Boolean(catchUpIso)
+
   let indexed = 0
   let errors = 0
   let from = 0
 
   for (;;) {
-    const { data: rows, error } = await supabase
+    let listingQuery = supabase
       .from("listings")
       .select(LISTING_SEARCH_DOC_SELECT)
       .eq("status", "active")
@@ -115,12 +133,19 @@ export async function reindexElasticsearchFromSupabase(
       .order("created_at", { ascending: false })
       .range(from, from + PAGE_SIZE - 1)
 
+    if (catchUpIso) {
+      listingQuery = listingQuery.gte("updated_at", catchUpIso)
+    }
+
+    const { data: rows, error } = await listingQuery
+
     if (error) {
       return { ok: false, status: 500, error: error.message }
     }
 
     if (!rows?.length) break
 
+    const docs: ListingSearchDoc[] = []
     for (const row of rows as ListingSearchDocRow[]) {
       try {
         if (
@@ -133,13 +158,15 @@ export async function reindexElasticsearchFromSupabase(
         ) {
           continue
         }
-        const doc = listingRowToSearchDocFromRow(row)
-        await indexListingDocument(doc)
-        indexed++
+        docs.push(listingRowToSearchDocFromRow(row))
       } catch {
         errors++
       }
     }
+
+    const bulk = await bulkIndexListingDocuments(docs)
+    indexed += bulk.indexed
+    errors += bulk.errors
 
     if (rows.length < PAGE_SIZE) break
     from += PAGE_SIZE
@@ -147,76 +174,88 @@ export async function reindexElasticsearchFromSupabase(
 
   let brandsIndexed = 0
   let brandErrors = 0
-  let brandFrom = 0
 
-  for (;;) {
-    const { data: brandRows, error: brandListError } = await supabase
-      .from("brands")
-      .select("id, name, slug, short_description, lead_shaper_name, location_label, founder_name")
-      .order("name", { ascending: true })
-      .range(brandFrom, brandFrom + PAGE_SIZE - 1)
+  if (!isCatchUp) {
+    let brandFrom = 0
+    for (;;) {
+      const { data: brandRows, error: brandListError } = await supabase
+        .from("brands")
+        .select("id, name, slug, short_description, lead_shaper_name, location_label, founder_name")
+        .order("name", { ascending: true })
+        .range(brandFrom, brandFrom + PAGE_SIZE - 1)
 
-    if (brandListError) {
-      return { ok: false, status: 500, error: brandListError.message }
-    }
-
-    if (!brandRows?.length) break
-
-    for (const row of brandRows) {
-      try {
-        const doc = brandRowToSearchDoc(row as Parameters<typeof brandRowToSearchDoc>[0])
-        await indexBrandDocument(doc)
-        brandsIndexed++
-      } catch {
-        brandErrors++
+      if (brandListError) {
+        return { ok: false, status: 500, error: brandListError.message }
       }
-    }
 
-    if (brandRows.length < PAGE_SIZE) break
-    brandFrom += PAGE_SIZE
+      if (!brandRows?.length) break
+
+      for (const row of brandRows) {
+        try {
+          const doc = brandRowToSearchDoc(row as Parameters<typeof brandRowToSearchDoc>[0])
+          await indexBrandDocument(doc)
+          brandsIndexed++
+        } catch {
+          brandErrors++
+        }
+      }
+
+      if (brandRows.length < PAGE_SIZE) break
+      brandFrom += PAGE_SIZE
+    }
   }
 
   let finCatalogBrandsIndexed = 0
   let finCatalogModelsIndexed = 0
   let finCatalogVariantsIndexed = 0
   let finCatalogErrors = 0
-  try {
-    const finCatalog = await reindexFinCatalogFromSupabase(supabase)
-    finCatalogBrandsIndexed = finCatalog.brandsIndexed
-    finCatalogModelsIndexed = finCatalog.modelsIndexed
-    finCatalogVariantsIndexed = finCatalog.variantsIndexed
-    finCatalogErrors = finCatalog.errors
-  } catch (err) {
-    console.error("[elasticsearchReindex] fin catalog reindex failed:", err)
-    finCatalogErrors++
-  }
-
   let sellCatalogBrandsIndexed = 0
   let sellCatalogModelsIndexed = 0
   let sellCatalogErrors = 0
-  try {
-    const sellCatalog = await reindexSellCatalogFromSupabase(supabase)
-    sellCatalogBrandsIndexed = sellCatalog.brandsIndexed
-    sellCatalogModelsIndexed = sellCatalog.modelsIndexed
-    sellCatalogErrors = sellCatalog.errors
-    revalidateSellCatalogSearch()
-  } catch (err) {
-    console.error("[elasticsearchReindex] sell catalog reindex failed:", err)
-    sellCatalogErrors++
+
+  if (!isCatchUp) {
+    try {
+      const finCatalog = await reindexFinCatalogFromSupabase(supabase)
+      finCatalogBrandsIndexed = finCatalog.brandsIndexed
+      finCatalogModelsIndexed = finCatalog.modelsIndexed
+      finCatalogVariantsIndexed = finCatalog.variantsIndexed
+      finCatalogErrors = finCatalog.errors
+    } catch (err) {
+      console.error("[elasticsearchReindex] fin catalog reindex failed:", err)
+      finCatalogErrors++
+    }
+
+    try {
+      const sellCatalog = await reindexSellCatalogFromSupabase(supabase)
+      sellCatalogBrandsIndexed = sellCatalog.brandsIndexed
+      sellCatalogModelsIndexed = sellCatalog.modelsIndexed
+      sellCatalogErrors = sellCatalog.errors
+      revalidateSellCatalogSearch()
+    } catch (err) {
+      console.error("[elasticsearchReindex] sell catalog reindex failed:", err)
+      sellCatalogErrors++
+    }
   }
 
   const activeListingUserIds = new Set<string>()
+  const catchUpSellerIds = new Set<string>()
   {
     const activeListingPageSize = 1000
     let activeListingFrom = 0
     for (;;) {
-      const { data: rows, error } = await supabase
+      let activeQuery = supabase
         .from("listings")
         .select("user_id")
         .eq("status", "active")
         .eq("hidden_from_site", false)
         .is("archived_at", null)
         .range(activeListingFrom, activeListingFrom + activeListingPageSize - 1)
+
+      if (catchUpIso) {
+        activeQuery = activeQuery.gte("updated_at", catchUpIso)
+      }
+
+      const { data: rows, error } = await activeQuery
 
       if (error) {
         return { ok: false, status: 500, error: error.message }
@@ -225,7 +264,10 @@ export async function reindexElasticsearchFromSupabase(
 
       for (const row of rows) {
         const uid = (row as { user_id?: string }).user_id
-        if (uid) activeListingUserIds.add(uid)
+        if (uid) {
+          activeListingUserIds.add(uid)
+          if (isCatchUp) catchUpSellerIds.add(uid)
+        }
       }
       if (rows.length < activeListingPageSize) break
       activeListingFrom += activeListingPageSize
@@ -235,40 +277,68 @@ export async function reindexElasticsearchFromSupabase(
   let sellersIndexed = 0
   let sellersRemoved = 0
   let sellerErrors = 0
-  let sellerFrom = 0
 
-  for (;;) {
-    const { data: sellerRows, error: sellerListError } = await supabase
-      .from("profiles")
-      .select(
-        "id, seller_slug, display_name, shop_name, shop_description, bio, city, shop_address, is_shop, shop_verified",
-      )
-      .order("id", { ascending: true })
-      .range(sellerFrom, sellerFrom + PAGE_SIZE - 1)
+  if (isCatchUp) {
+    const sellerIdList = [...catchUpSellerIds]
+    for (let i = 0; i < sellerIdList.length; i += PAGE_SIZE) {
+      const chunk = sellerIdList.slice(i, i + PAGE_SIZE)
+      const { data: sellerRows, error: sellerListError } = await supabase
+        .from("profiles")
+        .select(
+          "id, seller_slug, display_name, shop_name, shop_description, bio, city, shop_address, is_shop, shop_verified",
+        )
+        .in("id", chunk)
 
-    if (sellerListError) {
-      return { ok: false, status: 500, error: sellerListError.message }
-    }
-    if (!sellerRows?.length) break
+      if (sellerListError) {
+        return { ok: false, status: 500, error: sellerListError.message }
+      }
 
-    for (const row of sellerRows as SellerProfileRow[]) {
-      try {
-        const hasListings = activeListingUserIds.has(row.id)
-        const eligible = Boolean(row.is_shop) || hasListings
-        if (!eligible || !row.seller_slug) {
-          await deleteSellerDocument(row.id)
-          sellersRemoved++
-          continue
+      for (const row of (sellerRows ?? []) as SellerProfileRow[]) {
+        try {
+          const hasListings = true
+          if (!row.seller_slug) continue
+          await indexSellerDocument(profileRowToSellerDoc(row, hasListings))
+          sellersIndexed++
+        } catch {
+          sellerErrors++
         }
-        await indexSellerDocument(profileRowToSellerDoc(row, hasListings))
-        sellersIndexed++
-      } catch {
-        sellerErrors++
       }
     }
+  } else {
+    let sellerFrom = 0
+    for (;;) {
+      const { data: sellerRows, error: sellerListError } = await supabase
+        .from("profiles")
+        .select(
+          "id, seller_slug, display_name, shop_name, shop_description, bio, city, shop_address, is_shop, shop_verified",
+        )
+        .order("id", { ascending: true })
+        .range(sellerFrom, sellerFrom + PAGE_SIZE - 1)
 
-    if (sellerRows.length < PAGE_SIZE) break
-    sellerFrom += PAGE_SIZE
+      if (sellerListError) {
+        return { ok: false, status: 500, error: sellerListError.message }
+      }
+      if (!sellerRows?.length) break
+
+      for (const row of sellerRows as SellerProfileRow[]) {
+        try {
+          const hasListings = activeListingUserIds.has(row.id)
+          const eligible = Boolean(row.is_shop) || hasListings
+          if (!eligible || !row.seller_slug) {
+            await deleteSellerDocument(row.id)
+            sellersRemoved++
+            continue
+          }
+          await indexSellerDocument(profileRowToSellerDoc(row, hasListings))
+          sellersIndexed++
+        } catch {
+          sellerErrors++
+        }
+      }
+
+      if (sellerRows.length < PAGE_SIZE) break
+      sellerFrom += PAGE_SIZE
+    }
   }
 
   let forumThreadsIndexed = 0
@@ -276,11 +346,17 @@ export async function reindexElasticsearchFromSupabase(
   let forumThreadFrom = 0
 
   for (;;) {
-    const { data: threadRows, error: threadListError } = await supabase
+    let threadQuery = supabase
       .from("forum_threads")
       .select("id")
       .order("updated_at", { ascending: false })
       .range(forumThreadFrom, forumThreadFrom + PAGE_SIZE - 1)
+
+    if (catchUpIso) {
+      threadQuery = threadQuery.gte("updated_at", catchUpIso)
+    }
+
+    const { data: threadRows, error: threadListError } = await threadQuery
 
     if (threadListError) {
       return { ok: false, status: 500, error: threadListError.message }

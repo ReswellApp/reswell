@@ -201,6 +201,32 @@ export async function indexListingDocument(
   })
 }
 
+export async function bulkIndexListingDocuments(
+  docs: ListingSearchDoc[],
+): Promise<{ indexed: number; errors: number }> {
+  const es = getElasticsearchClient()
+  if (!es || docs.length === 0) return { indexed: 0, errors: 0 }
+
+  await ensureListingsIndex()
+  const result = await es.bulk({
+    refresh: false,
+    operations: docs.flatMap((doc) => [
+      { index: { _index: ELASTICSEARCH_LISTINGS_INDEX, _id: doc.id } },
+      doc,
+    ]),
+  })
+
+  if (!result.errors) return { indexed: docs.length, errors: 0 }
+
+  let indexed = 0
+  let errors = 0
+  for (const item of result.items) {
+    if (item.index?.error) errors++
+    else indexed++
+  }
+  return { indexed, errors }
+}
+
 export async function deleteListingDocument(listingId: string): Promise<void> {
   const es = getElasticsearchClient()
   if (!es) return

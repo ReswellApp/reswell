@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
-import { reindexElasticsearchFromSupabase } from "@/lib/services/elasticsearchReindex"
+import {
+  ELASTICSEARCH_CATCH_UP_LOOKBACK_MS,
+  reindexElasticsearchFromSupabase,
+} from "@/lib/services/elasticsearchReindex"
 
 export const maxDuration = 300
 
 /**
- * Hourly catch-up reindex of Elasticsearch from Supabase (listings, brands,
- * fin catalog, sellers, forum threads). Covers listings that missed live sync
- * or the Supabase ES webhook.
+ * Hourly catch-up reindex of listings, sellers, and forum threads that changed
+ * in the last 26 hours. Full catalog rebuilds stay on admin `/api/search/reindex`.
  *
  * GET /api/cron/elasticsearch-reindex
  * Protected with CRON_SECRET when set. Scheduled in vercel.json (`15 * * * *`).
@@ -37,7 +39,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await reindexElasticsearchFromSupabase(supabase)
+    const catchUpSince = new Date(Date.now() - ELASTICSEARCH_CATCH_UP_LOOKBACK_MS)
+    const result = await reindexElasticsearchFromSupabase(supabase, { catchUpSince })
     if (!result.ok) {
       console.error("[cron] elasticsearch-reindex failed:", result.error)
       return NextResponse.json({ error: result.error }, { status: result.status })
@@ -45,6 +48,8 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       ok: true,
+      mode: "catch_up",
+      catch_up_since: catchUpSince.toISOString(),
       summary: result.summary,
       reference_time: new Date().toISOString(),
     })
