@@ -9,6 +9,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
 } from "react"
 import { Minus, Plus, RotateCcw, X } from "lucide-react"
 import {
@@ -29,9 +30,11 @@ import { cn } from "@/lib/utils"
 
 const ZOOM_TOLERANCE = 0.015
 const DEFAULT_ASPECT_RATIO = 3 / 4
+/** Mobile: a little larger than contain, well short of full cover, so edges stay mostly visible. */
+const MOBILE_OVERSCAN_CLASS = "origin-top object-top scale-[1.12]"
 
 const LIGHTBOX_IMAGE_SIZES =
-  "(max-width: 768px) 100vw, (max-width: 1280px) 92vw, 90vw"
+  "(max-width: 768px) 100vw, (max-width: 1280px) 70vw, 60vw"
 
 const CHROME_BUTTON_CLASS =
   "h-11 w-11 shrink-0 rounded-full border border-border/55 bg-background/90 text-foreground shadow-sm backdrop-blur-md hover:bg-muted/40 [&_svg]:size-5"
@@ -153,7 +156,7 @@ function LightboxSlide({
     img.src = src
     if (img.complete && img.naturalWidth > 0) {
       setLoadedSrc(src)
-      if (isActive) {
+      if (isActive && !isMaxMd) {
         requestAnimationFrame(() => {
           pinchRef.current?.centerView(1, 0)
         })
@@ -163,7 +166,7 @@ function LightboxSlide({
 
     const markFullLoaded = () => {
       setLoadedSrc(src)
-      if (isActive) {
+      if (isActive && !isMaxMd) {
         requestAnimationFrame(() => {
           pinchRef.current?.centerView(1, 0)
         })
@@ -171,7 +174,7 @@ function LightboxSlide({
     }
     img.addEventListener("load", markFullLoaded)
     return () => img.removeEventListener("load", markFullLoaded)
-  }, [isActive, src])
+  }, [isActive, isMaxMd, src])
 
   const slideReady = loadedSrc === src || placeholderLoaded
   const [scale, setScale] = useState(1)
@@ -179,7 +182,7 @@ function LightboxSlide({
   const scaleRef = useRef(1)
   scaleRef.current = scale
   useEffect(() => {
-    if (!isActive) return
+    if (!isActive || isMaxMd) return
     if (scaleRef.current > 1 + ZOOM_TOLERANCE) return
     const id = requestAnimationFrame(() => {
       pinchRef.current?.centerView(1, 0)
@@ -193,15 +196,33 @@ function LightboxSlide({
     setAspectRatio((prev) => (Math.abs(prev - next) < 0.001 ? prev : next))
   }
 
+  const fitCard = !isMaxMd
+  const frameStyle: CSSProperties | undefined = fitCard
+    ? {
+        aspectRatio,
+        width: `min(100cqi, calc(100cqh * ${aspectRatio}))`,
+        height: `min(100cqh, calc(100cqi / ${aspectRatio}))`,
+      }
+    : undefined
+
   return (
     <div
-      className="flex h-full w-full"
+      className={cn(
+        "flex h-full w-full justify-center",
+        fitCard ? "[container-type:size] items-center px-16 py-10" : "items-start",
+      )}
       onClick={(event) => {
         if (event.target === event.currentTarget) onBackdropClick()
       }}
     >
       <div
-        className="relative h-full min-h-0 w-full min-w-full overflow-hidden bg-[#f5f5f7] dark:bg-muted"
+        className={cn(
+          "relative overflow-hidden bg-background",
+          fitCard
+            ? "rounded-2xl shadow-sm ring-1 ring-black/[0.06] dark:ring-white/[0.06]"
+            : "h-full w-full",
+        )}
+        style={frameStyle}
         onClick={(event) => event.stopPropagation()}
       >
         <ListingTileShimmer
@@ -217,8 +238,8 @@ function LightboxSlide({
           initialScale={1}
           minScale={1}
           maxScale={5}
-          centerOnInit
-          centerZoomedOut
+          centerOnInit={!isMaxMd}
+          centerZoomedOut={!isMaxMd}
           limitToBounds
           smooth
           wheel={{ step: 0.12, disabled: !isActive }}
@@ -254,7 +275,8 @@ function LightboxSlide({
                 placeholder="blur"
                 blurDataURL={portraitShimmer}
                 className={cn(
-                  "pointer-events-none select-none object-cover object-center transition-opacity duration-300 ease-out",
+                  "pointer-events-none select-none object-contain object-center transition-opacity duration-300 ease-out",
+                  !fitCard && MOBILE_OVERSCAN_CLASS,
                   loadedSrc === src ? "opacity-0" : "opacity-100",
                 )}
                 sizes={LIGHTBOX_IMAGE_SIZES}
@@ -273,7 +295,8 @@ function LightboxSlide({
               unoptimized
               draggable={false}
               className={cn(
-                "select-none object-cover object-center transition-opacity duration-300 ease-out",
+                "select-none object-contain object-center transition-opacity duration-300 ease-out",
+                !fitCard && MOBILE_OVERSCAN_CLASS,
                 loadedSrc === src ? "opacity-100" : "opacity-0",
               )}
               sizes={LIGHTBOX_IMAGE_SIZES}
@@ -281,7 +304,7 @@ function LightboxSlide({
               onLoadingComplete={(img) => {
                 setLoadedSrc(src)
                 rememberAspectRatio(img.naturalWidth, img.naturalHeight)
-                if (isActive) {
+                if (isActive && !isMaxMd) {
                   requestAnimationFrame(() => {
                     pinchRef.current?.centerView(1, 0)
                   })
@@ -305,6 +328,8 @@ interface ListingImageLightboxProps {
   onIndexChange: (next: number) => void
   /** Natural width/height per slide — sizes the photo frame before decode. */
   aspectRatios?: Record<number, number>
+  /** Length × width × thickness · volume — shown above the thumbnail slider. */
+  dimensionsLine?: string | null
 }
 
 export function ListingImageLightbox({
@@ -315,6 +340,7 @@ export function ListingImageLightbox({
   index,
   onIndexChange,
   aspectRatios,
+  dimensionsLine,
 }: ListingImageLightboxProps) {
   const [scale, setScale] = useState(1)
   const pinchRefs = useRef<Map<number, ReactZoomPanPinchContentRef | null>>(new Map())
@@ -463,7 +489,7 @@ export function ListingImageLightbox({
             if (!isZoomedOut) e.preventDefault()
           }}
           className={cn(
-            "fixed inset-0 z-[70] flex min-h-0 min-w-0 flex-col outline-none",
+            "fixed inset-x-0 top-0 z-[70] flex h-dvh max-h-dvh min-h-0 min-w-0 flex-col overflow-hidden bg-background outline-none",
             "duration-300 data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
           )}
@@ -509,7 +535,7 @@ export function ListingImageLightbox({
               </Button>
             </DialogClose>
 
-            <div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 hidden justify-center md:flex">
+            <div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 hidden justify-center xl:flex [@media(pointer:coarse)]:hidden">
               <div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-border/50 bg-background/90 p-1 shadow-sm backdrop-blur-md">
                 <ZoomToolbar
                   onZoomIn={() => activePinchRef?.zoomIn(0.18, 200)}
@@ -521,36 +547,45 @@ export function ListingImageLightbox({
             </div>
           </div>
 
-          {count > 1 ? (
-            <div className="relative z-30 flex shrink-0 items-center gap-2 bg-background px-2 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2">
-              <ListingImageCarouselNavButton
-                direction="prev"
-                variant="chrome"
-                staticPosition
-                srLabel="Previous photo"
-                onClick={goPrev}
-              />
-              <LightboxThumbRow
-                urls={proxiedUrls}
-                title={title}
-                selectedIndex={index}
-                onSelect={(next) => {
-                  if (emblaApi && useSwipeCarousel) {
-                    emblaApi.scrollTo(next)
-                    return
-                  }
-                  pinchRefs.current.get(index)?.resetTransform(0)
-                  setScale(1)
-                  onIndexChange(next)
-                }}
-              />
-              <ListingImageCarouselNavButton
-                direction="next"
-                variant="chrome"
-                staticPosition
-                srLabel="Next photo"
-                onClick={goNext}
-              />
+          {count > 1 || dimensionsLine ? (
+            <div className="relative z-30 flex shrink-0 flex-col gap-2 border-t border-border/40 bg-background px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2 md:px-2">
+              {dimensionsLine ? (
+                <p className="text-center font-sans text-[15px] font-medium tabular-nums leading-snug text-foreground">
+                  {dimensionsLine}
+                </p>
+              ) : null}
+              {count > 1 ? (
+                <div className="flex items-center gap-2">
+                  <ListingImageCarouselNavButton
+                    direction="prev"
+                    variant="chrome"
+                    staticPosition
+                    srLabel="Previous photo"
+                    onClick={goPrev}
+                  />
+                  <LightboxThumbRow
+                    urls={proxiedUrls}
+                    title={title}
+                    selectedIndex={index}
+                    onSelect={(next) => {
+                      if (emblaApi && useSwipeCarousel) {
+                        emblaApi.scrollTo(next)
+                        return
+                      }
+                      pinchRefs.current.get(index)?.resetTransform(0)
+                      setScale(1)
+                      onIndexChange(next)
+                    }}
+                  />
+                  <ListingImageCarouselNavButton
+                    direction="next"
+                    variant="chrome"
+                    staticPosition
+                    srLabel="Next photo"
+                    onClick={goNext}
+                  />
+                </div>
+              ) : null}
             </div>
           ) : (
             <div className="h-[env(safe-area-inset-bottom)] shrink-0" />
@@ -591,7 +626,7 @@ function LightboxThumbRow({
     <div className="min-w-0 flex-1">
       <div
         ref={rowRef}
-        className="flex justify-center gap-1.5 overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch]"
+        className="flex snap-x snap-mandatory gap-1.5 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [-webkit-overflow-scrolling:touch] [&::-webkit-scrollbar]:hidden"
       >
         {urls.map((url, thumbIndex) => {
           const src = url && url !== "/placeholder.svg" ? withListingMediaPdpVariant(url) : url
@@ -605,13 +640,13 @@ function LightboxThumbRow({
               aria-label={`Show photo ${thumbIndex + 1}`}
               aria-current={selected ? "true" : undefined}
               className={cn(
-                "flex-shrink-0 overflow-hidden rounded-lg bg-muted transition-[box-shadow,ring-color] duration-200",
+                "shrink-0 snap-center overflow-hidden rounded-lg bg-muted transition-[box-shadow,ring-color] duration-200",
                 selected
                   ? "ring-[1.5px] ring-offset-2 ring-offset-background ring-foreground/80"
                   : "ring-[0.5px] ring-muted-foreground/25",
               )}
             >
-              <span className="relative block w-11 bg-muted" style={{ paddingBottom: "133.33%" }}>
+              <span className="relative block w-11 shrink-0 bg-muted" style={{ paddingBottom: "133.33%" }}>
                 <span className="absolute inset-0">
                   <Image
                     src={src || "/placeholder.svg"}

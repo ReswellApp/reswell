@@ -1,8 +1,9 @@
 "use client"
 
-import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from "react"
+import { type CSSProperties, type PointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import dynamic from "next/dynamic"
+import useEmblaCarousel from "embla-carousel-react"
 import { cn } from "@/lib/utils"
 import { portraitShimmer, squareShimmer } from "@/lib/image-shimmer"
 import {
@@ -58,9 +59,12 @@ interface ImageGalleryProps {
   compactMobile?: boolean
   /** Share / favorite controls — rendered on the hero tile so they track its bounds. */
   heroOverlay?: ReactNode
+  /** Board dims line for enlarge chrome, e.g. `5'11″ × 18 3/8″ × 2 1/4″ · 27 L`. */
+  dimensionsLine?: string | null
 }
 
-const SWIPE_MIN_PX = 48
+/** Ignore tap-to-enlarge once the finger has moved this far (Embla owns the swipe). */
+const HERO_TAP_SLOP_PX = 8
 
 /** Browser-cache full listing photos (same URLs as hero + lightbox). */
 function warmListingImageSrc(url: string): void {
@@ -89,7 +93,7 @@ function gallerySlideNearSelected(i: number, selected: number, total: number): b
   return false
 }
 
-export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }: ImageGalleryProps) {
+export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, dimensionsLine }: ImageGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   /** Mount the lightbox (and its zoom library chunk) only after the first enlarge. */
@@ -97,11 +101,23 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
   const [lightboxIndex, setLightboxIndex] = useState(0)
   /** Natural width/height per slide — mobile hero uses this instead of a fixed crop frame. */
   const [imageAspectRatios, setImageAspectRatios] = useState<Record<number, number>>({})
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+  /** Aspect frame follows the settled slide so the hero height does not jump mid-swipe. */
+  const [frameIndex, setFrameIndex] = useState(0)
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null)
   const suppressHeroClickRef = useRef(false)
   const thumbRowRef = useRef<HTMLDivElement>(null)
 
-  const mobileHeroAspectRatio = imageAspectRatios[selectedIndex] ?? 3 / 4
+  const canSwipe = images.length > 1
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop: canSwipe,
+    align: "start",
+    duration: 22,
+    dragThreshold: 8,
+    watchDrag: canSwipe,
+  })
+
+  const mobileHeroAspectRatio =
+    imageAspectRatios[frameIndex] ?? imageAspectRatios[selectedIndex] ?? 3 / 4
 
   /** One URL per gallery slide (same order as `images`) so lightbox index stays aligned. */
   const proxiedUrls = useMemo(
@@ -127,14 +143,35 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
   /** Stable primitive — never pass `images`/`proxiedUrls` arrays as effect deps (fixed length). */
   const galleryUrlsKey = useMemo(() => galleryUrls.join("|"), [galleryUrls])
 
-  const mountedHeroIndices = useMemo(() => {
-    if (images.length <= 1) return [0]
-    const indices = new Set<number>()
-    for (let i = 0; i < images.length; i += 1) {
-      if (gallerySlideNearSelected(i, selectedIndex, images.length)) indices.add(i)
+  useEffect(() => {
+    if (!emblaApi) return
+    const onSelect = () => {
+      setSelectedIndex(emblaApi.selectedScrollSnap())
     }
-    return [...indices].sort((a, b) => a - b)
-  }, [images.length, selectedIndex])
+    const onSettle = () => {
+      setFrameIndex(emblaApi.selectedScrollSnap())
+    }
+    const onReInit = () => {
+      onSelect()
+      onSettle()
+    }
+    onSelect()
+    onSettle()
+    emblaApi.on("select", onSelect)
+    emblaApi.on("settle", onSettle)
+    emblaApi.on("reInit", onReInit)
+    return () => {
+      emblaApi.off("select", onSelect)
+      emblaApi.off("settle", onSettle)
+      emblaApi.off("reInit", onReInit)
+    }
+  }, [emblaApi])
+
+  useEffect(() => {
+    if (!emblaApi) return
+    if (emblaApi.selectedScrollSnap() === selectedIndex) return
+    emblaApi.scrollTo(selectedIndex, true)
+  }, [emblaApi, selectedIndex])
 
   // Hero: warm active slide + neighbors. Lightbox warms all slides in openLightbox / onOpenChange.
   useEffect(() => {
@@ -183,11 +220,39 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
   }
 
   function goPrev() {
+    if (emblaApi && canSwipe) {
+      emblaApi.scrollPrev()
+      return
+    }
     setSelectedIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
   }
 
   function goNext() {
+    if (emblaApi && canSwipe) {
+      emblaApi.scrollNext()
+      return
+    }
     setSelectedIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
+  }
+
+  function onHeroPointerDown(event: PointerEvent<HTMLDivElement>) {
+    pointerStartRef.current = { x: event.clientX, y: event.clientY }
+    suppressHeroClickRef.current = false
+  }
+
+  function onHeroPointerMove(event: PointerEvent<HTMLDivElement>) {
+    const start = pointerStartRef.current
+    if (!start) return
+    if (
+      Math.abs(event.clientX - start.x) > HERO_TAP_SLOP_PX ||
+      Math.abs(event.clientY - start.y) > HERO_TAP_SLOP_PX
+    ) {
+      suppressHeroClickRef.current = true
+    }
+  }
+
+  function onHeroPointerUp() {
+    pointerStartRef.current = null
   }
 
   function openLightbox() {
@@ -214,12 +279,14 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
               return
             }
             setSelectedIndex(lightboxIndex)
+            setFrameIndex(lightboxIndex)
           }}
           proxiedUrls={proxiedUrls}
           title={title}
           index={lightboxIndex}
           onIndexChange={setLightboxIndex}
           aspectRatios={imageAspectRatios}
+          dimensionsLine={dimensionsLine}
         />
       ) : null}
 
@@ -232,7 +299,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
       >
         <div
           className={cn(
-            "relative overflow-hidden bg-[#f5f5f7] select-none touch-pan-y dark:bg-muted",
+            "relative overflow-hidden bg-[#f5f5f7] select-none dark:bg-muted",
             compactMobile
               ? "max-md:h-auto max-md:max-h-[min(58dvh,30rem)] max-md:w-full max-md:min-w-full max-md:[aspect-ratio:var(--hero-aspect,3/4)] max-md:rounded-none md:aspect-[3/4] md:max-h-none md:h-auto md:w-full md:rounded-2xl md:shadow-sm md:ring-1 md:ring-black/[0.04] dark:md:ring-white/[0.06]"
               : "w-full rounded-2xl shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06]",
@@ -242,32 +309,6 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
               ? ({ "--hero-aspect": mobileHeroAspectRatio } as CSSProperties)
               : { paddingBottom: "133.33%" }
           }
-          onTouchStart={(e) => {
-            if (images.length <= 1) return
-            const t = e.touches[0]
-            if (!t) return
-            touchStartRef.current = { x: t.clientX, y: t.clientY }
-          }}
-          onTouchEnd={(e) => {
-            const start = touchStartRef.current
-            touchStartRef.current = null
-            if (!start || images.length <= 1) return
-            const t = e.changedTouches[0]
-            if (!t) return
-            const dx = t.clientX - start.x
-            const dy = t.clientY - start.y
-            if (Math.abs(dx) < SWIPE_MIN_PX) return
-            if (Math.abs(dx) <= Math.abs(dy)) return
-            suppressHeroClickRef.current = true
-            window.setTimeout(() => {
-              suppressHeroClickRef.current = false
-            }, 400)
-            if (dx > 0) goPrev()
-            else goNext()
-          }}
-          onTouchCancel={() => {
-            touchStartRef.current = null
-          }}
         >
         {heroOverlay ? (
           <div className="absolute right-2 top-2 z-[15] flex items-start gap-2 sm:right-3 sm:top-3 md:right-4 md:top-4">
@@ -281,12 +322,17 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
         </div>
 
         <div
-          className="absolute inset-0 z-[1] cursor-zoom-in outline-none ring-inset ring-offset-0 transition-[box-shadow] focus-visible:ring-2 focus-visible:ring-ring"
+          ref={emblaRef}
+          className="absolute inset-0 z-[1] cursor-zoom-in overflow-hidden overscroll-x-contain outline-none ring-inset ring-offset-0 transition-[box-shadow] focus-visible:ring-2 focus-visible:ring-ring"
           role="button"
           tabIndex={0}
           aria-haspopup="dialog"
           aria-expanded={lightboxOpen}
           aria-label="View enlarged photos"
+          onPointerDown={onHeroPointerDown}
+          onPointerMove={onHeroPointerMove}
+          onPointerUp={onHeroPointerUp}
+          onPointerCancel={onHeroPointerUp}
           onKeyDown={(e) => {
             if (e.key !== "Enter" && e.key !== " ") return
             e.preventDefault()
@@ -298,39 +344,42 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
             openLightbox()
           }}
         >
-          {mountedHeroIndices.map((i) => {
-            const image = images[i]
-            if (!image) return null
-            const isSelected = i === selectedIndex
-            return (
-              <Image
-                key={image.id || `hero-${i}-${image.url}`}
-                src={heroUrls[i] || "/placeholder.svg"}
-                alt={`${title} - Image ${i + 1}`}
-                fill
-                unoptimized={listingImageShouldBypassOptimization(heroUrls[i])}
-                className={cn(
-                  "absolute inset-0 object-cover object-center transition-opacity duration-300 ease-in-out",
-                  isSelected ? "z-[2] opacity-100" : "z-[1] opacity-0",
-                )}
-                priority={i === 0 && selectedIndex === 0}
-                fetchPriority={isSelected ? "high" : "auto"}
-                loading={isSelected ? "eager" : "lazy"}
-                sizes="(max-width: 1024px) 100svw, 50svw"
-                placeholder="blur"
-                blurDataURL={portraitShimmer}
-                aria-hidden={!isSelected}
-                onLoadingComplete={({ naturalWidth, naturalHeight }) => {
-                  if (naturalWidth <= 0 || naturalHeight <= 0) return
-                  const ratio = naturalWidth / naturalHeight
-                  setImageAspectRatios((prev) => {
-                    if (prev[i] === ratio) return prev
-                    return { ...prev, [i]: ratio }
-                  })
-                }}
-              />
-            )
-          })}
+          <div className="flex h-full touch-pan-y will-change-transform">
+            {images.map((image, i) => {
+              const isSelected = i === selectedIndex
+              const nearSelected = gallerySlideNearSelected(i, selectedIndex, images.length)
+              return (
+                <div
+                  key={image.id || `hero-${i}-${image.url}`}
+                  className="relative h-full min-w-0 shrink-0 grow-0 basis-full bg-[#f5f5f7] dark:bg-muted"
+                  aria-hidden={!isSelected}
+                >
+                  <Image
+                    src={heroUrls[i] || "/placeholder.svg"}
+                    alt={`${title} - Image ${i + 1}`}
+                    fill
+                    unoptimized={listingImageShouldBypassOptimization(heroUrls[i])}
+                    draggable={false}
+                    className="pointer-events-none select-none object-cover object-center"
+                    priority={i === 0 && selectedIndex === 0}
+                    fetchPriority={isSelected ? "high" : "auto"}
+                    loading={nearSelected ? "eager" : "lazy"}
+                    sizes="(max-width: 1024px) 100svw, 50svw"
+                    placeholder="blur"
+                    blurDataURL={portraitShimmer}
+                    onLoadingComplete={({ naturalWidth, naturalHeight }) => {
+                      if (naturalWidth <= 0 || naturalHeight <= 0) return
+                      const ratio = naturalWidth / naturalHeight
+                      setImageAspectRatios((prev) => {
+                        if (prev[i] === ratio) return prev
+                        return { ...prev, [i]: ratio }
+                      })
+                    }}
+                  />
+                </div>
+              )
+            })}
+          </div>
         </div>
         {sold ? (
           <div className="pointer-events-none absolute left-4 top-4 z-20 rounded-full bg-foreground px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-background">
@@ -386,7 +435,14 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
               key={image.id || `thumb-${index}-${image.url}`}
               type="button"
               data-gallery-thumb={index}
-              onClick={() => setSelectedIndex(index)}
+              onClick={() => {
+                if (emblaApi && canSwipe) {
+                  emblaApi.scrollTo(index)
+                  return
+                }
+                setSelectedIndex(index)
+                setFrameIndex(index)
+              }}
               aria-label={`Show photo ${index + 1} in gallery`}
               className={cn(
                 "flex-shrink-0 overflow-hidden bg-muted transition-[box-shadow,ring-color] duration-200",

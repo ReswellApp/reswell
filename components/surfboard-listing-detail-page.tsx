@@ -57,6 +57,7 @@ import { ListingMobileBuySummary } from "@/components/features/listings/listing-
 import { ListingDetailPeerPurchaseActionsLoader } from "@/components/listing-detail-peer-purchase-actions-loader"
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 import { ListingBoardDimensionsBlock } from "@/components/listing-board-dimensions-section"
+import { formatListingDimensionsLine } from "@/lib/listing-dimensions-display"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
 import { HomePeerListingScrollTile, HomeListingScrollRow, type HomePeerScrollListing } from "@/components/features/home"
@@ -246,6 +247,9 @@ export async function SurfboardListingDetailPage({
   const typeCrumb = boardsBrowseBoardTypeLabel(rawBoardType ?? undefined)
   const browseBoardTypeParam = browseTypeParamFromBoardType(rawBoardType)
   const listingTitle = capitalizeWords(board.title)
+  const dimensionsLine = formatListingDimensionsLine({
+    dimensions: (board as { dimensions?: string | null }).dimensions,
+  })
 
   /** Public sold/browse price — always original list price, never negotiated offer amounts. */
   const publicListPriceUsd = publicListingListPriceUsd(board.price)
@@ -449,6 +453,7 @@ export async function SurfboardListingDetailPage({
                   title={capitalizeWords(board.title)}
                   sold={isSold}
                   compactMobile
+                  dimensionsLine={dimensionsLine}
                   heroOverlay={
                     <>
                       {showShareOnGalleryOverlay ? (
