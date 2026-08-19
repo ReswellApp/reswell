@@ -17,7 +17,36 @@ import {
 import { peerListingEditHref } from "@/lib/peer-listing-sections"
 import { SURFBOARD_SELL_BOARDS_CREATE_HREF } from "@/lib/sell-flow/surfboard-sell-paths"
 import { setSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
+import {
+  getGiveawayBySlug,
+  isGiveawayOpen,
+  WIN_A_SURFBOARD_GIVEAWAY_SLUG,
+} from "@/lib/giveaways/catalog"
 import { cn } from "@/lib/utils"
+
+const RAFFLE_CELEBRATION_SEEN_PREFIX = "reswell.giveaway.raffleCelebrationSeen."
+
+function raffleCelebrationSeenKey(slug: string): string {
+  return `${RAFFLE_CELEBRATION_SEEN_PREFIX}${slug}`
+}
+
+function hasSeenRaffleCelebration(slug: string): boolean {
+  if (typeof window === "undefined") return false
+  try {
+    return window.localStorage.getItem(raffleCelebrationSeenKey(slug)) === "1"
+  } catch {
+    return false
+  }
+}
+
+function markRaffleCelebrationSeen(slug: string): void {
+  if (typeof window === "undefined") return
+  try {
+    window.localStorage.setItem(raffleCelebrationSeenKey(slug), "1")
+  } catch {
+    /* private mode — one-time copy is best-effort */
+  }
+}
 
 /** Sell entry per listing section for the "List another" CTA. */
 function sellAgainHref(section: string): string {
@@ -50,11 +79,13 @@ function sellAgainHref(section: string): string {
  * fresh publish. The seller lands on their real, live listing (the payoff),
  * with a share link, a "list another" prompt, and — when payouts aren't set
  * up yet — a non-blocking Stripe Connect nudge so payday isn't a surprise.
+ * Raffle copy is one-time: only the listing that is their raffle ticket.
  */
 export function ListingPublishedCelebration({ listingParam }: { listingParam: string }) {
   const [marker, setMarker] = useState<JustPublishedListingMarker | null>(null)
   const [visible, setVisible] = useState(false)
   const [payoutsNeedSetup, setPayoutsNeedSetup] = useState(false)
+  const [showRaffleEntry, setShowRaffleEntry] = useState(false)
   const [enrichmentGaps, setEnrichmentGaps] = useState<ListingEnrichmentGap[]>([])
   const consumedRef = useRef(false)
 
@@ -119,6 +150,35 @@ export function ListingPublishedCelebration({ listingParam }: { listingParam: st
         /* prompts are best-effort */
       })
 
+    // Raffle line: only the first qualifying surfboard (the locked ticket).
+    const giveaway = getGiveawayBySlug(WIN_A_SURFBOARD_GIVEAWAY_SLUG)
+    if (
+      found.section === "surfboards" &&
+      giveaway &&
+      isGiveawayOpen(giveaway) &&
+      !hasSeenRaffleCelebration(WIN_A_SURFBOARD_GIVEAWAY_SLUG)
+    ) {
+      void fetch(`/api/giveaways/${WIN_A_SURFBOARD_GIVEAWAY_SLUG}/entry`, {
+        cache: "no-store",
+        signal: controller.signal,
+      })
+        .then(async (res) => {
+          if (!res.ok) return
+          const json = (await res.json()) as {
+            data?: { entry?: { listingId?: string | null; status?: string } | null }
+          }
+          const entry = json.data?.entry
+          if (entry?.status !== "qualified") return
+          if (entry.listingId === found.listingId) {
+            setShowRaffleEntry(true)
+          }
+          markRaffleCelebrationSeen(WIN_A_SURFBOARD_GIVEAWAY_SLUG)
+        })
+        .catch(() => {
+          /* raffle line is best-effort */
+        })
+    }
+
     return () => {
       cancelAnimationFrame(raf)
       controller.abort()
@@ -167,7 +227,7 @@ export function ListingPublishedCelebration({ listingParam }: { listingParam: st
             </p>
             <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
               Buyers can see it right now. Share it to sell faster.
-              {marker.section === "surfboards" ? (
+              {showRaffleEntry ? (
                 <>
                   {" "}
                   You&apos;re also in the{" "}

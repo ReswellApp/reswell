@@ -3,6 +3,9 @@
  *
  * **Metric name in Klaviyo:** `Shipping Sale Received` — profile is the **seller**.
  *
+ * Unshipped seller follow-up flows should exit when **Seller Order Shipped** fires on this
+ * same seller profile. Buyer **Order Shipped** will not take them out of the flow.
+ *
  * Template variables: structured ship-to (`ship_to_name`, `ship_to_line1`, …, `ship_to_formatted`),
  * `label_workflow` (`reswell` | `seller_own`), `label_workflow_instructions`,
  * `sale_url`, `shipping_tools_url`, plus order/listing fields from **New Sale Received**.

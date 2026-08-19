@@ -44,6 +44,8 @@ import {
   TAIL_SHAPE_LABELS,
   type TailShapeTagSlug,
 } from "@/lib/listing-tail-shape-tags"
+import { parseBrowseLocationLabel } from "@/lib/listing-location-or-filter"
+import { usStateTitleCaseName } from "@/lib/us-state-name-to-code"
 
 /** Attach `must_not` to a listings bool query body (keyword builders already set filter/must/should). */
 function withMustNot(queryBody: object, mustNot: object[]): object {
@@ -251,16 +253,45 @@ function brandModelClauses(ctx: BoardsBrowseEsContext): object[] {
 function locationTextClauses(locationText: string | undefined): object[] {
   const loc = locationText?.trim()
   if (!loc) return []
-  return [
-    {
-      multi_match: {
-        query: loc,
-        fields: ["city", "state"],
-        type: "best_fields",
-        operator: "or",
+
+  const { city, stateCode, stateRaw } = parseBrowseLocationLabel(loc)
+  const filters: object[] = []
+
+  if (city) {
+    filters.push({
+      match: {
+        city: {
+          query: city,
+          operator: "and",
+        },
       },
-    },
-  ]
+    })
+  }
+
+  if (stateCode) {
+    const should: object[] = [{ match: { state: stateCode } }]
+    const title = usStateTitleCaseName(stateCode)
+    if (title) should.push({ match: { state: title } })
+    filters.push({ bool: { should, minimum_should_match: 1 } })
+  } else if (stateRaw) {
+    filters.push({
+      match: {
+        state: { query: stateRaw, operator: "and" },
+      },
+    })
+  }
+
+  if (filters.length === 0) {
+    return [
+      {
+        match: {
+          city: { query: loc, operator: "and" },
+        },
+      },
+    ]
+  }
+
+  return filters
 }
 
 function lengthInchesClause(lengthInches: number | undefined): object | null {

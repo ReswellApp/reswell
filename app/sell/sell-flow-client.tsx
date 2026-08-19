@@ -1011,16 +1011,14 @@ function SellPageContentInner({
     if (handoff.selectionKind === "model") {
       // Catalog models tagged with a board shape auto-select the matching
       // "Board shape / category" chip (chip values are the fixed category UUIDs).
+      // Do not prefill listing description from the catalog model write-up —
+      // sellers write that themselves.
       const handoffBoardCategoryId = handoff.boardCategorySlug
         ? boardCategoryMap[handoff.boardCategorySlug] ?? ""
         : ""
       setFormData((f) => ({
         ...f,
         title: f.title.trim() ? f.title : handoff.suggestedTitle,
-        description:
-          f.description.trim() || !handoff.suggestedDescription
-            ? f.description
-            : handoff.suggestedDescription,
         brand: handoff.brandName,
         boardLinkedBrandName: handoff.brandName,
         boardBrandId: handoff.brandId,

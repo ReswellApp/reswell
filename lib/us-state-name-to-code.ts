@@ -62,6 +62,21 @@ export const US_STATE_NAME_TO_CODE: Record<string, string> = {
   "virgin islands": "VI",
 }
 
+/** First canonical lowercase name for each USPS code (CA → "california"). */
+export const US_STATE_CODE_TO_NAME: Record<string, string> = {}
+for (const [name, code] of Object.entries(US_STATE_NAME_TO_CODE)) {
+  if (US_STATE_CODE_TO_NAME[code] == null) {
+    US_STATE_CODE_TO_NAME[code] = name
+  }
+}
+
+/** Title-case state name for a USPS code (`CA` → `California`). */
+export function usStateTitleCaseName(code: string): string | null {
+  const name = US_STATE_CODE_TO_NAME[code.trim().toUpperCase()]
+  if (!name) return null
+  return name.replace(/\b([a-z])/g, (ch) => ch.toUpperCase())
+}
+
 /**
  * ShipEngine and many US carrier APIs require `state_province` to be a 2-letter USPS code when
  * `country_code` is US. Geocoders often return full names (e.g. "California").

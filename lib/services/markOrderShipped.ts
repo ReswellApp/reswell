@@ -1,8 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
-import { resolveProfilePhoneE164 } from "@/lib/db/profilePersonalInfo"
-import { createServiceRoleClient } from "@/lib/supabase/server"
-import { trackKlaviyoOrderShipped } from "@/lib/klaviyo/track-order-shipped"
+import { notifyOrderShippedKlaviyoIfMissing } from "@/lib/services/notifyOrderShippedKlaviyo"
 import { normalizeTrackingNumberForCarrier } from "@/lib/shipping/normalize-tracking-number"
 import { parseOrderShippedMessageMetadata } from "@/lib/validations/order-shipped-message-metadata"
 import type { OrderShippedMessagePayload } from "@/lib/validations/order-shipped-message-metadata"
@@ -70,6 +68,8 @@ async function postOrderShippedNotification(
   trackingCarrier: string | null,
   listingTitle: string,
 ): Promise<void> {
+  await notifyOrderShippedKlaviyoIfMissing(supabase, ctx.id)
+
   const conv = await resolveListingThread(
     supabase,
     ctx.buyer_id,
@@ -107,28 +107,6 @@ async function postOrderShippedNotification(
     .from("conversations")
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conv.id)
-
-  let buyerEmail: string | null = null
-  let buyerPhoneE164: string | null = null
-  try {
-    const svc = createServiceRoleClient()
-    const { data: buyerAuth } = await svc.auth.admin.getUserById(ctx.buyer_id)
-    buyerEmail = buyerAuth?.user?.email ?? null
-    const authPhone = buyerAuth?.user?.phone?.trim() || null
-    buyerPhoneE164 = await resolveProfilePhoneE164(svc, ctx.buyer_id, authPhone)
-  } catch {
-    /* non-critical */
-  }
-
-  void trackKlaviyoOrderShipped({
-    buyerUserId: ctx.buyer_id,
-    buyerEmail,
-    buyerPhoneE164,
-    orderId: ctx.id,
-    listingTitle,
-    trackingNumber,
-    trackingCarrier: carrier,
-  })
 }
 
 /**

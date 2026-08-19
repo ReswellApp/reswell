@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { notifyBuyerOrderShippingUpdateKlaviyo } from "@/lib/services/notifyBuyerOrderShippingUpdateKlaviyo"
+import { notifyOrderShippedKlaviyoIfMissing } from "@/lib/services/notifyOrderShippedKlaviyo"
 import type { OrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import { syncCarrierDeliveryFromTracking } from "@/lib/services/syncCarrierDeliveryFromTracking"
 import { tryReleaseShippingPayoutAfterCarrierHold } from "@/lib/services/autoReleaseShippingPayoutsAfterCarrierDelivery"
@@ -40,5 +41,6 @@ export async function persistOrderCarrierTrackingSnapshot(
 
   await syncCarrierDeliveryFromTracking(supabase, orderId, detail)
   await tryReleaseShippingPayoutAfterCarrierHold(orderId)
+  await notifyOrderShippedKlaviyoIfMissing(supabase, orderId)
   await notifyBuyerOrderShippingUpdateKlaviyo(supabase, orderId, previousDetailRaw, detail)
 }

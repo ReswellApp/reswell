@@ -2,7 +2,8 @@
  * Server-only: Klaviyo Events API — fires when ShipEngine reports a new carrier scan on a shipped order.
  *
  * **Metric name in Klaviyo:** `Order Shipping Update` — create a flow triggered by this metric.
- * Distinct from **Order Shipped** (fires once when the seller adds tracking). Use this metric for
+ * Distinct from **Order Shipped** (fires once when the order is marked shipped or the first
+ * in-transit carrier scan lands). Use this metric for
  * in-transit, out-for-delivery, delivered, and exception emails from real carrier data.
  *
  * Template variables: `{{ event.order_num }}`, `{{ event.Title }}`, `{{ event.status_label }}`,

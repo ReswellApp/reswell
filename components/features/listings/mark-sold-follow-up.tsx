@@ -49,10 +49,12 @@ export function MarkSoldFollowUp({
   listingId,
   listingPriceUsd,
   onClose,
+  onFinished,
 }: {
   listingId: string
   listingPriceUsd: number | null
   onClose: () => void
+  onFinished?: () => void
 }) {
   const [step, setStep] = useState<FollowUpStep>("channel")
   const [soldChannel, setSoldChannel] = useState<SoldOffPlatformChannel | null>(null)
@@ -145,6 +147,7 @@ export function MarkSoldFollowUp({
         toast.error(result.error)
         return
       }
+      onFinished?.()
       setStep("thanks")
     } finally {
       setLoading(false)

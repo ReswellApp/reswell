@@ -9,6 +9,8 @@
  * 3. Email → drag **Code** / custom HTML → paste `KLAVIYO_SELLER_SHIPPING_SALE_RECEIVED_EMAIL_HTML`
  * 4. Preview with a recent **Shipping Sale Received** event
  * 5. Suggested subject: `You sold {{ event.Title }} — label on the way`
+ * 6. Unshipped follow-up / internal escalation: add a time delay, then exit if the seller
+ *    has done **Seller Order Shipped** (not buyer **Order Shipped**)
  *
  * **Do not** also trigger this email from **New Sale Received** (same order, double send).
  *
