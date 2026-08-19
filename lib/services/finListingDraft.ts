@@ -161,6 +161,7 @@ export async function listFinListingDrafts(
       price: typeof r.price === "number" ? r.price : null,
       updatedAt: r.updated_at,
       primaryImageUrl: primary?.url ?? null,
+      section: FINS_SECTION,
     }
   })
 }

@@ -145,6 +145,7 @@ export function SellFunnelAdminClient() {
           <p className="text-muted-foreground mt-2 max-w-2xl">
             First-party instrumentation from `/sell` publish flows: where sellers start, which steps
             they reach, validation blocks, and publish outcomes. Pair with Klaviyo{" "}
+            <strong className="font-medium text-foreground">Unfinished Listing</strong> /{" "}
             <strong className="font-medium text-foreground">Viewed Sell Page</strong> /{" "}
             <strong className="font-medium text-foreground">Listing</strong> metrics for
             re-engagement.

@@ -7,12 +7,22 @@ import { createClient } from "@/lib/supabase/client"
 import { cn } from "@/lib/utils"
 import { getSellServerDraftListingId } from "@/lib/sell-draft-local-meta"
 import { loadGuestSellListingDraft, loadSellListingDraft } from "@/lib/sell-listing-draft-idb"
+import {
+  isPeerListingSection,
+  PEER_LISTING_SECTION_LABELS,
+  peerListingEditHref,
+} from "@/lib/peer-listing-sections"
 
 export type SellContinueDraftItem = {
   id: string
   href: string
   title: string
   subtitle?: string
+}
+
+function sectionLabel(section: string | null | undefined): string {
+  if (isPeerListingSection(section)) return PEER_LISTING_SECTION_LABELS[section]
+  return "Listing"
 }
 
 /**
@@ -35,7 +45,7 @@ export function SellContinueDrafts({ className }: { className?: string }) {
       }
 
       try {
-        const res = await fetch("/api/listings/draft?section=surfboards", {
+        const res = await fetch("/api/listings/draft", {
           credentials: "include",
         })
         if (res.ok) {
@@ -46,16 +56,21 @@ export function SellContinueDrafts({ className }: { className?: string }) {
                 title: string | null
                 price: number | null
                 updatedAt: string
+                section?: string
               }>
             }
           }
           for (const d of json.data?.drafts ?? []) {
-            const title = d.title?.trim() || "Surfboard draft"
+            const label = sectionLabel(d.section)
+            const title = d.title?.trim() || `${label} draft`
             push({
-              id: `server-board-${d.id}`,
-              href: `/sell/boards?edit=${encodeURIComponent(d.id)}`,
+              id: `server-${d.id}`,
+              href: peerListingEditHref(d.section, d.id),
               title,
-              subtitle: d.price != null && d.price > 0 ? `$${Math.round(d.price)}` : "In progress",
+              subtitle:
+                d.price != null && d.price > 0
+                  ? `$${Math.round(d.price)} · ${label}`
+                  : `In progress · ${label}`,
             })
           }
         }
@@ -132,7 +147,7 @@ export function SellContinueDrafts({ className }: { className?: string }) {
         <h2 className="text-base font-semibold tracking-tight text-foreground">Your drafts</h2>
         {drafts.length >= 3 ? (
           <Link
-            href="/sell/boards"
+            href="/dashboard/listings"
             className="text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
           >
             See all

@@ -1,5 +1,6 @@
 import Link from "next/link"
 import type { GiveawayAdminDashboard } from "@/lib/services/giveawayEntry"
+import { GiveawayListingRemindersButton } from "@/components/features/admin/giveaway-listing-reminders-button"
 import { Badge } from "@/components/ui/badge"
 
 function formatWhen(iso: string | null): string {
@@ -23,12 +24,15 @@ function listingStatusLabel(status: string | null): string {
 }
 
 export function GiveawayAdminDashboardView({ data }: { data: GiveawayAdminDashboard }) {
+  const notListedCount = data.entries.filter((entry) => !entry.listingId).length
+
   return (
     <div className="space-y-8">
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="Giveaway button clicks" value={data.ctaClicks} />
         <StatCard label="Signed up from the button" value={data.signupsFromCta} />
         <StatCard label="Qualified (listed a board)" value={data.qualifiedEntries} />
+        <StatCard label="Not listed yet" value={notListedCount} />
       </div>
 
       <section>
@@ -59,11 +63,17 @@ export function GiveawayAdminDashboardView({ data }: { data: GiveawayAdminDashbo
       </section>
 
       <section>
-        <h2 className="text-sm font-semibold text-foreground">Entries</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Listing ID stays even after the board sells or is marked sold — that listing is the raffle
-          ticket.
-        </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">Entries</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Listing ID stays even after the board sells or is marked sold — that listing is the raffle
+              ticket. Klaviyo sends a confirmation on enter, then a listing reminder if they stay
+              pending.
+            </p>
+          </div>
+          <GiveawayListingRemindersButton unlistedCount={notListedCount} />
+        </div>
         <div className="mt-3 overflow-x-auto rounded-xl border border-border">
           <table className="w-full min-w-[52rem] text-left text-sm">
             <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">

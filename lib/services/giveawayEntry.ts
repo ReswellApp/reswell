@@ -120,6 +120,7 @@ export async function enterGiveaway(
     giveawaySlug: params.slug,
     preferredBrand: created.preferredBrand,
     status: created.status,
+    listingId,
   })
   if (created.status === "qualified" && listingId) {
     void trackKlaviyoGiveawayQualified({
@@ -212,6 +213,7 @@ export async function qualifyPublishedListingForGiveaways(
         giveawaySlug: giveaway.slug,
         preferredBrand: null,
         status: "qualified",
+        listingId: lockedListingId,
       })
       void trackKlaviyoGiveawayQualified({
         userId: sellerUserId,

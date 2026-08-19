@@ -133,6 +133,7 @@ function downloadUsersCsv(rows: User[]): void {
     'verified',
     'listings',
     'active_listings',
+    'draft_listings',
     'sales',
     'gmv',
     'joined',
@@ -149,6 +150,7 @@ function downloadUsersCsv(rows: User[]): void {
       u.shop_verified ? 'yes' : 'no',
       u.listings_count,
       u.active_listings_count,
+      u.draft_listings_count,
       u.sales_count,
       u.gmv,
       format(new Date(u.created_at), 'yyyy-MM-dd'),
@@ -1067,7 +1069,11 @@ export default function AdminUsersPage() {
                       {user.listings_count > 0 ? (
                         <span className="text-foreground">
                           {compactNumber(user.listings_count)}
-                          <span className="text-muted-foreground"> · {user.active_listings_count} live</span>
+                          <span className="text-muted-foreground">
+                            {user.draft_listings_count > 0
+                              ? ` · ${user.draft_listings_count} draft · ${user.active_listings_count} live`
+                              : ` · ${user.active_listings_count} live`}
+                          </span>
                         </span>
                       ) : (
                         <span className="text-muted-foreground">—</span>

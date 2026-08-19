@@ -4,7 +4,6 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import useEmblaCarousel from "embla-carousel-react"
 import Image from "next/image"
 import {
-  type CSSProperties,
   useCallback,
   useEffect,
   useMemo,
@@ -67,19 +66,6 @@ function usePrefersCoarsePointer() {
   }, [])
 
   return coarse
-}
-
-function huggingFrameStyle(aspectRatio: number, isMaxMd: boolean): CSSProperties {
-  const maxHeight = isMaxMd
-    ? "min(90dvh, calc(100dvh - 6.5rem))"
-    : "min(92dvh, calc(100dvh - 8.25rem))"
-  const maxWidth = isMaxMd ? "calc(100vw - 1.25rem)" : "calc(100vw - 8.5rem)"
-  return {
-    aspectRatio,
-    width: `min(${maxWidth}, calc(${maxHeight} * ${aspectRatio}))`,
-    maxWidth,
-    maxHeight,
-  }
 }
 
 interface LightboxSlideProps {
@@ -192,11 +178,6 @@ function LightboxSlide({
   const isZoomedOut = scale <= 1 + ZOOM_TOLERANCE
   const scaleRef = useRef(1)
   scaleRef.current = scale
-  const frameStyle = useMemo(
-    () => huggingFrameStyle(aspectRatio, isMaxMd),
-    [aspectRatio, isMaxMd],
-  )
-
   useEffect(() => {
     if (!isActive) return
     if (scaleRef.current > 1 + ZOOM_TOLERANCE) return
@@ -214,20 +195,19 @@ function LightboxSlide({
 
   return (
     <div
-      className="flex h-full w-full items-center justify-center"
+      className="flex h-full w-full"
       onClick={(event) => {
         if (event.target === event.currentTarget) onBackdropClick()
       }}
     >
       <div
-        style={frameStyle}
-        className="relative shrink-0 overflow-hidden rounded-xl bg-[#f5f5f7] shadow-sm ring-1 ring-black/[0.06] sm:rounded-2xl dark:bg-muted dark:ring-white/[0.08]"
+        className="relative h-full min-h-0 w-full min-w-full overflow-hidden bg-[#f5f5f7] dark:bg-muted"
         onClick={(event) => event.stopPropagation()}
       >
         <ListingTileShimmer
           aria-hidden
           className={cn(
-            "listing-tile-shimmer-overlay absolute inset-0 z-[1] rounded-xl sm:rounded-2xl",
+            "listing-tile-shimmer-overlay absolute inset-0 z-[1]",
             slideReady && "pointer-events-none opacity-0",
           )}
         />
@@ -248,7 +228,7 @@ function LightboxSlide({
             velocityDisabled: coarsePointer,
           }}
           pinch={{
-            step: 5,
+            step: 3.2,
             allowPanning: true,
             disabled: !isActive,
           }}
@@ -274,7 +254,7 @@ function LightboxSlide({
                 placeholder="blur"
                 blurDataURL={portraitShimmer}
                 className={cn(
-                  "pointer-events-none select-none object-contain object-center transition-opacity duration-300 ease-out",
+                  "pointer-events-none select-none object-cover object-center transition-opacity duration-300 ease-out",
                   loadedSrc === src ? "opacity-0" : "opacity-100",
                 )}
                 sizes={LIGHTBOX_IMAGE_SIZES}
@@ -293,7 +273,7 @@ function LightboxSlide({
               unoptimized
               draggable={false}
               className={cn(
-                "select-none object-contain object-center transition-opacity duration-300 ease-out",
+                "select-none object-cover object-center transition-opacity duration-300 ease-out",
                 loadedSrc === src ? "opacity-100" : "opacity-0",
               )}
               sizes={LIGHTBOX_IMAGE_SIZES}
@@ -492,49 +472,7 @@ export function ListingImageLightbox({
             {title} — photo {index + 1} of {Math.max(count, 1)}
           </DialogTitle>
 
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-3 px-4 pt-[max(env(safe-area-inset-top),0.75rem)] sm:px-5">
-            {count > 1 ? (
-              <p className="pointer-events-none min-w-0 truncate text-sm font-medium tabular-nums text-foreground/55">
-                {index + 1}
-                <span className="px-1 font-normal text-foreground/35">/</span>
-                {count}
-              </p>
-            ) : (
-              <span aria-hidden />
-            )}
-            <DialogClose asChild>
-              <Button
-                type="button"
-                size="icon"
-                variant="secondary"
-                className={cn("pointer-events-auto", CHROME_BUTTON_CLASS)}
-              >
-                <X className="stroke-[2]" />
-                <span className="sr-only">Close</span>
-              </Button>
-            </DialogClose>
-          </div>
-
           <div className="relative min-h-0 min-w-0 flex-1">
-            {count > 1 ? (
-              <>
-                <ListingImageCarouselNavButton
-                  direction="prev"
-                  variant="chrome"
-                  sideClassName="pointer-events-auto left-3 sm:left-4 md:left-5"
-                  srLabel="Previous photo"
-                  onClick={goPrev}
-                />
-                <ListingImageCarouselNavButton
-                  direction="next"
-                  variant="chrome"
-                  sideClassName="pointer-events-auto right-3 md:right-5"
-                  srLabel="Next photo"
-                  onClick={goNext}
-                />
-              </>
-            ) : null}
-
             {count > 0 ? (
               useSwipeCarousel ? (
                 <div ref={emblaRef} className="absolute inset-0 overflow-hidden">
@@ -555,7 +493,23 @@ export function ListingImageLightbox({
               )
             ) : null}
 
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 hidden justify-center pb-[max(env(safe-area-inset-bottom),1rem)] md:flex">
+            <DialogClose asChild>
+              <Button
+                type="button"
+                size="icon"
+                variant="secondary"
+                className={cn(
+                  "pointer-events-auto absolute right-3 z-30",
+                  "top-[max(env(safe-area-inset-top),0.75rem)]",
+                  CHROME_BUTTON_CLASS,
+                )}
+              >
+                <X className="stroke-[2]" />
+                <span className="sr-only">Close</span>
+              </Button>
+            </DialogClose>
+
+            <div className="pointer-events-none absolute inset-x-0 bottom-3 z-30 hidden justify-center md:flex">
               <div className="pointer-events-auto flex items-center gap-0.5 rounded-full border border-border/50 bg-background/90 p-1 shadow-sm backdrop-blur-md">
                 <ZoomToolbar
                   onZoomIn={() => activePinchRef?.zoomIn(0.18, 200)}
@@ -566,9 +520,114 @@ export function ListingImageLightbox({
               </div>
             </div>
           </div>
+
+          {count > 1 ? (
+            <div className="relative z-30 flex shrink-0 items-center gap-2 bg-background px-2 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-2">
+              <ListingImageCarouselNavButton
+                direction="prev"
+                variant="chrome"
+                staticPosition
+                srLabel="Previous photo"
+                onClick={goPrev}
+              />
+              <LightboxThumbRow
+                urls={proxiedUrls}
+                title={title}
+                selectedIndex={index}
+                onSelect={(next) => {
+                  if (emblaApi && useSwipeCarousel) {
+                    emblaApi.scrollTo(next)
+                    return
+                  }
+                  pinchRefs.current.get(index)?.resetTransform(0)
+                  setScale(1)
+                  onIndexChange(next)
+                }}
+              />
+              <ListingImageCarouselNavButton
+                direction="next"
+                variant="chrome"
+                staticPosition
+                srLabel="Next photo"
+                onClick={goNext}
+              />
+            </div>
+          ) : (
+            <div className="h-[env(safe-area-inset-bottom)] shrink-0" />
+          )}
         </DialogPrimitive.Content>
       </DialogPortal>
     </Dialog>
+  )
+}
+
+function LightboxThumbRow({
+  urls,
+  title,
+  selectedIndex,
+  onSelect,
+}: {
+  urls: string[]
+  title: string
+  selectedIndex: number
+  onSelect: (index: number) => void
+}) {
+  const rowRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const row = rowRef.current
+    if (!row) return
+    const active = row.querySelector<HTMLElement>(`[data-lightbox-thumb="${selectedIndex}"]`)
+    if (!active) return
+    const rowRect = row.getBoundingClientRect()
+    const thumbRect = active.getBoundingClientRect()
+    if (thumbRect.left >= rowRect.left && thumbRect.right <= rowRect.right) return
+    const nextLeft =
+      row.scrollLeft + (thumbRect.left - rowRect.left) - (rowRect.width - thumbRect.width) / 2
+    row.scrollTo({ left: Math.max(0, nextLeft), behavior: "smooth" })
+  }, [selectedIndex])
+
+  return (
+    <div className="min-w-0 flex-1">
+      <div
+        ref={rowRef}
+        className="flex justify-center gap-1.5 overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch]"
+      >
+        {urls.map((url, thumbIndex) => {
+          const src = url && url !== "/placeholder.svg" ? withListingMediaPdpVariant(url) : url
+          const selected = thumbIndex === selectedIndex
+          return (
+            <button
+              key={`${url}-${thumbIndex}`}
+              type="button"
+              data-lightbox-thumb={thumbIndex}
+              onClick={() => onSelect(thumbIndex)}
+              aria-label={`Show photo ${thumbIndex + 1}`}
+              aria-current={selected ? "true" : undefined}
+              className={cn(
+                "flex-shrink-0 overflow-hidden rounded-lg bg-muted transition-[box-shadow,ring-color] duration-200",
+                selected
+                  ? "ring-[1.5px] ring-offset-2 ring-offset-background ring-foreground/80"
+                  : "ring-[0.5px] ring-muted-foreground/25",
+              )}
+            >
+              <span className="relative block w-11 bg-muted" style={{ paddingBottom: "133.33%" }}>
+                <span className="absolute inset-0">
+                  <Image
+                    src={src || "/placeholder.svg"}
+                    alt={`${title} — thumbnail ${thumbIndex + 1}`}
+                    fill
+                    unoptimized={listingImageShouldBypassOptimization(src)}
+                    className="object-cover object-center"
+                    sizes="44px"
+                  />
+                </span>
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
   )
 }
 

@@ -45,6 +45,7 @@ import { MAGAZINES_SECTION } from "@/lib/magazine-listing-config"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
 import { ListingDetailEngagementMetrics } from "@/components/listing-detail-engagement-metrics"
+import { ListingKlarnaAsLowAs } from "@/components/features/listings/listing-klarna-as-low-as"
 import { ListingMobileBuySummary } from "@/components/features/listings/listing-mobile-buy-summary"
 import { ListingDetailPeerPurchaseActionsLoader } from "@/components/listing-detail-peer-purchase-actions-loader"
 import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
@@ -383,6 +384,8 @@ export async function MagazinesListingDetailPage({
           {/* Mobile price/actions block */}
           <div className="min-w-0 max-w-full max-lg:order-2 lg:hidden">
             <ListingMobileBuySummary
+              listingId={magazine.id}
+              isLoggedIn={!!user}
               condition={magazine.condition as string | null}
               priceUsd={isSold ? publicListPriceUsd : listPriceNum}
               isSold={isSold}
@@ -442,6 +445,7 @@ export async function MagazinesListingDetailPage({
                     {shippingPriceCaption ? (
                       <p className="mt-1.5 text-[15px] text-muted-foreground">{shippingPriceCaption}</p>
                     ) : null}
+                    <ListingKlarnaAsLowAs listingId={magazine.id} isLoggedIn={!!user} className="mt-2" />
                   </div>
                 </>
               )}

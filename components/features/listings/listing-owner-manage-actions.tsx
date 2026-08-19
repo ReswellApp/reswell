@@ -33,16 +33,21 @@ export function ListingOwnerManageActions({
   showQuickPriceEdit = true,
   enrichmentGaps = [],
 }: ListingOwnerManageActionsProps) {
+  const isDraft = listingStatus === "draft"
   const isDelinquent = listingStatus === "delinquent"
-  const showVacation = !isDelinquent && canUseListingVacationMode(listingStatus)
+  const showVacation = !isDelinquent && !isDraft && canUseListingVacationMode(listingStatus)
   const editHref = peerListingEditHref(section, listingId)
-  const showEnrichment = !isDelinquent && enrichmentGaps.length > 0
+  const showEnrichment = !isDelinquent && !isDraft && enrichmentGaps.length > 0
 
   return (
     <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">
       <div className="flex min-w-0 flex-col items-start gap-2">
         <p className="text-[14px] text-muted-foreground">Your listing</p>
-        {isDelinquent ? (
+        {isDraft ? (
+          <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+            Draft — not published yet. Continue to finish and go live.
+          </p>
+        ) : isDelinquent ? (
           <p className="text-sm font-medium text-orange-700 dark:text-orange-400">
             Delinquent — this listing is hidden while your account is restricted.
           </p>
@@ -54,10 +59,10 @@ export function ListingOwnerManageActions({
         <div className="flex min-w-0 flex-wrap gap-2">
           <Button asChild className="rounded-full">
             <Link prefetch={false} href={editHref}>
-              Edit listing
+              {isDraft ? "Continue listing" : "Edit listing"}
             </Link>
           </Button>
-          {showQuickPriceEdit ? (
+          {showQuickPriceEdit && !isDraft ? (
             <QuickEditListingPriceDialog
               listingId={listingId}
               currentPriceUsd={currentPriceUsd}
@@ -71,10 +76,12 @@ export function ListingOwnerManageActions({
               className="px-4"
             />
           ) : null}
-          <EndListingButton
-            listingId={listingId}
-            triggerClassName="rounded-full border-border/60 shadow-none"
-          />
+          {!isDraft ? (
+            <EndListingButton
+              listingId={listingId}
+              triggerClassName="rounded-full border-border/60 shadow-none"
+            />
+          ) : null}
         </div>
         {showEnrichment ? (
           <div className="mt-1 w-full rounded-xl border border-listingHeart/20 bg-listingHeart/5 px-3.5 py-3">

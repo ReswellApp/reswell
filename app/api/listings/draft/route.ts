@@ -3,6 +3,7 @@ import { cookies } from "next/headers"
 import { resolveServerAuth } from "@/lib/auth/get-safe-server-user"
 import { listingDraftSaveSchema } from "@/lib/validations/listing-draft-save"
 import {
+  listSellerListingDrafts,
   listSurfboardListingDrafts,
   upsertGuestSurfboardListingDraft,
   upsertSurfboardListingDraft,
@@ -32,22 +33,24 @@ async function resolveGuestTokenHash(
 
 export async function GET(request: NextRequest) {
   const { supabase, user } = await resolveServerAuth()
-  const sectionParam = request.nextUrl.searchParams.get("section")?.trim()
-  if (sectionParam !== "surfboards" && sectionParam !== "fins") {
+  const sectionParam = request.nextUrl.searchParams.get("section")?.trim() ?? ""
+  const listAllSections = sectionParam === "" || sectionParam === "all"
+  if (!listAllSections && sectionParam !== "surfboards" && sectionParam !== "fins") {
     return NextResponse.json({ error: "Invalid section" }, { status: 400 })
   }
 
   try {
     if (user) {
-      const drafts =
-        sectionParam === "fins"
+      const drafts = listAllSections
+        ? await listSellerListingDrafts(supabase, user.id)
+        : sectionParam === "fins"
           ? await listFinListingDrafts(supabase, user.id)
           : await listSurfboardListingDrafts(supabase, user.id)
       return NextResponse.json({ data: { drafts } }, { status: 200 })
     }
 
     // Guests: surfboard drafts only (Quick). Fins guest server drafts later.
-    if (sectionParam !== "surfboards") {
+    if (sectionParam === "fins") {
       return NextResponse.json({ data: { drafts: [] } }, { status: 200 })
     }
 

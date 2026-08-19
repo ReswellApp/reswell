@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 import Link from "next/link"
 import { Hourglass, ShieldCheck, Sparkles, Truck } from "lucide-react"
 import { ListingDetailEngagementMetrics } from "@/components/listing-detail-engagement-metrics"
+import { ListingKlarnaAsLowAs } from "@/components/features/listings/listing-klarna-as-low-as"
 import { formatHomePeerListingConditionLine } from "@/lib/listing-labels"
 
 const RECENTLY_LISTED_MS = 14 * 24 * 60 * 60 * 1000
@@ -62,6 +63,8 @@ function shippingStatusRow({
 }
 
 export interface ListingMobileBuySummaryProps {
+  listingId: string
+  isLoggedIn: boolean
   condition?: string | null
   priceUsd: number
   isSold: boolean
@@ -83,6 +86,8 @@ export interface ListingMobileBuySummaryProps {
 }
 
 export function ListingMobileBuySummary({
+  listingId,
+  isLoggedIn,
   condition,
   priceUsd,
   isSold,
@@ -148,6 +153,9 @@ export function ListingMobileBuySummary({
         </p>
       )}
       {shippingNote ? <p className="mt-1 text-[14px] text-muted-foreground">{shippingNote}</p> : null}
+      {!isSold ? (
+        <ListingKlarnaAsLowAs listingId={listingId} isLoggedIn={isLoggedIn} className="mt-2" />
+      ) : null}
       {agreedPriceUsd != null ? (
         <p className="mt-1.5 text-[15px] font-medium text-emerald-700 dark:text-emerald-400">
           Your accepted price: ${agreedPriceUsd.toFixed(2)} at checkout

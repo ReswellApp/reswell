@@ -25,7 +25,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ArrowLeft, MoreVertical, Package, Mail, User, RotateCcw, CheckCircle2, XCircle, Wallet, RefreshCw, Loader2, Lock, Unlock, MessageSquarePlus, Ban } from 'lucide-react'
+import { ArrowLeft, MoreVertical, Package, Mail, User, RotateCcw, CheckCircle2, XCircle, Wallet, RefreshCw, Loader2, Lock, Unlock, MessageSquarePlus, Ban, Pencil } from 'lucide-react'
+import { listingDetailHref } from '@/lib/listing-href'
+import { peerListingEditHref } from '@/lib/peer-listing-sections'
 import { capitalizeWords } from '@/lib/listing-labels'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -55,6 +57,7 @@ interface ListingRow {
   price: number
   section: string
   status: string
+  slug?: string | null
   hidden_from_site?: boolean | null
   created_at: string
   listing_images: { url: string }[]
@@ -355,8 +358,8 @@ export default function AdminUserDetailPage() {
     }
   }, [id])
 
-  async function startImpersonation() {
-    if (!profile) return
+  async function startImpersonation(nextPath = '/') {
+    if (!profile) return false
     const res = await fetch('/api/admin/impersonate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -373,10 +376,23 @@ export default function AdminUserDetailPage() {
         email: profile.email,
       })
       toast.success(`Now acting as ${profile.display_name || 'this user'}`)
-      router.push('/')
-    } else {
-      toast.error('Failed to start impersonation')
+      router.push(nextPath)
+      return true
     }
+    toast.error('Failed to start impersonation')
+    return false
+  }
+
+  function listingViewHref(listing: ListingRow): string {
+    return listingDetailHref({
+      id: listing.id,
+      slug: listing.slug,
+      section: listing.section,
+    })
+  }
+
+  function listingEditHref(listing: ListingRow): string {
+    return peerListingEditHref(listing.section, listing.id)
   }
 
   async function toggleVerified() {
@@ -486,12 +502,6 @@ export default function AdminUserDetailPage() {
         <p className="text-muted-foreground">User not found.</p>
       </div>
     )
-  }
-
-  const getSectionHref = (section: string) => {
-    if (section === 'surfboards') return '/boards'
-    if (section === 'new') return '/l'
-    return '/gear'
   }
 
   return (
@@ -918,10 +928,10 @@ export default function AdminUserDetailPage() {
                   <TableRow key={l.id}>
                     <TableCell>
                       <Link
-                        href={`${getSectionHref(l.section)}/${l.id}`}
+                        href={listingViewHref(l)}
                         className="font-medium text-primary hover:underline line-clamp-1 max-w-[200px]"
                       >
-                        {l.title}
+                        {l.title?.trim() || 'Untitled draft'}
                       </Link>
                     </TableCell>
                     <TableCell>
@@ -955,9 +965,17 @@ export default function AdminUserDetailPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <Link href={`${getSectionHref(l.section)}/${l.id}`}>
+                            <Link href={listingViewHref(l)}>
                               View
                             </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              void startImpersonation(listingEditHref(l))
+                            }}
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            {l.status === 'draft' ? 'Continue draft' : 'Edit listing'}
                           </DropdownMenuItem>
                           {l.status === 'active' && (
                             <DropdownMenuItem

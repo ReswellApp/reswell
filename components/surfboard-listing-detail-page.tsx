@@ -52,6 +52,7 @@ import { getBrandById } from "@/lib/brands/server"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
 import { ListingDetailEngagementMetrics } from "@/components/listing-detail-engagement-metrics"
+import { ListingKlarnaAsLowAs } from "@/components/features/listings/listing-klarna-as-low-as"
 import { ListingMobileBuySummary } from "@/components/features/listings/listing-mobile-buy-summary"
 import { ListingDetailPeerPurchaseActionsLoader } from "@/components/listing-detail-peer-purchase-actions-loader"
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
@@ -481,6 +482,8 @@ export async function SurfboardListingDetailPage({
 
             <div className="min-w-0 max-w-full max-lg:order-2 lg:hidden">
               <ListingMobileBuySummary
+                listingId={board.id}
+                isLoggedIn={!!user}
                 condition={board.condition}
                 priceUsd={isSold ? publicListPriceUsd : board.price}
                 isSold={isSold}
@@ -558,6 +561,7 @@ export async function SurfboardListingDetailPage({
                       {shippingPriceCaption ? (
                         <p className="mt-1.5 text-[15px] text-muted-foreground">{shippingPriceCaption}</p>
                       ) : null}
+                      <ListingKlarnaAsLowAs listingId={board.id} isLoggedIn={!!user} className="mt-2" />
                     </div>
                     {buyerAgreedPriceUsd != null ? (
                       <p className="mt-2 text-[15px] font-medium text-emerald-700 dark:text-emerald-400">

@@ -30,3 +30,10 @@ export function acceptedOfferCheckoutHref(offerId: string): string {
   params.set("offer", offerId)
   return `/checkout?${params.toString()}`
 }
+
+/** Cart URL that adds this listing after auth (used by PDP Klarna). */
+export function cartAddListingHref(listingId: string): string {
+  const params = new URLSearchParams()
+  params.set("add", listingId)
+  return `/cart?${params.toString()}`
+}

@@ -26,6 +26,7 @@ export type AdminUserDirectoryRow = {
   last_active_at: string | null
   listings_count: number
   active_listings_count: number
+  draft_listings_count: number
   sales_count: number
   gmv: number
 }
@@ -109,12 +110,13 @@ export async function loadAdminUsersDirectory(): Promise<
       ),
     ])
 
-    const listingMap = new Map<string, { total: number; active: number }>()
+    const listingMap = new Map<string, { total: number; active: number; draft: number }>()
     for (const l of listings) {
       if (!l.user_id) continue
-      const agg = listingMap.get(l.user_id) ?? { total: 0, active: 0 }
+      const agg = listingMap.get(l.user_id) ?? { total: 0, active: 0, draft: 0 }
       agg.total += 1
       if (l.status === 'active') agg.active += 1
+      if (l.status === 'draft') agg.draft += 1
       listingMap.set(l.user_id, agg)
     }
 
@@ -145,6 +147,7 @@ export async function loadAdminUsersDirectory(): Promise<
         last_active_at: p.last_active_at,
         listings_count: listingAgg?.total ?? 0,
         active_listings_count: listingAgg?.active ?? 0,
+        draft_listings_count: listingAgg?.draft ?? 0,
         sales_count: salesAgg?.count ?? 0,
         gmv: salesAgg?.gmv ?? 0,
       }

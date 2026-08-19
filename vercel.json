@@ -26,6 +26,14 @@
       "schedule": "0 8 * * *"
     },
     {
+      "path": "/api/cron/klaviyo-unfinished-listings",
+      "schedule": "40 * * * *"
+    },
+    {
+      "path": "/api/cron/klaviyo-giveaway-listing-reminders",
+      "schedule": "50 * * * *"
+    },
+    {
       "path": "/api/cron/seller-message-inactivity",
       "schedule": "0 7 * * *"
     },
