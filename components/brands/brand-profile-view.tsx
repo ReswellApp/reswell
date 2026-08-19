@@ -39,9 +39,6 @@ export function BrandProfileView({
   const metaBits = [
     brand.founder_name ? `Founded by ${brand.founder_name}` : null,
     brand.lead_shaper_name ? `Shaped by ${brand.lead_shaper_name}` : null,
-    brand.model_count > 0
-      ? `${brand.model_count} model${brand.model_count === 1 ? "" : "s"}`
-      : null,
   ].filter((bit): bit is string => bit != null)
 
   return (
