@@ -14,7 +14,10 @@ import {
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 import { MESSAGE_BLOCKED_POLICY_ERROR } from "@/lib/messages/policy-errors"
-import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
+import {
+  messagePolicyBlocksDelivery,
+  type MessagePolicyReasonCode,
+} from "@/lib/messages/fraud-reason-codes"
 import type { MessageSendRestrictionActionResult } from "@/lib/messages/send-restriction-errors"
 import { evaluateUserMessageSend } from "@/lib/services/accountRestrictions"
 import { sendSellerReviewRequestForOrder } from "@/lib/services/sellerReviewRequest"
@@ -202,6 +205,22 @@ function policyBlockedSendResult(reasonCode: MessagePolicyReasonCode) {
   return { error: MESSAGE_BLOCKED_POLICY_ERROR, policyReason: reasonCode } as const
 }
 
+/** Persist a fraud_messages row. Returns a blocked send result only for reasons that still stop delivery. */
+async function captureAndMaybeBlockPolicyViolation(row: {
+  conversationId: string
+  senderId: string
+  recipientId: string
+  listingId: string | null
+  content: string
+  reasonCode: MessagePolicyReasonCode
+}) {
+  await capturePolicyBlockedDmContent(row)
+  if (!messagePolicyBlocksDelivery(row.reasonCode)) {
+    return null
+  }
+  return policyBlockedSendResult(row.reasonCode)
+}
+
 function sendRestrictionBlockedResult(
   guard: Extract<Awaited<ReturnType<typeof evaluateUserMessageSend>>, { ok: false }>,
 ): MessageSendRestrictionActionResult {
@@ -354,7 +373,7 @@ export async function sendMarketplaceListingMessage(input: unknown) {
     body,
   )
   if (policyViolation) {
-    await capturePolicyBlockedDmContent({
+    const blocked = await captureAndMaybeBlockPolicyViolation({
       conversationId: conversation.id,
       senderId: user.id,
       recipientId: receiverId,
@@ -362,7 +381,7 @@ export async function sendMarketplaceListingMessage(input: unknown) {
       content: body,
       reasonCode: policyViolation,
     })
-    return policyBlockedSendResult(policyViolation)
+    if (blocked) return blocked
   }
 
   const { data: inserted, error: msgError } = await supabase
@@ -475,7 +494,7 @@ export async function sendListingMessage(input: {
     body,
   )
   if (policyViolation) {
-    await capturePolicyBlockedDmContent({
+    const blocked = await captureAndMaybeBlockPolicyViolation({
       conversationId: conversation.id,
       senderId: user.id,
       recipientId: seller_id,
@@ -483,7 +502,7 @@ export async function sendListingMessage(input: {
       content: body,
       reasonCode: policyViolation,
     })
-    return policyBlockedSendResult(policyViolation)
+    if (blocked) return blocked
   }
 
   const { data: inserted, error: msgError } = await supabase
@@ -577,7 +596,7 @@ export async function sendConversationReply(input: {
     body,
   )
   if (policyViolation) {
-    await capturePolicyBlockedDmContent({
+    const blocked = await captureAndMaybeBlockPolicyViolation({
       conversationId: conv.id,
       senderId: user.id,
       recipientId: receiverId,
@@ -585,7 +604,7 @@ export async function sendConversationReply(input: {
       content: body,
       reasonCode: policyViolation,
     })
-    return policyBlockedSendResult(policyViolation)
+    if (blocked) return blocked
   }
 
   const { data: inserted, error: msgError } = await supabase
@@ -761,7 +780,7 @@ export async function sendConversationLocationReply(input: unknown) {
     formattedAddress,
   )
   if (policyViolation) {
-    await capturePolicyBlockedDmContent({
+    const blocked = await captureAndMaybeBlockPolicyViolation({
       conversationId: conv.id,
       senderId: user.id,
       recipientId: receiverId,
@@ -769,7 +788,7 @@ export async function sendConversationLocationReply(input: unknown) {
       content: formattedAddress,
       reasonCode: policyViolation,
     })
-    return policyBlockedSendResult(policyViolation)
+    if (blocked) return blocked
   }
 
   const metadataPayload = messageLocationMetadataSchema.parse({

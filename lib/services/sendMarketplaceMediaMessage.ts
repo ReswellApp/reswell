@@ -8,7 +8,10 @@ import { evaluateUserMessageSend } from "@/lib/services/accountRestrictions"
 import { trackKlaviyoSupportTicketResponse } from "@/lib/klaviyo/track-support-ticket-response"
 import { trackKlaviyoMessageSent } from "@/lib/klaviyo/track-message-sent"
 import { MESSAGE_BLOCKED_POLICY_ERROR } from "@/lib/messages/policy-errors"
-import type { MessagePolicyReasonCode } from "@/lib/messages/fraud-reason-codes"
+import {
+  messagePolicyBlocksDelivery,
+  type MessagePolicyReasonCode,
+} from "@/lib/messages/fraud-reason-codes"
 import {
   MARKETPLACE_MESSAGE_ATTACHMENTS_BUCKET,
   composeMediaAttachmentMessageBody,
@@ -126,12 +129,14 @@ export async function sendMarketplaceMediaMessage(input: {
       } catch (e) {
         console.error("[sendMarketplaceMediaMessage] fraud_messages insert:", e)
       }
-      await removeOrphanAttachment(service, attachment.path)
-      return {
-        ok: false,
-        error: MESSAGE_BLOCKED_POLICY_ERROR,
-        policyReason: policyViolation,
-        status: 400,
+      if (messagePolicyBlocksDelivery(policyViolation)) {
+        await removeOrphanAttachment(service, attachment.path)
+        return {
+          ok: false,
+          error: MESSAGE_BLOCKED_POLICY_ERROR,
+          policyReason: policyViolation,
+          status: 400,
+        }
       }
     }
   }

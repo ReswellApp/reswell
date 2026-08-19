@@ -63,9 +63,9 @@ export function FraudMessagesAdminClient() {
               Intercepted marketplace chats
             </CardTitle>
             <CardDescription>
-              Sender text blocked before delivery — phone numbers, email addresses, off-platform
-              payment terms (Venmo, PayPal, cash), and phishing or impersonation scams. Users were
-              not suspended.
+              Flagged marketplace DMs. Email, off-platform payment (Venmo, PayPal, cash), and
+              phishing or impersonation scams are blocked before delivery. Phone numbers are
+              captured here but still sent. Users were not suspended.
             </CardDescription>
           </div>
           <Button variant="outline" size="sm" disabled={loading} onClick={() => void load()}>
