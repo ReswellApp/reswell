@@ -34,13 +34,6 @@ const LIGHTBOX_SURFACE_CLASS = "bg-[#f5f5f7] dark:bg-muted"
 /** Mobile: a little larger than contain, well short of full cover, so edges stay mostly visible. */
 const MOBILE_OVERSCAN_CLASS = "origin-top object-top scale-[1.12]"
 
-function isCachedImageSrc(src: string): boolean {
-  if (!src || typeof window === "undefined") return false
-  const probe = new window.Image()
-  probe.src = src
-  return probe.complete && probe.naturalWidth > 0
-}
-
 const LIGHTBOX_IMAGE_SIZES =
   "(max-width: 768px) 100vw, (max-width: 1280px) 70vw, 60vw"
 
@@ -113,17 +106,13 @@ function LightboxSlide({
     () => (src && src !== "/placeholder.svg" ? withListingMediaPdpVariant(src) : ""),
     [src],
   )
-  const [loadedSrc, setLoadedSrc] = useState<string | null>(() =>
-    isCachedImageSrc(src) ? src : null,
-  )
-  const [placeholderLoaded, setPlaceholderLoaded] = useState(() =>
-    Boolean(placeholderSrc) && isCachedImageSrc(placeholderSrc),
-  )
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null)
+  const [placeholderLoaded, setPlaceholderLoaded] = useState(false)
   const [trackedSrc, setTrackedSrc] = useState(src)
   if (src !== trackedSrc) {
     setTrackedSrc(src)
-    setLoadedSrc(isCachedImageSrc(src) ? src : null)
-    setPlaceholderLoaded(Boolean(placeholderSrc) && isCachedImageSrc(placeholderSrc))
+    setLoadedSrc(null)
+    setPlaceholderLoaded(false)
   }
   const [aspectRatio, setAspectRatio] = useState(initialAspectRatio)
   const pinchRef = useRef<ReactZoomPanPinchContentRef | null>(null)
@@ -147,55 +136,8 @@ function LightboxSlide({
     }
   }, [isActive, onScaleChange])
 
-  useEffect(() => {
-    if (!placeholderSrc) return
-
-    const img = new window.Image()
-    img.decoding = "async"
-    img.src = placeholderSrc
-    if (img.complete && img.naturalWidth > 0) {
-      setPlaceholderLoaded(true)
-      return
-    }
-
-    const markPlaceholderLoaded = () => setPlaceholderLoaded(true)
-    img.addEventListener("load", markPlaceholderLoaded)
-    return () => img.removeEventListener("load", markPlaceholderLoaded)
-  }, [placeholderSrc])
-
-  useEffect(() => {
-    if (!src) return
-
-    const img = new window.Image()
-    img.decoding = "async"
-    img.src = src
-    if (img.complete && img.naturalWidth > 0) {
-      setLoadedSrc(src)
-      if (isActive && !isMaxMd) {
-        requestAnimationFrame(() => {
-          pinchRef.current?.centerView(1, 0)
-        })
-      }
-      return
-    }
-
-    const markFullLoaded = () => {
-      setLoadedSrc(src)
-      if (isActive && !isMaxMd) {
-        requestAnimationFrame(() => {
-          pinchRef.current?.centerView(1, 0)
-        })
-      }
-    }
-    img.addEventListener("load", markFullLoaded)
-    return () => img.removeEventListener("load", markFullLoaded)
-  }, [isActive, isMaxMd, src])
-
-  const cachedPreview =
-    previewSrc && previewSrc !== src && isCachedImageSrc(previewSrc) ? previewSrc : ""
-  const paintUnderlay =
-    placeholderLoaded && placeholderSrc ? placeholderSrc : cachedPreview
-  const slideReady = loadedSrc === src || placeholderLoaded || Boolean(cachedPreview)
+  const underlaySrc = placeholderSrc || (previewSrc && previewSrc !== src ? previewSrc : "")
+  const slideReady = loadedSrc === src || placeholderLoaded
   const [scale, setScale] = useState(1)
   const isZoomedOut = scale <= 1 + ZOOM_TOLERANCE
   const scaleRef = useRef(1)
@@ -216,23 +158,13 @@ function LightboxSlide({
   }
 
   const fitCard = !isMaxMd
-  const frameStyle: CSSProperties = {
-    ...(fitCard
-      ? {
-          aspectRatio,
-          width: `min(100cqi, calc(100cqh * ${aspectRatio}))`,
-          height: `min(100cqh, calc(100cqi / ${aspectRatio}))`,
-        }
-      : {}),
-    ...(paintUnderlay && loadedSrc !== src
-      ? {
-          backgroundImage: `url("${paintUnderlay}")`,
-          backgroundSize: fitCard ? "contain" : "112% auto",
-          backgroundPosition: fitCard ? "center" : "top center",
-          backgroundRepeat: "no-repeat",
-        }
-      : {}),
-  }
+  const frameStyle: CSSProperties | undefined = fitCard
+    ? {
+        aspectRatio,
+        width: `min(100cqi, calc(100cqh * ${aspectRatio}))`,
+        height: `min(100cqh, calc(100cqi / ${aspectRatio}))`,
+      }
+    : undefined
 
   return (
     <div
@@ -255,13 +187,38 @@ function LightboxSlide({
         style={frameStyle}
         onClick={(event) => event.stopPropagation()}
       >
-        <ListingTileShimmer
-          aria-hidden
-          className={cn(
-            "listing-tile-shimmer-overlay absolute inset-0 z-[1] rounded-none",
-            slideReady && "pointer-events-none opacity-0",
-          )}
-        />
+        {underlaySrc ? (
+          <Image
+            key={`underlay-${underlaySrc}`}
+            aria-hidden
+            src={underlaySrc}
+            alt=""
+            fill
+            unoptimized={listingImageShouldBypassOptimization(underlaySrc)}
+            draggable={false}
+            className={cn(
+              "pointer-events-none z-[2] bg-transparent select-none object-contain object-center",
+              !fitCard && MOBILE_OVERSCAN_CLASS,
+              placeholderLoaded && loadedSrc !== src ? "opacity-100" : "opacity-0",
+            )}
+            sizes={LIGHTBOX_IMAGE_SIZES}
+            priority={priority}
+            ref={(img) => {
+              if (img?.complete && img.naturalWidth > 0) setPlaceholderLoaded(true)
+            }}
+            onLoadingComplete={(img) => {
+              setPlaceholderLoaded(true)
+              rememberAspectRatio(img.naturalWidth, img.naturalHeight)
+            }}
+          />
+        ) : null}
+        {!slideReady ? (
+          <ListingTileShimmer
+            aria-hidden
+            className="listing-tile-shimmer-overlay absolute inset-0 z-[3] rounded-none"
+          />
+        ) : null}
+        <div className="absolute inset-0 z-[1]">
         <TransformWrapper
           ref={setPinchRef}
           disabled={!isActive}
@@ -293,28 +250,6 @@ function LightboxSlide({
             wrapperClass="!h-full !w-full !bg-transparent"
             contentClass="!relative !h-full !w-full !bg-transparent"
           >
-            {placeholderSrc ? (
-              <Image
-                key={placeholderSrc}
-                aria-hidden
-                src={placeholderSrc}
-                alt=""
-                fill
-                unoptimized={listingImageShouldBypassOptimization(placeholderSrc)}
-                draggable={false}
-                className={cn(
-                  "pointer-events-none select-none object-contain object-center",
-                  !fitCard && MOBILE_OVERSCAN_CLASS,
-                  loadedSrc === src ? "opacity-0" : "opacity-100",
-                )}
-                sizes={LIGHTBOX_IMAGE_SIZES}
-                priority={priority}
-                onLoadingComplete={(img) => {
-                  setPlaceholderLoaded(true)
-                  rememberAspectRatio(img.naturalWidth, img.naturalHeight)
-                }}
-              />
-            ) : null}
             <Image
               key={src}
               src={src}
@@ -323,7 +258,7 @@ function LightboxSlide({
               unoptimized
               draggable={false}
               className={cn(
-                "select-none object-contain object-center transition-opacity duration-300 ease-out",
+                "bg-transparent select-none object-contain object-center transition-opacity duration-200 ease-out",
                 !fitCard && MOBILE_OVERSCAN_CLASS,
                 loadedSrc === src ? "opacity-100" : "opacity-0",
               )}
@@ -331,6 +266,7 @@ function LightboxSlide({
               priority={priority}
               onLoadingComplete={(img) => {
                 setLoadedSrc(src)
+                setPlaceholderLoaded(true)
                 rememberAspectRatio(img.naturalWidth, img.naturalHeight)
                 if (isActive && !isMaxMd) {
                   requestAnimationFrame(() => {
@@ -341,6 +277,7 @@ function LightboxSlide({
             />
           </TransformComponent>
         </TransformWrapper>
+        </div>
       </div>
     </div>
   )
@@ -416,6 +353,22 @@ export function ListingImageLightbox({
   useEffect(() => {
     if (!open) setScale(1)
   }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    for (const url of proxiedUrls) {
+      if (!url || url === "/placeholder.svg") continue
+      const full = new window.Image()
+      full.decoding = "async"
+      full.src = url
+      const pdp = withListingMediaPdpVariant(url)
+      if (pdp !== url) {
+        const mid = new window.Image()
+        mid.decoding = "async"
+        mid.src = pdp
+      }
+    }
+  }, [open, proxiedUrls])
 
   useEffect(() => {
     if (!emblaApi || !open) return
@@ -679,7 +632,7 @@ function LightboxThumbRow({
                   : "ring-[0.5px] ring-muted-foreground/25",
               )}
             >
-              <span className="relative block w-11 shrink-0 bg-muted" style={{ paddingBottom: "133.33%" }}>
+              <span className="listing-tile-shimmer relative block w-11 shrink-0" style={{ paddingBottom: "133.33%" }}>
                 <span className="absolute inset-0">
                   <Image
                     src={src || "/placeholder.svg"}

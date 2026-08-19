@@ -19,17 +19,22 @@ export interface ListingGalleryPhotoProps {
   onLoaded?: (size: { naturalWidth: number; naturalHeight: number }) => void
 }
 
-function markReadyIfComplete(
-  img: HTMLImageElement | null,
-  mark: () => void,
-): void {
+function markReadyIfComplete(img: HTMLImageElement | null, mark: () => void): void {
   if (img?.complete && img.naturalWidth > 0) mark()
 }
 
+function rememberSize(
+  img: { naturalWidth: number; naturalHeight: number },
+  onLoaded?: ListingGalleryPhotoProps["onLoaded"],
+): void {
+  if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+    onLoaded?.({ naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight })
+  }
+}
+
 /**
- * Listing gallery photo — wave shimmer until a real bitmap is painted, then a
- * fade. Optional `previewSrc` shows the browse-sized image first so /l is not
- * a grey box while the larger PDP variant decodes.
+ * Listing gallery photo. The wave skeleton is the canvas — bitmaps stay invisible
+ * until they have actually painted, so the well never flashes white/grey.
  */
 export function ListingGalleryPhoto({
   src,
@@ -68,14 +73,17 @@ export function ListingGalleryPhoto({
           draggable={false}
           aria-hidden
           className={cn(
-            "pointer-events-none select-none object-cover object-center",
+            "pointer-events-none bg-transparent select-none object-cover object-center",
             className,
-            srcReady ? "opacity-0" : "opacity-100",
+            previewReady && !srcReady ? "opacity-100" : "opacity-0",
           )}
           sizes={sizes}
           loading={priority ? "eager" : loading}
           ref={(img) => markReadyIfComplete(img, () => setPreviewReady(true))}
-          onLoadingComplete={() => setPreviewReady(true)}
+          onLoadingComplete={(img) => {
+            setPreviewReady(true)
+            rememberSize(img, onLoaded)
+          }}
         />
       ) : null}
       <Image
@@ -86,24 +94,18 @@ export function ListingGalleryPhoto({
         unoptimized={listingImageShouldBypassOptimization(src)}
         draggable={false}
         className={cn(
-          "pointer-events-none select-none object-cover object-center transition-opacity duration-300 ease-out",
+          "pointer-events-none bg-transparent select-none object-cover object-center transition-opacity duration-200 ease-out",
           className,
-          srcReady || !preview ? "opacity-100" : "opacity-0",
+          srcReady ? "opacity-100" : "opacity-0",
         )}
         sizes={sizes}
         priority={priority}
         fetchPriority={fetchPriority}
         loading={loading}
-        ref={(img) =>
-          markReadyIfComplete(img, () => {
-            setSrcReady(true)
-          })
-        }
+        ref={(img) => markReadyIfComplete(img, () => setSrcReady(true))}
         onLoadingComplete={(img) => {
           setSrcReady(true)
-          if (img.naturalWidth > 0 && img.naturalHeight > 0) {
-            onLoaded?.({ naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight })
-          }
+          rememberSize(img, onLoaded)
         }}
       />
       <ListingTileShimmer

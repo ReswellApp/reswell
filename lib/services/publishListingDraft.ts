@@ -86,6 +86,12 @@ export async function applyPublishedListingSideEffects(
   sellerUserId: string,
 ): Promise<void> {
   try {
+    await qualifyPublishedListingForGiveaways(supabase, listingId, sellerUserId)
+  } catch {
+    // Giveaway qualification is best-effort — never block publish.
+  }
+
+  try {
     await syncListingToIndex(supabase, listingId)
   } catch {
     // ES optional
@@ -109,15 +115,13 @@ export async function applyPublishedListingSideEffects(
     // best-effort
   }
 
-  await revalidateAfterListingSiteModeration(supabase, [listingId])
-  revalidateBoardsBrowseCatalog()
-  revalidateNavSearchSuggest()
-  await revalidateSellersAfterListingChange(supabase, sellerUserId)
-
   try {
-    await qualifyPublishedListingForGiveaways(supabase, listingId, sellerUserId)
+    await revalidateAfterListingSiteModeration(supabase, [listingId])
+    revalidateBoardsBrowseCatalog()
+    revalidateNavSearchSuggest()
+    await revalidateSellersAfterListingChange(supabase, sellerUserId)
   } catch {
-    // Giveaway qualification is best-effort — never block publish.
+    // Cache revalidation is best-effort — listing is already live.
   }
 }
 

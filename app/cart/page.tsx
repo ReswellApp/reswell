@@ -7,6 +7,9 @@ import { CartPageView } from "@/components/cart-page-view"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { getFavoriteListingsForCartCarousel } from "@/lib/db/favorites"
 import { cartAddListingHref } from "@/lib/listing-href"
+import { getPublicSellerDisplayName } from "@/lib/listing-labels"
+import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import { getCartSellerAddons } from "@/lib/services/cartSellerAddons"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 import { createClient } from "@/lib/supabase/server"
 import { isUUID } from "@/lib/slugify"
@@ -60,10 +63,21 @@ export default async function CartPage({
 
   const { items, error } = await getCartPageItems()
   const cartListingIds = items.map((row) => row.listing.id)
+  const addonHosts = items
+    .filter((row) => isPeerListingSection(row.listing.section))
+    .map((row) => ({
+      listingId: row.listing.id,
+      sellerId: row.listing.user_id,
+      title: row.listing.title,
+      section: row.listing.section,
+      sellerName: getPublicSellerDisplayName(row.listing.profiles),
+      sellerSlug: row.listing.profiles?.seller_slug ?? null,
+    }))
 
-  const [{ favorites: favoritedListingIds }, carouselResult] = await Promise.all([
+  const [{ favorites: favoritedListingIds }, carouselResult, addonResult] = await Promise.all([
     getFavoriteListingIds(),
     getFavoriteListingsForCartCarousel(supabase, user.id, { excludeListingIds: cartListingIds }),
+    getCartSellerAddons(supabase, addonHosts, cartListingIds),
   ])
 
   return (
@@ -72,6 +86,10 @@ export default async function CartPage({
       loadError={error}
       favoritedListingIds={favoritedListingIds}
       favoriteCarouselListings={carouselResult.listings}
+      sellerAddonListings={addonResult.listings}
+      sellerAddonSubtitle={addonResult.subtitle}
+      sellerAddonViewAllHref={addonResult.viewAllHref}
+      sellerAddonViewAllLabel={addonResult.viewAllLabel}
       buyerId={user.id}
     />
   )

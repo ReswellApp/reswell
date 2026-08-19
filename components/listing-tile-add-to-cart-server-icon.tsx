@@ -92,6 +92,9 @@ export function ListingTileAddToCartServerIcon({
       })
       setAdded(true)
       window.dispatchEvent(new CustomEvent("cartUpdated"))
+      if (pathname === "/cart") {
+        router.refresh()
+      }
       window.setTimeout(() => setAdded(false), 1600)
     } finally {
       setLoading(false)

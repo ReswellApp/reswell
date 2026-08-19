@@ -275,7 +275,7 @@ export async function POST(request: NextRequest) {
   }
   await revalidateSellersAfterListingChange(supabase, user.id)
   revalidateNavSearchSuggest()
-  void qualifyPublishedListingForGiveaways(
+  await qualifyPublishedListingForGiveaways(
     supabase,
     listing.id,
     user.id,

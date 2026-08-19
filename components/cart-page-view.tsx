@@ -28,7 +28,9 @@ import {
   CartFavoritesCarousel,
   type CartCarouselFavoriteListing,
 } from "@/components/features/cart/cart-favorites-carousel"
+import { CartSellerAddonsCarousel } from "@/components/features/cart/cart-seller-addons-carousel"
 import { CartOrderSummary } from "@/components/features/cart/cart-order-summary"
+import type { CartSellerAddonCarouselItem } from "@/lib/services/cartSellerAddons"
 import { cn } from "@/lib/utils"
 import { FavoriteButton } from "@/components/favorite-button"
 
@@ -67,12 +69,20 @@ export function CartPageView({
   loadError,
   favoritedListingIds,
   favoriteCarouselListings,
+  sellerAddonListings,
+  sellerAddonSubtitle,
+  sellerAddonViewAllHref,
+  sellerAddonViewAllLabel,
   buyerId,
 }: {
   initialItems: CartPageItem[]
   loadError: string | null
   favoritedListingIds: string[]
   favoriteCarouselListings: CartCarouselFavoriteListing[]
+  sellerAddonListings: CartSellerAddonCarouselItem[]
+  sellerAddonSubtitle: string
+  sellerAddonViewAllHref: string | null
+  sellerAddonViewAllLabel: string
   buyerId: string
 }) {
   const router = useRouter()
@@ -419,6 +429,15 @@ export function CartPageView({
             />
           </aside>
         </div>
+
+        <CartSellerAddonsCarousel
+          initialListings={sellerAddonListings}
+          subtitle={sellerAddonSubtitle}
+          viewAllHref={sellerAddonViewAllHref}
+          viewAllLabel={sellerAddonViewAllLabel}
+          buyerId={buyerId}
+          favoritedListingIds={favoritedListingIds}
+        />
 
         <CartBuyingFaq className="mt-16 border-t border-neutral-200 pt-12 dark:border-white/10" />
 

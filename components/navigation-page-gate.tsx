@@ -68,7 +68,8 @@ export function NavigationPageGate({ children }: { children: ReactNode }) {
         key={navCount}
         className={cn(
           flatMobileMessagesInbox ? "flex w-full flex-col" : "flex w-full min-h-0 min-w-0 flex-1 flex-col",
-          navCount > 0 && "page-enter",
+          // Listing photos should stay on screen — opacity-0 page-enter is a white flash on /l.
+          navCount > 0 && !pathname.startsWith("/l/") && "page-enter",
         )}
         onAnimationEnd={(event) => {
           // Drop the class so no animated transform can linger on this wrapper.

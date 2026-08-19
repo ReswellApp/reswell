@@ -10,9 +10,11 @@ import {
   proxiedListingImageSrc,
   withListingMediaPdpVariant,
 } from "@/lib/listing-media-proxy-url"
-import { Maximize2 } from "lucide-react"
+import { Maximize2, Play } from "lucide-react"
 import { ListingGalleryPhoto } from "@/components/features/listings/listing-gallery-photo"
 import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
+import { ListingPdpVideo } from "@/components/features/listings/listing-pdp-video"
+import type { ListingPdpVideoSource } from "@/lib/primary-listing-video"
 
 function preloadListingImageLightbox() {
   return import("@/components/features/listings/listing-image-lightbox")
@@ -32,6 +34,8 @@ interface ImageGalleryProps {
     thumbnail_url?: string | null
   }>
   title: string
+  /** Optional listing video — rendered as the last carousel slide, not above the photos. */
+  video?: ListingPdpVideoSource | null
   /** Sold listings: SOLD badge on the hero. */
   sold?: boolean
   /** Mobile PDP: edge-to-edge hero, natural ratio, height-capped so title stays nearby. */
@@ -64,15 +68,15 @@ function warmHeroSlideNeighbors(urls: string[], activeIndex: number): void {
   }
 }
 
-function gallerySlideNearSelected(i: number, selected: number, total: number): boolean {
-  if (total <= 1) return true
-  if (i === selected) return true
-  if (i === (selected + 1) % total) return true
-  if (i === (selected - 1 + total) % total) return true
-  return false
-}
-
-export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, dimensionsLine }: ImageGalleryProps) {
+export function ImageGallery({
+  images,
+  title,
+  video,
+  sold,
+  compactMobile,
+  heroOverlay,
+  dimensionsLine,
+}: ImageGalleryProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   /** Mount once the zoom chunk is ready so the first enlarge is a state change, not a white shell. */
@@ -86,7 +90,10 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
   const suppressHeroClickRef = useRef(false)
   const thumbRowRef = useRef<HTMLDivElement>(null)
 
-  const canSwipe = images.length > 1
+  const hasVideo = Boolean(video?.url?.trim())
+  const videoIndex = hasVideo ? images.length : -1
+  const slideCount = images.length + (hasVideo ? 1 : 0)
+  const canSwipe = slideCount > 1
   const [emblaRef, emblaApi] = useEmblaCarousel({
     loop: canSwipe,
     align: "start",
@@ -95,10 +102,13 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
     watchDrag: canSwipe,
   })
 
-  const mobileHeroAspectRatio =
-    imageAspectRatios[frameIndex] ?? imageAspectRatios[selectedIndex] ?? 3 / 4
+  const isVideoSelected = hasVideo && selectedIndex === videoIndex
+  const isVideoFrame = hasVideo && frameIndex === videoIndex
+  const mobileHeroAspectRatio = isVideoFrame
+    ? 3 / 4
+    : imageAspectRatios[frameIndex] ?? imageAspectRatios[selectedIndex] ?? 3 / 4
 
-  /** One URL per gallery slide (same order as `images`) so lightbox index stays aligned. */
+  /** Photo URLs only — video is a trailing carousel slide and stays out of the lightbox. */
   const proxiedUrls = useMemo(
     () =>
       images.map((img) => proxiedListingImageSrc(img.url) || "/placeholder.svg"),
@@ -168,8 +178,12 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
     emblaApi.scrollTo(selectedIndex, true)
   }, [emblaApi, selectedIndex])
 
-  // Hero: warm active slide + neighbors. Lightbox warms all slides in openLightbox / onOpenChange.
+  // Warm every hero + tile URL so swipe never lands on an unloaded white slide.
   useEffect(() => {
+    for (const url of heroUrls) warmListingImageSrc(url)
+    for (const url of previewUrls) {
+      if (url) warmListingImageSrc(url)
+    }
     warmHeroSlideNeighbors(galleryUrls, selectedIndex)
   }, [galleryUrlsKey, selectedIndex])
 
@@ -203,7 +217,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
     return () => window.clearTimeout(id)
   }, [])
 
-  if (images.length === 0) {
+  if (slideCount === 0) {
     return (
       <div
         className="relative w-full rounded-2xl bg-[#f5f5f7] text-muted-foreground shadow-sm ring-1 ring-black/[0.04] dark:bg-muted dark:ring-white/[0.06]"
@@ -219,7 +233,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
       emblaApi.scrollPrev()
       return
     }
-    setSelectedIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
+    setSelectedIndex((prev) => (prev === 0 ? slideCount - 1 : prev - 1))
   }
 
   function goNext() {
@@ -227,7 +241,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
       emblaApi.scrollNext()
       return
     }
-    setSelectedIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))
+    setSelectedIndex((prev) => (prev === slideCount - 1 ? 0 : prev + 1))
   }
 
   function onHeroPointerDown(event: PointerEvent<HTMLDivElement>) {
@@ -252,6 +266,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
   }
 
   function openLightbox() {
+    if (isVideoSelected || proxiedUrls.length === 0) return
     for (const url of proxiedUrls) warmListingImageSrc(url)
     setLightboxIndex(selectedIndex)
     setLightboxMounted(true)
@@ -313,19 +328,24 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
           </div>
         ) : null}
 
-        <div className="pointer-events-none absolute bottom-3 left-3 z-[8] flex size-8 items-center justify-center rounded-full bg-background/75 text-foreground shadow-sm backdrop-blur-md">
-          <Maximize2 className="size-3.5 opacity-70" aria-hidden />
-          <span className="sr-only">Enlarge</span>
-        </div>
+        {isVideoSelected ? null : (
+          <div className="pointer-events-none absolute bottom-3 left-3 z-[8] flex size-8 items-center justify-center rounded-full bg-background/75 text-foreground shadow-sm backdrop-blur-md">
+            <Maximize2 className="size-3.5 opacity-70" aria-hidden />
+            <span className="sr-only">Enlarge</span>
+          </div>
+        )}
 
         <div
           ref={emblaRef}
-          className="absolute inset-0 z-[1] cursor-zoom-in overflow-hidden overscroll-x-contain outline-none ring-inset ring-offset-0 transition-[box-shadow] focus-visible:ring-2 focus-visible:ring-ring"
-          role="button"
-          tabIndex={0}
-          aria-haspopup="dialog"
-          aria-expanded={lightboxOpen}
-          aria-label="View enlarged photos"
+          className={cn(
+            "absolute inset-0 z-[1] overflow-hidden overscroll-x-contain outline-none ring-inset ring-offset-0 transition-[box-shadow] focus-visible:ring-2 focus-visible:ring-ring",
+            isVideoSelected ? "cursor-default" : "cursor-zoom-in",
+          )}
+          role={hasVideo ? undefined : "button"}
+          tabIndex={hasVideo ? undefined : 0}
+          aria-haspopup={hasVideo ? undefined : "dialog"}
+          aria-expanded={hasVideo ? undefined : lightboxOpen}
+          aria-label={hasVideo ? undefined : "View enlarged photos"}
           onPointerEnter={() => {
             void preloadListingImageLightbox().then(() => setLightboxMounted(true))
           }}
@@ -347,7 +367,6 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
           <div className="flex h-full touch-pan-y will-change-transform">
             {images.map((image, i) => {
               const isSelected = i === selectedIndex
-              const nearSelected = gallerySlideNearSelected(i, selectedIndex, images.length)
               return (
                 <div
                   key={image.id || `hero-${i}-${image.url}`}
@@ -360,7 +379,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
                     alt={`${title} - Image ${i + 1}`}
                     priority={i === 0 && selectedIndex === 0}
                     fetchPriority={isSelected ? "high" : "auto"}
-                    loading={nearSelected ? "eager" : "lazy"}
+                    loading="eager"
                     sizes="(max-width: 1024px) 100svw, 50svw"
                     onLoaded={({ naturalWidth, naturalHeight }) => {
                       const ratio = naturalWidth / naturalHeight
@@ -373,6 +392,21 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
                 </div>
               )
             })}
+            {hasVideo && video ? (
+              <div
+                key={video.id || "hero-video"}
+                className="relative h-full min-w-0 shrink-0 grow-0 basis-full bg-black"
+                aria-hidden={!isVideoSelected}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <ListingPdpVideo
+                  video={video}
+                  title={title}
+                  fill
+                  active={isVideoSelected}
+                />
+              </div>
+            ) : null}
           </div>
         </div>
         {sold ? (
@@ -381,13 +415,13 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
           </div>
         ) : null}
 
-        {images.length > 1 && !compactMobile && (
+        {slideCount > 1 && !compactMobile && (
           <>
             <ListingImageCarouselNavButton
               direction="prev"
               variant="embed"
               sideClassName="left-3"
-              srLabel="Previous image"
+              srLabel="Previous slide"
               onClick={(e) => {
                 e.stopPropagation()
                 goPrev()
@@ -397,7 +431,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
               direction="next"
               variant="embed"
               sideClassName="right-3"
-              srLabel="Next image"
+              srLabel="Next slide"
               onClick={(e) => {
                 e.stopPropagation()
                 goNext()
@@ -407,16 +441,16 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
         )}
 
         {/* Image counter */}
-        {images.length > 1 && (
+        {slideCount > 1 && (
           <div className="absolute bottom-3 right-3 z-10 rounded-full bg-background/75 px-2.5 py-1 text-xs font-medium tabular-nums text-foreground backdrop-blur-md">
-            {selectedIndex + 1} / {images.length}
+            {selectedIndex + 1} / {slideCount}
           </div>
         )}
         </div>
       </div>
 
       {/* Thumbnails - explicit 3:4 box (padding-bottom) so fill Image has a defined size */}
-      {images.length > 1 && (
+      {slideCount > 1 && (
         <div
           ref={thumbRowRef}
           className={cn(
@@ -448,7 +482,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
             >
               <span
                 className={cn(
-                  "relative block bg-muted",
+                  "listing-tile-shimmer relative block",
                   compactMobile ? "w-11 md:w-16" : "w-16",
                 )}
                 style={{ paddingBottom: "133.33%" }}
@@ -470,6 +504,54 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay, 
               </span>
             </button>
           ))}
+          {hasVideo && video ? (
+            <button
+              key={video.id || "thumb-video"}
+              type="button"
+              data-gallery-thumb={videoIndex}
+              onClick={() => {
+                if (emblaApi && canSwipe) {
+                  emblaApi.scrollTo(videoIndex)
+                  return
+                }
+                setSelectedIndex(videoIndex)
+                setFrameIndex(videoIndex)
+              }}
+              aria-label="Show video in gallery"
+              className={cn(
+                "flex-shrink-0 overflow-hidden bg-muted transition-[box-shadow,ring-color] duration-200",
+                compactMobile ? "rounded-lg md:rounded-2xl" : "rounded-2xl",
+                isVideoSelected
+                  ? "ring-[1.5px] ring-offset-2 ring-offset-background ring-foreground/80"
+                  : "ring-[0.5px] ring-muted-foreground/25 hover:ring-muted-foreground/45"
+              )}
+            >
+              <span
+                className={cn(
+                  "listing-tile-shimmer relative block",
+                  compactMobile ? "w-11 md:w-16" : "w-16",
+                )}
+                style={{ paddingBottom: "133.33%" }}
+              >
+                <span className="absolute inset-0 bg-black">
+                  {video.thumbnail_url?.trim() ? (
+                    <ListingGalleryPhoto
+                      src={
+                        proxiedListingImageSrc(video.thumbnail_url) ||
+                        video.thumbnail_url
+                      }
+                      alt={`${title} - Video thumbnail`}
+                      loading={isVideoSelected ? "eager" : "lazy"}
+                      sizes="64px"
+                    />
+                  ) : null}
+                  <span className="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center bg-black/30">
+                    <Play className="size-3.5 fill-white text-white" aria-hidden />
+                  </span>
+                </span>
+              </span>
+            </button>
+          ) : null}
         </div>
       )}
     </div>

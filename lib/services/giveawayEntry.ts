@@ -135,13 +135,22 @@ export async function enterGiveaway(
   return { ok: true, entry: created, alreadyEntered: false }
 }
 
+function giveawayWriteClient(fallback: SupabaseClient): SupabaseClient {
+  try {
+    return createServiceRoleClient()
+  } catch {
+    return fallback
+  }
+}
+
 export async function qualifyPublishedListingForGiveaways(
   supabase: SupabaseClient,
   listingId: string,
   sellerUserId: string,
   sellerEmail?: string | null,
 ): Promise<void> {
-  const { data, error } = await supabase
+  const db = giveawayWriteClient(supabase)
+  const { data, error } = await db
     .from("listings")
     .select("id, section, status, user_id")
     .eq("id", listingId)
@@ -160,7 +169,7 @@ export async function qualifyPublishedListingForGiveaways(
   const now = new Date().toISOString()
   for (const giveaway of openGiveaways) {
     const existing = await getGiveawayEntryForUser(
-      supabase,
+      db,
       sellerUserId,
       giveaway.slug,
     )
@@ -169,7 +178,7 @@ export async function qualifyPublishedListingForGiveaways(
 
     if (existing?.status === "qualified") {
       if (!existing.listingId) {
-        await updateGiveawayEntry(supabase, {
+        await updateGiveawayEntry(db, {
           userId: sellerUserId,
           giveawaySlug: giveaway.slug,
           listingId: lockedListingId,
@@ -179,7 +188,7 @@ export async function qualifyPublishedListingForGiveaways(
     }
 
     if (existing) {
-      const updated = await updateGiveawayEntry(supabase, {
+      const updated = await updateGiveawayEntry(db, {
         userId: sellerUserId,
         giveawaySlug: giveaway.slug,
         status: "qualified",
@@ -198,7 +207,7 @@ export async function qualifyPublishedListingForGiveaways(
       continue
     }
 
-    const created = await upsertGiveawayEntry(supabase, {
+    const created = await upsertGiveawayEntry(db, {
       userId: sellerUserId,
       giveawaySlug: giveaway.slug,
       preferredBrand: null,
@@ -293,6 +302,33 @@ export type GiveawayAdminDashboard = {
   entries: GiveawayAdminEntry[]
 }
 
+async function reconcilePendingGiveawayQualifications(
+  supabase: SupabaseClient,
+  slug: string,
+): Promise<boolean> {
+  const giveaway = getGiveawayBySlug(slug)
+  if (!giveaway?.requiresSurfboardListing || !isGiveawayOpen(giveaway)) {
+    return false
+  }
+
+  const rows = await listGiveawayEntriesForAdmin(supabase, slug)
+  let qualifiedAny = false
+  for (const row of rows) {
+    if (row.status === "qualified" && row.listing_id) continue
+    const publishedId =
+      row.listing_id ?? (await findPublishedSurfboardId(supabase, row.user_id))
+    if (!publishedId) continue
+    await qualifyPublishedListingForGiveaways(
+      supabase,
+      publishedId,
+      row.user_id,
+      row.profile?.email ?? null,
+    )
+    qualifiedAny = true
+  }
+  return qualifiedAny
+}
+
 export async function getGiveawayAdminDashboard(
   slug: string,
 ): Promise<GiveawayAdminDashboard | null> {
@@ -300,6 +336,10 @@ export async function getGiveawayAdminDashboard(
   if (!giveaway) return null
 
   const supabase = createServiceRoleClient()
+  // Publish can go live before the giveaway hook finishes (or get aborted on
+  // navigate). Heal pending entries that already have a published surfboard.
+  await reconcilePendingGiveawayQualifications(supabase, slug)
+
   const [ctaClicks, rows] = await Promise.all([
     countGiveawayEvents(supabase, { giveawaySlug: slug, event: "cta_click" }),
     listGiveawayEntriesForAdmin(supabase, slug),

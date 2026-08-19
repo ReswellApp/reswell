@@ -27,7 +27,6 @@ import { computeListingEnrichmentGaps } from "@/lib/sell-flow/listing-enrichment
 import { Hourglass, Flag, Truck } from "lucide-react"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ImageGallery } from "@/components/image-gallery"
-import { ListingPdpVideo } from "@/components/features/listings/listing-pdp-video"
 import { primaryListingVideo } from "@/lib/primary-listing-video"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
@@ -443,13 +442,9 @@ export async function SurfboardListingDetailPage({
                 <ListingPhotosPendingBanner imageCount={images.length} isOwner={isOwnListing} />
               )}
               <div className="relative isolate">
-                {video ? (
-                  <div className="mb-3 md:mb-4">
-                    <ListingPdpVideo video={video} title={listingTitle} />
-                  </div>
-                ) : null}
                 <ImageGallery
                   images={images}
+                  video={video}
                   title={capitalizeWords(board.title)}
                   sold={isSold}
                   compactMobile

@@ -83,13 +83,14 @@ export function GiveawayAdminDashboardView({ data }: { data: GiveawayAdminDashbo
                 <th className="px-4 py-2.5 font-medium">Entered</th>
                 <th className="px-4 py-2.5 font-medium">Listing ID</th>
                 <th className="px-4 py-2.5 font-medium">Listing</th>
+                <th className="px-4 py-2.5 font-medium">Qualified</th>
                 <th className="px-4 py-2.5 font-medium">From CTA</th>
               </tr>
             </thead>
             <tbody>
               {data.entries.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                     No entries yet.
                   </td>
                 </tr>
@@ -123,6 +124,13 @@ export function GiveawayAdminDashboardView({ data }: { data: GiveawayAdminDashbo
                       <p className="mt-0.5">
                         <Badge variant="secondary">{listingStatusLabel(entry.listingStatus)}</Badge>
                       </p>
+                    </td>
+                    <td className="px-4 py-2.5">
+                      {entry.status === "qualified" ? (
+                        <Badge>Qualified</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">Pending</span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5">
                       {entry.signedUpFromCta ? "Yes" : "No"}

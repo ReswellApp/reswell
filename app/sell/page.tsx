@@ -49,6 +49,10 @@ export default async function SellPage({
     redirect(SURFBOARD_SELL_BOARDS_CREATE_HREF)
   }
 
+  const isAdminPromise = user
+    ? fetchProfileIsAdmin(supabase, user.id)
+    : Promise.resolve(false)
+
   // Editing an existing listing or explicitly choosing surfboards goes straight
   // to the surfboard flow (/sell/boards is the canonical boards sell URL).
   // Suspense fallback is null: the client form owns its own editLoading skeleton,
@@ -56,13 +60,16 @@ export default async function SellPage({
   if (editId || type === "surfboard") {
     return (
       <Suspense fallback={null}>
-        <SellFlowShell urlEditListingId={editId} />
+        <SellFlowShell
+          urlEditListingId={editId}
+          initialActorIsAdmin={await isAdminPromise}
+        />
       </Suspense>
     )
   }
 
   const [isAdmin, trendingBrandsCatalog] = await Promise.all([
-    user ? fetchProfileIsAdmin(supabase, user.id) : Promise.resolve(false),
+    isAdminPromise,
     getCachedHomeTrendingBrandsCatalog(),
   ])
 

@@ -26,7 +26,6 @@ import { ShareButton } from "@/components/share-button"
 import { ListingOwnerManageActions } from "@/components/features/listings/listing-owner-manage-actions"
 import { ListingPhotosPendingBanner } from "@/components/listing-photos-pending-banner"
 import { ImageGallery } from "@/components/image-gallery"
-import { ListingPdpVideo } from "@/components/features/listings/listing-pdp-video"
 import { primaryListingVideo } from "@/lib/primary-listing-video"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { ContactSellerForm } from "@/components/contact-seller-form"
@@ -385,13 +384,9 @@ export async function SurfpacksListingDetailPage({
               <ListingPhotosPendingBanner imageCount={images.length} isOwner={isOwnListing} />
             )}
             <div className="relative isolate">
-              {video ? (
-                <div className="mb-3 md:mb-4">
-                  <ListingPdpVideo video={video} title={listingTitle} />
-                </div>
-              ) : null}
               <ImageGallery
                 images={images}
+                video={video}
                 title={listingTitle}
                 sold={isSold}
                 compactMobile
