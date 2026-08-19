@@ -521,14 +521,14 @@ export function ListingImageLightbox({
                 <ListingImageCarouselNavButton
                   direction="prev"
                   variant="chrome"
-                  sideClassName="pointer-events-auto left-3 hidden sm:left-4 md:left-5 md:inline-flex"
+                  sideClassName="pointer-events-auto left-3 sm:left-4 md:left-5"
                   srLabel="Previous photo"
                   onClick={goPrev}
                 />
                 <ListingImageCarouselNavButton
                   direction="next"
                   variant="chrome"
-                  sideClassName="pointer-events-auto right-3 hidden md:right-5 md:inline-flex"
+                  sideClassName="pointer-events-auto right-3 md:right-5"
                   srLabel="Next photo"
                   onClick={goNext}
                 />

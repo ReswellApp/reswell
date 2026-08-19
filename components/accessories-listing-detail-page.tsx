@@ -31,7 +31,6 @@ import { primaryListingVideo } from "@/lib/primary-listing-video"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
-import { listingTileFavoriteButtonChromeClassName } from "@/components/favorite-button-card-overlay"
 import { cn } from "@/lib/utils"
 import {
   ListingSoldDetailNotice,
@@ -49,6 +48,7 @@ import { getBrandById } from "@/lib/brands/server"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
 import { ListingDetailEngagementMetrics } from "@/components/listing-detail-engagement-metrics"
+import { ListingMobileBuySummary } from "@/components/features/listings/listing-mobile-buy-summary"
 import { ListingDetailPeerPurchaseActionsLoader } from "@/components/listing-detail-peer-purchase-actions-loader"
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
@@ -298,10 +298,6 @@ export async function AccessoriesListingDetailPage({
     }
   }
 
-  const mobileProductMetaItems = [
-    conditionWords ? `Used – ${conditionWords}` : null,
-  ].filter(Boolean) as string[]
-
   const listingViews = Number((accessory.views as number | null) ?? 0)
   let listedRelative: string | null = null
   if (accessory.created_at != null) {
@@ -349,7 +345,7 @@ export async function AccessoriesListingDetailPage({
   )
 
   return (
-    <main className="relative flex-1 w-full min-w-0 max-w-full overflow-x-clip bg-background pb-16 pt-5 sm:pb-24 sm:pt-8">
+    <main className="relative flex-1 w-full min-w-0 max-w-full overflow-x-clip bg-background pb-16 pt-2 sm:pb-24 sm:pt-3 lg:pt-8">
       <div className="container mx-auto w-full min-w-0 max-w-full px-4 sm:px-6 lg:px-8 lg:!max-w-[min(100%,1320px)] xl:!max-w-[min(100%,1480px)] 2xl:!max-w-[min(100%,1680px)]">
         <div className="mb-3 min-w-0 max-w-full pt-0.5 max-lg:mb-4 lg:mb-8">
           <Breadcrumb>
@@ -381,7 +377,7 @@ export async function AccessoriesListingDetailPage({
           </div>
         )}
 
-        <div className="mx-auto grid w-full min-w-0 max-w-full gap-x-8 gap-y-5 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:grid-rows-[auto_auto_auto] lg:[grid-template-areas:'gallery_details'_'about_details'_'similar_similar'] lg:items-start lg:gap-x-12 lg:gap-y-0 xl:gap-x-16">
+        <div className="mx-auto grid w-full min-w-0 max-w-full gap-x-8 gap-y-2 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:grid-rows-[auto_auto_auto] lg:[grid-template-areas:'gallery_details'_'about_details'_'similar_similar'] lg:items-start lg:gap-x-12 lg:gap-y-0 xl:gap-x-16">
           {/* Images */}
           <div className="min-w-0 max-lg:order-1 lg:[grid-area:gallery] lg:order-none lg:w-full lg:max-w-[29rem] lg:justify-self-start xl:max-w-[32rem]">
             {!(isSold && isOwnListing) && (
@@ -415,11 +411,8 @@ export async function AccessoriesListingDetailPage({
                           initialFavorited={isFavorited}
                           isLoggedIn={!!user}
                           refreshAfterToggle
-                          heartAccent="listingTile"
-                          className={cn(
-                            "h-11 w-11 min-h-11 min-w-11",
-                            listingTileFavoriteButtonChromeClassName,
-                          )}
+                          heartAccent="listingPdp"
+                          className="h-11 w-11 min-h-11 min-w-11"
                         />
                       </div>
                     ) : null}
@@ -434,46 +427,25 @@ export async function AccessoriesListingDetailPage({
 
           {/* Mobile price/actions block */}
           <div className="min-w-0 max-w-full max-lg:order-2 lg:hidden">
-            {isSold ? (
-              <p className="mt-2 font-headline text-3xl font-semibold tracking-tight text-[#163060] tabular-nums">
-                Sold for ${publicListPriceUsd.toFixed(2)}
-              </p>
-            ) : (
-              <div className="mt-2">
-                <p className="text-3xl font-bold tracking-tight text-foreground tabular-nums sm:text-4xl">
-                  ${listPriceNum.toFixed(2)}
-                </p>
-                {buyerAgreedPriceUsd != null ? (
-                  <p className="mt-1.5 text-[15px] font-medium text-emerald-700 dark:text-emerald-400">
-                    Your accepted price: ${buyerAgreedPriceUsd.toFixed(2)} at checkout
-                  </p>
-                ) : null}
-              </div>
-            )}
-            <ListingDetailEngagementMetrics
+            <ListingMobileBuySummary
+              condition={accessory.condition as string | null}
+              priceUsd={isSold ? publicListPriceUsd : listPriceNum}
+              isSold={isSold}
+              shippingPriceCaption={shippingPriceCaption}
+              shippingOffered={shippingOffered}
+              pickupOffered={pickupOffered}
+              shippingCostMode={boardShippingCostMode}
+              shippingFlatRate={shippingFlatRate}
+              locationLine={listingLocationLine}
+              showScarcity={!isSold && !isOwnListing && accessory.status === "active"}
               views={listingViews}
               watchers={listingWatchersCount}
               cartHolderCount={cartHolderCount}
-              isSold={isSold}
-              className="mt-2 lg:hidden"
-            />
-            {mobileProductMetaItems.length > 0 ? (
-              <div className="mt-3 space-y-2 border-y border-border/50 py-2.5 text-[14px]">
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-foreground">
-                  {mobileProductMetaItems.map((item) => (
-                    <span key={item}>{item}</span>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-            {!isSold && !isOwnListing && accessory.status === "active" ? (
-              <p className="mt-3 flex items-center gap-1.5 text-[14px] text-foreground">
-                <Hourglass className="h-[14px] w-[14px] shrink-0 text-muted-foreground" aria-hidden />
-                <span className="font-medium">Only one available</span>
-              </p>
-            ) : null}
-            {canPeerPurchase ? (
-              <div className="mt-5">
+              createdAt={accessory.created_at}
+              showPurchaseProtection={!isSold && !isOwnListing}
+              agreedPriceUsd={buyerAgreedPriceUsd}
+            >
+              {canPeerPurchase ? (
                 <ListingDetailPeerPurchaseActionsLoader
                   listingId={accessory.id}
                   checkoutListingParam={accessory.slug ?? accessory.id}
@@ -491,8 +463,8 @@ export async function AccessoriesListingDetailPage({
                     ) : undefined
                   }
                 />
-              </div>
-            ) : null}
+              ) : null}
+            </ListingMobileBuySummary>
             <div className="mt-5 border-t border-neutral-200/90 pt-5 dark:border-neutral-700/70 lg:hidden">
               {aboutSellerSection}
             </div>
@@ -644,7 +616,7 @@ export async function AccessoriesListingDetailPage({
             ) : null}
           </div>
 
-          <div className="col-span-full mt-8 min-w-0 max-w-full border-t border-neutral-200/90 pt-6 dark:border-neutral-700/70 max-lg:order-3 lg:col-span-1 lg:[grid-area:about] lg:order-none lg:mt-0 lg:border-t lg:border-neutral-200/90 lg:pt-5 dark:lg:border-neutral-700/70 xl:pt-6">
+          <div className="col-span-full min-w-0 max-w-full max-lg:order-3 lg:col-span-1 lg:[grid-area:about] lg:order-none lg:border-t lg:border-neutral-200/90 lg:pt-5 dark:lg:border-neutral-700/70 xl:pt-6">
             <Accordion type="multiple" defaultValue={["about", "specs", "shipping"]} className="w-full">
               <AccordionItem value="about" className="border-border/55">
                 <AccordionTrigger className="py-4 text-[16px] font-medium text-foreground hover:no-underline [&[data-state=open]>svg]:text-foreground">

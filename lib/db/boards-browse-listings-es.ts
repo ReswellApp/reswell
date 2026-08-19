@@ -4,16 +4,13 @@ import {
   searchBoardsBrowse,
   type BoardsBrowseEsSearchParams,
 } from "@/lib/elasticsearch/boards-browse-search"
-import { BOARDS_BROWSE_NEWEST_SORT } from "@/lib/marketplace-slug-metadata"
 import { hasAnyFacetSelection } from "@/lib/boards-browse-facets"
 import {
   BOARDS_BROWSE_PAGE_SIZE,
-  isBoardsBrowseTopPicksSort,
   SURFBOARD_BROWSE_LISTING_SELECT,
   type BoardBrowseListingRow,
   type BoardsBrowseCategoryTypePage,
 } from "@/lib/db/boards-browse-listings"
-import { listBoardsBrowseTopPickListingIdsOrdered } from "@/lib/db/boards-browse-top-picks"
 import { sortRecordsByIdOrder } from "@/lib/utils/sort-by-id-order"
 
 /**
@@ -84,12 +81,7 @@ export async function getBoardsBrowseListingsPageViaEs(
 ): Promise<BoardsBrowseCategoryTypePage | null> {
   const limit = BOARDS_BROWSE_PAGE_SIZE
   const offset = (input.page - 1) * limit
-  const isGeo = Boolean(input.geo)
-  const isTopPicks = isBoardsBrowseTopPicksSort(input.sort)
-
-  const ids = isTopPicks && !isGeo
-    ? await topPicksPageIds(supabase, input, offset, limit)
-    : await standardPageIds(input, offset, limit)
+  const ids = await standardPageIds(input, offset, limit)
 
   if (ids === null) return null
   if (ids.orderedIds.length === 0 && ids.total === 0) {
@@ -126,63 +118,4 @@ async function standardPageIds(
   })
   if (!res) return null
   return { orderedIds: res.ids, total: res.total }
-}
-
-/** Admin Top Picks pinned first (curation order), then newest — paginated across the boundary. */
-async function topPicksPageIds(
-  supabase: SupabaseClient,
-  input: BoardsBrowseEsPageInput,
-  offset: number,
-  limit: number,
-): Promise<PageIds | null> {
-  const curatedIds = await listBoardsBrowseTopPickListingIdsOrdered(supabase)
-  if (curatedIds.length === 0) {
-    return standardPageIds({ ...input, sort: BOARDS_BROWSE_NEWEST_SORT }, offset, limit)
-  }
-
-  const pickMatch = await searchBoardsBrowse({
-    ...input,
-    sort: BOARDS_BROWSE_NEWEST_SORT,
-    useSuppressionSort: true,
-    restrictToIds: curatedIds,
-    from: 0,
-    size: curatedIds.length,
-  })
-  if (!pickMatch) return null
-
-  const matched = new Set(pickMatch.ids)
-  const orderedPickIds = curatedIds.filter((id) => matched.has(id))
-  const pickCount = orderedPickIds.length
-
-  let pickSlice: string[]
-  let nonPickFrom: number
-  let nonPickSize: number
-  if (offset >= pickCount) {
-    pickSlice = []
-    nonPickFrom = offset - pickCount
-    nonPickSize = limit
-  } else if (offset + limit <= pickCount) {
-    pickSlice = orderedPickIds.slice(offset, offset + limit)
-    nonPickFrom = 0
-    nonPickSize = 0
-  } else {
-    pickSlice = orderedPickIds.slice(offset)
-    nonPickFrom = 0
-    nonPickSize = limit - pickSlice.length
-  }
-
-  const nonPick = await searchBoardsBrowse({
-    ...input,
-    sort: BOARDS_BROWSE_NEWEST_SORT,
-    useSuppressionSort: true,
-    excludeIds: curatedIds,
-    from: nonPickFrom,
-    size: nonPickSize,
-  })
-  if (!nonPick) return null
-
-  return {
-    orderedIds: [...pickSlice, ...nonPick.ids],
-    total: pickCount + nonPick.total,
-  }
 }

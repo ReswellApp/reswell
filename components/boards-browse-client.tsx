@@ -26,7 +26,7 @@ type BoardsBrowseClientProps = {
   /** Page H1 — rendered with Filter in one header band. Omit when the page supplies its own heading. */
   title?: string
   description?: string
-  /** Optional admin CMS control (e.g. Top Picks curator) shown in the header action row. */
+  /** Optional admin CMS control shown in the header action row. */
   headerAction?: ReactNode
 }
 

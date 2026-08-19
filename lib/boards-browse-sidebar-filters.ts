@@ -38,15 +38,15 @@ export function boardsBrowseHasSidebarFilters(sp: SidebarFilterParams): boolean 
 }
 
 /**
- * Top Picks / Newest curation only applies on unfiltered browse. With sidebar filters,
- * fall back to recency (price sorts are unchanged).
+ * Daily rotate / Newest shuffle only applies on unfiltered browse. With sidebar filters
+ * or a keyword search, fall back to recency (price sorts are unchanged).
  */
 export function boardsBrowseEffectiveSort(
   sort: string,
   hasSidebarFilters: boolean,
+  hasKeywordQuery = false,
 ): string {
-  if (!hasSidebarFilters) return sort
-  if (isBoardsBrowseTopPicksSort(sort) || sort === BOARDS_BROWSE_NEWEST_SORT) {
+  if (isBoardsBrowseTopPicksSort(sort) && (hasSidebarFilters || hasKeywordQuery)) {
     return BOARDS_BROWSE_NEWEST_SORT
   }
   return sort

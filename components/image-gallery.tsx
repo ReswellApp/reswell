@@ -54,7 +54,7 @@ interface ImageGalleryProps {
   title: string
   /** Sold listings: SOLD badge on the hero. */
   sold?: boolean
-  /** Mobile PDP: shorter hero frame so title + image fit above the fold. */
+  /** Mobile PDP: edge-to-edge hero, natural ratio, height-capped so title stays nearby. */
   compactMobile?: boolean
   /** Share / favorite controls — rendered on the hero tile so they track its bounds. */
   heroOverlay?: ReactNode
@@ -99,6 +99,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
   const [imageAspectRatios, setImageAspectRatios] = useState<Record<number, number>>({})
   const touchStartRef = useRef<{ x: number; y: number } | null>(null)
   const suppressHeroClickRef = useRef(false)
+  const thumbRowRef = useRef<HTMLDivElement>(null)
 
   const mobileHeroAspectRatio = imageAspectRatios[selectedIndex] ?? 3 / 4
 
@@ -139,6 +140,19 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
   useEffect(() => {
     warmHeroSlideNeighbors(galleryUrls, selectedIndex)
   }, [galleryUrlsKey, selectedIndex])
+
+  useEffect(() => {
+    const row = thumbRowRef.current
+    if (!row) return
+    const active = row.querySelector<HTMLElement>(`[data-gallery-thumb="${selectedIndex}"]`)
+    if (!active) return
+    const rowRect = row.getBoundingClientRect()
+    const thumbRect = active.getBoundingClientRect()
+    if (thumbRect.left >= rowRect.left && thumbRect.right <= rowRect.right) return
+    const nextLeft =
+      row.scrollLeft + (thumbRect.left - rowRect.left) - (rowRect.width - thumbRect.width) / 2
+    row.scrollTo({ left: Math.max(0, nextLeft), behavior: "smooth" })
+  }, [selectedIndex])
 
   // Preload the lightbox (and its zoom library chunk) while idle so the first enlarge is instant.
   useEffect(() => {
@@ -187,7 +201,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
     <div
       className={cn(
         "mx-auto w-full min-w-0 max-w-full",
-        compactMobile ? "max-md:space-y-0 md:space-y-5" : "space-y-5",
+        compactMobile ? "max-md:space-y-2.5 md:space-y-5" : "space-y-5",
       )}
     >
       {lightboxEverOpened ? (
@@ -209,46 +223,52 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
         />
       ) : null}
 
-      {/* Main Image — tablet/desktop: stable 3:4 frame; phone (compactMobile): shorter natural-ratio hero */}
+      {/* Main Image — tablet/desktop: stable 3:4; phone: edge-to-edge, natural ratio, height-capped */}
       <div
         className={cn(
-          "relative overflow-hidden rounded-2xl bg-[#f5f5f7] shadow-sm ring-1 ring-black/[0.04] select-none touch-pan-y dark:bg-muted dark:ring-white/[0.06]",
-          compactMobile
-            ? "max-md:mx-auto max-md:h-auto max-md:max-h-[min(52dvh,28rem)] max-md:w-[min(100%,calc(min(52dvh,28rem)*var(--hero-aspect,0.75)))] max-md:max-w-full max-md:[aspect-ratio:var(--hero-aspect,3/4)] md:mx-0 md:aspect-[3/4] md:max-h-none md:h-auto md:w-full"
-            : "w-full",
+          compactMobile &&
+            "max-md:bg-[#f5f5f7] dark:max-md:bg-muted max-sm:-mx-4 max-sm:w-[calc(100%+2rem)] sm:-mx-6 sm:w-[calc(100%+3rem)] md:mx-0 md:w-full md:bg-transparent dark:md:bg-transparent",
         )}
-        style={
-          compactMobile
-            ? ({ "--hero-aspect": mobileHeroAspectRatio } as CSSProperties)
-            : { paddingBottom: "133.33%" }
-        }
-        onTouchStart={(e) => {
-          if (images.length <= 1) return
-          const t = e.touches[0]
-          if (!t) return
-          touchStartRef.current = { x: t.clientX, y: t.clientY }
-        }}
-        onTouchEnd={(e) => {
-          const start = touchStartRef.current
-          touchStartRef.current = null
-          if (!start || images.length <= 1) return
-          const t = e.changedTouches[0]
-          if (!t) return
-          const dx = t.clientX - start.x
-          const dy = t.clientY - start.y
-          if (Math.abs(dx) < SWIPE_MIN_PX) return
-          if (Math.abs(dx) <= Math.abs(dy)) return
-          suppressHeroClickRef.current = true
-          window.setTimeout(() => {
-            suppressHeroClickRef.current = false
-          }, 400)
-          if (dx > 0) goPrev()
-          else goNext()
-        }}
-        onTouchCancel={() => {
-          touchStartRef.current = null
-        }}
       >
+        <div
+          className={cn(
+            "relative overflow-hidden bg-[#f5f5f7] select-none touch-pan-y dark:bg-muted",
+            compactMobile
+              ? "max-md:h-auto max-md:max-h-[min(58dvh,30rem)] max-md:w-full max-md:min-w-full max-md:[aspect-ratio:var(--hero-aspect,3/4)] max-md:rounded-none md:aspect-[3/4] md:max-h-none md:h-auto md:w-full md:rounded-2xl md:shadow-sm md:ring-1 md:ring-black/[0.04] dark:md:ring-white/[0.06]"
+              : "w-full rounded-2xl shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06]",
+          )}
+          style={
+            compactMobile
+              ? ({ "--hero-aspect": mobileHeroAspectRatio } as CSSProperties)
+              : { paddingBottom: "133.33%" }
+          }
+          onTouchStart={(e) => {
+            if (images.length <= 1) return
+            const t = e.touches[0]
+            if (!t) return
+            touchStartRef.current = { x: t.clientX, y: t.clientY }
+          }}
+          onTouchEnd={(e) => {
+            const start = touchStartRef.current
+            touchStartRef.current = null
+            if (!start || images.length <= 1) return
+            const t = e.changedTouches[0]
+            if (!t) return
+            const dx = t.clientX - start.x
+            const dy = t.clientY - start.y
+            if (Math.abs(dx) < SWIPE_MIN_PX) return
+            if (Math.abs(dx) <= Math.abs(dy)) return
+            suppressHeroClickRef.current = true
+            window.setTimeout(() => {
+              suppressHeroClickRef.current = false
+            }, 400)
+            if (dx > 0) goPrev()
+            else goNext()
+          }}
+          onTouchCancel={() => {
+            touchStartRef.current = null
+          }}
+        >
         {heroOverlay ? (
           <div className="absolute right-2 top-2 z-[15] flex items-start gap-2 sm:right-3 sm:top-3 md:right-4 md:top-4">
             {heroOverlay}
@@ -318,8 +338,7 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
           </div>
         ) : null}
 
-        {/* Navigation arrows */}
-        {images.length > 1 && (
+        {images.length > 1 && !compactMobile && (
           <>
             <ListingImageCarouselNavButton
               direction="prev"
@@ -350,31 +369,38 @@ export function ImageGallery({ images, title, sold, compactMobile, heroOverlay }
             {selectedIndex + 1} / {images.length}
           </div>
         )}
+        </div>
       </div>
 
       {/* Thumbnails - explicit 3:4 box (padding-bottom) so fill Image has a defined size */}
       {images.length > 1 && (
         <div
+          ref={thumbRowRef}
           className={cn(
-            "flex max-w-full min-w-0 gap-2.5 overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch]",
-            compactMobile && "max-md:hidden",
+            "flex max-w-full min-w-0 overflow-x-auto overscroll-x-contain pb-1 [-webkit-overflow-scrolling:touch]",
+            compactMobile ? "gap-1.5 md:gap-2.5" : "gap-2.5",
           )}
         >
           {images.map((image, index) => (
             <button
               key={image.id || `thumb-${index}-${image.url}`}
               type="button"
+              data-gallery-thumb={index}
               onClick={() => setSelectedIndex(index)}
               aria-label={`Show photo ${index + 1} in gallery`}
               className={cn(
-                "flex-shrink-0 overflow-hidden rounded-2xl bg-muted transition-[box-shadow,ring-color] duration-200",
+                "flex-shrink-0 overflow-hidden bg-muted transition-[box-shadow,ring-color] duration-200",
+                compactMobile ? "rounded-lg md:rounded-2xl" : "rounded-2xl",
                 index === selectedIndex
                   ? "ring-[1.5px] ring-offset-2 ring-offset-background ring-foreground/80"
                   : "ring-[0.5px] ring-muted-foreground/25 hover:ring-muted-foreground/45"
               )}
             >
               <span
-                className="relative block w-16 bg-muted"
+                className={cn(
+                  "relative block bg-muted",
+                  compactMobile ? "w-11 md:w-16" : "w-16",
+                )}
                 style={{ paddingBottom: "133.33%" }}
               >
                 <span className="absolute inset-0">

@@ -95,6 +95,14 @@ const listYourBoardNavButtonClassName = cn(
   "shrink-0 whitespace-nowrap rounded-full border-foreground/20 px-5 text-[14px] font-medium",
 )
 
+/** Guest mobile header: Sell + heart + cart share a 1.5px foreground stroke. */
+const mobileGuestActionStrokeWidth = 1.5
+const mobileGuestActionIconClassName = "h-6 w-6"
+const mobileGuestActionIconButtonClassName =
+  "h-10 w-10 text-foreground hover:bg-black/5 [&_svg]:size-6"
+const mobileGuestSellButtonClassName =
+  "h-10 shrink-0 rounded-full border-[1.5px] border-foreground px-4 text-[14px] font-medium text-foreground shadow-none hover:bg-muted/50"
+
 /** Guest “Recently sold” nav control — larger tap target (Clock icon, links to `/sold`). */
 const recentlySoldNavButtonClassName =
   "h-11 w-14 shrink-0 px-0 text-foreground hover:bg-muted sm:h-12 sm:w-[3.75rem]"
@@ -103,12 +111,12 @@ const recentlySoldNavIconClassName = "h-8 w-8 sm:h-9 sm:w-9"
 function HeaderMobileNavActionsSkeleton() {
   return (
     <div
-      className="flex shrink-0 items-center justify-end gap-1.5"
+      className="flex shrink-0 items-center justify-end gap-1"
       aria-busy="true"
       aria-label="Loading navigation"
     >
-      <Skeleton className="h-4 w-12 shrink-0 rounded" />
-      <Skeleton className="h-4 w-8 shrink-0 rounded" />
+      <Skeleton className="h-10 w-14 shrink-0 rounded-full" />
+      <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
       <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
     </div>
   )
@@ -1107,7 +1115,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 <div className="min-w-0 flex-1">
                   <SiteWordmarkLink compact className="px-1 py-1 sm:px-2 sm:py-1.5" />
                 </div>
-                <div className="flex shrink-0 items-center justify-end gap-0.5">
+                <div className="flex shrink-0 items-center justify-end gap-1">
                   {!authLoaded ? (
                     <HeaderMobileNavActionsSkeleton />
                   ) : user ? (
@@ -1150,27 +1158,37 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                     </>
                   ) : (
                     <>
+                      <Button asChild variant="outline" className={mobileGuestSellButtonClassName}>
+                        <Link href={SELL_HUB_HREF}>Sell</Link>
+                      </Button>
                       <Link
-                        href={authLandingHref("/auth/login")}
+                        href={`/auth/login?redirect=${encodeURIComponent("/favorites")}`}
+                        className="inline-flex shrink-0"
                         onClick={(e) => {
                           if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                           e.preventDefault()
-                          openLogin()
+                          openLogin("/favorites")
                         }}
-                        className="shrink-0 whitespace-nowrap px-1 py-2 text-[15px] font-medium text-foreground"
                       >
-                        Log in
-                      </Link>
-                      <Link
-                        href={SELL_HUB_HREF}
-                        className="shrink-0 whitespace-nowrap px-1 py-2 text-[15px] font-medium text-foreground"
-                      >
-                        Sell
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={mobileGuestActionIconButtonClassName}
+                          aria-label="Favorites"
+                        >
+                          <Heart
+                            className={mobileGuestActionIconClassName}
+                            strokeWidth={mobileGuestActionStrokeWidth}
+                          />
+                        </Button>
                       </Link>
                       <CartHeaderLink
                         showOnNarrowScreens
                         authResolved={authLoaded}
                         userId={user?.id ?? null}
+                        className={mobileGuestActionIconButtonClassName}
+                        iconClassName={mobileGuestActionIconClassName}
+                        iconStrokeWidth={mobileGuestActionStrokeWidth}
                       />
                     </>
                   )}

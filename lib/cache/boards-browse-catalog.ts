@@ -3,10 +3,12 @@ import {
   boardsBrowseCategoryTypeCacheKey,
   fetchBoardsBrowseCategoryTypePage,
   isBoardsBrowseCategoryTypeView,
+  isBoardsBrowseTopPicksSort,
   type BoardsBrowseCategoryTypePage,
 } from "@/lib/db/boards-browse-listings"
 import type { BoardsBrowseSearchParams } from "@/lib/marketplace-slug-metadata"
 import { createAnonSupabaseClient } from "@/lib/supabase/anon"
+import { boardsBrowseDailyRotateSeed } from "@/lib/utils/boards-browse-daily-rotate"
 
 /** Hourly cache for nav category views (`/boards`, `/boards?type=…`). */
 export const BOARDS_BROWSE_CACHE_TAG = "boards-browse"
@@ -19,15 +21,22 @@ async function loadBoardsBrowseCategoryTypePage(
   condition: string,
   sort: string,
   page: number,
+  rotateSeed: string,
 ): Promise<BoardsBrowseCategoryTypePage> {
   const supabase = createAnonSupabaseClient()
-  return fetchBoardsBrowseCategoryTypePage(supabase, { boardType, condition, sort, page })
+  return fetchBoardsBrowseCategoryTypePage(supabase, {
+    boardType,
+    condition,
+    sort,
+    page,
+    rotateSeed,
+  })
 }
 
 const getCachedBoardsBrowseCategoryTypePage = unstable_cache(
   loadBoardsBrowseCategoryTypePage,
-  // `v2` bump invalidates pages cached at the previous page size (40) so results don't mix.
-  ["boards-browse-category-type", "v2-size30"],
+  // `v3` includes the 24h rotate seed so unfiltered `/boards` reshuffles on a new day.
+  ["boards-browse-category-type", "v3-daily-rotate"],
   {
     revalidate: BOARDS_BROWSE_REVALIDATE_SECONDS,
     tags: [BOARDS_BROWSE_CACHE_TAG],
@@ -41,5 +50,6 @@ export async function getBoardsBrowseCategoryTypePageCached(
     return null
   }
   const { boardType, condition, sort, page } = boardsBrowseCategoryTypeCacheKey(searchParams)
-  return getCachedBoardsBrowseCategoryTypePage(boardType, condition, sort, page)
+  const rotateSeed = isBoardsBrowseTopPicksSort(sort) ? boardsBrowseDailyRotateSeed() : ""
+  return getCachedBoardsBrowseCategoryTypePage(boardType, condition, sort, page, rotateSeed)
 }

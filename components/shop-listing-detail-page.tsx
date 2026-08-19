@@ -105,7 +105,7 @@ export async function ShopListingDetailPage({
       .slice(0, 4) ?? []
 
   return (
-    <main className="relative flex-1 w-full min-w-0 max-w-full overflow-x-clip bg-background pb-16 pt-5 sm:pb-24 sm:pt-8">
+    <main className="relative flex-1 w-full min-w-0 max-w-full overflow-x-clip bg-background pb-16 pt-2 sm:pb-24 sm:pt-3 lg:pt-8">
       <div className="container mx-auto w-full min-w-0 max-w-full px-4 sm:px-6 lg:max-w-[1120px] lg:px-8">
         <div className="mb-5 min-w-0 max-w-full pt-0.5 lg:mb-8">
           <Breadcrumb>

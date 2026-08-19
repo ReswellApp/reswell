@@ -3,7 +3,7 @@
  * `geo_distance` radius/nearest sorting, and faceted availability counts via
  * aggregations — replacing the in-memory haversine sort and the lean-row facet scan.
  *
- * This module is pure ES (ids / totals / counts). Row hydration + top-picks
+ * This module is pure ES (ids / totals / counts). Row hydration + daily-rotate
  * orchestration live in `lib/db/boards-browse-listings-es.ts`.
  */
 
@@ -30,10 +30,12 @@ import {
 import {
   boardTypeForDbFromBrowseParam,
   browseTypeParamFromBoardType,
+  BOARDS_BROWSE_TOP_PICKS_SORT,
 } from "@/lib/marketplace-slug-metadata"
 import { categoryIdsForBrowseBoardTypes } from "@/lib/utils/board-type-from-category-id"
 import type { BoardsBrowseFacetCounts } from "@/lib/services/boardsBrowseFacetCounts"
 import { isUuidString } from "@/lib/utils/isUuid"
+import { boardsBrowseDailyRotateSeed, hashStringCyrb53 } from "@/lib/utils/boards-browse-daily-rotate"
 import {
   TAIL_SHAPE_LABELS,
   type TailShapeTagSlug,
@@ -344,7 +346,7 @@ export type BoardsBrowseEsSearchParams = BoardsBrowseEsContext & {
   facets?: BoardsBrowseFacetSelections
   dimensionTokens?: string[]
   geo?: { lat: number; lng: number; radiusMi?: number }
-  /** `newest` | `price-low` | `price-high` | `price-newest` | `nearest`. */
+  /** `newest` | `price-low` | `price-high` | `price-newest` | `nearest` | `top-picks` (24h rotate). */
   sort: string
   useSuppressionSort?: boolean
   restrictToIds?: string[]
@@ -410,6 +412,10 @@ function buildListingsFilters(params: BoardsBrowseEsSearchParams): object[] {
   return filters
 }
 
+function hashRotateSeedForEs(seed: string): number {
+  return hashStringCyrb53(seed) | 0
+}
+
 function buildSort(params: BoardsBrowseEsSearchParams): object[] {
   const sort: object[] = []
   if (params.useSuppressionSort) {
@@ -429,6 +435,22 @@ function buildSort(params: BoardsBrowseEsSearchParams): object[] {
   }
 
   const hasKeyword = Boolean(params.query?.trim() || params.rankQuery?.trim())
+
+  if (params.sort === BOARDS_BROWSE_TOP_PICKS_SORT) {
+    const seed = boardsBrowseDailyRotateSeed()
+    sort.push({
+      _script: {
+        type: "number",
+        script: {
+          lang: "painless",
+          source: "doc['id'].value.hashCode() ^ params.seed",
+          params: { seed: hashRotateSeedForEs(seed) },
+        },
+        order: "asc",
+      },
+    })
+    return sort
+  }
 
   if (params.sort === "price-low") {
     sort.push({ price: { order: "asc", missing: "_last" } })

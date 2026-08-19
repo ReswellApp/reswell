@@ -33,7 +33,6 @@ import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
 import { ContactSellerForm } from "@/components/contact-seller-form"
 import { FavoriteButton } from "@/components/favorite-button"
-import { listingTileFavoriteButtonChromeClassName } from "@/components/favorite-button-card-overlay"
 import { cn } from "@/lib/utils"
 import {
   ListingSoldDetailNotice,
@@ -53,6 +52,7 @@ import { getBrandById } from "@/lib/brands/server"
 import { sellerProfileHref } from "@/lib/seller-slug"
 import { listingDetailHref } from "@/lib/listing-href"
 import { ListingDetailEngagementMetrics } from "@/components/listing-detail-engagement-metrics"
+import { ListingMobileBuySummary } from "@/components/features/listings/listing-mobile-buy-summary"
 import { ListingDetailPeerPurchaseActionsLoader } from "@/components/listing-detail-peer-purchase-actions-loader"
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 import { ListingBoardDimensionsBlock } from "@/components/listing-board-dimensions-section"
@@ -324,39 +324,6 @@ export async function SurfboardListingDetailPage({
     }
   }
 
-  const mobileFulfillmentChips = ((): string[] => {
-    if (!shippingOffered && pickupOffered) return ["Local pickup", "Shipping not offered"]
-    if (shippingOffered && !pickupOffered) {
-      if (boardShippingCostMode === "free") return ["Free shipping"]
-      if (shippingFlatRate > 0) return [`Ships (+$${shippingFlatRate.toFixed(2)})`]
-      if (boardShippingCostMode === "reswell") return ["Shipping at checkout"]
-      if (boardShippingCostMode === "flat") {
-        return shippingFlatRate > 0
-          ? [`Ships (+$${shippingFlatRate.toFixed(2)})`]
-          : ["Flat shipping"]
-      }
-      return ["Ships"]
-    }
-    if (shippingOffered && pickupOffered) {
-      const shipPart =
-        boardShippingCostMode === "free"
-          ? "Free shipping"
-          : shippingFlatRate > 0
-            ? `+$${shippingFlatRate.toFixed(2)} shipping`
-            : boardShippingCostMode === "reswell"
-              ? "Shipping at checkout"
-              : boardShippingCostMode === "flat"
-                ? "Flat shipping"
-                : "Shipping"
-      return ["Local pickup", shipPart]
-    }
-    return []
-  })()
-
-  const mobileProductMetaItems = [
-    conditionWords ? `Used – ${conditionWords}` : null,
-  ].filter(Boolean) as string[]
-
   const listingViews = Number((board as { views?: number | null }).views ?? 0)
   let listedRelative: string | null = null
   if (board.created_at != null) {
@@ -393,7 +360,7 @@ export async function SurfboardListingDetailPage({
   )
 
   return (
-      <main className="relative flex-1 w-full min-w-0 max-w-full overflow-x-clip bg-background pb-16 pt-5 sm:pb-24 sm:pt-8">
+      <main className="relative flex-1 w-full min-w-0 max-w-full overflow-x-clip bg-background pb-16 pt-2 sm:pb-24 sm:pt-3 lg:pt-8">
         {metaCatalogEligible ? (
           <MetaViewContentTracker
             listingId={board.id}
@@ -464,7 +431,7 @@ export async function SurfboardListingDetailPage({
             </div>
           )}
 
-          <div className="mx-auto grid w-full min-w-0 max-w-full gap-x-8 gap-y-5 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:grid-rows-[auto_auto_auto] lg:[grid-template-areas:'gallery_details'_'about_details'_'similar_similar'] lg:items-start lg:gap-x-12 lg:gap-y-0 xl:gap-x-16">
+          <div className="mx-auto grid w-full min-w-0 max-w-full gap-x-8 gap-y-2 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:grid-rows-[auto_auto_auto] lg:[grid-template-areas:'gallery_details'_'about_details'_'similar_similar'] lg:items-start lg:gap-x-12 lg:gap-y-0 xl:gap-x-16">
             {/* Images */}
             <div className="min-w-0 max-lg:order-1 lg:[grid-area:gallery] lg:order-none lg:w-full lg:max-w-[29rem] lg:justify-self-start xl:max-w-[32rem]">
               {!(isSold && isOwnListing) && (
@@ -498,11 +465,8 @@ export async function SurfboardListingDetailPage({
                             initialFavorited={isFavorited}
                             isLoggedIn={!!user}
                             refreshAfterToggle
-                            heartAccent="listingTile"
-                            className={cn(
-                              "h-11 w-11 min-h-11 min-w-11",
-                              listingTileFavoriteButtonChromeClassName,
-                            )}
+                            heartAccent="listingPdp"
+                            className="h-11 w-11 min-h-11 min-w-11"
                           />
                         </div>
                       ) : null}
@@ -516,76 +480,26 @@ export async function SurfboardListingDetailPage({
             </div>
 
             <div className="min-w-0 max-w-full max-lg:order-2 lg:hidden">
-              {isSold ? (
-                <p className="mt-2 font-headline text-3xl font-semibold tracking-tight text-[#163060] tabular-nums">
-                  Sold for ${publicListPriceUsd.toFixed(2)}
-                </p>
-              ) : (
-                <div className="mt-2">
-                  <p className="text-3xl font-bold tracking-tight text-foreground tabular-nums sm:text-4xl">
-                    ${board.price.toFixed(2)}
-                  </p>
-                  {buyerAgreedPriceUsd != null ? (
-                    <p className="mt-1.5 text-[15px] font-medium text-emerald-700 dark:text-emerald-400">
-                      Your accepted price: ${buyerAgreedPriceUsd.toFixed(2)} at checkout
-                    </p>
-                  ) : null}
-                </div>
-              )}
-              <ListingDetailEngagementMetrics
+              <ListingMobileBuySummary
+                condition={board.condition}
+                priceUsd={isSold ? publicListPriceUsd : board.price}
+                isSold={isSold}
+                soldShipped={soldUsedShipping}
+                shippingPriceCaption={shippingPriceCaption}
+                shippingOffered={shippingOffered}
+                pickupOffered={pickupOffered}
+                shippingCostMode={boardShippingCostMode}
+                shippingFlatRate={shippingFlatRate}
+                locationLine={listingLocationLine}
+                showScarcity={!isSold && !isOwnListing && board.status === "active"}
                 views={listingViews}
                 watchers={listingWatchersCount}
                 cartHolderCount={cartHolderCount}
-                isSold={isSold}
-                className="mt-2 lg:hidden"
-              />
-              {(mobileProductMetaItems.length > 0 ||
-                (isSold ? soldUsedShipping : mobileFulfillmentChips.length > 0)) ? (
-                <div className="mt-3 space-y-2 border-y border-border/50 py-2.5 text-[14px]">
-                  {mobileProductMetaItems.length > 0 ? (
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-foreground">
-                      {mobileProductMetaItems.map((item, index) => (
-                        <span key={item} className="inline-flex items-center gap-3">
-                          {index > 0 ? <span aria-hidden className="h-3.5 w-px shrink-0 bg-border" /> : null}
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                  {isSold && soldUsedShipping ? (
-                    <p className="inline-flex items-center gap-1.5 text-muted-foreground">
-                      <Truck className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                      <span>This board was shipped</span>
-                    </p>
-                  ) : mobileFulfillmentChips.length > 0 ? (
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground">
-                      {mobileFulfillmentChips.map((item, index) => (
-                        <span key={item} className="inline-flex items-center gap-3">
-                          {index > 0 ? <span aria-hidden className="h-3.5 w-px shrink-0 bg-border" /> : null}
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-              {!isSold && !isOwnListing && board.status === "active" ? (
-                <p className="mt-3 flex items-center gap-1.5 text-[14px] text-foreground">
-                  <Hourglass className="h-[14px] w-[14px] shrink-0 text-muted-foreground" aria-hidden />
-                  <span className="font-medium">Only one available</span>
-                </p>
-              ) : null}
-              {!isSold && !isOwnListing ? (
-                <p className="mt-2 text-[13px] leading-snug text-muted-foreground">
-                  Covered by{" "}
-                  <Link href="/protection-policy" className="text-foreground underline decoration-dashed underline-offset-2 hover:no-underline">
-                    Purchase Protection
-                  </Link>{" "}
-                  on eligible checkout.
-                </p>
-              ) : null}
-              {canPeerPurchase ? (
-                <div className="mt-5">
+                createdAt={board.created_at}
+                showPurchaseProtection={!isSold && !isOwnListing}
+                agreedPriceUsd={buyerAgreedPriceUsd}
+              >
+                {canPeerPurchase ? (
                   <ListingDetailPeerPurchaseActionsLoader
                     listingId={board.id}
                     checkoutListingParam={board.slug ?? board.id}
@@ -603,8 +517,8 @@ export async function SurfboardListingDetailPage({
                       ) : undefined
                     }
                   />
-                </div>
-              ) : null}
+                ) : null}
+              </ListingMobileBuySummary>
               <div className="mt-5 border-t border-neutral-200/90 pt-5 dark:border-neutral-700/70 lg:hidden">
                 {aboutSellerSection}
               </div>
@@ -773,7 +687,7 @@ export async function SurfboardListingDetailPage({
               ) : null}
             </div>
 
-            <div className="col-span-full mt-8 min-w-0 max-w-full border-t border-neutral-200/90 pt-6 dark:border-neutral-700/70 max-lg:order-3 lg:col-span-1 lg:[grid-area:about] lg:order-none lg:mt-0 lg:border-t lg:border-neutral-200/90 lg:pt-5 dark:lg:border-neutral-700/70 xl:pt-6">
+            <div className="col-span-full min-w-0 max-w-full max-lg:order-3 lg:col-span-1 lg:[grid-area:about] lg:order-none lg:border-t lg:border-neutral-200/90 lg:pt-5 dark:lg:border-neutral-700/70 xl:pt-6">
               <Accordion
                 type="multiple"
                 defaultValue={["about", "specs", "shipping"]}

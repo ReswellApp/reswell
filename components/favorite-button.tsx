@@ -26,9 +26,10 @@ interface FavoriteButtonProps {
   /** Refetch server components after a successful toggle (e.g. PDP watchers count). */
   refreshAfterToggle?: boolean
   /**
-   * Listing tiles and PDP gallery use heartIcon (#04070E); other surfaces stay default red.
+   * Listing tiles use heartIcon (#04070E). PDP gallery overlay uses a white outline
+   * on the photo. Other surfaces stay default red.
    */
-  heartAccent?: "default" | "listingTile"
+  heartAccent?: "default" | "listingTile" | "listingPdp"
 }
 
 export function FavoriteButton({
@@ -48,6 +49,7 @@ export function FavoriteButton({
   const [loading, setLoading] = useState(false)
   const openSignIn = useSignInGate()
   const useListingTileHeart = heartAccent === "listingTile"
+  const useListingPdpHeart = heartAccent === "listingPdp"
 
   async function toggleFavorite() {
     if (!isLoggedIn) {
@@ -92,13 +94,20 @@ export function FavoriteButton({
         "transition-[background-color,color,opacity] duration-200 ease-in-out",
         variant === "ghost" &&
           "relative h-11 w-11 min-h-[44px] min-w-[44px] rounded-full border border-transparent bg-transparent text-neutral-800 shadow-none hover:border-white/80 hover:bg-white/75 hover:text-black hover:shadow-[0_2px_12px_rgba(0,0,0,0.1)] hover:backdrop-blur-md group-hover/favorite:border-white/80 group-hover/favorite:bg-white/75 group-hover/favorite:text-black group-hover/favorite:shadow-[0_2px_12px_rgba(0,0,0,0.1)] group-hover/favorite:backdrop-blur-md focus-visible:border-white/80 focus-visible:bg-white/75 focus-visible:text-black focus-visible:shadow-[0_2px_12px_rgba(0,0,0,0.1)] focus-visible:backdrop-blur-md dark:text-neutral-100 dark:hover:border-white/70 dark:hover:bg-white/75 dark:hover:text-black dark:group-hover/favorite:border-white/70 dark:group-hover/favorite:bg-white/75 dark:group-hover/favorite:text-black dark:focus-visible:border-white/70 dark:focus-visible:bg-white/75 dark:focus-visible:text-black [&_svg]:pointer-events-auto",
+        variant === "ghost" &&
+          useListingPdpHeart &&
+          "text-white hover:border-transparent hover:bg-black/20 hover:text-white hover:shadow-none hover:backdrop-blur-none group-hover/favorite:border-transparent group-hover/favorite:bg-black/20 group-hover/favorite:text-white group-hover/favorite:shadow-none group-hover/favorite:backdrop-blur-none focus-visible:border-transparent focus-visible:bg-black/20 focus-visible:text-white focus-visible:shadow-none focus-visible:backdrop-blur-none dark:text-white dark:hover:border-transparent dark:hover:bg-black/20 dark:hover:text-white dark:group-hover/favorite:border-transparent dark:group-hover/favorite:bg-black/20 dark:group-hover/favorite:text-white dark:focus-visible:border-transparent dark:focus-visible:bg-black/20 dark:focus-visible:text-white",
         favorited &&
-          (useListingTileHeart
+          (useListingPdpHeart
+            ? "text-white hover:text-white group-hover/favorite:text-white dark:text-white dark:hover:text-white dark:group-hover/favorite:text-white"
+            : useListingTileHeart
             ? "text-heartIcon hover:text-heartIcon group-hover/favorite:text-heartIcon dark:text-heartIcon dark:hover:text-heartIcon dark:group-hover/favorite:text-heartIcon"
             : "text-red-500 hover:text-red-600 group-hover/favorite:text-red-600 dark:text-red-500 dark:hover:text-red-600 dark:group-hover/favorite:text-red-600"),
         variant === "ghost" &&
           !favorited &&
-          (useListingTileHeart
+          (useListingPdpHeart
+            ? "hover:[&_svg]:fill-current group-hover/favorite:[&_svg]:fill-current focus-visible:[&_svg]:fill-current"
+            : useListingTileHeart
             ? "hover:text-heartIcon hover:[&_svg]:fill-current group-hover/favorite:text-heartIcon group-hover/favorite:[&_svg]:fill-current focus-visible:text-heartIcon focus-visible:[&_svg]:fill-current dark:hover:text-heartIcon dark:group-hover/favorite:text-heartIcon dark:focus-visible:text-heartIcon"
             : "hover:text-red-500 hover:[&_svg]:fill-current group-hover/favorite:text-red-500 group-hover/favorite:[&_svg]:fill-current focus-visible:text-red-500 focus-visible:[&_svg]:fill-current dark:hover:text-red-500 dark:group-hover/favorite:text-red-500 dark:focus-visible:text-red-500"),
         className,
@@ -112,6 +121,7 @@ export function FavoriteButton({
             className={cn(
               "relative z-10 h-4 w-4",
               favorited && "fill-current",
+              useListingPdpHeart && "drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)]",
               iconClassName,
             )}
           />

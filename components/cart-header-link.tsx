@@ -28,11 +28,17 @@ export function CartHeaderLink({
   authResolved = false,
   /** When set (including `null` for guests), skips `auth.getUser()` in the nav. */
   userId,
+  className,
+  iconClassName,
+  iconStrokeWidth,
 }: {
   showOnNarrowScreens?: boolean
   showOnDesktopNav?: boolean
   authResolved?: boolean
   userId?: string | null
+  className?: string
+  iconClassName?: string
+  iconStrokeWidth?: number
 }) {
   const [count, setCount] = useState<number | null>(null)
   const visibility = showOnNarrowScreens
@@ -104,10 +110,13 @@ export function CartHeaderLink({
       asChild
       variant="ghost"
       size="icon"
-      className={cn("relative h-10 w-10 text-foreground hover:bg-pacific/5", visibility)}
+      className={cn("relative h-10 w-10 text-foreground hover:bg-pacific/5", visibility, className)}
     >
       <Link href="/cart">
-        <ShoppingCart className="h-6 w-6" />
+        <ShoppingCart
+          className={cn("h-6 w-6", iconClassName)}
+          strokeWidth={iconStrokeWidth}
+        />
         {count > 0 && (
           <Badge
             variant="secondary"

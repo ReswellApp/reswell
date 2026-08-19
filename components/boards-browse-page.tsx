@@ -22,8 +22,8 @@ import {
   BOARDS_BROWSE_PAGE_SIZE,
   buildSurfboardBrowseBaseQuery,
   compareBoardBrowseRows,
-  compareBoardBrowseRowsTopPicks,
-  fetchBoardsBrowseTopPicksPage,
+  compareBoardBrowseRowsDailyRotate,
+  fetchBoardsBrowseDailyRotatePage,
   fetchNearestSurfboardsWithinRadius,
   isBoardsBrowseTopPicksSort,
   LOCATION_FALLBACK_RADIUS_MI,
@@ -32,7 +32,6 @@ import {
   type BoardBrowseListingRow,
   type SurfboardBrowseListingsQuery,
 } from "@/lib/db/boards-browse-listings"
-import { listBoardsBrowseTopPickListingIdsOrdered } from "@/lib/db/boards-browse-top-picks"
 import {
   boardsBrowseBoardTypeLabel,
   BOARDS_BROWSE_DEFAULT_SORT,
@@ -57,6 +56,7 @@ import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
 import { cn } from "@/lib/utils"
 import { isUuidString } from "@/lib/utils/isUuid"
 import { haversineMi } from "@/lib/db/boards-browse-listings"
+import { boardsBrowseDailyRotateSeed } from "@/lib/utils/boards-browse-daily-rotate"
 import { facetSelectionsFromBrowseParams } from "@/lib/boards-browse-facets"
 import {
   boardsBrowseEffectiveSort,
@@ -121,10 +121,11 @@ async function BoardListings({
 
   const boardType = searchParams.type || "all"
   const condition = searchParams.condition || "all"
+  const query = searchParams.q || ""
+  const hasKeywordQuery = query.trim().length > 0
   const rawSort = searchParams.sort || BOARDS_BROWSE_DEFAULT_SORT
   const hasSidebarFilters = boardsBrowseHasSidebarFilters(searchParams)
-  const sort = boardsBrowseEffectiveSort(rawSort, hasSidebarFilters)
-  const query = searchParams.q || ""
+  const sort = boardsBrowseEffectiveSort(rawSort, hasSidebarFilters, hasKeywordQuery)
   const brand = searchParams.brand || ""
   const model = searchParams.model || ""
   const brandIdRaw = searchParams.brandId?.trim() ?? ""
@@ -163,7 +164,6 @@ async function BoardListings({
   let totalPages = 0
   let handledByEs = false
   const esEnabled = isBoardsBrowseEsEnabled()
-  const hasKeywordQuery = query.trim().length > 0
   const resolvedKeyword = hasKeywordQuery
     ? await resolveBoardsSearchQuery(supabase, {
         q: query,
@@ -321,24 +321,13 @@ async function BoardListings({
     boards = cachedCategoryPage.boards
     totalPages = cachedCategoryPage.totalPages
   } else if (isTopPicksSort && !filterByRadius && !isNearestSort) {
-    const topPicksPage = await fetchBoardsBrowseTopPicksPage(supabase, {
+    const rotatePage = await fetchBoardsBrowseDailyRotatePage(supabase, {
       boardType,
       condition,
-      query,
-      brand: brandModelIdForQuery ? undefined : brand.trim() || undefined,
-      model: brandModelIdForQuery || brandIdForQuery ? undefined : model.trim() || undefined,
-      brandId: brandModelIdForQuery ? undefined : brandIdForQuery,
-      brandModelId: brandModelIdForQuery,
-      dimensionFields,
-      facets,
-      minPrice,
-      maxPrice,
-      shippingAvailable,
-      locationTextFilter: location.trim() && !useGeocodedAnchor ? location : undefined,
       page,
     })
-    boards = topPicksPage.boards
-    totalPages = topPicksPage.totalPages
+    boards = rotatePage.boards
+    totalPages = rotatePage.totalPages
   } else {
     const useSuppressionSort = await isBoardsBrowseSuppressionSortAvailable(supabase)
 
@@ -400,9 +389,8 @@ async function BoardListings({
           return a._distance - b._distance
         })
       } else if (isTopPicksSort) {
-        const curatedIds = await listBoardsBrowseTopPickListingIdsOrdered(supabase)
-        const curationIndex = new Map(curatedIds.map((id, index) => [id, index]))
-        withDistance.sort((a, b) => compareBoardBrowseRowsTopPicks(a, b, curationIndex))
+        const rotateSeed = boardsBrowseDailyRotateSeed()
+        withDistance.sort((a, b) => compareBoardBrowseRowsDailyRotate(a, b, rotateSeed))
       } else {
         withDistance.sort((a, b) => compareBoardBrowseRows(a, b, sort))
       }
