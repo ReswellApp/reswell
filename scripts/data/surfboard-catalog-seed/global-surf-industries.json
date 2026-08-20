@@ -1,0 +1,166 @@
+{
+  "purpose": "Global Surf Industries USA surfboard models from https://us.surfindustries.com/pages/products",
+  "source_url": "https://us.surfindustries.com/pages/products",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "critical-slide-society",
+      "name": "Critical Slide Society",
+      "website_url": "https://us.surfindustries.com",
+      "location_label": "Australia",
+      "short_description": "The Critical Slide Society \u2014 retro-inspired logs, twins, and mid-lengths.",
+      "models": [
+        {
+          "name": "Fun Guy",
+          "image_url": "https://cdn.shopify.com/s/files/1/0459/1481/6670/files/cat-prod-tcss-25-fun-guy.webp?v=1746059062",
+          "description": "There is a performance element to this model to however, single/double concave for speed & moderate rockers through out to give you the option of turning in more critical parts of the wave. Don\u2019t let the soft exterior fool you this board will take you where ever you want to go on a wave.\n OUTLINE: Classified as a fun shape, the outline is full and generous from nose to tail providing maximum stability on small to medium size waves. The rounded nose keeps the area up front and allows the rider to comfortably shift their weight forward. The slight taper through the tail lets you maneuver the board with ease.\n ROCKER: Low, relaxed rocker makes this board paddle onto waves really well, accelerate from the take off with minimal effort, and allow for flowing turns on the face of the wave.\n CONTOURS: Vee-to-double concave bottom makes for easy rail-to-rail transitions and offers control when driving off the tail.\n FOIL: Designed with plenty of volume in the nose and tail, and out towards the rails, which provides added stability and makes this board simple to ride for surfers transitioning from the wastewater to unbroken waves.\n FINS: Fitted a two plus one set up. with FCS II side plugs makes installing and removing fins quick and convenient. that\u2019s easy to ride and control.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Logger Head",
+          "image_url": "https://cdn.shopify.com/s/files/1/0459/1481/6670/files/cat-prod-tcss-24-logger-head-magenta.jpg?v=1713746019",
+          "description": "The Logger Head is a contemporary version of an old school longboard design.\n\n OUTLINE: The Logger Head is a wide and incredibly stable surfboard. The long parallel rails create a huge stable platform to stand and walk the board, and the full rounded nose is ideal for riding the nose.\n\n ROCKER: Moderately flat entry rocker provides fast paddling and flowing down-the-line trim speed. The flat section through the middle gives this surfboard effortless glide, and slight lift in the tail enhances turning ability.\n\n CONTOURS: A long, single concave under the nose provides lift for extended nose time, while vee through the belly and tail allows the rider to transition smoothly from rail-to-rail.\n\n RAIL: Forgiving 60/40 rails not only provide bite on the wave face, but also allows for smooth transitional turns off the tail.\n\n FOIL:Designed with plenty of volume through the nose and tail, and also out towards the rails, providing added stability and making this board simple to ride, regardless of your skill level.\n\n AESTHETIC: Finished with 2 x 6ox layers on the deck and a single layer plus a fins patch on the bottom, coated with traditional resin tint, rail laps and matte sanded finish.\n\n FIN: The Logger Head comes with a single fin box and 9\u2033 inch Rake fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Angler",
+          "image_url": "https://cdn.shopify.com/s/files/1/0459/1481/6670/files/cat-prod-tcss-24-angler-air.jpg?v=1713745084",
+          "description": "Our twin fin, the Angler will feel fast, loose and have lots of forward drive. True to the way most twin fin boards surf these will generate loads of down-the-line speed. The pivoting capabilities of the twin will also make for smooth, effortless turning in small to medium size waves.\n The modern elements include a narrower tail which allows pull tighter lines in a turn. From a design perspective The Angler lends from the old-school keel twin with a relaxed yet fast rocker, and a vee-to-single concave bottom that will instil trust in the rider when it takes off and starts to drive off the bottom. The traditional beak nose positions additional volume under the chest for easy wave catching.\n The Angler will actually satisfy a wide range of abilities and surf conditions, from beach breaks to point waves and reefs. The volume is set to moderate to help paddle with speed to get into the wave as early as possible.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Hermit",
+          "image_url": "https://cdn.shopify.com/s/files/1/0459/1481/6670/files/cat-prod-tcss-24-hermit-air.jpg?v=1713745582",
+          "description": "Mid Length surfboards have become popular over the last couple of years. The versatility of the Hermit is the reason it works in such a wide range of conditions. \n\n The Hermit is probably the primary go-to board in the TCSS range if you wanted to surf every day and only had one board to surf on.\n\n We have set the volume to moderate to help get into the waves early and set up for long runs.\n\n The generous outline and smooth curves mean this board is designed to have excellent balance between drawing long smooth lines in cruise mode and pulling a great turn on the open face when the opportunity presents. Without doubt, the Hermit will be one of your favourite boards.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Wavemaster 5000",
+          "image_url": "https://cdn.shopify.com/s/files/1/0459/1481/6670/files/cat-prod-tcss-25-wave-master-5000.webp?v=1734411225",
+          "description": "Designed with bigger people in mind we have set out to make the Wavemaster 5000 the best all round longboard in the world. Hands down this board will be the number 1 wave catching machine you have ever ridden. This is a High Volume Semi-Performance Longboard.\n With some slight concave under the nose to keep the nose up when paddling to the deep double concave with lots of Vee in the tail to give the board the ability to change direction quickly, these two bottom contours combine to provide you with the best chance of getting into the wave early and then making the most of what the wave offers up.\n\n We have worked hard to hide all the volume through the board, with the nose and tail foiling nicely. It will feel and look like a big board, but it rides like a board of normal proportions.\n\n Constructed in our proven SLX fabrication, this is an Epoxy Board made with Biaxial cloth on the deck for strength and a high-density EPS foam core to keep the board light to carry.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    },
+    {
+      "slug": "7s-surfboards",
+      "name": "7S Surfboards",
+      "website_url": "https://7ssurfboards.com",
+      "location_label": "USA",
+      "short_description": "Everyday performance shortboards and fishes from 7S.",
+      "models": [
+        {
+          "name": "Double Down",
+          "image_url": "https://cdn.shopify.com/s/files/1/0459/1481/6670/products/cat-prod-7s-20-double-down-pu.jpg?v=1597722688",
+          "description": "The 7S Double Down aims to increase your wave count and improve your small wave game. This is the flattest surfboard in the 7S range, and it has the highest volume per size ratio. For these reasons, it\u2019s fast, has plenty of flow, and is the perfect weapon for fatter, sub-par conditions.\n\n OUTLINE: The nose and tail dimensions at 12\u2033 are the same, creating a larger sweet spot, and a more stable planning zone. The full nose further adds to the stability, and the \u2018Corner Round\u2019 tail allows the width to extend further back, while still achieving the smooth transitions between turns that a round tail is famous for.\n ROCKER: With an emphasis on everyday conditions; flat equals flow, so the Double Down will slide into waves with ease, and maintain its speed over dead sections with minimal effort. Slight lift in the nose and tail will satisfy the more experienced rider looking for a summer groveller.\n CONTOURS: Subtle yet effective, the slight concave up front creates lift when taking off, then a double concave starting in the mid zone leads into a shallow rolled vee off the tail. This bottom combination maintains exceptional speed in softer waves, yet provides a nice balance of control versus quick turning response when pivoting right off the tail.\n PERFORMANCE: The Double Down is fast off the mark, and super easy to turn. Think summer beach breaks or soft point waves where you need a board with enough foam and buoyancy to get you going, but don\u2019t want to restrict how you want to perform on a wave. We suggest riding this board will bigger side fins, and a smaller centre fin.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "JetStream +",
+          "image_url": "https://cdn.shopify.com/s/files/1/0459/1481/6670/products/cat-prod-7s-20-jetstream-pu.jpg?v=1597722691",
+          "description": "Derived from the more refined Slipstream of the past, the new 7S Jetstream+ is a true hybrid surfboard, both from a design perspective and by definition of its performance. Now with more volume under the chest for better paddling and overall usability, this \u2018Performance All-Rounder\u2019 will adapt to a range of conditions from mushy beach breaks to classic point waves.\n OUTLINE: There\u2019s more surface area up front compared to a regular shortboard, which is great for generating speed and acceleration when driving off your front foot. The back half resembles a traditional shortboard with a refined outline and a forgiving round tail for smooth, yet controlled rail transitions.\n CONTOURS: Tried and tested around the global, the subtle single-to-double concave with vee out through the tail delivers a balance of speed and flow over flatter sections, and responsiveness in hollow waves.\n ROCKER: Low-to-moderate entry rocker is designed to offer immediate acceleration from the take off, but still allow the board to fit into more critical parts of the wave. The relaxed tail rocker helps maintain down the line speed, and creates acceleration through the entire turning arc.\n FOIL: Foiled just enough through the nose and tail so the board delivers a nice feeling of sensitivity. The performance rail profile completes the design package by adding a highly responsive feel when the board is carving on rail.\n PERFORMANCE: Regarded as the most user-friendly hybrid model on the market, the 7S Jetstream+ is essentially designed to make performance surfing a little easier, and create a better approach to the way you ride waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Superfish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0459/1481/6670/products/cat-prod-7s-20-sf4-pu.jpg?v=1597722693",
+          "description": "The Superfish 4 (SF4) is an amalgamation of the Superfish3 shape, with some old design features from the past. While still targeted at surfer's looking for a high volume modern fish shape, we believe this is our best Superfish yet; offering the perfect balance of stability and turning response.\n OUTLINE: Wider nose, fuller outline up front, and parallel rails create a large stable platform through to middle to generate speed. We've eliminated the flyer making a smoother curve in the back half of the board. The tail outline tapers so you can make tighter radius turns when you position your back foot right on the tail. The swallow tail also adds bite especially in smoother conditions.\n DESIGN: The return of the original step deck! This feature increases volume through the spine and out towards the rails, creates a flatter deck, while allowing for a lower, more sensitive feeling rail. Single-to-double concave delivers a very consistent and predictable feel, without restricting speed or the ability to transition quickly from rail-to-rail between turns.\n ROCKER: The 3 stage rocker is well balanced, with just enough flip in the entry to prevent nose-diving in steeper waves. The flatter mid section maintains forward drive and flow. Moderate curve out the tail presents the opportunity to really jam a nice turn when pushing harder off your back foot.\n FOIL: We've added volume to this model, under the chest and extending towards the nose and tail. This provides amazing paddle power so you can get into waves early.\n PERFORMANCE: Renowned for its wave catching prowess, this model really does appeal to a wide demographic. It's the perfect board if you've just started turning and you want to progress to the next level of performance.",
+          "board_category_slug": "fish"
+        }
+      ]
+    },
+    {
+      "slug": "salt-gypsy",
+      "name": "Salt Gypsy",
+      "website_url": "https://us.surfindustries.com/collections/salt-gypsy-surfboards",
+      "location_label": "Australia",
+      "short_description": "Women's surfboards from Salt Gypsy \u2014 shortboards, mids, and longboards.",
+      "models": [
+        {
+          "name": "Chi Chi",
+          "image_url": "https://cdn.shopify.com/s/files/1/0459/1481/6670/files/cat-prod-salt-gypsy-24-chi-chi-dirty-pink.jpg?v=1731626330",
+          "description": "The Salt Gypsy Chi Chi aims to improve your wave count, it has a huge range. This board has the rocker tuned for a shortboard, and we have dropped the volume per size ratio so it fits within the Salt Gypsy mandate to suit women\u2019s smaller frames. It\u2019s a fast board that offers plenty of flow, and is the perfect choice for maximising your wave count even when the conditions aren\u2019t perfect.\n\n\u00a0 OUTLINE: The nose and tail dimensions at 12\u2033 are the same, creating a larger sweet spot, and a more stable planning zone. The full nose further adds to the stability, and the tail allows the width to extend further back, while still achieving the smooth transitions between turns that a round tail is famous for.\n ROCKER: With an emphasis on everyday conditions; flat equals flow, so the Chi Chi will slide into waves with ease, and maintain its speed over dead sections with minimal effort. Slight lift in the nose and tail will satisfy the more experienced rider looking for a summer groveller.\n CONTOURS: Subtle yet effective, the slight concave up front creates lift when taking off, then a double concave starting in the mid zone leads into a shallow rolled vee off the tail. This bottom combination maintains exceptional speed in softer waves, yet provides a nice balance of control versus quick turning response when pivoting right off the tail.\n PERFORMANCE: The Chi Chi is fast from the second you get to your feet, and super easy to turn. Think summer beach breaks or soft point waves where you need a board with enough foam and buoyancy to get you going, but don\u2019t want to restrict how you want to perform on a wave.\n\n To find\u00a0out more about Salt Gypsy\u2019s heritage and apparel range please go to www.saltgypsy.com",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Dusty",
+          "image_url": "https://cdn.shopify.com/s/files/1/0459/1481/6670/files/cat-prod-salt-gypsy-24-dusty-lemonade.jpg?v=1727928593",
+          "description": "Imagine riding in an old Cadillac\u2026 You know how the old classic cars just seem to glide and almost float along the road? Well, that\u2019s exactly the feel on offer with the Salt Gypsy Dusty Longboard.\n The Dusty is by no means a performance Longboard, this board is about getting onto waves really early, setting the line, and then feeling the trim as you cruise down the line. Optimum conditions are small to medium size waves, and it will really feel at home on a long point wave.\n *All Salt Gypsy surfboards were tested and designed with appropriate dimensions and volume allocations to suit female surfers so they can get the most out of every wave \u2013 they also come in a 100% stretch cotton dust jacket ensuring that zero plastic is used in the packaging of these surfboards.\n To find\u00a0out more about Salt Gypsy\u2019s heritage and apparel range please go to www.saltgypsy.com",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mid Tide",
+          "image_url": "https://cdn.shopify.com/s/files/1/0459/1481/6670/files/cat-prod-salt-gypsy-24-mid-tide-peach-fuzz_c858d9ff-ea15-4b63-9ba5-5a618d3dde93.jpg?v=1727931722",
+          "description": "The versatility of the Mid Tide shouldn\u2019t be underestimated. This all day, every day surfboard is not intimidating in any way, and has a reliability to it that\u2019ll see her perform in just about any type of waves. This one is defined as a mid-length cruiser with a few smaller sizes in the offering for the more petite girls and those with some intent to their approach.\n\n The Mid Tide is defined as a mid-length cruiser with some smaller sizes for the more petite girls and those with some intent to their approach.\n The generous outline (shape) and \u2018easy on the eye\u2019 curves mean this board strikes the perfect balance between drawing long smooth lines in cruise mode and banking a nice turn on the open face.\n Think easy paddling, lots of stability and enough turning response to satisfy the savvy Salt Gypsy wanting to really wet the rail.\n All ages, all conditions\u2026 The Mid Tide is basically an all-round cruiser that will adapt to the rider\u2019s ability.\n *All Salt Gypsy surfboards were tested and designed with appropriate dimensions and volume allocations to suit female surfers so they can get the most out of every wave \u2013 they also come in a 100% stretch cotton dust jacket ensuring that zero plastic is used in the packaging of these surfboards.\n To find\u00a0out more about Salt Gypsy\u2019s heritage and apparel range please go to www.saltgypsy.com",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    },
+    {
+      "slug": "modern-surfboards",
+      "name": "Modern Surfboards",
+      "website_url": "https://modernsurfboards.com",
+      "location_label": "Australia",
+      "short_description": "Accessible Australian performance, mid-length, and longboard designs.",
+      "models": [
+        {
+          "name": "Double Wide",
+          "image_url": "https://cdn.shopify.com/s/files/1/0459/1481/6670/products/cat-prod-modern-20-double-wide-slx.jpg?v=1597722791",
+          "description": "What happens when you take a longboard and make it shorter, and re-distribute the foam into the outline and thickness? Answer, you get the Modern Double Wide. This high volume mid-length surfboard offers great stability and exceptional paddle power for beginner-to-intermediate surfers. This version is now available in our Epoxy Soft construction.\n OUTLINE: Generous nose outline up front with parallel rails, leading into a wide tail. Having maximum surface area gives this surfboard amazing side-to-side stability so it\u2019s perfect for beginner and intermediate riders as they jump to their feet.\n CONTOURS: Flat through the nose helps with early entry into softer waves, vee into double rolled concave in the back half of the board means more capable riders can still make flowing directional changes.\n ROCKER: Relaxed through the entire length of the board with gentle lift in the nose and tail. This allows the board to paddle exceptionally well, catch waves easily, and maintain forward flow even in the white-water, while still allowing the board to turn in a smooth arc.\n FOIL: Boxy rails and a high-volume foil from nose-to-tail means this board will sit high on the water making it perfect for maintaining speed and distance in smaller conditions.\n Available in\u00a0three key sizes, the Modern Double Wide is perfect for anyone looking for the stability and paddle power of a longboard in a more manageable size board.\n NEXT STEP: If you are looking for a more performance version of this board. Check out the\u00a0 Modern Surfboard Double Wide SLX",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Falcon",
+          "image_url": "https://cdn.shopify.com/s/files/1/0459/1481/6670/files/cat-prod-modern-23-falcon-olive.jpg?v=1692764267",
+          "description": "The Falcon sets a new benchmark in the funboard category. Stable and buoyant, with a sexier shape and some performance hidden within the design, the Falcon is the perfect board for beginner-to-intermediates wanting a board that gets better as your skills improve.\n\n OUTLINE: The wide point is forward to enhance trim stability from a central stance position, and the streamlined nose gives the outline a contemporary vibe. The back half of the board tapers steadily towards the tail for easier turning in smaller waves, and to heighten control in slightly larger waves.\n CONTOURS: The rocker strikes a balance between paddle speed and just enough nose/tail lift for accessing steeper parts of the wave. Forward vee running to vee/double concave between the feet allows for very smooth rail transitions and a responsive feel when standing further back.\n FOIL: Designed with plenty of volume through the spine for appropriate buoyancy and stability. The taper at the tips provides better performance sensitivity when riding on the wave face.\n PERFORMANCE: The dual-purpose nature of the Falcon offers a stable and cruisy ride for surfers coming off a softboard or bigger longboard. Alternatively, more capable riders will find a surprising amount of speed a response when adopting a more aggressive approach.\n Available in a broad size allocation in clear and tint options, the Modern Falcon is a reliable, and affordable board that will feature prominently in your quiver. Comes as a thruster with FCS II plugs and Performer Medium fins.\n NEXT STEP: If you are looking for a more performance version of this board. Check out the\u00a0 7S Jet Stream +",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Golden Rule",
+          "image_url": "https://cdn.shopify.com/s/files/1/0459/1481/6670/files/cat-prod-modern-24-golden-rule-steele.webp?v=1721707477",
+          "description": "We worked on the Golden Rule to ensure it is a user-friendly all round longboard that will give the rider the ability to ride each wave easily. The overall style of the board has an emphasis on stability, control and smooth turning. The Golden Rule is all about having the volume where it is needed. Having the right amount of foam under your torso for fast paddling or foiling the tail out so the board can perform when when turning. We love the way the Golden Rule rides.\n\n OUTLINE: OUTLINE: You will find The Golden Rule has a very balanced outline, we have pulled the nose in to give it a bit more of a performance feel, a parallel mid-section which creates a huge standing zone, and we have tapered the tail to help break a line and turn smoothly.\n ROCKER: Nice and low through the entry makes for fast paddling, which equates to being able to get onto the waves earlier. Relaxed through the middle, but with enough curve to facilitate a smooth turning arc on the wave face. And finally, there\u2019s a little extra lift in the tail to make turning easier for surfers moving up in their abilities.\n CONTOURS:We have given The Golden Rule a slight concave in the nose, then simplified soft vee in the mid section, running into vee/double concave through the tail. This is designed to help promote smoother rail-to-rail transitions on a longer board, yet still provide control in steeper sections, and deliver a feeling of pivotal sensitivity when turning right off the tail.\n FOIL: We have thinned our the nose and tail from previous models also smooth it out towards the rails, providing added stability and making this board simple to ride, regardless of your skill level.\n PERFORMANCE: The Golden Rule has volume\u00a0distributed\u00a0to give the rider the best chance\u00a0of having the most fun on the wave.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Highline",
+          "image_url": "https://cdn.shopify.com/s/files/1/0459/1481/6670/products/cat-prod-modern-22-highline-ex-soft.jpg?v=1659327537",
+          "description": "Now available in our Epoxy Soft construction for more fun. With the Modern Highline we wanted to design a board that would give novice-to-intermediate surfers as much assistance as possible.\n\n To become a better surfer and build your confidence, you need to catch as many waves as possible. There aren't any shortcuts but we think we can help shorten the learning curve. So we designed this board to be very buoyant (easy to paddle), stable (easy to get to your feet), and easy to control (smooth turns and go where you want on a wave).\n\n Essentially, we built this board to re-define the first steps in surfing so people develop their skills quicker, build confidence and maximise the enjoyment they get from riding waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Highline 2.0",
+          "image_url": "https://cdn.shopify.com/s/files/1/0459/1481/6670/files/cat-prod-modern-24-highline-2-0-clear.jpg?v=1712886944",
+          "description": "This 2nd iteration of the Highline sees the plan shape and the rocker maintained from the original version.\n The update features a dramatically tweaked bottom contour that has a small amount of Vee upfront then a noticeable double concave with a lot of Vee between the fins.\n We know that the Modern Highline was primarily designed as a transition board for those coming off a high volume softboard wanting to ride a smaller board. It has become so much more by dramatically increasing your wave count it in turn increases your confidence and with the updated bottom contour it increases the ease of turning the board.\n Essentially, we built upon the original design of this board to hasten the first steps in surfing so people develop their skills even quicker and maximise the enjoyment they get from riding waves sooner.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Love Child",
+          "image_url": "https://cdn.shopify.com/s/files/1/0459/1481/6670/files/cat-prod-modern-24-love-child-pu-clear.jpg?v=1710827156",
+          "description": "With loads of surface area up front, and a more tapered outline in the tail, the Modern Love Child is a versatile cruiser that is sure to double your wave count. This surfboard paddles exceptionally well, has plenty of turning ability off the tail, and will adapt as the conditions, and your approach changes.\n\n OUTLINE: The longboard outline up front creates a huge stable zone under the front foot and chest, which is great for catching waves early and riding forward towards the nose. The tapered area pintail keeps the board manoeuvrable and adds control in bigger, steeper waves.\n ROCKER: The low rocker is designed to glide effortlessly into waves and maintain down-the-line speed and acceleration. The subtle lift in the tail rocker promotes smooth gliding turns on the face.\n CONTOURS: Pronounced vee-double concave starts under the front foot and runs all the way out the back maintaining ample manoeuvrability on an otherwise wide, higher volume board.\n FIN: The single and 2 + 1 set-ups deliver a free-flowing ride while promoting longer lines.\n AESTHETIC: The traditional resin tints, rail laps, and gloss finish not only look striking but also guarantees that each board has its own unique appearance. \n NEXT STEP: If you are looking for a more performance version of this board. Check out the\u00a0 7S Super Fish 4",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Retro",
+          "image_url": "https://cdn.shopify.com/s/files/1/0459/1481/6670/products/cat-prod-modern-23-retro-clear_a5b5a560-3ea4-4433-a086-f37e5d67dd5a.jpg?v=1692923144",
+          "description": "The Modern Retro Longboard puts a contemporary twist on an old school design, made popular back in the late 60\u2019s, when hanging toes was the in-vogue move.\n\n OUTLINE: The Retro is wide and incredibly stable. The long parallel rails create a huge stable platform to stand and walk the board, and the full rounded nose is ideal for riding the nose.\n ROCKER: Moderately flat entry rocker provides fast paddling and flowing down-the-line trim speed. The flat section through the middle gives the board effortless glide, and slight lift in the tail enhances turning ability.\n CONTOURS: A long, single concave under the nose provides lift for extended nose time, while vee through the belly and tail allows the rider to transition smoothly from rail-to-rail.\n RAILS: Forgiving 60/40 rails not only provide bite on the wave face, but also allows for smooth transitional turns off the tail.\n AESTHETIC: Double stringer with traditional resin tint, rail laps and gloss finish not only look striking, but guarantees that each board has its own unique appearance.\n FIN: The Retro comes with a single fin box and 9.5\u2033 inch Rake fin.\n This log inspired Longboard is all about glide, flow and trimming down the line with style.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    },
+    {
+      "slug": "three-palms-board-co",
+      "name": "Three Palms Board Co",
+      "website_url": "https://us.surfindustries.com",
+      "location_label": null,
+      "short_description": "Soft-top surfboards from Three Palms Board Co.",
+      "models": [
+        {
+          "name": "Soft Surfboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/0459/1481/6670/files/cat-prod-3-palms-20-soft-surfboard.jpg?v=1752465327",
+          "description": "Stacked with extra volume, and constructed to keep beginners safe, the Three Palms Soft Surfboard has been purpose built to withstand some rough treatment, and the repetitive use associated with the rental market.\n\n DESIGN: With a focus on stability, the outline of this board is full bodied from nose to tail, and it has plenty of extra width through the middle to give first timers ample opportunity to jump to their feet. The extra volume in this board means it\u2019s extremely buoyant for paddling and catching waves easily, and to keep the board sitting high in the water when riding broken foam waves.\n\n CONSTRUCTION: Thick EVA deck and a soft slick skin on the bottom is super durable, yet soft enough to keep beginners safe. EPS core makes for a stiff, stable platform which is important at the beginner level. While other softboards can over flex, our boards maintain rocker integrity so you can jump to your feet quickly and confidently ride waves.\n\n SAFETY: Vacuum construction process eliminates hard or sharp surfaces, and prevents peeling or bubbling. Heavy-duty nose and tail bumper zones are a great feature for rental facilities and surf schools storing the boards standing on the tail.\n\n FEATURES: Convenient carry handle for easy transportation. Leash plug and FCS compatible fin boxes with HD internal reinforcements. Flexible thruster fin set makes it fast and easy to hit the water.\n\n PERFORMANCE: Available in three key sizes to accommodate a wide range of surfer weights and abilities. Three Palms Soft Surfboards are perfect for beginners to learn, progress and have endless fun on the waves.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
