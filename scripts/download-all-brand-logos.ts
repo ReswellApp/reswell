@@ -35,7 +35,8 @@ type Brand = {
 
 // Known logo URLs for specific brands
 const KNOWN_LOGOS: Record<string, string> = {
-  'almond-surfboards': 'https://almondsurfboards.com/cdn/shop/files/Almond-Logo_300x.png',
+  // Official header mark (Almond-Logo_300x.png 404s and previously saved as HTML).
+  'almond-surfboards': 'https://cdn.shopify.com/s/files/1/0586/9682/6965/files/Almond-Diamond.svg?v=1757971113',
   'lib-tech-surfboards': 'https://www.lib-tech.com/static/version1780486653/frontend/Mervin/libtech/en_US/images/logo.svg',
   'nsp-surfboards': 'https://www.nspsurfboards.com/wp-content/uploads/2024/11/NSP-Logo-White-spaced-out-V03.webp',
   'torq-surfboards': 'https://www.torqsurfboards.com/wp-content/uploads/2019/08/torq-logo.png',
