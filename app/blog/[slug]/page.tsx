@@ -12,6 +12,7 @@ import { proxiedBlogImageSrc } from "@/lib/blog/blog-media-proxy-url"
 import { absolutePublicMediaUrl, absoluteUrl, pageSeoMetadata } from "@/lib/site-metadata"
 
 export const dynamic = "force-dynamic"
+export const revalidate = 0
 
 export async function generateMetadata(props: {
   params: Promise<{ slug: string }>
@@ -38,19 +39,18 @@ export async function generateMetadata(props: {
   })
 
   const rawCandidate = absolutePublicMediaUrl(article.ogImage ?? article.coverImage)
-  let ogImageAbs: string | undefined
+  let ogImageAbs: string
   if (rawCandidate) {
     const proxied = proxiedBlogImageSrc(rawCandidate)
     ogImageAbs = proxied.startsWith("/") ? absoluteUrl(proxied) : proxied
+  } else {
+    ogImageAbs = absoluteUrl(`/blog/${slug}/opengraph-image`)
   }
 
   return {
     ...meta,
-    openGraph:
-      ogImageAbs && meta.openGraph
-        ? { ...meta.openGraph, images: [{ url: ogImageAbs }] }
-        : meta.openGraph,
-    twitter: ogImageAbs && meta.twitter ? { ...meta.twitter, images: [ogImageAbs] } : meta.twitter,
+    openGraph: meta.openGraph ? { ...meta.openGraph, images: [{ url: ogImageAbs }] } : meta.openGraph,
+    twitter: meta.twitter ? { ...meta.twitter, images: [ogImageAbs] } : meta.twitter,
   }
 }
 

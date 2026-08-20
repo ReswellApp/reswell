@@ -206,26 +206,39 @@ export function ListingPublishedCelebration({ listingParam }: { listingParam: st
       role="status"
       aria-live="polite"
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-4 sm:pb-6",
-        "pointer-events-none",
+        "fixed inset-x-0 bottom-0 z-50 flex justify-center px-4 pb-4",
+        "pointer-events-none md:pb-3",
       )}
     >
       <div
         className={cn(
           "pointer-events-auto w-full max-w-md rounded-2xl border border-listingHeart/25 bg-white p-5 shadow-soft",
           "transition-all duration-500 ease-smooth",
+          "md:w-auto md:max-w-none md:rounded-xl md:p-2 md:pl-2.5",
           visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0",
         )}
       >
-        <div className="flex items-start gap-3">
-          <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-listingHeart/10">
-            <CheckCircle2 className="size-5 text-listingHeart" aria-hidden />
+        <div className="flex items-start gap-3 md:items-center md:gap-2">
+          <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-listingHeart/10 md:mt-0 md:size-7">
+            <CheckCircle2 className="size-5 text-listingHeart md:size-3.5" aria-hidden />
           </span>
-          <div className="min-w-0 flex-1">
-            <p className="font-headline text-base font-bold text-foreground">
+          <div className="min-w-0 flex-1 md:flex-none">
+            <p className="font-headline text-base font-bold text-foreground md:whitespace-nowrap md:text-sm">
               Your listing is live
+              {showRaffleEntry ? (
+                <span className="hidden font-sans text-xs font-normal text-muted-foreground md:inline">
+                  {" "}
+                  ·{" "}
+                  <Link
+                    href="/giveaways"
+                    className="font-medium text-listingHeart underline-offset-2 hover:underline"
+                  >
+                    In the raffle
+                  </Link>
+                </span>
+              ) : null}
             </p>
-            <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground md:hidden">
               Buyers can see it right now. Share it to sell faster.
               {showRaffleEntry ? (
                 <>
@@ -242,6 +255,31 @@ export function ListingPublishedCelebration({ listingParam }: { listingParam: st
               ) : null}
             </p>
           </div>
+          <div className="hidden shrink-0 gap-1.5 md:flex">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1 px-2.5"
+              onClick={handleShare}
+            >
+              <Link2 className="size-3.5" aria-hidden />
+              Share
+            </Button>
+            <Button
+              asChild
+              size="sm"
+              className="h-8 gap-1 bg-listingHeart px-2.5 text-white hover:bg-listingHeart/90"
+            >
+              <Link
+                href={sellAgainHref(marker.section)}
+                onClick={() => setSellEntryPoint("celebration")}
+              >
+                <Plus className="size-3.5" aria-hidden />
+                List another
+              </Link>
+            </Button>
+          </div>
           <button
             type="button"
             onClick={() => setVisible(false)}
@@ -251,11 +289,11 @@ export function ListingPublishedCelebration({ listingParam }: { listingParam: st
             aria-label="Dismiss"
             className="rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
-            <X className="size-4" aria-hidden />
+            <X className="size-4 md:size-3.5" aria-hidden />
           </button>
         </div>
 
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex gap-2 md:hidden">
           <Button
             type="button"
             variant="outline"
@@ -282,18 +320,18 @@ export function ListingPublishedCelebration({ listingParam }: { listingParam: st
         </div>
 
         {enrichmentGaps.length > 0 ? (
-          <div className="mt-3 rounded-lg bg-listingHeart/5 px-3 py-2.5">
-            <p className="flex items-center gap-1.5 text-[13px] font-medium text-foreground">
+          <div className="mt-3 rounded-lg bg-listingHeart/5 px-3 py-2.5 md:mt-2 md:px-2 md:py-1.5">
+            <p className="flex items-center gap-1.5 text-[13px] font-medium text-foreground md:text-xs">
               <Sparkles className="size-3.5 text-listingHeart" aria-hidden />
               Help it sell faster
             </p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
+            <div className="mt-2 flex flex-wrap gap-1.5 md:mt-1.5">
               {enrichmentGaps.map((gap) => (
                 <Link
                   key={gap.id}
                   prefetch={false}
                   href={peerListingEditHref(marker.section, marker.listingId)}
-                  className="rounded-full border border-listingHeart/30 bg-white px-3 py-1 text-xs font-medium text-listingHeart transition-colors hover:bg-listingHeart hover:text-white"
+                  className="rounded-full border border-listingHeart/30 bg-white px-3 py-1 text-xs font-medium text-listingHeart transition-colors hover:bg-listingHeart hover:text-white md:px-2 md:py-0.5"
                 >
                   {gap.label}
                 </Link>
@@ -305,9 +343,9 @@ export function ListingPublishedCelebration({ listingParam }: { listingParam: st
         {payoutsNeedSetup ? (
           <Link
             href="/dashboard/payouts"
-            className="mt-3 flex items-center gap-2 rounded-lg bg-muted px-3 py-2.5 text-sm text-foreground transition-colors hover:bg-muted/70"
+            className="mt-3 flex items-center gap-2 rounded-lg bg-muted px-3 py-2.5 text-sm text-foreground transition-colors hover:bg-muted/70 md:mt-2 md:px-2 md:py-1.5 md:text-xs"
           >
-            <Landmark className="size-4 shrink-0 text-listingHeart" aria-hidden />
+            <Landmark className="size-4 shrink-0 text-listingHeart md:size-3.5" aria-hidden />
             <span className="leading-snug">
               <span className="font-medium">Get paid when it sells</span>{" "}
               <span className="text-muted-foreground">— set up payouts in a minute.</span>

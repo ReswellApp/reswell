@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { X } from "lucide-react"
 import { GiveawayBrandPicker } from "@/components/features/giveaways/giveaway-brand-picker"
 import { Button } from "@/components/ui/button"
 import {
@@ -50,7 +51,15 @@ export function SignUpGiveawayScreen({
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-md">
-        <Card>
+        <Card className="relative">
+          <button
+            type="button"
+            onClick={onDecline}
+            className="absolute right-4 top-4 rounded-sm p-1 text-muted-foreground transition hover:text-foreground"
+            aria-label="Exit"
+          >
+            <X className="h-4 w-4" />
+          </button>
           <CardHeader className="text-center">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-listingHeart">
               {giveaway.eyebrow}

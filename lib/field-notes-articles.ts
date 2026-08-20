@@ -3,7 +3,7 @@ import { proxiedBlogImageSrc } from "@/lib/blog/blog-media-proxy-url"
 export type ArticleBlock =
   | { kind: "h2"; text: string }
   | { kind: "p"; text: string }
-  | { kind: "image"; url: string; alt?: string; caption?: string }
+  | { kind: "image"; url: string; alt?: string; caption?: string; width?: number; height?: number }
   | { kind: "instagram"; url: string }
 
 export type FieldNoteArticle = {
@@ -27,12 +27,21 @@ export type FieldNoteArticle = {
   /** When false, post is omitted from `/blog` index but may still load at `/blog/[slug]` if published. */
   listedOnBlog?: boolean
   sortOrder?: number
+  /** Row `updated_at` — used to cache-bust cover URLs on the index. */
+  updatedAt?: string
   blocks: ArticleBlock[]
 }
 
-/** Public cover URL via proxy, or `null` when the post has no cover (no placeholder imagery). */
+function cacheBustMediaSrc(src: string, version: string | undefined): string {
+  const v = version?.trim()
+  if (!v) return src
+  const token = encodeURIComponent(v)
+  return src.includes("?") ? `${src}&v=${token}` : `${src}?v=${token}`
+}
+
+/** Public cover URL via proxy, or `null` when the post has no cover (title card is used instead). */
 export function getFieldNoteCoverSrc(article: FieldNoteArticle): string | null {
   const url = article.coverImage?.trim()
   if (!url) return null
-  return proxiedBlogImageSrc(url)
+  return cacheBustMediaSrc(proxiedBlogImageSrc(url), article.updatedAt)
 }

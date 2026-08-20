@@ -6,11 +6,30 @@
  *
  * Receiver email: uses auth.admin.getUserById (requires SUPABASE_SERVICE_ROLE_KEY in prod for email).
  * The Klaviyo **profile** on the event is the **receiver** so flows email them by default.
+ *
+ * **Klaviyo SMS flow (manual):** trigger on this metric with a **transactional** SMS action
+ * filtered to `message_sms_opt_in` is true. Opt-in also sets marketing consent so a marketing
+ * SMS action still works if the flow was built that way. Suggested SMS:
+ * `Reswell: New message from {{ event.message_from.display_name }}.`
  */
 
+import { after } from "next/server"
 import { getMessageSmsReceiverContext } from "@/lib/db/messageSmsNotifications"
+import { subscribeKlaviyoProfileSmsConsent } from "@/lib/klaviyo/subscribe-profile-sms-consent"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { sendKlaviyoServerEvent } from "@/lib/klaviyo/send-event"
+
+function scheduleMessageSentWork(work: () => Promise<void>): void {
+  const run = () =>
+    work().catch((e) => {
+      console.error("[klaviyo] Message Sent failed:", e)
+    })
+  try {
+    after(run)
+  } catch {
+    void run()
+  }
+}
 
 const MESSAGE_PROP_MAX = 4000
 
@@ -125,6 +144,12 @@ export type KlaviyoMessageSentPayload = {
 export async function trackKlaviyoMessageSent(
   payload: KlaviyoMessageSentPayload,
 ): Promise<void> {
+  scheduleMessageSentWork(() => performTrackKlaviyoMessageSent(payload))
+}
+
+async function performTrackKlaviyoMessageSent(
+  payload: KlaviyoMessageSentPayload,
+): Promise<void> {
   const {
     senderUserId,
     receiverUserId,
@@ -188,6 +213,16 @@ export async function trackKlaviyoMessageSent(
       "[klaviyo] Message Sent: receiver opted in to SMS but no valid phone on profile.",
       { receiverUserId },
     )
+  }
+
+  if (receiverSmsOptIn && receiverPhoneE164) {
+    await subscribeKlaviyoProfileSmsConsent({
+      phoneNumber: receiverPhoneE164,
+      email: receiverEmail,
+      externalId: receiverUserId,
+      transactional: "SUBSCRIBED",
+      marketing: "SUBSCRIBED",
+    })
   }
 
   const trimmed =

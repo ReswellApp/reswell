@@ -3746,12 +3746,11 @@ function SellPageContentInner({
               status={publishPreview.status}
               errorMessage={publishPreview.errorMessage}
               failedStepLabel={publishPreview.failedStepLabel}
-              onContinue={() => {
+              onViewLiveListing={() => {
                 if (publishPreview.detailHref) {
                   leaveSellDocument(publishPreview.detailHref)
                 }
               }}
-              onExit={() => leaveSellDocument(sellListingsHubHref)}
               onRetry={() => formRef.current?.requestSubmit()}
               onDismissError={() => {
                 setPublishPreview(null)

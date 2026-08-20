@@ -1,4 +1,8 @@
 import { z } from "zod"
+import {
+  BLOG_COPYRIGHT_FREE_IMAGE_ERROR,
+  isCopyrightFreeBlogImageUrl,
+} from "@/lib/blog/copyright-free-image-url"
 import { instagramPermalinkToEmbedSrc } from "@/lib/utils/instagram-embed"
 
 const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
@@ -15,11 +19,19 @@ const instagramSchema = z
   .url()
   .refine((u) => instagramPermalinkToEmbedSrc(u) !== null, "Paste a standard Instagram post or reel URL")
 
+const httpsCopyrightFreeImageUrl = z
+  .string()
+  .url()
+  .refine((u) => /^https:/i.test(u), "Cover and images must use HTTPS")
+  .refine((u) => isCopyrightFreeBlogImageUrl(u), BLOG_COPYRIGHT_FREE_IMAGE_ERROR)
+
 const imageSchema = z.object({
   kind: z.literal("image"),
-  url: z.string().url().refine((u) => /^https:/i.test(u), "Cover and images must use HTTPS"),
+  url: httpsCopyrightFreeImageUrl,
   alt: z.string().max(500).optional(),
   caption: z.string().max(2000).optional(),
+  width: z.coerce.number().int().positive().max(20_000).optional(),
+  height: z.coerce.number().int().positive().max(20_000).optional(),
 })
 
 export const articleBlockSchema = z.discriminatedUnion("kind", [
@@ -52,6 +64,10 @@ const blogDraftCoreSchema = z.object({
   coverImage: z
     .union([z.string().url(), z.literal(""), z.undefined()])
     .refine((v) => v === undefined || v === "" || /^https:/i.test(v), "HTTPS only")
+    .refine(
+      (v) => v === undefined || v === "" || isCopyrightFreeBlogImageUrl(v),
+      BLOG_COPYRIGHT_FREE_IMAGE_ERROR,
+    )
     .transform((v) => (v === "" ? undefined : v)),
   blocks: articleBlocksSchema,
   seoTitle: z.union([z.string().max(500), z.literal(""), z.undefined()]).transform((v) => (v === "" ? undefined : v)),
@@ -61,6 +77,10 @@ const blogDraftCoreSchema = z.object({
   ogImage: z
     .union([z.string().url(), z.literal(""), z.undefined()])
     .refine((v) => v === undefined || v === "" || /^https:/i.test(v), "HTTPS only")
+    .refine(
+      (v) => v === undefined || v === "" || isCopyrightFreeBlogImageUrl(v),
+      BLOG_COPYRIGHT_FREE_IMAGE_ERROR,
+    )
     .transform((v) => (v === "" ? undefined : v)),
   published: z.boolean(),
   /** When false, `/blog` index omits the post; `/blog/[slug]` still works if published. */

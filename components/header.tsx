@@ -30,7 +30,6 @@ import {
   Search,
   User,
   Heart,
-  Plus,
   ChevronDown,
   Clock,
   LogOut,
@@ -95,18 +94,43 @@ const listYourBoardNavButtonClassName = cn(
   "shrink-0 whitespace-nowrap rounded-full border-foreground/20 px-5 text-[14px] font-medium",
 )
 
-/** Guest mobile header: Sell + heart + cart share a 1.5px foreground stroke. */
-const mobileGuestActionStrokeWidth = 1.5
-const mobileGuestActionIconClassName = "h-6 w-6"
-const mobileGuestActionIconButtonClassName =
+/** Mobile header actions: Sell + heart + cart share a 1.5px foreground stroke. */
+const mobileActionStrokeWidth = 1.5
+const mobileActionIconClassName = "h-6 w-6"
+const mobileActionIconButtonClassName =
   "h-10 w-10 text-foreground hover:bg-black/5 [&_svg]:size-6"
-const mobileGuestSellButtonClassName =
-  "h-10 shrink-0 rounded-full border-[1.5px] border-foreground px-4 text-[14px] font-medium text-foreground shadow-none hover:bg-muted/50"
+const mobileSellButtonClassName =
+  "h-10 shrink-0 whitespace-nowrap rounded-full border-[1.5px] border-foreground px-3.5 text-[14px] font-medium text-foreground shadow-none hover:bg-muted/50"
 
 /** Guest “Recently sold” nav control — larger tap target (Clock icon, links to `/sold`). */
 const recentlySoldNavButtonClassName =
   "h-11 w-14 shrink-0 px-0 text-foreground hover:bg-muted sm:h-12 sm:w-[3.75rem]"
 const recentlySoldNavIconClassName = "h-8 w-8 sm:h-9 sm:w-9"
+
+function HeaderSellButton({ className }: { className?: string }) {
+  return (
+    <Button asChild variant="outline" className={cn(mobileSellButtonClassName, className)}>
+      <Link href={SELL_HUB_HREF}>Sell</Link>
+    </Button>
+  )
+}
+
+function HeaderMobileSignUpButton({ onSignUp }: { onSignUp: () => void }) {
+  return (
+    <Button asChild variant="outline" className={mobileSellButtonClassName}>
+      <Link
+        href={authLandingHref("/auth/sign-up")}
+        onClick={(e) => {
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+          e.preventDefault()
+          onSignUp()
+        }}
+      >
+        Sign up
+      </Link>
+    </Button>
+  )
+}
 
 function HeaderMobileNavActionsSkeleton() {
   return (
@@ -116,6 +140,7 @@ function HeaderMobileNavActionsSkeleton() {
       aria-label="Loading navigation"
     >
       <Skeleton className="h-10 w-14 shrink-0 rounded-full" />
+      <Skeleton className="h-10 w-[4.5rem] shrink-0 rounded-full" />
       <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
       <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
     </div>
@@ -129,13 +154,13 @@ function HeaderDesktopNavActionsSkeleton() {
       aria-busy="true"
       aria-label="Loading navigation"
     >
-      <Skeleton className="hidden h-12 w-[9.5rem] shrink-0 rounded-full lg:mr-10 lg:block" />
+      <Skeleton className="hidden h-10 w-14 shrink-0 rounded-full lg:mr-10 lg:block" />
       <Skeleton className="hidden h-4 w-11 shrink-0 rounded lg:block" />
       <Skeleton className="hidden h-11 w-14 shrink-0 rounded-lg lg:block" />
       <Skeleton className="hidden h-10 w-10 shrink-0 rounded-lg lg:block" />
       <Skeleton className="hidden h-10 w-10 shrink-0 rounded-lg lg:block" />
       <Skeleton className="hidden h-10 w-10 shrink-0 rounded-lg sm:block" />
-      <Skeleton className="hidden h-12 w-36 shrink-0 rounded-full sm:block lg:hidden" />
+      <Skeleton className="hidden h-10 w-14 shrink-0 rounded-full sm:block lg:hidden" />
       <Skeleton className="hidden h-4 w-14 shrink-0 rounded sm:block lg:hidden" />
       <Skeleton className="h-9 w-9 shrink-0 rounded-full sm:ml-2 md:ml-4" />
     </div>
@@ -1134,47 +1159,41 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                     <HeaderMobileNavActionsSkeleton />
                   ) : user ? (
                     <>
+                      <HeaderSellButton />
                       <Link href="/favorites" className="inline-flex shrink-0">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-10 w-10 text-foreground hover:bg-black/5"
+                          className={mobileActionIconButtonClassName}
                           aria-label="Favorites"
                         >
-                          <Heart className="h-[22px] w-[22px]" />
+                          <Heart
+                            className={mobileActionIconClassName}
+                            strokeWidth={mobileActionStrokeWidth}
+                          />
                         </Button>
                       </Link>
                       <NavMessagesDropdown
                         userId={user.id}
                         unreadMessages={unreadMessages}
-                        triggerClassName="h-10 w-10 shrink-0"
-                        iconClassName="h-[22px] w-[22px]"
+                        triggerClassName={cn(mobileActionIconButtonClassName, "shrink-0")}
+                        iconClassName={mobileActionIconClassName}
+                        iconStrokeWidth={mobileActionStrokeWidth}
                       />
-                      <Button
-                        asChild
-                        variant="ghost"
-                        size="icon"
-                        className="h-10 w-10 shrink-0 text-foreground hover:bg-black/5"
-                      >
-                        <Link
-                          href={SELL_HUB_HREF}
-                          aria-label="Create listing"
-                        >
-                          <Plus className="h-[22px] w-[22px]" aria-hidden />
-                        </Link>
-                      </Button>
                       <div className="shrink-0">{accountMenu}</div>
                       <CartHeaderLink
                         showOnNarrowScreens
                         authResolved={authLoaded}
                         userId={user?.id ?? null}
+                        className={mobileActionIconButtonClassName}
+                        iconClassName={mobileActionIconClassName}
+                        iconStrokeWidth={mobileActionStrokeWidth}
                       />
                     </>
                   ) : (
                     <>
-                      <Button asChild variant="outline" className={mobileGuestSellButtonClassName}>
-                        <Link href={SELL_HUB_HREF}>Sell</Link>
-                      </Button>
+                      <HeaderSellButton />
+                      <HeaderMobileSignUpButton onSignUp={() => openSignUp()} />
                       <Link
                         href={`/auth/login?redirect=${encodeURIComponent("/favorites")}`}
                         className="inline-flex shrink-0"
@@ -1187,12 +1206,12 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                         <Button
                           variant="ghost"
                           size="icon"
-                          className={mobileGuestActionIconButtonClassName}
+                          className={mobileActionIconButtonClassName}
                           aria-label="Favorites"
                         >
                           <Heart
-                            className={mobileGuestActionIconClassName}
-                            strokeWidth={mobileGuestActionStrokeWidth}
+                            className={mobileActionIconClassName}
+                            strokeWidth={mobileActionStrokeWidth}
                           />
                         </Button>
                       </Link>
@@ -1200,9 +1219,9 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                         showOnNarrowScreens
                         authResolved={authLoaded}
                         userId={user?.id ?? null}
-                        className={mobileGuestActionIconButtonClassName}
-                        iconClassName={mobileGuestActionIconClassName}
-                        iconStrokeWidth={mobileGuestActionStrokeWidth}
+                        className={mobileActionIconButtonClassName}
+                        iconClassName={mobileActionIconClassName}
+                        iconStrokeWidth={mobileActionStrokeWidth}
                       />
                     </>
                   )}
@@ -1286,27 +1305,10 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               <HeaderDesktopNavActionsSkeleton />
             ) : (
               <>
-            {user ? (
-              <Button
-                asChild
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 shrink-0 text-foreground hover:bg-muted"
-              >
-                <Link href={SELL_HUB_HREF} aria-label="Create listing">
-                  <Plus className="h-[22px] w-[22px]" aria-hidden />
-                </Link>
-              </Button>
-            ) : null}
+            {user ? <HeaderSellButton className="lg:mr-2" /> : null}
 
             {!user ? (
-              <Button
-                asChild
-                variant="outline"
-                className={cn(listYourBoardNavButtonClassName, "hidden lg:mr-10 lg:inline-flex")}
-              >
-                <Link href={SELL_HUB_HREF}>List your gear</Link>
-              </Button>
+              <HeaderSellButton className="hidden lg:mr-10 lg:inline-flex" />
             ) : null}
 
             {!user ? (
@@ -1367,13 +1369,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
               </div>
             ) : (
               <div className="flex items-center gap-0">
-                <Button
-                  asChild
-                  variant="outline"
-                  className={cn(listYourBoardNavButtonClassName, "hidden sm:inline-flex lg:hidden")}
-                >
-                  <Link href={SELL_HUB_HREF}>List your gear</Link>
-                </Button>
+                <HeaderSellButton className="hidden sm:inline-flex lg:hidden" />
                 <div className="hidden items-center gap-2 lg:flex">
                   <Button
                     asChild

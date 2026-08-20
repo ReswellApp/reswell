@@ -63,7 +63,20 @@ export function SignInRequiredGate({
 
     const verifySession = async (): Promise<boolean> => {
       const session = await resolveClientSessionForMutation(supabase)
-      return Boolean(session?.user)
+      if (session?.user) return true
+      // Browser client can miss httpOnly SSR cookies; the server cookie probe
+      // is enough to treat this tab as signed in and refresh the RSC tree.
+      try {
+        const res = await fetch("/api/auth/session-user", {
+          credentials: "include",
+          cache: "no-store",
+        })
+        if (!res.ok) return false
+        const body = (await res.json()) as { data?: { id?: string } }
+        return Boolean(body.data?.id?.trim())
+      } catch {
+        return false
+      }
     }
 
     const applyAuthed = () => {
@@ -92,6 +105,7 @@ export function SignInRequiredGate({
         if (!mounted) return
         if (ok) {
           applyAuthed()
+          router.refresh()
           return
         }
         applyBlocked()
@@ -105,8 +119,10 @@ export function SignInRequiredGate({
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
+        const wasAuthed = authedRef.current
         authedRef.current = true
         setPhase("authed")
+        if (!wasAuthed) router.refresh()
       } else if (_event === "SIGNED_OUT") {
         authedRef.current = false
         setPhase("blocked")

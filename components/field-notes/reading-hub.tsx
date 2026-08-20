@@ -6,6 +6,7 @@ import type { FieldNoteArticle } from "@/lib/field-notes-articles"
 import { getFieldNoteCoverSrc } from "@/lib/field-notes-articles"
 import { blogImageShouldBypassOptimization } from "@/lib/blog/blog-media-proxy-url"
 import { MostRecentHeading } from "@/components/field-notes/most-recent-heading"
+import { BlogTitleCover } from "@/components/field-notes/blog-title-cover"
 
 type Props = {
   title: string
@@ -26,18 +27,19 @@ export function BlogListingRow({ article }: { article: FieldNoteArticle }) {
         href={`/blog/${article.slug}`}
         className="group grid gap-8 no-underline md:grid-cols-12 md:gap-10 lg:gap-12"
       >
-        <div className="relative aspect-[16/10] w-full overflow-hidden bg-muted md:col-span-5">
+        <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#04070E] md:col-span-5">
           {coverSrc ? (
             <Image
+              key={coverSrc}
               src={coverSrc}
               alt={article.title}
               fill
               unoptimized={blogImageShouldBypassOptimization(coverSrc)}
               sizes="(max-width: 768px) 100vw, 42vw"
-              className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+              className="object-contain transition-transform duration-500 ease-out group-hover:scale-[1.03]"
             />
           ) : (
-            <div className="h-full w-full bg-muted" aria-hidden />
+            <BlogTitleCover title={article.title} tag={article.tag} />
           )}
           <div className="absolute left-3 top-3 sm:left-4 sm:top-4">
             <span className="inline-flex items-center gap-2 bg-foreground px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-foreground shadow-sm sm:text-[11px]">

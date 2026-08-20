@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server"
-import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import {
   adminDeleteBlogPostService,
@@ -7,6 +6,7 @@ import {
   adminUpdateBlogPostService,
 } from "@/lib/services/blogPostsAdmin"
 import { adminBlogPostWriteSchema } from "@/lib/validations/blog"
+import { revalidateBlogPaths } from "@/lib/blog/revalidate-blog"
 
 export async function GET(_request: Request, ctx: { params: Promise<{ id: string }> }) {
   const gate = await requireAdmin()
@@ -46,9 +46,7 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ id: strin
     )
   }
 
-  revalidatePath("/blog")
-  revalidatePath("/blog/[slug]", "layout")
-  revalidatePath(`/blog/${parsed.data.slug}`)
+  revalidateBlogPaths(parsed.data.slug)
   return NextResponse.json({ data: { ok: true as const } }, { status: 200 })
 }
 
@@ -57,12 +55,12 @@ export async function DELETE(_request: Request, ctx: { params: Promise<{ id: str
   if (!gate.ok) return gate.response
 
   const { id } = await ctx.params
+  const existing = await adminGetBlogArticleService(gate.ctx.supabase, id)
   const result = await adminDeleteBlogPostService(gate.ctx.supabase, id)
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 404 })
   }
 
-  revalidatePath("/blog")
-  revalidatePath("/blog/[slug]", "layout")
+  revalidateBlogPaths(existing?.slug)
   return NextResponse.json({ data: { ok: true as const } }, { status: 200 })
 }

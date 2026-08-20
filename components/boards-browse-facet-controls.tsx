@@ -260,6 +260,7 @@ function BrandModelSection({ state }: { state: BoardsFilterState }) {
 }
 
 const SECTION_IDS = [
+  "price",
   "location",
   "shipping",
   "style",
@@ -270,7 +271,6 @@ const SECTION_IDS = [
   "construction",
   "brand",
   "condition",
-  "price",
 ] as const
 
 export function BoardsBrowseFacetControls({
@@ -290,6 +290,10 @@ export function BoardsBrowseFacetControls({
       defaultValue={[...SECTION_IDS]}
       className="w-full"
     >
+      <FacetAccordionItem id="price" title="Price">
+        <PriceSection state={state} />
+      </FacetAccordionItem>
+
       <FacetAccordionItem id="location" title="Location">
         <BoardsBrowseLocationFilter state={state} listboxId={locationListboxId} />
       </FacetAccordionItem>
@@ -381,10 +385,6 @@ export function BoardsBrowseFacetControls({
           counts={counts[FACET_PARAM_KEYS.condition]}
           state={state}
         />
-      </FacetAccordionItem>
-
-      <FacetAccordionItem id="price" title="Price">
-        <PriceSection state={state} />
       </FacetAccordionItem>
     </Accordion>
   )

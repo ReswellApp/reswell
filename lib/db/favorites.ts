@@ -121,3 +121,134 @@ export async function getFavoriteListingsForCartCarousel(
 
   return { listings, error: null }
 }
+
+/** Listing fields needed for the /favorites saved list. */
+export type SavedFavoriteListing = {
+  id: string
+  slug: string | null
+  user_id: string
+  title: string
+  price: number
+  status: string
+  section: string
+  hidden_from_site?: boolean | null
+  archived_at?: string | null
+  city: string | null
+  state: string | null
+  condition?: string | null
+  board_type?: string | null
+  dimensions?: string | null
+  shipping_available?: boolean | null
+  local_pickup?: boolean | null
+  listing_images: { url: string; is_primary: boolean }[]
+  profiles?: { display_name?: string | null; shop_verified?: boolean } | null
+  categories?: { name?: string | null } | null
+}
+
+export type SavedFavoriteRow = {
+  id: string
+  created_at: string
+  listing: SavedFavoriteListing
+}
+
+/**
+ * All saved listings for the signed-in user, newest first.
+ * Visibility matches the public saved-list rules (active / pending / sold).
+ */
+export async function getSavedFavoritesForUser(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<{ favorites: SavedFavoriteRow[]; error: string | null }> {
+  const { data, error } = await supabase
+    .from("favorites")
+    .select(
+      `
+      id,
+      created_at,
+      listing:listings (
+        id,
+        slug,
+        user_id,
+        title,
+        price,
+        status,
+        section,
+        hidden_from_site,
+        archived_at,
+        city,
+        state,
+        condition,
+        board_type,
+        dimensions,
+        shipping_available,
+        local_pickup,
+        listing_images ( url, is_primary ),
+        profiles!listings_user_id_fkey ( display_name, shop_verified ),
+        categories ( name )
+      )
+    `,
+    )
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    return { favorites: [], error: error.message }
+  }
+
+  const favorites: SavedFavoriteRow[] = []
+
+  for (const row of data ?? []) {
+    const raw = row as {
+      id: string
+      created_at: string
+      listing:
+        | (SavedFavoriteListing & {
+            listing_images?: { url: string; is_primary: boolean }[] | null
+            profiles?:
+              | { display_name?: string | null; shop_verified?: boolean }
+              | { display_name?: string | null; shop_verified?: boolean }[]
+              | null
+            categories?:
+              | { name?: string | null }
+              | { name?: string | null }[]
+              | null
+          })
+        | (SavedFavoriteListing & {
+            listing_images?: { url: string; is_primary: boolean }[] | null
+            profiles?:
+              | { display_name?: string | null; shop_verified?: boolean }
+              | { display_name?: string | null; shop_verified?: boolean }[]
+              | null
+            categories?:
+              | { name?: string | null }
+              | { name?: string | null }[]
+              | null
+          })[]
+        | null
+    }
+
+    const listingRaw = raw.listing
+    const listing = Array.isArray(listingRaw) ? listingRaw[0] : listingRaw
+    if (!listing) continue
+    if (!isListingVisibleInSavedList(listing)) continue
+
+    const cat = listing.categories
+    const categories = Array.isArray(cat) ? cat[0] ?? null : cat ?? null
+    const pr = listing.profiles
+    const profiles = Array.isArray(pr) ? pr[0] ?? null : pr ?? null
+
+    favorites.push({
+      id: raw.id,
+      created_at: raw.created_at,
+      listing: {
+        ...listing,
+        price: typeof listing.price === "number" ? listing.price : Number(listing.price),
+        listing_images: listing.listing_images ?? [],
+        categories,
+        profiles,
+      },
+    })
+  }
+
+  return { favorites, error: null }
+}

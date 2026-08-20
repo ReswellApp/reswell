@@ -1,5 +1,6 @@
-import { createClient } from "@/lib/supabase/server"
 import { SavedListContent } from "@/components/saved-list-content"
+import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
+import { getSavedFavoritesForUser } from "@/lib/db/favorites"
 import { pageSeoMetadata } from "@/lib/site-metadata"
 
 export const metadata = pageSeoMetadata({
@@ -10,18 +11,19 @@ export const metadata = pageSeoMetadata({
 })
 
 export default async function FavoritesPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { supabase, user } = await getCachedRequestSession()
 
   if (!user) {
     return null
   }
 
+  const { favorites } = await getSavedFavoritesForUser(supabase, user.id)
+
   return (
-      <main className="flex-1">
-        <section className="container mx-auto py-8">
-          <SavedListContent />
-        </section>
-      </main>
+    <main className="flex-1">
+      <section className="container mx-auto py-8">
+        <SavedListContent viewerId={user.id} initialFavorites={favorites} />
+      </section>
+    </main>
   )
 }

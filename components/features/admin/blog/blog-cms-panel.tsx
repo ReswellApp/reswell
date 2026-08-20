@@ -16,6 +16,7 @@ import { toast } from "sonner"
 import { BlogImageDropZone } from "@/components/features/admin/blog/blog-image-drop-zone"
 import type { ArticleBlock } from "@/lib/field-notes-articles"
 import type { FieldNoteArticle } from "@/lib/field-notes-articles"
+import { BlogTitleCover } from "@/components/field-notes/blog-title-cover"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -331,6 +332,8 @@ function SortableBlockRow(props: {
                     url: prev && /^https:\/\//i.test(prev) ? prev : "",
                     alt: block.kind === "image" ? block.alt ?? "" : "",
                     caption: block.kind === "image" ? block.caption ?? "" : "",
+                    width: block.kind === "image" ? block.width : undefined,
+                    height: block.kind === "image" ? block.height : undefined,
                   })
                 }
                 if (kind === "instagram") {
@@ -388,7 +391,15 @@ function SortableBlockRow(props: {
                 compact
                 label="Image"
                 value={block.url}
-                onUrlChange={(u) => props.patch(props.row.cid, { ...block, url: u })}
+                onUrlChange={(u, dim) =>
+                  props.patch(props.row.cid, {
+                    ...block,
+                    url: u,
+                    width: dim?.width,
+                    height: dim?.height,
+                  })
+                }
+                hint="Unsplash, Pexels, Pixabay, Wikimedia Commons, or a photo you own. No brand or product-catalog shots."
               />
               <Input
                 value={block.alt ?? ""}
@@ -625,7 +636,10 @@ export function BlogCmsFloatingPanel() {
         <SheetContent side="left" className="flex h-full max-h-screen w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-xl md:max-w-2xl">
           <SheetHeader className="shrink-0 border-b px-6 py-5 text-left">
             <SheetTitle>Blog CMS</SheetTitle>
-            <SheetDescription>Manage posts shown on `/blog`: copy, imagery, ordering, URLs, SEO, and layout blocks.</SheetDescription>
+            <SheetDescription>
+              Manage posts on `/blog`. Covers are optional (a title card is generated when empty). Images must be
+              copyright-free.
+            </SheetDescription>
           </SheetHeader>
 
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-6 pb-10 pt-4">
@@ -754,10 +768,23 @@ export function BlogCmsFloatingPanel() {
 
                   <div className="space-y-2 sm:col-span-2">
                     <BlogImageDropZone
-                      label="Cover image"
+                      label="Cover image (optional)"
                       value={draft.coverImage}
                       onUrlChange={(next) => setDraft((d) => ({ ...d, coverImage: next }))}
+                      hint="Leave empty to use a generated title card. Copyright-free images only — Unsplash, Pexels, Pixabay, Wikimedia Commons, or photos you own."
                     />
+                    {!draft.coverImage.trim() ? (
+                      <div className="overflow-hidden rounded-lg border border-border">
+                        <div className="relative aspect-[16/10] w-full">
+                          <div className="absolute inset-0">
+                            <BlogTitleCover
+                              title={draft.title.trim() || "Untitled post"}
+                              tag={draft.tag.trim() || "Blog"}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="flex flex-col gap-3 rounded-lg border p-4 sm:col-span-2">
@@ -821,6 +848,7 @@ export function BlogCmsFloatingPanel() {
                           label="Social share image (Open Graph)"
                           value={draft.ogImage}
                           onUrlChange={(next) => setDraft((d) => ({ ...d, ogImage: next }))}
+                          hint="Optional. If empty, shares use the cover photo or the generated title card. Same copyright-free rules as covers."
                         />
                       </AccordionContent>
                     </AccordionItem>
@@ -856,20 +884,26 @@ export function BlogCmsFloatingPanel() {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 border-t pt-4">
-                  <Button type="button" disabled={working} onClick={() => persist()}>
-                    {working ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-                        Saving…
-                      </>
-                    ) : (
-                      "Save"
-                    )}
-                  </Button>
-                  <Button type="button" variant="destructive" disabled={working || !editingId || creating} onClick={deleteCurrent}>
-                    Delete
-                  </Button>
+                <div className="space-y-3 border-t pt-4">
+                  <p className="text-xs leading-relaxed text-muted-foreground">
+                    Saving confirms every image is copyright-free or owned by Reswell. Cover may be empty — the title
+                    card is used instead.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" disabled={working} onClick={() => persist()}>
+                      {working ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                          Saving…
+                        </>
+                      ) : (
+                        "Save"
+                      )}
+                    </Button>
+                    <Button type="button" variant="destructive" disabled={working || !editingId || creating} onClick={deleteCurrent}>
+                      Delete
+                    </Button>
+                  </div>
                 </div>
               </>
             )}

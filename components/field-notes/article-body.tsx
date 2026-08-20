@@ -1,84 +1,39 @@
 import Image from "next/image"
 import type { ArticleBlock } from "@/lib/field-notes-articles"
 import { InstagramEmbedBlock } from "@/components/field-notes/instagram-embed-block"
-import { proxiedBlogImageSrc, blogImageShouldBypassOptimization } from "@/lib/blog/blog-media-proxy-url"
+import { BlogIntrinsicImage } from "@/components/field-notes/blog-intrinsic-image"
+import { proxiedBlogImageSrc } from "@/lib/blog/blog-media-proxy-url"
 
 function InlineArticleImage({
   url,
   alt,
   caption,
+  width,
+  height,
 }: {
   url: string
   alt: string
   caption?: string
+  width?: number
+  height?: number
 }) {
   const src = proxiedBlogImageSrc(url)
 
-  /** Same-origin blog storage proxy keeps Supabase hosts out of the DOM. */
-  if (src.startsWith("/media/blog/")) {
-    return (
-      <figure className="space-y-3">
-        <span className="relative block aspect-[16/10] w-full overflow-hidden rounded-lg bg-muted shadow-sm">
-          <Image
-            src={src}
-            alt={alt}
-            fill
-            unoptimized={blogImageShouldBypassOptimization(src)}
-            sizes="(max-width: 768px) 100vw, 896px"
-            className="object-cover"
-          />
-        </span>
-        {caption?.trim() ? (
-          <figcaption className="text-center text-sm text-muted-foreground">{caption.trim()}</figcaption>
-        ) : null}
-      </figure>
-    )
-  }
-
-  try {
-    /** Remote CDNs: use `next/image` only where allowed patterns exist. */
-    const host = new URL(src).hostname
-    const allowOptimized =
-      /\.unsplash\.com$/i.test(host) ||
-      host === "images.unsplash.com" ||
-      host === "picsum.photos"
-
-    const inner = allowOptimized ? (
-      <span className="relative block aspect-[16/10] w-full overflow-hidden rounded-lg bg-muted shadow-sm">
-        <Image
-          src={src}
-          alt={alt}
-          fill
-          quality={92}
-          sizes="(max-width: 768px) 100vw, 896px"
-          className="object-cover"
-        />
-      </span>
-    ) : (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
+  return (
+    <figure className="space-y-3">
+      <BlogIntrinsicImage
         src={src}
         alt={alt}
-        className="h-auto w-full max-w-full rounded-lg border border-border bg-muted shadow-sm"
-        loading="lazy"
+        width={width}
+        height={height}
+        sizes="(max-width: 768px) 100vw, 896px"
+        className="rounded-lg bg-muted shadow-sm"
       />
-    )
-
-    return (
-      <figure className="space-y-3">
-        {inner}
-        {caption?.trim() ? (
-          <figcaption className="text-center text-sm text-muted-foreground">{caption.trim()}</figcaption>
-        ) : null}
-      </figure>
-    )
-  } catch {
-    return (
-      <p className="text-sm text-muted-foreground" role="status">
-        Invalid image URL
-      </p>
-    )
-  }
+      {caption?.trim() ? (
+        <figcaption className="text-center text-sm text-muted-foreground">{caption.trim()}</figcaption>
+      ) : null}
+    </figure>
+  )
 }
 
 export function ArticleBody({ blocks }: { blocks: ArticleBlock[] }) {
@@ -108,7 +63,14 @@ export function ArticleBody({ blocks }: { blocks: ArticleBlock[] }) {
         if (block.kind === "image") {
           const altLabel = block.alt?.trim() ? block.alt.trim() : "Image for this story"
           return (
-            <InlineArticleImage key={i} url={block.url} alt={altLabel} caption={block.caption} />
+            <InlineArticleImage
+              key={i}
+              url={block.url}
+              alt={altLabel}
+              caption={block.caption}
+              width={block.width}
+              height={block.height}
+            />
           )
         }
         return <InstagramEmbedBlock key={i} url={block.url} />

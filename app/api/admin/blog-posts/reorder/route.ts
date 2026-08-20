@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
-import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/brands/admin-server"
 import { adminReorderBlogPostsService } from "@/lib/services/blogPostsAdmin"
 import { reorderBlogPostsBodySchema } from "@/lib/validations/blog"
+import { revalidateBlogPaths } from "@/lib/blog/revalidate-blog"
 
 export async function PATCH(request: Request) {
   const gate = await requireAdmin()
@@ -26,7 +26,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: result.error }, { status: 500 })
   }
 
-  revalidatePath("/blog")
+  revalidateBlogPaths()
 
   return NextResponse.json({ data: { ok: true as const } }, { status: 200 })
 }

@@ -2,19 +2,18 @@
 
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase/client"
-import { BLOG_IMAGES_BUCKET } from "@/lib/blog/blog-images-bucket"
+import { BLOG_IMAGE_MAX_EDGE_PX, BLOG_IMAGES_BUCKET } from "@/lib/blog/blog-images-bucket"
 
 const MAX_BYTES = 8 * 1024 * 1024
 
-/** Stored blog CMS images — landscape 3:2 (pixels). */
-const BLOG_IMAGE_WIDTH = 3000
-const BLOG_IMAGE_HEIGHT = 2000
-
 /**
- * Center-crops (cover) to {@link BLOG_IMAGE_WIDTH}×{@link BLOG_IMAGE_HEIGHT}. Any raster size is accepted;
- * outputs match source where possible (PNG→PNG when resized; JPEG/WebP/GIF→JPEG when resized — GIF loses animation unless already exact px).
+ * Scales down so the longest edge is at most {@link BLOG_IMAGE_MAX_EDGE_PX}. Aspect ratio is preserved
+ * (no crop). PNG stays PNG when resized; JPEG/WebP/GIF become JPEG when resized — GIF loses animation
+ * unless it already fits the max edge.
  */
-async function normalizeBlogUploadImageDimensions(file: File): Promise<File | null> {
+async function normalizeBlogUploadImageDimensions(
+  file: File,
+): Promise<{ file: File; width: number; height: number } | null> {
   let bitmap: ImageBitmap | null = null
 
   try {
@@ -25,13 +24,20 @@ async function normalizeBlogUploadImageDimensions(file: File): Promise<File | nu
   }
 
   try {
-    if (bitmap.width === BLOG_IMAGE_WIDTH && bitmap.height === BLOG_IMAGE_HEIGHT) {
-      return file
+    const srcW = bitmap.width
+    const srcH = bitmap.height
+    const longest = Math.max(srcW, srcH)
+    if (longest <= BLOG_IMAGE_MAX_EDGE_PX) {
+      return { file, width: srcW, height: srcH }
     }
 
+    const scale = BLOG_IMAGE_MAX_EDGE_PX / longest
+    const outW = Math.max(1, Math.round(srcW * scale))
+    const outH = Math.max(1, Math.round(srcH * scale))
+
     const canvas = document.createElement("canvas")
-    canvas.width = BLOG_IMAGE_WIDTH
-    canvas.height = BLOG_IMAGE_HEIGHT
+    canvas.width = outW
+    canvas.height = outH
     const ctx = canvas.getContext("2d")
     if (!ctx) {
       toast.error("Could not process this image.")
@@ -40,13 +46,7 @@ async function normalizeBlogUploadImageDimensions(file: File): Promise<File | nu
 
     ctx.imageSmoothingEnabled = true
     ctx.imageSmoothingQuality = "high"
-
-    const scale = Math.max(BLOG_IMAGE_WIDTH / bitmap.width, BLOG_IMAGE_HEIGHT / bitmap.height)
-    const drawnW = bitmap.width * scale
-    const drawnH = bitmap.height * scale
-    const dx = (BLOG_IMAGE_WIDTH - drawnW) / 2
-    const dy = (BLOG_IMAGE_HEIGHT - drawnH) / 2
-    ctx.drawImage(bitmap, dx, dy, drawnW, drawnH)
+    ctx.drawImage(bitmap, 0, 0, outW, outH)
 
     /** Resized GIF uses first decoded frame → static JPEG */
     const outType = file.type === "image/png" ? "image/png" : "image/jpeg"
@@ -62,7 +62,11 @@ async function normalizeBlogUploadImageDimensions(file: File): Promise<File | nu
     }
 
     const ext = outType === "image/png" ? "png" : "jpg"
-    return new File([blob], `blog-${crypto.randomUUID()}.${ext}`, { type: outType })
+    return {
+      file: new File([blob], `blog-${crypto.randomUUID()}.${ext}`, { type: outType }),
+      width: outW,
+      height: outH,
+    }
   } finally {
     bitmap.close()
   }
@@ -88,10 +92,18 @@ function mimeToExt(type: string): string {
   return "webp"
 }
 
+export type BlogUploadedImage = {
+  url: string
+  width: number
+  height: number
+}
+
 /**
  * Uploads to public `blog-images` (admin RLS). Requires migrated storage policies + existing bucket row.
+ * Only upload images that are copyright-free or owned by Reswell — see blog image guidelines.
+ * Aspect ratio is preserved; pixel size is returned so the storefront can render at the true ratio.
  */
-export async function uploadBlogMediaFile(file: File): Promise<string | null> {
+export async function uploadBlogMediaFile(file: File): Promise<BlogUploadedImage | null> {
   await requestBlogBucketFromServer()
 
   if (!file.type.startsWith("image/")) {
@@ -106,23 +118,23 @@ export async function uploadBlogMediaFile(file: File): Promise<string | null> {
   const normalized = await normalizeBlogUploadImageDimensions(file)
   if (!normalized) return null
   /** Crop/re-encode output can exceed source bytes — clamp after normalize */
-  if (normalized.size > MAX_BYTES) {
-    toast.error(`After resizing to ${BLOG_IMAGE_WIDTH}×${BLOG_IMAGE_HEIGHT}, the image must stay under 8MB.`)
+  if (normalized.file.size > MAX_BYTES) {
+    toast.error(`After resizing (longest side ${BLOG_IMAGE_MAX_EDGE_PX}px), the image must stay under 8MB.`)
     return null
   }
 
   const supabase = createClient()
 
   let ext =
-    ACCEPTED_EXTENSIONS.find((e) => normalized.name.toLowerCase().endsWith(`.${e}`)) ??
-    mimeToExt(normalized.type)
-  ext = ACCEPTED_EXTENSIONS.includes(ext) ? ext : mimeToExt(normalized.type)
+    ACCEPTED_EXTENSIONS.find((e) => normalized.file.name.toLowerCase().endsWith(`.${e}`)) ??
+    mimeToExt(normalized.file.type)
+  ext = ACCEPTED_EXTENSIONS.includes(ext) ? ext : mimeToExt(normalized.file.type)
 
   const path = `cms/${crypto.randomUUID()}.${ext}`
 
-  const { error } = await supabase.storage.from(BLOG_IMAGES_BUCKET).upload(path, normalized, {
+  const { error } = await supabase.storage.from(BLOG_IMAGES_BUCKET).upload(path, normalized.file, {
     upsert: false,
-    contentType: normalized.type || `image/${ext === "jpg" ? "jpeg" : ext}`,
+    contentType: normalized.file.type || `image/${ext === "jpg" ? "jpeg" : ext}`,
   })
 
   if (error) {
@@ -142,5 +154,5 @@ export async function uploadBlogMediaFile(file: File): Promise<string | null> {
     data: { publicUrl },
   } = supabase.storage.from(BLOG_IMAGES_BUCKET).getPublicUrl(path)
   /** Cache-bust CDN after fresh upload */
-  return `${publicUrl}?t=${Date.now()}`
+  return { url: `${publicUrl}?t=${Date.now()}`, width: normalized.width, height: normalized.height }
 }

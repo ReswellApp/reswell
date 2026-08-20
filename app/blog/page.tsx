@@ -6,6 +6,7 @@ import { resolveBlogAdminAccess } from "@/lib/services/blogAdminGate"
 import { resolvePageMetadata } from "@/lib/seo/resolve-page-seo"
 
 export const dynamic = "force-dynamic"
+export const revalidate = 0
 
 export async function generateMetadata() {
   return resolvePageMetadata("blog")

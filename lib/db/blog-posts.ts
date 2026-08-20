@@ -51,6 +51,7 @@ export function mapBlogRowToArticle(row: BlogPostRow): FieldNoteArticle {
     published: row.published,
     listedOnBlog: row.listed_on_blog,
     sortOrder: row.sort_order,
+    updatedAt: row.updated_at,
     blocks: parseStoredBlocks(row.blocks),
   }
 }

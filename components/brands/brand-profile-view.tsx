@@ -1,6 +1,5 @@
-import Image from "next/image"
 import Link from "next/link"
-import { ExternalLink, MapPin, Package } from "lucide-react"
+import { ExternalLink, MapPin } from "lucide-react"
 import {
   BRANDS_BASE,
   brandActiveListingsBrowseHref,
@@ -8,8 +7,7 @@ import {
   brandSoldListingsBrowseHref,
 } from "@/lib/brands/routes"
 import type { BrandRow } from "@/lib/brands/types"
-import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
-import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
+import { BrandLogoMark } from "@/components/brands/brand-logo-mark"
 import { BrandDetailAdminBar } from "@/components/brands/brand-detail-admin-bar"
 import { BrandProductCategoryBadges } from "@/components/brands/brand-product-category-badges"
 import { Button } from "@/components/ui/button"
@@ -35,7 +33,6 @@ export function BrandProfileView({
   isLoggedIn: boolean
   viewerUserId: string | null
 }) {
-  const logoSrc = brand.logo_url ? brandLogoDisplaySrc(brand.logo_url) : null
   const metaBits = [
     brand.founder_name ? `Founded by ${brand.founder_name}` : null,
     brand.lead_shaper_name ? `Shaped by ${brand.lead_shaper_name}` : null,
@@ -59,25 +56,12 @@ export function BrandProfileView({
           </div>
 
           <div className="flex gap-4 sm:gap-5">
-            {logoSrc ? (
-              <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border/60 bg-background p-1.5 sm:h-16 sm:w-16 sm:rounded-xl sm:p-2">
-                <Image
-                  src={logoSrc}
-                  alt={`${brand.name} logo`}
-                  fill
-                  className="object-contain object-center"
-                  sizes="64px"
-                  unoptimized={listingImageShouldBypassOptimization(logoSrc)}
-                />
-              </div>
-            ) : (
-              <div
-                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted text-muted-foreground sm:h-16 sm:w-16 sm:rounded-xl"
-                aria-hidden
-              >
-                <Package className="h-6 w-6" />
-              </div>
-            )}
+            <BrandLogoMark
+              name={brand.name}
+              logoUrl={brand.logo_url}
+              className="h-14 w-14 rounded-lg text-lg sm:h-16 sm:w-16 sm:rounded-xl sm:text-xl"
+              imageSizes="64px"
+            />
 
             <div className="min-w-0 flex-1">
               <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">

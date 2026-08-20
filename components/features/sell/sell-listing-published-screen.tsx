@@ -21,8 +21,7 @@ export type SellListingPublishedScreenProps = {
   status: SellListingPublishedScreenStatus
   errorMessage?: string
   failedStepLabel?: string
-  onContinue: () => void
-  onExit: () => void
+  onViewLiveListing: () => void
   onRetry?: () => void
   onDismissError?: () => void
 }
@@ -52,8 +51,7 @@ function SellListingPublishedInterior({
   status,
   errorMessage,
   failedStepLabel,
-  onContinue,
-  onExit,
+  onViewLiveListing,
   onRetry,
   onDismissError,
 }: SellListingPublishedScreenProps) {
@@ -133,27 +131,15 @@ function SellListingPublishedInterior({
             </Button>
           </>
         ) : (
-          <>
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              className="h-12 min-w-[7.5rem] px-6 text-base"
-              onClick={onExit}
-              disabled={!isLive}
-            >
-              Exit
-            </Button>
-            <Button
-              type="button"
-              size="lg"
-              className={cn(SELL_PRIMARY_BUTTON_CLASS, "min-w-[7.5rem]")}
-              onClick={onContinue}
-              disabled={!isLive}
-            >
-              Continue
-            </Button>
-          </>
+          <Button
+            type="button"
+            size="lg"
+            className={cn(SELL_PRIMARY_BUTTON_CLASS, "min-w-[12rem]")}
+            onClick={onViewLiveListing}
+            disabled={!isLive}
+          >
+            View live listing
+          </Button>
         )}
       </div>
     </div>
@@ -161,7 +147,7 @@ function SellListingPublishedInterior({
 }
 
 /**
- * Full-viewport publish gate. User stays here until Continue / Exit (or Back / Retry on error).
+ * Full-viewport publish gate. User stays here until View live listing (or Back / Retry on error).
  */
 export function SellListingPublishedScreen(props: SellListingPublishedScreenProps) {
   const [mounted, setMounted] = useState(false)
