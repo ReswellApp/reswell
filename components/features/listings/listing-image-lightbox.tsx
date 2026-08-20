@@ -22,6 +22,10 @@ import { ListingImageCarouselNavButton } from "@/components/features/listings/li
 import { Button } from "@/components/ui/button"
 import { ListingTileShimmer } from "@/components/ui/skeleton"
 import {
+  listingPhotoBackdropStyle,
+  listingPhotoIsCached,
+} from "@/components/features/listings/listing-gallery-photo"
+import {
   listingImageShouldBypassOptimization,
   withListingMediaPdpVariant,
 } from "@/lib/listing-media-proxy-url"
@@ -29,8 +33,20 @@ import { cn } from "@/lib/utils"
 
 const ZOOM_TOLERANCE = 0.015
 const DEFAULT_ASPECT_RATIO = 3 / 4
-/** Matches the PDP hero canvas so enlarge never pops to a white sheet. */
-const LIGHTBOX_SURFACE_CLASS = "bg-[#f5f5f7] dark:bg-muted"
+/** Chrome around the photo — never used as the photo canvas itself. */
+const LIGHTBOX_SURFACE_CLASS = "bg-[#f3f4f6] dark:bg-muted"
+const PHOTO_LAYER =
+  "bg-transparent select-none object-contain object-center backface-hidden transform-gpu"
+
+function markPaintedAfterDecode(img: HTMLImageElement | null, mark: () => void): void {
+  if (!img || !img.complete || img.naturalWidth === 0) return
+  const finish = () => mark()
+  if (typeof img.decode === "function") {
+    void img.decode().then(finish).catch(finish)
+    return
+  }
+  finish()
+}
 /** Mobile: a little larger than contain, well short of full cover, so edges stay mostly visible. */
 const MOBILE_OVERSCAN_CLASS = "origin-top object-top scale-[1.12]"
 
@@ -106,8 +122,15 @@ function LightboxSlide({
     () => (src && src !== "/placeholder.svg" ? withListingMediaPdpVariant(src) : ""),
     [src],
   )
-  const [loadedSrc, setLoadedSrc] = useState<string | null>(null)
-  const [placeholderLoaded, setPlaceholderLoaded] = useState(false)
+  const initialUnderlay =
+    (src && src !== "/placeholder.svg" ? withListingMediaPdpVariant(src) : "") ||
+    (previewSrc && previewSrc !== src ? previewSrc : "")
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(() =>
+    listingPhotoIsCached(src) ? src : null,
+  )
+  const [placeholderLoaded, setPlaceholderLoaded] = useState(() =>
+    listingPhotoIsCached(initialUnderlay),
+  )
   const [trackedSrc, setTrackedSrc] = useState(src)
   if (src !== trackedSrc) {
     setTrackedSrc(src)
@@ -138,6 +161,7 @@ function LightboxSlide({
 
   const underlaySrc = placeholderSrc || (previewSrc && previewSrc !== src ? previewSrc : "")
   const slideReady = loadedSrc === src || placeholderLoaded
+  const backdropSrc = underlaySrc || (src && src !== "/placeholder.svg" ? src : "")
   const [scale, setScale] = useState(1)
   const isZoomedOut = scale <= 1 + ZOOM_TOLERANCE
   const scaleRef = useRef(1)
@@ -178,13 +202,16 @@ function LightboxSlide({
     >
       <div
         className={cn(
-          "relative overflow-hidden",
-          LIGHTBOX_SURFACE_CLASS,
+          "relative overflow-hidden backface-hidden transform-gpu",
+          !backdropSrc && LIGHTBOX_SURFACE_CLASS,
           fitCard
             ? "rounded-2xl shadow-sm ring-1 ring-black/[0.06] dark:ring-white/[0.06]"
             : "h-full w-full",
         )}
-        style={frameStyle}
+        style={{
+          ...listingPhotoBackdropStyle(backdropSrc, "contain"),
+          ...frameStyle,
+        }}
         onClick={(event) => event.stopPropagation()}
       >
         {underlaySrc ? (
@@ -197,18 +224,20 @@ function LightboxSlide({
             unoptimized={listingImageShouldBypassOptimization(underlaySrc)}
             draggable={false}
             className={cn(
-              "pointer-events-none z-[2] bg-transparent select-none object-contain object-center",
+              PHOTO_LAYER,
+              "pointer-events-none z-[1]",
               !fitCard && MOBILE_OVERSCAN_CLASS,
-              placeholderLoaded && loadedSrc !== src ? "opacity-100" : "opacity-0",
+              placeholderLoaded ? "opacity-100" : "opacity-0",
             )}
             sizes={LIGHTBOX_IMAGE_SIZES}
             priority={priority}
-            ref={(img) => {
-              if (img?.complete && img.naturalWidth > 0) setPlaceholderLoaded(true)
-            }}
-            onLoadingComplete={(img) => {
-              setPlaceholderLoaded(true)
-              rememberAspectRatio(img.naturalWidth, img.naturalHeight)
+            ref={(img) => markPaintedAfterDecode(img, () => setPlaceholderLoaded(true))}
+            onLoad={(event) => {
+              const img = event.currentTarget
+              markPaintedAfterDecode(img, () => {
+                setPlaceholderLoaded(true)
+                rememberAspectRatio(img.naturalWidth, img.naturalHeight)
+              })
             }}
           />
         ) : null}
@@ -218,7 +247,7 @@ function LightboxSlide({
             className="listing-tile-shimmer-overlay absolute inset-0 z-[3] rounded-none"
           />
         ) : null}
-        <div className="absolute inset-0 z-[1]">
+        <div className="absolute inset-0 z-[2]">
         <TransformWrapper
           ref={setPinchRef}
           disabled={!isActive}
@@ -258,21 +287,27 @@ function LightboxSlide({
               unoptimized
               draggable={false}
               className={cn(
-                "bg-transparent select-none object-contain object-center transition-opacity duration-200 ease-out",
+                PHOTO_LAYER,
                 !fitCard && MOBILE_OVERSCAN_CLASS,
+                placeholderLoaded && loadedSrc !== src
+                  ? "transition-opacity duration-200 ease-out"
+                  : null,
                 loadedSrc === src ? "opacity-100" : "opacity-0",
               )}
               sizes={LIGHTBOX_IMAGE_SIZES}
               priority={priority}
-              onLoadingComplete={(img) => {
-                setLoadedSrc(src)
-                setPlaceholderLoaded(true)
-                rememberAspectRatio(img.naturalWidth, img.naturalHeight)
-                if (isActive && !isMaxMd) {
-                  requestAnimationFrame(() => {
-                    pinchRef.current?.centerView(1, 0)
-                  })
-                }
+              onLoad={(event) => {
+                const img = event.currentTarget
+                markPaintedAfterDecode(img, () => {
+                  setLoadedSrc(src)
+                  setPlaceholderLoaded(true)
+                  rememberAspectRatio(img.naturalWidth, img.naturalHeight)
+                  if (isActive && !isMaxMd) {
+                    requestAnimationFrame(() => {
+                      pinchRef.current?.centerView(1, 0)
+                    })
+                  }
+                })
               }}
             />
           </TransformComponent>
@@ -502,7 +537,7 @@ export function ListingImageLightbox({
                     {proxiedUrls.map((url, slideIndex) => (
                       <div
                         key={`${url}-${slideIndex}`}
-                        className="relative h-full min-w-0 shrink-0 grow-0 basis-full"
+                        className="relative h-full min-w-0 shrink-0 grow-0 basis-full backface-hidden transform-gpu"
                         aria-hidden={slideIndex !== index}
                       >
                         {renderSlide(slideIndex, slideIndex === index)}

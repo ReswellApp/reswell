@@ -1,6 +1,6 @@
 "use client"
 
-import { type ReactNode, Suspense, useEffect, useMemo, useState, useTransition } from "react"
+import { type ReactNode, Suspense, useMemo, useState, useTransition } from "react"
 import { Check, Truck, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -11,7 +11,6 @@ import { CategoryBrowsePageHeader } from "@/components/category-browse-page-head
 import { CategoryBrowseFilterButton } from "@/components/category-browse-filter-button"
 import { BoardsBrowseFacetControls } from "@/components/boards-browse-facet-controls"
 import { useBoardsFilterState } from "@/components/boards-browse-filter-state"
-import { prefetchBoardsBrowseBrandModelsCatalog } from "@/components/boards-browse-catalog-brand-model"
 import { BoardsSaveSearchPanel } from "@/components/boards-save-search-panel"
 import { facetOptionLabel, FACET_PARAM_KEYS } from "@/lib/boards-browse-facets"
 import { logBrowseButtonClick } from "@/lib/log-browse-button-click"
@@ -43,10 +42,6 @@ export function BoardsBrowseClient({
   const [mobileOpen, setMobileOpen] = useState(false)
   const [desktopFiltersOpen, setDesktopFiltersOpen] = useState(false)
   const state = useBoardsFilterState(startTransition)
-
-  useEffect(() => {
-    prefetchBoardsBrowseBrandModelsCatalog()
-  }, [])
 
   const chips = useMemo<ActiveChip[]>(() => {
     const out: ActiveChip[] = []

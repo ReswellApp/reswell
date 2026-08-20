@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { useState } from "react"
+import { useState, type CSSProperties } from "react"
 import { ListingTileShimmer } from "@/components/ui/skeleton"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
@@ -19,8 +19,43 @@ export interface ListingGalleryPhotoProps {
   onLoaded?: (size: { naturalWidth: number; naturalHeight: number }) => void
 }
 
-function markReadyIfComplete(img: HTMLImageElement | null, mark: () => void): void {
-  if (img?.complete && img.naturalWidth > 0) mark()
+const PHOTO_LAYER =
+  "pointer-events-none bg-transparent select-none object-cover object-center backface-hidden transform-gpu"
+
+/**
+ * CSS backdrop so the first compositor frame can show a cached listing photo
+ * without waiting on React load state (avoids the white well).
+ */
+export function listingPhotoBackdropStyle(
+  src: string | undefined,
+  fit: "cover" | "contain" = "cover",
+): CSSProperties | undefined {
+  if (!src || src === "/placeholder.svg") return undefined
+  const safe = src.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+  return {
+    backgroundImage: `url("${safe}")`,
+    backgroundSize: fit,
+    backgroundPosition: fit === "contain" ? "center top" : "center",
+    backgroundRepeat: "no-repeat",
+  }
+}
+
+/** Sync cache probe — `img.complete` is true on the first tick when the URL is already in memory. */
+export function listingPhotoIsCached(src: string | undefined): boolean {
+  if (!src || src === "/placeholder.svg" || typeof window === "undefined") return false
+  const probe = new window.Image()
+  probe.src = src
+  return probe.complete && probe.naturalWidth > 0
+}
+
+function markPaintedAfterDecode(img: HTMLImageElement | null, mark: () => void): void {
+  if (!img || !img.complete || img.naturalWidth === 0) return
+  const finish = () => mark()
+  if (typeof img.decode === "function") {
+    void img.decode().then(finish).catch(finish)
+    return
+  }
+  finish()
 }
 
 function rememberSize(
@@ -33,8 +68,9 @@ function rememberSize(
 }
 
 /**
- * Listing gallery photo. The wave skeleton is the canvas — bitmaps stay invisible
- * until they have actually painted, so the well never flashes white/grey.
+ * Listing gallery photo. A cached tile/PDP URL is the canvas. Bitmaps stay
+ * invisible until decoded, the preview stays under the sharp image, and the
+ * wave only covers a well that has no photo URL yet.
  */
 export function ListingGalleryPhoto({
   src,
@@ -48,13 +84,17 @@ export function ListingGalleryPhoto({
   onLoaded,
 }: ListingGalleryPhotoProps) {
   const [trackedSrc, setTrackedSrc] = useState(src)
+  const [trackedPreview, setTrackedPreview] = useState(previewSrc ?? "")
   const [previewReady, setPreviewReady] = useState(false)
   const [srcReady, setSrcReady] = useState(false)
 
   if (src !== trackedSrc) {
     setTrackedSrc(src)
-    setPreviewReady(false)
     setSrcReady(false)
+  }
+  if ((previewSrc ?? "") !== trackedPreview) {
+    setTrackedPreview(previewSrc ?? "")
+    setPreviewReady(false)
   }
 
   const preview =
@@ -73,16 +113,20 @@ export function ListingGalleryPhoto({
           draggable={false}
           aria-hidden
           className={cn(
-            "pointer-events-none bg-transparent select-none object-cover object-center",
+            PHOTO_LAYER,
+            "z-[1]",
             className,
-            previewReady && !srcReady ? "opacity-100" : "opacity-0",
+            previewReady ? "opacity-100" : "opacity-0",
           )}
           sizes={sizes}
           loading={priority ? "eager" : loading}
-          ref={(img) => markReadyIfComplete(img, () => setPreviewReady(true))}
-          onLoadingComplete={(img) => {
-            setPreviewReady(true)
-            rememberSize(img, onLoaded)
+          ref={(img) => markPaintedAfterDecode(img, () => setPreviewReady(true))}
+          onLoad={(event) => {
+            const img = event.currentTarget
+            markPaintedAfterDecode(img, () => {
+              setPreviewReady(true)
+              rememberSize(img, onLoaded)
+            })
           }}
         />
       ) : null}
@@ -94,18 +138,23 @@ export function ListingGalleryPhoto({
         unoptimized={listingImageShouldBypassOptimization(src)}
         draggable={false}
         className={cn(
-          "pointer-events-none bg-transparent select-none object-cover object-center transition-opacity duration-200 ease-out",
+          PHOTO_LAYER,
+          "z-[2]",
           className,
+          preview && previewReady ? "transition-opacity duration-200 ease-out" : null,
           srcReady ? "opacity-100" : "opacity-0",
         )}
         sizes={sizes}
         priority={priority}
         fetchPriority={fetchPriority}
         loading={loading}
-        ref={(img) => markReadyIfComplete(img, () => setSrcReady(true))}
-        onLoadingComplete={(img) => {
-          setSrcReady(true)
-          rememberSize(img, onLoaded)
+        ref={(img) => markPaintedAfterDecode(img, () => setSrcReady(true))}
+        onLoad={(event) => {
+          const img = event.currentTarget
+          markPaintedAfterDecode(img, () => {
+            setSrcReady(true)
+            rememberSize(img, onLoaded)
+          })
         }}
       />
       <ListingTileShimmer

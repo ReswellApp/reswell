@@ -1,16 +1,14 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { BoardsBrowseCatalogBrandModel } from "@/components/boards-browse-catalog-brand-model"
 import { BoardsBrowseLocationFilter } from "@/components/boards-browse-location-filter"
 import {
   BOARD_STYLE_OPTIONS,
@@ -183,95 +181,31 @@ function PriceSection({ state }: { state: BoardsFilterState }) {
   )
 }
 
-function BrandModelSection({ state }: { state: BoardsFilterState }) {
-  const [brandText, setBrandText] = useState(state.brand)
-  const [modelText, setModelText] = useState(state.model)
-  const brandTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const modelTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => setBrandText(state.brand), [state.brand])
-  useEffect(() => setModelText(state.model), [state.model])
-
-  return (
-    <div className="space-y-3 pt-1">
-      <div className="space-y-1.5">
-        <Label className="text-xs font-medium text-foreground/80">Brand</Label>
-        <BoardsBrowseCatalogBrandModel
-          field="brand"
-          brandText={brandText}
-          catalogBrandId={state.brandId}
-          modelText={modelText}
-          onBrandTextChange={(v) => {
-            setBrandText(v)
-            if (brandTimer.current) clearTimeout(brandTimer.current)
-            brandTimer.current = setTimeout(() => {
-              state.setBrand({ brand: v, brandId: "", model: state.model, brandModelId: "" })
-            }, 420)
-          }}
-          onCatalogBrandPicked={(b) => {
-            if (brandTimer.current) clearTimeout(brandTimer.current)
-            setBrandText(b.name)
-            state.setBrand({ brand: b.name, brandId: b.id })
-          }}
-          onModelTextChange={setModelText}
-          onCatalogModelPicked={(row) => {
-            setBrandText(row.brandName)
-            setModelText(row.name)
-            state.setBrand({
-              brand: row.brandName,
-              brandId: row.brandId,
-              model: row.name,
-              brandModelId: row.id,
-            })
-          }}
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label className="text-xs font-medium text-foreground/80">Model</Label>
-        <BoardsBrowseCatalogBrandModel
-          field="model"
-          portaledModelDropdown
-          brandText={brandText}
-          catalogBrandId={state.brandId}
-          modelText={modelText}
-          onBrandTextChange={setBrandText}
-          onCatalogBrandPicked={(b) => state.setBrand({ brand: b.name, brandId: b.id })}
-          onModelTextChange={(v) => {
-            setModelText(v)
-            if (modelTimer.current) clearTimeout(modelTimer.current)
-            modelTimer.current = setTimeout(() => {
-              state.setModel({ model: v, brandModelId: "" })
-            }, 420)
-          }}
-          onCatalogModelPicked={(row) => {
-            setBrandText(row.brandName)
-            setModelText(row.name)
-            state.setBrand({
-              brand: row.brandName,
-              brandId: row.brandId,
-              model: row.name,
-              brandModelId: row.id,
-            })
-          }}
-        />
-      </div>
-    </div>
-  )
-}
-
-const SECTION_IDS = [
+const PRIMARY_SECTION_IDS = [
   "price",
   "location",
   "shipping",
   "style",
+  "condition",
+] as const
+
+const ADVANCED_SECTION_IDS = [
   "length",
   "volume",
   "fin",
   "finSystem",
   "construction",
-  "brand",
-  "condition",
 ] as const
+
+function advancedFilterCount(selections: BoardsFilterState["selections"]): number {
+  return (
+    selections.lengthBuckets.length +
+    selections.volumeBuckets.length +
+    selections.finSetups.length +
+    selections.finSystems.length +
+    selections.constructions.length
+  )
+}
 
 export function BoardsBrowseFacetControls({
   state,
@@ -283,11 +217,15 @@ export function BoardsBrowseFacetControls({
   locationListboxId: string
 }) {
   const { selections } = state
+  const advancedCount = advancedFilterCount(selections)
 
   return (
     <Accordion
       type="multiple"
-      defaultValue={[...SECTION_IDS]}
+      defaultValue={[
+        ...PRIMARY_SECTION_IDS,
+        ...(advancedCount > 0 ? (["advanced"] as const) : []),
+      ]}
       className="w-full"
     >
       <FacetAccordionItem id="price" title="Price">
@@ -323,60 +261,6 @@ export function BoardsBrowseFacetControls({
         />
       </FacetAccordionItem>
 
-      <FacetAccordionItem id="length" title="Length">
-        <RangeSection
-          paramKey={FACET_PARAM_KEYS.length}
-          buckets={LENGTH_BUCKETS}
-          selected={selections.lengthBuckets}
-          counts={counts[FACET_PARAM_KEYS.length]}
-          state={state}
-        />
-      </FacetAccordionItem>
-
-      <FacetAccordionItem id="volume" title="Volume">
-        <RangeSection
-          paramKey={FACET_PARAM_KEYS.volume}
-          buckets={VOLUME_BUCKETS}
-          selected={selections.volumeBuckets}
-          counts={counts[FACET_PARAM_KEYS.volume]}
-          state={state}
-        />
-      </FacetAccordionItem>
-
-      <FacetAccordionItem id="fin" title="Fin Setup">
-        <MultiSelectSection
-          paramKey={FACET_PARAM_KEYS.finSetup}
-          options={FIN_SETUP_OPTIONS}
-          selected={selections.finSetups}
-          counts={counts[FACET_PARAM_KEYS.finSetup]}
-          state={state}
-        />
-      </FacetAccordionItem>
-
-      <FacetAccordionItem id="finSystem" title="Fin System">
-        <MultiSelectSection
-          paramKey={FACET_PARAM_KEYS.finSystem}
-          options={FIN_SYSTEM_OPTIONS}
-          selected={selections.finSystems}
-          counts={counts[FACET_PARAM_KEYS.finSystem]}
-          state={state}
-        />
-      </FacetAccordionItem>
-
-      <FacetAccordionItem id="construction" title="Board Construction">
-        <MultiSelectSection
-          paramKey={FACET_PARAM_KEYS.construction}
-          options={CONSTRUCTION_OPTIONS}
-          selected={selections.constructions}
-          counts={counts[FACET_PARAM_KEYS.construction]}
-          state={state}
-        />
-      </FacetAccordionItem>
-
-      <FacetAccordionItem id="brand" title="Brand & Model">
-        <BrandModelSection state={state} />
-      </FacetAccordionItem>
-
       <FacetAccordionItem id="condition" title="Condition">
         <MultiSelectSection
           paramKey={FACET_PARAM_KEYS.condition}
@@ -386,6 +270,76 @@ export function BoardsBrowseFacetControls({
           state={state}
         />
       </FacetAccordionItem>
+
+      <FacetAccordionItem
+        id="advanced"
+        title={
+          <span className="flex items-center gap-2">
+            Advanced
+            {advancedCount > 0 ? (
+              <span className="text-xs tabular-nums text-muted-foreground">
+                ({advancedCount})
+              </span>
+            ) : null}
+          </span>
+        }
+      >
+        <Accordion
+          type="multiple"
+          defaultValue={[...ADVANCED_SECTION_IDS]}
+          className="w-full"
+        >
+          <FacetAccordionItem id="length" title="Length" nested>
+            <RangeSection
+              paramKey={FACET_PARAM_KEYS.length}
+              buckets={LENGTH_BUCKETS}
+              selected={selections.lengthBuckets}
+              counts={counts[FACET_PARAM_KEYS.length]}
+              state={state}
+            />
+          </FacetAccordionItem>
+
+          <FacetAccordionItem id="volume" title="Volume" nested>
+            <RangeSection
+              paramKey={FACET_PARAM_KEYS.volume}
+              buckets={VOLUME_BUCKETS}
+              selected={selections.volumeBuckets}
+              counts={counts[FACET_PARAM_KEYS.volume]}
+              state={state}
+            />
+          </FacetAccordionItem>
+
+          <FacetAccordionItem id="fin" title="Fin Setup" nested>
+            <MultiSelectSection
+              paramKey={FACET_PARAM_KEYS.finSetup}
+              options={FIN_SETUP_OPTIONS}
+              selected={selections.finSetups}
+              counts={counts[FACET_PARAM_KEYS.finSetup]}
+              state={state}
+            />
+          </FacetAccordionItem>
+
+          <FacetAccordionItem id="finSystem" title="Fin System" nested>
+            <MultiSelectSection
+              paramKey={FACET_PARAM_KEYS.finSystem}
+              options={FIN_SYSTEM_OPTIONS}
+              selected={selections.finSystems}
+              counts={counts[FACET_PARAM_KEYS.finSystem]}
+              state={state}
+            />
+          </FacetAccordionItem>
+
+          <FacetAccordionItem id="construction" title="Board Construction" nested>
+            <MultiSelectSection
+              paramKey={FACET_PARAM_KEYS.construction}
+              options={CONSTRUCTION_OPTIONS}
+              selected={selections.constructions}
+              counts={counts[FACET_PARAM_KEYS.construction]}
+              state={state}
+            />
+          </FacetAccordionItem>
+        </Accordion>
+      </FacetAccordionItem>
     </Accordion>
   )
 }
@@ -394,17 +348,27 @@ function FacetAccordionItem({
   id,
   title,
   children,
+  nested = false,
 }: {
   id: string
-  title: string
+  title: React.ReactNode
   children: React.ReactNode
+  nested?: boolean
 }) {
   return (
-    <AccordionItem value={id} className="border-b border-border/70">
-      <AccordionTrigger className="py-3 text-sm font-semibold text-foreground hover:no-underline">
+    <AccordionItem
+      value={id}
+      className={cn("border-border/70", nested ? "border-b last:border-b-0" : "border-b")}
+    >
+      <AccordionTrigger
+        className={cn(
+          "py-3 text-sm font-semibold text-foreground hover:no-underline",
+          nested && "py-2 text-[13px] font-medium text-foreground/80",
+        )}
+      >
         {title}
       </AccordionTrigger>
-      <AccordionContent className="pb-3">{children}</AccordionContent>
+      <AccordionContent className={cn("pb-3", nested && "pb-2")}>{children}</AccordionContent>
     </AccordionItem>
   )
 }

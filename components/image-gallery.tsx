@@ -11,7 +11,10 @@ import {
   withListingMediaPdpVariant,
 } from "@/lib/listing-media-proxy-url"
 import { Maximize2, Play } from "lucide-react"
-import { ListingGalleryPhoto } from "@/components/features/listings/listing-gallery-photo"
+import {
+  ListingGalleryPhoto,
+  listingPhotoBackdropStyle,
+} from "@/components/features/listings/listing-gallery-photo"
 import { ListingImageCarouselNavButton } from "@/components/features/listings/listing-image-carousel-nav-button"
 import { ListingPdpVideo } from "@/components/features/listings/listing-pdp-video"
 import type { ListingPdpVideoSource } from "@/lib/primary-listing-video"
@@ -306,12 +309,12 @@ export function ImageGallery({
       <div
         className={cn(
           compactMobile &&
-            "max-md:bg-[#f5f5f7] dark:max-md:bg-muted max-sm:-mx-4 max-sm:w-[calc(100%+2rem)] sm:-mx-6 sm:w-[calc(100%+3rem)] md:mx-0 md:w-full md:bg-transparent dark:md:bg-transparent",
+            "max-sm:-mx-4 max-sm:w-[calc(100%+2rem)] sm:-mx-6 sm:w-[calc(100%+3rem)] md:mx-0 md:w-full",
         )}
       >
         <div
           className={cn(
-            "relative overflow-hidden bg-[#f5f5f7] select-none dark:bg-muted",
+            "relative overflow-hidden bg-transparent select-none",
             compactMobile
               ? "max-md:h-auto max-md:max-h-[min(58dvh,30rem)] max-md:w-full max-md:min-w-full max-md:[aspect-ratio:var(--hero-aspect,3/4)] max-md:rounded-none md:aspect-[3/4] md:max-h-none md:h-auto md:w-full md:rounded-2xl md:shadow-sm md:ring-1 md:ring-black/[0.04] dark:md:ring-white/[0.06]"
               : "w-full rounded-2xl shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06]",
@@ -364,13 +367,15 @@ export function ImageGallery({
             openLightbox()
           }}
         >
-          <div className="flex h-full touch-pan-y will-change-transform">
+          <div className="flex h-full touch-pan-y will-change-transform backface-hidden">
             {images.map((image, i) => {
               const isSelected = i === selectedIndex
+              const slideSrc = previewUrls[i] || heroUrls[i]
               return (
                 <div
                   key={image.id || `hero-${i}-${image.url}`}
-                  className="relative h-full min-w-0 shrink-0 grow-0 basis-full bg-[#f5f5f7] dark:bg-muted"
+                  className="relative h-full min-w-0 shrink-0 grow-0 basis-full backface-hidden transform-gpu"
+                  style={listingPhotoBackdropStyle(slideSrc)}
                   aria-hidden={!isSelected}
                 >
                   <ListingGalleryPhoto

@@ -115,20 +115,19 @@ function HeaderSellButton({ className }: { className?: string }) {
   )
 }
 
-function HeaderMobileSignUpButton({ onSignUp }: { onSignUp: () => void }) {
+function HeaderMobileLogInLink({ onLogIn }: { onLogIn: () => void }) {
   return (
-    <Button asChild variant="outline" className={mobileSellButtonClassName}>
-      <Link
-        href={authLandingHref("/auth/sign-up")}
-        onClick={(e) => {
-          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-          e.preventDefault()
-          onSignUp()
-        }}
-      >
-        Sign up
-      </Link>
-    </Button>
+    <Link
+      href={authLandingHref("/auth/login")}
+      onClick={(e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
+        e.preventDefault()
+        onLogIn()
+      }}
+      className="shrink-0 px-2 py-2 text-[15px] font-medium text-foreground/80 transition-colors hover:text-cerulean"
+    >
+      Log in
+    </Link>
   )
 }
 
@@ -140,9 +139,9 @@ function HeaderMobileNavActionsSkeleton() {
       aria-label="Loading navigation"
     >
       <Skeleton className="h-10 w-14 shrink-0 rounded-full" />
-      <Skeleton className="h-10 w-[4.5rem] shrink-0 rounded-full" />
       <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
       <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
+      <Skeleton className="h-4 w-12 shrink-0 rounded" />
     </div>
   )
 }
@@ -1193,7 +1192,6 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   ) : (
                     <>
                       <HeaderSellButton />
-                      <HeaderMobileSignUpButton onSignUp={() => openSignUp()} />
                       <Link
                         href={`/auth/login?redirect=${encodeURIComponent("/favorites")}`}
                         className="inline-flex shrink-0"
@@ -1223,6 +1221,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                         iconClassName={mobileActionIconClassName}
                         iconStrokeWidth={mobileActionStrokeWidth}
                       />
+                      <HeaderMobileLogInLink onLogIn={() => openLogin()} />
                     </>
                   )}
                 </div>
