@@ -63,7 +63,10 @@ export type AdminBusinessInsights = {
   selectedYearMonth: string | null
   periodDays: number
   revenue: {
+    /** Buyer-paid order totals (item + shipping, net of promo). */
     gmv: TrendMetric
+    /** Buyer-paid item totals only (excludes shipping, still net of promo). */
+    gmvWithoutShipping: TrendMetric
     platformRevenue: TrendMetric
     /** Reswell-funded promo discounts (newsletter + admin-issued codes). */
     marketingExpense: TrendMetric

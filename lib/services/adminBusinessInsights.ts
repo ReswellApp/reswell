@@ -64,8 +64,9 @@ export type {
  * `is_admin_test = false` filtering used by `adminPlatformFees.ts`.
  *
  * Money is treated as USD (no `currency` column on `orders`/`listings`).
- * "GMV" is buyer-paid order totals = sum of `orders.amount` (item + shipping,
- * net of Reswell promo). Take rate uses listing item GMV (seller earnings +
+ * "GMV with shipping" is buyer-paid order totals = sum of `orders.amount`
+ * (item + shipping, net of Reswell promo). "GMV without shipping" subtracts
+ * `orders.shipping_amount`. Take rate uses listing item GMV (seller earnings +
  * platform fee) — the 7% fee base — so promo codes do not dilute the rate.
  * Promo discounts are reported as marketing expense. "Sale time" is
  * `orders.created_at` (there is no `listings.sold_at`). Daily chart buckets
@@ -95,6 +96,11 @@ function num(value: unknown): number {
   if (value == null) return 0
   const n = typeof value === 'number' ? value : Number(value)
   return Number.isFinite(n) ? n : 0
+}
+
+/** Buyer-paid GMV minus shipping — same promo treatment as `orders.amount`. */
+function buyerPaidGmvExcludingShipping(order: Pick<OrderRow, 'amount' | 'shipping_amount'>): number {
+  return Math.max(0, Math.round((order.amount - order.shipping_amount) * 100) / 100)
 }
 
 function trend(current: number, previous: number): TrendMetric {
@@ -340,6 +346,8 @@ export async function loadAdminBusinessInsights(
     // Partition by window + status.
     let gmvCur = 0
     let gmvPrev = 0
+    let gmvWithoutShippingCur = 0
+    let gmvWithoutShippingPrev = 0
     let listingItemGmvCur = 0
     let feesCur = 0
     let feesPrev = 0
@@ -367,6 +375,7 @@ export async function loadAdminBusinessInsights(
       if (confirmed) {
         if (inCurrent) {
           gmvCur += o.amount
+          gmvWithoutShippingCur += buyerPaidGmvExcludingShipping(o)
           listingItemGmvCur += marketplaceListingItemGmvUsd(o)
           feesCur += o.platform_fee
           promoCur += marketplacePromoMarketingUsd(o)
@@ -392,6 +401,7 @@ export async function loadAdminBusinessInsights(
           }
         } else if (inPrevious) {
           gmvPrev += o.amount
+          gmvWithoutShippingPrev += buyerPaidGmvExcludingShipping(o)
           feesPrev += o.platform_fee
           promoPrev += marketplacePromoMarketingUsd(o)
           ordersPrev += 1
@@ -515,6 +525,7 @@ export async function loadAdminBusinessInsights(
         periodDays: period.periodDays,
         revenue: {
           gmv: trend(gmvCur, gmvPrev),
+          gmvWithoutShipping: trend(gmvWithoutShippingCur, gmvWithoutShippingPrev),
           platformRevenue: trend(feesCur, feesPrev),
           marketingExpense: trend(promoCur, promoPrev),
           orders: trend(ordersCur, ordersPrev),

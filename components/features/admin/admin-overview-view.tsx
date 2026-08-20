@@ -21,6 +21,7 @@ import {
   TrendingDown,
   TrendingUp,
   Trophy,
+  Truck,
   UserPlus,
   Users,
 } from 'lucide-react'
@@ -685,14 +686,22 @@ export function AdminOverviewView({
       {insights ? (
         <>
           {/* Financial KPIs */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
             <KpiCard
-              icon={DollarSign}
+              icon={Truck}
               accent="emerald"
-              label="GMV"
+              label="GMV with shipping"
               value={compactUsd(insights.revenue.gmv.current)}
               delta={insights.revenue.gmv}
               footnote={`${compareFootnote} · ${compactUsd(insights.revenue.gmv.previous)}`}
+            />
+            <KpiCard
+              icon={DollarSign}
+              accent="emerald"
+              label="GMV without shipping"
+              value={compactUsd(insights.revenue.gmvWithoutShipping.current)}
+              delta={insights.revenue.gmvWithoutShipping}
+              footnote={`${compareFootnote} · ${compactUsd(insights.revenue.gmvWithoutShipping.previous)}`}
             />
             <KpiCard
               icon={Coins}

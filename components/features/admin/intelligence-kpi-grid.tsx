@@ -78,9 +78,16 @@ export function IntelligenceKpiGrid({ insights }: { insights: AdminBusinessInsig
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
       <KpiCard
         icon={DollarSign}
-        label="GMV"
+        label="GMV with shipping"
         value={compactUsd(insights.revenue.gmv.current)}
         delta={insights.revenue.gmv}
+        footnote={`vs ${insights.comparePeriodLabel}`}
+      />
+      <KpiCard
+        icon={DollarSign}
+        label="GMV without shipping"
+        value={compactUsd(insights.revenue.gmvWithoutShipping.current)}
+        delta={insights.revenue.gmvWithoutShipping}
         footnote={`vs ${insights.comparePeriodLabel}`}
       />
       <KpiCard
