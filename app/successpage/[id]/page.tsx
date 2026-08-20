@@ -9,6 +9,7 @@ import { GooglePurchaseConversionBeacon } from "@/components/google-ads/google-p
 import { GooglePurchaseConversionScript } from "@/components/google-ads/google-purchase-conversion-script"
 import { GooglePurchaseEventScript } from "@/components/google-analytics/google-purchase-event-script"
 import { MetaPurchaseEventScript } from "@/components/meta/meta-purchase-event-script"
+import { getPostHogServerClient } from "@/lib/posthog-server"
 
 type PageProps = { params: Promise<{ id: string }> }
 
@@ -43,6 +44,28 @@ export default async function PurchaseSuccessPage(props: PageProps) {
   const payload = await fetchBuyerOrderSuccessPayload(supabase, user.id, user.email, id)
   if (!payload) {
     notFound()
+  }
+
+  // Track purchase_completed server-side so it fires exactly once per confirmation page load.
+  const posthog = getPostHogServerClient()
+  if (posthog) {
+    posthog.capture({
+      distinctId: user.id,
+      event: 'purchase_completed',
+      properties: {
+        order_id: payload.orderId,
+        total_amount: payload.total,
+        item_price: payload.itemPrice,
+        shipping_cost: payload.shippingCost,
+        fulfillment_method: payload.fulfillmentMethod,
+        item_count: payload.orderLines.length,
+        listing_ids: payload.orderLines
+          .map((l) => l.listingId)
+          .filter(Boolean),
+        categories: [...new Set(payload.orderLines.map((l) => l.categoryLabel).filter(Boolean))],
+      },
+    })
+    await posthog.flush()
   }
 
   const conversionTracking = (

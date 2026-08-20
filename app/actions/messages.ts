@@ -28,6 +28,7 @@ import {
 import { marketplaceMessageAttachmentInputSchema } from "@/lib/validations/marketplace-message-attachment"
 import { sendMarketplaceMediaMessage } from "@/lib/services/sendMarketplaceMediaMessage"
 import { discardUnsentMessageAttachment } from "@/lib/services/discardUnsentMessageAttachment"
+import { captureServerEvent } from "@/lib/posthog-server"
 import {
   loadOtherPartyProfile,
   type OtherPartyProfileSummary,
@@ -429,6 +430,11 @@ export async function sendMarketplaceListingMessage(input: unknown) {
       email: user.email ?? null,
       profile: senderProfile,
     },
+  })
+
+  await captureServerEvent(user.id, "message_sent", {
+    listing_id,
+    conversation_id: conversation.id,
   })
 
   return {

@@ -32,8 +32,9 @@ export const soldFlowReswellReviewSchema = z.object({
   description: z
     .string()
     .trim()
-    .min(10, "Share a bit more about your experience.")
-    .max(2000, "Review is too long."),
+    .max(2000, "Review is too long.")
+    .optional()
+    .default(""),
 })
 
 export type ReswellPlatformReviewInput = z.infer<typeof reswellPlatformReviewSchema>

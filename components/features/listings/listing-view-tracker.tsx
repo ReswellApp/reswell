@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
+import posthog from "posthog-js"
 
 /** Deduplicate React Strict Mode double effect + very fast remounts (same id). */
 const lastSentAt = new Map<string, number>()
@@ -21,6 +22,7 @@ function shouldRecord(listingId: string) {
 export function ListingViewTracker({ listingId }: { listingId: string }) {
   useEffect(() => {
     if (!shouldRecord(listingId)) return
+    posthog.capture("listing_viewed", { listing_id: listingId })
     void fetch(`/api/listings/${encodeURIComponent(listingId)}/view`, {
       method: "POST",
       credentials: "include",

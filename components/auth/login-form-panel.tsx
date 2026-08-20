@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff } from "lucide-react"
+import posthog from "posthog-js"
 import { createClient } from "@/lib/supabase/client"
 import { AuthFormOrDivider } from "@/components/auth/auth-form-or-divider"
 import { GoogleOAuthButton } from "@/components/auth/google-oauth-button"
@@ -111,7 +112,13 @@ export function LoginFormPanel({
       if (variant !== "modal") {
         setGate("redirecting")
       }
-      await waitForClientSession({ supabase })
+      const session = await waitForClientSession({ supabase })
+      if (session?.user) {
+        posthog.identify(session.user.id, {
+          email: session.user.email,
+        })
+        posthog.capture('user_logged_in', { login_method: 'email' })
+      }
       if (typeof window !== "undefined") {
         window.dispatchEvent(new Event(HEADER_AUTH_REFRESH_EVENT))
       }

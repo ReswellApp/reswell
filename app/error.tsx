@@ -6,6 +6,7 @@ import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { isChunkLoadError, recoverFromChunkLoadError } from "@/lib/utils/is-chunk-load-error"
 import { reportClientError } from "@/lib/utils/reportClientError"
+import posthog from "posthog-js"
 
 /**
  * Root route error boundary. Catches uncaught errors thrown while rendering any route
@@ -33,6 +34,7 @@ export default function RootError({
       }
     }
     console.error("[app] route error:", error)
+    posthog.captureException(error)
     void reportClientError({
       name: error.name,
       message: error.message || "Route error",

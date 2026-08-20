@@ -1,3 +1,7 @@
+"use client"
+
+import posthog from "posthog-js"
+
 /**
  * SessionStorage handoff from the sell flows to the listing detail page so the
  * PDP can show a one-time "your listing is live" celebration after a fresh
@@ -23,6 +27,11 @@ export function setJustPublishedListingMarker(marker: {
   section: string
 }): void {
   if (typeof window === "undefined") return
+  posthog.capture("listing_published", {
+    listing_id: marker.listingId,
+    listing_type: marker.section,
+    is_new_listing: true,
+  })
   try {
     sessionStorage.setItem(
       JUST_PUBLISHED_KEY,

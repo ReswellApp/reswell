@@ -64,6 +64,8 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Required to support PostHog trailing-slash API requests.
+  skipTrailingSlashRedirect: true,
   images: {
     // Default is 'attachment', which sets Content-Disposition on /_next/image so
     // opening or sharing those URLs downloads the file instead of showing it in-tab.
@@ -179,19 +181,34 @@ const nextConfig = {
   },
   async rewrites() {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "")
-    if (!supabaseUrl) return []
+
+    // Derive PostHog asset host from the ingest host env var.
+    const posthogIngestHost = (process.env.NEXT_PUBLIC_POSTHOG_HOST ?? '').replace(/\/$/, '')
+    const posthogAssetsHost = posthogIngestHost
+      .replace('us.i.posthog.com', 'us-assets.i.posthog.com')
+      .replace('eu.i.posthog.com', 'eu-assets.i.posthog.com')
+    const posthogAfterFiles = posthogIngestHost
+      ? [
+          { source: '/ingest/static/:path*', destination: `${posthogAssetsHost}/static/:path*` },
+          { source: '/ingest/array/:path*', destination: `${posthogAssetsHost}/array/:path*` },
+          { source: '/ingest/:path*', destination: `${posthogIngestHost}/:path*` },
+        ]
+      : []
 
     // Static listing photos: edge-rewrite to Supabase public objects so Google Merchant /
     // Googlebot-Image fetch a direct image file instead of a serverless resize handler.
     // Requests with ?variant= still hit app/media/listings/[...path]/route.ts.
     return {
-      beforeFiles: [
-        {
-          source: "/media/listings/:path*",
-          missing: [{ type: "query", key: "variant" }],
-          destination: `${supabaseUrl}/storage/v1/object/public/listings/:path*`,
-        },
-      ],
+      beforeFiles: supabaseUrl
+        ? [
+            {
+              source: "/media/listings/:path*",
+              missing: [{ type: "query", key: "variant" }],
+              destination: `${supabaseUrl}/storage/v1/object/public/listings/:path*`,
+            },
+          ]
+        : [],
+      afterFiles: posthogAfterFiles,
     }
   },
   async redirects() {

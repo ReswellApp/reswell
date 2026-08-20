@@ -15,6 +15,7 @@ import { GoogleAnalyticsGtag } from '@/components/google-analytics-gtag'
 import { GoogleSignUpWelcomeRedirect } from '@/components/auth/google-sign-up-welcome-redirect'
 import { KlaviyoOnsite } from '@/components/klaviyo-onsite'
 import { KlaviyoPageViewTracker } from '@/components/klaviyo-page-view-tracker'
+import { PostHogIdentify } from '@/components/posthog-identify'
 import { MetaPixel } from '@/components/meta-pixel'
 import { MetaCapiParamBootstrap } from '@/components/meta/meta-capi-param-bootstrap'
 import { AdClickAttributionBootstrap } from '@/components/ads/ad-click-attribution-bootstrap'
@@ -95,6 +96,7 @@ export default function RootLayout({
             <AdClickAttributionBootstrap />
             <MetaCapiParamBootstrap />
             <KlaviyoPageViewTracker />
+            <PostHogIdentify />
             <MetaPixelPageViewTracker />
             <GoogleSignUpWelcomeRedirect />
           </Suspense>

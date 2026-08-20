@@ -5,6 +5,7 @@ import {
   completeMarketplaceOrderFromPaymentIntent,
   retrieveSucceededPaymentIntent,
 } from "@/lib/stripe-complete-order"
+import { getPostHogServerClient } from "@/lib/posthog-server"
 
 export async function POST(request: NextRequest) {
   if (!process.env.STRIPE_SECRET_KEY?.trim()) {
@@ -58,6 +59,24 @@ export async function POST(request: NextRequest) {
       piId: pi.id,
     })
     return NextResponse.json({ error: result.error }, { status: result.status })
+  }
+
+  if (!result.alreadyProcessed) {
+    const posthog = getPostHogServerClient()
+    if (posthog) {
+      posthog.capture({
+        distinctId: user.id,
+        event: 'order_finalized',
+        properties: {
+          order_id: result.orderId,
+          payment_intent_id: pi.id,
+          amount_total: pi.amount / 100,
+          currency: pi.currency,
+          seller_id: pi.metadata.seller_id ?? undefined,
+        },
+      })
+      await posthog.flush()
+    }
   }
 
   return NextResponse.json({

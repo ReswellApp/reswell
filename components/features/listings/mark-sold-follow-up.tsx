@@ -6,12 +6,18 @@ import { ChevronLeft } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
-  MarkSoldChannelStep,
-  MarkSoldHelpedStep,
-  MarkSoldReviewStep,
+  MarkSoldSurveyForm,
   MarkSoldThanksStep,
-  MarkSoldTipAmountStep,
 } from "@/components/features/listings/mark-sold-survey-steps"
+import { submitSoldFlowReswellReviewAction } from "@/lib/actions/reswellPlatformReview"
+import { postListingSaleFeedback, postListingSaleTip } from "@/lib/listing-sale-feedback-request"
+import {
+  SALE_TIP_MAX_CENTS,
+  SALE_TIP_MIN_CENTS,
+  SALE_TIP_PRESET_PERCENTS,
+  saleTipPresetCents,
+  type SoldOffPlatformChannel,
+} from "@/lib/validations/mark-listing-sold"
 
 const MarkSoldTipCheckout = dynamic(
   () =>
@@ -23,17 +29,8 @@ const MarkSoldTipCheckout = dynamic(
     loading: () => <p className="text-sm text-muted-foreground">Loading payment…</p>,
   },
 )
-import { submitSoldFlowReswellReviewAction } from "@/lib/actions/reswellPlatformReview"
-import { postListingSaleFeedback, postListingSaleTip } from "@/lib/listing-sale-feedback-request"
-import {
-  SALE_TIP_MAX_CENTS,
-  SALE_TIP_MIN_CENTS,
-  SALE_TIP_PRESET_PERCENTS,
-  saleTipPresetCents,
-  type SoldOffPlatformChannel,
-} from "@/lib/validations/mark-listing-sold"
 
-type FollowUpStep = "channel" | "helped" | "tip" | "review" | "thanks"
+type FollowUpStep = "form" | "checkout" | "thanks"
 
 function parseCustomTipCents(raw: string): number | null {
   const trimmed = raw.trim().replace(/^\$/, "")
@@ -56,10 +53,10 @@ export function MarkSoldFollowUp({
   onClose: () => void
   onFinished?: () => void
 }) {
-  const [step, setStep] = useState<FollowUpStep>("channel")
+  const [step, setStep] = useState<FollowUpStep>("form")
   const [soldChannel, setSoldChannel] = useState<SoldOffPlatformChannel | null>(null)
   const [elsewhereDetail, setElsewhereDetail] = useState("")
-  const [reswellHelped, setReswellHelped] = useState<boolean | null>(null)
+  const [helpedOffPlatform, setHelpedOffPlatform] = useState(false)
   const [customTip, setCustomTip] = useState("")
   const [selectedTipCents, setSelectedTipCents] = useState<number | null>(null)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
@@ -79,76 +76,65 @@ export function MarkSoldFollowUp({
     })
   }, [listingPriceUsd])
 
-  async function saveChannelAndContinue() {
-    if (!soldChannel || !elsewhereDetailValid) return
-    setLoading(true)
-    try {
-      const result = await postListingSaleFeedback(listingId, {
+  function finish() {
+    onFinished?.()
+    setStep("thanks")
+  }
+
+  async function saveFeedbackAndReview(): Promise<boolean> {
+    if (!soldChannel || !elsewhereDetailValid) return false
+
+    const [feedbackResult, reviewResult] = await Promise.all([
+      postListingSaleFeedback(listingId, {
         channel: soldChannel,
         detail: soldChannel === "elsewhere" ? elsewhereDetail.trim() : undefined,
-      })
-      if (!result.ok) {
-        toast.error(result.error)
-        return
-      }
-      setStep("helped")
-    } finally {
-      setLoading(false)
+        reswellHelpedFindBuyer: soldChannel === "reswell" || helpedOffPlatform,
+      }),
+      reviewRating == null
+        ? Promise.resolve(null)
+        : submitSoldFlowReswellReviewAction({
+            rating: reviewRating,
+            description: reviewText,
+          }),
+    ])
+
+    if (!feedbackResult.ok) {
+      toast.error(feedbackResult.error)
+      return false
     }
+    if (reviewResult && "error" in reviewResult) {
+      toast.error(reviewResult.error)
+      return false
+    }
+    return true
   }
 
-  async function saveHelpedAndContinue() {
-    if (reswellHelped === null) return
+  async function startTip(amountCents: number): Promise<boolean> {
+    const result = await postListingSaleTip(listingId, amountCents)
+    if (!result.ok) {
+      toast.error(result.error)
+      return false
+    }
+    setSelectedTipCents(result.amountCents)
+    setClientSecret(result.clientSecret)
+    setStep("checkout")
+    return true
+  }
+
+  async function handleSubmit() {
+    if (!soldChannel || !elsewhereDetailValid) return
+    if (customTip.trim() && customTipCents === null) return
+
+    const tipCents = customTipCents ?? selectedTipCents
     setLoading(true)
     try {
-      const result = await postListingSaleFeedback(listingId, {
-        reswellHelpedFindBuyer: reswellHelped,
-      })
-      if (!result.ok) {
-        toast.error(result.error)
+      const saved = await saveFeedbackAndReview()
+      if (!saved) return
+      if (tipCents != null) {
+        await startTip(tipCents)
         return
       }
-      setStep(reswellHelped ? "tip" : "review")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function startTip(amountCents: number) {
-    setLoading(true)
-    try {
-      const result = await postListingSaleTip(listingId, amountCents)
-      if (!result.ok) {
-        toast.error(result.error)
-        return
-      }
-      setSelectedTipCents(result.amountCents)
-      setClientSecret(result.clientSecret)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  function goToReview() {
-    setClientSecret(null)
-    setSelectedTipCents(null)
-    setStep("review")
-  }
-
-  async function submitReview() {
-    if (reviewRating == null) return
-    setLoading(true)
-    try {
-      const result = await submitSoldFlowReswellReviewAction({
-        rating: reviewRating,
-        description: reviewText,
-      })
-      if ("error" in result) {
-        toast.error(result.error)
-        return
-      }
-      onFinished?.()
-      setStep("thanks")
+      finish()
     } finally {
       setLoading(false)
     }
@@ -158,36 +144,7 @@ export function MarkSoldFollowUp({
     return <MarkSoldThanksStep tipped={tipped} onClose={onClose} />
   }
 
-  if (step === "review") {
-    return (
-      <MarkSoldReviewStep
-        rating={reviewRating}
-        review={reviewText}
-        loading={loading}
-        onRatingChange={setReviewRating}
-        onReviewChange={setReviewText}
-        onBack={() => setStep(reswellHelped ? "tip" : "helped")}
-        onContinue={() => void submitReview()}
-        stepCurrent={reswellHelped ? 4 : 3}
-        stepTotal={reswellHelped ? 4 : 3}
-      />
-    )
-  }
-
-  if (step === "helped") {
-    return (
-      <MarkSoldHelpedStep
-        selected={reswellHelped}
-        loading={loading}
-        onHelpedChange={setReswellHelped}
-        onBack={() => setStep("channel")}
-        onContinue={() => void saveHelpedAndContinue()}
-        stepTotal={reswellHelped ? 4 : 3}
-      />
-    )
-  }
-
-  if (step === "tip" && clientSecret && selectedTipCents) {
+  if (step === "checkout" && clientSecret && selectedTipCents) {
     return (
       <div className="space-y-3">
         <div className="space-y-1.5">
@@ -202,7 +159,8 @@ export function MarkSoldFollowUp({
           onSuccess={() => {
             toast.success("Tip sent. Thank you.")
             setTipped(true)
-            goToReview()
+            setClientSecret(null)
+            finish()
           }}
         />
         <div className="flex items-center justify-between gap-2">
@@ -212,13 +170,21 @@ export function MarkSoldFollowUp({
             disabled={loading}
             onClick={() => {
               setClientSecret(null)
-              setSelectedTipCents(null)
+              setStep("form")
             }}
           >
             <ChevronLeft className="h-4 w-4" aria-hidden />
             Back
           </Button>
-          <Button type="button" variant="ghost" disabled={loading} onClick={goToReview}>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={loading}
+            onClick={() => {
+              setClientSecret(null)
+              finish()
+            }}
+          >
             No thanks
           </Button>
         </div>
@@ -226,39 +192,41 @@ export function MarkSoldFollowUp({
     )
   }
 
-  if (step === "tip") {
-    return (
-      <MarkSoldTipAmountStep
-        reswellHelped={reswellHelped}
-        listingPriceUsd={listingPriceUsd}
-        presets={tipPresets}
-        customTip={customTip}
-        customTipCents={customTipCents}
-        loading={loading}
-        onCustomTipChange={setCustomTip}
-        onSelectPreset={(cents) => void startTip(cents)}
-        onSubmitCustom={() => {
-          if (customTipCents !== null) void startTip(customTipCents)
-        }}
-        onBack={() => {
-          setClientSecret(null)
-          setSelectedTipCents(null)
-          setStep("helped")
-        }}
-        onNoThanks={goToReview}
-      />
-    )
-  }
-
   return (
-    <MarkSoldChannelStep
+    <MarkSoldSurveyForm
       soldChannel={soldChannel}
       elsewhereDetail={elsewhereDetail}
       elsewhereDetailValid={elsewhereDetailValid}
+      helpedOffPlatform={helpedOffPlatform}
+      listingPriceUsd={listingPriceUsd}
+      presets={tipPresets}
+      selectedTipCents={selectedTipCents}
+      customTip={customTip}
+      customTipCents={customTipCents}
+      rating={reviewRating}
+      review={reviewText}
       loading={loading}
-      onChannelChange={setSoldChannel}
+      onChannelChange={(channel) => {
+        setSoldChannel(channel)
+        if (channel === "reswell") setHelpedOffPlatform(false)
+      }}
       onDetailChange={setElsewhereDetail}
-      onContinue={() => void saveChannelAndContinue()}
+      onHelpedOffPlatformChange={setHelpedOffPlatform}
+      onSelectNoTip={() => {
+        setSelectedTipCents(null)
+        setCustomTip("")
+      }}
+      onSelectPreset={(cents) => {
+        setCustomTip("")
+        setSelectedTipCents(cents)
+      }}
+      onCustomTipChange={(value) => {
+        setCustomTip(value)
+        setSelectedTipCents(parseCustomTipCents(value))
+      }}
+      onRatingChange={setReviewRating}
+      onReviewChange={setReviewText}
+      onSubmit={() => void handleSubmit()}
     />
   )
 }

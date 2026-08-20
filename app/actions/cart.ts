@@ -12,6 +12,7 @@ import { isBlockedOwnListingPurchase, isCartEligibleSection } from "@/lib/cart-e
 import { isReswellShopListing } from "@/lib/reswell-shop"
 import { isListingPurchasable } from "@/lib/listing-public-visibility"
 import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
+import { captureServerEvent } from "@/lib/posthog-server"
 
 export type CartListingRow = {
   id: string
@@ -254,6 +255,11 @@ export async function addCartItem(
   revalidatePath("/cart")
   const pathSlug = listingRow?.slug?.trim()
   revalidatePath(pathSlug ? `/l/${pathSlug}` : `/l/${listingId}`)
+  await captureServerEvent(user.id, "cart_item_added", {
+    listing_id: listingId,
+    section: listingRow ? String(listingRow.section ?? "surfboards") : undefined,
+    quantity: addQty,
+  })
   return { ok: true, error: null, value, contentName, metaEventId }
 }
 

@@ -287,7 +287,7 @@ export function EndListingDialog({
           <DialogHeader>
             <DialogTitle>Congrats on the sale</DialogTitle>
             <DialogDescription>
-              Tell us where it sold. Then you can leave an optional tip and rate Reswell.
+              Where it sold, plus an optional tip and rating.
             </DialogDescription>
           </DialogHeader>
           {listingId ? (

@@ -1,3 +1,6 @@
+"use client"
+
+import posthog from "posthog-js"
 import { logSellFunnelEventAction } from "@/lib/actions/sellFunnelActions"
 import { resolveSellEntryPoint } from "@/lib/sell-flow/sell-entry-point"
 import type {
@@ -17,6 +20,14 @@ export function logSellFunnelEvent(event: SellFunnelEventInput): void {
   const payload: SellFunnelEventInput = entryPoint
     ? { ...event, entryPoint }
     : event
+
+  posthog.capture(`sell_${payload.event}`, {
+    listing_type: payload.listingType,
+    field: payload.field,
+    listing_id: payload.listingId,
+    duration_ms: payload.durationMs,
+    entry_point: payload.entryPoint,
+  })
 
   void logSellFunnelEventAction(payload)
     .then((res) => {

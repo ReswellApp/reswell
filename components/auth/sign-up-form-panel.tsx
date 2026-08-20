@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Check, Eye, EyeOff } from "lucide-react"
+import posthog from "posthog-js"
 import { createClient } from "@/lib/supabase/client"
 import { AuthFormOrDivider } from "@/components/auth/auth-form-or-divider"
 import { GoogleOAuthButton } from "@/components/auth/google-oauth-button"
@@ -160,6 +161,13 @@ export function SignUpFormPanel({
       })
       if (signError) throw signError
       if (signData.session?.user) {
+        posthog.identify(signData.session.user.id, {
+          email: signData.session.user.email,
+          name: displayName,
+        })
+        posthog.capture('user_signed_up', {
+          sign_up_method: 'email',
+        })
         try {
           await fetch("/api/integrations/klaviyo/new-account-created", {
             method: "POST",

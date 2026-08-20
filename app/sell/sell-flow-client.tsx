@@ -1,7 +1,6 @@
 "use client"
 /** Sell flow: free-form listing title; brand line uses catalog (brands) + request CTA; no separate shaper field. */
 
-
 import React, {
   useState,
   useEffect,
@@ -12,7 +11,6 @@ import React, {
   useId,
 } from "react"
 import { createPortal } from "react-dom"
-import Image from "next/image"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
@@ -27,7 +25,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { SmoothCollapse } from "@/components/ui/smooth-collapse"
 import { Switch } from "@/components/ui/switch"
-import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -57,11 +54,11 @@ import {
   ChevronRight,
   CheckCircle2,
   AlertCircle,
-  RefreshCw,
   Zap,
 } from "lucide-react"
 import { LocationPicker, type LocationPrefillSuggested } from "@/components/location-picker"
 import { listingDetailHref } from "@/lib/listing-href"
+import type { ListingImageForCard } from "@/lib/listing-image-display"
 import { setJustPublishedListingMarker } from "@/lib/sell-flow/just-published"
 import { navigateAfterListingSave } from "@/lib/sell-flow/navigate-after-listing-save"
 import {
@@ -122,6 +119,7 @@ import {
 } from "@/components/request-brand-model-dialog"
 import { SellFlowFormColumnSkeleton } from "@/components/features/sell/sell-flow-route-skeleton"
 import { SellEditLoadError } from "@/components/features/sell/sell-edit-load-error"
+import { SellListingPublishedScreen } from "@/components/features/sell/sell-listing-published-screen"
 import { useOwnedListingEditLoad } from "@/components/features/sell/hooks/use-owned-listing-edit-load"
 import {
   sellFormSnapshotLooksFilled,
@@ -367,74 +365,15 @@ type PublishPreviewState = {
   coverUrl: string
   status: "publishing" | "live" | "error"
   detailHref?: string
+  listingId?: string | null
+  slug?: string | null
+  condition: string
+  boardType: string
+  shippingAvailable: boolean
+  localPickup: boolean
+  listingImages: ListingImageForCard[]
   errorMessage?: string
   failedStepLabel?: string
-}
-
-function SellFlowPublishingInterior({
-  preview,
-  uploadPhaseLabels,
-  submitStepIndex,
-  listingSubmitProgressValue,
-}: {
-  preview: PublishPreviewState
-  uploadPhaseLabels: string[]
-  submitStepIndex: number
-  listingSubmitProgressValue: number
-}) {
-  const thumb = proxiedListingImageSrc(preview.coverUrl) || "/placeholder.svg"
-  const stepLabel = uploadPhaseLabels[submitStepIndex] ?? "Working…"
-
-  return (
-    <div
-      className="relative w-full max-w-md animate-in fade-in zoom-in-95 motion-reduce:animate-none motion-reduce:opacity-100 motion-reduce:zoom-in-100 duration-300"
-      aria-busy="true"
-      aria-live="polite"
-      aria-label={`Publishing listing: ${preview.title}`}
-    >
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-md sm:p-7">
-        <div className="mb-6 space-y-2 text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Publishing
-          </p>
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">
-            Finishing up your listing
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            You&apos;ll go to your live listing when everything is saved.
-          </p>
-        </div>
-
-        <div className="mb-6 flex gap-4">
-          <div className="relative h-[4.75rem] w-[4.75rem] shrink-0 overflow-hidden rounded-xl border border-border/80 bg-muted shadow-inner">
-            <Image
-              src={thumb}
-              alt=""
-              fill
-              className="object-cover object-center"
-              unoptimized
-            />
-          </div>
-          <div className="flex min-h-[4.75rem] min-w-0 flex-1 flex-col justify-center gap-2">
-            <p className="line-clamp-2 text-base font-semibold leading-snug text-foreground">
-              {preview.title}
-            </p>
-            <Skeleton className="h-3 w-[88%]" />
-            <Skeleton className="h-3 w-3/5" />
-            <p className="text-xs tabular-nums text-muted-foreground">${preview.price}</p>
-          </div>
-        </div>
-
-        <div className="space-y-3 rounded-xl bg-muted/30 p-4 ring-1 ring-border/50">
-          <p className="flex items-center gap-2 text-sm font-medium text-foreground">
-            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" aria-hidden />
-            <span>{stepLabel}</span>
-          </p>
-          <Progress value={listingSubmitProgressValue} className="h-1.5" />
-        </div>
-      </div>
-    </div>
-  )
 }
 
 function SellPublishingGenericLoaderPortal() {
@@ -475,48 +414,6 @@ function SellPublishingGenericLoaderPortal() {
   )
 }
 
-/**
- * Full-viewport takeover (ported to document.body — `.page-enter` applies transform on ancestors,
- * which traps `position:fixed` so the footer stays visible underneath).
- */
-function SellFlowPublishingFullscreenPortal(props: {
-  preview: PublishPreviewState
-  uploadPhaseLabels: string[]
-  submitStepIndex: number
-  listingSubmitProgressValue: number
-}) {
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  useLayoutEffect(() => {
-    if (!mounted) return
-    const prev = document.documentElement.style.overflow
-    document.documentElement.style.overflow = "hidden"
-    return () => {
-      document.documentElement.style.overflow = prev
-    }
-  }, [mounted])
-
-  if (!mounted || typeof document === "undefined") {
-    return null
-  }
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-y-auto overscroll-none bg-background p-6 sm:p-10 motion-safe:animate-in motion-safe:fade-in motion-reduce:animate-none motion-reduce:opacity-100 duration-200"
-      role="presentation"
-    >
-      <div className="flex min-h-0 w-full max-w-xl flex-1 flex-col justify-center py-8">
-        <SellFlowPublishingInterior {...props} />
-      </div>
-    </div>,
-    document.body,
-  )
-}
-
 type ListingPhotoSlot = {
   clientId: string
   /** Local preview (blob URL) until we can show uploaded thumb */
@@ -540,6 +437,16 @@ type ListingPhotoSlot = {
   dropSourceFileAfterUpload?: boolean
   /** Bumps when re-processing the same slot so stale async work does not apply. */
   prepareSeq?: number
+}
+
+function listingImagesForPublishPreview(images: ListingPhotoSlot[]): ListingImageForCard[] {
+  return images
+    .filter((im) => Boolean(im.url || im.thumbnailUrl || im.previewUrl))
+    .map((im, index) => ({
+      url: im.url || im.previewUrl || null,
+      thumbnail_url: im.thumbnailUrl || im.previewUrl || null,
+      is_primary: index === 0,
+    }))
 }
 
 const LISTING_PHOTO_FILE_EXT_RE = /\.(heic|heif|jpe?g|png|webp|gif|avif|tif?f)$/i
@@ -835,15 +742,17 @@ function SellPageContentInner({
 
   const [loading, setLoading] = useState(false)
   const [publishValidationBanner, setPublishValidationBanner] = useState<string | null>(null)
-  const [submitStepIndex, setSubmitStepIndex] = useState(0)
+  const [, setSubmitStepIndex] = useState(0)
   const submitStepIndexRef = useRef(0)
   const [publishPreview, setPublishPreview] = useState<PublishPreviewState | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
   /** Prevents concurrent publishes (double-tap / stacked submits before `loading` flips). */
   const publishInFlightRef = useRef(false)
+  /** Skip Chrome's native leave-site prompt on intentional post-publish navigation. */
+  const allowDocumentUnloadRef = useRef(false)
   const uploadToastIdRef = useRef<string | number | null>(null)
   const uploadPhaseLabelsRef = useRef<string[]>([...LISTING_UPLOAD_STEP_LABELS])
-  const [uploadPhaseLabels, setUploadPhaseLabels] = useState<string[]>(() => [
+  const [, setUploadPhaseLabels] = useState<string[]>(() => [
     ...LISTING_UPLOAD_STEP_LABELS,
   ])
   const [draftHydrated, setDraftHydrated] = useState(!!editId)
@@ -917,6 +826,7 @@ function SellPageContentInner({
   useEffect(() => {
     if (!loading) return
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (allowDocumentUnloadRef.current) return
       e.preventDefault()
       e.returnValue = ""
     }
@@ -2915,12 +2825,18 @@ function SellPageContentInner({
     if (tid != null) toast.dismiss(tid)
   }
 
+  const leaveSellDocument = useCallback((href: string) => {
+    allowDocumentUnloadRef.current = true
+    navigateAfterListingSave(href)
+  }, [])
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (publishInFlightRef.current) {
       return
     }
     publishInFlightRef.current = true
+    allowDocumentUnloadRef.current = false
 
     const publishStartedAt = Date.now()
     logSellFunnelEvent({
@@ -3208,9 +3124,11 @@ function SellPageContentInner({
           images[0]?.previewUrl ||
           "/placeholder.svg",
         status: "publishing",
-      })
-      uploadToastIdRef.current = toast.loading("Your listing is being uploaded...", {
-        duration: 600_000,
+        condition: fd.condition,
+        boardType: fd.boardType,
+        shippingAvailable: fulfillmentFlags.shipping_available,
+        localPickup: fulfillmentFlags.local_pickup,
+        listingImages: listingImagesForPublishPreview(images),
       })
 
       let listingId: string | null = effectiveEditId
@@ -3615,13 +3533,25 @@ function SellPageContentInner({
             listingId: listingId ?? undefined,
             durationMs: Date.now() - publishStartedAt,
           })
-          retainPublishOverlayUntilNavigation = true
           setJustPublishedListingMarker({
             listingId,
             slug: listingSlug ?? null,
             section: "surfboards",
           })
-          navigateAfterListingSave(detailPath)
+          retainPublishOverlayUntilNavigation = true
+          setPublishPreview((p) =>
+            p
+              ? {
+                  ...p,
+                  status: "live",
+                  listingId,
+                  slug: listingSlug,
+                  detailHref: detailPath,
+                  listingImages: listingImagesForPublishPreview(imagesRef.current),
+                }
+              : null,
+          )
+          setLoading(false)
           return
         }
         if (editId && !usedImpersonationListingApi) {
@@ -3689,6 +3619,9 @@ function SellPageContentInner({
             defaultDetailPath: detailPath,
           })
         ) {
+          allowDocumentUnloadRef.current = true
+          setPublishPreview(null)
+          setLoading(false)
           return
         }
       }
@@ -3700,7 +3633,27 @@ function SellPageContentInner({
           section: "surfboards",
         })
       }
-      navigateAfterListingSave(detailPath)
+      if (listingImpersonation) {
+        leaveSellDocument(detailPath)
+        return
+      }
+      if (listingId) {
+        setPublishPreview((p) =>
+          p
+            ? {
+                ...p,
+                status: "live",
+                listingId,
+                slug: listingSlug,
+                detailHref: detailPath,
+                listingImages: listingImagesForPublishPreview(imagesRef.current),
+              }
+            : null,
+        )
+        setLoading(false)
+        return
+      }
+      leaveSellDocument(detailPath)
     } catch (error: unknown) {
       const aborted = isSellSubmitAbortError(error)
       const msg = sellSubmitErrorMessage(error, "Failed to create listing")
@@ -3744,16 +3697,11 @@ function SellPageContentInner({
     }
   }
 
-  const stepCount = Math.max(1, uploadPhaseLabels.length)
-  const listingSubmitProgressValue = Math.min(
-    100,
-    Math.round(((submitStepIndex + 1) / stepCount) * 100),
-  )
-
   const optimizingAny = images.some((im) => im.optimizePhase === "running")
 
-  /** Covers publish + rare early loading without preview; never while edit hydration is blocking. */
-  const fullscreenSellBlocking = loading && (!!publishPreview || !editLoading)
+  /** Covers publish gate (in-flight, live, or error) and rare early loading without preview. */
+  const fullscreenSellBlocking =
+    Boolean(publishPreview) || (loading && !editLoading)
   const showBoardModeHeader = !editId && !editLoading && !getImpersonation()
 
   if (editLoadError) {
@@ -3778,14 +3726,39 @@ function SellPageContentInner({
       >
         <AdminBulkListingBanner section="surfboards" bulkSlotId={bulkSlotId} />
         <div className="container relative mx-auto max-w-3xl min-h-[50vh] px-4 sm:px-6 lg:max-w-6xl">
-          {loading && publishPreview ? (
-            <SellFlowPublishingFullscreenPortal
-              preview={publishPreview}
-              uploadPhaseLabels={uploadPhaseLabels}
-              submitStepIndex={submitStepIndex}
-              listingSubmitProgressValue={listingSubmitProgressValue}
+          {publishPreview ? (
+            <SellListingPublishedScreen
+              listing={{
+                id: publishPreview.listingId || "publishing",
+                slug: publishPreview.slug ?? null,
+                user_id: signedInUserId ?? "",
+                title: publishPreview.title,
+                price: publishPreview.price,
+                status: publishPreview.status === "live" ? "active" : "draft",
+                section: "surfboards",
+                local_pickup: publishPreview.localPickup,
+                shipping_available: publishPreview.shippingAvailable,
+                listing_images: publishPreview.listingImages,
+                board_type: publishPreview.boardType,
+                condition: publishPreview.condition,
+              }}
+              viewerUserId={signedInUserId}
+              status={publishPreview.status}
+              errorMessage={publishPreview.errorMessage}
+              failedStepLabel={publishPreview.failedStepLabel}
+              onContinue={() => {
+                if (publishPreview.detailHref) {
+                  leaveSellDocument(publishPreview.detailHref)
+                }
+              }}
+              onExit={() => leaveSellDocument(sellListingsHubHref)}
+              onRetry={() => formRef.current?.requestSubmit()}
+              onDismissError={() => {
+                setPublishPreview(null)
+                setLoading(false)
+              }}
             />
-          ) : loading && !editLoading && !publishPreview ? (
+          ) : loading && !editLoading ? (
             <SellPublishingGenericLoaderPortal />
           ) : null}
           <div
@@ -4458,89 +4431,6 @@ function SellPageContentInner({
                   />
 
                   <Separator className="bg-border" />
-
-                {publishPreview && !loading && (
-                  <div
-                    className={cn(
-                      "rounded-xl border p-4 flex gap-4 transition-colors",
-                      publishPreview.status === "publishing" && "border-primary/25 bg-primary/[0.04]",
-                      publishPreview.status === "live" && "border-emerald-500/30 bg-emerald-500/[0.06]",
-                      publishPreview.status === "error" && "border-destructive/40 bg-destructive/[0.06]",
-                    )}
-                  >
-                    <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted">
-                      <Image
-                        src={proxiedListingImageSrc(publishPreview.coverUrl) || "/placeholder.svg"}
-                        alt=""
-                        fill
-                        className="object-cover object-center"
-                        unoptimized
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1 space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold text-foreground truncate">{publishPreview.title}</p>
-                        {publishPreview.status === "publishing" && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-xs font-medium text-primary">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Publishing...
-                          </span>
-                        )}
-                        {publishPreview.status === "live" && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
-                            <CheckCircle2 className="h-3 w-3" />
-                            Live ✓
-                          </span>
-                        )}
-                        {publishPreview.status === "error" && (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-medium text-destructive">
-                            <AlertCircle className="h-3 w-3" />
-                            Failed
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        ${publishPreview.price}
-                        {publishPreview.detailHref && publishPreview.status === "live" && (
-                          <>
-                            {" · "}
-                            <Link
-                              href={publishPreview.detailHref}
-                              className="text-primary underline-offset-4 hover:underline"
-                            >
-                              View listing
-                            </Link>
-                          </>
-                        )}
-                      </p>
-                      {publishPreview.status === "error" && (
-                        <div className="pt-2 space-y-2">
-                          <p className="text-xs text-muted-foreground">
-                            {publishPreview.failedStepLabel ? (
-                              <>
-                                <span className="font-medium text-foreground">
-                                  {publishPreview.failedStepLabel}
-                                </span>
-                                {" — "}
-                              </>
-                            ) : null}
-                            {publishPreview.errorMessage}
-                          </p>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="gap-1.5"
-                            onClick={() => formRef.current?.requestSubmit()}
-                          >
-                            <RefreshCw className="h-3.5 w-3.5" />
-                            Retry
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
 
                 </div>
                 </SellFormSection>

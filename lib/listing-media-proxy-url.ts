@@ -21,7 +21,12 @@ export function isProxiedListingMediaSrc(src: string | null | undefined): boolea
  * avoid transformation + cache-write charges.
  */
 export function listingImageShouldBypassOptimization(src: string | null | undefined): boolean {
-  return typeof src === "string" && src.startsWith("/media/")
+  if (typeof src !== "string" || !src) return false
+  return (
+    src.startsWith("/media/") ||
+    src.startsWith("blob:") ||
+    src.startsWith("data:")
+  )
 }
 
 const PUBLIC_LISTINGS_MARKER = "/storage/v1/object/public/listings/"

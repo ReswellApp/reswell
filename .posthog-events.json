@@ -1,0 +1,87 @@
+[
+  {
+    "event_name": "listing_viewed",
+    "event_description": "Fired when a shopper lands on a listing detail page, the top of the buy funnel.",
+    "file": "components/features/listings/listing-view-tracker.tsx"
+  },
+  {
+    "event_name": "listing_favorited",
+    "event_description": "Fired when a logged-in user toggles a listing into their favorites (heart button).",
+    "file": "components/favorite-button.tsx"
+  },
+  {
+    "event_name": "listing_unfavorited",
+    "event_description": "Fired when a logged-in user removes a listing from their favorites (heart button).",
+    "file": "components/favorite-button.tsx"
+  },
+  {
+    "event_name": "cart_item_added",
+    "event_description": "Fired server-side when a buyer successfully adds a listing to their cart.",
+    "file": "app/actions/cart.ts"
+  },
+  {
+    "event_name": "checkout_started",
+    "event_description": "Fired when a buyer reaches the checkout page with a listing or cart in their session.",
+    "file": "components/features/checkout/klaviyo-checkout-started-tracker.tsx"
+  },
+  {
+    "event_name": "purchase_completed",
+    "event_description": "Fired server-side when the buyer lands on the purchase confirmation page after a successful payment.",
+    "file": "app/successpage/[id]/page.tsx"
+  },
+  {
+    "event_name": "order_finalized",
+    "event_description": "Fired server-side in the Stripe finalize-order API route after a successful payment intent is recorded as a completed order.",
+    "file": "app/api/stripe/finalize-order/route.ts"
+  },
+  {
+    "event_name": "offer_submitted",
+    "event_description": "Fired server-side when a buyer successfully submits an offer on a listing.",
+    "file": "app/api/listings/[id]/offers/route.ts"
+  },
+  {
+    "event_name": "offer_accepted",
+    "event_description": "Fired server-side when a seller accepts a pending offer.",
+    "file": "lib/actions/offerRespond.ts"
+  },
+  {
+    "event_name": "message_sent",
+    "event_description": "Fired server-side when a buyer or seller sends a marketplace listing message.",
+    "file": "app/actions/messages.ts"
+  },
+  {
+    "event_name": "sell_flow_viewed",
+    "event_description": "Fired when a seller lands on /sell, /sell/boards, or any other /sell category flow.",
+    "file": "components/features/sell/sell-flow-viewed-tracker.tsx"
+  },
+  {
+    "event_name": "sell_flow_started",
+    "event_description": "Fired once per session when a seller starts filling a category sell form.",
+    "file": "lib/sell-flow/log-sell-funnel-event.ts"
+  },
+  {
+    "event_name": "sell_publish_attempt",
+    "event_description": "Fired when a seller submits the publish action on any /sell flow.",
+    "file": "lib/sell-flow/log-sell-funnel-event.ts"
+  },
+  {
+    "event_name": "sell_publish_succeeded",
+    "event_description": "Fired when a listing publish succeeds on any /sell flow.",
+    "file": "lib/sell-flow/log-sell-funnel-event.ts"
+  },
+  {
+    "event_name": "listing_published",
+    "event_description": "Fired client-side when a seller successfully publishes a new listing or re-publishes a draft in the sell flow.",
+    "file": "lib/sell-flow/just-published.ts"
+  },
+  {
+    "event_name": "user_signed_up",
+    "event_description": "Fired client-side when a user successfully creates a new account via the email sign-up form.",
+    "file": "components/auth/sign-up-form-panel.tsx"
+  },
+  {
+    "event_name": "user_logged_in",
+    "event_description": "Fired client-side when a user successfully signs in with email and password.",
+    "file": "components/auth/login-form-panel.tsx"
+  }
+]

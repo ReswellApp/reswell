@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { Heart } from "lucide-react"
 import { toast } from "sonner"
+import posthog from "posthog-js"
 
 interface FavoriteButtonProps {
   listingId: string
@@ -71,6 +72,9 @@ export function FavoriteButton({
       }
       setFavorited(result.favorited)
       onFavoritedChange?.(result.favorited)
+      posthog.capture(result.favorited ? 'listing_favorited' : 'listing_unfavorited', {
+        listing_id: listingId,
+      })
       if (refreshAfterToggle) {
         router.refresh()
       }

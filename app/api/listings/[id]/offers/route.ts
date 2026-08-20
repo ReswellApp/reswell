@@ -4,6 +4,7 @@ import { z } from "zod"
 import { createClient } from "@/lib/supabase/server"
 import { createListingOffer } from "@/lib/services/createListingOffer"
 import { createListingOfferBodySchema } from "@/lib/validations/create-listing-offer"
+import { captureServerEvent } from "@/lib/posthog-server"
 
 const listingIdParamSchema = z.string().uuid("Invalid listing id")
 
@@ -56,6 +57,13 @@ export async function POST(
   }
 
   revalidatePath("/dashboard/offers")
+
+  await captureServerEvent(user.id, "offer_submitted", {
+    listing_id: listingId,
+    offer_id: result.offerId,
+    amount: parsed.data.amount,
+    fulfillment: parsed.data.fulfillment,
+  })
 
   return NextResponse.json({ data: { offerId: result.offerId } }, { status: 201 })
 }
