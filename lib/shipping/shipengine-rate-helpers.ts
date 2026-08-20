@@ -25,8 +25,12 @@ function asRecord(v: unknown): Record<string, unknown> | null {
     : null
 }
 
-/** ShipEngine rejects empty `phone` on `ship_from` / `ship_to` when missing from our UI (rate quotes). */
-export const SHIPENGINE_PLACEHOLDER_US_PHONE = "5555555555"
+/**
+ * ShipEngine rejects empty `phone` on `ship_from` / `ship_to`.
+ * When the buyer or seller has no number on file, use this Reswell line so
+ * carriers can still reach someone about a delivery issue.
+ */
+export const SHIPENGINE_PLACEHOLDER_US_PHONE = "805-453-9406"
 
 export function addressToPayload(a: ShippingAddressInput, role: "from" | "to") {
   const country = normalizeCountryCodeForShipping(a.country_code)
