@@ -5,8 +5,6 @@ import type { OrderPlacedMessagePayload } from "@/lib/validations/order-placed-m
 function shippingLines(shipping: Record<string, unknown> | null): string[] {
   if (!shipping) return []
   const name = typeof shipping.name === "string" ? shipping.name.trim() : ""
-  const phone = typeof shipping.phone === "string" ? shipping.phone.trim() : ""
-  const email = typeof shipping.email === "string" ? shipping.email.trim() : ""
   const rawAddr = shipping.address
   const addr =
     rawAddr && typeof rawAddr === "object" && !Array.isArray(rawAddr)
@@ -20,8 +18,6 @@ function shippingLines(shipping: Record<string, unknown> | null): string[] {
   const cityState = [addr?.city, addr?.state, addr?.postal_code].filter(Boolean).join(", ").trim()
   if (cityState) lines.push(cityState)
   if (addr?.country?.trim()) lines.push(addr.country.trim().toUpperCase())
-  if (phone) lines.push(`Phone: ${phone}`)
-  if (email) lines.push(`Email: ${email}`)
   return lines
 }
 

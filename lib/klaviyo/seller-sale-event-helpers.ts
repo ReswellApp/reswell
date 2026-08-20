@@ -12,15 +12,13 @@ import {
 
 export type KlaviyoShipToAddress = {
   name: string
-  phone: string
-  email: string
   line1: string
   line2: string
   city: string
   state: string
   postal_code: string
   country: string
-  /** Multi-line block for email templates. */
+  /** Multi-line block for seller email templates — address only, no phone or email. */
   formatted: string
 }
 
@@ -74,8 +72,6 @@ export function parseOrderShippingAddressForKlaviyo(
   if (!raw || typeof raw !== "object") return null
 
   const name = typeof raw.name === "string" ? raw.name.trim() : ""
-  const phone = typeof raw.phone === "string" ? raw.phone.trim() : ""
-  const email = typeof raw.email === "string" ? raw.email.trim() : ""
 
   const rawAddr = raw.address
   const addr =
@@ -100,16 +96,12 @@ export function parseOrderShippingAddressForKlaviyo(
     line2 || null,
     [city, state, postal_code].filter(Boolean).join(", ").trim() || null,
     country || null,
-    phone ? `Phone: ${phone}` : null,
-    email ? `Email: ${email}` : null,
   ]
     .filter((line): line is string => Boolean(line))
     .join("\n")
 
   return {
     name,
-    phone,
-    email,
     line1,
     line2,
     city,

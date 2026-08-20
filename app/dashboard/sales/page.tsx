@@ -506,9 +506,6 @@ export default async function SalesPage({
                       <p className="text-muted-foreground whitespace-pre-line line-clamp-3">
                         {addrBlock}
                       </p>
-                      {(ship?.phone || ship?.email) && (
-                        <p className="text-xs text-muted-foreground mt-1">Open sale for full details</p>
-                      )}
                     </div>
                   )}
 

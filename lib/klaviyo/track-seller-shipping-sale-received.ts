@@ -6,7 +6,8 @@
  * Unshipped seller follow-up flows should exit when **Seller Order Shipped** fires on this
  * same seller profile. Buyer **Order Shipped** will not take them out of the flow.
  *
- * Template variables: structured ship-to (`ship_to_name`, `ship_to_line1`, …, `ship_to_formatted`),
+ * Template variables: structured ship-to (`ship_to_name`, `ship_to_line1`, …, `ship_to_formatted`).
+ * Buyer phone and email are omitted — those stay admin-only.
  * `label_workflow` (`reswell` | `seller_own`), `label_workflow_instructions`,
  * `sale_url`, `shipping_tools_url`, plus order/listing fields from **New Sale Received**.
  *
@@ -77,8 +78,8 @@ export async function trackKlaviyoSellerShippingSaleReceived(
       buyer_user_id: payload.buyerUserId,
       buyer_display_name: payload.buyerDisplayName,
       ship_to_name: shipTo?.name ?? "",
-      ship_to_phone: shipTo?.phone ?? "",
-      ship_to_email: shipTo?.email ?? "",
+      ship_to_phone: "",
+      ship_to_email: "",
       ship_to_line1: shipTo?.line1 ?? "",
       ship_to_line2: shipTo?.line2 ?? "",
       ship_to_city: shipTo?.city ?? "",

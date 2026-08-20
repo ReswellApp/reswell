@@ -798,11 +798,6 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
                   <p className="text-muted-foreground whitespace-pre-line leading-relaxed">
                     {addrBlock}
                   </p>
-                  {ship?.phone && (
-                    <p className="text-muted-foreground">
-                      {ship.phone}
-                    </p>
-                  )}
                 </div>
               ) : isPickup ? (
                 <p className="text-sm text-muted-foreground">
