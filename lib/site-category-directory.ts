@@ -3,8 +3,6 @@
  * Surfboard types match the board style facet in `lib/boards-browse-facets` (`type`/`style` query params).
  */
 
-import { BRANDS_BASE } from "@/lib/brands/routes"
-
 export type CategoryLink = { label: string; href: string }
 
 /** `/boards` root label — matches header nav and browse breadcrumbs. */
@@ -176,16 +174,14 @@ export function boardBrowseNavItemIsActive(
   return pathname === path
 }
 
-/** Desktop header right rail — Sellers, Brands, Sold. */
+/** Desktop header right rail — Sellers, Sold. `/brands` stays live; hidden from nav for now. */
 export const siteHeaderDesktopSecondaryNavLinks: CategoryLink[] = [
   { label: "Sellers", href: "/sellers" },
-  { label: "Brands", href: BRANDS_BASE },
   { label: "Sold", href: "/sold" },
 ]
 
-/** Mobile pill strip + hamburger — Brands, Sellers, Sold. */
+/** Mobile pill strip + hamburger — Sellers, Sold. `/brands` stays live; hidden from nav for now. */
 export const siteHeaderMobileSecondaryNavLinks: CategoryLink[] = [
-  { label: "Brands", href: BRANDS_BASE },
   { label: "Sellers", href: "/sellers" },
   { label: "Sold", href: "/sold" },
 ]

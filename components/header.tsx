@@ -94,13 +94,13 @@ const listYourBoardNavButtonClassName = cn(
   "shrink-0 whitespace-nowrap rounded-full border-foreground/20 px-5 text-[14px] font-medium",
 )
 
-/** Mobile header actions: Sell + heart + cart share a 1.5px foreground stroke. */
+/** Mobile header actions: compact Reverb-like targets (32px / 20px icons). */
 const mobileActionStrokeWidth = 1.5
-const mobileActionIconClassName = "h-6 w-6"
+const mobileActionIconClassName = "h-5 w-5"
 const mobileActionIconButtonClassName =
-  "h-10 w-10 text-foreground hover:bg-black/5 [&_svg]:size-6"
+  "h-8 w-8 text-foreground hover:bg-black/5 [&_svg]:size-5"
 const mobileSellButtonClassName =
-  "h-10 shrink-0 whitespace-nowrap rounded-full border-[1.5px] border-foreground px-3.5 text-[14px] font-medium text-foreground shadow-none hover:bg-muted/50"
+  "h-8 shrink-0 whitespace-nowrap rounded-full border border-foreground px-3 py-0 text-[13px] font-medium leading-none text-foreground shadow-none hover:bg-muted/50 md:h-9 md:px-3.5 md:text-[14px]"
 
 /** Guest “Recently sold” nav control — larger tap target (Clock icon, links to `/sold`). */
 const recentlySoldNavButtonClassName =
@@ -124,7 +124,7 @@ function HeaderMobileLogInLink({ onLogIn }: { onLogIn: () => void }) {
         e.preventDefault()
         onLogIn()
       }}
-      className="shrink-0 px-2 py-2 text-[15px] font-medium text-foreground/80 transition-colors hover:text-cerulean"
+      className="shrink-0 px-1.5 py-1.5 text-[13px] font-medium text-foreground/80 transition-colors hover:text-cerulean"
     >
       Log in
     </Link>
@@ -134,13 +134,13 @@ function HeaderMobileLogInLink({ onLogIn }: { onLogIn: () => void }) {
 function HeaderMobileNavActionsSkeleton() {
   return (
     <div
-      className="flex shrink-0 items-center justify-end gap-1"
+      className="flex shrink-0 items-center justify-end gap-0.5"
       aria-busy="true"
       aria-label="Loading navigation"
     >
-      <Skeleton className="h-10 w-14 shrink-0 rounded-full" />
-      <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
-      <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
+      <Skeleton className="h-8 w-12 shrink-0 rounded-full" />
+      <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
+      <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
       <Skeleton className="h-4 w-12 shrink-0 rounded" />
     </div>
   )
@@ -1149,11 +1149,11 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
         >
           {isMobileViewport ? (
             <>
-              <div className="flex min-h-[48px] min-w-0 items-center gap-2">
+              <div className="flex min-h-10 min-w-0 items-center gap-2">
                 <div className="min-w-0 flex-1">
                   <SiteWordmarkLink compact className="px-1 py-1 sm:px-2 sm:py-1.5" />
                 </div>
-                <div className="flex shrink-0 items-center justify-end gap-1">
+                <div className="flex shrink-0 items-center justify-end gap-0.5">
                   {!authLoaded ? (
                     <HeaderMobileNavActionsSkeleton />
                   ) : user ? (

@@ -99,8 +99,11 @@ export function CartHeaderLink({
 
   if (count === null) {
     return (
-      <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center", visibility)} aria-hidden>
-        <Skeleton className="h-10 w-10 rounded-lg" />
+      <div
+        className={cn("flex h-10 w-10 shrink-0 items-center justify-center", visibility, className)}
+        aria-hidden
+      >
+        <Skeleton className="size-full rounded-lg" />
       </div>
     )
   }
@@ -120,7 +123,7 @@ export function CartHeaderLink({
         {count > 0 && (
           <Badge
             variant="secondary"
-            className="absolute -right-1 -top-1 h-5 min-w-[1.25rem] rounded-full px-1 text-xs flex items-center justify-center"
+            className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-0.5 text-[10px] leading-none md:-right-1 md:-top-1 md:h-5 md:min-w-[1.25rem] md:px-1 md:text-xs"
           >
             {count > 9 ? "9+" : count}
           </Badge>
