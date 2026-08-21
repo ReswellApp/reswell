@@ -52,7 +52,7 @@ const brandCatalogImageHosts = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingRoot: path.join(__dirname),
-  serverExternalPackages: ['exceljs'],
+  serverExternalPackages: ['exceljs', 'archiver'],
   outputFileTracingIncludes: {
     '/app/api/admin/facebook-marketplace-bulk/export/route': [
       './lib/facebook-marketplace/templates/**',

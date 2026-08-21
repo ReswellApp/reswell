@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { trackKlaviyoOfferAccepted } from "@/lib/klaviyo/track-offer-accepted"
 import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
 import { appendOfferTimelineEntry } from "@/lib/services/appendOfferTimeline"
@@ -82,7 +83,7 @@ export async function respondToCounterOfferService(
   const { data: listing, error: listErr } = await supabase
     .from("listings")
     .select(
-      "id, title, user_id, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode",
+      "id, title, user_id, slug, section, price, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode",
     )
     .eq("id", offer.listing_id)
     .maybeSingle()
@@ -228,6 +229,24 @@ export async function respondToCounterOfferService(
       message: `${title}: buyer accepted your counter of $${current.toFixed(2)}.`,
     })
   }
+
+  const listPrice = roundMoney(parseFloat(String(listing.price)))
+  void trackKlaviyoOfferAccepted({
+    offerId,
+    listingId: offer.listing_id as string,
+    listingTitle: title,
+    listingSlug: (listing.slug as string | null | undefined) ?? null,
+    listingSection: (listing.section as string) || "surfboards",
+    listPrice: Number.isFinite(listPrice) ? listPrice : current,
+    offerAmount: current,
+    buyerUserId: buyerUserId,
+    sellerUserId: offer.seller_id as string,
+    acceptedBy: "buyer",
+    fulfillment: reconciled.fulfillment,
+    conversationId: conv?.id ?? null,
+  }).catch((e) => {
+    console.error("[respondToCounterOffer] klaviyo Offer Accepted:", e)
+  })
 
   return { ok: true, conversationId: conv?.id ?? null }
 }

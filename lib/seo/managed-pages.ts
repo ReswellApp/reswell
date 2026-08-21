@@ -146,6 +146,12 @@ export const MANAGED_PAGES: ManagedPage[] = [
     ogImageUrl:
       "https://lqwsewptsirsglasnwmn.supabase.co/storage/v1/object/public/seo-assets/share-images/834f5712-af90-43f9-acf1-c4ce0e87daea.jpg",
   }),
+  page("careers", "core", "Careers", {
+    title: "Careers at Reswell | Surf Marketplace Jobs",
+    description:
+      "Work on the peer-to-peer marketplace for surfers. See open roles at Reswell, based in Santa Barbara.",
+    path: "/careers",
+  }),
 
   // ---- Marketplace ----
   page("boards", "marketplace", "Browse boards", {

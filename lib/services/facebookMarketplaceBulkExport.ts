@@ -1,6 +1,12 @@
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { FACEBOOK_MARKETPLACE_BULK_UPLOAD_MAX } from "@/lib/facebook-marketplace/categories"
 import { buildFacebookMarketplaceBulkUploadXlsx } from "@/lib/facebook-marketplace/build-bulk-upload-xlsx"
+import {
+  downloadListingImageForZip,
+  startFacebookMarketplaceListingPhotosZip,
+  zipArchiveToWebStream,
+  type FacebookMarketplacePhotoZipListing,
+} from "@/lib/facebook-marketplace/build-listing-photos-zip"
 import { mapListingToFacebookMarketplaceRow } from "@/lib/facebook-marketplace/map-listing"
 import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
 import { PEER_LISTING_SECTION_LABELS, isPeerListingSection } from "@/lib/peer-listing-sections"
@@ -24,6 +30,7 @@ export type FacebookMarketplaceBulkListingPreview = {
   section_label: string
   condition: string | null
   thumbnail_url: string
+  image_count: number
   facebook: {
     title: string
     price: number
@@ -46,6 +53,24 @@ function sectionLabel(section: string): string {
   return section
 }
 
+function fullListingImageUrls(
+  images: FacebookMarketplaceBulkListingRow["listing_images"],
+): string[] {
+  const list = [...(images ?? [])].sort((a, b) => {
+    if (Boolean(a.is_primary) !== Boolean(b.is_primary)) return a.is_primary ? -1 : 1
+    return (a.sort_order ?? 999) - (b.sort_order ?? 999)
+  })
+  const urls: string[] = []
+  const seen = new Set<string>()
+  for (const image of list) {
+    const url = image.url?.trim()
+    if (!url || seen.has(url)) continue
+    seen.add(url)
+    urls.push(url)
+  }
+  return urls
+}
+
 function toPreview(listing: FacebookMarketplaceBulkListingRow): FacebookMarketplaceBulkListingPreview | null {
   const facebook = mapListingToFacebookMarketplaceRow(listing)
   if (!facebook) return null
@@ -58,6 +83,7 @@ function toPreview(listing: FacebookMarketplaceBulkListingRow): FacebookMarketpl
     section_label: sectionLabel(listing.section),
     condition: listing.condition,
     thumbnail_url: listingTitleThumbnailSrc(listing.listing_images),
+    image_count: fullListingImageUrls(listing.listing_images).length,
     facebook: {
       title: facebook.title,
       price: facebook.price,
@@ -183,5 +209,66 @@ export async function exportFacebookMarketplaceBulkWorkbookService(
   } catch (error) {
     console.error("exportFacebookMarketplaceBulkWorkbookService:", error)
     return { ok: false, error: "Could not build the Marketplace spreadsheet", status: 500 }
+  }
+}
+
+export async function exportFacebookMarketplaceListingPhotosZipService(
+  sellerId: string,
+): Promise<
+  | {
+      ok: true
+      stream: ReadableStream<Uint8Array>
+      filename: string
+      listingCount: number
+      imageCount: number
+    }
+  | { ok: false; error: string; status?: number }
+> {
+  const supabase = serviceClient()
+  if (!supabase) return { ok: false, error: "Server configuration error", status: 500 }
+
+  try {
+    const seller = await getFacebookMarketplaceBulkSellerProfile(supabase, sellerId)
+    if (!seller) return { ok: false, error: "Seller not found", status: 404 }
+
+    const rows = await listActiveListingsForFacebookMarketplaceBulkExport(supabase, sellerId)
+    const listings: FacebookMarketplacePhotoZipListing[] = []
+    for (const row of rows) {
+      if (row.section !== "surfboards") continue
+      const image_urls = fullListingImageUrls(row.listing_images)
+      if (image_urls.length === 0) continue
+      listings.push({
+        id: row.id,
+        slug: row.slug,
+        title: row.title,
+        price: row.price,
+        image_urls,
+      })
+    }
+
+    if (listings.length === 0) {
+      return { ok: false, error: "This seller has no surfboard listing photos to download", status: 400 }
+    }
+
+    const imageCount = listings.reduce((sum, listing) => sum + listing.image_urls.length, 0)
+    const stamp = new Date().toISOString().slice(0, 10)
+    const label = sellerFileLabel(seller)
+    const filename = `Marketplace_Listing_Photos_${label}_${stamp}.zip`
+    const { archive } = startFacebookMarketplaceListingPhotosZip({
+      rootFolder: `${label}-listing-photos`,
+      listings,
+      downloadImage: (url) => downloadListingImageForZip(supabase, url),
+    })
+
+    return {
+      ok: true,
+      stream: zipArchiveToWebStream(archive),
+      filename,
+      listingCount: listings.length,
+      imageCount,
+    }
+  } catch (error) {
+    console.error("exportFacebookMarketplaceListingPhotosZipService:", error)
+    return { ok: false, error: "Could not build the listing photos zip", status: 500 }
   }
 }

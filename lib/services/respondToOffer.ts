@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { trackKlaviyoOfferAccepted } from "@/lib/klaviyo/track-offer-accepted"
 import { trackKlaviyoSellerMadeOfferToBuyer } from "@/lib/klaviyo/track-seller-made-offer-to-buyer"
 import { getConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { appendConversationMessageWithClient } from "@/lib/services/conversationThread"
@@ -208,6 +209,23 @@ export async function respondToOfferService(
         message: `${title}: your offer of $${current.toFixed(2)} was accepted.`,
       })
     }
+
+    void trackKlaviyoOfferAccepted({
+      offerId,
+      listingId: offer.listing_id as string,
+      listingTitle: title,
+      listingSlug: (listing.slug as string | null | undefined) ?? null,
+      listingSection: (listing.section as string) || "surfboards",
+      listPrice,
+      offerAmount: current,
+      buyerUserId: offer.buyer_id as string,
+      sellerUserId,
+      acceptedBy: "seller",
+      fulfillment: reconciled.fulfillment,
+      conversationId: conv?.id ?? null,
+    }).catch((e) => {
+      console.error("[respondToOffer] klaviyo Offer Accepted:", e)
+    })
 
     return { ok: true, conversationId: conv?.id ?? null }
   }

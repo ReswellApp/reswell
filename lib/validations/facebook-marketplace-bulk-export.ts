@@ -28,3 +28,11 @@ export const facebookMarketplaceBulkExportBodySchema = z.object({
 })
 
 export type FacebookMarketplaceBulkExportBody = z.infer<typeof facebookMarketplaceBulkExportBodySchema>
+
+export const facebookMarketplaceBulkPhotosQuerySchema = z.object({
+  seller_id: facebookMarketplaceBulkSellerIdSchema,
+})
+
+export type FacebookMarketplaceBulkPhotosQuery = z.infer<
+  typeof facebookMarketplaceBulkPhotosQuerySchema
+>

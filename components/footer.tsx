@@ -15,7 +15,7 @@ export function Footer() {
   return (
     <footer className="border-t border-white/15 bg-listingHeart pb-[env(safe-area-inset-bottom)] text-white">
       <div className="container mx-auto py-10 sm:py-14">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5 md:gap-10">
+        <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-6 md:gap-10">
           {/* Brand */}
           <div className="col-span-2 order-1 lg:col-span-1 md:order-none">
             <SiteWordmarkLink
@@ -82,6 +82,20 @@ export function Footer() {
             <h3 className="text-sm font-semibold text-white">Help</h3>
             <ul className="mt-4 space-y-3">
               {siteFooterNavLinks.help.map((link) => (
+                <li key={link.name}>
+                  <Link href={link.href} className={footerLinkClassName}>
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Careers */}
+          <div className="order-3 md:order-none">
+            <h3 className="text-sm font-semibold text-white">Careers</h3>
+            <ul className="mt-4 space-y-3">
+              {siteFooterNavLinks.careers.map((link) => (
                 <li key={link.name}>
                   <Link href={link.href} className={footerLinkClassName}>
                     {link.name}

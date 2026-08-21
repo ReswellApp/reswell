@@ -157,6 +157,9 @@ export function FacebookMarketplaceListingSelectPanel({
                     <p className="mt-0.5 truncate text-xs text-muted-foreground">
                       {formatUsd(listing.facebook.price)} · {listing.facebook.condition} · {listing.section_label}
                       {listing.condition ? ` (${formatCondition(listing.condition)})` : ""}
+                      {listing.image_count > 0
+                        ? ` · ${listing.image_count} photo${listing.image_count === 1 ? "" : "s"}`
+                        : ""}
                     </p>
                   </div>
                 </li>

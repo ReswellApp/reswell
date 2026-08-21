@@ -8,7 +8,7 @@ import { FacebookMarketplaceBulkClient } from "@/components/features/admin/faceb
 export const metadata = privatePageMetadata({
   title: "FB Marketplace export — Admin — Reswell",
   description:
-    "Choose a seller and export active listings into Facebook Marketplace’s bulk upload spreadsheet.",
+    "Choose a seller, export active listings into Facebook Marketplace’s bulk upload spreadsheet, and download surfboard listing photos as a zip.",
   path: "/admin/facebook-marketplace-bulk",
 })
 

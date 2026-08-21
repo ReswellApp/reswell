@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
-import { Download, Loader2 } from "lucide-react"
+import { Download, Images, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -36,6 +36,7 @@ export function FacebookMarketplaceBulkClient() {
   const [loadingListings, setLoadingListings] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [exporting, setExporting] = useState(false)
+  const [zippingPhotos, setZippingPhotos] = useState(false)
 
   const runSearch = useCallback(async (q: string) => {
     const term = q.trim()
@@ -109,6 +110,14 @@ export function FacebookMarketplaceBulkClient() {
     void loadSellerListings(initialSellerId)
   }, [initialSellerId, loadSellerListings])
 
+  const photoCount = useMemo(
+    () =>
+      listings
+        .filter((listing) => listing.section === "surfboards")
+        .reduce((sum, listing) => sum + listing.image_count, 0),
+    [listings],
+  )
+
   const selectedCount = selectedIds.size
   const allVisibleSelected = useMemo(() => {
     if (listings.length === 0) return false
@@ -171,6 +180,45 @@ export function FacebookMarketplaceBulkClient() {
     }
   }
 
+  async function downloadListingPhotos() {
+    if (!seller || photoCount === 0) return
+    setZippingPhotos(true)
+    try {
+      const params = new URLSearchParams()
+      params.set("seller_id", seller.id)
+      const res = await fetch(
+        `/api/admin/facebook-marketplace-bulk/photos?${params.toString()}`,
+        { credentials: "include" },
+      )
+      if (!res.ok) {
+        const json = (await res.json().catch(() => ({}))) as { error?: string }
+        toast.error(typeof json.error === "string" ? json.error : "Photo download failed")
+        return
+      }
+      const blob = await res.blob()
+      const disposition = res.headers.get("Content-Disposition") ?? ""
+      const match = disposition.match(/filename="([^"]+)"/)
+      const filename = match?.[1] ?? "Marketplace_Listing_Photos.zip"
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement("a")
+      anchor.href = url
+      anchor.download = filename
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      URL.revokeObjectURL(url)
+      const listingCount = res.headers.get("X-Listing-Count")
+      const imageCount = res.headers.get("X-Photo-Count")
+      const listingsLabel = listingCount ?? String(listings.length)
+      const photosLabel = imageCount ?? String(photoCount)
+      toast.success(`Downloaded ${photosLabel} photos from ${listingsLabel} listings`)
+    } catch {
+      toast.error("Photo download failed")
+    } finally {
+      setZippingPhotos(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="space-y-1">
@@ -183,7 +231,8 @@ export function FacebookMarketplaceBulkClient() {
         <p className="max-w-2xl text-sm text-muted-foreground">
           Choose a seller, pick active listings, and download Facebook’s Marketplace bulk-upload
           spreadsheet. Facebook accepts up to {FACEBOOK_MARKETPLACE_BULK_UPLOAD_MAX} listings per file.
-          Photos are added in Marketplace after you upload the file.
+          You can also download every surfboard listing photo from that profile as a zip, grouped by
+          listing.
         </p>
       </div>
 
@@ -218,16 +267,34 @@ export function FacebookMarketplaceBulkClient() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-muted-foreground">
-          Download fills TITLE, PRICE, CONDITION, DESCRIPTION, and CATEGORY in Facebook’s official template.
+          Spreadsheet fills TITLE, PRICE, CONDITION, DESCRIPTION, and CATEGORY. Photo zip includes
+          every image from this seller’s active surfboard listings, one folder per listing.
         </p>
-        <Button
-          type="button"
-          onClick={() => void downloadWorkbook()}
-          disabled={!seller || selectedCount === 0 || exporting}
-        >
-          {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-          {exporting ? "Building spreadsheet…" : `Download spreadsheet (${selectedCount})`}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void downloadListingPhotos()}
+            disabled={!seller || photoCount === 0 || zippingPhotos}
+          >
+            {zippingPhotos ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Images className="mr-2 h-4 w-4" />
+            )}
+            {zippingPhotos
+              ? "Zipping photos…"
+              : `Download all surfboard photos${photoCount > 0 ? ` (${photoCount})` : ""}`}
+          </Button>
+          <Button
+            type="button"
+            onClick={() => void downloadWorkbook()}
+            disabled={!seller || selectedCount === 0 || exporting}
+          >
+            {exporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+            {exporting ? "Building spreadsheet…" : `Download spreadsheet (${selectedCount})`}
+          </Button>
+        </div>
       </div>
     </div>
   )

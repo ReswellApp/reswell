@@ -1531,6 +1531,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                     links: siteFooterNavLinks.marketplace.filter((link) => link.href !== "/boards"),
                   },
                   { title: "Help", links: siteFooterNavLinks.help },
+                  { title: "Careers", links: siteFooterNavLinks.careers },
                   { title: "Legal", links: siteFooterNavLinks.legal },
                 ] as const
               ).map((section, sectionIndex) => (

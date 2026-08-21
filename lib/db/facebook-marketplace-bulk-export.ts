@@ -21,7 +21,7 @@ const LISTING_SELECT = `
   hidden_from_site,
   archived_at,
   created_at,
-  listing_images ( url, thumbnail_url, is_primary )
+  listing_images ( url, thumbnail_url, is_primary, sort_order )
 `.trim()
 
 function escapeIlikeToken(q: string) {
@@ -45,6 +45,7 @@ export type FacebookMarketplaceBulkListingImage = {
   url: string | null
   thumbnail_url: string | null
   is_primary: boolean | null
+  sort_order: number | null
 }
 
 export type FacebookMarketplaceBulkListingRow = {
