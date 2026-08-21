@@ -1,0 +1,148 @@
+{
+  "generated_for": "Maurice Cole Surfboards official model catalog",
+  "source": "https://www.mauricecole.com/performance-shortboards",
+  "sources": [
+    "https://www.mauricecole.com/performance-shortboards",
+    "https://www.mauricecole.com/performance-hybrids",
+    "https://www.mauricecole.com/tow-boards",
+    "https://www.mauricecole.com/rv-shorty",
+    "https://www.mauricecole.com/protow",
+    "https://www.mauricecole.com/veecon-iii",
+    "https://www.mauricecole.com/mermaid",
+    "https://www.mauricecole.com/metro-1",
+    "https://www.mauricecole.com/atm",
+    "https://www.mauricecole.com/twin-pin",
+    "https://www.mauricecole.com/reddingo",
+    "https://www.mauricecole.com/shiva",
+    "https://www.mauricecole.com/twuster",
+    "https://www.mauricecole.com/dirtydingo",
+    "https://www.mauricecole.com/asymmetrical",
+    "https://www.mauricecole.com/metro",
+    "https://www.mauricecole.com/protow-1",
+    "https://www.mauricecole.com/guns"
+  ],
+  "skipped": [
+    "Stock boards / one-off inventory at /stockboards",
+    "Fin shop products at /fins",
+    "Reverse V collector merch (book, poster, T-shirt)",
+    "Custom order / deposit page",
+    "Asymmetric Tow, Asymmetric Longboard, and Asymmetric Hipster (variants on the Asymmetric page, not separate named model pages)",
+    "The New Reverse Vee overview page (range index for RV Shorty, Protow, Twin Pin, Vee Con III)"
+  ],
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "maurice-cole-surfboards",
+      "name": "Maurice Cole Surfboards",
+      "website_url": "https://www.mauricecole.com",
+      "location_label": "Australia",
+      "founder_name": "Maurice Cole",
+      "lead_shaper_name": "Maurice Cole",
+      "short_description": "Maurice Cole — pioneering Australian performance design.",
+      "models": [
+        {
+          "name": "Reverse Vee Shorty",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1705270495005-0ZOQWC8QD0BH07O02S7K/6%274_RVShorty.jpg",
+          "description": "Revisiting a classic bottom curve, for an all around shortboard. Designed for waves 0-6ft. Vee in the nose for easy paddling, easy take-offs and is great in chop. It has that extra squirt of the bottom with a hard edge the full length of the board. A slight Vee in the tail making for speed and carves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Protow",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1694412592816-ZRXUNCFI61ZD3RMDRTM1/7%27LimegreenProtow.jpg",
+          "description": "The most advanced surfboard on the market. Designed for waves 2-8ft. The step up board from the Metro-TT. Now a 1/4\" vee in the nose deflects chop and decreases wind lift in large conditions. There is also more thickness under the chest, with a flat deck and a chined rail. Concave sits at 3/8\" graduating to a 1/2\" vee off the tail for more grip and a rail line flip behind the fins which releases at high speeds. Based on the tow series evolution.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Vee Con III",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1665983861654-9BHCBX90MAJ7O2659RA1/veecon3_6%270%27.jpg",
+          "description": "The best board you'll ever ride. Designed for waves 0-10ft. An all around high performance board (short or long) that can be made in sizes from 5'8\" to 9'6\" and comes in a thruster configuration. It uses the Reverse Vee bottom curve with a more pronounced Vee in the nose, through to a concave to the fins and then a small Vee in the tail. Comes with fluted flyers that act as wings and hard edges nose to tail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mermaid",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1493948142580-IKKOABXEO48ET0E22TYU/image-asset.jpeg",
+          "description": "The all-rounder. Designed for waves 1-4ft. Maurice's mainstay performance design for small waves — a board designed to replace anything fishy. Approximately 1 to 2 inches shorter and 1/4 to 1/2 an inch wider than your standard shortboard. The wider tail helps carry you over flatter sections and the extra curve in the tail keeps it loose and snappy.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Metro iD",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1493958312697-KBLFAKMQLYFW6FB1KYAT/image-asset.jpeg",
+          "description": "The Modern Retro — updated. Designed for waves 1-5ft. The Metro combines width and thickness from the old retro fish, but introduces a tow inspired bottom rocker and a very deep concave. More width in the tail creates a larger sweet spot and an accentuated change in curve at the 1 mark loosens the board up. This board replaces all Fish type boards.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "ATM",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1495754248682-B2ARN0FF126PUEPU6764/image-asset.jpeg",
+          "description": "The Magic Board. Designed for waves 2-12ft. The closest Maurice makes to a conventional board. It has a deeper concave than most designs with a lot of tail kick, which means a bit faster and carvier than your current ride. Used in grommet boards, shortboards, semi-guns, and bigger Indo/Hawaii guns up to 10 foot. Custom is King.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Reverse Vee Twin Pin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1692081118773-3PWS0XE8DWOHEME8HHQN/6%274%27twinpin.jpg",
+          "description": "A modern take on a magic board. Designed for waves 1-10ft. The new modern day MC twin fin, designed with the history of Maurice riding a board in the 80s given to him by Dane Kealoha. It has vee in the nose, to concave, to a slight vee in the tail, which gives lots of speed. Fluted flyers with hard edges nose to tail, fins moved up to 11\". The fluted flyers give a loose feel and shorten the turning radius.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Red Dingo",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1678333628297-7Z4EZLBOZUYL1M2ULZD5/8%276RedDingo.jpg",
+          "description": "The crowd crusher. Designed for waves 1-5ft. Maurice's answer to the Mini Longboard/Mal — a very high performance board from 6'8\"-9'6\", single concave hard edges, comes as a 5 fin to be ridden as thruster or quad and outperforms the 2+1 or single.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Shiva",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/fd0f55fa-5805-4988-bf78-31634f4c008a/6%279Shiva_orange.jpg",
+          "description": "A board for every day. Designed for waves 1-8ft. Born from a desire to create a design that would work as a single, a quad, and a thruster so Roark could travel with a one-board quiver. Single concave with a hard edge nose to tail, a spiral vee off the tail, and very low rocker. Comes in sizes from 5'4\"-8'0\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Twuster",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1494394904813-37UMHTPNF48H5NGF2QN0/Twuster_2.jpg",
+          "description": "The Modern Twin. Designed for waves 1-6ft. Redesigned so it can be ridden in small surf as a twin, but also as a thruster when the waves are bigger and you need more grip and drive. Single concave with hard edges nose to tail and an accentuated vee off the Swallow/SWAT tail, with an old school winger. Comes in 5'4\"-8'0\".",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Dirty Dingo",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1494137273337-UZTC5TBHCG1G6AEIPSZB/image-asset.jpeg",
+          "description": "The ultimate groveller. Designed for waves 1-5ft. A small wave hybrid that comes as a 5 fin and has the MC DNA of a single concave with hard edges nose to tail and low rocker. Works from knee high to overhead. Comes in a rounded squash tail or squound tail; because of the wider nose it can be surfed smaller than your height.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Asymmetric",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1493959482522-PAUUFXVLBKX116IKQQUE/image-asset.jpeg",
+          "description": "A new frontier. Designed for waves 1-8ft. For surfers that have used the MC Protow or other boards with a single, deep concave. Allows you to surf solid waves on a much shorter board due to thickness and width hidden by the concave. The rail is more drawn out, giving the feeling of a step-up shortboard without the unwanted foam.",
+          "board_category_slug": "asym"
+        },
+        {
+          "name": "Metro",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1493958170693-BF5344RCFK7DRJZ1NNKI/image-asset.jpeg",
+          "description": "The Modern Retro. Designed for waves 1-5ft. Combines width and thickness from the old retro fish, but introduces a tow inspired bottom rocker and a very deep concave. More width in the tail creates a larger sweet spot. Unlike an old school fish, the Metro will sit high on steep fast sections and won't morph into a shopping trolley style slide when you want to lay a full tilt cutback.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Reverse V",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1493958668573-UVPU50AA16RD943V3QNR/image-asset.jpeg",
+          "description": "The board that changed everything. Designed for waves 2ft plus. In 1990 Tom Curren and Maurice Cole began a surfing/shaping relationship that resulted in Tom winning the World Title from trials to World Champion on a quiver ranging from 6'-8'3\". The Reverse V put vee under the front foot and nothing between the fins — the opposite of the old theory — and produced a much faster surfboard that carves at higher speeds.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Tow",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1493952760995-2MYSNFNNA5N9E36ZGRWI/image-asset.jpeg",
+          "description": "Designed for waves 6-30ft. Maurice Cole's tow-in design: a substantial 3/4\" concave running the length of the board for less wetted surface, a very straight/fast centre bottom line, and curve for turning on the rail line. Construction ranges from multilayered fibreglass hulls to carbon/kevlar and high-grade carbon with 80/20 foil fins.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "RCJ Tow",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1493952779828-IPD00Y6UK2PTPKSINRGD/image-asset.jpeg",
+          "description": "Ross Clarke-Jones tow board. Designed for waves 6-30ft. Developed with Ross Clarke-Jones as test pilot on boards generally 5'11\" x 16 1/4\" x 1 3/4, attaining speeds anywhere up to 120km/h. Hull shape, fin placement, angle, stiffness, size, and foil are all tuned for those speeds.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Guns",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59082bc686e6c0132ce8a762/1495452082609-G3HFBN24TOBE8FBAULCH/image-asset.jpeg",
+          "description": "Designed for waves 6-30ft. Developed with Noah Johnson: a gun that paddles in with ease but can be turned 3/4 of the way down the face and into the barrel, avoiding the drawn-out bottom turn. Hard edge nose to tail, vee in the nose, slight concave into a quad fin setup, thickness under the chest with thin rails and a foiled-out tail. Narrow nose so wind does not get under it when paddling in.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
