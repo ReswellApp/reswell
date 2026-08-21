@@ -1,0 +1,208 @@
+{
+  "generated_for": "Harbour Surfboards official model catalog",
+  "source": "https://www.harboursurfboards.com/thewholelineup",
+  "sources": [
+    "https://www.harboursurfboards.com/thewholelineup",
+    "https://www.harboursurfboards.com/longboards",
+    "https://www.harboursurfboards.com/sitemap.xml",
+    "https://www.harboursurfboards.com/bananamodel",
+    "https://www.harboursurfboards.com/sano",
+    "https://www.harboursurfboards.com/therapier",
+    "https://www.harboursurfboards.com/theray",
+    "https://www.harboursurfboards.com/mod65",
+    "https://www.harboursurfboards.com/noserider",
+    "https://www.harboursurfboards.com/nineteen",
+    "https://www.harboursurfboards.com/cheater60s",
+    "https://www.harboursurfboards.com/theevolver",
+    "https://www.harboursurfboards.com/merlin",
+    "https://www.harboursurfboards.com/plantain",
+    "https://www.harboursurfboards.com/hp1",
+    "https://www.harboursurfboards.com/h3model",
+    "https://www.harboursurfboards.com/turbo",
+    "https://www.harboursurfboards.com/rapierspecialdesign",
+    "https://www.harboursurfboards.com/revolverspecialdesign",
+    "https://www.harboursurfboards.com/tsshape",
+    "https://www.harboursurfboards.com/66banana",
+    "https://www.harboursurfboards.com/sphericalrevolver",
+    "https://www.harboursurfboards.com/superrevolver",
+    "https://www.harboursurfboards.com/morefun",
+    "https://www.harboursurfboards.com/redux",
+    "https://www.harboursurfboards.com/midtwinpin",
+    "https://www.harboursurfboards.com/fish",
+    "https://www.harboursurfboards.com/sausage"
+  ],
+  "skipped": [
+    "Homepage /shop-2 current inventory one-offs (9.6\" Banana, SOLD OUT SKUs, etc.)",
+    "/fins — fin products, not surfboard models",
+    "/customsurfboardorder — custom deposit, not a named production model",
+    "Diamond Tail — listed on the lineup page but has no dedicated official model page or photo",
+    "Classic Model / Drifter — not on the current /thewholelineup page and no sitemap model page",
+    "Stingray and Reflector (Stamps x Harbour) — no dedicated Harbour model pages in the sitemap",
+    "Size charts, magazine ads, action shots, and warranty/inventory copy",
+    "Existing placeholder rows Formula, Easy Rider, Sweet Ride, Buddy, Carnival, Hot Curl, Lumberjack, Wedge — not on the official current lineup; left in place, not deleted"
+  ],
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "harbour-surfboards",
+      "name": "Harbour Surfboards",
+      "website_url": "https://www.harboursurfboards.com/",
+      "location_label": "Seal Beach, California",
+      "founder_name": "Rich Harbour",
+      "lead_shaper_name": "Rich Harbour",
+      "short_description": "Seal Beach institution — classic longboards and California outlines since 1959.",
+      "models": [
+        {
+          "name": "Banana Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/cf17042d-628b-4c5c-9ba3-6340864f6eee/banana_top_2500px.png",
+          "description": "The original Banana model was designed in 1963 – it was yellow and just happened to look like a giant banana in the surf. It was unique in that it had significantly more rocker than the typical surfboard built during this era and may have been the first board designed with real rocker. Since then it has gone through many modifications and decades later the Banana model remains as the anchor of our surfboard line. It is the universal surfboard with few limitations. This model remains the best choice for the surfer needing some floatation and paddling ease without sacrifice in maneuverability. The Banana Model is a must have!",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Sano",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/9b6d69a9-b6c1-435c-a66f-7b66de851f76/sano_top_2500px_V2.png",
+          "description": "You want a board that will catch lots of waves? This is your board. The San-O model was designed as the longboard with excellent flotation, stability and ease of paddling, with plenty of maneuverability. The San-O model’s wide nose and tail gives the outline in the middle of the board some straightness, which aids the ride on the tip.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Rapier",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/d684592c-7524-4cd5-b854-ebe44cb69b51/rapier_top_2500px.png",
+          "description": "This pin tail has the float and paddling of the Banana, and as much stability on the nose as the San-O. It has the wonderful flow of turn to cut back that the pin tail delivers. Not all pin tails are alike, as the outline preceding the tail curve has been carefully crafted to minimize drive loss that is typical of so many other pintail boards. The Rapier has our Cruiser rail design that is low and soft in the middle to low and hard in the tail area.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Ray",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/c273e86d-5f6d-4429-b7d6-88df1c5ddcf2/theray_top_2500px.png",
+          "description": "Meet The Ray, your new go-to modern traditional longboard built for effortless cruising and classic nose riding. We designed it with soft 50/50 rails that blend into a soft down tail with a hard edge, giving you the perfect mix of speed, bite, and drive when you turn. It shares the same rocker and width as our cruiser lineup but comes in a bit thinner, featuring a mellow bottom contour and a blended nose concave that gives you serious lift for hanging ten. If you are under 200 lbs, the 9'6\" setup is going to be your absolute sweet spot.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mod 65",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/ce4dd16d-97c3-42d9-8315-1834794ffd42/mod65_top_2500px.png",
+          "description": "Our take on the perfect modern hotdog shape. Cruise, turn, trim, the Mod 65 is your performance nose rider. Best suited for waist or shoulder high waves. The design was modified off our Nineteen model with fine tuned modifications - we took the nose down to 18 1/2”, added the tear drop nose concave on the bottom and reduced the nose rocker. The rails are pinched 50/50 rails for quicker response and feel.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Noserider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/55f14874-b31d-4e83-94af-49c912de3846/noserider_blue_top_2500px.png",
+          "description": "The Noserider is superb at what its name implies. With one of the more exaggerated concaves ever built, this board will simplify getting tip time like never before. But that is just the beginning because it catches waves quite well, and it turns quite easily. This is your “take to the beach on an average day board” because surfing is supposed to be fun.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Nineteen",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/385fd874-3946-4ab5-bb61-497641576fa6/19_orange_top_2500px.png",
+          "description": "Tim Stamps was given the challenge to design us the ultimate super cruiser! Modeled after the 1960’s traditional longboards with a tail that measures 16 1/2″, a thickness of 3 3/8, 23″ wide and of course a 19″ nose. The Nineteen is a wide stable cruisin’ nose rider. Complete with 50/50 rails, a blended flow through concave nose, a long low rocker with moderate tail kick this model has a smooth entry line for maximum glide style. An optional T-band stringer and/or volan glass gives this model extra soul. Tim has delivered!",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Cheater 60",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/7307759d-d2b9-40ec-af9b-a1ec33f1aa89/Cheater_green_top_2500px.png",
+          "description": "It was around 1965 and ideas were flying around for a new design. There was a theory that a scooped out “step” deck allowed for the nose to flex straight for noseriding and reduce the swing weight when turning. Well it rode so well it was almost like cheating! Thus the Cheater Model was born. The 1966 World Surfing Championships saw Steve Bigler take 4th place on a Harbour Cheater and since this model has been one of Harbour’s classic designs that has interestingly (with lots of back story) come in and out of production over the decades. After lots of requests and pleads we have once again brought back the Cheater model in honor of our 60th anniversary!",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Evolver",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/1782162246909-UQQ26IMHATN9GC42PP1M/evolver_sig_top_1700px.png",
+          "description": "A tribute to our 55th year anniversary in 2014, the Evolver is a culmination of 55 years of surfboard design. This board model has an extremely wide tail that picks up a wave’s energy like no other board. It turns on a dime and, with those 50/50 nose rails and soft concave, it nose rides with the best of them.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Merlin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/4ced4b3a-f551-41da-b1ac-ff4a6836840a/merlin_top_2500px.png",
+          "description": "The Merlin has one of our wider outlines, and this extended surface area enhances paddling, wave catching ability, and wave riding stability. The nose is wide enough to be called a nose rider and the pintail gives that great smoothness to the turn, with a fluid cutback like no other tail. The bottom of the nose has a soft concave and the tail has a slight “V” with soft tunnels next to it. The rails are rather unique, with the front 2/3 being traditional 50/50 rails that transition into downturned rails at the tail. The Merlin finds the slot when nose riding and has the positive feel of a contemporary board when turning. Another design from the gifted mind of Tim Stamps, this board is pure magic, so we named it Merlin after the most famous wizard of them all.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Plantain",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/29c38b15-2403-4016-81fe-559b90ea9a56/plantain_top_2500px.png",
+          "description": "The Plantain has 50/50 rails in the front of the board for finding the perfect slot when nose riding. And with it’s soft concave, the Plantain nose rides very well. It has down turned rails at the tail and some seriously deep tunnels next to the fin. Hard corners on (true) square tails are a little bit too stiff feeling for some surfers. The ever so slightly rounded corners on the square tail of the Plantain give it the positive feel coming out of a turn that a true square tail gives. But they are just soft enough for great flow; connecting front to backside turns. And the Plantain hasbetter drive out of the turn than the softer feel of squash tails and pintails.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "HP1",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/7afd8d7e-dafe-4aea-82ef-d640e0bd5788/HP1_top_2500px.png",
+          "description": "A high-performance single fin: zero drag, maximum speed. No side fins means easier paddling, faster wave-catching, and cleaner tube rides than a standard thruster. The unique HP fin actually wags with your carves, throwing you forward with an extra burst of speed as you exit. A true high-performance longboard built for effortless carving and locked-in nose rides.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "H3",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/c50a3e57-de16-4df0-a8bc-2da7e78d0fa9/H3_stripe_top_2500px.png",
+          "description": "A high performance 2+1 design that is a bit wider than our other high performance boards, this board has the turn that one expects from a pintail, and plenty of acceleration out of that turn. The H3 will handle a wide range of surf size and quality with little loss of performance no matter what quality wave you surf in. Other boards may have a slight edge in one specified situation but this is the high performance board you take to the beach 95% of the time. Nose rides, turns, and speed — it has it all. And the nose has our famous channels. From the mind and hands of Tim Stamps.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Turbo",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/37b04c21-0227-4b57-b49e-e4a303b6be84/Turbo_top_2500px.png",
+          "description": "This is our high performance squash tail that softens the harshness of a square tail. The Turbo performs in all conditions making it a great all around high performance long board. This shape has excellent drive while coming out of the turn, a feature that power surfers really enjoy.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "60's Rapier Special Design",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/7a459210-8750-4594-bba0-91b261ddf62d/60s_Rapier_sd_top_2500px.png",
+          "description": "The 60's Rapier Special Design takes our classic late-60s Rapier longboard template and packs it with modern performance tweaks. We kept the iconic original outline but overhauled the rails, rolling out pinched 50/50 rails from the nose down to sharp down-rails in the tail so you can really lean in and engage your rail through every turn. Finished off with a nose concave on the bottom for locked-in tip time, this board gives you that soulful, traditional glide with a much quicker, more responsive feel",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "60's Revolver Special Design",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/61479e95-4405-4d53-ae4c-8dc6a7249852/60s_Revolver_top_2500px.png",
+          "description": "The 60's Revolver Special Design takes the iconic, center-driven momentum of our late-60s classic Revolver model and re-imagines it with modern design elements. We kept that legendary mid-board paddle power but completely overhauled the performance to make it way more user-friendly. By introducing a sleek pintail shape, locking in hard edges through the tail, and layering in advanced bottom contours, we've turned a retro cruiser into a high-performance machine that carves tighter and responds faster than the original ever could",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "TS Shape",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/e03b9854-980b-4b3c-a444-e170e726af9f/TSshape_top_2500px.png",
+          "description": "The TS is the (exact) classic Trestle Special shape, with three stringers, volan glass, and high density foam tail block. The only difference between this and the original 1965 Trestle Special is the TS Shape logo, the foam and the glassing schedule. We now use super green foam and our current volan glass job. With the extra weight gained from the 3 cedar stringers and volan glass the TS Shape is ideal for reef or point breaks. All TS Shapes are available (only) with clear volan glass, 3 cedar stringers 6″ apart, and a foam tail block. Glass on fin is available by request only",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "66 Banana",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/1bf8401b-f658-417b-8c90-d3d3e137956e/66banana_blackstripe_top_2500px.png",
+          "description": "Pure '60s Time Machine: An exact replica of the 1966 masterpiece, built for surfers who want to experience ultimate vintage glide and drive. The classic flat rocker forces you to learn proper, old-school turning mechanics. No modern shortcuts here; it’ll take you to the nose, but you'll learn to lock it in the right way.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Spherical Revolver",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/2f812158-ff41-4c0a-bedf-bc8f793a62b6/sphericalrevolver_bswirl_top_2500px.png",
+          "description": "The Spherical Revolver is an update of the popular 1969 design of the same name. This mid-range board is pure fun. With its wide surface area and elliptical shape the Spherical Revolver is stable and quick and has an amazing amount of maneuverability. A great design for the longboarder that wants some of the shorter feel. The shorter sizes will accommodate either 150-lb. surfers of better ability or very light surfers. The longer size range of this board will perform best for 200 lb. good surfers or lighter surfers that want a full round tail on a wider board. This full figured board will really put some fire back in your surfing. The Spherical Revolver is offered in both a single fin and a 2 + 1 fin set-up and has the original 1969 logo.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Super Revolver",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/db1cf10a-04e7-459d-b912-607d2e7f11af/superrev_top_2500px.png",
+          "description": "We have taken the Spherical Revolver to another level with this shape. A two plus one set-up with more rocker, tunnels next to the fins, slight mid board concave, and a bit wider there too. Truly a stunning difference, this board is really alive!",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "More Fun",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/22310f09-927e-4068-ac9b-d9c3317e9e36/morefun_red_top_2500px.png",
+          "description": "The More Fun is our take on the typical fun-board shape that we have all seen over the years. Surfers from all walks of life will enjoy this model! It’s more performance oriented than our “Spherical Revolver” yet it’s got more volume and flotation than our “Drifter” model to make it our most predictable and all-around mid-range board for all surfers of all skill levels that are good paddlers!",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Redux",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/54d69450-7125-4269-8263-31778608c728/redux_top_2500px.png",
+          "description": "This midrange board is pure performance. The Redux has the feel and some of the look of a short board with supreme maneuverability yet much more volume for float. A narrow nose, pulled down rails and rounded tail give this model a sleek, curvy outline for turning. The Redux features 3 fins.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mid Twin Pin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/6757c65d-33c8-4f9f-b55a-0a4e9952dd6e/midrange_top_2500px.png",
+          "description": "This is your go to board for tail happy turning fun! Plenty of volume for easy wave entry. It’s the board for those that don’t want to go for a longboard but are uncomfortable with the short board story. Built for the average day in mind the Mid Twin Pin makes a great travel companion as well as a good daily rider.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/1586997071572-2789QWLMOX2KD8BJWVAS/image-asset.jpeg",
+          "description": "A Fish shape is not for beginners, as some skill is needed to make it work. Surfing a Fish is almost like riding a skateboard on water. They have very little rocker, and a width that is almost as wide as a contemporary board that is 3 feet longer. There is lots of curve in the front half of the outline with the tail area becoming much straighter. And it has a wide swallow. Hey, this is not your normal approach to making surfboards. These boards float well for their size, but to remain true to their design concept it is recommended to stay within the 5-6 and 6-6 size range. These boards are for waves in the waist to head high range, although this does not restrict someone from pushing these numbers.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Sausage",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/573a0bbd1bbee0c53fd143e4/ff4e9013-660c-45e8-9bb4-d43c0e5a8b27/sausage_top_2500px.png",
+          "description": "If you are a good paddler and in good shape the Sausage is your guarantee for a good time! This board shines in waves waist to head high that are generally less powerful and mushy. The flat rocker, wide template and full rails make for an effortless glide. The shorter length makes for tighter, in the pocket turns too! Keep this in the car at all times! If it is too small and mushy to ride your standard thruster, don’t grab that longboard; grab the Sausage. Are you riding 7′ or 8′ boards and you’re ready to graduate to a shortboard? Give the Sausage a try! The Sausage is a great steppingstone towards riding a standard shortboard! It comes as a thruster or quad. Another design from the gifted mind and hands of Tim Stamps",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
