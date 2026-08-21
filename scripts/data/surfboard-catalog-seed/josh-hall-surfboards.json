@@ -1,0 +1,211 @@
+{
+  "generated_for": "Josh Hall Surfboards official model catalog",
+  "source": "https://joshhallsurfboards.com/pages/models",
+  "sources": [
+    "https://joshhallsurfboards.com/pages/models",
+    "https://joshhallsurfboards.com/collections/big-boards",
+    "https://joshhallsurfboards.com/collections/logs",
+    "https://joshhallsurfboards.com/collections/longboards",
+    "https://joshhallsurfboards.com/collections/midlengths",
+    "https://joshhallsurfboards.com/collections/fish",
+    "https://joshhallsurfboards.com/collections/super-swallow",
+    "https://joshhallsurfboards.com/collections/reef-rider",
+    "https://joshhallsurfboards.com/collections/le-sliviar",
+    "https://joshhallsurfboards.com/collections/eagle",
+    "https://joshhallsurfboards.com/collections/big-calyma",
+    "https://joshhallsurfboards.com/collections/pintail",
+    "https://joshhallsurfboards.com/collections/bb-model",
+    "https://joshhallsurfboards.com/collections/crown-royal",
+    "https://joshhallsurfboards.com/collections/the-diamond-crown",
+    "https://joshhallsurfboards.com/collections/wahine-model",
+    "https://joshhallsurfboards.com/collections/heritage-model-hp2",
+    "https://joshhallsurfboards.com/collections/the-personal",
+    "https://joshhallsurfboards.com/collections/dtnr",
+    "https://joshhallsurfboards.com/collections/the-personal-diamond",
+    "https://joshhallsurfboards.com/collections/skosh",
+    "https://joshhallsurfboards.com/collections/cali-cruiser",
+    "https://joshhallsurfboards.com/collections/gunner",
+    "https://joshhallsurfboards.com/collections/panacea-egg",
+    "https://joshhallsurfboards.com/collections/pointed-nose-egg",
+    "https://joshhallsurfboards.com/collections/swallowtail",
+    "https://joshhallsurfboards.com/collections/sd-keel-fin",
+    "https://joshhallsurfboards.com/collections/gen-2-keel",
+    "https://joshhallsurfboards.com/collections/long-fish",
+    "https://joshhallsurfboards.com/collections/piseas",
+    "https://joshhallsurfboards.com/collections/calyma-fish"
+  ],
+  "skipped": [
+    "Homepage / collections inventory one-offs (5'6 Calyma Fish, 10'6 Eagle, sold/used SKUs, etc.)",
+    "/collections/fins and NVS/Captain Fin products — fins, not surfboard models",
+    "/products/custom-surfboard-deposit — custom deposit, not a named production model",
+    "Clothing, hats, tees, hoodies, posters, stickers, and flyers",
+    "Le Sliviar Art Series — art/merch editions of Le Sliviar, not a separate production model",
+    "B Model collection — not listed on the current Big Boards / Logs / Longboards / Midlengths / Fish model cards",
+    "Category buckets Big Boards, Logs, Longboards, Midlengths, Fish",
+    "Existing inventory-named rows BB Model Longboard, SD Keel Fish, Gen 2 Keel Fish, Long Fish Twin, Calyma, Calyma Quad — left in place, not deleted"
+  ],
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "josh-hall-surfboards",
+      "name": "Josh Hall Surfboards",
+      "website_url": "https://joshhallsurfboards.com",
+      "location_label": "San Diego, California",
+      "founder_name": "Josh Hall",
+      "lead_shaper_name": "Josh Hall",
+      "short_description": "San Diego factory-built fishes, logs, and gliders from Skip Frye protégé Josh Hall.",
+      "models": [
+        {
+          "name": "Super Swallow",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Super-Swallow.jpg",
+          "description": "This streamlined big board can truly cover all grounds. This edition of the glider is a second or third model to get on once you’ve mastered the Eagle or Reef Rider. With a 7” tail block on the swallow and narrower mid-line this board is meant for waves. Prefered as an alternative to the Pintail design, with the narrower swallow tail and hips you can really turn this board on rail",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Reef Rider",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Reef-Rider.jpg",
+          "description": "This Design is based on my own surfing and interpretation of Skips Eagle design. I have narrowed the tail width a touch and the nose by about an inch with a different curve. Really a sleek looking high performing big board for all levels and all waves. Mostly only Skip can ride the nose on the big boards so this template updates the outline with a narrower nose.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Le Sliviar",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Le-Sliviar.jpg",
+          "description": "Pronounced ( Lé sliv- AIR ) This super refined Glider is the result of a nearly 18 year collaboration with my pal Thomas Campbell, the artist/filmmaker most known to surfers for his movies the Seedling , Sprout and the Present . A Skip Frye big board proponent for many years, Thomas approached me with some ideas to modify his boards with a goal of maximizing the performance characteristics of gliders in the 11’ range. The Le Sliviar features a scooped nose and is thinned out and narrowed in every way—with softer, more forgiving rails. Featuring a t-band wedge stringer that provides added flex characteristics, this highly functional glider is one of my favorite designs to date.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Eagle",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Eagle.jpg",
+          "description": "The roots to this big board design run deep, all the way back to 1991 when Skip Frye got jazzed on riding boards that tapped into the essence of ancient Hawaiian trim. Unlike most board designs, where the surfer tries to “rip” on them, the Eagle (and boards like it) are all about minimal movement and just letting the feeling of ultimate glide bleed through the board and into your feet. There’s no better feeling! *Please note that this design runs really big, typically in the 11’0” range. It commands a lot of respect, as it’s very difficult to ride. I generally recommend big boards for expert riders that are ready for a challenge.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Big Calyma",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Fish-Simmons.jpg",
+          "description": "Like the Eagle, the roots to this big board design run back to the early ’90s when Skip Frye first got jazzed on tapping into ancient Hawaiian trim. During Skip’s discovery and experimentation period of these big boards he rediscovered some of Bob Simmons design principles and applied them. Its key characteristics are the 10” tail block with a swallow tail outline, as well as the Simmons influenced concave bottom and shallow belly roll entry. My personal journey on the Skip Fish Simmons started in 1999 and I have ridden these boards in all lengths and all fin sets ups from 6’0” to 12” with Quads Tris and Twin fins. I’m proud to introduce The Calyma Fish! This model embodies 25 years of surfing and shaping this design with subtle tweaks and refinement over time. I hope you enjoy.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Pintail",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Pintail.jpg",
+          "description": "Sometimes referred to as the 2 to 20 model, the Cali Gun is a full on pintail, built to handle whatever craziness mother nature throws at you. A much sleeker version of the Eagle, this racey board is for those that want a small wave cross country paddle machine but still want to use the same board when it’s pushing three to four times overhead. Cajones not included.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "BB Model",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Untitled_design_6.png",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Crown Royal",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Josh-Hall-Surfboards-Crown-Royal.jpg",
+          "description": "If you’re a specialist that likes to just walk to the tip and park it, this is the board for you. The Crown Royal is a full templated, traditional California noserider. Its wide tail block combined with moderately foiled rails provides added lift and hold in the most critical of sections. This is by far the best noseriding design in my line of longboards.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Diamond Crown",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Josh-Hall-Surfboards-The-Crown-Diamond.jpg",
+          "description": "This is the first tweak of the Crown Royal we’ve been working on. The Wide diamond tails really offers a new pivot and hold whilst on the nose with the model. If you’re a specialist that likes to just walk to the tip and park it, this is the board for you. The Crown Royal is a full templated, traditional California noserider. Its wide tail block combined with moderately foiled rails provides added lift and hold in the most critical of sections. This is by far the best noseriding design in my line of longboards.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Town Model",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Wahine-Model.jpg",
+          "description": "This model was designed for the smaller built log rider. Mostly in the 9’0-9’4 range this boards is an all-around log model; the perfect balance between yin and yang, not too much rocker nor too much width. Featuring a flatter nose template with a shallow dished out concave and narrower tail template the Wahine offers the right amount of hold while still being able to get the tail around thru the turns. Still plenty of room on the nose for hanging 10 little piggies over.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Heritage Model – HP2",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Josh-Hall-Surfboards-Heritage-model.png",
+          "description": "The Heritage model dates back to my early years of shaping logs. It’s the second rendition of what I was searching of for the best all around log I could shape. This model features the wider nose template of the Crown Royal yet has a narrower tail curve and smaller tail block giving a nice hip feature for the board. When the waves are less than ideal the Heritage model allows the forgiveness of a narrow board yet still allowing for tip time.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Personal",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Josh-Hall-Surfboards-The-Personal.jpg",
+          "description": "The Personal is my take on the modern traditional noserider—or my answer to a comp design. It has all the things I love about ’60s style longboards, but with its added hip and tail curves I’ve freed up the more parallel outline of most traditional noseriders. I love how The Personal still lets me rely on solid levitation and hold during long, critical noserides yet because of its tucked edge I’m able to step back on the tail and effortlessly redirect in and around the pocket.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "DTNR",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Josh-Hall-Surfboards-Diamond-tail-noserider-DTNR.jpg",
+          "description": "The DTNR is my take on the modern traditional noserider—or my answer to a comp design. It has all the things I love about ’60s style longboards, but with its added hip and tail curves I’ve freed up the more parallel outline of most traditional noseriders. I love how The DTNR still lets me rely on solid levitation and hold during long, critical noserides yet because of its tucked edge I’m able to step back on the tail and effortlessly redirect in and around the pocket.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Personal Diamond",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Josh-Hall-Surfboards-The-DT-Personal.jpg",
+          "description": "Sharing a lot of similarities to the DTNR, The Personal Diamond tail model has a few tweaks that make it my most “high performance” longboard design on offer. It’s meant for critical noserides then seamlessly stepping back on the tail and rip a turn. It’s typically a 2 plus 1 fin set up with more modern, tucked edge rails and a slightly lighter glass job. The Personal Diamond features a fuller nose template and a rounded-corner diamond tail. The diamond tail has more drive through the turns than the square tail because it doesn’t have that break point like the square tail has, making for a much smoother turn. Most of my customers use this model as their travel longboard, so they’re prepared to handle most any conditions they will encounter.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Skosh",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Skosh.jpg",
+          "description": "The Skosh was created as a modern alternative for the midlength surfer. While I personally prefer this model as a 7’10”—to ride in bigger winter surf—its outline can be adapted to nearly any length conceivable. Some of my more shortboard orientated customers like this board because its contemporary outline curve turns this model into a semi-modern shortboard. The Winter Skosh is the narrowest, gunniest plan shape I offer.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Cali Cruiser",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Josh-Hall-Surfboards-Cali-Cruiser.jpg",
+          "description": "A close cousin to the Winter Skosh design thread, the Cali Cruiser is another versatile alternative for midlength surfers. The sweet spot is from 7’10” to about 8’2” for bigger winter surf. For smaller waves we can bring this down to the 6’10” to 7’2” range for the more playful waist to head high surf.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Gunner",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Gunner.jpg",
+          "description": "Love eggs but want a pulled in template for big, hollow surf? This is the board for you. Essentially an “egg gun,” I worked on refining Gunner’s rocker to perform in large waves—flat enough to catch waves yet kicked up enough to fit into the curves of heavier surf breaks. I also hid a decent amount of foam under the chest, providing maximum paddle entry to help avoid late drops. The narrow tail, in relation to the wide point, is designed to maximize control when you really need it. Most tend to ride this model as a quad however this curve suits a 2 plus 1 extremely well. Always more options that way.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Panacea Egg",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Panacea-Egg.jpg",
+          "description": "Versatile, paddles well and can turn on a dime, the Panacea Egg lives up to its name: A surfboard design “cure all” that’s the perfect one board quiver—ready to handle most any type of conditions you’ll encounter at home or abroad. Because of its ample volume and neutral design characteristics, I recommend an 8’0” as an ideal starting point for this design. This Panacea is also what I commonly suggest when longboard surfers want to have their first go at a smaller board.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pointed Nose Egg",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Pointed-Nose-Egg.jpg",
+          "description": "All the benefits of a classic egg design but with some modern flair around the forward quarter. The Pointed Nose Egg performs best in the smaller range of board lengths, preferred by surfers that like the egg design’s glide and buttery turns, yet prefer tad less curve and volume in the nose.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Swallowtail",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Swallow-Tail-Model.jpg",
+          "description": "The swallowtail template entered my universe back in 2001 when Skip outlined 3 boards for me for a surf trip to Indonesia; it has been a mainstay in the quiver ever since. Probably the most contemporary shape I have in the smaller board models. Could be viewed easily as a Rocket Fish with either Quad or Twin fin set ups. It paddles well and is extremely fast down the line, but because its narrower with more curve in the outline, you can be really aggressive with bottom turn top turn surfing. While I personally prefer this model in the 7’6”-8’0” zone—to ride in bigger winter surf—its outline can be adapted to nearly any length.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "SD Keel Fin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/SD-Keel-Fish.jpg",
+          "description": "Built for speed, this SD Keel Fin is my tribute to the Steve Lis/Skip Frye fish design thread. In 2011, Skip allowed me to restore his original Lis Fish template—the same one Skip’s classic fish outline is from. I’m honored that he shared this sacred template with me, giving his blessing to continue this design tradition that was born in our backyard. The smaller versions have much wider tail block widths than the normal 5’10”.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Gen 2 Keel",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Gen-2-Keel.jpg",
+          "description": "This user-friendly update to the classic fish outline has had some incredible results for my customers and teamriders. The Gen 2 Keel is a half inch wider than my SD Keel Fin except for the tail block—which is ½” narrower. Narrowing the tail block added a bunch of curve behind the fins, which loosened up the overall performance characteristics and made it much easier than most fish on your backhand.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Long Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Long-Fish.jpg",
+          "description": "The perfect shortboard for the avid longboarder, the Long Fish is also a legit alternative to common midlength designs like the egg. In 2003, I was looking for a design that could help me transition from longboards to shortboards. My shaper and mentor, Skip Frye, suggested I try one of his “Long Fish” designs and it was the perfect solution. I’ve had one in my quiver ever since. You can really engage the board’s long rails with the wave at top speeds and have unbelievable control on big, walled up point breaks.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Piseas",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Piseas-Fish.jpg",
+          "description": "This isn’t your old man’s fish. The Piseas is a super charged, high performance version of it. Boasting a classic fish outline, Piseas offers a modern ride thanks to its contemporary rocker, updated fish rails, high aspect, glass on bamboo twin fin template and a modified single-to-double concave bottom. This set up is my favorite, allowing you to surf more aggressively and confidently push into tighter turning arcs than traditional twin keels will allow. On the Piseas you’ll surf better, faster and sharper. I say glass on Bamboo Twins because I’m not a fan of most (Twin future templates) as the notch in the rear of the fin ultimately bleeds speed on turns and I’m no fan of slowing down…",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Calyma Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0717/7427/3572/collections/Calyma-Fish.jpg",
+          "description": "The name says it all. The Calyma-Fish is your go to all around Fish. In the smaller softer waves, you can skateboard around sections effortlessly yet its versatile for when the waves have the juice. The Single into double barrel vee provides all the speed you need while the vee plane allows you the control. They run a touch wider to accompany the fin cluster and add a touch of curve in the outline behind the front fin. Lots of paddle and lots of speed the Calyma has you covered.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
