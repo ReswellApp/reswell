@@ -11,4 +11,5 @@ export type ListingCartOfferProspect = {
   id: string
   title: string
   cartCount: number
+  price: number
 }

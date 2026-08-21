@@ -500,7 +500,7 @@ export async function SurfboardListingDetailPage({
                 cartHolderCount={cartHolderCount}
                 offerToCart={
                   isOwnListing && user
-                    ? { listingId: board.id, sellerUserId: user.id }
+                    ? { listingId: board.id, sellerUserId: user.id, listingTitle, listPrice: listPriceNum }
                     : null
                 }
                 createdAt={board.created_at}
@@ -631,7 +631,7 @@ export async function SurfboardListingDetailPage({
                       isSold={isSold}
                       offerToCart={
                         isOwnListing && user
-                          ? { listingId: board.id, sellerUserId: user.id }
+                          ? { listingId: board.id, sellerUserId: user.id, listingTitle, listPrice: listPriceNum }
                           : null
                       }
                       className="max-lg:hidden"

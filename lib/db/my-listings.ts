@@ -157,7 +157,7 @@ export async function fetchMyListingCartOfferProspects(
 
   const { data, error } = await supabase
     .from("listings")
-    .select("id, title, status, section, hidden_from_site")
+    .select("id, title, price, status, section, hidden_from_site")
     .eq("user_id", userId)
     .in("id", ids)
     .in("status", ["active", "pending_sale"])
@@ -173,10 +173,12 @@ export async function fetchMyListingCartOfferProspects(
     if (!isPeerListingSection(row.section)) continue
     const cartCount = engagementCounts.get(row.id)?.cartCount ?? 0
     if (cartCount <= 0) continue
+    const price = Number.parseFloat(String(row.price ?? 0))
     prospects.push({
       id: row.id,
       title: (row.title ?? "").trim() || "Listing",
       cartCount,
+      price: Number.isFinite(price) ? price : 0,
     })
   }
 

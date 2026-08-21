@@ -145,7 +145,14 @@ export function ListingMobileBuySummary({
         watchers={watchers}
         cartHolderCount={cartHolderCount}
         isSold={isSold}
-        offerToCart={offerToCart}
+        offerToCart={
+          offerToCart
+            ? {
+                ...offerToCart,
+                listPrice: offerToCart.listPrice ?? priceUsd,
+              }
+            : null
+        }
         className="mt-1.5 text-[13px]"
       />
 

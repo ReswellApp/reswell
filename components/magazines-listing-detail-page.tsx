@@ -396,7 +396,7 @@ export async function MagazinesListingDetailPage({
               cartHolderCount={cartHolderCount}
               offerToCart={
                 isOwnListing && user
-                  ? { listingId: magazine.id, sellerUserId: user.id }
+                  ? { listingId: magazine.id, sellerUserId: user.id, listingTitle, listPrice: listPriceNum }
                   : null
               }
               createdAt={magazine.created_at}
@@ -494,7 +494,7 @@ export async function MagazinesListingDetailPage({
                     isSold={isSold}
                     offerToCart={
                       isOwnListing && user
-                        ? { listingId: magazine.id, sellerUserId: user.id }
+                        ? { listingId: magazine.id, sellerUserId: user.id, listingTitle, listPrice: listPriceNum }
                         : null
                     }
                     className="max-lg:hidden"

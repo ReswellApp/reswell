@@ -6,6 +6,9 @@ import { cn } from "@/lib/utils"
 export type ListingOfferToCartProps = {
   listingId: string
   sellerUserId: string
+  listingTitle?: string
+  listPrice?: number
+  primaryImageUrl?: string | null
 }
 
 interface ListingDetailEngagementMetricsProps {
@@ -53,6 +56,9 @@ export function ListingDetailEngagementMetrics({
             listingId={offerToCart.listingId}
             sellerUserId={offerToCart.sellerUserId}
             cartHolderCount={cartHolderCount}
+            listingTitle={offerToCart.listingTitle}
+            listPrice={offerToCart.listPrice}
+            primaryImageUrl={offerToCart.primaryImageUrl}
             triggerVariant="stat"
           />
         ) : (

@@ -439,7 +439,7 @@ export async function ApparelListingDetailPage({
               cartHolderCount={cartHolderCount}
               offerToCart={
                 isOwnListing && user
-                  ? { listingId: apparel.id, sellerUserId: user.id }
+                  ? { listingId: apparel.id, sellerUserId: user.id, listingTitle, listPrice: listPriceNum }
                   : null
               }
               createdAt={apparel.created_at}
@@ -565,7 +565,7 @@ export async function ApparelListingDetailPage({
                     isSold={isSold}
                     offerToCart={
                       isOwnListing && user
-                        ? { listingId: apparel.id, sellerUserId: user.id }
+                        ? { listingId: apparel.id, sellerUserId: user.id, listingTitle, listPrice: listPriceNum }
                         : null
                     }
                     className="max-lg:hidden"

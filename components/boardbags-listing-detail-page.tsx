@@ -441,7 +441,7 @@ export async function BoardbagsListingDetailPage({
               cartHolderCount={cartHolderCount}
               offerToCart={
                 isOwnListing && user
-                  ? { listingId: boardbag.id, sellerUserId: user.id }
+                  ? { listingId: boardbag.id, sellerUserId: user.id, listingTitle, listPrice: listPriceNum }
                   : null
               }
               createdAt={boardbag.created_at}
@@ -567,7 +567,7 @@ export async function BoardbagsListingDetailPage({
                     isSold={isSold}
                     offerToCart={
                       isOwnListing && user
-                        ? { listingId: boardbag.id, sellerUserId: user.id }
+                        ? { listingId: boardbag.id, sellerUserId: user.id, listingTitle, listPrice: listPriceNum }
                         : null
                     }
                     className="max-lg:hidden"

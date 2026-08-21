@@ -441,7 +441,7 @@ export async function LeashesListingDetailPage({
               cartHolderCount={cartHolderCount}
               offerToCart={
                 isOwnListing && user
-                  ? { listingId: leash.id, sellerUserId: user.id }
+                  ? { listingId: leash.id, sellerUserId: user.id, listingTitle, listPrice: listPriceNum }
                   : null
               }
               createdAt={leash.created_at}
@@ -567,7 +567,7 @@ export async function LeashesListingDetailPage({
                     isSold={isSold}
                     offerToCart={
                       isOwnListing && user
-                        ? { listingId: leash.id, sellerUserId: user.id }
+                        ? { listingId: leash.id, sellerUserId: user.id, listingTitle, listPrice: listPriceNum }
                         : null
                     }
                     className="max-lg:hidden"

@@ -1,4 +1,5 @@
 import type { ArticleBlock } from "@/lib/field-notes-articles"
+import { ArticleInlineText } from "@/components/field-notes/article-inline-text"
 import { InstagramEmbedBlock } from "@/components/field-notes/instagram-embed-block"
 import { BlogIntrinsicImage } from "@/components/field-notes/blog-intrinsic-image"
 import { BlogListingTile } from "@/components/field-notes/blog-listing-tile"
@@ -74,7 +75,7 @@ function ParagraphText({
     const label = callout[1].replace(/\b\w/g, (c) => c.toUpperCase())
     return (
       <p className={cn("mt-4 text-[16.5px] leading-[1.75] text-foreground/90 sm:text-[17px]", className)}>
-        <span className="font-semibold text-foreground">{label}:</span> {body}
+        <span className="font-semibold text-foreground">{label}:</span> <ArticleInlineText text={body} />
       </p>
     )
   }
@@ -89,7 +90,7 @@ function ParagraphText({
         className,
       )}
     >
-      {text}
+      <ArticleInlineText text={text} />
     </p>
   )
 }

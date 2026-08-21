@@ -171,6 +171,7 @@ export function SellerOfferToCartHolders({
               listingTitle={listingTitle}
               listPrice={listPrice}
               primaryImageUrl={primaryImageUrl}
+              allowAdditionalListings={false}
             />
           ) : (
             <>

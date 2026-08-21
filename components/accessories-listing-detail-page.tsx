@@ -441,7 +441,7 @@ export async function AccessoriesListingDetailPage({
               cartHolderCount={cartHolderCount}
               offerToCart={
                 isOwnListing && user
-                  ? { listingId: accessory.id, sellerUserId: user.id }
+                  ? { listingId: accessory.id, sellerUserId: user.id, listingTitle, listPrice: listPriceNum }
                   : null
               }
               createdAt={accessory.created_at}
@@ -567,7 +567,7 @@ export async function AccessoriesListingDetailPage({
                     isSold={isSold}
                     offerToCart={
                       isOwnListing && user
-                        ? { listingId: accessory.id, sellerUserId: user.id }
+                        ? { listingId: accessory.id, sellerUserId: user.id, listingTitle, listPrice: listPriceNum }
                         : null
                     }
                     className="max-lg:hidden"

@@ -44,6 +44,7 @@ export function SellerCartOfferProspects({
               sellerUserId={sellerUserId}
               cartHolderCount={listing.cartCount}
               listingTitle={listing.title}
+              listPrice={listing.price}
               triggerSize="sm"
               triggerLabel="Offer"
             />

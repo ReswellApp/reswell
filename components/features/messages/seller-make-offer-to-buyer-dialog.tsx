@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { createClient } from "@/lib/supabase/client"
 import { capitalizeWords } from "@/lib/listing-labels"
 import { cn } from "@/lib/utils"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
@@ -26,8 +25,8 @@ import {
   offerShippingCostLabel,
 } from "@/lib/offer-listing-shipping"
 import { effectiveBoardShippingMode } from "@/lib/services/peerListingShippingQuote"
-import { listingTitleThumbnailSrc, type ListingImageForCard } from "@/lib/listing-image-display"
-import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
+import { listingTitleThumbnailSrc } from "@/lib/listing-image-display"
+import type { SellerOfferListing } from "@/lib/types/seller-offer-listing"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -41,21 +40,7 @@ function parseAmountInput(raw: string): number | null {
   return roundMoney(n)
 }
 
-type SellerListingRow = {
-  id: string
-  title: string | null
-  section: string | null
-  price: number
-  minimum_offer_pct: number | null
-  shipping_available: boolean | null
-  local_pickup: boolean | null
-  shipping_price: number | null
-  board_shipping_cost_mode: "reswell" | "flat" | "free" | null
-  listing_images: ListingImageForCard[] | null
-}
-
-const SELLER_OFFER_LISTING_SELECT =
-  "id, title, section, price, minimum_offer_pct, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode, hidden_from_site, buyer_offers_enabled, listing_images(url, thumbnail_url, is_primary)"
+type SellerListingRow = SellerOfferListing
 
 function fallbackSellerListingRow({
   listingId,
@@ -80,23 +65,6 @@ function fallbackSellerListingRow({
     shipping_price: null,
     board_shipping_cost_mode: null,
     listing_images: primaryImageUrl ? [{ url: primaryImageUrl, is_primary: true }] : null,
-  }
-}
-
-function mapSellerListingRow(row: Record<string, unknown>): SellerListingRow {
-  return {
-    id: row.id as string,
-    title: (row.title as string | null) ?? null,
-    section: (row.section as string | null) ?? null,
-    price: roundMoney(parseFloat(String(row.price ?? 0))),
-    minimum_offer_pct: (row.minimum_offer_pct as number | null) ?? null,
-    shipping_available: row.shipping_available as boolean | null,
-    local_pickup: row.local_pickup as boolean | null,
-    shipping_price:
-      row.shipping_price != null ? roundMoney(parseFloat(String(row.shipping_price))) : null,
-    board_shipping_cost_mode:
-      (row.board_shipping_cost_mode as SellerListingRow["board_shipping_cost_mode"]) ?? null,
-    listing_images: (row.listing_images as ListingImageForCard[] | null) ?? null,
   }
 }
 
@@ -272,6 +240,8 @@ export type SellerMakeOfferToBuyerDialogProps = {
   primaryImageUrl?: string | null
   /** Form only — parent already provides the dialog shell. */
   embedded?: boolean
+  /** When false, the offer is locked to this listing — no bundle picker. */
+  allowAdditionalListings?: boolean
   onOfferSent?: (payload: {
     listingId: string
     buyerUserId: string
@@ -285,16 +255,15 @@ export function SellerMakeOfferToBuyerDialog({
   onOpenChange,
   listingId,
   buyerUserId,
-  sellerUserId,
   conversationId,
   listingTitle,
   listPrice,
   primaryImageUrl,
   embedded = false,
+  allowAdditionalListings = true,
   onOfferSent,
 }: SellerMakeOfferToBuyerDialogProps) {
   const router = useRouter()
-  const supabase = createClient()
   const [listings, setListings] = useState<SellerListingRow[]>(() => {
     const fallback = fallbackSellerListingRow({
       listingId,
@@ -313,60 +282,66 @@ export function SellerMakeOfferToBuyerDialog({
   const [message, setMessage] = useState("")
   const [submitting, setSubmitting] = useState(false)
 
+  const seedFallbackListing = useCallback((): SellerListingRow | null => {
+    return fallbackSellerListingRow({
+      listingId,
+      listingTitle,
+      listPrice,
+      primaryImageUrl,
+    })
+  }, [listingId, listingTitle, listPrice, primaryImageUrl])
+
   const loadSellerListings = useCallback(async () => {
     setLoadingListings(true)
     try {
-      const [listRes, anchorRes] = await Promise.all([
-        supabase
-          .from("listings")
-          .select(SELLER_OFFER_LISTING_SELECT)
-          .eq("user_id", sellerUserId)
-          .in("section", PEER_LISTING_SECTIONS_FILTER)
-          .in("status", ["active", "pending_sale"])
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("listings")
-          .select(SELLER_OFFER_LISTING_SELECT)
-          .eq("id", listingId)
-          .eq("user_id", sellerUserId)
-          .maybeSingle(),
-      ])
+      const listingQuery = allowAdditionalListings ? "" : "?anchorOnly=1"
+      const res = await fetch(`/api/listings/${listingId}/seller-offers${listingQuery}`, {
+        method: "GET",
+        credentials: "include",
+      })
+      const json: unknown = await res.json().catch(() => ({}))
+      const payload =
+        typeof json === "object" && json !== null && "data" in json
+          ? (json as { data?: { listings?: SellerOfferListing[] } }).data
+          : undefined
+      const loaded = Array.isArray(payload?.listings) ? payload.listings : []
+      const rows = allowAdditionalListings
+        ? loaded
+        : loaded.filter((row) => row.id === listingId)
 
-      if (listRes.error) {
-        toast.error("Could not load your listings.")
+      if (!res.ok || rows.length === 0) {
+        const fallback = seedFallbackListing()
+        if (fallback) {
+          setListings([fallback])
+          return
+        }
+        if (!res.ok) {
+          const err =
+            typeof json === "object" &&
+            json !== null &&
+            "error" in json &&
+            typeof (json as { error: unknown }).error === "string"
+              ? (json as { error: string }).error
+              : "Could not load your listings."
+          toast.error(err)
+        }
+        setListings([])
         return
       }
 
-      const byId = new Map<string, SellerListingRow>()
-      for (const row of listRes.data ?? []) {
-        const record = row as Record<string, unknown>
-        if (record.hidden_from_site === true) continue
-        if (record.buyer_offers_enabled === false && record.id !== listingId) continue
-        byId.set(record.id as string, mapSellerListingRow(record))
+      setListings(rows)
+    } catch {
+      const fallback = seedFallbackListing()
+      if (fallback) {
+        setListings([fallback])
+      } else {
+        toast.error("Could not load your listings.")
+        setListings([])
       }
-
-      if (anchorRes.data && !anchorRes.error) {
-        const record = anchorRes.data as Record<string, unknown>
-        if (record.hidden_from_site !== true) {
-          byId.set(record.id as string, mapSellerListingRow(record))
-        }
-      }
-
-      if (!byId.has(listingId)) {
-        const fallback = fallbackSellerListingRow({
-          listingId,
-          listingTitle,
-          listPrice,
-          primaryImageUrl,
-        })
-        if (fallback) byId.set(listingId, fallback)
-      }
-
-      setListings([...byId.values()])
     } finally {
       setLoadingListings(false)
     }
-  }, [supabase, sellerUserId, listingId, listingTitle, listPrice, primaryImageUrl])
+  }, [allowAdditionalListings, listingId, seedFallbackListing])
 
   useEffect(() => {
     if (!open) return
@@ -499,6 +474,7 @@ export function SellerMakeOfferToBuyerDialog({
       : null
 
   function addListing(id: string) {
+    if (!allowAdditionalListings) return
     if (selectedIds.has(id)) return
     setSelectedIds((prev) => new Set([...prev, id]))
     setSelectedOrder((prev) => [id, ...prev.filter((rowId) => rowId !== id)])
@@ -534,7 +510,10 @@ export function SellerMakeOfferToBuyerDialog({
         body: JSON.stringify({
           buyerUserId,
           fulfillment,
-          lineItems: lineItems.map((row) => ({
+          lineItems: (allowAdditionalListings
+            ? lineItems
+            : lineItems.filter((row) => row.listingId === listingId)
+          ).map((row) => ({
             listingId: row.listingId,
             amount: row.amount,
           })),
@@ -597,18 +576,22 @@ export function SellerMakeOfferToBuyerDialog({
         <DialogHeader className="shrink-0 space-y-1 border-b border-border/60 px-5 pb-4 pt-5 sm:px-6">
           <DialogTitle className="text-left text-xl font-semibold">Make them an offer</DialogTitle>
           <p className="text-left text-[15px] leading-snug text-muted-foreground">
-            Set your price for each listing. Add more listings to bundle into one offer.
+            {allowAdditionalListings
+              ? "Set your price for each listing. Add more listings to bundle into one offer."
+              : "Set your price for this listing."}
           </p>
         </DialogHeader>
 
         <form onSubmit={(e) => void handleSubmit(e)} className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4 sm:px-6">
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">
-                In this offer ({orderedSelectedListings.length})
-              </Label>
+              {allowAdditionalListings ? (
+                <Label className="text-sm font-semibold">
+                  In this offer ({orderedSelectedListings.length})
+                </Label>
+              ) : null}
 
-              {orderedSelectedListings.length > 0 && !loadingListings ? (
+              {allowAdditionalListings && orderedSelectedListings.length > 0 && !loadingListings ? (
                 <div className="rounded-xl border border-border/60 bg-muted/30 px-3.5 py-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -658,19 +641,23 @@ export function SellerMakeOfferToBuyerDialog({
                     <SelectedOfferListingCard
                       key={row.id}
                       row={row}
-                      isAnchor={row.id === listingId}
+                      isAnchor={allowAdditionalListings && row.id === listingId}
                       amountInput={amountByListingId[row.id] ?? ""}
                       onAmountChange={(value) =>
                         setAmountByListingId((prev) => ({ ...prev, [row.id]: value }))
                       }
-                      onRemove={row.id === listingId ? undefined : () => removeListing(row.id)}
+                      onRemove={
+                        allowAdditionalListings && row.id !== listingId
+                          ? () => removeListing(row.id)
+                          : undefined
+                      }
                     />
                   ))}
                 </ul>
               )}
             </div>
 
-            {!loadingListings && unselectedListings.length > 0 ? (
+            {allowAdditionalListings && !loadingListings && unselectedListings.length > 0 ? (
               <div className="space-y-2 border-t border-border/50 pt-4">
                 <Label className="text-sm font-semibold">Add another listing</Label>
                 <p className="text-xs text-muted-foreground">
@@ -785,7 +772,11 @@ export function SellerMakeOfferToBuyerDialog({
               <Textarea
                 rows={3}
                 maxLength={200}
-                placeholder="e.g. Happy to meet locally this weekend, or bundle both items."
+                placeholder={
+                  allowAdditionalListings
+                    ? "e.g. Happy to meet locally this weekend, or bundle both items."
+                    : "e.g. Happy to meet locally this weekend."
+                }
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 className="resize-none"

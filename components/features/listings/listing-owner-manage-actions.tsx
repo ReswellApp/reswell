@@ -85,6 +85,7 @@ export async function ListingOwnerManageActions({
               listingId={listingId}
               sellerUserId={user.id}
               cartHolderCount={cartHolderCount}
+              listPrice={currentPriceUsd}
               triggerClassName="border-border/60 shadow-none"
             />
           ) : null}

@@ -401,7 +401,7 @@ function SortableBlockRow(props: {
               value={block.text}
               onChange={(e) => props.patch(props.row.cid, { kind: "p", text: e.target.value })}
               rows={6}
-              placeholder="Paragraph…"
+              placeholder="Paragraph… Use [label](/path) or [label](https://…) for clickable links."
               className="min-h-[120px]"
             />
           ) : null}
