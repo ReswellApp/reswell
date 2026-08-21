@@ -1,0 +1,203 @@
+{
+  "generated_for": "Jye Byrnes Surfboards official model catalog",
+  "source": "https://www.jyebyrnessurfboards.com.au/",
+  "sources": [
+    "https://www.jyebyrnessurfboards.com.au/sitemap.xml",
+    "https://www.jyebyrnessurfboards.com.au/anchovy-quad",
+    "https://www.jyebyrnessurfboards.com.au/jbean",
+    "https://www.jyebyrnessurfboards.com.au/sweet-pea",
+    "https://www.jyebyrnessurfboards.com.au/stubbby",
+    "https://www.jyebyrnessurfboards.com.au/sardine",
+    "https://www.jyebyrnessurfboards.com.au/rising-sun",
+    "https://www.jyebyrnessurfboards.com.au/little-swallow",
+    "https://www.jyebyrnessurfboards.com.au/big-wave",
+    "https://www.jyebyrnessurfboards.com.au/stepup",
+    "https://www.jyebyrnessurfboards.com.au/jb-signature",
+    "https://www.jyebyrnessurfboards.com.au/vwizard",
+    "https://www.jyebyrnessurfboards.com.au/pilgrim-model",
+    "https://www.jyebyrnessurfboards.com.au/dt-noserider",
+    "https://www.jyebyrnessurfboards.com.au/vintage-model",
+    "https://www.jyebyrnessurfboards.com.au/fish-finger-1",
+    "https://www.jyebyrnessurfboards.com.au/razor-fish-1",
+    "https://www.jyebyrnessurfboards.com.au/cortez-1",
+    "https://www.jyebyrnessurfboards.com.au/anchovy-keel-1",
+    "https://www.jyebyrnessurfboards.com.au/bonzer5",
+    "https://www.jyebyrnessurfboards.com.au/the-grom",
+    "https://www.jyebyrnessurfboards.com.au/new-page-3",
+    "https://www.jyebyrnessurfboards.com.au/sixchannel-single-fin2",
+    "https://www.jyebyrnessurfboards.com.au/bumble-bee-tracker-1",
+    "https://www.jyebyrnessurfboards.com.au/crossbreed-1",
+    "https://www.jyebyrnessurfboards.com.au/little-joe",
+    "https://www.jyebyrnessurfboards.com.au/twinpin"
+  ],
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "jye-byrnes-surfboards",
+      "name": "Jye Byrnes Surfboards",
+      "website_url": "https://www.jyebyrnessurfboards.com.au",
+      "location_label": "Newcastle, New South Wales, Australia",
+      "founder_name": "Jye Byrnes",
+      "lead_shaper_name": "Jye Byrnes",
+      "short_description": "Custom surfboards handcrafted in Newcastle, NSW by Jye Byrnes — performance shortboards, fish, mid-lengths, longboards, and step-ups.",
+      "models": [
+        {
+          "name": "Anchovy Quad",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1510017757630-BZ6VN1ZA3TQ4CDP863Q4/Anchovy+-+Collage+Photosquare.png",
+          "description": "The Anchovy model is one of my most popular models that is heavily influenced by Steve Lis's fish; a shape that has significantly contributed to the progression of surf board design. My interpretation possesses two unique features (1) Three-phase bottom contour - Panel-roll bottom flows through a deep single to double concave and (2) Split-keel quad fins - a specially designed quad fin template for smooth drive. A wide swallow tail, flat rocker, generous amount of volume and a curvy outline translates to smooth lines and drawn-out turns on the wave face. A great little board that is perfectly suited to small-medium size days.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "JBean",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1514082885771-YTX7CKM5VPD7ZISTUWQL/JBean+-+Light+Grey+Two-tone+Resin+Tint+w.+Red+Pinline+-+Collag.jpg",
+          "description": "I started designing this board with the thought of combining the elements of a fish; keeping the volume in the outline around the nose and tail. I wanted the board to be on the smaller side in length, channelling the egg concept by compressing the volume so the wide point was just past centre. This board has a relaxed, flat rocker making it a great paddler. For the bottom contour, a slight single concave flows into a double concave - vee tail. The tail is rounded for extra stability allowing you to turn with ease, which appeals to all levels of surfing.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Sweet Pea",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1549410016894-4LCKKHVBJ9WW4A6Z1ISQ/Sweet+Pea+-+Two-tone+Red+Wine+-+Collage.jpg",
+          "description": "A flat rocker and a panel-roll bottom flowing through a deep single to double concave, flattening down through the twin keels. A wide swallow tail similar to my Cortez model.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Stubby",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1532493604847-8KYIPP1DE4J70HZES866/Stubby+-+Website+Collage.jpg",
+          "description": "The ‘Stubby’ design is a compressed version of a shortboard that seems to fit just about anywhere on the wave as you explore down the line. The fuller nose increases wave entry and planning speed over flat sections. A medium rocker and single to double concave bottom contour. A wide rounded square tail for increased maneuverability for small to medium days or the heavier surfer. Great all-round board for the every day punter.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sardine",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1510619481219-QV8L5U1P8JA7APUWHOGS/Sardine+Website+Collage.png",
+          "description": "The Sardine model is a slim drawn out version of the original Anchovy model. This board has the same bottom contour as my Anchovy model. I have tweaked the fins. I’m using a Twin fin template somewhere between a keel fin outline and a standard MR twin fin. The result is great - I can go top to bottom on my backhand without drift or catching an edge that sometimes happens with twins. By narrowing the tip of the fin and having a slight sweep in the rake, you can complete single-stage turns. The rocker on this board is fairly flat with a panel-roll bottom flowing through a deep single to double concave, flattening down through the fins and a wide swallow tail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Rising Sun",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1549410109256-XHZ7E4E3QCHE5J4CVEP8/Rising+Sun+-+Two-tone+custard+tint+-+Collage.jpg",
+          "description": "A long-board for the everyday surfer to longboard enthusiast. A comfortable easy-rider with a flattened mid-section which is the key to resistance free trimming, promoting smoother and easier turning in most longboarding conditions. An exceptional paddler with a balanced, low to mid rocker, this fuss-free board will always impress. Features include a wider slightly pointed speed shape nose, mid rail, streamlined curves to a rounded pin-tail. A scalloped nose concave rolled bottom, subtle double concave to a flat-V. Recommended as a single fin or 2+1.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Little Swallow",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1535158392310-QRQ8DB09CE7S6NEW213O/Little+Swallow+-+Brown+and+Fluro+Yellow+Spray.jpg",
+          "description": "Following on from my stubby concept, the Little Swallow board is designed with a little extra width in the front 3rd of the board, taking the positives of the fish style board without going with a full blown fish nose outline. A medium rocker (similar to my 2300 model) with a single to double concave and, of course, a swallow tail. I wanted to make a model that could suit various weights and ages without losing performance. Popular among the experienced gentleman as an all rounder or the younger brigade as an alternative smaller wave board.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Big Wave",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1532489424856-4J1KHQUQZLYQ48MNB8HM/Big_Wave+-+Website+Collage.jpg",
+          "description": "This board was designed for when the waves get serious. A must for a ticket to Indo' or those winter swells at home. Reliable in solid conditions. A curvy rocker with a simple Simon roll bottom into a small spiral vee through the tail. Again, I like to go with a lean pin tail.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Step-up",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1532488055596-8JO7JSMQ8PIRFB6TSB2O/Step-up+-+Website+Collage.jpg",
+          "description": "A board designed to surf when the waves get a little big or punchy, but not big enough for a designated big wave board. Reliable in solid conditions; ideal in Indonesia or those winter swells at home. Made for hollow waves, I go with a curvy rocker, slight single concave into a deeper double concave and vee through the tail. Most commonly made with a lean, rounded pin tail.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "JB Signature",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1532494257392-K71NRJHEJ85HYM5PNKZR/Signature+Model+-+Website+Collage.jpg",
+          "description": "This is my premier longboard for the average to experienced surfer. Designed and tested when I was travelling the globe surfing professionally, I found that this board surfed well in all conditions. Big or small, the signature model complimented my longboard style; a mixture of old school and new flair manoeuvres. This shape allows for a smooth glide, carving turns and effortless nose riding. Featuring a slightly pointed nose, subtle hip, a mid to low rail and a balanced rocker with a late tail kick. The bottom contour is blended and broken down into 4 slices. Starting with a single concave nose slice moving into a roll bottom, followed by a generous double concave and finishing off with a deep v-hull. This promotes water flow through the bottom of the board and enhances your chances of ’riding and smiling’. Available as a small rounded square tail (stock option - top right photo) or rounded pin (custom order - bottom right photo).",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "V-Wizard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1549061075470-SWR9J528ZP7ZJ5GNXDPC/V-Wizard+-+Two-tone+Green+-+Collage.jpg",
+          "description": "The V-WIZARD is a modern log/traditional model that is the ‘go-to’ board for those small days. I designed this board based on customers and team riders feedback wanting a board to surf traditional for all conditions. With a new generation of surfers tired of sinking in the summer heat or struggling on their shortboards at the odd point break, the V-Wizard will suit all wanting to ride and smile. The outline is inspired by classic 1960’s longboards with a modern twist. With a flatter rocker throughout the board, its an exceptional paddler and trim queen, coupled with a refined V bottom throughout the tail will ensure the board is still a functional turner. A long drawn out nose concave allows for extended, easier tip time! Standard tail is square, but can be custom order as a diamond or a tail of your choice!",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pilgrim Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1511574349176-Q9YQ7UGZI6G8UQBFFOAV/Pilgrim+-+Volan+w%3A+Foam+Insert+Stringer+-+Collage.png",
+          "description": "The Pilgrim Model is a homage to the 67/68 era of longboarding in Australia. This era was when board design began progressing, pulling the wide point back to create a hip (Pig Style) and narrowing the nose for better control. This is the loggers board for a traditional enthusiast. Low rocker, pinched 50/50 rails and rolled bottom will make you surf with style. I prefer a square tail option, but other tails will work too. Dress this baby up with custom foam inserts, resin stringer lines or tints and you will have a beautiful board that evokes a ‘from the past’ yet contemporary feel.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "DT Noserider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1511217434443-HEY2U7P363CAEQBHNNZY/DT+Noserider+Collage.png",
+          "description": "A nose riding specialist! Designed off my many trips chasing right hand point breaks, team rider feedback and general consensus from my customers that the DT (Diamond Tail) nose rider is great all-round nose rider for the experienced or novice surfer wanting a challenge to ride the nose. The shape has been designed for nose riding, yet when things get tight and you need to walk back to turn, the board will pivot and help you re-direct back towards the nose riding section. This board has a low/flat nose-entry rocker, but extends slightly in the tail. Deep single nose concave combined with a smooth rolled-V bottom will have you hanging five or ten in no time.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Vintage Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1531279314661-TP7GIQ5OSVJFSUPAR33I/Vintage+Longboard+-+Soft+Grey+Dark+Green+Resin+Tint.jpg",
+          "description": "Inspired by the pioneers of California surfing in the 1960’s, the Vintage model is functional nostalgia at its best. No hips in this outline! The Vintage model features a forward template which expands the nose area and reduces the tail width for pivot turning. The flat/low rocker profile enhances the nose riding ability of the board to a soulful trim. The bottom contour comprises a subtle nose concave with a refined vee throughout the tail. Most popular as a square, but other shapes can be adapted. The Vintage model has a lot of volume, making it a stand-out performer on point breaks or small beachies. Single fin is a must with the option of a box or set fin. You can customise your board with the classic look of multiple stringers, foam stringers or soft coloured tints.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Fish Finger",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1529716956677-RMR4YD4QSODB6QX7YL3N/Fish+Finger+-+Light+Blue%3AWhite+Wash+w%3A+Black+Pinline+-+Collage.jpg",
+          "description": "Small, fat and stubby like fingers, this board paddles like a dream and glides over those gutter loving beach breaks. Great for those wanting volume without going to a full blown fish outline. I've incorporated a flatter rocker than your progressive shortboard, making this board user-friendly when the surf is small and fat. The bottom contours include a generous single concave that flattens out through the tail. The Fish Finger comes in two tail configurations: (1) a shallow wide swallow tail for added acceleration and slide or (2) a diamond tail for pivoting speed.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Razor Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1532493209163-YYJU8HEYRK3802SXLMX1/Razor_Fish-Website_Collage.jpg",
+          "description": "Simply modern. The Razor Fish is my version of the modern fish; a board for those uninterested in straying too far from a high-performance shape. The bottom contour on this board is a roll bottom that flows through a double concave into a small flick Vee. The Razor Fish has a wide nose outline and a low rail profile to hide the volume under your chest. A flat rocker makes the Razor Fish a fantastic paddler; a premium small wave performer. Suited for all levels from beginner to advanced surfers.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Cortez Quad",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1532492784823-UP5GEED8FE67M89YCNHC/Cortez+-+Website+Collage.jpg",
+          "description": "The Cortez Quad model is the ultimate hybrid board, combining the positives of the Anchovy model (Low-mid rocker, plenty of volume) with a slightly more refined and modern outline. I use the same bottom contour and fins (Split-keel quads) as the Anchovy model, however; I have slightly extended the nose rocker to allow easier entry in hollower waves. I've also refined the swallow tail by pulling it in to allow the board to dig in and hold when pushing through tighter turns. Popular among the experienced gentlemen as an all rounder or the younger brigade's small wave board. One of my favourite boards!",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Twin-keel Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1510019069300-QAWRWULNG7V55RMN163C/Anchovy+Keel+Collage.png",
+          "description": "The Twin-keel Fish is a traditional fish. I start with the Anchovy Quad bottom contour; a panel-roll bottom through a deep single to double concave. However, unlike the Anchovy quad I flatten out the foam between the keels - this allows for easy release without losing drive. A wide swallow tail makes up the rear of the board. Traditionally, the keel fin is for taking the high-line and for long, drawn-out turns. A great addition to your summer quiver.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Bonzer 5",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1535158303916-TWSSESZLJBVGREV5DHKC/Bonzer5+-+Grey-Black+w.+Red+Pinline.jpg",
+          "description": "Bonzer 5 Following on from the Campbell Brothers’s concept, the contemporary Bonzer 5 is designed to be surfed more progressive than its traditional sibling. I've added an extra two long, low profile side fins to give the board more drive. The end result is drive and release of a thruster with the flow of a single fin. Three words: versatility, speed and flow!! The Bonzer 5 rocker is low to mid. The bottom contours take the form of rolled entry, slight single concave that enters into a deep, double concave that extends to tunnel channels through the fins. I prefer a diamond tail, but rounded pin, and swallow tails will also work.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Grom",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1532489664444-PCJLMJ2D39X9X5LZ4CWP/Grom+-+Website+Collage.jpg",
+          "description": "With a new generation of kids learning to surf, the transition from a soft board to a fibreglass surfboard can be tricky. It's very important to select the right board to facilitate the grommet's progression to the next stage. I have designed this board to look like a regular board, however it has a lot more volume around the outline for extra stability, without going too long in length. I like to make my Grom boards a little flatter than your contemporary rocker, easier to paddle. I like to keep the bottom simple with a shallow concave into a blended vee. I mostly make rounded square or round tails - preferring to avoid sharp/jagged edges for the Grom.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "2300",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1532487818858-37WHHJTM3MQFO2GGVYIZ/2300+-+Website+Collage.jpg",
+          "description": "My newest shortboard model. This board is a combination of some past favourite designs merged into one. I have taken the best parts of each model to help develop a fast and responsive shortboard. Medium rocker for surfing in the pocket. For the bottom contour, I go with entry single concave, that flows into a double concave inside the single and departs through the engine room (i.e. the fins!). Most commonly shaped as a squash tail, but works just as well with a round tail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Six-Channel Single Fin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1532489924281-GMSATBF1U3M7XTVMA6LT/Six-Channel+Single-fin+website+collagev2.jpg",
+          "description": "A seventies inspired outline with modern rails and a six-channel bottom contour brings your surfing back to basics and unleashes your inner soul surfer. Pivot and flow is what surfing is all about! I keep the rocker low to mid in this board. Opposites attract in this retro yet contemporary bottom; a convex to concave with a six-channel jive. Your choice of traditional or corrugated channels. My preferred tail configuration is a traditional rounded-pin, however; swallow or diamond tails can be adapted.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Bumble Bee Tracker",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1532490274053-P3B6A3ZG0FW91P6ZP19E/Bumble+Bee+Tracker+-+Website+Collage.jpg",
+          "description": "Inspired by designs that emerged from the late 60’s-early 70’s, the beginning of the shortboard revolution. The Bumble Bee Tracker is a beautiful mid-length board, with the wide point forward in the outline that reflects on the past and utilises modern features that is perfect to surf in trim. A low-mid rocker and roll vee bottom contours compliment the low 50/50 rail line with a hard edge toward the sleek rounded pin tail for modern influence. Can be ridden as a flex single to mingle or the reliable 2+1. The Bumble Bee will help surf the high line,driving with speed and in style. Evolution is inevitable, but why forget about the past?",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Crossbreed",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1510616053752-2PR7RF2363Y7G0CQSZ6G/Crossbreed+Website+Collage.jpg",
+          "description": "The Crossbreed is quickly becoming my most popular mid-length board. A combination of a few generations blended into a board that is large in volume and easy to paddle, coupled with performance characteristics of a shorter board. Great for those riding a longboard that wish to go shorter or for shortboard surfers wanting to go longer. A true all-rounder! A low to mid rocker with rolled bottom contour in the front half of the board, blended into a double concave and finished with a vee. Most popular as a rounded pin tail, but diamond and swallow tails can be adapted.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Little Joe",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/1532490554272-8CKU2M4ELVGGINMH38SG/Little+Joe+-+Website+Collage.jpg",
+          "description": "The Little Joe outline is a stubby full nose mid-length modelled off my Rising Sun model longboard. A proven all-round performer for the intermediate and advanced surfer or an ideal introduction board for the beginner or young wahine. Featuring a rounded nose, smooth curves, mid-rail and user-friendly rocker. Recommended as a 2+1 but can be ridden as a single fin for a smooth ride. A mid-low rocker with a rolled bottom front half blending into a double concave and finishing with a 'vee'.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Twin Pin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/59e96e6d4c326da34a785505/d694fb51-787d-4e3b-a1f9-118886a202b6/IMG_3063.jpeg",
+          "description": "The Twin Pin Model is a beautiful mid-length board, with the wide point pushed forward in the outline that reflects a hybrid style outline. Inspired by some designs that I rode back when I was into riding old vintage boards that we usually had picked up at garage sales or 2nd hand stores. This particular board was a beefed up piece of foam, but being Twin-fin round tail allowed me to understand the beauty of the pivot. Blending my designs with old and new templates, the twin Pin model has the perfect fusion of my experience as a surfer shaper and past legends of the trade. Rocker : My extremely popular Midlenght curve is used in this model. The key to this curve is the distribution of foam throughout the curve, putting the foam where you need it for paddling and the thinner tail for extra drive and control of your Twin pin. Contours: : Rolled entry, into a deep double concave throughout tail.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
