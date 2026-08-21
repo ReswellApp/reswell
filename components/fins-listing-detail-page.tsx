@@ -461,6 +461,11 @@ export async function FinsListingDetailPage({
               views={listingViews}
               watchers={listingWatchersCount}
               cartHolderCount={cartHolderCount}
+              offerToCart={
+                isOwnListing && user
+                  ? { listingId: fin.id, sellerUserId: user.id }
+                  : null
+              }
               createdAt={fin.created_at}
               showPurchaseProtection={!isSold && !isOwnListing}
               agreedPriceUsd={buyerAgreedPriceUsd}
@@ -582,6 +587,11 @@ export async function FinsListingDetailPage({
                     watchers={listingWatchersCount}
                     cartHolderCount={cartHolderCount}
                     isSold={isSold}
+                    offerToCart={
+                      isOwnListing && user
+                        ? { listingId: fin.id, sellerUserId: user.id }
+                        : null
+                    }
                     className="max-lg:hidden"
                   />
                 ) : null}

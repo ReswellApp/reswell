@@ -394,6 +394,11 @@ export async function MagazinesListingDetailPage({
               views={listingViews}
               watchers={listingWatchersCount}
               cartHolderCount={cartHolderCount}
+              offerToCart={
+                isOwnListing && user
+                  ? { listingId: magazine.id, sellerUserId: user.id }
+                  : null
+              }
               createdAt={magazine.created_at}
               showPurchaseProtection={!isSold && !isOwnListing}
             >
@@ -487,6 +492,11 @@ export async function MagazinesListingDetailPage({
                     watchers={listingWatchersCount}
                     cartHolderCount={cartHolderCount}
                     isSold={isSold}
+                    offerToCart={
+                      isOwnListing && user
+                        ? { listingId: magazine.id, sellerUserId: user.id }
+                        : null
+                    }
                     className="max-lg:hidden"
                   />
                 ) : null}

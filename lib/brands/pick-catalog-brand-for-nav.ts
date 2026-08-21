@@ -3,6 +3,7 @@ import {
   isMarketplaceSearchNoiseToken,
   pickClosestBrandNameMatch,
 } from "@/lib/utils/marketplace-brand-query"
+import { brandNamesAreSearchSynonyms } from "@/lib/utils/marketplace-brand-synonyms"
 
 export type BrandNavPickRow = { name: string; slug: string }
 
@@ -31,6 +32,9 @@ export function pickCatalogBrandForNavPick(
 
   const exact = rows.find((r) => r.name.toLowerCase() === lower)
   if (exact) return exact
+
+  const synonym = rows.find((r) => brandNamesAreSearchSynonyms(lower, r.name))
+  if (synonym) return synonym
 
   const extendedName = rows.find((r) => {
     const n = r.name.toLowerCase()

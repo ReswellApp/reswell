@@ -140,7 +140,7 @@ async function callGeminiForNlIntent(
 Only use the provided enum values for styles, conditions, constructions, finSystems, finSetups, and tailShapes.
 Map casual language:
 - "new" / "brand new" → brand_new; "mint" / "like new" → excellent
-- "CI" → brandText "Channel Islands"; "Lost" → brandText "Lost Surfboards"
+- "CI" → brandText "Channel Islands"; "Lost" / "Mayhem" → brandText "Lost Surfboards"
 - Length: "6 foot" / "6 feet" / "6ft" / "6'" → lengthToken "6'0"; "5'10" stays "5'10"
 - Fin SYSTEMS (plugs): "fcs" / "fcs2" / "fcs ii" → fcs_ii; "futures" → futures; "twin tab" → fcs_twin_tab; "glass on" → glass_on
 - Fin SETUPS (layout): "thruster" / "tri" → thruster; "twin" → twin_only; "2+1" → twin; "quad" → quad; "5-fin" → five; "single" → single

@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { listingIdsBlockedFromPermanentDelete } from "@/lib/db/listingDeleteEligibility"
+import { isPeerListingSection } from "@/lib/peer-listing-sections"
+import type { ListingCartOfferProspect } from "@/lib/types/listing-cart-holders"
 
 export type MyListingImageRow = {
   url: string
@@ -140,4 +142,43 @@ export async function fetchMyListings(
   })
 
   return { listings, stats }
+}
+
+/** Active peer listings the seller owns that currently have buyers in cart. */
+export async function fetchMyListingCartOfferProspects(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<ListingCartOfferProspect[]> {
+  const engagementCounts = await fetchMyListingsEngagementCounts(supabase)
+  const ids = [...engagementCounts.entries()]
+    .filter(([, engagement]) => engagement.cartCount > 0)
+    .map(([listingId]) => listingId)
+  if (ids.length === 0) return []
+
+  const { data, error } = await supabase
+    .from("listings")
+    .select("id, title, status, section, hidden_from_site")
+    .eq("user_id", userId)
+    .in("id", ids)
+    .in("status", ["active", "pending_sale"])
+    .eq("hidden_from_site", false)
+
+  if (error) {
+    console.error("[fetchMyListingCartOfferProspects]", error.message)
+    return []
+  }
+
+  const prospects: ListingCartOfferProspect[] = []
+  for (const row of data ?? []) {
+    if (!isPeerListingSection(row.section)) continue
+    const cartCount = engagementCounts.get(row.id)?.cartCount ?? 0
+    if (cartCount <= 0) continue
+    prospects.push({
+      id: row.id,
+      title: (row.title ?? "").trim() || "Listing",
+      cartCount,
+    })
+  }
+
+  return prospects.sort((a, b) => b.cartCount - a.cartCount)
 }

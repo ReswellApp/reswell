@@ -1,6 +1,12 @@
 import { ShoppingCart } from "lucide-react"
 
+import { SellerOfferToCartHolders } from "@/components/features/listings/seller-offer-to-cart-holders"
 import { cn } from "@/lib/utils"
+
+export type ListingOfferToCartProps = {
+  listingId: string
+  sellerUserId: string
+}
 
 interface ListingDetailEngagementMetricsProps {
   views: number
@@ -8,6 +14,8 @@ interface ListingDetailEngagementMetricsProps {
   cartHolderCount: number
   isSold?: boolean
   className?: string
+  /** Listing owner: cart count opens the seller-offer dialog. */
+  offerToCart?: ListingOfferToCartProps | null
 }
 
 export function ListingDetailEngagementMetrics({
@@ -16,6 +24,7 @@ export function ListingDetailEngagementMetrics({
   cartHolderCount,
   isSold = false,
   className,
+  offerToCart = null,
 }: ListingDetailEngagementMetricsProps) {
   if (isSold) return null
 
@@ -39,14 +48,23 @@ export function ListingDetailEngagementMetrics({
         </span>
       </span>
       {cartHolderCount > 0 ? (
-        <span className="inline-flex items-center gap-1">
-          <ShoppingCart className="h-3 w-3 shrink-0 opacity-80" aria-hidden />
-          <span className="font-medium text-foreground/80">
-            {cartHolderCount === 1
-              ? "In someone’s cart"
-              : `In ${cartHolderCount} buyers’ carts`}
+        offerToCart ? (
+          <SellerOfferToCartHolders
+            listingId={offerToCart.listingId}
+            sellerUserId={offerToCart.sellerUserId}
+            cartHolderCount={cartHolderCount}
+            triggerVariant="stat"
+          />
+        ) : (
+          <span className="inline-flex items-center gap-1">
+            <ShoppingCart className="h-3 w-3 shrink-0 opacity-80" aria-hidden />
+            <span className="font-medium text-foreground/80">
+              {cartHolderCount === 1
+                ? "In someone’s cart"
+                : `In ${cartHolderCount} buyers’ carts`}
+            </span>
           </span>
-        </span>
+        )
       ) : null}
     </div>
   )

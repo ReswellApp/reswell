@@ -4,6 +4,7 @@
  */
 
 import type { ElasticsearchIndexedListingSection } from "@/lib/elasticsearch/listing-sections"
+import { marketplaceBrandSynonymCandidates } from "@/lib/utils/marketplace-brand-synonyms"
 
 const MARKETPLACE_SEARCH_NOISE_WORDS = new Set([
   "surfboard",
@@ -149,6 +150,10 @@ export function marketplaceBrandQueryCandidates(raw: string): string[] {
   const byLength = [...tokens].sort((a, b) => b.length - a.length)
   for (const token of byLength) {
     add(token)
+  }
+
+  for (const alias of marketplaceBrandSynonymCandidates(trimmed)) {
+    add(alias)
   }
 
   return out

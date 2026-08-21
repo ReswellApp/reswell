@@ -437,6 +437,37 @@ function normalizeExpansions(expansions: string[] | undefined): string[] {
 }
 
 /**
+ * Directory brand filter. When synonym expansions exist (Lost ↔ Mayhem), also
+ * match listings that only have the alias on brand/title and no `brand_id`.
+ */
+export function listingBrandIdFilterClause(
+  brandId: string,
+  expansions?: string[],
+): object {
+  const aliasClauses = normalizeExpansions(expansions)
+    .filter((term) => term.length >= 3)
+    .map((term) => ({
+      multi_match: {
+        query: term,
+        fields: ["brand^3", "title^2", "model"],
+        type: "best_fields" as const,
+        operator: "and" as const,
+      },
+    }))
+
+  if (aliasClauses.length === 0) {
+    return { term: { brand_id: brandId } }
+  }
+
+  return {
+    bool: {
+      should: [{ term: { brand_id: brandId } }, ...aliasClauses],
+      minimum_should_match: 1,
+    },
+  }
+}
+
+/**
  * Soft ranking clauses for leftover NL keywords when structured filters already
  * own recall (brand / price / fins…). Never used as `must`.
  */
@@ -680,7 +711,9 @@ export async function searchListingIdsFromElasticsearch(
       filter.push({ term: { brand_model_id: brandModelId } })
     } else {
       const brandId = options?.brandId?.trim()
-      if (brandId) filter.push({ term: { brand_id: brandId } })
+      if (brandId) {
+        filter.push(listingBrandIdFilterClause(brandId, options?.expansions))
+      }
     }
 
     const lengthInches = options?.lengthInches

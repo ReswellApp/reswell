@@ -1,11 +1,18 @@
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import type { ReswellListingRateRow } from "@/lib/services/reswellListingShippingRate"
 
+const USPS_GROUND_PRIORITY_CODES = [
+  "usps_ground_advantage",
+  "usps_parcel_select",
+  "usps_priority_mail",
+] as const
+
 /** ShipEngine service codes allowed for peer checkout by product section. */
 export const PEER_CHECKOUT_USPS_SERVICE_CODES: Partial<
   Record<PeerListingSection, readonly string[]>
 > = {
-  fins: ["usps_ground_advantage", "usps_parcel_select", "usps_priority_mail"],
+  fins: USPS_GROUND_PRIORITY_CODES,
+  apparel: USPS_GROUND_PRIORITY_CODES,
   magazines: ["usps_media_mail"],
 }
 
@@ -55,19 +62,22 @@ function finServiceSortKey(serviceCode: string): number {
   return 2
 }
 
+export function peerCheckoutUsesUspsGroundPriorityChoice(
+  section: string | null | undefined,
+): boolean {
+  return section === "fins" || section === "apparel"
+}
+
 export function peerCheckoutSectionRestrictsUspsServices(
   section: string | null | undefined,
 ): section is PeerListingSection {
-  return (
-    section === "fins" ||
-    section === "magazines"
-  )
+  return peerCheckoutUsesUspsGroundPriorityChoice(section) || section === "magazines"
 }
 
 export function peerCheckoutOffersShippingRateChoice(
   section: string | null | undefined,
 ): boolean {
-  return section === "fins"
+  return peerCheckoutUsesUspsGroundPriorityChoice(section)
 }
 
 export function filterReswellRatesForPeerSection(
@@ -108,7 +118,7 @@ export function toPeerCheckoutShippingRateOptions(
       }
     })
 
-  if (section === "fins") {
+  if (peerCheckoutUsesUspsGroundPriorityChoice(section)) {
     options.sort((a, b) => {
       const order = finServiceSortKey(a.serviceCode) - finServiceSortKey(b.serviceCode)
       if (order !== 0) return order
@@ -155,7 +165,7 @@ export function findPeerCheckoutRateOption(
 }
 
 /**
- * ShipEngine `rate_id` values expire between `/rates` calls. For fins checkout, buyers
+ * ShipEngine `rate_id` values expire between `/rates` calls. For fins/apparel checkout, buyers
  * pick a stable USPS service (Ground vs Priority); resolve that bucket on fresh quotes.
  */
 export function findPeerCheckoutRateOptionByServiceCode(
@@ -169,7 +179,7 @@ export function findPeerCheckoutRateOptionByServiceCode(
   const exact = options.find((option) => normalizeServiceCode(option.serviceCode) === normalized)
   if (exact) return exact
 
-  if (section === "fins") {
+  if (peerCheckoutUsesUspsGroundPriorityChoice(section)) {
     if (FIN_GROUND_CODES.has(normalized)) {
       return options.find((option) => FIN_GROUND_CODES.has(option.serviceCode)) ?? null
     }
@@ -182,7 +192,7 @@ export function findPeerCheckoutRateOptionByServiceCode(
 }
 
 export function peerCheckoutShippingServiceError(section: string | null | undefined): string {
-  if (section === "fins") {
+  if (peerCheckoutUsesUspsGroundPriorityChoice(section)) {
     return "USPS Ground and USPS Priority are not available for this shipment. Try a different address or contact support."
   }
   if (section === "magazines") {

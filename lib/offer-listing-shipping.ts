@@ -7,6 +7,7 @@ function roundMoney(n: number): number {
 export type OfferShippingCostMode = "reswell" | "flat" | "free"
 
 export type ListingForOfferShipping = {
+  section?: string | null
   shipping_available?: boolean | null
   local_pickup?: boolean | null
   shipping_price?: string | number | null

@@ -88,8 +88,6 @@ function withApparelListingRefinements<T extends z.ZodType>(schema: T) {
     })
     .superRefine((data, ctx) => {
       if (!data.shippingAvailable) return
-      const mode = data.shippingCostMode ?? "reswell"
-      if (mode !== "reswell") return
 
       const L = parseReswellParcelLengthRawToCarrierInches(data.reswellPackageLengthIn)
       if (L == null || L <= 0) {

@@ -44,6 +44,7 @@ function parseAmountInput(raw: string): number | null {
 type SellerListingRow = {
   id: string
   title: string | null
+  section: string | null
   price: number
   minimum_offer_pct: number | null
   shipping_available: boolean | null
@@ -51,6 +52,52 @@ type SellerListingRow = {
   shipping_price: number | null
   board_shipping_cost_mode: "reswell" | "flat" | "free" | null
   listing_images: ListingImageForCard[] | null
+}
+
+const SELLER_OFFER_LISTING_SELECT =
+  "id, title, section, price, minimum_offer_pct, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode, hidden_from_site, buyer_offers_enabled, listing_images(url, thumbnail_url, is_primary)"
+
+function fallbackSellerListingRow({
+  listingId,
+  listingTitle,
+  listPrice,
+  primaryImageUrl,
+}: {
+  listingId: string
+  listingTitle?: string
+  listPrice?: number
+  primaryImageUrl?: string | null
+}): SellerListingRow | null {
+  if (listPrice == null || listPrice <= 0) return null
+  return {
+    id: listingId,
+    title: listingTitle?.trim() || "Listing",
+    section: null,
+    price: roundMoney(listPrice),
+    minimum_offer_pct: null,
+    shipping_available: null,
+    local_pickup: true,
+    shipping_price: null,
+    board_shipping_cost_mode: null,
+    listing_images: primaryImageUrl ? [{ url: primaryImageUrl, is_primary: true }] : null,
+  }
+}
+
+function mapSellerListingRow(row: Record<string, unknown>): SellerListingRow {
+  return {
+    id: row.id as string,
+    title: (row.title as string | null) ?? null,
+    section: (row.section as string | null) ?? null,
+    price: roundMoney(parseFloat(String(row.price ?? 0))),
+    minimum_offer_pct: (row.minimum_offer_pct as number | null) ?? null,
+    shipping_available: row.shipping_available as boolean | null,
+    local_pickup: row.local_pickup as boolean | null,
+    shipping_price:
+      row.shipping_price != null ? roundMoney(parseFloat(String(row.shipping_price))) : null,
+    board_shipping_cost_mode:
+      (row.board_shipping_cost_mode as SellerListingRow["board_shipping_cost_mode"]) ?? null,
+    listing_images: (row.listing_images as ListingImageForCard[] | null) ?? null,
+  }
 }
 
 function ListingThumb({
@@ -223,6 +270,8 @@ export type SellerMakeOfferToBuyerDialogProps = {
   listingTitle?: string
   listPrice?: number
   primaryImageUrl?: string | null
+  /** Form only — parent already provides the dialog shell. */
+  embedded?: boolean
   onOfferSent?: (payload: {
     listingId: string
     buyerUserId: string
@@ -238,11 +287,23 @@ export function SellerMakeOfferToBuyerDialog({
   buyerUserId,
   sellerUserId,
   conversationId,
+  listingTitle,
+  listPrice,
+  primaryImageUrl,
+  embedded = false,
   onOfferSent,
 }: SellerMakeOfferToBuyerDialogProps) {
   const router = useRouter()
   const supabase = createClient()
-  const [listings, setListings] = useState<SellerListingRow[]>([])
+  const [listings, setListings] = useState<SellerListingRow[]>(() => {
+    const fallback = fallbackSellerListingRow({
+      listingId,
+      listingTitle,
+      listPrice,
+      primaryImageUrl,
+    })
+    return fallback ? [fallback] : []
+  })
   const [loadingListings, setLoadingListings] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set([listingId]))
   /** Selected listing order — thread listing pinned first; newly added appear next. */
@@ -255,42 +316,57 @@ export function SellerMakeOfferToBuyerDialog({
   const loadSellerListings = useCallback(async () => {
     setLoadingListings(true)
     try {
-      const { data, error } = await supabase
-        .from("listings")
-        .select(
-          "id, title, price, minimum_offer_pct, shipping_available, local_pickup, shipping_price, board_shipping_cost_mode, listing_images(url, thumbnail_url, is_primary)",
-        )
-        .eq("user_id", sellerUserId)
-        .in("section", PEER_LISTING_SECTIONS_FILTER)
-        .in("status", ["active", "pending_sale"])
-        .eq("hidden_from_site", false)
-        .eq("buyer_offers_enabled", true)
-        .order("created_at", { ascending: false })
+      const [listRes, anchorRes] = await Promise.all([
+        supabase
+          .from("listings")
+          .select(SELLER_OFFER_LISTING_SELECT)
+          .eq("user_id", sellerUserId)
+          .in("section", PEER_LISTING_SECTIONS_FILTER)
+          .in("status", ["active", "pending_sale"])
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("listings")
+          .select(SELLER_OFFER_LISTING_SELECT)
+          .eq("id", listingId)
+          .eq("user_id", sellerUserId)
+          .maybeSingle(),
+      ])
 
-      if (error) {
+      if (listRes.error) {
         toast.error("Could not load your listings.")
         return
       }
 
-      const rows: SellerListingRow[] = (data ?? []).map((row) => ({
-        id: row.id as string,
-        title: (row.title as string | null) ?? null,
-        price: roundMoney(parseFloat(String(row.price ?? 0))),
-        minimum_offer_pct: (row.minimum_offer_pct as number | null) ?? null,
-        shipping_available: row.shipping_available as boolean | null,
-        local_pickup: row.local_pickup as boolean | null,
-        shipping_price:
-          row.shipping_price != null ? roundMoney(parseFloat(String(row.shipping_price))) : null,
-        board_shipping_cost_mode:
-          (row.board_shipping_cost_mode as SellerListingRow["board_shipping_cost_mode"]) ?? null,
-        listing_images: (row.listing_images as ListingImageForCard[] | null) ?? null,
-      }))
+      const byId = new Map<string, SellerListingRow>()
+      for (const row of listRes.data ?? []) {
+        const record = row as Record<string, unknown>
+        if (record.hidden_from_site === true) continue
+        if (record.buyer_offers_enabled === false && record.id !== listingId) continue
+        byId.set(record.id as string, mapSellerListingRow(record))
+      }
 
-      setListings(rows)
+      if (anchorRes.data && !anchorRes.error) {
+        const record = anchorRes.data as Record<string, unknown>
+        if (record.hidden_from_site !== true) {
+          byId.set(record.id as string, mapSellerListingRow(record))
+        }
+      }
+
+      if (!byId.has(listingId)) {
+        const fallback = fallbackSellerListingRow({
+          listingId,
+          listingTitle,
+          listPrice,
+          primaryImageUrl,
+        })
+        if (fallback) byId.set(listingId, fallback)
+      }
+
+      setListings([...byId.values()])
     } finally {
       setLoadingListings(false)
     }
-  }, [supabase, sellerUserId])
+  }, [supabase, sellerUserId, listingId, listingTitle, listPrice, primaryImageUrl])
 
   useEffect(() => {
     if (!open) return
@@ -516,12 +592,8 @@ export function SellerMakeOfferToBuyerDialog({
   const canShip =
     !isBundle && orderedSelectedListings.length === 1 && !!orderedSelectedListings[0]?.shipping_available
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        showCloseButton
-        className="flex max-h-[min(92vh,720px)] w-[calc(100%-1.5rem)] max-w-lg flex-col overflow-hidden p-0"
-      >
+  const form = (
+    <>
         <DialogHeader className="shrink-0 space-y-1 border-b border-border/60 px-5 pb-4 pt-5 sm:px-6">
           <DialogTitle className="text-left text-xl font-semibold">Make them an offer</DialogTitle>
           <p className="text-left text-[15px] leading-snug text-muted-foreground">
@@ -573,7 +645,7 @@ export function SellerMakeOfferToBuyerDialog({
                 </div>
               ) : null}
 
-              {loadingListings ? (
+              {orderedSelectedListings.length === 0 && loadingListings ? (
                 <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                   Loading your listings…
@@ -745,6 +817,18 @@ export function SellerMakeOfferToBuyerDialog({
             </Button>
           </DialogFooter>
         </form>
+    </>
+  )
+
+  if (embedded) return form
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        showCloseButton
+        className="flex max-h-[min(92vh,720px)] w-[calc(100%-1.5rem)] max-w-lg flex-col overflow-hidden p-0"
+      >
+        {form}
       </DialogContent>
     </Dialog>
   )

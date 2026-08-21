@@ -274,7 +274,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     displayListings.find((l) => l.id === sale.listing_id) ?? displayListings[0] ?? fallbackListing
   const isReswellShippingOrder =
     sale.fulfillment_method === "shipping" &&
-    primaryListing?.section === "surfboards" &&
+    isPeerListingSection(primaryListing?.section) &&
     effectiveBoardShippingMode(primaryListing) === "reswell"
 
   const title =

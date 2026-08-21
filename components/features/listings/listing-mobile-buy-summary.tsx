@@ -1,7 +1,10 @@
 import type { ReactNode } from "react"
 import Link from "next/link"
 import { Hourglass, ShieldCheck, Sparkles, Truck } from "lucide-react"
-import { ListingDetailEngagementMetrics } from "@/components/listing-detail-engagement-metrics"
+import {
+  ListingDetailEngagementMetrics,
+  type ListingOfferToCartProps,
+} from "@/components/listing-detail-engagement-metrics"
 import { ListingKlarnaAsLowAs } from "@/components/features/listings/listing-klarna-as-low-as"
 import { formatHomePeerListingConditionLine } from "@/lib/listing-labels"
 
@@ -79,6 +82,7 @@ export interface ListingMobileBuySummaryProps {
   views?: number
   watchers?: number
   cartHolderCount?: number
+  offerToCart?: ListingOfferToCartProps | null
   createdAt?: string | number | Date | null
   showPurchaseProtection?: boolean
   agreedPriceUsd?: number | null
@@ -102,6 +106,7 @@ export function ListingMobileBuySummary({
   views = 0,
   watchers = 0,
   cartHolderCount = 0,
+  offerToCart = null,
   createdAt = null,
   showPurchaseProtection = false,
   agreedPriceUsd = null,
@@ -140,6 +145,7 @@ export function ListingMobileBuySummary({
         watchers={watchers}
         cartHolderCount={cartHolderCount}
         isSold={isSold}
+        offerToCart={offerToCart}
         className="mt-1.5 text-[13px]"
       />
 

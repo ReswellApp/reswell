@@ -15,6 +15,7 @@ import {
   buildListingsSearchQueryBody,
   buildListingsTypoFallbackQueryBody,
   ensureListingsIndex,
+  listingBrandIdFilterClause,
 } from "./listings-index"
 import {
   BOARD_STYLE_OPTIONS,
@@ -233,7 +234,7 @@ function brandModelClauses(ctx: BoardsBrowseEsContext): object[] {
     return [{ term: { brand_model_id: brandModelId } }]
   }
   if (brandId && isUuidString(brandId)) {
-    return [{ term: { brand_id: brandId } }]
+    return [listingBrandIdFilterClause(brandId, ctx.expansions)]
   }
   const out: object[] = []
   const brand = ctx.brand?.trim()

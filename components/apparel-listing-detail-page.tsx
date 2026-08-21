@@ -248,8 +248,6 @@ export async function ApparelListingDetailPage({
     null
   const primaryImageUrl = primaryImageRaw ? proxiedListingImageSrc(primaryImageRaw) : null
 
-  const shippingFlatRate = Math.max(0, Number.parseFloat(String(apparel.shipping_price ?? 0)) || 0)
-
   const makeOfferConfig =
     canPeerPurchase && acceptOffers && listPriceNum > 0
       ? {
@@ -260,9 +258,8 @@ export async function ApparelListingDetailPage({
           primaryImageUrl,
           canPick: pickupOffered,
           canShip: shippingOffered,
-          shippingFlatRate,
-          shippingCostMode:
-            (apparel.board_shipping_cost_mode as "reswell" | "flat" | "free" | null) ?? null,
+          shippingFlatRate: 0,
+          shippingCostMode: shippingOffered ? ("reswell" as const) : null,
         }
       : undefined
 
@@ -277,8 +274,7 @@ export async function ApparelListingDetailPage({
       ? `${apparel.city}, ${apparel.state}`
       : (apparel.profiles as { location?: string | null } | null)?.location?.trim() || null
 
-  const boardShippingCostMode =
-    (apparel.board_shipping_cost_mode as "reswell" | "flat" | "free" | null) ?? null
+  const boardShippingCostMode = shippingOffered ? ("reswell" as const) : null
 
   const fulfillmentLabels = boardFulfillmentDetailLabels(
     apparel.local_pickup,
@@ -294,11 +290,7 @@ export async function ApparelListingDetailPage({
   if (!isSold) {
     if (!shippingOffered && pickupOffered) {
       shippingPriceCaption = "Local pickup · shipping not offered"
-    } else if (shippingOffered && boardShippingCostMode === "free") {
-      shippingPriceCaption = "Free shipping included"
-    } else if (shippingOffered && shippingFlatRate > 0) {
-      shippingPriceCaption = `+ $${shippingFlatRate.toFixed(2)} shipping`
-    } else if (shippingOffered && boardShippingCostMode === "reswell") {
+    } else if (shippingOffered) {
       shippingPriceCaption = "Shipping rate calculated at checkout"
     }
   }
@@ -439,12 +431,17 @@ export async function ApparelListingDetailPage({
               shippingOffered={shippingOffered}
               pickupOffered={pickupOffered}
               shippingCostMode={boardShippingCostMode}
-              shippingFlatRate={shippingFlatRate}
+              shippingFlatRate={0}
               locationLine={listingLocationLine}
               showScarcity={!isSold && !isOwnListing && apparel.status === "active"}
               views={listingViews}
               watchers={listingWatchersCount}
               cartHolderCount={cartHolderCount}
+              offerToCart={
+                isOwnListing && user
+                  ? { listingId: apparel.id, sellerUserId: user.id }
+                  : null
+              }
               createdAt={apparel.created_at}
               showPurchaseProtection={!isSold && !isOwnListing}
               agreedPriceUsd={buyerAgreedPriceUsd}
@@ -566,6 +563,11 @@ export async function ApparelListingDetailPage({
                     watchers={listingWatchersCount}
                     cartHolderCount={cartHolderCount}
                     isSold={isSold}
+                    offerToCart={
+                      isOwnListing && user
+                        ? { listingId: apparel.id, sellerUserId: user.id }
+                        : null
+                    }
                     className="max-lg:hidden"
                   />
                 ) : null}
@@ -682,11 +684,7 @@ export async function ApparelListingDetailPage({
                       <p className="inline-flex items-center gap-1.5 text-muted-foreground">
                         <Truck className="h-3.5 w-3.5 shrink-0" aria-hidden />
                         <span>
-                          {boardShippingCostMode === "free"
-                            ? "Free shipping"
-                            : shippingFlatRate > 0
-                              ? `Flat $${shippingFlatRate.toFixed(2)} shipping`
-                              : "Shipping calculated at checkout"}
+                          Shipping calculated at checkout
                         </span>
                       </p>
                     ) : null}

@@ -50,6 +50,7 @@ const INDEX_SETTINGS = {
         synonyms: [
           "ta, trueames => true, ames",
           "ci => channel, islands",
+          "lost, mayhem",
           "pv => pacific, vibrations",
           "fcs2, fcsii => fcs",
           "tri => thruster",

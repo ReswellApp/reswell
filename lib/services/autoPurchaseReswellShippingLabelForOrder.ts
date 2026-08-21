@@ -24,6 +24,7 @@ import {
 } from "@/lib/services/peerListingShippingQuote"
 import { getCheapestReswellRateForListings } from "@/lib/services/reswellListingShippingRate"
 import { getStripe } from "@/lib/stripe-server"
+import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { isShipEngineConfigured } from "@/lib/shipengine/config"
 import {
   orderShippingJsonToRateQuoteAddress,
@@ -47,7 +48,7 @@ async function orderAlreadyHasPreparedLabel(
 }
 
 /**
- * After a peer surfboard order with Reswell-calculated shipping, purchase the cheapest
+ * After a peer order with Reswell-calculated shipping, purchase the cheapest
  * ShipEngine label, store the PDF in order_shipping_labels, and expose it on the seller sale page.
  *
  * Safe to call multiple times — skips when a label already exists.
@@ -123,7 +124,7 @@ export async function autoPurchaseReswellShippingLabelForOrder(
 
     const listing = Array.isArray(o.listings) ? o.listings[0] : o.listings
     const listingSection = (listing as { section?: string } | null)?.section
-    if (!listing || (listingSection !== "surfboards" && listingSection !== "fins" && listingSection !== "magazines")) return
+    if (!listing || !isPeerListingSection(listingSection)) return
 
     /** Multi-item orders ship as one box — pull every line's listing for the combined parcel. */
     let listingsForQuote: PeerListingForShippingQuote[] = [

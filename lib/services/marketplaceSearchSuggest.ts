@@ -377,36 +377,59 @@ export async function runMarketplaceSearchSuggest(
   // Brand inventory fill only for brand-only queries (e.g. "channel islands").
   // Brand + model keeps relevance results, with catalog/model matches pinned front.
   if (effectiveBrand && parsed.isBrandOnly) {
-    const brandListings = await listActiveListingsForBrand(supabase, effectiveBrand, {
-      limit: MAX_LISTINGS,
-      sections,
-    })
-    if (brandListings.length > 0) {
-      listings = brandListings.map(recentListingToSuggestListing)
-      listingsBackend = "supabase"
-    } else if (parsed.sectionIntent && isElasticsearchConfigured()) {
-      // Co-brand / collaborator: manufacturer brand_id may differ (Futures AM2 × CI).
-      // Section-scoped text search without brand_id hard filter.
+    let filledFromAliasSearch = false
+    if (parsed.expansions.length > 0 && isElasticsearchConfigured()) {
       try {
-        const ids = await searchListingIdsFromElasticsearch(
-          parsed.textQuery || effectiveBrand.name || q,
-          MAX_LISTINGS,
-          {
-            sections,
-            expansions: parsed.expansions,
-            brandId: null,
-          },
-        )
+        const ids = await searchListingIdsFromElasticsearch("", MAX_LISTINGS, {
+          sections,
+          expansions: parsed.expansions,
+          brandId: effectiveBrand.id,
+        })
         const ordered = await hydrateSuggestListingsFromIds(ids)
         if (ordered.length > 0) {
           listings = ordered
           listingsBackend = "elasticsearch"
+          filledFromAliasSearch = true
         }
       } catch (err) {
         console.error(
-          "[searchSuggest] section-scoped brand text fallback failed, keeping prior listings:",
+          "[searchSuggest] brand-alias listing suggest failed, using brand inventory:",
           err,
         )
+      }
+    }
+    if (!filledFromAliasSearch) {
+      const brandListings = await listActiveListingsForBrand(supabase, effectiveBrand, {
+        limit: MAX_LISTINGS,
+        sections,
+      })
+      if (brandListings.length > 0) {
+        listings = brandListings.map(recentListingToSuggestListing)
+        listingsBackend = "supabase"
+      } else if (parsed.sectionIntent && isElasticsearchConfigured()) {
+        // Co-brand / collaborator: manufacturer brand_id may differ (Futures AM2 × CI).
+        // Section-scoped text search without brand_id hard filter.
+        try {
+          const ids = await searchListingIdsFromElasticsearch(
+            parsed.textQuery || effectiveBrand.name || q,
+            MAX_LISTINGS,
+            {
+              sections,
+              expansions: parsed.expansions,
+              brandId: null,
+            },
+          )
+          const ordered = await hydrateSuggestListingsFromIds(ids)
+          if (ordered.length > 0) {
+            listings = ordered
+            listingsBackend = "elasticsearch"
+          }
+        } catch (err) {
+          console.error(
+            "[searchSuggest] section-scoped brand text fallback failed, keeping prior listings:",
+            err,
+          )
+        }
       }
     }
   } else if (parsed.modelIds.length > 0) {

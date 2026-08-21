@@ -3,9 +3,11 @@ import { Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { EndListingButton } from "@/components/end-listing-button"
 import { QuickEditListingPriceDialog } from "@/components/features/listings/quick-edit-listing-price-dialog"
+import { SellerOfferToCartHolders } from "@/components/features/listings/seller-offer-to-cart-holders"
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { listingCanBePermanentlyDeleted } from "@/lib/db/listingDeleteEligibility"
-import { peerListingEditHref } from "@/lib/peer-listing-sections"
+import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
+import { isPeerListingSection, peerListingEditHref } from "@/lib/peer-listing-sections"
 import type { ListingEnrichmentGap } from "@/lib/sell-flow/listing-enrichment"
 
 interface ListingOwnerManageActionsProps {
@@ -31,12 +33,22 @@ export async function ListingOwnerManageActions({
 }: ListingOwnerManageActionsProps) {
   const isDraft = listingStatus === "draft"
   const isDelinquent = listingStatus === "delinquent"
+  const isSold = listingStatus === "sold"
   const editHref = peerListingEditHref(section, listingId)
   const showEnrichment = !isDelinquent && !isDraft && enrichmentGaps.length > 0
-  const { supabase } = await getCachedRequestSession()
-  const canDelete = isDraft
-    ? false
-    : await listingCanBePermanentlyDeleted(supabase, listingId)
+  const { supabase, user } = await getCachedRequestSession()
+  const canOfferToCart =
+    !!user &&
+    isPeerListingSection(section) &&
+    !isDraft &&
+    !isDelinquent &&
+    !isSold &&
+    !hiddenFromSite
+
+  const [canDelete, cartHolderCount] = await Promise.all([
+    isDraft ? Promise.resolve(false) : listingCanBePermanentlyDeleted(supabase, listingId),
+    canOfferToCart ? getListingCartHolderCount(supabase, listingId) : Promise.resolve(0),
+  ])
 
   return (
     <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">
@@ -66,6 +78,14 @@ export async function ListingOwnerManageActions({
               listingId={listingId}
               currentPriceUsd={currentPriceUsd}
               triggerClassName="rounded-full border-border/60 shadow-none"
+            />
+          ) : null}
+          {canOfferToCart && user && cartHolderCount > 0 ? (
+            <SellerOfferToCartHolders
+              listingId={listingId}
+              sellerUserId={user.id}
+              cartHolderCount={cartHolderCount}
+              triggerClassName="border-border/60 shadow-none"
             />
           ) : null}
           {!isDraft ? (

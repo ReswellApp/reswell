@@ -250,6 +250,7 @@ function mapListingShippingAttributes(
   if (!listing.shipping_available) return undefined
 
   const mode = effectiveBoardShippingMode({
+    section: listing.section,
     board_shipping_cost_mode: listing.board_shipping_cost_mode,
     shipping_price: listing.shipping_price,
   })

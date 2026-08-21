@@ -15,6 +15,7 @@ import {
 import {
   filterReswellRatesForPeerSection,
   findPeerCheckoutRateOptionByServiceCode,
+  peerCheckoutSectionRestrictsUspsServices,
   peerCheckoutShippingServiceError,
   type PeerCheckoutShippingRateOption,
   toPeerCheckoutShippingRateOptions,
@@ -280,7 +281,7 @@ function resolveSelectedCheckoutRate(
   const filtered = filterReswellRatesForPeerSection(decorated, section)
   const checkoutRateOptions = toPeerCheckoutShippingRateOptions(filtered, section)
 
-  if (section === "fins" || section === "magazines") {
+  if (peerCheckoutSectionRestrictsUspsServices(section)) {
     if (checkoutRateOptions.length === 0) {
       return { ok: false, error: peerCheckoutShippingServiceError(section) }
     }
@@ -321,14 +322,13 @@ function resolveSelectedCheckoutRate(
 
   const purchasable =
     defaultRow ??
-    (section === "fins" || section === "magazines" ? filtered : decorated).find((row) => row.rate_id != null)
+    (peerCheckoutSectionRestrictsUspsServices(section) ? filtered : decorated).find((row) => row.rate_id != null)
   if (!purchasable?.rate_id) {
     return {
       ok: false,
-      error:
-        section === "fins" || section === "magazines"
-          ? peerCheckoutShippingServiceError(section)
-          : "No carrier returned a label rate for this shipment. Try again or check ShipEngine.",
+      error: peerCheckoutSectionRestrictsUspsServices(section)
+        ? peerCheckoutShippingServiceError(section)
+        : "No carrier returned a label rate for this shipment. Try again or check ShipEngine.",
     }
   }
 

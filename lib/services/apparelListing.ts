@@ -133,10 +133,7 @@ export async function updateApparelListing(
     throw new Error("Sold listings cannot be edited")
   }
 
-  const allowPrivilegedShippingModes = await fetchProfileIsAdmin(supabase, userId)
-  const updateFields = buildApparelListingPersistFields(input, {
-    allowPrivilegedShippingModes,
-  })
+  const updateFields = buildApparelListingPersistFields(input)
   const { data: updated, error: updateError } = await supabase
     .from("listings")
     .update(updateFields)
@@ -176,10 +173,7 @@ export async function createApparelListing(
   await assertApparelSellAllowed(supabase, userId)
 
   const slug = await generateUniqueListingSlug(supabase, input.title)
-  const allowPrivilegedShippingModes = await fetchProfileIsAdmin(supabase, userId)
-  const persistFields = buildApparelListingPersistFields(input, {
-    allowPrivilegedShippingModes,
-  })
+  const persistFields = buildApparelListingPersistFields(input)
   const { updated_at: _omitUpdatedAt, ...insertFields } = persistFields
 
   const { data: inserted, error: listingError } = await supabase

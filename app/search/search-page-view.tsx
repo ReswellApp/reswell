@@ -362,9 +362,11 @@ async function resolveSearchListings(
   const categoryId = category?.id ?? null
 
   // Brand inventory only for brand-only intent (URL brand with no q, or parsed brand-only).
+  // Skip exclusive inventory when synonyms exist (Lost ↔ Mayhem) so alias titles recall too.
   const useBrandInventory =
     Boolean(brand) &&
-    ((!rawQuery.trim() && brandFromUrl) || Boolean(parsed?.isBrandOnly))
+    ((!rawQuery.trim() && brandFromUrl) || Boolean(parsed?.isBrandOnly)) &&
+    (parsed?.expansions.length ?? 0) === 0
 
   if (useBrandInventory && brand) {
     const inventorySections = parsed?.sectionIntent ? [parsed.sectionIntent] : undefined
@@ -387,8 +389,15 @@ async function resolveSearchListings(
 
   const expansions = parsed?.expansions ?? (await expansionsForMarketplaceQuery(rawQuery))
   // Prefer parser text (may be "" for section-only "fins" → all listings in that section).
-  const textQuery =
-    parsed != null ? (parsed.textQuery ?? "").trim() : rawQuery.trim()
+  // Brand-only + aliases: empty keyword so brand_id OR alias text is the recall clause.
+  const widenBrandWithAliases = Boolean(
+    parsed?.isBrandOnly && expansions.length > 0 && (parsed.brand?.id || brand?.id),
+  )
+  const textQuery = widenBrandWithAliases
+    ? ""
+    : parsed != null
+      ? (parsed.textQuery ?? "").trim()
+      : rawQuery.trim()
   const brandModelIds =
     parsed?.modelIds?.length
       ? parsed.modelIds
@@ -530,9 +539,10 @@ async function buildSearchFromSupabase(
   const allRes = await buildSearchQuery(supabase, rawQuery, categoryId, limit)
   let rows = allRes.data ?? []
 
-  // Synonym recovery: when the literal query matches nothing, try each expansion.
-  if (rows.length === 0 && expansions.length > 0) {
-    const merged = new Map<string, any>()
+  // Synonym expansions are OR-added (same as ES) so Lost also retrieves Mayhem, etc.
+  if (expansions.length > 0) {
+    const merged = new Map<string, (typeof rows)[number]>()
+    for (const row of rows) merged.set(row.id, row)
     for (const expansion of expansions) {
       if (merged.size >= limit) break
       const expRes = await buildSearchQuery(supabase, expansion, categoryId, limit)

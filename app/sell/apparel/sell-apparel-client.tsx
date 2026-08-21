@@ -25,8 +25,6 @@ import { SellFormSection } from "@/components/features/sell/sell-form-section"
 import { SellListingPhotoEmptyDropzone } from "@/components/features/sell/sell-listing-photo-empty-dropzone"
 import { SellSimplePhotoTile } from "@/components/features/sell/sell-simple-photo-tile"
 import { useSimpleListingPhotoRotate } from "@/components/features/sell/hooks/use-simple-listing-photo-rotate"
-import { SellShippingCostModeRadios } from "@/components/features/sell/sell-shipping-cost-mode-radios"
-import { normalizeSellShippingCostMode } from "@/lib/sell-shipping-cost-mode"
 import {
   SellListingVideoAddTile,
   SellListingVideoFilledTile,
@@ -131,21 +129,6 @@ function shippingPriceToFormValue(v: unknown): string {
   return Number.isFinite(n) ? String(n) : ""
 }
 
-function apparelShippingModeFromListing(listing: {
-  shipping_available?: boolean | null
-  shipping_price?: number | string | null
-  board_shipping_cost_mode?: string | null
-}): ApparelFormState["shippingMode"] {
-  const stored = listing.board_shipping_cost_mode
-  if (stored === "reswell" || stored === "free" || stored === "flat") return stored
-  if (listing.shipping_available) {
-    const n = Number.parseFloat(String(listing.shipping_price ?? 0).replace(/,/g, ""))
-    if (Number.isFinite(n) && n > 0) return "flat"
-    return "free"
-  }
-  return "reswell"
-}
-
 type ApparelFormState = {
   title: string
   description: string
@@ -214,7 +197,7 @@ function apparelFormFromDraftSnapshot(snapshot: SellListingDraftFormSnapshot): A
       continue
     }
     if (key === "shippingMode") {
-      if (value === "reswell" || value === "free" || value === "flat") next.shippingMode = value
+      next.shippingMode = "reswell"
       continue
     }
     if (typeof value === typeof initial) {
@@ -253,7 +236,6 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
   const [photos, setPhotos] = useState<PhotoSlot[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [editListingOwnerId, setEditListingOwnerId] = useState<string | null>(null)
-  const [actorIsAdmin, setActorIsAdmin] = useState<boolean | null>(null)
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
 
   const sellVideoReturnPath = useCallback(
@@ -371,14 +353,6 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
           shipping_packed_weight_oz?: number | string | null
         },
       )
-      const shippingMode = apparelShippingModeFromListing(
-        listing as {
-          shipping_available?: boolean | null
-          shipping_price?: number | string | null
-          board_shipping_cost_mode?: string | null
-        },
-      )
-
       setForm({
         title: listing.title ?? "",
         description: listing.description ?? "",
@@ -401,7 +375,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
         locationDisplay: [listing.city, listing.state].filter(Boolean).join(", "),
         shippingAvailable: Boolean(listing.shipping_available),
         localPickup: listing.local_pickup !== false,
-        shippingMode,
+        shippingMode: "reswell",
         shippingPrice: shippingPriceToFormValue(listing.shipping_price),
         ...loadedReswellPackage,
         buyerOffers:
@@ -488,36 +462,6 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
   const setField = useCallback(<K extends keyof ApparelFormState>(key: K, value: ApparelFormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
   }, [])
-
-  useEffect(() => {
-    let cancelled = false
-    void (async () => {
-      const supabase = supabaseRef.current
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) {
-        if (!cancelled) setActorIsAdmin(null)
-        return
-      }
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_admin")
-        .eq("id", user.id)
-        .maybeSingle()
-      if (!cancelled) setActorIsAdmin(profile?.is_admin === true)
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  useEffect(() => {
-    if (actorIsAdmin !== false) return
-    if (form.shippingMode !== "free" && form.shippingMode !== "flat") return
-    setField("shippingMode", "reswell")
-  }, [actorIsAdmin, form.shippingMode, setField])
-
 
   const updateSlot = useCallback((clientId: string, patch: Partial<PhotoSlot>) => {
     setPhotos((prev) => prev.map((p) => (p.clientId === clientId ? { ...p, ...patch } : p)))
@@ -698,7 +642,6 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       .eq("id", user.id)
       .maybeSingle()
     const submitActorIsAdmin = actorProfile?.is_admin === true
-    setActorIsAdmin(submitActorIsAdmin)
 
     const publishStartedAt = Date.now()
     logSellFunnelEvent({
@@ -759,7 +702,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       scrollApparelSellSectionIntoView("sell-apparel-section-delivery")
       return
     }
-    if (form.shippingAvailable && normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin) === "reswell") {
+    if (form.shippingAvailable) {
       const L = parseReswellParcelLengthRawToCarrierInches(form.reswellPackageLengthIn)
       const W = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageWidthIn)
       const H = parseReswellParcelWidthHeightRawToCarrierInches(form.reswellPackageHeightIn)
@@ -768,15 +711,6 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
         scrollApparelSellSectionIntoView("sell-apparel-section-reswell-package")
         return
       }
-    }
-    if (
-      form.shippingAvailable &&
-      normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin) === "flat" &&
-      (form.shippingPrice === "" || Number(form.shippingPrice) < 0)
-    ) {
-      failValidation("Enter a flat shipping rate.")
-      scrollApparelSellSectionIntoView("sell-apparel-section-delivery")
-      return
     }
 
     const payload = {
@@ -794,14 +728,8 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       locationLng: form.locationLng ?? undefined,
       shippingAvailable: form.shippingAvailable,
       localPickup: form.localPickup,
-      shippingCostMode: form.shippingAvailable
-        ? normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin)
-        : null,
-      shippingPrice:
-        form.shippingAvailable &&
-        normalizeSellShippingCostMode(form.shippingMode, submitActorIsAdmin) === "flat"
-          ? Number(form.shippingPrice || 0)
-          : null,
+      shippingCostMode: form.shippingAvailable ? ("reswell" as const) : null,
+      shippingPrice: null,
       reswellPackageLengthIn: form.reswellPackageLengthIn,
       reswellPackageWidthIn: form.reswellPackageWidthIn,
       reswellPackageHeightIn: form.reswellPackageHeightIn,
@@ -1338,53 +1266,20 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
                   </div>
 
                   {form.shippingAvailable ? (
-                    <div className="space-y-4 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
+                    <div className="space-y-2 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-6">
                       <h3 className="text-sm font-semibold text-foreground">
-                        Shipping cost in the Continental U.S.{" "}
-                        <span className="text-destructive" aria-hidden>
-                          *
-                        </span>
+                        Reswell shipping
                       </h3>
-                      <SellShippingCostModeRadios
-                        idPrefix="sell-apparel"
-                        value={form.shippingMode}
-                        onChange={(mode) => setField("shippingMode", mode)}
-                        allowPrivilegedModes={actorIsAdmin === true}
-                        flatRateSlot={
-                        <div className="space-y-2 rounded-lg border border-border bg-background p-4 sm:p-5">
-                          <Label htmlFor="apparel-shipping-price" className="text-sm font-semibold text-foreground">
-                            Shipping rate{" "}
-                            <span className="text-destructive" aria-hidden>
-                              *
-                            </span>
-                          </Label>
-                          <div className="relative max-w-md">
-                            <span
-                              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm tabular-nums text-muted-foreground"
-                              aria-hidden
-                            >
-                              $
-                            </span>
-                            <Input
-                              id="apparel-shipping-price"
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              placeholder="0.00"
-                              value={form.shippingPrice}
-                              onChange={(e) => setField("shippingPrice", e.target.value)}
-                              className="h-11 border-foreground/20 bg-card pl-8 tabular-nums shadow-sm placeholder:text-muted-foreground"
-                            />
-                          </div>
-                        </div>
-                        }
-                      />
+                      <p className="text-sm leading-relaxed text-muted-foreground">
+                        Buyers pay a live USPS rate at checkout. Reswell buys the label and adds
+                        tracking to your sale automatically.
+                      </p>
                     </div>
                   ) : null}
                 </div>
               </SellFormSection>
 
-              {form.shippingAvailable && form.shippingMode === "reswell" ? (
+              {form.shippingAvailable ? (
                 <SellFormSection
                   sectionId="sell-apparel-section-reswell-package"
                   title="Reswell shipping: packed size & weight"

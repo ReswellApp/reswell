@@ -12,6 +12,13 @@
 
 export const APPAREL_SECTION = "apparel" as const
 
+/** Apparel never uses seller flat/free rates — live ShipEngine quote + auto-bought label. */
+export function listingAlwaysUsesReswellShipping(
+  section: string | null | undefined,
+): boolean {
+  return section === APPAREL_SECTION
+}
+
 /**
  * Soft-launch gate: only marketplace admins (`profiles.is_admin`) may open
  * `/sell/apparel` or create/update apparel listings. `/apparel` browse stays public.

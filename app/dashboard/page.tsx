@@ -523,7 +523,7 @@ export default async function DashboardPage() {
           <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
             <CardTitle className="text-lg">Drafts</CardTitle>
             <Button variant="ghost" size="sm" asChild>
-              <Link href="/dashboard/listings">
+              <Link href="/dashboard/listings?status=draft">
                 View All
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Link>

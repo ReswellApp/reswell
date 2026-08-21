@@ -4,6 +4,7 @@ import { DashboardOffersView } from "@/components/features/offers/dashboard-offe
 import { parseOffersTab } from "@/lib/utils/offers-dashboard-display"
 import { getCachedDashboardSession } from "@/lib/dashboard-session"
 import { fetchDashboardOffersPartitioned } from "@/lib/db/offers-dashboard"
+import { fetchMyListingCartOfferProspects } from "@/lib/db/my-listings"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import type { DashboardOfferRow } from "@/lib/types/offers-dashboard"
 
@@ -36,8 +37,11 @@ export default async function DashboardOffersPage({
     redirect("/auth/login?redirect=/dashboard/offers")
   }
 
-  const { sent, received, sellersById, buyersById, fetchError } =
-    await fetchDashboardOffersPartitioned(supabase, user.id)
+  const [{ sent, received, sellersById, buyersById, fetchError }, cartOfferProspects] =
+    await Promise.all([
+      fetchDashboardOffersPartitioned(supabase, user.id),
+      fetchMyListingCartOfferProspects(supabase, user.id),
+    ])
 
   const offers = mergeOffers(sent, received)
 
@@ -85,6 +89,7 @@ export default async function DashboardOffersPage({
         sellersById={sellersById}
         buyersById={buyersById}
         minPctByListingId={minPctByListingId}
+        cartOfferProspects={cartOfferProspects}
       />
     </div>
   )

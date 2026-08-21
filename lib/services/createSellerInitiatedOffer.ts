@@ -55,9 +55,6 @@ function validateListingForSellerOffer(
   if (listing.status !== "active" && listing.status !== "pending_sale") {
     return { ok: false, error: "One or more listings are not accepting offers." }
   }
-  if (listing.buyer_offers_enabled === false) {
-    return { ok: false, error: "You are not accepting offers on one or more items." }
-  }
 
   const listPrice = roundMoney(parseFloat(String(listing.price)))
   if (!Number.isFinite(listPrice) || listPrice <= 0) {

@@ -25,6 +25,10 @@ import {
   residualMarketplaceQueryAfterBrand,
   stripMarketplaceSearchNoiseWords,
 } from "@/lib/utils/marketplace-brand-query"
+import {
+  brandNamesAreSearchSynonyms,
+  brandTextAliasesForSearch,
+} from "@/lib/utils/marketplace-brand-synonyms"
 import { matchModelFromTitle } from "@/lib/utils/listing-brand-model-match"
 
 export type MarketplaceParsedBrand = {
@@ -190,13 +194,14 @@ function isNoiseOnlyModelQuery(modelQuery: string): boolean {
 }
 
 /**
- * Brand/model labels for Applied chips / hard filters must appear in the typed query.
- * Blocks synonym-only and fuzzy catalog accidents from the banner.
+ * Brand/model labels for Applied chips / hard filters must appear in the typed query
+ * (or be a built-in brand alias such as Mayhem → Lost). Blocks fuzzy catalog accidents.
  */
 export function catalogLabelGroundedInQuery(query: string, label: string | null | undefined): boolean {
   const q = (query || "").trim().toLowerCase()
   const name = (label || "").trim().toLowerCase()
   if (!q || !name) return false
+  if (brandNamesAreSearchSynonyms(q, name)) return true
   if (q.includes(name)) return true
   if (name.includes(q) && q.length >= 5 && !isNoiseOnlyModelQuery(q)) return true
   const nameTokens =
@@ -240,6 +245,7 @@ function brandMatchIsGrounded(
 ): boolean {
   const brandOnly = isBrandOnlyMarketplaceSuggestQuery(query, brandName)
   if (brandOnly) return true
+  if (brandNamesAreSearchSynonyms(query, brandName)) return true
   if (query.toLowerCase().includes(brandName.toLowerCase())) return true
   const residual = residualMarketplaceQueryAfterBrand(query, brandName)
   if (residual.length < query.trim().length) return true
@@ -248,6 +254,21 @@ function brandMatchIsGrounded(
     const el = e.toLowerCase()
     return el === brandLower || brandLower.includes(el) || el.includes(brandLower)
   })
+}
+
+function residualAfterBrandAndAliases(
+  query: string,
+  brandName: string,
+  expansions: string[],
+): string {
+  let residual = residualMarketplaceQueryAfterBrand(query, brandName)
+  for (const alias of brandTextAliasesForSearch(brandName)) {
+    residual = residualMarketplaceQueryAfterBrand(residual, alias)
+  }
+  for (const expansion of expansions) {
+    residual = residualMarketplaceQueryAfterBrand(residual, expansion)
+  }
+  return residual
 }
 
 async function resolveBrandForParse(
@@ -427,7 +448,7 @@ export async function parseMarketplaceQuery(
   // catalog models whose names include the brand (e.g. "Channel Islands (AMK) Keels…").
   const residualAfterBrand = brand
     ? stripMarketplaceSearchNoiseWords(
-        residualMarketplaceQueryAfterBrand(withoutLength, brand.name),
+        residualAfterBrandAndAliases(withoutLength, brand.name, expansions),
       )
     : ""
 
@@ -470,7 +491,7 @@ export async function parseMarketplaceQuery(
 
   let residual = withoutLength
   if (resolvedBrand) {
-    residual = residualMarketplaceQueryAfterBrand(residual, resolvedBrand.name)
+    residual = residualAfterBrandAndAliases(residual, resolvedBrand.name, expansions)
   }
   if (model) {
     residual = stripPhraseFromQuery(residual, model.name)

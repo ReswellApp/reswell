@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { boardLengthLabelFromDimensionsColumn } from "@/lib/listing-dimensions-storage"
+import { brandTextAliasesForSearch } from "@/lib/utils/marketplace-brand-synonyms"
 import { fetchRecentlySoldListingsConfirmedCheckoutOrdering } from "@/lib/db/home-recently-sold-strip"
 import { isPeerListingSection, PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 import { isListingVisibleInPublicSoldFeed } from "@/lib/listing-public-visibility"
@@ -139,6 +140,9 @@ export async function listActiveListingsForBrand(
 ): Promise<RecentListing[]> {
   const { limit, categoryId = null, sections } = options
   const namePattern = `"%${escapeForOrFilter(brand.name)}%"`
+  const aliasClauses = brandTextAliasesForSearch(brand.name)
+    .filter((alias) => alias.length >= 4)
+    .map((alias) => `brand.ilike."%${escapeForOrFilter(alias)}%"`)
 
   let q = supabase
     .from("listings")
@@ -155,7 +159,9 @@ export async function listActiveListingsForBrand(
     q = q.in("section", PEER_LISTING_SECTIONS_FILTER)
   }
 
-  q = q.or(`brand_id.eq.${brand.id},brand.ilike.${namePattern}`)
+  q = q.or(
+    [`brand_id.eq.${brand.id}`, `brand.ilike.${namePattern}`, ...aliasClauses].join(","),
+  )
   q = q.order("created_at", { ascending: false }).limit(limit)
 
   const { data, error } = await q

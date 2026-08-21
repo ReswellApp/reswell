@@ -439,6 +439,11 @@ export async function LeashesListingDetailPage({
               views={listingViews}
               watchers={listingWatchersCount}
               cartHolderCount={cartHolderCount}
+              offerToCart={
+                isOwnListing && user
+                  ? { listingId: leash.id, sellerUserId: user.id }
+                  : null
+              }
               createdAt={leash.created_at}
               showPurchaseProtection={!isSold && !isOwnListing}
               agreedPriceUsd={buyerAgreedPriceUsd}
@@ -560,6 +565,11 @@ export async function LeashesListingDetailPage({
                     watchers={listingWatchersCount}
                     cartHolderCount={cartHolderCount}
                     isSold={isSold}
+                    offerToCart={
+                      isOwnListing && user
+                        ? { listingId: leash.id, sellerUserId: user.id }
+                        : null
+                    }
                     className="max-lg:hidden"
                   />
                 ) : null}

@@ -439,6 +439,11 @@ export async function SurfpacksListingDetailPage({
               views={listingViews}
               watchers={listingWatchersCount}
               cartHolderCount={cartHolderCount}
+              offerToCart={
+                isOwnListing && user
+                  ? { listingId: surfpack.id, sellerUserId: user.id }
+                  : null
+              }
               createdAt={surfpack.created_at}
               showPurchaseProtection={!isSold && !isOwnListing}
               agreedPriceUsd={buyerAgreedPriceUsd}
@@ -560,6 +565,11 @@ export async function SurfpacksListingDetailPage({
                     watchers={listingWatchersCount}
                     cartHolderCount={cartHolderCount}
                     isSold={isSold}
+                    offerToCart={
+                      isOwnListing && user
+                        ? { listingId: surfpack.id, sellerUserId: user.id }
+                        : null
+                    }
                     className="max-lg:hidden"
                   />
                 ) : null}
