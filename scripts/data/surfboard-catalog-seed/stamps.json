@@ -1,0 +1,423 @@
+{
+  "generated_for": "Stamps Surfboards official model catalog",
+  "source": "https://www.surfboardsbystamps.com/surfboards",
+  "sources": [
+    "https://www.surfboardsbystamps.com/hp2-copy",
+    "https://www.surfboardsbystamps.com/fishy-copy",
+    "https://www.surfboardsbystamps.com/groovy-n-eggy-copy",
+    "https://www.surfboardsbystamps.com/next-steps-guns",
+    "https://www.surfboardsbystamps.com/e-series-copy",
+    "https://www.surfboardsbystamps.com/longboards-long-and-loggy",
+    "https://www.surfboardsbystamps.com/longboards-contemporary"
+  ],
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "stamps",
+      "name": "Stamps",
+      "website_url": "https://www.surfboardsbystamps.com/",
+      "location_label": "Seal Beach, California",
+      "founder_name": "Tim Stamps",
+      "lead_shaper_name": "Tim Stamps",
+      "short_description": "Custom handcrafted surfboards by Tim Stamps — performance shortboards, fish, mid-lengths, longboards, and guns.",
+      "models": [
+        {
+          "name": "Apex-Pro",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1723910528631-ZBI2DQ39UAUVHVW0OFCQ/apex+pro+copy.jpg",
+          "description": "A high performance shortboard. Continually refined with state of the art surfing in mind. This design has a fairly high continuous rocker line nose to tail with an accelerated curve off the tail. Single concave with double through the fins. Fast, loose, and responsive.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "BSAR",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1723132281709-9BFP1N4VZYWVYWGDE4W0/BSAR24.jpg",
+          "description": "The BSAR is Simpo's 'go to' daily all-arounder high performance design. We've been working on this one and constantly making subtle adjustments. Moderate nose and tail rocker with a nice speed platform in the engine room. A bit of accelerated rocker off the tail. Thicker at the stringer through the center and up under the chest, with a nice refined rail taper. Slight 'vee' deck to remove some foam and add sensitivity. Fuller outline in the nose and tail for a balanced feel. A 'pro' board, just about anyone can ride!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "WarHawk",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1722710525023-E0UAAXHAPDIYC5TRCJOK/warhawk.jpg",
+          "description": "An 'everyday' high performance shortboard! The roots of this board stared with the ScareCrow model. It has a similar versatile, moderate rocker line with a slight accelerated curve off the tail for release and a bit more lift in the nose. The outline is slightly wider through the center with a fuller nose and wider tail and tail block. The foil is a bit fuller forward. I've also added a bit of concave between the feet. These characteristics add up to an all around everyday forgiving performance shape. This is fast becoming one of our most popular shortboard shapes/designs. This board translates well in to the 'next step' shape as well. Add a couple inches when the conditions call for it.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "ScareCrow",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1722721763789-196VD9MTL8MA34NP244R/scarecrow.jpg",
+          "description": "An 'everyday' shortboard! It has a versatile, moderate rocker line with a slight accelerated curve off the tail for release. The outline is slightly wider through the center with a fuller nose and wider tail and tail block. These characteristics add up to an all around everyday forgiving performance shape. This is one of our most popular shortboard shapes/designs.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Grinder-X",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1722721673450-Q6IW0JISHXD0KWYS7WLU/grinder_x.jpg",
+          "description": "Based off the DNA of the original Grinder model. Moderate rocker in the nose and tail. Single concave runs through the center, flattening out at the tail. Double concaves are inset in the single concave through the fin area. The overall width has been widened up about 1/4\" and the nose pushed out about 1/2\" at stock sizes. This board is ridden in everyday conditions by some of the world's best surfers.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "BlindSpot",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1722721406148-2Q8MU0R1U9Y97FG2APFJ/blindspot.jpg",
+          "description": "The Blindspot is a blend of the GrinderX with the Scarecrow. A hybrid of the two for a more versatile, user friendly design for when the waves get a little better and bigger. Compared to the GrinderX, it's a bit more refined in the outline, at the same length it's a little narrower in the center with a slightly pulled in nose and tail. i also added a bit of rocker, but it's still in the lower to moderate range. an easy board to transition from FX, GrinderX, and similar models when the waves pick up, or as an everyday versatile shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Habanero",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1722721494245-HXNAZUNTZL2WJQ65V3HN/habanero.jpg",
+          "description": "The Habanero was spawned from the Grinder series. I originally made some adjustments that blended the Grinder and the GrinderX to get a small wave contest board for Brett and Courtney. They need a board that would handle the flat sections, but still go vertical on demand. I call the Habaner an 'active' grovellor. It has surface area where you need it where you're standing to keep on top of the water if you're moving it. Lower tail rocker with a bit of 'vee' . The nose rocker is fairly high to keep it nice and free in the steeper sections. The outline has a wider over all template with a moderate nose and tail width, with a slightly pulled in tail block.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Grinder",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1722721614883-JT4I6E1759IGUP8K28IV/grinder.jpg",
+          "description": "An overall lower rocker and a wider outline characterizes this model. Great for everyday conditions, yet works when it gets good as well. The outline is based on some of the very functional curves of the 80's with a fuller template and 'hip' to break up the outline for looseness. All the modern conveniences of contemporary rocker, foil, and contours. One of the most versatile, user friendly shortboard designs.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Flare",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709358384702-KISU2JSS5120T4HQP047/flare.jpg",
+          "description": "Another of the full plan shape, high performance designs. A moderate and continuous rocker with plenty of contours. Single concave runs nose to tail with a double concave through your feet. The curvy outline keeps the arcs of this board tight. A great all around, versatile board for most skill levels and wave conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "WMD",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709504172187-X6C9W3WJHMTI0HXGN6G5/wmd.jpg",
+          "description": "Following suit with our other 'shorter and wider' models, this is a high performance driven board for all around, mediocre conditions. Lower rocker, single with double concave, and a slight vee off the tail are the contours on this one. Lots of tail area make this a fast and loose board and the proportionally pulled nose keep it free and the arcs tight.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Giggle Box",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709358386030-K2AT2ZEMSE2JH91JTF0M/giggle-box.jpg",
+          "description": "The Giggle Box is a blend of 80's and 90's concepts with the refinements of today. It has a flatter deck with angular rails to keep the rail line foiled out. Lower rocker with softer contours and concaves with a touch of vee off the tail. Slight 'beak' nose. A fuller volume board that feels quick and nimble. The name for this one came from one of the first ones I made and gave to a friend to ride...he said from the first few waves he was just 'giggling' with how fast he was going and the turns he could do so easily! ... the 'Box' comes from the flatter deck....hence, the 'GiggleBox\" was born!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Shadow",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709503679346-C5GVVV5O8SXBAMLLXDVF/shadow.jpg",
+          "description": "A high performance smaller wave design with a lower rocker line with a wider, more balanced outline. Bottom contours are a single concave running into a slight vee off the tail. The fin area features an inset blended double concave. The wing in the outline reduces tail area behind the back foot as well as creating a 'breaking point' in the outline for release and pivot.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Spearfish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709358389697-XGTK279I7FCREHTJJYNW/spearfish.jpg",
+          "description": "The SpearFish takes outline cues from the theory applied to the Banjo Fish. Its origins start from the ever popular GrinderX model. The most dramatic part of this board is the outline. From the widepoint to the hip, is a very straightened out curve. After the hip point the tail has an accentuated curve into the tail block. This straightens out the outline and reduces surface area between the feet and adds curve behind the rear foot. This makes for a responsive rail to rail transitions and a shorter turning radius with the narrowed up tail block. The nose outline is slightly fuller to compensate for the area lost in the tail section. To reduce pressure and add some speed and bite i've added a short channel that runs off the tail from about 7\" up. It has a similar moderate rocker and single concave running through with a double concave inster between the fins as the GrinderX, but I added a bit of vee off the tail to add a bit of rail rocker.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Rerun",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709358387737-AP9C15D4QNPWJSYEXNMZ/rerun.jpg",
+          "description": "The ReRun is a mash up of design elements from my GrinderX and the GiggleBox. It has the moderate rocker line of the GrinderX with a touch of vee added off the tail as well as a slightly wider nose. The deck profile has cues taken from the GiggleBox, but not as dramatic. The deck isn't as flat and the roll off the rail shoulder is more blended. The foil is thickened up under the chest area and up through the nose. The tail is quite refined from the fin area out the tail block. I also kept the blended beak nose off the front end. This one has lots of 'hidden' volume for extra paddleability while retaining a quick and sensitive ride. a volume defying design... Typical Size Range: 5'4\" - 6'4\"",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Vulture",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709358389948-YXBOGJ3YR66N8S3CY3K9/vulture.jpg",
+          "description": "Generally geared toward smaller, slower surf. It has a lower continuous rocker from nose to tail. The bottom contours are a slight single concave through the center and fin area to a subtle vee off the tail block, with double barrel concaves through the fin area. The outline proportion is pretty full through the nose and the tail area has a double bump in the fin area leading into a soft diamond squash. The tail features and bottom contours help to keep this board very fast and responsive for the suited conditions. Best recommended for intermediate surfers for all around conditions to advanced surfers for less than optimum conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Blender",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1722779994391-XD814T7F6XOJBSAOLWBO/thunderbucket.jpg",
+          "description": "I introduce, 'the Blender', as it's a Flare base, with a blend of GrinderX elements :: compared to the baseline Flare, it has more nose and tail rocker, slightly narrower at 'stock' specs, and a slightly pulled in nose, with other subtle elements :: pretty much a blend of two boards that will kill your daily driver quiver ::.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "WarLow",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1752352823964-PI18AIQTXYK5JB3E6JVP/warlow+copy+2.jpg",
+          "description": "The 'everyday' high performance shortboard just got more versatile! The roots of this board stared with the WarHawk model. It has a similar versatile, moderate rocker line with slightly less tail rocker and accelerated curve out the tail with the same lift in the nose. I've also added a bit of concave just in front of the leading fins to straighten out the stringer line a bit. These characteristics add up to an all around everyday forgiving performance shape with that extra drive and speed off the tail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Twin Keel Fish (TKF)",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709316094868-V094MI4XS57NT699NG8I/twin-keel-fish.jpg",
+          "description": "A modern take on a classic design. A full template, full volume twin keel fish. Very fast down the line and drawing a nice line are what this board is all about. Low rocker for rocket like speed. Features include a flatter deck and lower angular rails, flat entry, slight concave through the center, vee out the tail, with double concaves through the fin area.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Quantum Quad",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709316093911-J57OA50KKE9DDIMQD21T/quantum-quad.jpg",
+          "description": "We took the classic Twin Keel design theory and revved it up to get a more performance driven fish shape. Added some nose rocker, pulled the nose in, thinned out the rails, and added a quad fin set up. Slight concave through the center with subtle double concaves running through the fins, and a vee out the back. This all adds up to a super fast, very positive board. Super fun in all conditions.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Banjo Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709316088877-XPZJ3VMPCQ717AGKZ0OB/banjo.jpg",
+          "description": "The Banjo Fish is the next generation spawn from the Twin Keel Fish. I've kept the same rocker and foil flow, but changed up the outline and the contours slightly. I pulled the outline from the wide point to about 8\" from the tail to to a much straighter line. This gives a straighter line between the feet when engaged on the rail and also reduces surface area to get it on rail easier. From the 8\" mark to the tail block I added curve with a reduced tail block width. This gives added response with an increased curve and reduced area behind the foot and fin. I've also reduced the nose width to allow the board to go up the face easier and work in unison with the reduced tail block width. The adjustment on contours was just a slight increase of the double concave through the fin area. The deck has the same flatter profile with a more angular responsive rail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Indo Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709316092817-MNI2IWV7OT089SKA1J6K/indo-fish.jpg",
+          "description": "This design came about when thinking of a fish that would work well in the waves of an Indonesian boat trip (or any good waves around the planet). We kept the lines of the fish and changed up the details. Added some more nose rocker and narrowed up the whole outline. This is a good wave fish. Reef, beach break, or point break. Typical dimension: Materials: Polyurethane/Polyester(PU/PE), EPS/Epoxy.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fritter",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1711822682673-YNJMDIS1ZABB8337PK38/fritter.jpg",
+          "description": "Lower rocker line and fuller in the front half makes for a good paddler and wave entry. Lots to push off of in the front with a tighter rounded pin that fits well in the pocket and steeper sections.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Banana Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709316088990-XB3G6SMTYNBHKIU5Y0BX/banana-fish.jpg",
+          "description": "The Banana Fish is a mash up of the \"Quantum Quad\" and the \"Flare\" with a bunch of blend along the way. I started with the Quantum Quad DNA and blended in the rocker of the Flare. I adjusted the rocker a bit, added some concave through the center, softened the vee at the fins and added in a touch more double concave. The outline was narrowed up through the center a bit, and the nose, tail and tail block were pulled in a bit as well. The Banana Fish has more rocker allowing it to fit in the curve of the face easier, and draw a tighter line without sacrifice in speed and glide. Ride this one an inch or two longer than the Quantum Quad and an inch or so shorter than the Flare. As all shapes and designs, there are no 'set' rules on what to ride and what feels 'right' to you.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Rustler",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709316094634-VD43LPIPP6BCAUDCLGXE/rustler.jpg",
+          "description": "The Rustler is based on the fish/hybrid DNA, but with a more refined outline and progressive rocker line. It has more nose and tail rocker compared to both the TKF and Quantum Quad. The outline is narrower through the wide point as well as a proportionately narrower nose and a double bump swallow tail to pull out some surface area, as well as 'adding' curve to make it more responsive off the tail. The deck profile is flatter with a more tapered angular rail. This model falls somewhere between the shortboard and fish. It just might be the one board quiver you can always ride; if you like shortboards and fish designs. Makes a perfect travel board when space is limited, as it will handle just about all conditions. Fast, Loose, Progressive, and Fishy!",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Decibel",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709316090855-M2Q63HAZEVAY6GXQSVTO/decible.jpg",
+          "description": "A refined high performance version spawned from the ever popular Quantum Fish. The Decibel turns up the performance level of the 'fish' shape. A more refined nose foil with a touch more rocker of the tip, enhanced bottom contours, and most notable the double bump diamond swallow tail. The tail shape really loosens this one up off the tail for more progressive surfing in tighter places on the wave face. Bottom contours are a blended single concave in through the center, with a double between the fins, and a slight vee off the tail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Bento Box",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709316089817-77IUUP77GU9FRF0SSZIF/bento-box.jpg",
+          "description": "The Bento Box was designed during a trip to Japan that had some pretty small, but fun waves. As we traveled up, and down the coast, I kept thinking about a sleeker WTF type of shape, with lots of paddle and glide; with a refined rail to keep it really responsive off the tail. Featuring elements from the WTF and the Twin Keel Fish (TKF) models, with features that make it its own creature. A blend of the outline and rocker line of the WTF, with the deck profile of the TKF is where the model started. It has a low 'fish' type rocker, with a flatter deck profile and lower angular rails. The rail tapers out through the fin area and out through the tail block for a responsive tail section that is easy to set on edge. Flat under the nose, running into a slight single concave through the center with vee out the tail. Set in the fin area is a slight double concave. The foil is fuller through nose and center, blending into a thinner tail section. Out the tail is a short 'slot channel' to give a little relief with the lower rocker and add some extra bite with the quad set up. The outline is full with a blunt rounded nose and a wing (right about where the back foot should be during a turn) squash tail to loosen it up, reduce surface area, and give a 'pivot' point.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Quantum Quad (Long Division)",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709316093036-3DXBS1V5ZD6RGI67KK2F/long-division-quantum.jpg",
+          "description": "LONG division The Quantum Quad: LongDivision takes the same design elements as the 'standard' Quantum fish design with added length. With the added length, the nose, tail, and tip of the tail will decrease in width a bit in order to keep a nice curve in the outline. I recommend taking the width and thickness of the 'standard' length fish you'd ride and add as much or as little length as you'd like. The added length will give that 'fishy' squirt we all love, as well as drawing out smoother longer lines. For reference, I added about 12\" of length to what I normally ride for a Quantum Quad or other fishy shape.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "WTF",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709316095631-0C3FU37JQRD1EV7CERPJ/wtf.jpg",
+          "description": "SHORT and WIDE....this is a 'fish' type shape taken to the extreme. In a nutshell, I took my twin keel fish foil and contours and pushed the outline WAY out and dropped the rocker a bit. This shape has paddle, glide, and speed to burn. Quite a bit of tail to command, but the rewards are great. Perfect for a junky beach break, or a lined up point....WTF (wide tailed fish) or the not so PC, WTF!? Materials: Polyurethane/Polyester(PU/PE), EPS/Epoxy, Pu/Epoxy Sizing: Ride approximately 8\" under you height, or add some length for extra glide!",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Spark Plug",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1712282680063-FDH68TX0NSQ56LXW5KEO/spark+plug+-+twin+fin.jpeg",
+          "description": "The Spark Plug is my latest refinement in a 'modern' performance twin fin. Moderate nose lift with a lower tail rocker and a bit of vee off the tail. Slight concave through the center with a bit of double concave in the fin area. Fins are set back a bit to give more speed, hold, and control. The rail is tapered out in the fin area allowing the rail to knife in the face. Outline has a nice nose area for paddling and planing, and between the feet the curve is straightened out for more speed and hold.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Spark Plug Retro",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1712282692015-89EQX4S94N21IJJJGSY6/spark+plug+retro+-+twin+fin.jpeg",
+          "description": "The Spark Plug Retro is my latest refinement in a 'modern' performance twin fin with the added foam of the days gone by. The 'Retro' version of the Spark Plug has a fuller, balanced thickness foil through the nose and tail, a 'flatter deck profile with a dropped angular rail, and a touch fuller nose outline. The thickness flow and deck contour 'hides' a bit more foam for easy paddle and great flow. Moderate nose lift and a lower tail rocker with a bit of vee off the tail. Slight concave through the center with a bit of double concave in the fin area. Fins are set back a bit to give more speed, hold, and control. The rail is tapered out in the fin area allowing the rail to knife in the face. Outline has a nice nose area for paddling and planing, and between the feet the curve is straightened out for more speed and hold.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Can Opener",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1712282766020-X9CFIMVMHK7CAAZECVUW/can-opener.jpg",
+          "description": "The Can Opener is a descendent of the TKF model as it's base DNA. I took the base design of the TKF and added a bit of rocker in the nose, narrowed up the nose a bit, pulled the tail in from the widepoint, and added a wing swallow to further reduce the surface area and outline in the tail. I thinned out the rail profile in the fin area for more responsiveness and 'bite' in the face. The deck profile is similar to that of the TKF with the flatter cross section and a lower angular rail. Set up with upright twin fins.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Sultwinn",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1712282781616-8P9XD07TM37NHAPPUB8Z/SULTWINN.jpg",
+          "description": "The Sultwinn is the latest 'evolution' around the world in the twin fin designs. My version of this shape has a lower, easy glide rocker line, flowing, round pin, and curvy outline, with a balanced thickness foil. Bottom contours are a slightly rolled nose, subtle concave through the center, vee out the tail with a double concave inset through the fin area. Don't let the center thickness fool you...The rails are pretty foiled and sleek through the center, continuing out the tail. The longer arc in the rail line and the tighter tail allows this twin fin a refined hold and reliability not found in the wider tailed twin fin designs. I suggest riding this one a bit longer than your standard board, to quite a bit longer, for drawing a nice line and supreme flow. i can do this model with a 'flat' bottom or a 4-channel out the tail option for added grip and hold. Twin Fin or Twin Trailer.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Kai Zen",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1722709588730-B4KOWSKR1G1ZXUJC7L4T/kaizen%2Bweb%2B24.png",
+          "description": "An all around modern twin fin design. The basis of this board is the Flare model. Outline was slightly widened throughout, the tail rocker was dropped a bit, and rail shape was firmed up on the bottom. Fins are set toward the tail to keep the board feeling positive, while keeping the twin fin speed and skate. Super fast, loose, positive, and fun. Very addicting...this one started out as a board I built for a friend, then his friend, then their friends..and so on!",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fuse",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1722722142985-EA4U0INLYVHT0YPP0FW6/fuse-2.jpg",
+          "description": "This model is a blend of the Quantum fish and the Flare. The foil and the template in the front half are of the Quantum and the tail is that of the Flare. Of course, there's a few tweaks along the way. The nose is slightly pulled in, a bit of nose lift added, and the contours were enhanced a bit as well. With the speed of a fish off the front and the arc of a shortboard off the tail. Gas pedal up front, shred pedal off the tail!",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "FX",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1722722306663-RC3EBQ26IF7E7HVUX7D3/fx.jpg",
+          "description": "Born of our Quantum Quad fish design. We took the the Quantum as the basis for this new model and changed it up a bit to add some 'new' spice and flare. Design enhancements include an updated foil, outline, and contours. The 'beak' nose was taken out of the design for a more foiled nose with less 'swing weight'. The nose was slightly narrowed up and the tail shape was changed from a deep swallow to a slight hip squash, keeping more surface area in the tail and making it possible to really get back on the tail for critical maneuvers. A touch more vee and double concaves were also added in the tail area. This board is best suited for smaller, flatter waves at beach breaks and on point breaks, buts the limits can be pushed by more advanced surfers.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "TKF LongLine",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1722722827266-NSKI6E2N2AM0SCD184CG/tkf+ll+copy.jpg",
+          "description": "LONG LINE The (TKF) Long Line takes the design elements of the 'standard' TKF fish design, but with the added length for that high line trim speed. With the added length the nose, tail, and tip of the tail will decrease in width a bit in order to keep a nice curve in the outline. On these, I recommend taking the width and thickness of the 'standard' length fish you'd ride, and add as much or as little length as you'd like. The added length will give that 'fishy' speed we all love and then some as well as drawing out smoother, longer lines. For reference, I added about 12\"of length compared to my standard TKF.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Bottle Rocket",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1740349486207-U44VI8WINCE032ZP7ICJ/bottle+rocket.jpg",
+          "description": "The Bottle-Rocket is my latest refinement in a 'modern' performance twin-trailer. Moderate nose lift with a lower tail rocker and a bit of vee off the tail. Slight concave through the center with a bit of double concave in the fin area. Fins are set back a bit to give more speed, hold, and control, and the trailer fin is pushed up a bit for looseness. The rail is tapered out in the fin area allowing the rail to knife in the face. Outline has a nice nose area for paddling and planing, and between the feet the curve is straightened out for more speed and hold. Compared to the SparkPlugRetro, i pushed the wing up a bit to compliment the more forward front fin placement.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Anza Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1740347013854-QOHYVIUK7XI57ZM6JT6Z/anza+twin+500+978+copy.jpg",
+          "description": "The ANZA Twin came about after riding and refining several versions of my Sultwinn design. Starting with the Sultwinn design, I gave it several tweaks and changes to get what i was after in a new and fresh ride. I pulled in the nose outline similar in proportion to my Flare/KaiZen models, added a touch of nose lift, and pushed out the the tail to a nice pulled in swallow tail, but kept a lot of that nice curve in the tail outline. Also, a bit of added vee off the tail for an easier rail to rail transition off the tail, as well as a touch more single concave through the center to give more 'grip' and 'push back' and curve in the rail line. The fins are also set back a bit to add more resistance and control with the added surface area and straighter rail line in the tail. This all adds up to a design that has a bit more 'performance' and crisper feel off the tail, while remaining a super flowy board.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "FX+C",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1752355127019-ZEMC7WKP3E6HKEOGKMTB/fxplus+copy+jpg.jpg",
+          "description": "Born of our fX fish design. We took the the fX as the basis for this new model and changed it up a bit to add some 'new' spice and flare. Design enhancements include an updated foil, outline, and contours. The slight 'beak' nose was taken out of the design for a more foiled nose with less 'swing weight', and that 'shortboard' look. The nose was narrowed up and the tail shape was changed to a slight hip squash, keeping more surface area in the tail and making it possible to really get back on the tail for critical maneuvers. A touch more vee and double concaves were also added in the tail area as well as a super thinned out rail from the front fins out the tail. here's come of the back story.... | f/X+C ::.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Over Easy",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709359817876-D6P5C1VLA30OLIQ3XXJC/OVER-EASY.jpg",
+          "description": "This is our popular and versatile egg shape. A good transitional board from a longboard heading to a shorter board. Also a great all around shape/design for the beginner as well the advanced surfer. Ride this one short if you want to get aggressive or add some length if you want to have more cruise and glide. Typical Dimensions and Size Range:.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Spegg",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709359819350-HJKVMWC2KN9QR6ULKQ7Q/SPEGG.jpg",
+          "description": "The SPEGG is our speed-egg shape. I started with the OverEasy as the DNA for this model and adjusted the design to get an egg shape that has more maneuverability and can handle a steeper, faster wave face. The nose and tail width were narrowed up, the wide point pulled back, more nose rocker was added, and a subtle massage of the bottom contours and rail foil. This is a progressive egg shape for a wide variety of waves and surfing styles. Typical Dimensions and Size Range:.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Roswell",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709359818883-RY6Y8HV8MCJCZ238XUHO/ROSWELL.jpg",
+          "description": "The Roswell is a blend of the DNA from the OverEasy and Spegg, with influences from my 'shortboard' designs. The width and thickness are similar to the OverEasy/Spegg designs but the rails are quite foiled to follow suit along the lines of a more 'refined' shortboard shape. I increased the nose and tail rocker and added a slight concave through the bottom. The nose has a slight roll, and the tail has a vee running out the tip with a double concave in the fin area. The outline has a more pulled in nose as well. This board can be ridden with the flow and glide of the other midlength shapes, but with quite a bit more refined 'performance' in the design for quick and sharp turns when needed. TYPICAL DIMENSIONS AND SIZE RANGE:.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "70's Pocket Rocket",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709359817056-BS98HWCBWT0FKYTHN4RV/70S-POCKET-ROCKET.jpg",
+          "description": "pocket rocket A modern adaptation of the 70's pocket rocket. A full foil, yet sleek outline characterize this model. We added some more tail width to make a more user friendly ride. Comes alive when the waves do. Also available in a soft diamond tail. single fin or 2+1 'widowmaker' fin set up. Typical Dimensions.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Stubby",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709359819722-IG4Y5ELJ56CFLMB8OSZJ/STUBBY.jpg",
+          "description": "Single fin style and action. A full curvy outline with a slightly pulled in nose characterize this model. The wider tail and center will keep you flowing while the reduced nose outline will let you turn tight arcs. A super fun board with flow and arc potential. single or 2+1 fin set up.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Polaris-DT",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709359818073-AIH1V1Z3PG1EKG9XNVMD/POLARIS---DT.jpg",
+          "description": "A blend of the old and the new. Inspired by the very functional \"go to\" boards of the 70's. A full yet curvy outline gives plenty of surface area for planing and an updated bottom curve and foil keep this ride smooth. Fun in all types of waves. Typical Dimensions.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "DSF",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709359817003-Q5G7NBAS53TDLALRNK9J/DSF.jpg",
+          "description": "[Davo's single fin] This board likes waves with speed and really likes a lined up point! A modern take on an old classic! A good all around \"modern-retro\" single fin design.... slight single concave running through the center, vee out the tail, with a double barrel running in the fin area and out the tail block. What this all adds up to is a fast, loose, fun single fin! Materials: Polyurethane/Polyester(PU/PE).",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Skillet",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1722723553952-OMNAJL6FRVVCW9XVCOW0/skillet+copy.jpg",
+          "description": "A hybrid fusion of design features from high performance short boards and the retro egg shape. It has a fuller outline and foil for ease of paddling, wave catching, and skating across sections combined with a progressive bottom rocker and contours to keep it lively and maneuver oriented. The wide point behind the center allows for a slightly narrower nose than the tail. A great shape for the advanced as well as the novice.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Next Step",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1722707259188-UK0GVHCEKN3XRQSQ4PQS/next-step.jpg",
+          "description": "When the waves call for it and your \"every day\" board is red-lining and won't cut it. The NextStep has more nose and tail rocker, a sleeker outline through the nose and tail area, and slightly softened up bottom contours. Go up a couple of inches and embrace that new swell with confidence. The Next-Step can be tuned in from your everyday existing model. This will make the transitions from board to board and a variety of conditions prectically seamless.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Big Guns",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1722707269336-7G0SHVJ7LVN2P4M20DV1/gun_use.jpg",
+          "description": "If you are ready to go, and can handle it.....we have some Big Guns to make it happen. Lots of foam in the center and forward for hunting down and catching the big bombs, and a foiled out, sleek tail section for control at high speeds. Glassed heavy to handle the speed and bump. All guns are built to order!",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Flare Up",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1722708370934-UEBHXAFKPCJWN495JC4F/FLARE+UP1.jpg",
+          "description": "The Flare-up was made for people who are riding fishy boards or Flare type shapes as their daily drivers. When the waves get better or a typical step up is too narrow and refined with too much rocker. Super easy transition from the hybrid and fishy shapes for a better wave board. Size this model up according to what you are currently riding.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Blindspot E",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709359118723-NKMD5HU1M1C0IDYY0QAH/BLINDSPOT-E.jpg",
+          "description": "THE 'E' SERIES WILL RUN ABOUT 3\" SHORTER IN OVERALL LENGTH. THE LAST 5\" OR SO ON THE BOTTOM IS BLENDED UP TO THE DECK GIVING AND ACCELERATED NOSE LIFT. ALSO REMOVING THE NOSE TIP BALANCES OUT THE FOIL AND FOAM DISTRIBUTION FOR LESS SWING WEIGHT AND A MORE 'BALANCED' FEEL. THE BLINDSPOT IS A BLEND OF THE GRINDERX WITH THE SCARECROW. A HYBRID OF THE TWO FOR A MORE VERSATILE, USER FRIENDLY DESIGN FOR WHEN THE WAVES GET A LITTLE BETTER AND BIGGER. COMPARED TO THE GRINDERX, IT'S A BIT MORE REFINED IN THE OUTLINE, AT THE SAME LENGTH IT'S A LITTLE NARROWER IN THE CENTER WITH A SLIGHTLY PULLED IN NOSE AND TAIL. I ALSO ADDED A BIT OF ROCKER, BUT IT'S STILL IN THE LOWER TO MODERATE RANGE. AN EASY BOARD TO TRANSITION FROM FX, GRINDERX, AND SIMILAR MODELS WHEN THE WAVES PICK UP, OR AS AN EVERYDAY VERSATILE SHORTBOARD.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Lug-Nut",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709359120771-IOGWYPNS8CY7YDSXOVMP/LUG-NUT.jpg",
+          "description": "THE 'E' SERIES WILL RUN ABOUT 3\" SHORTER IN OVERALL LENGTH. THE LAST 5\" OR SO ON THE BOTTOM IS BLENDED UP TO THE DECK GIVING AND ACCELERATED NOSE LIFT. ALSO REMOVING THE NOSE TIP BALANCES OUT THE FOIL AND FOAM DISTRIBUTION FOR LESS SWING WEIGHT AND A MORE 'BALANCED' FEEL. The Lug-Nut was originally designed with the 'wave-pool' in mind. Watching hundreds of waves roll down the banks of Lemoore, ridden by top surfers and getting a few of my own here and there, I tried to pare down what was working and cut what wasn't needed in design. This is a shorter, curvier board that fits in all the right places, keeps a balanced and minimalist design ethos. Balanced thickness flow nose to tail, a low but accelerated rocker in last bit of the nose, quite a curvy tail rocker, with a nice refined rail profile. Before riding these in the wave pool, they were tested in the ocean with surprising results. Best suited for a smaller, curvy wave with some push!!!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Flare E",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709359118721-CPZH78P6FXIJUR1LHUZC/FLARE-E.jpg",
+          "description": "THE 'E' SERIES WILL RUN ABOUT 2\" SHORTER IN OVERALL LENGTH. THE LAST 5\" OR SO ON THE BOTTOM IS BLENDED UP TO THE DECK GIVING AND ACCELERATED NOSE LIFT. ALSO REMOVING THE NOSE TIP BALANCES OUT THE FOIL AND FOAM DISTRIBUTION FOR LESS SWING WEIGHT AND A MORE 'BALANCED' FEEL. Another of the full plan shape, high performance designs. A moderate and continuous rocker with plenty of contours. Single concave runs nose to tail with a double concave through your feet. The curvy outline keeps the arcs of this board tight. A great all around, versatile board for most skill levels and wave conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Fuse E",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709359119772-1WI0FO8BWQ6EL1Y955RX/FUSE-E.jpg",
+          "description": "THE 'E' SERIES WILL RUN ABOUT 1.5\" SHORTER IN OVERALL LENGTH. THE LAST 5\" OR SO ON THE BOTTOM IS BLENDED UP TO THE DECK GIVING AND ACCELERATED NOSE LIFT. ALSO REMOVING THE NOSE TIP BALANCES OUT THE FOIL AND FOAM DISTRIBUTION FOR LESS SWING WEIGHT AND A MORE 'BALANCED' FEEL. This Fuse is a blend of the Quantum fish and the Flare. The foil and the template in the front half are of the Quantum and the tail is that of the Flare. Of course, there's a few tweaks along the way. The nose is slightly pulled in, a bit of nose lift added, and the contours were enhanced a bit as well. With the speed of a fish off the front and the arc of a shortboard off the tail. Gas pedal up front, shred pedal off the tail!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "FX-E",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709359120068-2VHUFI9BTAZYXF3UBTU4/FX-E.jpg",
+          "description": "The 'E' series will run about 1\" shorter in overall length. The last 5\" or so on the bottom is blended up to the deck giving and accelerated nose lift. Also removing the nose tip balances out the foil and foam distribution for less swing weight and a more 'balanced' feel. The fX is born of the Quantum Quad fish design. We took the the Quantum as the basis for this new model and changed it up a bit to add some 'new' spice and flare. Design enhancements include an updated foil, outline, and contours. The 'beak' nose refined for a more foiled nose with less 'swing weight'. The nose was slightly narrowed up and the tail shape was changed from a deep swallow to a slight hip squash, keeping more surface area in the tail and making it possible to really get back on the tail for critical maneuvers. A touch more vee and double concaves were also added in the tail area. This board is best suited for smaller, flatter waves at beach breaks and on point breaks, buts the limits can be pushed by more advanced surfers.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "El Dorado",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709360712252-XHNBZSZO8GVM7BT5JQ9B/EL-DORADO.jpg",
+          "description": "A traditional longboard shape. Long, low nose rocker with a generous amount of tail kick. A wider template nose to tail, tapered 50/50 rails, and a generous blended nose concave keeps glide and the noseride a priority here.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Axis",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709360711099-AMFRGXWDQW6ZRKF6062A/AXIS.jpg",
+          "description": "A traditional longboard shape. Low continuous rocker, low volume 50/50 rails, and a blended nose concave. The round tail provides smooth transitions and turns while the generous nose concave provides plenty of nose ride.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Hobo",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709360712834-5V5O62QJSOKGCVM9Z0U2/HOBO.jpg",
+          "description": "The Hobo is a classic style shape. Low continuous rocker, in the nose, slight tail kick, lower volume 50/50 rails, and a generous blended nose concave. The outline has a bit of 'Pig' influence with the widepoint a bit back with a narrower nose and a wider tail proportion. The rolled bottom and soft rails(displacement) run through the board nose to tail, until right at the tail block where it has a hard edge for a clean water release. Great for all around traditional style surfing.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Hombre",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709360713141-5N1XOB77ET7UZJ7SNE75/HOMBRE.jpg",
+          "description": "A traditional longboard shape. The Hombre has a low continuous rocker, slight tail kick, lower volume 50/50 rails, and a generous blended nose concave. Great for all around traditional style surfing.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Javelina",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709360713608-V6SL294FI697JO6BOV18/JAVELINA.jpg",
+          "description": "A modern 'pig' type of shape. A moderate, functional 'pig' outline with a low traditional rocker line from tip to tail. Contours are a rolled nose to a flatter rail to rail panel with roll through the center, to a rolled vee at the tail section. Lots of traditional glide and easy, smooth turning from this one.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Bridge",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709360711152-SPME9BBCQUUQT94VEWVC/BRIDGE.jpg",
+          "description": "The Bridge model blends the 'classic' style shape with the 'contemporary' shape. The front three quarters of the board have the classic feel with a tapered 50/50 egg rail with a rolled bottom, whilst the last quarter of the board has a rolled vee with a tucked hard edge. This gives the board that classic 'in the water'(displacement) feel when gliding and trimming, and when it's time to step on the tail and turn the rolled vee with edge(planing) gives a bit of bite and plenty of control for more dynamic directions changes and squirts of speed to get around sections. The rocker line is moderately low in the nose with a generous amount of tail rocker with a bit of 'kick' off the back 12\" inches. Under the nose is a soft, blended concave. Generally set up as a single fin, but also can be set up as a 2+1.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Odyssey",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709360714106-5C5VHSBHJDM40NL91MWE/ODYSSEY.jpg",
+          "description": "An all around, everyday, performance longboard shape. This model has a thinner foil and rails, yet maintains a fuller plan shape. A longboard design you can ride 95% of the time. Blended nose concave to flat through the center leading to vee out the tail with a double concave in the fin area.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Comp",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/2dbbd48a-03dc-4955-82f9-59e92791f6ab/comp-normalized.jpg",
+          "description": "A high performance longboard. Thin foil and rails and progressive bottom contours make this a very high performance sled. Ride off the tail for big turns and cutbacks, and run to the nose for a quick 5 or ten. Nose concave flowing into flat through the center leading to vee and double concaves through the tail.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "SV-3",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/bbfd8f86-7a16-4b23-9edb-8f6f32ffd1a8/sv3.jpg",
+          "description": "A wider template and thickness that's an all around performer. Easy paddling and wave catcher with glide and performance. Nose concave blending to flat through the center giving way to double concaves and vee out the tail.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Utility Series - Galaxy",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709360714832-K2X40BZUUY5Q8ULKCX3D/UTILITY-SERIES---GALAXY.jpg",
+          "description": "'UTE' SERIES — GALAXY A CONTEMPORARY long board. Moderate rocker, modern rails (hard in the tail, transitioning soft through the mid section and nose), and a blended nose concave. For all around longboard surfing. The hard rails in the tail are great for beginners or those who prefer the speed and zing of hard edges. Outlines also available on this shape are the Axis or the Hombre.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Iris",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/55710a7ce4b0bbe8e5cb9025/1709361024230-CQXQU904KM890EVYIUCX/IRIS.jpg",
+          "description": "A traditional longboard shape. The Iris has a low continuous rocker and lower 50/50 rails. The outline is of the narrower classic type of the 60's. Suited more toward point/reef breaks or waves with a bit more push.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
