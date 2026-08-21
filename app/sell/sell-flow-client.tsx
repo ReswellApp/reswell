@@ -76,6 +76,7 @@ import { slugify } from "@/lib/slugify"
 import {
   clearImpersonation,
   clearImpersonationStorageIfCookieMissing,
+  getActiveImpersonationClient,
   getImpersonation,
   type ImpersonationData,
 } from "@/lib/impersonation"
@@ -1182,7 +1183,7 @@ function SellPageContentInner({
   )
 
   const hydrateBoardEdit = useCallback(
-    (listing: OwnedListingForEditRow, sessionUserId: string) => {
+    (listing: OwnedListingForEditRow) => {
       clearImpersonationStorageIfCookieMissing()
       const imp = getImpersonation()
 
@@ -1211,12 +1212,10 @@ function SellPageContentInner({
           replaceSellDraftEditUrl("surfboards", String(listing.id))
         }
       }
-      // Keep impersonation only when editing that seller’s listing (not your own).
-      const keepImpersonation =
-        imp != null &&
-        imp.userId === listing.user_id &&
-        sessionUserId !== listing.user_id
-      if (imp && !keepImpersonation) {
+      // Drop a stale impersonation target only. owned-edit's `userId` is the listing
+      // owner (the impersonated seller), not the admin session — do not treat it as
+      // "editing your own listing" or Save will lose the impersonation cookie.
+      if (imp && imp.userId !== listing.user_id) {
         clearImpersonation()
         setImpersonation(null)
       }
@@ -2890,7 +2889,7 @@ function SellPageContentInner({
       setActorIsAdmin(submitActorIsAdmin)
 
       /** Only admins may use impersonation listing APIs; server also requires the HTTP cookie + target id. */
-      let storedImpersonation = getImpersonation()
+      let storedImpersonation = getActiveImpersonationClient()
       if (storedImpersonation && !submitActorIsAdmin) {
         clearImpersonation()
         setImpersonation(null)
