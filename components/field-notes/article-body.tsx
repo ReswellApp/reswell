@@ -12,7 +12,7 @@ import {
 import { cn } from "@/lib/utils"
 
 const CALLOUT_RE =
-  /^(why it stands out|best for|key strengths|possible limitations):\s*/i
+  /^(why it stands out|best for|key strengths|possible limitations|wave conditions|skill level and style|sizing and volume|fin setup|stock vs\. custom):\s*/i
 
 type ParagraphBlock = Extract<ArticleBlock, { kind: "p" }>
 type ImageBlock = Extract<ArticleBlock, { kind: "image" }>
