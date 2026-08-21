@@ -1,0 +1,70 @@
+{
+  "generated_for": "Alex Lopez Surfboards official model catalog",
+  "source": "https://www.alexlopezsurfboards.com/s-projects-side-by-side",
+  "sources": [
+    "https://www.alexlopezsurfboards.com/s-projects-side-by-side",
+    "https://www.alexlopezsurfboards.com/pages-sitemap.xml"
+  ],
+  "skipped": [
+    "Homepage / contact — no additional named models",
+    "Wix /items and /items-1 shop stubs (empty, no named production models)",
+    "True Ames fin recommendations mentioned on model pages (fins, not boards)",
+    "Action / clip videos on the MODELS page (used still board photos instead)"
+  ],
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "alex-lopez-surfboards",
+      "name": "Alex Lopez Surfboards",
+      "website_url": "https://www.alexlopezsurfboards.com/",
+      "location_label": "Oceanside, CA",
+      "founder_name": "Alex Lopez",
+      "lead_shaper_name": "Alex Lopez",
+      "short_description": "Son of the legendary Gerry Lopez, Alex Lopez is carving out his own identity as a hand shaper based in Oceanside, crafting beautifully refined, travel tested boards that feel as good as they look.",
+      "models": [
+        {
+          "name": "Kinky Fish",
+          "image_url": "https://static.wixstatic.com/media/92463a_0fd1b44235394d87acfde961364d2f58~mv2.png",
+          "description": "Narrower and more rocker than the classic fish model. Made to be ridden a bit more in the pocket, has a slight double wing and a accelerated tail rocker. A nice board if your looking for some aspects of a fish but are wanting it to ride slightly more shortboardy. Size range: 5'2 - 5'10.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fish",
+          "image_url": "https://static.wixstatic.com/media/92463a_cadd4ac3fd95466b9e631816ea0612f4~mv2.png",
+          "description": "Pretty simple, just my take on a San Diego fish. Relaxed rocker wide tail makes for nice paddle and fast down the line. Recommended with glass on 50/50 keels but easy to do with flat foil or box's. Size range: 5'6 - 6'3.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Diamond Twin",
+          "image_url": "https://static.wixstatic.com/media/92463a_e784fedf6c614c6a8f7d3bcdf3c343a8~mv2.png",
+          "description": "Slightly pulled in nose and a more modern rocker, geared towards performance in a little longer board. This board is great for someone, like myself, coming from riding a bigger board and wanting something with nice paddle for better waves but not wanting to go to too small. The wing and diamond combo makes it feel really quick and pivoty off the tail, I enjoy them around 6'0-6'4. Size range: 5'7 - 6'8.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Grand Twin",
+          "image_url": "https://static.wixstatic.com/media/92463a_8fe4f2686e9640cdaf30c486c8efcc46~mv2.png",
+          "description": "More foiled, rocker and narrower than the diamond twin. Made to be a bit more of a performance board aimed at surfing better waves. Same bottom contours as diamond twin but belly channels sit in the transition of concave to v to straighten the bottom curve with the idea to make the board faster. Pretty similar outline to diamond twin but nose is brought in slightly and it has a wing pin. Size range: 5'7 - 6'8.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "LT",
+          "image_url": "https://static.wixstatic.com/media/92463a_3e42e7dc9efd439ebbcc06f3bed88da8~mv2.png",
+          "description": "Longer swallow tail twin. Does well with a little bit of push but is still fun on medium to smaller days. A nice board for winter time in California, paddles great and still duck dives well but stable and trusty. Size range: 6'8.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Single Fin",
+          "image_url": "https://static.wixstatic.com/media/92463a_1220a2dce729466fac74393d463dcfda~mv2.png",
+          "description": "Classic lines with some slightly modern adjustments. Another board that is slightly more suited to better waves, enjoy at a nice point or a good day at a beach break. Size range: 6'6 - 8'.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Terrapin",
+          "image_url": "https://static.wixstatic.com/media/92463a_81dcb6b4c0a045238124498cabb47681~mv2.jpg",
+          "description": "I was looking for a board that I could always have in the car and ride pretty much everyday. The first one was a 7'4 and it was the first time I really connected with a shape and it just felt right for my body type and surfing. Wide point forward for nice paddle and a somewhat pulled in tail for maneuverability. It's a pretty simple board that I hope most level of surfer can get on and enjoy the glide. Lately have been making more twin versions of the board, for me personally I enjoy the twins in the 6'8 to low 7' range and singles in the mid 7' up. Size range: 6' - 10'.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
