@@ -1,7 +1,10 @@
 "use client"
 
-import { useEffect, useMemo, useRef } from "react"
-import { listingDirectPublicImageUrl } from "@/lib/listing-media-proxy-url"
+import { useEffect, useMemo, useRef, useState } from "react"
+import {
+  listingDirectPublicImageUrl,
+  listingPdpVideoPlaybackSrc,
+} from "@/lib/listing-media-proxy-url"
 import type { ListingPdpVideoSource } from "@/lib/primary-listing-video"
 import { cn } from "@/lib/utils"
 
@@ -18,8 +21,8 @@ type ListingPdpVideoProps = {
 }
 
 /**
- * PDP product video. Uses the direct public storage URL so large files are not
- * buffered through the image media proxy (Meta/Google also consume that URL).
+ * PDP product video. Played through `/media/listing-videos` so large files are
+ * streamed with Range support and a Chrome-safe Content-Type (not QuickTime).
  */
 export function ListingPdpVideo({
   video,
@@ -29,15 +32,17 @@ export function ListingPdpVideo({
   active = true,
 }: ListingPdpVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const src = useMemo(
-    () => listingDirectPublicImageUrl(video.url) ?? video.url.trim(),
-    [video.url],
-  )
+  const [failed, setFailed] = useState(false)
+  const src = useMemo(() => listingPdpVideoPlaybackSrc(video.url), [video.url])
   const poster = useMemo(() => {
     const raw = video.thumbnail_url?.trim()
     if (!raw) return undefined
     return listingDirectPublicImageUrl(raw) ?? raw
   }, [video.thumbnail_url])
+
+  useEffect(() => {
+    setFailed(false)
+  }, [src])
 
   useEffect(() => {
     if (active) return
@@ -57,15 +62,25 @@ export function ListingPdpVideo({
     >
       <video
         ref={videoRef}
-        className={cn("bg-black object-contain", fill ? "h-full w-full" : "aspect-video w-full")}
+        src={src}
+        className={cn(
+          "relative z-[1] bg-black object-contain",
+          fill ? "h-full w-full" : "aspect-video w-full",
+        )}
         controls
         playsInline
-        preload="metadata"
+        preload={active ? "auto" : "metadata"}
         poster={poster}
         aria-label={`${title} video`}
-      >
-        <source src={src} type={video.content_type?.trim() || undefined} />
-      </video>
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
+        onError={() => setFailed(true)}
+      />
+      {failed ? (
+        <p className="pointer-events-none absolute inset-0 z-[2] flex items-center justify-center px-6 text-center text-sm text-white/80">
+          This video can’t play in this browser.
+        </p>
+      ) : null}
     </div>
   )
 }

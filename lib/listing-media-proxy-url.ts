@@ -3,6 +3,9 @@ import { absoluteUrl } from "@/lib/site-metadata"
 /** Same-origin listing photo proxy — see `app/media/listings/[...path]/route.ts`. */
 export const LISTING_MEDIA_PROXY_PATH_PREFIX = "/media/listings/" as const
 
+/** Same-origin listing video stream — see `app/media/listing-videos/[...path]/route.ts`. */
+export const LISTING_VIDEO_PROXY_PATH_PREFIX = "/media/listing-videos/" as const
+
 /** Resize hint for legacy full-res listing objects without a stored thumb file. */
 export const LISTING_MEDIA_TILE_VARIANT_PARAM = "tile" as const
 
@@ -114,18 +117,49 @@ export function listingPublicStorageObjectUrl(objectPath: string): string | null
   return `${base}/storage/v1/object/public/listings/${encoded}`
 }
 
+function listingBucketObjectPathFromRaw(raw: string): string | null {
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+  return (
+    listingStorageObjectPathFromUrl(trimmed) ??
+    listingStorageObjectPathFromProxiedSrc(proxiedListingImageSrc(trimmed))
+  )
+}
+
+function decodePathSegment(segment: string): string {
+  try {
+    return decodeURIComponent(segment)
+  } catch {
+    return segment
+  }
+}
+
 /**
  * Direct public storage URL when `raw` resolves to a listings-bucket object.
  * Used by catalog feeds when a static file exists (no on-demand ?variant= resize).
  */
 export function listingDirectPublicImageUrl(raw: string | null | undefined): string | null {
   if (!raw?.trim()) return null
-  const trimmed = raw.trim()
-  const objectPath =
-    listingStorageObjectPathFromUrl(trimmed) ??
-    listingStorageObjectPathFromProxiedSrc(proxiedListingImageSrc(trimmed))
+  const objectPath = listingBucketObjectPathFromRaw(raw)
   if (!objectPath) return null
   return listingPublicStorageObjectUrl(objectPath)
+}
+
+/**
+ * Same-origin PDP video URL. Streams via `/media/listing-videos` so Chrome gets a
+ * playable Content-Type (QuickTime objects are advertised as `video/mp4`) and Range
+ * requests are not buffered through the image cache.
+ */
+export function listingPdpVideoPlaybackSrc(raw: string | null | undefined): string {
+  const trimmed = raw?.trim() ?? ""
+  if (!trimmed) return ""
+  const objectPath = listingBucketObjectPathFromRaw(trimmed)
+  if (!objectPath) return trimmed
+  const encoded = objectPath
+    .split("/")
+    .map((segment) => encodeURIComponent(decodePathSegment(segment)))
+    .join("/")
+  return `${LISTING_VIDEO_PROXY_PATH_PREFIX}${encoded}`
 }
 
 /**

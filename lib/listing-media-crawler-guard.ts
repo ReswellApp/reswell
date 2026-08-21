@@ -82,9 +82,22 @@ export function isBrowserListingMediaImageRequest(request: Request): boolean {
   return accept.startsWith("image/")
 }
 
+/** Native `<video>` / `<audio>` range requests — must not count against the crawl cap. */
+export function isBrowserListingMediaPlaybackRequest(request: Request): boolean {
+  const dest = request.headers.get("sec-fetch-dest")
+  if (dest === "video" || dest === "audio") return true
+  const accept = request.headers.get("accept") ?? ""
+  return accept.startsWith("video/") || accept.startsWith("audio/")
+}
+
 /** Best-effort per-instance throttle for abusive clients (serverless-safe, not global). */
 export function isListingMediaRateLimited(request: Request): boolean {
-  if (isBrowserListingMediaImageRequest(request)) return false
+  if (
+    isBrowserListingMediaImageRequest(request) ||
+    isBrowserListingMediaPlaybackRequest(request)
+  ) {
+    return false
+  }
 
   const ip = clientIpFromRequest(request)
   const now = Date.now()

@@ -102,7 +102,13 @@ export function ImageGallery({
     align: "start",
     duration: 22,
     dragThreshold: 8,
-    watchDrag: canSwipe,
+    // Native video controls live on the <video> node — do not start a swipe there.
+    watchDrag: (_api, event) => {
+      if (!canSwipe) return false
+      const target = event.target
+      if (target instanceof Element && target.closest("video")) return false
+      return true
+    },
   })
 
   const isVideoSelected = hasVideo && selectedIndex === videoIndex
@@ -447,7 +453,7 @@ export function ImageGallery({
 
         {/* Image counter */}
         {slideCount > 1 && (
-          <div className="absolute bottom-3 right-3 z-10 rounded-full bg-background/75 px-2.5 py-1 text-xs font-medium tabular-nums text-foreground backdrop-blur-md">
+          <div className="pointer-events-none absolute bottom-3 right-3 z-10 rounded-full bg-background/75 px-2.5 py-1 text-xs font-medium tabular-nums text-foreground backdrop-blur-md">
             {selectedIndex + 1} / {slideCount}
           </div>
         )}

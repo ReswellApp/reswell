@@ -60,6 +60,9 @@ export async function uploadListingVideoToSupabase(opts: {
 
   const mime = normalizeListingVideoMimeType(opts.file)
   const ext = listingVideoExtensionForMime(mime)
+  // Chrome/Android skip `video/quicktime`. Store MOV as MP4 so the object plays.
+  const storageContentType: ListingVideoMimeType =
+    mime === "video/quicktime" ? "video/mp4" : mime
   const ts = Date.now()
   const videoPath = `${userId}/${ts}-${opts.clientId}-video.${ext}`
 
@@ -79,13 +82,13 @@ export async function uploadListingVideoToSupabase(opts: {
     supabase: opts.supabase,
     pathInBucket: videoPath,
     body: opts.file,
-    contentType: mime,
+    contentType: storageContentType,
   })
 
   return {
     url: listingObjectPublicUrl(supabaseUrl, videoPath),
     thumbnailUrl,
-    contentType: mime,
+    contentType: storageContentType,
     durationSeconds: opts.durationSeconds,
     byteSize: opts.file.size,
   }
