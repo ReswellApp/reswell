@@ -137,7 +137,7 @@ function HeaderMobileNavActionsSkeleton() {
     <>
       <Skeleton className="h-8 w-12 shrink-0 rounded-full" />
       <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
-      <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
+      <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
       <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
     </>
   )
