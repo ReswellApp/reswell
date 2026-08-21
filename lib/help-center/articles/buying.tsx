@@ -320,8 +320,9 @@ export const buyingHelpArticles: HelpArticle[] = [
         body: (
           <>
             <p>
-              Open {helpLink("/favorites", "Favorites")} from the header to see everything you have saved.
-              Tap a listing to go back to it, or tap the heart again to remove it.
+              Open {helpLink("/dashboard/favorites", "Favorites")} from your profile menu or dashboard
+              to see everything you have saved. Tap a listing to go back to it, or tap the heart again
+              to remove it.
             </p>
             <BulletList
               items={[

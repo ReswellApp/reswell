@@ -3,6 +3,7 @@ import {
   LayoutDashboard,
   Banknote,
   Handshake,
+  Heart,
   Package,
   ShoppingBag,
   PackageCheck,
@@ -40,5 +41,6 @@ export const DASHBOARD_NAV_LINKS: DashboardNavLink[] = [
   { name: "Support", href: "/dashboard/support", icon: LifeBuoy },
   { name: "Purchases", href: "/dashboard/purchases", icon: ShoppingBag },
   { name: "Sales", href: "/dashboard/sales", icon: PackageCheck },
+  { name: "Favorites", href: "/dashboard/favorites", icon: Heart },
   { name: "Following", href: "/dashboard/following", icon: Users },
 ]

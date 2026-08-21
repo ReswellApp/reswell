@@ -122,7 +122,6 @@ export function listStaticSiteAssets(): SiteAssetEntry[] {
       status: "orphan",
     }),
     publicImage("brand/empty-state-wave.jpg", "Favorites empty-state / auth source", "brand", [
-      "/favorites",
       "/auth/login",
       "/auth/sign-up",
     ]),

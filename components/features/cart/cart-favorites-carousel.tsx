@@ -63,7 +63,7 @@ export function CartFavoritesCarousel({
           <p className="text-muted-foreground">Listings you&apos;ve saved for later</p>
         </div>
         <Button variant="outline" asChild>
-          <Link href="/favorites">
+          <Link href="/dashboard/favorites">
             View all
             <ArrowRight className="ml-1 h-4 w-4" />
           </Link>

@@ -99,6 +99,7 @@ const mobileActionStrokeWidth = 1.5
 const mobileActionIconClassName = "h-5 w-5"
 const mobileActionIconButtonClassName =
   "h-8 w-8 text-foreground hover:bg-black/5 [&_svg]:size-5"
+const mobileActionRowClassName = "flex shrink-0 items-center justify-end gap-1.5"
 const mobileSellButtonClassName =
   "h-8 shrink-0 whitespace-nowrap rounded-full border border-foreground px-3 py-0 text-[13px] font-medium leading-none text-foreground shadow-none hover:bg-muted/50 md:h-9 md:px-3.5 md:text-[14px]"
 
@@ -133,16 +134,12 @@ function HeaderMobileLogInLink({ onLogIn }: { onLogIn: () => void }) {
 
 function HeaderMobileNavActionsSkeleton() {
   return (
-    <div
-      className="flex shrink-0 items-center justify-end gap-0.5"
-      aria-busy="true"
-      aria-label="Loading navigation"
-    >
+    <>
       <Skeleton className="h-8 w-12 shrink-0 rounded-full" />
       <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
+      <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
       <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
-      <Skeleton className="h-4 w-12 shrink-0 rounded" />
-    </div>
+    </>
   )
 }
 
@@ -1153,25 +1150,16 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                 <div className="min-w-0 flex-1">
                   <SiteWordmarkLink compact className="px-1 py-1 sm:px-2 sm:py-1.5" />
                 </div>
-                <div className="flex shrink-0 items-center justify-end gap-0.5">
+                <div
+                  className={mobileActionRowClassName}
+                  aria-busy={!authLoaded}
+                  aria-label={!authLoaded ? "Loading navigation" : undefined}
+                >
                   {!authLoaded ? (
                     <HeaderMobileNavActionsSkeleton />
                   ) : user ? (
                     <>
                       <HeaderSellButton />
-                      <Link href="/favorites" className="inline-flex shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className={mobileActionIconButtonClassName}
-                          aria-label="Favorites"
-                        >
-                          <Heart
-                            className={mobileActionIconClassName}
-                            strokeWidth={mobileActionStrokeWidth}
-                          />
-                        </Button>
-                      </Link>
                       <NavMessagesDropdown
                         userId={user.id}
                         unreadMessages={unreadMessages}
@@ -1192,27 +1180,6 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   ) : (
                     <>
                       <HeaderSellButton />
-                      <Link
-                        href={`/auth/login?redirect=${encodeURIComponent("/favorites")}`}
-                        className="inline-flex shrink-0"
-                        onClick={(e) => {
-                          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
-                          e.preventDefault()
-                          openLogin("/favorites")
-                        }}
-                      >
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className={mobileActionIconButtonClassName}
-                          aria-label="Favorites"
-                        >
-                          <Heart
-                            className={mobileActionIconClassName}
-                            strokeWidth={mobileActionStrokeWidth}
-                          />
-                        </Button>
-                      </Link>
                       <CartHeaderLink
                         showOnNarrowScreens
                         authResolved={authLoaded}
@@ -1259,7 +1226,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
           {!headerRowCompact ? (
             <Suspense
               fallback={
-                <div className="hidden min-w-0 flex-1 px-2 md:block" aria-hidden>
+                <div className="hidden min-w-0 flex-1 px-2 md:block lg:max-w-xl xl:max-w-2xl" aria-hidden>
                   <Skeleton className="h-10 min-h-[2.5rem] w-full rounded-full" />
                 </div>
               }
@@ -1331,8 +1298,8 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
             <Link
               href={
                 user
-                  ? "/favorites"
-                  : `/auth/login?redirect=${encodeURIComponent("/favorites")}`
+                  ? "/dashboard/favorites"
+                  : `/auth/login?redirect=${encodeURIComponent("/dashboard/favorites")}`
               }
               className="hidden lg:inline-flex"
               onClick={
@@ -1341,7 +1308,7 @@ export function Header({ serverHeaderAuth }: { serverHeaderAuth: SiteChromeAuthP
                   : (e) => {
                       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return
                       e.preventDefault()
-                      openLogin("/favorites")
+                      openLogin("/dashboard/favorites")
                     }
               }
             >

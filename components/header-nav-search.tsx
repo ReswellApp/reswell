@@ -842,7 +842,7 @@ export function HeaderNavSearch({
   return (
     <div
       className={cn(
-        "hidden min-w-0 w-full flex-1 items-center px-2 md:flex",
+        "hidden min-w-0 w-full flex-1 items-center px-2 md:flex lg:max-w-xl xl:max-w-2xl",
         // Keep the search bar above the portaled page scrim / sibling chrome while open.
         showFocusScrim && "relative z-[70]",
       )}

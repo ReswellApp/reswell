@@ -68,6 +68,13 @@ const SECTION_META_BY_PREFIX: { prefix: string; meta: DashboardSectionMeta }[] =
     },
   },
   {
+    prefix: "/dashboard/favorites",
+    meta: {
+      sectionName: "Favorites",
+      description: "Listings you have saved to revisit later.",
+    },
+  },
+  {
     prefix: "/dashboard/following",
     meta: {
       sectionName: "Following",

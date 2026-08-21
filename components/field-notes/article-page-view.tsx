@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { format } from "date-fns"
+import { ArrowLeft } from "lucide-react"
 import type { FieldNoteArticle } from "@/lib/field-notes-articles"
 import { getFieldNoteCoverSrc } from "@/lib/field-notes-articles"
 import { BlogPostCard } from "@/components/field-notes/blog-post-card"
@@ -23,9 +24,10 @@ export function ArticlePageView({ article, relatedArticles, listingEmbeds }: Pro
         <header className="mx-auto max-w-3xl px-4 pt-8 sm:px-6 sm:pt-12">
           <Link
             href="/blog"
-            className="text-sm font-medium text-[#163060] underline-offset-4 hover:underline"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-[#163060] underline-offset-4 hover:underline"
           >
-            Blog
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            Back
           </Link>
 
           <p className="mt-8 text-[11px] font-medium uppercase tracking-[0.14em] text-[#355185]">
@@ -62,6 +64,13 @@ export function ArticlePageView({ article, relatedArticles, listingEmbeds }: Pro
             </p>
           ) : null}
           <ArticleBody blocks={article.blocks} listingEmbeds={listingEmbeds} />
+          <Link
+            href="/blog"
+            className="mt-12 inline-flex items-center gap-1.5 text-sm font-medium text-[#163060] underline-offset-4 hover:underline"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            Back
+          </Link>
         </div>
       </article>
 
