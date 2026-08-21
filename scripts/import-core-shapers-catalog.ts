@@ -54,11 +54,16 @@ import {
   createBrandCatalogImageMirrorCache,
   resolveMirroredBrandCatalogImageUrl,
 } from "@/lib/services/brandCatalogImageStorage"
+import {
+  SURFBOARD_SELL_CATEGORY_ORDER,
+  type SurfboardSellCategoryKey,
+} from "@/lib/surfboard-sell-categories"
 
 type SeedModel = {
   name: string
   image_url?: string | null
   description?: string | null
+  board_category_slug?: SurfboardSellCategoryKey | null
 }
 
 type SeedBrand = {
@@ -113,6 +118,16 @@ function loadEnvFile(relativePath: string): void {
   }
 }
 
+function parseBoardCategorySlug(
+  raw: unknown,
+): SurfboardSellCategoryKey | null {
+  if (typeof raw !== "string") return null
+  const value = raw.trim()
+  return (SURFBOARD_SELL_CATEGORY_ORDER as readonly string[]).includes(value)
+    ? (value as SurfboardSellCategoryKey)
+    : null
+}
+
 function loadSeedFile(path: string): {
   brands: SeedBrand[]
   productCategorySlug: BrandProductCategorySlug | null
@@ -140,6 +155,7 @@ function loadSeedFile(path: string): {
             name: m.name.trim(),
             image_url: m.image_url ?? null,
             description: m.description ?? null,
+            board_category_slug: parseBoardCategorySlug(m.board_category_slug),
           }))
           .filter((m) => m.name.length > 0),
       }))
@@ -304,6 +320,7 @@ async function upsertModelsForBrand(opts: {
       description: model.description ?? null,
       image_url: imageUrl,
       product_category_slug: opts.productCategorySlug,
+      board_category_slug: model.board_category_slug ?? null,
     })
 
     if (insertResult.ok) {
@@ -314,7 +331,7 @@ async function upsertModelsForBrand(opts: {
     if (insertResult.code === "23505") {
       const { data: existing, error: existingError } = await opts.supabase
         .from("brand_models")
-        .select("id, description, image_url")
+        .select("id, description, image_url, board_category_slug")
         .eq("brand_id", opts.brandId)
         .ilike("name", model.name)
         .maybeSingle()
@@ -328,12 +345,16 @@ async function upsertModelsForBrand(opts: {
       const patch: {
         description?: string | null
         image_url?: string | null
+        board_category_slug?: SurfboardSellCategoryKey | null
       } = {}
       if (model.description && !existing.description) {
         patch.description = model.description
       }
       if (imageUrl && !existing.image_url) {
         patch.image_url = imageUrl
+      }
+      if (model.board_category_slug && !existing.board_category_slug) {
+        patch.board_category_slug = model.board_category_slug
       }
 
       if (Object.keys(patch).length > 0) {
