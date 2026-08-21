@@ -66,7 +66,7 @@ export async function blogTitleCoverImageResponse(slug: string) {
             fontWeight: 600,
             letterSpacing: 3,
             textTransform: "uppercase",
-            color: "#bae6fd",
+            color: "#7F9DD5",
           }}
         >
           {`Reswell · ${tagLabel}`}
@@ -76,7 +76,7 @@ export async function blogTitleCoverImageResponse(slug: string) {
             display: "flex",
             fontSize: headline.length > 52 ? 48 : 58,
             fontWeight: 700,
-            color: "#f8fafc",
+            color: "#F9F9F2",
             lineHeight: 1.1,
             letterSpacing: -1.5,
             maxWidth: 1000,
@@ -89,7 +89,7 @@ export async function blogTitleCoverImageResponse(slug: string) {
             display: "flex",
             fontSize: 24,
             fontWeight: 600,
-            color: "#94a3b8",
+            color: "#7F9DD5",
             letterSpacing: 2,
             textTransform: "uppercase",
           }}

@@ -7,6 +7,7 @@ import {
   getPublishedArticleBySlugForSite,
   listRelatedPublishedForSite,
 } from "@/lib/services/blogPublic"
+import { resolveBlogListingEmbeds } from "@/lib/services/blogListingEmbeds"
 import { resolveBlogAdminAccess } from "@/lib/services/blogAdminGate"
 import { proxiedBlogImageSrc } from "@/lib/blog/blog-media-proxy-url"
 import { absolutePublicMediaUrl, absoluteUrl, pageSeoMetadata } from "@/lib/site-metadata"
@@ -59,13 +60,16 @@ export default async function BlogArticlePage(props: { params: Promise<{ slug: s
   const supabase = await createClient()
   const article = await getPublishedArticleBySlugForSite(supabase, slug)
   if (!article) notFound()
-  const relatedArticles = await listRelatedPublishedForSite(supabase, slug, 5)
+  const [relatedArticles, listingEmbeds] = await Promise.all([
+    listRelatedPublishedForSite(supabase, slug, 5),
+    resolveBlogListingEmbeds(supabase, article.blocks),
+  ])
   const { canManageBlogCms } = await resolveBlogAdminAccess()
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
       {canManageBlogCms ? <BlogCmsFloatingPanel /> : null}
-      <ArticlePageView article={article} relatedArticles={relatedArticles} />
+      <ArticlePageView article={article} relatedArticles={relatedArticles} listingEmbeds={listingEmbeds} />
     </div>
   )
 }

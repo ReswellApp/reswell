@@ -132,6 +132,44 @@ function blocksToRows(blocks: ArticleBlock[]): BlockRow[] {
   return blocks.map((block) => ({ cid: crypto.randomUUID(), block }))
 }
 
+function existingListingRef(block: ArticleBlock): string {
+  return block.kind === "listing" || block.kind === "listing-image" ? block.ref : ""
+}
+
+function blockForKind(kind: ArticleBlock["kind"], prev: ArticleBlock): ArticleBlock {
+  if (kind === "h2") return { kind: "h2", text: prev.kind === "h2" ? prev.text : "" }
+  if (kind === "p") return { kind: "p", text: prev.kind === "p" ? prev.text : "" }
+  if (kind === "image") {
+    const prevUrl = prev.kind === "image" ? prev.url : ""
+    return {
+      kind: "image",
+      url: prevUrl && /^https:\/\//i.test(prevUrl) ? prevUrl : "",
+      alt: prev.kind === "image" ? prev.alt ?? "" : "",
+      caption: prev.kind === "image" ? prev.caption ?? "" : "",
+      width: prev.kind === "image" ? prev.width : undefined,
+      height: prev.kind === "image" ? prev.height : undefined,
+    }
+  }
+  if (kind === "instagram") {
+    return {
+      kind: "instagram",
+      url: prev.kind === "instagram" ? prev.url : "https://www.instagram.com/reel/example-placeholder-replace-me/",
+    }
+  }
+  if (kind === "listing") return { kind: "listing", ref: existingListingRef(prev) }
+  if (kind === "listing-image") {
+    return {
+      kind: "listing-image",
+      ref: existingListingRef(prev),
+      caption: prev.kind === "listing-image" ? prev.caption ?? "" : "",
+    }
+  }
+  return {
+    kind: "sold-listings",
+    limit: prev.kind === "sold-listings" ? prev.limit ?? 6 : 6,
+  }
+}
+
 async function fetchJson(url: string, init?: RequestInit) {
   const headers = new Headers(init?.headers ?? undefined)
   if (init?.body !== undefined && init.body !== null) {
@@ -323,31 +361,10 @@ function SortableBlockRow(props: {
             <Select
               value={block.kind}
               onValueChange={(kind) => {
-                if (kind === "h2") props.patch(props.row.cid, { kind: "h2", text: block.kind === "h2" ? block.text : "" })
-                if (kind === "p") props.patch(props.row.cid, { kind: "p", text: block.kind === "p" ? block.text : "" })
-                if (kind === "image") {
-                  const prev = block.kind === "image" ? block.url : ""
-                  props.patch(props.row.cid, {
-                    kind: "image",
-                    url: prev && /^https:\/\//i.test(prev) ? prev : "",
-                    alt: block.kind === "image" ? block.alt ?? "" : "",
-                    caption: block.kind === "image" ? block.caption ?? "" : "",
-                    width: block.kind === "image" ? block.width : undefined,
-                    height: block.kind === "image" ? block.height : undefined,
-                  })
-                }
-                if (kind === "instagram") {
-                  const prevIg = block.kind === "instagram" ? block.url : ""
-                  props.patch(props.row.cid, {
-                    kind: "instagram",
-                    url:
-                      prevIg.trim() ||
-                      "https://www.instagram.com/reel/example-placeholder-replace-me/",
-                  })
-                }
+                props.patch(props.row.cid, blockForKind(kind as ArticleBlock["kind"], block))
               }}
             >
-              <SelectTrigger className="h-9 w-[150px]" aria-label="Block type">
+              <SelectTrigger className="h-9 w-[200px]" aria-label="Block type">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -355,6 +372,9 @@ function SortableBlockRow(props: {
                 <SelectItem value="p">Paragraph</SelectItem>
                 <SelectItem value="image">Image</SelectItem>
                 <SelectItem value="instagram">Instagram</SelectItem>
+                <SelectItem value="listing">Listing tile</SelectItem>
+                <SelectItem value="listing-image">Listing photos</SelectItem>
+                <SelectItem value="sold-listings">Recently sold</SelectItem>
               </SelectContent>
             </Select>
             <Button
@@ -419,6 +439,44 @@ function SortableBlockRow(props: {
               onChange={(e) => props.patch(props.row.cid, { kind: "instagram", url: e.target.value })}
               placeholder="Instagram post or reel URL"
             />
+          ) : null}
+          {block.kind === "listing" ? (
+            <Input
+              value={block.ref}
+              onChange={(e) => props.patch(props.row.cid, { kind: "listing", ref: e.target.value })}
+              placeholder="Listing URL or slug — /l/…"
+            />
+          ) : null}
+          {block.kind === "listing-image" ? (
+            <div className="grid gap-2">
+              <Input
+                value={block.ref}
+                onChange={(e) => props.patch(props.row.cid, { ...block, ref: e.target.value })}
+                placeholder="Listing URL or slug — /l/…"
+              />
+              <Input
+                value={block.caption ?? ""}
+                onChange={(e) => props.patch(props.row.cid, { ...block, caption: e.target.value })}
+                placeholder="Caption (optional)"
+              />
+            </div>
+          ) : null}
+          {block.kind === "sold-listings" ? (
+            <div className="grid gap-1">
+              <Label className="text-xs text-muted-foreground">How many sold listings</Label>
+              <Input
+                type="number"
+                min={2}
+                max={12}
+                value={block.limit ?? 6}
+                onChange={(e) =>
+                  props.patch(props.row.cid, {
+                    kind: "sold-listings",
+                    limit: Number(e.target.value) || 6,
+                  })
+                }
+              />
+            </div>
           ) : null}
         </div>
       </div>
@@ -886,8 +944,8 @@ export function BlogCmsFloatingPanel() {
 
                 <div className="space-y-3 border-t pt-4">
                   <p className="text-xs leading-relaxed text-muted-foreground">
-                    Saving confirms every image is copyright-free or owned by Reswell. Cover may be empty — the title
-                    card is used instead.
+                    Cover and uploaded images must be copyright-free or owned by Reswell. Listing tiles and photos
+                    pull from live marketplace listings. Cover may be empty — the title card is used instead.
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <Button type="button" disabled={working} onClick={() => persist()}>

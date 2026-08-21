@@ -52,8 +52,7 @@ export const DYNAMIC_PAGE_TYPES: DynamicPageType[] = [
       { token: "tagline", label: "Short description", sample: "Performance surfboards from Santa Barbara" },
     ],
     defaultTitleTemplate: "{name} · Surf brand — Reswell",
-    defaultDescriptionTemplate:
-      "Explore {name} on Reswell — models, stories, and where to find their boards.",
+    defaultDescriptionTemplate: "{tagline}",
   },
   {
     key: "type:seller",

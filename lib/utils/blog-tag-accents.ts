@@ -1,44 +1,92 @@
+import {
+  BRAND_CTA_BLUE,
+  BRAND_DARK_BLUE,
+  BRAND_DEEP_BLUE,
+  BRAND_LIGHT_BLUE,
+  BRAND_NAVY,
+  BRAND_OFF_WHITE,
+} from "@/lib/brand-colors"
+
 export type BlogTagAccent = {
   pill: string
   stripe: string
+  banner: string
+  /** Overlapping board marks on empty banners. */
+  marks: string
+  heading: string
   /** Hex stops for generated title-card / OG art (Satori cannot use Tailwind). */
   ogFrom: string
   ogTo: string
 }
 
 /**
- * Visual accents for blog / field-notes tags (index cards + article hero).
+ * Visual accents for blog cards and article heroes.
+ * Colors are Reswell brand palette only (`lib/brand-colors.ts`).
  */
 export function blogTagAccents(tag: string): BlogTagAccent {
   const key = tag.toLowerCase()
   if (key === "gear") {
     return {
-      pill: "border-sky-200/80 bg-sky-50 text-sky-950",
-      stripe: "from-sky-500/90 to-cyan-600/80",
-      ogFrom: "#0ea5e9",
-      ogTo: "#0891b2",
+      pill: "border-[#7F9DD5]/50 bg-[#7F9DD5]/20 text-[#163060]",
+      stripe: "from-[#7F9DD5] to-[#5574AD]",
+      banner: "bg-[#7F9DD5]",
+      marks: "bg-[#163060]/15",
+      heading: "text-[#163060]",
+      ogFrom: BRAND_LIGHT_BLUE,
+      ogTo: BRAND_CTA_BLUE,
+    }
+  }
+  if (key === "boards") {
+    return {
+      pill: "border-[#5574AD]/40 bg-[#5574AD]/15 text-[#163060]",
+      stripe: "from-[#5574AD] to-[#355185]",
+      banner: "bg-[#5574AD]",
+      marks: "bg-white/25",
+      heading: "text-[#5574AD]",
+      ogFrom: BRAND_CTA_BLUE,
+      ogTo: BRAND_DARK_BLUE,
+    }
+  }
+  if (key === "people") {
+    return {
+      pill: "border-[#355185]/40 bg-[#355185]/15 text-[#163060]",
+      stripe: "from-[#355185] to-[#163060]",
+      banner: "bg-[#355185]",
+      marks: "bg-white/25",
+      heading: "text-[#355185]",
+      ogFrom: BRAND_DARK_BLUE,
+      ogTo: BRAND_DEEP_BLUE,
     }
   }
   if (key === "culture") {
     return {
-      pill: "border-violet-200/80 bg-violet-50 text-violet-950",
-      stripe: "from-violet-500/85 to-fuchsia-600/75",
-      ogFrom: "#8b5cf6",
-      ogTo: "#c026d3",
+      pill: "border-[#163060]/30 bg-[#163060]/10 text-[#163060]",
+      stripe: "from-[#163060] to-[#001A4A]",
+      banner: "bg-[#163060]",
+      marks: "bg-white/20",
+      heading: "text-[#163060]",
+      ogFrom: BRAND_DEEP_BLUE,
+      ogTo: BRAND_NAVY,
     }
   }
   if (key === "travel") {
     return {
-      pill: "border-amber-200/80 bg-amber-50 text-amber-950",
-      stripe: "from-amber-500/85 to-orange-600/75",
-      ogFrom: "#f59e0b",
-      ogTo: "#ea580c",
+      pill: "border-[#001A4A]/30 bg-[#001A4A]/10 text-[#163060]",
+      stripe: "from-[#001A4A] to-[#04070E]",
+      banner: "bg-[#001A4A]",
+      marks: "bg-white/20",
+      heading: "text-[#5574AD]",
+      ogFrom: BRAND_NAVY,
+      ogTo: BRAND_DEEP_BLUE,
     }
   }
   return {
-    pill: "border-border bg-muted/80 text-foreground",
-    stripe: "from-foreground/30 to-foreground/15",
-    ogFrom: "#94a3b8",
-    ogTo: "#64748b",
+    pill: "border-[#7F9DD5]/40 bg-[#F9F9F2] text-[#163060]",
+    stripe: "from-[#7F9DD5] to-[#5574AD]",
+    banner: "bg-[#F9F9F2]",
+    marks: "bg-[#163060]/10",
+    heading: "text-[#163060]",
+    ogFrom: BRAND_OFF_WHITE,
+    ogTo: BRAND_LIGHT_BLUE,
   }
 }

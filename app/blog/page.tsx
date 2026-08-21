@@ -22,7 +22,7 @@ export default async function BlogPage() {
       {canManageBlogCms ? <BlogCmsFloatingPanel /> : null}
       <ReadingHub
         title="Blog"
-        description="Stories and practical guides from Reswell on gear, culture, and the marketplace, for buyers and sellers."
+        description="Boards, fins, and the people who ride them."
         articles={articles}
       />
     </div>

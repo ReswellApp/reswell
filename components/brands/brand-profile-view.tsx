@@ -13,6 +13,10 @@ import { BrandProductCategoryBadges } from "@/components/brands/brand-product-ca
 import { Button } from "@/components/ui/button"
 import type { RecentListing } from "@/components/recent-feed-client"
 import { BrandMarketplaceListingsPreview } from "@/components/brands/brand-marketplace-listings-preview"
+import {
+  brandLiveListingsHeading,
+  brandRecentlySoldHeading,
+} from "@/lib/brands/listings-copy"
 
 /**
  * Brand detail — directory fields from `public.brands`; CTAs use keyword `/search?q={name}`;
@@ -33,9 +37,11 @@ export function BrandProfileView({
   isLoggedIn: boolean
   viewerUserId: string | null
 }) {
+  const founder = brand.founder_name?.trim() || null
+  const shaper = brand.lead_shaper_name?.trim() || null
   const metaBits = [
-    brand.founder_name ? `Founded by ${brand.founder_name}` : null,
-    brand.lead_shaper_name ? `Shaped by ${brand.lead_shaper_name}` : null,
+    founder ? `Founded by ${founder}` : null,
+    shaper && shaper !== founder ? `Shaped by ${shaper}` : null,
     brand.model_count > 0
       ? `${brand.model_count} model${brand.model_count === 1 ? "" : "s"}`
       : null,
@@ -128,6 +134,8 @@ export function BrandProfileView({
               viewerUserId={viewerUserId}
               viewAllActiveHref={brandActiveListingsBrowseHref(brand)}
               viewSoldHref={brandSoldListingsBrowseHref(brand)}
+              liveHeading={brandLiveListingsHeading(brand.name, brand.product_categories)}
+              soldHeading={brandRecentlySoldHeading(brand.name, brand.product_categories)}
             />
           </div>
         </section>

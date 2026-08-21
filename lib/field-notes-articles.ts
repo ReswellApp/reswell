@@ -5,6 +5,9 @@ export type ArticleBlock =
   | { kind: "p"; text: string }
   | { kind: "image"; url: string; alt?: string; caption?: string; width?: number; height?: number }
   | { kind: "instagram"; url: string }
+  | { kind: "listing"; ref: string }
+  | { kind: "listing-image"; ref: string; caption?: string }
+  | { kind: "sold-listings"; limit?: number }
 
 export type FieldNoteArticle = {
   /** Present when sourced from Postgres. */

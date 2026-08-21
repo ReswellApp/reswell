@@ -34,6 +34,8 @@ const imageSchema = z.object({
   height: z.coerce.number().int().positive().max(20_000).optional(),
 })
 
+const listingRefSchema = z.string().trim().min(1).max(500)
+
 export const articleBlockSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("h2"),
@@ -47,6 +49,19 @@ export const articleBlockSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("instagram"),
     url: instagramSchema,
+  }),
+  z.object({
+    kind: z.literal("listing"),
+    ref: listingRefSchema,
+  }),
+  z.object({
+    kind: z.literal("listing-image"),
+    ref: listingRefSchema,
+    caption: z.string().max(2000).optional(),
+  }),
+  z.object({
+    kind: z.literal("sold-listings"),
+    limit: z.coerce.number().int().min(2).max(12).optional(),
   }),
 ])
 
