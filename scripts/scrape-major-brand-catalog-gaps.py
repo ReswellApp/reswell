@@ -324,11 +324,40 @@ def is_surfboard(product: dict) -> bool:
     return bool(BOARD.search(blob))
 
 
+# Channel Islands alternate spellings → canonical catalog names.
+CI_MODEL_ALIASES = {
+    "2.pro": "CI 2.Pro",
+    "ci 2.pro": "CI 2.Pro",
+    "ci 2.pro ect": "CI 2.Pro",
+    "high-5": "High 5",
+    "high five": "High 5",
+    "m13": "The M13",
+    "new flyer": "The New Flyer",
+    "tlow": "T-Low",
+    "waterhog": "The Water Hog",
+    "black beauty": "The Black Beauty",
+    "black/white": "Black and White",
+    "black & white": "Black and White",
+    "rocket wide sqaush": "Rocket Wide Squash",
+    "sp12": "Semi Pro 12",
+    "msf": "The MSF G2",
+    "mini": "Mini Eco-hybrid",
+    "x-lite pod mod black": "Pod Mod",
+}
+
+
+def apply_ci_model_alias(name: str) -> str:
+    return CI_MODEL_ALIASES.get(name.casefold().strip(), name.strip())
+
+
 def clean_model_name(title: str, brand_name: str) -> str:
     name = title.strip()
     # Pyzel / stock titles often use "Model | dims | fins | construction"
     if "|" in name:
         name = name.split("|", 1)[0].strip()
+    # Used / trade-in SKUs are not catalog models
+    if re.search(r"\bused\s+team\s+board\b|\bteam\s+trade[\s-]?in\b", name, re.I):
+        return ""
     for prefix in [
         brand_name,
         brand_name.replace("&", "and"),
@@ -395,10 +424,27 @@ def clean_model_name(title: str, brand_name: str) -> str:
         candidate = m.group(1).strip(" -|:/")
         if not re.match(r"^\d+['′]", candidate):
             name = candidate
+    # Collapse construction SKUs into the base model for CI / shared scrapes
+    name = re.sub(
+        r"\s+(?:spine-?tek|spinetek|ect(?:\s+epoxy)?|x-?lite(?:\s+pod\s+mod)?(?:\s+black)?)\s*$",
+        "",
+        name,
+        flags=re.I,
+    )
     name = re.sub(r"\s+", " ", name).strip(" -|:/")
-    # Drop pure configurator / deposit junk
-    if re.search(r"^(custom order|shape3d|tech upgrade|rush)\b", name, re.I):
+    # Drop pure configurator / deposit junk (exact "The" is truncated scrape noise)
+    if re.search(r"^(custom order|shape3d|tech upgrade|rush)$", name, re.I):
         return ""
+    if re.fullmatch(r"the", name, re.I):
+        return ""
+    if brand_name.casefold().startswith("channel islands"):
+        # Keep CI prefix on models that are officially "CI …" (2.Pro, Mid, Pro, …)
+        restored = title.strip()
+        if re.match(r"^(?:channel islands(?:\s+surfboards)?|ci)\s+", restored, re.I):
+            # Prefer official CI-prefixed names when the cleaned name is a known CI shape
+            if name.casefold() in {"2.pro", "mid", "mid twin", "pro", "pro grom", "pro step up", "log", "noserider", "fish"}:
+                name = f"CI {name}" if not name.casefold().startswith("ci ") else name
+        name = apply_ci_model_alias(name)
     return name[:120] if name else ""
 
 

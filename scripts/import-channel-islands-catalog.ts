@@ -17,6 +17,7 @@ import {
   buildChannelIslandsModelDescription,
   CHANNEL_ISLANDS_BRAND_SLUG,
   DEFAULT_CHANNEL_ISLANDS_JSON,
+  isChannelIslandsCatalogModelName,
   loadChannelIslandsJsonRows,
   normalizeChannelIslandsModelName,
   resolveChannelIslandsModelImage,
@@ -92,6 +93,10 @@ async function importCatalog(
 
   for (const row of rows) {
     const modelName = normalizeChannelIslandsModelName(row.productName)
+    if (!isChannelIslandsCatalogModelName(modelName)) {
+      skippedModels++
+      continue
+    }
     const description = buildChannelIslandsModelDescription(row)
 
     if (dryRun) {
