@@ -16,14 +16,7 @@ import { loadHomeMostViewedMosaic, type HomeMostViewedMosaicLayout } from "@/lib
 import { loadHomeRecentlyListedGridRows } from "@/lib/services/homeRecentlyListedGridSection"
 import { loadHomeRecentlySoldSurfboardRows } from "@/lib/services/homeRecentlySoldStrip"
 import { createAnonSupabaseClient } from "@/lib/supabase/anon"
-import {
-  BRAND_MEDIA_PROXY_PATH_PREFIX,
-  brandAssetsStorageObjectPathFromUrl,
-} from "@/lib/brand-media-proxy-url"
-import {
-  BRAND_REQUEST_MEDIA_PROXY_PATH_PREFIX,
-  brandRequestLogosStorageObjectPathFromUrl,
-} from "@/lib/brand-request-media-proxy-url"
+import { brandLogoStorageRef } from "@/lib/brand-media-proxy-url"
 import {
   getCachedPublicStorageObject,
   type PublicStorageBucket,
@@ -259,47 +252,9 @@ const TRENDING_BRAND_LOGO_PUBLIC_MARKER: Record<
   "brand-request-logos": "/storage/v1/object/public/brand-request-logos/",
 }
 
-function objectPathFromProxiedMediaSrc(src: string, prefix: string): string | null {
-  if (!src.startsWith(prefix)) return null
-  const raw = src.slice(prefix.length).split(/[?#]/)[0] ?? ""
-  try {
-    const decoded = raw
-      .split("/")
-      .filter(Boolean)
-      .map((segment) => decodeURIComponent(segment))
-      .join("/")
-    if (!decoded || decoded.includes("..")) return null
-    return decoded
-  } catch {
-    return null
-  }
-}
-
-function resolveTrendingBrandLogoStorage(
-  logoUrl: string,
-): {
-  bucket: Extract<PublicStorageBucket, "brand-assets" | "brand-request-logos">
-  objectPath: string
-} | null {
-  const brandAssetsPath =
-    brandAssetsStorageObjectPathFromUrl(logoUrl) ??
-    objectPathFromProxiedMediaSrc(logoUrl, BRAND_MEDIA_PROXY_PATH_PREFIX)
-  if (brandAssetsPath) return { bucket: "brand-assets", objectPath: brandAssetsPath }
-
-  const requestPath =
-    brandRequestLogosStorageObjectPathFromUrl(logoUrl) ??
-    objectPathFromProxiedMediaSrc(logoUrl, BRAND_REQUEST_MEDIA_PROXY_PATH_PREFIX)
-  if (requestPath) return { bucket: "brand-request-logos", objectPath: requestPath }
-
-  return null
-}
-
-/** Fill Next.js Data Cache for `/media/brands` so homepage logos skip Supabase on origin hits. */
+/** Prime tag-only Data Cache for `/media/brands` so homepage logos skip Supabase until a brand update. */
 async function warmTrendingBrandLogo(logoUrl: string | null): Promise<void> {
-  const trimmed = logoUrl?.trim()
-  if (!trimmed) return
-
-  const resolved = resolveTrendingBrandLogoStorage(trimmed)
+  const resolved = brandLogoStorageRef(logoUrl)
   if (!resolved) return
 
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "")

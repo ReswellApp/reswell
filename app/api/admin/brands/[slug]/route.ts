@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { revalidateHomeTrendingBrandsCatalog } from "@/lib/cache/revalidate-home-public-catalog"
+import { revalidateBrandLogoMedia } from "@/lib/cache/revalidate-public-storage-object"
 import { revalidateSellCatalogSearch } from "@/lib/cache/revalidate-sell-catalog-search"
 import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
 import { syncFinCatalogBrandToIndex } from "@/lib/elasticsearch/fin-catalog-index"
@@ -122,6 +123,16 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ slug: str
     productCategoriesUpdate = parsedCategories
   }
 
+  let previousLogoUrl: string | null = null
+  if (body.logo_url !== undefined) {
+    const { data: current } = await supabase
+      .from("brands")
+      .select("logo_url")
+      .eq("slug", currentSlug)
+      .maybeSingle()
+    previousLogoUrl = typeof current?.logo_url === "string" ? current.logo_url : null
+  }
+
   const { data, error } = await supabase
     .from("brands")
     .update(updates)
@@ -160,6 +171,10 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ slug: str
     body.slug !== undefined
   ) {
     revalidateHomeTrendingBrandsCatalog()
+  }
+  if (body.logo_url !== undefined) {
+    const nextLogo = typeof updates.logo_url === "string" ? updates.logo_url : null
+    revalidateBrandLogoMedia(previousLogoUrl, nextLogo)
   }
   void syncBrandToIndex(supabase, data.id)
   void syncFinCatalogBrandToIndex(supabase, data.id)
