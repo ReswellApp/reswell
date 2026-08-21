@@ -1,0 +1,158 @@
+<!--
+  Reswell · Klaviyo flow — Offer accepted (buyer)
+  Paste into Flows → Email → Code / HTML (or a Custom HTML block).
+
+  Trigger: Metric → Offer Accepted
+  Optional split: accepted_by equals seller → send this immediately.
+  Then Time delay 24h → paste offer-accepted-reminder-email.html
+  Exit / filter: profile has done Placed Order or Purchase Successful since starting this flow.
+
+  Subject: Your offer was accepted
+  Preview: {{ event.Title }} is yours at {{ event.offer_amount_display }}
+
+  Event variables (from track-offer-accepted.ts):
+  - Title, offer_amount_display, list_price_display, seller_display_name
+  - fulfillment_label, checkout_url, listing_url, messages_url, photo_url, offers_url
+
+  checkout_url already has ?offer= — append UTMs with & not ?.
+  If your Klaviyo shell already has a logo or footer, delete the logo row below.
+  Leave Klaviyo's unsubscribe / address footer in the template shell.
+
+  Do not use {% if %} / {% for %} in this workspace — they often print as raw text.
+-->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;background:#FFFFFF;">
+  <tr>
+    <td align="center" style="padding:32px 16px 40px 16px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;max-width:600px;">
+
+        <!-- Logo -->
+        <tr>
+          <td align="center" style="padding:0 0 28px 0;">
+            <a href="https://www.reswell.app?utm_source=klaviyo&utm_medium=email&utm_campaign=offer_accepted&utm_content=logo" style="text-decoration:none;">
+              <img src="https://www.reswell.app/images/reswell-logo.png" alt="Reswell" width="160" height="40" style="display:block;width:160px;max-width:100%;height:auto;border:0;" />
+            </a>
+          </td>
+        </tr>
+
+        <!-- Headline -->
+        <tr>
+          <td align="center" style="padding:0 32px 8px 32px;">
+            <h1 style="margin:0;font-family:Arial, Helvetica, sans-serif;font-size:28px;font-weight:700;color:#04070E;letter-spacing:-0.03em;line-height:1.2;text-align:center;">
+              Your offer was accepted
+            </h1>
+          </td>
+        </tr>
+
+        <tr>
+          <td align="center" style="padding:0 32px 24px 32px;">
+            <p style="margin:0;font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:1.5;color:#04070E;text-align:center;">
+              Hey {{ first_name|default:'there' }} &mdash; {{ event|lookup:'seller_display_name' }} accepted your offer of <strong style="font-weight:600;">{{ event|lookup:'offer_amount_display' }}</strong> for <strong style="font-weight:600;">{{ event|lookup:'Title' }}</strong>. Checkout when you&rsquo;re ready.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Listing photo -->
+        <tr>
+          <td align="center" style="padding:0 32px 16px 32px;">
+            <a href="{{ event|lookup:'listing_url' }}?utm_source=klaviyo&utm_medium=email&utm_campaign=offer_accepted&utm_content=listing_image" style="text-decoration:none;">
+              <img src="{{ event|lookup:'photo_url' }}" alt="{{ event|lookup:'Title' }}" width="400" style="display:block;width:100%;max-width:400px;height:auto;margin:0 auto;border-radius:8px;border:1px solid #E2E8F0;" />
+            </a>
+          </td>
+        </tr>
+
+        <tr>
+          <td align="center" style="padding:0 32px 24px 32px;">
+            <a href="{{ event|lookup:'listing_url' }}?utm_source=klaviyo&utm_medium=email&utm_campaign=offer_accepted&utm_content=listing_title" style="font-family:Arial, Helvetica, sans-serif;font-size:18px;font-weight:600;color:#04070E;text-decoration:none;letter-spacing:-0.02em;line-height:1.3;">{{ event|lookup:'Title' }}</a>
+            <p style="margin:8px 0 0 0;font-family:Arial, Helvetica, sans-serif;font-size:17px;font-weight:600;color:#163060;">{{ event|lookup:'offer_amount_display' }}</p>
+          </td>
+        </tr>
+
+        <!-- Offer summary -->
+        <tr>
+          <td style="padding:0 32px 24px 32px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;max-width:440px;margin:0 auto;border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+              <tr>
+                <td style="padding:16px 20px 8px 20px;font-family:Arial, Helvetica, sans-serif;font-size:13px;font-weight:700;color:#04070E;letter-spacing:0.06em;text-transform:uppercase;">
+                  Offer summary
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:0 20px;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
+                    <tr>
+                      <td style="padding:12px 0;border-bottom:1px solid #E2E8F0;font-family:Arial, Helvetica, sans-serif;font-size:15px;color:#04070E;">Seller</td>
+                      <td align="right" style="padding:12px 0;border-bottom:1px solid #E2E8F0;font-family:Arial, Helvetica, sans-serif;font-size:15px;font-weight:600;color:#04070E;">{{ event|lookup:'seller_display_name' }}</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:0 20px;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
+                    <tr>
+                      <td style="padding:12px 0;border-bottom:1px solid #E2E8F0;font-family:Arial, Helvetica, sans-serif;font-size:15px;color:#04070E;">List price</td>
+                      <td align="right" style="padding:12px 0;border-bottom:1px solid #E2E8F0;font-family:Arial, Helvetica, sans-serif;font-size:15px;font-weight:600;color:#04070E;">{{ event|lookup:'list_price_display' }}</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:0 20px;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
+                    <tr>
+                      <td style="padding:12px 0;border-bottom:1px solid #E2E8F0;font-family:Arial, Helvetica, sans-serif;font-size:15px;color:#04070E;">Delivery</td>
+                      <td align="right" style="padding:12px 0;border-bottom:1px solid #E2E8F0;font-family:Arial, Helvetica, sans-serif;font-size:15px;font-weight:600;color:#04070E;">{{ event|lookup:'fulfillment_label' }}</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:12px 20px 16px 20px;">
+                  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border-collapse:collapse;">
+                    <tr>
+                      <td style="font-family:Arial, Helvetica, sans-serif;font-size:16px;font-weight:700;color:#04070E;">Your price</td>
+                      <td align="right" style="font-family:Arial, Helvetica, sans-serif;font-size:16px;font-weight:700;color:#163060;">{{ event|lookup:'offer_amount_display' }}</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td align="center" style="padding:0 32px 28px 32px;">
+            <p style="margin:0;font-family:Arial, Helvetica, sans-serif;font-size:15px;line-height:1.5;color:#64748B;text-align:center;max-width:440px;">
+              Shipping, if it applies, is added at checkout. You&rsquo;re not required to buy &mdash; this just locks in the agreed price.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Primary CTA -->
+        <tr>
+          <td align="center" style="padding:0 32px 12px 32px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+              <tr>
+                <td align="center" bgcolor="#5574AD" style="border-radius:50px;">
+                  <a href="{{ event|lookup:'checkout_url' }}&utm_source=klaviyo&utm_medium=email&utm_campaign=offer_accepted&utm_content=checkout_cta" style="display:inline-block;padding:14px 48px;font-family:Arial, Helvetica, sans-serif;font-size:16px;font-weight:600;color:#FFFFFF;text-decoration:none;letter-spacing:-0.02em;">
+                    Complete checkout
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td align="center" style="padding:0 32px 0 32px;">
+            <p style="margin:0;font-family:Arial, Helvetica, sans-serif;font-size:15px;line-height:1.5;color:#64748B;text-align:center;">
+              Questions? <a href="{{ event|lookup:'messages_url' }}?utm_source=klaviyo&utm_medium=email&utm_campaign=offer_accepted&utm_content=message_seller" style="color:#5574AD;text-decoration:underline;">Message the seller</a>
+              or <a href="{{ event|lookup:'offers_url' }}?utm_source=klaviyo&utm_medium=email&utm_campaign=offer_accepted&utm_content=view_offers" style="color:#5574AD;text-decoration:underline;">view your offers</a>.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
