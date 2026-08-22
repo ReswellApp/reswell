@@ -1,0 +1,223 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "misfit-surfboards",
+      "name": "Misfit",
+      "website_url": "https://misfitshapes.com/",
+      "location_label": "Australia",
+      "short_description": "Australian alternative and performance shapes with a strong indie following.",
+      "models": [
+        {
+          "name": "Bull Dove 2",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/files/BULLDOVE-WEB-4000x2250.jpg?v=1711407424",
+          "board_category_slug": "shortboard",
+          "description": "The globally travelled, highly rated ‘BULL DOVE’ returns after much anticipation. The name still suggests it all; a raging “bull”, but perfectly tamed by timeless shortboard design and clean, pure lines, hence the “dove” part of the title. Well, that and the fact that we wanted to pay homage to our powerhouse model signatory, Fraser Dovell."
+        },
+        {
+          "name": "Eraser Head",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/files/ERASER-HEAD-WEB-flatlays.jpg?v=1695095635",
+          "board_category_slug": "shortboard",
+          "description": "Our beloved Guadeloupean National Tito LaVole has his first M/SF/T Signature model, aptly named 'ERASER HEAD', an ode to David Lynch's 1977 horror film of the same name. This board has been nearly 2 years in development and has taken many turns in design."
+        },
+        {
+          "name": "Longus",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/unnamed.jpg?v=1678937250",
+          "board_category_slug": "hybrid",
+          "description": "This model was originally planned to be called the LONG CLOUD, derived from its extended length on base model the BEACH CLOUD. But long cloud felt more like the name of a weather pattern. It’s not like “warm day” is a sexy name for pair of pants, long cloud wasn’t sexy enough either."
+        },
+        {
+          "name": "Drib",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/DRIB-STANVERSION-deck.jpg?v=1662685259",
+          "board_category_slug": "shortboard",
+          "description": "Hingy's got a Signature Model. I reckon most surfers dream of having a surfboard model bearing their name, but very few get to realize it. In recent years we've endeavoured to bring more of our fam into the design suite to create boards they are proud to call theirs and ones that reflect their approach to surfing."
+        },
+        {
+          "name": "Fungzetti",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/FUNGZETTI-4000x22504_DECK.jpg?v=1700456343",
+          "board_category_slug": "shortboard",
+          "description": "Mitch Coleborn is a surfer's surfer. His credibility amongst the surfing fraternity's core has been defined by his game-changing appearances in surf films like Modern Collective, Cluster, BS! and Stranger Than Fiction. His power & aggression, yet poise embodies surfing's definition from other board sports."
+        },
+        {
+          "name": "Yandina Speedway",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/YANDINA-BOARDS6_4000x_a5babe85-1124-4d2b-b6db-efa77c1a69a2.jpg?v=1628037434",
+          "board_category_slug": "shortboard",
+          "description": "‘YANDINA SPEEDWAY’, the long-awaited, and first signature model of OG M/SF/T family JAKE VINCENT, and who would expect a shape and name anything less representative of the “Vin”. This is QLD, engine culture and hellman spirit all packaged in a model for those that desire to surf like Vin; animated, untamed, progressive and unpredictable."
+        },
+        {
+          "name": "Speed Egg - Diamond Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/SPEEDEGG-DIAMOND.jpg?v=1622094530",
+          "board_category_slug": "hybrid",
+          "description": "Our classic NEO ‘SPEED EGG’ now has a spicy sister model, the ‘SPEED EGG - DIAMOND TWIN’. And really a “sister” is the best way to describe these board’s fundamental differences – she’s a bit smaller, a bit naughtier and she loves Gaga."
+        },
+        {
+          "name": "Truffle Shuffle",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/TRUFFLESHUFFLE.jpg?v=1622081381",
+          "board_category_slug": "shortboard",
+          "description": "After a long and at times brutal court case, ‘Chunk’ from the Goonies finally pulled down his floral shirt and began designing surfboards."
+        },
+        {
+          "name": "Thruster Space Dolphin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/THRUSTERSPACEDOLPHIN-1.jpg?v=1617941230",
+          "board_category_slug": "hybrid",
+          "description": "Still one of the most infamous players on the block, the ‘THRUSTER SPACE DOLPHIN’ is our punt machine for proggy surfing in small to mid-range wave conditions. This model has a deep single concave from nose all the way out through its signature 7” chopped square tail as well as an unmistakable stench of the good times."
+        },
+        {
+          "name": "Suspended Particle",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/SUSPENDEDPARTICLE_4000x_a04a2156-2ec5-4761-88a6-ba834cd693f7.jpg?v=1630463894",
+          "board_category_slug": "shortboard",
+          "description": "The ‘SUSPENDED PARTICLE’ is the only “shortboard” to be designed amidst this current post-apocalyptic age. Like any other piece of Cold War technology, this machine is built for flowing, top to bottom progressive surfing in everyday 2 - 6ft conditions."
+        },
+        {
+          "name": "Shadow Puppet",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/SHADOWPUPPET.jpg?v=1617941398",
+          "board_category_slug": "other",
+          "description": "This straight up sled doesn’t have too much in common with the subtly subversive Javanese puppet theatre “Wayang Kulit”."
+        },
+        {
+          "name": "Proform",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/PROFORM3.jpg?v=1620700239",
+          "board_category_slug": "shortboard",
+          "description": "I recently watched the 2010 remake of ‘The Karate Kid’, which I agree is a questionable choice of film from the outset, but furthermore I resigned that it was an absolute awful remake of an original classic, which is the polar opposite of what we have done here."
+        },
+        {
+          "name": "Nu Wavr",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/NUWAVR.jpg?v=1617939936",
+          "board_category_slug": "other",
+          "description": "The ‘NU WAVR’ is our unique “single fin-multi”, another modern interpretation of a retrospective design; drawing from a classic pintail vee bottom single fin but with contemporary inspiration, most notably the option to ride this board as a quad, thruster or single fin, making the board incredibly versatile and dynamic, like a winged cheetah for instance."
+        },
+        {
+          "name": "Nu Ravr",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/NUWAVRWHT.jpg?v=1617939871",
+          "board_category_slug": "step-up-gun",
+          "description": "In the words of the great Herbie Fletcher “when in doubt, paddle out”. Fundamentally, this is the inspiration behind the ‘NU RAVR’; developed initially as a step-up request of our original single fin model, the ‘NU WAVR’, but by design principle, it’s also in the same category as our ‘high-volume’ guns."
+        },
+        {
+          "name": "Mermaid Killer",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/MERMAIDKILLER.jpg?v=1617943140",
+          "board_category_slug": "fish",
+          "description": "The second signature model and next generation shape of Otis Carey’s, the ‘MERMAID KILLER’. As you may have realized, Otis has an insatiable appetite for co-designing unreal, unbeatable and unapologetic sleds. This board is all about heightened speed and responsiveness allowing for progressive modern surfing through an ultra short and refined shape."
+        },
+        {
+          "name": "Magic Mule",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/MAGICMULE_fd9c13ee-5380-48e5-8ab5-502494b5bdea.jpg?v=1617941176",
+          "board_category_slug": "hybrid",
+          "description": "The ‘MAGIC MULE’, your all round workhorse, initially designed as the big brother to the THRUSTER SPACE DOLPHIN; this model is built with maximum fun, forgiveness and versatility in mind."
+        },
+        {
+          "name": "Gun",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/GUN.jpg?v=1617940835",
+          "board_category_slug": "step-up-gun",
+          "description": "The late Hunter. S. Thompson used to surround himself with all sorts of guns because, “if people believe they’re going to be shot, they might stay away.” While Thompson was a prolific journalist, he was also a paranoid maniac. So rather than amassing a vast array of street heaters, we’ve stuck with just two variations of the ‘GUN’ or step up series boards."
+        },
+        {
+          "name": "G W O R",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/GWOR.jpg?v=1617942900",
+          "board_category_slug": "other",
+          "description": "G W O R ~ as in ‘gwor did you see that?!”… well, kind of, we just wanted a model & name reminiscent of the power and passion of the early 80s. And it just so happens that in the same year (1984) Gonz featured on the cover of ‘Thrasher’ Magazine performing a “beanplant”, Occy burst on to the world surfing scene soaring to the top of the ASP ratings."
+        },
+        {
+          "name": "Fang Variation",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/FANGVARIATION.jpg?v=1617940926",
+          "board_category_slug": "hybrid",
+          "description": "Another FANG means another pun, so don’t’ worry boss, you’ll fangk me later."
+        },
+        {
+          "name": "Fang",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/FANG.jpg?v=1617940873",
+          "board_category_slug": "hybrid",
+          "description": "Lock and load Raoul Duke, the ‘FANG’ is our step up hybrid “small board” model. What the heck is that you ask? Is it Lynard Skynard playing a hologram show in 2025? Close. It’s the refined, pinny sister model to our original small board hybrid the ‘FLAIR’ designed for waves in the 4 – 8ft range while maintaining maneuverability and critical tube riding ability."
+        },
+        {
+          "name": "Dingo Bandido",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/DINGOBANDIDO.jpg?v=1617941041",
+          "board_category_slug": "shortboard",
+          "description": "The ‘DINGO BANDIDO’ was the first signature creation of the enigmatic Otis Hope Carey. Co-designed with Otis, this model is built for individuals that desire to surf like him – vertical, progressive and almost always in the air, unlike a Zeppelin which is only sometimes in the air."
+        },
+        {
+          "name": "Diamond Dancer 3",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/DD3.jpg?v=1619165188",
+          "board_category_slug": "fish",
+          "description": "Part of our 2018 ‘Modern Cloud Control 3’ Collection, the ‘DIAMOND DANCER 3’ is our most conventional version of the Diamond Dancer Series yet."
+        },
+        {
+          "name": "Diamond Dancer 2",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/DIAMONDDANCER2.jpg?v=1617943058",
+          "board_category_slug": "fish",
+          "description": "Part of our 2017 ‘Modern Cloud Control 2’ Collection with a continued design emphasis on free-flowing and progressive shapes, the ‘DIAMOND DANCER 2’ is the shortboard, or refined nose profile version of the original snub nose ‘DIAMOND DANCER’."
+        },
+        {
+          "name": "Diamond Dancer",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/DIAMONDDANCER-1.jpg?v=1617942982",
+          "board_category_slug": "fish",
+          "description": "The first of our 2016 ‘Modern Cloud Control’ Collection with an overall design emphasis on free-flowing, progressive shapes, the ‘DIAMOND DANCER’ is the highly anticipated follow up model to the cult classic ‘MERMAID KILLER’."
+        },
+        {
+          "name": "Dead Beatsled",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/DEADBEATSLED.jpg?v=1619164985",
+          "board_category_slug": "groveler",
+          "description": "The ‘DEAD BEAT SLED’ is yet another model of board that has three words in its name. This trifecta of semantics was originally conceived by our old pal Mickey Mandrusiak of ‘DEAD BEAT BAND’ and ‘BLEACH GIRLS’ when he requested we add a single-fin box to our best selling model, the DOPE MACHINE."
+        },
+        {
+          "name": "Da Grom",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/DAGROM.jpg?v=1619164820",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Bull Dove",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/BULLDOVE.jpg?v=1617927692",
+          "board_category_slug": "shortboard",
+          "description": "The ‘BULL DOVE’ is our NEW 2019 team-plug performance shortboard. In fact it’s the most “HP” blade we’ve developed since the release of our long-time favoured team shorty, the ‘PROFORM’, and just like it’s predecessor, this model is designed for all out ATTACK."
+        },
+        {
+          "name": "Beach Metall Rnd",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/beachmetalrnd-deck.jpg?v=1651718000",
+          "board_category_slug": "fish",
+          "description": "Released in our 2018 ‘Modern Cloud Control 3’ Collection, the original flyer swallow ‘BEACH METALL’ reflected our desire to continue advancing ‘performance’ twin fins. In the winter of 2019, we introduced it’s round (RND) tail sister model to further facilitate the same contemporary twin fin approach but this time in far juicier conditions."
+        },
+        {
+          "name": "Neo Speed Egg",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/SPEEDEGG.jpg?v=1620365877",
+          "board_category_slug": "hybrid",
+          "description": "Although never released, we have been playing with this model for over 10 years. So it's old in design, but new (neo) from us. It is also the base planshape of our upcoming mid-length 'softboard' (more on that to come...). So here it finally is, the mid-length shape we always seem to circle back to, a classic ‘SPEED EGG’."
+        },
+        {
+          "name": "Sinister Kid",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/SINISTERKID-1.jpg?v=1617681281",
+          "board_category_slug": "other",
+          "description": "Until now, the most sinister kid was definitely Nelson Muntz. However, it is with great pride that we now announce that there is a new king in town. It all started as the second installment of our collaboration series with George Henderson of ‘A.D.C.C’, the ‘SINISTER KID’ is our new proggy take on a traditional mini simmons."
+        },
+        {
+          "name": "Dope Machine",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/DOPEMACHINE-1.jpg?v=1668562187",
+          "board_category_slug": "hybrid",
+          "description": "Unrivalled, unprecedented, pure fun; the ‘DOPE MACHINE’ is the first of our collaboration series with long time ‘MAD MINDS’ Advocate George Henderson of ‘A DEAD COFFIN CLUB’. Fundamentally, it is a combination of a classic high wide point fun-board, almost reminiscent of a 70’s single fin spawned with a modern proggy fish or hybrid."
+        },
+        {
+          "name": "Sk8ey 2.0",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/SK8EY2.jpg?v=1620702613",
+          "board_category_slug": "fish",
+          "description": "Like all former Hollywood stars, our original best selling skateboard inspired fish, the SK8EY has had some work done to keep her looking relevant and saucy. Anyone familiar with waiting room magazines would know that the ‘SK8EY 2.0’ has had a nose job, some lipo on the bum and an overall tightening of the curves."
+        },
+        {
+          "name": "Beach Metall",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/beachmetal-1.jpg?v=1617680828",
+          "board_category_slug": "fish",
+          "description": "Part of our 2018 ‘Modern Cloud Control 3’ Collection, the ‘BEACH METALL’ reflects our continued desire to advance performance ‘twin fins’, with this model being the most contemporary, and damn lively one to date. We’ve straightened the rail line from mid point to flyer providing even more drive."
+        },
+        {
+          "name": "Beach Cloud",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/beachcloud-yellow-deckcopy_1.jpg?v=1692696303",
+          "board_category_slug": "fish",
+          "description": "The second of our ‘Modern Cloud Control’ Collection with an overall design emphasis on free-flowing, progressive shapes, the ‘BEACH CLOUD’ is a modern take on a classic twin fin feel. As the name suggests, it has the same gaseous qualities as early evening Chanel perfume, late-night sea fog and loud sneezes at dusk."
+        },
+        {
+          "name": "Beach Burn",
+          "image_url": "https://cdn.shopify.com/s/files/1/0276/9865/9406/products/BEACHBURN_1bba7178-842c-4dd6-aa80-3e57b4e06e5e.jpg?v=1614308633",
+          "board_category_slug": "fish",
+          "description": "Part of our 2017 ‘Modern Cloud Control 2’ Collection with a continued progressive design approach to some favored retrospective board designs, the ‘BEACH BURN’ is the round tail, almost “winter twinny” version of the ‘BEACH CLOUD’ twin keel fish."
+        }
+      ]
+    }
+  ]
+}
