@@ -53,7 +53,7 @@ async function fetchAllBrandModelPages(
   run: (
     from: number,
     to: number,
-  ) => PromiseLike<{ data: RawBrandModelRow[] | null; error: { message: string } | null }>,
+  ) => PromiseLike<{ data: unknown; error: { message: string } | null }>,
 ): Promise<{ rows: RawBrandModelRow[]; error: string | null }> {
   const rows: RawBrandModelRow[] = []
   let from = 0
