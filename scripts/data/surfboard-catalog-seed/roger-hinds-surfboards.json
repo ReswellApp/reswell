@@ -1,0 +1,160 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "roger-hinds-surfboards",
+      "name": "Roger Hinds",
+      "website_url": "https://www.rogerhindssurfboards.com/",
+      "location_label": "California",
+      "founder_name": "Roger Hinds",
+      "lead_shaper_name": "Roger Hinds",
+      "short_description": "Hand-shaped custom surfboards from Roger Hinds — official named models from the shaper's site.",
+      "models": [
+        {
+          "name": "The King Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/1612678542056-X4JGCAZDGD1AAJQ7YKZV/Roger-Hinds-Surfboards-Kingfish-Model.jpg",
+          "description": "When the fish came out of San Diego and other twin fin designs started popping up, there were specific outlines that were surfacing on the North Shore that were ideal for the conditions.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Assassin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/1622008680344-8SA6KVKQ9AZLX9U5HZ9I/Roger-Hinds-Surfboards_Assassin-Design_2021.png",
+          "description": "The Assassin was a board Roger originally shaped in 1971, inspired by what some of the Australians rode in the 1970 world contest in Victoria, Australia. The board had a displacement hull bottom; the new version can be built either with the displacement hull or a contemporary bottom. The original was 6'8, 22 inches wide, 3 inches thick.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Aussie V",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/37f680f3-770c-45f1-8388-4eaad094c03d/Roger-HInds-Surfboards_Aussie-V.jpg",
+          "description": "The Aussie V was the start of Roger's career in the late 60s. He would strip down longboards and shape them into what was to become the transition-era style board. This board has a displacement hull bottom with a steep V in the tail. The board rides fast and smooth.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Red Baron",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/1670824782241-KQOJ2609WWV8B3M5ZG05/Roger-Hinds-Surfboards-Red-Baron-Stepdeck.jpg",
+          "description": "The lineup can sometimes be a warzone. So when you're in need of some dominance in the dogfight for waves then The Red Baron model is the weapon of choice. Inspired by competition rider Baron Bañuelos, the board comes with pinched 50/50 rails and is offered in a stepdeck version with an option for pin or squaretail.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Renaissance",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/298c48ce-df3a-4c3a-96fb-656fb5f52a7d/Roger-Hinds-Surfboards-The-Renaissance-Model-2022.png",
+          "description": "The Renaissance model revisits and revives the top longboard plan shape from the 1960s and combines it with modern rocker, rail, and foil. The modern pulled-down rail allows for smooth rail-to-rail transitions, and the fine foil increases speed and glide.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Tunnel Hustler",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/18988479-748b-4fe3-9da2-4d8e5c11c239/Roger-Hinds-Surfboards-Tunnel-Hustler-2022.png",
+          "description": "The Tunnel Hustler is Roger's high-performance longboard, first built for Russ K Makaha and Blue Hawaii team riders in the 90s for Sunset, Makaha, and Pipeline, and a standout at Malibu and California beachbreaks. Pulled-in tail, increased mid-board curve, and multiple fin setups make it the most performance-driven model in the longboard quiver.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "1958 Pig",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/382d754a-143b-4f4e-90bb-7cc4c3cb4a72/Roger-Hinds-Surfboards-1958-Pig-2022.png",
+          "description": "The plan shape of the Roger Hinds 1958 Pig is an exact replica of the Velzy/Jacobs Pig, with subtle changes to the deck, bottom, and rails. The deck line is perfectly flat, the bottom has a low entry rocker for paddling and glide, and the rails are thinner and more foiled than the tennis-ball rails on 1950s pigs.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "PS.65 by Paul Strauch",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/b16bd521-352b-4799-9c86-2c83067cb4c3/Roger-Hinds-Surfboards-PS65-2022.png",
+          "description": "A collaborative model between Paul Strauch and Roger Hinds, inspired by the small-wave board George Downing made for Paul for the 1965 world contest in Peru. The original Downing classic shape is kept intact as a small-wave longboard and modernized in the bottom rocker, nose, tail, and rails. Boards are hand signed and numbered by Paul Strauch.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The 4 Doors Ultra Glide",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/fe760598-ff82-4b44-ad4a-675003e43a52/Roger-Hinds-Surfboards-Ultra-Glide-Stained-Glass-2025.png",
+          "description": "Surfing the Ultra Glide alternates between smooth-operator and slide-the-glide sensations. An extended V panel allows easy rail-to-rail transitions on a flowing pintail outline designed to maximize the glider experience. Offered from 9'0\" to 12'0\", with the sweet spot at 10'0\", 10'6\", or 11'0\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Malolo Flyer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/1618290204838-GVZKF79W6IYE8BFI8QWA/Roger-Hinds-Surfboards-Malolo-Flyer-2021.png",
+          "description": "The Malolo Flyer, translated from Hawaiian as \"Flying Fish,\" is a collaboration with Paul Strauch, Jr. Design elements include a narrow nose, rocker, and a wide tail section with extremely sharp right-angle rails. Extremely easy to change direction, trim, and nose ride.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Pig Pin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/1617688811862-UHCBWFYF91OQWIYX939F/Roger-Hinds-Surfboards-Pig-Pin-2021.png",
+          "description": "The Pig Pin is the natural evolution forward from the 1958 Pig. Similar in outline, with wide hips and a similar nose, it uses a pintail instead of a square tail and is offered with traditional 50/50 rails or a modernized down-rail option. Ridden exclusively as a single fin from 8'0\" to 11'0\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Dream Step Deck",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/1489357654782-XLQ0U3FFJGG8NT65UOSE/roger+hinds+surfboards+the+dream+step+deck+.jpg",
+          "description": "This surfboard was the model for the Ultimate Craftsman Project and was inspired by a 1967 Skip Frye shape. Roger wanted it really pinched all the way through the board — something different than any board you'd come across in a surf shop. The base model comes with a single stringer and can be custom ordered with special wood glue-ups, pinlines, and deck patches.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Classic",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/1617688888718-IEKKVE9QZW8HL9EIR4XQ/Roger-Hinds-Surfboards-Classic-2021.png",
+          "description": "A perfectly constructed 1966-1967 noserider. With three stringers, a custom tailblock, and unparalleled 50/50 rails, this classic longboard defines the genuine noserider that's been cruising San Onofre and Malibu for decades.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Genesis",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/e6ee050a-ee5b-4815-aa6f-85768d671616/Roger-Hinds-Surfboards-Genesis-Red-Bolt-Rail-2025.png",
+          "description": "In the summer of 1973, after a couple of winters on the North Shore, Roger was riding a 6'10\" Lightning Bolt, 20 inches wide, with a single fin and swallow tail. Fifty years later he pulled out the original template and added an inch of tape around each side, bringing the board forward half a century. The significant curve in the outline shortens the turning radius. Named Genesis because it was the point he began to understand how specific features influenced performance.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "California Gold",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/4297a36c-602f-4d08-9132-9e371c855b01/Roger+Hinds+Surfboards+California+Gold+Red+Abstract+2025.png",
+          "description": "The California Gold has longboard dimensions from the center to the tail with a pulled-in nose — basically a blown-up California-style gun. Proper shortboard or gun rocker lets it turn short and tight in the pocket. Roger has been riding it from 2 feet to well overhead. Popular sizes start at 7'4\" to 7'6\" and go up to 9'0\".",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "The Dream Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/90ab55ad-e691-42cc-b84a-fad37d6cd8ab/Roger-Hinds-Surfboards-Dream-Fish-Cream-2025.png",
+          "description": "The Dream Fish is a fish that performs beyond expectations. The curve of the outline allows you to get more vertical than a traditional fish, while the width in the tail gets you through flatter or slower sections. Due to Roger's fin-box placements it can be ridden as a fish, twin, or thruster depending on the setup.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Master",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/58bb673b-3315-4ea9-8074-4fd91039f9ed/The-Master-by-Roger-Hinds-Surfboards.png",
+          "description": "The Master is a board for those who still want to feel the glide, drive down the line, put the board on rail, and smile after a clean roundhouse cutback. Recommended from 7 to 9 feet, and it can be taken into the 6-foot range with some tweaking. Surfed best as a thruster or 5-fin, it has shortboard rocker so it can turn, stay fast, and stay loose. It is not a mid-length or a funboard — it is a shortboard for people who want to recapture their surfing prime.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Mind's Eye",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/aed06fc4-a5f3-4e8d-91d8-7a76910f94b3/Roger-Hinds-Surfboards-The-Minds-Eye-012523.jpg",
+          "description": "The Mind's Eye is Roger's latest midlength. A functional funboard outline for stability, paddling power, and easy rail-to-rail transitions, with his proven double concave and some vee off the tail. Thickness sits under the chest for paddling, while the rail stays thinner and foiled. It works from 6'4\" to 8'0\" as a tri-fin, quad, single, or 2+1.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Nomad",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/e2bd52bf-f84a-467d-88b3-9c1167988a28/Roger-Hinds-Surfboards_Nomad-Design_2021.png",
+          "description": "The Nomad has a shortboard high-performance rocker combined with a larger planing surface and a thinner overall foil. The added fullness and width of the outline lets you catch waves like a longboard, turn like a shortboard, and surf fast and loose. With Roger's fin-box placements it can be ridden as a thruster, twin, or quad.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Nomad Twin Fin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/f1811dd1-1992-485b-b21e-17bdeba78f9f/Roger-Hinds-Surfboards-Nomad-Twin-2022.png",
+          "description": "An exciting revision on Roger's original Nomad. The Nomad Twin Fin has a shortboard high-performance rocker, a larger planing surface, and a thinner foil, with the wide point moved back and fluted wings toward the rear of the fins. The wings break the rail line and the flutes add bite and projection while keeping the original Nomad bottom contour and rocker.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Bandit",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/1615764212730-6J097NGJZIPCZB70IKG0/Roger-Hinds-Surfboards_Bandit-Design_2021.png",
+          "description": "The Bandit was an original template from 1972 which would have been a twin fin, brought back in late summer 2017. Coupled with modern rails and a modern rocker in the original outline, it works with all fin configurations and accommodates bigger surfers on a shorter board.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Tamago",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/7a6902b6-aa8f-45f5-8cf7-53a7f75d476d/Roger-Hinds-Surfboards-Blue-Tamago-2026.png",
+          "description": "The Tamago, or egg-shaped midlength, allows for both casual cruising and performance surfing depending on the surfer and the conditions. A user-friendly wave magnet: the full outline catches waves early, and the rounded pintail gives holding power. It works equally well in beachbreaks and lined-up point waves.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Thing",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/1612985269817-PYJB21E4N7XD7RRDTEA8/Roger-Hinds-Surfboards_Thing+2.png",
+          "description": "Part fish, part hybrid, and part performance, The Thing is a one-board quiver. Whether groveling in slop or surfing the best waves you've had in a while, it maxes out wave count without sacrificing performance. Great for surfers coming down from funboards and longer hybrids.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Tracker",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/537d86e9e4b0f85b733cf5c6/1ef79583-737f-49bb-ac47-502ac702902c/roger-hinds-surfboards_tracker_gold-tb.jpg",
+          "description": "The Tracker, and its non-displacement hull, was built for a surfer whose emphasis is good style in good surf. It wants you to paddle out at Rincon, J-Bay, or Hanalei, take off deep, go hard off the bottom, and carve a big powerful turn.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
