@@ -1,0 +1,82 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "mark-richards-surfboards",
+      "name": "Mark Richards Surfboards",
+      "website_url": "https://markrichardssurfboards.com/",
+      "location_label": "Newcastle, New South Wales, Australia",
+      "founder_name": "Mark Richards",
+      "lead_shaper_name": "Mark Richards",
+      "short_description": "Low-output, high-quality surfboards shaped by four-time world champion Mark Richards in Australia, from history-defining twins to modern shortboards.",
+      "models": [
+        {
+          "name": "1980 Retro Pro",
+          "image_url": "https://cdn.shopify.com/s/files/1/0564/9180/2808/products/mr_boards_1980retropro_a.jpg",
+          "description": "An update on Mark Richards' most popular retro model, the 1980 Retro Twin Fin. It shares a similar retro rocker, vee bottom, fluted wings and thickness distribution, with a narrower nose and a wider more curved tail. Fast, loose, and a blast from the past. Standard fin setup is twin fin plus stabiliser.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "1979 Retro Single Fin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0564/9180/2808/products/mr_boards_1979-retro-single_a.jpg",
+          "description": "Faithfully recreated from an original 1979 board, retaining the same dimensions and plan-shape curves, retro rocker and thickness distribution with a beak nose, and a flat panel V bottom. Set or fin-box options are available using the MR 1979 fin template.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Super Twin 2",
+          "image_url": "https://cdn.shopify.com/s/files/1/0564/9180/2808/products/mr_boards_supertwin2_a.jpg",
+          "description": "The most popular and versatile model in the MR range. Mark Richards' ultimate small-wave high-performance board: fast, loose and easy to turn. Wider template with more nose area for flotation and paddling power. Standard fin setup is twin fin plus stabiliser.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "California Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0564/9180/2808/products/mr_boards_californiatwin_a.jpg",
+          "description": "A collaboration between Mark Richards and Matt Biolos. A modern single-to-double concave twin-plus-trailer based on MR's Super Twin, with lower entry rocker, a wider nose and tail block, and extra width for glide in gutless surf.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Cali Twin Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0564/9180/2808/products/mr_boards_calitwinpin_a.jpg",
+          "description": "A natural extension of the California Twin, also designed with Matt Biolos. The winged swallow of the original Cali Twin is replaced with a pin tail while keeping the wide forward outline, low entry rocker and deep single-to-double concave.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Flying Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0564/9180/2808/products/mr_boards_flyingfish_a_1800x1800_b9011647-b7d0-45f8-91ee-6c535ae30741.jpg",
+          "description": "A performance fish designed to surf rail to rail while keeping fish planing speed on fat sections and drive in small waves. Full pointed nose, low entry rocker, and a single-to-double concave. Standard fin setup is 5-fin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Puffer Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0564/9180/2808/products/mr_boards_puffertwin_a.jpg",
+          "description": "Combines the 1980 Retro Pro Twin with the modern Super Twin and Flying Fish to create a retro high-performance twin. Semi-fish outline with a full pointed nose. Standard fin setup is twin fin plus stabiliser.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Scalded Cat",
+          "image_url": "https://cdn.shopify.com/s/files/1/0564/9180/2808/products/mr_boards_scaldedcat_a.jpg",
+          "description": "A small-wave board designed through countless prototypes to enhance performance in small, marginal surf. Semi-fish with a full pointed nose and low rocker. Standard fin setup is twin fin plus stabiliser; also available as a 5-fin.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Mid Length Swallow Twin + 1",
+          "image_url": "https://cdn.shopify.com/s/files/1/0564/9180/2808/products/mr_mid-length-swallow_twin_1_a.jpg",
+          "description": "Balances performance and paddle power. Full pointed nose with low entry rocker, and a single-to-double concave with an accentuated V-like spine for acceleration. Developed on 6'8\" and 7'0\" lengths.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Bush Ranger Step-Up",
+          "image_url": "https://cdn.shopify.com/s/files/1/0564/9180/2808/products/mr_boards_bushrangerstepup_roundpin_a.jpg",
+          "description": "A high-performance step-up for when the surf has some size. Increased nose width and extra thickness under the chest, with accelerated tail rocker. Standard fin setup is 5-fin.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Bush Ranger Gun",
+          "image_url": "https://cdn.shopify.com/s/files/1/0564/9180/2808/products/mr_boards_bushrangergun_swallow_redrail_a.jpg",
+          "description": "The go-to board for good 6–8 ft plus surf. A modern gun with maneuverability on the open face that still holds in critical situations. Standard fin setup is thruster.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
