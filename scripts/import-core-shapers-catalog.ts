@@ -48,6 +48,10 @@ import {
   syncBrandProductCategories,
 } from "@/lib/db/brand-product-categories"
 import { isValidBrandSlug, slugifyBrandName } from "@/lib/brands/slug"
+import {
+  SURFBOARD_SELL_CATEGORY_ORDER,
+  type SurfboardSellCategoryKey,
+} from "@/lib/surfboard-sell-categories"
 import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
 import { syncSellCatalogBrandToIndex } from "@/lib/elasticsearch/sell-catalog-index"
 import {
@@ -59,6 +63,7 @@ type SeedModel = {
   name: string
   image_url?: string | null
   description?: string | null
+  board_category_slug?: SurfboardSellCategoryKey | null
 }
 
 type SeedBrand = {
@@ -136,11 +141,21 @@ function loadSeedFile(path: string): {
         slug: (b.slug || slugifyBrandName(b.name)).trim(),
         name: b.name.trim(),
         models: (b.models ?? [])
-          .map((m) => ({
-            name: m.name.trim(),
-            image_url: m.image_url ?? null,
-            description: m.description ?? null,
-          }))
+          .map((m) => {
+            const rawCategory =
+              typeof m.board_category_slug === "string" ? m.board_category_slug.trim() : ""
+            const boardCategorySlug = (SURFBOARD_SELL_CATEGORY_ORDER as readonly string[]).includes(
+              rawCategory,
+            )
+              ? (rawCategory as SurfboardSellCategoryKey)
+              : null
+            return {
+              name: m.name.trim(),
+              image_url: m.image_url ?? null,
+              description: m.description ?? null,
+              board_category_slug: boardCategorySlug,
+            }
+          })
           .filter((m) => m.name.length > 0),
       }))
       .filter((b) => b.name.length > 0 && isValidBrandSlug(b.slug)),
@@ -304,6 +319,7 @@ async function upsertModelsForBrand(opts: {
       description: model.description ?? null,
       image_url: imageUrl,
       product_category_slug: opts.productCategorySlug,
+      board_category_slug: model.board_category_slug ?? null,
     })
 
     if (insertResult.ok) {
