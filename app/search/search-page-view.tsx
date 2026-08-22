@@ -14,6 +14,7 @@ import {
   searchListingIdsFromElasticsearch,
 } from "@/lib/elasticsearch/listings-index"
 import {
+  brandLegacyRecallTokens,
   fuzzyBrandNamePrefix,
   isLikelyTypoBrandMatch,
   isMarketplaceSectionOnlyQuery,
@@ -375,9 +376,14 @@ async function resolveSearchListings(
       categoryId,
       sections: inventorySections,
     })
-    // Section-scoped brand inventory can be empty for co-brands (CI query → Futures fins).
-    // Fall through to ES text search in that case.
-    if (listings.length > 0 || !parsed?.sectionIntent) {
+    if (listings.length > 0) {
+      return { listings, searchMeta: null }
+    }
+    // Empty inventory with no typed query (brandSlug URL / brand page) stays empty.
+    // Brand-only free text must fall through so last-name titles still recall
+    // (e.g. "Christenson" → "6'6 Christenson Lane Splitter"). Section-scoped
+    // inventory can also be empty for co-brands (CI query → Futures fins).
+    if (!rawQuery.trim()) {
       return { listings, searchMeta: null }
     }
   }
@@ -387,7 +393,10 @@ async function resolveSearchListings(
     return { listings, searchMeta: null }
   }
 
-  const expansions = parsed?.expansions ?? (await expansionsForMarketplaceQuery(rawQuery))
+  const expansions = [
+    ...(parsed?.expansions ?? (await expansionsForMarketplaceQuery(rawQuery))),
+    ...(brand ? brandLegacyRecallTokens(brand.name) : []),
+  ]
   // Prefer parser text (may be "" for section-only "fins" → all listings in that section).
   // Brand-only + aliases: empty keyword so brand_id OR alias text is the recall clause.
   const widenBrandWithAliases = Boolean(

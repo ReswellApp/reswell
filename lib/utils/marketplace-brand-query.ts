@@ -31,6 +31,35 @@ const MARKETPLACE_SEARCH_NOISE_WORDS = new Set([
 ])
 
 /**
+ * Brand-name tokens that are too generic to use as title recall
+ * ("Hayden Shapes" must not match every listing with "shapes" in the title).
+ */
+const GENERIC_BRAND_NAME_TOKENS = new Set([
+  "shapes",
+  "designs",
+  "industries",
+  "company",
+  "inc",
+  "ltd",
+  "lab",
+  "labs",
+  "factory",
+  "handmade",
+  "customs",
+  "custom",
+  "the",
+  "studio",
+  "studios",
+  "workshop",
+])
+
+/**
+ * Minimum length for a brand-name token used as last-name / legacy title recall.
+ * Keeps "Chris" from matching unrelated titles while still matching "Christenson".
+ */
+const MIN_LEGACY_BRAND_TOKEN_LEN = 6
+
+/**
  * Query tokens that imply a marketplace listing section (e.g. "channel islands fins").
  * Bare "board(s)" stay noise-only — they do not force surfboards scope.
  */
@@ -163,6 +192,28 @@ export function marketplaceBrandQueryCandidates(raw: string): string[] {
 export function isMarketplaceSearchNoiseToken(token: string): boolean {
   const core = token.trim().toLowerCase().replace(/^['']+|['']+$/g, "")
   return core.length > 0 && MARKETPLACE_SEARCH_NOISE_WORDS.has(core)
+}
+
+/**
+ * Distinctive tokens from a directory brand name for last-name / legacy title recall.
+ * "Chris Christenson" → ["christenson"] so listings titled "Christenson Lane Splitter"
+ * still match a brand-only search. Skips given-name-length tokens and generic suffixes.
+ */
+export function brandLegacyRecallTokens(brandName: string): string[] {
+  const rawTokens = tokenizeQuery(brandName).filter((t) => !isMarketplaceSearchNoiseToken(t))
+  if (rawTokens.length === 0) return []
+
+  const distinctive = rawTokens.filter(
+    (t) => t.length >= MIN_LEGACY_BRAND_TOKEN_LEN && !GENERIC_BRAND_NAME_TOKENS.has(t),
+  )
+  if (distinctive.length === 0) return []
+
+  if (rawTokens.length >= 2) {
+    const lastNameLike = distinctive.filter((t) => t !== rawTokens[0])
+    if (lastNameLike.length > 0) return lastNameLike
+  }
+
+  return distinctive
 }
 
 export function levenshteinDistance(a: string, b: string): number {

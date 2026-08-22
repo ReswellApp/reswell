@@ -1,9 +1,12 @@
+import { brandLegacyRecallTokens } from "@/lib/utils/marketplace-brand-query"
+
 /**
  * Pure, deterministic matching of a listing title against the brand/model catalog.
  *
  * Used by the daily backfill cron to attach a directory brand / model to active
  * surfboard and fin listings that are missing them. Precision is favoured over
- * recall: a candidate only matches when its (normalized) name appears as a
+ * recall: a candidate only matches when its (normalized) name — or a distinctive
+ * last-name token such as "Christenson" for "Chris Christenson" — appears as a
  * whole-word phrase inside the title, so generic token overlap ("the", "6", a
  * shared letter) can never mislabel a listing.
  */
@@ -58,8 +61,11 @@ export function matchBrandFromTitle(
   for (const brand of brands) {
     const namePhrase = normalizedPhrase(brand.name)
     const slugPhrase = normalizedPhrase(brand.slug?.replace(/-/g, " "))
+    const lastNamePhrases = brandLegacyRecallTokens(brand.name).map((token) =>
+      normalizedPhrase(token),
+    )
 
-    const candidates = [namePhrase, slugPhrase].filter(
+    const candidates = [namePhrase, slugPhrase, ...lastNamePhrases].filter(
       (phrase) => phrase.length >= MIN_BRAND_PHRASE_LEN,
     )
     const matched = candidates.some((phrase) => phraseAppearsIn(haystack, phrase))
