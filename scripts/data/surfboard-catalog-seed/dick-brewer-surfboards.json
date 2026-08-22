@@ -1,0 +1,78 @@
+{
+  "generated_for": "Dick Brewer Surfboards official named models via the live Brewer-Morgan catalog",
+  "source": "https://brewermorgansurfboards.com/surfboard-models",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "dick-brewer-surfboards",
+      "name": "Dick Brewer Surfboards",
+      "website_url": "https://brewermorgansurfboards.com/surfboard-models",
+      "location_label": "Hawaii",
+      "founder_name": "Dick Brewer",
+      "lead_shaper_name": "Steve Morgan",
+      "short_description": "Dick Brewer — legendary Hawaiian big-wave and performance design.",
+      "models": [
+        {
+          "name": "Pupukea",
+          "image_url": "https://img1.wsimg.com/isteam/ip/9966d837-bca4-48b6-a6aa-e020176206eb/blob-df19437.png",
+          "description": "With the wide point and volume forward of center and narrower tail, the Pupukea combines early Brewer design with modern efficiency. This board is about the barrel — getting into waves early and maintaining control, the two essentials that determine effective tube riding. Sizes 5'8–6'10 (photo 6'2 x 19.5 x 2.6). Bottom: single to double concave. Tail: pin tail. Fins: tri, quad.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "82",
+          "image_url": "https://img1.wsimg.com/isteam/ip/9966d837-bca4-48b6-a6aa-e020176206eb/blob-29c17de.png",
+          "description": "The original prototype of this model was created in 82 in California just prior to the full impact of the needle nose. Well balanced, this is a hybrid design that offers a great deal of versatility. Made for small to medium size surf with lower rocker and a little more central surface area. The swallow wing tail design allows for quick release and gives the board more control when the surf picks up a bit. Sizes 5'4–6'2 (photo 5'8 x 19.25 x 2.5 x 28L). Bottom: single to double concave. Tail: swallow wing, squash wing. Fins: tri, quad.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Hanalei",
+          "image_url": "https://img1.wsimg.com/isteam/ip/9966d837-bca4-48b6-a6aa-e020176206eb/blob-22a23ac.png",
+          "description": "Originally designed by Dick Brewer and Steve Morgan in 1985 on the island of Kauai, this board offers a classic Brewer Island template with a little more width and float. This step up board is built to take on larger surf and make the challenge a little easier — can handle the barrel but still performs well on sizable open face surf. Sizes 6'4–8'4 (photo 7'0 x 20.5 x 2.7 x 41L). Bottom: flat vee panels with subtle double concave in tail area. Tail: round pin, swallow. Fins: tri, quad.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Waikiki",
+          "image_url": "https://img1.wsimg.com/isteam/ip/9966d837-bca4-48b6-a6aa-e020176206eb/blob-6effe0c.png",
+          "description": "The Waikiki is a classic single fin designed by Dick Brewer and Steve Morgan. The result of this successful collaboration is a board that turns well and excels in nose riding. This board has a concave bottom entry, transitioning into a pyramid vee, providing for excellent pivot motion to the tail. Tapered 50/50 rails combined with a little more float under the paddle zone make this board both agile and a good paddler. Sizes 9'0–10' (photo 9'6 x 23 x 3 1/8). Bottom: concave nose to deep vee in tail. Tail: square, pin. Fin: single.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "63",
+          "image_url": "https://img1.wsimg.com/isteam/ip/9966d837-bca4-48b6-a6aa-e020176206eb/blob-99431dc.png",
+          "description": "The template of this board was designed by Dick Brewer in 1963, and was originally known as the Summer Semi, later given the name Pipeliner when Brewer brought this series of boards into the Bing lineup. The 63 follows the same template curve as the classic Pipeliner but has a nose width of 18 1/2\" in contrast to the Classic Pipeliner at 17\". The 63 takes on the characteristics of a modern performance longboard with down rails and a subtle concave bottom with substantial vee in the tail. This is a really versatile longboard that can handle a wide variety of conditions. Sizes 8'0–9'6 (photo 9'0 x 22 1/2 x 3). Bottom: single to double concave with vee. Tail: round pin, square. Fins: 2+1, tri, single.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pocket Rocket",
+          "image_url": "https://img1.wsimg.com/isteam/ip/9966d837-bca4-48b6-a6aa-e020176206eb/blob-4cee2a6.png",
+          "description": "Taking its name from the infamous board that Brewer built for Reno Abellira in 1968, this model represented a new wave of refinement in the late 70s. Created by Steve Morgan, the Pocket Rocket is the culmination of earlier Brewer fish designs, having much of the surface area of 70s style fishes but with less bulk and a little more nose lift. While serving as a great everyday board, this board is also an easy groveling transition for those who are used to riding modern performance boards. Sizes 5'2–6'0 (photo 5'6 x 20.5 x 2.3). Bottom: single to double concave with tail vee. Tail: fish wing. Fins: twin + trailer or 2/4.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "V5 Bonzer",
+          "image_url": "https://img1.wsimg.com/isteam/ip/9966d837-bca4-48b6-a6aa-e020176206eb/231c3697-64f5-447d-ace8-059c3f2ebe47.jpg",
+          "description": "The V5 is the ultimate combination of vintage and modern. Drawing from one of the earliest Brewer Morgan templates in 1979, this pre-thruster model combines the design ingenuity of the Campbell Brothers Bonzer design and that of Dick Brewer's early three fin designs. With the volume displacement slightly forward of center, this board catches waves easily and, true to the intention of the design, offers the fluidity of a single fin with more control and drive off the rail. Sizes 5'6–7'6 (photo 6'4 x 19.75 x 2.6). Bottom: concave with deep spiral vee. Tail: round pin wing. Fins: Bonzer 4+1.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Lotus",
+          "image_url": "https://img1.wsimg.com/isteam/ip/9966d837-bca4-48b6-a6aa-e020176206eb/BM_LOTUS_SFO-0420_TOP.jpg",
+          "description": "First developed by Dick Brewer in the summer of 1967, the Lotus was a transitional board created in the short window of time between the longboard era and the shortboard revolution. Working together, Brewer and Morgan have recreated this design in a more contemporary form. With a low rocker and wide point forward, this board offers an exceptionally smooth glide and ease of paddle. Sizes 5'6–7'6 (photo 6'10 x 20.5 x 2.7). Bottom: mild concave to spiral vee. Tail: pin. Fins: single, 2+1.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Lotus Fish",
+          "image_url": "https://img1.wsimg.com/isteam/ip/9966d837-bca4-48b6-a6aa-e020176206eb/blob-bc54bfa.png",
+          "description": "Fishes have been a part of Brewer surf design since 1976, when Dick assisted Mark Richards in the creation of MR's first performance fish. With the Lotus Fish, we wanted to include some of the features of an old school fish but we wanted more speed and control. The Lotus nose template worked well for this design and the bump wing worked in reducing the tail area and also serving as a transition point to reset the rail contour and bottom rocker. The Lotus Fish combines the best of both, modern and retro. Single to double concave with a tight rail and modern nose. A lot of skate, but very controllable. Sizes 5'2–6'0 (photo 5'5 x 20 x 2.5). Fins: twin keel, quad.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Hanalei Gun",
+          "image_url": "https://img1.wsimg.com/isteam/ip/9966d837-bca4-48b6-a6aa-e020176206eb/blob-e0bdbff.png",
+          "description": "The original creation of the Hanalei Gun goes back to 1985, when Dick Brewer and Steve Morgan were working together on the island of Kauai. In 2017, the two revisited this design, making subtle modifications in both rocker and fin placement. The Hanalei Gun was designed for big wave versatility with the ability to penetrate and control deep bottom turns, while still having enough rail release for turning and tracking on large open face waves. Like the original version, the Hanalei Gun has more central surface area and a forward of center volume displacement, contributing to earlier wave entry and added drive. Sizes 8'6–10'. Tail: pin tail. Bottom: flat vee panels. Fins: tri or quad.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
