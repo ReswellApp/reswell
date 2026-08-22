@@ -34,6 +34,11 @@
  *     --seed scripts/data/surfboard-catalog-seed/small-fin-brands.json \
  *     --backfill /dev/null \
  *     --category fins
+ *
+ * Add Algorithm Surfboards models:
+ *   npx tsx scripts/import-core-shapers-catalog.ts \
+ *     --seed scripts/data/surfboard-catalog-seed/algorithm-surfboards.json \
+ *     --backfill /dev/null
  */
 import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
@@ -51,7 +56,12 @@ import { isValidBrandSlug, slugifyBrandName } from "@/lib/brands/slug"
 import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
 import { syncSellCatalogBrandToIndex } from "@/lib/elasticsearch/sell-catalog-index"
 import {
+  SURFBOARD_SELL_CATEGORY_ORDER,
+  type SurfboardSellCategoryKey,
+} from "@/lib/surfboard-sell-categories"
+import {
   createBrandCatalogImageMirrorCache,
+  isExternalBrandCatalogImageUrl,
   resolveMirroredBrandCatalogImageUrl,
 } from "@/lib/services/brandCatalogImageStorage"
 
@@ -59,6 +69,15 @@ type SeedModel = {
   name: string
   image_url?: string | null
   description?: string | null
+  board_category_slug?: SurfboardSellCategoryKey | null
+}
+
+function parseBoardCategorySlug(value: unknown): SurfboardSellCategoryKey | null {
+  if (typeof value !== "string") return null
+  const trimmed = value.trim()
+  return (SURFBOARD_SELL_CATEGORY_ORDER as readonly string[]).includes(trimmed)
+    ? (trimmed as SurfboardSellCategoryKey)
+    : null
 }
 
 type SeedBrand = {
@@ -140,6 +159,7 @@ function loadSeedFile(path: string): {
             name: m.name.trim(),
             image_url: m.image_url ?? null,
             description: m.description ?? null,
+            board_category_slug: parseBoardCategorySlug(m.board_category_slug),
           }))
           .filter((m) => m.name.length > 0),
       }))
@@ -304,6 +324,7 @@ async function upsertModelsForBrand(opts: {
       description: model.description ?? null,
       image_url: imageUrl,
       product_category_slug: opts.productCategorySlug,
+      board_category_slug: model.board_category_slug ?? null,
     })
 
     if (insertResult.ok) {
@@ -314,7 +335,7 @@ async function upsertModelsForBrand(opts: {
     if (insertResult.code === "23505") {
       const { data: existing, error: existingError } = await opts.supabase
         .from("brand_models")
-        .select("id, description, image_url")
+        .select("id, description, image_url, board_category_slug")
         .eq("brand_id", opts.brandId)
         .ilike("name", model.name)
         .maybeSingle()
@@ -328,12 +349,19 @@ async function upsertModelsForBrand(opts: {
       const patch: {
         description?: string | null
         image_url?: string | null
+        board_category_slug?: SurfboardSellCategoryKey | null
       } = {}
       if (model.description && !existing.description) {
         patch.description = model.description
       }
-      if (imageUrl && !existing.image_url) {
+      if (
+        imageUrl &&
+        (!existing.image_url || isExternalBrandCatalogImageUrl(String(existing.image_url)))
+      ) {
         patch.image_url = imageUrl
+      }
+      if (model.board_category_slug && !existing.board_category_slug) {
+        patch.board_category_slug = model.board_category_slug
       }
 
       if (Object.keys(patch).length > 0) {
