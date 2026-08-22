@@ -1,0 +1,64 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "hot-buttered-surfboards",
+      "name": "Hot Buttered Surfboards",
+      "website_url": "https://hotbuttered.com",
+      "location_label": "Northern Beaches, Sydney, Australia",
+      "founder_name": "Terry Fitzgerald",
+      "lead_shaper_name": "Terry Fitzgerald",
+      "short_description": "Sydney Northern Beaches Rainbow originals by Terry Fitzgerald — hand-shaped speed-line guns, wingers, twins, and Driftas with Martyn Worthington airbrush.",
+      "models": [
+        {
+          "name": "Sunset Gun",
+          "image_url": "https://hotbuttered.com/wp-content/uploads/2023/04/Hero_SunsetGun-copy.jpg",
+          "description": "During the ‘70’s it was hard to find a more influential Australian surfer/shaper with Hawaiian experience than Terry Fitzgerald. His Sunset Guns introduced concaves, spiral vees and wings in well-documented sessions epitomising the style and speed that was the short board revolution. This board’s roots are in the first 6’10 ‘wing’ round-tail proto-type and first Hot Buttered Flyer launched at Narrabeen’s Carpark Rights, then taken to the world stage at Sunset, Makaha and Laniakea. As the weapon of choice for ‘Mr Body Torque’, the gun version was pure speed with the added ability to break lines after long fades and bottom turns. Size range: 7’10 – 9’0.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Pin Wings",
+          "image_url": "https://hotbuttered.com/wp-content/uploads/2023/04/Hero_PinWings.jpg",
+          "description": "The natural flow-on from big wave Sunset guns, were the pintail wingers. Specialising in tube-riding and handling tight situations at high speed based on design where the nose vee blends into a flat entry area and through to concave/double concaves in what is perhaps the most typical of TF’s bottom creations. The first boards featured single wings which evolved into double wingers with flutes, giving these boards the ability to deal with long and short arcs and still be able to run high and long. The Pin Wings came into their own running high under the lip at Honoloua Bay, Maui and Jeffreys Bay, South Africa. The Classic Wing Pin was developed at the peak of TF’s surfing career in the mid-70’s. Wings: single or double option. Size range: 6'10 – 7'10.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Round Wing Swallow",
+          "image_url": "https://hotbuttered.com/wp-content/uploads/2023/05/Hero_Round-Wing-Swallow.jpg",
+          "description": "The very first winger was a 6’10” round-tail flyer launched in the summer of 1972/73. That board provided the template for the pintail winger, then swallow versions which became the power carving beasts of the mid-70s. To his basic round-tail mini-gun outline, TF shaped a pinched wing in foam, into the rail. Extra planning area was added under the backfoot for skating over flat spots. Foil was refined with thickness pushed forward adding projection. Converting the round tail sticking point into a swallow tail, allowed better rail to rail work, on the face. The bigger wing was rounded to smooth out swoops and high line snaps, with the same curves featured on the outside of the swallow plan-shape. Subtle single/double concaves made the board all about speed, but, with the truest of single fin feel. Size range: 6’3 - 7’2.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Area Pin / Area Pin Wing",
+          "image_url": "https://hotbuttered.com/wp-content/uploads/2023/04/AreaPin_Hero.jpg",
+          "description": "Aggressive performance surfing requires complete faith, especially taking the drop and deep in the pocket. Rounded area pins provide tight turn security and allow performance creativity. With a thin tail and straighter rocker curve, the pin allows long arcs and power drives at size. Bobby Owns rode Nick Carroll’s 6’8” area pin at Bells in ’81, winning the Trials and pushing Simon riding his new fangled Thruster on the day that changed surfing. Size range: 6’4 – 6'7 / 6'8 – 6’10.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Double Wing Swallows",
+          "image_url": "https://hotbuttered.com/wp-content/uploads/2023/04/Hero_DWS.jpg",
+          "description": "The original round swallow wingers were a typical driving high performance surfboard for clean powerful waves. The double winger derives from earlier work on wing pins and swallows in Hawaiian and South African waters, and developed as the \"good-wave\" all-rounder, that no HB team rider dared leave home without. To cool the power off the bigger versions, and tune to smaller beach-breaks a second wing was added for even more planning area under the back-foot to skate over fat and flat spots and adding to the value of a narrower tail through the wing series. The most adaptable and adapted of the HB Models, the double winger brought wins on a 6’2 at the ’75 Aussie Titles, and at Ulu, 1980, on a 6’5 version. Size range: 5’10 – 6’8.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Drifta / Drifta XL",
+          "image_url": "https://hotbuttered.com/wp-content/uploads/2023/04/Hero_Drifta2.jpg",
+          "description": "A radical stab, creating an alternative to the Thruster. The Drifta Series width and emphasis on skating speed pre-dated the revival of fish-style boards in the late 90’s. Main features include: an updated classic single-to-double concave, running a decade ahead of the Performance School. Fluted and pinched wings, stepping down to a stubby swallow, or, chopped square tail, a round nose and mini side-fins, giving the Drifta it’s almost spaceship-like appearance. A 7 1/2” wide-based single fin completed the revolution to hotdog happiness. Driftas hide a typically uncompromising design capable of extraordinary down-the-line speed combined with the ability to break tracks (vertical or horizontal). Size range: DIII 5’8 - 6’8 / XL 6’10 - 7’4.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Modern Twin",
+          "image_url": "https://hotbuttered.com/wp-content/uploads/2023/04/ModernTwin_Hero.jpg",
+          "description": "Derek Hynd’s extraordinary addition to the twin fin design stream differed dramatically to MR’s deep V style. The original TF shaped DH concept features subtle concaves through the fin area, a refined, thinner beaked nose line (heralding the no-nose era), and a stabilizer fin (foreshadowing the tri-fin). To swooping arcs and snaps, DH added 360° foam bounces and even footstraps for more adventure. Derek’s brand of aggressive pocket surfing created his New Wave and Hyndsight models, which took him to No. 7 in the World, twice. Size range: 5’10 – 6'4.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Chopped Square",
+          "image_url": "https://hotbuttered.com/wp-content/uploads/2023/04/ChoppedSq_Hero.jpg",
+          "description": "After a decade of re-working area pintails, swallows, double wings and tapering single-fin foils, TF was faced with a question: where to go? Already into multi-fins, with DH’s boards and the Driftas, yet looking for something faster, free-er, harder. Square off the tail, add a full concave bottom with a slight vee behind the back fin, roll the nose off a leading edge and hand it to Vetea David. Suddenly a 5’8” was drawing 6’2” lines, a 6’8 drawing 7’2 arcs. Tri-fin set-ups became a different animal with the corners of the square holding bite and line. This board is all about open face carving and tight aggression in the pocket. Size range: 5'10 - 6'7 / 6'8 - 6'10.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
