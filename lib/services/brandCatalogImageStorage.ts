@@ -84,12 +84,26 @@ export function isValidHttpImageSource(url: string | null | undefined): url is s
   }
 }
 
+/** Stay under the `brand-assets` bucket file size limit (5MB, same as logo uploads). */
+const MAX_UPLOAD_BYTES = 4.5 * 1024 * 1024
+const MAX_IMAGE_EDGE = 1600
+
 async function normalizeImageBytes(
   bytes: Buffer,
   contentType: string | null,
 ): Promise<{ body: Buffer; ext: string; mime: string }> {
   const ct = (contentType ?? "").toLowerCase()
-  const needsConvert = ct.includes("avif") || ct.includes("gif") || ct.includes("svg")
+  const meta = await sharp(bytes).metadata()
+  const width = meta.width ?? 0
+  const height = meta.height ?? 0
+  const tooBigBytes = bytes.byteLength > MAX_UPLOAD_BYTES
+  const tooBigDims = Math.max(width, height) > MAX_IMAGE_EDGE
+  const needsConvert =
+    ct.includes("avif") ||
+    ct.includes("gif") ||
+    ct.includes("svg") ||
+    tooBigBytes ||
+    tooBigDims
 
   if (!needsConvert) {
     const ext = extensionFromContentType(contentType) ?? "jpg"
@@ -97,7 +111,29 @@ async function normalizeImageBytes(
     return { body: bytes, ext, mime }
   }
 
-  const webp = await sharp(bytes).webp({ quality: 88 }).toBuffer()
+  let pipeline = sharp(bytes)
+  if (tooBigDims) {
+    pipeline = pipeline.resize({
+      width: MAX_IMAGE_EDGE,
+      height: MAX_IMAGE_EDGE,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+  }
+
+  let webp = await pipeline.webp({ quality: 82, effort: 4 }).toBuffer()
+  if (webp.byteLength > MAX_UPLOAD_BYTES) {
+    webp = await sharp(bytes)
+      .resize({
+        width: 1200,
+        height: 1200,
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .webp({ quality: 72, effort: 4 })
+      .toBuffer()
+  }
+
   return { body: webp, ext: "webp", mime: "image/webp" }
 }
 

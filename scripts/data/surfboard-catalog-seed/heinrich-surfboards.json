@@ -1,0 +1,120 @@
+{
+  "purpose": "Heinrich Surfboards models from https://www.heinrichsurfboards.com/models",
+  "source_url": "https://www.heinrichsurfboards.com/models",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "heinrich-surfboards",
+      "name": "Heinrich Surfboards",
+      "website_url": "https://www.heinrichsurfboards.com",
+      "location_label": "San Diego, California",
+      "founder_name": "Nick Heinrich",
+      "lead_shaper_name": "Nick Heinrich",
+      "short_description": "Handcrafted surfboards built in San Diego, California.",
+      "models": [
+        {
+          "name": "Classic Keel",
+          "image_url": "https://www.heinrichsurfboards.com/_astro/classic-keel-02.qncdeRVW_ZvHxLG.png",
+          "description": "My personal take on the classic San Diego design drawing much inspiration from Steve Lis and Rich Pavel. I tried to keep it true to its origin, featuring a beak nose with a flat deck and down rail, packing plenty of foam where you need it without compromising performance. A low rocker with keel fins placed on the rail generate speed down the line and glide through the flats but make no mistake, the keel fish was originally intended to take off under the lip, and they come alive in better surf.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mod Fish",
+          "image_url": "https://www.heinrichsurfboards.com/_astro/mod-fish-07.BlirdlQ9_24zmaC.png",
+          "description": "A modern take on a classic design. While maintaining similar attributes to its predecessor, the Mod Fish is a streamlined version with performance surfing in mind. A modern foil with an exaggerated down rail and a fair bit of tail flick behind the fins creates a very responsive feel in the pocket and encourages more aggressive vertical surfing than earlier versions. More curve through the back half of the board, paired with a keel/ upright hybrid create the perfect balance of performance and classic style.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Sub Krawler",
+          "image_url": "https://www.heinrichsurfboards.com/_astro/sub-krawler-02.joDNdF1A_Z27Grww.png",
+          "description": "Think \"speed egg blended with a performance shortboard\". An accelerated rocker in compliment with a smooth fluid outline allow you to really push on it with full confidence. Double concave blending into vee, with a tucked edge through the tail make it easy to put the exclamation point on those wrapping turns. While the round pin, historically, has been synonymous with an upright twin, it pairs great with an array of fin set ups.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Wing Swallow",
+          "image_url": "https://www.heinrichsurfboards.com/_astro/wing-swallow-06.B9j0t3Qq_ZRvKf2.png",
+          "description": "The Wing Swallow is another timeless design that has come and gone with waves of popularity over the years. Relatively low entry rocker with the gas peddle in between your stance gives drive and glide in smaller mushier surf, while remaining loose and responsive as result of the curve behind the wings. Typically paired with a twin or twin + trailer setup, the wing swallow is ideal for rail to rail surfing in 2-5' surf.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Item 9",
+          "image_url": "https://www.heinrichsurfboards.com/_astro/item-9-03.B57FCMz9_ZRcIPV.png",
+          "description": "After experimenting and refining these with nothing but positive feedback over the last few years, Item 9 is ready for you. A groveley planing hull intended for everything Southern California. The chopped \u201cnipple nose\u201d concentrates the forward volume while the single concave from nose to tail flattens the rocker, providing tons of paddle power for such a small board. Concave through the tail creates lift and generates speed with a soft forgiving rail for control and stability.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Mad Hatter",
+          "image_url": "https://www.heinrichsurfboards.com/_astro/mad-hatter-01.BeuHaDG3_oVcBx.png",
+          "description": "A classic early 80's outline blended with modern bottom contours and rails; This double wing swallow has performance surfing in mind without taking it too seriously. Typically paired with a 4 or 6 channel bottom, top it off with a DayGlo airbrush for the ultimate blast from the past. Multiple wings create a tighter turning radius, with a hard tucked rail under the front foot that allows both hold and release when you need it. Placement of wings varies in correlation with fin set up.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Paradigm",
+          "image_url": "https://www.heinrichsurfboards.com/_astro/paradigm-01.ByLI1HRD_3seak.png",
+          "description": "The classic egg, arguably the most versatile surfboard of all. Inspired by my time sharing a bay with John Holly (Seagull Surfboards), the Paradigm can handle just about anything. The typically round playful outline matched with a subtle continuous rocker glide through small gutless surf while a sexy round pin tail with a wide point centralized around your stance allows for tight turns in the pocket and tremendous trim speed when given room to open up on bigger faces.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Hellman",
+          "image_url": "https://www.heinrichsurfboards.com/_astro/hellman-01.PiQVXYj6_1HobNP.png",
+          "description": "The Hellman is a volume forward egg derived from some of the earlier San Diego egg curves. A wider nose with a continuous rocker allow you to get in early and set your line while the pulled in pin tail knifes into steep faces and harnesses all the speed you\u2019re willing to handle. Ideally intended to be ridden in head high to double overhead surf as a single fin for minimum drag.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Krawler",
+          "image_url": "https://www.heinrichsurfboards.com/_astro/krawler-01.D2o76ENp_28xyUT.png",
+          "description": "A true speed egg most suitable for a fast running point or a punchy reef, ideally shoulder to overhead high. A slight vee entry blending into a subtle single concave with a bit of panel vee through the tail stays friction free on steeper take offs and allow you to put it on rail with total control at high speeds. A low rail with an aggressive foil allow you to hold tight in the pocket with incredible sensitivity.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Devil Dog",
+          "image_url": "https://www.heinrichsurfboards.com/_astro/devil-dog-05.bIxYpPmQ_KHWlq.png",
+          "description": "The Devil Dog is about as radical as it sounds. Originally designed as a bonzer, although it can be ordered with various fin set ups. This 70\u2019s inspired step up features a pulled in tail that holds in steeper faces, while the \u201ccurve ball\u201d template around your stance keeps it from being too stiff. Top it off with a late wing swallow with complimenting vee allowing you to turn on a dime.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Speed Dealer",
+          "image_url": "https://www.heinrichsurfboards.com/_astro/speed-dealer-03.t5l8s6MG_1JfKch.png",
+          "description": "A smooth flowing stretched fish with a fair amount of continuous curve amongst a balanced outline that works in a variety of conditions. Having enough foam in all the right places, the Speed Dealer paddles and plains through an open face like a dream. Typically matched with a high aspect twin, quad, or twinzer setup, you get effortless speed and drive. Draw long smooth lines with all the board you need to grovel in the mushy stuff or push it into well overhead surf.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Paradox",
+          "image_url": "https://www.heinrichsurfboards.com/_astro/paradox-02.CusnKrrw_vRKFM.png",
+          "description": "Inspired by Michael Peterson. In the world of surfboard design, simple and smooth reign supreme. The paradox begs to differ. An aggressive volume forward tube rider with a classic double wing pin tail, creating a break in the rail line thus tightening the turning radius with each wing. Drive down the line with your front foot on the gas peddle then step on the tail to snap tight turns in the pocket. Placement of wings varies in correlation with fin set up.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Point N' Shoot",
+          "image_url": "https://www.heinrichsurfboards.com/_astro/point-n-shoot-04.SqhlBlN-_nORSO.png",
+          "description": "Traditional nose rider. A parallel outline with a pointed wide nose allow for long nose rides down the beach without pushing water. A lower rail in the nose with a deep concave create tremendous lift and stability on the nose. A fair bit of belly with panel vee loosens up the wide, straight outline while the exaggerated tail flick suctions to the pocket and turns on a dime when you get over the fin. Fuller 50/50 rails and a chopped square tail offer stability that does exactly what its name suggests. Pair with a pivot fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Wilbur",
+          "image_url": "https://www.heinrichsurfboards.com/_astro/wilbur-01.B18bx3Yi_Z2jGRUa.png",
+          "description": "Inspired by Dale Velzy\u2019s revolutionary pig design dating back to 50\u2019s, this little piggy features a wide-point-back outline with a hippy thumb tail that is incredibly maneuverable. While staying on the mild side of the pig spectrum, the outline maintains a fair amount of continuous curve matched with heaps of belly and rolled vee that make it easy to nose ride and turn from anywhere on the board. The narrower nose paired with a long centralized concave excel in faster more critical sections.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Beetlejuice",
+          "image_url": "https://www.heinrichsurfboards.com/_astro/beetlejuice-01.UQFbPlg0_b24x1.png",
+          "description": "The board that rides itself. A straightforward balanced outline with a slight bit of entry rocker keep it dummy proof while foiled 60/40 rails with a fairly rolled bottom provide control and facilitate rail to rail transition. A subtle hip blending into a narrower rounded squash draws fluid lines and couldn't make turning easier. Pivot or balanced rake fin recommended.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Diamond",
+          "image_url": "https://www.heinrichsurfboards.com/_astro/diamond-01.B_QuknL4_Erme0.png",
+          "description": "California all-arounder. Plenty of intricacy disguised as simplicity. From the nose working backwards, 70/30 rails blend into the opposite with an upturned rail off the tail, providing ultimate lift on the nose while the tail end drags to keep you glued to the the pocket. Blended concave provides stability on the tip while the aggressive rolled vee keeps it plenty loose.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Wizard",
+          "image_url": "https://www.heinrichsurfboards.com/_astro/wizard-01.DKKqvtjm_Z2nrckM.png",
+          "description": "Inspired by the timeless San Diego gliders as made famous by Skip Frye, glide and trim are the name of the game here. Most often shaped well over 10' the wizard features a not so subtle amount of tail rocker and vee to liven up the back end allowing you to turn such a big board. Most suitable for a long running point. Whether it be ankle high or head high, less is more, put it in the curl and enjoy the glide.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
