@@ -1,0 +1,714 @@
+{
+  "generated_for": "reswell surfboards catalog",
+  "purpose": "Daily growth of small USA and Australia surfboard-maker brands",
+  "generated_on": "2026-08-22",
+  "product_category_slug": "surfboards",
+  "integrity": {
+    "first_party_only": true,
+    "surfboard_models_only": true,
+    "require_image_name_description_logo": true
+  },
+  "brands": [
+    {
+      "slug": "m10-surfboards",
+      "name": "M10 Surfboards",
+      "website_url": "https://m10surfboards.com",
+      "location_label": "Santa Cruz, California",
+      "founder_name": "Geoff Rashe",
+      "lead_shaper_name": "Geoff Rashe",
+      "short_description": "Santa Cruz custom shortboards and alternative shapes from Geoff Rashe / M10.",
+      "logo_url": "https://m10surfboards.com/cdn/shop/files/IMG_0941.png",
+      "models": [
+        {
+          "name": "Hogfish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/files/IMG_1555.jpg",
+          "description": "Hogfish Fast. Loose. Glides. Paddles. Holds. Magic board. The Hogfish has been a best-seller for about 20 years. I guess that makes it a classic! Why do people like it so much? It's because it's really three boards in one; a fish, an all around shortboard, and a step-up. \"How can that be\", you ask? It's simple; it's short and wide with lots of glide like a fish; when you step behind the wing with your back foot, it's fast, snappy and loose off the tail like your favorite shortboard; and with all the volume, it paddles great into meaty waves, and has a straight rail line that enables you to make any section and hold a line through huge carves. It just needs a bigger fin when used as a…"
+        },
+        {
+          "name": "Magic Carpet",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/files/IMG_1552.jpg",
+          "description": "If you're new to M10, start here. This is your basic all-around California shortboard; medium rocker, medium concaves, balanced nose to tail, works for the front or back foot oriented surfer, isn't overly dependent on perfect foot placement; fast, loose, holds a line, etc... People love this board and we've been making it for a very long time, with little adjustments all along the way. It generally works better in softer waves than the Tomahawk or Millennial. Everybody has so many models you don't even know what to get. How do you pick? We try to keep it simple by limiting the choices. To make it even easier, if you aren't sure what to get, just order a Magic Carpet."
+        },
+        {
+          "name": "Millennial",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/files/image_123650291_1.jpg",
+          "description": "Driving and carving, vertical attack, tight radius turns. The Millennial is our most high performance offering for the engaged surfer who keeps it on rail. There is a fair bit of middle rocker and deep single concave, so you surf off the tail, especially driving with your back foot as you build speed by pushing off the deep concave scoop and fins. This board likes to surf up and down in the pocket of a good wave. This is our model for maximal shredding by the surfer who can seriously link turns."
+        },
+        {
+          "name": "Slabslayer",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/files/IMG_1554.jpg",
+          "description": "Richie Schmidt wanted a shortboard that he could tackle some slabs on, so this board was born and dubbed the \"Slabslayer\". Its rocker is like the Magic Carpet, but with a lower entry. The thickness flow is a good bit fuller under the chest relative to the tail, as compared to a regular board (for easy wave entry when you really need it). Concaves are somewhat shallow for seamless rail to rail transitions. It turned out to be a great all-around board that can be ridden in a wide range of conditions, but is best described as a contemporary step-up. Round tail only for tight turns. Testing"
+        },
+        {
+          "name": "Tomahawk",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/files/IMG_1556.jpg",
+          "description": "Fast and loose high performance shortboard. Back foot orientation, but works best when surfed with both feet. Loves a good wave, but goes in slop too. Proven in California, Hawaii, and Indonesia, among other places. The Tomahawk is the direct descendant of 25 years of R&D. It's our flagship performance shortboard that has grown up next to the Magic Carpet (which is a little flatter). Concaves are medium, rocker is continuous from front to back foot with a lifted entry for vertical attack and moderate tail rocker for driving and carving. You really can't go wrong here, unless if you regularly surf shitty waves or prefer to ride the nose."
+        },
+        {
+          "name": "99",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/products/RatboyImage.png",
+          "description": "This is what Ratboy and Flea were riding in 1999 when Rat was world airshow champ and Flea was riding M10's before his head-to-toe Rusty sponsorship took him away. I designed it specifically for airs, but it's really just a great all around shortboard. It has a fast rocker with a shallow single to double concave from the middle back, and a little vee in the entry, to make for a fast, loose and forgiving board."
+        },
+        {
+          "name": "Agent Smith",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/files/IMG_1558.jpg",
+          "description": "Inspired by one of Tyler Smith's favorite boards.He helped develop the Hogfish so he knows his way around this type of board.It has characteristics of a fish but surfs like a shortboard.Made some adjustments to turn tighter in better surf.Available with double micro wing.(Recommended)"
+        },
+        {
+          "name": "Flatso",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/products/FlatsoImage.png",
+          "description": "The Flatso is so flat, a little fat, and crazy fast. When the waves are kinda fat and flat you need a board to match. It has a deep single concave bottom and should be ordered 4\"-6\" shorter than you regular shortboard and about an inch wider. It's designed to be a twin-fin, but I suggest getting the trailing fin box (2+1 setup) to have a mini-trailer option. four and five fins are available too."
+        },
+        {
+          "name": "Mini Thick",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/files/IMG_1557.jpg",
+          "description": "A great step down for the smaller days.Order this board a little shorter,wider and thicker then your shortboard."
+        },
+        {
+          "name": "Puck",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/products/PuckImage.png",
+          "description": "The Puck was born as an alternative to the Hogfish for people who didn't want as much width in the nose and tail. The nose is pulled in and the wing is higher than the Hogfish, making it surf more like a regular shortboard than a fish. Ozzie Wright got one many years ago and it was his favorite for a long time until it finally broke. Lots of people have called it their best board ever. It works well as a full-volume all-around shortboard."
+        },
+        {
+          "name": "TRP",
+          "image_url": "https://cdn.shopify.com/s/files/1/0017/3205/1001/products/TRPImage.png",
+          "description": "The TRP is our step-up based on the Tomahawk rocker. We kicked the tail a bit, lowered and added volume to the entry, relaxed the concave, and put a hint of vee in the tali. It can be customized to the individual for shallow or deep water reefs and beach breaks. Typically, it would be ordered in the 6'6\"-7'6\" range."
+        }
+      ]
+    },
+    {
+      "slug": "gen4-surfboards",
+      "name": "Gen4 Surfboards",
+      "website_url": "https://gen4surf.com",
+      "location_label": "Tweed Heads, New South Wales, Australia",
+      "founder_name": "Jye Gudenswager",
+      "lead_shaper_name": "Jye Gudenswager",
+      "short_description": "Fourth-generation Australian custom boards from Jye Gudenswager in Tweed Heads.",
+      "logo_url": "https://gen4surf.com/cdn/shop/files/FuturaLogo_300x300.png",
+      "models": [
+        {
+          "name": "ALL STAR",
+          "image_url": "https://cdn.shopify.com/s/files/1/0122/9170/2842/products/AllStar_All_1638x2047_73c38d84-0334-48ae-929d-62162a8dd0a1.jpg",
+          "description": "The AllStar is our high performance shortboard made for experienced surfers. This is the board to use if you are heading on a boat trip to perfect Indo waves, or have a pumping day at your local break. This board was designed with the input of the worlds best surfers such as Mick Fanning, Mitch Parkinson, and Mark Occhilupo. It’s the go-to board for good surfers in great conditions. Wave range: 3ft – 6ft+. Good to Excellent, Clean Conditions. Design: The AllStar runs a high entry rocker and single concave through the chest to double concave through the fins. Shaper notes: Rides this board a couple of inches taller than your height. Step Up available for waves 6ft+ Standard Fin…"
+        },
+        {
+          "name": "ALL STAR X",
+          "image_url": "https://cdn.shopify.com/s/files/1/0122/9170/2842/products/AllStar_X_All_1638x2047_611ea0dc-b480-4013-be08-5955337c1828.jpg",
+          "description": "(WAVE TYPE) - 3 TO 10FT POINT BREAKS, PUNCHY BEACH BREAKS, REEF BREAKS FULL ROCKER LOW RAIL Similar to our highly rated Allstar model in a few ways but different in so many others. We have taken all the best features and tweaked them for the better to create one of our highest performers yet. Keeping an eye-catchingly smooth outline that flows into a slight hip allows for easy directional changes, matched with our slight rocker extension out through the nose allows for a larger sweet spot and prevents any catching through big powerful carves or critical parts of the wave. A slightly deeper single concave under your front foot runs down into a double concave through the fins for a bit of…"
+        },
+        {
+          "name": "BLACK MAGIC",
+          "image_url": "https://cdn.shopify.com/s/files/1/0122/9170/2842/products/Black_MAGIC_All_1638x2047_3e4077a4-0710-45c9-8186-dee06f093d16.jpg",
+          "description": "The Black Magic is the perfect all rounder for intermediate and experienced surfers. This is Mitch Parkinson’s favourite model and the board that he uses daily. The Black Magic is designed to be a one board quiver for good surfers that will excel in a wide variety of conditions. Wave range: 2ft – 5ft. All Conditions. Design: With a high entry rocker and single to double concave this board will change the way you think about surfing. It has a wide middle/chest area for stability and paddle power, but the nose and tail are refined like a high performance model making the perfect combination. Shaper notes: Rides this board a little shorter and wider than your AllStar (High Performance…"
+        },
+        {
+          "name": "BLACK MAGIC 2.0",
+          "image_url": "https://cdn.shopify.com/s/files/1/0122/9170/2842/products/Black_MAGIC_All_1638x2047_367fb36f-e0a8-4013-9c3f-0a9303e464ab.jpg",
+          "description": "WAVE TYPE – 2 TO 6FT ALL WAVE TYPES MEDIUM ROCKER MEDIUM/LOW RAIL We have decided its time to take our “BEST SELLING” Black Magic tweak some refinements and add some spice to give you the 2.0 version. Pulling the nose in slightly and dropping its flowing rocker and rail line creating a much larger sweetspot for the pilot. We kept the single concave running down into a double concave through the fins to allow lift and generate speed in average conditions but also to maintain control when the waves turn on. Now here's the SPICEY part and our favourite part, the single channel running 5 inches up the tail with same angle as the fins allowing the water to flow freely through the back of the…"
+        },
+        {
+          "name": "DOUBLE DARE",
+          "image_url": "https://cdn.shopify.com/s/files/1/0122/9170/2842/products/DoubleDare_All_1638x2047_125d3353-64f2-42e8-9b93-b971d8a839a1.jpg",
+          "description": "WAVE TYPE – 0 TO 4FT ALL WAVE TYPES MEDIUM ROCKER FULL RAIL Keeping the old school traditional smooth outline of a twinny but adding some new school flair, we have created a board that screams fun! Adding a slightly fuller rocker then your usual twin combining that with a v-tail pushing up to flat under your chest and secretly moving our fin position backwards a few inches for control, our Double Dare is able to generate maximum speed while maintaining control through fast manouvers. Thoroughly tested by our team in terrible beachies to pumping point breaks up the whole east coast of Australia the Double Dare gets the tick of approval. WHAT THE TEAM RIDES MITCH PARKINSON – 170 CM 70KG 5’2”…"
+        },
+        {
+          "name": "HYBRID",
+          "image_url": "https://cdn.shopify.com/s/files/1/0122/9170/2842/files/IMG_2611.jpg",
+          "description": "The Hybrid is the love child of the Black Magic and the Bull. It’s the all round board for the moderate to intermediate surfer. Having the chest and nose of the Bull means that the board paddles like a dream. Then the rear end and tail of the Black Magic gives you the manoeuvrability that you need to turn and hit sections. Wave range: 4ft and under. Any Conditions. Design: The Hybrid has a broad nose slowly slimming into a refined tail that will give you stability and the ability to charge straight over flat sections, whilst still allowing you to smack a section when it presents itself. The board also has a medium entry rocker and a V tail heading into a single concave to allow plenty of…"
+        },
+        {
+          "name": "LITTLE SECRET",
+          "image_url": "https://cdn.shopify.com/s/files/1/0122/9170/2842/products/Spread.jpg",
+          "description": "The Little Secret is the high performance shortboard made for the moderate-intermediate surfer. We realise that not everyone can surf everyday and be as fit as the pros, so we made a high performance board that allows you to rip and perform in high quality waves. Wave range: 3ft – 6ft+. Good to Excellent, Clean Conditions. Design: We’ve given the Little Secret more foam around the chest area to make paddling easier and add stability. The Little Secret is a little wider than an Allstar, but we’ve added the hip near the tail to allow for easier turning. As with our other performance boards the Little Secret keeps a high entry rocker and single concave through the chest to double concave…"
+        },
+        {
+          "name": "LUV MONSTR",
+          "image_url": "https://cdn.shopify.com/s/files/1/0122/9170/2842/products/LUV-MONSTER_All_1638x2047_4b316c9a-218d-406d-a3a4-d53d78e563fa.jpg",
+          "description": "WAVE TYPE - 1 TO 6FT BEACH BREAKS, POINT BREAKS, REEF BREAKS MEDIUM ROCKER MEDIUM RAIL The Luvmonstr was originally designed as that in between board you go to that’s forgiving, easy to ride and your able to switch back an forth between our other models with no transition period. I’ve made the luvmonstr thicker under the chest area by redistributing foam forwards and deepening the bottom contours allowing fast acceleration from the get go. Combine all that with its soft rail and you’re in for a fast yet forgiving ride. Designed for all types of surfers and all types of conditions, from onshore slop to perfect clean points, it’s a “MUST HAVE” in your quiver. WHAT THE TEAM RIDES – MITCH…"
+        },
+        {
+          "name": "MINI MAL",
+          "image_url": "https://cdn.shopify.com/s/files/1/0122/9170/2842/products/Product_4_Front.png",
+          "description": "The Mini Mal is the perfect fun board for Summer conditions. Mini mal surfboards are perfect for the person who likes the feel of a longboard but wants more maneuverability. Minimals are easier to carry and manage out in the water but with all the surfing ease of a longboard. Wave range: 3ft and under. Any conditions. Design: The Mini Mal has a low entry rocker and plenty of width and thickness to give this little magic carpet maximum speed in crap conditions. Shaper notes: Ride this board around 2 foot taller than your height. Standard Fin Configuration: FCS I / FCS II / Futures Thruster / Single Fin box available for an extra $50)"
+        },
+        {
+          "name": "THE BULL",
+          "image_url": "https://cdn.shopify.com/s/files/1/0122/9170/2842/products/The_Bull_All_1638x2047_f522754e-0e7d-4d9f-9d0d-1f2c7c83dfd1.jpg",
+          "description": "The Bull is the ultimate groveller, designed for all surfers on those days when you desperately want to surf but the conditions are less than average. The Bull has plenty of thickness and width to provide the paddle power needed in gutless surf. The V at the tip of the tail acts like a see-saw that allows you turn the board on a dime in the slop. Wave range: 2ft and under. Any conditions. Design: The Bull has a low entry rocker and plenty of width and thickness to give this little magic carpet maximum speed in crap conditions. Having a V tail to flat bottom, combined with a single flyer and swallow tail, gives the board maximum manouverability in the slop. Shaper notes: Rides this board…"
+        }
+      ]
+    },
+    {
+      "slug": "pipedream-surfboards",
+      "name": "Pipedream Surfboards",
+      "website_url": "https://pipedreamsurfboards.com",
+      "location_label": "Currumbin Waters, Queensland, Australia",
+      "founder_name": "Murray Bourton",
+      "lead_shaper_name": "Murray Bourton",
+      "short_description": "Gold Coast custom shapes since 1975, skewed toward fun and exploratory surfing.",
+      "logo_url": "https://pipedreamsurfboards.com/cdn/shop/files/PIPEDREAM_320x.jpg",
+      "models": [
+        {
+          "name": "FASHION VICTIM",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/FashVic1300x2048.jpg",
+          "description": "The new “Fashion Victim” next generation has only slightly been changed from the original due to its popularity, but I just could not help myself to rev it up just a little more. Perhaps the most versatile actual 5 finner in my range, in that although compromised it is my best bet each way for both fin modes to be compatible. Quads love a wall and a barrel and thrusters yearn for vertical opportunities and a lotta air. The tail width moderation is the key i.e. not too wide for a thruster and not too narrower for a quad albeit you can squeeze the tail widths in on a quad without dramas. PLAN SHAPE Trying to be everything to everybody as stated above the plan shape particularly, is the…"
+        },
+        {
+          "name": "ANTI MAL",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/MUZZA591981300x2048.jpg",
+          "description": "INTRO The Next Gen Anti-Mal is basically a slight tweak of a very successful model to date. The changes are basically only adding more thickness forward running into an old fashion beak at the nose. This facilitates even more paddle to combat the fleets of church doors proliferating our points more and more these days. The volumes have increased slightly and the numbers are reflected in the dims table at the end of the model spiel. To add more versatility a 10” fin box has been added allowing the use of a deeper centre fin moved forward when in 2+1 mode or indeed a slightly larger rear centre fin in thruster mode. This will make the design feel a little less front heavy since you will be…"
+        },
+        {
+          "name": "High Performance Retro",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/HPRetrol1300x2048.jpg",
+          "description": "It seems that cycles are coming around more often these days and what was old is new again even quicker. I designed the High-Performance Retro about 20 years back and now rediscovered its relevance in today’s market. The wider forgiving nose and pulled in swallow makes for a board that catches wave easily and as a thruster can be laid over with more power off the bottom at speed. This model was so popular back then it deserves another run now. PLANSHAPE The HPR has a fuller nose which these days is not that unusual so I guess what really sets it apart is the narrow swallow accentuated by the inclusion of twin flyers that dramatically reduce the width of the tail area. I think the amount of…"
+        },
+        {
+          "name": "HYDRO TWIN",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/MUZZA60928-2048x1300.jpg",
+          "description": "Arguably one of my best Twinnies ever, I have been hesitant to meddle with it thus far, but the time has come to spark it up a little. In fact, little has changed with the original besides the addition of a small flyer in the plan shape in order to reduce the width of the swallow. This should allow it to handle bigger turns in bigger waves more comfortably. PLAN SHAPE The added flyer is positioned just behind the trailing edge of the twin fin and pulls into a narrower moon so it will sit and hold through power turns. Having said that it is still basically a widish tail so will do all that is required in small waves. Like all twin fins the area is forward of centre as to allow a straightish…"
+        },
+        {
+          "name": "INDO GUN",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/IndoGun1300x2046.jpg",
+          "description": "INTRO Perhaps the most surfed archipelago in history Indonesia is the most reef wave rich country in the world and the world knows it! Having said that the lure is still too great and that is why this model is dedicated to these hollow reef waves. PLAN SHAPE This model is a five-fin rounded pin tail which is designed to be a compromise for a thruster set up to a quad. The real compromise is basically in the outline with balancing the tail area so it is not too wide for three fins and not too narrow for a quad set up. At the other end it is common for most big wave boards to be forward centric which helps the board drive longer distances as the narrower tail can be held to account. Area…"
+        },
+        {
+          "name": "Little ORCA",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/Orca1300x2048.jpg",
+          "description": "LITTLE ORCA The little Orca is a fish with a difference. Like its namesake it is black and white, but seldom eats whales.! It comes in small sizes and can be made extra-long if need be and all still will work the same i.e. fast and furious! This model is a brazen Twinny with a huge mono concave running two thirds of the board length up from the tail. The back half of this concave sits into a deepening vee which gives it more rail to rail twitch. Probably like nothing else on the market this thing is an excitement machine on steroids. PLAN SHAPE The outline of the Little Orca is pure fish as in the sense it sports a semi wide nose and quite a straight wave hugging outline centre to tail -…"
+        },
+        {
+          "name": "LITTLE ORCA MK2",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/LittleORCA21300x2048.jpg",
+          "description": "INTRO The Little Orca was one out of the box that maybe was a step too far but I was surprised how customers took to it. I guess with more and more people chasing smaller waves these days they only had to get a taste of the speed and the line this model takes to get somewhat hooked on it. I think it may even be more palatable if I reduced some of its extremes as in the width of the tail and the depth of the Grand Canyon i.e. the single concave through two thirds of the bottom which really does dominate the landscape...! PLANSHAPE The original Orca was designed as a fast little fish through and through sporting a very wide moon tail designed to reduce a lot of pod pressure with the cut out…"
+        },
+        {
+          "name": "Little ZAPPA",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/MUZ-272897-2048.jpg",
+          "description": "This little gem I have just brought back from the dead in that it was hugely successful through the first decade and a half when the world went shorter but it eventually got left behind amongst the big brand stampede trying to be everything to everybody. It seems now that designs like this are almost the norm for those that have wave size limits whereas it is almost now basically their “Go To”. Call it a fish or hybrid or indeed almost high-performance coz it has a pretty revved up bottom shape and rocker design. The big change c/f with the earlier model-I now have the confidence to make this a designated quad design which it should have been back then but market forces wanted a bet each…"
+        },
+        {
+          "name": "MALIBRUIZER",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/MALIBRUZER1300x2046_51e3e1b1-5970-4676-a91e-33a093a542b7.jpg",
+          "description": "INTRO This particular model evolved from a well-known Sunshine Coast competitive Mal rider who swears by how manoeuvrable this design is and who encouraged me to put this model out there. As reluctant as I was having an Anti Mal model in the range, I succumbed so unashamedly here it is. To add more light weight liveliness to a board this size I have made this with a stringered eps blank and it is glassed with epoxy resin. PLAN SHAPE The tail shape is a pulled in chisel and the nose measurement 12” down is nearly 3” wider than that of the 12’ mark up from the tail which for a performance Mal is a necessity if you really want to swing that mother and do your walk to the nose. All in all…"
+        },
+        {
+          "name": "MID LENGTH SNUB",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/Snub1300x2048.jpg",
+          "description": "The Mid length notion is a wide characterization of boards that first and foremost must paddle well and a close second must perform well! Big ask...? As a result, this genre has a litany of suggested models, and all relevant I might say. The Snub is a mild form of a mid-length in that it is not super wide in the nose and not super long in that 7.0 is the longest suggested. PLANSHAPE The Snub is a bet each way in that it is wider in the nose than a normal longer surfboard, but still pulled in enough to be less nose heavy and still whip able from rail to rail since it is narrower than most mid lengths in the nose. The tail area is also intelligently pulled in to facilitate moving the 5 fin…"
+        },
+        {
+          "name": "MULTI",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/Multi1300x2048.jpg",
+          "description": "MULTI Having one board that is versatile enough to cover different waves and styles of surfing, would be I think an appealing option for the middle-aged market. There are many out there that would have the patience to work through the options and find their groove. All things being equal this model should serve many purposes. Having been at the forefront in quad fin designs I have accurately positioned them to suit this mode and the front fin quad positions will also serve to be a perfect position for side bights for a 2 + 1 fin configuration without compromise. The quad mode also facilitates a small wave quad mode by using the Twin fin positions for the front quads and the normal trailor…"
+        },
+        {
+          "name": "PINGER ROUNTAIL",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/MUZZA61296-1300x2048.jpg",
+          "description": "The Pinger has been a staple in my Pipedream range for quite some time now and to offer it as a round tail was the next step since they are all the rage now. In addition, the round tail will enhance the rotation in quad mode more than that of the moon tail which will be an advantage in smaller less powerful waves. Every other facet of this design is the same as the original Pinger. As mentioned above the addition of the round tail will make this model easier to turn and to my mind will suit the quad mode the best. Since it is my widest short board design in the range it has been extremely popular for those a little older or heavier to keep riding short without sacrificing any paddle. As…"
+        },
+        {
+          "name": "QUATRO",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/TheQUATTRO1300x2048.jpg",
+          "description": "INTRO The Quatro is proud to be a quad fin only. It is now time to be not afraid to make and ride designated quad designs without having to compromise the design in order to facilitate a thruster option. Quads light up with more area forward and don’t need an abundance of tail lift in order to turn easily as does the thruster. So, keeping in mind this design is through and through the not a compromise. PLANSHAPE The Quatro Swallow tail has more area forward in order to give it more drive, reach and paddle ability. Being a quad, you no longer have to have you heal sitting on the pod as the Trailor fins are further forward than a tri centre fin so you have more sway over the wider nose. The…"
+        },
+        {
+          "name": "REEF SWALLOW",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/MUZZA60914-2048x1300.jpg",
+          "description": "The Reef Swallow has been around some time now and has always been my go - to in Indo. I always favoured a spikey swallow off the bottom and in the shade. Although rounded pins are still favoured by most in power these days, the swallow still has believers particularly with their ability to sit higher in the barrel without any slide. In addition, most Indo reef set ups do not give you much elbow room to pull off roundhouse cutties that suit a rounded pin anyways. The updates with this model, although it was almost a perennial, is extending a little longer vee through the fins in order to give it more tilt at speed and in the barrel. Also combining a five fin set up to give it even more…"
+        },
+        {
+          "name": "ROCKET TWINZAA",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/Twinzza_1300x2048_06033594-28ef-42ad-b595-bcc9707e87c6.jpg",
+          "description": "The Round Tail Twinzaa has been one of my best designs ever and indeed a totally original concept. This Twinzaa has little in common with the norm which are basically twin fin designs with a small side bight forward of the alphas. My current Twinzaa has been around for about 8 years andnow the time has come for the “Next Gen”. The one thing about the Twinzaa besides its manoeuvrability is its miraculous speed from naught to 100 ! So if you think that model was fast wait till you lay the front foot down on the Next Gen ! PLANSHAPE The plan shape of the Next Gen is exactly the same as the original. If it isn’t broke don’t fix it is the belief with this update where the planshape is…"
+        },
+        {
+          "name": "SILVER BULLET",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/sb_13300x2048_199ef7e3-e486-41f0-b31a-5c599d9665f8.jpg",
+          "description": "The Silver Bullet has been one of my biggest success stories to date. First designed over 15 years ago and as the clock turns it has now actually become very relevant again, particularly purely as a quad. The idea of a dedicated quad only, has now been fully accepted since the market is aging and needing vehicles like this that give you free speed and excess paddle ability. Not to mention they will sit in the shade in the barrel more comfortably than any other design. This design was also the first to incorporate my cathedral hull design that has proliferated into many of my other designs and been copied by many other designers around the planet. Which I mean sort of proves that it works!…"
+        },
+        {
+          "name": "SKINNY BULLET",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/SkinBulletNewGen1300x2048.jpg",
+          "description": "Since the fear campaign on quads has finally evaporated, now it is time to tweak some of my earlier models. The Skin B was the first quad I tested in Indo at Lances Rights as a step up on a decent day and with the lift of the cathedral hull I was totally sold particularly at the base of the wave. Now with the confidence with front foot pressure into a bottom turn the scope to either head vertical or elect for massive reach is now available. I have two other Bullet models in the range but this one will handle whatever gets served up to it with ease. It is my best quad step up to date. PLAN SHAPE As we know all quads enjoy more area forward since they are firmly in the twin fin camp from a…"
+        },
+        {
+          "name": "SNUB FEEDER",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/snub_1300x2048_d0710838-bc82-4bd1-b52b-c7170b55d145.jpg",
+          "description": "INTRO The idea of the Snub Feeder has been around for a while and is one worth bringing back since performance surfboard design have lost their pretentions and are now open to changes to nose widths offering safer alternatives for those that rip and are determined to ride short without any loss of paddle. Having said that the bottom shape and rocker which are the engine room in this performance model have not changed. PLAN SHAPE The Snub is as it sounds that it has a snub nose. Pretty well a high-performance plan shape with one foot the nose chopped off and rounded. This effectively flattens the nose rocker and widens the nose at the same time making it a great paddler and a forgiveness up…"
+        },
+        {
+          "name": "SQUIRTER HYDRO ROUND TAIL CHANNEL TWINNY",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/MUZZA55493_-1300x2048.jpg",
+          "description": "The hydro Twin has been a staple in my range for over six or more years now, so I thought there was a good reason to tweak it even more since the idea is a keeper and the feedback has been overwhelming. The inclusion of a round tail on a twin fin was always resisted back in the day by the fear that a round tail on a Twin Fin would make the board way too loose.! After all the swallow on a twin fin was to give it some extra bight at the very end of the board as well as helping to facilitate a straighter outline from centre to tail so it would hug to the face better . A round tail Twinny at that time was generally deemed a no-no. Jump forward some 50 years and now it seems anything goes and…"
+        },
+        {
+          "name": "T-RAY SWALLOW GUN",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/TRay2048x1300.jpg",
+          "description": "INTRO Tony Ray was and still is arguably one of Australia’s best big wave exports. With two second places in the Eddie amongst many other successful results on the rock. He was one of the very few at the time sporting a swallow tail amongst a sea of pintails. Although this design is not being put forward as a heritage model as it could rather as a design that is still relevant today particularly to those who may be a tad long in the tooth who yearn to draw the classic lines still functional in waves of consequence where speed patience and grace are required. Of late there are too many bragging they can ride big waves on small boards and they can, but grace certainly goes out the door. PLAN…"
+        },
+        {
+          "name": "The Chappy Model",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/chappy1300x2048.jpg",
+          "description": "There may be many that do not remember or know of the “Little General” but regardless he was the flag bearer through a period during the 80’s where channel bottoms were totally in favour. We have them back now as a standard today, but mostly in hybrid twinnies and the like, although there are pockets of support particularly for waves of consequence that have hollow whisper clean faces like the Queensland points and many reef waves in Indo. Having said that the Chappy model is a flash back that indeed is relevant today for many that just love the feel. Even then we were on the money with the right rockers and bottom shapes for tail channels so really this model presented here has only been…"
+        },
+        {
+          "name": "The Dom",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/dom2.jpg",
+          "description": "Late 1970’s – The Dominic Wybrow Inspired Channel Twin Fin 70’s CHANNEL TWIN FIN 5.10 x 20 ½ x 2 5/8 double flyer channel swallow twin fin. This board appeared on my door step not long ago with an old friend Jason who had been riding it on and off for years. He was talking it up so much I decided to make a very close copy of it. As I got into it I realized what era this board had evolved from and it all led back to Dominic Wybrow or Zappa- his labelled nick name. To cut a long story short an old friend from Bondi, the late Wayne Williams encouraged me to look after this kid so I bought him up from Sydney and taught him how to shape. The kid ripped and was winning all the contests around…"
+        },
+        {
+          "name": "The GENTLEMAN",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/products/TheGMan1300x2048.jpg",
+          "description": "EPS GENTLEMAN 4 + 1 In order to address the mix of punters taking up surfing of late and the variation of models they are open to, I designed the Gentleman to satisfy those that first and for most need help to paddle in. A close second is a board with as much diversity as possible in that it can be surfed in a variety of conditions in a choice of modes. PURPOSE Perhaps the main theme of this board besides being an excellent wave catcher is that it can be ridden in 3 different modes that would suit a wider variety of conditions sometimes only managed with multiple boards. 1. Quad mode 2. 2 + 1 mode 3. Single fin mode It may be once a surfer finds his favourite mode he sticks with it but the…"
+        },
+        {
+          "name": "The Guy",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/GuyBot.jpg",
+          "description": "Early 1970’s – The Guy Ormorod single flyer swallow tail single fin THE GUY ORMOROD SINGLE FLYER SWALLOW 6.0 X 18 ¾ X 2 7/16 single flyer swallow with dropped wing. This board became a favourite of Guy’s in the early seventies and there was a full centre spread in Surfing World magazine of Guy laying a deep cutty flashing the nose to tail Pipedream spray at the camera. We made a few of these boards for him but none went as well as the one I shaped a small flute under the flyer. According to Guy at the time the dropped wing as I later called it, gave him heaps more squirt and bight and this really livened up the board. I have applied this dropped wing in many of my late boards with the same…"
+        },
+        {
+          "name": "The HIGH PERFORMANCE SLICK",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/MUZZA54027_-_1300x2048b_9e589aea-1479-49db-a0b4-7e974d9ed6a6.jpg",
+          "description": "The High-Performance Slick is indeed my best foot forward when it comes to the thruster that can and should be ridden by those pushing their own limits without having to deal with limits under their feet. I do not fill my range with a huge variety of these high-performance thrusters because the world has moved on to other more exciting and appropriate designs for the general market.. The market for more new aspiring tools for those keen on winning a world title are drying up just like the market that chases them. The world tour is sadly out of reach purely from an economical perspective for 99% of its aspirants. The important elements in this and most high-performance thrusters are all the…"
+        },
+        {
+          "name": "THE HYDRO MULTI",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/HydroMulti1300x2048.jpg",
+          "description": "INTRO Have been playing with this concept for a while now and probably pushed the envelope a tad with the Multi Anti Mal which perhaps should have come with a user manual in retrospect. The Hydro multi however is a lot simpler - so much so, a drover’s dog will get it! I have always said that the quad and twin fin concepts belong to the same family, as does the single fin and the thruster belong to another. In order to morph a quad and a twin fin into the same board it is only a question of fin positions simply because they both need plan shapes that carry more area forward of centre unlike that of the tail centric tri fins. So, the thought behind this concept is without compromise…"
+        },
+        {
+          "name": "The PINGER",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/products/PingerFront2048x1300.jpg",
+          "description": "EPS PINGER The Pinger has had major surgery this year and is sporting a much more simplified plan shape. The Pinger has been a consistent seller in the Pipedream range for many years now and is set to get with the times. The DNA of this model is however still alive and well. This year the Pinger is aimed at the bigger fellows and does not go any shorter than 6.6. PURPOSE The new Pinger’s simplification is mainly the exclusion of the double flyers and flutes which have been replaced with an exaggerated hip that will do the same thing and loosen up the plan shape. Perhaps the widest and thickest fish in the range the Pinger has the greatest paddle pedigree of them all. PLAN SHAPE There is…"
+        },
+        {
+          "name": "The RT SLICK",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/SlickRTDeck.jpg",
+          "description": "ROUND TAIL SLICK The Slick model has had my small foot in the door of the high-performance market for quite a while now and I believe has all the ingredients necessary to propel a hottie to the top. Having said that these days I shy away from that market and leave that for the froth shapers eager to make their mark. Since the round tail of late has become the tail shape preferred by those chasing the crown I think it prudent I offer this as another alternative to keep up with the times. Albeit only a small tweak of a model that has endured scrutiny for such a long time the round tail does offer much smoother round houses off the top even though it lacks the punch of a corner in the pod off…"
+        },
+        {
+          "name": "The RT TWINZAA",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/products/rttwinza.jpg",
+          "description": "THE ROUNTAIL TWINZAA The Twinzaa evolved from the quad fin family rather than the Twin fin family, but is still closely related in many ways. Perhaps the driving force behind this design direction is the need for an alpha fin or fins further up from the tail so as to allow one to operate in a more forward position without losing decisive control. Normal quad designs have the bigger fins up front, but the Twinzaa has the big ones in the rear albeit they are positioned much further up than normal quad rears. This then allows one to have more area forward dodging the front heavy syndrome that thrusters suffer should they have wider noses. Wider noses, flatter rockers, cathedral hull and…"
+        },
+        {
+          "name": "The Scat",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/scat1.jpg",
+          "description": "Mid 1980’s – Scat Pitchers Belly Channel chisel tail thruster SCAT 6.0 BELLY CHANNEL CHISEL TAIL 6.0 X 19 ½ X 2 3/8 belly channel chisel This model came to my attention when I was looking at some old ads that I did with Chappy, Smithy and Scat. The board he had under his arm looked real good and was his preferred type of channel. He was in every contest going and found the belly channels were more user friendly in substandard surf where in those days, most contests were unfortunately held. This was the time when the hip in the plan shape was a prerequisite for a thruster and Damien Hardman promoted the belly channel. This particular board that Scat rode was a low nose entry flat decked and…"
+        },
+        {
+          "name": "The SLOP ROD",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/products/2020SlopRodDeck.jpg",
+          "description": "EPS STRINGERD SLOP ROD TRI FIN INTRO The new 2020 Slop Rod has been slightly modified in that it is now a dedicated thruster and only comes as a squash tail design. The demand for high performance short boards is still alive and well. Not everyone has retreated to the fish design in order to master small waves, indeed there are many particularly above average surfers who just need a little more width and float in their high performance models in order to tame the smaller waves. It is this portion of the market the Slop Rod has in mind. PLAN SHAPE The Slop Rod being wider in the girth is also wider in the nose and tail as a result. Coupled with being shorter and sporting a pronounced hip in…"
+        },
+        {
+          "name": "The SMOOTH OPERATOR",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/MUZZA592111300x2048.jpg",
+          "description": "The Smooth Operator is indeed a very traditional thruster in every sense. With ever increasing tail flips in the modern performance thrusters that enable fast and flicky repertoires there are many surfers out there as a result, being left behind. Twitchy might suit super talented surfers in small waves, but for guys who want to draw long fast lines in 3 feet up, the Smooth Operator has the engine required. I have always believed a round tail is so easy to turn it more often than not needs a check mechanism. Reducing tail rocker does just that- balancing the drive and pivot so as to fit the bill for those who want reach without excess reaction. PLANSHAPE Like most performance thrusters the…"
+        },
+        {
+          "name": "The Space Cadet",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/spacecadet1300x2048.jpg",
+          "description": "This concept was something I had always wanted to try to design and now with the 3D design program I could put it together without wasting a blank like I did way back trying to design one. First and foremost, I wanted to massively thicken the back half of the board without it being felt in the rail back there. By employing a heavy roll on the deck in the tail area the rail thickness becomes more penetrable. Also, by employing a deep tail vee back there as well, helps to thin out the rail from the bottom up. The front half of the board is totally the opposite in that it is deeply concaved on the deck and bottom right to the nose. This lateral shape delivers extra thickness to the rail…"
+        },
+        {
+          "name": "The STEP 123",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/TheStep1300x2048.jpg",
+          "description": "The PU STEP 123 The thought behind this model came primarily to address the paddle crisis for those who need to keep their boards short…and indeed there are many of us...! In addition, the inclusion of multipurpose options into the one board, but sensibly. Firstly, the inclusion of the step deck is for those obsessed with keeping short, and who have only width and thickness to buy back some of the lost paddle by staying short. Too much width puts pressure on thruster mode and too much thickness corks the board out for all modes making it difficult to throw around on rail. The thickness dilemma can be minimized by rolling the deck more, but there is a limit to that before you feel like you…"
+        },
+        {
+          "name": "The Territorial",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/1A113000x2048.jpg",
+          "description": "The Territorial is a mid-length that retains speed and more importantly maneuverability that tends to vanish as you begin stretching lengths in order to catch more waves. More tail rocker and lower rails go a long way facilitating this endeavor. Moreover, quad fins add to this process also, and if it is more pivot you want a 2+1 fin set will deliver this in spades. The term Territorial simply suggests riding this model will help you protect your turf without giving up your surfing prowess. PLAN SHAPE Like most mid-lengths the Territorial is forward centric mainly to facilitate early entry, but it also gives one the opportunity to lower the nose lift as it becomes wider. The inclusion of…"
+        },
+        {
+          "name": "The Zane",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/ZANE-MODEL.jpg",
+          "description": "Mid 1990”s Zane Harrison triple flyer pintail This model is the last of the Pipedream Retro range. This era was only 8 years ago and perhaps could be argued is a little too modern, however one could argue that surfboard design is moving forward so fast that designs like this could be forgotten forever if not recorded. The multiple flyer design had been around since the Hot Buttered days and we used it on some of Zane’s boards that worked a treat for him. This model is 6.2 x 18 ¾ x 2 5/16 and has a con- vee to give the tail a little more tip at high speeds. The planshape is widish in the tail but depletes at the tail end with the use of flyers. This gives the board the capacity to sit down…"
+        },
+        {
+          "name": "TWINSER SQUIRTER",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/SquirterTwinser1300x2048.jpg",
+          "description": "INTRO The thinking with this little number was derived from classic boat design where you have a forgiving hull up front and flatter bottom in the rear where the motor is located. In this case the motor is the deep double concave built into a very subtle vee out the last third of the board. When rail to railing which Twinnies and Twinsers alike, do well. The extra squirt from the deep doubles will for sure allow this model to more than live up to its name. Would not dare to shape this into a thruster design, but as I have always said Twin fin designs are so free they can tolerate harnessing. P LAN SHAPE The Squirter sports a normal traditional Twinny plan shape in that if is forward…"
+        },
+        {
+          "name": "TWINZER MK2",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/TwinzaMk2Deck_98746176-ddd6-409a-aa0b-9111ac55a3cf.jpg",
+          "description": "TWINZER MARK TWO Since I have been into my own concept of the Twinzaa the last 8 years and also in response to a surge of interest in the older Twinzer concept of late I have decided to make a more conventional Twinzer for the current market that is less “out there” than my previous design, although having said that I still believe my current Twinzaa design is the best board I have ever designed to date..! So, I have taken a more palatable market approach with this model, but what I have learnt with my previous model has in a small way seeped into this design none the less. Lythe to just design a standard Twinzer I guess- it’s just not in my DNA to do so. I have learnt so much from my…"
+        },
+        {
+          "name": "Vintage 6.4 Thruster",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/products/20210716_200720.jpg",
+          "description": "6.4.....? Back in those days we only gave a length. Guess our customers just trusted us more than they do now..? Mid 80,s at a guess and in reasonable condition. Without over selling my rep I would think it fair for those who may be interested that $350 would be there abouts."
+        },
+        {
+          "name": "Vintage 6.6 Thruster 1986 aprox",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/products/20210716_203534.jpg",
+          "description": "6.6......? as I said that's all you got back then and you would be pissing upwind if you mention litres! This is the old eagle shaper decal that I somehow thought was relevant back then. Actually all my shapers had their own decals which more than my main opposition awarded their hire help I must say !! Anyways since I shaped this I am adding another $50 simply coz I can see this drawing interest around $400.00. Tell me I am dreaming?"
+        },
+        {
+          "name": "WHIPPET TWIN",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/WHIPPET1300x2048.jpg",
+          "description": "INTRO Yes, it’s raining Twins. Perhaps the mid length craze caused by aging surfers’ efforts to stay relevant has kicked it all off. Nevertheless, the Whippet Twin is unapologetic for its purpose and is true to this cause i.e. longer looser surfboard designs that aging punters can actually rip the bag on.! PLAN SHAPE The Whippet is of course forward centric, but it is not over the top so it has a good swing rate for a longer board. In addition, the round tail helps this cause as well. In the past most Twin Fins have been strictly swallow tails because they bight so well, but that was in the day where Twin Fin designs were perceived to be only short boards in smaller waves. Now days the…"
+        },
+        {
+          "name": "WIZZARD MID LENGTH TWIN SWALLOW",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/WizzardSwallowTailDeck1024x615.jpg",
+          "description": "WIZZARD MID LENGTH TWIN SWALLOW PURPOSE There is little difference in the purpose and design of these 2 stablemates (Round & Swallow) except for the round tail having channels and the Swallow being …well a swallow tail without channels. And secondly, perhaps a bees dick more rocker due to the absence of the ball and socket freedom of the round tail model. Everything else in the lateral bottom shape, rail shape and general profile is exactly the same- so no need to double up on info here. Since a round tail slices off the ears of a swallow there is as a result a tad more volume in the swallow model and for those with a magnifying glass at the ready Here they are !!! 6.8 x 20 ¾ x 2 ¾ = 40.43…"
+        },
+        {
+          "name": "WIZZARD MID LENGTH TWINNY ROUND TAIL CHANNEL",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/WizzardRoundTailDesk1024x615.jpg",
+          "description": "WIZZARD MID LENGTH TWINNY ROUND TAIL CHANNEL PURPOSE Due to the demand for longer twin fins the Wizard range is a timely addition to my Pipedream stable. This design is aimed at those older guys that need paddle, but are desperate to keep it loose, fast and competitive. Twin fins need a wider nose and a flatter rocker to deliver run and reach since they have only two fins creating only increased pivot at the sacrifice of all others so a wider nose and a flatter rocker corrects that imbalance and at the same time boosts the paddle in momentum a facility much needed for an ageing surfer PLANSHAPE The outlines of Twin fins are always forward centric for reasons described above and have up to…"
+        }
+      ]
+    },
+    {
+      "slug": "thread-surfboards",
+      "name": "Thread Surfboards",
+      "website_url": "https://threadsurfboards.com",
+      "location_label": "Costa Mesa, California",
+      "short_description": "Costa Mesa custom grovelers, performance shortboards, and USA-made soft-tops.",
+      "logo_url": "https://threadsurfboards.com/wp-content/uploads/2020/12/Thread-B.png",
+      "models": [
+        {
+          "name": "Astro",
+          "image_url": "https://cdn-bechc.nitrocdn.com/dqXWZweSAagPLRPxtGiCsobIpdLbJaMo/assets/images/optimized/rev-d6bd1f7/wp-content/uploads/2016/10/Astro-front-845x1024.jpg",
+          "description": "The Astro is a high performance hybrid board designed for shredding in waves that would not normally be surfable. The Astro bridges the gap between full grovel boards and high performance shortboards. The widened nose and tail area, low entry rocker and single to deep double concave through the fins makes the Astro lightning fast. And with a subtle hip at the front fins, mid tail rocker, and a slight vee off the tail allows this speedster to shred like a high performance shortboard!"
+        },
+        {
+          "name": "Colt 45",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/08/Colt45-front-845x1024.jpg",
+          "description": "The Colt45 is the board to ride when you want to rip like your riding your standard shortboard, but in waves that are sub par conditions. It is a step down from the Pirate Hooker, designed for high performance surfing in smaller weaker surf. It has a lower rocker throughout, with a touch of flip off the tail, this combined with the hip in the tail allows the Colt45 to have a tight turning radius in the pocket, with release and pop off the lip. The speed comes from a generous single concave and double concave between the fins. You want to ride the Colt45 anywhere from 2-4 inches shorter than your standard shortboard."
+        },
+        {
+          "name": "Hybrid",
+          "image_url": "https://cdn-bechc.nitrocdn.com/dqXWZweSAagPLRPxtGiCsobIpdLbJaMo/assets/images/optimized/rev-d6bd1f7/wp-content/uploads/2016/11/Hybrid-front-845x1024.jpg",
+          "description": "The Hybrid is a small wave favorite for the thread designs team and customers everywhere, designed for small to medium surf as a high performance short board but still holds it’s own in overhead surf. It has a wider outline and lower entry rocker than our Koozie model with a single to double concave and slightly fuller rails so it’s more difficult to bury the rail when it’s laid hard on rail in a turn, this will help store energy during a turn and release that energy coming out of the turn. Designed to be ridden about 2-3 inches shorter than your standard short board."
+        },
+        {
+          "name": "Koozie RT",
+          "image_url": "https://cdn-bechc.nitrocdn.com/dqXWZweSAagPLRPxtGiCsobIpdLbJaMo/assets/images/optimized/rev-d6bd1f7/wp-content/uploads/2016/11/Koozie-RT-front-845x1024.jpg",
+          "description": "The Koozie RT is based of the Koozie, only with a few minor tweaks to make it work better in bigger and better waves. We pulled the tail in and made it a round tail to hold in steeper and larger waves. We also shallowed the concave, because more speed needs less lift. The Koozie RT is the board for when you need a slight step up from your standard shortboard."
+        },
+        {
+          "name": "Mint Tie Dye Foamy",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2021/01/Foam-Board-Green-Black-Main.jpg",
+          "description": "USA-made Thread soft-top surfboard built from waterproof copolymer foam with a wax-free EVA deck pad and Futures fins included."
+        },
+        {
+          "name": "Record Setter Step Up",
+          "image_url": "https://cdn-bechc.nitrocdn.com/dqXWZweSAagPLRPxtGiCsobIpdLbJaMo/assets/images/optimized/rev-d6bd1f7/wp-content/uploads/2016/11/Record-Setter-STEPUP-front-845x1024.jpg",
+          "description": "The Record Setter Step Up is a stretched out version of the Record Setter. It is designed for those bigger days when you just need “more board”. We took the Record Setter and added a touch of nose and tail rocker, shallowed the concave as more speed needs less lift, and thinned out the rail to make it knife through the face of the wave better. It is a great choice for those bigger beach break days!"
+        },
+        {
+          "name": "Rust Tie Dye Foamy",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2021/01/Foam-Board-Pink-Main.jpg",
+          "description": "USA-made Thread soft-top surfboard built from waterproof copolymer foam with a wax-free EVA deck pad and Futures fins included."
+        },
+        {
+          "name": "The Blowfish",
+          "image_url": "https://cdn-bechc.nitrocdn.com/dqXWZweSAagPLRPxtGiCsobIpdLbJaMo/assets/images/optimized/rev-d6bd1f7/wp-content/uploads/2016/08/Blowfish-front1-845x1024.jpg",
+          "description": "A super fun retro style groveler designed for relaxed style surfing in all small to medium conditions and is easily ridden by any type of surfer of any skill level. The super flat entry rocker combined with a wide forward point and a single concave gives this board unbelievable down the line speed and the vee through the tail helps this board turn on a dime. This board is designed to be ridden 4-6 inches shorter than your standard shortboard."
+        },
+        {
+          "name": "The Egg",
+          "image_url": "https://cdn-bechc.nitrocdn.com/dqXWZweSAagPLRPxtGiCsobIpdLbJaMo/assets/images/optimized/rev-d6bd1f7/wp-content/uploads/2016/08/Egg-front-845x1024.jpg",
+          "description": "The Egg is a fun and easy to ride board for surfers of all skill levels. It is super versatile and can be ridden as a thruster, quad or single fin. If you order it with a 5-fin set up it can be riden as a tri or quad fin. If you order it as with a single fin and side bite boxes you can ride it as a single fin with the option to add side fins. And lastly, you can also orer it as a quad with a single 10″ box to ride it as a single fin or quad fin. The wide and round outline makes The Egg a wave catchign machine with great down the line speed. It has a low to mid entry rocker and low tail rocker which allows the board to carry momentum through the flat sections. It has a reverse vee bottom…"
+        },
+        {
+          "name": "The G6",
+          "image_url": "https://cdn-bechc.nitrocdn.com/dqXWZweSAagPLRPxtGiCsobIpdLbJaMo/assets/images/optimized/rev-d6bd1f7/wp-content/uploads/2016/10/G6-front-845x1024.jpg",
+          "description": "“The G6” is already a favorite with the Thread Designs team and customers everywhere, it is a super fun small wave speed machine. The low and constant rocker makes this board power through those flat sections and makes paddling almost effortless. The single concave through the first half of the board makes it accelerate quickly and the double concave starting just behind the center and peaking just in front of the front fins allows it to do quick rail to rail turns, along with the double winged round tail reducing surface area in the tail while maintaining volume will have you turning tight when in the bowly pocket of a wave giving it that performance board feel."
+        },
+        {
+          "name": "Tube Hound",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/08/Tube-Hound-front-845x1024.jpg",
+          "description": "The Tube Hound is built for big barreling waves like Ocean Beach in San Fran, Cloudbreak, Puerto Escondido, and Pipeline, just to name a few. With extra thickness and a fuller outline than traditional step-ups and guns have, the Tube Hound is a paddling machine. It has a flowing continuous rocker with a flat bottom in the front 1/4 of the board which blends to a slight single concave and a spiral vee off the tail, allowing maneuverability and control at high speeds. We recommend ordering this board with a 5-fin set up so you have the option to ride it as both a quad or tri fin."
+        },
+        {
+          "name": "White Tie Dye Foamy",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2021/01/Foam-Board-Green-White-Main.jpg",
+          "description": "USA-made Thread soft-top surfboard built from waterproof copolymer foam with a wax-free EVA deck pad and Futures fins included."
+        }
+      ]
+    },
+    {
+      "slug": "dylan-surfboards",
+      "name": "Dylan Surfboards",
+      "website_url": "https://dylansurfboards.com",
+      "location_label": "Port Kembla, New South Wales, Australia",
+      "founder_name": "Dylan Longbottom",
+      "lead_shaper_name": "Dylan Longbottom",
+      "short_description": "Port Kembla performance and alternative shapes from surfer-shaper Dylan Longbottom.",
+      "logo_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/dylan-logo-white.png",
+      "models": [
+        {
+          "name": "4X Mid Length",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2024/07/4xmid_update-1600x1600.png",
+          "description": "This model is perfect or those that just want to cruise and to make paddling much easier, set up as a twin fin plus the 4 channels for extra drive and a rounded pin tail for hold. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE Enquire Today Tail Options Rounded Pin Fin Options FCS2 - Futures - Five Fin Available - Thruster Concave Slight single concave flowing into 4 channels Core Option All Dylan Shapes are also available in EPOXY CORE Wave Height Guide Our Wave Height Guide has been created to give you a basic understanding of the ideal wave size range this board…"
+        },
+        {
+          "name": "Big Gun",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/biggun-1600x1600.png",
+          "description": "This my paddle in board for very large waves around the world, designed to get into waves early with a lot more volume under the chest and made a lot thicker than your standard step up boards. It has a big long rocker with a nice long drawn out planshape, low rails and a pulled in tail. It all depends on your weight/height/age ratio and where you surf to maximise volume, plus a super strong glass job. Enquire Today Tail Options Pin Fin Options FCS - FCS2 - Futures - Five Fin Available - Thruster Concave Slight single concave with vee through the tail Core Option All Dylan Shapes are also available in EPOXY CORE Wave Height…"
+        },
+        {
+          "name": "CAB SAV",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2024/07/cabsav-1600x1600.png",
+          "description": "Cab Sav is a mid length cross step up board that has a wider point much further forward with a drawn in swallow tail that is good for when its pumping but also good to ride when its small. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE Enquire Today Tail Options Swallow Fin Options FCS2 - Futures - Five Fin Available - Thruster Concave Medium single concave into double concave. Core Option All Dylan Shapes are also available in EPOXY CORE Wave Height Guide Our Wave Height Guide has been created to give you a basic understanding of the ideal wave size range this board has been…"
+        },
+        {
+          "name": "CAB SLAB",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2024/07/cabslab-1600x1600.png",
+          "description": "This is a board i designed with Cronulla charger Fletcher Hayllar that we wanted for slabs and ride shorter with wide point a touch further forward to help us paddle into wave earlier without riding a longer board, but it also works great in the beach breaks as well for tuns making it a super fun all rounder. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE Enquire Today Tail Options Pin - Rounded Pin Fin Options FCS2 - Futures - Five Fin Available - Thruster Concave Medium single concave into double concave. Core Option All Dylan Shapes are also available in EPOXY CORE Wave…"
+        },
+        {
+          "name": "Cosmic Crusader",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/CosmicCrusader-1600x1600.png",
+          "description": "This is a super fun board made for easy paddling and generates speed a lot easier, has a lot more area up towards the nose with a standard shortboard tail making it easy to turn and full soft rails making it very forgiving. Perfect for beginners to intermediate, and for surfers that don’t get in the water frequently Enquire Today Tail Options Fin Options Concave Core Option All Dylan Shapes are also available in EPOXY CORE Wave Height Guide Our Wave Height Guide has been created to give you a basic understanding of the ideal wave size range this board has been designed for. Waves beyond the range below are…"
+        },
+        {
+          "name": "Double Slider",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2015/12/tailoptions-1600x1600.png",
+          "description": "A new mid-length model that you can take out on any day of the week and just have heaps of fun. Super easy to paddle with more area up front and can ride up to 8 inches longer than your shortboard, low rails making it easy to turn plus have that fast smooth glide feeling on the wave. Instead of riding a long-board you can ride one of these and just cruise and glide in early or put in on rail with ease. Basic sizes but can make any dimensions to suit the individual IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE Enquire Today Tail Options Double Swallow Fin Options FCS…"
+        },
+        {
+          "name": "Filthy Fish",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2024/07/filty_fish-1600x1600.png",
+          "description": "This a quad fish i designed for small beach breaks and wave pools, made the deck flatter so its more responsive along with a single flyer and lower rocker, really fast and loose for small waves. Enquire Today Tail Options Fish Fin Options FCS - FCS2 - Futures - Set - Five Fin Available - Thruster Concave Single concave into a deep double concave. Core Option All Dylan Shapes are also available in EPOXY CORE Wave Height Guide Our Wave Height Guide has been created to give you a basic understanding of the ideal wave size range this board has been designed for. Waves beyond the range below are not recommended on this…"
+        },
+        {
+          "name": "Free Flow",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2015/12/Freeflow-1-1600x1600.png",
+          "description": "This is my new updated model spawned from my old flowrider model, changed the rocker and moved the centre point back more under the feet plus made the wide point at the nose area a touch wider and the tail is a little wider than my X5 model, great all round high performance model. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE Enquire Today Tail Options Rounded Pin - Rounded Tail - Squash - Swallow Fin Options FCS - FCS2 - Futures - Five Fin Available - Thruster Concave Slight single through to double concave; Single concave with double concave under the back foot and vee out…"
+        },
+        {
+          "name": "Gypsy",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/gypsy-1600x1600.png",
+          "description": "This is my retro kind of model that has that old school thick beak nose to help glide into waves, this combined with a single flyer round pin tail and the single fin or 2+1 fin set up allows for long smooth turns and is also great for barrel riding. Enquire Today Tail Options Rounded Pin Fin Options FCS - FCS2 - Futures - Single fin with option for 2 side plugs Concave Slight single with vee through the tail Core Option All Dylan Shapes are also available in EPOXY CORE Wave Height Guide Our Wave Height Guide has been created to give you a basic understanding of the ideal wave size range this board has been designed for. Waves…"
+        },
+        {
+          "name": "HOT SPOT",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2015/12/tailoptions-1600x1600.png",
+          "description": "Inspired by the RX5, I have moved the centre point back 2 inches so it is more balanced between your feet creating better turning ability and a looser feel. It has a deep single to double concave and slightly more tail rocker for more speed, with a slightly wider squash tail which I have changed from the round tail RX5, I like to ride it slightly wider but thinner… a great all round high performance board. Basic sizes but can make any dimensions to suit the individual. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE Enquire Today Tail Options Squash Fin Options FCS - FCS2 -…"
+        },
+        {
+          "name": "Hotrod",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/Hotrod-1600x1600.png",
+          "description": "A mini mal like model which has that very full nose - but made a lot wider and thicker than all other boards, allowing it to paddle into waves super easy, while also being very stable on the waves. It consists of a standard short board tail to make it easy to turn, perfect for beginners or surfers that just want to cruise and catch waves easily. Enquire Today Tail Options Rounded Pin Fin Options FCS - FCS2 - Futures - Five Fin Available - Thruster Concave Straight single concave with slight vee out through tail Core Option All Dylan Shapes are also available in EPOXY CORE Wave Height Guide Our Wave Height Guide has been…"
+        },
+        {
+          "name": "Laurie Towner Pro Model",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2021/06/laurie_web-1600x1600.png",
+          "description": "Laurie & Dylan have worked together for years fine tuning this shape. Paddling this exact board into some of the biggest hollow waves around the world where you need a lot of extra volume and keeping the rails very low to knife into those big drops. The bottom includes a single to double concave and the rocker has nice smooth long continuous curve with enough nose curve not to catch but low enough to get good paddle speed. Your high performance powerful wave surfing vehicle is here. Basic sizes but can make any dimensions to suit the individual. IMPORTANT NOTICE: This Board (along with ALL…"
+        },
+        {
+          "name": "Little Ripper",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/littleripper-1600x1600.png",
+          "description": "This is my high performance model for the kids, made to suit there age/height/weight ratio with more rocker and refined outline for sharper turns to allow the kids to progress quickly to high levels. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE Enquire Today Tail Options Rounded Pin - Rounded Tail - Squash - Swallow Fin Options FCS - FCS2 - Futures - Set - Thruster Concave Medium concave with slight double under back foot Core Option All Dylan Shapes are also available in EPOXY CORE Wave Height Guide Our Wave Height Guide has been created to give you a basic…"
+        },
+        {
+          "name": "Lucas Chumbo Pro Model",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2015/12/tailoptions-1600x1600.png",
+          "description": "This is the new high performance big gun that allows us to actually surf large waves and not just survive or just go straight. I worked close with Lucas to give him more paddle power with the flat deck which continues the volume out to where it meets the low rail, the flat deck also make it way easier to turn for a big board and the low rails allowing the board to engage and hold and be able to change lines easy and smooth. The bottom is slight concave though to a strong double concave inside the vee, Luca and myself feel this model has changed big wave surfing making it safer, easier and guys…"
+        },
+        {
+          "name": "MEX5",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2015/12/tailoptions-1600x1600.png",
+          "description": "My new Mex5 model is a combination of my 2 favourite models being my RX5 and Mexican, i have used the nice smooth bottom curve of the RX5 and used an outline like the Mexican with a slight hip and slightly more area under the chest for board and paddle speed, great for all conditions making it the perfect all rounder. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE Enquire Today Tail Options Rounded Pin - Rounded Tail - Squash - Swallow - Round Square Fin Options FCS - FCS2 - Five Fin Available - Thruster Concave Medium through to double Core Option All Dylan Shapes are also available…"
+        },
+        {
+          "name": "Mexican",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2015/12/Mexican-1-1600x1600.png",
+          "description": "This is my high performance board for small to medium waves and suited for beach breaks and those rippable points/reef breaks, consists of a medium rocker and a much broader outline with generous width around the chest area for paddling and more area in front of the fins breaking with a hip to bring the tail back in, excellent board for everyday conditions and suited for everyone. Enquire Today Tail Options Rounded Tail - Squash Fin Options FCS - FCS2 - Futures - Five Fin Available - Thruster Concave Deeper single concave with very slight double under back foot. Core Option All Dylan Shapes are also available in EPOXY CORE…"
+        },
+        {
+          "name": "Predator",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/predator-1600x1600.png",
+          "description": "This is my step up model for those heavier days - more volume under the chest allows getting into bigger waves, which is critical to get a good line. This, combined with more rocker for gets those steep drops while fitting into hollow waves better, plus low rails for bite and hold - so there is no sliding and the nose is not too pulled in but narrow enough with a tighter tail area. Tested around the world by the worlds best, this board comes with a very strong glass job for strength and extra drive. Enquire Today Tail Options Rounded Pin - Swallow Fin Options FCS - FCS2 - Futures - Five Fin Available - Thruster Concave…"
+        },
+        {
+          "name": "RAPTOR",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2019/08/Raptor_Web-1600x1600.png",
+          "description": "The Raptor is a new board I've been working on where I fused the Predator model and my performance RX5 model that has a sexy curvy outline, pulled in swallow tail, lower rails and more rocker so we can ride it with a little extra volume. It’s a great all rounder for turns and barrels for waves 3 to 6 feet, it's a mix of old school curves with shorter new school performance and I like to ride it the same length as my own height or 1 inch longer. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE Enquire Today Tail Options Swallow Fin Options FCS - FCS2 - Futures - Set - Thruster Concave…"
+        },
+        {
+          "name": "Recovery",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2024/07/recovery-1600x1600.png",
+          "description": "After breaking my ribs badly and had to recover for a long time i had to start again on long boards and loved that gliding feeling they give you, so then i started making them shorter and come up with this design making it as easy to paddle in as possible but in a short board, become super fun riding small waves again. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE Enquire Today Tail Options Rounded Pin - Rounded Tail Fin Options FCS2 - Futures - Five Fin Available - Thruster Concave slight concave into a deep double concave Core Option All Dylan Shapes are also available in…"
+        },
+        {
+          "name": "RX5",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2015/12/Rx5-1-1600x1600.png",
+          "description": "The new RX5 model is exactly the same as my original X5 model but it now has a little extra tail rocker and now comes in a round tail and 5 fin plug option, slightly wider up front than the X5 model and has the same concaves, my go to board when the waves are good. Enquire Today Tail Options Pin - Rounded Pin - Rounded Tail Fin Options FCS - FCS2 - Futures - Five Fin Available - Thruster Concave Medium through to double Core Option All Dylan Shapes are also available in EPOXY CORE Wave Height Guide Our Wave Height Guide has been created to give you a basic understanding of the ideal wave size range this board has been designed for.…"
+        },
+        {
+          "name": "Secret Squirrel",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/secretsquirrel-1600x1600.png",
+          "description": "This is a model for the groms coming off their first foamy or their dads' boards, made a lot shorter but still a lot taller than the child with a generous amount of volume in the width and thickness to allow them to learn to paddle by themselves and catch waves - plus it allows them to progress faster, also giving them extra stability and making it easy to duck dive. Enquire Today Tail Options Round Square Fin Options FCS - FCS2 - Futures - Set - Thruster Concave Slight single into double concave Core Option All Dylan Shapes are also available in EPOXY CORE Wave Height Guide Our Wave Height Guide has been…"
+        },
+        {
+          "name": "Siamese Twiin",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2018/05/Siamese_Twiin_Web-1600x1600.png",
+          "description": "Designed and tested this retro twinny in various conditions around the world and made it to suit those tiny days to have a tonne of fun, wide point very far forward with super fish outline and deep swallow tail along with a deep double concave to make it very fast. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE Enquire Today Tail Options Rocket - Fish Fin Options FCS - FCS2 - Futures - Set Concave Medium through to double Core Option All Dylan Shapes are also available in EPOXY CORE Wave Height Guide Our Wave Height Guide has been created to give you a basic…"
+        },
+        {
+          "name": "Spicy Moroccan",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2018/10/Spicy_Morrocan_Web-1600x1600.png",
+          "description": "New performance model board that you can ride 2-3 inches shorter than your height that has the same volume of your standard shortboard, it has a very curvy plan-shape with all the area and thickness distributed between the feet plus a strong hip squash tail and a single concave. Its something you would ride out your local beachbreak on your 1-4 foot day that has heaps of speed and will be very loose through turns making it a super fun model. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE Enquire Today Tail Options Squash Fin Options FCS - FCS2 - Futures - Set…"
+        },
+        {
+          "name": "Sumo",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/sumo-1600x1600.png",
+          "description": "I designed the Sumo Model for guys generally weighing over 85kg's. With the increased area, you get greater paddle & drive speed. But I’ve re updated the shape to give the big guys a board that still feels loose. Enquire Today Tail Options Rounded Pin - Rounded Tail Fin Options FCS - FCS2 - Futures - Five Fin Available - Thruster Concave Single into Double Core Option All Dylan Shapes are also available in EPOXY CORE Wave Height Guide Our Wave Height Guide has been created to give you a basic understanding of the ideal wave size range this board has been designed for. Waves beyond the range below are not recommended on this…"
+        },
+        {
+          "name": "Thunder Egg",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/ThunderEgg-1600x1600.png",
+          "description": "This is one of my super fun small wave models designed to generate speed in weak waves, has a much fuller nose and very wide tail plus full rails to allow extra buoyancy to allow better paddle speed and get through dead sections very easy, great board for practising airs. Enquire Today Tail Options Swallow - Rocket Fin Options FCS - FCS2 - Futures - Five Fin Available Concave Single concave with a deep double then slight vee out tail Core Option All Dylan Shapes are also available in EPOXY CORE Wave Height Guide Our Wave Height Guide has been created to give you a basic understanding of the ideal wave size range…"
+        },
+        {
+          "name": "Tow",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/Tow-1600x1600.png",
+          "description": "This has been my pet project for over 12 years now - since testing my originals 'Big Shipsterns' and 'Teahupoo', it is a model that myself and the worlds best big wave riders have tested in every slab and bombie around the globe. With a lower smoother rocker and deep concaves, plus more parallel rails and very low thin rails allow this board to go at the maximum speeds possible on massive waves. What is crucial is getting the weight suited to the right location as the boards vary from 5 kilograms to 15 kilograms, its so strong it will last forever with 8 layers of 6 ounce glass. Enquire Today Tail Options Moon Fin Options FCS -…"
+        },
+        {
+          "name": "Trippy Taco",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/trippytaco-1600x1600.png",
+          "description": "New super fun board for small beach breaks with more area in the nose and tail which makes this board glide across waves very easily, it also ensures it is not hard to pick up speed in weak surf. Enquire Today Tail Options Double Swallow Fin Options FCS - FCS2 - Futures Concave Slight single into double concave Core Option All Dylan Shapes are also available in EPOXY CORE Wave Height Guide Our Wave Height Guide has been created to give you a basic understanding of the ideal wave size range this board has been designed for. Waves beyond the range below are not recommended on this board. Skill / Experience Guide This…"
+        },
+        {
+          "name": "Twister",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2016/01/Twister-1600x1600.png",
+          "description": "This is my high performance fish that consists of double flyers that flute and act as teeth or fins on your rails - which give a little extra bite through turns. By doing this it brings a wide board back narrow through the tail and still allows you to skate through sections with all that area between your feet. The fuller nose, rocker is not too flat with a little more tail lift, it has been a personal favourite for years on those small beach break days. IMPORTANT NOTICE: This Board (along with ALL Dylan Shapes) are also available in EPOXY CORE Enquire Today Tail Options Rounded Tail - Squash - Swallow Fin Options FCS -…"
+        },
+        {
+          "name": "X5",
+          "image_url": "https://dylansurfboards.com/wp-content/uploads/2015/12/X5-1-1600x1600.png",
+          "description": "This is my high performance model with the least amount of volume per size which is more refined and has more tail and nose rocker than all my other model, tails and nose areas are tighter and its perfect for when the waves are good which feels very lively under your feet and is the ideal high perfomance board. Enquire Today Tail Options Rounded Pin - Rounded Tail - Squash - Swallow Fin Options FCS - FCS2 - Futures - Five Fin Available - Thruster Concave Medium through to double Core Option All Dylan Shapes are also available in EPOXY CORE Wave Height Guide Our Wave Height Guide has been created to give you a basic understanding of…"
+        }
+      ]
+    },
+    {
+      "slug": "bryan-bates-surfboards",
+      "name": "Bryan Bates Surfboards",
+      "website_url": "https://www.bryanbates.com.au",
+      "location_label": "Sawtell / Arrawarra, New South Wales, Australia",
+      "founder_name": "Bryan Bates",
+      "lead_shaper_name": "Bryan Bates",
+      "short_description": "Hand-shaped, glassed, and finished one-off boards from Bryan Bates on the NSW mid-north coast.",
+      "logo_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1592435097610-0MH1E3O2PGYPYN1BEO8J/BB_2020_VERYWIDE_WOOD_LOGO_WHT.png",
+      "models": [
+        {
+          "name": "5'5 Drifter",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497667626640-J2GV4M2EER8QMGMNFTXS/5-5.png",
+          "description": "This board is the most dynamic of the Drifter range. Its geared for the most progressive surfing and demands some expertise of the rider. Its short rail line allows for total rotational freedom. You can whip 360s literally at will with this board. The challenge in a board this small comes in drawing long lines. That's where the recurve and straight bits in the tail outline come into their own. Finlets are positioned at the rear so they are primarily out of the water in spins but weighting the rear of the board heavily engages them solidly for surprising hold in late takeoffs and steep drops. Colours: This model is available in your choice of: • Tint • Opaque • Semi-opaque • Swirl • Clear…"
+        },
+        {
+          "name": "6'4 Drifter",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497668219271-0GZG33YTM2J89ZZ6KP8U/DRIFTER_TEST4.png",
+          "description": "This board is the workhorse and the most versatile of the Drifter range. It would suit the widest variety of surfers from shortboard rippers to longboard and single fin cruisers. I personally ride this board most often and it works beautifully from 5'8\" to 7'. This board draws incredible lines paddles beautifully and also has fantastic free sliding and spinning ability. You can really expand your horizons with this board in terms of where you can go on waves and how you get there. Massive drifts, backwards drifts, elevator slips, giant swipes, berts, snaps, pop shuvits, frontside and cutback 360s are just a few of the moves I've worked out so far. What will you come up with? Colours: This…"
+        },
+        {
+          "name": "7'2 Drifter",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497668986366-VURTD20OLBJZRQ49MVEW/7_2_DRIFTER.png",
+          "description": "This one is for all conditions and abilities, and it goes great on the points on a fun day. It's totally up for the bigger days and beach breaks too though and the extra length and thickness makes a super paddler. The outline is a bit pulled in at the nose and tail to create more hold in critical situations. Finlets are pushed up slightly to allow for more hold and control, and to accommodate trickier drops. This board has been tested in reef surf in the South Pacific with great results, and generally gets the nod when someone new to Drifting would like to have a go. 360s and all other fun moves are fully on the menu with this board. A great choice if you'll only have one drifter. Colours:…"
+        },
+        {
+          "name": "Advanced Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497671791268-P96E0J1QIG9UJT9F77Q6/BATES_BOARDS12QUAD%2BFISH.png",
+          "description": "This board is a highly refined and updated version of one of the most functional designs ever created. I start with the Steve Lis platform and delete some of the overall curve, straightening the outline in front of the back foot and pulling the curve in more dramatically behind the fins and back foot. This makes it both looser and faster at the same time. It gets souped up bottom with a modern single to double concave within the panel vee. Finally, the Advanced Fish is available with just about any fin combination you could want, though my personal favourite is the Twinzer. This makes a fantastic Quad or 5 fin convertible. Colours: This model is available in your choice of: • Tint • Opaque…"
+        },
+        {
+          "name": "Bonzer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497699603042-91DCNAXA256FPVYPVID7/Bonzer+British+Racing+Green.png",
+          "description": "The bonzer is a hopped up single fin. Originally a design of the Campbell Brothers, it features a double concave through the fin area utilizing the Venturi principle that a fluid or air speeds up when compressed into a narrower channel. This creates forward propulsion and as a result the bonzer design has always been associated with down the line speed. The modern version is a five fin (bonzer 5) with a very contemporary single to double concave bottom, modern rails and a healthy rocker. It has an old school deck line and outline, packing heaps of foam in the flat deck and area in the nose and tail. Its a super paddling board and, due to the side fins being so out on the rail and splayed…"
+        },
+        {
+          "name": "Classic Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497674527656-BBEZUFYTUCPZ9NP8KDH7/Classic-Fish-Peach-Deck.png",
+          "description": "I did a good deal of research on the origins of the design by Steve Lis, but also had some great experience with fish designers like Rich Pavel to draw on. The rails of a classic fish are the defining characteristic. They're low, but soft and the bottom rolls up to meet them just slightly on the outer edge. Feels amazing when you hold the board and has a smooth, fast feel through the water. Flat deck, low rocker, great paddling and natural speed with this board. I've really enjoyed researching and honouring the roots of this timeless design. Always best with marine plywood glassed on keel fins. Colours: This model is available in your choice of: • Tint • Opaque • Semi-opaque • Swirl •…"
+        },
+        {
+          "name": "Continental",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497669715437-V95IR1OXEL4QXJGU4AHC/2017-04-18+15.00.03-1.jpg",
+          "description": "The Continental is a new model with very old roots. I started with the 1\" redwood stringer I salvaged many years ago from an old 60's Jacobs 10'4\" longboard and got the boys at Burford Blanks to glue their 10'2\" blank up to that rocker. I've been studying old traditional logs and experimenting to get the perfect combination of that classic feel: that paddle, glide and run, blended with a more user-friendly turning and change of direction feel. I wanted to make a big board that could be safely ridden in a crowd, something that felt big but didn't \"ride you\". This is a really great board that is very traditional but with some subtle modern refinements that make it a joy to ride. Colours:…"
+        },
+        {
+          "name": "Egg",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497700108427-B7LW657A6HZ65M4JBIW6/Egg+Denim+Blue+Tint.png",
+          "description": "The egg is a seriously versatile single fin with a bottom shape much like a longboard--light vee in the back and a little concave up front. It's very much like a mini Evolver with the wide point switched up so its narrower in the tail than the nose. This gives it a looser, more shortboard-like feel on the back foot. This model paddles amazing and can do a surprising amount of work in serious surf. Eggs can be run at almost any length from 5'6\" to 8'6\" and tick so many boxes its ridiculous. I do a lot of them at 6'6\" and 7'6\" and though they're really a single fin, the design can accept side fins or quad. A standard stock size might be 6'6\", 21 1/2\", 2 1/2\". Colours: This model is available…"
+        },
+        {
+          "name": "Evolver",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497700343813-SO310CQHTT7D55VUGSJN/BATES_BOARDS6.png",
+          "description": "If I was limited to having only one board it would certainly be this one! This board is so versatile and so much fun. It's based on the \"Evolution\" style single fins of the late 60's when surfboards began to get shorter. The big difference between this and a \"Tracker\" is that the wide point is back and not forward of center. This puts the wide point (outline apex) and rocker apex between your feet to make a board that surfs easily and with great flow. Its paired with a Greenough 4A, with the wide base for drive and a fairly thin, flexy tip for projection and great direction changes. This is a great board for any ability or experience. Colours: This model is available in your choice of: •…"
+        },
+        {
+          "name": "Glider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497670116869-DX2MDLTU4MISPE3N42PC/2017-05-06+08.20.54.jpg",
+          "description": "I think that 12 foot glide is one of the best experiences in surfing. Colours: This model is available in your choice of: • Tint • Opaque • Semi-opaque • Swirl • Clear Materials:"
+        },
+        {
+          "name": "Lady Log",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497670352296-RJVUFHZ1DNHTRR5L48BI/2017-04-26+15.20.28-1.jpg",
+          "description": "I decided to make a specific model: The Lady Log. Compared to my standard Noserider, it's a little thinner and narrower overall with a bit less rocker in the tail and a more continuous curve to the rocker. This makes it amazing to turn from anywhere on the board (not just right on the tail) It also has a more refined rail. That means that it's lighter weight, easier to handle and control and supremely user friendly. It also comes in the prettiest colours you can dream up! Colours: This model is available in your choice of: • Tint • Opaque • Semi-opaque • Swirl • Clear Materials:"
+        },
+        {
+          "name": "Modern Keel Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497694407084-O2WOIAS87GOK05SK3M20/2016-11-20+19.30.07-1-2.jpg",
+          "description": "The original Steve Lis stand up kneeboard in the 70's, a substitute for a longboard in small waves, performance versions with tweaked rockers and bottom shapes, quad fishes, classic replicas, long versions. Today I'm enjoying reworking the most original form of my Classic Lis Fish and adding subtle modern refinements in concaves, rail shapes and edges without straying to far from the spirit of the animal. Been getting the most wonderful feedback on these boards from customers finding themselves surfing better, more fluidly and still with enough shred to satisfy that shortboard side of things. 5'6\" 21\" 2 1/2\" is the ideal dimensions for this model and there's heaps of volume contained in…"
+        },
+        {
+          "name": "Noserider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497671319475-KYOY8G00DO7HPVLMEU5X/DRIFTER_TEST5.png",
+          "description": "My Noserider is a real class act, with roots from the famous Hansenn 50/50, The outline is fairly parallel with a lot of nose area but significant curve in the last 24\" of the tail. I favour a bit more relaxed but continuous rocker overall and loads in the tail and find it makes the board fit the wave really easily and noseride great. A deep nose concave or rolled entry are available; the roll helps for nose steering and the concave for flat out tip time. I prefer to concentrate the roll through the guts out to the rails, leaving the centre section fairly flat so the board is more stable, faster, and less sticky. This board, when paired with a 9\" pivot fin you just can't go wrong. Colours:…"
+        },
+        {
+          "name": "Sunset Semigun",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497704441007-35BHI1ZCCRS8R6DFPQRT/IMG_5907.JPG",
+          "description": "A good semi-gun outline has that perennial sex appeal and also seems to hold the promise of memorable, adrenaline charged rides. I was taught how to make big wave boards by one of the best, Cort Gion. He was North Shore underground late 70's to early 90's and this was his favorite kind of board to shape and ride. I like to bring those old values into my sunset board, retaining volume and foil in the shape, reflective of that era. These days the rocker and bottoms are updated and the outline is a bit less pinny, making subtle but important changes to this classic. It makes a great thruster, widowmaker 2+1 or best, simply as a single fin. Colours: This model is available in your choice of: •…"
+        },
+        {
+          "name": "Thruster",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497697595566-3OIYSNVVAJI318HR3LRT/2016-12-07+13.55.29.jpg",
+          "description": "My Thruster is 80's influenced and, like everything I do, a blend of classic and modern elements. It has a bit fuller outline than what you would see in a modern shortboard and is designed to surf fun waves in the 2 to 5 foot range. I integrate modern concaves in to the bottom shape so its fast across the water and has that familiar shortboard feel and quickness. I like to shape these with a flatter deck to make it easier to paddle and ride. If you're accustomed to thruster surfing and you want to stay with that feel than this is the model for you. It can really square off bottom and top turns and has predictable and crisp performance through all parts of the wave. Colours: This model is…"
+        },
+        {
+          "name": "Traditional",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497671528993-5LKDEJRZN0GFM8U56BX1/BATES_BOARDS4.png",
+          "description": "The timeless template for this board has come through my shaping tree from two directions and places. Despite the different waves and styles the resulting form was surprisingly similar. I've been pleased to find the same form reflected here in Australia in Bob McTavish's late 60's Cords. It's a fine, refined and precision piece of equipment, not bulky or obtuse. Subtle hips, light roll throughout, fine round rails, flat deck with moderate tail rocker. The result is a board which is all class, has a beautiful flow and can be ridden in a variety of waves. Colours: This model is available in your choice of: • Tint • Opaque • Semi-opaque • Swirl • Clear Materials:"
+        },
+        {
+          "name": "Tupira Special",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497859054158-EP0P2904ZZ35LK06GG84/Tupira+Mini+Blue+tint+deck+blue+and+purple+acid+bottom.png",
+          "description": "The Tupira Special is a quad shortboard that's designed to surf quality waves in the 2 to 5 foot range. It has a clean single concave and a bit more area in the outline to paddle in easy, create a lot of speed and a nice crisp loose feel on the water. It makes a fantastic everyday shortboard and can be stretched out for step up situations. Colours: This model is available in your choice of: • Tint • Opaque • Semi-opaque • Swirl • Clear Materials:"
+        },
+        {
+          "name": "Twinzer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497695376045-L8NXMR9L4SM32XKX74AA/EC1_3550.jpg",
+          "description": "The Twinzer! Anything a twin fin can do, this can do better. Wil Jobson created this original fin design over 30 years ago and he spent some time down in Oregon and left us with our heads spun round about the efficiency and thoughtfulness of this design. The smaller leading fin organises the water flow so the back fin can operate in clean water, much like a jib sail fills the mainsail on a sailboat or drafting behind a vehicle on the highway. They absolutely sing on a wall and are far more positive than a twinny, meaning you can surf the board harder without spinning out and still have that rad skatey feel that makes twins so good. Fin placement is absolutely crucial for twinzers and is…"
+        },
+        {
+          "name": "Wing",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/531e6482e4b0b17f97449ffe/1497756784442-UX4KDZKOR4IOECT3K3VP/Screen+Shot+2017-06-12+at+4.51.03+PM.png",
+          "description": "If you wanted to travel in the simplest way possible, light on gear and with the minimal amount of possessions, you'd want one surfboard that you could trust to excel in a variety of conditions and types of waves. That's a brief rundown of the concept for this \"Wing\" model. The feedback from Phil and Ryan has ranged from \"magic carpet\" to \"can't fault it\". One of the greatest challenges as a shaper is to create a board that will meet critical performance goals across the full spectrum of wave conditions, and this board does just that. What's really driving this design is a rolled hull entry feeding into single concave. It has a fine, crisp modern feel to the tail and strong edge tip to…"
+        }
+      ]
+    }
+  ],
+  "rejected": [
+    "leatherman-surfboards: models=0 logo=True",
+    "neto-shapes: models=0 logo=True",
+    "mc-surf-designs: homepage model list only, no per-model images (logo=None)"
+  ],
+  "summary": {
+    "brand_count": 6,
+    "model_count": 124,
+    "image_count": 124,
+    "logo_count": 6
+  }
+}
