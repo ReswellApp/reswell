@@ -1,0 +1,113 @@
+{
+  "generated_for": "Mesa Surfboards official model catalog",
+  "source": "https://mesasurfboards.com/",
+  "sources": [
+    "https://mesasurfboards.com/",
+    "https://mesasurfboards.com/boards/",
+    "https://mesasurfboards.com/misfit/",
+    "https://mesasurfboards.com/sg/",
+    "https://mesasurfboards.com/rat-racer/",
+    "https://mesasurfboards.com/riviera/",
+    "https://mesasurfboards.com/tuan-fish/",
+    "https://mesasurfboards.com/the-whip/",
+    "https://mesasurfboards.com/393-2/",
+    "https://mesasurfboards.com/gun/",
+    "https://mesasurfboards.com/noserider/",
+    "https://mesasurfboards.com/asymetrical/",
+    "https://mesasurfboards.com/baron-2/",
+    "https://mesasurfboards.com/motorhead/",
+    "https://mesasurfboards.com/about/"
+  ],
+  "skipped": [
+    "/custom — custom order form and price list, not a named production model",
+    "/shop WooCommerce products — merch (tees, hats) and Motorhead Signature Fins",
+    "Blog, articles, cart, checkout, my-account, sample-page — not model listings",
+    "Rat Racer dimension screenshots — keep the product-front board photo instead"
+  ],
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "mesa-surfboards",
+      "name": "Mesa Surfboards",
+      "website_url": "https://mesasurfboards.com/",
+      "location_label": "Santa Barbara, California",
+      "founder_name": "Cooper Boneck",
+      "lead_shaper_name": "Cooper Boneck",
+      "short_description": "Santa Barbara born and raised, Coop channels a lifetime of skating and surfing the local points into thoughtfully crafted custom surfboards built to match every surfer's unique style.",
+      "models": [
+        {
+          "name": "Misfit",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/10/Misfit-main-scaled.jpg",
+          "description": "The Misfit is quickly becoming a very popular board of mine! I think largely due to the fact that it's got a lot of foam/volume packed into a shorter fishier template with a rocker and bottom contour that lends perfectly for a board that's super fun in your everyday waist to head high range. The misfit got its name because we were going for more of a small wave board originally, then proceeded to test it in almost strictly good bowly waves and realized that it was just a really fun all around board in a lot of conditions. The rocker is on the low side to keep the board fast. The bottom consists of my familiar single,double, v double exit that keeps the board feeling lively but trustworthy and The subtle wings help bring the area of the tail in for added control. The misfit… Like any of my boards Can be ordered with Flat Deck and Stepped Rails for adding more volume or with a standard domed deck.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "SG",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/10/SG-picture.png",
+          "description": "Named after its test pilot Javi ..aka “The Spanish Gringo.” This boards got the spice and is definitely the most high performance Board in my line-up. It was designed and tested in vertical powerful surf for responsiveness and control in the pocket. In good waves this board will do what you want. Generally ridden about your same height or slightly longer to push it into a step up. Can be ordered as a squash or round pin.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Rat Racer",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/10/Rat-racer-main-scaled.jpg",
+          "description": "A fast drivey quad fin for sub par to good days in the waist to head high range. Fun in the pocket or hunting down an air section.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Riviera",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/11/riviera-quad-1-770x1032-1.png",
+          "description": "The Riviera has been a very requested board of mine due to its ease of use for most skill levels yet very capable under the feet of people wanting to push it. The board works great in a wide variety of waves and conditions from waist high to well overhead. The Riviera has a simple yet versatile plan-shape which allows me to offer it in various versions with subtle tweaks to best suit the designs. Typical lengths are between 6’8 to 7’4 with widths between 20 5/8 to 21 1/2 and desired thickness. The Riviera can be ordered as a channeled twin, Quad, or Single fin + sidebites. The riviera quad came about from a mini-gun/step up design actually and found that some of the same design aspects worked really well on this template for chest to well overhead waves. It looks similar to original riviera but The bottom contours, rocker and obviously fin setup has changed as well as a slightly more pulled in outline and wide point slightly back. Where the original is still a solid choice I like the quad setup for a little tighter off the lip surfing.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mesa Fish",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/10/Tuan-fish-main-photo-scaled.jpg",
+          "description": "The “MESA Fish” was made to be a a short boarders fish. A super fun twin fin with plenty of drive for when the waves are lacking.. but make no mistake this board handles overhead and some juice all the same. low entry rocker for paddle ease and a bit more rocker in the tail to allow for tighter turning radius and more hold. The familiar single to double concave and a little V out the tail makes this board really easy to transition to from your shortboard and back and keeps things lively. A necessity",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Whip",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/10/WHIP-MAIN-edited.jpg",
+          "description": "The whip is my standard all around thruster for everyday conditions. It has a sneaky amount of foam throughout the board, med/full rails, single to double concave and mid range rocker that works well in a variety of conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mini Gun",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/11/minigun.jpg",
+          "description": "The mini Gun came into existence for a few of our favorite more open ocean waves where theres just to much water moving for your typical step up. A key attribute is the flat deck and stepped rails allowing a LOT more foam to be packed into this board while keeping the rails more sensitive still. An awesome combination of paddle power and maneuverability. Its got a gunny ish template but the Rocker, bottom contours and widepoint more centered helps this board stay loose playful and easy to maneuver for its length. Like any board of mine but especially these and the guns i like to make them custom for each rider and wave (s) they have in mind. These are custom order only so please reach out if you have questions or want to get one going.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Gun",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/11/gun.jpg",
+          "description": "Custom orders and select only.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Noserider",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/11/nopserider.jpg",
+          "description": "My take on a traditional Log. Lower nose rocker Wide point back and some flip off the tail slight concave in the nose and a mellow roll all the way off the tail and typically no edge. But custom is always the name of the game and this design is so fun and easy to tweak for customer wants and needs.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Asymetrical",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/10/ASY-MIAN-edited.jpg",
+          "description": "Asymmetrical designs are some of my favorite to both ride and shape and are custom by request only.",
+          "board_category_slug": "asym"
+        },
+        {
+          "name": "Baron",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/10/naron-edited.jpg",
+          "description": "The baron is a hybrid winged twin, between a fish and a shortboard. The lower overall rocker and blend of concaves make this board fast and loose. This board really shines in punchy waist to slightly overhead surf. Skatier then your shortboard, snappier then your fish. It’s just fun.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Motorhead",
+          "image_url": "https://mesasurfboards.com/wp-content/uploads/2024/11/motorhead1-480x640-1.jpeg",
+          "description": "The Motorhead is simple, fast and full of style. Best in shoulder to overhead surf with some juice and face to work with. The first thing you’ll notice is how smooth the board feels. The relaxed entry rocker and blend of slight concave/double to channel V keeps the board fast and responsive with plenty of hold through big turns. Typically comes with a flat deck and stepped rails, giving you extra paddle power and flow but the sensitivity of your usual high performance shortboard rails. Ride same/slightly longer than your typical shortboard or 1-2″ longer than your height.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
