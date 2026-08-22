@@ -69,10 +69,12 @@ export function buildGa4PurchaseInlineScript(options: {
   var payload = ${safeInlineJson(payload)};
 
   function wasReported() {
+    try { if (localStorage.getItem(dedupKey) === '1') return true; } catch (e) {}
     try { return sessionStorage.getItem(dedupKey) === '1'; } catch (e) { return false; }
   }
 
   function markReported() {
+    try { localStorage.setItem(dedupKey, '1'); } catch (e) {}
     try { sessionStorage.setItem(dedupKey, '1'); } catch (e) {}
   }
 

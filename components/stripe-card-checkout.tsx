@@ -17,6 +17,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { BRAND_CTA_BLUE } from "@/lib/brand-colors"
 import { stripePublishableKey } from "@/lib/stripe/client-checkout-enabled"
+import { buildOrderSuccessPath } from "@/lib/google-ads/purchase-success-path"
 import { cn } from "@/lib/utils"
 
 const publishableKey = stripePublishableKey()
@@ -88,7 +89,7 @@ function CheckoutForm({
         return
       }
       if (data.orderId) {
-        router.replace(`/successpage/${data.orderId}`)
+        router.replace(buildOrderSuccessPath(data.orderId, { reportPurchase: true }))
       } else {
         router.replace("/checkout/success")
       }

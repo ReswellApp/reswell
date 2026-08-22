@@ -30,6 +30,7 @@ import {
   RefreshCw,
   Search,
   ShoppingBag,
+  Sparkles,
   Wrench,
   Zap,
 } from 'lucide-react'
@@ -383,6 +384,20 @@ export default function AdminToolsPage() {
             <Link href="/admin/search-analytics">
               <Database className="mr-2 h-4 w-4" />
               Open search analytics
+              <ArrowUpRight className="ml-1.5 h-4 w-4" />
+            </Link>
+          </Button>
+        </ToolCard>
+        <ToolCard
+          icon={Sparkles}
+          accent="sky"
+          title="Search quality"
+          description="See listings returned per search, how the LLM matched, and rate Good / Close / Bad so it learns."
+        >
+          <Button variant="outline" asChild>
+            <Link href="/admin/search-quality">
+              <Sparkles className="mr-2 h-4 w-4" />
+              Open search quality
               <ArrowUpRight className="ml-1.5 h-4 w-4" />
             </Link>
           </Button>

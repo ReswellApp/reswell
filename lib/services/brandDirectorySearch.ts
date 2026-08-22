@@ -9,6 +9,10 @@ import {
   marketplaceBrandQueryCandidates,
   pickClosestBrandNameMatch,
 } from "@/lib/utils/marketplace-brand-query"
+import {
+  isGenericSurfSearchToken,
+  isMarketplaceGenericSurfSearchOnly,
+} from "@/lib/utils/marketplace-style-query"
 
 /** `public.brands` row shape for the `/sell` brand typeahead (nav-style dropdown). */
 export type BrandCatalogSuggestRow = {
@@ -207,7 +211,9 @@ async function resolveDirectoryBrandByFuzzyCatalogMatch(
   supabase: SupabaseClient,
   rawLabel: string,
 ): Promise<DirectoryBrandMini | null> {
-  const tokens = fuzzyBrandLookupTokens(rawLabel)
+  const tokens = fuzzyBrandLookupTokens(rawLabel).filter(
+    (t) => !isGenericSurfSearchToken(t) && !isMarketplaceGenericSurfSearchOnly(t),
+  )
   if (tokens.length === 0) return null
 
   for (const token of tokens) {
@@ -253,8 +259,12 @@ export async function resolveDirectoryBrandRowFromLabel(
 ): Promise<DirectoryBrandMini | null> {
   const name = (rawLabel || "").trim()
   if (!name) return null
+  // Shape words ("fish", "groveler") must not resolve to a brand that merely contains them.
+  if (isMarketplaceGenericSurfSearchOnly(name)) return null
 
-  const candidates = marketplaceBrandQueryCandidates(name)
+  const candidates = marketplaceBrandQueryCandidates(name).filter(
+    (candidate) => !isMarketplaceGenericSurfSearchOnly(candidate),
+  )
 
   for (const candidate of candidates) {
     const { rows } = await searchBrandsCatalogSuggestWithClient(supabase, candidate)
@@ -288,6 +298,7 @@ export async function resolveInferredBrandForMarketplaceSuggest(
   q: string,
   catalogRows: BrandCatalogSuggestRow[],
 ): Promise<DirectoryBrandMini | null> {
+  if (isMarketplaceGenericSurfSearchOnly(q)) return null
   const picked = pickCatalogBrandForNavPick(
     catalogRows.map((r) => ({ name: r.name, slug: r.slug })),
     q,

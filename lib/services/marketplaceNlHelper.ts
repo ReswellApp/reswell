@@ -32,6 +32,7 @@ import {
   extractFinSystemsFromQuery,
 } from "@/lib/utils/marketplace-fin-query"
 import { extractTailShapesFromQuery } from "@/lib/utils/marketplace-tail-query"
+import { extractBoardStylesFromQuery } from "@/lib/utils/marketplace-style-query"
 import { totalBoardLengthInchesFromCombinedInput } from "@/lib/board-measurements"
 import type { MarketplaceNlHelperRefine } from "@/lib/utils/marketplace-nl-helper-refine"
 
@@ -121,6 +122,7 @@ export async function runMarketplaceNlHelper(
     ...(intent.tailShapes ?? []),
     ...extractTailShapesFromQuery(q),
   ]
+  const stylesList = [...intent.styles, ...extractBoardStylesFromQuery(q)]
 
   const sanitizedPrices = sanitizeNlPriceAgainstQuery(q, {
     minPrice: intent.minPrice ?? priceRules.minPrice,
@@ -178,6 +180,7 @@ export async function runMarketplaceNlHelper(
     finSetups: finSetupsList,
     constructions: constructionsList,
     tailShapes,
+    styles: stylesList,
     minPrice,
     maxPrice,
   })
@@ -208,7 +211,7 @@ export async function runMarketplaceNlHelper(
   if (maxPrice != null) refine.maxPrice = String(Math.round(maxPrice))
   const condition = uniqueCsv(intent.conditions)
   if (condition) refine.condition = condition
-  const style = uniqueCsv(intent.styles)
+  const style = uniqueCsv(stylesList)
   if (style) refine.style = style
   if (finSetups) refine.fin = finSetups
   if (finSystems) refine.finSystem = finSystems

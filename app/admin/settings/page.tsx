@@ -99,6 +99,7 @@ const CAPABILITY_GROUPS: CapabilityGroup[] = [
       { href: '/admin/used-board-market-dashboard', label: 'Used board market', description: 'Resale market trends', icon: Waves },
       { href: '/admin/catalog-overview', label: 'Brand catalog', description: 'Explore brand catalog', icon: FolderTree },
       { href: '/admin/search-analytics', label: 'Search analytics', description: 'Query & result insights', icon: LineChart },
+      { href: '/admin/search-quality', label: 'Search quality', description: 'Rate listings per search and train the NL helper', icon: Sparkles },
       { href: '/admin/search-daily-report', label: 'Search reports', description: 'Daily, monthly, and all-time search demand briefings', icon: FileText },
       { href: '/admin/ad-sales', label: 'Ad sales', description: 'Listings sold from Google & Meta ads', icon: Megaphone },
       { href: '/admin/pickup-only-boards', label: 'Pickup-only boards', description: 'Map local-pickup surfboards for geo ads', icon: MapPin },

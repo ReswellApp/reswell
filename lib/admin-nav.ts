@@ -122,6 +122,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroupConfig[] = [
       { href: '/admin/price-guide', label: 'Price Guide', icon: 'bookOpen' },
       { href: '/admin/catalog-overview', label: 'Brand catalog explorer', icon: 'folderTree' },
       { href: '/admin/search-analytics', label: 'Search analytics', icon: 'lineChart' },
+      { href: '/admin/search-quality', label: 'Search quality', icon: 'sparkles' },
       { href: '/admin/search-daily-report', label: 'Search reports', icon: 'fileText' },
       { href: '/admin/llm-usage', label: 'LLM usage', icon: 'sparkles' },
       { href: '/admin/listing-views', label: 'Listing views', icon: 'activity' },

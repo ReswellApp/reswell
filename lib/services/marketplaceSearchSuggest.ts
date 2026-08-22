@@ -5,6 +5,7 @@ import {
   searchBrandModelsForBrandId,
   searchBrandModelsWithBrandsForSuggest,
 } from "@/lib/db/brand-models"
+import { listingBoardTypeDbValuesForFilter } from "@/lib/board-type-canonical"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
 import { searchListingIdsFromElasticsearch } from "@/lib/elasticsearch/listings-index"
 import {
@@ -35,6 +36,10 @@ import {
   isMarketplaceSectionOnlyQuery,
   residualMarketplaceQueryAfterBrand,
 } from "@/lib/utils/marketplace-brand-query"
+import {
+  isMarketplaceBoardStyleOnlyQuery,
+  isMarketplaceGenericSurfSearchOnly,
+} from "@/lib/utils/marketplace-style-query"
 
 const MAX_TITLES = 20
 const MAX_CATEGORIES = 12
@@ -249,30 +254,36 @@ export async function runMarketplaceSearchSuggest(
   const safe = escapeIlikeToken(q)
   const pattern = `"%${safe}%"`
 
-  const catalogBrands = await searchBrandsCatalogSuggestWithClient(supabase, q)
-  const inferredBrand = await resolveInferredBrandForMarketplaceSuggest(
-    supabase,
-    q,
-    catalogBrands.rows,
-  )
   const sectionOnly = isMarketplaceSectionOnlyQuery(q)
+  const styleOnly = isMarketplaceBoardStyleOnlyQuery(q)
+  const genericFacetOnly = isMarketplaceGenericSurfSearchOnly(q)
+  const skipCatalogBrand = sectionOnly || styleOnly || genericFacetOnly
+  const catalogBrands = skipCatalogBrand
+    ? { rows: [] as BrandCatalogSuggestRow[], meta: { backend: "supabase" as const } }
+    : await searchBrandsCatalogSuggestWithClient(supabase, q)
+  const inferredBrand = skipCatalogBrand
+    ? null
+    : await resolveInferredBrandForMarketplaceSuggest(supabase, q, catalogBrands.rows)
   const parsed = await parseMarketplaceQuery(supabase, q, {
-    // Bare "fins" must not inherit Futures Fins from catalog contains-match.
-    brandHint: sectionOnly ? null : inferredBrand,
+    // Bare "fins" / "fish" / "fish twin" must not inherit Futures Fins / Fish Stix.
+    brandHint: skipCatalogBrand ? null : inferredBrand,
   })
   // Query tokens like "fins" scope suggest to that section; nav `section` param is the fallback.
   const sections = parsed.sectionIntent
     ? [parsed.sectionIntent]
-    : marketplaceSearchSuggestSections(section)
-  const pickedCatalogSlug = sectionOnly
+    : styleOnly || parsed.styleIntent.length > 0
+      ? ["surfboards"]
+      : marketplaceSearchSuggestSections(section)
+  const pickedCatalogSlug = skipCatalogBrand
     ? null
     : (parsed.brand?.slug ??
       inferredBrand?.slug ??
       catalogBrands.rows.find((r) => r.name.toLowerCase().includes(q.toLowerCase()))?.slug ??
       null)
 
-  // Section-only ("fins"): no title keyword filter — show recent listings in that section.
-  const listingTextQuery = sectionOnly ? "" : (parsed.textQuery || q).trim()
+  // Section-only ("fins") / style-only ("fish"): no title keyword — show recent in that facet.
+  const listingTextQuery =
+    sectionOnly || styleOnly ? "" : (parsed.textQuery || q).trim()
   const ilikeSafe = listingTextQuery ? escapeIlikeToken(listingTextQuery) : ""
   const ilikePattern = ilikeSafe ? `"%${ilikeSafe}%"` : ""
   const textOr = ilikePattern
@@ -317,6 +328,14 @@ export async function runMarketplaceSearchSuggest(
     .limit(TITLE_SUGGEST_FETCH)
   if (textOr) titlesQuery = titlesQuery.or(textOr)
 
+  const styleDbTypes = Array.from(
+    new Set(parsed.styleIntent.flatMap((s) => listingBoardTypeDbValuesForFilter(s))),
+  )
+  if (styleDbTypes.length > 0) {
+    listingsQuery = listingsQuery.in("board_type", styleDbTypes)
+    titlesQuery = titlesQuery.in("board_type", styleDbTypes)
+  }
+
   const [listingsRes, titlesRes, categoriesRes, brandsRes] = await Promise.all([
     listingsQuery,
     titlesQuery,
@@ -354,6 +373,7 @@ export async function runMarketplaceSearchSuggest(
         brandId: parsed.modelIds.length > 0 ? null : parsed.brand?.id ?? null,
         brandModelIds: parsed.modelIds.length > 0 ? parsed.modelIds : null,
         lengthInches: parsed.lengthInches,
+        boardTypes: parsed.styleIntent.length > 0 ? parsed.styleIntent : null,
       })
       const ordered = await hydrateSuggestListingsFromIds(ids)
       if (ordered.length > 0) {
@@ -489,11 +509,11 @@ export async function runMarketplaceSearchSuggest(
     .filter(Boolean)
     .slice(0, MAX_CATEGORIES) as string[]
 
-  // Bare "fins" must not surface Futures Fins from catalog name-contains.
-  let brands = sectionOnly
+  // Bare "fins" / "fish" / "fish twin" must not surface Futures Fins / Fish Stix from catalog name-contains.
+  let brands = skipCatalogBrand
     ? []
     : catalogRowsToSuggestBrandChips(catalogBrands.rows, pickedCatalogSlug, MAX_BRANDS)
-  if (brands.length === 0 && !sectionOnly) {
+  if (brands.length === 0 && !skipCatalogBrand) {
     const brandInputs = dedupeListingBrandInputsForSuggest(
       (brandsRes.data || []) as { brand: string | null; brand_id: string | null }[],
       MAX_BRANDS,

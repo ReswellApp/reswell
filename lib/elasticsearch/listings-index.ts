@@ -16,7 +16,9 @@ import {
   FIN_SETUP_OPTIONS,
   FIN_SYSTEM_OPTIONS,
 } from "@/lib/boards-browse-facets"
+import { listingBoardTypeDbValuesForFilter } from "@/lib/board-type-canonical"
 import { LISTING_CONDITION_LABELS } from "@/lib/listing-labels"
+import { categoryIdsForBrowseBoardTypes } from "@/lib/utils/board-type-from-category-id"
 import { getElasticsearchClient } from "./client"
 import { ELASTICSEARCH_LISTINGS_INDEX } from "./config"
 
@@ -467,6 +469,22 @@ export function listingBrandIdFilterClause(
   }
 }
 
+/** Filter listings by canonical board-style slugs (`board_type` or surfboard category). */
+export function listingBoardTypesFilterClause(styleSlugs?: string[] | null): object | null {
+  const slugs = (styleSlugs ?? []).map((s) => s.trim()).filter(Boolean)
+  if (slugs.length === 0) return null
+  const dbTypes = Array.from(
+    new Set(slugs.flatMap((s) => listingBoardTypeDbValuesForFilter(s))),
+  )
+  const categoryIds = categoryIdsForBrowseBoardTypes(slugs)
+  const should: object[] = []
+  if (dbTypes.length > 0) should.push({ terms: { board_type: dbTypes } })
+  if (categoryIds.length > 0) should.push({ terms: { category_id: categoryIds } })
+  if (should.length === 0) return null
+  if (should.length === 1) return should[0]!
+  return { bool: { should, minimum_should_match: 1 } }
+}
+
 /**
  * Soft ranking clauses for leftover NL keywords when structured filters already
  * own recall (brand / price / fins…). Never used as `must`.
@@ -681,6 +699,8 @@ export async function searchListingIdsFromElasticsearch(
     brandModelIds?: string[] | null
     /** Exact board length in inches (±1" range). */
     lengthInches?: number | null
+    /** Canonical board-style slugs (`listings.board_type` / surfboard category). */
+    boardTypes?: string[] | null
   },
 ): Promise<string[]> {
   const es = getElasticsearchClient()
@@ -727,6 +747,9 @@ export async function searchListingIdsFromElasticsearch(
         },
       })
     }
+
+    const boardTypeFilter = listingBoardTypesFilterClause(options?.boardTypes)
+    if (boardTypeFilter) filter.push(boardTypeFilter)
 
     const q = rawQuery.trim()
     const queryBody = options?.typoFallback

@@ -51,6 +51,10 @@ import {
   mergeNlOverlayIntoFacets,
   resolveBoardsSearchQuery,
 } from "@/lib/services/searchBoards"
+import {
+  newSearchQualityEventId,
+  scheduleSearchQualityEventCapture,
+} from "@/lib/services/searchQuality"
 import { NaturalLanguageSearchHelper } from "@/components/features/search/natural-language-search-helper"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
 import { cn } from "@/lib/utils"
@@ -236,6 +240,8 @@ async function BoardListings({
     }),
   ).toString()
 
+  const searchQualityEventId = hasKeywordQuery ? newSearchQualityEventId() : null
+
   const nlHint =
     hasKeywordQuery ? (
       <div className="mb-4">
@@ -244,6 +250,7 @@ async function BoardListings({
           searchParamsString={searchParamsString}
           initialAppliedLabels={nl?.appliedLabels}
           initialSummary={nl?.summary}
+          qualityEventId={searchQualityEventId}
         />
       </div>
     ) : null
@@ -594,6 +601,26 @@ async function BoardListings({
         }
       }
     }
+  }
+
+  if (searchQualityEventId && hasKeywordQuery) {
+    const rows = (boards ?? []) as BoardBrowseListingRow[]
+    scheduleSearchQualityEventCapture({
+      eventId: searchQualityEventId,
+      rawQuery: query,
+      searchSurface: "boards",
+      backend: handledByEs ? "elasticsearch" : "supabase",
+      listings: rows.map((row) => ({
+        id: row.id,
+        title: row.title,
+        slug: row.slug,
+        price: row.price,
+        board_type: row.board_type,
+        listing_images: row.listing_images,
+      })),
+      parsed: resolvedKeyword?.parsed ?? null,
+      extraStyles: nl?.styles ?? [],
+    })
   }
 
   if (!boards || boards.length === 0) {

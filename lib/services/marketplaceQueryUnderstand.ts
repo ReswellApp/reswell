@@ -32,6 +32,12 @@ import {
   queryMentionsTailFilters,
   tailShapeLabel,
 } from "@/lib/utils/marketplace-tail-query"
+import {
+  boardStyleLabel,
+  extractBoardStylesFromQuery,
+  queryMentionsBoardStyles,
+} from "@/lib/utils/marketplace-style-query"
+import { searchQualityMemoryPromptBlock } from "@/lib/services/searchQuality"
 
 export const MARKETPLACE_NL_SEARCH_CACHE_TAG = "marketplace-nl-search"
 const NL_CACHE_SECONDS = 60 * 30
@@ -75,7 +81,8 @@ export function marketplaceQueryLikelyNeedsLlm(
     /\b\d{1,2}'\s*\d{0,2}\b/.test(lower) ||
     queryMentionsFinFilters(q) ||
     queryMentionsTailFilters(q) ||
-    queryMentionsConstructionFilters(q)
+    queryMentionsConstructionFilters(q) ||
+    queryMentionsBoardStyles(q)
 
   if (nlSignals) return true
 
@@ -128,6 +135,7 @@ ${lines}`
 async function callGeminiForNlIntent(
   rawQuery: string,
   synonymExpansions: string[],
+  memoryBlock = "",
 ): Promise<MarketplaceNlSearchIntent | null> {
   const q = rawQuery.trim()
   if (q.length < 2) return null
@@ -142,6 +150,7 @@ Map casual language:
 - "new" / "brand new" → brand_new; "mint" / "like new" → excellent
 - "CI" → brandText "Channel Islands"; "Lost" / "Mayhem" → brandText "Lost Surfboards"
 - Length: "6 foot" / "6 feet" / "6ft" / "6'" → lengthToken "6'0"; "5'10" stays "5'10"
+- Board STYLES: "fish" / "fish board" → fish (shape, NOT the brand Fish Stix); "shortboard" → shortboard; "longboard" → longboard; "groveler" → groveler; "hybrid" / "midlength" / "funboard" → hybrid; "gun" / "step-up" → step-up-gun; "asym" → asym. Only set brandText "Fish Stix" when the user typed that brand name.
 - Fin SYSTEMS (plugs): "fcs" / "fcs2" / "fcs ii" → fcs_ii; "futures" → futures; "twin tab" → fcs_twin_tab; "glass on" → glass_on
 - Fin SETUPS (layout): "thruster" / "tri" → thruster; "twin" → twin_only; "2+1" → twin; "quad" → quad; "5-fin" → five; "single" → single
 - Tail shapes: "round tail" / "round" → round; "squash" → squash; "pin" / "pintail" → pin; "swallow" → swallow
@@ -153,7 +162,7 @@ Split the query into:
 2) residualText = ONLY leftover model words that help rank listings (e.g. "puddle jumper", "sub driver").
 Never put brand names, prices, fin/tail words (fcs, thruster, round tail, …), "under"/"over"/"near", shipping, condition words, or generic words like "boards"/"surfboards"/"board" into residualText.
 If the query is only filters (e.g. "lost under $800", "boards with fcs", "6 foot board"), residualText must be "".
-Prices are USD integers.`,
+Prices are USD integers.${memoryBlock}`,
       prompt: `Extract search filters from this query:\n"""${q}"""${synonymHintBlock(synonymExpansions)}`,
       temperature: 0,
       providerOptions: {
@@ -201,7 +210,11 @@ function uniqueStrings(values: string[]): string[] {
 }
 
 const getCachedNlIntent = unstable_cache(
-  async (normalizedQuery: string, expansionKey: string): Promise<MarketplaceNlSearchIntent | null> => {
+  async (
+    normalizedQuery: string,
+    expansionKey: string,
+    memoryBlock: string,
+  ): Promise<MarketplaceNlSearchIntent | null> => {
     let expansions: string[] = []
     if (expansionKey) {
       try {
@@ -213,9 +226,9 @@ const getCachedNlIntent = unstable_cache(
         expansions = []
       }
     }
-    return callGeminiForNlIntent(normalizedQuery, expansions)
+    return callGeminiForNlIntent(normalizedQuery, expansions, memoryBlock)
   },
-  ["marketplace-nl-search-v6"],
+  ["marketplace-nl-search-v7"],
   { revalidate: NL_CACHE_SECONDS, tags: [MARKETPLACE_NL_SEARCH_CACHE_TAG] },
 )
 
@@ -237,7 +250,8 @@ export async function understandMarketplaceQueryWithLlm(
 
   const key = q.toLowerCase().replace(/\s+/g, " ")
   const expansions = uniqueStrings((rulesParsed.expansions ?? []).slice(0, MAX_SYNONYM_HINTS))
-  return getCachedNlIntent(key, JSON.stringify(expansions))
+  const memoryBlock = await searchQualityMemoryPromptBlock(q)
+  return getCachedNlIntent(key, JSON.stringify(expansions), memoryBlock)
 }
 
 /** Human-readable chips for the results banner. */
@@ -268,15 +282,18 @@ export function rulesFinOverlayFromQuery(rawQuery: string): MarketplaceNlSearchI
   const finSetups = extractFinSetupsFromQuery(rawQuery)
   const tailShapes = extractTailShapesFromQuery(rawQuery)
   const constructions = extractConstructionsFromQuery(rawQuery)
+  const styles = extractBoardStylesFromQuery(rawQuery)
   if (
     finSystems.length === 0 &&
     finSetups.length === 0 &&
     tailShapes.length === 0 &&
-    constructions.length === 0
+    constructions.length === 0 &&
+    styles.length === 0
   ) {
     return null
   }
   const labels = [
+    ...styles.map(boardStyleLabel),
     ...finSystems.map(finSystemLabel),
     ...finSetups.map(finSetupLabel),
     ...tailShapes.map((t) => `${tailShapeLabel(t)} tail`),
@@ -286,7 +303,7 @@ export function rulesFinOverlayFromQuery(rawQuery: string): MarketplaceNlSearchI
     brandText: null,
     modelText: null,
     residualText: "",
-    styles: [],
+    styles,
     conditions: [],
     constructions,
     finSystems,

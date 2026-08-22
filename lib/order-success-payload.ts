@@ -51,6 +51,8 @@ type OrderSuccessOrderRow = {
   amount: number | string
   shipping_amount: number | string | null
   created_at: string
+  status: string | null
+  is_admin_test: boolean | null
   fulfillment_method: string | null
   pickup_code: string | null
   seller_id: string | null
@@ -174,6 +176,13 @@ function mapOrderRowToCheckoutPayload(
   )
   const listingIdForLinks = pricedOrderLines[0]?.listingId ?? fallbackListing?.id ?? null
 
+  const status = (order.status ?? "").trim().toLowerCase()
+  const reportAdPurchaseConversion =
+    Number.isFinite(total) &&
+    total > 0 &&
+    order.is_admin_test !== true &&
+    (status === "confirmed" || status === "refunding" || status === "refunded")
+
   return {
     orderId: order.id,
     displayNumber,
@@ -181,6 +190,7 @@ function mapOrderRowToCheckoutPayload(
     total,
     itemPrice,
     shippingCost,
+    reportAdPurchaseConversion,
     fulfillmentMethod: fulfillment,
     pickupCode,
     sellerId: order.seller_id?.trim() ? order.seller_id : null,
@@ -219,6 +229,8 @@ export async function fetchBuyerOrderSuccessPayload(
       amount,
       shipping_amount,
       created_at,
+      status,
+      is_admin_test,
       fulfillment_method,
       pickup_code,
       seller_id,

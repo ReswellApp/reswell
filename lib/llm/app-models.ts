@@ -32,7 +32,7 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
     id: "marketplace_nl_search",
     name: "Marketplace NL search",
     purpose:
-      "Turns free-text /boards queries into structured facet filters (brand, price, fins, length, etc.). Uses curated search synonyms to recover aliases and typos. Elasticsearch still does retrieval.",
+      "Turns free-text /boards queries into structured facet filters (brand, price, fins, length, etc.). Uses curated search synonyms and admin Good/Close/Bad search-quality memory to recover aliases and typos. Elasticsearch still does retrieval.",
     gatewayFeatureTag: "feature:marketplace-nl-search",
     transport: "vercel_ai_gateway",
     defaultModel: "google/gemini-2.5-flash",
@@ -43,6 +43,7 @@ export const APP_LLM_FEATURES: readonly AppLlmFeatureDefinition[] = [
       "lib/services/marketplaceQueryUnderstand.ts",
       "lib/services/marketplaceNlHelper.ts",
       "lib/services/searchSynonyms.ts",
+      "lib/services/searchQuality.ts",
     ],
   },
   {

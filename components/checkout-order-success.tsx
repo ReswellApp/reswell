@@ -17,6 +17,11 @@ export type CheckoutOrderSuccessPayload = {
   total: number
   itemPrice: number
   shippingCost: number
+  /**
+   * Real confirmed marketplace purchase (not pending, not admin test).
+   * Purchase pixels still also require the one-time checkout query param.
+   */
+  reportAdPurchaseConversion: boolean
   fulfillmentMethod: "shipping" | "pickup" | null
   /** Pickup handoff code — only set on `fulfillment_method = 'pickup'` orders (one code per order). */
   pickupCode: string | null

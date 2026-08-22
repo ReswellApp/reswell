@@ -11,7 +11,7 @@ interface GooglePurchaseConversionScriptProps {
 
 /**
  * Fires the Google Ads purchase conversion from an inline script (before React hydration).
- * Tag Assistant and page-load diagnostics rely on this firing early, not only in useEffect.
+ * Only mounted on the first checkout landing (`?gads_purchase=1`), once per real order.
  */
 export function GooglePurchaseConversionScript({
   orderId,

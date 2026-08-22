@@ -3,6 +3,10 @@ import {
   isMarketplaceSearchNoiseToken,
   pickClosestBrandNameMatch,
 } from "@/lib/utils/marketplace-brand-query"
+import {
+  isGenericSurfSearchToken,
+  isMarketplaceGenericSurfSearchOnly,
+} from "@/lib/utils/marketplace-style-query"
 import { brandNamesAreSearchSynonyms } from "@/lib/utils/marketplace-brand-synonyms"
 
 export type BrandNavPickRow = { name: string; slug: string }
@@ -11,7 +15,12 @@ function queryBrandTokens(lowerQuery: string): string[] {
   const tokens = lowerQuery.match(/[\w']+/g) ?? []
   return tokens
     .map((t) => t.replace(/^['']+|['']+$/g, ""))
-    .filter((t) => t.length >= 3 && !isMarketplaceSearchNoiseToken(t))
+    .filter(
+      (t) =>
+        t.length >= 3 &&
+        !isMarketplaceSearchNoiseToken(t) &&
+        !isGenericSurfSearchToken(t),
+    )
 }
 
 /**
@@ -36,6 +45,11 @@ export function pickCatalogBrandForNavPick(
   const synonym = rows.find((r) => brandNamesAreSearchSynonyms(lower, r.name))
   if (synonym) return synonym
 
+  // Substring / prefix matches ("fish" → "Fish Stix", "fish twin" → same)
+  // are typeahead-only noise when the query is only shape / fin-layout words.
+  // Exact / synonym still win above.
+  if (isMarketplaceGenericSurfSearchOnly(q)) return null
+
   const extendedName = rows.find((r) => {
     const n = r.name.toLowerCase()
     return n.startsWith(lower + " ") || n.startsWith(lower + "·")
@@ -54,13 +68,16 @@ export function pickCatalogBrandForNavPick(
 
   const tokenOverlap = rows.find((r) => {
     const brandLower = r.name.toLowerCase()
-    const brandTokens = brandLower.match(/[\w']+/g) ?? [brandLower]
+    const brandTokens = (brandLower.match(/[\w']+/g) ?? [brandLower]).filter(
+      (bt) => bt.length >= 3 && !isMarketplaceSearchNoiseToken(bt) && !isGenericSurfSearchToken(bt),
+    )
+    if (brandTokens.length === 0) return false
     return queryTokens.some((qt) => {
       if (brandLower === qt || brandLower.startsWith(qt) || qt.startsWith(brandLower)) {
         return true
       }
       return brandTokens.some(
-        (bt) => bt.length >= 3 && (bt === qt || bt.startsWith(qt) || qt.startsWith(bt)),
+        (bt) => bt === qt || bt.startsWith(qt) || qt.startsWith(bt),
       )
     })
   })

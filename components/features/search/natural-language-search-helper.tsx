@@ -17,6 +17,7 @@ export function NaturalLanguageSearchHelper({
   searchParamsString,
   initialAppliedLabels,
   initialSummary,
+  qualityEventId,
   className,
 }: {
   query: string
@@ -24,6 +25,8 @@ export function NaturalLanguageSearchHelper({
   searchParamsString: string
   initialAppliedLabels?: string[]
   initialSummary?: string | null
+  /** Search quality review id so the NL helper snapshot can be attached. */
+  qualityEventId?: string | null
   className?: string
 }) {
   const router = useRouter()
@@ -49,7 +52,9 @@ export function NaturalLanguageSearchHelper({
 
     void (async () => {
       try {
-        const res = await fetch(`/api/search/nl-helper?q=${encodeURIComponent(q)}`, {
+        const params = new URLSearchParams({ q })
+        if (qualityEventId) params.set("eventId", qualityEventId)
+        const res = await fetch(`/api/search/nl-helper?${params.toString()}`, {
           signal: controller.signal,
           credentials: "same-origin",
         })

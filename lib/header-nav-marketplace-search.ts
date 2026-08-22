@@ -4,6 +4,7 @@ import {
   isMarketplaceSectionOnlyQuery,
   marketplaceSectionBrowseHref,
 } from "@/lib/utils/marketplace-brand-query"
+import { marketplaceBoardStyleBrowseHref } from "@/lib/utils/marketplace-style-query"
 
 /** Marketplace-wide copy for main nav — same on every route. */
 export function headerNavSearchPlaceholder(_section?: string): string {
@@ -43,7 +44,8 @@ export function navSearchSuggestSectionKey(section: string): NavSearchSuggestSec
 
 /**
  * Main nav submit lands on marketplace-wide `/search`, except bare section
- * keywords (`fins`, `wetsuits`, …) which open that section’s browse hub.
+ * keywords (`fins`, `wetsuits`, …) which open that section’s browse hub,
+ * and bare board styles (`fish`, `shortboard`) which open `/boards?type=&q=`.
  */
 export function headerNavSearchSubmitHref(
   rawQuery: string,
@@ -57,6 +59,9 @@ export function headerNavSearchSubmitHref(
     const browseHref = marketplaceSectionBrowseHref(extractMarketplaceSectionIntent(term))
     if (browseHref) return browseHref
   }
+
+  const styleHref = marketplaceBoardStyleBrowseHref(term)
+  if (styleHref) return styleHref
 
   const params = new URLSearchParams()
   params.set("q", term)

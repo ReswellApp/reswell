@@ -20,6 +20,11 @@ import {
   isMarketplaceSectionOnlyQuery,
   stripMarketplaceSearchNoiseWords,
 } from "@/lib/utils/marketplace-brand-query"
+import {
+  isMarketplaceBoardStyleOnlyQuery,
+  isMarketplaceGenericSurfSearchOnly,
+} from "@/lib/utils/marketplace-style-query"
+import { listingBoardTypeDbValuesForFilter } from "@/lib/board-type-canonical"
 import { hydrateListingsByIds } from "@/lib/search/hydrate-listings"
 import {
   listActiveListingIdsByBrandModelIds,
@@ -33,6 +38,10 @@ import {
   normalizeMarketplaceSearchQueryForAnalytics,
   recordMarketplaceSearchAnalyticsEvent,
 } from "@/lib/services/searchAnalytics"
+import {
+  newSearchQualityEventId,
+  scheduleSearchQualityEventCapture,
+} from "@/lib/services/searchQuality"
 import {
   parseMarketplaceQuery,
   type MarketplaceParsedQuery,
@@ -138,12 +147,15 @@ export async function SearchPageView({
       : null)
 
   // Brand-only free-text still resolves via directory when the parser misses.
-  // Skip for bare section keywords ("fins") — those must not match Futures Fins, etc.
+  // Skip for bare section keywords ("fins") and shape / fin-layout queries
+  // ("fish", "fish twin") — those must not match Futures Fins / Fish Stix, etc.
   if (
     !brandRow &&
     rawQuery.trim() &&
     !parsedQuery?.model &&
-    !isMarketplaceSectionOnlyQuery(rawQuery)
+    !isMarketplaceSectionOnlyQuery(rawQuery) &&
+    !isMarketplaceBoardStyleOnlyQuery(rawQuery) &&
+    !isMarketplaceGenericSurfSearchOnly(rawQuery)
   ) {
     brandRow = await resolveDirectoryBrandRowFromLabel(supabase, rawQuery)
   }
@@ -185,21 +197,38 @@ export async function SearchPageView({
     Boolean(brandFromUrl),
   )
 
-  if (rawQuery.trim() && searchMeta) {
-    const analyticsPayload = {
-      queryDisplay: displayMarketplaceSearchQueryForAnalytics(rawQuery),
-      queryNormalized: normalizeMarketplaceSearchQueryForAnalytics(rawQuery),
-      resultCount: searchMeta.resultCount,
-      backend: searchMeta.backend,
-      categorySlug: categorySlugForLog,
-      ...(analyticsOriginHeaderNav ? { originSurface: "header_nav" as const } : {}),
-    }
-    after(async () => {
-      try {
-        await recordMarketplaceSearchAnalyticsEvent(analyticsPayload)
-      } catch (e) {
-        console.error("[SearchPageView] marketplace search analytics failed:", e)
+  if (rawQuery.trim()) {
+    if (searchMeta) {
+      const analyticsPayload = {
+        queryDisplay: displayMarketplaceSearchQueryForAnalytics(rawQuery),
+        queryNormalized: normalizeMarketplaceSearchQueryForAnalytics(rawQuery),
+        resultCount: searchMeta.resultCount,
+        backend: searchMeta.backend,
+        categorySlug: categorySlugForLog,
+        ...(analyticsOriginHeaderNav ? { originSurface: "header_nav" as const } : {}),
       }
+      after(async () => {
+        try {
+          await recordMarketplaceSearchAnalyticsEvent(analyticsPayload)
+        } catch (e) {
+          console.error("[SearchPageView] marketplace search analytics failed:", e)
+        }
+      })
+    }
+    scheduleSearchQualityEventCapture({
+      eventId: newSearchQualityEventId(),
+      rawQuery,
+      searchSurface: "marketplace",
+      backend: searchMeta?.backend ?? null,
+      listings: listings.map((l) => ({
+        id: l.id,
+        title: l.title,
+        slug: l.slug,
+        price: l.price,
+        board_type: l.board_type,
+        listing_images: l.listing_images,
+      })),
+      parsed: parsedQuery,
     })
   }
 
@@ -418,6 +447,7 @@ async function resolveSearchListings(
       ? null
       : parsed?.brand?.id ?? (brandFromUrl ? brand?.id : null) ?? null
   const lengthInches = parsed?.lengthInches ?? null
+  const boardTypes = parsed?.styleIntent?.length ? parsed.styleIntent : null
   const sections = categoryId
     ? ["surfboards"]
     : parsed?.sectionIntent
@@ -434,6 +464,7 @@ async function resolveSearchListings(
         brandModelIds?: string[] | null
         brandId?: string | null
         lengthInches?: number | null
+        boardTypes?: string[] | null
         typoFallback?: boolean
       }) =>
         searchListingIdsFromElasticsearch(opts.q, LIMIT, {
@@ -443,6 +474,7 @@ async function resolveSearchListings(
           brandId: opts.brandId,
           brandModelIds: opts.brandModelIds,
           lengthInches: opts.lengthInches,
+          boardTypes: opts.boardTypes,
           typoFallback: opts.typoFallback,
         })
 
@@ -452,9 +484,16 @@ async function resolveSearchListings(
         brandModelIds,
         brandId,
         lengthInches,
+        boardTypes,
       })
       if (ids.length === 0 && lengthInches != null && brandModelIds.length > 0) {
-        ids = await runEs({ q: textQuery, brandModelIds, brandId: null, lengthInches: null })
+        ids = await runEs({
+          q: textQuery,
+          brandModelIds,
+          brandId: null,
+          lengthInches: null,
+          boardTypes,
+        })
       }
       if (ids.length === 0 && brandModelIds.length > 0) {
         ids = await runEs({
@@ -462,6 +501,7 @@ async function resolveSearchListings(
           brandModelIds: null,
           brandId: parsed?.brand?.id ?? brandId,
           lengthInches: null,
+          boardTypes,
         })
       }
       if (ids.length === 0) {
@@ -470,6 +510,7 @@ async function resolveSearchListings(
           brandModelIds: null,
           brandId: null,
           lengthInches: null,
+          boardTypes,
         })
       }
       if (ids.length === 0) {
@@ -478,6 +519,7 @@ async function resolveSearchListings(
           brandModelIds: null,
           brandId: null,
           lengthInches: null,
+          boardTypes,
           typoFallback: true,
         })
       }
@@ -489,21 +531,42 @@ async function resolveSearchListings(
           brandModelIds: null,
           brandId: null,
           lengthInches: null,
+          boardTypes,
         })
         listings = await hydrateListingsByIds(supabase, ids)
       }
       backend = "elasticsearch"
     } catch (err) {
       console.error("[search] Elasticsearch error, falling back to Supabase:", err)
-      const r = await buildSearchFromSupabase(supabase, rawQuery, categoryId, LIMIT, expansions)
+      const r = await buildSearchFromSupabase(
+        supabase,
+        rawQuery,
+        categoryId,
+        LIMIT,
+        expansions,
+        boardTypes,
+      )
       listings = r.listings
       backend = "supabase"
     }
   } else {
-    const r = await buildSearchFromSupabase(supabase, rawQuery, categoryId, LIMIT, expansions)
+    const r = await buildSearchFromSupabase(
+      supabase,
+      rawQuery,
+      categoryId,
+      LIMIT,
+      expansions,
+      boardTypes,
+    )
     listings = r.listings
     if (listings.length === 0) {
-      const retry = await buildSearchFromSupabaseTypoFallback(supabase, rawQuery, categoryId, LIMIT)
+      const retry = await buildSearchFromSupabaseTypoFallback(
+        supabase,
+        rawQuery,
+        categoryId,
+        LIMIT,
+        boardTypes,
+      )
       listings = retry.listings
     }
     backend = "supabase"
@@ -536,16 +599,28 @@ async function resolveSearchListings(
   }
 }
 
+function applyBoardTypeFilter<T extends { in: (column: string, values: string[]) => T }>(
+  query: T,
+  boardTypes: string[] | null,
+): T {
+  const dbTypes = Array.from(
+    new Set((boardTypes ?? []).flatMap((s) => listingBoardTypeDbValuesForFilter(s))),
+  )
+  if (dbTypes.length === 0) return query
+  return query.in("board_type", dbTypes)
+}
+
 async function buildSearchFromSupabase(
   supabase: Awaited<ReturnType<typeof createClient>>,
   rawQuery: string,
   categoryId: string | null,
   limit: number,
   expansions: string[] = [],
+  boardTypes: string[] | null = null,
 ): Promise<{
   listings: RecentListing[]
 }> {
-  const allRes = await buildSearchQuery(supabase, rawQuery, categoryId, limit)
+  const allRes = await buildSearchQuery(supabase, rawQuery, categoryId, limit, boardTypes)
   let rows = allRes.data ?? []
 
   // Synonym expansions are OR-added (same as ES) so Lost also retrieves Mayhem, etc.
@@ -554,7 +629,7 @@ async function buildSearchFromSupabase(
     for (const row of rows) merged.set(row.id, row)
     for (const expansion of expansions) {
       if (merged.size >= limit) break
-      const expRes = await buildSearchQuery(supabase, expansion, categoryId, limit)
+      const expRes = await buildSearchQuery(supabase, expansion, categoryId, limit, boardTypes)
       for (const row of expRes.data ?? []) {
         if (!merged.has(row.id)) merged.set(row.id, row)
       }
@@ -575,6 +650,7 @@ async function buildSearchFromSupabaseTypoFallback(
   rawQuery: string,
   categoryId: string | null,
   limit: number,
+  boardTypes: string[] | null = null,
 ): Promise<{ listings: RecentListing[] }> {
   const meaningful = meaningfulSearchTerms(rawQuery)
   const primary = [...meaningful].sort((a, b) => b.length - a.length)[0]
@@ -619,6 +695,7 @@ async function buildSearchFromSupabaseTypoFallback(
   } else {
     query = query.in("section", [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS])
   }
+  query = applyBoardTypeFilter(query, boardTypes)
 
   const { data, error } = await query
   if (error || !data?.length) return { listings: [] }
@@ -651,6 +728,7 @@ async function buildSearchQuery(
   rawQuery: string,
   categoryId: string | null,
   limit: number,
+  boardTypes: string[] | null = null,
 ): Promise<{ data: any[] }> {
   let query = supabase
     .from("listings")
@@ -681,6 +759,7 @@ async function buildSearchQuery(
   } else {
     query = query.in("section", [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS])
   }
+  query = applyBoardTypeFilter(query, boardTypes)
 
   if (rawQuery) {
     const meaningful = meaningfulSearchTerms(rawQuery)

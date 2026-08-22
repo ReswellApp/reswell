@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { buildOrderSuccessPath } from "@/lib/google-ads/purchase-success-path"
 import { Card, CardContent } from "@/components/ui/card"
 import { CheckCircle2, Loader2 } from "lucide-react"
 
@@ -55,7 +56,7 @@ function CheckoutSuccessInner() {
 
   useEffect(() => {
     if (!orderIdInUrl || paymentIntent) return
-    router.replace(`/successpage/${orderIdInUrl}`)
+    router.replace(buildOrderSuccessPath(orderIdInUrl, { reportPurchase: true }))
   }, [orderIdInUrl, paymentIntent, router])
 
   useEffect(() => {
@@ -107,7 +108,7 @@ function CheckoutSuccessInner() {
 
   useEffect(() => {
     if (!finalizedOrderId) return
-    router.replace(`/successpage/${finalizedOrderId}`)
+    router.replace(buildOrderSuccessPath(finalizedOrderId, { reportPurchase: true }))
   }, [finalizedOrderId, router])
 
   if (!paymentIntent && !orderIdInUrl) {

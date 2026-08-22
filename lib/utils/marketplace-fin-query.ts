@@ -39,6 +39,25 @@ const FIN_SETUP_ALIASES: Array<{ slug: string; phrases: string[] }> = [
 const ALLOWED_FIN_SYSTEMS = new Set(FIN_SYSTEM_OPTIONS.map((o) => o.value))
 const ALLOWED_FIN_SETUPS = new Set(FIN_SETUP_OPTIONS.map((o) => o.value))
 
+/**
+ * Single-word fin-layout aliases that must never hard-resolve a directory brand
+ * ("twin" is a setup, not a brand name token). Does not include fin *systems*
+ * like "futures" / "fcs" — those are also brand names shoppers search for.
+ */
+const GENERIC_FIN_LAYOUT_TOKENS = new Set(
+  FIN_SETUP_ALIASES.flatMap((row) =>
+    row.phrases.filter(
+      (p) => !p.includes(" ") && !p.includes("-") && !p.includes("+") && !/\d/.test(p),
+    ),
+  ),
+)
+
+/** True when this token is a fin-layout word (twin, quad, thruster), not a brand hint. */
+export function isGenericFinLayoutSearchToken(token: string): boolean {
+  const core = token.trim().toLowerCase().replace(/^['']+|['']+$/g, "")
+  return core.length > 0 && GENERIC_FIN_LAYOUT_TOKENS.has(core)
+}
+
 function matchAliasSlugs(
   lower: string,
   aliases: Array<{ slug: string; phrases: string[] }>,
