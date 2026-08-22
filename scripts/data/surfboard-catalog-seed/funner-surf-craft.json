@@ -1,0 +1,72 @@
+{
+  "generated_for": "FUNNER Surf Craft official model catalog",
+  "source": "https://funner.surf",
+  "sources": [
+    "https://funner.surf",
+    "https://funner.surf/products.json",
+    "https://funner.surf/collections.json",
+    "https://funner.surf/collections/boardfolio/products.json",
+    "https://funner.surf/pages/hello"
+  ],
+  "skipped": [
+    "Shirts / Beanies — apparel merch",
+    "FUTURES Alpha fins — fin products, not named surfboards",
+    "Blue Root Surf Supply lumber and cloth — materials, not named surfboards",
+    "Mini LOG — leftover catalog name; official current product is The Missing Link (same Shopify handle funner-log). Existing Mini LOG row was not deleted."
+  ],
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "funner-surf-craft",
+      "name": "FUNNER Surf Craft",
+      "website_url": "https://funner.surf",
+      "location_label": "Oregon",
+      "founder_name": "Eddie Rosenberg",
+      "lead_shaper_name": "Eddie Rosenberg",
+      "short_description": "Oregon-made ECOBOARD Gold surf craft built from recycled and renewable materials.",
+      "models": [
+        {
+          "name": "HP Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0648/0406/1410/files/IMG_0890.jpg?v=1780333902",
+          "description": "An alternative shortboard experience. The HP TWIN rips at warp speed. Super fast. Super responsive. The most high-performance surf craft in our lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mid TWIN",
+          "image_url": "https://cdn.shopify.com/s/files/1/0648/0406/1410/files/MidTwinWildIris_9676a8ce-95d8-4abc-8af3-e0b9ff9cb0c9.png?v=1739906583",
+          "description": "A fully charged wave riding experience. The Mid TWIN is your best bud when the surf is pumping. A delight of epic proportions feasting on speedy carves in shoulder-overhead surf. The most powerful surf craft in our lineup.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mini SIMM",
+          "image_url": "https://cdn.shopify.com/s/files/1/0648/0406/1410/files/IMG_0874.heic?v=1780023765&width=1600&format=jpg",
+          "description": "An alternative shortboard experience. The Mini SIMMS quickly gathers speed and is super responsive, thriving in the fast lane and snapping turns off the lip. The most playful surf craft in our lineup.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The EGG",
+          "image_url": "https://cdn.shopify.com/s/files/1/0648/0406/1410/files/EggGoldenEagle.png?v=1739906551",
+          "description": "A super friendly wave riding experience. The EGG hooks it up with easy paddling and predictable takeoffs, then cruises down the line connecting buttery smooth turns. The most balanced surf craft in our lineup.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Missing Link",
+          "image_url": "https://cdn.shopify.com/s/files/1/0648/0406/1410/files/MiniLogGlacierTeal.png?v=1751316413",
+          "description": "A perfectly attainable wave riding experience. The Missing Link is a wave catching machine. Its unrivaled paddle power and stability get you popping up early and easy. The most foundational surf craft in our lineup.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The PCH",
+          "image_url": null,
+          "description": null
+        },
+        {
+          "name": "The Wegg",
+          "image_url": "https://cdn.shopify.com/s/files/1/0648/0406/1410/files/TheWeggEclipse_7cb1ebf4-d8de-4ccb-b1b6-b395d9ae4075.png?v=1758297853",
+          "description": "An iconic Jon Wegener shape, now in FUNNER construction. The Wegg is a masterclass in blending curves for smooth, flowing surfing. A light belly up front transitions seamlessly into V off the tail, while moderate rocker pairs with down-turned rails. The result is easy paddling with remarkable maneuverability, shining in everything from 2-foot rollers to 8-foot perfection. A true sweet spot in board design—and a shape we’re honored to craft for you.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
