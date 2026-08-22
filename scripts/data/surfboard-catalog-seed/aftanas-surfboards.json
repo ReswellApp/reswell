@@ -1,0 +1,88 @@
+{
+  "generated_for": "Aftanas Surfboards official model catalog",
+  "source": "https://aftanas.ca/collections/boards",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "aftanas-surfboards",
+      "name": "Aftanas Surfboards",
+      "website_url": "https://aftanas.ca/",
+      "location_label": "Tofino, British Columbia",
+      "short_description": "Surfboards designed and constructed in Tofino, British Columbia, with in-house CAD design, CNC pre-shaping, and finish-shaping.",
+      "models": [
+        {
+          "name": "The Sled",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/sled-square.png",
+          "description": "I have made a lot of Sleds. Through that, the Sled has slowly morphed into what it is today - your best bet for a daily driver in the most commonly occurring surf on the West Coast. The outline remains on the full side without losing it’s shortboard status. Single concaves with the slightest of double concave between the fins dominates the bottom contours and keeps you moving through the flats or when you need to get somewhere with one quick pump. Tail rocker is set up for speed with a little extra curve in the last 6” to allow for a tighter turning radius. SURFER: Beginner to Advanced SIZING Intermediate: About your height, maybe a bit shorter but be sure you are hitting a volume you are used to. Inter-Advanced: 2” shorter than your height but keep the volume where you are comfortable. Advanced: Probably about 2” shorter than your height. Volume can be the same as you are used to in your shortboards.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Analog",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/analog.png",
+          "description": "The perfect blend of fish speed and shortboard control with a serious range sums up the Analog perfectly. Maybe not an absolute groveler but a board that works well from hip to well overhead. I don’t really believe in one board quivers, but I would say this is as close as it gets. I started with the outline of the Bob round tail, narrowed the outline, straightened the rocker profile from centre back and lifted the nose a touch. I kept heavy speed generating concaves through mid board, maxing just in front of the fins, bleeding into a subtle double concave out through between the fins. I left as much curve in the rail line as possible, especially through the last third of the tail, to keep things lively on rail. After 6 months of feedback, and a few tweaks from Coach Brown, we had a keeper on our hands. Shannon’s thoughts: “It’s a very fast and lively board that takes the effort out of generating speed and refocuses your attention to the lip and your next move.” SURFER: Intermediate to Advanced SIZING Beginniner: The Analog is not the best choice for beginners. If you just got to have one, order it at least 6” over your head. Intermediate: Meet your volume requirements and stick to your height, plus or minus an inch. Inter-Advanced: Around 2-4” under your height. With such a solid wave range it will depend on how the Analog fits in your quiver.Advanced: Again around 2-4” under your height and hitting your preferred volume",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Project",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/project.png",
+          "description": "The Project is a culmination of everything I have learned from every shredder I have worked with. It is not a board for beginners and I would even say that it is not the best intermediate board either. It is for those looking to take their surfing to the next level with on rail carving turns and big tail blows. I won’t get into the details of the curves, rails, or concaves. Simply put, the Project is a fast, ultra high performance shortboard that will allow you to surf as vertically and as hard as you possibly can. Which tail should you choose? It really depends on the feel you are looking for and the waves you are going to be surfing. Round tails go rail-to-rail smoothly and increase the arc of the turn, while squash tails offer a tighter turning radius and a little more release. SURFER Inter-Advanced - Pro SIZING Intermediate: An ‘Option’ or Sled Round Tail would be a better choice, but if you want to feel what a lot of curve and hold feels like in a board, then giv’er. Make sure you are at least a couple of inches over your height and intend for it to be a step-up for the best days. Inter-Advanced: Your height is a good place to be and, like always, ensuring the volume makes sense relative to your weight. Advanced: Your height. If you want to surf with a lot of power, go a little longer.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Option",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/option.png",
+          "description": "The Option is just that, somewhere to go when you have outgrown a Sled and are working your way towards The Project. With more volume per inch than the Project and a flatter and more forgiving rocker template, speed comes easier and hitting your volume takes less length. I would call it an introduction to a full on shortboard. Rocker is curvier in the tail than the nose making it a good paddler. Concaves are similar to The Project, and rails have a touch more volume. A lot of my team keep an Option in their quiver for those days that have a bit of size but not much power. SURFER: Intermediate to Advanced. SIZING Intermediate: If this is your transition to a shortboard, keep to your height to an inch over. If you are not getting enough volume at an inch over then add some thickness.Inter-advanced: go a bit shorter than your height. It will be a good board for those days that are just a little too soft for your Project. If the volume is off use thickness to hit your target. Advanced: A couple of inches under your height. Volume should be there at that size. Short rail lines are always helpful when the waves are softer.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Spork",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/spork.png",
+          "description": "In 2016 the Spork went through a serious overhaul, turning it into a mush crusher with a real need for speed. Like the Analog, the Spork has fish-like rocker with a shortboard outline. The difference is, of course, the much wider arse on the Spork. I designed it for those that like to have an abundance of speed under their back foot and like the looseness of a wide tail in marginal waves. The engine is a heavy single concave that melds into a light double under your back foot. The rails are boxier than the Analog, serving to keep the deck flat and the volume up. A good paddler and an easy wave catcher even in softer surf. SURFER Intermediate - Advanced SIZING Intermediate: Your height to maybe an inch under if it meets your volume requirements. Volume should be at least your standard shortboard plus a liter or two. Advanced: 2” under your height should meet your volume requirements. The same volume as your shortboard is the minimum but I would add a litre if it is going to be for micro waves.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Bob",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/bob.png",
+          "description": "In 2015 I wasn’t in the best surfing shape. Production demands and deadlines started to eat into what would normally be my water time. Being picky about tides and surf quality took a back seat to getting to the nearest beach as quick as possible. If the surf was overpowering the squash tail I just grabbed the round tail. Bob is a machine for crushing mush, with flair. Low entry rocker gets you in early, a speed pedal under your front foot gets you moving quick and a curvy last 6” allows you to surf more vertically than you would expect from similar boards. Can’t afford a longboard? Let Bob keep you stoked on those days where you just want to get wet no matter the size. SURFER: Inter-Beginner to Advanced SIZING Inter-Beginner: I f you have a mid shape and want to try something short, you could pull it off with some serious effort but you would be better off with a Stuhb. Intermediate: Your height is a safe place or two inches under. You want to be sure there is about 1 to 2 litres more volume in your Bob than your standard shortboard. Advanced: Short as you want to go but be sure to keep an extra litre in your super short boards. Boards lose some ease of paddling when they get into the ultra short range. This advice would apply to inter-advanced and Pro surfers as well.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Koifish",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/koifish.png",
+          "description": "The Koi Fish could be called the Speed Fish. It is all about making waves in surf that would be sectioning out if you weren’t going so fast. If you like to high line through speedy sections or float over the crumbling ones, then you are on the right track with the Koi Fish. SURFER Inter-Beginner - Advanced SIZING Inter-beginner: Two to three inches over your height should do the trick. Make sure that the volume makes sense for your weight. Intermediate: Your height to 2” under. Don’t worry if the volume is higher than your shortboard, it will be beneficial. Advanced: use volume as your guide and shoot for about 2 litres more than your shortboard. It will change your approach to surfing.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Druther",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/The_Druther.png",
+          "description": "The Druther is simply a matter of personal choice. It turns its back on what it should be and lets you slide along without judgement or care. It doesn’t have roots in the past nor its the future. It isn’t trying to change your life - it just offers up what surfing is all about: having a good time, sliding effortlessly across the ocean. You wanna crack the lip? Crack it. You wanna float that section? Float it. Don’t worry about what you're supposed to do just do what you want. Flat entry rocker gets you in quick and early. With one good pump you are on the move, then it's all about what you want to do next. Slight belly up in the nose flows into concaves under your front foot and roll out to a double concave under your back foot. Speed is everywhere and the refined rail line gives you the control to use it. Just think how much you can have on a soft day, then multiply it by two. Five fin setups are not mandatory but are a very good idea. SURFER: Intermediate to Advanced SIZING Intermediate: Your height to 2” under your height and don’t sweat the volume. There is foam in this board but it is well placed and serves a purpose. Inter-Advanced: Ride it short. You know where you are at. If you wanna shred on it, get it about a liter more than your shortboard. If you wanna cruise and trim, leave around 2 liters more than you normally ride…even more…go ahead and dare to chill out. Advanced: Really the same story as above.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Stuhb",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/stuhb.png",
+          "description": "I had a travelling Aussie stop by one day looking for a surfboard with a longboard outline, but shortened to 5’8. I felt like he was on to something. All fun up front and business at the back. We took a 9’6 longboard template I had lying around, marked 5’8” on the blank and made it fit. After some rocker tweaks and relocating concaves, we were done. Funny how easy it is sometimes. A nice full nose makes getting in early a breeze, a real must in a mush crusher, while the relatively narrow tail gives it a good range. Concave under your front foot keeps you moving down the line quick and takes the focus away from generating speed. If you are stepping down from a Slim Jim, or just looking to ride a shorter board that keeps your wave count up, the Stuhb is it. SURFER Beginner - Advanced SIZING Beginner: I don’t think of the Stuhb as a full-on beginner board but if you are a smaller person and can meet the 1’ over your height rule it could be done. Intermediate: You can go pretty short, 2” under your height is likely fine, you will want to shoot for 1.5 to 2 litres over your standard shortboard. Always nice to have a few more litres if you are going a lot shorter. Advanced: You will know where this board will fit. You might be surprised at the benefits of the full nose and extra width when the waves are weird or soft. WAVE RANGE Hip high to 4 feet over-head plus",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Slim Jim",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/slim-jim.png",
+          "description": "The Slim Jim is a user friendly and versatile design. It makes a great entry level surfboard, a sleek mid-size for those that might normally shortboard (but at times appreciate a little extra length), and a great alternative to a long board for bigger surf. If you're on a journey down to a shortboard, or need to step away from your shortboard for a bit, the Slim Jim is a great layover. Design principles are simple – low entry curves with a bit of nose flip, moderate concaves keep you moving through the soft sections, and tail rocker that is specifically designed for surfing off the tail – shortboard style. This makes it a board that gets you in early while feeling shorter than it is under your feet. This is a board you can expect to keep in your quiver for a long time. SURFER Beginner - Advanced SIZING Beginner: If you are a full-on beginner consider kepping it to 18\" over your head Inter-Beginner: Minimum of 12\" over your head. Keep the glide alive. Intermediate: 8 - 10\" over your head is a good place to start. But go ahead! Take a chance and go longer. Advanced: makes a great board for bigger days or if you want to work on your rail game. Riding longer, bigger boards can add some smoothness to your style.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Blender",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/blender.png",
+          "description": "I was originally going to call the Blender The E.D.L, The Every Day Longboard. It was designed for those that choose to longboard year round and in all conditions. It is a blend of performance longboard and a full on nose rider. It can be surfed from the tail, has a reasonable mid trim platform and a generous spoon in the nose. The spoon serves a dual purpose- a place to perch up on for nose ride sections and takes some swing weight out of front end. Less swing weight means quicker direction and trim changes. SURFER Beginner - Advanced SIZING For all surfers the 9’0 to 9’6 will work.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Even",
+          "image_url": "https://cdn.shopify.com/s/files/1/2283/8597/products/even.png",
+          "description": "Sure, I started out primarily as a shortboard designer. It was what I was riding 90% of the time and because of that, it was what I was building 90% of the time. Time passes, things change. Since 2014 I have been on a mission to make a nose rider that makes nose riding easy. Something more stable than the traditional log that tends to roll around under your feet and can feel slow. Through removing some belly and straightening the bottom curves from centre through to the nose, cross stepping smoothly is easier, mid trim is faster and overall stoke factor stays high. A solid hip gives you a great fulcrum point for direction changes and repositioning for the next nose ride section. SURFER: Newbie - Advanced SIZING More length equals more glide. Keep it as long as you are comfortable with managing. If you are a smaller person then a 9’0 should be enough. If you are over 225 lbs then I would start at 9’6.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
