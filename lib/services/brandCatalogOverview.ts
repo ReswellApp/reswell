@@ -16,7 +16,7 @@ export type BrandCatalogBrandNode = {
   models: BrandCatalogModelNode[]
 }
 
-/** Hierarchical snapshot: brands → brand_models → brand_model_variants (read-only). */
+/** Hierarchical snapshot: brands → brand_models → brand_model_variants (read-only, paged past PostgREST's 1000-row cap). */
 export async function getBrandCatalogOverview(
   supabase: SupabaseClient,
 ): Promise<{

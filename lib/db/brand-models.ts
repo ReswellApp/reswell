@@ -46,6 +46,30 @@ const LIST_SELECT = `
   brands:brand_id ( id, name, slug )
 `
 
+/** PostgREST returns at most ~1000 rows per request unless ranged. */
+const ADMIN_LIST_PAGE = 1000
+
+function mapBrandModelAdminRows(rows: RawBrandModelRow[]): BrandModelAdminRow[] {
+  const out: BrandModelAdminRow[] = []
+  for (const row of rows) {
+    const b = pickJoinedBrand(row.brands)
+    if (!b?.id) continue
+    out.push({
+      id: row.id,
+      brand_id: row.brand_id,
+      name: row.name,
+      description: row.description,
+      image_url: row.image_url ?? null,
+      product_category_slug: row.product_category_slug ?? "surfboards",
+      board_category_slug: row.board_category_slug ?? null,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      brand: { id: b.id, name: b.name, slug: b.slug },
+    })
+  }
+  return out
+}
+
 /** Public catalog rows for sell-flow model picker (`brand_models` only — not variants). */
 export async function listBrandModelsForPublicCatalogByBrandId(
   supabase: SupabaseClient,
@@ -252,37 +276,33 @@ export async function listBrandModelsForAdmin(
   supabase: SupabaseClient,
   brandId?: string,
 ): Promise<BrandModelAdminRow[]> {
-  let q = supabase.from("brand_models").select(LIST_SELECT).order("name", { ascending: true })
-
-  if (brandId) {
-    q = q.eq("brand_id", brandId)
-  }
-
-  const { data, error } = await q
-
-  if (error) {
-    console.error("listBrandModelsForAdmin:", error.message)
-    return []
-  }
-
-  const rows = (data ?? []) as RawBrandModelRow[]
   const out: BrandModelAdminRow[] = []
-  for (const row of rows) {
-    const b = pickJoinedBrand(row.brands)
-    if (!b?.id) continue
-    out.push({
-      id: row.id,
-      brand_id: row.brand_id,
-      name: row.name,
-      description: row.description,
-      image_url: row.image_url ?? null,
-      product_category_slug: row.product_category_slug ?? "surfboards",
-      board_category_slug: row.board_category_slug ?? null,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-      brand: { id: b.id, name: b.name, slug: b.slug },
-    })
+  let from = 0
+
+  for (;;) {
+    let q = supabase
+      .from("brand_models")
+      .select(LIST_SELECT)
+      .order("name", { ascending: true })
+      .order("id", { ascending: true })
+
+    if (brandId) {
+      q = q.eq("brand_id", brandId)
+    }
+
+    const { data, error } = await q.range(from, from + ADMIN_LIST_PAGE - 1)
+
+    if (error) {
+      console.error("listBrandModelsForAdmin:", error.message)
+      break
+    }
+
+    const batch = (data ?? []) as RawBrandModelRow[]
+    out.push(...mapBrandModelAdminRows(batch))
+    if (batch.length < ADMIN_LIST_PAGE) break
+    from += ADMIN_LIST_PAGE
   }
+
   return out
 }
 
