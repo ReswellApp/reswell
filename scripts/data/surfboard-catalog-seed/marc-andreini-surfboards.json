@@ -1,0 +1,128 @@
+{
+  "generated_for": "Andreini Surfboards official model catalog",
+  "source": "https://www.andreinisurfboards.com/",
+  "sources": [
+    "https://www.andreinisurfboards.com/",
+    "https://www.andreinisurfboards.com/boards",
+    "https://www.andreinisurfboards.com/about",
+    "https://www.andreinisurfboards.com/vaquero",
+    "https://www.andreinisurfboards.com/serena",
+    "https://www.andreinisurfboards.com/mcvee",
+    "https://www.andreinisurfboards.com/bullet",
+    "https://www.andreinisurfboards.com/edge",
+    "https://www.andreinisurfboards.com/glider",
+    "https://www.andreinisurfboards.com/noserider",
+    "https://www.andreinisurfboards.com/magic-sam",
+    "https://www.andreinisurfboards.com/pocket-rocket",
+    "https://www.andreinisurfboards.com/mp-special",
+    "https://www.andreinisurfboards.com/leenough",
+    "https://www.andreinisurfboards.com/specialk",
+    "https://www.andreinisurfboards.com/double-enda",
+    "https://www.andreinisurfboards.com/pig"
+  ],
+  "skipped": [
+    "/ — homepage hero (The Gift) is not a named production model",
+    "Size-specific gallery duplicates after the first product-front board photo",
+    "Action / portrait shots (Scott Bass on Glider, Glenn Sakamoto on Double Enda, Kitamura Vaquero, andreini_is_the_man.png)",
+    "Book enquiries and merch-adjacent homepage content",
+    "Boards-index lorem ipsum captions (Laura Sharma / Todd Jones placeholders) — used official model-page copy instead"
+  ],
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "marc-andreini-surfboards",
+      "name": "Andreini Surfboards",
+      "website_url": "https://www.andreinisurfboards.com/",
+      "location_label": "Half Moon Bay, California",
+      "founder_name": "Marc Andreini",
+      "lead_shaper_name": "Marc Andreini",
+      "short_description": "Marc Andreini is a designer and shaper of custom surfboards for over 40 years, specializing in boards for all wave types, locations, and the people who surf there.",
+      "models": [
+        {
+          "name": "Vaquero",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5acaf5f8710699a9ef3b6816/1524545093676-1CPDWUR4QEPQZMFY2PZW/6-10-andreini-vaquero_2048x2048.jpg",
+          "description": "Inspired by Greenough. Full outline. Single fin. Round tail with low rocker that features a rolled bottom forward fading into flat in the tail. A smooth flowing design. From 6’4’ to 9’. For all around conditions year round.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Serena",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5acaf5f8710699a9ef3b6816/1524978572723-U1KX8PXLOBBM1F1TENDY/8-4-andreini-serena.jpg",
+          "description": "Inspired by Serena. A pintail version of the Vaquero. Smooth flowing speed lines with good holding for juicier waves. From 7’10” to 9’6”. Best in winter surf but rides year round.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "McVee",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5acaf5f8710699a9ef3b6816/1524981528367-1M1I4LY1G3MVPH9HNU3X/88-andreini-mcvee-smoke_2048x2048.jpg",
+          "description": "Size range: 8’ - 9'6\". Rolled bottom and deck with Vee ahead of the fin. Flat behind the fin box so that the board will come right out of the bottom turn and change direction with out tracking over the back of the wave like the original design.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Bullet",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5acaf5f8710699a9ef3b6816/1524979817965-SVQKR810X2YBCHJBM60Q/6-andreini-bullet-quad_2048x2048.jpg",
+          "description": "Full outline. Short. Multiple fin set up. Stubbie. Low rocker. Single to double concave. Works best with 2+1, quad or twinzer. From 5’8” to 6’2”. Good year round from 2’-6’ surf.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Edge",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5acaf5f8710699a9ef3b6816/1524978725140-CURKSRSYP9RBRVVA16JG/68-andreini-edge-vaquero_2048x2048.jpg",
+          "description": "A George Greenough design that can be adapted to most surfboards. Two surfboards in one: a narrow concave tow board with hard edges, nose to tail, is shaped underneath a displacement hull with full lifted rails. Works in all conditions even chop and wind. Excels as the power comes on. Good from 5'6 to 12’. Stubbies to guns. Pure genius. Thanks George.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Glider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5acaf5f8710699a9ef3b6816/1524976803005-GS9YXSN01US31YZ8TQNL/10-4-andreini-glider-gun_2048x2048.jpg",
+          "description": "Inspired by Skip Frye. Low rocker. Sleek outline. Rolled bottom. Vee in tail. Round Pin. For mature stylists. From 9’6”-12’. Best in clean longboard conditions or clean winter waves that are uncrowded. Year round board from 2’-10’ surf.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Noserider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5acaf5f8710699a9ef3b6816/1525058963363-58QD9B0FVNQRUKRDIR4L/9-6-andreini-nose-rider_2048x2048.jpg",
+          "description": "Low rocker. 50/50 rails. Concave nose. Full outline fin. Just like the old days. From 9’-10’6”. Best in clean waves under chest high.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Magic Sam",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5acaf5f8710699a9ef3b6816/1524980489937-WBUDWV444JQIKF7ML5QX/94-andreini-magicsam_2048x2048.jpg",
+          "description": "Standard longboard from 1966 inspired by Nat Young’s Sam and the Yater Spoon. The two best boards of the era. Wide point center. Low rocker. Lifted rails. Rolled bottom into vee in tail. Wider nose and step deck option for nose riding. Soft tucked under edge in tail. From 8’8” to 9’10”. Best in all around longboard surf year round from 2’-5’.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pocket Rocket",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5acaf5f8710699a9ef3b6816/1524982726766-LUJE2ZQS0PPOYKPS5BFB/7-10-andreini-pocket-rocket.jpg",
+          "description": "Round Pin higher performance version of the Serena Pin. More pulled in nose and tail. Good step up board from a standard thruster. Single concave to double out back. Lifted rail forward. Single fin with a fuller rocker. From 6’4” to 7’10”. Best in better waves.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "MP",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5acaf5f8710699a9ef3b6816/1525067314980-KUF0MVMA6PZG5EEP8JSM/67-andreini-mp-clear_2048x2048.jpg",
+          "description": "Michael Peterson model inspired by the magic seen on film in Morning of the Earth. Supreme hot dog action.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Leenough",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5acaf5f8710699a9ef3b6816/1524982460997-ELB6CTTDC3NCQQ85N4E8/60-leenough.jpg",
+          "description": "My best version of Greenough’s kneeboard outline made to stand up on and rip! Inspired by Leonelli, the Leenough is from 5'10 - 6'2\". Full outline with a wide arc tail. Quad fins make the wide tail work. Low rocker. Double barrel vee. For 3\"-6\" surf, medium power.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Special K",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5acaf5f8710699a9ef3b6816/1525058745793-QG42KL2ADO7W7X98338Z/7-9-andreini-special-k.jpg",
+          "description": "Inspired by KP. A squaretail version of the Vaquero with vee through the tail. For more angular turns with an edge to them. From 7’6” to 9’. For better waves year round.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Double Enda",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5acaf5f8710699a9ef3b6816/1524979414454-7S6JH19YT5239ZZEDOMB/7%278-andrini-double-enda.jpg",
+          "description": "Inspired by Wayne Lynch. A transition round tail with natural rocker, full vee, and wide point back for more vertical surfing and 180° cutbacks. From 7’6” to 8’8”. Best for summer and spring soft wave conditions.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pig",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5acaf5f8710699a9ef3b6816/1524982917886-GULX3NJB8ERO52JHIAX7/10-owl-pig_2048x2048.jpg",
+          "description": "Low rocker. Wide point back. Narrow nose. D fin retro. For old school surfing. From 9’-10’2”. Best in longboard conditions and for stronger surfers as they require more muscle to turn!",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
