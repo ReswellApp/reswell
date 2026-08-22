@@ -74,24 +74,38 @@ export async function listBrandModelVariantsForAdmin(
   })) as BrandModelVariantRow[]
 }
 
+/** PostgREST returns at most 1,000 rows unless the client pages with `.range()`. */
+const POSTGREST_PAGE_SIZE = 1000
+
 /** Read-only: every row in `brand_model_variants` for admin catalog overview. */
 export async function listAllBrandModelVariantsForOverview(
   supabase: SupabaseClient,
 ): Promise<BrandModelVariantRow[]> {
-  const { data, error } = await supabase
-    .from("brand_model_variants")
-    .select(ADMIN_SELECT_LIST)
-    .order("brand_id", { ascending: true })
-    .order("brand_model_id", { ascending: true })
-    .order("sort_order", { ascending: true })
-    .order("length_label", { ascending: true })
+  const collected: Record<string, unknown>[] = []
+  let from = 0
 
-  if (error) {
-    console.error("listAllBrandModelVariantsForOverview:", error.message)
-    return []
+  for (;;) {
+    const { data, error } = await supabase
+      .from("brand_model_variants")
+      .select(ADMIN_SELECT_LIST)
+      .order("brand_id", { ascending: true })
+      .order("brand_model_id", { ascending: true })
+      .order("sort_order", { ascending: true })
+      .order("length_label", { ascending: true })
+      .range(from, from + POSTGREST_PAGE_SIZE - 1)
+
+    if (error) {
+      console.error("listAllBrandModelVariantsForOverview:", error.message)
+      return []
+    }
+
+    const page = (data ?? []) as Record<string, unknown>[]
+    collected.push(...page)
+    if (page.length < POSTGREST_PAGE_SIZE) break
+    from += POSTGREST_PAGE_SIZE
   }
-  const rows = (data ?? []) as Record<string, unknown>[]
-  return rows.map((r) => ({
+
+  return collected.map((r) => ({
     ...(r as Omit<BrandModelVariantRow, "price">),
     price: normalizeNullableMoney(r.price),
   })) as BrandModelVariantRow[]
