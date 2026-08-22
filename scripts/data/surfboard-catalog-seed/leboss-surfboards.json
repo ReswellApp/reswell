@@ -1,0 +1,96 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "leboss-surfboards",
+      "name": "LeBoss Surfboards",
+      "website_url": "https://lebossboards.com/",
+      "location_label": "South Beach, Oregon",
+      "founder_name": "Ryan LeBoss",
+      "lead_shaper_name": "Ryan LeBoss",
+      "short_description": "Hand-built custom surfboards by Ryan LeBoss in South Beach, Oregon. Performance-leaning alternative surfcraft, shaped start to finish in the LeBoss factory opened in 2019.",
+      "models": [
+        {
+          "name": "LeMana",
+          "image_url": "https://lebossboards.com/wp-content/uploads/2024/02/lemana-1-deck-1.jpg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Miracle Child",
+          "image_url": "https://lebossboards.com/wp-content/uploads/2023/09/Miracle-child-3-deck.jpg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Miracle Whip",
+          "image_url": "https://lebossboards.com/wp-content/uploads/2023/09/Miracle-whip-1.jpg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Katana",
+          "image_url": "https://lebossboards.com/wp-content/uploads/2024/03/Katana-1_covershot.jpg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Garçon",
+          "image_url": "https://lebossboards.com/wp-content/uploads/2024/03/Garcon-1-deck.jpg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Kenny Loggins",
+          "image_url": "https://lebossboards.com/wp-content/uploads/2023/09/Kenni-Loggins-1.jpg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "LeGlider",
+          "image_url": "https://lebossboards.com/wp-content/uploads/2023/09/Leglider.jpg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Long Egg",
+          "image_url": "https://lebossboards.com/wp-content/uploads/2023/09/Long-egg-1.jpg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Shestorm",
+          "image_url": "https://lebossboards.com/wp-content/uploads/2023/09/Shestorm-1.jpg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Golden Child",
+          "image_url": "https://lebossboards.com/wp-content/uploads/2024/03/goldenchild-deck.jpg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Fishcakes",
+          "image_url": "https://lebossboards.com/wp-content/uploads/2023/09/Fishcakes-1.jpg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "LeBonzer",
+          "image_url": "https://lebossboards.com/wp-content/uploads/2024/02/lebonzer-1.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "LoveChild",
+          "image_url": "https://lebossboards.com/wp-content/uploads/2024/02/lovechild-1-deck.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mini Sim",
+          "image_url": "https://lebossboards.com/wp-content/uploads/2023/09/Mini-Sim.jpg",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Satori",
+          "image_url": "https://lebossboards.com/wp-content/uploads/2024/02/Satori-1-deck.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Twinpin",
+          "image_url": "https://lebossboards.com/wp-content/uploads/2023/09/Twinpin-2.jpg",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
