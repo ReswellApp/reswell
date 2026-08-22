@@ -1,0 +1,116 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "murdey-surfboards",
+      "name": "Murdey Surfboards",
+      "website_url": "https://www.murdeysurfboards.com/",
+      "location_label": "Pacific Northwest",
+      "short_description": "Hand-shaped surfboards from the Pacific Northwest — official Murdey shortboards, mid-lengths, and longboards.",
+      "models": [
+        {
+          "name": "What",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/a749ac68-a1af-4b4e-87cd-5579f08790e2/WHAT.png",
+          "description": "Chappy and I have been refining this one for the last few years to create a unique combination of low rocker, full volume and a fairly pointy nose specifically designed for Northwest waves. The 80's flatness and volume allow for great wave catching ability while the modern single to double concave gives this board some punch. The pulled nose fits in tighter spots and the recommended quad keeps the speed to make those sections. Epic!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Stumpy",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/9a9ce1d8-ceae-401c-b581-28ed70a59f26/STUMPY.png",
+          "description": "Stumpy is a Simmons inspired plug: flat, short and thick. Belly nose/bottom flowing to a crisp V to keep it loose and make free flowing turns. Nearly parallel fin placement for plenty of glide. Super fun in subpar surf.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Skipper Stone",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/6f73cbb2-571d-4136-980e-0641587f6608/SKIPPER+S.png",
+          "description": "The nearly symmetrical outline gives this nub a well balanced feel under your arm, chest and feet. Once this board makes it into your quiver there's a good chance it will get pulled out more often than the rest, especially when the waves are subpar. A low effort short board wave hog with a 5 fin set up becomes the ultimate skate brain looking to surf stick.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Modfish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/8f95d980-8e23-4d67-8a0b-63db4b6e67f6/MODFISH.png",
+          "description": "New Modfish for 2023! Similar in template to the old school Fish but slightly pulled in both nose and tail. Relaxed rocker for easy wave catching and paddling with a turbo boost Venturi concave for added performance. Great all around summer board.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Larold",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/87063610-7ab6-4157-8fb8-d56c07af872d/LAROLD.png",
+          "description": "The Larold is a throwback single fin with a single/double V bottom concave. Low rocker and great paddling ability for early wave entry, It's all about the flow. Beak nose, bevel rail with flat deck.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/8a1a97f6-0402-464c-b1c9-d3c8ee8005ac/FISH.png",
+          "description": "Drop in and tune out. This classic Steve Lis inspired Fish has a a slight single concave flowing into pronounce V out the tail. Crisp edge running a solid third up the tail rail, trim action is what this board craves. Refurbished custom skate deck fins or Future K1/K2's.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Crescent Wrench",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/4f060900-3107-4d26-a014-a9a8d455f23b/CresWrench.png",
+          "description": "The Crescent Wrench is a flat, wide tail shortboard that fits in tight spaces. Loose and fast the deep single combined with a tighter quad placement allows water to move freely through the bottom of this sled-think speed with big buckets!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Skullet & Sword",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/1424158301886-7TDPNKBMTUXKXI9R5HXG/image-asset.png",
+          "description": "The Skullet and Sword is a performance short board with a touch of 'Oregon Beef.' Slightly wider nose and a little extra foam under the chest give paddle power, while the thinner rails and narrower outline create speed and control. Single to double concave, hesh certified and ready to hack!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mini Log",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/bf2eb134-4dad-4d3d-abb0-85c5e70dbfcb/MINI+LOG.png",
+          "description": "This classic mini has all the characteristics of a modern longboard, only scaled down to create smooth paddling on a more maneuverable version. Great for those who don't want the bulk of a longboard but still want to have the experience of easy wave catching.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Happy Family",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/7d7ac27a-438f-4cd1-9540-cb296245bf6b/HappyFam.png",
+          "description": "Performance all around mid-length four channel Twin with optional nub trailer. Similar to the High Bred template but slightly narrower and pulled nose and tail. Single concave flows directly to four channel with slight V out the tail. Modern rails, with a crisp hard edge and 'thumb' tail. Extremely fast and loose, great section maker for down the line speed.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "High Bred",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/150f9cc1-d9b2-450f-aa3c-419f93b3348e/HIGHBRED.png",
+          "description": "The ultimate between the Checkered Egg and the Horse Blinders, the High Bred maintains wave catching but still turns with ease. Super versatile board for many different waves and all skill levels. Single to double with a touch of V, with many tail and fun options. This one always finds the way home.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Checkered Egg",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/d463370e-934e-48a8-9168-918e0bf06d53/CHECKERED+E_.png",
+          "description": "This midsize egg is intended to maximize your wave count while providing stability and maneuverability. Great for those smaller days but also fun when you want to get into bigger waves early. The many fin and bottom choices within this template make it one of our most versatile boards.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Horse Blinders",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/1425158899889-A4CE9UKRJL426GDWVDW0/horseblinders2.png",
+          "description": "High performance with a little beef added in both thickness and width, the Horse Blinder is the go to when the waves start pumping. Think step up with a little more foam to accommodate the wetsuit and the chop to get you in earlier. The single to double concave works well with both squash and round pin tails, creating maximum lift or a \"5th\" gear to get you where you want to go.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Viper",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/52c6597d-19f6-45da-84c6-d267181c0ee6/VIPER.png",
+          "description": "A fast paddling, thinner and narrower performance longboard. Fairly deep nose concave and V off the tail provide great trim with the ability to lay into the rail. Great addition to any quiver.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pig",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/2d340077-3c61-419a-b7b8-8004cf554d48/PIG.png",
+          "description": "A classic, traditional log for freight train trim vibes and cross stepping small wave delight. Reverse rocker for easy downhill paddling and wide point 10' to 14\" back of center. Soft 60/40 pinched rails and added tail rocker to set up off the bottom turn. Nose patch concave, belly to healthy V out the tail bottom. Lay up with 8oz Volan glass for that extra heft and glide. Really fun way to enjoy those clean, small days.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Lil Buddy",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/6e59f9cf-8437-4d39-8732-0c9172a49566/LIL+BUDDY.png",
+          "description": "The Little Buddy is very similar to the Bells and Whistles model only slimmed down in volume, width and thickness. Takayama inspired nose rider, nose patch/belly/V bottom concave, thinner rails and pulled in square tail. Responsive rail to rail with the ability to walk the nose, a great versatile longboard.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Bells and Whistles",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/54b78a9ee4b0bf25db7a1d6e/7ac5a3d8-fd48-49f1-8d2a-4bcfb21cb6e0/BELLS.png",
+          "description": "Classic log with all the trimmings. Low rocker, soft rails and plenty of glide. The Bells and Whistles excels in smaller, peeling surf. A dose of nose concave and healthy V off the tail provide the option to walk up front or drop a knee.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
