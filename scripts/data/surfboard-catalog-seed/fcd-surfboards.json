@@ -1,0 +1,124 @@
+{
+  "generated_for": "FCD Surfboards official model catalog",
+  "source": "https://www.fcdsurfboards.com/",
+  "sources": [
+    "https://www.fcdsurfboards.com/",
+    "https://www.fcdsurfboards.com/surf",
+    "https://www.fcdsurfboards.com/shortboards",
+    "https://www.fcdsurfboards.com/longboards",
+    "https://www.fcdsurfboards.com/guns",
+    "https://www.fcdsurfboards.com/about-us",
+    "https://www.fcdsurfboards.com/sitemap.xml"
+  ],
+  "skipped": [
+    "/shop — hats, tees, bottles, stickers, and accessories",
+    "/shop-boards — one-off dimension SKUs (5'10 Fark, 9'4 Beavertail, etc.), not the named lineup",
+    "/custom-boards — custom order page, not a named production model",
+    "/kite, /kite-gun, /shrike, /blunt — kite-specific boards, not the surf lineup",
+    "/foil-surfboard, /grasshopper-foil-surfboard, /locust-foil-surf-board — foil boards",
+    "/surf, /shortboards, /longboards, /guns, /step-up, /guns-all — category index pages"
+  ],
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "fcd-surfboards",
+      "name": "FCD Surfboards",
+      "website_url": "https://www.fcdsurfboards.com/",
+      "location_label": "Ventura, California",
+      "lead_shaper_name": "Fletch",
+      "short_description": "We shape and glass in Ventura from start to finish, using materials and processes designed to lengthen the life of your boards.",
+      "models": [
+        {
+          "name": "Mullet",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5953cf505016e19f982c8bd0/1499455501883-FANIPIMIHWN2MOTGF260/FCD+Surfboard",
+          "description": "Aussie shredder (and Patagonia Surf Ambassador) Dan Ross's go-to shortboard. Designed for fast, skatey, performance surfing in a variety of conditions. Full, curvy outline with wide swallowtail for speed and lift.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Wild Boar",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5953cf505016e19f982c8bd0/1501528307895-KTJTVJU3GYOLNDH5CL8B/Wild+Boar_Front_Grey+Gradient.png",
+          "description": "Originally intended as a groveler, the Wild Boar has proven to be a great all-condition, high performance shortboard. Provides speed and maneuverability without the twitchy feeling associated with mini-shortboards.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Fark",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5953cf505016e19f982c8bd0/1501534623929-V3LE50NEY7ESB8MYHIPX/FCD+Surfboard",
+          "description": "Shorter, flatter, and more curvy than a high performance shortboard, but not as limiting as a fish. Swallowtail quad has excellent drive and hold, yet still feels loose and lively. Early entry rocker and low swing weight.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5953cf505016e19f982c8bd0/1501540073752-PCJAZ702EUFW75Q1RJL7/FCD+Surfboard",
+          "description": "Contemporary interpretation of traditional fish designs. Flat deck from rail to rail, with an \"S\" deck tail for maximum foam volume. Thin pinched rails for bite and sensitivity.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Octo",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5953cf505016e19f982c8bd0/1506558429807-IGUL1VODSPDSY3AGGB8O/FCD+Surfboard",
+          "description": "Handles a wide variety of surf: from 2ft. to double overhead. Extra speed and early entry with minimal rocker. Single concave and curvy outline allow the Octo to plane quickly and easily.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "F-Rocket",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5953cf505016e19f982c8bd0/1501698009560-RPYK4FK6E0BV93QW6RZK/FCD+Surfboard",
+          "description": "Designed with Kohl Christensen, the F-Rocket originated as a stretched, round pin version of the Fark. Depending on the dimensions, the F-Rocket can be a true midrange gun for crazy waves or a high-performance, one-board quiver. Full / low nose for early glide-in entry.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Noseglider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5953cf505016e19f982c8bd0/1502835905557-MNG6OZDAAC5KZ34PGGFZ/FCD+Surfboard",
+          "description": "A single-fin longboard that turns as well as it noserides. Full, curvy outline with open, flowing nose concave for lift and speed.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "HP Longboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5953cf505016e19f982c8bd0/1502833521214-7L56K5Y8HHZWSKWH5A8Y/FCD+Surfboard",
+          "description": "Works in knee-high to double overhead surf. Can be pumped off the tail for speed, but trims and glides when ridden further forward. Full blunt nose and concave maximizes noseriding area and lift without adding swing weight.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Beavertail",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5953cf505016e19f982c8bd0/1502903522947-B9XWIGROEAL8CFK0YXNR/FCD+Surfboard",
+          "description": "Traditional log inspired by the classic shapes of the late '60s and built for tip-time. Tested on pointbreaks all over the world. Polyurethane foam and heavy glassing for glide and momentum.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Hawaii HP",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5953cf505016e19f982c8bd0/1510856427228-T94ZRRNQXG8JG1M1Y6AY/FCD+Surfboard",
+          "description": "Exaggerated, continuous, playful rocker with straight, fast exit. Thin and foiled for sensitivity and performance. Nose concave facilitates easy nose-riding.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Huevo Ranchero",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5953cf505016e19f982c8bd0/1506560409576-ERYY5GACJNVJJI2JI3SM/FCD+Surfboard",
+          "description": "Super fun and versatile shape for any skill level. Very popular easy-to-surf alternative for most abilities. Newbies can order it oversized for increased wave count.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pro HS3",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5953cf505016e19f982c8bd0/1580066379307-EBBCBDPVABJ8G2JEHPQZ/HC3+6.1+Deck+Ready+for+Web.png",
+          "description": "Designed with team riders, this board is meant for beachbreaks and reefbreaks when conditions are clean and crazy. Lots of rocker and foiled out for high level barrel riding and maneuvers in serious conditions. Relatively deep single concave throughout and slight vee out the tail.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Higgy",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5953cf505016e19f982c8bd0/1579481570419-4AVPQW0SNX4VOG7U3CJ1/Higgy+Deck_Ready+for+Web.png",
+          "description": "Somewhere between a good wave shortboard and a step-up (not limited to death slabs). A very slight beak keeps a bit of volume in the heavily scooped nose for late takeoff recovery.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Mako Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5953cf505016e19f982c8bd0/1610920708683-YTF1GWYCFCIAK2SCHJSX/Mako+Twin+Deck.jpg",
+          "description": "Surfing a shortboard doesn’t always have to be a serious endeavor with the Mako Twin. Inspired by its predecessor, the Mako, the Mako Twin is more compact, slightly floatier, and comes standard with a super fun, new school, upright twin fin.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Step Deck",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5953cf505016e19f982c8bd0/1726179319635-X2NM3S42NIQ6QG098F5R/FCD+Step+Deck_Small_Deck_Ready+for+Web.png",
+          "description": "Additional volume and paddle power where you need it most, with a refined rail for driving hard through turns in big, solid waves. The Step Deck comes in 3 different sub-models, with slight variations between the models: High Performance, Gun, and Psycho sizes. Because the rail remains thinner for all models of the Step Deck, this board can be ridden in good surf, as well as gigantic waves, with increased maneuverability.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
