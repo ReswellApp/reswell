@@ -1,0 +1,78 @@
+{
+  "generated_for": "Weston Surfboards official named model catalog",
+  "source": "https://westonsurfboards.com/models",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "weston-surfboards",
+      "name": "Weston Surfboards",
+      "website_url": "https://westonsurfboards.com/",
+      "location_label": "Oceanside, California",
+      "founder_name": "Wes Holderman",
+      "lead_shaper_name": "Wes Holderman",
+      "short_description": "Hand shaped and glassed surfboards from an Oceanside, California factory.",
+      "models": [
+        {
+          "name": "B. Egg",
+          "image_url": "https://img1.wsimg.com/isteam/ip/0aa943a4-fd90-4452-b410-549d0336c575/IMG_2063.WEBP",
+          "description": "The Beach Break Egg is a user friendly board for days when the waves are good and you need extra paddle speed. Double concave through tail with the option of single fin or 2+1 fin set up. The single fin is a more traditional approach, focused on style and flow. The 2+1 set up gives the option for a tighter turning radius.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "STP",
+          "image_url": "https://img1.wsimg.com/isteam/ip/0aa943a4-fd90-4452-b410-549d0336c575/IMG_2061.WEBP",
+          "description": "The STP, aka Short Twin Pin, is a performance board for fast, ripple waves. Wide front end for easy paddle and wave entry. The bottom is flat on the nose that transitions to a double concave throughout the back half of the tail for lots of speed. This board goes fast, is very loose, and loves to be in the pocket.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Good Foot",
+          "image_url": "https://img1.wsimg.com/isteam/ip/0aa943a4-fd90-4452-b410-549d0336c575/IMG_2065.WEBP",
+          "description": "A wave catching machine. Low rocker profile for speed and trim. The bottom transitions from flat to slight double concave releasing into slight vee. The Goodfoot works for most waves from 2’-8’. It has unbelievable glide and flow through turns. This board is a great travel board as it can be surfed in most conditions and wave sizes. Fin set up: Single. Other Fin options: TriFin/2+1.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Power Glide",
+          "image_url": "https://img1.wsimg.com/isteam/ip/0aa943a4-fd90-4452-b410-549d0336c575/power%20glide.JPG",
+          "description": "New Model. High performance long board.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Special Blend",
+          "image_url": "https://img1.wsimg.com/isteam/ip/0aa943a4-fd90-4452-b410-549d0336c575/IMG_2059.WEBP",
+          "description": "With Aussie influence and Southern California flare we bring to your one of the most versatile logs in the water. 60/40 soft rails, narrow nose with the wide point pulled back. This board likes to nose ride steep and deep. With the almost piggish outline and a rounded squash tail it's easy to turn with stability and balance. Ideal for anything 2ft to 6ft+, great for beach breaks and points.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Noserider",
+          "image_url": "https://img1.wsimg.com/isteam/ip/0aa943a4-fd90-4452-b410-549d0336c575/ols/IMG_2112.jpg",
+          "description": "Classic Noserider outline with a blended nose concave for lift and speed on the nose. The 50/50 rails with a rolled bottom and thinner tail than most noseriders make it easy to ride and responsive through turns. Optimal surf on points or clean beach breaks.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Axis",
+          "image_url": "https://img1.wsimg.com/isteam/ip/0aa943a4-fd90-4452-b410-549d0336c575/ols/Image-4-857cf86.jpg",
+          "description": "The Axis is a classic small wave log. I’ve blended the back half of a pig shape and added a wider nose. Deep long blended nose concave that transitions to a soft roll off the tail. It pivots and turns off the tail with ease and has incredible lift while nose riding. 50/50 rails.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Axis Blend",
+          "image_url": "https://img1.wsimg.com/isteam/ip/0aa943a4-fd90-4452-b410-549d0336c575/ols/axis%20blend%2C%20green%20swirl%202.jpeg",
+          "description": "With a deep subtle nose concave that transitions to flat through the center of the board to slight vee off the tail. This board is an all around gem. A new team favorite and probably the most versatile longboard in the lineup. It has the turning capability of the Special Blend and noserides insane.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Fish",
+          "image_url": "https://img1.wsimg.com/isteam/ip/0aa943a4-fd90-4452-b410-549d0336c575/ols/beet%20red%204.jpeg",
+          "description": "Modern take on the classic fish. Softer more forgiving rails up front with slight double concave to vee off the tail. Very maneuverable and fast! This isn’t just a small wave fish, it likes fast waves too.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Flying Burrito",
+          "image_url": "https://img1.wsimg.com/isteam/ip/0aa943a4-fd90-4452-b410-549d0336c575/ols/flyin%20burrito%2C%20blue%202.jpeg",
+          "description": "The Flying Burrito is a nose rider. It has a very wide nose for stability while noserideing. Deep blended nose concave for lift but still maintains speed. The tail end is fairly flat with slight roll. The tail template is also pulled in more than most NR models which makes it fast and maneuverable. It's great nose rider that’s fast and responsive off the tail.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
