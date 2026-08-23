@@ -1,0 +1,132 @@
+{
+  "generated_for": "Otter Surfboards official named model catalog",
+  "source": "https://ottersurfboards.co.uk/",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "otter-surfboards",
+      "name": "Otter Surfboards",
+      "website_url": "https://ottersurfboards.co.uk/",
+      "location_label": "Porthtowan, Cornwall",
+      "founder_name": "James Otter",
+      "lead_shaper_name": "James Otter",
+      "short_description": "Hollow wooden surfboards handcrafted in Porthtowan, Cornwall since 2010 from locally grown timber.",
+      "models": [
+        {
+          "name": "ADPT",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/Otter-Surfboards-ADPT-profile-shape-composite.jpg",
+          "description": "A high performance small wave twin fin, the FORM ADPT was designed in collaboration with 3x British Champion Alan Stokes and quickly became Alan’s favourite board. With a full outline that tapers to a pulled in swallow tail, the ADPT surfs incredibly well in small and sloppy conditions and its fine tuned 60/40 rails and the single to double concave facilitate speed and performance when the waves get better. We love the speed of the twin fin set up that can then be harnessed through turns without sliding out. 5’6” x 19½” x 2 ⅜” – 27 l Recommended to be ridden as a twin fin.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Seadar",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2025/02/Otter-Wooden-Surfboard-Seadar-Mini-Simmons-Blue-Door-Deck-Product.jpg",
+          "description": "A hollow wooden interpretation of the recently revitalized Bob Simmons inspired planing hull design, the Seadar is a light-weight board designed for speed in small-to-medium waves and down the line point break style waves. Short, fat and wide throughout with the classic twin keel fins, the Seadar is best planked entirely in Western Red Cedar to reduce weight. It will paddle into waves easily and is a fast board, particularly in down-the-line situations. 5’6″ x 22″ x 2 5/8″ – 32.4 l Best ridden as a twin fin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fetch",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2025/02/Otter-Wooden-Surfboard-Fish-Fetch-Blue-Door-Deck-Product.jpg",
+          "description": "The Fetch is a classic fish outline developed from the first wooden surfboard that James constructed. A classic fish at sub-6’, it is a higher volume surfboard to improve paddling speed and facilitate catching waves, and has a fairly straight rail line through the middle of the board and a pulled in, more progressive tail template and flat rocker for speed once up and riding. A classic small to medium wave board, we recommend twin keel fins to give you a fast board that turns on a dime. 5’10” x 20¾” x 2¾” – 32.6 l Best ridden as a twin fin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Swift",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/Otter-Wooden-Surfboard-Swift-Blue-Door-Top-Product-1.jpg",
+          "description": "A 6’2” hybrid, the Swift has been designed to balance easy paddling and wave catching ability with manoeuvrability for more progressive surfing. With a modern rocker line and more pinched rails, this surfboard turns well and with a high degree of control. It has a more rounded outline than our traditional fish models with those turns in mind, but without sacrificing speed. The Swift features a swallowtail so that a wider tail pod is possible without losing hold through turns. We think it looks more like the tail of a swift, so this travel board named itself. 6’2 x 21 1/2” x 2 7/8” – 41.3 l A great progressive hybrid, we recommend a thruster fin set-up to make the most of its drive and manoeuvrability or a twin fin for speed and looseness.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Cutter",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2025/04/Tom-Elkins-Cutter-Single-Dark-Deck-1.jpg",
+          "description": "The Cutter is our fast, sleek single fin model, inspired by the fast boats that plied the inshore waters around Cornwall. A well proportioned board with clean, classic lines that belie it’s ample volume, it is a fast board which begs for high line speed runs and drawn out carves. 6’4″ x 20 3/4″ x 2 1/2″ – 34.5 l Designed to be ridden as a single fin, but can also be used as a 1+2 (with side bites).",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Woodburner",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/Chris-Woodburner-Deck.jpg",
+          "description": "The larger fish in the Otter Surfboards range, the 6’4” Woodburner is a higher volume fish shape designed with speed, both when paddling and surfing, in mind. Ideal for small summer days or for those surfers who perhaps don’t get in the ocean quite as much as they’d like to anymore, and who might appreciate a little extra volume under them as a subtle helping hand to get into waves and generate speed. One of the most popular surfboards in our range. 6’4″ x 22 1/4″ x 2 3/4″ – 36 l Designed and ridden best as a twin fin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Riser",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/Otter_Surfboards_6_8_Riser_wall-centered.jpg",
+          "description": "Designed to perform in the best waves, The Riser will get you into and out of some truly memorable situations. A 6’8” semi-gun with a sleek outline to suit steep drops and optimise manoeuvrability, the rounded pintail and quad-fin option will hold in on critical sections allowing you to paddle for the wave of your life with confidence and make it to the end of the line ready to paddle back to get another one. 6’8” x 20 1/4” x 2 1/2” 38.5 l Designed as a quad for speed and stability, but can also be ridden as a thruster for drive and manoeuvrability.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Jetty",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/Tim-English-Jetty-Double-Sandwich-Deck.jpg",
+          "description": "The Jetty is perhaps the most recognisable surfboard in the Otter Surfboards range: A 6’10” “egg” style shape that takes the best characteristics of longboard design and transplants them onto a shorter board for easier manouevrebility. With the round nose and wider plan shape of a longboard, the Jetty paddles well and catches waves easier but allows for tighter surfing in the pocket and can be turned a great deal easier. 6’10” x 21½” x 2⅝” – 43.8 l Designed and best ridden as a single fin.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Barque",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/Otter_Surfboards_7_2_Barque_composite_logo_crop.jpg",
+          "description": "The Barque is our smaller mid-length option. It carries plenty of volume so paddles well and catches waves easily, and its full nose makes it a stable surfboard – particularly in smaller and weaker waves. The Barque’s relatively straight rail line and pulled in tail also make for a fast board down the line when the surf gets a bit bigger, so it could well be the only surfboard that you need – for any season, at home or abroad. 7’2” x 21¾” x 2¾” – 48l Designed to be ridden as a single fin, but can also be used as a 1+2 (with side bites).",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Coaster",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/Otter_Surfboards_Coaster_Centered-Composite-copy.jpg",
+          "description": "A 7’2” midlength tracker with a refined, pulled in, template and a rounded pintail. The Coaster is designed to shine in anything from waist-high peelers to overhead points and reefs. At 21½” wide and 2¾” thick it’s fast to paddle, handling “meatier” waves with ease, and the drawn out tail smooths turns and holds in well on steeper waves or small hollow runners. This board is fast, tight, and a joy to ride whether you’re cruising in true summer style or rolling into some thicker autumn swells. 7’2” x 21½” x 2¾” – 46.4 l Designed to be ridden as a single fin in small surf, but comes alive as a quad, thruster or 1+2 in bigger surf.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Roller Coaster",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/Roller-Coaster-Marlow-Warrington-Mattei-Deck.jpg",
+          "description": "Taking the template and rocker line straight from our popular Coaster model and squeezing an extra 5 litres of volume into it, makes this board a great one-board-quiver for anyone looking for some extra floatation and paddle power. 7’2″ x 22″ x 3″ – 52.3l Designed to be ridden as a single fin in small surf, but comes alive as a quad, thruster or 1+2 in bigger surf.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Island Hopper",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/James-Deck-Otter-Wooden-Surfboard-Island-Hopper.jpg",
+          "description": "At 7’4” long and 23” wide, the Island Hopper is both a great “step-down” board for longboarders as well as an appealing board for surfers looking to inject some fun cruising back into their game. A great mid-length shape, this board is a true all-rounder ideal for “one board” quivers and international travel and was developed for early customer from the Channel Islands. 7’4” x 23” x 3” – 59.2 l Designed and best ridden as a single fin.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Clipper",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/Clipper-Product.jpg",
+          "description": "Taking its cue from the down-railed guns of 1970s Hawaii, the Clipper is designed with size and power in mind. A classic 7’10” single fin pintail with its wide-point forward of centre and a lot of volume under the chest foiling out to soft rails for increased hold at speed, the Clipper gets into waves early, holds through drawn-out turns, and follows classic lines. This is a board that will allow you to surf larger waves with confidence, and style to burn. 7’10” x 21 5/8″ x 3 1/4″ – 60.4l Designed and best ridden as a single fin.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Pieces of Eight",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/CenteredOtter_Surfboards_8022_Pieces_of_Eight_logo.jpg",
+          "description": "The Pieces of Eight isn’t quite a longboard but it isn’t a mini-mal either. The momentum and glide of a wooden surfboard lends itself to this kind of shape for making the most of waves from knee high to overhead . This board can be surfed from the tail just like any of our mid-lengths, or treated as a mal and cross stepped for nose riding, making it a great all rounder. 8’2” x 21½ ” x 2⅞” – 55.1 l Designed to be ridden as a single fin, but can also be used as a 1+2 (single fin with side bites).",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Wicket",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/Otter_Surfboards_Wicket-centered.jpg",
+          "description": "The performance model in our range of mals is the 9’1” Wicket. Designed with regular longboarders in mind, it is a progressive longboard with design features aimed at allowing a high level of manoeuvrability. A more noticeable rocker curve and pulled in tail coupled with the option of a 2+1 or regular thruster set-up make this a great option for surfers who like to get on every part of the wave. 9’1″ x 14 7/8″ x 22 1/2″ x 18 1/8 x 3″ – 72.2 l Designed to be ridden as a single fin, but can also be used as a 1+2 (single fin with side bites).",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Seasaw",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/SeaSaw-product-shot-big-centered.jpg",
+          "description": "The Seasaw balances the best of old and new, in true Otter surfboards fashion. At 9’4” it is not an inhibitively long board, allowing some nimbleness in where it can be placed on a wave. The prospect, however, of spending considerable time with your toes curled over the nose, enjoying the feeling of not having any board under you at all, has also been a major consideration. A blend of a traditional planshape with modern foils and rails, this is an accessible longboard for all. 9’4″ x 16″ x 22 7/8″ x 18 1/2″ x 3″ – 72.6 l Designed and best surfed as a single fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Tea Tree",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2022/09/Mat-Deck.jpg",
+          "description": "The Tea Tree is inspired by the longboards from the late 60’s and borrows all of the best elements from surfboards of that era and introduces some modern nuances to bring it right up to date. Amazingly responsive off the tail, with it’s wide point slightly back of center and a more rounded, wider tail than our other longboards and able to lock into trim with its refined rails and slightly narrower nose makes this a board that will guarantee a smile on your face and allow a mixture of progressive and traditional longboarding. 9’6” x 16 5/16” x 23” x 17 3/4” x 3” – 75.1 l Designed to be ridden as a single fin in anything from 1-5 feet.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pier",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2020/12/Pier-Longboard-Single-Sandwich-Deck-Otter-Wooden-Surfboards.jpg",
+          "description": "Take a walk on the Pier, Otter Surfboard’s Traditional Mal. Playing on the glide and momentum inherent in wooden surfboards, the Pier replicates the weight of classic, volan glassed longboards of old. Riding the Pier is all about trim, poise and working with, rather than against, the wave and the board under your feet. 9’6″ x 16″ x 22 7/8″ x 18 1/2″ x 3 1/4″ – 78.2 l Designed and best surfed as a single fin, in fact, only to be ridden as a single fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Cali Log",
+          "image_url": "https://ottersurfboards.co.uk/wp-content/uploads/2024/04/Cali-Log-98-Deck.jpg",
+          "description": "Our take on the classic 60’s Californian Longboard. This board is all about walking to the tip, giving those toes a dip, and making the most of surfing small summer waves. With the widest point set back from centre, a nod to the boards namesake, and a relaxed rocker line, the Cali Log is designed for locking into trim, whilst the ‘V’ in the tail allows for a smooth transition from rail to rail. 9’8” x 16 3/4″ x 23 1/8” x 17 7/8″ x 3 1/4” – 85.2 l Designed to be ridden as a single fin in anything from 1-4 feet.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
