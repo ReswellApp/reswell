@@ -1,0 +1,120 @@
+{
+  "generated_for": "Hess Surfboards official named model catalog",
+  "source": "http://hesssurfboards.com/shapes",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "hess-surfboards",
+      "name": "Hess Surfboards",
+      "website_url": "http://hesssurfboards.com/",
+      "location_label": "San Francisco, California",
+      "founder_name": "Danny Hess",
+      "lead_shaper_name": "Danny Hess",
+      "short_description": "Handcrafted wood and recycled EPS/wood surfboards by Danny Hess in San Francisco and the Santa Cruz mountains.",
+      "models": [
+        {
+          "name": "The Traveler",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/4fa891eae4b0fdc1b4236e54/1590953851187-1F0IZBF153ODF68P16T8/IMG_3448.jpg",
+          "description": "The Traveler is my personal go to shape. It is a combination of all of my favorite elements from 20 years of favorite boards. I've designed it to have the immediate take off speed I love in a quad fish design, alongside the high speed full rail turning ability of a high performance shape. I've increased the tail rocker a bit to really allow pivot through turns with the straighter tail line. Shortboard neutral rails make for a reliable and predictable amount of hold through turns. I rely on mine in everything from knee high to double overhead. Ride it a a couple inches shorter than your everyday shortboard and a couple inches longer than your everyday fish. I build these from 5'4\" to 8'",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Searcher",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/4fa891eae4b0fdc1b4236e54/2d5c0a7c-8618-4a16-a88c-dfa33926243b/IMG_0057.jpeg",
+          "description": "The Searcher is A round nose performance groveler design. This shape COMBINES THE lively and versatile characteristics of our Traveler Quad with the paddle ability and Glide of our mini simmons inspired snaggle paw design.this makes for a board you can ride much shorter than yout EVERYDAY shortboard. I recommend 4\" inches shorter. The searcher is designed to inspire you to get in the water no mater what the waves look like. Built from 5' to 6'8\"",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Ranger",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/4fa891eae4b0fdc1b4236e54/1502890687100-61CF2X0LHAV5SWBGWP0V/IMG_5391.JPG",
+          "description": "The Ranger was created out of my search for a board with that quad fish speed that would also have the ability to really hold and turn in the pocket in hollow, punchy surf. The reduced planning surface of the round tail really allows the Ranger to go rail to rail and really hold in when the surf gets critical. I recommend riding the Ranger 4\" to 6\" inches shorter than your everyday shortboard. Length- 5'2\" to 6'8\" Tails- Round, and double bump round. Fins- Futures thruster, Quad, five or Glass-ons Bottom- Forward V to single to double to V out the tail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Banjo",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/4fa891eae4b0fdc1b4236e54/1591894475805-CIX2VVMB39PA04Z7F15B/IMG_5066.jpg",
+          "description": "The Banjo is a fuller outline shortboard design. Relaxed entry rocker and a bit more tail rocker than your everyday shortboard, create a board with good paddle and quick in the pocket responsiveness. I recommend riding this shape at least a couple inches shorter than your everyday shortboard. Length- 5'6\" to 6'6\"",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Kunkel Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/4fa891eae4b0fdc1b4236e54/1423074866017-292IP8OVN2I8FHG90EEO/image-asset.jpeg",
+          "description": "The Kunkel Twin is the fastest board I build. It has endless down the line speed, glide and trim. It's really built to maximize speed and maneuverability in gutless surf. I build these as both traditional keel fin twins, and progressive micro wing/ single foil twins.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Pacheco",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/4fa891eae4b0fdc1b4236e54/1591889110646-XOY4B60RTCB4MMYDVT0A/IMG_3454.jpg",
+          "description": "The Pacheco is a performance oriented quad fish outline that utilizes streamlined curves, pronounced hip through the tail, and a more progressive entry and tail rocker. These elements come together to create a board that is extremely quick and responsive in a full range of conditions. From generating a lot of speed in marginal small surf to really handling in hollow good waves. I recommend riding this shape 4 to 6 inches shorter than your everyday shortboard. Length- 5'4\" to 6'6\" Tail- Double wing swallow Fins- Futures quad or glass-on quad Bottom- forward v to single to double concave",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Snaggle Paw",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/4fa891eae4b0fdc1b4236e54/1628470564505-QVHHCIOCQ1546A1WMJ0H/IMG_0997.jpeg",
+          "description": "With a nod to mini-simmons inspired shapes I've created the Snaggle Paw. The Snaggle Paw is a blend of my favorite bottom contours and progressive tail rocker with a full outline to create a shape that really focuses on immediate speed in gutless surf. This design really feels on top of the water and loves to run through quick tight arcing turns. I recommend riding the Snaggle Paw at least 8 inches shorter than your everyday short board. Lengths- 4'10\" to 6'6\" Bottom- Spiral V Tails- Arc, Swallow, Square",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Box",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/4fa891eae4b0fdc1b4236e54/1406396107181-UEUSW6ETLR9AFKDEVYXA/image-asset.jpeg",
+          "description": "The \"Box\" Is a deconstructed high performance shortboard. Inspired by The Peanut Shark laydowns I make, the futuristic planing hulls of Daniel Thompson and the Mach- 77 Morey Boogie that started my love of surfing. This Design is made to really generate speed and fly in smaller to medium size surf. I've added a bit of entry and tail rocker to allow the \"Box\" to be put through much tighter turns than expected of wider tail designs. Length- 5' to 6'4\" Bottom- V to deep double concave running through the tail V. Tail- Arc",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Long Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/4fa891eae4b0fdc1b4236e54/1628471234486-5OYIM9DW5B7EX0QSBMTU/IMG_0163.jpeg",
+          "description": "Our Long Fish combines the glide of a speed egg with the loose lively feeling of a quad or twin fish. These are designed to be wave harvesters made to replace your log or wavestorm. I've been really enjoying my 8 foot Long Fish in the smaller summer surf. We build them from 6'8\" to 10'.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Moraga",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/4fa891eae4b0fdc1b4236e54/1423079451669-OV5ENHCIHMSBKEOXLY2X/image-asset.jpeg",
+          "description": "The Moraga is a mid-length designed to have a lot of paddle, at the same time maintain smooth, fluid glide and maneuverability. As round tail the Moraga functions as a very reliable, carvy speed egg. The deep swallow tail really loosens the shape up and give it the feel of a larger fish. Length- 7' to 9' Fins- Futures thruster/quad/five, Single box, 2+1, and glass- on Tails- Round, swallow Bottom- Full V- panel with double concave running through the fins.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Bella Speed Egg",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/4fa891eae4b0fdc1b4236e54/1628279562420-43M8HSEG60TMJ80GEGHC/IMG_6537.jpeg",
+          "description": "The Bella is a refined streamlined speed egg design. I like the idea of a nice mid length go to shape that really goes in everyday surf, yet can be pushed into bigger hollower surf with ease. The Bella has a bit more rocker than your normal mid length allowing for more versatility and tighter turning ability. The wide point forward full pin tail shape really give it that speed and trim we love in these mid lengths. I recommend it from 6'10\" to 8'.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Banjo Step Up",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/4fa891eae4b0fdc1b4236e54/1406482198664-ORETI335PV8UA46VYAM7/photo-64.JPG",
+          "description": "Taking the concept of the fuller shortboard outline and bringing that into a step-up for overhead powerful surf is the concept behind this shape. Relaxed entry rocker and accelerated tail rocker makes a shape that paddles really well with the ability to track down waves then really lay down a turn once you get one. Length- 6'8\" to 7'4\" Tail- Round/ diamond/ squash/ baby swallow Fins- Futures thruster/ quad or five Bottom- Single to double concave",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Noriega",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/4fa891eae4b0fdc1b4236e54/1536797872519-9KFFW5COKJXZ7S0K30H2/IMG_7169.JPG",
+          "description": "The Noriega has evolved from a lot of research paddling Ocean Beach. On larger days the ability to paddle against the current and track down waves once you're outside is key. This wide point forward, lower entry rockered, California gun outline gives you the paddle ability, while the accelerated tail rocker and curve through the tail create a mid-length gun that will really run through turns once you track one down. Length-7' to 9' Fins- Futures thruster/ quad/ Five or glass-on. Tails- Round-pin, swallow, diamond Bottom- Full V panel with double concave through the fins.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "North American Gun",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/4fa891eae4b0fdc1b4236e54/1351134287272-B4UMAJZ0MCAZEX6J0R0J/northgun1web.jpg",
+          "description": "I've been really engaged in refining my full guns for many years. They've evolved to really perform in the cold, heavy water of Northern California. The North American Gun is a fully realized design built to not just survive, but really surf larger waves. Fully tested and refined at Mavericks and Ocean Beach I have full confidence in the unique blend of outline, foil and rocker I build into these boards. I definitely believe that my wood technology lends itself really well to handling the speed, and bump of larger waves. The wood really dampens the bumps at the same time carrying momentum and providing a lot of control. Length- 8'10\"- 12' Tails- Diamond, Pin, Swallow Fins- Quad, thruster, five futures boxes, Widowmaker, single fin, glass-on's Bottom: Custom",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Traveler Gun",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/4fa891eae4b0fdc1b4236e54/1590093969704-4NMGXKMMKI3SZGYLEOIZ/IMG_1823.JPG",
+          "description": "The Traveler Gun is a high performance fuller outlined big wave gun. I've designed it to maximize wave catching ability, at the same time creating increased drive and better turning ability than your conventional narrow nose, narrow tial gun. The wider tail gets up on plane and carries speed giving it the ability to really run through big sections and carry speed through big turns. The full nose creates a board with the paddle and wave catching ability of a much longer shape. This allows you to ride a shorter better turning gun without giving up paddle ability. We make them from 7' to 11'6\".",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Log",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/4fa891eae4b0fdc1b4236e54/1591893082514-XY003TP6WE86KWTF9CYX/IMG_3001.JPG",
+          "description": "My designs have heavily influenced by the more traditional shapes of Marc Andreini, Yater and Christensen. I build many different styles, from 20\" wide nose, parallel 50/50 railed nose riders, to more pig influenced wide point back trim seekers. I focus on really building the rider the exact design they're looking for. The wood in these boards really does carry amazing amounts of momentum and creates a unique smooth sense of glide and trim. I really enjoy building these logs. Lengths- 9' to10'4\" Tails- round-pin, square Fins- Single box or Glass on Bottom- Custom",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Glider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/4fa891eae4b0fdc1b4236e54/1591891876294-XB5R68X9UZAYA15134Y0/IMG_1267.JPG",
+          "description": "I've been riding Skip Fry Eagles for some years now and I have really fallen in love with the unique sense of glide and trim you can find on these boards. After some experimentation I've created my interpretation of the idea as the Pequad. I've pulled in the nose and tail to create less swing weight forward and quicker transitions when redirecting. I build these boards from 10' to 13' and really feel that the magic happens with an 11' pintail glass on single fin. These are fully custom and I build them in my single skin technology, full wood technology, as well as the hollow core reclaimed redwood pictured above. Length- 10' to 13' Fins- Glass on single or Box. Tails- Pin Bottom- Custom",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
