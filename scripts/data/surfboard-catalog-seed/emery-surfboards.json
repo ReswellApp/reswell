@@ -1,0 +1,190 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "emery-surfboards",
+      "name": "Emery Surfboards",
+      "website_url": "https://emerysurfboards.com/",
+      "location_label": "Byron Bay, New South Wales",
+      "founder_name": "Al Emery",
+      "lead_shaper_name": "Al Emery",
+      "short_description": "Byron Bay surfboards shaped by Al Emery, designed and built in Northern New South Wales.",
+      "models": [
+        {
+          "name": "Haz Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Harry-Fish_01.png",
+          "description": "Harry has taken inspiration from the Emery archive’s using the Stump Original model as the base when designing this shorey weapon. Tweaking the rails, adding a bevelled step deck and concaved double foot wells to feel like your feet are grabbing the board. This board is super fun and allows you to experiment with all of the different fin set ups.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Haz Short",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Harry-Short_01.png",
+          "description": "A modern performance shortboard with a hip in it’s outline at the tail along with mid to low rails give it control and speed through your change of direction. Haz loves his with a swallow tail, add this with it’s big deep single to double concave under your feet and it gives you the speed and power to fly! Haz loves it ☺",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Haz Shorter",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Harry-Shorter_01.png",
+          "description": "Harry’s short board…shortened. Taking the key aspects from the Black Angel we have made a shorter, wider version for the smaller fun waves. Can be surfed in all round conditions as well.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Haz Step Up",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Harry-Step-Up_01.png",
+          "description": "Harry has designed this model for surfing the heavier, thicker waves. Stepping up from his shortboard with extra length and a fuller nose with foam under the chest for paddling. A lower rail and pulled in tail enable this board to catch and stay on the wall of these bigger sets. If your looking for something for the punchier swells, this is the one ☺",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Haz Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Harry-Twin_01.png",
+          "description": "The Haz Twin is designed with speed, flow & fun in mind. The mellow rocker with added foam in the middle and low rails all work together to create a super fun board for long green walls. The ultimate combo of being a twin fin set up, channels up back and a pin tail allows you to pivot and turn with ease. This is one of Haz’s go to boards for all conditions. Emery Surfboards Fun Times Co.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Black Angel",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Black-Angel_993dda6c-0185-4ea5-a304-a0954f9ea46a.png",
+          "description": "The modern shortboard. Smooth outline gives you good drive in the pocket. Combining a deep single concave with a gradual nose entry and medium tail kick gives it a heap of speed with the option of releasing the tail. Generous foam under your chest gets you more waves and makes it easy to land crazy airs and recover from full rail turns. Designed to be ridden at your height.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Black Angel II",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Black-Angel-II_2ce33a07-b11d-44b0-a133-36267ea090cf.png",
+          "description": "An update of our most popular all rounder, The Black Angel II. It has increased tail rocker to allow it to fit into the tightest curviest waves, giving you a super fast reacting and tight turning board with the ability to carve right out of a lighting top turn. Combining single concave with a slight double between the fins, giving you a ton of drive when you need it.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Tiny Terror",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Tiny-Terror_c2da2325-52b5-42fe-a4a4-9d71e8c65df0.png",
+          "description": "This is a performance board for tiny waves. A flat rocker with a raised rail curve to give vee out the back of the board for speed and release. A stubby outline combined with a wide round square tail allows for rail to rail surfing. This winning combo saw Matt Wilkinson ride it to the WCT Final in Santa Cruz. Designed to be ridden 3 inches shorter than your height.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Press Play",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Press-Play.png",
+          "description": "This board is built for fun. Ride it super small for performance twist or ride similar size to your shorty for an easy riding summer board, your choice. The belly of the board has a slight double concave, drawing the water through the board and giving you your initial speed.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Dime",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_The-Dime.png",
+          "description": "Turn on a dime. Coming from the drive of the competition to surf at full performance in all types of conditions. We used the best parts of our performance shortboard's with some of the key outline curves from our small wave boards to make The Dime as our new all rounder. Push it hard and it holds in, extra tail lift to flip from rail to rail with ease.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Shoe",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_The-Shoe_ff989726-94e6-430b-9fc7-af91eca8e764.png",
+          "description": "Similar outline nose and tail like a shoe, same same but different. This board is loose, responsive and holds its lines in solid waves, with a single to double concave on its bottom curve and a nice forgiving rail. Can be riden from 1-6 foot, its a must have in any quiver.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Wedge Tail",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Wedge-Tail_9499de0d-1234-483c-80db-2cde9ebe1087.png",
+          "description": "Taking inspiration from the 80’s but keeping with our design theories of performance, the Wedge Tail will have you flying down the line. Flat rocker and the wide point two thirds of the way up the board will make you generate speed out of your front foot. Flyers sit on the rail, right about the same positioning of your back foot, giving you responsive rail to rail surfing.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Raven",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Raven_da9e01fc-62c2-4dc5-8f7d-b616982505f2.png",
+          "description": "Take flight....our new modern short board built for control and drive throughout your turns. A flatter deck with mellow rocker entry up front, a bit of flip out the tail, combined with a wide outline in the nose and tail area. This along with a deep double concave under the back foot gives this board a tonne of power when you put your foot down and will hold all the way through your turns.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Cannon",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Cannon_ae3f446e-c2b9-48ff-b950-f2efbe3fefc2.png",
+          "description": "Designed to get you over the ledge on the big days, The Cannon has been built with a narrow outline and has volume distributed in all the right places. The foam distribution can be tweaked to suit Hollow kegs or fuller point waves. This weapon packs a single concave to a double v in the tail. Don't bring a knife to a gun fight.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Retro Bay Twin Fin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Retro-Bay-Twin-Fin_Army.png",
+          "description": "Evoking nostalgia and with Summer fun in mind, the Retro Bay Collection is here. A pop of vibrance and a modern twist to the Retro Twin Fin, your summer day's just got injected with a whole lot of fun! Waves for days.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Retro Bay Mal",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Mal-Peaches_CL.png",
+          "description": "Evoking nostalgia and with Summer fun in mind, the Retro Bay Collection is here. Choose from our exclusive colours created for the collection.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Retro Bay Twin Mid",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Retro-Bay-Twin-Mid_Honey.png",
+          "description": "The Retro Bay Twin Mid is designed with speed, flow & fun in mind. The mellow rocker with added foam in the middle and low rails all work together to create a super fun board for long green walls. The ultimate combo of being a twin fin set up, channels up back and a pin tail allows you to pivot and turn with ease.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Retro Bay Single Mid",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Retro-Bay-Single-Fin_MID_Rust.png",
+          "description": "The Single Fin Mid is designed with speed, flow & fun in mind. The mellow rocker with added foam in the middle and low rails all work together to create a super fun board for long green walls.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "50 Cent",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_50-Cent.png",
+          "description": "The flattest, fastest coin in Emery’s wallet, its absence of rocker and extended girth/volume makes it one of the funnest most unique boards in the Emery range. Unlike its metallic namesake, the angular tail outline creates opportunities to be spent.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Arrow",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Arrow_0ff15d5c-9429-4a24-8116-ecd508038fc3.png",
+          "description": "Designed with performance in mind. This board has an overhaul of all key aspect. The bottom contour is a single to double into exaggerated vee through the tail. The nose width is wider than all emery performance boards. The noticeable tail hip creates a wider finishing rounded square giving it a modern and fresh look to the emery quiver.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mini",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Mini_024c7e30-bb5d-4ea6-a9b9-962f21213312.png",
+          "description": "A compressed version of Melling’s Pro Model. We’ve flattened out the rocker, beefed up the rails, widened the center and taken 3 inches of its height. Similar to a greasy midget the Mini will squeeze into any, and every small space without compromising it’s ability to be thrown.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Nemesis",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Nemesis_07ef6391-6b40-4c2e-bf24-505e9133cfa7.png",
+          "description": "The name is deceiving.The Nemesis is NOT your enemy, it is however, everyone else’s! You will be catching a lot more waves and surfing them to maximum potential. No one likes a show off. Nemesis has been designed with the smaller days in mind. That said, it will hold in anything up to solid 6 foot. The short stubby outline is perfect for getting through flat sections.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Pro Ho",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Pro-Ho_ea1c4c7a-b3ba-4309-b87e-c8796a078c41.png",
+          "description": "For the hot-dogging slut in all of us. This Bitch is for the high performance surfer. Whether pushing your limits in contests or busting fins in your shoulder hopping friends ace she’s got your back (and everyone elses). Super responsive, fast off the mark with plenty of bottom curve, she’s ready to be custom ordered and fine tuned to all your needs and desires.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sled Zeppelin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Sled-Zeppelin_98fa499e-296c-4a98-bbb6-508a2cfbd7d9.png",
+          "description": "A compressed version of Melling’s Pro Model. We’ve flattened out the rocker, beefed up the rails, widened the center and taken 3 inches of its height. Similar to a greasy midget the Mini will squeeze into any, and every small space without compromising it’s ability to be thrown.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Stump Diamond",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Stump-Diamond.png",
+          "description": "This is an amped up version of the Stump Original, we changed the bottom contour to a single-to-double and added a more performance tail, the diamond tail, to allow to surf at the highest level of fish designs.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Stump Original",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Stump-Original_f8286b8d-3b8a-43c3-af79-3d80c03b73aa.png",
+          "description": "A board designed for every day beachies. Wider throughout and with more volume and less rocker than your shortboard, the Stump is your perfect summer slop killer. Skip over the fat sections and punt over that topless hottie frolicking in the shorie. Forget the name this board misses nothing.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Stump Thumb",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Stump-Thumb_f0468bd0-a51f-47fa-ba51-a71e81db16e4.png",
+          "description": "A board designed for every day beachies. Wider throughout and with more volume and less rocker than your shortboard, the Stump is your perfect summer slop killer. Skip over the fat sections and punt over that topless hottie frolicking in the shorie. Forget the name this board misses nothing.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Shadow",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_The-Shadow_1d1e8a64-2497-4806-88b5-d74df4fed0cd.png",
+          "description": "This is your new all rounder. Like its namesake, The Shadow will be under your feet and by your side through all conditions. We’ve given The Shadow a flatter rocker than your standard shortboard to keep you going when the waves are mush. A deep single concave with a slight vee through the tail helps generate speed, giving you that little bit extra push through those flat sections.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Thrasher",
+          "image_url": "https://cdn.shopify.com/s/files/1/0916/4770/products/Emery-Surfboards_Thrasher_a77fef19-d1f8-4431-9cba-062bb38f796a.png",
+          "description": "Prototyped off our popular Pro Ho and Mini model. The Thrasher uses a medium rocker and a single to double concave for great transition surfing, getting you through flat sections and back into the pocket. Less foam in the rails allows it to have a little bit wider outline. Designed to be ridden 1 inch shorter than your height.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
