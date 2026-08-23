@@ -1,0 +1,66 @@
+{
+  "product_category_slug": "surfboards",
+  "source": "https://simonandersonsurfboards.com/surfboards/",
+  "generated_for": "Simon Anderson Surfboards official named model catalog",
+  "brands": [
+    {
+      "slug": "simon-anderson-surfboards",
+      "name": "Simon Anderson Surfboards",
+      "website_url": "https://simonandersonsurfboards.com/",
+      "location_label": "North Narrabeen / Brookvale, New South Wales, Australia",
+      "founder_name": "Simon Anderson",
+      "lead_shaper_name": "Simon Anderson",
+      "short_description": "Beautifully crafted high-performance surfboards from the mind that changed surfing forever. Established North Narrabeen 1971. Hand-shaped in Australia.",
+      "models": [
+        {
+          "name": "Varmit",
+          "image_url": "https://simonandersonsurfboards.com/wp-content/uploads/2026/06/Varmit.png",
+          "description": "Varmit is a fuller volume performance board with extra width through the nose and overall plan shape, combined with a rounded square tail, single to double concave and smooth modern rocker.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Alley",
+          "image_url": "https://simonandersonsurfboards.com/wp-content/uploads/2026/07/Alley.png",
+          "description": "Developed to maximize speed, carve and aerial potential. Generous nose and tail area with rounded square tail, vee deck to low boxy rail, deep single concave throughout.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "NXFC",
+          "image_url": "https://simonandersonsurfboards.com/wp-content/uploads/2026/07/nxfc-deck2-480x720.jpg-1.webp",
+          "description": "Modern high-performance shortboard combining speed, responsiveness, and control. Rounded square tail, balanced nose & tail planshape, single to double concave low soft rails. Best suited to 2–5ft surf as a Thruster.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "5 Spark",
+          "image_url": "https://simonandersonsurfboards.com/wp-content/uploads/2026/06/5-Spark.webp",
+          "description": "Swallow tail performance fish with Thruster or Quad fin options. Features streamlined fish outline, flatter deck, low soft rails, single to double concave, vee through the tail and a smooth medium rocker.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mollusc",
+          "image_url": "https://simonandersonsurfboards.com/wp-content/uploads/2026/06/Mollusc.webp",
+          "description": "A fuller outline performance shortboard with added area through the nose and round tail. Features a single to double concave, low entry rocker, medium tail rocker, and slightly fuller low soft rails.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mollusc Robo",
+          "image_url": "https://simonandersonsurfboards.com/wp-content/uploads/2026/06/Mollusc-Robo.webp",
+          "description": "A stretched-out version of Mollusc, designed to add paddle power and wave-catching ability while retaining a performance feel. Developed from the Mollusc as a higher-volume performance board and an alternative to surfing a Mini Mal.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Face Dancer",
+          "image_url": "https://simonandersonsurfboards.com/wp-content/uploads/2026/06/Face-Dancer.png",
+          "description": "A good all-rounder customized over the years to surf up as a semi-gun, or down as a smaller wave performance board for a one board quiver. Quad option, good wave Thruster. Slightly increased area in the nose, normal width in the round tail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "DSC & DSCV",
+          "image_url": "https://simonandersonsurfboards.com/wp-content/uploads/2026/06/DSC-DSC-VEE.webp",
+          "description": "Step-up or Semi-gun rounded pin Thruster, but can be a Quad option board. Rocker is smooth and moderate with slight single to double concave and low soft rail. DSCV is a similar design but has vee in the back half of the board. DSC has been around since 1994, slowly evolving as a dependable all purpose good wave board. DSCV was introduced as a bigger board semi gun option.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
