@@ -1,0 +1,108 @@
+{
+  "generated_for": "Carrozza Surfboards official named model catalog",
+  "source": "https://www.carrozzasurfboards.com/collections/surfboards",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "carrozza-surfboards",
+      "name": "Carrozza Surfboards",
+      "website_url": "https://www.carrozzasurfboards.com/",
+      "location_label": "Huntington Beach, California",
+      "founder_name": "Chris Carrozza",
+      "lead_shaper_name": "Chris Carrozza",
+      "short_description": "Handcrafted high-performance surfboards by Chris Carrozza in Huntington Beach, California.",
+      "models": [
+        {
+          "name": "The Perfect 10",
+          "image_url": "https://cdn.shopify.com/s/files/1/1251/5009/products/cs22_1.jpg?v=1675187173",
+          "description": "The Perfect 10 Board is the our latest performance shortboard. It is the result of over 20 years of research and development. This is our easiest shortboard to ride from novice to expert level surfers. Whether you are looking to transition to your first shortboard or a seasoned ripper looking for a everyday board that works in everything this board is the call!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "One Wing Dove",
+          "image_url": "https://cdn.shopify.com/s/files/1/1251/5009/products/one_wing_dove_surfboard_image.png?v=1599751690",
+          "description": "The One Wing Dove is our newest performance shortboard designed for average to expert surfers that want maximum ripping coupled with speed and drive and a forgiving easy to surf outline. Low entry and exit rockers couple with our deepest single concave between the front and back feet allow for an amazingly responsive feeling surfboard in even the junkiest of conditions. The One Wing has a full outline which is perfect for the smaller more average days at your local beach break. We recommend the One Wing Dove be ridden as a thruster setup with a fin that has a decent amount of rake. If your'e the type of surfer that is looking for an ultra loose and maneuverable shortboard you'll be nothing but stoked with this model. We haven't released a new model in a while, we've been working on dialing in this board for some time now. Check out the shop to grab a demo and give it a spin!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Heater",
+          "image_url": "https://cdn.shopify.com/s/files/1/1251/5009/products/HEATER_900x_6cc23e0c-deab-45da-8a51-e696f9e266f2.jpg?v=1524774095",
+          "description": "The Heater Model: A high performance shortboard model, designed to kill it. This is the daily driver surfboard model for the dedicated ripper. This board is your go to shred stick for the surfer that wants to surf at their highest level in all conditions. Originally developed in Hawaii as one of Chris Carrozza's favorite boards for all around conditions, the Heater is a loose and fast high performance shortboard design. Performance rails, a moderate single to double concave with either flat out the tail. Grab the Heater model as your go to daily driver for ultimate ripping in waist high to well overhead surf. Our most aggressive rockers and deep concaves, performance-rails, and a nice amount of nose and tail rocker make the heater responsive and very maneuverable in the most critical waves. A great board for daily ripping, but still performs in head high to double overhead draining conditions. Check out some quick footage of South African X-WQS warrior Rudy Palmboom surfing a 6'0\" X 18.5\" X 2.25\" Heater model in some lumpy Huntington Beach south swell. Below is a quick video of Huntington Beach team rider Jeremy Jennings surfing a north OC secret spot :) on his 6'0\" X 18.6\" X 2.2\" Heater, Volume is 27L on this model.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Stub Heater",
+          "image_url": "https://cdn.shopify.com/s/files/1/1251/5009/products/STUB-HEATER_600x_010ceb5b-368d-498b-abef-51098603c636.jpg?v=1524776190",
+          "description": "Based of our Heater model, comes the Stub Heater! This board has been built for surfers that prefer a drivey on rail carving approach to their surfing but need a board that allows for this style of surfing in average to less than good conditions. Our Heater model works really well when the surf starts to turn on and has a little more juice, but as with any board like that everybody always said, \"I wish I had a small wave version of this board.\" So we tested some rockers and concave combos and came up with this fuller outline, lower overall rocker version of the Heater which stays loose and lively in smaller surf and allows for the heavy back footed carving approach in the everyday waves of So Cal and beyond. Overall the Stub Heater stays curvy in the mid rail line, just like the Heater, but the curve of the stub heater rail carries more forward into a fuller nose allowing for more forward volume for easier wave entry and easier speed generation in smaller, less powerful surf (what we get here in so cal) . The tail on the Stub Heater stays pulled in to allow the tight arching turns and lots of hold and drive. We use an overall single concave on this board.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Brofessional",
+          "image_url": "https://cdn.shopify.com/s/files/1/1251/5009/products/BROFESSIONAL_2000x_349c11bc-3cb9-49bb-9d88-0e3632b6d816.jpg?v=1524775314",
+          "description": "high performance daily driver surfboard Brofessional Model : High Performance daily driver surfboard. This board has been designed for average surfers to rippers, those that like to ride high performance surfboards but need a bit more volume than the chippy high performance shape. This board was designed using the front half of our Heater Model and the back half of our Loose Change model. We developed this model for the needs of everyday surfers that like a slightly fuller volume shortboard but still want the performance aspects of a low volume high performance shortboard. The Brofessional model features a moderate single to double concave with a baby amount of Spiral Vee out the tail. This board stays loose and lively in any condition you can throw at it. Check out the video below!",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "BFF",
+          "image_url": "https://cdn.shopify.com/s/files/1/1251/5009/products/BFF_2000x_2b440eb5-f91b-4629-8656-1d280170eff9.jpg?v=1524776545",
+          "description": "The BFF is your \"best friend forever\" because it's the perfect board for your daily surf sessions. Firing or not, hip high to overhead, The BFF model has got you covered. A daily driver surfboard model for a variety of conditions. A large sweet spot at center for loose ripping, along with a hip in the back and wide squash tail make the BFF very user friendly in various conditions. The Carrozza BFF has a slightly wider than normal template for a more user friendly feeling in average waves. Available with various tail types and an optional 5 fin set up. Light single concave running the length of the board.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Loose Change",
+          "image_url": "https://cdn.shopify.com/s/files/1/1251/5009/products/LOOSE-CHANGE_480x_64668f98-19fd-4b41-9354-d4f8c20fc280.jpg?v=1514352175",
+          "description": "Loose Change: A Small-wave secret weapon! A really fast, really loose small wave surfboard designed to surf loose and fun in less than good waves. A high performance groveler surfboard that rips in gutless surf. The loose change should be ridden shorter and wider than your regular short board, with a very curved outline for radical and fast maneuvering in less than good waves. The entry rocker is low, with a nice tail rocker falling continuously from center to keep the board fast and lively. This should be your high performance groveler/fish alternative surfboard Ultra Light single concave and set up as a quad, thruster, or 5 fin. For knee high groveler waves to chest / shoulder high junk surf when you wanna rip harder than your fish will let you. This board should be ridden 2 - 4 inches shorter than your normal shortboard.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Brat",
+          "image_url": "https://cdn.shopify.com/s/files/1/1251/5009/products/BRAT_2000x_09b70529-9115-4390-a274-e7dd9b2f9549.jpg?v=1524773041",
+          "description": "The Carrozza Surfboards Brat model surfboard is a very stubby high performance short board model designed for ripping in all types of surf conditions. A wider template makes this board great for getting into waves early, easy paddling and easy speed generation. Guys that huck airs, hacks and slides love this board for its short stubby nature that provides lots of surface area for easy landings and recovery from critical turns. The Brat features a single concave to Vee in the tail. This board works great as a thruster or quad fin and works well in a variety of conditions. Set up the quad for the mushy average days at your local beach break and watch how fast and slidey you can get. If they waves get better switch over to a thruster / tri fin set up and see just how much hold this board has. Overall this is a very versatile board that can be somewhat of a \"quiver killer.\" Ride this board approximately 2 - 4 inches shorter than your standard shortboard. Stock Dimensions: Height Width Thickness Volume 5'0\" 16.8\" 2' 18.52 5'2\" 17.4\" 2\" 20.4 5'4\" 18\" 2.1\" 22.4 5'6\" 18.5\" 2.18\" 24.6 5'8\" 19\" 2.25\" 27 5'10\" 19.5\" 2.3\" 29 6'0\" 20.25\" 2.38\" 32 6'2\" 20.8\" 2.4\" 34.6 6'4\" 21.4\" 2.5\" 37.5 6'6\" 21.9\" 2.57\" 40.5 6'8\" 22.5\" 2.6\" 43.75",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Wrecking Ball",
+          "image_url": "https://cdn.shopify.com/s/files/1/1251/5009/products/WRECKING-BALL_2000x_ab836ff3-ee6e-430c-9daa-a61bcc6548fd.jpg?v=1514352380",
+          "description": "Often described as \"too loose\" for waves above shoulder high. Our original Wrecking Ball model is a high performance shortboard meant to be ridden in knee high to shoulder high waves when you are looking for maximum shreddability. A fuller outline, almost a fish style outline but with a shortboard style build. This board is shorter, wider and curvier than your typical shortboard, has lots of volume and rips in small waves. This shape features a moderate single concave to pronounced Vee that starts before the back fin and runs out the tail. This combination allows for extreme speed and drive, looseness and a skate-y feeling through turns, while still feeling incredibly responsive off of the back foot. Ride this board about 2 - 4 inches shorter than your normal performance short board. This board works well as a quad fin or thruster so a 5 fin set up is recommended.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "HyperLink",
+          "image_url": "https://cdn.shopify.com/s/files/1/1251/5009/products/HYPERLINK_1000x_a1f0f28a-011b-4457-8f2a-a2708a7dee06.jpg?v=1526742384",
+          "description": "Big Guy Shortboard The Carrozza Surfboards HyperLink model is a great option for anyone that wants an easy, user friendly shortboard style shape that will catch waves and turn and generate speed with little effort. The Hyperlink is our go-to recommendation for someone looking for what some people call the Big Guy Shortboard The HyperLink is meant to be ridden as small as 6' and as large as 7' 6\" for bigger surfers. This is the go to hybrid style board for someone that is ready to rip on a performance shortboard style shape. but wants the ease of a fuller outline with more volume. Recommended with a rounded pin tail. This model has a forward wide point nice full rails. A great Hybrid style surfboard for fast on rail turning. If you want to read more about this board you can check out a write up on this board here explaining more details about this board Big Guy Shortboard",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Moped",
+          "image_url": "https://cdn.shopify.com/s/files/1/1251/5009/products/MOPED_480x_b09ed2eb-7305-479e-8f18-c4d79e8d11ec.jpg?v=1514352171",
+          "description": "We all know mopeds are fun to ride but you don't want your friends to see you on one right! This is the most maneuverable fun shape / mini tanker you will ever surf. A fair amount of entry concave and lots (really lots) of Vee out the tail allow the board to tip on rail and wrap around like a board much shorter. This board is simply tons of fun. Catches waves like a longboard but has way more maneuverability than your traditional longboard shape. This fun shape surfboard can help you get into waves early, build speed and flow while providing stability and ease of use. This is the go to fun shape surfboard for those surfers that want to make the longboard shortboard transition and gain more maneuverability without loosing any paddle power The moped fun shape surfboard is recommended with a round pin or thumb-tail. Future or FCS fins available. Single fin, thruster or 5 fin configuration options. Mellow rails make this fun shape surfboard user friendly in everyday waves. This board is designed to be ridden in the 6'0\" - 8'0\" range.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Real Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/1251/5009/products/REAL-FISH_800x_da9f9b2d-ed4c-4bfa-ad47-1bc722a78fea.jpg?v=1514352172",
+          "description": "Classic Twin Fin Fish Wanna get classic? This board will allow you to get classic and beyond! Our REAL FISH model is a throwback to the super user friendly, wave catching machines of the 70's, but with a modern performance oriented bottom you will be catching waves like a beefier fun shape but ripping like a performance fish shape. Ride this board as a quad or with glass on twin keel fins and rip the heck out of all types of waves. Small mush to head high tubes, this board has all kinds of drive and maneuverability with lots of volume for catching anything in sight!",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Magic Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/1251/5009/products/MAGIC-FISH_600x_e33de4ea-174b-4940-827d-96eccb0f6d6d.jpg?v=1524765970",
+          "description": "A modern high performance fish surfboard, Magic Fish: A wave catching machine with its continuously wide outline through the nose, full rails and wide template. Rip in knee high to slightly overhead surf. Deep Double Concave to Vee in the tail keeps is fast, loose, and lively in a variety of conditions. Quad fin set up recommended, available as a 5 fin convertible with choice of FCS or Future fin boxes. Low rocker for fast surfing– flies over the flats and mush make sections you never used to. Double bump in the tail helps the board respond and pivot quickly so you can turn on a dime. A mellow dove tail gives the Magic Fish the ability to hold in hollow surf. The board you want when its small and weak but will surprise you when the waves turn on. Designed for ankle to head high, but has been tested in solid double over head juice.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Lil Buddy",
+          "image_url": "https://cdn.shopify.com/s/files/1/1251/5009/products/LIL_BUDDY_600x_319db454-e992-4651-bcff-219ba793d3e2.jpg?v=1524776322",
+          "description": "The Ultimate high performance groveler surfboard: Designed for absolute destruction in junk waves. Airs, Hacks, Slides, Cuttys, wherever your mind goes on the wave, the Lil Buddy will follow. The Lil Buddy Model was the #1 seller when launched at our board demo in June of 2013, surpassing all other boards with only a 6 month production time. We get nothing but positive feedback about this board. The Lil Buddy model should be sized about the same as your high performance fish dimensions. The Lil Buddy is a hybrid stubby groveler that features key elements from our Magic Fish and BFF model surfboards. This Board is gonna blow you away in small waves and can easily be that daily board if the waves you surf everyday are less than good. If you like the ease of a fish but want something more performance oriented then the Lil Buddy is for you. This is our ultimate Stubby Groveler Surfboard Model. Recommended as a quad but available as a five fin set up for thruster use or nubster fin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "El Stumpo",
+          "image_url": "https://cdn.shopify.com/s/files/1/1251/5009/products/EL-STUMPO_600x_ade7fd1b-b314-4912-8c75-b7b57ce18160.jpg?v=1524765882",
+          "description": "A Mini Simmons quad fin Inspired surfboard! Super fast and super loose Mini Simmons style quad. Own the groveler days, ultra loose and fast. Paddles and catches waves easily but stays nice and loose for easy down the line speed. Great for banking up and down the face, making it over slow mushy sections and connecting waves where your normal daily driver shortboard would sink. Very low entry and tail rocker, very wide template throughout the nose to tail, and some solid double concave make this board very fast and loose, the tail has a nice wide V for responsiveness. Designed for ankle to head high surf that is mushy and weak.",
+          "board_category_slug": "other"
+        }
+      ]
+    }
+  ]
+}
