@@ -1,0 +1,186 @@
+{
+  "product_category_slug": "surfboards",
+  "source": "https://www.minamisurfboards.com/?page_id=46",
+  "generated_for": "Minami Surfboards official named model catalog",
+  "brands": [
+    {
+      "slug": "minami-surfboards",
+      "name": "Minami Surfboards",
+      "website_url": "https://www.minamisurfboards.com/",
+      "location_label": "Honolulu, Hawaii",
+      "founder_name": "Glenn Minami",
+      "lead_shaper_name": "Glenn Minami",
+      "short_description": "Custom surfboards professionally shaped by Glenn Minami in Honolulu, Hawaii.",
+      "models": [
+        {
+          "name": "The Brat",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2021/10/surfboard_Brat_FULL.jpg",
+          "description": "Wave size: small to head high. Tail: thumb. Board size: up to 6'4\".",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "CF-2",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2024/01/surfboard_CF2_FULL.png",
+          "description": "All-arounder. Tail: squash, rounded squash, round, or swallow. Board size depends on rider weight.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Cheetah",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2021/10/surfboard_Cheetah_FULL.png",
+          "description": "Wave size: knee to head high. Tail: stealth. Board size: up to 6'6\".",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Classic Oahu",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2021/10/surfboard_ClassicOahu_FULL.jpg",
+          "description": "Wave size: small to medium. Custom tail and length.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Da Beast",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2021/10/surfboard_DaBeast_FULL.jpg",
+          "description": "Wave size: small to big. Board size: 6'6\" to 8'0\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "F-1",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2021/10/surfboard_F1_FULL.png",
+          "description": "Wave size: up to 2' overhead. Tail: squash or swallow. Board size: up to 6'4\".",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "F-12",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2021/10/surfboard_F12_FULL.png",
+          "description": "Wave size: small to overhead. Tail: squash, round, or swallow. Board size: up to 6'5\".",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "F-2",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2021/10/surfboard_F2_FULL3.jpg",
+          "description": "Wave size: overhead to double overhead plus. Tail: round pin. Board size: 5'10\" to 7'0\".",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "F-3 Gun",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2021/10/surfboard_F3Gun_FULL.png",
+          "description": "Wave size: medium-big to big. Tail: round pin. Board size: 7'2\" to 8'6\".",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "FX-1",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2021/10/surfboard_FX1_FULL.png",
+          "description": "Wave size: small to overhead. Tail: wing swallow. Board size: up to 6'4\".",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Flashback",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2021/10/surfboard_Flashback_FULL.jpg",
+          "description": "Wave size: knee to head high. Tail: fish. Board size: 5'0\" to 6'2\".",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Guava Jam",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2021/09/surfboard_GuavaJam_FULL.jpg",
+          "description": "Wave size: waist to 2' overhead. Tail: swallow. Board size: 4'8\" to 6'8\".",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Hot Rodder",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2025/03/surfboard_HotRodder_FULL.png",
+          "description": "Wave size: waist to a couple feet overhead. Tail: swallow. Board size: 5'2\" to 6'6\".",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "JB Model",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2023/11/surfboard_JB_FULL-1.png",
+          "description": "Wave size: all-arounder, waist to overhead. Tail: rounded squash, round, or swallow. Board size: up to 6'6\".",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Maui Funboard",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2021/10/surfboard_MauiFunboard_FULL-1.jpg",
+          "description": "Custom tail and length for any wave size.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mean Sardine",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2025/05/surfboard_MeanSardine_FULL.jpg",
+          "description": "Wave size: waist to head high plus. Tail: swallow. Board size: 5'2\" to 6'4\".",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Micro LB",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2021/10/surfboard_MicroLB_FULL2.png",
+          "description": "Wave size: tiny to head high. Board size: 5'5\" and up.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mid Molo",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2025/05/surfboard_MidMolo_FULL-1.jpg",
+          "description": "Wave size: 1' to 6'. Tail: squash, swallow, round, or round pin. Board size: 6'0\" to 6'10\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Molokai Fun Gun",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2021/10/surfboard_MolokaiFunGun_FULL-1.jpg",
+          "description": "Wave size: small to medium. Custom tail and length.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Performance Hotdogger",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2021/10/surfboard_PerformanceHotdogger_FULL2.png",
+          "description": "Wave size: small to medium. Custom tail and length.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Psyko",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2021/09/surfboard_psyko_FULL_alt.png",
+          "description": "Wave size: waist to head high plus. Tail: stealth or wing swallow. Ride 2-3\" shorter and 1/8\" to 3/8\" wider.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Retro Fish",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2021/10/surfboard_RetroFish_FULL.jpg",
+          "description": "Wave size: 1' to 3'. Tail: deep fish tail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Retro Twinnie",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2022/06/surfboard_RetroTwinnie_FULL.png",
+          "description": "Wave size: 1' to 4'. Tail: wing swallow.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "SX Gun",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2021/10/surfboard_SXV_FULL.jpg",
+          "description": "Wave size: medium-big to big. Tail: round pin. Board size: 8'0\" and up, wide and thick.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Ten Toes Noserider",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2021/10/surfboard_TenToes_FULL2.png",
+          "description": "Wave size: small to medium. Custom tail and length.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Blaze",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2021/10/surfboard_Blaze_FULL-1.png",
+          "description": "Wave size: waist to overhead. Board size: up to 6'6\".",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Patriot",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2021/10/surfboard_Waimea_FULL.jpg",
+          "description": "Wave size: very big. Tail: round pin or pin. Board size: 10'0\" plus.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "X Factor",
+          "image_url": "https://www.minamisurfboards.com/wp-content/uploads/2023/03/surfboard_XFACTOR_02-2.png",
+          "description": "Wave size: waist to head high plus. Tail: round squash or swallow. Board size: shorter than a normal shortboard.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
