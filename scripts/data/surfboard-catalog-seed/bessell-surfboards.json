@@ -1,0 +1,150 @@
+{
+  "generated_for": "Bessell Surfboards official named model catalog",
+  "source": "https://www.bessellsurfboards.com/",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "bessell-surfboards",
+      "name": "Bessell Surfboards",
+      "website_url": "https://www.bessellsurfboards.com/",
+      "location_label": "La Jolla, California",
+      "founder_name": "Tim Bessell",
+      "lead_shaper_name": "Tim Bessell",
+      "short_description": "Custom surfboards shaped by Tim Bessell at his La Jolla, California studio.",
+      "models": [
+        {
+          "name": "The Eliminator",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/83ac685b-b4da-4c5f-9a73-9099e3bda486/THE+ELIMINATOR+NO+BACKGROUND.png",
+          "description": "The Eliminator is built for surfers who want power, speed and precison in critical conditions. Designed for intermediate to advanced riders, this high-performance shortboard thrives in steep, punchy waves where quick reactions and aggressive turns are a must",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Carbon-X",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/f7853930-dfa3-4376-a8c7-8c34d813e406/CARBON+X+NO+BACKGROUND.png",
+          "description": "The Carbon-X is the pinnacle of high-performance surfboard technology, built for surfers who demand speed, strength and precision. Constructed with cutting edge carbon fiber reinforcement, this board delivers and ultra-lightweight feel with enhanced durability and flex control.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Pocket Rocket",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/3994bb65-efab-41bc-8ec4-4092b75e9329/THE+POCKET+ROCKET+.png",
+          "description": "The Pocket Rocket is the ultimate high-performance shortboard for surfers who thrive in tight, fast-breaking waves. Designed for explosive maneuvers, this board allows for seamless transitions and lightning-fast responsiveness.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Bad Ray",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/ca9ea088-2e5c-4c96-8b7b-07453e034868/THE+BAD+RAY.PNG",
+          "description": "The BadRay is a high-performance shortboard designed for surfers who demand speed, precision and responsiveness. Perfect for intermediate to advanced riders, this board excels in quick, snappy turns and fast acceleration, making it ideal for aggressive surfing in a variety of conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Standard Issue",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/3a6b4407-ad1d-4c00-affe-53340ca37b00/39D1FA3E-8889-4F49-96FD-38F59D4DB4EA.PNG",
+          "description": "Designed for versatility and performance, the Standard Issue Shortboard is Tim Bessell\u2019s go-to model for everyday surf. With a balanced outline, moderate rocker, and refined rails, this board offers speed, control, and responsiveness in a wide range of conditions. Perfect for surfers looking for a reliable, all-around shortboard that performs from beach breaks to point waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Kissing Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/c08721da-8805-4660-9e3a-ddc1870d3e69/BESSELL%28KISSING_FISH%2924.PNG",
+          "description": "The Kissing Fish is designed for surfers who crave a blend of classic style and modern performance. With its distinct shape and unique outline, this board offers a smooth, flowing ride perfect for carving and generating speed. Ideal for those who want to catch every wave and enjoy effortless gliding, the Kissing Fish is Versatile enough for a variety of wave types, offering an exciting ride in both smaller and bigger surf.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Femme-Fatale",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/cd87cbcd-1b81-4149-ac69-c2ec86bb0e4c/0E1D11B7-9CA3-4B45-96ED-DAA4A4F49AA7.PNG",
+          "description": "The Fem Fatale is a modern evolution of the classic California shape- built for speed, flow, and versatility. It absolutely flies down the line, effortlessly holding a rail through long, arcing cutbacks while still feeling lively and responsive underfoot. The slightly doomed deck maintains plenty of volume for easy paddling and floating, while the refined tail and increased rocker allow for tighter, more precise turns when you want to dial up the performance.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Barracuda",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/23116231-9fc3-4e57-a3cc-4d8181cf52be/AEBDB6CF-1F02-4C35-93D3-F0C4C6C27696.PNG",
+          "description": "The Barracuda is a Hybrid Fish Design, designed for surfers who want power, precision and unparalleled speed. With its aggressive outline and sharp rails, this board is made to cut through the water with ease, offering excellent hold and control in larger surf. Whether youre carving down the line or attacking powerful waves, the Barracuda delivers explosive acceleration and smooth dynamic turns. Perfect for those looking to tackle big waves with confidence and style.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Twinnie",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/a38a6765-a1d5-463d-9dde-56858d5bf3ad/F90B941B-2299-4A42-A3D0-DD841E3BF76F.PNG",
+          "description": "The Twinnie is built for surfers seeking a high performance, versatile ride. With its uniqure twin-fin setup and dynamic shape, this board is engineered for speed, fluidity and precision in a wide range of conditions. Designed by Tim Bessell, this board combines classic influences with modern features for a fun and responsive surfing experience.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Flying Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/7a6d356c-2fe4-48f5-8f54-a4d1fbca700b/FOREST+GREEN+FLYING+FISH.PNG",
+          "description": "The Flying Fish is built for surfers who want a high-performance board that excels in speed, agility, and smooth transitions. Featuring a sleek, fish-inspired design, this board delivers exceptional lift and control, making it perfect for fast, responsive maneuvers in a variety of wave conditions. Whether youre carving deep lines or catching air, the flying fish provides the versatility and performance you need to push your limits in any surf.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Magic Carpet",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/e20741df-cdf0-40df-ac0e-9c5b0804da27/MAGIC+CARPET+NO+BACKGROUND.png",
+          "description": "The Magic Carpet is built for surfers seeking an incredibly smooth, high-performance ride that makes every wave feel like magic. With its balanced shape and refined design, this board offers outstanding stability and speed, allowing for effortless gliding and deep carves. Whether you're cruising down the line or executing controlled turns, the Magic Carpet lets you experience the sensation of flying over the water with ease, making it ideal for both beginners and experienced riders looking for a versatile, fun ride.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Grace",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/22621b72-a8d0-46e6-8cd7-b79c748349a6/MIKE+GRACE.PNG",
+          "description": "The Grace, designed in collaboration with legendary surfer Mike Hynson from \u201cThe Endless Summer\u201d, is a tribute to the timeless style and elegance of classic longboarding. This is the most important surfboard of the 20th Century. This board is a paradigm shift, the mother of all modern surfboards. This board had a profound influence on the golden age of surfing. This board combines modern performance with vintage aesthetics, offering smooth, fluid rides and effortless noserides. With its graceful outline and perfect balance, The Grace excels in providing stability and control, making it ideal for surfers who appreciate a relaxed, yet powerful approach to longboarding. Whether you're cruising mellow points or carving smooth lines, the Grace lets you glide through the water with pure, effortless style. The legendary Mike Hynson is now surfing in heaven. We are honored to donate a portion of our proceeds to the Hynson Family.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Surf Rider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/537aea5a-f8d3-4a5e-bfb8-27d8de6eaf0e/BESSELL_SURFBOARD%28RED%2924.PNG",
+          "description": "The Surf Rider is designed for surfers who appreciate a classic ride with modern performance. With its iconic shape and balanced outline, this board offers excellent stability, making it ideal for smooth cruising and carving down the line. Whether you're a seasoned surfer or a beginner looking to master the art of longboarding, The Surf Rider's effortless glide and responsiveness allow you to embrace the full experience of wave riding. Its versatility makes it perfect for catching small waves or flowing through bigger, more powerful surf with ease.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Retro",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/cea254f3-ba46-4cee-8591-df952bf3536d/BA96953C-2399-49B1-85FD-87409FFF46F3.PNG",
+          "description": "The Retro is a nod to the golden age of surfing, designed for those who appreciate the roots of the sport while still seeking modern performance. With its classic shape and retro-inspired features, this board offers smooth, flowing rides that bring you back to the simple joy of catching waves. The Retro is perfect for carving, noseriding, and effortless cruising, making it an excellent choice for surfers who love the nostalgic style of the past but with the reliability of contemporary design.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Single Fin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/ff97a0b2-b88a-4d68-8f07-11b5b8f0b34f/BFB1CEE6-6D26-4533-AF9A-4A95CA8C0C58.PNG",
+          "description": "The Single Fin is a true classic, designed for surfers who appreciate the smooth, stylish ride of traditional longboarding. With its simple, yet effective design, this board offers unparalleled control and stability, allowing for smooth, flowing turns and effortless glide across the wave. Ideal for surfers who enjoy a relaxed, cruisy ride or those looking to embrace the art of noseriding, The Single Fin brings you back to the roots of surfing while still delivering modern performance and durability.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Thrill Pill",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/2bb8bc95-5113-40ca-b78f-dd33a73a8f25/8B48FEA6-0685-4E0D-815A-691F999B3ED2.PNG",
+          "description": "The Thrill Pill is made for surfers who live for speed, power, and high-energy waves. Designed to push the limits of performance, this board delivers explosive acceleration, precise control, and the ability to handle fast, powerful surf with ease. Its responsive design makes it perfect for carving hard turns, attacking the lip, and generating speed down the line. Whether you're taking on overhead waves or hitting bi-sections, the Thrill Pill will fuel your ride with an adrenaline rush from start to finish.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Step-Up",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/425d58d4-61f0-4dbf-8e31-37f8b36a9f0b/the+step+up.PNG",
+          "description": "The Step-Up (or semi-gun) is explicitly tailored for larger, powerful waves. Despite the \u201cgun\u201d designation, users report these boards handle like \u201cpocket rockets,\u201d turning on a dime and feeling responsive even in heavy surf. Made with skillful foil control and a balanced rocker, these boards excel in punchy conditions\u2014ideal for experienced surfers tackling overhead waves.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "The Hang 10",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/621a92df-37ac-4e4a-b97e-e11084ab3d56/The+Hang+10.JPEG",
+          "description": "The Hang 10 is crafted for surfers who love to embrace the classic art of nose riding. Designed for maximum stability and control, this longboard is perfect for those who want to take their time on the wave and enjoy the pure essence of surfing. With a sleek shape and emphasis on smooth, flowing lines, the Hang 10 lets you glide effortlessly across the face of the wave while allowing for perfect balance when nose riding.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The 60/40",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/0961d162-5200-4d6c-a53d-ff2044ada782/THE+60%3A40+NO+BACKGROUND.png",
+          "description": "The 60/40 Longboard is designed for surfers who seek a perfect balance of stability and performance. With a design that blends classic longboard elements with cutting-edge features, this board excels in providing smooth gliding and effortless maneuverability. Whether you\u2019re cruising the line or looking to take on more aggressive turns, the 60/40 longboard is ideal for those seeking a versatile board that offers both relaxed style and dynamic performance.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The California Classic 3",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/7642ff5a-6a00-47b4-95c1-e9b07390fb2f/BESSELL_TRIPPLE_STRINGER%2924.PNG",
+          "description": "The California Classic 3 Longboard is a tribute to the timeless design and laid-back style of the golden era of surfing. Crafted for those who appreciate smooth, stylish rides, this board combines traditional longboard aesthetics with modern performance features. Whether youre cruising down the line or noseriding in the pocket, the California Classic 3 delivers the ultimate balance of stability and maneuverability. Perfect for surfers looking to embrace the classic style of California surf culture while enjoying the smooth, fluid ride of a high-perfromance longboard",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Cheater 5",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/ccea35c4-2a7a-4280-983e-dba9dd7cfceb/D639CC63-E24F-42EB-9E8C-FAE5F61B38B5.PNG",
+          "description": "The Cheater 5 is designed for surfers who want to take their longboarding to the next level. With a sleek, high-performance shape, this board excels in providing explosive speed, smooth noserides, and the ability to execute tight turns with precision. The Cheater 5 blends the classic longboard style with a more dynamic, responaive feel, making it perfect for surfers who want to cheat the wave and ride withpower and style.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The 50/50",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/67fd73cac7cb1859ef9165d6/5c2ea82d-1bbb-4a8f-a053-4cc767dff5aa/CB49C7CF-500A-4FCD-ADB7-893B1A9EA7B2.PNG",
+          "description": "The 50/50 Longboard is designed for the surfer who craves the perfect bend of classic longboard style and modern performance. With a balanced shape and versatile features, this board offers smooth, fluid rides and the ability to handle both relaxed cruising and more aggressive maneuvers. Whether you\u2019re looking to ride the nose or carve with precision, the 50/50 longboard offers exceptional stability, control, and style in all types of surf",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
