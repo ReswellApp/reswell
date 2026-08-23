@@ -1,8 +1,9 @@
 /**
  * Natural-language marketplace query understanding via Gemini (AI Gateway).
  *
- * Role: compile free-text into structured `/boards` filters. Retrieval stays
- * Elasticsearch — the LLM does not scan listing rows.
+ * Role: compile free-text into structured `/boards` filters and (in the parallel
+ * helper) rank Elasticsearch title+catalog candidates. Retrieval stays in ES —
+ * the LLM never invents listing ids.
  */
 
 import { unstable_cache } from "next/cache"
@@ -13,8 +14,6 @@ import {
   type MarketplaceNlSearchIntent,
 } from "@/lib/validations/marketplaceNlSearch"
 import type { MarketplaceParsedQuery } from "@/lib/services/marketplaceQueryParse"
-import { isMarketplaceSearchNoiseToken } from "@/lib/utils/marketplace-brand-query"
-import { compactSearchCurationKey } from "@/lib/validations/searchCuration"
 import {
   constructionLabel,
   extractConstructionsFromQuery,
@@ -64,7 +63,7 @@ export function isMarketplaceNlSearchEnabled(): boolean {
 /** Heuristic: call the LLM when the query looks like natural language / filters. */
 export function marketplaceQueryLikelyNeedsLlm(
   rawQuery: string,
-  rulesParsed: MarketplaceParsedQuery,
+  _rulesParsed: MarketplaceParsedQuery,
 ): boolean {
   const q = rawQuery.trim()
   if (q.length < 6) return false
@@ -87,41 +86,10 @@ export function marketplaceQueryLikelyNeedsLlm(
   if (nlSignals) return true
 
   const tokens = lower.match(/[\w']+/g) ?? []
-  const hasModel = Boolean(rulesParsed.model || rulesParsed.modelIds.length > 0)
-
-  // Multi-token queries with no structured brand/model hit still benefit from NL.
-  if (tokens.length >= 3 && !hasModel) return true
-
-  // Curated synonym/typo recovery — expansions matched but the typed query isn't already
-  // the canonical catalog name (skip "channel islands"; keep "ci 6 foot" / "chanel islands").
-  if (
-    tokens.length >= 2 &&
-    (rulesParsed.expansions?.length ?? 0) > 0 &&
-    !hasModel &&
-    !queryMatchesCanonicalExpansion(q, rulesParsed.expansions)
-  ) {
-    return true
-  }
-
-  // Two-token proper-name-looking queries with no catalog hit (e.g. "dumpstr diver").
-  if (!hasModel && !rulesParsed.brand && looksLikeCatalogNameQuery(tokens)) {
-    return true
-  }
+  // Two or more tokens: rank title+catalog candidates even when a model already resolved.
+  if (tokens.length >= 2) return true
 
   return false
-}
-
-/** Distinctive 2–4 token phrases that look like a mistyped brand/model, not filter chatter. */
-function looksLikeCatalogNameQuery(tokens: string[]): boolean {
-  if (tokens.length < 2 || tokens.length > 4) return false
-  const meaningful = tokens.filter((t) => t.length >= 4 && !isMarketplaceSearchNoiseToken(t))
-  return meaningful.length >= 2
-}
-
-function queryMatchesCanonicalExpansion(rawQuery: string, expansions: string[]): boolean {
-  const q = compactSearchCurationKey(rawQuery)
-  if (q.length < 4) return false
-  return expansions.some((expansion) => compactSearchCurationKey(expansion) === q)
 }
 
 function synonymHintBlock(expansions: string[]): string {

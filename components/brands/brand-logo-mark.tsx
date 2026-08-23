@@ -7,7 +7,6 @@ import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-
 import {
   brandMarkFallbackClassName,
   brandMarkInitials,
-  isConfiguredNextImageSrc,
 } from "@/lib/brands/logo-mark"
 import { cn } from "@/lib/utils"
 
@@ -31,8 +30,7 @@ export function BrandLogoMark({
   imageSizes,
   decorative = false,
 }: BrandLogoMarkProps) {
-  const rawSrc = logoUrl?.trim() ? brandLogoDisplaySrc(logoUrl.trim()) : ""
-  const src = rawSrc && isConfiguredNextImageSrc(rawSrc) ? rawSrc : null
+  const src = logoUrl?.trim() ? brandLogoDisplaySrc(logoUrl.trim()) : ""
   const [imageFailed, setImageFailed] = useState(false)
   const showLogo = Boolean(src) && !imageFailed
 

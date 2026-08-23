@@ -27,28 +27,6 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 // No-op comment: trigger a fresh deploy after Vercel env changes.
 
-/** Hostnames for next/image in brand profiles (logos and art from brand sites / CDNs). */
-const brandCatalogImageHosts = [
-  'albumsurf.com',
-  'bingsurf.com',
-  'cisurfboards.com',
-  'd3iswawdztsslu.cloudfront.net',
-  'dhdsurf.com',
-  'i.vimeocdn.com',
-  'i.ytimg.com',
-  'ianc57.sg-host.com',
-  'instafeed.nfcube.com',
-  'lostsurfboards.net',
-  'lovemachinesurfboards.com',
-  'pyzelsurfboards.com',
-  'scontent.cdninstagram.com',
-  'sharpeyesurfboards.com',
-  'us.jsindustries.com',
-  'www.chillisurfboards.com',
-  'www.haydenshapes.com',
-  'www.robertssurf.com',
-]
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   outputFileTracingRoot: path.join(__dirname),
@@ -103,15 +81,15 @@ const nextConfig = {
         hostname: 'cdn.shopify.com',
         pathname: '/**',
       },
-      ...brandCatalogImageHosts.map((hostname) => ({
-        protocol: 'https',
-        hostname,
-        pathname: '/**',
-      })),
       // Press / collections assets
       {
         protocol: 'https',
         hostname: 'images.squarespace-cdn.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.squarespace.com',
         pathname: '/**',
       },
       {

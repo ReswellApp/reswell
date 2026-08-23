@@ -14,6 +14,8 @@ export const maxDuration = 30
 export async function GET(request: NextRequest) {
   const q = request.nextUrl.searchParams.get("q")?.trim() ?? ""
   const eventId = request.nextUrl.searchParams.get("eventId")?.trim() || null
+  const surfaceRaw = request.nextUrl.searchParams.get("surface")?.trim()
+  const surface = surfaceRaw === "boards" ? "boards" : "marketplace"
   if (q.length < 2) {
     return NextResponse.json({
       ok: true,
@@ -22,12 +24,16 @@ export async function GET(request: NextRequest) {
       appliedLabels: [],
       summary: "",
       refine: {},
+      rankedIds: [],
+      dropIds: [],
+      extraPhrases: [],
+      listings: [],
     })
   }
 
   try {
     const supabase = createAnonSupabaseClient()
-    const result = await runMarketplaceNlHelper(supabase, q)
+    const result = await runMarketplaceNlHelper(supabase, q, { surface })
     try {
       await attachNlHelperSnapshotToEvent({
         eventId,
@@ -37,6 +43,9 @@ export async function GET(request: NextRequest) {
         summary: result.summary,
         appliedLabels: result.appliedLabels,
         refine: result.refine,
+        rankedIds: result.rankedIds,
+        dropIds: result.dropIds,
+        extraPhrases: result.extraPhrases,
       })
     } catch (e) {
       console.error("[api/search/nl-helper] quality attach failed:", e)
@@ -53,6 +62,10 @@ export async function GET(request: NextRequest) {
         appliedLabels: [],
         summary: "",
         refine: {},
+        rankedIds: [],
+        dropIds: [],
+        extraPhrases: [],
+        listings: [],
       },
       { status: 200 },
     )

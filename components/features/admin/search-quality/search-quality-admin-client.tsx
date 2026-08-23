@@ -509,6 +509,15 @@ function EventDetail({
             {nl?.appliedLabels?.length ? (
               <p className="text-muted-foreground">Labels: {nl.appliedLabels.join(", ")}</p>
             ) : null}
+            {nl?.rankedIds?.length ? (
+              <p className="text-muted-foreground">
+                Ranked {nl.rankedIds.length} listing{nl.rankedIds.length === 1 ? "" : "s"}
+                {nl.dropIds?.length ? ` · dropped ${nl.dropIds.length}` : ""}
+              </p>
+            ) : null}
+            {nl?.extraPhrases?.length ? (
+              <p className="text-muted-foreground">Extra phrases: {nl.extraPhrases.join(", ")}</p>
+            ) : null}
             {nl?.refine && Object.keys(nl.refine).length > 0 ? (
               <pre className="overflow-x-auto rounded bg-white p-2 text-[11px] text-slate-700">
                 {JSON.stringify(nl.refine, null, 2)}

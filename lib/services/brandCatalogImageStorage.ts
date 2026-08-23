@@ -7,7 +7,7 @@ import { isAbortError } from "@/lib/utils/is-abort-error"
 
 export const BRAND_ASSETS_BUCKET = "brand-assets" as const
 
-export type BrandCatalogImageKind = "model" | "variant"
+export type BrandCatalogImageKind = "model" | "variant" | "logo"
 
 const MIN_IMAGE_BYTES = 80
 
@@ -120,6 +120,7 @@ function storagePathForMirroredImage(
 ): string {
   const hash = createHash("sha256").update(catalogImageDedupeKey(sourceUrl)).digest("hex").slice(0, 20)
   const file = `mirror-${hash}.${ext}`
+  if (kind === "logo") return `logos/${file}`
   return kind === "variant" ? `board-models/dimensions/${file}` : `board-models/${file}`
 }
 

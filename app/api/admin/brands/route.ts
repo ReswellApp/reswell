@@ -14,6 +14,7 @@ import {
   type BrandProductCategorySlug,
 } from "@/lib/brand-product-categories"
 import { syncBrandProductCategories } from "@/lib/db/brand-product-categories"
+import { isSelfHostedBrandLogoUrl } from "@/lib/brand-media-proxy-url"
 
 const MAX_SHORT_DESCRIPTION = 2000
 
@@ -76,12 +77,17 @@ function parseBody(body: unknown): {
   const parsedCategories = parseBrandProductCategorySlugsFromBody(o.product_categories)
   if ("error" in parsedCategories) return parsedCategories
 
+  const logo_url = typeof o.logo_url === "string" ? o.logo_url.trim() || null : null
+  if (logo_url && !isSelfHostedBrandLogoUrl(logo_url)) {
+    return { error: "Logo must be uploaded to Reswell storage — external image URLs are not allowed." }
+  }
+
   return {
     slug,
     name,
     short_description: shortRaw || null,
     website_url: typeof o.website_url === "string" ? o.website_url.trim() || null : null,
-    logo_url: typeof o.logo_url === "string" ? o.logo_url.trim() || null : null,
+    logo_url,
     founder_name: typeof o.founder_name === "string" ? o.founder_name.trim() || null : null,
     lead_shaper_name: typeof o.lead_shaper_name === "string" ? o.lead_shaper_name.trim() || null : null,
     location_label: typeof o.location_label === "string" ? o.location_label.trim() || null : null,

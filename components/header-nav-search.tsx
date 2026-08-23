@@ -5,6 +5,7 @@ import { useClientSearchParams } from "@/hooks/use-client-search-params"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
 import { X, Search } from "lucide-react"
 import { createPortal } from "react-dom"
 import {
@@ -132,6 +133,8 @@ function NavSearchIdleRecentlyViewedBrandTile({
 }) {
   if (!brand.slug.trim()) return null
 
+  const logoSrc = brand.logoUrl?.trim() ? brandLogoDisplaySrc(brand.logoUrl) : ""
+
   return (
     <Link
       href={`${BRANDS_BASE}/${encodeURIComponent(brand.slug)}`}
@@ -140,9 +143,9 @@ function NavSearchIdleRecentlyViewedBrandTile({
       onClick={onNavigate}
     >
       <div className={navSearchTopListingThumbClassName}>
-        {brand.logoUrl ? (
+        {logoSrc ? (
           <Image
-            src={brand.logoUrl}
+            src={logoSrc}
             alt=""
             fill
             className="object-contain p-1"

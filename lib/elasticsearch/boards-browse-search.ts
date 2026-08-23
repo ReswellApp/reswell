@@ -16,6 +16,7 @@ import {
   buildListingsTypoFallbackQueryBody,
   ensureListingsIndex,
   listingBrandIdFilterClause,
+  listingCatalogBoostShouldClauses,
 } from "./listings-index"
 import {
   BOARD_STYLE_OPTIONS,
@@ -89,22 +90,25 @@ function boardsBrowseKeywordQuery(
   typoFallback = false,
   expansions?: string[],
   rankQuery?: string,
+  catalogBoostShould?: object[],
 ): object | null {
   const q = query?.trim()
+  const catalogBoosts = catalogBoostShould ?? []
   if (!q) {
-    return withRankBoosts(
-      {
-        bool: {
-          filter: filter as estypes.QueryDslQueryContainer[],
-          must_not: mustNot as estypes.QueryDslQueryContainer[],
-        },
+    const base = {
+      bool: {
+        filter: filter as estypes.QueryDslQueryContainer[],
+        must_not: mustNot as estypes.QueryDslQueryContainer[],
+        ...(catalogBoosts.length > 0
+          ? { should: catalogBoosts, minimum_should_match: 0 }
+          : {}),
       },
-      rankQuery,
-    )
+    }
+    return withRankBoosts(base, rankQuery)
   }
   const body = typoFallback
     ? buildListingsTypoFallbackQueryBody(filter, q)
-    : buildListingsSearchQueryBody(filter, q, expansions)
+    : buildListingsSearchQueryBody(filter, q, expansions, catalogBoosts)
   if (!body) return null
   return withRankBoosts(withMustNot(body, mustNot), rankQuery)
 }
@@ -187,8 +191,15 @@ export type BoardsBrowseEsContext = {
   model?: string
   brandId?: string
   brandModelId?: string
-  /** Multiple catalog model ids (Dumpster Diver + variants). */
+  /** Multiple catalog model ids (Dumpster Diver + variants). Hard filter (URL facet). */
   brandModelIds?: string[]
+  /**
+   * Parsed catalog model ids from free text. Ranking boosts only — title-only
+   * listings without `brand_model_id` still match.
+   */
+  boostBrandModelIds?: string[]
+  /** Parsed directory brand id from free text. Ranking boost, not a hard filter. */
+  boostBrandId?: string
   minPrice?: number
   maxPrice?: number
   /** Free-text city/state filter (only when there is no geocoded anchor). */
@@ -208,6 +219,14 @@ export type BoardsBrowseEsContext = {
    * (many listings omit the structured tail field).
    */
   tailShapes?: string[]
+}
+
+function catalogBoostsFromContext(ctx: BoardsBrowseEsContext): object[] {
+  return listingCatalogBoostShouldClauses({
+    brandModelIds: ctx.boostBrandModelIds,
+    brandId: ctx.boostBrandId,
+    expansions: ctx.expansions,
+  })
 }
 
 function priceClauses(ctx: BoardsBrowseEsContext): object[] {
@@ -556,6 +575,7 @@ export async function searchBoardsBrowse(
     false,
     params.expansions,
     params.rankQuery,
+    catalogBoostsFromContext(params),
   )
   if (!keywordQuery) return { ids: [], total: 0 }
 
@@ -583,6 +603,7 @@ export async function searchBoardsBrowse(
     true,
     params.expansions,
     params.rankQuery,
+    catalogBoostsFromContext(params),
   )
   if (!typoQuery) return parsed
 
@@ -727,6 +748,7 @@ export async function boardsBrowseFacetCountsFromEs(
     false,
     ctx.expansions,
     ctx.rankQuery,
+    catalogBoostsFromContext(ctx),
   ) ?? {
     bool: { filter: filter as estypes.QueryDslQueryContainer[] },
   }

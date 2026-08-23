@@ -4,7 +4,7 @@ import { unstable_cache } from "next/cache"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { SearchCategoryFilters } from "./search-section-filters"
 import type { RecentListing } from "@/components/recent-feed-client"
-import { RecentFeedClient } from "@/components/recent-feed-client"
+import { MarketplaceSearchResults } from "@/components/features/search/marketplace-search-results"
 import { BoardsNoResultsSaveSearch } from "@/components/boards-no-results-save-search"
 import { marketplaceSearchSavedCriteria } from "@/lib/utils/peer-saved-search-criteria"
 import { isElasticsearchConfigured } from "@/lib/elasticsearch/config"
@@ -47,8 +47,9 @@ import {
   type MarketplaceParsedQuery,
 } from "@/lib/services/marketplaceQueryParse"
 import { expansionsForMarketplaceQuery } from "@/lib/services/searchSynonyms"
+import { extractPriceFiltersFromQuery } from "@/lib/utils/marketplace-price-query"
+import { stripFilterLanguageFromKeyword } from "@/lib/services/searchBoards"
 import { resolveSearchOverrideListingIds } from "@/lib/services/searchResultOverrides"
-import { NaturalLanguageSearchHint } from "@/components/features/search/natural-language-search-hint"
 
 const LIMIT = 48
 
@@ -197,6 +198,8 @@ export async function SearchPageView({
     Boolean(brandFromUrl),
   )
 
+  const searchQualityEventId = rawQuery.trim() ? newSearchQualityEventId() : null
+
   if (rawQuery.trim()) {
     if (searchMeta) {
       const analyticsPayload = {
@@ -216,7 +219,7 @@ export async function SearchPageView({
       })
     }
     scheduleSearchQualityEventCapture({
-      eventId: newSearchQualityEventId(),
+      eventId: searchQualityEventId!,
       rawQuery,
       searchSurface: "marketplace",
       backend: searchMeta?.backend ?? null,
@@ -285,10 +288,6 @@ export async function SearchPageView({
                 . For filters (style, price, shipping),{" "}
                 <a
                   href={`/boards?q=${encodeURIComponent(rawQuery.trim())}${
-                    parsedQuery?.model?.id
-                      ? `&brandModelId=${encodeURIComponent(parsedQuery.model.id)}`
-                      : ""
-                  }${
                     parsedQuery?.lengthToken
                       ? `&dimLength=${encodeURIComponent(parsedQuery.lengthToken)}`
                       : ""
@@ -330,11 +329,6 @@ export async function SearchPageView({
               </>
             )}
           </p>
-          {rawQuery.trim() ? (
-            <div className="mt-4 max-w-2xl">
-              <NaturalLanguageSearchHint query={rawQuery} />
-            </div>
-          ) : null}
         </div>
       </section>
 
@@ -352,27 +346,30 @@ export async function SearchPageView({
 
       <section className="container mx-auto py-8">
         {listings.length === 0 && rawQuery.trim() && !brandUnknown ? (
-          <BoardsNoResultsSaveSearch
-            criteria={marketplaceSearchSavedCriteria(rawQuery)}
-            isLoggedIn={!!user}
-            clearHref="/search/recent"
-          />
-        ) : (
-          <RecentFeedClient
-            listings={listings}
-            favoritedListingIds={favoritedListingIds}
-            isLoggedIn={!!user}
-            viewerUserId={user?.id ?? null}
-            hydrateOwnFavorites={skipAuthLookup}
-            emptyMessage={
-              brandUnknown
-                ? "No brand matches that URL. Return to search and pick a brand from suggestions."
-                : brandRow
-                  ? "No active listings for this brand yet. Try another category or check back soon."
-                  : "No listings to show yet. Check back soon or browse by category."
-            }
-          />
-        )}
+          <div className="mb-6">
+            <BoardsNoResultsSaveSearch
+              criteria={marketplaceSearchSavedCriteria(rawQuery)}
+              isLoggedIn={!!user}
+              clearHref="/search/recent"
+            />
+          </div>
+        ) : null}
+        <MarketplaceSearchResults
+          query={rawQuery}
+          qualityEventId={searchQualityEventId}
+          listings={listings}
+          favoritedListingIds={favoritedListingIds}
+          isLoggedIn={!!user}
+          viewerUserId={user?.id ?? null}
+          hydrateOwnFavorites={skipAuthLookup}
+          emptyMessage={
+            brandUnknown
+              ? "No brand matches that URL. Return to search and pick a brand from suggestions."
+              : brandRow
+                ? "No active listings for this brand yet. Try another category or check back soon."
+                : "No listings to show yet. Check back soon or browse by category."
+          }
+        />
       </section>
     </main>
   )
@@ -391,12 +388,9 @@ async function resolveSearchListings(
 }> {
   const categoryId = category?.id ?? null
 
-  // Brand inventory only for brand-only intent (URL brand with no q, or parsed brand-only).
-  // Skip exclusive inventory when synonyms exist (Lost ↔ Mayhem) so alias titles recall too.
-  const useBrandInventory =
-    Boolean(brand) &&
-    ((!rawQuery.trim() && brandFromUrl) || Boolean(parsed?.isBrandOnly)) &&
-    (parsed?.expansions.length ?? 0) === 0
+  // Brand inventory only for brand URL pages with no typed query.
+  // Typed brand/model searches mix catalog IDs (boost) with title/brand/model text.
+  const useBrandInventory = Boolean(brand) && !rawQuery.trim() && brandFromUrl
 
   if (useBrandInventory && brand) {
     const inventorySections = parsed?.sectionIntent ? [parsed.sectionIntent] : undefined
@@ -426,24 +420,20 @@ async function resolveSearchListings(
     ...(parsed?.expansions ?? (await expansionsForMarketplaceQuery(rawQuery))),
     ...(brand ? brandLegacyRecallTokens(brand.name) : []),
   ]
-  // Prefer parser text (may be "" for section-only "fins" → all listings in that section).
-  // Brand-only + aliases: empty keyword so brand_id OR alias text is the recall clause.
-  const widenBrandWithAliases = Boolean(
-    parsed?.isBrandOnly && expansions.length > 0 && (parsed.brand?.id || brand?.id),
-  )
-  const textQuery = widenBrandWithAliases
-    ? ""
-    : parsed != null
-      ? (parsed.textQuery ?? "").trim()
-      : rawQuery.trim()
+  const priceRules = extractPriceFiltersFromQuery(rawQuery)
+  const keywordQuery =
+    stripFilterLanguageFromKeyword(rawQuery) ||
+    (parsed?.model?.name ?? parsed?.brand?.name ?? "").trim() ||
+    ""
   const brandModelIds =
     parsed?.modelIds?.length
       ? parsed.modelIds
       : parsed?.model?.id
         ? [parsed.model.id]
         : []
-  const brandId =
-    brandModelIds.length > 0
+  const boostBrandModelIds = brandModelIds.length > 0 ? brandModelIds : null
+  const boostBrandId =
+    boostBrandModelIds?.length
       ? null
       : parsed?.brand?.id ?? (brandFromUrl ? brand?.id : null) ?? null
   const lengthInches = parsed?.lengthInches ?? null
@@ -461,75 +451,75 @@ async function resolveSearchListings(
     try {
       const runEs = (opts: {
         q: string
-        brandModelIds?: string[] | null
-        brandId?: string | null
+        boostBrandModelIds?: string[] | null
+        boostBrandId?: string | null
         lengthInches?: number | null
         boardTypes?: string[] | null
+        minPrice?: number | null
+        maxPrice?: number | null
         typoFallback?: boolean
       }) =>
         searchListingIdsFromElasticsearch(opts.q, LIMIT, {
           categoryName: category?.name ?? null,
           expansions,
           sections,
-          brandId: opts.brandId,
-          brandModelIds: opts.brandModelIds,
+          boostBrandModelIds: opts.boostBrandModelIds,
+          boostBrandId: opts.boostBrandId,
           lengthInches: opts.lengthInches,
           boardTypes: opts.boardTypes,
+          minPrice: opts.minPrice,
+          maxPrice: opts.maxPrice,
           typoFallback: opts.typoFallback,
         })
 
-      // Progressive relaxation: model+length → model only → text (+ brand) → typo.
+      // Mixed recall: title/brand/model text + catalog ID boosts + hard price/length.
       let ids = await runEs({
-        q: textQuery,
-        brandModelIds,
-        brandId,
+        q: keywordQuery,
+        boostBrandModelIds,
+        boostBrandId,
         lengthInches,
         boardTypes,
+        minPrice: priceRules.minPrice ?? null,
+        maxPrice: priceRules.maxPrice ?? null,
       })
-      if (ids.length === 0 && lengthInches != null && brandModelIds.length > 0) {
+      if (ids.length === 0 && lengthInches != null) {
         ids = await runEs({
-          q: textQuery,
-          brandModelIds,
-          brandId: null,
+          q: keywordQuery,
+          boostBrandModelIds,
+          boostBrandId,
           lengthInches: null,
           boardTypes,
-        })
-      }
-      if (ids.length === 0 && brandModelIds.length > 0) {
-        ids = await runEs({
-          q: rawQuery.trim(),
-          brandModelIds: null,
-          brandId: parsed?.brand?.id ?? brandId,
-          lengthInches: null,
-          boardTypes,
+          minPrice: priceRules.minPrice ?? null,
+          maxPrice: priceRules.maxPrice ?? null,
         })
       }
       if (ids.length === 0) {
         ids = await runEs({
           q: rawQuery.trim(),
-          brandModelIds: null,
-          brandId: null,
+          boostBrandModelIds,
+          boostBrandId,
           lengthInches: null,
           boardTypes,
+          minPrice: priceRules.minPrice ?? null,
+          maxPrice: priceRules.maxPrice ?? null,
         })
       }
       if (ids.length === 0) {
         ids = await runEs({
-          q: textQuery || rawQuery,
-          brandModelIds: null,
-          brandId: null,
+          q: keywordQuery || rawQuery,
+          boostBrandModelIds: null,
+          boostBrandId: null,
           lengthInches: null,
           boardTypes,
           typoFallback: true,
         })
       }
       listings = await hydrateListingsByIds(supabase, ids)
-      // Stale ES hits (deleted/hidden) skip relaxation because ids.length > 0.
       if (listings.length === 0 && ids.length > 0) {
         ids = await runEs({
           q: rawQuery.trim(),
-          brandModelIds: null,
-          brandId: null,
+          boostBrandModelIds: null,
+          boostBrandId: null,
           lengthInches: null,
           boardTypes,
         })

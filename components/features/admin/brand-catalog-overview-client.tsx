@@ -662,7 +662,7 @@ function BrandRow({
         <ChevronRight
           className={cn("mt-1 h-5 w-5 shrink-0 text-slate-400 transition-transform", open && "rotate-90")}
         />
-        {isValidImg(brand.logo_url) ? (
+        {brand.logo_url?.trim() && brandLogoDisplaySrc(brand.logo_url) ? (
           <span className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
             <Image
               src={brandLogoDisplaySrc(brand.logo_url)}

@@ -4,6 +4,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import { isSelfHostedBrandLogoUrl } from '@/lib/brand-media-proxy-url'
 
 // Support both standard and Cursor Cloud Agent env var naming
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.Next_Public_Supabase_Url
@@ -43,13 +44,11 @@ async function checkBrandLogos() {
 
   const missingLogos = brands.filter(b => !b.logo_url || b.logo_url.trim() === '')
   const hasLogos = brands.filter(b => b.logo_url && b.logo_url.trim() !== '')
-  const hasSupabaseLogos = brands.filter(b => 
-    b.logo_url && b.logo_url.includes('app.reswell.app/storage')
-  )
+  const hasSelfHostedLogos = brands.filter((b) => isSelfHostedBrandLogoUrl(b.logo_url))
 
   console.log('📊 Statistics:')
   console.log(`  ✅ Has logos: ${hasLogos.length}`)
-  console.log(`  📦 In Supabase: ${hasSupabaseLogos.length}`)
+  console.log(`  📦 Self-hosted: ${hasSelfHostedLogos.length}`)
   console.log(`  ❌ Missing logos: ${missingLogos.length}\n`)
 
   if (missingLogos.length > 0) {
@@ -60,9 +59,7 @@ async function checkBrandLogos() {
     console.log('')
   }
 
-  const externalLogos = hasLogos.filter(b => 
-    !b.logo_url.includes('app.reswell.app/storage')
-  )
+  const externalLogos = hasLogos.filter((b) => !isSelfHostedBrandLogoUrl(b.logo_url))
   
   if (externalLogos.length > 0) {
     console.log('🔗 Brands with external URLs:')

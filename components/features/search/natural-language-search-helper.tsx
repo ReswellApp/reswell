@@ -3,14 +3,22 @@
 import { useEffect, useRef, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { NaturalLanguageSearchHint } from "@/components/features/search/natural-language-search-hint"
+import type { RecentListing } from "@/components/recent-feed-client"
 import {
   mergeNlHelperRefineIntoSearchParams,
   type MarketplaceNlHelperRefine,
 } from "@/lib/utils/marketplace-nl-helper-refine"
 
+export type NlHelperMatchPayload = {
+  listings: RecentListing[]
+  rankedIds: string[]
+  dropIds: string[]
+}
+
 /**
  * Shows rules-applied chips immediately, then runs Gemini (AI Gateway) in parallel
- * to refine filters without blocking the first search results paint.
+ * to refine filters and rank additional title+catalog matches without blocking
+ * first results paint.
  */
 export function NaturalLanguageSearchHelper({
   query,
@@ -18,6 +26,7 @@ export function NaturalLanguageSearchHelper({
   initialAppliedLabels,
   initialSummary,
   qualityEventId,
+  onMatch,
   className,
 }: {
   query: string
@@ -27,6 +36,7 @@ export function NaturalLanguageSearchHelper({
   initialSummary?: string | null
   /** Search quality review id so the NL helper snapshot can be attached. */
   qualityEventId?: string | null
+  onMatch?: (payload: NlHelperMatchPayload) => void
   className?: string
 }) {
   const router = useRouter()
@@ -36,6 +46,8 @@ export function NaturalLanguageSearchHelper({
   const [appliedLabels, setAppliedLabels] = useState<string[]>(initialAppliedLabels ?? [])
   const [summary, setSummary] = useState<string | null | undefined>(initialSummary)
   const refinedForQuery = useRef<string | null>(null)
+  const onMatchRef = useRef(onMatch)
+  onMatchRef.current = onMatch
 
   useEffect(() => {
     setAppliedLabels(initialAppliedLabels ?? [])
@@ -49,10 +61,11 @@ export function NaturalLanguageSearchHelper({
     const controller = new AbortController()
     const startedFor = q
     const paramsSnapshot = searchParamsString
+    const surface = pathname === "/boards" || pathname.startsWith("/boards/") ? "boards" : "marketplace"
 
     void (async () => {
       try {
-        const params = new URLSearchParams({ q })
+        const params = new URLSearchParams({ q, surface })
         if (qualityEventId) params.set("eventId", qualityEventId)
         const res = await fetch(`/api/search/nl-helper?${params.toString()}`, {
           signal: controller.signal,
@@ -65,6 +78,9 @@ export function NaturalLanguageSearchHelper({
           appliedLabels?: string[]
           summary?: string
           refine?: MarketplaceNlHelperRefine
+          rankedIds?: string[]
+          dropIds?: string[]
+          listings?: RecentListing[]
         }
         if (controller.signal.aborted || startedFor !== q) return
 
@@ -83,14 +99,20 @@ export function NaturalLanguageSearchHelper({
         }
         if (data.summary?.trim()) setSummary(data.summary.trim())
 
-        if (data.skipped || !data.refine) {
-          refinedForQuery.current = startedFor
-          return
+        const listings = Array.isArray(data.listings) ? data.listings : []
+        const rankedIds = Array.isArray(data.rankedIds) ? data.rankedIds : []
+        const dropIds = Array.isArray(data.dropIds) ? data.dropIds : []
+        if (listings.length > 0 || rankedIds.length > 0 || dropIds.length > 0) {
+          onMatchRef.current?.({ listings, rankedIds, dropIds })
         }
+
+        refinedForQuery.current = startedFor
+
+        if (data.skipped || !data.refine) return
+        if (surface !== "boards") return
 
         const current = new URLSearchParams(paramsSnapshot)
         const next = mergeNlHelperRefineIntoSearchParams(current, data.refine)
-        refinedForQuery.current = startedFor
         if (!next) return
 
         const qs = next.toString()
@@ -103,7 +125,7 @@ export function NaturalLanguageSearchHelper({
     })()
 
     return () => controller.abort()
-  }, [q, pathname, router, searchParamsString])
+  }, [q, pathname, router, searchParamsString, qualityEventId])
 
   if (q.length < 2) return null
 

@@ -3,8 +3,9 @@
  * then map onto the Elasticsearch `/boards` browse query context.
  *
  * Critical path is rules-only (brand/model/length/price/fins/tails) so Enter stays
- * fast. Gemini via AI Gateway runs in parallel as a client helper
- * (`/api/search/nl-helper`) and may refine filters after first paint.
+ * fast. Parsed catalog IDs boost ranking; they do not exclusive-filter, so title-only
+ * listings still recall. Gemini via AI Gateway runs in parallel as a client helper
+ * (`/api/search/nl-helper`) and may refine filters and rank extra matches after first paint.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js"
@@ -22,7 +23,10 @@ import {
   nlIntentToAppliedLabels,
   rulesFinOverlayFromQuery,
 } from "@/lib/services/marketplaceQueryUnderstand"
-import { stripMarketplaceSearchNoiseWords } from "@/lib/utils/marketplace-brand-query"
+import {
+  isMarketplaceSearchNoiseToken,
+  stripMarketplaceSearchNoiseWords,
+} from "@/lib/utils/marketplace-brand-query"
 import { stripConstructionFilterPhrasesFromKeyword } from "@/lib/utils/marketplace-construction-query"
 import { stripFinFilterPhrasesFromKeyword } from "@/lib/utils/marketplace-fin-query"
 import { extractPriceFiltersFromQuery } from "@/lib/utils/marketplace-price-query"
@@ -74,7 +78,8 @@ const FILTER_LANGUAGE_TOKENS = new Set([
   "inch",
 ])
 
-function stripFilterLanguageFromKeyword(raw: string): string {
+/** Strip price/filter/noise words so leftover tokens can match title + brand + model. */
+export function stripFilterLanguageFromKeyword(raw: string): string {
   const withoutMoney = raw.replace(/\$\s*\d+(?:[.,]\d+)?/g, " ").replace(/\b\d+\s*(?:dollars|usd)\b/gi, " ")
   const tokens = stripMarketplaceSearchNoiseWords(withoutMoney)
     .split(/\s+/)
@@ -83,6 +88,7 @@ function stripFilterLanguageFromKeyword(raw: string): string {
       const core = t.toLowerCase().replace(/^['']+|['']+$/g, "")
       if (!core) return false
       if (FILTER_LANGUAGE_TOKENS.has(core)) return false
+      if (isMarketplaceSearchNoiseToken(core)) return false
       if (/^\d+$/.test(core)) return false
       return true
     })
@@ -125,6 +131,8 @@ export type SearchBoardsQueryResolution = {
     | "brandId"
     | "brandModelId"
     | "brandModelIds"
+    | "boostBrandModelIds"
+    | "boostBrandId"
     | "expansions"
     | "lengthInches"
     | "minLengthInches"
@@ -383,6 +391,7 @@ export async function resolveBoardsSearchQuery(
   const urlBrandId = input.brandId?.trim() || undefined
   const urlBrand = input.brand?.trim() || undefined
   const urlModel = input.model?.trim() || undefined
+  const urlLockedCatalog = Boolean(urlBrandModelId || urlBrandId)
 
   const groundedModelIds =
     enriched.model && catalogLabelGroundedInQuery(q, enriched.model.name)
@@ -391,24 +400,20 @@ export async function resolveBoardsSearchQuery(
         : [enriched.model.id]
       : undefined
 
-  const brandModelIds =
-    urlBrandModelId
-      ? [urlBrandModelId]
-      : groundedModelIds
-
+  const brandModelIds = urlBrandModelId ? [urlBrandModelId] : undefined
   const brandModelId = brandModelIds?.length === 1 ? brandModelIds[0] : undefined
+  const boostBrandModelIds = !urlLockedCatalog ? groundedModelIds : undefined
   const groundedBrandId =
-    !brandModelIds?.length &&
+    !boostBrandModelIds?.length &&
     enriched.brand?.id &&
     catalogLabelGroundedInQuery(q, enriched.brand.name)
       ? enriched.brand.id
       : undefined
-  const brandId =
-    brandModelIds && brandModelIds.length > 0
-      ? undefined
-      : urlBrandId || groundedBrandId || undefined
+  const brandId = urlBrandModelId ? undefined : urlBrandId || undefined
+  const boostBrandId =
+    !urlLockedCatalog && !boostBrandModelIds?.length ? groundedBrandId : undefined
   const brand =
-    brandModelIds?.length || brandId
+    brandModelIds?.length || brandId || boostBrandModelIds?.length || boostBrandId
       ? undefined
       : urlBrand ||
         (enriched.brand && !enriched.model && catalogLabelGroundedInQuery(q, enriched.brand.name)
@@ -416,7 +421,7 @@ export async function resolveBoardsSearchQuery(
           : undefined) ||
         (nl?.brandText && catalogLabelGroundedInQuery(q, nl.brandText) ? nl.brandText : undefined)
   const model =
-    brandModelIds?.length || brandId
+    brandModelIds?.length || brandId || boostBrandModelIds?.length || boostBrandId
       ? undefined
       : urlModel ||
         (enriched.model && catalogLabelGroundedInQuery(q, enriched.model.name)
@@ -424,12 +429,10 @@ export async function resolveBoardsSearchQuery(
           : undefined) ||
         (nl?.modelText && catalogLabelGroundedInQuery(q, nl.modelText) ? nl.modelText : undefined)
 
-  // When NL (or rules) already applied brand/price/etc., leftover text must NOT be an ES
-  // `must` (filter words like "under" zero results via minimum_should_match). Instead it
-  // becomes a soft `rankQuery` boost so model words still improve ordering.
+  // URL catalog facets and numeric/facet filters own recall. Parsed brand/model
+  // from free text only boost — title still has to be able to match.
   const structuredFiltersApplied = Boolean(
-    brandId ||
-      brandModelIds?.length ||
+    urlLockedCatalog ||
       brand ||
       model ||
       enriched.lengthInches != null ||
@@ -457,10 +460,7 @@ export async function resolveBoardsSearchQuery(
           ),
         ),
       ) ||
-      // Model text is already a hard filter when resolved; only keep as soft rank otherwise.
-      (!brandModelIds?.length
-        ? stripFilterLanguageFromKeyword(nl.modelText || "")
-        : "") ||
+      stripFilterLanguageFromKeyword(nl.modelText || "") ||
       ""
     : stripFilterLanguageFromKeyword(
         stripBoardStylePhrasesFromKeyword(
@@ -472,27 +472,19 @@ export async function resolveBoardsSearchQuery(
         ),
       ) || ""
 
+  const keywordFromQuery = stripFilterLanguageFromKeyword(q)
+
   let query: string | undefined
   let rankQuery: string | undefined
 
-  if (structuredFiltersApplied) {
-    // Filters own recall; residual only ranks (e.g. "puddle jumper" within Lost + $800).
+  if (urlLockedCatalog) {
     query = undefined
-    rankQuery = residualKeyword || undefined
-    if (rankQuery) {
-      const qLower = rankQuery.toLowerCase()
-      const brandName = (enriched.brand?.name || brand || nl?.brandText || "").toLowerCase()
-      if (
-        brandName &&
-        (qLower === brandName ||
-          brandName.includes(qLower) ||
-          qLower.includes(brandName.split(/\s+/)[0] ?? ""))
-      ) {
-        rankQuery = undefined
-      }
-    }
+    rankQuery = residualKeyword || keywordFromQuery || undefined
+  } else if (structuredFiltersApplied) {
+    query = keywordFromQuery || residualKeyword || undefined
+    rankQuery = undefined
   } else {
-    query = residualKeyword || undefined
+    query = residualKeyword || keywordFromQuery || undefined
   }
 
   return {
@@ -506,6 +498,8 @@ export async function resolveBoardsSearchQuery(
       brandId,
       brandModelId,
       brandModelIds,
+      boostBrandModelIds,
+      boostBrandId,
       expansions: enriched.expansions,
       lengthInches: enriched.lengthInches ?? nl?.lengthInches ?? undefined,
       minLengthInches: nl?.minLengthInches,

@@ -439,6 +439,31 @@ function normalizeExpansions(expansions: string[] | undefined): string[] {
 }
 
 /**
+ * Soft catalog ranking: linked brand/model IDs rank higher, but title-only
+ * listings still match. Never used as a `filter` — that hides unlinked inventory.
+ */
+export function listingCatalogBoostShouldClauses(input: {
+  brandModelIds?: string[] | null
+  brandId?: string | null
+  expansions?: string[]
+}): object[] {
+  const ids = (input.brandModelIds ?? []).map((id) => id.trim()).filter(Boolean)
+  if (ids.length > 0) {
+    return [{ terms: { brand_model_id: ids, boost: 12 } }]
+  }
+  const brandId = input.brandId?.trim()
+  if (!brandId) return []
+  return [
+    {
+      bool: {
+        should: [listingBrandIdFilterClause(brandId, input.expansions)],
+        boost: 8,
+      },
+    },
+  ]
+}
+
+/**
  * Directory brand filter. When synonym expansions exist (Lost ↔ Mayhem), also
  * match listings that only have the alias on brand/title and no `brand_id`.
  */
@@ -538,9 +563,11 @@ export function buildListingsSearchQueryBody(
   filter: object[],
   rawQuery: string,
   expansions?: string[],
+  catalogBoostShould?: object[],
 ): object {
   const q = rawQuery.trim()
   const meaningful = meaningfulSearchTerms(q)
+  const catalogBoosts = catalogBoostShould ?? []
   const expansionTerms = normalizeExpansions(expansions)
   const expansionClauses = expansionTerms.map((term) => ({
     multi_match: {
@@ -584,6 +611,8 @@ export function buildListingsSearchQueryBody(
             },
           },
         ],
+        should: catalogBoosts,
+        minimum_should_match: 0,
       },
     }
   }
@@ -639,6 +668,7 @@ export function buildListingsSearchQueryBody(
           },
         },
         ...expansionPhraseBoosts,
+        ...catalogBoosts,
       ],
       minimum_should_match: 0,
     },
@@ -695,12 +725,21 @@ export async function searchListingIdsFromElasticsearch(
     brandId?: string | null
     /** Catalog model filter (`listings.brand_model_id`). */
     brandModelId?: string | null
-    /** Multiple catalog model ids (e.g. Dumpster Diver + Dumpster Diver 2). */
+    /** Multiple catalog model ids (e.g. Dumpster Diver + Dumpster Diver 2). Hard filter. */
     brandModelIds?: string[] | null
+    /**
+     * Catalog model ids used as ranking boosts, not filters, so title-only
+     * listings (no `brand_model_id`) still recall.
+     */
+    boostBrandModelIds?: string[] | null
+    /** Directory brand id as a ranking boost (not a hard filter). */
+    boostBrandId?: string | null
     /** Exact board length in inches (±1" range). */
     lengthInches?: number | null
     /** Canonical board-style slugs (`listings.board_type` / surfboard category). */
     boardTypes?: string[] | null
+    minPrice?: number | null
+    maxPrice?: number | null
   },
 ): Promise<string[]> {
   const es = getElasticsearchClient()
@@ -708,53 +747,11 @@ export async function searchListingIdsFromElasticsearch(
 
   try {
     await ensureListingsIndex()
-
-    const sections = options?.sections ?? ["surfboards"]
-
-    const filter: object[] = [
-      { term: { status: "active" } },
-      { terms: { section: sections } },
-    ]
-
-    const cat = typeof options?.categoryName === "string" ? options.categoryName.trim() : ""
-    if (cat) {
-      filter.push({ match_phrase: { category_name: cat } })
-    }
-
-    const brandModelIds = (options?.brandModelIds ?? [])
-      .map((id) => id.trim())
-      .filter(Boolean)
-    const brandModelId = options?.brandModelId?.trim()
-    if (brandModelIds.length > 0) {
-      filter.push({ terms: { brand_model_id: brandModelIds } })
-    } else if (brandModelId) {
-      filter.push({ term: { brand_model_id: brandModelId } })
-    } else {
-      const brandId = options?.brandId?.trim()
-      if (brandId) {
-        filter.push(listingBrandIdFilterClause(brandId, options?.expansions))
-      }
-    }
-
-    const lengthInches = options?.lengthInches
-    if (lengthInches != null && Number.isFinite(lengthInches) && lengthInches > 0) {
-      filter.push({
-        range: {
-          length_total_inches: {
-            gte: lengthInches - 1,
-            lte: lengthInches + 1,
-          },
-        },
-      })
-    }
-
-    const boardTypeFilter = listingBoardTypesFilterClause(options?.boardTypes)
-    if (boardTypeFilter) filter.push(boardTypeFilter)
-
+    const { filter, catalogBoostShould } = listingSearchFilterAndBoosts(rawQuery, options)
     const q = rawQuery.trim()
     const queryBody = options?.typoFallback
       ? buildListingsTypoFallbackQueryBody(filter, q)
-      : buildListingsSearchQueryBody(filter, q, options?.expansions)
+      : buildListingsSearchQueryBody(filter, q, options?.expansions, catalogBoostShould)
 
     if (q && options?.typoFallback && !queryBody) {
       return []
@@ -772,8 +769,10 @@ export async function searchListingIdsFromElasticsearch(
           index: ELASTICSEARCH_LISTINGS_INDEX,
           size: limit,
           _source: false,
-          query: { bool: { filter } },
-          sort: [{ created_at: { order: "desc" } }],
+          query: listingFilterOnlyQuery(filter, catalogBoostShould),
+          sort: catalogBoostShould.length
+            ? [{ _score: { order: "desc" } }, { created_at: { order: "desc" } }]
+            : [{ created_at: { order: "desc" } }],
         })
 
     return (res.hits.hits ?? [])
@@ -783,6 +782,161 @@ export async function searchListingIdsFromElasticsearch(
     const msg = e instanceof Error ? e.message : String(e)
     console.error("[elasticsearch] searchListingIdsFromElasticsearch failed:", msg, e)
     throw e
+  }
+}
+
+export type ListingMatchCandidate = {
+  id: string
+  title: string
+  brand: string | null
+  model: string | null
+  price: number | null
+  boardType: string | null
+  lengthInches: number | null
+}
+
+const MATCH_CANDIDATE_SOURCE = [
+  "title",
+  "brand",
+  "model",
+  "price",
+  "board_type",
+  "length_total_inches",
+] as const
+
+/**
+ * Wider title+catalog recall for the parallel LLM match pass.
+ * Catalog IDs boost; they do not exclude unlinked title matches.
+ */
+export async function searchListingMatchCandidatesFromElasticsearch(
+  rawQuery: string,
+  limit: number,
+  options?: Parameters<typeof searchListingIdsFromElasticsearch>[2],
+): Promise<ListingMatchCandidate[]> {
+  const es = getElasticsearchClient()
+  if (!es) return []
+
+  try {
+    await ensureListingsIndex()
+    const { filter, catalogBoostShould } = listingSearchFilterAndBoosts(rawQuery, options)
+    const q = rawQuery.trim()
+    const queryBody = q
+      ? buildListingsSearchQueryBody(filter, q, options?.expansions, catalogBoostShould)
+      : listingFilterOnlyQuery(filter, catalogBoostShould)
+
+    const res = await es.search({
+      index: ELASTICSEARCH_LISTINGS_INDEX,
+      size: Math.min(Math.max(limit, 1), 48),
+      _source: [...MATCH_CANDIDATE_SOURCE],
+      query: queryBody,
+      sort: [{ _score: { order: "desc" } }, { created_at: { order: "desc" } }],
+    })
+
+    const out: ListingMatchCandidate[] = []
+    for (const hit of res.hits.hits ?? []) {
+      const id = typeof hit._id === "string" ? hit._id : ""
+      if (!id) continue
+      const src = (hit._source ?? {}) as Record<string, unknown>
+      const priceRaw = src.price
+      const price =
+        typeof priceRaw === "number"
+          ? priceRaw
+          : typeof priceRaw === "string"
+            ? Number.parseFloat(priceRaw)
+            : null
+      const lengthRaw = src.length_total_inches
+      const lengthInches = typeof lengthRaw === "number" && Number.isFinite(lengthRaw) ? lengthRaw : null
+      out.push({
+        id,
+        title: typeof src.title === "string" ? src.title : "",
+        brand: typeof src.brand === "string" ? src.brand : null,
+        model: typeof src.model === "string" ? src.model : null,
+        price: price != null && Number.isFinite(price) ? price : null,
+        boardType: typeof src.board_type === "string" ? src.board_type : null,
+        lengthInches,
+      })
+    }
+    return out
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] searchListingMatchCandidatesFromElasticsearch failed:", msg, e)
+    return []
+  }
+}
+
+type ListingSearchOptions = NonNullable<Parameters<typeof searchListingIdsFromElasticsearch>[2]>
+
+function listingSearchFilterAndBoosts(
+  _rawQuery: string,
+  options?: ListingSearchOptions,
+): { filter: object[]; catalogBoostShould: object[] } {
+  const sections = options?.sections ?? ["surfboards"]
+  const filter: object[] = [
+    { term: { status: "active" } },
+    { terms: { section: sections } },
+  ]
+
+  const cat = typeof options?.categoryName === "string" ? options.categoryName.trim() : ""
+  if (cat) {
+    filter.push({ match_phrase: { category_name: cat } })
+  }
+
+  const brandModelIds = (options?.brandModelIds ?? []).map((id) => id.trim()).filter(Boolean)
+  const brandModelId = options?.brandModelId?.trim()
+  if (brandModelIds.length > 0) {
+    filter.push({ terms: { brand_model_id: brandModelIds } })
+  } else if (brandModelId) {
+    filter.push({ term: { brand_model_id: brandModelId } })
+  } else {
+    const brandId = options?.brandId?.trim()
+    if (brandId) {
+      filter.push(listingBrandIdFilterClause(brandId, options?.expansions))
+    }
+  }
+
+  const lengthInches = options?.lengthInches
+  if (lengthInches != null && Number.isFinite(lengthInches) && lengthInches > 0) {
+    filter.push({
+      range: {
+        length_total_inches: {
+          gte: lengthInches - 1,
+          lte: lengthInches + 1,
+        },
+      },
+    })
+  }
+
+  const boardTypeFilter = listingBoardTypesFilterClause(options?.boardTypes)
+  if (boardTypeFilter) filter.push(boardTypeFilter)
+
+  const minPrice = options?.minPrice
+  if (minPrice != null && Number.isFinite(minPrice) && minPrice >= 0) {
+    filter.push({ range: { price: { gte: minPrice } } })
+  }
+  const maxPrice = options?.maxPrice
+  if (maxPrice != null && Number.isFinite(maxPrice) && maxPrice >= 0) {
+    filter.push({ range: { price: { lte: maxPrice } } })
+  }
+
+  const catalogBoostShould = listingCatalogBoostShouldClauses({
+    brandModelIds: options?.boostBrandModelIds,
+    brandId: options?.boostBrandId,
+    expansions: options?.expansions,
+  })
+
+  return { filter, catalogBoostShould }
+}
+
+function listingFilterOnlyQuery(filter: object[], catalogBoostShould: object[]): object {
+  if (catalogBoostShould.length === 0) {
+    return { bool: { filter } }
+  }
+  return {
+    bool: {
+      filter,
+      should: catalogBoostShould,
+      minimum_should_match: 0,
+    },
   }
 }
 

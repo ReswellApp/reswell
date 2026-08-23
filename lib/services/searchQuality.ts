@@ -120,6 +120,9 @@ export async function attachNlHelperSnapshotToEvent(input: {
   summary: string
   appliedLabels: string[]
   refine: MarketplaceNlHelperRefine
+  rankedIds?: string[]
+  dropIds?: string[]
+  extraPhrases?: string[]
 }): Promise<void> {
   const eventId = input.eventId?.trim()
   if (!eventId) return
@@ -132,6 +135,9 @@ export async function attachNlHelperSnapshotToEvent(input: {
     summary: input.summary,
     appliedLabels: input.appliedLabels,
     refine: { ...input.refine },
+    rankedIds: input.rankedIds ?? [],
+    dropIds: input.dropIds ?? [],
+    extraPhrases: input.extraPhrases ?? [],
   }
 
   try {

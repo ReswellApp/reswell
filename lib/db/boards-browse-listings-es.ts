@@ -60,6 +60,8 @@ function isLockedEmptyEsResult(input: BoardsBrowseEsPageInput): boolean {
     Boolean(input.brandId?.trim()) ||
     Boolean(input.brandModelId?.trim()) ||
     (input.brandModelIds?.length ?? 0) > 0 ||
+    (input.boostBrandModelIds?.length ?? 0) > 0 ||
+    Boolean(input.boostBrandId?.trim()) ||
     input.lengthInches != null ||
     (input.tailShapes?.length ?? 0) > 0 ||
     input.minPrice != null ||

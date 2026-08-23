@@ -367,14 +367,18 @@ export async function runMarketplaceSearchSuggest(
 
   if (isElasticsearchConfigured()) {
     try {
-      const ids = await searchListingIdsFromElasticsearch(listingTextQuery, MAX_LISTINGS, {
-        sections,
-        expansions: parsed.expansions,
-        brandId: parsed.modelIds.length > 0 ? null : parsed.brand?.id ?? null,
-        brandModelIds: parsed.modelIds.length > 0 ? parsed.modelIds : null,
-        lengthInches: parsed.lengthInches,
-        boardTypes: parsed.styleIntent.length > 0 ? parsed.styleIntent : null,
-      })
+      const ids = await searchListingIdsFromElasticsearch(
+        listingTextQuery || parsed.model?.name || q,
+        MAX_LISTINGS,
+        {
+          sections,
+          expansions: parsed.expansions,
+          boostBrandId: parsed.modelIds.length > 0 ? null : parsed.brand?.id ?? null,
+          boostBrandModelIds: parsed.modelIds.length > 0 ? parsed.modelIds : null,
+          lengthInches: parsed.lengthInches,
+          boardTypes: parsed.styleIntent.length > 0 ? parsed.styleIntent : null,
+        },
+      )
       const ordered = await hydrateSuggestListingsFromIds(ids)
       if (ordered.length > 0) {
         listings = ordered
@@ -400,10 +404,10 @@ export async function runMarketplaceSearchSuggest(
     let filledFromAliasSearch = false
     if (parsed.expansions.length > 0 && isElasticsearchConfigured()) {
       try {
-        const ids = await searchListingIdsFromElasticsearch("", MAX_LISTINGS, {
+        const ids = await searchListingIdsFromElasticsearch(effectiveBrand.name, MAX_LISTINGS, {
           sections,
           expansions: parsed.expansions,
-          brandId: effectiveBrand.id,
+          boostBrandId: effectiveBrand.id,
         })
         const ordered = await hydrateSuggestListingsFromIds(ids)
         if (ordered.length > 0) {

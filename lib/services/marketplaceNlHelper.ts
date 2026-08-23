@@ -3,13 +3,13 @@
  *
  * Does not run on the boards browse critical path — the client calls
  * `/api/search/nl-helper` after first paint to refine filters that rules miss
- * (condition, construction, location, shipping, fuzzy brand/model, synonym typos).
+ * and to rank additional title+catalog matches. Catalog brand/model IDs are
+ * not written to the URL (they would hide unlinked title matches).
  */
 
 import "server-only"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import {
-  catalogLabelGroundedInQuery,
   formatBoardLengthTokenFromInches,
   parseMarketplaceQuery,
 } from "@/lib/services/marketplaceQueryParse"
@@ -19,7 +19,10 @@ import {
   nlIntentToAppliedLabels,
   understandMarketplaceQueryWithLlm,
 } from "@/lib/services/marketplaceQueryUnderstand"
-import { resolveDirectoryBrandRowFromLabel } from "@/lib/services/brandDirectorySearch"
+import { matchMarketplaceListingsWithLlm } from "@/lib/services/marketplaceListingMatch"
+import { hydrateListingsByIds } from "@/lib/search/hydrate-listings"
+import type { RecentListing } from "@/components/recent-feed-client"
+import { ELASTICSEARCH_INDEXED_LISTING_SECTIONS } from "@/lib/elasticsearch/listing-sections"
 import {
   extractPriceFiltersFromQuery,
   sanitizeNlPriceAgainstQuery,
@@ -46,6 +49,17 @@ export type MarketplaceNlHelperResult = {
   summary: string
   /** URL search params to merge when not already present (progressive refine). */
   refine: MarketplaceNlHelperRefine
+  rankedIds: string[]
+  dropIds: string[]
+  extraPhrases: string[]
+  listings: RecentListing[]
+}
+
+const EMPTY_MATCH = {
+  rankedIds: [] as string[],
+  dropIds: [] as string[],
+  extraPhrases: [] as string[],
+  listings: [] as RecentListing[],
 }
 
 function uniqueCsv(values: string[]): string | undefined {
@@ -66,10 +80,19 @@ function uniqueCsv(values: string[]): string | undefined {
 export async function runMarketplaceNlHelper(
   supabase: SupabaseClient,
   rawQuery: string,
+  options?: { surface?: "marketplace" | "boards" },
 ): Promise<MarketplaceNlHelperResult> {
   const q = (rawQuery || "").trim()
   if (q.length < 2) {
-    return { ok: true, skipped: true, reason: "empty_query", appliedLabels: [], summary: "", refine: {} }
+    return {
+      ok: true,
+      skipped: true,
+      reason: "empty_query",
+      appliedLabels: [],
+      summary: "",
+      refine: {},
+      ...EMPTY_MATCH,
+    }
   }
 
   if (!isMarketplaceNlSearchEnabled()) {
@@ -80,6 +103,7 @@ export async function runMarketplaceNlHelper(
       appliedLabels: [],
       summary: "",
       refine: {},
+      ...EMPTY_MATCH,
     }
   }
 
@@ -92,6 +116,7 @@ export async function runMarketplaceNlHelper(
       appliedLabels: [],
       summary: "",
       refine: {},
+      ...EMPTY_MATCH,
     }
   }
 
@@ -104,6 +129,7 @@ export async function runMarketplaceNlHelper(
       appliedLabels: [],
       summary: "",
       refine: {},
+      ...EMPTY_MATCH,
     }
   }
 
@@ -131,31 +157,8 @@ export async function runMarketplaceNlHelper(
   const minPrice = sanitizedPrices.minPrice
   const maxPrice = sanitizedPrices.maxPrice
 
-  let brandId: string | undefined
-  let brandModelId: string | undefined
-
-  // Resolve catalog IDs only from LLM-extracted brand/model (never synonym/fuzzy rules parse).
   const llmBrand = intent.brandText?.trim() || ""
   const llmModel = intent.modelText?.trim() || ""
-  if (llmBrand || llmModel) {
-    const hintQ = [llmBrand, llmModel].filter(Boolean).join(" ").trim()
-    if (hintQ.length >= 2) {
-      const retry = await parseMarketplaceQuery(supabase, hintQ)
-      if (
-        retry.model &&
-        catalogLabelGroundedInQuery(hintQ, retry.model.name) &&
-        retry.modelIds.length === 1
-      ) {
-        brandModelId = retry.modelIds[0]
-      } else if (retry.brand?.id && catalogLabelGroundedInQuery(hintQ, retry.brand.name)) {
-        brandId = retry.brand.id
-      }
-    }
-    if (!brandId && !brandModelId && llmBrand) {
-      const brand = await resolveDirectoryBrandRowFromLabel(supabase, llmBrand)
-      if (brand) brandId = brand.id
-    }
-  }
 
   const casualFeetLength = /\b\d{1,2}\s*(?:foot|feet|ft)\b/i.test(q)
   let dimLength: string | undefined
@@ -199,13 +202,6 @@ export async function runMarketplaceNlHelper(
 
   const refine: MarketplaceNlHelperRefine = {}
   const clearParams: string[] = []
-
-  if (brandModelId) refine.brandModelId = brandModelId
-  else if (brandId) refine.brandId = brandId
-  else {
-    // Drop stale auto brand/model from a prior bad refine.
-    clearParams.push("brandModelId", "brandId", "brand", "model")
-  }
 
   if (minPrice != null) refine.minPrice = String(Math.round(minPrice))
   if (maxPrice != null) refine.maxPrice = String(Math.round(maxPrice))
@@ -258,12 +254,26 @@ export async function runMarketplaceNlHelper(
     refine.clearParams = [...new Set(clearParams)]
   }
 
+  const sections =
+    options?.surface === "boards"
+      ? ["surfboards"]
+      : [...ELASTICSEARCH_INDEXED_LISTING_SECTIONS]
+  const match = await matchMarketplaceListingsWithLlm(q, parsed, intent, sections)
+  const hydrateIds = [...match.rankedIds, ...match.extraIds].slice(0, 24)
+  const listings =
+    hydrateIds.length > 0 ? await hydrateListingsByIds(supabase, hydrateIds) : []
+
   return {
     ok: true,
     appliedLabels: labels,
     summary:
-      [intent.summary.trim(), lengthBounds.label, dimLength].filter(Boolean).join(", ") ||
-      labels.join(", "),
+      [intent.summary.trim(), match.summary, lengthBounds.label, dimLength]
+        .filter(Boolean)
+        .join(", ") || labels.join(", "),
     refine,
+    rankedIds: match.rankedIds,
+    dropIds: match.dropIds,
+    extraPhrases: match.extraPhrases,
+    listings,
   }
 }

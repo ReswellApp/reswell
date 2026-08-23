@@ -67,7 +67,16 @@ export function brandLogoDisplaySrc(url: string | null | undefined): string {
   const fromBrandAssets = proxiedBrandMediaSrc(t)
   if (fromBrandAssets !== t) return fromBrandAssets
 
-  return proxiedBrandRequestLogoSrc(t)
+  const fromRequest = proxiedBrandRequestLogoSrc(t)
+  if (fromRequest !== t) return fromRequest
+
+  // External manufacturer CDNs are not served at runtime — mirror into brand-assets first.
+  return ""
+}
+
+/** True when the logo URL is stored in our Supabase buckets (or same-origin `/media/*` proxy). */
+export function isSelfHostedBrandLogoUrl(url: string | null | undefined): boolean {
+  return brandLogoStorageRef(url) != null
 }
 
 export type BrandLogoStorageBucket = "brand-assets" | "brand-request-logos"

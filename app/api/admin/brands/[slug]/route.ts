@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { revalidatePath } from "next/cache"
 import { revalidateHomeTrendingBrandsCatalog } from "@/lib/cache/revalidate-home-public-catalog"
 import { revalidateBrandLogoMedia } from "@/lib/cache/revalidate-public-storage-object"
+import { isSelfHostedBrandLogoUrl } from "@/lib/brand-media-proxy-url"
 import { revalidateSellCatalogSearch } from "@/lib/cache/revalidate-sell-catalog-search"
 import { syncBrandToIndex } from "@/lib/elasticsearch/brands-index"
 import { syncFinCatalogBrandToIndex } from "@/lib/elasticsearch/fin-catalog-index"
@@ -73,7 +74,14 @@ export async function PATCH(request: Request, ctx: { params: Promise<{ slug: str
     updates.website_url = typeof body.website_url === "string" ? body.website_url.trim() || null : null
   }
   if (body.logo_url !== undefined) {
-    updates.logo_url = typeof body.logo_url === "string" ? body.logo_url.trim() || null : null
+    const nextLogo = typeof body.logo_url === "string" ? body.logo_url.trim() || null : null
+    if (nextLogo && !isSelfHostedBrandLogoUrl(nextLogo)) {
+      return NextResponse.json(
+        { error: "Logo must be uploaded to Reswell storage — external image URLs are not allowed." },
+        { status: 400 },
+      )
+    }
+    updates.logo_url = nextLogo
   }
   if (body.founder_name !== undefined) {
     updates.founder_name = typeof body.founder_name === "string" ? body.founder_name.trim() || null : null

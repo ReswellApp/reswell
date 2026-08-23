@@ -131,6 +131,8 @@ export async function getBoardsBrowseFacetCountsMapCached(
           brandId: resolved?.context.brandId ?? brandId,
           brandModelId: resolved?.context.brandModelId ?? brandModelId,
           brandModelIds: resolved?.context.brandModelIds,
+          boostBrandModelIds: resolved?.context.boostBrandModelIds,
+          boostBrandId: resolved?.context.boostBrandId,
           expansions: resolved?.context.expansions,
           lengthInches: resolved?.context.lengthInches,
           minLengthInches: resolved?.context.minLengthInches,

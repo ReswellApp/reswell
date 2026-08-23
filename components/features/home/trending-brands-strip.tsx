@@ -38,6 +38,7 @@ function splitIntoColumns(
 }
 
 function BrandCell({ b }: { b: TrendingStripBrand }) {
+  const logoSrc = b.logo_url?.trim() ? brandLogoDisplaySrc(b.logo_url) : ""
   return (
     <div className="w-full min-w-0 shrink-0">
       <Link
@@ -48,15 +49,15 @@ function BrandCell({ b }: { b: TrendingStripBrand }) {
           className="relative flex h-14 w-full max-w-[7rem] items-center justify-center sm:h-16"
           aria-hidden
         >
-          {b.logo_url ? (
+          {logoSrc ? (
             <div className="relative h-14 w-full sm:h-16">
               <Image
-                src={brandLogoDisplaySrc(b.logo_url)}
+                src={logoSrc}
                 alt=""
                 fill
                 className="object-contain object-center"
                 sizes="(max-width: 640px) 112px, 120px"
-                unoptimized={listingImageShouldBypassOptimization(brandLogoDisplaySrc(b.logo_url))}
+                unoptimized={listingImageShouldBypassOptimization(logoSrc)}
               />
             </div>
           ) : (

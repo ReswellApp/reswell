@@ -55,7 +55,7 @@ import {
   newSearchQualityEventId,
   scheduleSearchQualityEventCapture,
 } from "@/lib/services/searchQuality"
-import { NaturalLanguageSearchHelper } from "@/components/features/search/natural-language-search-helper"
+import { BoardsKeywordResults } from "@/components/features/search/boards-keyword-results"
 import { surfboardsBrowseRootLabel } from "@/lib/site-category-directory"
 import { cn } from "@/lib/utils"
 import { isUuidString } from "@/lib/utils/isUuid"
@@ -216,6 +216,8 @@ async function BoardListings({
       ? undefined
       : model.trim() || undefined)
   const esExpansions = resolvedKeyword?.context.expansions
+  const esBoostBrandModelIds = resolvedKeyword?.context.boostBrandModelIds
+  const esBoostBrandId = resolvedKeyword?.context.boostBrandId
   const esLengthInches = resolvedKeyword?.context.lengthInches
   const esMinLengthInches = resolvedKeyword?.context.minLengthInches
   const esMaxLengthInches = resolvedKeyword?.context.maxLengthInches
@@ -225,7 +227,9 @@ async function BoardListings({
     hasKeywordQuery ||
       esBrandModelId ||
       (esBrandModelIds?.length ?? 0) > 0 ||
+      (esBoostBrandModelIds?.length ?? 0) > 0 ||
       esBrandId ||
+      esBoostBrandId ||
       esLengthInches != null ||
       esMinLengthInches != null ||
       esMaxLengthInches != null ||
@@ -242,18 +246,15 @@ async function BoardListings({
 
   const searchQualityEventId = hasKeywordQuery ? newSearchQualityEventId() : null
 
-  const nlHint =
-    hasKeywordQuery ? (
-      <div className="mb-4">
-        <NaturalLanguageSearchHelper
-          query={query}
-          searchParamsString={searchParamsString}
-          initialAppliedLabels={nl?.appliedLabels}
-          initialSummary={nl?.summary}
-          qualityEventId={searchQualityEventId}
-        />
-      </div>
-    ) : null
+  const keywordResultsProps = hasKeywordQuery
+    ? {
+        query,
+        searchParamsString,
+        qualityEventId: searchQualityEventId,
+        initialAppliedLabels: nl?.appliedLabels,
+        initialSummary: nl?.summary,
+      }
+    : null
 
   // Elasticsearch: indexed filtering + geo_distance sort on reswell_listings (surfboards).
   // Nav category views stay on the (cheap, hourly-cached) Postgres path. Keyword search
@@ -271,6 +272,8 @@ async function BoardListings({
         brandId: esBrandModelIds?.length || esBrandModelId ? undefined : esBrandId,
         brandModelId: esBrandModelId,
         brandModelIds: esBrandModelIds,
+        boostBrandModelIds: esBoostBrandModelIds,
+        boostBrandId: esBoostBrandId,
         expansions: esExpansions,
         lengthInches: esLengthInches,
         minLengthInches: esMinLengthInches,
@@ -501,6 +504,8 @@ async function BoardListings({
           brandId: esBrandModelIds?.length || esBrandModelId ? undefined : esBrandId,
           brandModelId: esBrandModelId,
           brandModelIds: esBrandModelIds,
+          boostBrandModelIds: esBoostBrandModelIds,
+          boostBrandId: esBoostBrandId,
           expansions: esExpansions,
           lengthInches: esLengthInches,
           minLengthInches: esMinLengthInches,
@@ -646,7 +651,14 @@ async function BoardListings({
 
     return (
       <>
-        {nlHint}
+        {keywordResultsProps ? (
+          <BoardsKeywordResults
+            {...keywordResultsProps}
+            boardRows={[]}
+            favoritedIds={[]}
+            userId={user?.id ?? null}
+          />
+        ) : null}
         <BoardsNoResultsSaveSearch
           criteria={saveCriteria}
           isLoggedIn={Boolean(user)}
@@ -660,7 +672,6 @@ async function BoardListings({
 
   return (
     <>
-      {nlHint}
       {locationFallbackNotice ? (
         <p
           className="mb-4 rounded-lg border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground"
@@ -671,14 +682,26 @@ async function BoardListings({
       ) : null}
       <Suspense
         fallback={
-          <BoardListingsTileGrid
-            boardRows={boardRows}
-            favoritedIds={[]}
-            userId={null}
-          />
+          keywordResultsProps ? (
+            <BoardsKeywordResults
+              {...keywordResultsProps}
+              boardRows={boardRows}
+              favoritedIds={[]}
+              userId={null}
+            />
+          ) : (
+            <BoardListingsTileGrid
+              boardRows={boardRows}
+              favoritedIds={[]}
+              userId={null}
+            />
+          )
         }
       >
-        <BoardListingsTileGridWithFavorites boardRows={boardRows} />
+        <BoardListingsTileGridWithFavorites
+          boardRows={boardRows}
+          keyword={keywordResultsProps}
+        />
       </Suspense>
 
       <BoardsBrowsePagination page={page} totalPages={totalPages} />
@@ -727,8 +750,16 @@ function BoardListingsTileGrid({
 
 async function BoardListingsTileGridWithFavorites({
   boardRows,
+  keyword,
 }: {
   boardRows: BoardBrowseListingRow[]
+  keyword: {
+    query: string
+    searchParamsString: string
+    qualityEventId: string | null
+    initialAppliedLabels?: string[]
+    initialSummary?: string | null
+  } | null
 }) {
   const { supabase, user } = await getCachedRequestSession()
 
@@ -743,6 +774,17 @@ async function BoardListingsTileGridWithFavorites({
         boardRows.map((b) => b.id),
       )
     favoritedIds = (favs ?? []).map((f) => f.listing_id)
+  }
+
+  if (keyword) {
+    return (
+      <BoardsKeywordResults
+        {...keyword}
+        boardRows={boardRows}
+        favoritedIds={favoritedIds}
+        userId={user?.id ?? null}
+      />
+    )
   }
 
   return (

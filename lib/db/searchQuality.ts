@@ -27,6 +27,9 @@ export type SearchQualityNlSnapshot = {
   summary: string
   appliedLabels: string[]
   refine: Record<string, unknown>
+  rankedIds?: string[]
+  dropIds?: string[]
+  extraPhrases?: string[]
 }
 
 export type SearchQualityListingRatings = Record<string, SearchQualityRating>

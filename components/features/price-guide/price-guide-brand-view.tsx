@@ -1,5 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
+import { brandLogoDisplaySrc } from "@/lib/public-media-display-src"
 import { PriceGuideBreadcrumbs } from "@/components/features/price-guide/price-guide-breadcrumbs"
 import { PriceGuideConfidencePill } from "@/components/features/price-guide/price-guide-confidence"
 import { PriceGuideCompsTable } from "@/components/features/price-guide/price-guide-comps-table"
@@ -10,6 +11,7 @@ import { formatGuideUsd } from "@/lib/price-guide/format"
 import type { PriceGuideBrandPage } from "@/lib/types/price-guide"
 
 export function PriceGuideBrandView({ page }: { page: PriceGuideBrandPage }) {
+  const logoSrc = page.brand.logo_url?.trim() ? brandLogoDisplaySrc(page.brand.logo_url) : ""
   return (
     <main className="flex-1">
       <section className="border-b border-border/80 bg-offwhite">
@@ -22,9 +24,9 @@ export function PriceGuideBrandView({ page }: { page: PriceGuideBrandPage }) {
           />
           <div className="mt-6 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
             <div className="flex items-start gap-4">
-              {page.brand.logo_url ? (
+              {logoSrc ? (
                 <Image
-                  src={page.brand.logo_url}
+                  src={logoSrc}
                   alt=""
                   width={64}
                   height={64}
