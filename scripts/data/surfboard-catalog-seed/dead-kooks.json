@@ -1,0 +1,160 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "dead-kooks",
+      "name": "Dead Kooks",
+      "website_url": "https://deadkooks.com/",
+      "location_label": "Byron Bay, New South Wales, Australia",
+      "founder_name": "Eden Saul",
+      "lead_shaper_name": "Eden Saul",
+      "short_description": "Byron Bay surfboards shaped by Eden Saul. Dead Kooks boards are built with a keen eye for functional design and stimulating aesthetic details.",
+      "models": [
+        {
+          "name": "11'11",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/DEADKOOKS.11_11.JPG",
+          "description": "These big blades are one of my favourites in the range. Ideal at 11’11 yet can happily scale them down, they are a far cry from some big boaty plug. A very refined foil tip to tip, rolled nose entry that continues down the length of the board to a deeper panel Vee in the tail. The bottom roll combined with the consistent curve in the rail line and moderate even rocker helps make these such a dynamic board. Incredibly fast yet easily maneuvable, stable and surfable from all over the board. Fast highlines, tight trim, long swooping turns, the feeling of 10ft of rail all in the water at once and realising is high addictive. Hard to lave these alone once you get started and much more than a board for small grovel days. Generally available from 10’10, but can be scaled down to 10'1. Eden's forever intrigued and on the hunt for ultimate momentum sensations, and is continually building big boards to tune in to such sensations. Long tri-fin and twin fins included. Some rare examples of these will sometimes be found here, otherwise get in touch at hello@deadkooks.com to discuss what you're chasing in this space and its multitude of dimensions.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "All Time",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/IMG_1618_2.jpg",
+          "description": "A new direction. Taking cues from some late 60's Australian rockers, a few things we learnt from the Guerrero and some feelings we were chasing, the All Time is where we ended up. It's noticeably a wider outline, plenty of curve all round. The rocker is the rear is pretty straight but continuous with a flip in the front third, this combined with the ample amount of belly provides a really dynamic ride. It has a great sense of trim and very direct feel, the lower tail rocker allows you to push hard from the back with lots of drive, while it locks in very tight on the front end. It's a real pleasure to ride and a board we are very happy to be able to offer.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Aphex",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/Dead-Kooks_APHEX_02.jpg",
+          "description": "The Aphex Twin was a new model for 2020, although it was brewing for many years before that, a real all-rounder for those who enjoy some longer rail. Using a tried and tested rocker with a forgiving mid boxy rail that gets very bitey in the rear third for sensitivity and hold with a nice tucked edge. A soft single concave under the front foot to give a familar positive feel that gives a nice amount of pop and drive and a comfotable reliability. Combined with a deep four channel bottom that provides grip, thrust and a sensitivity rolling rail to rail under the back foot with ease. With plenty of paddle power, built for long drawn out arcs and quick adjustments, these are the fastest boards i've ever ridden and are hard to get off. Most at home when there is wall to play with but still very comfortable in some softer slop. Best from 6'6 - 7'6 but happy to build them bigger to suit.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Casbah",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/Dead-Kooks-Surfboards_Kassia_01_WEB.jpg",
+          "description": "The more sleek and thinned out longboard in the lineup. A narrow outline, running them nice and refined (team dims are generally 9’5 x 22 9/16 x 2 5/8). A flattened rocker with a little tail kick, a subtle concave running through the front end to a very mellow rolled bottom with a rail band that comes way up, almost meeting the deck which has just a small amount of crown and roll. This keeps them fast and responsive, while being super user friendly for smaller surfers. A go-to for those with a narrower stance and those who drive with a more ‘hips first’ approach (think Kassia or Victoria, compared to the heavy back-foot, knee-driven approach a-la CJ). The Casbah was a while in the making, developed and dialled in over a 3-year period across the California and Mexico coasts, as well as back here on the East Coast of Australia with our dear friend Kassia Meador. Highly comfortable on anything from a more sloped face to something with a tighter pocket. Available from 8’10 - 9’10.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Ege Bamyasi",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/products/IMG_08352.jpg",
+          "description": "The Ege Bamyasi is a continuation on from the Salty. Generally ridden a bit shorter than the Salty, with a 2+1 fin setup for a really buttery feel under the back foot and some extra hold in more hollow surf. We've kept that tucked edge and added a bit more spice through the back to keep things nice and tight and dynamic. Something that'll get you smiling in onshore slop to overhead perfection.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Flatdeck Thruster",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/deadkooks.flatdeck2.jpg",
+          "description": "Taking an old 80's outline and making a few tweaks, adding some modern bottom contours, flat deck with drop bevel rail, the Flatdeck Thruster come together. Wanting a shortboard for more critical and tight radius surfing that had the flow, initial speed and carry through the flats that i got from my Riches. Plenty of performance in these, no need to hold back, they want to be ridden hard. Been having a blast on these in a wide array of conditions. Available from 5’2-6’6 if you’re a big fella.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Guerrero",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/Dead-Kooks-Surfboards_Guerrero_01_WEB.jpg",
+          "description": "In designing and shaping this board i wanted to bring a totally fresh approach to what CJ has been riding. After making a few Nausea model's in various sizes and with a few tweaks I had a solid idea what i wanted to do with this board. The Guerrero model is something fresh and exciting. Starting with the rocker used in the Dead Kooks Nausea model we added some extra lift in the front end giving a nice clean and consistent rocker curve providing hold on the nose, stable and fast trim from a forward position and precise control and drive from the rear. The outline is a nod to some late 60's Australian favourites, pulling in the ears out front and carrying width just behind center providing a nice hip. There is a pretty serious amount of concave that runs through the front third of the board, narrow and blended into the belly as it runs out into the rest of the board. The rails are a noticeably a little lower more a 60/40 running into a panelled V section leading into the fin with a dash of edge for control, direct feel under foot and a little flair. Available from 9’2-10’2",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Hellcat",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/Dead-Kooks-Surfboards_Hellcat_01_WEB.jpg",
+          "description": "Looking for new feelings from a twin the Hellcat was born. A scaled down Hellhound outline with similar foil but thats about where it stops. Some detailed bottom contours, tucked under edge and low rail, fins pushed up with the wider pintail providing hold and amble release when needed. The tighter tail keeps it nice and nimble under the back foot while. the wider plan shape under the front foot gives it plenty of carry through the flats yet sits nice and tight in the pocket. Suited to a wide array of conditions. Order from 5’4-6’4.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Hellhound",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/DEADKOOKSHOUND4.jpg",
+          "description": "The real go-to in the collection. The Hellhound is one of my first templates and still a favourite. Happy in such a wide array of conditions and if i could just take one board on a trip this might be it. Foam pushed forward, neutral rails, double concave under the back foot and a nice edge to provide positive feel and drive when pushing hard. A great balanced feel under foot, these are available from 6’2 - 7’6.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Nausea",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/Dead-Kooks-Surfboards_Nausea_01_WEB.jpg",
+          "description": "All-round winner. This is our tried and tested favourite in the range. Heavy late 60’s Australian influence, tucked in nose, hips just behind center, even/consistent rocker tip to tip and pinched out foiled rail. Narrow concave running through the front third, the Nausea has been my go to for a long time. Refined and balanced these work for the experienced surfer or this just getting into longboards. Comfortable in tight hollow point waves and short beachies, loves to be surfed from all over the board. Loose and driving off the tail, fast through the middle and holds tight on the nose. Can be ridden from 9’0-10’2.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "New Rave",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/Dead-Kooks-Surfboards_New-Wave_01_WEB.jpg",
+          "description": "Our take on a classic Noserider. A very easy and forgiving ride. Molasses is the term that comes to mind.. Smooth and easy as she goes is what this is all about. A soft and wide blended concave in the front 1/3, soft roll through the middle for speed and ease of trim. A mid 60/40 Rail that provides hold and sensitivity.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pretty (Hate) Machine",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/IMG_5667.jpg",
+          "description": "The Pretty (Hate) Machine has come about through the desire to have something that gives the drive of a glider from the tail but with nose rider characteristics in the front third. Something that'll trim all day and that you can push as hard as you'll ever want to from the tail, but still hold tight on the nose in the pocket . Racy narrow outline, tight concave through the front 1/3, moving in to roll that accelerates towards the tail with a decent dose of kick behind the fin and a touch of edge.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Rattlesnake",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/Dead-Kooks-Surfboards_Rattlesnake_01_WEB.jpg",
+          "description": "Sleek and refined, the Rattlesnake is built for clean tight lines and crisp surfing. The stretched fish outline with the pulled in tail block, sharp rails and dynamic bottom contours make this haul ass. There’s such a good feel from pushing these boards hard, the drive and control from a board this size is a whole lot of fun. Best paired with upright twins. Available from 6’6-7’10.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Riches RF",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/DEADKOOKS.RICHE2.jpg",
+          "description": "Highly functional, tried tested and well refined. The Riches RF is my go-to for most days. From Californian summer slop to well overhead East Coast points, these are built to be surfed hard and really come to life in good waves. Low rails and low rocker, a clean foil tip to tip and some complex bottom contours, there’s plenty going on but all combined is a hell of a lot of fun. Fast and drivey, release when you need it, tight in the pocket and good carry through the flats. Best from 4’10 - 6’0.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Salty",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/Dead-Kooks-Surfboards_Salty_01_WEB.jpg",
+          "description": "The most easy riding MidLength in our lineup. Consistent rocker, fuller outline and tighter backend. A scooped out nose to reduce swing weight combine with a rolled entry, flat to panel Vee bottom. A forgiving rail with a more mid boxy feel and tucked edge. Smooth surfing, drawn out clean lines and tight pocket hooks, the Salty will cover a lot of bases. Suggested to run it with side bites for maximum for performance, added drive and hold when really pushing it, but very comfortable as a single.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Shorty",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/Dead-Kooks-Surfboards_Shorty_01_WEB.jpg",
+          "description": "I cut my teeth shaping shortboards and still get a good kick out of it. Building refined Shorty’s and StepUps for friends to some of the tour guys with a rounded approach to speed, agility and performance. We have a few dialled in shapes we usually run but happy to tweak to your needs.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SPEED",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/IMG_6940_eb23b1f1-d57c-445c-b6a1-cfde11e00c96.jpg",
+          "description": "A new model I've been really enjoying, a bit of a strange alchemy of thoughts and feelings. Starting with some Jacobs models that got a little rebirth in the early 2000's, a nod to late 60's speed shapes but with some of the fun of the often dissed late 1990's / early 2000's longboards. A generous amount of rocker, soft rolled entry to panelled Vee the length of the board a mid boxy rail that feeds to a hard edge in the back. It has a generous sweet spot in the middle and just forward of center that is the control room to ride and drive from, stop back and its loose and free off the tail. Find the right section and it'll hold tight on the front, but this isn't really what this board is for. This board if for surfing hard hard off the back, causing from the center and trimming and gunning hard and fast from the front 1/3. They surf shorter than they are so don't one afraid of a bit extra length.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Stubby",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/DEADKOOKS.STUBBY.jpg",
+          "description": "Great easy to ride option for a range of conditions. The Stubby has a foiled hull entry, neutral rails to soft tucked down rail in the tail. A soft double under the back foot into Vee provides able drive and a familiar reliability to push hard through turns. A flat rocker with wide point and volume pushed forward under the chest. The Stubby can be surfed forward for a super loose feeling, down the line speed and fast high lines, yet shifting to the tail it can be pushed hard through tight arcs and put high into the lip. Best ridden from 6’2 - 7’6.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Thang",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/IMG_5382.jpg",
+          "description": "The Thang. Essentially, the design for this has pulled strong inspiration from the Yin Yang, incorporating some modifications such as shortening the front section by 4 inches and refining its structure and pulling everything in a bit. Following countless sessions and conversations with Dave, and several trips to Fiji and the States where I took only a Yin Yang, I sought a board tailored to navigating really tight pockets and executing more critical backside turns where the tight radius of the wave didn't allow for a longer rail to fit so easily. Thus, the Thang is where we arrived. The rear end retains the essence of the Yin Yang, albeit with some subtle adjustments, ensuring a familiar feel underfoot. This iteration is optimized for maneuverability in confined spaces while maintaining the smooth rail line characteristic of its longer counterpart for the more open faced waves. These are offering optimal performance when surfed 4-6 inches smaller than you'd typically ride your Yin Yang.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Toro",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/IMG_4639.jpg",
+          "description": "What started as a fun little KneeBoard experiment has quickly become a favourite for those small days or just maximising fun. Taking cues from old \"Sky\" Kneeboard and the MR bumblebee, the toro has a stubby little plan shape. Not overly wide but with the full nose and straighter exit in the tail, it keeps some nice curve throughout. An accentuated Vee in the nose entry fades to a single and back to Vee behind the fins. Available as a twin or Quad setup, choose your own adventure.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Vivi",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/5c777f02-2dab-4eff-8875-66dd841f252b.jpg",
+          "description": "A new model for 2025 built in collaboration with Victoria Vegara. This model is the culmination of working together for over 10 years on refining what works best for Vic. A highly versatile shape. Tucked nose and more neutral outline to a tighter tail and diamond tail block. A soft teardrop concave under the nose that fades into a flatter bottom with graduating roll in the back 1/3. 60/40 rails keep it fast and in control.. A really fun and exciting board to ride in a wide range of conditions. Victoria rides 9'5 x 22/34 x 2 3/4",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Wildflower",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/products/IMG_6283.jpg",
+          "description": "The Wildflower is the result of a recent film project that required a range of boards to fit the setting of the early 70's. Outlines and design cues were taken from that era and modernised slightly to create something incredibly reliable and ripable in a broad range of conditions. Foam carried right across the deck, flat entry to vee with a tucked edge from in front of the fin. These are comfortable in the pocket and carry over fat sections with ease. It’s been a long time since a singlefin excited me this much. To be ridden from 6'1 to 7'2, but can be built bigger upon request!",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Yin Yang",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/IMG_0386.jpg",
+          "description": "This is our bread and butter. My favourite board in the range and our best seller. The Yin Yang has come about through countless hours and many iterations over the past few years. Wanting to keep a generous amount of foam for paddle-power, speed and flow, but come up with something that would be comfortable being put wherever your shortboard would go. Hence, the Yin Yang was born. The tighter tail pod allows for reliable and powerful surfing, easy speed and will happily go frontside or backside. Think of it as the younger, over-caffeinated sibling to the Aphex. An excitable puppy. A lower and shorter rail line pulls everything in a bit tighter and adding sensitivity, allowing for more critical surfing while still preserving the forgiving nature of the Aphex. At home in a wide range of conditions, it will carry speed well over fat sections but project in any direction your ability will allow when there’s some wall to work with. Generally ridden from 6’3 - 7'0, but can be built longer upon request.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Marquee",
+          "image_url": "https://cdn.shopify.com/s/files/1/2373/4163/collections/Dead-Kooks-Surfboards_Marquee_01_WEB.jpg",
+          "description": "One of the new models born from a few Summer’s back. I was doing a round the world trip shaping and surfing in a bunch of different spots and conditions and this is what i was travelling with. The Marquee was comfortable in punchy beach breaks, junky mush and pushing points. More rocker than the rest of the range and the striking blunt nose, it has a pretty sleek outline and pinched rail. Soft concave entry blending to a soft rolled bottom, lower rail line and pinched rear. I love the feeling of curling your toes over the blunt nose, especially backside giving a lot of control. A solid all-rounder for those who dig a little difference. Available from 8’10-10’",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
