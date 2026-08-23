@@ -1,0 +1,72 @@
+{
+  "generated_for": "Jimmy Lewis official surfboard model catalog",
+  "source": "https://jimmylewis.com/product-category/surfboards/",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "jimmy-lewis-surfboards",
+      "name": "Jimmy Lewis",
+      "website_url": "https://jimmylewis.com/",
+      "location_label": "Maui, Hawaii",
+      "founder_name": "Jimmy Lewis",
+      "lead_shaper_name": "Jimmy Lewis",
+      "short_description": "Maui, Hawaii surfboards shaped by Jimmy Lewis since 1968.",
+      "models": [
+        {
+          "name": "Shack",
+          "image_url": "https://jimmylewis.com/wp-content/uploads/2016/04/surf-shack-top.png",
+          "description": "Our all around high performance shortboard. Designed with a clean flowing performance rocker and single to double concave for butter smooth turns and that alive responsive feel under your feet. Comes with 4.5″ thruster set. Sizes 5’9″x17.75″x1.875″ (21L.) 6’0″x18.25″x2″ (26L.) 6’3″ x 18.75″x2.125″ (31L.)",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Kwad",
+          "image_url": "https://jimmylewis.com/wp-content/uploads/2016/04/surf-kwad-maroon-top.png",
+          "description": "This high performance shortboard was built around the quad fin set up. It’s wide point barely up from center gives it that front foot drive and allows it to keep its speed on the wave while it’s clean rocker line and 4 fin set up allows it to hold through clean carving lines. Comes with quad fin set up (4.5″ front, 4″ back). Sizes 5’4″x17.5″x1.875″, 19.5 liters 5’7″x18″x2″, 22.3 liters 5’11″x18.5″x2.125″, 25.3 liters 6’2″x19″x2.25″, 29.8 liters",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Canary",
+          "image_url": "https://jimmylewis.com/wp-content/uploads/2016/04/surf-canary-yellow-top.png",
+          "description": "The Canary’s wider outline with its flatter rocker through the middle of the board gives it tons of drive and speed through any flat spot on weak waves. It’s single to double concave with it’s moderate tail rocker makes it very responsive and easy to fling around. Great board for any conditions from perfect to junk. 5 box fin set up. Includes 4.5″ thruster set. Sizes 5’6″ x 21.5″ x 2.3″ (34.5L.) 5’11″ x 22.25″ x 2.3″ (38.87L.) 6’3″ x 22.75″ x 2.3″ (41L.)",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Rocket",
+          "image_url": "https://jimmylewis.com/wp-content/uploads/2016/04/surf-rocket-maroon-top-1.png",
+          "description": "The classic fish shape combined with twin keel fins offers insane drive and down the line speed even in less than powerful waves. A paneled “V” bottom going from tip to tail makes for incredible rail to rail speed transitions. Twin fin box set up. Comes with 5″ deep keel fins. Sizes 5’10″x21.5″x2.5″ (39L.) 6’4″x22.25″x2.75″ (45L.) 6’8″x22.5″x2.75″ (48L.)",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Destroyer",
+          "image_url": "https://jimmylewis.com/wp-content/uploads/2016/04/Destroyer-deck-magenta.jpg",
+          "description": "Maui’s Favorite Board! The short longboard. This mini tanker is a great fun shape for beginners and advanced riders. Catches waves like a longboard but performs like a shortboard. The flat bottom through the front and center of the board going to a V near the fins makes this board very fast and responsive under your feet. Comes with 4.5″ thruster set. Sizes 6’0″ x 20 3/4″ x 2 1/2″ (37 Liters) 6’6″ x 21 1/4″ x 2 3/4″ (45.1 Liters) 7’0″x21.25″x2.75″ (48.5 Liters.) 7’6″ x 21 1/2″ x 2 3/4″ (52.8 Liters) 8’0″x21.5″x2.75″ (56.5 Liters.)",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Maui Model",
+          "image_url": "https://jimmylewis.com/wp-content/uploads/2016/04/Maui-Model-deck-red.jpg",
+          "description": "We started out with our HP longboard design and gave it some extra width, volume and small adjustments to create a very forgiving and easy to ride longboard. This board is ideal for beginners or somebody who just wants to cruise in small waves. Flat bottom in nose blending into a single concave in the center feeding into a double concave in the fin area and flat off the tail block. 2+1 fin box set up. Comes with 7″ JL swept fin and 3.5″ side bites. Sizes 8’0″ (62L.) 8’6″ 9’0″x23.5″ (72L.) 9’6″ 10’0″x24.5″ (92L.)",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "HP",
+          "image_url": "https://jimmylewis.com/wp-content/uploads/2016/04/HP-deck-blue.jpg",
+          "description": "High performance longboard. Designed for riders looking to get the best speed and control from a longboard. Flat bottom with “V” in the tail. 8’6″ comes with 4.5″ thruster fins; 9’1″/9’8″ come with 7″ JL swept fin and 3.5″ side bites. Sizes 8’6″x21 1/2″x2 5/8″ (57.5L.) 9’1″x22 1/2″x2 7/8″ (70L.) 9’8″x23″x3 1/8″ (83.4L.)",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Tai Stick",
+          "image_url": "https://jimmylewis.com/wp-content/uploads/2016/04/surf-thaistick-yellow-top-1.png",
+          "description": "The Tai Stick is a thinner performance long board. The thinness gives a more sensitive/alive feel on the wave and under your feet. This long board has a slight single concave in the center, much like shortboards, going into a double concave “V” in front of and through the three fin set up. This gives the board lift and quick planing with more drive in the turns. 2+1 fin box set up. Comes with 7″ JL swept fin and 3.5″ side bites. Sizes 9’1″x22″x2.4″ (57.9L) 9’6″x22.5″x2.7″ (69.7L)",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Ultimate Noserider",
+          "image_url": "https://jimmylewis.com/wp-content/uploads/2016/04/surf-ultimatenoserider-maroon-top.png",
+          "description": "The classic nose riding longboard with concave nose, 50/50 rails, soft squash tail, and nose rider fin. Single fin box. 9’9″ comes with 10″ nose rider fin; 10’4″ and 10’10″ come with 11″ nose rider fin. Sizes 9’9″x23″x3 3/8″ (88L.) 10’4″x24 1/4″x3 5/8″ (106L.) 10’10″x24 1/2″x4″ (124L.)",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
