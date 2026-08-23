@@ -1,0 +1,48 @@
+{
+  "generated_for": "McCallum Surfboards official named model catalog",
+  "source": "https://www.mccallumsurfboards.com/",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "mccallum-surfboards",
+      "name": "McCallum Surfboards",
+      "website_url": "https://www.mccallumsurfboards.com/",
+      "location_label": "California",
+      "founder_name": "Jeff McCallum",
+      "lead_shaper_name": "Jeff McCallum",
+      "short_description": "Shapes by Jeff McCallum, with hand-shaped, computer-cut, and Mexico-made production levels.",
+      "models": [
+        {
+          "name": "PDX",
+          "image_url": "https://cdn.shopify.com/s/files/1/0878/4334/0576/files/pdxtoprailcaptwinzer.jpg?v=1780606473",
+          "description": "The PDX is the meat and potatoes of what I do, the original design was called a Quagg, for Quad+Egg, which went through a few alterations eventually ending in the PDX. The design came from the fish craze on 2001ish I was riding a few classic Fish in the 5'4\"-5'6\" range but wanted something longer being 6'3\" As the fish grew in length they started to track, so i combined a fish with a round pin to put some curve in the rail and loosen them up. Since then of the nearly 8000 boards I've hand shapes the PDX has been by far the most popular, They paddle great, fast and super loose. Sort of a best of both worlds.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "T-Egg",
+          "image_url": "https://cdn.shopify.com/s/files/1/0878/4334/0576/files/jeff_mccallum_black_and_white.jpg?v=1751522535",
+          "description": "The TEgg, started as a last minute fin change on an already glassed board, which turned into probably my favorite board in the last 15 Years, The Long straight, parallel rails add down the line speed and drive, then the parallel pivot point of the twin keeps the loose and flowing. The added volume of the mid length creates a ton of paddle power helping it excel in small to ever well overhead surf. This is now my current go to all-a-rounder and a must on any surf trip especially if I can only take one board.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Kimbo",
+          "image_url": "https://cdn.shopify.com/s/files/1/0878/4334/0576/files/15AA67CD-F86D-49AA-B5E8-5AB0B0506301_1080x_8da13b56-049d-4b64-82cb-a87b064379b5.webp?v=1786559231",
+          "description": "The Kimbo, was named after my english mastiff who passed away in 2018. I had an idea in my head of a modified Tegg designed for winter swell, with a more streamline, pulled in outline but the same general design cues. I made one shortly after Kimbo passed away and ended up putting his ashes in the pinlines and decided to only ride that board for an entire year. It was originally designed around a step up/ Gun but after riding it for a year straight in all conditions it became a favorite. And still my go to when the waves get punchy, big or small. I've since shrunk down the original 8'0\" to 7'0\" and everything in between to widen the range. The 7'0\" comes out less pulled in in the tail and turns into a great all-arounder and a one board quiver in punchy waves.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Gyp",
+          "image_url": "https://cdn.shopify.com/s/files/1/0878/4334/0576/files/jmfishdeck.jpg?v=1774301838",
+          "description": "The GYP is fish is a model designed off a Skip Frye template. Lots of volume where you need it with Skip rails to help transition from rail to rail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Q-Egg",
+          "image_url": "https://cdn.shopify.com/s/files/1/0878/4334/0576/files/mccallumqeggtop_MCCALLUM_QUAD_EGG.jpg?v=1780605436",
+          "description": "Q-EGG, a playful QUAD fin that is super playful in a variety of waves! Just the right amount of rocker to help maneuver a wider template through those sneaky little sections.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
