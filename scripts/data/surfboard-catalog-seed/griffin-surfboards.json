@@ -1,0 +1,82 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "griffin-surfboards",
+      "name": "Griffin Surfboards",
+      "website_url": "https://griffinsurfboardsnz.com/",
+      "location_label": "Mount Maunganui, New Zealand",
+      "founder_name": "Jordan Griffin",
+      "lead_shaper_name": "Jordan Griffin",
+      "short_description": "Independent Mount Maunganui surfboards shaped by Jordan Griffin since 2016. Custom models built around the rider.",
+      "models": [
+        {
+          "name": "2002 A Modern Throwback Thruster",
+          "image_url": "https://cdn.shopify.com/s/files/1/0569/6936/3639/files/IMG_4393.heic?width=1600&format=jpg",
+          "description": "2002 \u2013 A Modern Throwback Thruster The 2002 is a refined thruster inspired by early 2000s performance boards \u2014 reimagined for modern surfing. Featuring a classic 2002-style rocker and outline , this board brings that raw, high-speed feel with updated flow and drive. Designed to be ridden around 4 inches longer than your standard shortboard, and \u00be to 1 inch narrower , the 2002 trims out clean and holds a line when things get steep and fast. The added length gives it extra paddle power and projection, while the sleeker width keeps it sharp and responsive off the tail. Perfect for surfers chasing down the wall, throwing big turns, and tapping into that stripped-back, no-frills performance\u2026",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Zimmer Pin Step Up",
+          "image_url": "https://cdn.shopify.com/s/files/1/0569/6936/3639/files/IMG_4897.heic?width=1600&format=jpg",
+          "description": "The Zimmer Pin Step Up is a high-performance twin fin built for advanced surfers looking to push their limits in the surf. Designed for speed, control, and flow, it blends classic lines with refined modern tweaks. The nose has been thinned out and more rocker added to suit steeper, more curved waves, while a slightly lower rail helps engage more easily and hold through critical turns. Combined with a rounded pin tail and twin fin setup, this board offers drive, control, and smooth rail-to-rail transitions in bigger surf. Key Features: Twin fin setup (FCS2 or Futures) Refined pin-tail for grip and control Thinner nose + added rocker for steeper, curved waves Lower rail for easier engagement\u2026",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Two Fun",
+          "image_url": "https://cdn.shopify.com/s/files/1/0569/6936/3639/files/IMG_3606.heic?width=1600&format=jpg",
+          "description": "The Two Fun Model is designed for surfers who crave a dynamic and fun ride, blending the best of speed and manoeuvrability. Featuring a unique twin-fin setup with a trailer fin, this board is perfect for those who love to carve smooth arcs while maintaining excellent drive and stability. Whether you're carving down the line or looking for a bit of extra hold in the pocket, the Two Fun Model delivers a versatile performance, ideal for a variety of wave conditions. Twin Fin + Trailer Fin Configuration: The twin fins provide responsive turning and fast acceleration, while the trailer fin enhances stability and control for sharper, more precise maneuvers. Fun & Agile Performance: Designed to\u2026",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Zimmer Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0569/6936/3639/products/image_e409120d-73ea-42ce-9308-fc5cce4e2561.heic?width=1600&format=jpg",
+          "description": "The ZIMMER TWO PIN has really opened my and our team riders' minds as to what is possible on a twin fin. With maximum hold, this board has amazing drive and speed. The ZIMMER TWO PIN is a mix between the Keeler and the original Zimmer Twin. With a little added width and thickness for those not-so-perfect days. We have also pushed the fins a lot further back to give it the drive and hold as we've chucked out the stabilizer in the Zimmer Two Pin. The Zimmer Two pin is a perfect addition to any quiver. Glassing: 4x4x4 or 4x4x6 Rocker: Flat rocker Concave: Single to a subtle double concave with V running through the fins and off the tail. Tail: rounded pin Fins layout: Twin FCS2 or future\u2026",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Mixer",
+          "image_url": "https://cdn.shopify.com/s/files/1/0569/6936/3639/products/image_2437d839-e8f7-4592-8eec-b97eba770fbd.heic?width=1600&format=jpg",
+          "description": "THE MIXER After years of riding the athlete log it was time for new feelings in hopes of a even better ride. I made up a few different concepts and sent them out to my trusted test pilots to get some feedback. It was an instant hit for all of them and only a few minor changes were made. I had taken the front end of the Athlete and mixed it with the width of the chalkboard and the tail end of the first love. We Flatted the rocker and made it a little less extreme in the concave and the belly roll. This log has also been on a diet with a lot of foam as we felt that logs don\u2019t always have to be big fat-railed slugs. This log has amazing nose riding capabilities mixed with easy flowing turns\u2026",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Zimmer Pin XL",
+          "image_url": "https://cdn.shopify.com/s/files/1/0569/6936/3639/files/IMG_3422.heic?width=1600&format=jpg",
+          "description": "The Zimmer PIN XL has that fun twin feel but has enough hold and projection to free you from ever wishing for a third fin or trailer. Designed as an all-rounder, it helps you rip into anything from lame little waves to double overhead rifling walls. The rails are low, so most people ride the Zimmer PIN XL at least 1/8\u201d -1/4\u201d thicker than their shortboard . Glassing: 4x4x4x 4 tail patch or 4x4x6 Rocker: Flat rocker Concave: Single to a subtle double concave with V running through the fins and off the tail. Tail: Rounded pin Fins layout: Twin. FCS2 or future boxes are available. (glass on fins are available) Skill level: All levels Wave Type: Beach Break, Point Break, Reef Break Wave Height:\u2026",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Zimmer Swallow",
+          "image_url": "https://cdn.shopify.com/s/files/1/0569/6936/3639/products/IMG_5087.jpg",
+          "description": "The ZIMMER TWO is a mix between the Keeler and the Zimmer Twin. With a little added width and thickness for those not-so-perfect days. We have also pushed the fins a lot further back to give it amazing drive and hold as we've chucked out the stabilizer in the Zimmer two. The Zimmer Two is a perfect addition to any quiver. Glassing: 4x4x4 or 4x4x6 Rocker: Flat rocker Concave: Single to a subtle double concave with V running through the fins and off the tail. Tail: Swallow tail Fins layout: Twin FCS2 or future boxes are available. (glass on fins are available) Skill level: All levels Wave Type: Beach Break, Point Break, Reef Break Wave Height: 1-5ft + Ordering Info: Resin tints or pigments:\u2026",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "LGP",
+          "image_url": "https://cdn.shopify.com/s/files/1/0569/6936/3639/files/IMG_9382.heic?width=1600&format=jpg",
+          "description": "The LGP is the pinnacle of high-performance equipment in decent to cooking surf. We\u2019ve developed this board with Luke Griffin. The LGP allows you to get into waves earlier & easier while maintaining the perfect level of control in quality conditions and high speeds. Glassing: 4x4x4x or 6x4x4 all LPG\u2019s come with a Innegra heel and toe tail strip. Rocker: Medium rocker Concave: Single to a subtle double concave running through the fins Tail: Squash / round / swallow tails Fins Layout: 3, fcs2, or future boxes. (glass ons available) Skill Level: Intermediate to PRO Wave Type: Beach Break, Point Break, Reef Break Wave Height: 1-6ft + Resin tints or pigments: $150 per side Sprays: $185 per side\u2026",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "King Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0569/6936/3639/products/image_dfaea44b-d5d8-4277-9c57-f301ef26c732.jpg",
+          "description": "The KING FISH is a take on the Happy Hour Keel we do but with added length for amazing paddle power and glide. Plus these things can handle some serious juice, while still being amazing in knee to chest-high waves which makes this board a must-have in your quiver. Glassing: 4x4x6 or 6x4x6 Rocker: Flat rocker Concave: Single to a deep double concave through the fins and off the tail. Tail: Deep swallow tail Fins Layout: Twin keels. I'd recommend glass on keel fins, but FCS2 or future boxes are available. Skill Level: All levels Wave Type: Beach Break, Point Break, Reef Break Wave Height: 1-6ft + ADD ON'S Resin tints or pigments: $150 per side Sprays: $185 per side Triple stringer: $170\u2026",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Keeler",
+          "image_url": "https://cdn.shopify.com/s/files/1/0569/6936/3639/files/IMG_3610.heic?width=1600&format=jpg",
+          "description": "The KEELER is a more refined version of the Happy Hour Keel Fish with a straighter outline and less volume all around. It still has all the speed you\u2019ll ever want and they love some nice flowing surfing. You\u2019ll probably never find a better down-the-line tube board. The KEELER is a perfect all-round board from 2 ft slop to 5 ft tubes. I believe you\u2019ll love every moment on this board. Glassing: 4x4x4 or 4x4x6 Rocker: Flat rocker Concave: Single to a subtle double concave with a slight vee running through the fins and off the tail. Tail: Deep swallow tail Fins Layout: Twin keels. fcs2 or future boxes glass ons are also available. Skill Level: All skill levels Wave Type: Beach Break, Point\u2026",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Happy Hour Keel Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0569/6936/3639/products/IMG_5443.jpg",
+          "description": "The HAPPY HOUR KEEL FISH is probably one of the fastest boards I\u2019ve ever ridden, they love some nice flowing surfing. Big turns are not an issue and you\u2019ll probably never find a better down-the-line tube board. The fish was born from a kneeboard so wants to be ridden as short as possible to really get the feeling it\u2019s supposed to have. A classic shape that will never get old and a go-to board for almost every wave type. Glassing: 4x4x4 or 4x4x6 Rocker: Flat rocker Concave: Single to a subtle double concave with a deep V running through the fins and off the tail. Tail: Deep swallow tail Fins layout: Twin keels. I'd recommend glass on keel fins, but FCS2 or future boxes are available. Skill\u2026",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
