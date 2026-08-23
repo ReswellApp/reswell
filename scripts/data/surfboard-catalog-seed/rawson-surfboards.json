@@ -1,0 +1,210 @@
+{
+  "product_category_slug": "surfboards",
+  "source": "https://www.rawsonsurfboards.com/all-surfboards",
+  "generated_for": "Rawson Surfboards official named model catalog",
+  "brands": [
+    {
+      "slug": "rawson-surfboards",
+      "name": "Rawson Surfboards",
+      "website_url": "https://www.rawsonsurfboards.com/",
+      "location_label": "Sunset Beach, Oahu, Hawaii",
+      "founder_name": "Pat Rawson",
+      "lead_shaper_name": "Pat Rawson",
+      "short_description": "Hand-shaped custom surfboards by Pat Rawson, manufacturing on the North Shore of Oahu since 1972.",
+      "models": [
+        {
+          "name": "The \"Sniper\" Shortboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1613885299392-57DZ6F3WGTNSKTP84YZR/IMG_7754.jpeg",
+          "description": "Sniper Series The Sniper series is currently my most asked for model from my customers world wide. I originally designed the first Impala in 2009 while shaping at Lost Surfboards while building and selling my Rawson brands that Lost was distributing for me. At the time, Matt Biolos; the Lost Surfboards owner, was encouraging me to design a hybrid that had the best of the '80's, but style was contemporary looking.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sniper Shortboard SS",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1613885091167-6BXVM44O31N2H5ZEC4LD/IMG_8722.JPG",
+          "description": "Sniper Series The Sniper series is currently my most asked for model from my customers world wide. I originally designed the first Impala in 2009 while shaping at Lost Surfboards while building and selling my Rawson brands that Lost was distributing for me. At the time, Matt Biolos; the Lost Surfboards owner, was encouraging me to design a hybrid that had the best of the '80's, but style was contemporary looking.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SK8+ Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608073384514-N01SK729K4OZIZMTP5SH/IMG_4675__36540.1597892136.jpg",
+          "description": "The SK8+ Model: The performance series Rawson SK8+ is a modified offspring of the long-enduring Rawson Hyper-Skate Model. Combining a slightly wider nose, with a lower and more efficient nose rocker, and a slight concave bottom contour to double concaves in the tail, along with a thinner, boxy California styled rail with good tail edges, gives this short board model characteristics to be skatey and loose in…",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "HC+ Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608073298444-ONV1JF2KMS446EUPQYL1/IMG_4678__39298.1585527181.jpg",
+          "description": "HC+ Model: This high performance Rawson specialty model was formally known as the Hyper-Classic model, and is one of my longest running Rawson step-up models I offer. The HC+ is a semi-gun design originally “spawned” on the North Shore and is intended for good surf and traveling surfers everywhere.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "The Impala Design",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608073111332-0PJQ662CR1RQAPTK664N/impala__88343.1597892530.jpg",
+          "description": "The Impala Model: I designed the first Impala in 2009 while shaping at Lost Surfboards while they were building and selling my Rawson brand. At the time, Matt Biolos; the Lost owner, was encouraging me to design a hybrid that had the best of the '80's, but with style that was contemporary looking. The result was one of my best small wave model sellers for 8 years: the Impala.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "TC Impala Quad",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608073010238-58VXYWDECXNSWHM89V6J/IMG_1231__71894.1597892185.jpg",
+          "description": "TC Impala Quad Board Range: 5'8 ~ 7'4 All the TC Impala Quad Models can also be ordered shorter or wider and thicker. They all are hand signed by Tom, and are a great choice for surfers that love speed, carving, powerful bottom turns and gouging roundhouse cutbacks. These dims below are based by Tom's actual boards and body weight for a step-up style.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The 4x2 Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608071611025-8DWQB75J4QQ8FEFO1M6T/IMG_6698__94316.1598411554.jpg",
+          "description": "The 4X2 Model: Back about 10 years ago, professional surfer, Allen Sarlo and I started designing boards for his powerful surfing style using medium deep concave bottoms combined with double concaves inside that concave, resulting in a very high planing and super-hydrodynamical bottom design that worked extremely well for Allen's powerful style in both large and small wave in California and Hawaii.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The 4x2 Blunt Twinzer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608068938910-JVVH6C59CL8Z93I24BYX/The_4x2_Blunt_Twinzer__03839.1597894138.jpg",
+          "description": "The 4x2 Twinzer Blunt Model The 4x2 Twinzer Blunt was designed by modifying my existing 4x2 model by morphing a wide nose template, also incorporating less nose rocker for paddling, and for increased front foot drive in small dead surf. This one is meant to be ordered wider overall than the standard 4X2.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "1975 Sting Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608072299888-OXS16ASH8KEI2BJ25PCD/1975-sting__11309.1597894641.jpg",
+          "description": "1975 Sting Model Back in 1973, renowned Shaper/Surfer Ben Aipa came out with his revolutionary Sting design. At the time, Ben was working exclusively with Larry Bertlemann and Buttons Kaluhiokalani and Mark Liddell, and that was the hottest single fin design of that time period.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "'77 Single Fin Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1613884538499-9WVE6HIFDLMOKAHBPK9G/Rawson_Blue_01.jpg",
+          "description": "'77 Single Fin Model: Back in 1977-78, I started working with Rob Burns, the founder of Local Motion in Kailua Oahu as his first shaper. We enjoyed tremendous initial success and we were able to have team riders like Buzzy Kerbox who was a top 10 ASP rider from Kailua, Oahu, where we were located.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Kailua Single Fin Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1613884723992-KGNEU926YLIQYBYXTJZ3/Rawson_Red+Wing_01.jpg",
+          "description": "Kailua Single Fin Model: Around 1976, I started shaping & building Wing Round Pin single fins on the North Shore. They had very flat decks, and fuller yet low rails and they were really a consistent riding board I enjoyed shaping. When Rob Burns started Local Motion in Kailua, Oahu, I became his first shaper and this was a really popular model I was building then around LM Kailua team rider, Buzzy Kerbox.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Summer of 83' Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608072662906-TPCG94L1NCZ2P3BS6JNG/Backround_Pic_copy__16870.1596609434.jpg",
+          "description": "Summer of '83 Model: The first thruster models I was designing and shaping, and being sold at Local Motion Hawaii and in Japan, were mainly designed for Mark Liddell and \"Button's\", who were my team riders and riding for LM since 1978. In the middle of the Summer of '83, I had 3 different magazine cover shots of that same thruster design, and so the name: \"Summer of '83\" model was appropriate.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The '84 Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608072799596-2PG9WCYWJ1YRLB6EWSNW/2017_Vintage_Surfboards_Shoot_-_0657__03092.1594252007.jpg",
+          "description": "The '84 Model: As Summer of '84 came about, the thruster was getting perfected in in terms of refining the design around 3 (or more) fins. For me at that time, I took off the double bump wings, and streamlined the outline somewhat, compared to the Summer of '83. These newer '84 boards were more refined, although I continued with the nose to tail panel vee, going into a double concaved vee in the fin area.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The '85 Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608072868810-KATG7Z4MFKIUZDBNX9LN/IMG_0259__79593.1598415723.jpg",
+          "description": "The '85 Model: By 1985, shapers everywhere were pretty much on top of the thruster design, and finally other proven designs were being tested. I always had a soft place in my heart for Twin fin designs.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The San Diego Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608071742696-19YEZK1HGMIH36IJFZQ7/classic-sandiego4__22671.1598410944.jpg",
+          "description": "The SAN DIEGO FISH: The SAN DIEGO FISH has been my traditional fish design for almost 50 years. I originally shaped this design for myself and my riders in California in 1971-72 before moving to Hawaii to study, work and surf. I've kept up on the refinement of the SDF since then, and in 1991 began building more SDF designs for guys like Donavan Frankenrieter and my son, Ryan and other team riders.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Rocket Fish (RF)",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608068641756-8PNTCHJZUPOJOK1DCLYJ/rocket-fishrf__69287.1597894420.jpg",
+          "description": "Rocket Fish (RF): I've been building and refining the Rocket Fish design aka RF design since 1992. My longtime friend; Clyde Beatty, was the originator of the original Rocket Fish Design in the early 70's. A long while ago, I had asked his permission to use his Rocket Fish name, because I really like that name and also the type of board it represents in my surfboard model categories.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Rocket Fish (RF) PLUS Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608073781348-Q9926ZIA3LGMBYWAT1ES/rf___27935.1597892054.jpg",
+          "description": "The Rocket Fish (RF) PLUS Model The Rocket Fish (RF) PLUS model is the expanded version of my Rocket Fish (RF) model. Many surfers today are looking for surfboards with more length, bigger dimensions, more cubic volume, that are designed with the correct rocker and rails for larger boards that still maintain the speed and ride of the smaller board models, yet still surf well as the longer & bigger version.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Alien Swallowtail",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1611819364343-V9YNMSQJ07K9M27X1I7F/Rawson_Twin+Fin_01.jpg",
+          "description": "Alien Swallowtail: The Alien Swallowtail is the offspring of my former SR-71 model which was very popular 17 years ago while I was working at the PSG factory in Miramar, San Diego. It features a beak type nose, with thickness forward along with a flatter deck, and fuller low rails. The double wing swallow version is ideal for a quad fin positioned off each wing.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Alien Round Tail Bonzer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608068060058-R85DWVBAF17OE5UXCPAS/alien-roundtail2__12834.1598413697.jpg",
+          "description": "Alien Round Tail Bonzer: The Alien Round tail is my Rawson Round tail rendition of the Alien series. The Alien Round tail features a Bonzer bottom design, which enhances the loose-ness from the curvier tail curve, and really gives this model speed to burn derived from effortless transitioning rail to rail bursts.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Nova Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1613883174620-YPDVDM788W9DOMJHVK2X/IMG_6682.jpg",
+          "description": "NOVA Twin The Rawson NOVA Twin is a newer contemporary design with an exclusive wing diamond tail. It features fuller low rails, a \"Sleek Beak\" nose and is a well rounded dedicated twin fin. It’s important to note the fin placement is further back on this board providing solid, confident hold, and eliminating the need for a back fin or trailer.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "High Performance Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608068415964-7MREF2SOU5GDIG9M4AOI/IMG_4643__23046.1593285051.jpg",
+          "description": "High Performance Twin model (HPT) We started building and selling the High Performance Twin design around 1989 to the Japan and Hawaii market. At the time, we still had \"sleek-beak\" noses and lower nose rockers in our thrusters that were just ahead time-wise of the hyper-kicked Kelly Slater style that came into the design scene in 1992.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Wave Bandit Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608073877116-FU4ODTB68JBGBL1FU6T5/wave-bandit__40946.1597895499.jpg",
+          "description": "Wave Bandit Twin/Quad Model (Bandito de Las Olas) I've always made and ridden hybrid-type boards for myself that had some extra volume and paddle power for the crowded days in Honolulu Summer surf and North Shore small surf, but still rode like a performance board in good surf.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Speed Egg Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1613885822983-YRP4CLOI3TFPOVVR4W1C/IMG_7196.JPG",
+          "description": "The \"Speed Egg\" Model The Speed Egg was designed by using the Sniper model with it's bottom and rail and tail template, and then morphing in a wider Egg type nose. The Speed Egg has all the characteristics of my Sniper model, with the extra planing and paddling from the wider nose. Those liking the Sniper Model, will love the Speed Egg for a step down type board, or just for a longer easy takeoff weekend model.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Cheater 5 Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1613885656535-K6KX7N5UOYNWZBMFSXJ8/Rawson_Cheater+5_01.jpg",
+          "description": "Cheater 5 The Rawson Cheater 5 model was named by Rocky Point Rawson team rider, Jack Lutey. At the time, we were trying to collaborate on a design that was a mid length that would surf high performance maneuvers and fit the wave at Rocky Point, and other premier surf spots, yet easily handle the trade wind bump and still paddle well. The result is the Cheater 5.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Alien Plus Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608073648345-QNJQYYU3H90AVT3FNBCE/Screen_Shot_2020-07-12_at_5.11.45_PM__48419.1594599243.jpg",
+          "description": "The Alien PLUS Model: The Alien PLUS is the expanded version of both my Alien Swallowtail and Round tail models. Many surfers today are looking for surfboards with more length, bigger dimensions, more cubic volume, that are designed with the correct rocker and rails for larger boards that still maintain the speed and ride of the smaller board models, yet still surf well as the longer & bigger version.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Sunset Point Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1613885709101-QL4GQJM7KWASK606YD70/IMG_1029.jpeg",
+          "description": "The Sunset Point Model: My Sunset Point Rounded Pintail Model Longboard has been our favorite step up long board for good surf in Hawaii type surf. This board has a narrower round tail with a slight concave in the nose for lift.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Diablo Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608074077291-4RWB0FAPSUPG5YHGEM0L/fullsizeoutput_66f__38058.1596610390.jpg",
+          "description": "The Diablo Model Longboard My latest longboard design; the Diablo Model, has only been in my catalog lineup for 3 1/2 years. It’s a newer design, and mainly an ultra-performance longboard with a sleeker nose and tail template. But, it’s designed with a light concave for lift in the nose, and the extra tail rocker enables this model to fit hollow waves well.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Chun's Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608074021527-6OP9RBB91OY2T4M24ZRL/chuns-model2__39559.1597894485.jpg",
+          "description": "The Chun’s Model Longboard: My Chun’s Model Longboard has been in my catalog lineup for many years. I mainly build my Longboard model shapes on a custom order basis as they are of a personal nature. I still love to longboard when the conditions are appropriate, and I have been evolving this model over the past 53+ years at places like Malibu, CA, #3’s in Waikiki, and of course: Chun’s Reef on Oahu’s North Shore.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Sniper Gun Model",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608074597001-84F2KQZ8TL423TNUH6K3/The_Sniper_Gun_Model__78019.1597895479.jpg",
+          "description": "The Sniper Gun Model: The Sniper Gun came about around 4 years ago, by combining into my previous Matador/Impala gun combination, which was growing in popularity, especially with my more mature customers wanting to stay connected to their large wave commitment. Thanks to Trip Forman of Real Water Sports, this model and its name evolved into my most popular gun model that I offer besides the Classic Quad Model.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Classic Gun",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1613885961385-6OO4KDMOVMMZTKGBXA0G/IMG_8466.JPG",
+          "description": "Classic Gun Style: The Classic Gun has been my Rawson Surfboards design forte since the '70's for high performance Guns and catering to serious experienced riders wanting pre-tested and proven gun designs for their different needs and aspirations in large surf. Building custom boards on the North Shore of Oahu for 48 years has enabled me to fine tune my larger wave boards constantly.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Cheater 5 Gun",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608074369177-Y9E20ZRF0R7GSCGIWART/The_NEW_Cheater_5_GUN__48759.1591045007.jpg",
+          "description": "The Cheater 5 Gun Model: The Cheater 5 Gun came about by speaking with different big wave Rawson team riders asking me about combining some new concepts into my gun series. So, my first idea was placing a Cheater 5 outline over my Sniper Gun Model and combining both concepts.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "TC Snap Back",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5fd8481e3ea9e15de736a76c/1608075085020-ZFQD46OIFUDTH1GLIQNS/fullsizeoutput_13a1__59381.1600576891.jpg",
+          "description": "Tom Carroll 1991 Pipeline Masters Snapback Model: We've made a lot of these high-end TC replicas for many over the past 6 years. They are shaped exactly to spec like Tom's original famous snapback 7'8 x 17.87 x 2.37 Bombora Round tail thruster that he did his famous snapback on back at Pipe in 1991.",
+          "board_category_slug": "other"
+        }
+      ]
+    }
+  ]
+}
