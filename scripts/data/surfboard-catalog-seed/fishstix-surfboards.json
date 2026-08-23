@@ -1,0 +1,72 @@
+{
+  "generated_for": "Fishstix Surfboards official model catalog",
+  "source": "https://fishstixsurfboards.co.za/",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "fishstix-surfboards",
+      "name": "Fishstix Surfboards",
+      "website_url": "https://fishstixsurfboards.co.za/",
+      "location_label": "St. Francis Bay, Eastern Cape, South Africa",
+      "founder_name": "Simon Fish",
+      "lead_shaper_name": "Simon Fish",
+      "short_description": "Handcrafted surfboards by Simon Fish in St. Francis Bay, South Africa, shaped around J-Bay and Cape St. Francis.",
+      "models": [
+        {
+          "name": "The Honey Badger",
+          "image_url": "https://fishstixsurfboards.co.za/wp-content/uploads/2019/09/Honey-badger-test700.jpg",
+          "description": "Stanley Badger’s signature board model. Designed & shaped in Simon’s shaping bay, together, Simon and Stanley came up with an absolute small wave ripper with surprising capabilities in overhead surf. “What we shaped is one of the best boards I’ve ever owned. The Honey Badger goes flat out in anything from ½ foot Seals shorey to groomed over-head J-bay walls. It feels like a thruster in & out of the lip, but has the speed of a quad. I was home for 3 months & rode this board the entire time.” Low continuous rocker. Full rails. Continuous outline. Single concave.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Nose Rose",
+          "image_url": "https://fishstixsurfboards.co.za/wp-content/uploads/2022/12/Products700x700-ns-top.jpg",
+          "description": "The Nose-Rose is shaped for traditional nose-riding & trim. Various nose concave’s & spoons are optional. The Nose Rose comes with a rolled vee through to the tail & 50/50 rails which allows for plenty of control on the nose, as well as tight arcs & direction changes when needed. We have added extra curve out the back of the board, which creates down-force in the tail & keeps you propped up on the nose. Flatter rocker. 50/50 rails. Traditional outlines. Single fin. Glassed heavy. Resin tints, colour splashes, pin lines & anything your heart desires.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Keeper",
+          "image_url": "https://fishstixsurfboards.co.za/wp-content/uploads/2022/12/KEEPER.png",
+          "description": "If you are into fast, smooth surfing on the rail, then the Keeper is the board to include in your quiver. The board features a continuous curve in the rocker & outline. This creates an excellent base to surf over your front & back foot through carves, while enabling you to surf vertically in the critical section of the wave. The board feels engaged down-the-line, while shifting your weight forward through turns gives it release & a loose feeling. Continuous rocker & outline. Single to double concave. Swallow Tail or Rounded Pin. Surfed as a quad or thruster.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Twinski",
+          "image_url": "https://fishstixsurfboards.co.za/wp-content/uploads/2022/12/Twinski.png",
+          "description": "A contemporary take on the twin fin which altered the trajectory of modern surfing over four decades ago, the Twinski is a channel bottom twin fin ridden 3 – 4 inches shorter than your regular short board. The channels and subtle single concave provide drive and control while still maintaining that classic twin fin flow we are all accustomed to. Low rocker. Full outline with a flat deck. Subtle single concave into channels out the tail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Long Fish",
+          "image_url": "https://fishstixsurfboards.co.za/wp-content/uploads/2022/12/Long-Fish.png",
+          "description": "Cruise & and draw classic lines on smaller days or catch waves with confidence when the surf picks up. The Long Fish is board suitable for all skill levels. It can be surfed further forward when flowing down the line or looking for the tube, while stepping over the fins allows for easy redirecting & generating speed. There’s plenty of foam in this cruiser to up your wave count and get you in early. Flatter rocker with plenty of foam. Slight concave into vee bottom through the tail. Flat top deck.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Surf Punk",
+          "image_url": "https://fishstixsurfboards.co.za/wp-content/uploads/2022/12/surf-punk-w.jpg",
+          "description": "The Surf Punk is our flagship high-performance model. Its constant evolution over two decades sees it stand at the forefront of performance & progression. The board will continuously engage the power of the wave through hard & committed surfing. If progressive & high-performance surfing is what excites you and you need a board that can handle anything you paddle into, the Surf Punk is a go. Medium entry rocker. Flatter through the middle. Hyper tail kick. Single to double concave.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mid-length Twinski",
+          "image_url": "https://fishstixsurfboards.co.za/wp-content/uploads/2024/03/mid-lenght-twinski-blue-board-1.jpg",
+          "description": "Following the success of the Twinski, we have created a mid-length version, hence the name Mid-length Twinski. The longer mid-length is a cruisey, user friendly version, designed for intermediate to advanced surfers looking to catch more waves & draw stylish lines on the open face of waves. Ladies will find that the lower rail of the board is easier to manoeuvre, while all surfers or all shapes & sizes can use the length & volume combined with a flatter rocker to the paddle into waves with ease. This board loves to be surfed in clean waves from 1 to 6ft. The channels & larger twin fin setup creates hold & stability at speed. Ride 6 to 12 inches longer if you’re a short-boarder looking to step onto a longer board or chat to us if you need guidance what size to go for if you’re an intermediate surfer or long-boarder looking to ride something shorter. Flatter rocker, longer mid-length outline, channels & twin fin setup.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "White Gold 2.0",
+          "image_url": "https://fishstixsurfboards.co.za/wp-content/uploads/2024/01/white-gold-1-1.jpg",
+          "description": "A lightning fast smaller wave performance board, which fits right in between your groveler & all-rounder. The lower entry rocker & fuller outline generates speed & drive in softer conditions, while the high hip placement creates a pivot point between the feet, which loosens the tail creating whip & release through turns. The bottom features a single to double concave through the fins, this assists in rail to rail transitioning, giving more control and a responsive feel under foot. Lower nose entry, high hip placement, squash or swallow tail.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The El Niño",
+          "image_url": "https://fishstixsurfboards.co.za/wp-content/uploads/2023/05/el-nino-top.png",
+          "description": "Designed for powerful surf in the overhead to double overhead range. The El Niño is a product of many years surfing & shaping for surfers who love to ‘have a go’ when winter kicks in! The wide point has been moved forward placing more volume under chest to increase paddling power and get you into those heaving waves early. The pulled-in rails and tail allow for navigating barrels and maintaining control during high-speed turns, without sacrificing the board’s responsiveness. The El Niño is the ideal board for Indo, the many point breaks which line the SA coastline, A-frame beach breaks like the Dunes, Durban Piers or your local beachie on the day of the year. Feel confident to have a real go this winter on the El Niño.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
