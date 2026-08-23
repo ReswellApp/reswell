@@ -127,6 +127,16 @@ function loadEnvFile(relativePath: string): void {
   }
 }
 
+function parseBoardCategorySlug(
+  raw: unknown,
+): SurfboardSellCategoryKey | null {
+  if (typeof raw !== "string") return null
+  const value = raw.trim()
+  return (SURFBOARD_SELL_CATEGORY_ORDER as readonly string[]).includes(value)
+    ? (value as SurfboardSellCategoryKey)
+    : null
+}
+
 function loadSeedFile(path: string): {
   brands: SeedBrand[]
   productCategorySlug: BrandProductCategorySlug | null
