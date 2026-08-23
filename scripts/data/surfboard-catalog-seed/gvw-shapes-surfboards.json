@@ -1,0 +1,40 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "gvw-shapes-surfboards",
+      "name": "GVW Shapes",
+      "website_url": "https://gvwshapes.com/",
+      "location_label": "Durban, South Africa",
+      "founder_name": "Gary Van Wieringen",
+      "lead_shaper_name": "Gary Van Wieringen",
+      "short_description": "Handcrafted surfboards by Gary Van Wieringen in Durban, South Africa, from two decades of shaping and competitive surfing.",
+      "models": [
+        {
+          "name": "No. 1 Model",
+          "image_url": "https://gvwshapes.com/wp-content/uploads/2025/02/No1-TOP-2025.jpg",
+          "description": "The model No.1 is a great small wave performance board that is ideal for waves under 4ft. It is super-fast, quick off the mark and holds that speed extremely well. Think high-performance for Summertime or smaller waves with less power and push. Feels really forgiving under foot and allows the average surfer to perform at their highest level.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "No. 4 Model",
+          "image_url": "https://gvwshapes.com/wp-content/uploads/2025/02/No4-TOP-2025-sq.jpg",
+          "description": "The model No.4 is a well-rounded short board. This board is incredibly user-friendly and exhibits forgiveness across all types of conditions. With the outline provides rail-to-rail transitions with ease, speed and control being the primary features.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "No. 6 Model",
+          "image_url": "https://gvwshapes.com/wp-content/uploads/2025/02/No6-TOP-2025.jpg",
+          "description": "The model No.6 is a step up pin tail that has been generated from and inspired by model No.11 proportionally adding some extra width and thickness, making it a more user-friendly performance board. This model has been designed to maintain control, which also helps with hold when surfing in bigger conditions, making it an extremely versatile shape.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "No. 11 Model",
+          "image_url": "https://gvwshapes.com/wp-content/uploads/2025/02/No11-TOP-2025.jpg",
+          "description": "The model No.11 is a narrow squash step up that has been designed to let you unleash the beast by doing your biggest turns in waves with more power. Grab it when your local break is pumping, 4ft+ waves, big barrels and huge carves. Recommended ordering a couple of inches longer and slightly narrower than your day-to-day board.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
