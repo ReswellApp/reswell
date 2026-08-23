@@ -1,0 +1,60 @@
+{
+  "product_category_slug": "surfboards",
+  "source": "https://lindensurfboards.com/surfboards/",
+  "generated_for": "Linden Surfboards official named model catalog",
+  "brands": [
+    {
+      "slug": "linden-surfboards",
+      "name": "Linden Surfboards",
+      "website_url": "https://lindensurfboards.com/",
+      "location_label": "Oceanside, California",
+      "founder_name": "Gary Linden",
+      "lead_shaper_name": "Gary Linden",
+      "short_description": "Linden Surfboards has been shaped by hand in Oceanside, CA since 1978. Gary Linden shapes custom foam, balsa, and agave boards from his Oceanside workshop.",
+      "models": [
+        {
+          "name": "Todos",
+          "image_url": "https://lindensurfboards.com/wp-content/uploads/2024/05/Linden-Todos-Model.png",
+          "description": "Big wave gun built for 30-foot-plus offshore reef breaks. Available 9–10'6\" in polyurethane or agave. Shaped to order by Gary Linden. Available dimensions: 9'0\" x 20 1/4\" x 3 1/8\"; 9'6\" x 20 1/2\" x 3 1/4\"; 10' x 21\" x 3 1/2\"; 10'6\" x 21 1/2\" x 3 3/4\".",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Catalina",
+          "image_url": "https://lindensurfboards.com/wp-content/uploads/2024/05/Linden-Catalina-Model.png",
+          "description": "The Catalina is a mid-length shape running 6'8\" to 7'0\". It's built for point breaks and slower, more drawn-out surf. Available in polyurethane or agave. Available dimensions: 6'8\" x 19 3/4\" x 2 1/2\"; 7'0\" x 20\" x 2 3/4\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Model S",
+          "image_url": "https://lindensurfboards.com/wp-content/uploads/2024/05/Linden-S-Model.png",
+          "description": "The Model S is Gary's all-around shortboard, available from 5'8\" to 6'2\". It works in most conditions and is the most versatile shape in the lineup. Available in polyurethane or agave. Available dimensions: 5'8\" x 18 1/2\" x 2 1/4\"; 5'10\" x 18 3/4\" x 2 3/8\"; 6'0\" x 19\" x 2 1/2\"; 6'2\" x 19 1/4\" x 2 1/2\".",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Nub",
+          "image_url": "https://lindensurfboards.com/wp-content/uploads/2024/05/Linden-NUB-Model.png",
+          "description": "The Nub is a wide, short board built for small, weak surf. Runs 5'6\" to 6'6\" with extra width for paddle power in flat conditions. Available in polyurethane or agave. Available dimensions: 5'6\" x 21\" x 2 1/2\"; 6'0\" x 21 1/2\" x 2 3/4\"; 6'6\" x 22\" x 2 3/4\".",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Chips and Salsa",
+          "image_url": "https://lindensurfboards.com/wp-content/uploads/2024/05/Linden-ChipsnSalsa-Model.png",
+          "description": "The Chips and Salsa is a classic longboard shape running 9'0\" to 9'6\". Built for smooth, cross-stepping surf. Available in polyurethane or agave. Available dimensions: 9'0\" x 22 1/4\" x 2 3/4\"; 9'6\" x 22 1/2\" x 3\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Oaxaca",
+          "image_url": "https://lindensurfboards.com/wp-content/uploads/2024/05/Linden-Oaxaca-Model.png",
+          "description": "The Oaxaca is a step-up shape running 8'0\" to 8'4\", built for larger surf where a standard shortboard loses drive. Available in polyurethane or agave. Available dimensions: 8'0\" x 20\" x 3\"; 8'4\" x 20 1/4\" x 3 1/8\".",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Saqua",
+          "image_url": "https://lindensurfboards.com/wp-content/uploads/2024/05/Linden-Saqua-Model.png",
+          "description": "The Saqua is a fish shape running 6'2\" to 6'6\". Wide tail, low rocker, built for small to medium surf. Available in polyurethane or agave. Available dimensions: 6'2\" x 19\" x 2 1/2\"; 6'6\" x 19 1/4\" x 2 5/8\".",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
