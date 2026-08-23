@@ -50,21 +50,18 @@ export function getImpersonation(): ImpersonationData | null {
 }
 
 /**
- * If the admin impersonation cookie is gone but localStorage still has data, drop localStorage.
- * Admin APIs only trust the cookie for the target user id — stale LS alone caused wrong UX.
+ * Keep localStorage in sync when the impersonation cookie is readable.
+ *
+ * Do **not** wipe localStorage when `document.cookie` omits the cookie — Next.js
+ * may set it httpOnly, in which case fetch still sends it but JS cannot see it.
+ * Wiping here dropped the admin “edit as seller” target and Save then aborted.
  */
 export function clearImpersonationStorageIfCookieMissing() {
   if (typeof window === "undefined") return
-  const hasCookie = document.cookie
-    .split(";")
-    .some((c) => c.trim().startsWith(`${IMPERSONATION_COOKIE}=`))
-  if (!hasCookie) {
-    try {
-      localStorage.removeItem(STORAGE_KEY)
-    } catch {
-      /* ignore */
-    }
-  }
+  const raw = readCookieValue(IMPERSONATION_COOKIE)
+  if (!raw) return
+  const parsed = parseImpersonationCookie(raw)
+  if (parsed) setImpersonation(parsed)
 }
 
 /** Clear impersonation from both localStorage and the cookie. */
@@ -87,13 +84,16 @@ function readCookieValue(name: string): string | null {
 }
 
 /**
- * Current impersonation target from the admin cookie, after dropping stale localStorage
- * when the cookie is missing. Use for UI (banner); APIs still validate the cookie server-side.
+ * Current impersonation target from the admin cookie, falling back to localStorage
+ * when the cookie is httpOnly (still sent on `credentials: "include"` fetches).
+ * Admin APIs still validate the HTTP cookie server-side.
  */
 export function getActiveImpersonationClient(): ImpersonationData | null {
   if (typeof window === "undefined") return null
-  clearImpersonationStorageIfCookieMissing()
   const raw = readCookieValue(IMPERSONATION_COOKIE)
-  if (!raw) return null
-  return parseImpersonationCookie(raw)
+  if (raw) {
+    const parsed = parseImpersonationCookie(raw)
+    if (parsed) return parsed
+  }
+  return getImpersonation()
 }

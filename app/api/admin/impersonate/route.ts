@@ -38,6 +38,8 @@ export async function POST(request: NextRequest) {
     maxAge: 60 * 60 * 4, // 4 hours
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
+    // Sell-flow Save reads this via document.cookie to choose the impersonation API.
+    httpOnly: false,
   })
   return res
 }
