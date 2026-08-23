@@ -1,0 +1,552 @@
+{
+  "generated_for": "reswell surfboards catalog",
+  "purpose": "Daily growth of small USA and Australia surfboard-maker brands",
+  "generated_on": "2026-08-23",
+  "product_category_slug": "surfboards",
+  "integrity": {
+    "first_party_only": true,
+    "surfboard_models_only": true,
+    "require_image_name_description_logo": true
+  },
+  "brands": [
+    {
+      "slug": "grain-surfboards",
+      "name": "Grain Surfboards",
+      "website_url": "https://grainsurfboards.com",
+      "location_label": "York, Maine",
+      "founder_name": "Mike LaVecchia",
+      "lead_shaper_name": "Mike LaVecchia",
+      "short_description": "Wooden surfboards built in York, Maine from northern white cedar — hollow cedar-rail craft with named everyday, fish, mid-length, and longboard models.",
+      "logo_url": "https://grainsurfboards.com/cdn/shop/files/logo-white.png",
+      "models": [
+        {
+          "name": "Waka",
+          "image_url": "https://cdn.shopify.com/s/files/1/0000/5597/files/IMG_5162.jpg",
+          "description": "The beautiful Waka, with some great looking planks, cork rails and a twin FCS fin set up. It's freshly polished and in our showrrom. Holding true to a traditional fish shape inspired by its founder Steve Lis, the Waka combines speed with a classic ride. Skatey, loose, and lively, it loves racing down the line or carving around softer surf that would be a struggle on most shortboards. The Waka is a shop favorite for the same reason the fish shape has never gone out of style—it’s so darn fun! The design of the Waka focuses planing capability and speed generation in a small package. A wider outline makes up for lack of length, allowing this fish to be ridden shorter than most other shapes.The…"
+        },
+        {
+          "name": "Tern",
+          "image_url": "https://cdn.shopify.com/s/files/1/0000/5597/files/IMG_5169.jpg",
+          "description": "The beautiful Tern, built in our original CedarRail construction is in the showroom and is ready to wax! This board was built/shaped at Eddie Vedder's Ohana Fest in California so it's got rhythm in it's bones, some beautiful cedar planks and functional two plus one fin set up. The Tern is a pintail mid-length that draws influence from retro shapes to bring style and flow to waves with a little more juice. Born from wanting to push some of our classic mid-length boards like the Seed and Sapling into bigger and steeper surf, the Tern excels with control at speed. The Tern features a sleek, pulled in outline with a very drawn out pintail for holding tight in the pocket. It has a good amount…"
+        },
+        {
+          "name": "Albatross",
+          "image_url": "https://cdn.shopify.com/s/files/1/0000/5597/products/IMG_0155.jpg",
+          "description": "Finished Board Specs: 9’2 x 23” x 3” | Volume 69L 10'2\" x 23 3/4\" x 3 1/4\" | Volume 86.5L 11'2\" x 23 7/8\" x 3 1/2\" | Volume 104L 12'2\" x 24\" x 3 3/4\" | Volume 123L For 'Tailored Dims', We'll reach out with a form to tell us what you're thinking about. The Albatross was designed with inspiration from graceful glider shapes by Skip Frye and his disciples—a nod to Skip’s Eagle Glider. It’s extra size allows you to cruise the lineup and cherry-pick waves from way outside. The sleek outline and planing features give the Albatross ultimate speed and trimming ability. Capable of super early wave entry, beating sections and trimming all the way to shore. Walk the length, captain pumps and pivots…"
+        },
+        {
+          "name": "Arctic Tern",
+          "image_url": "https://cdn.shopify.com/s/files/1/0000/5597/files/LaVecchia__041225_E3250.jpg",
+          "description": "Finished Board Specs: 6’4” x 20” x 2 ⅝” – 36L 6’10” x 20 ½” x 2 ¾” – 41L 7’4” x 21” x 2 ⅞” – 46L For 'Tailored Dims', we'll reach out with a form to tell us what you're thinking A twin-pin built for longer lines, steeper pockets, and the journeys in between. Inspired by the sleek flight and long-range travels of its namesake, the Arctic Tern is our twin-pin evolution of the Tern—a refined redesign that brings more speed, drive, and looseness while holding true to the clean lines and flow of the original. The Arctic Tern excels on waves that feel rushed for the sweeping turns of single fins but with steep pockets where fish tails won’t fit. Riders looking for a board that blends the speed…"
+        },
+        {
+          "name": "The Cutwater",
+          "image_url": "https://cdn.shopify.com/s/files/1/0000/5597/products/LaVecchia_180827_E034.jpg",
+          "description": "Finished Board Specs 9’6\" x 22 7/8″x 3 1/8″ / Volume 77.39 L For 'Tailored Dims', we'll reach out with a form to tell us what you're thinking about. Designed purely for tip-time, the Cutwater is our take on the classic noserider for those under-chest-high log sessions. Our rocker is inspired by old-school shapers that flipped foam blanks around, nose-to-tail, to get maximum tail-kick and a low nose. A deep, natural, concave under its beak runs to a flat-bottom midsection and a super-swept square-tail. Dimensions like those, along with 50/50 rails, are why this board allows you to get a walk in while you ride. So, either lock yourself in the pocket or drag along for a slow dance on the tip."
+        },
+        {
+          "name": "The Dreadnought",
+          "image_url": "https://cdn.shopify.com/s/files/1/0000/5597/products/MG_9298.jpg",
+          "description": "This big gun was built for one thing: exhilarating survival. Designed with a fistful of new internal construction details that make it formidable and fast, it has a mostly flat bottom and slight V in the full-shaped pintail. Its weighted construction fearless before monster waves, this big gun runs chatter-free ahead of bone-crushing curls."
+        },
+        {
+          "name": "The Drifter",
+          "image_url": "https://cdn.shopify.com/s/files/1/0000/5597/products/W3M4971.jpg",
+          "description": "Finished Board Specs 12' x 24\" x 3 1/2\" For 'Tailored Dims', we'll reach out with a form to tell us what you're thinking about. The 12′ Drifter was designed with long gentle stomach-high peelers in mind. The 12-0 originated from our popular 10’ Waterlog template. It’s been refined for long, slow beach-break, where the first of these boards appears regularly to steal waves from way outside where the stand-ups roam. The Drifter turns best from the tail, sinking and pivoting around the fin, but walk forward and it trims right out and picks up amazing speed even as its consistent belly makes rolling into turns surprisingly easy. This board is enjoyed most by bigger surfers who are looking for…"
+        },
+        {
+          "name": "The Fantail",
+          "image_url": "https://cdn.shopify.com/s/files/1/0000/5597/products/LaVecchia_130402_Grain1202.jpg",
+          "description": "Finished Board Specs 9'9\" x 22″x 3 1/8″ / Volume 75.55 L9'2\" (more specs to come) For 'Tailored Dims', we'll reach out with a form to tell us what you're thinking about. This “pig” surfboard type carries its less-than-flattering name in honor of its outline. A heritage board that looks unusual today, it was at one time found on every beach in California. The “pig” needed some new justice, and for subtlety of design, there was no better input to be found than that of pig-master Gene Cooper of Cooperfish Surfboards. We coupled his advice with the piggiest, old-school Velzy outline we could manage. Along with the narrow nose, wide-point well behind center and flattish rocker that keeps the…"
+        },
+        {
+          "name": "The Frigate",
+          "image_url": "https://cdn.shopify.com/s/files/1/0000/5597/files/LaVecchia__070224_G2875_53664b21-1ef2-478d-93b1-03371af7ace4.jpg",
+          "description": "Finished Board Specs: 7’4” x 21-1/4” x 3” / Volume 53 L 8’4” x 22-1/4” x 3-1/4” / Volume 67.5 L For 'Tailored Dims', we'll reach out with a form to tell us what you're thinking about. The Frigate is our higher volume “long fish”. Named for the Frigate bird which is known to soar continuously on ocean breezes with minimal flapping and steer with its deeply forked tail. The Frigate is a great board for bigger riders wanting the looseness and speed of a fish, longboarders taking their first step shorter, or anyone looking for a high volume, midlength speedster. This board paddles like a longboard and rips like a fish. Featuring a stretched out fish outline with the thickness of of a log, the…"
+        },
+        {
+          "name": "The MLBB (Channel Bottom)",
+          "image_url": "https://cdn.shopify.com/s/files/1/0000/5597/files/LaVecchia__022525_G3222.jpg",
+          "description": "'GreenRail' Custom Board Price is $2,500 Specs: 8'3\" x 22 1/8\" x 3 1/4\" Volume: 63L This channel bottom version of Christian Beamish's Midlength for Black Belt is our latest collaboration shape and truly a sight to behold. With hours dedicated to its intricate design it is a perfect fusion of paddle power and effortless glide, built for steep, deep conditions. The 8'3 MLBB GreenRail can be a daily driver that boosts confidence and pushes your limits in bigger waves. This shape is a perfect blend of speed-egg elements and Hawaiian-inspired design, offering a versatile and high-performance riding experience. Christian Beamish is a surfer, shaper and writer living in Ventura, California.…"
+        },
+        {
+          "name": "The Northern Pintail",
+          "image_url": "https://cdn.shopify.com/s/files/1/0000/5597/products/W3M9745.jpg",
+          "description": "Finished Board Specs 10’6\" x 23 3/4″x 3 1/16″ / Volume 90.78 L For 'Tailored Dims', we'll reach out with a form to tell us what you're thinking about. A classic retro that will never go out of style, this pintail noserider is a true beauty. Despite its length, the sweeping pintail and pinched 50/50 rails make this board seem almost slight next to the logs we ride in small surf. A gentle belly through most of the board’s length combined with ultra-fine rails make this board responsive and lively. Great in head-high surf, boards of this style are also ridden at breaks like Sunset."
+        },
+        {
+          "name": "The Pandan",
+          "image_url": "https://cdn.shopify.com/s/files/1/0000/5597/products/layne_final_a89e1124-87ff-4afa-95f1-2fbc4d34a411.jpg",
+          "description": "Finished Board Specs 6'-11-3/4\"x 20-1/8″x 2-3/16″ / Volume 39.96 For 'Tailored Dims', we'll reach out with a form to tell us what you're thinking about. The Pandan was originally conceived as a pro-level funshape designed with the help of seven-time world champ Layne Beachley. Looking for something for her home break, we worked up a slender funshape up to fit her advanced skills. Besides the graceful single-to-double concaves and tight little squash tail. we designed it as a low-rocker board with a flat entry and hotted it up with a curvy, spooned-out step deck forward. This board has the full outline fun-shape surfers want, but with performance elements pros look for."
+        },
+        {
+          "name": "The Radicle",
+          "image_url": "https://cdn.shopify.com/s/files/1/0000/5597/products/LaVecchia__012623_G2263.jpg",
+          "description": "Finished Board Specs 6'9\" x 18 1/4\" x 2 1/2\" For 'Tailored Dims', we'll reach out with a form to tell us what you're thinking about. Named after the first rootlet to emerge from a germinating seed, we think of the Radicle as a next-gen surfboard. Its design sprouts from a blend of pro free-surfer Dave Rastovich’s style and our continuing quest to evolve wood board construction methods. The flat V in the tail gives excellent high-speed response, quick to slice big, deep lines across the faces of hollow dredgers like those at Pipeline and Backdoor. \"I took the radicle out for its first surf today in proper 8-10ft swell with 30+ mph winds at Devereux, and it was absolutely PERFECT- smooth,…"
+        },
+        {
+          "name": "The Root",
+          "image_url": "https://cdn.shopify.com/s/files/1/0000/5597/products/IMG_9215.JPG",
+          "description": "Finished Board Specs 8'6\" x 22 1/4\" x 2 7/8\"/ Volume 60.09L 9'0\" x 22 3/8\" x 2 7/8\"/ Volume 64.36L 9'6\" x 22 3/8\" x 2 7/8\"/ Volume 69.44 For 'Tailored Dims', we'll reach out with a form to tell us what you're thinking about. This nimble pintail is our version of a performance-style longboard, designed with speed generation and maneuverability in mind, while remaining suitable for mellow surf. The Root excels in a myriad of conditions, having the speed and control to handle zippier beach breaks or the bigger stuff—plus the volume to catch all the waves you want on a small day. The Root features a moderate rocker, allowing for later and steeper drops than a log. Full volume in the center…"
+        },
+        {
+          "name": "The Sapling",
+          "image_url": "https://cdn.shopify.com/s/files/1/0000/5597/products/LaVecchia_180403_Grain4091.jpg",
+          "description": "Finished Board Specs: 7'6\" x 22 1/4\" x 2 3/4\" / Volume 54L 8′ x 22 3/4″ x 2 7/8″ / Volume 62.60L For 'Tailored Dims' we'll reach out with a form to tell us what you're thinking about. The Sapling is our very versatile midlength fun-board, it’s a higher volume “egg” that's still responsive enough to maneuver from the lip and quick enough to carry you through fast sections. A great “short board” for larger riders or transitioning longboarders, or an all-around one board quiver! The Sapling has a moderate rocker, maintaining paddle speed while having enough nose lift to stick steeper drops. The wide-point sits directly under the chest, concentrating the float under the rider when paddling,…"
+        },
+        {
+          "name": "The Seed",
+          "image_url": "https://cdn.shopify.com/s/files/1/0000/5597/products/LaVecchia_170908_Grain3500.jpg",
+          "description": "Finished Board Specs 6'-5\" x 20-3/8″ x 2-1/2″ / Volume 39.39 L For 'Tailored Dims', we'll reach out with a form to tell us what you're thinking about. Old school surfboard, meet your new school doppelganger. The Seed is a retro-style, high-volume board infused with technology that allows for super-responsive turns. A double to single concave from tail to nose channels water past the fin, allowing the board to react quicker and carve on a dime."
+        },
+        {
+          "name": "The Shearwater",
+          "image_url": "https://cdn.shopify.com/s/files/1/0000/5597/files/IMG_0054.jpg",
+          "description": "Finished Board Specs 7’2” x 21.5\" x 2 7/8\" / Volume 48 L For 'Tailored Dims', we'll reach out with a form to tell us what you're thinking about. Meet the Shearwater, inspired by the bird that effortlessly skims the waves with its wings extended. Like its feathered namesake, this board is all about speed with ease. Stretching out the fish outline, the Shearwater inhabits a sweet spot among shapes we really love. Paddle it with the ease of a midlength and feel the acceleration of the tail end of a fish. Riding the Shearwater is like piloting a glider in a smaller, more manageable form. Whether you’re an avid longboarder looking for something smaller, or sizing up to a midlength, the longfish…"
+        },
+        {
+          "name": "The Spray",
+          "image_url": "https://cdn.shopify.com/s/files/1/0000/5597/products/MG_6003.jpg",
+          "description": "Finished Board Specs 8' x 23 1/4\" x 3\" For 'Tailored Dims', we'll reach out with a form to tell us what you're thinking about. We feel privileged to have had some generous help from the legendary Campbell brothers (original designers of the Bonzer) in developing The Spray. Bending wood to the super-deep double concaves that run between fins canted at almost twenty degrees, we managed a version of perhaps the most radical bottom ever put under a surfboard. Operating on principles literally extracted from aeronautics, boards of this type represent possibly the most extreme design innovation to be applied to surfboards since the fin. We made it long and wide for plenty of glide, but with a…"
+        },
+        {
+          "name": "The Wegener Mr. Simmons",
+          "image_url": "https://cdn.shopify.com/s/files/1/0000/5597/products/LaVecchia__021323_G2278.jpg",
+          "description": "Finished Board Specs 5'-5\" x 21\" x 2-9/16\" / Volume 35.70 6'-3\" x 21.5″ x 2-11/16″ / Volume 44.72 For 'Tailored Dims', we'll reach out with a form to tell us what you're thinking about. If you're familiar with the evolution of surfboard design, then you've heard of Bob Simmons, who - before there was a surf industry - developed radical new ways of thinking about board design. Applying science gleaned from naval architecture texts, Simmons melded the performance characteristics of displacement and planing surfaces to obtain performance characteristics unheard of at the time but which are now essentials of most modern surfboard shapes. In the same vein of experimentation is our friend Jon…"
+        }
+      ]
+    },
+    {
+      "slug": "cole-surfboards",
+      "name": "Cole Surfboards",
+      "website_url": "https://colesurfboards.com",
+      "location_label": "San Clemente, California",
+      "founder_name": "Cole Simler",
+      "lead_shaper_name": "Cole Simler",
+      "short_description": "USA-made custom shortboards, fishes, and grovelers from Cole Simler in San Clemente.",
+      "logo_url": "https://colesurfboards.com/images/coleLogoWebNav.png",
+      "models": [
+        {
+          "name": "Loose Cannon",
+          "image_url": "https://colesurfboards.com/images/looseCannonBoard.jpg",
+          "description": "The Loose Cannon is a full outlined shortboard inspired by the trend towards the shorter wider boards being ridden by many of the top pros these days. The board is designed with a full outline in the nose , a pronounced hip at the front fins and a wide rounded square tail. The board has a low entry rocker, with a substantial single concave through the front of the board with a double concave dropped into it between the fins. The back of the board has a moderate tail kick and a slight vee out the last 6 inches of the tail. The Loose Cannon is perfect for smaller and less powerful surf, while still being solid and stable enough, to ride, well into overhead plus surf. DOWNLOAD ORDER CARD…"
+        },
+        {
+          "name": "Batfish",
+          "image_url": "https://colesurfboards.com/images/batfishBoard.jpg",
+          "description": "The Bat Fish has a wider rounded nose for catching waves easily and planing through sections. This is basically our Bullet fish with a bat tail. These boards are great for smaller to medium surf. These boards are excellent for perfecting tricks, such as, tail slide, airs, and reverses. This user friendly board is a great addition to any serious board quiver. DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS LENGTH WIDTH THICK VOLUME 5'5\" 19 1/4\" 2 1/4\" 26.6 5'6\" 19 1/2 2 1/4\" 27.8 5'7\" 19 1/2\" 2 5/16\" 29.2 5'8\" 19 3/4 2 3/8\" 30 5'9\" 19 3/4 2 7/16\" 31.2 5'10\" 20\" 2 7/16\" 32 5'11\" 20 1/4 2 7/16\" 33.7 6'0\" 20 1/2 2 1/2\" 36.27 6'1\" 20 3/4 2 9/16\" 37.4 6'2\" 20 3/4 2 5/8\" 37.7 6'3\" 21��� 2 5/8\" 40 6'4\"…"
+        },
+        {
+          "name": "Pistol",
+          "image_url": "https://colesurfboards.com/images/pistolBoard.jpg",
+          "description": "The Pistol features a sleek outline with a smooth entry rocker. A fair amount of tail rocker allows for snappy turns and the board fits nicely into the curve of the pocket. The bottom contours feature a blend of flat, vee, and double concave vee for a balance of speed and control. These boards have fairly narrow tails (usually round-pins or narrow round-squares) for holding power and control. This is the model for good waves and good surfing. They are the perfect boards to take on a surf trip! DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS LENGTH WIDTH THICK VOL 6'0\" 18 1/4\" 2 1/4\" 26 6'1\" 18 3/8\" 2 5/16\" 27.25 6'2\" 18 1/2\" 2� 3/8 28.5 6'3\" 18 5/8\" 2 3/8\" 29 6'4\" 18 3/4\" 2 3/8\" 29.75 6'5\" 19\" 2…"
+        },
+        {
+          "name": "Slingshot",
+          "image_url": "https://colesurfboards.com/images/slingshotBoard.jpg",
+          "description": "The Slingshot features a fuller nose with a wide forward outline, round forgiving rails, and a flatter deck. The Slingshot features an extremely low entry rocker, allowing for instant acceleration and making it a wave caching machine. This back half of the board features a smooth moderate rocker, with an exaggerated tail kick out the tail for tight radius turns in the pocket.Although this board was originally designed for small to medium size surf, the smooth outline and full length single concave bottom, has proven to maintain it’s drive and hold an edge into larger surf as well.The Slingshot comes standard with a wide diamond tail. As popularity of this design has grown, we have begun to…"
+        },
+        {
+          "name": "Firefly",
+          "image_url": "https://colesurfboards.com/images/fireflyBoard.jpg",
+          "description": "The Cole Firefly Quad is the culmination of years of experimentation research and testing. The Firefly Quad came about when Nathan Fletcher and Cole were searching for something more exciting than the standard thruster, which had been stagnating, or at least, getting a bit boring throughout the 1990’s. Around 2000, “Nathan and I had both ridden Quads in the past and loved certain things about the design, so we began working on combining the Four Fin Design with the more contemporary outlines, rockers and bottom contours of today.” DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS LENGTH WIDTH THICK VOLUME 5'8\" 18 3/4 2� 5/16 26.52 5'10\" 18 7/8\" 2� 3/8 28.2 5'11\" 19\" 2� 7/16 29.41 6'0\" 19 1/4\" 2�…"
+        },
+        {
+          "name": "Grasshopper",
+          "image_url": "https://colesurfboards.com/images/grassHopperBoard.jpg",
+          "description": "The Grasshopper quad, is a full outline, semi-fish, version of our world renowned Firefly quad. It has a very low entry rocker with a moderate amount of kick out the tail. The Grasshopper also features a unique double wing bat tail, which allows the board to be wider at the fins, for quick acceleration and drive, and then pull in quickly for more holding power on tight turns. This board flies through and over sections in small to medium surf. DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS LENGTH WIDTH THICK VOLUME 5'6\" 19 1/4 2� 5/16 25.42 5'8\" 19 1/2 2� 3/8 27.99 5'10\" 19 3/4 2� 7/16 29.9 5'11\" 20 1/4\" 2� 9/16 32.6 6'0\" 20 1/2 2 5/8\" 34.3 6'1\" 20 1/2\" 2 5/8\" 34.77 6'2\" 20 3/4 2 5/8\" 35.77 6'3\"…"
+        },
+        {
+          "name": "V12",
+          "image_url": "https://colesurfboards.com/images/V12Board.jpg",
+          "description": "This board is fast and loose! Its design is extremely versatile and dependable in a wide variety of surf conditions. This model features a combination of single concave, double concave and a touch of vee out the tail for smooth rail to rail transitions. The rocker configuration and bottom contours allow instant acceleration, drive, and speed, The High Performance Shortboard maintains the maneuverability needed for radical directions, aerial and power surfing. This design continues to set the standard for cutting edge, performance surfing. This model has been ridden by some of the world's best professional surfers and has been tested and refined based on rider feedback. DOWNLOAD ORDER CARD…"
+        },
+        {
+          "name": "Road Tripper",
+          "image_url": "https://colesurfboards.com/images/roadTripperBoard.jpg",
+          "description": "This is a high performance swallow tail, it has a very low entry rocker with moderate tail lift. This model features a combination of single concave, double concave and vee out the tail for smooth rail to rail transitions. This board is extremely quick to get up to speed and is really snappy and loose off the top. DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS LENGTH WIDTH THICK VOLUME 5'6\" 19 1/2 2� 3/8 27.8 5'7\" 19 5/8\" 2� 3/8 29.12 5'8\" 19 3/4\" 2� 7/16 30.3 5'9\" 20\" 2� 1/2 32 5'10\" 20 1/4 2� 9/16 33.74 5'11\" 20 1/2 2� 5/8 35.35 6'0\" 20 5/8 2� 5/8 36.07 6'2\" 20 3/4 2� 3/4 38.76 6'4\" 21\" 2� 3/4 40.29 6'6\" 21 1/4 2� 7/8 43.57   COLE SURFBOARDS | 129 Calle De Los Molina San Clemente, CA 92672 |…"
+        },
+        {
+          "name": "X10",
+          "image_url": "https://colesurfboards.com/images/x10Board.jpg",
+          "description": "This X10 was inspired by Kelly Slater’s short , full nose, step up, that he rode in this years Pipe masters. We originally designed this board as a step up board for bigger surf, and the results were great. Soon after, some of our team riders began experimenting with the board in small to medium surf, and found the board to be very drivey and fast. To make the board even more versatile, and to loosen it up a bit in smaller surf, we ended up increased the tail width and put a bit more kick in the tail. We also tested it as a quad in addition to the tri set up, and had great feed back on the all around performance of the board with both fin configurations. This board will be introduced into…"
+        },
+        {
+          "name": "Wrecking Ball",
+          "image_url": "https://colesurfboards.com/images/wreckingballBoard.jpg",
+          "description": "The Wrecking Ball is a small wave destroyer. It's designed to turn mushy, boring surf into a fun and rippable playground. The full outline, combined with the flatter deck and fuller volume, help the wrecking ball catch small or weak waves super easily. The bottom features a very subtle single concave through the relaxed entry rocker, feeding into vee through the back one third of the board. The vee allows the board to transfer from rail to rail with ease. We have then dropped a unique \"bonzer\" style double concave between the feet to keep the board running at full speed down the line, and through flat ,or soft sections. This board will keep you psyched on crappy surf, or let you get crazy…"
+        },
+        {
+          "name": "Bullet Fish",
+          "image_url": "https://colesurfboards.com/images/bullitfishBoard.jpg",
+          "description": "has a wider round nose for catching waves easy and for gliding through sections. The twin fin side fins with small center fin make the board very loose but also allow the board to drive and accelerate very quickly. The bottom features include a single concave running from the nose through the center with a double concave vee out the back one third of the board. This year we are also offering this same board with a slightly different fin placement for surfers who prefer a standard tri fin set up. Both of these boards are excellent for learning tricks such as tail slides, airs, and reverses. Try one today and turn your local break into a skate park! DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS…"
+        },
+        {
+          "name": "Skeleton Fish",
+          "image_url": "https://colesurfboards.com/images/skeletonFishBoard.jpg",
+          "description": "This design is ideal for, but not limited to, small to medium sized surf. The full outline, along with the single to double concave bottom allows for increased planning speed, acceleration and looseness. The tri fin design maintains the drive and carving power of the standard thruster. We have had great success with the double-wing swallow in this design. The double-wing swallow allows for extra width under the front fins for looseness, while also allowing for the tail to be pulled in for extra control and carving. These boars fly through flat spots, and allow the rider to find pockets of speed in even the most gutless surf. DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS LENGTH WIDTH THICK…"
+        },
+        {
+          "name": "Single Barrel",
+          "image_url": "https://colesurfboards.com/images/singleBarrelBoard.jpg",
+          "description": "This is a state of the art performance shortboard, it has a relatively low entry rocker and quite a bit of rocker out the tail. The board has a single concave starting about 16” back from the nose and running the full length out the tail. The outline has the wide point back about 1 ½’from center to accentuate the curve in the back ½ of the board. This board is very drivey , while at the same time it is really snappy off the top and in the pocket. Fast, loose and predictable, this board is a favorite of top pros, and average surfers as well, for its all around versatility and high performance. DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS N / A   COLE SURFBOARDS | 129 Calle De Los Molinos San…"
+        },
+        {
+          "name": "Soy Saucer",
+          "image_url": "https://colesurfboards.com/images/soysaucerBoard.jpg",
+          "description": "This full outlined disc makes small surf a pleasure, it catches waves with ease and flies through flat sections like a skateboard. Works great with most fin configurations. This board can be custom tailored to fit any surfers needs. DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS LENGTH WIDTH THICK VOL 5'8\" 19 1/4 2� 5/16 27.5 5'9\" 19 3/8\" 2� 5/16 28 5'10\" 19 1/2 2� 3/8 29 5'11\" 19 5/8\" 2� 7/16 30.75 6'0\" 19 3/4\" 2� 1/2 32 6'1\" 20\" 2� 5/8 34.5 6'2\" 20 1/4 2� 5/8 36 6'3\" 20 3/4 2� 3/4 38.5 6'4\" 21\" 2� 3/4 39.5 6'5\" 21\" 2� 3/4 40 6'6\" 21 1/4 2� 7/8 42.75   COLE SURFBOARDS | 129 Calle De Los Molinos San Clemente, CA 92672 | Phone: 949.940.9044 Email: colesurfboards@gmail.com"
+        },
+        {
+          "name": "Flight Deck",
+          "image_url": "https://colesurfboards.com/images/flightDeckBoard.jpg",
+          "description": "Designed primarily for small to medium sized surf, the Flight Deck features a slightly fuller outline and a wider tail block than a standard shortboard. This outline, along with slightly deeper concaves allow this design to catch waves easily and slingshot through mushy sections at the same time. These boards maintain the snappy characteristics of the high performance shortboard while giving the rider a bit more glide through flat sports. This model is a must for making the most of everyday surf. DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS LENGTH WIDTH THICK VOLUME 5'8\" 18 5/8\" 2� 1/4 25.57 5'9\" 18 3/4 2� 1/4 26.12 5'10\" 18 3/4\" 2 5/16\" 27.3 5'11\" 19 1/8\" 2� 3/8 28.98 6'0\" 19 1/4\" 2 7/16\"…"
+        },
+        {
+          "name": "Trunk Board",
+          "image_url": "https://colesurfboards.com/images/trunkboardBoard.jpg",
+          "description": "Trunk Board (AKA Black Diamond 5) This short, stubby design, features a very low entry rocker, with a moderate amount of tail rocker. The deep “bonzer” style concave that runs full length from the nose, through the fins, and out the tail. Even though it is short, the low entry rocker combined with this full length concave allow this board to catch waves and plane through sections with ease. For 2010, we’ve added this board in a five fin with 4 bonzer side runners and a single box, this fin setup works amazing with this design making it very carvy and drivey, yet still very loose. DOWNLOAD ORDER CARD SUGGESTED DIMENSIONS LENGTH WIDTH THICK VOLUME 5'0\" 20 1/2 2 3/8\" 28.11 5'1\" 20 5/8 2� 7/16…"
+        }
+      ]
+    },
+    {
+      "slug": "south-coast-surfboards",
+      "name": "South Coast Surfboards",
+      "website_url": "https://www.southcoastsurfboards.com",
+      "location_label": "Torquay, Victoria, Australia",
+      "founder_name": "Ian Chisholm",
+      "lead_shaper_name": "Ian Chisholm",
+      "short_description": "Family-owned Torquay factory shaping and glassing traditional longboards, mid-lengths, and small-wave boards by hand since 1995.",
+      "logo_url": "https://www.southcoastsurfboards.com/cdn/shop/files/IMG_0650_dc9c7de1-d8c6-41c3-b7b3-bb18020a2bd3.jpg",
+      "models": [
+        {
+          "name": "Slasher LO PRO",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/IMG-1972.png",
+          "description": "9’3 by 23 by 3 glassed in 6 ounce bottom and double 6 ounce deck . Recommended fin 10” pivot flex 70 litres"
+        },
+        {
+          "name": "Slot Machine",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/IMG-2690.png",
+          "description": "7’4 x 21 3/4 x 2 3/4 Fins included. The most common question asked is what the best surfboard to own if you could only have one? The Slot Machine. It paddles like a longboard, surfs like a shortboard. The ultimate mid length that will perform anywhere. This board will handle 2ft-6ft beachies or Indo reef breaks. A great travel option for your next surf trip and a must in a quiver. Works as a single, thruster or quad."
+        },
+        {
+          "name": "Mullet",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/IMG-0012.png",
+          "description": "An 80s-inspired shortboard combining the volume of an 80s thruster with the loose, fast feel of a 70s twin. The winged swallow and twin-fin setup reduce drag, generating speed and freeing up turns, while the wing provides control through tighter arcs. Paired with our modern twin-fin template, it’s a versatile alternative to the traditional thruster, performing across a wide range of conditions. 6’10 by 21 1/2 by 2 5/8 full polish colour work and pin lining by Chizza glassed in 6 ounce bottom and 6 and 4 ounce deck . Fin choice THE TWIN"
+        },
+        {
+          "name": "OG67",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/IMG-3887.png",
+          "description": "9’ 4 x 23 x 3 Fin included. With a 67 involvement style rocker & outline. It has a heavily blended concave from the mid point. A slightly rolled bottom, with foiled out rails that are tucked so it performs and drives like a modern longboard. It’s essentially a board for performance logging enthusiasts, who still want to shred without glass on edge."
+        },
+        {
+          "name": "Retro Slide",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/IMG-1454.png",
+          "description": "6’2 by 21 by 2 1/2 retro slide glassed on keels with custom pinlining and high gloss polish"
+        },
+        {
+          "name": "OZ Noserider",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/IMG-2008.png",
+          "description": "9’4 by 23 byb2 7/8 handmade tie dye by Chizza with inks glassed in 6 ounce bottom and double 6 deck . Recommended fin 10” pivot flex"
+        },
+        {
+          "name": "Cooked EGG",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/IMG-1044.png",
+          "description": "7’6 by 22 by 2 3/4 51 litres laminated 6 bottom and 6/4 deck recommendedl fin the 2 plus 1 Seaswords"
+        },
+        {
+          "name": "Signature PRO",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/IMG-1663.png",
+          "description": "9’8 by 23 by 3 signature pro glassed in volan"
+        },
+        {
+          "name": "SMTH Shape",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/753DBC9A-D9BB-4E7A-9C3C-DCBA33EA337C.png",
+          "description": "6’1 by 18 5/8 by 2 11/16 never surfed made for my son who grew to much before we could get it in the water no fins"
+        },
+        {
+          "name": "Thunderbolt",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/IMG-0620.png",
+          "description": "9’1 by 22 1/2 by 2 3/4 eps thunderbolt construction ar18 in excellent condition rare only 20 ever made wont be produced again"
+        },
+        {
+          "name": "Triumph",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/IMG-8194.png",
+          "description": "6’10 by 21 1/4 by 2 5/8 laminated in 6 ounce bottom and 6 and 4 ounce deck .Recommended fins the TWIN"
+        },
+        {
+          "name": "Virtuoso",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/IMG-0969.png",
+          "description": "9’4 by 23 by 3 glassed in 6 ounce bottom double 6 deck . This one has a slight blemish in the tail on the deck due to foam inconsistency purely cosmetic so discounted by $200"
+        },
+        {
+          "name": "Alter EGO",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/B7F86950-1271-45E3-BA1B-8D9BA94847F5.png",
+          "description": "6’2 by 20 3/4 by 2 5/8 glassed in 6 bottom 6 and 4 deck sanded finish performance weight . Performer twin is the fin of choice"
+        },
+        {
+          "name": "Colonel",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/IMG-0749.png",
+          "description": "9’6 by 23 by 3 laminated in 6 bottom double 6 deck 70L recommended fin THE COMMANDER"
+        },
+        {
+          "name": "GULL Glider",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/IMG-1964.png",
+          "description": "11, by 23 3/4 by 3 1/4 glassed in double 6 with fabric inlay .recommended fin 9” pivot flex"
+        },
+        {
+          "name": "Low Pro",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/IMG_6260.png",
+          "description": "The newest collaboration between Ian Chisholm & CJ Nelson. 9’4 x 23 x 3 | Size Range 9’0 to 10ft | | Fin Options - Single Fin, glass on or Fin Box |"
+        },
+        {
+          "name": "NOVA MOON",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/IMG-0880_a894a041-570e-4e04-979e-a94b816acac4.png",
+          "description": "10’ by 23 3/4 by 3 1/8 glassed in volan double stringer glass on fin excellent condition"
+        },
+        {
+          "name": "NOVA Stella",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/C99B431B-B97B-4211-9E44-4CE1B08E554C.png",
+          "description": "9’6 by 23 by 3 laminated 6 bottom double 6 deck suggested fin options THE COMMANDER THE CALI CLASSIC THE BEN CONSIDINE"
+        },
+        {
+          "name": "Stepflow",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/72C3AC18-1AC0-4D35-AC88-64CC0FDFDB53.png",
+          "description": "9’9 23 3/4 by 3 3/8 stepflow glassed in volan with multi foam density stringers either side cedar 1/8 full high gloss polish one off"
+        },
+        {
+          "name": "Stretch Twinzer FISH",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/IMG-1042.png",
+          "description": "8’6 by 23 by 3 laminated in 6 ounce bottom and 6 and 4 deck"
+        },
+        {
+          "name": "Twinzer FISH",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/IMG-1041.png",
+          "description": "6’4 by 21 1/2 by 2 3/4 glassed in 6 bottom and 6/4 deck"
+        },
+        {
+          "name": "Wing Swallow Retro Slide",
+          "image_url": "https://cdn.shopify.com/s/files/1/1015/4959/files/457E9A09-9EDC-46D3-B713-7796CD7B433C.png",
+          "description": "5’6 x 20 1/2 x 2 3/8 Fins included. This board is so fun in small waves & really excels in punchy beaches. Perfect for fast down the line surfing flowing into long arching turns."
+        }
+      ]
+    },
+    {
+      "slug": "darcy-surfboards",
+      "name": "D'Arcy Surfboards",
+      "website_url": "https://darcysurfboards.com",
+      "location_label": "Gold Coast, Queensland, Australia",
+      "founder_name": "Stuart D'Arcy",
+      "lead_shaper_name": "Stuart D'Arcy",
+      "short_description": "Gold Coast custom performance, mid-length, and fish designs from shaper Stuart D'Arcy.",
+      "logo_url": "https://darcysurfboards.com/cdn/shop/files/logo_800x206.png",
+      "models": [
+        {
+          "name": "A-Bomb",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/A-Bom-S-D.jpg",
+          "description": "It's all about volume with shortboard performance... Made to make the most out of dismal surf conditions, you can catch more waves while maintaining performance. The a-bomb is ridden 4 to 6 inches shorter and 1 to 2 inches wider than your normal dimensions. It’s crazy how versatile the super fast and fun a-bomb design is. Put a smile on your dial.. Suitable Skill Level Pro - Intermediate D'Arcy Surfboards ~ 5'5 A-Bomb ~ \"I contacted Darc towards the end of last Winter to get a summer board shaped up. I wanted something to be more of a step down to my regular performance shortboard (5'9 Pit Pro). Considering the waves on offer in South Aus are small during summer. I needed a board to be…"
+        },
+        {
+          "name": "Cutaway Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/Cutaway-Pink.jpg",
+          "description": "The Cutaway Fish is a reboot of the Superfish with some performance-enhanced changes. Pulling in the outline between the feet and behind the back foot, allows the board to turn faster in a tighter arc, whilst still maintaining speed and smooth control without losing any paddle power. Smooth Operator Suitable Skill Level Pro - Intermediate"
+        },
+        {
+          "name": "Disco Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/disco-twin.png",
+          "description": "As surfing got more radical in the 80‘s with 360’s, airs, rounder roundhouses and more vertical re-entries, design experimentation went wild! Shorter, curvier and more outline, the flyer swallow twin perfected and performance tested by the likes of Mark Richards and Martin Potter inspired the disco twin. Fast and loose. Goes really fast in fluro! rip, tear, lacerate... Suitable Skill Level Pro - Intermediate"
+        },
+        {
+          "name": "Dragon",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/dragon-3.jpg",
+          "description": "The dragon is an all round short board. A little more out line and volume in the foil allows the bigger surfer to maintain speed without losing performance. Fast and reliable in most conditions, this is my all round weapon of choice. Fire it up... Suitable Skill Level Pro - Intermediate"
+        },
+        {
+          "name": "Frequent Flyer",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/frequent-flyer-blue.jpg",
+          "description": "The link between the Bomb and the performance short board. The Frequent Flyer is ridden 2 to 3 inches shorter and a little wider in the nose and tail than your normal short-board. Made to perform best in slower or choppy waves, really fast in super clean waves and like the name suggests, quick off the mark. If you want to add some speed and spark to your day to day surfing the Frequent Flyer is it! speed defies gravity... Suitable Skill Level Pro - Intermediate"
+        },
+        {
+          "name": "Grom",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/grom-step-up.jpg",
+          "description": "Grom The Grom shape comes into play when the young surfer takes control of his equipment. Shaped to suit a performance level and wave type is critical at this stage of development. Customise is wise. Tested and proven around the world by Junior Champions. Smash it up... Suitable Skill Level Pro - Intermediate - Beginner"
+        },
+        {
+          "name": "Gun",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/GUN-8_8.jpg",
+          "description": "The D’Arcy Gun and Tow Series is the result of hardcore testing by the D’Arcy Team in some of the heaviest waves in Australia, Indonesia and Hawaii. Combined with the strongest materials and best workmanship money can buy, these boards will come through for you when you need them most. In the water! Trust in experience... Suitable Skill Level Pro - Intermediate"
+        },
+        {
+          "name": "Mid-length Magic",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/Mid-Length-Crisis-RED.jpg",
+          "description": "The Mid-length Magic is a mid-length shape usually between 6'8 - 7'6 forced into riding a bigger board through injury.I made a flat rocker (easy paddle) super hull (easy turn) 7'2 x 21'1/2\" x 2'5/8 round tail single . inspired by the Wayne Lynch evolution model. It not only got me back in the water but also had me frothing on the free feeling. The connection to the power of the wave and the easy control in all size waves is amazing. I've been working on different fin systems twins, twinzers with channels. I first call it my Mid Length Crisis but after some customers call it their magic board I renamed it The Mid Length Magic. So fast and effortless to paddle. *All board prices based on…"
+        },
+        {
+          "name": "Mini Long",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/mini-long-1.jpg",
+          "description": "Like the name suggests the mini long is the little brother to the long. Inspired by the transition from longboard to shortboard made popular by Bob McTavish and Wayne Lynch, their soul, style and grace in the water depict new shapes and this is the evolution of the mini long made to be graceful in all conditions. style and grace... Suitable Skill Level Pro - Intermediate - Beginner"
+        },
+        {
+          "name": "Pirate Door",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/Pirate-door-Blue.jpg",
+          "description": "This model came about from living in the U.S in 2013, riding mainly slow, sloppy waves. It's a super fun mini board and what it lacks in length it makes up in outline. A wide nose and tail with a semi-hull entry through to single double barrel concave with vee kick out the tail. With a flatter rocker, takeoff is easy and speed is not a problem. The concave to vee bottom lets it flow from one rail to another so you can put the pedal to the metal and go vertical into and beyond the lip. The volume of the Superfish, the grace of the Waterbird and the release of the Abomb Made to plunder... Suitable Skill Level Pro - Intermediate - Beginner"
+        },
+        {
+          "name": "Pit Pro",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/pit-pro-1.jpg",
+          "description": "Designed for the contest ready surfer to max their heat points, it's fast and loose with plenty of drive for the aerial attack. A sweet bottom curve and clean outline combined allows performance surfing at it's best. For the pro in the pit... Suitable Skill Level Pro - Intermediate"
+        },
+        {
+          "name": "Single Slave",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/single-slave-board-3.jpg",
+          "description": "70s shortboard revolution! Speed and radical maneuvers in small to medium waves shorter, wider, thinner, looser and way more curve will still maintain the single fin style of surfing. If you just want to add some grace to your surfing or you remember the lines of days gone by, a change is as good as a holiday. speed blur Suitable Skill Level Pro - Intermediate"
+        },
+        {
+          "name": "Sleepwalker Long",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/Long.jpg",
+          "description": "Not your traditional long board design...working in the 90‘s with Michel Demont (World Champion Longboarder) on his contest demands and his free surfing at home in tahiti, we came up with an all rounder. A combination of classic smooth lines and modern curve designs, a little more curve in the bottom combined with a smooth outline makes an ideal shape for today’s progressive surfing style. smooth soul... Suitable Skill Level Pro - Intermediate - Beginner"
+        },
+        {
+          "name": "Snub",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/Snub-Black-green.jpg",
+          "description": "Developed for Pottz in the 90’s for the pro tour... A lower nose entry and more nose area makes catching waves and keeping up speed in slow soft waves easy. Using a standard short board tail kick and outline, the snub performs like your favourite short board in small gutless waves. Get air if you dare... Suitable Skill Level Pro - Intermediate"
+        },
+        {
+          "name": "Step Up",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/step-up-1.jpg",
+          "description": "The ultimate island hopping back-up As the standard boards are getting smaller, I've designed a board to perform in the 4-8 foot bracket Bigger than your shortboard and smaller than a gun, this is an essential for your board bag for those tropic adventures Stand tall..."
+        },
+        {
+          "name": "Superfish",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/Retro-super-fish-black.jpg",
+          "description": "A super short twin with a wide nose and tail design that gives the feel of a longer board when on its rail . More volume to catch more waves, a rolled vee up front and flat vee through the keels and curve to suit .The keel fins allow it to glide through turns .A double barrel vee in the tail helps it release when necessary. soul to glide Suitable Skill Level Pro - Intermediate"
+        },
+        {
+          "name": "The Slingshot",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/sling-shot-2.jpg",
+          "description": "The Slingshot was made to compliment the pit pro and all its contest savvy attributes, allowing the surfer who surfs very junky waves all the time, the chance to open up the speed between turns whilst maintaining flow. get high and fly... Suitable Skill Level Pro - Intermediate"
+        },
+        {
+          "name": "Ugly Betty",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/ugly-betty-orange.jpg",
+          "description": "Volume, volume, volume... The Ugly Betty I built for myself in the UK to maximise paddle volume and keep a performance feel in powerless waves.Combining chimed rails and flat to concave deck line, the Ugly Betty paddles fast . Having a vee barrel concave bottom maintains speed through turns. A full nose outline allows you to ride it shorter so it easer to manoeuvre in small waves ... Designed for surfers who like an easy paddle and a fast and smooth ride. Great for all waves up to 4 feet... Fun in the Sun... Suitable Skill Level Pro - Intermediate - Beginner"
+        },
+        {
+          "name": "Waterbird",
+          "image_url": "https://cdn.shopify.com/s/files/1/1603/9577/products/Water-Bird.jpg",
+          "description": "Working with team rider Jimmy McMillan towards a shape to fuse the performance shortboard with the speed and flow of the Superfish model which Jimmy loved cruising on after getting back into the water from a serious spinal injury. Enter the Waterbird! Capitalising on volume and outline for maximum wave catchability, fast and stable because of its width yet highly manoeuvrable because of its curves and fin configuration. Quad fins equal less drag and your best fun will be in small to medium waves. For those cruisy surfers who like to lay a line down, set the rail and glide through the turn. Birds are all about freedom and this board really gets you there. ...swoop, carve, float, fly!…"
+        }
+      ]
+    },
+    {
+      "slug": "wayne-lynch-surfboards",
+      "name": "Wayne Lynch Surfboards",
+      "website_url": "https://waynelynchsurfboards.com",
+      "location_label": "Fairhaven, Victoria, Australia",
+      "founder_name": "Wayne Lynch",
+      "lead_shaper_name": "Wayne Lynch",
+      "short_description": "Victorian surf craft from Australian surfing legend Wayne Lynch, including the Evo, Hybrid, Performance, and Unison longboard.",
+      "logo_url": "https://www.waynelynchsurfboards.com/cdn/shop/t/7/assets/logo.svg",
+      "models": [
+        {
+          "name": "Evo",
+          "image_url": "https://cdn.shopify.com/s/files/1/0699/2543/7761/files/5349E5F4-0D6D-494A-9910-ACF212584C40.jpg",
+          "description": "The Evo Design is a refinement of one of the very first boards I did back in 1968 whilst working in John Arnold’s Surf Shop in South Australia where I first began seriously shaping. When I was very young, there was a board called a Teardrop. One of my friends had one. That board had a specific design. It had a very wide tail combined with a tapering plan-shape right to the nose which was pointy and if you had grabbed it by the nose, held it up, it looked like a drop of water. At the time I was riding early balsa wood, thick railed, heavy longboard that had nothing refined about it. Whenever I swapped boards with my friend, I was amazed by how free it was and how different it felt to my…"
+        },
+        {
+          "name": "Hybrid",
+          "image_url": "https://cdn.shopify.com/s/files/1/0699/2543/7761/files/C85FCD83-94DC-4B69-ACC1-D96E9D82E15B.jpg",
+          "description": "6’10 x 20 3/4 x 2 7/8 Hybrid thruster The Hybrid. A concept that has been derived by blending specific elements of my two favourite boards, the ‘Performance’ and the ‘Evo’. Aesthetically pleasing softer curves through the plan shape, not to pointy-not to round, combined with the lower entry rocker of the Evo and the bottom shape of the Performance, the Hybrid is to date, the most versatile board in my quiver. Suited to a variety of different waves, from your average mushy beach break to long peeling point break walls and steep hollow reef breaks. FCS Fusion thruster setup Sage deck fade spray- blue pinline - golden yellow bottom Satin finish Fins not Included"
+        },
+        {
+          "name": "Performance",
+          "image_url": "https://cdn.shopify.com/s/files/1/0699/2543/7761/files/BC290234-4C3D-4F2A-804F-7E2DE3615095.jpg",
+          "description": "With around 40 years of research and design, the Performance board is my absolute go to board for the best, hollowest and most powerful waves, in which, I’ve spent majority of my time surfing down south on the rugged Victorian coastline. Built for waves of consequence, I’ve surfed these boards in Indonesia, Hawaii, and Fiji as part of the development process. The design is really quite simplistic. The bottom shape being single to double concave to double concave Vee to Vee off the tail, all very subtle as to me it’s all about blend. As the boards get longer and for larger waves, I reduce the surface area in the back quarter, increasing the Vee through the tail taking away to double concave…"
+        },
+        {
+          "name": "Single Fin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0699/2543/7761/files/IMG-2918.jpg",
+          "description": "The Single Fin. Reno Abellira had shaped a few boards for the Lorne surf shop when he was in Vic for the 1977 bells contest. I walked into the shop some time after and saw the 6’11 swallowtail sitting in the racks and immediately bought it. The Reno was one of my all time favourite boards, but had some aspects I wanted to adjust, especially the nose rocker as it was just a bit too flat. Furthering that, I’ve refined and changed that board over many years by increasing the entry rocker, adding a modern bottom and rails whilst trying to maintain the original plan shape. Typically, surfboards are an ever developing process. I’ve always described shaping as part art, part craft and part…"
+        },
+        {
+          "name": "Unison Longboard",
+          "image_url": "https://cdn.shopify.com/s/files/1/0699/2543/7761/files/IMG-5724.jpg",
+          "description": "The Unison Longboard I’ve been asked many times over the years if I’ll ever make a mal. After spending most of my life trying to get off them, I’ve realised now that’s it’s quite a fun and interesting thing for me to do, revisiting that way of surfing again. This design is a modern refined take on the involvement era mal’s we used to ride in the mid sixties. Blended concave through the nose leading to subtle roll though the tail, wide point back, 50/50 rails. It’s responsive off the tail, maintains speed when in trim and really stable on the nose creating a simultaneous flow between the rider, the board and the wave. I’ve really enjoyed creating this board, and now on the small days, I’m…"
+        }
+      ]
+    },
+    {
+      "slug": "simon-jones-designs",
+      "name": "Simon Jones Designs",
+      "website_url": "https://simonjonesdesigns.com",
+      "location_label": "Byron Bay, New South Wales, Australia",
+      "founder_name": "Simon Jones",
+      "lead_shaper_name": "Simon Jones",
+      "short_description": "Family-run Byron Bay label handcrafting stock and custom shortboards and mid-lengths since 1983.",
+      "logo_url": "https://simonjonesdesigns.com/cdn/shop/files/ef7a98_4d29fe1d11274d2286f14b0b72069db6_mv2.png",
+      "models": [
+        {
+          "name": "Fiji",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/13484107626a03.png",
+          "description": "Surfboard Model: Fiji Surfboard Model Type: Shortboard / Mid-length Fin System: 2x Futures Bottom Shape: 4 Channels"
+        },
+        {
+          "name": "Au Go Go",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/19249475269d86.png",
+          "description": "Surfboard Model: Au Go Go Surfboard ID: 1108941 Surfboard Model Type: Shortboard Fins: 2x Futures"
+        },
+        {
+          "name": "Calypte",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/18928892946a6b.png",
+          "description": "Surfboard Model: Calypte - Double Stringer Surfboard ID: 1154878 Surfboard Model Type: Shortboard Fins: 2x Futures"
+        },
+        {
+          "name": "Little Wing",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/LittleWingDeck.png",
+          "description": "Surfboard Model: Little Wing Surfboard Model Type: Shortboard / Mid-length Fin System: 2x Futures Bottom Shape: Single Concave"
+        },
+        {
+          "name": "Remote Location",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/12555241846a3d.png",
+          "description": "Surfboard Model: Remote Location Surfboard Model Type: Shortboard Fin System: 2x Futures Bottom Shape: 2 Channels"
+        },
+        {
+          "name": "Twin Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/81225206269dec.png",
+          "description": "Surfboard Model: Twin Pin Surfboard Model Type: Short / Mid-length Fin System: 2x Futures Bottom Shape: Double concave set in Vee"
+        },
+        {
+          "name": "Massive",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/234826466a6b11.png",
+          "description": "Surfboard Model: Massive Surfboard Model Type: Mid-length Fin System: 2x Futures Bottom Shape: 4 Channels"
+        },
+        {
+          "name": "2-Track",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/2-Track_Deck.png",
+          "description": "Surfboard Model: 2-Track Surfboard Model Type: Shortboard Fin System: 2x Futures Bottom Shape: 4 Channels"
+        },
+        {
+          "name": "Dylan",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/Dylan_Deck.png",
+          "description": "Surfboard Model: Dylan Surfboard Model Type: Glider Fin System: 2x Futures / Glass On Bottom Shape: Vee"
+        },
+        {
+          "name": "Keel",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/Keel_Deck.png",
+          "description": "Surfboard Model: Keel Surfboard Model Type: Shortboard / Mid-length Fin System: 2x Futures Bottom Shape: Single to Double"
+        },
+        {
+          "name": "LBOH",
+          "image_url": "https://cdn.shopify.com/s/files/1/0973/1761/7956/files/LBOH_Deck.png",
+          "description": "Surfboard Model: LBOH Surfboard Model Type: Shortboard Fin System: 2x Futures Bottom Shape: Single to Double"
+        }
+      ]
+    }
+  ],
+  "rejected": [],
+  "summary": {
+    "brand_count": 6,
+    "model_count": 92,
+    "image_count": 92,
+    "logo_count": 6
+  }
+}
