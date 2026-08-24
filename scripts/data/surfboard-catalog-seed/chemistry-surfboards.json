@@ -1,0 +1,184 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "chemistry-surfboards",
+      "name": "Chemistry Surfboards",
+      "website_url": "https://www.chemistrysurfboards.com/",
+      "location_label": "Oceanside, California",
+      "founder_name": "Jason Bennett",
+      "lead_shaper_name": "Jason Bennett",
+      "short_description": "Custom surfboards handcrafted in Oceanside, California since 2002 by Jason Bennett and Willie Smith.",
+      "models": [
+        {
+          "name": "Zen 3",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/z/e/zen-3-top_1_.png",
+          "description": "The Zen board line has been a favorite of our customers looking for a forward volume board to get in early on heavy, hollow surf. The Zen 3 was built off of the need to get into waves easily and to go as fast as possible down the line. This characteristic",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Beer Fridge",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/b/e/beerfridge_deck.png",
+          "description": "The Beer Fridge is another new addition to our high performance line. This model is a mixture between our Flashpoint and R2 models. The Beer Fridge has a thicker nose and tail foil which makes it an easier riding shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "R2+",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/1/a/1a.png",
+          "description": "Due to the success of our R2, we decided to develop the R2+ based off team rider's need for more rocker on his shortboard to surf in bigger, hollower waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Side-A",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/s/i/side-a-top.png",
+          "description": "Our newest performance shortboard in collaboration with Chemistry's team riders. The Side-A model fits between our user friendly R2 model and our most high performance board the B-Side.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Cassette Deck",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/c/a/cassette-deck-top_1_.png",
+          "description": "A nostalgic performance twin fin from the golden era of shortboard design. Jason Bennett developed the Cassette Deck for the Vissla Cosmic Creek Challenge.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Pool Toy",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/p/o/pool-toy-web-top-072522.jpg",
+          "description": "With all the hype surrounding fresh water wave pools, and having Chemistry ambassador, Cheyne Magnusson, operating the B.S.R. wave pool in Waco Texas, we decided to build a model catered to fresh water surfing.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Holloway",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/h/a/halloway-top.png",
+          "description": "The Holloway is your go to every day traditional twin fin fish in our Cursive line. This board was inspired by San Diegos own Steve Lis who invented the first fish in 1967. This board\u2019s outline and lower rocker lends to down the line speed and excels in a",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Judah",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/j/u/judahdeck.png",
+          "description": "Our Judah model is a throwback big wave gun design.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Half Moon",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/h/a/halfmoon-top.png",
+          "description": "The Half Moon is a non-traditional small wave glider. Its super wide outline and low rocker make this board exceptionally fast. The round nose allows this model to plane and paddle with ease. This board is the perfect addition to anyones quiver looking to",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Lyle",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/l/y/lyle-1.png",
+          "description": "One of two mid lengths in the Cursive line, the Lyle was built for its easy paddling and wave catching abilities. This model has a relaxed rocker and its \u201cegg\u201d shape allows this board to trim very well. The bottom contour of the Lyle is a single to slight",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Standard",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/b/o/board_model_images_standard_top.png",
+          "description": "The Standard was built for gliding and nose riding. This model has a deep tear drop concave in the nose which allows the board to have lift when hanging ten. The Standard has a relaxed rocker, a wider nose and tail, and straighter outline which all assist",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Lazy Cat",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/l/a/lazycat-1_2.png",
+          "description": "A true mid length, the Lazy Cat has a wide range of waves this board can be ridden in. Add it to your quiver as a small wave glider, or utilize its size and surf this board in bigger waves. This model paddles very well getting into many different types of",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Holiday",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/h/o/holiday-top.png",
+          "description": "Our Holiday model is a new addition to our small wave selection. This fish was built to speed down the line yet has a refined foil for high performance top to bottom surfing.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "40 oz.",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/4/0/40-oz-top.png",
+          "description": "The 40 oz model was a favorite of our customers when we introduced it in the early 2000s. Nearly 20 years later we are re-introducing this model for the beginner/heavier/older surfer who is looking for a performance shortboard. The 40 oz. model crams a to",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Summertime Pt. 2",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/s/u/summertime-web-top-080122.jpg",
+          "description": "The Summertime Pt. 2 is Chemistry's small-wave escape board, built for easy paddle and fun in weaker summer surf.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Zen 4",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/z/e/zen-4-web-top-080122.jpg",
+          "description": "The Zen 4 is the latest model in the Chem Zen line. It has the ability to hold a rail on the open face and in the tube.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Alchemist",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/m/a/marzo-web-top-072522.jpg",
+          "description": "This performance fish is ridden 2\u201d - 3\u201d shorter and 3/4\u201d - 1\u201d wider that your conventional shortboard. There is extra area in the nose to help you paddle in the smaller stuff as well as get you through those mushy sections. Available in either a single or",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mid Mod",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/m/i/mid-mod-top_7.png",
+          "description": "Not quite a shortboard, not quite a longboard - the Mid Mod is Chemistry's mid-length, with generous forward volume for paddling and a 2+1 or twin setup depending on how you want it to ride.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Zen 4.1",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/z/e/zen-4.1-top_1.png",
+          "description": "The Zen 4.1 is the latest model in the Chem Zen line. It has the ability to hold a rail on the open face and in the tube.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The 23",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/2/3/23-2-boards.png",
+          "description": "The 23 is Chemistry's high-performance hybrid that transitions between a classic thruster and a playful twin. It uses a 4-belly channel system and a center channel that fades then reappears, built as a quiver-killer for a wide range of waves.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pantera Rosa",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/p/a/pantera-rosa-top_3.png",
+          "description": "La Pantera Rosa is Olympian Bryan Perez's signature high-performance shortboard, designed by Jason Bennett. It blends elements of the M Mix and B-Side with a more aggressive rocker, pulled-in nose, and single-to-double concave for punchy, lined-up surf.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Zenith",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/z/e/zenith-top.png",
+          "description": "The Zenith is designed for everyday conditions, from high-performance surfing to weekend wave-catching. Jason Bennett placed the fins closer to the centerline under the heel and toe, with generous tail kick for rail-to-rail leverage.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Zen 4 Deluxe",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/z/e/zen-4-top_1.png",
+          "description": "The Zen 4 has become a crowd favorite for a reason. Its balanced performance, versatility, and undeniable fun factor speak for themselves. And now, with The Deluxe, even more surfers can experience the magic.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The M Mix",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/m/a/marzos-mix-web-both-082122.jpg",
+          "description": "The M Mix mixes Chemistry's user-friendly R2 with the high-performance B-Side. Forward volume and a wider nose help paddle and generate speed, with single concave and extra tail rocker for maneuverability.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Daisho",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/d/a/daisho-web-top-072522.jpg",
+          "description": "With all the recent hype on the modern, high performance single fin, we decided to take it to the \u201cnext level\u201d of high performance with our version of the Twin Fin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "4 x 4",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/4/x/4x4-top_1_.png",
+          "description": "With the 4 x 4 design we took our Wide J 6 model and modified the double wings to slight double bumps giving the board a more forgiving feel while keeping the desired straighter outline.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Minion",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/m/i/minionall_1.png",
+          "description": "The minion model was spawned from wanting to put an ultra easy small wave paddler into the Chemistry lineup. This model replaces your need for a longboard when the surf is sub par.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "B-Side",
+          "image_url": "https://content.cavewire.com/host/chemistry-us/path/media/catalog/product/cache/1/image/e4d92e6aceaad517e7b5c12e0dc06587/b/-/b-side-top_2.png",
+          "description": "The B-Side is our most high performance shortboard in our line. It also has the deepest single concave, and most accelerated rocker of any performance board we have built.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
