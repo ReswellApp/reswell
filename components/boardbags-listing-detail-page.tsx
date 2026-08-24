@@ -624,6 +624,8 @@ export async function BoardbagsListingDetailPage({
                 <ListingSoldOwnerNotice
                   dashboardListingsHref="/dashboard/listings"
                   sectionLabel="listing"
+                  listingId={boardbag.id as string}
+                  canRelist={boardbag.sold_off_platform === true}
                 />
               </div>
             )}

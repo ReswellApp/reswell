@@ -128,8 +128,8 @@ function AdminNavItemIcon({ icon }: { icon: AdminNavIconKey }) {
 
 function isNavActive(pathname: string, href: string): boolean {
   const norm = pathname.replace(/\/$/, '') || '/'
-  // Exact-only for home/overview roots so they don't steal child routes.
-  if (href === '/admin/home' || href === '/admin/overview') {
+  // Exact-only for roots that have sibling child routes (e.g. /admin/shop/orders).
+  if (href === '/admin/home' || href === '/admin/overview' || href === '/admin/shop') {
     return norm === href
   }
   return norm === href || norm.startsWith(`${href}/`)

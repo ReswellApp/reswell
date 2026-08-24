@@ -622,6 +622,8 @@ export async function ApparelListingDetailPage({
                 <ListingSoldOwnerNotice
                   dashboardListingsHref="/dashboard/listings"
                   sectionLabel="listing"
+                  listingId={apparel.id as string}
+                  canRelist={apparel.sold_off_platform === true}
                 />
               </div>
             )}

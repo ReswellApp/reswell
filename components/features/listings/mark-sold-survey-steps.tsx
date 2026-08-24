@@ -123,11 +123,11 @@ export function MarkSoldSurveyForm({
       </section>
 
       <section className="space-y-2">
-        <h3 className="text-sm font-medium">Optional tip</h3>
+        <h3 className="text-sm font-medium">Tip Reswell</h3>
         <p className="text-xs text-muted-foreground">
           {listingPriceLabel
-            ? `Percents are based on your ${listingPriceLabel} listing price.`
-            : "Completely up to you."}
+            ? `Optional. Percents are based on your ${listingPriceLabel} listing price. Choosing an amount takes you to card payment.`
+            : "Optional. Choosing an amount takes you to card payment."}
         </p>
         <div className="flex flex-wrap gap-2">
           <Button
@@ -205,7 +205,13 @@ export function MarkSoldSurveyForm({
       </section>
 
       <Button type="button" className="w-full" disabled={!canSubmit} onClick={onSubmit}>
-        {loading ? "Saving…" : selectedTipCents != null ? "Continue to tip" : "Done"}
+        {loading
+          ? selectedTipCents != null
+            ? "Starting tip…"
+            : "Saving…"
+          : selectedTipCents != null
+            ? "Continue to pay tip"
+            : "Done"}
       </Button>
     </div>
   )

@@ -1,10 +1,30 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
 import type { AdminNavGroupConfig } from '@/lib/admin-nav'
 import type { AdminNavBadgeCounts } from '@/lib/admin-nav-badge-counts'
 import { AdminHomeGreeting } from '@/components/features/admin/admin-home-greeting'
 import { AdminHomeIcon } from '@/components/features/admin/admin-home-icon'
+import { AdminHomePulseTiles } from '@/components/features/admin/admin-home-pulse-tiles'
+import { AdminHomeRevenueFilter } from '@/components/features/admin/admin-home-revenue-filter'
+import { AdminRevenueChart } from '@/components/features/admin/admin-revenue-chart'
+import { AdminUserSignupsChart } from '@/components/features/admin/admin-user-signups-chart'
+import type { AdminHomePulse } from '@/lib/services/adminHomePulse'
+import type { AdminHomeSignupPoint } from '@/lib/services/adminHomeSignups'
+import type { AdminRevenueTrend } from '@/lib/types/adminBusinessInsights'
+import type { AdminHomeRevenueRange } from '@/lib/utils/adminInsightsPeriod'
+import { BUSINESS_TIMEZONE_LABEL } from '@/lib/utils/business-timezone'
 import { cn } from '@/lib/utils'
+
+function revenueChartSubtitle(trend: AdminRevenueTrend): string {
+  if (trend.periodMode === 'month') {
+    return `Daily GMV and platform fees in ${trend.periodLabel} (${BUSINESS_TIMEZONE_LABEL})`
+  }
+  if (trend.aggregation === 'month') {
+    return `${trend.periodLabel} · monthly GMV (${BUSINESS_TIMEZONE_LABEL})`
+  }
+  return `Daily GMV and platform fees over the last ${trend.periodDays} days (${BUSINESS_TIMEZONE_LABEL})`
+}
 
 const GROUP_THEMES: Record<
   string,
@@ -13,6 +33,10 @@ const GROUP_THEMES: Record<
   overview: {
     chipDot: 'bg-[#355185]',
     wells: ['bg-[#163060]', 'bg-[#355185]', 'bg-[#5574AD]', 'bg-[#7F9DD5]'],
+  },
+  reswell: {
+    chipDot: 'bg-[#8A734A]',
+    wells: ['bg-[#8A734A]', 'bg-[#163060]', 'bg-[#355185]', 'bg-[#5574AD]'],
   },
   'orders-shipping': {
     chipDot: 'bg-[#C45C3E]',
@@ -41,12 +65,28 @@ interface AdminHomeDashboardProps {
   groups: AdminNavGroupConfig[]
   badgeCounts?: AdminNavBadgeCounts
   displayName?: string | null
+  revenueTrend?: AdminRevenueTrend | null
+  revenueTrendError?: string | null
+  selectedYearMonth?: string | null
+  range?: AdminHomeRevenueRange
+  pulse?: AdminHomePulse | null
+  signupTrend?: AdminHomeSignupPoint[] | null
+  signupTrendError?: string | null
+  isAdmin?: boolean
 }
 
 export function AdminHomeDashboard({
   groups,
   badgeCounts = {},
   displayName,
+  revenueTrend = null,
+  revenueTrendError = null,
+  selectedYearMonth = null,
+  range = 'ytd',
+  pulse = null,
+  signupTrend = null,
+  signupTrendError = null,
+  isAdmin = false,
 }: AdminHomeDashboardProps) {
   return (
     <div className="space-y-6">
@@ -61,6 +101,48 @@ export function AdminHomeDashboard({
           Go big or go home
         </p>
       </header>
+
+      {pulse ? <AdminHomePulseTiles pulse={pulse} isAdmin={isAdmin} /> : null}
+
+      {revenueTrend || revenueTrendError ? (
+        <div className="space-y-3">
+          {revenueTrendError ? (
+            <p className="rounded-2xl border border-destructive/40 bg-destructive/[0.06] px-4 py-3 text-sm text-destructive">
+              {revenueTrendError}
+            </p>
+          ) : null}
+          {revenueTrend ? (
+            <AdminRevenueChart
+              data={revenueTrend.daily}
+              monthly={revenueTrend.monthly}
+              chartSubtitle={revenueChartSubtitle(revenueTrend)}
+              insight={revenueTrend.insight}
+              totalGmv={revenueTrend.totalGmv}
+              totalOrders={revenueTrend.totalOrders}
+              periodFilter={
+                <Suspense fallback={null}>
+                  <AdminHomeRevenueFilter
+                    selectedYearMonth={selectedYearMonth}
+                    range={range}
+                  />
+                </Suspense>
+              }
+            />
+          ) : null}
+        </div>
+      ) : null}
+
+      {signupTrendError ? (
+        <p className="rounded-2xl border border-destructive/40 bg-destructive/[0.06] px-4 py-3 text-sm text-destructive">
+          {signupTrendError}
+        </p>
+      ) : null}
+      {signupTrend ? (
+        <AdminUserSignupsChart
+          data={signupTrend}
+          chartSubtitle={`Year to date since first sign-up · monthly new users (${BUSINESS_TIMEZONE_LABEL})`}
+        />
+      ) : null}
 
       {groups.map((group) => {
         const theme = GROUP_THEMES[group.id] ?? FALLBACK_THEME

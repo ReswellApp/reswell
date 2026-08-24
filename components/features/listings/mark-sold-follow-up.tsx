@@ -10,6 +10,7 @@ import {
   MarkSoldThanksStep,
 } from "@/components/features/listings/mark-sold-survey-steps"
 import { submitSoldFlowReswellReviewAction } from "@/lib/actions/reswellPlatformReview"
+import { RelistListingButton } from "@/components/features/listings/relist-listing-button"
 import { postListingSaleFeedback, postListingSaleTip } from "@/lib/listing-sale-feedback-request"
 import {
   SALE_TIP_MAX_CENTS,
@@ -47,11 +48,15 @@ export function MarkSoldFollowUp({
   listingPriceUsd,
   onClose,
   onFinished,
+  onCheckoutActiveChange,
+  onRelisted,
 }: {
   listingId: string
   listingPriceUsd: number | null
   onClose: () => void
   onFinished?: () => void
+  onCheckoutActiveChange?: (active: boolean) => void
+  onRelisted?: () => void
 }) {
   const [step, setStep] = useState<FollowUpStep>("form")
   const [soldChannel, setSoldChannel] = useState<SoldOffPlatformChannel | null>(null)
@@ -118,10 +123,12 @@ export function MarkSoldFollowUp({
     const result = await postListingSaleTip(listingId, amountCents)
     if (!result.ok) {
       toast.error(result.error)
+      onCheckoutActiveChange?.(false)
       return false
     }
     setSelectedTipCents(result.amountCents)
     setClientSecret(result.clientSecret)
+    onCheckoutActiveChange?.(true)
     setStep("checkout")
     return true
   }
@@ -134,11 +141,11 @@ export function MarkSoldFollowUp({
     setLoading(true)
     try {
       const saved = await saveFeedbackAndReview()
-      if (!saved) return
       if (tipCents != null) {
         await startTip(tipCents)
         return
       }
+      if (!saved) return
       finish()
     } finally {
       setLoading(false)
@@ -166,6 +173,7 @@ export function MarkSoldFollowUp({
             toast.success("Tip sent. Thank you.")
             setTipped(true)
             setClientSecret(null)
+            onCheckoutActiveChange?.(false)
             finish()
           }}
         />
@@ -175,6 +183,7 @@ export function MarkSoldFollowUp({
             variant="outline"
             disabled={loading}
             onClick={() => {
+              onCheckoutActiveChange?.(false)
               setClientSecret(null)
               setStep("form")
             }}
@@ -187,6 +196,7 @@ export function MarkSoldFollowUp({
             variant="ghost"
             disabled={loading}
             onClick={() => {
+              onCheckoutActiveChange?.(false)
               setClientSecret(null)
               finish()
             }}
@@ -199,40 +209,53 @@ export function MarkSoldFollowUp({
   }
 
   return (
-    <MarkSoldSurveyForm
-      soldChannel={soldChannel}
-      elsewhereDetail={elsewhereDetail}
-      elsewhereDetailValid={elsewhereDetailValid}
-      helpedOffPlatform={helpedOffPlatform}
-      listingPriceUsd={listingPriceUsd}
-      presets={tipPresets}
-      selectedTipCents={selectedTipCents}
-      customTip={customTip}
-      customTipCents={customTipCents}
-      rating={reviewRating}
-      review={reviewText}
-      loading={loading}
-      onChannelChange={(channel) => {
-        setSoldChannel(channel)
-        if (channel === "reswell") setHelpedOffPlatform(false)
-      }}
-      onDetailChange={setElsewhereDetail}
-      onHelpedOffPlatformChange={setHelpedOffPlatform}
-      onSelectNoTip={() => {
-        setSelectedTipCents(null)
-        setCustomTip("")
-      }}
-      onSelectPreset={(cents) => {
-        setCustomTip("")
-        setSelectedTipCents(cents)
-      }}
-      onCustomTipChange={(value) => {
-        setCustomTip(value)
-        setSelectedTipCents(parseCustomTipCents(value))
-      }}
-      onRatingChange={setReviewRating}
-      onReviewChange={setReviewText}
-      onSubmit={() => void handleSubmit()}
-    />
+    <div className="space-y-3">
+      <MarkSoldSurveyForm
+        soldChannel={soldChannel}
+        elsewhereDetail={elsewhereDetail}
+        elsewhereDetailValid={elsewhereDetailValid}
+        helpedOffPlatform={helpedOffPlatform}
+        listingPriceUsd={listingPriceUsd}
+        presets={tipPresets}
+        selectedTipCents={selectedTipCents}
+        customTip={customTip}
+        customTipCents={customTipCents}
+        rating={reviewRating}
+        review={reviewText}
+        loading={loading}
+        onChannelChange={(channel) => {
+          setSoldChannel(channel)
+          if (channel === "reswell") setHelpedOffPlatform(false)
+        }}
+        onDetailChange={setElsewhereDetail}
+        onHelpedOffPlatformChange={setHelpedOffPlatform}
+        onSelectNoTip={() => {
+          setSelectedTipCents(null)
+          setCustomTip("")
+        }}
+        onSelectPreset={(cents) => {
+          setCustomTip("")
+          setSelectedTipCents(cents)
+        }}
+        onCustomTipChange={(value) => {
+          setCustomTip(value)
+          setSelectedTipCents(parseCustomTipCents(value))
+        }}
+        onRatingChange={setReviewRating}
+        onReviewChange={setReviewText}
+        onSubmit={() => void handleSubmit()}
+      />
+      <div className="text-center">
+        <RelistListingButton
+          listingId={listingId}
+          triggerLabel="Marked sold by accident? Relist"
+          triggerSize="default"
+          triggerVariant="ghost"
+          triggerClassName="h-auto px-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+          showIcon={false}
+          onSuccess={onRelisted}
+        />
+      </div>
+    </div>
   )
 }

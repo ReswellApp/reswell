@@ -624,6 +624,8 @@ export async function SurfpacksListingDetailPage({
                 <ListingSoldOwnerNotice
                   dashboardListingsHref="/dashboard/listings"
                   sectionLabel="listing"
+                  listingId={surfpack.id as string}
+                  canRelist={surfpack.sold_off_platform === true}
                 />
               </div>
             )}

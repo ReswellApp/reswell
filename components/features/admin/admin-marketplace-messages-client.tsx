@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
@@ -32,10 +32,13 @@ function getLastActivityMs(conv: AdminMarketplaceConversationListRow): number {
     const fromConv = new Date(conv.last_message_at).getTime()
     if (Number.isFinite(fromConv)) maxMs = fromConv
   }
-  const last = conv.messages?.[0]
-  if (last) {
-    const t = new Date(last.created_at).getTime()
+  for (const message of conv.messages ?? []) {
+    const t = new Date(message.created_at).getTime()
     if (Number.isFinite(t) && t > maxMs) maxMs = t
+  }
+  if (maxMs === 0 && conv.created_at) {
+    const fromCreated = new Date(conv.created_at).getTime()
+    if (Number.isFinite(fromCreated)) maxMs = fromCreated
   }
   return maxMs
 }
@@ -102,6 +105,16 @@ export function AdminMarketplaceMessagesClient() {
     void fetchRows()
   }, [fetchRows])
 
+  const sortedRows = useMemo(
+    () =>
+      [...rows].sort((a, b) => {
+        const delta = getLastActivityMs(b) - getLastActivityMs(a)
+        if (delta !== 0) return delta
+        return a.id.localeCompare(b.id)
+      }),
+    [rows],
+  )
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     setAppliedSearch(searchInput.trim())
@@ -164,14 +177,14 @@ export function AdminMarketplaceMessagesClient() {
               <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
               Loading…
             </div>
-          ) : rows.length === 0 ? (
+          ) : sortedRows.length === 0 ? (
             <div className="p-8 text-center">
               <MessageCircle className="mx-auto mb-2 h-8 w-8 text-muted-foreground" aria-hidden />
               <p className="text-muted-foreground">No conversations found</p>
             </div>
           ) : (
             <div className={cn("divide-y divide-border/40", groupedShell)}>
-              {rows.map((conv) => {
+              {sortedRows.map((conv) => {
                 const lastMs = getLastActivityMs(conv)
                 const listingTitle = conv.listing?.title?.trim()
                   ? capitalizeWords(conv.listing.title.trim())

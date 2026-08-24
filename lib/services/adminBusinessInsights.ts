@@ -19,7 +19,9 @@ import type {
   AdminInsightsTopSeller,
   AdminMomentumMatrix,
   AdminMonthlyRevenueRow,
+  AdminRevenueTrend,
   LoadAdminBusinessInsightsOptions,
+  LoadAdminRevenueTrendOptions,
   MomentumComparison,
   MomentumFormat,
   MomentumMetric,
@@ -27,10 +29,15 @@ import type {
   TrendMetric,
 } from '@/lib/types/adminBusinessInsights'
 import {
+  resolveAdminHomeRevenuePeriod,
   resolveAdminInsightsPeriod,
   utcMonthStartIso,
   utcYearMonthChoices,
 } from '@/lib/utils/adminInsightsPeriod'
+import {
+  buildAdminRevenueMonthlyPoints,
+  buildAdminRevenuePaceInsight,
+} from '@/lib/utils/adminRevenueMonthly'
 import {
   marketplaceListingItemGmvUsd,
   marketplacePromoMarketingUsd,
@@ -47,7 +54,9 @@ export type {
   AdminInsightsTopSeller,
   AdminMomentumMatrix,
   AdminMonthlyRevenueRow,
+  AdminRevenueTrend,
   LoadAdminBusinessInsightsOptions,
+  LoadAdminRevenueTrendOptions,
   MomentumComparison,
   MomentumFormat,
   MomentumMetric,
@@ -568,6 +577,95 @@ export async function loadAdminBusinessInsights(
       ok: false,
       error:
         'Add SUPABASE_SERVICE_ROLE_KEY on the server to compute marketplace business insights.',
+    }
+  }
+}
+
+export async function loadAdminRevenueTrend(
+  options?: LoadAdminRevenueTrendOptions,
+): Promise<{ ok: true; data: AdminRevenueTrend } | { ok: false; error: string }> {
+  try {
+    const db = createServiceRoleClient()
+    const range = options?.range ?? 'ytd'
+    const period = resolveAdminHomeRevenuePeriod(options?.yearMonth, range)
+    const periodStartIso = new Date(period.periodStartMs).toISOString()
+    const periodEndIso = new Date(period.periodEndMs).toISOString()
+
+    const { data: orderRows, error } = await db
+      .from('orders')
+      .select('id, amount, platform_fee, status, created_at')
+      .eq('is_admin_test', false)
+      .gte('created_at', periodStartIso)
+      .lt('created_at', periodEndIso)
+      .order('created_at', { ascending: false })
+      .limit(ORDERS_FETCH_CAP)
+
+    if (error) {
+      return { ok: false, error: 'Could not load marketplace revenue trend.' }
+    }
+
+    const dailyMap = new Map<string, { gmv: number; fees: number; orders: number }>()
+    for (const key of buildBusinessDayKeys(period.periodStartMs, period.periodEndMs)) {
+      dailyMap.set(key, { gmv: 0, fees: 0, orders: 0 })
+    }
+
+    let totalGmv = 0
+    let totalOrders = 0
+
+    for (const row of orderRows ?? []) {
+      const r = row as Record<string, unknown>
+      const order = {
+        amount: num(r.amount),
+        platform_fee: num(r.platform_fee),
+        status: String(r.status ?? ''),
+        created_at: String(r.created_at ?? ''),
+      }
+      if (order.status !== 'confirmed') continue
+      if (isHiddenFromAdminOverviewReport(order)) continue
+
+      const bucket = dailyMap.get(businessDayKey(order.created_at))
+      if (!bucket) continue
+      bucket.gmv += order.amount
+      bucket.fees += order.platform_fee
+      bucket.orders += 1
+      totalGmv += order.amount
+      totalOrders += 1
+    }
+
+    const daily: AdminInsightsDailyPoint[] = Array.from(dailyMap.entries()).map(
+      ([date, v]) => ({ date, gmv: v.gmv, fees: v.fees, orders: v.orders }),
+    )
+    const aggregation =
+      (range === '90d' || range === 'ytd') && !options?.yearMonth ? 'month' : 'day'
+    const monthly =
+      aggregation === 'month'
+        ? buildAdminRevenueMonthlyPoints(daily, { trimLeadingEmpty: range === 'ytd' })
+        : []
+    const insight =
+      aggregation === 'month'
+        ? buildAdminRevenuePaceInsight({ monthly, totalGmv, range })
+        : null
+
+    return {
+      ok: true,
+      data: {
+        periodMode: period.mode,
+        periodLabel: period.label,
+        periodDays: period.periodDays,
+        selectedYearMonth: period.mode === 'month' ? period.yearMonth : null,
+        aggregation,
+        daily,
+        monthly,
+        totalGmv,
+        totalOrders,
+        insight,
+      },
+    }
+  } catch {
+    return {
+      ok: false,
+      error:
+        'Add SUPABASE_SERVICE_ROLE_KEY on the server to load the admin revenue trend.',
     }
   }
 }

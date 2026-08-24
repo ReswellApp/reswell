@@ -44,7 +44,6 @@ import {
 } from "@/lib/ads/attribution"
 import { insertOrderAdAttribution } from "@/lib/db/orderAdAttribution"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
-import { touchUserLastActive } from "@/lib/db/userActivity"
 import { purchaseReswellShippingLabelAfterCheckout } from "@/lib/services/autoPurchaseReswellShippingLabelForOrder"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { safeRevalidateAfterMarketplaceOrderCommit } from "@/lib/cache/safe-revalidate-after-order"
@@ -906,11 +905,6 @@ export async function completeMarketplaceOrderFromPaymentIntent(
 
   if (buyerId) {
     void deleteBuyerCartRowsForListings(serviceSupabase, buyerId, listingIdsOrdered)
-  }
-
-  void touchUserLastActive(serviceSupabase, bundleSellerId)
-  if (buyerId) {
-    void touchUserLastActive(serviceSupabase, buyerId)
   }
 
   const listingTitles = listingsOrdered.map((l) => String(l.title ?? ""))

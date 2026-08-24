@@ -624,6 +624,8 @@ export async function LeashesListingDetailPage({
                 <ListingSoldOwnerNotice
                   dashboardListingsHref="/dashboard/listings"
                   sectionLabel="listing"
+                  listingId={leash.id as string}
+                  canRelist={leash.sold_off_platform === true}
                 />
               </div>
             )}

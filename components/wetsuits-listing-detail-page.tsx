@@ -639,6 +639,8 @@ export async function WetsuitsListingDetailPage({
                 <ListingSoldOwnerNotice
                   dashboardListingsHref="/dashboard/listings"
                   sectionLabel="listing"
+                  listingId={wetsuit.id as string}
+                  canRelist={wetsuit.sold_off_platform === true}
                 />
               </div>
             )}

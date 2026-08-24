@@ -2,7 +2,6 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { submitContactFormMessageService } from "@/lib/services/contactForm"
-import { recordPresenceHeartbeat } from "@/lib/services/presenceHeartbeat"
 
 export async function getAdminSession() {
   const supabase = await createClient()
@@ -41,15 +40,6 @@ export async function getPaypalProfileStatus() {
   }
 
   return { data: data ?? {}, error: null }
-}
-
-/** Prefer POST /api/presence/heartbeat from clients — avoids deploy-skew Server Action 404s. */
-export async function updatePresenceHeartbeat() {
-  const result = await recordPresenceHeartbeat()
-  if (!result.ok) {
-    return { ok: false as const, error: result.error }
-  }
-  return { ok: true as const }
 }
 
 export async function submitContactMessage(input: { name: string; email: string; message: string }) {

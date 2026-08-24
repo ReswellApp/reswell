@@ -2,7 +2,6 @@ import type { ComponentType, ReactNode } from 'react'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import {
-  Activity,
   ArrowRight,
   ArrowUpRight,
   BadgePercent,
@@ -650,12 +649,6 @@ export function AdminOverviewView({
               <Link href="/admin/used-board-market-dashboard">Market data</Link>
             </Button>
           ) : null}
-          <Button variant="default" size="sm" className="gap-1.5" asChild>
-            <Link href="/admin/live">
-              <Activity className="h-4 w-4" aria-hidden />
-              Live
-            </Link>
-          </Button>
         </div>
         </div>
       </div>

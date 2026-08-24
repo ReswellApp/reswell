@@ -551,6 +551,8 @@ export async function MagazinesListingDetailPage({
                 <ListingSoldOwnerNotice
                   dashboardListingsHref="/dashboard/listings"
                   sectionLabel="listing"
+                  listingId={magazine.id as string}
+                  canRelist={magazine.sold_off_platform === true}
                 />
               </div>
             )}

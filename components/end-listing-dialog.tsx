@@ -4,18 +4,10 @@ import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -61,7 +53,9 @@ export function EndListingDialog({
   const [choice, setChoice] = useState<EndChoice>(null)
   const [loading, setLoading] = useState(false)
   const [soldPriceUsd, setSoldPriceUsd] = useState<number | null>(null)
+  const [tipCheckoutActive, setTipCheckoutActive] = useState(false)
   const markedSoldRef = useRef(false)
+  const tipCheckoutActiveRef = useRef(false)
   const router = useRouter()
 
   function resetState() {
@@ -69,6 +63,8 @@ export function EndListingDialog({
     setChoice(null)
     setLoading(false)
     setSoldPriceUsd(null)
+    setTipCheckoutActive(false)
+    tipCheckoutActiveRef.current = false
   }
 
   function closeAndRefreshIfSold() {
@@ -83,19 +79,24 @@ export function EndListingDialog({
     }
   }
 
-  function handleAlertOpenChange(nextOpen: boolean) {
+  function handleRelisted() {
+    markedSoldRef.current = false
+    resetState()
+    onOpenChange(false)
+  }
+
+  function handleOpenChange(nextOpen: boolean) {
     if (!nextOpen) {
-      if (markedSoldRef.current) return
+      if (tipCheckoutActiveRef.current) return
       closeAndRefreshIfSold()
       return
     }
     onOpenChange(true)
   }
 
-  function handleSurveyOpenChange(nextOpen: boolean) {
-    if (!nextOpen) {
-      closeAndRefreshIfSold()
-    }
+  function handleCheckoutActiveChange(active: boolean) {
+    tipCheckoutActiveRef.current = active
+    setTipCheckoutActive(active)
   }
 
   async function handleConfirm() {
@@ -179,120 +180,139 @@ export function EndListingDialog({
   const followUpPriceUsd =
     soldPriceUsd ??
     (typeof listingPriceUsd === "number" && listingPriceUsd > 0 ? listingPriceUsd : null)
+  const followUpOpen = step === "sold_survey"
 
   return (
-    <>
-      <AlertDialog open={open && step === "main"} onOpenChange={handleAlertOpenChange}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>End listing</AlertDialogTitle>
-            <AlertDialogDescription>
-              {canUseListingVacationMode(listingStatus)
-                ? "Vacation hides a live listing until you go live again. "
-                : null}
-              Archive removes it from the public site and keeps it under Archived listings for 30
-              days.
-              {canDelete
-                ? " Delete removes the listing immediately."
-                : " This listing is tied to an order or payment, so it can be archived instead of deleted."}{" "}
-              Mark as sold keeps it on file when you closed the sale elsewhere.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex flex-col gap-2 py-2">
-            {canUseListingVacationMode(listingStatus) ? (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent
+        className="max-h-[90vh] overflow-y-auto sm:max-w-lg"
+        showCloseButton={!tipCheckoutActive}
+        onOpenAutoFocus={(event) => {
+          if (followUpOpen) event.preventDefault()
+        }}
+        onFocusOutside={(event) => {
+          if (followUpOpen) event.preventDefault()
+        }}
+        onPointerDownOutside={(event) => {
+          if (followUpOpen) event.preventDefault()
+        }}
+        onInteractOutside={(event) => {
+          if (followUpOpen) event.preventDefault()
+        }}
+      >
+        {followUpOpen ? (
+          <>
+            <DialogHeader className="pr-8">
+              <DialogTitle>Congrats on the sale</DialogTitle>
+              <DialogDescription>
+                Where it sold, plus an optional tip to Reswell and a rating.
+              </DialogDescription>
+            </DialogHeader>
+            {listingId ? (
+              <MarkSoldFollowUp
+                listingId={listingId}
+                listingPriceUsd={followUpPriceUsd}
+                onCheckoutActiveChange={handleCheckoutActiveChange}
+                onClose={closeAndRefreshIfSold}
+                onRelisted={handleRelisted}
+              />
+            ) : null}
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle>End listing</DialogTitle>
+              <DialogDescription>
+                {canUseListingVacationMode(listingStatus)
+                  ? "Vacation hides a live listing until you go live again. "
+                  : null}
+                Archive removes it from the public site and keeps it under Archived listings for 30
+                days.
+                {canDelete
+                  ? " Delete removes the listing immediately."
+                  : " This listing is tied to an order or payment, so it can be archived instead of deleted."}{" "}
+                Mark as sold keeps it on file when you closed the sale elsewhere.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-2 py-2">
+              {canUseListingVacationMode(listingStatus) ? (
+                <Button
+                  variant={choice === "vacation" ? "default" : "outline"}
+                  className="justify-start"
+                  type="button"
+                  onClick={() => setChoice("vacation")}
+                >
+                  {vacationMode ? "Go live" : "Vacation mode"}
+                </Button>
+              ) : null}
               <Button
-                variant={choice === "vacation" ? "default" : "outline"}
+                variant={choice === "archive" ? "default" : "outline"}
                 className="justify-start"
                 type="button"
-                onClick={() => setChoice("vacation")}
+                onClick={() => setChoice("archive")}
               >
-                {vacationMode ? "Go live" : "Vacation mode"}
+                Archive listing
               </Button>
-            ) : null}
-            <Button
-              variant={choice === "archive" ? "default" : "outline"}
-              className="justify-start"
-              type="button"
-              onClick={() => setChoice("archive")}
-            >
-              Archive listing
-            </Button>
-            <Button
-              variant={choice === "mark_sold" ? "default" : "outline"}
-              className="justify-start"
-              type="button"
-              onClick={() => setChoice("mark_sold")}
-            >
-              Mark as sold
-            </Button>
-            {canDelete ? (
               <Button
-                variant={choice === "delete" ? "destructive" : "outline"}
+                variant={choice === "mark_sold" ? "default" : "outline"}
                 className="justify-start"
                 type="button"
-                onClick={() => setChoice("delete")}
+                onClick={() => setChoice("mark_sold")}
               >
-                Delete listing
+                Mark as sold
               </Button>
-            ) : null}
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-            <Button
-              type="button"
-              variant={choice === "delete" ? "destructive" : "default"}
-              disabled={!choice || loading}
-              onClick={() => void handleConfirm()}
-            >
-              {loading
-                ? choice === "delete"
-                  ? "Deleting…"
-                  : choice === "mark_sold"
-                    ? "Saving…"
-                    : choice === "vacation"
-                      ? vacationMode
-                        ? "Going live…"
-                        : "Updating…"
-                      : "Archiving…"
-                : choice === "delete"
-                  ? "Delete listing"
-                  : choice === "archive"
-                    ? "Archive listing"
+              {canDelete ? (
+                <Button
+                  variant={choice === "delete" ? "destructive" : "outline"}
+                  className="justify-start"
+                  type="button"
+                  onClick={() => setChoice("delete")}
+                >
+                  Delete listing
+                </Button>
+              ) : null}
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={loading}
+                onClick={closeAndRefreshIfSold}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant={choice === "delete" ? "destructive" : "default"}
+                disabled={!choice || loading}
+                onClick={() => void handleConfirm()}
+              >
+                {loading
+                  ? choice === "delete"
+                    ? "Deleting…"
                     : choice === "mark_sold"
-                      ? "Mark as sold"
+                      ? "Saving…"
                       : choice === "vacation"
                         ? vacationMode
-                          ? "Go live"
-                          : "Turn on vacation"
-                        : "Continue"}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <Dialog open={open && step === "sold_survey"} onOpenChange={handleSurveyOpenChange}>
-        <DialogContent
-          className="max-h-[90vh] overflow-y-auto sm:max-w-lg"
-          onOpenAutoFocus={(event) => event.preventDefault()}
-          onFocusOutside={(event) => event.preventDefault()}
-          onPointerDownOutside={(event) => event.preventDefault()}
-          onInteractOutside={(event) => event.preventDefault()}
-        >
-          <DialogHeader className="pr-8">
-            <DialogTitle>Congrats on the sale</DialogTitle>
-            <DialogDescription>
-              Where it sold, plus an optional tip and rating.
-            </DialogDescription>
-          </DialogHeader>
-          {listingId ? (
-            <MarkSoldFollowUp
-              listingId={listingId}
-              listingPriceUsd={followUpPriceUsd}
-              onClose={closeAndRefreshIfSold}
-            />
-          ) : null}
-        </DialogContent>
-      </Dialog>
-    </>
+                          ? "Going live…"
+                          : "Updating…"
+                        : "Archiving…"
+                  : choice === "delete"
+                    ? "Delete listing"
+                    : choice === "archive"
+                      ? "Archive listing"
+                      : choice === "mark_sold"
+                        ? "Mark as sold"
+                        : choice === "vacation"
+                          ? vacationMode
+                            ? "Go live"
+                            : "Turn on vacation"
+                          : "Continue"}
+              </Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   )
 }

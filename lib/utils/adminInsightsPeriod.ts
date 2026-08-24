@@ -1,10 +1,19 @@
 import { z } from 'zod'
 
+import { businessDayKeyFromMs, businessDayStartMs } from '@/lib/utils/business-timezone'
+
 /** Rolling comparison window for the admin overview BI dashboard. */
 export const ADMIN_INSIGHTS_PERIOD_DAYS = 30
 
+/** Rolling window for “past 3 months” on the admin home revenue chart. */
+export const ADMIN_INSIGHTS_QUARTER_DAYS = 90
+
 /** How many calendar months appear in the admin overview month picker. */
 export const ADMIN_INSIGHTS_MONTH_PICKER_COUNT = 36
+
+export const adminInsightsRangeSchema = z.enum(['30d', '90d', 'ytd'])
+
+export type AdminHomeRevenueRange = z.infer<typeof adminInsightsRangeSchema>
 
 export const adminInsightsYearMonthSchema = z
   .string()
@@ -65,6 +74,13 @@ export function utcYearMonthChoices(count: number): string[] {
   return months
 }
 
+export function shiftYearMonth(yearMonth: string, deltaMonths: number): string {
+  const parts = parseYearMonth(yearMonth)
+  if (!parts) return yearMonth
+  const shifted = new Date(Date.UTC(parts.year, parts.month - 1 + deltaMonths, 1))
+  return `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth() + 1).padStart(2, '0')}`
+}
+
 export function formatAdminInsightsMonthLabel(yearMonth: string): string {
   const parts = parseYearMonth(yearMonth)
   if (!parts) return yearMonth
@@ -75,8 +91,52 @@ export function formatAdminInsightsMonthLabel(yearMonth: string): string {
   })
 }
 
+export function parseAdminInsightsPeriodSearch(params: {
+  month?: string | null
+  range?: string | null
+}): { yearMonth: string | null; range: AdminHomeRevenueRange } {
+  const month = adminInsightsYearMonthSchema.safeParse(params.month?.trim())
+  if (month.success) {
+    return { yearMonth: month.data, range: '30d' }
+  }
+  const range = adminInsightsRangeSchema.safeParse(params.range?.trim())
+  if (range.success) {
+    return { yearMonth: null, range: range.data }
+  }
+  return { yearMonth: null, range: 'ytd' }
+}
+
+function resolveYearToDatePeriod(now: number): AdminInsightsPeriodResolved {
+  const todayKey = businessDayKeyFromMs(now)
+  const year = todayKey.slice(0, 4)
+  const periodStartMs = businessDayStartMs(`${year}-01-01`)
+  const dayMs = 24 * 60 * 60 * 1000
+  return {
+    mode: 'rolling',
+    periodDays: Math.max(1, Math.round((now - periodStartMs) / dayMs)),
+    label: `Year to date ${year}`,
+    compareLabel: `prior year`,
+    periodStartMs,
+    periodEndMs: now,
+    prevStartMs: businessDayStartMs(`${Number(year) - 1}-01-01`),
+    prevEndMs: periodStartMs,
+    fetchSinceIso: new Date(periodStartMs).toISOString(),
+  }
+}
+
+export function resolveAdminHomeRevenuePeriod(
+  yearMonth?: string | null,
+  range: AdminHomeRevenueRange = 'ytd',
+): AdminInsightsPeriodResolved {
+  if (yearMonth) return resolveAdminInsightsPeriod(yearMonth)
+  if (range === 'ytd') return resolveYearToDatePeriod(Date.now())
+  if (range === '90d') return resolveAdminInsightsPeriod(null, ADMIN_INSIGHTS_QUARTER_DAYS)
+  return resolveAdminInsightsPeriod(null, ADMIN_INSIGHTS_PERIOD_DAYS)
+}
+
 export function resolveAdminInsightsPeriod(
   yearMonthInput?: string | null,
+  rollingDays: number = ADMIN_INSIGHTS_PERIOD_DAYS,
 ): AdminInsightsPeriodResolved {
   const now = Date.now()
   const dayMs = 24 * 60 * 60 * 1000
@@ -121,6 +181,24 @@ export function resolveAdminInsightsPeriod(
         prevEndMs,
         fetchSinceIso: new Date(prevStartMs).toISOString(),
       }
+    }
+  }
+
+  if (rollingDays === ADMIN_INSIGHTS_QUARTER_DAYS) {
+    const currentYm = businessDayKeyFromMs(now).slice(0, 7)
+    const startYm = shiftYearMonth(currentYm, -2)
+    const periodStartMs = businessDayStartMs(`${startYm}-01`)
+    const periodDays = Math.max(1, Math.round((now - periodStartMs) / dayMs))
+    return {
+      mode: 'rolling',
+      periodDays,
+      label: 'Past 3 months',
+      compareLabel: 'prior 3 months',
+      periodStartMs,
+      periodEndMs: now,
+      prevStartMs: businessDayStartMs(`${shiftYearMonth(startYm, -3)}-01`),
+      prevEndMs: periodStartMs,
+      fetchSinceIso: new Date(periodStartMs).toISOString(),
     }
   }
 

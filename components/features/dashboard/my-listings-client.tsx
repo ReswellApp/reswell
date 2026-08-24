@@ -37,6 +37,7 @@ import {
   formatHomePeerListingConditionLine,
 } from "@/lib/listing-labels"
 import { EndListingDialog } from "@/components/end-listing-dialog"
+import { RelistListingButton } from "@/components/features/listings/relist-listing-button"
 import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
 import { SellerOfferToCartHolders } from "@/components/features/listings/seller-offer-to-cart-holders"
 import { SellerBanRestrictedPanel } from "@/components/features/sell/seller-ban-restricted-panel"
@@ -736,6 +737,12 @@ function ListingRow({
             </Link>
           </Button>
         )}
+        {isSold && !sellerBanned && listing.sold_off_platform === true ? (
+          <RelistListingButton
+            listingId={listing.id}
+            triggerClassName="min-w-[5.5rem] rounded-full bg-muted text-primary shadow-none hover:bg-muted/80"
+          />
+        ) : null}
         {canOfferToCart ? (
           <SellerOfferToCartHolders
             listingId={listing.id}

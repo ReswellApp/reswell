@@ -76,9 +76,7 @@ const CAPABILITY_GROUPS: CapabilityGroup[] = [
       { href: '/admin/home', label: 'Home', description: 'Jump to any admin page', icon: LayoutDashboard },
       { href: '/admin/overview', label: 'Overview', description: 'Site stats & recent activity', icon: Activity },
       { href: '/admin/listings', label: 'Listings', description: 'Search, moderate, restore', icon: Package },
-      { href: '/admin/seo', label: 'SEO', description: 'Page metadata & sitemaps', icon: Search },
       { href: '/admin/users', label: 'Users', description: 'Accounts, roles & access', icon: Users },
-      { href: '/admin/wallets', label: 'Wallets', description: 'Balances & payouts', icon: Wallet },
     ],
   },
   {
@@ -86,7 +84,6 @@ const CAPABILITY_GROUPS: CapabilityGroup[] = [
     label: 'Orders & shipping',
     items: [
       { href: '/admin/orders', label: 'Orders', description: 'All marketplace orders', icon: ShoppingBag },
-      { href: '/admin/orders/test-purchase', label: 'Test purchase', description: 'Run a test checkout', icon: ShoppingBag },
       { href: '/admin/orders/terminal', label: 'In-person checkout', description: 'Terminal tap-to-pay or card checkout', icon: ShoppingBag },
       { href: '/admin/shipping', label: 'Shipping', description: 'Carriers & rates', icon: Truck },
     ],
@@ -95,7 +92,6 @@ const CAPABILITY_GROUPS: CapabilityGroup[] = [
     id: 'analytics',
     label: 'Analytics',
     items: [
-      { href: '/admin/live', label: 'Live', description: 'Active users right now', icon: Activity },
       { href: '/admin/used-board-market-dashboard', label: 'Used board market', description: 'Resale market trends', icon: Waves },
       { href: '/admin/catalog-overview', label: 'Brand catalog', description: 'Explore brand catalog', icon: FolderTree },
       { href: '/admin/search-analytics', label: 'Search analytics', description: 'Query & result insights', icon: LineChart },
@@ -115,7 +111,6 @@ const CAPABILITY_GROUPS: CapabilityGroup[] = [
       { href: '/admin/crm', label: 'CRM', description: 'Customer relationships', icon: ContactRound },
       { href: '/admin/contact-messages', label: 'Support inbox', description: 'Contact form messages', icon: MessageSquare },
       { href: '/admin/messages', label: 'Marketplace messages', description: 'Buyer/seller threads', icon: MessageSquare },
-      { href: '/admin/fraud-messages', label: 'Fraud messages', description: 'Flagged conversations', icon: Shield },
       { href: '/admin/listings/brand-requests', label: 'Brand requests', description: 'Brand & model requests', icon: Tag },
     ],
   },
@@ -123,6 +118,13 @@ const CAPABILITY_GROUPS: CapabilityGroup[] = [
     id: 'admin-tools',
     label: 'Admin tools',
     items: [
+      { href: '/admin/listings/hidden', label: 'Hidden listings', description: 'Listings hidden from the site', icon: Package },
+      { href: '/admin/listings/bulk', label: 'Bulk list', description: 'Create many listings at once', icon: Layers },
+      { href: '/admin/seo', label: 'SEO', description: 'Page metadata & sitemaps', icon: Search },
+      { href: '/admin/wallets', label: 'Wallet balances', description: 'Balances & payouts', icon: Wallet },
+      { href: '/admin/orders/test-purchase', label: 'Test purchase', description: 'Run a test checkout', icon: ShoppingBag },
+      { href: '/admin/fraud-messages', label: 'Fraud messages', description: 'Flagged conversations', icon: Shield },
+      { href: '/admin/ops', label: 'Platform ops', description: 'Site errors and fix tickets', icon: Activity },
       { href: '/admin/reswelltickets', label: 'Reswell tickets', description: 'Admin progress and bug tracker — not customer support', icon: Ticket },
       { href: '/admin/tools', label: 'Admin tools', description: 'Search, cache & lifecycle jobs', icon: Wrench },
       { href: '/admin/site-assets', label: 'Site assets', description: 'Visual inventory of site imagery', icon: Layers },

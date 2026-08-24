@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Package, Truck } from "lucide-react"
+import { RelistListingButton } from "@/components/features/listings/relist-listing-button"
 
 /** Full-width callout on listing detail when status is sold — desktop and mobile. */
 export function ListingSoldDetailNotice({
@@ -41,13 +42,17 @@ export function ListingSoldDetailNotice({
   )
 }
 
-/** Owner-only copy when the listing is sold — no edit / end actions. */
+/** Owner-only copy when the listing is sold. Off-platform marks can be relisted. */
 export function ListingSoldOwnerNotice({
   dashboardListingsHref,
   sectionLabel,
+  listingId,
+  canRelist = false,
 }: {
   dashboardListingsHref: string
   sectionLabel: string
+  listingId: string
+  canRelist?: boolean
 }) {
   return (
     <div className="rounded-lg border border-border bg-muted/30 px-4 py-4 text-center">
@@ -56,9 +61,20 @@ export function ListingSoldOwnerNotice({
       </div>
       <p className="font-medium text-foreground">This {sectionLabel} sold on Reswell</p>
       <p className="mt-2 text-sm text-muted-foreground leading-snug">
-        This page stays visible for your records. Buyers can’t purchase it or send offers. Editing and
-        “end listing” are disabled for sold listings.
+        {canRelist
+          ? "This page stays visible for your records. If you marked it sold by accident, you can relist it."
+          : "This page stays visible for your records. Buyers can’t purchase it or send offers. Editing and “end listing” are disabled for sold listings."}
       </p>
+      {canRelist ? (
+        <div className="mt-4">
+          <RelistListingButton
+            listingId={listingId}
+            triggerSize="default"
+            triggerVariant="outline"
+            triggerClassName="rounded-full"
+          />
+        </div>
+      ) : null}
       <Link
         href={dashboardListingsHref}
         className="mt-4 inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"

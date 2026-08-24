@@ -19,6 +19,22 @@ export type AdminInsightsDailyPoint = {
   orders: number
 }
 
+export type AdminRevenueMonthlyPoint = {
+  yearMonth: string
+  label: string
+  gmv: number
+  fees: number
+  orders: number
+  gmvDeltaPct: number | null
+  ordersDeltaPct: number | null
+  isPartial: boolean
+  /** e.g. "vs Jul" or "vs Jul 1–24" for month-to-date. */
+  compareLabel: string | null
+  /** Full-month run-rate when `isPartial`. */
+  projectedGmv: number | null
+  projectedOrders: number | null
+}
+
 export type AdminInsightsTopSeller = {
   id: string
   name: string
@@ -112,6 +128,29 @@ export type AdminBusinessInsights = {
 export type LoadAdminBusinessInsightsOptions = {
   /** `YYYY-MM` calendar month (UTC). Omit for the rolling window. */
   yearMonth?: string | null
+}
+
+export type LoadAdminRevenueTrendOptions = {
+  /** `YYYY-MM` calendar month (UTC). Omit for a rolling window. */
+  yearMonth?: string | null
+  /** Home chart range. Ignored when `yearMonth` is set. */
+  range?: '30d' | '90d' | 'ytd'
+}
+
+export type AdminRevenueTrendAggregation = 'day' | 'month'
+
+export type AdminRevenueTrend = {
+  periodMode: AdminInsightsPeriodMode
+  periodLabel: string
+  periodDays: number
+  selectedYearMonth: string | null
+  aggregation: AdminRevenueTrendAggregation
+  daily: AdminInsightsDailyPoint[]
+  monthly: AdminRevenueMonthlyPoint[]
+  totalGmv: number
+  totalOrders: number
+  /** Forward-looking pace line for monthly views. */
+  insight: string | null
 }
 
 export type MomentumFormat = 'count' | 'usd'

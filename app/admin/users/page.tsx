@@ -66,7 +66,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { format, formatDistanceToNow } from 'date-fns'
+import { format } from 'date-fns'
 import { setImpersonation as storeImpersonation } from '@/lib/impersonation'
 import { cn } from '@/lib/utils'
 import type { AdminUserDirectoryRow } from '@/lib/services/adminUsersDirectory'
@@ -83,7 +83,6 @@ type User = AdminUserDirectoryRow
 
 type SortKey =
   | 'created_at'
-  | 'last_active_at'
   | 'listings_count'
   | 'sales_count'
   | 'gmv'
@@ -101,7 +100,6 @@ const TOGGLEABLE_COLUMNS = [
   { key: 'gmv', label: 'GMV' },
   { key: 'role', label: 'Role' },
   { key: 'joined', label: 'Joined' },
-  { key: 'last_active', label: 'Last active' },
 ] as const
 
 type ColumnKey = (typeof TOGGLEABLE_COLUMNS)[number]['key']
@@ -114,7 +112,6 @@ const DEFAULT_COLUMNS: ColumnVisibility = {
   gmv: true,
   role: true,
   joined: true,
-  last_active: true,
 }
 
 function csvCell(value: unknown): string {
@@ -137,7 +134,6 @@ function downloadUsersCsv(rows: User[]): void {
     'sales',
     'gmv',
     'joined',
-    'last_active',
   ]
   const lines = rows.map((u) =>
     [
@@ -154,7 +150,6 @@ function downloadUsersCsv(rows: User[]): void {
       u.sales_count,
       u.gmv,
       format(new Date(u.created_at), 'yyyy-MM-dd'),
-      u.last_active_at ? format(new Date(u.last_active_at), 'yyyy-MM-dd') : '',
     ]
       .map(csvCell)
       .join(','),
@@ -707,11 +702,6 @@ export default function AdminUsersPage() {
           return (a.gmv - b.gmv) * dir
         case 'display_name':
           return (a.display_name ?? '').localeCompare(b.display_name ?? '') * dir
-        case 'last_active_at': {
-          const at = a.last_active_at ? new Date(a.last_active_at).getTime() : 0
-          const bt = b.last_active_at ? new Date(b.last_active_at).getTime() : 0
-          return (at - bt) * dir
-        }
         case 'created_at':
         default:
           return (new Date(a.created_at).getTime() - new Date(b.created_at).getTime()) * dir
@@ -875,7 +865,6 @@ export default function AdminUsersPage() {
               <SelectContent>
                 <SelectItem value="created_at:desc">Newest first</SelectItem>
                 <SelectItem value="created_at:asc">Oldest first</SelectItem>
-                <SelectItem value="last_active_at:desc">Recently active</SelectItem>
                 <SelectItem value="listings_count:desc">Most listings</SelectItem>
                 <SelectItem value="sales_count:desc">Most sales</SelectItem>
                 <SelectItem value="gmv:desc">Top GMV</SelectItem>
@@ -1020,11 +1009,6 @@ export default function AdminUsersPage() {
                     <SortHeader label="Joined" sortKey="created_at" />
                   </TableHead>
                 ) : null}
-                {columns.last_active ? (
-                  <TableHead className="hidden xl:table-cell">
-                    <SortHeader label="Last active" sortKey="last_active_at" />
-                  </TableHead>
-                ) : null}
                 <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
@@ -1113,17 +1097,6 @@ export default function AdminUsersPage() {
                   {columns.joined ? (
                     <TableCell className="hidden text-sm text-muted-foreground xl:table-cell">
                       {format(new Date(user.created_at), 'MMM d, yyyy')}
-                    </TableCell>
-                  ) : null}
-                  {columns.last_active ? (
-                    <TableCell className="hidden text-sm text-muted-foreground xl:table-cell">
-                      {user.last_active_at ? (
-                        <span title={format(new Date(user.last_active_at), 'PPpp')} className="cursor-default">
-                          {formatDistanceToNow(new Date(user.last_active_at), { addSuffix: true })}
-                        </span>
-                      ) : (
-                        '—'
-                      )}
                     </TableCell>
                   ) : null}
                   <TableCell>

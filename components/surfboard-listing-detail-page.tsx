@@ -693,6 +693,8 @@ export async function SurfboardListingDetailPage({
                   <ListingSoldOwnerNotice
                     dashboardListingsHref="/dashboard/listings"
                     sectionLabel="board"
+                    listingId={board.id}
+                    canRelist={board.sold_off_platform === true}
                   />
                 </div>
               )}

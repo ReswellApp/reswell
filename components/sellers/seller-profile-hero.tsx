@@ -1,10 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import Link from "next/link"
 import { SellersBreadcrumbs } from "@/components/sellers/sellers-breadcrumbs"
 import { SellerProfileBannerEditor } from "@/components/sellers/seller-profile-banner-editor"
-import { formatDistanceToNow } from "date-fns"
 import { Globe, MapPin, MessageSquare, Phone } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ProfileAvatarImage } from "@/components/features/dashboard/profile-avatar-image"
@@ -34,7 +32,6 @@ export type SellerProfileHeroShop = {
   city: string | null
   bio: string | null
   created_at: string
-  last_active_at?: string | null
   is_shop: boolean | null
   shop_name: string | null
   shop_description: string | null
@@ -84,13 +81,6 @@ function bannerMonogram(name: string): string {
 function trimUrl(raw: string | null | undefined): string | null {
   const t = typeof raw === "string" ? raw.trim() : ""
   return t.length > 0 ? t : null
-}
-
-function formatLastActive(lastActiveAt: string | null | undefined): string | null {
-  if (!lastActiveAt?.trim()) return null
-  const date = new Date(lastActiveAt)
-  if (Number.isNaN(date.getTime())) return null
-  return `Active ${formatDistanceToNow(date, { addSuffix: true })}`
 }
 
 function locationLabel(shop: SellerProfileHeroShop): string | null {
@@ -154,12 +144,6 @@ export function SellerProfileHero({
     },
     listingImageFallbacks,
   )
-  // Relative time ("Active X ago") must wait until mount — server clock vs client
-  // hydration time otherwise mismatches and triggers a recoverable hydration error.
-  const [lastActiveLabel, setLastActiveLabel] = useState<string | null>(null)
-  useEffect(() => {
-    setLastActiveLabel(formatLastActive(shop.last_active_at))
-  }, [shop.last_active_at])
   const description = shop.shop_description || shop.bio
   const loc = locationLabel(shop)
   const monogram = bannerMonogram(displayName?.trim() || "Seller")
@@ -226,7 +210,7 @@ export function SellerProfileHero({
                   )}
                 </div>
 
-                {(loc || lastActiveLabel) && (
+                {(loc || !isOwnProfile) && (
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-2">
                     {loc ? (
                       <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -241,9 +225,6 @@ export function SellerProfileHero({
                           Message
                         </Link>
                       </Button>
-                    ) : null}
-                    {lastActiveLabel ? (
-                      <p className="text-xs text-muted-foreground">{lastActiveLabel}</p>
                     ) : null}
                   </div>
                 )}

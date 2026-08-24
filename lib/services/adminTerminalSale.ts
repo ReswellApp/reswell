@@ -16,7 +16,6 @@ import { getSellerEarnings } from "@/lib/seller-fees"
 import { completeMarketplaceOrderFromPaymentIntent } from "@/lib/stripe-complete-order"
 import { safeRevalidateAfterMarketplaceOrderCommit } from "@/lib/cache/safe-revalidate-after-order"
 import { markUserListingBoardModelDataSold } from "@/lib/db/user-listing-board-model-data"
-import { touchUserLastActive } from "@/lib/db/userActivity"
 import { postPurchaseThreadNotification } from "@/lib/purchase-thread-notification"
 import { formatOrderNumForCustomer } from "@/lib/order-num-display"
 import { trackKlaviyoBuyerOrderConfirmed } from "@/lib/klaviyo/track-buyer-order-confirmed"
@@ -795,11 +794,6 @@ export async function completeAdminTerminalCashSale(
 
   if (buyerId) {
     void deleteBuyerCartRowsForListings(service, buyerId, [listing.id])
-  }
-
-  void touchUserLastActive(service, sellerId)
-  if (buyerId) {
-    void touchUserLastActive(service, buyerId)
   }
 
   const buyerEmail = parties.customerEmail

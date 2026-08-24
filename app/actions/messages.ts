@@ -6,7 +6,6 @@ import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { findMessagesSupportTicketMetaByConversationId } from "@/lib/db/contactMessages"
 import { getConversationForBuyerSellerListing, ensureConversationForBuyerSellerListing } from "@/lib/db/conversations"
 import { insertFraudMessageCapturedContent } from "@/lib/db/fraudMessages"
-import { touchUserLastActive } from "@/lib/db/userActivity"
 import {
   getMessagePolicyViolationForSender,
   getMessagePolicyViolationForSenderInConversation,
@@ -404,11 +403,6 @@ export async function sendMarketplaceListingMessage(input: unknown) {
     .from("conversations")
     .update({ last_message_at: new Date().toISOString() })
     .eq("id", conversation.id)
-
-  // Sending a message is real engagement — reset the inactivity clock so we don't
-  // treat an active conversationalist as "inactive" and so any prior winback
-  // milestone re-arms for a future streak.
-  void touchUserLastActive(supabase, user.id)
 
   revalidateMessagesInboxForParticipants(ctx.buyerId, ctx.sellerId)
 

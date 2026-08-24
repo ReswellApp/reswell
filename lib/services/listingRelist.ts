@@ -1,13 +1,22 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { revalidateBoardsBrowseCatalog } from "@/lib/cache/revalidate-boards-browse-catalog"
-import { revalidateSellersForUserIds } from "@/lib/cache/revalidate-sellers-directory-catalog"
+import {
+  revalidateSellersAfterListingChange,
+  revalidateSellersForUserIds,
+} from "@/lib/cache/revalidate-sellers-directory-catalog"
 import { revalidateRecentlySoldSurfaces } from "@/lib/cache/revalidate-home-public-catalog"
+import { revalidateListingDetailPage } from "@/lib/cache/revalidate-listing-public-detail"
 import { deleteAllCartRowsForListing } from "@/lib/db/cart-items-server"
 import { syncListingToIndex } from "@/lib/elasticsearch/listings-index"
 import { syncListingToGoogleMerchantBestEffort } from "@/lib/services/googleMerchantSync"
 import { grantExclusiveWindowForRefundedOrderRelist } from "@/lib/services/listingBuyerExclusiveWindow"
-import { recordListingVisibilityEvents } from "@/lib/services/listingVisibilityAudit"
+import {
+  recordListingVisibilityEvent,
+  recordListingVisibilityEvents,
+} from "@/lib/services/listingVisibilityAudit"
+import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
 import { fetchSellerBanState, isSellerBanActive } from "@/lib/db/sellerBan"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 
 function uniqueListingIds(listingIds: readonly (string | null | undefined)[]): string[] {
   return [...new Set(listingIds.filter((id): id is string => typeof id === "string" && id.length > 0))]
@@ -262,4 +271,126 @@ export async function relistOrderListingsAfterRefund(
   if (grantExclusive) {
     await applyExclusiveBuyerWindowAfterRelist(supabase, orderId, relistedIds)
   }
+}
+
+type SellerMarkedSoldListingRow = {
+  id: string
+  user_id: string
+  status: string
+  archived_at: string | null
+  sold_off_platform: boolean | null
+  hidden_from_site: boolean | null
+  slug: string | null
+}
+
+export type RelistSellerMarkedSoldResult =
+  | { ok: true }
+  | { ok: false; status: number; error: string }
+
+/**
+ * Seller undo for “mark as sold” (off-platform). Marketplace checkout sales stay sold.
+ */
+export async function relistSellerMarkedSoldListing(
+  supabase: SupabaseClient,
+  params: { listingId: string; sellerUserId: string },
+): Promise<RelistSellerMarkedSoldResult> {
+  const { listingId, sellerUserId } = params
+
+  const { data, error: loadError } = await supabase
+    .from("listings")
+    .select("id, user_id, status, archived_at, sold_off_platform, hidden_from_site, slug")
+    .eq("id", listingId)
+    .maybeSingle()
+
+  if (loadError) {
+    console.error("[relist] failed to load listing for seller relist", {
+      listingId,
+      error: loadError,
+    })
+    return { ok: false, status: 500, error: "Could not load listing" }
+  }
+
+  const row = data as SellerMarkedSoldListingRow | null
+  if (!row) {
+    return { ok: false, status: 404, error: "Not found" }
+  }
+  if (row.user_id !== sellerUserId) {
+    return { ok: false, status: 403, error: "Forbidden" }
+  }
+
+  const sellGuard = await evaluateSellerCanSell(supabase, sellerUserId)
+  if (!sellGuard.ok) {
+    return { ok: false, status: 403, error: sellGuard.userMessage }
+  }
+
+  if (row.status !== "sold") {
+    return { ok: false, status: 400, error: "Only sold listings can be relisted" }
+  }
+  if (row.archived_at) {
+    return { ok: false, status: 400, error: "Archived listings cannot be relisted from here" }
+  }
+  if (row.sold_off_platform !== true) {
+    return {
+      ok: false,
+      status: 400,
+      error: "Listings sold on Reswell can’t be relisted this way",
+    }
+  }
+
+  const nowIso = new Date().toISOString()
+  const { data: updated, error: updateError } = await supabase
+    .from("listings")
+    .update({
+      status: "active",
+      sold_off_platform: false,
+      sold_off_platform_channel: null,
+      sold_off_platform_detail: null,
+      sold_off_platform_at: null,
+      sold_reswell_helped_find_buyer: null,
+      updated_at: nowIso,
+    })
+    .eq("id", listingId)
+    .eq("user_id", sellerUserId)
+    .eq("status", "sold")
+    .eq("sold_off_platform", true)
+    .is("archived_at", null)
+    .select("id")
+    .maybeSingle()
+
+  if (updateError) {
+    console.error("[relist] failed to reactivate seller-marked sold listing", {
+      listingId,
+      error: updateError,
+    })
+    return { ok: false, status: 500, error: "Failed to relist listing" }
+  }
+  if (!updated) {
+    return { ok: false, status: 409, error: "Listing could not be relisted" }
+  }
+
+  const hiddenFromSite = row.hidden_from_site === true
+
+  try {
+    const service = createServiceRoleClient()
+    await recordListingVisibilityEvent(service, {
+      listingId,
+      hiddenFromSite,
+      source: "seller_relist",
+      actorUserId: sellerUserId,
+      note: "Seller relisted after marking sold",
+      metadata: { reason: "undo_mark_sold" },
+    })
+  } catch {
+    // best-effort
+  }
+
+  revalidateListingDetailPage(listingId, row.slug)
+  revalidateBoardsBrowseCatalog()
+  revalidateRecentlySoldSurfaces()
+  await revalidateSellersAfterListingChange(supabase, sellerUserId)
+
+  void syncListingToGoogleMerchantBestEffort(supabase, listingId)
+  void syncListingToIndex(supabase, listingId)
+
+  return { ok: true }
 }
