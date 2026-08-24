@@ -1,0 +1,84 @@
+{
+  "generated_for": "Cheyne Horan Surfboards official model catalog",
+  "source": "https://cheynehoransurfboards.com.au/",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "cheyne-horan-surfboards",
+      "name": "Cheyne Horan Surfboards",
+      "website_url": "https://cheynehoransurfboards.com.au/",
+      "location_label": "Australia",
+      "founder_name": "Cheyne Horan",
+      "lead_shaper_name": "Cheyne Horan",
+      "short_description": "Custom surfboards by Cheyne Horan. Official named production designs from the shaper's site — hydro-dynamically designed for high performance and superior speed.",
+      "models": [
+        {
+          "name": "Spitfire",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2025/03/Spitfire-fff.jpg",
+          "description": "The SpitFire is the Modern Day Single Fin. Includes sanded finish and deck spray.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "ZYPHX",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2024/10/ZYPHX-1.png",
+          "description": "Without compromise. Includes sanded finish and deck spray.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Lazor Zap",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2024/10/LAZORZAP.png",
+          "description": "A design from the late 1970s with a wide tail and an ultra-narrow, needle-like nose. The wider tail gave lift and speed while the narrow nose cut through the wave with precision. Includes sanded finish and deck spray.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Yowza",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2024/10/YOWZA-ALLROUNDER.jpg",
+          "description": "YOWZA – Allrounder. Includes sanded finish and deck spray.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "84 Bells Winner",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2024/10/84-BELLS-WINNER.jpg",
+          "description": "Includes Full Spray top and bottom w/ gloss coat and buffed.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Azores",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2024/10/AZORES.png",
+          "description": "AZORES – Comp. Includes Deck Spray w/ sanded finish.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Deluxe",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2024/10/DELUXE.png",
+          "description": "Includes Full Spray top and bottom w/ gloss coat and buffed.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Twinnie-Zippy",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2024/10/TWINNIE.png",
+          "description": "TWINNIE- Zippy. Includes ZYPHX Deck Spray w/ sanded Finish.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Gun",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2024/10/GUN.jpg",
+          "description": "GUN – Big Wave Warrior. Includes Deck Spray w/sanded finish and Extra Length.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "SHLONG – Magneto",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2024/10/SHLONG.jpg",
+          "description": "SHLONG – Magneto. Includes Blast or ZYPHX.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "78 Remix – Double Flyer",
+          "image_url": "https://cheynehoransurfboards.com.au/wp-content/uploads/2024/10/78-REMIX.jpg",
+          "description": "Includes Full Lazor Zap Spray top and bottom w/ gloss coat and buffed.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
