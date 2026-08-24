@@ -1,0 +1,34 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "pipedream-surfboards",
+      "name": "Pipedream Surfboards",
+      "website_url": "https://pipedreamsurfboards.com",
+      "location_label": "Currumbin Waters, Queensland, Australia",
+      "founder_name": "Murray Bourton",
+      "lead_shaper_name": "Murray Bourton",
+      "short_description": "Currumbin Waters, Queensland surfboards shaped by Murray Bourton since 1974.",
+      "models": [
+        {
+          "name": "Twin Carby Twin Fin",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/twincarby1300x2048.jpg?v=1759364161",
+          "description": "The Twin Carby is a performance twin fin with area forward, a straighter plan in the back half, a small release flyer, and an aggressively deep pulled-in swallow. Low entry rocker with minimal tail flip; the bottom rolls in the nose, then moves through moderate concave into an aggressive vee.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "PERFORMANCE TWIN FIN",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/MUZZA55573_-_1300x2048_936b6661-1ca0-4a30-9f77-26f1dd564429.jpg?v=1733095690",
+          "description": "The Performance Twinny is a small, high-performance twin fin meant to be ridden short and pushed hard. Extra nose width for paddle and control, a straighter outline from centre to tail, and a small fluted flyer into a pulled-in swallow.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "TRI FIN TOW BOARD",
+          "image_url": "https://cdn.shopify.com/s/files/1/2446/8929/files/MUZZA60919-1300x2048.jpg?v=1745808213",
+          "description": "A narrow, thin tow-in gun with a biting swallow tail and deep 10mm concave from nose to tail. Built for high-speed control in large waves, with the rider positioned forward in straps.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
