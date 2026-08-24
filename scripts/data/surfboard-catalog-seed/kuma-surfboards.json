@@ -1,0 +1,102 @@
+{
+  "generated_for": "Kuma Surfboards official model catalog",
+  "source": "https://kumasurf.com.au/shop/",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "kuma-surfboards",
+      "name": "Kuma Surfboards",
+      "website_url": "https://kumasurf.com.au/",
+      "location_label": "Gold Coast, Queensland, Australia",
+      "founder_name": "Mitsunori Kumagai",
+      "lead_shaper_name": "Mitsunori Kumagai",
+      "short_description": "Gold Coast surfboards by Mitsunori Kumagai. Named production models from the official Kuma Surf shop. Brand started 2016.",
+      "models": [
+        {
+          "name": "No 5",
+          "image_url": "https://kumasurf.com.au/wp-content/uploads/2024/12/Kuma-Surf-5new.webp",
+          "description": "All round high performance shortboard. The No5 is designed as a true high-performance shortboard, best suited to intermediate to advanced surfers. Built for rail-to-rail surfing, lip work, and tight pocket turns, it performs best in waist to head-high waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Spark",
+          "image_url": "https://kumasurf.com.au/wp-content/uploads/2020/04/Spark-Front-scaled.jpg",
+          "description": "All round high performance shortboard. The SPARK is a true high-performance shortboard, best suited to intermediate to advanced surfers. Designed for rail-to-rail surfing, lip work, and tight pocket turns, it performs best in waist to head-high waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Godzilla",
+          "image_url": "https://kumasurf.com.au/wp-content/uploads/2021/07/KUMA-GODZILA-PU_WP-DECK-1.jpg",
+          "description": "A tiny wave contest machine. Designed as a high-performance small wave shortboard, the Godzilla thrives in a wide range of everyday conditions. Recommended sizing: ride 3–4 inches shorter, around 3/4\" wider, and keep similar thickness to your standard shortboard.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Dick Fish",
+          "image_url": "https://kumasurf.com.au/wp-content/uploads/2019/07/Surfboard_2_F_DarkFish-1.jpg",
+          "description": "High performance flying fish. Designed for small wave performance, the Dick Fish features a flat entry rocker and a wider outline to maximise volume and maintain speed through slower sections. The single to double concave flowing into vee, combined with a flyer tail, allows for smooth rail-to-rail transitions.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Happy",
+          "image_url": "https://kumasurf.com.au/wp-content/uploads/2022/06/KUMA-HAPPY-PU_WP-DECK.jpg",
+          "description": "The Happy is Kuma's classic mini-malibu, designed for easy surfing and maximum fun. Perfect for beginners looking to own their first board, while still offering enough performance for intermediate surfers. Deep single to double concave through the fins, finishing with a vee out the tail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Fish",
+          "image_url": "https://kumasurf.com.au/wp-content/uploads/2022/09/KUMA-FISH-TWIN.jpg",
+          "description": "Kuma Fish, winner of the 2020 MF Softboards Global Shaper Challenge. The flat deck increases volume for catching more waves in weaker conditions. A slightly forward-placed concave flows into a deep vee through the tail. Twin fin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Anchor",
+          "image_url": "https://kumasurf.com.au/wp-content/uploads/2019/07/Surfboard_5_F_SingleAnchor-1.jpg",
+          "description": "Originally designed for small waves, the Anchor is an easy wave catcher that gets you in early and lets you draw lines very different from a standard thruster. Recommended sizing: ride around 3 inches longer than your standard shortboard.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "New Fish",
+          "image_url": "https://kumasurf.com.au/wp-content/uploads/2022/06/KUMA-FISH-TWIN-PLUS-ONE-EPS_Deck-WP.jpg",
+          "description": "New version of Kuma Fish. A fun, high-performance 2+1 design built off the speed and flow of the original KUMA Fish. Using the same rocker and concave, it delivers drive while a refined, narrower nose improves performance and control. Twin + stabiliser or twin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Chill Out",
+          "image_url": "https://kumasurf.com.au/wp-content/uploads/2022/09/KUMA-SINGLE-PU_WP-DECK-1.jpg",
+          "description": "Easy to paddle and user friendly. The Chill Out is a versatile all-round board designed for everything from small, weak waves to overhead hollow conditions. Built to be ridden as either a twin or single fin, it features a round pin tail and four channels.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mini Godzilla",
+          "image_url": "https://kumasurf.com.au/wp-content/uploads/2022/09/KUMA-GODZILA-EPS_WP-DECK-1.jpg",
+          "description": "A shorter, wider Godzilla for small waves. Fast, responsive, and easy to generate speed in everyday conditions. How to order: ride 1–2 inches shorter, around 1/2\" wider, and keep the same thickness as your current Godzilla.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Clutch",
+          "image_url": "https://kumasurf.com.au/wp-content/uploads/2023/11/KUMA-CLUTCH-FIVE-FIN-PU_WP-DECK.jpg",
+          "description": "Designed for small, weaker waves through to head-high hollow conditions. The Clutch is about easy speed and control, with effortless take-offs, fast down-the-line performance, and a five-fin setup that can be ridden as a quad or thruster.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Carbon Fish",
+          "image_url": "https://kumasurf.com.au/wp-content/uploads/2024/03/Kuma-Carbon-Fish-3.jpeg",
+          "description": "Aero is an EPS stringerless epoxy board with a full carbon wrap, made in Australia. The flat deck increases volume for easier paddling, while a slightly forward-placed concave flows into a deep vee through the tail. Twin fin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fat Burger",
+          "image_url": "https://kumasurf.com.au/wp-content/uploads/2024/12/Fat-Burger-product-image.webp",
+          "description": "Originally developed in 2011 when team riders requested a small wave contest board. The Fat Burger is a shorter, wider design built to perform in weaker conditions, with a fuller outline, low entry rocker, and boxy rails.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "EMOI",
+          "image_url": "https://kumasurf.com.au/wp-content/uploads/2026/04/kuma-emoi-surfboard-hero-hires.webp",
+          "description": "An evolved Mini Simmons with fish-like speed and the easy control of a quad fin setup. The flat deck adds volume at shorter lengths. Based on the Clutch rocker, with added kick in the nose and tail, a narrower tail outline, and a diamond tail.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
