@@ -1,0 +1,58 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "daveysky-surfboards",
+      "name": "DaveySKY Surfboards",
+      "website_url": "https://www.daveyskysurfboards.com",
+      "location_label": "Manasquan, New Jersey",
+      "founder_name": "DaveySKY",
+      "lead_shaper_name": "DaveySKY",
+      "short_description": "East Coast performance quiver from Manasquan, NJ — fishes through high-performance shortboards.",
+      "models": [
+        {
+          "name": "Keeper",
+          "image_url": "https://www.daveyskysurfboards.com/images/board_models/keeper_d_web.jpg",
+          "description": "Welcome to the world of endless acceleration. Real talk: It's pretty simple to design a fish that paddles well and catches waves easily. It's a whole other thing to make a fish that paddles well, catches waves easily and turns and performs well. The Keeper is very much the latter of the two, and I'm damn proud of it.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Jet",
+          "image_url": "https://www.daveyskysurfboards.com/images/board_models/jet_d_1.jpg",
+          "description": "The Jet is an innovative hybrid shortboard designed around dynamic, fast, variable daily-driver U.S. East Coast conditions. The Jet is designed to do the brunt work generating speed for you so you don't have to spend all your time on the wave pumping to just stay on the wave face. The Jet is designed to allow you to focus on your maneuvers rather than trying to make waves or sections.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Thresher",
+          "image_url": "https://www.daveyskysurfboards.com/images/board_models/thresher_asym.png",
+          "description": "The Thresher is an asymmetrical performance hybrid designed to improve your backside/heelside surfing, especially in steep, critical waves and vertical in-the-pocket to tight shoulder surfing in medium to sizeable bowly, punchy, hollow surf. The front/toe side is Turbo Ripper & Jet inspired with a straighter and longer rail line, while the back/heel side is shorter and curvier — unique but drawn from Love/Lust curves — with a bump-to-wing for added bite.",
+          "board_category_slug": "asym"
+        },
+        {
+          "name": "Dream",
+          "image_url": "https://www.daveyskysurfboards.com/images/board_models/the_dream.png",
+          "description": "The Dream is a well...a dream board for dream conditions. When this is the board under your arm, you're bound to have a killer session. The Dream built for the pinnacle of vertical, critical high performance shortboarding designed for quality waves and conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Heater",
+          "image_url": "https://www.daveyskysurfboards.com/images/board_models/heater_d_2.jpg",
+          "description": "Big days with heaving lips, heavy winds and ripping current seem to be becoming a more regular thing here in New Jersey with more idealistic conditions occurring more infrequently, so it was time to make a proper Mini-Gun model for just such occassions. Welcome the Heater to step-up selection! With ample rocker, a narrow yet modern outline and curves derived from my long-standing Pipe Dream, the purpose of the Heater is simple: gain extra paddle power to fight current and heavy water as well as sit farther outside to hunt for overhead barrels.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Beach Cruiser Mark III",
+          "image_url": "https://www.daveyskysurfboards.com/images/board_models/bcmkiii_d_web.jpg",
+          "description": "The Beach Cruiser Mark III is the third evolution of the Beach Cruiser series: The original Beach Cruiser is a purebred & simplistic Cruiser longboard, designed for premium wave catching, speed & easy flowing turns. The Beach Cruiser Mark II adapted that platform, reducing speed and ease of turns slightly but introducing a user-friendly nose-to-talk walkable board for surfers primarily looking for a Cruiser longboard but want to be able to dabble with walking/noseriding. The Beach Cruiser Mark III takes it another step: a more advanced & technical but extremely capable Cruiser + Noserider hybrid, for surfers who want both the premium wave catching & healthy speed of a Cruiser with the hang-10 capabililty, sensitivity & pocket control of a noserider.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Legato",
+          "image_url": "https://www.daveyskysurfboards.com/images/board_models/legato_d_web.jpg",
+          "description": "The Legato is an asym evolution of the Beach Cruiser Mark III. The BCmkIII has become something of a catch-all for me personally as my style & approach to longboarding has evolved and as has been my \"go-to\" (or most ridden) longboard for the past few years. Ever since developing the Thresher, my asym performance shortboard, many years ago, I've been wanting to develop an asymmetrical longboard shape with a similar premise to make the board feel, react & surf more symmetrical through asymmetry, correcting for the natural advantages and disadvantages on our frontsides vs. backsides of the human body standing and moving sideways.",
+          "board_category_slug": "asym"
+        }
+      ]
+    }
+  ]
+}
