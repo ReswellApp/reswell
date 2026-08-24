@@ -87,6 +87,10 @@ export const saleTipBodySchema = z.object({
     .max(SALE_TIP_MAX_CENTS, `Tip cannot be more than ${SALE_TIP_MAX_USD_LABEL}`),
 })
 
+export const saleTipFinalizeBodySchema = z.object({
+  payment_intent_id: z.string().min(5).max(128),
+})
+
 export type SoldOffPlatformChannel = z.infer<typeof soldOffPlatformChannelSchema>
 export type MarkListingSoldBody = z.infer<typeof markListingSoldBodySchema>
 export type ListingSaleFeedbackBody = z.infer<typeof listingSaleFeedbackBodySchema>

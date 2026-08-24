@@ -275,9 +275,10 @@ export function EndListingDialog({
 
       <Dialog open={open && step === "sold_survey"} onOpenChange={handleSurveyOpenChange}>
         <DialogContent
-          className="max-h-[90vh] overflow-y-auto"
+          className="max-h-[90vh] overflow-y-auto sm:max-w-lg"
           showCloseButton={soldSurveyFinished}
           onOpenAutoFocus={(event) => event.preventDefault()}
+          onFocusOutside={(event) => event.preventDefault()}
           onPointerDownOutside={(event) => event.preventDefault()}
           onInteractOutside={(event) => event.preventDefault()}
           onEscapeKeyDown={(event) => {

@@ -12,6 +12,7 @@ export type MagazineBrowseListingRow = {
   user_id: string
   title: string
   price: number
+  compare_at_price: number | null
   status: string
   condition: string | null
   shipping_available: boolean | null
@@ -33,6 +34,7 @@ const MAGAZINE_BROWSE_LISTING_SELECT = `
   user_id,
   title,
   price,
+  compare_at_price,
   status,
   condition,
   shipping_available,

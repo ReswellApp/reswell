@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { resolveServerAuth } from "@/lib/auth/get-safe-server-user"
-import { updateSellerListingQuickPrice } from "@/lib/services/listingQuickPrice"
-import { listingQuickPriceBodySchema } from "@/lib/validations/listing-quick-price"
+import { finalizeSellerSaleTipPayment } from "@/lib/services/sellerSaleTip"
+import { saleTipFinalizeBodySchema } from "@/lib/validations/mark-listing-sold"
 
 const listingIdParamSchema = z.string().uuid("Invalid listing id")
 
-export async function PATCH(
+export async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
-  const { supabase, user } = await resolveServerAuth()
+  const { user } = await resolveServerAuth()
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
@@ -21,7 +21,6 @@ export async function PATCH(
     if (!idParsed.success) {
       return NextResponse.json({ error: "Invalid listing id" }, { status: 400 })
     }
-    const listingId = idParsed.data
 
     let body: unknown
     try {
@@ -30,27 +29,27 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid JSON" }, { status: 400 })
     }
 
-    const parsed = listingQuickPriceBodySchema.safeParse(body)
+    const parsed = saleTipFinalizeBodySchema.safeParse(body)
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Invalid input", details: parsed.error.flatten() },
-        { status: 400 },
-      )
+      return NextResponse.json({ error: "Invalid payment" }, { status: 400 })
     }
 
-    const result = await updateSellerListingQuickPrice(supabase, {
-      listingId,
+    const result = await finalizeSellerSaleTipPayment({
+      listingId: idParsed.data,
       sellerUserId: user.id,
-      priceUsd: parsed.data.priceUsd,
-      showPriceMarkdown: parsed.data.showPriceMarkdown,
+      paymentIntentId: parsed.data.payment_intent_id,
     })
 
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: result.status })
     }
 
-    return NextResponse.json({ data: { priceUsd: result.priceUsd } }, { status: 200 })
-  } catch {
-    return NextResponse.json({ error: "Request failed" }, { status: 500 })
+    return NextResponse.json(
+      { data: { ok: true, alreadyProcessed: result.alreadyProcessed } },
+      { status: 200 },
+    )
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Request failed"
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

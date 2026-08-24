@@ -52,7 +52,11 @@ import { ListingMobileBuySummary } from "@/components/features/listings/listing-
 import { ListingDetailPeerPurchaseActionsLoader } from "@/components/listing-detail-peer-purchase-actions-loader"
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
-import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
+import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
+import {
+  publicListingCompareAtPriceUsd,
+  publicListingListPriceUsd,
+} from "@/lib/utils/public-listing-price"
 import {
   HomePeerListingScrollTile,
   HomeListingScrollRow,
@@ -239,6 +243,10 @@ export async function WetsuitsListingDetailPage({
   const listPriceNum =
     typeof wetsuit.price === "number" ? wetsuit.price : Number.parseFloat(String(wetsuit.price)) || 0
   const publicListPriceUsd = publicListingListPriceUsd(wetsuit.price)
+  const compareAtPriceUsd = publicListingCompareAtPriceUsd(
+    (wetsuit as { compare_at_price?: string | number | null }).compare_at_price,
+    listPriceNum,
+  )
   const buyerOffersOn = (wetsuit.buyer_offers_enabled as boolean | null) !== false
   const offerPct = effectiveMinimumOfferPct(wetsuit as { minimum_offer_pct?: number | null })
   const minOfferAmount = Math.round(listPriceNum * (offerPct / 100) * 100) / 100
@@ -462,6 +470,7 @@ export async function WetsuitsListingDetailPage({
               createdAt={wetsuit.created_at}
               showPurchaseProtection={!isSold && !isOwnListing}
               agreedPriceUsd={buyerAgreedPriceUsd}
+                compareAtPriceUsd={isSold ? null : compareAtPriceUsd}
             >
               {canPeerPurchase ? (
                 <ListingDetailPeerPurchaseActionsLoader
@@ -512,7 +521,12 @@ export async function WetsuitsListingDetailPage({
                 <>
                   <div className="mt-4">
                     <p className="text-4xl font-bold tracking-tight text-foreground tabular-nums xl:text-[2.625rem] xl:leading-none">
-                      ${listPriceNum.toFixed(2)}
+                      <ListingPriceWithMarkdown
+                        priceUsd={isSold ? publicListPriceUsd : listPriceNum}
+                        compareAtPriceUsd={compareAtPriceUsd}
+                        priceClassName="text-4xl font-bold tracking-tight text-foreground tabular-nums xl:text-[2.625rem] xl:leading-none"
+                        compareClassName="text-xl font-medium text-muted-foreground line-through tabular-nums xl:text-2xl"
+                      />
                     </p>
                     {shippingPriceCaption ? (
                       <p className="mt-1.5 text-[15px] text-muted-foreground">{shippingPriceCaption}</p>
@@ -634,6 +648,7 @@ export async function WetsuitsListingDetailPage({
                 listingId={wetsuit.id}
                 section="wetsuits"
                 currentPriceUsd={listPriceNum}
+                  currentCompareAtPriceUsd={compareAtPriceUsd}
                 listingStatus={String(wetsuit.status ?? "")}
                 hiddenFromSite={wetsuit.hidden_from_site === true}
               />

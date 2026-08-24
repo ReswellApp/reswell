@@ -91,6 +91,7 @@ async function BoardbagListings({
               user_id: boardbag.user_id,
               title: boardbag.title,
               price: boardbag.price,
+              compare_at_price: boardbag.compare_at_price,
               status: boardbag.status,
               section: "boardbags",
               local_pickup: boardbag.local_pickup,

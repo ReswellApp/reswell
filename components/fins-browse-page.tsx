@@ -95,6 +95,7 @@ async function FinListings({
               user_id: fin.user_id,
               title: fin.title,
               price: fin.price,
+              compare_at_price: fin.compare_at_price,
               status: fin.status,
               section: "fins",
               local_pickup: fin.local_pickup,

@@ -64,3 +64,18 @@ export async function postListingSaleTip(
 
   return { ok: false, error: await readApiError(res, "Request failed"), status: res.status }
 }
+
+export async function finalizeListingSaleTip(
+  listingId: string,
+  paymentIntentId: string,
+): Promise<{ ok: true } | { ok: false; error: string; status: number }> {
+  const res = await fetch(`/api/listings/${listingId}/sale-tip/finalize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ payment_intent_id: paymentIntentId }),
+  })
+
+  if (res.ok) return { ok: true }
+  return { ok: false, error: await readApiError(res, "Could not record tip"), status: res.status }
+}

@@ -710,6 +710,7 @@ function BoardListingsTileGrid({
             user_id: board.user_id,
             title: board.title,
             price: board.price,
+            compare_at_price: board.compare_at_price,
             status: board.status,
             section: "surfboards",
             local_pickup: board.local_pickup,

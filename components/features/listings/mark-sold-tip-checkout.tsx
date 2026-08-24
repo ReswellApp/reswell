@@ -15,6 +15,7 @@ import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { BRAND_CTA_BLUE } from "@/lib/brand-colors"
+import { finalizeListingSaleTip } from "@/lib/listing-sale-feedback-request"
 import { stripePublishableKey } from "@/lib/stripe/client-checkout-enabled"
 import { cn } from "@/lib/utils"
 
@@ -26,6 +27,11 @@ function getStripeBrowser() {
   return stripePromise
 }
 
+/** Warm Stripe.js while the seller picks a tip amount. */
+export function prefetchSaleTipStripeJs(): void {
+  void getStripeBrowser()
+}
+
 function formatStripeConfirmError(error: unknown): string {
   if (error && typeof error === "object" && "message" in error) {
     const msg = (error as { message?: unknown }).message
@@ -35,10 +41,12 @@ function formatStripeConfirmError(error: unknown): string {
 }
 
 function TipPaymentForm({
+  listingId,
   clientSecret,
   amountLabel,
   onSuccess,
 }: {
+  listingId: string
   clientSecret: string
   amountLabel: string
   onSuccess: () => void
@@ -47,7 +55,19 @@ function TipPaymentForm({
   const elements = useElements()
   const [busy, setBusy] = useState(false)
   const [elementLoadError, setElementLoadError] = useState<string | null>(null)
+  const [paymentReady, setPaymentReady] = useState(false)
   const [expressVisible, setExpressVisible] = useState(false)
+
+  const completeAfterSuccess = useCallback(
+    async (paymentIntentId: string) => {
+      const finalized = await finalizeListingSaleTip(listingId, paymentIntentId)
+      if (!finalized.ok) {
+        console.error("Sale tip finalize failed", finalized.error)
+      }
+      onSuccess()
+    },
+    [listingId, onSuccess],
+  )
 
   const confirmAndComplete = useCallback(async (): Promise<
     { ok: true } | { ok: false; message: string }
@@ -75,12 +95,12 @@ function TipPaymentForm({
       return { ok: false, message: error.message ?? "Payment could not be confirmed." }
     }
 
-    if (paymentIntent?.status === "succeeded") {
-      onSuccess()
+    if (paymentIntent?.status === "succeeded" && paymentIntent.id) {
+      await completeAfterSuccess(paymentIntent.id)
     }
 
     return { ok: true }
-  }, [stripe, elements, clientSecret, onSuccess])
+  }, [stripe, elements, clientSecret, completeAfterSuccess])
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -127,17 +147,17 @@ function TipPaymentForm({
   )
 
   return (
-    <div className="space-y-4">
+    <div className="block space-y-4">
       {elementLoadError ? <p className="text-sm text-destructive">{elementLoadError}</p> : null}
 
-      <div className={cn(busy && "pointer-events-none opacity-60")}>
+      <div className={cn(!expressVisible && "h-0 overflow-hidden", busy && "pointer-events-none opacity-60")}>
         <ExpressCheckoutElement
           options={{
             business: { name: "Reswell" },
             paymentMethodOrder: ["apple_pay", "google_pay", "link"],
             paymentMethods: {
-              applePay: "always",
-              googlePay: "always",
+              applePay: "auto",
+              googlePay: "auto",
               link: "auto",
               paypal: "never",
               amazonPay: "never",
@@ -169,26 +189,48 @@ function TipPaymentForm({
       {expressVisible ? (
         <div className="flex items-center gap-3" role="separator" aria-label="or pay another way">
           <div className="h-px flex-1 bg-neutral-200" />
-          <span className="text-[12px] text-neutral-500">or</span>
+          <span className="text-[12px] text-neutral-500">or card</span>
           <div className="h-px flex-1 bg-neutral-200" />
         </div>
       ) : null}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <PaymentElement
-          options={{
-            paymentMethodOrder: ["card", "link"],
-            wallets: { applePay: "never", googlePay: "never" },
-          }}
-          onLoadError={(event) => {
-            const msg =
-              event.error?.message?.trim() ||
-              "Payment form failed to load. Confirm Stripe keys are configured."
-            setElementLoadError(msg)
-            toast.error(msg)
-          }}
-        />
-        <Button type="submit" className="w-full" disabled={busy || !stripe || !!elementLoadError}>
+        {!paymentReady && !elementLoadError ? (
+          <p className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            Loading card form…
+          </p>
+        ) : null}
+        <div className="min-h-[220px]">
+          <PaymentElement
+            options={{
+              layout: "tabs",
+              paymentMethodOrder: ["card", "link"],
+              wallets: { applePay: "never", googlePay: "never" },
+              fields: {
+                billingDetails: {
+                  name: "auto",
+                  email: "auto",
+                  phone: "never",
+                  address: "if_required",
+                },
+              },
+            }}
+            onReady={() => setPaymentReady(true)}
+            onLoadError={(event) => {
+              const msg =
+                event.error?.message?.trim() ||
+                "Payment form failed to load. Confirm Stripe keys are configured."
+              setElementLoadError(msg)
+              toast.error(msg)
+            }}
+          />
+        </div>
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={busy || !stripe || !!elementLoadError}
+        >
           {busy ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -204,10 +246,12 @@ function TipPaymentForm({
 }
 
 export function MarkSoldTipCheckout({
+  listingId,
   clientSecret,
   amountCents,
   onSuccess,
 }: {
+  listingId: string
   clientSecret: string
   amountCents: number
   onSuccess: () => void
@@ -217,7 +261,11 @@ export function MarkSoldTipCheckout({
   const amountLabel = `$${(amountCents / 100).toFixed(amountCents % 100 === 0 ? 0 : 2)}`
 
   if (!stripe) {
-    return <p className="text-sm text-muted-foreground">Tips aren&apos;t available right now.</p>
+    return (
+      <p className="text-sm text-destructive">
+        Card payments aren&apos;t available right now. Refresh and try again, or skip the tip.
+      </p>
+    )
   }
 
   const appearance: Appearance =
@@ -232,8 +280,13 @@ export function MarkSoldTipCheckout({
         }
 
   return (
-    <Elements key={clientSecret} stripe={stripe} options={{ clientSecret, appearance }}>
+    <Elements
+      key={clientSecret}
+      stripe={stripe}
+      options={{ clientSecret, appearance, loader: "auto" }}
+    >
       <TipPaymentForm
+        listingId={listingId}
         clientSecret={clientSecret}
         amountLabel={amountLabel}
         onSuccess={onSuccess}

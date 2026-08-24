@@ -13,6 +13,7 @@ const BRAND_MARKETPLACE_LISTING_SELECT = `
   user_id,
   title,
   price,
+  compare_at_price,
   condition,
   section,
   status,
@@ -73,6 +74,7 @@ interface BrandMarketplaceListingRow {
   user_id: string
   title: string
   price: number
+  compare_at_price?: number | string | null
   condition: string
   section: string
   status?: string
@@ -98,6 +100,7 @@ function mapRowToRecentListing(row: BrandMarketplaceListingRow): RecentListing {
     user_id: row.user_id,
     title: row.title,
     price: row.price,
+    compare_at_price: row.compare_at_price ?? null,
     condition: row.condition,
     section: row.section,
     status: row.status,

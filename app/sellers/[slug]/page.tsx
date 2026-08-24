@@ -313,6 +313,7 @@ export default async function SellerProfilePage({
       user_id: listing.user_id,
       title: listing.title,
       price: listing.price,
+      compare_at_price: (listing as { compare_at_price?: number | string | null }).compare_at_price ?? null,
       status: listing.status ?? "active",
       section: listing.section,
       local_pickup: listing.local_pickup,

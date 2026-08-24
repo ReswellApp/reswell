@@ -192,6 +192,7 @@ import {
   SellFacetChipGroup,
 } from "@/components/features/sell/sell-board-facet-fields"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
+import { resolveCompareAtPriceOnUpdate } from "@/lib/listing-compare-at-price"
 import { SellListingDescriptionField } from "@/components/features/sell/sell-listing-description-field"
 import { SellBoardModeHeader } from "@/components/features/sell/sell-board-mode-header"
 import { SellListingPhotoGrid } from "@/components/features/sell/sell-listing-photo-grid"
@@ -607,8 +608,11 @@ function createInitialSellFormData() {
     reswellPackageHeightIn: "",
     reswellPackageWeightLb: "",
     reswellPackageWeightOz: "",
-    autoPriceDrop: false,
+            autoPriceDrop: false,
     autoPriceDropFloor: "",
+    showPriceMarkdown: false,
+    loadedPublishedPriceUsd: null as number | null,
+    loadedCompareAtPriceUsd: null as number | null,
     buyerOffers: true,
     boardType: "",
     boardLength: "",
@@ -1362,6 +1366,23 @@ function SellPageContentInner({
             .auto_price_drop_floor
           if (f == null || f === "") return ""
           return String(f)
+        })(),
+        showPriceMarkdown: (() => {
+          const compareAt = Number.parseFloat(
+            String((listing as { compare_at_price?: number | string | null }).compare_at_price ?? ""),
+          )
+          const price = Number.parseFloat(String(listing.price ?? ""))
+          return Number.isFinite(compareAt) && Number.isFinite(price) && compareAt > price
+        })(),
+        loadedPublishedPriceUsd: (() => {
+          const n = Number.parseFloat(String(listing.price ?? ""))
+          return Number.isFinite(n) ? Math.round(n * 100) / 100 : null
+        })(),
+        loadedCompareAtPriceUsd: (() => {
+          const n = Number.parseFloat(
+            String((listing as { compare_at_price?: number | string | null }).compare_at_price ?? ""),
+          )
+          return Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null
         })(),
         buyerOffers:
           (listing as { buyer_offers_enabled?: boolean | null }).buyer_offers_enabled !== false,
@@ -3201,6 +3222,12 @@ function SellPageContentInner({
           brand_id: fd.boardBrandId.trim() || null,
           ...listingSurfboardBrandFieldsForDb(fd),
           seller_purchase_price_usd: sellerPurchasePriceToDb(fd.sellerPurchasePrice),
+          compare_at_price: resolveCompareAtPriceOnUpdate({
+            currentPriceUsd: fd.loadedPublishedPriceUsd ?? parseFloat(fd.price),
+            nextPriceUsd: parseFloat(fd.price),
+            existingCompareAtUsd: fd.loadedCompareAtPriceUsd,
+            showPriceMarkdown: fd.showPriceMarkdown === true,
+          }),
         }
 
         if (ownerEditsOwnListing) {
@@ -3366,6 +3393,7 @@ function SellPageContentInner({
           brand_id: fd.boardBrandId.trim() || null,
           ...listingSurfboardBrandFieldsForDb(fd),
           seller_purchase_price_usd: sellerPurchasePriceToDb(fd.sellerPurchasePrice),
+          compare_at_price: null,
         }
 
         if (listingImpersonation) {
@@ -4334,6 +4362,12 @@ function SellPageContentInner({
                       setFormData({ ...formData, sellerPurchasePrice: value })
                     }
                     showPurchasePrice={false}
+                    publishedPriceUsd={formData.loadedPublishedPriceUsd}
+                    existingCompareAtPriceUsd={formData.loadedCompareAtPriceUsd}
+                    showPriceMarkdown={formData.showPriceMarkdown === true}
+                    onShowPriceMarkdownChange={(value) =>
+                      setFormData({ ...formData, showPriceMarkdown: value })
+                    }
                     afterListingPrice={
                       <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-sm">
                         <div className="flex gap-3">

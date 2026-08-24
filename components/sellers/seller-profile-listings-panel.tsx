@@ -5,6 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { LayoutGrid, List, Package, Search } from "lucide-react"
 import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
+import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
 import { FavoriteButton } from "@/components/favorite-button"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -37,6 +38,7 @@ export type SellerProfileListing = {
   user_id: string
   title: string
   price: string | number
+  compare_at_price?: number | string | null
   status: string | null
   section: string
   local_pickup?: boolean | null
@@ -182,7 +184,14 @@ function SellerProfileListingListRow({
           {conditionLine ? (
             <p className="text-xs text-muted-foreground sm:text-sm">{conditionLine}</p>
           ) : null}
-          <p className="text-base font-bold tabular-nums text-foreground sm:text-lg">${price.toFixed(2)}</p>
+          <p className="text-base font-bold tabular-nums text-foreground sm:text-lg">
+            <ListingPriceWithMarkdown
+              priceUsd={price}
+              compareAtPriceUsd={listing.compare_at_price}
+              priceClassName="text-base font-bold tabular-nums text-foreground sm:text-lg"
+              compareClassName="text-sm font-medium text-muted-foreground line-through tabular-nums"
+            />
+          </p>
         </div>
       </Link>
 

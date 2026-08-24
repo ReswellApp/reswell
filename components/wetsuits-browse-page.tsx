@@ -90,6 +90,7 @@ async function WetsuitListings({
               user_id: wetsuit.user_id,
               title: wetsuit.title,
               price: wetsuit.price,
+              compare_at_price: wetsuit.compare_at_price,
               status: wetsuit.status,
               section: "wetsuits",
               local_pickup: wetsuit.local_pickup,

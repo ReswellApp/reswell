@@ -60,6 +60,7 @@ const featuredNewSelect = `
   slug,
   title,
   price,
+  compare_at_price,
   listing_images (url, thumbnail_url, sort_order, is_primary),
   stock_quantity,
   categories (name)
@@ -97,6 +98,7 @@ export type HomeFeaturedNewItem = {
     slug: string
     title: string
     price: number
+    compare_at_price?: number | null
     listing_images: unknown
   }
   stockQuantity: number

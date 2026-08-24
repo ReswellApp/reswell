@@ -1,12 +1,18 @@
 export async function patchListingQuickPrice(
   listingId: string,
   priceUsd: number,
+  options?: { showPriceMarkdown?: boolean },
 ): Promise<{ ok: true; priceUsd: number } | { ok: false; error: string; status: number }> {
   const res = await fetch(`/api/listings/${encodeURIComponent(listingId)}/price`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ priceUsd }),
+    body: JSON.stringify({
+      priceUsd,
+      ...(options?.showPriceMarkdown != null
+        ? { showPriceMarkdown: options.showPriceMarkdown }
+        : {}),
+    }),
   })
 
   if (res.ok) {

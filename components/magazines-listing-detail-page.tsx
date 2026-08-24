@@ -47,7 +47,11 @@ import { ListingDetailEngagementMetrics } from "@/components/listing-detail-enga
 import { ListingKlarnaAsLowAs } from "@/components/features/listings/listing-klarna-as-low-as"
 import { ListingMobileBuySummary } from "@/components/features/listings/listing-mobile-buy-summary"
 import { ListingDetailPeerPurchaseActionsLoader } from "@/components/listing-detail-peer-purchase-actions-loader"
-import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
+import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
+import {
+  publicListingCompareAtPriceUsd,
+  publicListingListPriceUsd,
+} from "@/lib/utils/public-listing-price"
 import {
   HomePeerListingScrollTile,
   HomeListingScrollRow,
@@ -222,6 +226,10 @@ export async function MagazinesListingDetailPage({
   const listPriceNum =
     typeof magazine.price === "number" ? magazine.price : Number.parseFloat(String(magazine.price)) || 0
   const publicListPriceUsd = publicListingListPriceUsd(magazine.price)
+  const compareAtPriceUsd = publicListingCompareAtPriceUsd(
+    (magazine as { compare_at_price?: string | number | null }).compare_at_price,
+    listPriceNum,
+  )
 
   const shippingFlatRate = Math.max(0, Number.parseFloat(String(magazine.shipping_price ?? 0)) || 0)
 
@@ -401,6 +409,7 @@ export async function MagazinesListingDetailPage({
               }
               createdAt={magazine.created_at}
               showPurchaseProtection={!isSold && !isOwnListing}
+              compareAtPriceUsd={isSold ? null : compareAtPriceUsd}
             >
               {canPeerPurchase ? (
                 <ListingDetailPeerPurchaseActionsLoader
@@ -440,7 +449,12 @@ export async function MagazinesListingDetailPage({
                 <>
                   <div className="mt-4">
                     <p className="text-4xl font-bold tracking-tight text-foreground tabular-nums xl:text-[2.625rem] xl:leading-none">
-                      ${listPriceNum.toFixed(2)}
+                      <ListingPriceWithMarkdown
+                        priceUsd={isSold ? publicListPriceUsd : listPriceNum}
+                        compareAtPriceUsd={compareAtPriceUsd}
+                        priceClassName="text-4xl font-bold tracking-tight text-foreground tabular-nums xl:text-[2.625rem] xl:leading-none"
+                        compareClassName="text-xl font-medium text-muted-foreground line-through tabular-nums xl:text-2xl"
+                      />
                     </p>
                     {shippingPriceCaption ? (
                       <p className="mt-1.5 text-[15px] text-muted-foreground">{shippingPriceCaption}</p>
@@ -546,6 +560,7 @@ export async function MagazinesListingDetailPage({
                 listingId={magazine.id}
                 section="magazines"
                 currentPriceUsd={listPriceNum}
+                  currentCompareAtPriceUsd={compareAtPriceUsd}
                 listingStatus={String(magazine.status ?? "")}
                 hiddenFromSite={magazine.hidden_from_site === true}
               />

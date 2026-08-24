@@ -91,6 +91,7 @@ async function ApparelListings({
               user_id: apparel.user_id,
               title: apparel.title,
               price: apparel.price,
+              compare_at_price: apparel.compare_at_price,
               status: apparel.status,
               section: "apparel",
               local_pickup: apparel.local_pickup,

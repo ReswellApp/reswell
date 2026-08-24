@@ -91,6 +91,7 @@ async function SurfpackListings({
               user_id: surfpack.user_id,
               title: surfpack.title,
               price: surfpack.price,
+              compare_at_price: surfpack.compare_at_price,
               status: surfpack.status,
               section: "surfpacks",
               local_pickup: surfpack.local_pickup,

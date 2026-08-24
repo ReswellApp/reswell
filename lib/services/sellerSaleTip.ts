@@ -1,10 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type Stripe from "stripe"
+import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
 import {
   getSellerSaleTipByPaymentIntentId,
   insertSellerSaleTip,
   markSellerSaleTipSucceeded,
 } from "@/lib/db/sellerSaleTips"
+import { retrieveSucceededPaymentIntent } from "@/lib/stripe-complete-order"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getStripe, getStripeCheckoutKeyConfigError } from "@/lib/stripe-server"
 import {
@@ -88,7 +90,7 @@ export async function createSellerSaleTipPaymentIntent(
     const paymentIntent = await stripe.paymentIntents.create({
       amount: params.amountCents,
       currency: "usd",
-      automatic_payment_methods: { enabled: true },
+      automatic_payment_methods: { enabled: true, allow_redirects: "never" },
       receipt_email: params.sellerEmail?.trim() || undefined,
       metadata: {
         purpose: SELLER_SALE_TIP_PI_PURPOSE,
@@ -146,6 +148,7 @@ export async function completeSellerSaleTipFromPaymentIntent(params: {
     return { ok: false, status: 404, error: "Tip record not found" }
   }
   if (existing.status === "succeeded") {
+    revalidateMarketplaceSoldFeedCatalog()
     return { ok: true, alreadyProcessed: true }
   }
 
@@ -153,5 +156,38 @@ export async function completeSellerSaleTipFromPaymentIntent(params: {
   if (!marked) {
     return { ok: false, status: 500, error: "Failed to record tip" }
   }
+  revalidateMarketplaceSoldFeedCatalog()
   return { ok: true, alreadyProcessed: false }
+}
+
+export async function finalizeSellerSaleTipPayment(params: {
+  listingId: string
+  sellerUserId: string
+  paymentIntentId: string
+}): Promise<CompleteSellerSaleTipResult> {
+  const retrieved = await retrieveSucceededPaymentIntent(params.paymentIntentId)
+  if (!retrieved.ok) return retrieved
+
+  const pi = retrieved.paymentIntent
+  if (!isSellerSaleTipPaymentIntent(pi)) {
+    return { ok: false, status: 400, error: "Not a sale tip payment" }
+  }
+  if (pi.metadata?.listing_id !== params.listingId) {
+    return { ok: false, status: 403, error: "Invalid payment" }
+  }
+  if (pi.metadata?.seller_id !== params.sellerUserId) {
+    return { ok: false, status: 403, error: "Invalid payment" }
+  }
+
+  let service: SupabaseClient
+  try {
+    service = createServiceRoleClient()
+  } catch {
+    return { ok: false, status: 503, error: "Could not complete tip" }
+  }
+
+  return completeSellerSaleTipFromPaymentIntent({
+    supabase: service,
+    paymentIntent: pi,
+  })
 }

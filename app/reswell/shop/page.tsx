@@ -64,6 +64,7 @@ export default async function ReswellShopPage() {
                   slug: listing.slug,
                   title: listing.title,
                   price: listing.price,
+                  compare_at_price: listing.compare_at_price,
                   listing_images: listing.listing_images,
                 }}
                 stockQuantity={listing.stock_quantity}

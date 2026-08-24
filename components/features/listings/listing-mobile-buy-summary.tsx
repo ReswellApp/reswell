@@ -6,6 +6,7 @@ import {
   type ListingOfferToCartProps,
 } from "@/components/listing-detail-engagement-metrics"
 import { ListingKlarnaAsLowAs } from "@/components/features/listings/listing-klarna-as-low-as"
+import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
 import { formatHomePeerListingConditionLine } from "@/lib/listing-labels"
 
 const RECENTLY_LISTED_MS = 14 * 24 * 60 * 60 * 1000
@@ -86,6 +87,7 @@ export interface ListingMobileBuySummaryProps {
   createdAt?: string | number | Date | null
   showPurchaseProtection?: boolean
   agreedPriceUsd?: number | null
+  compareAtPriceUsd?: number | null
   children?: ReactNode
 }
 
@@ -110,6 +112,7 @@ export function ListingMobileBuySummary({
   createdAt = null,
   showPurchaseProtection = false,
   agreedPriceUsd = null,
+  compareAtPriceUsd = null,
   children,
 }: ListingMobileBuySummaryProps) {
   const conditionLine = formatHomePeerListingConditionLine(condition)?.replace(" — ", " – ") ?? null
@@ -161,8 +164,13 @@ export function ListingMobileBuySummary({
           Sold for ${priceUsd.toFixed(2)}
         </p>
       ) : (
-        <p className="mt-2 text-3xl font-bold leading-none tracking-tight text-foreground tabular-nums">
-          ${priceUsd.toFixed(2)}
+        <p className="mt-2 text-3xl font-bold leading-none tracking-tight text-foreground">
+          <ListingPriceWithMarkdown
+            priceUsd={priceUsd}
+            compareAtPriceUsd={compareAtPriceUsd}
+            priceClassName="text-3xl font-bold tracking-tight text-foreground tabular-nums"
+            compareClassName="text-lg font-medium text-muted-foreground line-through tabular-nums"
+          />
         </p>
       )}
       {shippingNote ? <p className="mt-1 text-[14px] text-muted-foreground">{shippingNote}</p> : null}

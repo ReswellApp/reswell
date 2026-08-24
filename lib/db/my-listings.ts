@@ -14,6 +14,7 @@ export type MyListingRow = {
   slug: string | null
   title: string
   price: number
+  compare_at_price: number | null
   status: string
   section: string
   condition: string | null
@@ -43,7 +44,7 @@ export type FetchMyListingsResult = {
 }
 
 const MY_LISTINGS_SELECT =
-  "id, slug, title, price, status, section, condition, brand, model, views, created_at, archived_at, hidden_from_site, listing_images(url, thumbnail_url, is_primary)"
+  "id, slug, title, price, compare_at_price, status, section, condition, brand, model, views, created_at, archived_at, hidden_from_site, listing_images(url, thumbnail_url, is_primary)"
 
 const EMPTY_STATS: MyListingsDashboardStats = {
   totalListings: 0,

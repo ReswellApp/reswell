@@ -19,6 +19,7 @@ export const SHOP_LISTING_SELECT = `
       title,
       description,
       price,
+      compare_at_price,
       status,
       user_id,
       views,

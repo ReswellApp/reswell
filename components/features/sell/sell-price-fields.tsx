@@ -12,7 +12,12 @@ import {
 } from "@/components/ui/accordion"
 import { SELL_CONTROL_CLASS } from "@/components/features/sell/sell-form-surface"
 import { SellRequiredMark } from "@/components/features/sell/sell-required-mark"
+import { ListingPriceMarkdownToggle } from "@/components/features/listings/listing-price-markdown-toggle"
 import { cn } from "@/lib/utils"
+import {
+  parseOptionalUsdAmount,
+  resolveCompareAtPriceOnUpdate,
+} from "@/lib/listing-compare-at-price"
 
 /** Mirrors the listing-price rule in `pricePublishFieldsComplete` (sell-section-completion). */
 function listingPriceComplete(raw: string): boolean {
@@ -32,6 +37,10 @@ export interface SellPriceFieldsProps {
   purchaseAccordionTitle?: string
   purchaseAccordionDescription?: string
   showPurchasePrice?: boolean
+  publishedPriceUsd?: number | null
+  existingCompareAtPriceUsd?: number | null
+  showPriceMarkdown?: boolean
+  onShowPriceMarkdownChange?: (value: boolean) => void
 }
 
 export function SellPriceFields({
@@ -43,7 +52,28 @@ export function SellPriceFields({
   purchaseAccordionTitle = "What you paid for the board",
   purchaseAccordionDescription = "Keep track of what you paid for the board versus what it sells for. This info is for your benefit only.",
   showPurchasePrice = true,
+  publishedPriceUsd = null,
+  existingCompareAtPriceUsd = null,
+  showPriceMarkdown = false,
+  onShowPriceMarkdownChange,
 }: SellPriceFieldsProps) {
+  const nextPrice = parseOptionalUsdAmount(listingPrice)
+  const canOfferMarkdown =
+    publishedPriceUsd != null &&
+    nextPrice != null &&
+    onShowPriceMarkdownChange != null &&
+    (nextPrice < publishedPriceUsd ||
+      (existingCompareAtPriceUsd != null && existingCompareAtPriceUsd > nextPrice))
+  const previewCompareAt =
+    canOfferMarkdown && nextPrice != null && showPriceMarkdown
+      ? resolveCompareAtPriceOnUpdate({
+          currentPriceUsd: publishedPriceUsd ?? nextPrice,
+          nextPriceUsd: nextPrice,
+          existingCompareAtUsd: existingCompareAtPriceUsd,
+          showPriceMarkdown: true,
+        })
+      : null
+
   return (
     <div className="w-full space-y-4">
       <p className="text-sm leading-relaxed text-muted-foreground">
@@ -74,6 +104,16 @@ export function SellPriceFields({
             aria-required="true"
           />
         </div>
+        {canOfferMarkdown ? (
+          <ListingPriceMarkdownToggle
+            id="sell-show-price-markdown"
+            checked={showPriceMarkdown}
+            onCheckedChange={onShowPriceMarkdownChange}
+            previewPriceUsd={nextPrice}
+            previewCompareAtUsd={previewCompareAt}
+            className="pt-1"
+          />
+        ) : null}
       </div>
 
       {showPurchasePrice ? (

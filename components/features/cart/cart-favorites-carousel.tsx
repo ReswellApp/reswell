@@ -21,6 +21,7 @@ function toHomePeerListing(l: CartCarouselFavoriteListing): HomePeerScrollListin
     user_id: l.user_id,
     title: l.title,
     price: l.price,
+    compare_at_price: l.compare_at_price,
     status: l.status,
     section: l.section,
     local_pickup: l.local_pickup,

@@ -37,6 +37,7 @@ import {
   formatHomePeerListingConditionLine,
 } from "@/lib/listing-labels"
 import { EndListingDialog } from "@/components/end-listing-dialog"
+import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
 import { SellerOfferToCartHolders } from "@/components/features/listings/seller-offer-to-cart-holders"
 import { SellerBanRestrictedPanel } from "@/components/features/sell/seller-ban-restricted-panel"
 import {
@@ -664,7 +665,12 @@ function ListingRow({
           {isDraft ? (
             <span className="font-medium text-muted-foreground">Draft</span>
           ) : (
-            `$${listing.price.toFixed(2)}`
+            <ListingPriceWithMarkdown
+              priceUsd={listing.price}
+              compareAtPriceUsd={listing.compare_at_price}
+              priceClassName="text-[15px] font-semibold text-primary tabular-nums"
+              compareClassName="text-sm font-medium text-muted-foreground line-through tabular-nums"
+            />
           )}
         </p>
         {detailLine ? (

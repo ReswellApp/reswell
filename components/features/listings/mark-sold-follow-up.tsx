@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import { ChevronLeft } from "lucide-react"
 import { toast } from "sonner"
@@ -64,6 +64,12 @@ export function MarkSoldFollowUp({
   const [reviewText, setReviewText] = useState("")
   const [tipped, setTipped] = useState(false)
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    void import("@/components/features/listings/mark-sold-tip-checkout").then((mod) => {
+      mod.prefetchSaleTipStripeJs()
+    })
+  }, [])
 
   const elsewhereDetailValid =
     soldChannel !== "elsewhere" || elsewhereDetail.trim().length >= 2
@@ -150,10 +156,11 @@ export function MarkSoldFollowUp({
         <div className="space-y-1.5">
           <h3 className="text-lg font-semibold">Complete your tip</h3>
           <p className="text-sm text-muted-foreground">
-            Secure checkout with Stripe. You can change the amount or skip.
+            Enter a card below. Apple Pay and Google Pay show when your browser supports them.
           </p>
         </div>
         <MarkSoldTipCheckout
+          listingId={listingId}
           clientSecret={clientSecret}
           amountCents={selectedTipCents}
           onSuccess={() => {

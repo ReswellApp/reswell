@@ -52,6 +52,7 @@ export type BoardBrowseListingRow = {
   user_id: string
   title: string
   price: number | string
+  compare_at_price?: number | string | null
   status: string
   created_at?: string
   latitude?: number | null

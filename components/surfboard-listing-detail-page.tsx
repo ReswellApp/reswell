@@ -58,7 +58,11 @@ import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
 import { ListingBoardDimensionsBlock } from "@/components/listing-board-dimensions-section"
 import { formatListingDimensionsLine } from "@/lib/listing-dimensions-display"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
-import { publicListingListPriceUsd } from "@/lib/utils/public-listing-price"
+import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
+import {
+  publicListingCompareAtPriceUsd,
+  publicListingListPriceUsd,
+} from "@/lib/utils/public-listing-price"
 import { HomePeerListingScrollTile, HomeListingScrollRow, type HomePeerScrollListing } from "@/components/features/home"
 import { fetchSimilarSurfboardsForListingPdp } from "@/lib/db/listing-detail-similar-surfboards"
 import {
@@ -252,6 +256,10 @@ export async function SurfboardListingDetailPage({
 
   /** Public sold/browse price — always original list price, never negotiated offer amounts. */
   const publicListPriceUsd = publicListingListPriceUsd(board.price)
+  const compareAtPriceUsd = publicListingCompareAtPriceUsd(
+    (board as { compare_at_price?: string | number | null }).compare_at_price,
+    listPriceNum,
+  )
   const buyerOffersOn =
     (board as { buyer_offers_enabled?: boolean | null }).buyer_offers_enabled !== false
   const offerPct = effectiveMinimumOfferPct(
@@ -506,6 +514,7 @@ export async function SurfboardListingDetailPage({
                 createdAt={board.created_at}
                 showPurchaseProtection={!isSold && !isOwnListing}
                 agreedPriceUsd={buyerAgreedPriceUsd}
+                compareAtPriceUsd={isSold ? null : compareAtPriceUsd}
               >
                 {canPeerPurchase ? (
                   <ListingDetailPeerPurchaseActionsLoader
@@ -561,7 +570,12 @@ export async function SurfboardListingDetailPage({
                   <>
                     <div className="mt-4">
                       <p className="text-4xl font-bold tracking-tight text-foreground tabular-nums xl:text-[2.625rem] xl:leading-none">
-                        ${board.price.toFixed(2)}
+                        <ListingPriceWithMarkdown
+                          priceUsd={listPriceNum}
+                          compareAtPriceUsd={compareAtPriceUsd}
+                          priceClassName="text-4xl font-bold tracking-tight text-foreground tabular-nums xl:text-[2.625rem] xl:leading-none"
+                          compareClassName="text-xl font-medium text-muted-foreground line-through tabular-nums xl:text-2xl"
+                        />
                       </p>
                       {shippingPriceCaption ? (
                         <p className="mt-1.5 text-[15px] text-muted-foreground">{shippingPriceCaption}</p>
@@ -688,6 +702,7 @@ export async function SurfboardListingDetailPage({
                   listingId={board.id}
                   section="surfboards"
                   currentPriceUsd={listPriceNum}
+                  currentCompareAtPriceUsd={compareAtPriceUsd}
                   listingStatus={String(board.status ?? "")}
                   hiddenFromSite={board.hidden_from_site === true}
                   enrichmentGaps={computeListingEnrichmentGaps({

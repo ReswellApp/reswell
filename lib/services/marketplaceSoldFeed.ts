@@ -185,7 +185,7 @@ export async function loadMarketplaceSoldFeedPage(
   }
 }
 
-/** Public sold / shipped marketplace feed (no session). */
+/** Public sold / shipped marketplace feed (no session). Tipped mark-as-sold listings are included via the sold-page RPC. */
 export async function loadMarketplaceSoldFeed(
   supabase: SupabaseClient,
   brandSlug: string | null,

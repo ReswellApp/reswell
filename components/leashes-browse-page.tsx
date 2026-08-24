@@ -91,6 +91,7 @@ async function LeashListings({
               user_id: leash.user_id,
               title: leash.title,
               price: leash.price,
+              compare_at_price: leash.compare_at_price,
               status: leash.status,
               section: "leashes",
               local_pickup: leash.local_pickup,

@@ -21,6 +21,8 @@ import { ImageGallery } from "@/components/image-gallery"
 import { formatCategory } from "@/lib/listing-labels"
 import { findListingByParam } from "@/lib/listing-query"
 import { proxiedListingImageSrc } from "@/lib/listing-media-proxy-url"
+import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
+import { publicListingCompareAtPriceUsd } from "@/lib/utils/public-listing-price"
 
 export async function ShopListingDetailPage({
   listingParam,
@@ -73,6 +75,10 @@ export async function ShopListingDetailPage({
   const imageUrl = primaryImage?.url ? proxiedListingImageSrc(primaryImage.url) : null
   const title = typeof listing.title === "string" ? listing.title : ""
   const price = Number(listing.price)
+  const compareAtPriceUsd = publicListingCompareAtPriceUsd(
+    (listing as { compare_at_price?: string | number | null }).compare_at_price,
+    price,
+  )
 
   const relatedListings = await getCachedShopRelatedListings(listing.id)
 
@@ -150,7 +156,12 @@ export async function ShopListingDetailPage({
                 {listing.title}
               </h1>
               <p className="font-headline mt-4 text-3xl font-semibold tracking-tight text-foreground tabular-nums sm:text-4xl xl:text-[2.5rem]">
-                ${price.toFixed(2)}
+                <ListingPriceWithMarkdown
+                  priceUsd={price}
+                  compareAtPriceUsd={compareAtPriceUsd}
+                  priceClassName="text-3xl font-semibold tracking-tight text-foreground tabular-nums sm:text-4xl xl:text-[2.5rem]"
+                  compareClassName="text-xl font-medium text-muted-foreground line-through tabular-nums sm:text-2xl"
+                />
               </p>
             </div>
 

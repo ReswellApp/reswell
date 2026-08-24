@@ -14,6 +14,7 @@ interface ListingOwnerManageActionsProps {
   listingId: string
   section: string
   currentPriceUsd: number
+  currentCompareAtPriceUsd?: number | null
   listingStatus: string
   hiddenFromSite?: boolean
   showQuickPriceEdit?: boolean
@@ -26,6 +27,7 @@ export async function ListingOwnerManageActions({
   listingId,
   section,
   currentPriceUsd,
+  currentCompareAtPriceUsd = null,
   listingStatus,
   hiddenFromSite = false,
   showQuickPriceEdit = true,
@@ -77,6 +79,7 @@ export async function ListingOwnerManageActions({
             <QuickEditListingPriceDialog
               listingId={listingId}
               currentPriceUsd={currentPriceUsd}
+              currentCompareAtPriceUsd={currentCompareAtPriceUsd}
               triggerClassName="rounded-full border-border/60 shadow-none"
             />
           ) : null}

@@ -5,6 +5,7 @@
 import type { ReactNode } from "react"
 import { Truck } from "lucide-react"
 import { ListingTile } from "@/components/listing-tile"
+import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
 import { ListingTileAddToCartServerIcon } from "@/components/listing-tile-add-to-cart-server-icon"
 import { capitalizeWords, formatHomePeerListingConditionLine } from "@/lib/listing-labels"
 import { listingDetailHref } from "@/lib/listing-href"
@@ -39,6 +40,7 @@ export type HomePeerScrollListing = {
   user_id: string
   title: string
   price: string | number
+  compare_at_price?: number | string | null
   status: string
   section: string
   local_pickup?: boolean | null
@@ -153,7 +155,12 @@ export function HomePeerListingScrollTile({
         <div className={metaFooterClassName ?? homeUniformScrollMetaFooterClass}>
           <div className="flex min-w-0 items-center justify-between gap-2">
             <p className={compact ? homeMostViewedCompactPriceClass : homePeerTilePriceClass}>
-              ${Number(listing.price).toFixed(2)}
+              <ListingPriceWithMarkdown
+                priceUsd={Number(listing.price)}
+                compareAtPriceUsd={listing.compare_at_price}
+                priceClassName={compact ? homeMostViewedCompactPriceClass : homePeerTilePriceClass}
+                compareClassName="text-sm font-medium text-muted-foreground line-through tabular-nums"
+              />
             </p>
             <div className="flex shrink-0 items-center gap-1.5">
               {ships ? (

@@ -14,6 +14,7 @@ import { ListingTileCategoryPill } from "@/components/listing-tile-category-pill
 import { ListingTileCheckoutBasketIcon } from "@/components/listing-tile-checkout-basket-icon"
 import { ListingTileAddToCartIcon, type ListingTileCartItem } from "@/components/listing-tile-add-to-cart-icon"
 import { ListingTileAddToCartServerIcon } from "@/components/listing-tile-add-to-cart-server-icon"
+import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
 import { VerifiedBadge } from "@/components/verified-badge"
 import {
   listingProductCardGridClassName,
@@ -236,14 +237,12 @@ export function ListingTile({
       )}
     >
       <div className="flex min-w-0 items-center gap-2">
-        <p className="text-base font-bold text-black dark:text-white tabular-nums">
-          ${price.toFixed(2)}
-        </p>
-        {compareAtPrice != null && compareAtPrice > price ? (
-          <p className="text-sm text-muted-foreground line-through tabular-nums">
-            ${compareAtPrice.toFixed(2)}
-          </p>
-        ) : null}
+        <ListingPriceWithMarkdown
+          priceUsd={price}
+          compareAtPriceUsd={compareAtPrice}
+          priceClassName="text-base font-bold text-black dark:text-white tabular-nums"
+          compareClassName="text-sm text-muted-foreground line-through tabular-nums"
+        />
       </div>
       {priceAction ? (
         <div className={tilePriceActionRevealClass}>

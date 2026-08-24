@@ -1,4 +1,5 @@
 import { ListingTile } from "@/components/listing-tile"
+import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
 import { ListingTileShopInventoryCartIcon } from "@/components/listing-tile-shop-inventory-cart-icon"
 import { capitalizeWords, formatCategory } from "@/lib/listing-labels"
 import { listingCardImageSrc, type ListingImageForCard } from "@/lib/listing-image-display"
@@ -75,12 +76,12 @@ export function ShopNewListingStandardTile({
         <div className={homeUniformScrollMetaFooterClass}>
           <div className="flex min-w-0 items-center justify-between gap-2">
             <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0">
-              <p className={homePeerTilePriceClass}>${listing.price.toFixed(2)}</p>
-              {listing.compare_at_price != null && listing.compare_at_price > listing.price ? (
-                <p className="text-sm text-muted-foreground line-through tabular-nums">
-                  ${listing.compare_at_price.toFixed(2)}
-                </p>
-              ) : null}
+              <ListingPriceWithMarkdown
+                priceUsd={listing.price}
+                compareAtPriceUsd={listing.compare_at_price}
+                priceClassName={homePeerTilePriceClass}
+                compareClassName="text-sm text-muted-foreground line-through tabular-nums"
+              />
             </div>
             {stockQuantity > 0 ? (
               <ListingTileShopInventoryCartIcon
