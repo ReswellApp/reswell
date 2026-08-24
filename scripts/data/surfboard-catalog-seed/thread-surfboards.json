@@ -1,0 +1,164 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "thread-surfboards",
+      "name": "Thread Surfboards",
+      "website_url": "https://threadsurfboards.com/",
+      "location_label": "Costa Mesa, California",
+      "short_description": "Costa Mesa custom grovelers, performance shortboards, and USA-made soft-tops.",
+      "models": [
+        {
+          "name": "Astro",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/10/Astro-front.jpg",
+          "description": "The Astro is a high performance hybrid board designed for shredding in waves that would not normally be surfable. The Astro bridges the gap between full grovel boards and high performance shortboards. The widened nose and tail area, low entry rocker and single to deep double concave through the fins makes the Astro lightning fast. And with a subtle hip at the front fins, mid tail rocker, and a slight vee off the tail allows this speedster to shred like a high performance shortboard!",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Boom Box 2",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/08/BoomBox2-front.jpg",
+          "description": "The “Boom Box 2” is one of the most fun boards in our line. Designed with high performance in mind the Boom Box 2 comes standard as a 5 fin so it can be ridden as a tri or quad for versatility. It has a very flat continuous rocker throughout, wider nose and a wide rounded Diamond tail making this board super fast in small mush conditions but. The slight single concave running from just below the nose to about two thirds down the board helps the Boom Box 2 accelerate off the mark, while the double concave starting just in front of the front fins and Vee out the tail makes this board easy to put on rail and turn tight in the pocket. Designed to be ridden 5-6 inches shorter than your standard shortboard.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Boom Box 2 Pro",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/08/Boombox2pro-front.jpg",
+          "description": "A user friendly rippable board for all skill levels in poor to average conditions. The wide outline and low to mid entry rocker makes paddling a breeze. And the double wing round tail reduces surface area under the back foot which creates a pivot point for tight turns in the pocket. The board has a single to double concave between the fins and a slight vee off the tail, which allows for easy transition surfing when going from rail to rail.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Butterblock",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/08/Butterblock-front1.jpg",
+          "description": "The Butterblock is the board you take out when the waves are barley breaking. It is short, wide, thick, flat and fast! A super fun board for any type of small wave conditions, from beach breaks to point breaks. If you get it on a small day at a point break it will really excel. The bottom contours are flat in the front third of the board, and blends to a slight single and vee off the tail.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Cafe Latte",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/08/Cafe_Latte-front.jpg",
+          "description": "The Cafe Latte is a board that surfers of all levels can ride in everyday waves. From 2 foot mush to 2 foot overhead and hollow waves. It is designed to be ridden shorter then your standard shortboard making it fit really well in tight pocket style waves. The Cafe Latte has a wider outline with the wide point forward making it a great paddler and super fast in softer surf. It also has a pulled in double bump round tail which allows for tight pocket turns, and still holds in larger, steeper surf. The board has a mid entry rocker with a mid tail rocker and a touch of flip off the tail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Colt 45",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/08/Colt45-front.jpg",
+          "description": "The Colt45 is the board to ride when you want to rip like your riding your standard shortboard, but in waves that are sub par conditions. It is a step down from the Pirate Hooker, designed for high performance surfing in smaller weaker surf. It has a lower rocker throughout, with a touch of flip off the tail, this combined with the hip in the tail allows the Colt45 to have a tight turning radius in the pocket, with release and pop off the lip. The speed comes from a generous single concave and double concave between the fins. You want to ride the Colt45 anywhere from 2-4 inches shorter than your standard shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Hybrid",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/11/Hybrid-front.jpg",
+          "description": "The Hybrid is a small wave favorite for the thread designs team and customers everywhere, designed for small to medium surf as a high performance short board but still holds it’s own in overhead surf. It has a wider outline and lower entry rocker than our Koozie model with a single to double concave and slightly fuller rails so it’s more difficult to bury the rail when it’s laid hard on rail in a turn, this will help store energy during a turn and release that energy coming out of the turn. Designed to be ridden about 2-3 inches shorter than your standard short board.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Keg",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/08/Keg-front.jpg",
+          "description": "This is our summer small wave killer with a low entry rocker, a ton of volume, a forward wide point and full rails so this thing catches waves with ease. It has a single to generous double concave in front of the back foot into a vee out the tail and a winged swallow tail so it can still turn tight in the pocket. This board is made to be ridden 3-5 inches shorter than your standard shortboard.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Koozie",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/11/Koozie-front.jpg",
+          "description": "“The Koozie” is one of the most popular performance shortboards in our line and ridden by most of the Thread Designs team. It has a lower entry rocker and a wider outline than a traditional high performance shortboard with the wide point further forward to drive through those flat mushy sections with added rocker in the tail so it turns tight when in the pocket, it also has a single to double concave. This board is made to be ridden about 2 inches shorter than your standard short board.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Koozie RT",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/11/Koozie-RT-front.jpg",
+          "description": "The Koozie RT is based of the Koozie, only with a few minor tweaks to make it work better in bigger and better waves. We pulled the tail in and made it a round tail to hold in steeper and larger waves. We also shallowed the concave, because more speed needs less lift. The Koozie RT is the board for when you need a slight step up from your standard shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Koozie Step Up",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/11/KoozieStepup-front.jpg",
+          "description": "The Koozie Step-Up is a stretched out version of the Koozie RT with a few tweaks. We added rocker throughout for taking late drops on larger, steeper waves. We also reduced the concave because more speed needs less lift. The Koozie RT is a “go-to” board for ripping on those bigger and hollower days.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Pink Sabbath",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/08/Pink-Sabbath-front.jpg",
+          "description": "The Pink Sabbath is a contest style shortboard for small surf. It has a wider nose and tail which gives it a more parallel outline for speed and glide, even through the flattest sections. A single to double concave with a hip by the rail fins, mixed with a slightly thinner performance rail gives the Pink Sabbath the ability to draw tight arcs in the pocket. The overall summary is, a board that paddles well, catches waves with ease, has lightning speed in small surf, is super responsive and has lively feel under your feet with just the right amount of tail release.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Pirate Hooker",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/08/Pirate-Hooker-front.jpg",
+          "description": "The Pirate Hooker is our most popular and exciting everyday shortboard in our line. It shreds in knee high surf to a few feet overhead. It has a mid entry rocker but the rocker is slightly staged and is flatter through the middle of the board between your feet, which allows for a larger sweet spot and more glide through softer sections in more grovel-like conditions. The board also has a medium tail rocker with a touch of flip off the tail allowing for explosive release off the lip, and tight turns in the pocket! There is some added foam under the front foot for extra paddle power, and it has a deeper single to double concave which allows the Pirate Hooker to accelerate quickly from the take off and straight out of turns without missing a beat. And Lastly, the rails are slightly fuller than our traditional short board (The Koozie) which gives it a more forgiving and flowing ride.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Record Setter",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/08/Record-Setter-stepup-front.jpg",
+          "description": "The guys at Thread Designs call this model the One Board Quiver as its designed as an all round high performance shortboard to be ridden in all conditions from overhead barrels to 2ft mushy beach breaks. It has a slightly lower entry rocker with a more forward wide point making this board super fast and drivey when pushing through flat sections on mushy waves or pumping through draining barrels, the round tail gives it more speed for faster hollower waves and it is recommended as a 5 fin set up so it can be ridden as a quad for extra speed in flat surf. Single concave from just in front of the front foot to a slight double between the fins to loosen up the tail. This board is made to be ridden 2-3 inches shorter than your standard shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Record Setter Step Up",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/11/Record-Setter-STEPUP-front.jpg",
+          "description": "The Record Setter Step Up is a stretched out version of the Record Setter. It is designed for those bigger days when you just need “more board”. We took the Record Setter and added a touch of nose and tail rocker, shallowed the concave as more speed needs less lift, and thinned out the rail to make it knife through the face of the wave better. It is a great choice for those bigger beach break days!",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Syngl Fin",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/08/syngl-fin-front.jpg",
+          "description": "Our Syngl Fin is a modern mash up of a 70’s style retro single fin that will impress even the most die hard thruster surfers. It has a low to mid entry rocker with a beaked nose that allows for late take offs and tight turns in the pocket, and also has a low tail rocker for speed and drive. There is a lot of volume packed into this board, making it a great paddler and wave catching machine. You can grovel it in small mushy surf and also rip it in overhead waves because of it’s pulled in round pin-tail and low knifey rails. The bottom contours consist of a flat bottom in the first 18″ of the nose, to a slight single concave through the center, and a vee double concave through the tail.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "The Blowfish",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/08/Blowfish-front1.jpg",
+          "description": "A super fun retro style groveler designed for relaxed style surfing in all small to medium conditions and is easily ridden by any type of surfer of any skill level. The super flat entry rocker combined with a wide forward point and a single concave gives this board unbelievable down the line speed and the vee through the tail helps this board turn on a dime. This board is designed to be ridden 4-6 inches shorter than your standard shortboard.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Egg",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/08/Egg-front.jpg",
+          "description": "The Egg is a fun and easy to ride board for surfers of all skill levels. It is super versatile and can be ridden as a thruster, quad or single fin. If you order it with a 5-fin set up it can be riden as a tri or quad fin. If you order it as with a single fin and side bite boxes you can ride it as a single fin with the option to add side fins. And lastly, you can also orer it as a quad with a single 10″ box to ride it as a single fin or quad fin. The wide and round outline makes The Egg a wave catchign machine with great down the line speed. It has a low to mid entry rocker and low tail rocker which allows the board to carry momentum through the flat sections. It has a reverse vee bottom countour in the front 1/4 of the board, then blends to a subtle single concave through the center and into a sprial vee out the tail, which allows for great maneuverability and let’s the board go from rail to rail with ease.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The G6",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/10/G6-front.jpg",
+          "description": "“The G6” is already a favorite with the Thread Designs team and customers everywhere, it is a super fun small wave speed machine. The low and constant rocker makes this board power through those flat sections and makes paddling almost effortless. The single concave through the first half of the board makes it accelerate quickly and the double concave starting just behind the center and peaking just in front of the front fins allows it to do quick rail to rail turns, along with the double winged round tail reducing surface area in the tail while maintaining volume will have you turning tight when in the bowly pocket of a wave giving it that performance board feel.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "The Gun",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/11/The-Gun-front.jpg",
+          "description": "The Gun is a modern day gun designed for paddling into serious waves. With a forward wide point, thickness carried up under the chest and into the nose, and a flatter deck packing in some volume, this board will paddle like a dream and get you down the face of some mountains of water. With a thinned out tail along with the spiraled vee, this modern day Gun provides control and responsiveness when riding giants.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "The Pescado",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/11/Pescado-front1.jpg",
+          "description": "The Pescado is one of our most versatile, user friendly fun shapes in the line up. The fish-style shape has stood the tests of time and is still a favorite amongst all. With a rounded off nose you can ride The Pescado nice and short, and with volume in all the right places it will be flying down your local point break when it’s only kneed high. It has a slightly pulled in winged swallow tail with a modern mid performance rail so you can still push the boundaries on it when surfing head high beach breaks. The bottom contours into a vee belly in the first 16″- 18″ of the nose, and blends from a slight single concave through the middle to spiral vee off the tail. You can order The Pescado as a quad fin or a twin fin, both options work great!",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Pillow",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/09/Pillow-front.jpg",
+          "description": "The Pillow is the extreme small wave machine, with the super wide outline and low rocker throughout, it will fly through the softest sections the wave will throw at you. It has generous concave in the nose creating lift and speed, blending to a deep double concave between the feet helping it to go rail to rail with ease. It has a very subtle double bump round tail creating a pivot point and vee off the tail so it can still turn tight in the pocket if the waves offers up a section.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Tube Hound",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/08/Tube-Hound-front.jpg",
+          "description": "The Tube Hound is built for big barreling waves like Ocean Beach in San Fran, Cloudbreak, Puerto Escondido, and Pipeline, just to name a few. With extra thickness and a fuller outline than traditional step-ups and guns have, the Tube Hound is a paddling machine. It has a flowing continuous rocker with a flat bottom in the front 1/4 of the board which blends to a slight single concave and a spiral vee off the tail, allowing maneuverability and control at high speeds. We recommend ordering this board with a 5-fin set up so you have the option to ride it as both a quad or tri fin.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Twin Fin",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/08/Twin-fin-swallow-front.jpg",
+          "description": "The Twin Fin is a modern twist on the traditional Twin Fin. It has a fuller shortboard outline and added volume under the chest, making it paddle and grovel with ease. The pulled in winged swallow tail makes it turn tight in the pocket and snap well off the lip. And the slightly fuller rail allows the board to hold speed and drive through rail turns. The Twin Fin is a super versatile board for all skill levels in a wide variety of waves, from knee-high to overhead surf, the Twin Fin will flourish!",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Winged Syngl",
+          "image_url": "https://threadsurfboards.com/wp-content/uploads/2016/08/Winged-Syngl-front.jpg",
+          "description": "The Winged Syngl is a modern spin on the traditional style single fin. It is super fun in all types of waves, from California beach breaks and point breaks, to barreling into reef breaks. With a wide point forward outline, the Winged Syngl paddles with ease allowing for great wave catching capabilities in both small grovelley surf, up to a few feet overhead. We kept some of the traditional aspects like, the beaked nose, a winged pin tail, and a flatter deck and vee off the tail. But we also made some modern day refinements to the rocker, concave and rail. The Winged Syngl is great for beginners and still super fun for advanced surfers.",
+          "board_category_slug": "other"
+        }
+      ]
+    }
+  ]
+}
