@@ -2,6 +2,7 @@ import { cookies } from "next/headers"
 import { SiteChromeClient } from "@/components/site-chrome-client"
 import { hasSupabaseAuthCookies } from "@/lib/auth/has-supabase-auth-cookies"
 import { getSiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
+import { IMPERSONATION_COOKIE, parseImpersonationCookie } from "@/lib/impersonation"
 
 /**
  * **Server-first site chrome**: one validated `getUser()` + parallel header bootstrap per request,
@@ -15,5 +16,16 @@ export async function SiteChrome({ children }: { children: React.ReactNode }) {
   const headerAuth = hasSupabaseAuthCookies(cookieStore.getAll())
     ? await getSiteChromeAuthPayload()
     : { user: null, bootstrap: null }
-  return <SiteChromeClient headerAuth={headerAuth}>{children}</SiteChromeClient>
+  const impersonationRaw = cookieStore.get(IMPERSONATION_COOKIE)?.value
+  const initialImpersonation = impersonationRaw
+    ? parseImpersonationCookie(impersonationRaw)
+    : null
+  return (
+    <SiteChromeClient
+      headerAuth={headerAuth}
+      initialImpersonation={initialImpersonation}
+    >
+      {children}
+    </SiteChromeClient>
+  )
 }

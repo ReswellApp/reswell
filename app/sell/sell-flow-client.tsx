@@ -78,8 +78,10 @@ import {
   clearImpersonationStorageIfCookieMissing,
   getActiveImpersonationClient,
   getImpersonation,
+  IMPERSONATION_CHANGED_EVENT,
   type ImpersonationData,
 } from "@/lib/impersonation"
+import { ImpersonationActingAsStrip } from "@/components/impersonation-banner"
 import { updateImpersonatedListingViaApi } from "@/lib/utils/admin-impersonated-listing-create"
 import {
   adminIsEditingAnotherUsersListing,
@@ -753,7 +755,10 @@ function SellPageContentInner({
   )
   useEffect(() => {
     clearImpersonationStorageIfCookieMissing()
-    setImpersonation(getActiveImpersonationClient())
+    const sync = () => setImpersonation(getActiveImpersonationClient())
+    sync()
+    window.addEventListener(IMPERSONATION_CHANGED_EVENT, sync)
+    return () => window.removeEventListener(IMPERSONATION_CHANGED_EVENT, sync)
   }, [])
 
   const [loading, setLoading] = useState(false)
@@ -3780,6 +3785,24 @@ function SellPageContentInner({
           !fullscreenSellBlocking && !showBoardModeHeader && "pt-8",
         )}
       >
+        {impersonation ? (
+          <ImpersonationActingAsStrip
+            target={impersonation}
+            onExit={() => {
+              void (async () => {
+                try {
+                  await fetch("/api/admin/impersonate", {
+                    method: "DELETE",
+                    credentials: "include",
+                  })
+                } finally {
+                  clearImpersonation()
+                  setImpersonation(null)
+                }
+              })()
+            }}
+          />
+        ) : null}
         <AdminBulkListingBanner section="surfboards" bulkSlotId={bulkSlotId} />
         <div className="container relative mx-auto max-w-3xl min-h-[50vh] px-4 sm:px-6 lg:max-w-6xl">
           {publishPreview ? (

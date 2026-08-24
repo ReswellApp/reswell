@@ -22,6 +22,7 @@ import {
 } from "@/components/features/giveaways/giveaway-marquee"
 import { GiveawaySignupPopup } from "@/components/features/giveaways/giveaway-signup-popup"
 import type { SiteChromeAuthPayload } from "@/lib/auth/get-site-chrome-auth"
+import type { ImpersonationData } from "@/lib/impersonation"
 import {
   isMessageThreadDetailRoute,
   isMessagesDesktopShellRoute,
@@ -66,9 +67,11 @@ function hideFooter(pathname: string | null): boolean {
 export function SiteChromeClient({
   children,
   headerAuth,
+  initialImpersonation = null,
 }: {
   children: React.ReactNode
   headerAuth: SiteChromeAuthPayload
+  initialImpersonation?: ImpersonationData | null
 }) {
   const pathname = usePathname()
   const flatMobileMessagesInbox = useFlatMobileMessagesInbox()
@@ -130,7 +133,10 @@ export function SiteChromeClient({
       >
         <RouteProgressBar />
         <SiteHeaderShell>
-          <ImpersonationBanner />
+          <ImpersonationBanner
+            initialIsAdmin={headerAuth.bootstrap?.profile?.is_admin === true}
+            initialTarget={initialImpersonation}
+          />
           <Header serverHeaderAuth={headerAuth} />
         </SiteHeaderShell>
         <div

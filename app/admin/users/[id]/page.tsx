@@ -376,7 +376,7 @@ export default function AdminUserDetailPage() {
         email: profile.email,
       })
       toast.success(`Now acting as ${profile.display_name || 'this user'}`)
-      router.push(nextPath)
+      window.location.assign(nextPath)
       return true
     }
     toast.error('Failed to start impersonation')
