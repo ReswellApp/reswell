@@ -1,0 +1,78 @@
+{
+  "generated_for": "Ben Kelly Surfboards official named model catalog",
+  "source": "https://www.benkellysurfboards.com/surfboards?format=json",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "ben-kelly-surfboards",
+      "name": "Ben Kelly Surfboards",
+      "website_url": "https://www.benkellysurfboards.com/",
+      "location_label": "Santa Cruz, California",
+      "founder_name": "Ben Kelly",
+      "lead_shaper_name": "Ben Kelly",
+      "short_description": "Handcrafted custom surfboards by Santa Cruz shaper Ben Kelly.",
+      "models": [
+        {
+          "name": "GROM beta",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/57e9630920099ecbc982e0ad/1572193067912-ZIIZX8YSGP6N0UGNWBDT/GROM+beta+FRONT.jpg",
+          "description": "Developed with Cole Renfrew, The GROM beta is a grom sized version of The Beta performance shortboard model. The goal of this board is to be the go to everyday board for a grom! It is super versatile and meant for performance surfing in the pocket and above the lip. Smooth performance driven outline that cuts out un-needed foam leaving you with the raw essence of a high performance surfboard. Fuller rocker with tail kick allows The GROM Beta to be super responsive off the back foot allowing you to pull fully vertical maneuvers. Bottom features a medium single-to-double concave, a proven performance blend. Sizes: 4'8 - 5'4. Best for: 2-6ft punchy beach break / reef / points.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The beta",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/57e9630920099ecbc982e0ad/1538676951261-A6VSQUSYBH1C56XCM4G1/BKS+Beta+vertical+front.jpg",
+          "description": "Developed with Team Rider Luke Bender, The Beta is our most performance oriented model. When the waves are pumping and near-perfect conditions, this shape is ultra responsive and rips in the pocket. The Beta is designed for radical off the lip maneuvers as well as full control in barreling waves. Smooth performance driven outline that cuts out un-needed foam leaving you with the raw essence of a high performance surfboard. Full rocker with tail kick allows The Beta to be the most responsive board in the BKS quiver. Bottom features medium single-to-double concave proven performance blend. Ideal for powerful punchy beach break or reef in solid conditions. Sizes: 5'6-6'10. Best for: 4-10ft+ punchy beach break / reef.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Dream Sled",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/57e9630920099ecbc982e0ad/1538677069424-Y02LWYUH6I3REOFXGEIP/BKS+Dream+Sled+vertical+front.jpg",
+          "description": "The Dream Sled was named after the feeling you get riding this board. (Actually, the outline shape combination for this board came to me in a dream, hence the name). This model is a blend between the high performance Beta and the more grovely Weasel shape, bringing together an even keeled all around shortboard that can hop between the beach break at 26th Ave. right over the bowl at Sewer peak and then all the way down to Big Sur. Smooth symmetrical outline features a slightly fuller nose width than your standard shortboard and a wider squash tail out the back. Medium full rocker with tail kick allows the Dream Sled to be extremely responsive and playful in the right conditions with the pivot point landing between your feet. The bottom shape features a stronger single to double concave. This board is a super fun, responsive, non-aggressive all-around performance shortboard. Sizes: 5'6-6'10. Best for: 2-7ft beach / reef / point.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Weasel",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/57e9630920099ecbc982e0ad/1538678030659-5F3KUMMUZ9QMLEXHF7WU/BKS+The+Weasel+vertical+front.jpg",
+          "description": "This is the board that will sneak you into a ton of waves without sacrificing a high performance feel. Developed in Santa Cruz with the help of team rider Kyle Pitchford, The Weasel is meant to be your all-around go to grovely shortboard to ride on any given day in a variety of conditions. It's fast, loose, and it grovels. It's low entry rocker and contours help it carry through flat sections, yet still will release off the top when the wave stands-up. Perfect for just about any average to above average small to mid-sized California day! This board can be ridden roughly 4-6 inches shorter than your average high-performance board. Smooth symmetrical outline with noticeably wider, flatter nose. Minimal entry rocker transitions into a more defined tail rocker and kick to handle well in beach breaks. Added nose thickness gives you a little extra volume under your front foot and when paddling into waves. Early Single Concave starts under the chest and grows to a deep single out of the diamond tail. Sizes: 5'1-6'5. Best for: 2-6ft Everything.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Signature Series",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/57e9630920099ecbc982e0ad/1538678162232-L5ETSX8GH4IYC49NTJ2F/BKS+Signature+Series+vertical+front.jpg",
+          "description": "The most versatile board in the BKS quiver. The Signature Series model is designed to be your go to board when traveling or just when your not sure of what to ride. This retro styled short board brings flow, speed, and response into one balanced board that can handle any size swell. The Signature Series is especially ideal for long drawn out waves (points and select reefs) with big open faces while also being able to hold its own in heavier overhead spitting barrels. This model is versatile and can either be ridden as a step-down 6-8 inches shorter than your height in more punchy grovely surf or as a step-up in larger conditions. The wider template features a higher up wide point underneath the chest and increased volume throughout the middle of the shape. A flatter low/mid rocker contributes to the overall silky smooth flow. The most noticeable feature is the unique widened rounded pin tail which connects rail-to-rail carves. Sizes: 5'0 – 7'0. Best for: Everything – 1 board quiver.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Pool Party",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/57e9630920099ecbc982e0ad/1538678395434-QQ8F0MB1I1SA3CWP3LFQ/BKS+Pool+Party+vertical+front.jpg",
+          "description": "Skatey and Loose. The Pool Party is a squashed down little stubby potato chip loaded for fun when the waves tend smaller. When the conditions get weird, and you still want to get wet, this is your board! Most surfers ride this model 6-10 inches shorter than your height. Increased volume throughout the template allows for easy paddling and getting into waves early. The fins are set back creating a looser feel making the shape respond well in wonky dumpy conditions. Sizes: 5'0-6'2. Best for: 1-4ft+ wonky beach break or fun point break.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Classic Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/57e9630920099ecbc982e0ad/1538692835775-3KBPIMEPWFZJNI7MC59Z/BKS+Classic+Fish+vertical+front.jpg",
+          "description": "Creativity and Expression. The Classic Fish emulates these characteristics in style. The retro Classic Fish outline, with its wide swallowtail, gives you the ingredients to have fun and rip at the same time. This model has lots of volume throughout its entirety and due to the straighter rail line, flat bottom contour until the tail, and twin fin setup, will have the most drive of any board in the BKS quiver. What makes this fish shape truly unique is the convex tail out the swallow, designed so the surfer can lean forward for speedy drive and then lean back on the tail and have the board respond quickly. Sizes: 5'0-6'6. Best for: 2-6ft+ points, reefs, and occasionally a mellow rolly beach break.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Tiny Dancer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/57e9630920099ecbc982e0ad/1474955079026-ZS9CU8KOKA6FPTTVNHV7/image-asset.jpeg",
+          "description": "The ultimate fun board awaits. Ideal for the surfer who wants to be able to paddle into every single wave you want, The Tiny Dancer was inspired by Robbie Sweetman and Nick Buller as an alternative hybrid shape perfectly sized for fun. This model works as a great transition board for anyone going from a longboard to a shortboard or for a shortboarder who wants to have a cruiser board in their quiver without the hassle of a full longboard. The full template pulls its design from the California Cruzer nose. It has the impressive volume and paddles as easy as a longboard yet has maneuverability and flow of a fish. The board features a flat bottom pulled into a slight convex out the rounded pin tail. Sizes: 6'6-7'9. Best for: 1-6ft+ points, reefs, and rollers.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "California Cruzer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/57e9630920099ecbc982e0ad/1538693127940-1Z8LVB51MFLPSOGSBLTN/BKS+California+Cruzer+vertical+front.jpg",
+          "description": "The Cruzer's dream board at Pleasure Point. The California Cruzer is made to let Californians cruise. The Cruzer paddles like a dream and gives you both stability and maneuverability all in one beautiful longboard. A perfect choice for The Lane, 1st & 2nd peak Point, The Hook or 38th (Jacks) when there is some size. This model is designed to be your go to all-around longboard. Smooth outline, spooned out entry rocker, and slight tail kick. The foam-forward design aids in paddling and with drive down the line. The tight rounded pin tail gives the rider increased maneuverability and a seamless experience transitioning on rail. Sizes: 8'6-10'0. Best for: 2-6ft point break and rollers.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Steamboat",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/57e9630920099ecbc982e0ad/1538693255808-AD1T7UKWX5WIZKETIYA4/BKS+Steamboat+vertical+front.jpg",
+          "description": "Trim Trim Trim. The Steamboat was designed for supreme stability and for noseriding. This longboard model pays homage to the old-school classics with wide hips and a fat square. This is the go to log for those 2ft Capitola days, an average day at 38th (Jacks), or the typical Cowell's roller. The Steamboat glides effortlessly above the water and is a point-and-shoot style shape. The boxy outline and rails are optimal for straight-line gliding and staying right in the pocket. A spooned out nose entry rocker creates lift needed for nose-riding and blends with a flat mid-bottom for trimming and then into a slight tail kick for pivoting when needed. This is the flattest rocker board we offer. Sizes: 9'0-10'6. Best for: 0-4ft ripples, dribblers, and gutless rollers + noseriding.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
