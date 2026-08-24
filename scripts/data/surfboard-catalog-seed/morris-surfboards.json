@@ -1,0 +1,117 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "morris-surfboards",
+      "name": "Morris Surfboards",
+      "website_url": "https://morris-surfboards.co.nz/",
+      "location_label": "Silverdale, Auckland, New Zealand",
+      "founder_name": "Steve Morris",
+      "lead_shaper_name": "Steve Morris",
+      "short_description": "Handcrafted surfboards made in New Zealand by shaper Steve Morris. Custom boards built for NZ waves.",
+      "models": [
+        {
+          "name": "M-Log",
+          "image_url": "https://cdn.shopify.com/s/files/1/0892/3516/1393/files/6D2E05FD-067B-402C-B668-90D069FE2A29_1_201_a.jpg?v=1768874481",
+          "description": "The M-Log is our signature classic longboard. With inspiration taken from a variety of shapers from the refined classic 60’s era New Zealand longboards. Parallel pulled in nose outline with a smooth rail outline blending a slight hip in the tail third. Soft rolled bottom with nose concave. The rails are pinched 50/50 without being to knifed.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Versatile Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0892/3516/1393/files/7DAC9E4B-7F64-4BF6-8B40-13E42101B0EA_1_201_a_50d70d7f-60f0-498d-923c-e5199bcbd6a9.jpg?v=1768873540",
+          "description": "I designed this board years ago when the Twin Keel Retro fish craze was on. So first thing I did was put five boxes in it so it could be ridden as a Twin, Quad or Thruster. Instantly more options. The rocker is low but with the tips slightly flipped. The bottom is a single to double concave with the Vee starting at the mid point and running back out the tail, the single concave fades out as the double Vee concave comes into full effect between the riders feet. This makes a big board feel free and responsive. The rails are modern and tucked under with hard edges through the tail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Poker Face",
+          "image_url": "https://cdn.shopify.com/s/files/1/0892/3516/1393/files/PokerFace2.gif?v=1761688727",
+          "description": "The Poker Face is our take on the popular mid-length or there about’s design. Easy paddler, smooth turns with plenty of performance designed in for tight turns and control when navigating the crowd.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Fusion",
+          "image_url": "https://cdn.shopify.com/s/files/1/0892/3516/1393/files/Fusion.png?v=1736972218",
+          "description": "The most popular all round longboard we have ever made. A new lease on life with refined template and bottom curve this board goes in anything. Low entry rocker with moderate curve throughout, flipped in the tail giving the board easy wave catching ability and off the tail surfing. Single nose concave running out to a vee with double concaves. 60/40 rails bevelled forward bottom rails in the nose and hard edges in the tail.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "D-Log",
+          "image_url": "https://cdn.shopify.com/s/files/1/0892/3516/1393/files/6DEB4DE8-4AFF-4CC1-A2F6-10E6943D54B1_1_201_a.jpg?v=1768874409",
+          "description": "This board is a collaboration between myself and Daniel Proctor wanting to make a modern log that performed in a variety of waves around the country. Perfect log for people who are tall and 90kg plus.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Fire Fly Log",
+          "image_url": "https://cdn.shopify.com/s/files/1/0892/3516/1393/files/FireFly2.png?v=1736910098",
+          "description": "The Fire Fly model is a modern progressive style log with classic involvement era lines. Designed to accommodate nose riding trim and off the tail surfing. As quick and responsive as a single fin log can be.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Gem",
+          "image_url": "https://cdn.shopify.com/s/files/1/0892/3516/1393/files/922D0C97-E1C8-4E71-9265-7701D3C381B2_1_201_a.jpg?v=1768873815",
+          "description": "A modern cruiser longboard with volume, heaps of paddle power and plenty of glide.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Egg",
+          "image_url": "https://cdn.shopify.com/s/files/1/0892/3516/1393/files/Egg4.png?v=1768873735",
+          "description": "Long before the Mid Length lip fuzz the Egg has always been a very versatile surfboard. The entry rocker is low and continuous as it accelerates out the tail. The mid point is behind centre giving the outline the egg ‘look’.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Twin Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0892/3516/1393/files/TwinPin3_81f07d72-c335-4e32-b931-0726a278c680.jpg?v=1736902871",
+          "description": "The Twin Pin has a smooth outline so it give the board a nice flow when on rail and through turns. Keeping the rocker moderate through out with a nice little beak nose distributing the volume chest forward for easy paddling and wave count high. The tail is pulled in for nice carving turns with control. The bottom is a light single concave blended into a V bottom with inset double concaves allowing the board to transition from rail to rail with ease.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Twin Fin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0892/3516/1393/files/TwinFinFish5_10.gif?v=1768872090",
+          "description": "Taking the design elements of the early keel fin fishes and adding some modern flair is what I'm into with these boards.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Foam Friends",
+          "image_url": "https://cdn.shopify.com/s/files/1/0892/3516/1393/files/foam_Friends.png?v=1768873160",
+          "description": "Foam Friends excels in small waves with a stable wide nose platform for easy wave entry combining a smooth curvy outline into a pin tail for extra bite and area behind the fins for control and release in small rippable sections, the full single concave gives it some zip, thruster/quad combo lets you choose the feel.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Foam Frenzal",
+          "image_url": "https://cdn.shopify.com/s/files/1/0892/3516/1393/files/Foam_Frenzal.jpg?v=1768873106",
+          "description": "The Foam Frenzy model is a combination of two popular Morris models. Blending the Foam Friends nose and B-side Tail. The forward outline provides easy paddling and increased wave count and the rounded square tail is perfectly suited to surfers wanting a more predictable transition through turns. A slight hip in the tail outline for pivot off the bottom and release in the lip.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Flying Kiwi",
+          "image_url": "https://cdn.shopify.com/s/files/1/0892/3516/1393/files/291E46EE-F24B-42E3-966D-ED01E9D64D3F_1_201_a.jpg?v=1768872698",
+          "description": "Designed as a small wave performance modern fish. The Flying Kiwi features an outline which is wider in the nose and tail with a slight parallel mid-section for drive and speed helping maintain forward drive in mushy flat sections. Perfect small to medium wave board if you're looking for one board to cover most conditions, this is the one. The thickness is shifted slightly forward of centre and the deck relatively flat, enabling added volume and increasing paddle and wave catching. While keeping the tail thickness and tail rails thinner for control and hold at speed. Tail shape is a curved swallow, also available with a flyer at the forward rail fin position.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Tom Thumb",
+          "image_url": "https://cdn.shopify.com/s/files/1/0892/3516/1393/files/TomThumb2.png?v=1768872519",
+          "description": "Designed to be a daily driver with added wave range. Smooth outline fuller in the nose with a slight hip in the tail providing a pivot point to drive and carve tight turns in the pocket. It’s a very versatile board for waves in the 2-5 Ft range. The thickness is shifted slightly forward of centre and the deck relatively flat forward of centre enabling added volume and increasing paddle and wave catching. While keeping the tail thickness and tail rails thinner for control and hold at speed. Tail shape is somewhere between a round and squash tail so we’re calling it a thumb tail. Made with either a Thruster set up or five fin option for more options.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Generation Why",
+          "image_url": "https://cdn.shopify.com/s/files/1/0892/3516/1393/files/GenerationWhy_e7b695aa-3afc-4464-b018-b8f09349c3a3.png?v=1739920806",
+          "description": "Performance shortboard designed for fast progressive surfing, tail slides, fins out, reo’s, airs, reverses and surfs on rail through carving round house cutties and in the barrel. This board is good in the 2-5 ft+ range, smooth outline with a slight hip in the tail. We’ve pushed the thickness forward and flattened deck distributing the volume forward making paddling and entry into waves easier. While keeping the tail thickness and rails thinner for control and hold at speed. Available as Round square, Swallow and Round Tail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "M-19",
+          "image_url": "https://cdn.shopify.com/s/files/1/0892/3516/1393/files/M-19_Shortboard_bd26b73d-c87a-4449-a40b-edb2165400bb.png?v=1768873252",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "B-Side",
+          "image_url": "https://cdn.shopify.com/s/files/1/0892/3516/1393/files/FC9ABA7C-D416-4950-857C-524CFB203788_1_201_a.jpg?v=1768872163",
+          "description": "The B-Side Model is the daily driver cuzzy bro to the M19. DNA taken from the M19 Hi-Performance Shortboard with a wider fuller nose and tail template and flatter deck. Performance in wide range of conditions. Slight hip in the tail outline for pivot off the bottom and release in the lip.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
