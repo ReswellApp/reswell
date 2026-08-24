@@ -70,14 +70,17 @@ import {
   getImpersonation,
 } from "@/lib/impersonation"
 import { reswellPackageFormFromDbRow } from "@/lib/sell-listing-fulfillment-flags"
-import {
-  normalizeBoardLengthInput,
-  normalizeTapeStyleInchesInput,
-} from "@/lib/board-measurements"
+import { normalizeTapeStyleInchesInput } from "@/lib/board-measurements"
 import { shippingPriceToFormValue } from "@/lib/sell-flow/shipping-price-to-form-value"
 import type { ListingPhotoSlot } from "@/lib/sell-flow/listing-photo-slot"
 import { scrollPublishValidationBannerIntoView } from "@/lib/sell-flow/scroll-section-into-view"
 import { validateFinListingForm } from "@/lib/sell-flow/validate-fin-listing-form"
+import {
+  applyFinReswellPackageDefaults,
+  FIN_RESWELL_DEFAULT_PACKAGE_HEIGHT_IN,
+  FIN_RESWELL_DEFAULT_PACKAGE_LENGTH_IN,
+  FIN_RESWELL_DEFAULT_PACKAGE_WIDTH_IN,
+} from "@/lib/fin-reswell-shipping-defaults"
 import { logSellFunnelEvent } from "@/lib/sell-flow/log-sell-funnel-event"
 import {
   SELL_SUBMIT_INTERRUPTED_MESSAGE,
@@ -185,9 +188,9 @@ const INITIAL_STATE: FinFormState = {
   localPickup: false,
   shippingMode: "reswell",
   shippingPrice: "",
-  reswellPackageLengthIn: "",
-  reswellPackageWidthIn: "",
-  reswellPackageHeightIn: "",
+  reswellPackageLengthIn: FIN_RESWELL_DEFAULT_PACKAGE_LENGTH_IN,
+  reswellPackageWidthIn: FIN_RESWELL_DEFAULT_PACKAGE_WIDTH_IN,
+  reswellPackageHeightIn: FIN_RESWELL_DEFAULT_PACKAGE_HEIGHT_IN,
   reswellPackageWeightLb: "",
   reswellPackageWeightOz: "",
   buyerOffers: true,
@@ -325,18 +328,30 @@ export default function SellFinsFlow({
   }, [removedImageIds])
 
   const restoreFormFromDraft = useCallback((snapshot: SellListingDraftFormSnapshot) => {
-    setForm((prev) => ({
-      ...prev,
-      ...(snapshot as Partial<FinFormState>),
-      brandId:
-        typeof snapshot.brandId === "string" ? snapshot.brandId : prev.brandId,
-      brandModelId:
-        typeof snapshot.brandModelId === "string" ? snapshot.brandModelId : prev.brandModelId,
-      locationLat:
-        typeof snapshot.locationLat === "number" ? snapshot.locationLat : prev.locationLat,
-      locationLng:
-        typeof snapshot.locationLng === "number" ? snapshot.locationLng : prev.locationLng,
-    }))
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        ...(snapshot as Partial<FinFormState>),
+        brandId:
+          typeof snapshot.brandId === "string" ? snapshot.brandId : prev.brandId,
+        brandModelId:
+          typeof snapshot.brandModelId === "string" ? snapshot.brandModelId : prev.brandModelId,
+        locationLat:
+          typeof snapshot.locationLat === "number" ? snapshot.locationLat : prev.locationLat,
+        locationLng:
+          typeof snapshot.locationLng === "number" ? snapshot.locationLng : prev.locationLng,
+      }
+      return {
+        ...next,
+        ...applyFinReswellPackageDefaults({
+          reswellPackageLengthIn: next.reswellPackageLengthIn,
+          reswellPackageWidthIn: next.reswellPackageWidthIn,
+          reswellPackageHeightIn: next.reswellPackageHeightIn,
+          reswellPackageWeightLb: next.reswellPackageWeightLb,
+          reswellPackageWeightOz: next.reswellPackageWeightOz,
+        }),
+      }
+    })
     setFlowStep("form")
     persistFinSellFlowStep("form")
   }, [])
@@ -509,7 +524,7 @@ export default function SellFinsFlow({
         localPickup: false,
         shippingMode,
         shippingPrice: shippingPriceToFormValue(listing.shipping_price),
-        ...loadedReswellPackage,
+        ...applyFinReswellPackageDefaults(loadedReswellPackage),
         buyerOffers:
           (listing as { buyer_offers_enabled?: boolean | null }).buyer_offers_enabled !== false,
       })
@@ -1382,6 +1397,33 @@ export default function SellFinsFlow({
                       value={form.shippingMode}
                       onChange={(mode) => setField("shippingMode", mode)}
                       allowPrivilegedModes={actorIsAdmin === true}
+                      reswellDetails={{
+                        originCity: form.locationCity,
+                        originState: form.locationState,
+                      }}
+                      reswellPackageSlot={
+                        <ReswellPackageDimensionsCard
+                          showHeading
+                          lengthPlaceholder="e.g. 10"
+                          className="rounded-lg border-border bg-background p-3 shadow-none sm:p-4"
+                          lengthIn={form.reswellPackageLengthIn}
+                          widthIn={form.reswellPackageWidthIn}
+                          heightIn={form.reswellPackageHeightIn}
+                          weightLb={form.reswellPackageWeightLb}
+                          weightOz={form.reswellPackageWeightOz}
+                          onLengthInChange={(v) =>
+                            setField("reswellPackageLengthIn", normalizeTapeStyleInchesInput(v))
+                          }
+                          onWidthInChange={(v) =>
+                            setField("reswellPackageWidthIn", normalizeTapeStyleInchesInput(v))
+                          }
+                          onHeightInChange={(v) =>
+                            setField("reswellPackageHeightIn", normalizeTapeStyleInchesInput(v))
+                          }
+                          onWeightLbChange={(v) => setField("reswellPackageWeightLb", v)}
+                          onWeightOzChange={(v) => setField("reswellPackageWeightOz", v)}
+                        />
+                      }
                       flatRateSlot={
                         <div className="space-y-2 rounded-lg border border-border bg-background p-4 sm:p-5">
                           <Label htmlFor="fin-shipping-price" className="text-sm font-semibold text-foreground">
@@ -1414,35 +1456,6 @@ export default function SellFinsFlow({
                   </div>
                 </div>
               </SellFormSection>
-
-              {form.shippingMode === "reswell" ? (
-                <SellFormSection
-                  sectionId="sell-fins-section-reswell-package"
-                  title="Reswell shipping: packed size & weight"
-                >
-                  <ReswellPackageDimensionsCard
-                    showHeading={false}
-                    lengthPlaceholder="e.g. 10"
-                    className="rounded-none border-0 bg-transparent p-0 shadow-none"
-                    lengthIn={form.reswellPackageLengthIn}
-                    widthIn={form.reswellPackageWidthIn}
-                    heightIn={form.reswellPackageHeightIn}
-                    weightLb={form.reswellPackageWeightLb}
-                    weightOz={form.reswellPackageWeightOz}
-                    onLengthInChange={(v) =>
-                      setField("reswellPackageLengthIn", normalizeBoardLengthInput(v))
-                    }
-                    onWidthInChange={(v) =>
-                      setField("reswellPackageWidthIn", normalizeTapeStyleInchesInput(v))
-                    }
-                    onHeightInChange={(v) =>
-                      setField("reswellPackageHeightIn", normalizeTapeStyleInchesInput(v))
-                    }
-                    onWeightLbChange={(v) => setField("reswellPackageWeightLb", v)}
-                    onWeightOzChange={(v) => setField("reswellPackageWeightOz", v)}
-                  />
-                </SellFormSection>
-              ) : null}
 
               <SellFormSection
                 sectionId="sell-fins-section-publish"

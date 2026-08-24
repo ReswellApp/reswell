@@ -4,6 +4,7 @@ export const ELASTICSEARCH_INDEXED_LISTING_SECTIONS = [
   "fins",
   "magazines",
   "wetsuits",
+  "apparel",
 ] as const
 
 export type ElasticsearchIndexedListingSection =

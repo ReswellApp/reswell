@@ -30,6 +30,8 @@ type SellShippingCostModeRadiosProps = {
     packageWeightLb?: string
     packageWeightOz?: string
   }
+  /** Packed size/weight fields nested under the Reswell option. */
+  reswellPackageSlot?: ReactNode
 }
 
 export function SellShippingCostModeRadios({
@@ -40,6 +42,7 @@ export function SellShippingCostModeRadios({
   reswellAvailable = true,
   flatRateSlot,
   reswellDetails,
+  reswellPackageSlot,
 }: SellShippingCostModeRadiosProps) {
   const reswellEnabled = reswellAvailable !== false
   const effectiveValue = (() => {
@@ -75,11 +78,10 @@ export function SellShippingCostModeRadios({
         }}
         className="space-y-2 sm:space-y-3"
       >
-        <label
-          htmlFor={`${idPrefix}-ship-mode-reswell`}
+        <div
           className={cn(
             "flex gap-2.5 rounded-lg border p-3 transition-colors sm:gap-3 sm:rounded-xl sm:p-5",
-            reswellEnabled ? "cursor-pointer" : "cursor-not-allowed opacity-60",
+            !reswellEnabled && "opacity-60",
             effectiveValue === "reswell"
               ? "border-foreground bg-background shadow-sm"
               : "border-border hover:border-foreground/30",
@@ -92,7 +94,13 @@ export function SellShippingCostModeRadios({
             disabled={!reswellEnabled}
           />
           <div className="min-w-0 flex-1 space-y-2 sm:space-y-3">
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <label
+              htmlFor={`${idPrefix}-ship-mode-reswell`}
+              className={cn(
+                "flex flex-wrap items-center gap-1.5 sm:gap-2",
+                reswellEnabled ? "cursor-pointer" : "cursor-not-allowed",
+              )}
+            >
               <span className="text-xs font-semibold leading-snug text-foreground sm:text-sm">
                 Have Reswell calculate the shipping cost for buyers
               </span>
@@ -102,7 +110,7 @@ export function SellShippingCostModeRadios({
               >
                 Recommended
               </Badge>
-            </div>
+            </label>
             <SmoothCollapse
               open={effectiveValue === "reswell" && reswellEnabled}
               className="duration-200"
@@ -115,6 +123,7 @@ export function SellShippingCostModeRadios({
                 packageHeightIn={reswellDetails?.packageHeightIn}
                 packageWeightLb={reswellDetails?.packageWeightLb}
                 packageWeightOz={reswellDetails?.packageWeightOz}
+                packageSlot={reswellPackageSlot}
               />
             </SmoothCollapse>
             {!reswellEnabled ? (
@@ -124,7 +133,7 @@ export function SellShippingCostModeRadios({
               </p>
             ) : null}
           </div>
-        </label>
+        </div>
 
         {allowPrivilegedModes ? (
           <>

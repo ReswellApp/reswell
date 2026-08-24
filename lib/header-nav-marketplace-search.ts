@@ -8,14 +8,19 @@ import { marketplaceBoardStyleBrowseHref } from "@/lib/utils/marketplace-style-q
 
 /** Marketplace-wide copy for main nav — same on every route. */
 export function headerNavSearchPlaceholder(_section?: string): string {
-  return "Search surfboards, fins, wetsuits or magazines…"
+  return "Search surfboards, fins, wetsuits or apparel…"
 }
 
 /** Listing sections queried by nav typeahead for a given scope token. */
 export function marketplaceSearchSuggestSections(section: string): string[] {
   const normalized = section.trim().toLowerCase()
   if (normalized === "new") return ["new"]
-  if (normalized === "fins" || normalized === "wetsuits" || normalized === "magazines") {
+  if (
+    normalized === "fins" ||
+    normalized === "wetsuits" ||
+    normalized === "magazines" ||
+    normalized === "apparel"
+  ) {
     return [normalized]
   }
   if (normalized === "surfboards") return ["surfboards"]
@@ -30,12 +35,18 @@ export type NavSearchSuggestSectionKey =
   | "fins"
   | "wetsuits"
   | "magazines"
+  | "apparel"
   | "marketplace"
 
 export function navSearchSuggestSectionKey(section: string): NavSearchSuggestSectionKey {
   const normalized = section.trim().toLowerCase()
   if (normalized === "new") return "new"
-  if (normalized === "fins" || normalized === "wetsuits" || normalized === "magazines") {
+  if (
+    normalized === "fins" ||
+    normalized === "wetsuits" ||
+    normalized === "magazines" ||
+    normalized === "apparel"
+  ) {
     return normalized
   }
   if (normalized === "surfboards") return "surfboards"

@@ -68,7 +68,7 @@ export function GiveawayEnterBrandDialog({
               onContinue(value)
             }}
           >
-            {isLoggedIn ? "List a surfboard" : "Sign up to enter"}
+            {isLoggedIn ? "List a surfboard" : "Sign up & list a surfboard to enter"}
           </Button>
         </div>
       </DialogContent>

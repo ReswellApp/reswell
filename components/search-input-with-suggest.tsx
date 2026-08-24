@@ -268,6 +268,7 @@ function listingSectionLabel(section: string) {
   if (section === "fins") return "Fin"
   if (section === "wetsuits") return "Wetsuit"
   if (section === "magazines") return "Magazine"
+  if (section === "apparel") return "Apparel"
   if (section === "new") return "Shop"
   return "Listing"
 }

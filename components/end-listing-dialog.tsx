@@ -61,7 +61,6 @@ export function EndListingDialog({
   const [choice, setChoice] = useState<EndChoice>(null)
   const [loading, setLoading] = useState(false)
   const [soldPriceUsd, setSoldPriceUsd] = useState<number | null>(null)
-  const [soldSurveyFinished, setSoldSurveyFinished] = useState(false)
   const markedSoldRef = useRef(false)
   const router = useRouter()
 
@@ -70,7 +69,6 @@ export function EndListingDialog({
     setChoice(null)
     setLoading(false)
     setSoldPriceUsd(null)
-    setSoldSurveyFinished(false)
   }
 
   function closeAndRefreshIfSold() {
@@ -96,7 +94,6 @@ export function EndListingDialog({
 
   function handleSurveyOpenChange(nextOpen: boolean) {
     if (!nextOpen) {
-      if (!soldSurveyFinished) return
       closeAndRefreshIfSold()
     }
   }
@@ -276,16 +273,12 @@ export function EndListingDialog({
       <Dialog open={open && step === "sold_survey"} onOpenChange={handleSurveyOpenChange}>
         <DialogContent
           className="max-h-[90vh] overflow-y-auto sm:max-w-lg"
-          showCloseButton={soldSurveyFinished}
           onOpenAutoFocus={(event) => event.preventDefault()}
           onFocusOutside={(event) => event.preventDefault()}
           onPointerDownOutside={(event) => event.preventDefault()}
           onInteractOutside={(event) => event.preventDefault()}
-          onEscapeKeyDown={(event) => {
-            if (!soldSurveyFinished) event.preventDefault()
-          }}
         >
-          <DialogHeader>
+          <DialogHeader className="pr-8">
             <DialogTitle>Congrats on the sale</DialogTitle>
             <DialogDescription>
               Where it sold, plus an optional tip and rating.
@@ -295,7 +288,6 @@ export function EndListingDialog({
             <MarkSoldFollowUp
               listingId={listingId}
               listingPriceUsd={followUpPriceUsd}
-              onFinished={() => setSoldSurveyFinished(true)}
               onClose={closeAndRefreshIfSold}
             />
           ) : null}

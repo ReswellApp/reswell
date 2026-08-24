@@ -106,6 +106,7 @@ import { friendlyListingPhotoErrorMessage } from "@/lib/utils/friendly-listing-p
 import {
   SELL_SUBMIT_INTERRUPTED_MESSAGE,
   isSellSubmitAbortError,
+  retryOnceOnSellSubmitAbort,
   sellActionErrorMessage,
   sellSubmitErrorMessage,
 } from "@/lib/sell-flow/sell-submit-error"
@@ -3252,41 +3253,53 @@ function SellPageContentInner({
                 }
               : {}),
           }
-          let { data: updated, error: updateError } = await supabase
-            .from("listings")
-            .update(updatePayload)
-            .eq("id", effectiveEditId)
-            .eq("user_id", user.id)
-            .select("slug")
-            .single()
-          if (updateError && isListingDimensionDisplaySchemaCacheError(updateError)) {
-            if (process.env.NODE_ENV === "development") {
-              console.warn(
-                "[sell] DB rejected legacy listing dimension columns; saved without them. Ensure migrations are applied.",
-              )
-            }
-            const retry = await supabase
+          const persistOwnerListingUpdate = async () => {
+            let { data: updated, error: updateError } = await supabase
               .from("listings")
-              .update({
-                ...withoutListingDimensionDisplayDbFields(editListingFields as Record<string, unknown>),
-                updated_at: new Date().toISOString(),
-                ...(publishingFromDraftRow
-                  ? {
-                      status: "active" as const,
-                      hidden_from_site: false,
-                      site_visibility_reason: null,
-                      slug: publishSlug ?? undefined,
-                    }
-                  : {}),
-              })
+              .update(updatePayload)
               .eq("id", effectiveEditId)
               .eq("user_id", user.id)
               .select("slug")
               .single()
-            updated = retry.data
-            updateError = retry.error
+            if (updateError && isListingDimensionDisplaySchemaCacheError(updateError)) {
+              if (process.env.NODE_ENV === "development") {
+                console.warn(
+                  "[sell] DB rejected legacy listing dimension columns; saved without them. Ensure migrations are applied.",
+                )
+              }
+              const retry = await supabase
+                .from("listings")
+                .update({
+                  ...withoutListingDimensionDisplayDbFields(editListingFields as Record<string, unknown>),
+                  updated_at: new Date().toISOString(),
+                  ...(publishingFromDraftRow
+                    ? {
+                        status: "active" as const,
+                        hidden_from_site: false,
+                        site_visibility_reason: null,
+                        slug: publishSlug ?? undefined,
+                      }
+                    : {}),
+                })
+                .eq("id", effectiveEditId)
+                .eq("user_id", user.id)
+                .select("slug")
+                .single()
+              updated = retry.data
+              updateError = retry.error
+            }
+            if (updateError) {
+              // Keep the raw abort so retryOnceOnSellSubmitAbort can catch it.
+              if (isSellSubmitAbortError(updateError)) throw updateError
+              throw new Error(sellSubmitErrorMessage(updateError, "Failed to update listing"))
+            }
+            return updated
           }
-          if (updateError) throw new Error(sellSubmitErrorMessage(updateError, "Failed to update listing"))
+          const updated = await retryOnceOnSellSubmitAbort(persistOwnerListingUpdate, {
+            onRetry: async () => {
+              await resolveClientSessionForMutation(supabase)
+            },
+          })
           listingSlug = updated?.slug ?? null
           listingId = effectiveEditId
           persistBoardCatalogSnapshot(effectiveEditId, user.id)

@@ -110,7 +110,6 @@ export function MarkSoldFollowUp({
     }
     if (reviewResult && "error" in reviewResult) {
       toast.error(reviewResult.error)
-      return false
     }
     return true
   }

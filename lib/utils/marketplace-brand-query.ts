@@ -18,6 +18,10 @@ const MARKETPLACE_SEARCH_NOISE_WORDS = new Set([
   "wetsuits",
   "magazine",
   "magazines",
+  "apparel",
+  "clothing",
+  "boardshort",
+  "boardshorts",
   "used",
   "new",
   "for",
@@ -72,12 +76,17 @@ const SECTION_INTENT_BY_TOKEN: Record<string, ElasticsearchIndexedListingSection
   magazines: "magazines",
   surfboard: "surfboards",
   surfboards: "surfboards",
+  apparel: "apparel",
+  clothing: "apparel",
+  boardshort: "apparel",
+  boardshorts: "apparel",
 }
 
 const SECTION_INTENT_PRIORITY: ElasticsearchIndexedListingSection[] = [
   "fins",
   "wetsuits",
   "magazines",
+  "apparel",
   "surfboards",
 ]
 
@@ -125,6 +134,8 @@ export function marketplaceSectionBrowseHref(
       return "/magazines"
     case "surfboards":
       return "/boards"
+    case "apparel":
+      return "/apparel"
     default:
       return null
   }

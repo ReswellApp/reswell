@@ -17,6 +17,7 @@ import {
   FIN_SYSTEM_OPTIONS,
 } from "@/lib/boards-browse-facets"
 import { listingBoardTypeDbValuesForFilter } from "@/lib/board-type-canonical"
+import { apparelKindLabel, apparelSizeLabel } from "@/lib/apparel-listing-config"
 import { LISTING_CONDITION_LABELS } from "@/lib/listing-labels"
 import { categoryIdsForBrowseBoardTypes } from "@/lib/utils/board-type-from-category-id"
 import { getElasticsearchClient } from "./client"
@@ -74,6 +75,10 @@ export type ListingSearchDoc = {
   wetsuit_thickness: string | null
   /** Wetsuit zip type slug (`listings.wetsuit_zip_type`). */
   wetsuit_zip_type: string | null
+  /** Apparel category slug (`listings.apparel_kind`). */
+  apparel_kind: string | null
+  /** Apparel size slug (`listings.apparel_size`). */
+  apparel_size: string | null
 }
 
 const INDEX_SETTINGS = {
@@ -135,12 +140,14 @@ const BROWSE_INDEX_PROPERTIES = {
   location: { type: "geo_point" as const },
 }
 
-/** Section-specific facet fields (magazines, wetsuits). Additive on existing indices. */
+/** Section-specific facet fields (magazines, wetsuits, apparel). Additive on existing indices. */
 const SECTION_INDEX_PROPERTIES = {
   magazine_year: { type: "integer" as const },
   wetsuit_size: { type: "keyword" as const },
   wetsuit_thickness: { type: "keyword" as const },
   wetsuit_zip_type: { type: "keyword" as const },
+  apparel_kind: { type: "keyword" as const },
+  apparel_size: { type: "keyword" as const },
 }
 
 const ADDITIVE_INDEX_PROPERTIES = {
@@ -288,6 +295,8 @@ export function buildListingAttrsText(input: {
   shipping_available?: boolean | null
   local_pickup?: boolean | null
   price?: number | null
+  apparel_kind?: string | null
+  apparel_size?: string | null
 }): string {
   const parts: string[] = []
   const push = (v: string | null | undefined) => {
@@ -349,6 +358,18 @@ export function buildListingAttrsText(input: {
   }
   if (input.local_pickup) {
     push("local pickup meetup")
+  }
+  if (input.apparel_kind) {
+    push("apparel clothing")
+    push(apparelKindLabel(input.apparel_kind) ?? input.apparel_kind.replace(/_/g, " "))
+    push(input.apparel_kind.replace(/_/g, " "))
+    if (input.apparel_kind === "t_shirt") push("tee tshirt t-shirt shirt")
+    if (input.apparel_kind === "boardshorts") push("board shorts trunks")
+    if (input.apparel_kind === "hat") push("cap beanie")
+  }
+  if (input.apparel_size) {
+    push(apparelSizeLabel(input.apparel_size) ?? input.apparel_size.replace(/_/g, " "))
+    push(input.apparel_size.replace(/_/g, " "))
   }
 
   return parts.join(" ").replace(/\s+/g, " ").trim()
@@ -823,6 +844,8 @@ export const LISTING_SEARCH_DOC_SELECT = `
   longitude,
   magazine_year,
   wetsuit_size,
+  apparel_kind,
+  apparel_size,
   hidden_from_site,
   archived_at,
   categories (name)
@@ -859,6 +882,8 @@ export type ListingSearchDocRow = {
   longitude?: number | string | null
   magazine_year?: number | null
   wetsuit_size?: string | null
+  apparel_kind?: string | null
+  apparel_size?: string | null
   hidden_from_site?: boolean | null
   archived_at?: string | null
   categories: { name: string | null } | null | { name: string | null }[]
@@ -918,6 +943,8 @@ export function listingRowToSearchDocFromRow(row: ListingSearchDocRow): ListingS
   const condition = row.condition ?? null
   const fin_system = row.fin_system ?? null
   const construction = row.construction ?? null
+  const apparel_kind = row.apparel_kind?.trim() || null
+  const apparel_size = row.apparel_size?.trim() || null
 
   return {
     id: row.id,
@@ -965,12 +992,16 @@ export function listingRowToSearchDocFromRow(row: ListingSearchDocRow): ListingS
       shipping_available,
       local_pickup,
       price,
+      apparel_kind,
+      apparel_size,
     }),
     magazine_year: toFiniteNumber(row.magazine_year),
     wetsuit_size: row.wetsuit_size?.trim() || null,
     // Thickness / zip were dropped from `listings`; keep ES fields null for mapping compat.
     wetsuit_thickness: null,
     wetsuit_zip_type: null,
+    apparel_kind,
+    apparel_size,
     ...(lat != null && lon != null ? { location: { lat, lon } } : {}),
   }
 }

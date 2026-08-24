@@ -1,7 +1,7 @@
 "use client"
 
+import type { ReactNode } from "react"
 import Link from "next/link"
-import { Switch } from "@/components/ui/switch"
 import { UpsMark } from "@/components/features/sell/carrier-mark-icons"
 import { cn } from "@/lib/utils"
 
@@ -14,6 +14,8 @@ export type SellReswellCalculatedShippingDetailsProps = {
   packageWeightLb?: string
   packageWeightOz?: string
   className?: string
+  /** Packed size/weight fields shown under the Reswell option (e.g. fins). */
+  packageSlot?: ReactNode
 }
 
 function formatOriginLabel(city?: string, state?: string): string | null {
@@ -41,8 +43,8 @@ function formatPackageSummary(input: {
 }
 
 /**
- * Reverb-style details under “Have Reswell calculate shipping”: origin copy,
- * estimated package data, and UPS label handoff.
+ * Details under “Have Reswell calculate shipping”: origin copy, packed-size
+ * fields or a package summary, and UPS label handoff.
  */
 export function SellReswellCalculatedShippingDetails({
   originCity,
@@ -53,6 +55,7 @@ export function SellReswellCalculatedShippingDetails({
   packageWeightLb,
   packageWeightOz,
   className,
+  packageSlot,
 }: SellReswellCalculatedShippingDetailsProps) {
   const origin = formatOriginLabel(originCity, originState)
   const packageSummary = formatPackageSummary({
@@ -84,35 +87,18 @@ export function SellReswellCalculatedShippingDetails({
         </Link>
       </p>
 
-      <div className="rounded-lg border border-listingHeart/20 bg-listingHeart/[0.06] px-2.5 py-2 sm:rounded-xl sm:px-3.5 sm:py-3">
-        <div className="flex items-start gap-2 sm:gap-3">
-          <Switch
-            checked
-            disabled
-            aria-label="Use Reswell package data"
-            className="mt-0.5 shrink-0 origin-top-left scale-90 data-[state=checked]:bg-listingHeart sm:scale-100"
-          />
-          <div className="min-w-0 space-y-0.5">
-            <p className="text-xs font-semibold text-foreground sm:text-sm">
-              Use Reswell package data
-            </p>
-            <p className="text-xs leading-snug text-muted-foreground sm:text-sm sm:leading-relaxed">
-              {packageSummary ? (
-                packageSummary
-              ) : (
-                <>
-                  Estimated from your board dimensions
-                  <span className="hidden sm:inline">
-                    {" "}
-                    — no measuring tape needed
-                  </span>
-                  .
-                </>
-              )}
-            </p>
-          </div>
-        </div>
-      </div>
+      {packageSlot ? (
+        <div className="pt-0.5">{packageSlot}</div>
+      ) : packageSummary ? (
+        <p className="text-xs leading-snug text-muted-foreground sm:text-sm sm:leading-relaxed">
+          <span className="font-semibold text-foreground">Package </span>
+          {packageSummary}
+        </p>
+      ) : (
+        <p className="text-xs leading-snug text-muted-foreground sm:text-sm sm:leading-relaxed">
+          Enter the outer box you&apos;ll ship in so buyers see an accurate rate.
+        </p>
+      )}
 
       <div className="flex items-start gap-2 sm:gap-3">
         <UpsMark className="mt-0.5 scale-90 sm:scale-100" />
@@ -121,8 +107,7 @@ export function SellReswellCalculatedShippingDetails({
           <span className="sm:hidden"> Label emailed when it sells.</span>
           <span className="hidden sm:inline">
             {" "}
-            UPS provides strong rates for board packs like this. We&apos;ll email you next
-            steps about your label when this listing sells.
+            We&apos;ll email you next steps about your label when this listing sells.
           </span>
         </p>
       </div>

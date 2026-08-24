@@ -299,8 +299,17 @@ const nextConfig = {
   },
 }
 
-export default withPostHogConfig(withBundleAnalyzer(nextConfig), {
-  personalApiKey: process.env.POSTHOG_API_KEY,
-  projectId: process.env.POSTHOG_PROJECT_ID,
-  host: 'https://us.posthog.com',
-})
+const analyzed = withBundleAnalyzer(nextConfig)
+
+const posthogApiKey = process.env.POSTHOG_API_KEY
+const posthogProjectId = process.env.POSTHOG_PROJECT_ID
+
+// Source-map upload is production-only. Skip the wrapper when credentials
+// are missing so `next dev` still boots without POSTHOG_PROJECT_ID.
+export default posthogApiKey && posthogProjectId
+  ? withPostHogConfig(analyzed, {
+      personalApiKey: posthogApiKey,
+      projectId: posthogProjectId,
+      host: 'https://us.posthog.com',
+    })
+  : analyzed

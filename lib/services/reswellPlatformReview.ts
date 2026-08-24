@@ -33,10 +33,28 @@ export async function submitReswellPlatformReviewService(
   })
 
   if (error || !data) {
+    console.error("[submitReswellPlatformReview] upsert failed", {
+      userId,
+      message: error?.message ?? "no row returned",
+    })
     return { ok: false, error: "Could not save your review. Please try again." }
   }
 
   return { ok: true, review: data, isUpdate: !!existing }
+}
+
+/** Written text is optional in the sold flow; the table still requires a non-empty description. */
+const SOLD_FLOW_STAR_ONLY_REVIEW = "Rated Reswell after selling a listing."
+
+function resolveSoldFlowReviewDescription(
+  submitted: string,
+  existingDescription?: string | null,
+): string {
+  const trimmed = submitted.trim()
+  if (trimmed.length > 0) return trimmed
+  const existing = existingDescription?.trim() ?? ""
+  if (existing.length > 0) return existing
+  return SOLD_FLOW_STAR_ONLY_REVIEW
 }
 
 export async function submitSoldFlowReswellReviewService(
@@ -45,9 +63,10 @@ export async function submitSoldFlowReswellReviewService(
   input: SoldFlowReswellReviewInput,
 ): Promise<SubmitResult> {
   const fullName = await getReswellReviewAuthorName(supabase, userId)
+  const { data: existing } = await getReswellPlatformReviewByUserId(supabase, userId)
   return submitReswellPlatformReviewService(supabase, userId, {
     fullName,
-    description: input.description,
+    description: resolveSoldFlowReviewDescription(input.description, existing?.description),
     rating: input.rating,
   })
 }
