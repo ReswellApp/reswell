@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { getSafeRouteUser } from "@/lib/auth/get-safe-server-user"
-import { fetchOwnedListingForEdit } from "@/lib/db/listingEdit"
-import { IMPERSONATION_COOKIE, parseImpersonationCookie } from "@/lib/impersonation"
+import { fetchListingForEditById, fetchOwnedListingForEdit } from "@/lib/db/listingEdit"
+import {
+  IMPERSONATION_COOKIE,
+  impersonationCookieOptions,
+  parseImpersonationCookie,
+  serializeImpersonationCookie,
+} from "@/lib/impersonation"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 
 const listingIdParamSchema = z.string().uuid("Invalid listing id")
 
@@ -30,24 +36,54 @@ export async function GET(
       ? parseImpersonationCookie(impersonationRaw)
       : null
 
-    let ownerUserId = user.id
-    let listing = await fetchOwnedListingForEdit(supabase, idParsed.data, ownerUserId)
+    let listing = await fetchOwnedListingForEdit(supabase, idParsed.data, user.id)
+    let impersonationCookieToSet: ReturnType<typeof serializeImpersonationCookie> | null = null
+    let actorIsAdmin = false
 
-    if (!listing && impersonation) {
+    if (!listing) {
       const { data: profile } = await supabase
         .from("profiles")
         .select("is_admin")
         .eq("id", user.id)
         .maybeSingle()
 
-      if (profile?.is_admin === true) {
-        ownerUserId = impersonation.userId
-        listing = await fetchOwnedListingForEdit(supabase, idParsed.data, ownerUserId)
+      actorIsAdmin = profile?.is_admin === true
+      if (actorIsAdmin) {
+        if (impersonation) {
+          listing = await fetchOwnedListingForEdit(supabase, idParsed.data, impersonation.userId)
+        }
+        if (!listing) {
+          try {
+            listing = await fetchListingForEditById(createServiceRoleClient(), idParsed.data)
+          } catch {
+            listing = null
+          }
+        }
       }
     }
 
     if (!listing) {
       return NextResponse.json({ error: "Listing not found" }, { status: 404 })
+    }
+
+    const ownerUserId = listing.user_id
+    if (actorIsAdmin && ownerUserId && ownerUserId !== user.id) {
+      const { data: sellerProfile } = await supabase
+        .from("profiles")
+        .select("display_name, email")
+        .eq("id", ownerUserId)
+        .maybeSingle()
+      impersonationCookieToSet = serializeImpersonationCookie({
+        userId: ownerUserId,
+        displayName:
+          typeof sellerProfile?.display_name === "string" && sellerProfile.display_name.trim()
+            ? sellerProfile.display_name.trim()
+            : impersonation?.displayName || "User",
+        email:
+          typeof sellerProfile?.email === "string"
+            ? sellerProfile.email
+            : impersonation?.email ?? null,
+      })
     }
 
     const ok = NextResponse.json(
@@ -75,6 +111,13 @@ export async function GET(
         partitioned: cookie.partitioned,
       })
     })
+    if (impersonationCookieToSet) {
+      ok.cookies.set(
+        IMPERSONATION_COOKIE,
+        impersonationCookieToSet,
+        impersonationCookieOptions(),
+      )
+    }
     return ok
   } catch {
     return NextResponse.json({ error: "Request failed" }, { status: 500 })

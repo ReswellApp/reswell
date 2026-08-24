@@ -77,6 +77,10 @@ import {
   clearImpersonationStorageIfCookieMissing,
   getImpersonation,
 } from "@/lib/impersonation"
+import {
+  ensureImpersonationForListingOwner,
+  syncClientImpersonationForListingOwner,
+} from "@/lib/utils/admin-impersonation-for-listing"
 import { reswellPackageFormFromDbRow } from "@/lib/sell-listing-fulfillment-flags"
 import {
   normalizeBoardLengthInput,
@@ -320,8 +324,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
   })
 
   const hydrateApparelEdit = useCallback(
-    (listing: OwnedListingForEditRow) => {
-      const imp = getImpersonation()
+    async (listing: OwnedListingForEditRow) => {
 
       if ((listing as { status?: string }).status === "sold") {
         toast.message("This listing has sold — it can't be edited.")
@@ -341,9 +344,7 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       }
 
       setEditListingOwnerId(listing.user_id as string)
-      if (imp && imp.userId !== listing.user_id) {
-        clearImpersonation()
-      }
+      await syncClientImpersonationForListingOwner(String(listing.user_id ?? ""))
 
       const loadedReswellPackage = reswellPackageFormFromDbRow(
         listing as {
@@ -772,14 +773,16 @@ export default function SellApparelFlow({ editListingId = null }: { editListingI
       const adminImpersonatesListingOwner = Boolean(
         editId &&
           editListingOwnerId &&
-          listingImpersonation &&
-          listingImpersonation.userId === editListingOwnerId &&
+          submitActorIsAdmin &&
           user.id !== editListingOwnerId,
       )
 
       if (editId) {
         const ownerEditsOwnListing = user.id === editListingOwnerId
         if (adminImpersonatesListingOwner) {
+          if (editListingOwnerId) {
+            await ensureImpersonationForListingOwner(editListingOwnerId)
+          }
           const imageOps = payload.images.map((img, index) => ({
             id: img.id,
             url: img.url,

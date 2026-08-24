@@ -1,4 +1,4 @@
-import { isSellSubmitAbortError } from "@/lib/sell-flow/sell-submit-error"
+import { retryOnceOnSellSubmitAbort } from "@/lib/sell-flow/sell-submit-error"
 
 export type ImpersonatedListingImagePayload = {
   url: string
@@ -19,16 +19,8 @@ export type ImpersonatedListingVideoPayload = {
 async function fetchImpersonateListingJson(
   input: RequestInfo | URL,
   init: RequestInit,
-  attempt = 0,
 ): Promise<Response> {
-  try {
-    return await fetch(input, init)
-  } catch (error) {
-    if (attempt < 1 && isSellSubmitAbortError(error)) {
-      return fetchImpersonateListingJson(input, init, attempt + 1)
-    }
-    throw error
-  }
+  return retryOnceOnSellSubmitAbort(() => fetch(input, init))
 }
 
 export async function createImpersonatedListingViaApi(params: {

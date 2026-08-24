@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { IMPERSONATION_COOKIE } from "@/lib/impersonation"
+import {
+  IMPERSONATION_COOKIE,
+  impersonationCookieOptions,
+  serializeImpersonationCookie,
+} from "@/lib/impersonation"
 
 async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
   const {
@@ -26,21 +30,42 @@ export async function POST(request: NextRequest) {
   }
 
   const { userId, displayName, email } = await request.json()
-  if (!userId) {
+  if (!userId || typeof userId !== "string") {
     return NextResponse.json({ error: "Missing userId" }, { status: 400 })
   }
 
-  const cookieValue = JSON.stringify({ userId, displayName: displayName || "User", email: email || null })
+  let resolvedDisplayName = typeof displayName === "string" && displayName.trim() ? displayName.trim() : ""
+  let resolvedEmail = typeof email === "string" ? email : null
+  if (!resolvedDisplayName || resolvedEmail == null) {
+    const { data: targetProfile } = await supabase
+      .from("profiles")
+      .select("display_name, email")
+      .eq("id", userId)
+      .maybeSingle()
+    if (!resolvedDisplayName) {
+      resolvedDisplayName =
+        typeof targetProfile?.display_name === "string" && targetProfile.display_name.trim()
+          ? targetProfile.display_name.trim()
+          : "User"
+    }
+    if (resolvedEmail == null && typeof targetProfile?.email === "string") {
+      resolvedEmail = targetProfile.email
+    }
+  }
 
-  const res = NextResponse.json({ success: true, userId, displayName: displayName || "User", email: email || null })
-  res.cookies.set(IMPERSONATION_COOKIE, cookieValue, {
-    path: "/",
-    maxAge: 60 * 60 * 4, // 4 hours
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    // Sell-flow Save reads this via document.cookie to choose the impersonation API.
-    httpOnly: false,
+  const cookieValue = serializeImpersonationCookie({
+    userId,
+    displayName: resolvedDisplayName || "User",
+    email: resolvedEmail,
   })
+
+  const res = NextResponse.json({
+    success: true,
+    userId,
+    displayName: resolvedDisplayName || "User",
+    email: resolvedEmail,
+  })
+  res.cookies.set(IMPERSONATION_COOKIE, cookieValue, impersonationCookieOptions())
   return res
 }
 
@@ -52,9 +77,6 @@ export async function DELETE() {
   }
 
   const res = NextResponse.json({ success: true })
-  res.cookies.set(IMPERSONATION_COOKIE, "", {
-    path: "/",
-    maxAge: 0,
-  })
+  res.cookies.set(IMPERSONATION_COOKIE, "", impersonationCookieOptions(0))
   return res
 }

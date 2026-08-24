@@ -82,14 +82,7 @@ async function putImpersonatedListing(request: NextRequest) {
   }
 
   const raw = request.cookies.get(IMPERSONATION_COOKIE)?.value
-  if (!raw) {
-    return NextResponse.json({ error: "Not impersonating" }, { status: 400 })
-  }
-
-  const impersonation = parseImpersonationCookie(raw)
-  if (!impersonation) {
-    return NextResponse.json({ error: "Invalid impersonation cookie" }, { status: 400 })
-  }
+  const impersonation = raw ? parseImpersonationCookie(raw) : null
 
   let service
   try {
@@ -149,15 +142,11 @@ async function putImpersonatedListing(request: NextRequest) {
     return NextResponse.json({ error: "Listing not found" }, { status: 404 })
   }
 
-  if (existingListing.user_id !== impersonation.userId) {
-    return NextResponse.json(
-      {
-        error:
-          "Impersonation target does not own this listing. Re-impersonate that listing's seller from admin, or clear impersonation if you are signed in as the seller.",
-      },
-      { status: 403 },
-    )
-  }
+  /**
+   * Admins may save any listing. A matching impersonation cookie is optional —
+   * stale or missing cookies were failing Save after admin → Edit listing.
+   */
+  const sellerUserId = existingListing.user_id
 
   const { slug: _listingSlugFromBody, ...listingFields } = listingData as Record<string, unknown> & {
     slug?: unknown
@@ -313,7 +302,7 @@ async function putImpersonatedListing(request: NextRequest) {
   if (listingSection === "surfboards" && catalog_snapshot && typeof catalog_snapshot === "object") {
     const r = await upsertUserListingBoardModelDataFromSellForm(service, {
       listingId,
-      sellerUserId: impersonation.userId,
+      sellerUserId,
       form: catalog_snapshot,
     })
     if (!r.ok) {
@@ -323,12 +312,18 @@ async function putImpersonatedListing(request: NextRequest) {
 
   const { data: sellerProfile } = await service
     .from("profiles")
-    .select("display_name")
-    .eq("id", existingListing.user_id)
+    .select("display_name, email")
+    .eq("id", sellerUserId)
     .single()
 
   const sellerDisplayName =
     (sellerProfile?.display_name && String(sellerProfile.display_name).trim()) || "Seller"
+  const sellerEmail =
+    (typeof sellerProfile?.email === "string" && sellerProfile.email.trim()
+      ? sellerProfile.email.trim()
+      : null) ??
+    impersonation?.email ??
+    null
 
   const slug = slugTrim
 
@@ -350,7 +345,7 @@ async function putImpersonatedListing(request: NextRequest) {
     const primary = images.find((img) => img.url?.trim())
     void trackKlaviyoListingCreated({
       sellerUserId: existingListing.user_id,
-      sellerEmail: impersonation.email,
+      sellerEmail,
       listingId,
       title:
         typeof listingFields.title === "string" && listingFields.title.trim()
@@ -374,7 +369,7 @@ async function putImpersonatedListing(request: NextRequest) {
     void trackFirstTimeSellerForListingIfNeeded(service, {
       listingId,
       sellerUserId: existingListing.user_id,
-      sellerEmail: impersonation.email,
+      sellerEmail,
     })
     after(() => {
       void applyPublishedListingSideEffects(service, listingId, existingListing.user_id).catch(

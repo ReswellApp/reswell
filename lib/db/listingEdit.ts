@@ -85,6 +85,14 @@ export type OwnedListingForEditRow = {
     | null
 }
 
+const LISTING_FOR_EDIT_SELECT = `
+  *,
+  listing_images (id, url, thumbnail_url, is_primary, sort_order),
+  listing_videos (id, url, thumbnail_url, content_type, duration_seconds, byte_size, sort_order),
+  user_listing_board_model_data ( model_name, catalog_model_slug, catalog_brand_slug ),
+  brand_models ( id, name, brands ( slug ) )
+`
+
 /** Listing row + images for the sell-flow edit hydrator (owner-scoped). */
 export async function fetchOwnedListingForEdit(
   supabase: SupabaseClient,
@@ -96,17 +104,27 @@ export async function fetchOwnedListingForEdit(
 
   const { data, error } = await supabase
     .from("listings")
-    .select(
-      `
-      *,
-      listing_images (id, url, thumbnail_url, is_primary, sort_order),
-      listing_videos (id, url, thumbnail_url, content_type, duration_seconds, byte_size, sort_order),
-      user_listing_board_model_data ( model_name, catalog_model_slug, catalog_brand_slug ),
-      brand_models ( id, name, brands ( slug ) )
-    `,
-    )
+    .select(LISTING_FOR_EDIT_SELECT)
     .eq("id", trimmed)
     .eq("user_id", userId)
+    .maybeSingle()
+
+  if (error || !data?.id) return null
+  return data as OwnedListingForEditRow
+}
+
+/** Listing row by id only — admin / service-role edit hydration. */
+export async function fetchListingForEditById(
+  supabase: SupabaseClient,
+  listingId: string,
+): Promise<OwnedListingForEditRow | null> {
+  const trimmed = listingId.trim()
+  if (!trimmed) return null
+
+  const { data, error } = await supabase
+    .from("listings")
+    .select(LISTING_FOR_EDIT_SELECT)
+    .eq("id", trimmed)
     .maybeSingle()
 
   if (error || !data?.id) return null

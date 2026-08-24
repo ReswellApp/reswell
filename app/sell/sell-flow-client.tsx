@@ -81,6 +81,11 @@ import {
   type ImpersonationData,
 } from "@/lib/impersonation"
 import { updateImpersonatedListingViaApi } from "@/lib/utils/admin-impersonated-listing-create"
+import {
+  adminIsEditingAnotherUsersListing,
+  ensureImpersonationForListingOwner,
+  syncClientImpersonationForListingOwner,
+} from "@/lib/utils/admin-impersonation-for-listing"
 import type { IndexBoardModelSelection } from "@/components/index-board-model-combobox"
 import { SurfboardTitleIndexInput } from "@/components/surfboard-title-index-input"
 import {
@@ -1193,9 +1198,8 @@ function SellPageContentInner({
   )
 
   const hydrateBoardEdit = useCallback(
-    (listing: OwnedListingForEditRow) => {
+    async (listing: OwnedListingForEditRow) => {
       clearImpersonationStorageIfCookieMissing()
-      const imp = getActiveImpersonationClient()
 
       if ((listing as { status?: string }).status === "sold") {
         toast.message("This listing has sold — it can’t be edited.")
@@ -1222,13 +1226,7 @@ function SellPageContentInner({
           replaceSellDraftEditUrl("surfboards", String(listing.id))
         }
       }
-      // Drop a stale impersonation target only. owned-edit's `userId` is the listing
-      // owner (the impersonated seller), not the admin session — do not treat it as
-      // "editing your own listing" or Save will lose the impersonation cookie.
-      if (imp && imp.userId !== listing.user_id) {
-        clearImpersonation()
-        setImpersonation(null)
-      }
+      setImpersonation(await syncClientImpersonationForListingOwner(String(listing.user_id ?? "")))
       const loadedFulfillment = boardFulfillmentFromFlags(
         listing.local_pickup,
         listing.shipping_available
@@ -2951,13 +2949,11 @@ function SellPageContentInner({
       const listingImpersonation: ImpersonationData | null =
         submitActorIsAdmin && storedImpersonation ? storedImpersonation : null
 
-      const adminImpersonationEditListing = Boolean(
-        editId &&
-          editListingOwnerId &&
-          listingImpersonation &&
-          listingImpersonation.userId === editListingOwnerId &&
-          user.id !== editListingOwnerId,
-      )
+      const adminImpersonationEditListing = adminIsEditingAnotherUsersListing({
+        actorIsAdmin: submitActorIsAdmin,
+        actorUserId: user.id,
+        listingOwnerId: editListingOwnerId,
+      })
 
       const submitForm = formData
 
@@ -3189,11 +3185,11 @@ function SellPageContentInner({
         }
         const ownerEditsOwnListing =
           isLocalOnlyServerDraftSubmit || user.id === editListingOwnerId
-        const adminImpersonatesListingOwner =
-          !!editId &&
-          !!listingImpersonation &&
-          listingImpersonation.userId === editListingOwnerId &&
-          user.id !== editListingOwnerId
+        const adminEditsOtherListing = adminIsEditingAnotherUsersListing({
+          actorIsAdmin: submitActorIsAdmin,
+          actorUserId: user.id,
+          listingOwnerId: editListingOwnerId,
+        })
 
         /** Persists surfboard dims on `listings.dimensions` (see migration `20260815120000_listings_dimensions_column.sql`). */
         const dimensionsStored = listingDimensionsColumnFromSurfboardSellForm(fd)
@@ -3309,10 +3305,12 @@ function SellPageContentInner({
             publishedDraftNeedsSideEffects = true
           }
           clearSellServerDraftListingId("surfboards")
-        } else if (adminImpersonatesListingOwner) {
-          if (!editId) {
+        } else if (adminEditsOtherListing) {
+          if (!editId || !editListingOwnerId) {
             throw new Error("Listing is still loading. Try again in a moment.")
           }
+          await ensureImpersonationForListingOwner(editListingOwnerId)
+          setImpersonation(getActiveImpersonationClient())
           usedImpersonationListingApi = true
           goSubmitStep(0)
           const imageOps: {

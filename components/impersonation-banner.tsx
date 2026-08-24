@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client"
 import {
   getActiveImpersonationClient,
   clearImpersonation,
+  IMPERSONATION_CHANGED_EVENT,
   type ImpersonationData,
 } from "@/lib/impersonation"
 import { HEADER_AUTH_REFRESH_EVENT } from "@/lib/auth/header-auth-refresh"
@@ -62,6 +63,7 @@ export function ImpersonationBanner() {
       void sync()
     }
     window.addEventListener(HEADER_AUTH_REFRESH_EVENT, onAuthRefresh)
+    window.addEventListener(IMPERSONATION_CHANGED_EVENT, onAuthRefresh)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(() => {
@@ -69,6 +71,7 @@ export function ImpersonationBanner() {
     })
     return () => {
       window.removeEventListener(HEADER_AUTH_REFRESH_EVENT, onAuthRefresh)
+      window.removeEventListener(IMPERSONATION_CHANGED_EVENT, onAuthRefresh)
       subscription.unsubscribe()
     }
   }, [supabase, sync])

@@ -69,6 +69,10 @@ import {
   clearImpersonationStorageIfCookieMissing,
   getImpersonation,
 } from "@/lib/impersonation"
+import {
+  ensureImpersonationForListingOwner,
+  syncClientImpersonationForListingOwner,
+} from "@/lib/utils/admin-impersonation-for-listing"
 import { reswellPackageFormFromDbRow } from "@/lib/sell-listing-fulfillment-flags"
 import { normalizeTapeStyleInchesInput } from "@/lib/board-measurements"
 import { shippingPriceToFormValue } from "@/lib/sell-flow/shipping-price-to-form-value"
@@ -448,8 +452,7 @@ export default function SellFinsFlow({
   )
 
   const hydrateFinEdit = useCallback(
-    (listing: OwnedListingForEditRow) => {
-      const imp = getImpersonation()
+    async (listing: OwnedListingForEditRow) => {
 
       if ((listing as { status?: string }).status === "sold") {
         toast.message("This listing has sold — it can't be edited.")
@@ -477,9 +480,7 @@ export default function SellFinsFlow({
           replaceSellDraftEditUrl("fins", String(listing.id))
         }
       }
-      if (imp && imp.userId !== listing.user_id) {
-        clearImpersonation()
-      }
+      await syncClientImpersonationForListingOwner(String(listing.user_id ?? ""))
 
       const loadedReswellPackage = reswellPackageFormFromDbRow(
         listing as {
@@ -941,8 +942,7 @@ export default function SellFinsFlow({
       const adminImpersonatesListingOwner = Boolean(
         editId &&
           editListingOwnerId &&
-          listingImpersonation &&
-          listingImpersonation.userId === editListingOwnerId &&
+          submitActorIsAdmin &&
           user.id !== editListingOwnerId,
       )
 
@@ -957,6 +957,9 @@ export default function SellFinsFlow({
           isLocalOnlyServerDraftSubmit || user.id === editListingOwnerId
 
         if (adminImpersonatesListingOwner) {
+          if (editListingOwnerId) {
+            await ensureImpersonationForListingOwner(editListingOwnerId)
+          }
           const imageOps = payload.images.map((img, index) => ({
             id: img.id,
             url: img.url,
