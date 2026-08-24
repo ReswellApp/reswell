@@ -80,6 +80,7 @@ import {
   getImpersonation,
   type ImpersonationData,
 } from "@/lib/impersonation"
+import { updateImpersonatedListingViaApi } from "@/lib/utils/admin-impersonated-listing-create"
 import type { IndexBoardModelSelection } from "@/components/index-board-model-combobox"
 import { SurfboardTitleIndexInput } from "@/components/surfboard-title-index-input"
 import {
@@ -738,7 +739,7 @@ function SellPageContentInner({
   )
   useEffect(() => {
     clearImpersonationStorageIfCookieMissing()
-    setImpersonation(getImpersonation())
+    setImpersonation(getActiveImpersonationClient())
   }, [])
 
   const [loading, setLoading] = useState(false)
@@ -1185,7 +1186,7 @@ function SellPageContentInner({
   const hydrateBoardEdit = useCallback(
     (listing: OwnedListingForEditRow) => {
       clearImpersonationStorageIfCookieMissing()
-      const imp = getImpersonation()
+      const imp = getActiveImpersonationClient()
 
       if ((listing as { status?: string }).status === "sold") {
         toast.message("This listing has sold — it can’t be edited.")
@@ -2878,17 +2879,28 @@ function SellPageContentInner({
         return
       }
 
+      // Sync readable cookie → localStorage; never wipe (cookie may be httpOnly).
       clearImpersonationStorageIfCookieMissing()
 
-      const { data: actorProfile } = await supabase
-        .from("profiles")
-        .select("is_admin")
-        .eq("id", user.id)
-        .maybeSingle()
-      const submitActorIsAdmin = actorProfile?.is_admin === true
-      setActorIsAdmin(submitActorIsAdmin)
+      let submitActorIsAdmin = actorIsAdmin === true || initialActorIsAdmin === true
+      try {
+        const { data: actorProfile, error: actorProfileError } = await supabase
+          .from("profiles")
+          .select("is_admin")
+          .eq("id", user.id)
+          .maybeSingle()
+        if (!actorProfileError && actorProfile) {
+          submitActorIsAdmin = actorProfile.is_admin === true
+          setActorIsAdmin(submitActorIsAdmin)
+        }
+      } catch (profileError) {
+        // Token-refresh aborts must not drop admin impersonation mid-save.
+        if (!isSellSubmitAbortError(profileError) && process.env.NODE_ENV === "development") {
+          console.warn("[sell] is_admin lookup:", profileError)
+        }
+      }
 
-      /** Only admins may use impersonation listing APIs; server also requires the HTTP cookie + target id. */
+      /** Cookie first, localStorage fallback — APIs still require the HTTP cookie. */
       let storedImpersonation = getActiveImpersonationClient()
       if (storedImpersonation && !submitActorIsAdmin) {
         clearImpersonation()
@@ -3165,6 +3177,7 @@ function SellPageContentInner({
           description: fd.description,
           price: parseFloat(fd.price),
           condition: fd.condition,
+          section: "surfboards" as const,
           category_id: fd.category,
           board_type: resolveListingBoardTypeFromCategory(fd.category, fd.boardType),
           dimensions: dimensionsStored,
@@ -3253,6 +3266,9 @@ function SellPageContentInner({
           }
           clearSellServerDraftListingId("surfboards")
         } else if (adminImpersonatesListingOwner) {
+          if (!editId) {
+            throw new Error("Listing is still loading. Try again in a moment.")
+          }
           usedImpersonationListingApi = true
           goSubmitStep(0)
           const imageOps: {
@@ -3289,27 +3305,21 @@ function SellPageContentInner({
           }
 
           goSubmitStep(1)
-          const res = await fetch("/api/admin/impersonate/update-listing", {
-            method: "PUT",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              listingId: editId,
-              listing: editListingFields,
-              removedImageIds,
-              images: imageOps,
-              removedVideoIds,
-              videos: readyVideo ? [readyVideo] : [],
-              catalog_snapshot: boardCatalogSnapshotFromSellForm(fd),
-              publishFromDraft: listingIsDraft,
-            }),
+          const updated = await updateImpersonatedListingViaApi({
+            listingId: editId,
+            listing: editListingFields,
+            removedImageIds,
+            images: imageOps,
+            removedVideoIds,
+            videos: readyVideo ? [readyVideo] : [],
+            catalog_snapshot: boardCatalogSnapshotFromSellForm(fd),
+            publishFromDraft: listingIsDraft,
           })
-          const data = await res.json()
-          if (!res.ok) {
-            throw new Error(sellActionErrorMessage(data.error || "Failed to update listing"))
+          if (!updated.ok) {
+            throw new Error(sellActionErrorMessage(updated.error || "Failed to update listing"))
           }
-          listingSlug = data.slug
-          if (data.published === true) {
+          listingSlug = updated.slug
+          if (updated.published === true) {
             setEditListingStatus("active")
           }
           goSubmitStep(2)
@@ -3388,7 +3398,11 @@ function SellPageContentInner({
               catalog_snapshot: boardCatalogSnapshotFromSellForm(fd),
             }),
           })
-          const data = await res.json()
+          const data = (await res.json().catch(() => ({}))) as {
+            error?: string
+            listing_id?: string
+            slug?: string
+          }
           if (!res.ok) {
             throw new Error(sellActionErrorMessage(data.error || "Failed to create listing"))
           }

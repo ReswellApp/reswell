@@ -52,6 +52,12 @@ function normalizeBoardFulfillmentMode(m: unknown): BoardFulfillmentChoice {
   return "pickup_only"
 }
 
+/** Values allowed by `listings_shipping_package_band_check` (compact / medium). */
+function shippingPackageBandForDb(bandId: string | null): string | null {
+  if (bandId === "shortboard_compact" || bandId === "shortboard_medium") return bandId
+  return null
+}
+
 
 /**
  * Persists packed box + weight for Reswell-calculated shipping.
@@ -107,7 +113,7 @@ export function reswellPackageFieldsToDb(fd: SellFulfillmentPersistInput): {
       shipping_packed_height_in: band.heightIn,
       shipping_packed_weight_oz: band.weightLb * 16,
       shipping_package_tier: tierId,
-      shipping_package_band: packBandId,
+      shipping_package_band: shippingPackageBandForDb(packBandId),
     }
   }
 
@@ -174,7 +180,9 @@ export function reswellPackageFieldsToDb(fd: SellFulfillmentPersistInput): {
     shipping_packed_height_in: H,
     shipping_packed_weight_oz: totalOz,
     shipping_package_tier: tierId,
-    shipping_package_band: parseSurfboardShippingPackBandId(fd.surfboardShippingPackBand),
+    shipping_package_band: shippingPackageBandForDb(
+      parseSurfboardShippingPackBandId(fd.surfboardShippingPackBand),
+    ),
   }
 }
 
