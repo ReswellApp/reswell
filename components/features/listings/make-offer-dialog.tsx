@@ -260,7 +260,7 @@ export function MakeOfferDialog({
                   <p className="line-clamp-2 text-sm font-semibold leading-snug">{listingTitle}</p>
                   <div className="space-y-1">
                     <Label className="text-[11px] font-medium text-muted-foreground sm:text-xs">
-                      Delivery
+                      Delivery method
                     </Label>
                     {methodLocked ? (
                       <div className="rounded-md border border-input bg-background px-2.5 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm">

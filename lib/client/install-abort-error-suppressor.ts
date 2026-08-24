@@ -1,4 +1,5 @@
 import { containsAbortErrorSignal, isAbortError, isBenignClientFetchError } from "@/lib/utils/is-abort-error"
+import { isStaleFileNotFoundError } from "@/lib/utils/is-stale-file-not-found-error"
 
 declare global {
   interface Window {
@@ -17,7 +18,13 @@ export function installAbortErrorSuppressor(): void {
       event instanceof PromiseRejectionEvent
         ? event.reason
         : event.error ?? event.message
-    if (!containsAbortErrorSignal(reason, event.message)) return
+    if (
+      !containsAbortErrorSignal(reason, event.message) &&
+      !isStaleFileNotFoundError(reason) &&
+      !isStaleFileNotFoundError(event.message)
+    ) {
+      return
+    }
     event.preventDefault()
     event.stopImmediatePropagation()
   }
@@ -41,7 +48,13 @@ export function installAbortErrorSuppressor(): void {
   const reportError = window.reportError?.bind(window)
   if (reportError) {
     window.reportError = (error: unknown) => {
-      if (isAbortError(error) || isBenignClientFetchError(error)) return
+      if (
+        isAbortError(error) ||
+        isBenignClientFetchError(error) ||
+        isStaleFileNotFoundError(error)
+      ) {
+        return
+      }
       reportError(error)
     }
   }
@@ -49,7 +62,12 @@ export function installAbortErrorSuppressor(): void {
   if (process.env.NODE_ENV !== "production") {
     const originalConsoleError = console.error
     console.error = function patchedConsoleError(...args: unknown[]): void {
-      if (containsAbortErrorSignal(...args)) return
+      if (
+        containsAbortErrorSignal(...args) ||
+        args.some((arg) => isStaleFileNotFoundError(arg))
+      ) {
+        return
+      }
       originalConsoleError.apply(console, args as Parameters<typeof console.error>)
     }
   }

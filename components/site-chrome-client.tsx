@@ -14,7 +14,6 @@ import { NavigationPageGate } from "@/components/navigation-page-gate"
 import { RouteProgressBar } from "@/components/route-progress-bar"
 import { AuthModalProvider } from "@/components/auth/auth-modal-context"
 import { ImpersonationBanner } from "@/components/impersonation-banner"
-import { ProfileCompletionRequiredDialog } from "@/components/auth/profile-completion-required-dialog"
 import { NewsletterPromoPopup } from "@/components/features/marketing/newsletter-promo-popup"
 import { GiveawayEntryBootstrap } from "@/components/features/giveaways/giveaway-entry-bootstrap"
 import {
@@ -109,7 +108,6 @@ export function SiteChromeClient({
     return (
       <AuthModalProvider>
         <div className="flex min-h-dvh flex-col">
-          <ProfileCompletionRequiredDialog />
           <GiveawayEntryBootstrap isLoggedIn={Boolean(headerAuth.user)} />
           <GiveawaySignupPopup serverUser={headerAuth.user} />
           <NewsletterPromoPopup serverUser={headerAuth.user} />
@@ -121,7 +119,6 @@ export function SiteChromeClient({
   }
   return (
     <AuthModalProvider>
-      <ProfileCompletionRequiredDialog />
       <GiveawayEntryBootstrap isLoggedIn={Boolean(headerAuth.user)} />
       <GiveawaySignupPopup serverUser={headerAuth.user} />
       <NewsletterPromoPopup serverUser={headerAuth.user} />

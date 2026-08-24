@@ -53,8 +53,10 @@ interface CheckoutClientProps {
   seller?: CheckoutSeller | null
   /** When paying an accepted offer, bypasses cart verification at payment. */
   offerId?: string | null
-  /** Delivery method agreed on the offer — locks checkout radios when set. */
-  lockedFulfillment?: "pickup" | "shipping" | null
+  /** Offer’s delivery method — preselects checkout radios. The buyer can still switch. */
+  suggestedFulfillment?: "pickup" | "shipping" | null
+  /** Listing ids whose displayed price is the accepted offer amount. */
+  acceptedOfferListingIds?: string[]
 }
 
 export function CheckoutClient({
@@ -66,10 +68,11 @@ export function CheckoutClient({
   initialAddresses,
   seller,
   offerId = null,
-  lockedFulfillment = null,
+  suggestedFulfillment = null,
+  acceptedOfferListingIds,
 }: CheckoutClientProps) {
   const isBundle = listings.length > 1
-  const offerFulfillmentLock = normalizeOfferFulfillment(lockedFulfillment)
+  const offerSuggestedFulfillment = normalizeOfferFulfillment(suggestedFulfillment)
   const listingSections = listings.map((l) => l.section)
   const copy =
     copyProp ?? peerCheckoutCopyFromSections(listingSections, listings.length)
@@ -98,8 +101,8 @@ export function CheckoutClient({
     : !!primaryListing.shipping_available
 
   const [method, setMethod] = useState<"pickup" | "shipping">(() => {
-    if (offerFulfillmentLock === "pickup" && canPick) return "pickup"
-    if (offerFulfillmentLock === "shipping" && canShip) return "shipping"
+    if (offerSuggestedFulfillment === "pickup" && canPick) return "pickup"
+    if (offerSuggestedFulfillment === "shipping" && canShip) return "shipping"
     if (canPick && !canShip) return "pickup"
     if (!canPick && canShip) return "shipping"
     return "pickup"
@@ -510,32 +513,16 @@ export function CheckoutClient({
               </div>
             ) : null}
 
-            {offerFulfillmentLock && (canPick || canShip) ? (
-              <div className="mb-10 rounded-[8px] border border-[#5574AD]/25 bg-[#5574AD]/[0.06] px-4 py-3.5">
-                <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Delivery method</h2>
-                <p className="mt-2 flex items-center gap-2 text-sm font-medium text-foreground">
-                  {offerFulfillmentLock === "pickup" ? (
-                    <>
-                      <MapPin className="h-4 w-4 shrink-0 text-neutral-600" aria-hidden />
-                      Local pickup
-                    </>
-                  ) : (
-                    <>
-                      <Truck className="h-4 w-4 shrink-0 text-neutral-600" aria-hidden />
-                      Pay for shipping
-                    </>
-                  )}
-                </p>
-                <p className="mt-1 text-xs leading-relaxed text-neutral-600">
-                  Locked from your accepted offer
-                  {offerFulfillmentLock === "pickup"
-                    ? " — you’ll arrange pickup with the seller."
-                    : " — enter your address below for the shipping rate."}
-                </p>
-              </div>
-            ) : canPick && canShip ? (
+            {canPick && canShip ? (
               <div className="mb-10 space-y-3">
                 <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Delivery method</h2>
+                {offerSuggestedFulfillment ? (
+                  <p className="text-[13px] leading-relaxed text-neutral-600">
+                    This offer was for{" "}
+                    {offerSuggestedFulfillment === "pickup" ? "local pickup" : "shipping"}. You can
+                    still choose either delivery method below.
+                  </p>
+                ) : null}
                 <RadioGroup
                   value={method}
                   onValueChange={(v) => setMethod(v as "pickup" | "shipping")}
@@ -764,6 +751,9 @@ export function CheckoutClient({
           appliedPromo={appliedPromo}
           promoError={promoError}
           promoApplying={promoApplying}
+          acceptedOfferListingIds={
+            acceptedOfferListingIds ?? (offerId ? listings.map((listing) => listing.id) : [])
+          }
         />
       </div>
     </div>

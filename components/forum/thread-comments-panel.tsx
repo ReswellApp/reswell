@@ -17,7 +17,7 @@ import { CommentLikeButton } from "@/components/forum/comment-like-button"
 import { LinkifiedText } from "@/components/forum/linkified-text"
 import { useSignInGate } from "@/components/auth/use-sign-in-gate"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { formatDistanceToNow } from "date-fns"
+import { formatDistanceToNowLabel, RelativeTime } from "@/components/ui/relative-time"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { profileMediaDisplaySrc } from "@/lib/public-media-display-src"
@@ -601,7 +601,7 @@ export function ThreadCommentsPanel({
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <span className="cursor-default text-xs text-muted-foreground tabular-nums">
-                          {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
+                          <RelativeTime iso={c.created_at} formatLabel={formatDistanceToNowLabel} />
                         </span>
                       </TooltipTrigger>
                       <TooltipContent side="top" className="text-xs">
@@ -734,7 +734,7 @@ export function ThreadCommentsPanel({
                                 <div className="flex flex-wrap items-baseline gap-x-2">
                                   <span className="text-sm font-medium text-foreground">{rname}</span>
                                   <span className="text-xs text-muted-foreground tabular-nums">
-                                    {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
+                                    <RelativeTime iso={r.created_at} formatLabel={formatDistanceToNowLabel} />
                                   </span>
                                 </div>
                                 {renderReplyBody(r)}

@@ -7,7 +7,7 @@ import { appendOfferTimelineEntry } from "@/lib/services/appendOfferTimeline"
 import { deleteOfferRecord } from "@/lib/services/offerCleanup"
 import { parseOfferLineItems } from "@/lib/types/offer-line-item"
 import type { RespondToCounterOfferInput } from "@/lib/validations/respond-to-counter-offer"
-import { reconcileOfferFulfillmentWithListing } from "@/lib/offer-listing-shipping"
+import { reconcileOfferFulfillmentWithListings } from "@/lib/offer-listing-shipping"
 
 function roundMoney(n: number): number {
   return Math.round(n * 100) / 100
@@ -155,15 +155,38 @@ export async function respondToCounterOfferService(
 
   // accept — offer price is stored on offers only; listings.price stays at the original list price.
   const lineItems = parseOfferLineItems((offer as { line_items?: unknown }).line_items)
-  const isBundle = !!lineItems && lineItems.length > 1
-  const reconciled = reconcileOfferFulfillmentWithListing(
+  const extraIds = (lineItems ?? [])
+    .map((row) => row.listing_id)
+    .filter((id) => id !== listing.id)
+  let extraListings: Array<{
+    shipping_available: boolean | null
+    local_pickup: boolean | null
+  }> = []
+  if (extraIds.length > 0) {
+    const { data: extraRows, error: extraErr } = await supabase
+      .from("listings")
+      .select("id, shipping_available, local_pickup")
+      .in("id", extraIds)
+    if (extraErr || !extraRows || extraRows.length !== extraIds.length) {
+      return { ok: false, error: "One or more listings are no longer available." }
+    }
+    extraListings = extraRows as Array<{
+      shipping_available: boolean | null
+      local_pickup: boolean | null
+    }>
+  }
+  const reconciled = reconcileOfferFulfillmentWithListings(
     (offer as { fulfillment?: string | null }).fulfillment,
-    {
-      shipping_available: isBundle ? false : listing.shipping_available,
-      local_pickup: listing.local_pickup,
-      shipping_price: listing.shipping_price,
-      board_shipping_cost_mode: listing.board_shipping_cost_mode,
-    },
+    [
+      {
+        section: listing.section,
+        shipping_available: listing.shipping_available,
+        local_pickup: listing.local_pickup,
+        shipping_price: listing.shipping_price,
+        board_shipping_cost_mode: listing.board_shipping_cost_mode,
+      },
+      ...extraListings,
+    ],
   )
   if (!reconciled.fulfillment) {
     return {

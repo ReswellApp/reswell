@@ -2,6 +2,7 @@ import path from 'path'
 import fs from 'node:fs'
 import { fileURLToPath } from 'url'
 import bundleAnalyzer from '@next/bundle-analyzer'
+import { withPostHogConfig } from '@posthog/nextjs-config'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -298,4 +299,8 @@ const nextConfig = {
   },
 }
 
-export default withBundleAnalyzer(nextConfig)
+export default withPostHogConfig(withBundleAnalyzer(nextConfig), {
+  personalApiKey: process.env.POSTHOG_API_KEY,
+  projectId: process.env.POSTHOG_PROJECT_ID,
+  host: 'https://us.posthog.com',
+})

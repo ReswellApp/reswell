@@ -5,6 +5,7 @@ import Link from "next/link"
 import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { isChunkLoadError, recoverFromChunkLoadError } from "@/lib/utils/is-chunk-load-error"
+import { isStaleFileNotFoundError } from "@/lib/utils/is-stale-file-not-found-error"
 import { reportClientError } from "@/lib/utils/reportClientError"
 
 /**
@@ -33,6 +34,7 @@ export default function SellError({
         return
       }
     }
+    if (isStaleFileNotFoundError(error)) return
     console.error("[sell] page error:", error)
     void reportClientError({
       name: error.name,

@@ -541,7 +541,14 @@ function VariantImageThumb({ src, label }: { src: string | null | undefined; lab
   if (!isValidImg(src)) return <span className="tabular-nums text-slate-300">—</span>
   return (
     <span className="relative block h-9 w-9 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-50" title={label}>
-      <Image src={src} alt="" fill className="object-cover" sizes="36px" />
+      <Image
+        src={src}
+        alt=""
+        fill
+        className="object-cover"
+        sizes="36px"
+        unoptimized={listingImageShouldBypassOptimization(src)}
+      />
     </span>
   )
 }
@@ -747,7 +754,14 @@ function BrandRow({
                     <div className="flex flex-wrap items-start gap-3">
                       {isValidImg(model.image_url) ? (
                         <span className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md border border-slate-200 bg-slate-50">
-                          <Image src={model.image_url} alt="" fill className="object-cover" sizes="48px" />
+                          <Image
+                            src={model.image_url}
+                            alt=""
+                            fill
+                            className="object-cover"
+                            sizes="48px"
+                            unoptimized={listingImageShouldBypassOptimization(model.image_url)}
+                          />
                         </span>
                       ) : (
                         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-dashed border-slate-200 bg-slate-50 text-slate-300">

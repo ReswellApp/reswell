@@ -20,21 +20,25 @@ export async function persistListingDraftSnapshot(args: {
   /** Persist selected files even while optimize/upload is in flight (auth gate). */
   includeInFlightPhotos?: boolean
 }): Promise<void> {
-  const built = await buildSellListingDraft(
-    args.listingType,
-    args.formData,
-    listingPhotoSlotsForDraftPersist(args.images, {
-      includeInFlight: args.includeInFlightPhotos,
-    }),
-    null,
-    args.userId,
-    { allowGuest: !args.userId },
-  )
-  if (built) {
-    if (args.userId) await saveSellListingDraft(built)
-    else await saveGuestSellListingDraft(built)
-    return
+  try {
+    const built = await buildSellListingDraft(
+      args.listingType,
+      args.formData,
+      listingPhotoSlotsForDraftPersist(args.images, {
+        includeInFlight: args.includeInFlightPhotos,
+      }),
+      null,
+      args.userId,
+      { allowGuest: !args.userId },
+    )
+    if (built) {
+      if (args.userId) await saveSellListingDraft(built)
+      else await saveGuestSellListingDraft(built)
+      return
+    }
+    if (args.userId) await clearSellListingDraft(args.userId, args.listingType)
+    else await clearGuestSellListingDraft(args.listingType)
+  } catch (e) {
+    console.warn("[sell draft] persist failed", e)
   }
-  if (args.userId) await clearSellListingDraft(args.userId, args.listingType)
-  else await clearGuestSellListingDraft(args.listingType)
 }

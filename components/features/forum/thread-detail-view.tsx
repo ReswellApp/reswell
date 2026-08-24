@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useMemo } from "react"
-import { formatDistanceToNow } from "date-fns"
+import { formatDistanceToNowLabel, RelativeTime } from "@/components/ui/relative-time"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThreadLikeButton } from "@/components/forum/thread-like-button"
 import { ThreadCommentsPanel, type ThreadCommentRow } from "@/components/forum/thread-comments-panel"
@@ -127,9 +127,11 @@ export function ThreadDetailView({
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-semibold text-foreground">{authorName}</p>
-                <time className="text-xs tabular-nums text-muted-foreground">
-                  {formatDistanceToNow(new Date(createdAt), { addSuffix: true })}
-                </time>
+                <RelativeTime
+                  iso={createdAt}
+                  formatLabel={formatDistanceToNowLabel}
+                  className="text-xs text-muted-foreground"
+                />
               </div>
               {openingPhoto ? (
                 <div className="mt-4">

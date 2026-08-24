@@ -392,25 +392,19 @@ export function SellerMakeOfferToBuyerDialog({
       : 0
 
   const bundleFulfillmentMode = useMemo(() => {
-    if (orderedSelectedListings.length === 0) return "pickup_only" as const
+    if (orderedSelectedListings.length === 0) return "none" as const
     const allPickup = orderedSelectedListings.every((row) => row.local_pickup !== false)
     const allShip = orderedSelectedListings.every((row) => !!row.shipping_available)
-    if (allPickup && allShip && orderedSelectedListings.length === 1) {
-      return "pickup_and_shipping" as const
-    }
+    if (allPickup && allShip) return "pickup_and_shipping" as const
     if (allPickup) return "pickup_only" as const
-    if (allShip && orderedSelectedListings.length === 1) return "shipping_only" as const
-    return "pickup_only" as const
+    if (allShip) return "shipping_only" as const
+    return "none" as const
   }, [orderedSelectedListings])
 
   useEffect(() => {
-    if (isBundle) {
-      setFulfillment("pickup")
-      return
-    }
     if (bundleFulfillmentMode === "shipping_only") setFulfillment("shipping")
     if (bundleFulfillmentMode === "pickup_only") setFulfillment("pickup")
-  }, [isBundle, bundleFulfillmentMode])
+  }, [bundleFulfillmentMode])
 
   const lineItems = useMemo(() => {
     return orderedSelectedListings.map((row) => ({
@@ -566,10 +560,11 @@ export function SellerMakeOfferToBuyerDialog({
   }
 
   const canPick =
-    orderedSelectedListings.length === 0 ||
+    orderedSelectedListings.length > 0 &&
     orderedSelectedListings.every((r) => r.local_pickup !== false)
   const canShip =
-    !isBundle && orderedSelectedListings.length === 1 && !!orderedSelectedListings[0]?.shipping_available
+    orderedSelectedListings.length > 0 &&
+    orderedSelectedListings.every((r) => !!r.shipping_available)
 
   const form = (
     <>
@@ -676,11 +671,11 @@ export function SellerMakeOfferToBuyerDialog({
             ) : null}
 
             <div className="space-y-2 border-t border-border/50 pt-4">
-              <Label className="text-sm font-semibold">Fulfillment</Label>
-              {isBundle ? (
-                <p className="flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5 text-sm text-muted-foreground">
-                  <Package className="h-4 w-4 shrink-0" aria-hidden />
-                  Bundled offers use local pickup for all items.
+              <Label className="text-sm font-semibold">Delivery method</Label>
+              {bundleFulfillmentMode === "none" && orderedSelectedListings.length > 0 ? (
+                <p className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2.5 text-sm text-muted-foreground">
+                  These listings don&apos;t share a delivery method. Offer items that all allow
+                  pickup, all allow shipping, or both.
                 </p>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
@@ -712,18 +707,32 @@ export function SellerMakeOfferToBuyerDialog({
                     )}
                   >
                     <Truck className="h-4 w-4" aria-hidden />
-                    <span className="font-medium text-foreground">Ship to me</span>
+                    <span className="font-medium text-foreground">Shipping</span>
                   </button>
                 </div>
               )}
+              {canPick && canShip ? (
+                <p className="text-xs text-muted-foreground">
+                  The buyer can still choose local pickup or shipping at checkout.
+                </p>
+              ) : null}
             </div>
 
-            {fulfillment === "shipping" && !isBundle && singleListing ? (
+            {fulfillment === "shipping" && singleListing ? (
               <div className="space-y-1.5">
                 <Label className="text-sm font-semibold">Shipping from listing</Label>
                 <p className="text-sm font-medium tabular-nums">{shippingLabel}</p>
                 <p className="text-xs text-muted-foreground">
                   {offerShippingCostHint(shippingMode, listingFlatRate)}
+                </p>
+              </div>
+            ) : fulfillment === "shipping" && isBundle ? (
+              <div className="space-y-1.5">
+                <Label className="text-sm font-semibold">Shipping</Label>
+                <p className="text-sm font-medium">Calculated at checkout</p>
+                <p className="text-xs text-muted-foreground">
+                  Items ship together in one box. The buyer pays the quoted rate at checkout — not
+                  negotiated.
                 </p>
               </div>
             ) : null}
@@ -794,7 +803,10 @@ export function SellerMakeOfferToBuyerDialog({
                 submitting ||
                 loadingListings ||
                 orderedSelectedListings.length === 0 ||
-                !allAmountsValid
+                !allAmountsValid ||
+                bundleFulfillmentMode === "none" ||
+                (fulfillment === "pickup" && !canPick) ||
+                (fulfillment === "shipping" && !canShip)
               }
             >
               {submitting ? (

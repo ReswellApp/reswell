@@ -3,7 +3,7 @@ import {
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
-import { reconcileOfferFulfillmentWithListing } from "@/lib/offer-listing-shipping"
+import { reconcileOfferFulfillmentWithListings } from "@/lib/offer-listing-shipping"
 import { parseOfferLineItems, type OfferLineItem } from "@/lib/types/offer-line-item"
 import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 
@@ -29,14 +29,49 @@ function listingSetsMatch(a: Set<string>, b: Set<string>): boolean {
   return a.size === b.size && [...a].every((id) => b.has(id))
 }
 
+export function acceptedOfferListingIdSet(offer: AcceptedOfferCheckoutRow): Set<string> {
+  const items = parseOfferLineItems(offer.line_items)
+  if (items && items.length > 0) return new Set(items.map((row) => row.listing_id))
+  return new Set([offer.listing_id])
+}
+
+export function acceptedOfferMatchesListingIds(
+  offer: AcceptedOfferCheckoutRow,
+  listingIds: string[],
+): boolean {
+  return listingSetsMatch(acceptedOfferListingIdSet(offer), new Set(listingIds))
+}
+
+/**
+ * Unit price for a single-item ACCEPTED offer. Returns null for bundles so a
+ * cart/checkout line never inherits the bundle total or a sibling line amount.
+ */
+export function acceptedUnitPriceForSingleItemOffer(
+  offer: Pick<AcceptedOfferCheckoutRow, "listing_id" | "current_amount" | "line_items">,
+  listingId: string,
+): number | null {
+  const items = parseOfferLineItems(offer.line_items)
+  if (items && items.length > 1) return null
+  if (items && items.length === 1) {
+    const item = items[0]!
+    if (item.listing_id !== listingId) return null
+    const n = roundMoney(item.amount)
+    return Number.isFinite(n) && n > 0 ? n : null
+  }
+  if (offer.listing_id !== listingId) return null
+  const n = roundMoney(parseFloat(String(offer.current_amount)))
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
 export function offerLineItemListingIds(items: OfferLineItem[]): string[] {
   return items.map((row) => row.listing_id)
 }
 
-/** Resolve checkout delivery lock from an accepted offer + current listing rows. */
-export function lockedFulfillmentFromOfferAndListings(
+/** Suggested checkout delivery method from an accepted offer + current listing rows. */
+export function suggestedFulfillmentFromOfferAndListings(
   offerFulfillment: string | null | undefined,
   listings: Array<{
+    section?: string | null
     shipping_available?: boolean | null
     local_pickup?: boolean | null
     shipping_price?: string | number | null
@@ -44,14 +79,7 @@ export function lockedFulfillmentFromOfferAndListings(
   }>,
 ): "pickup" | "shipping" | null {
   if (listings.length === 0) return null
-  const primary = listings[0]!
-  const reconciled = reconcileOfferFulfillmentWithListing(offerFulfillment, {
-    shipping_available: listings.length > 1 ? false : !!primary.shipping_available,
-    local_pickup: listings.every((row) => row.local_pickup !== false),
-    shipping_price: primary.shipping_price,
-    board_shipping_cost_mode: primary.board_shipping_cost_mode,
-  })
-  return reconciled.fulfillment
+  return reconcileOfferFulfillmentWithListings(offerFulfillment, listings).fulfillment
 }
 
 export async function fetchAcceptedOfferById(
@@ -178,13 +206,6 @@ export async function loadAcceptedOfferCheckoutListings(
           },
         ]
 
-  if (lineItems.length > 1 && offer.fulfillment !== "pickup") {
-    return {
-      ok: false,
-      error: "Bundled offers must use local pickup. Contact the seller if you need help.",
-    }
-  }
-
   const listingIdsOrdered = lineItems.map((row) => row.listing_id)
 
   const { data: listingRows, error: listErr } = await supabase
@@ -215,37 +236,14 @@ export async function loadAcceptedOfferCheckoutListings(
     return { ok: false, error: "Invalid offer listings." }
   }
 
-  if (lineItems.length > 1) {
-    if (!listingsOrdered.every((row) => row.local_pickup !== false)) {
-      return {
-        ok: false,
-        error: "Every item in this bundle must offer local pickup.",
-      }
-    }
-  }
-
   const listings = applyOfferLineItemsToListings(listingsOrdered, lineItems)
 
-  const primary = listings[0]!
-  const reconciled = reconcileOfferFulfillmentWithListing(offer.fulfillment, {
-    /** Bundles are pickup-only — never treat them as shippable here. */
-    shipping_available: lineItems.length > 1 ? false : !!primary.shipping_available,
-    local_pickup: listings.every((row) => row.local_pickup !== false),
-    shipping_price: primary.shipping_price,
-    board_shipping_cost_mode: primary.board_shipping_cost_mode,
-  })
+  const reconciled = reconcileOfferFulfillmentWithListings(offer.fulfillment, listings)
 
   if (!reconciled.fulfillment) {
     return {
       ok: false,
       error: reconciled.reason ?? "This offer’s delivery method is no longer available.",
-    }
-  }
-
-  if (lineItems.length > 1 && reconciled.fulfillment !== "pickup") {
-    return {
-      ok: false,
-      error: "Bundled offers must use local pickup. Contact the seller if you need help.",
     }
   }
 

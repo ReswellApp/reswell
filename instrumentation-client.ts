@@ -1,9 +1,17 @@
 import { installAbortErrorSuppressor } from '@/lib/client/install-abort-error-suppressor'
 import { installChunkLoadRecovery } from '@/lib/client/install-chunk-load-recovery'
+import { installSafeTouchEventGuard } from '@/lib/client/install-safe-touch-event-guard'
+import { installWebViewBridgeNoiseSuppressor } from '@/lib/client/install-webview-bridge-noise-suppressor'
+import { isPostHogBenignClientFetchError } from '@/lib/utils/is-abort-error'
+import { isPostHogAndroidWebViewBridgeNoise } from '@/lib/utils/is-android-webview-bridge-noise'
+import { isPostHogStaleFileNotFoundError } from '@/lib/utils/is-stale-file-not-found-error'
 import posthog from 'posthog-js'
 
-// Runs before React hydration so dev overlay ignores benign navigation aborts.
+// Runs before React hydration so dev overlay ignores benign navigation aborts
+// and Android WebView Java-bridge teardown noise ("Java object is gone").
 installAbortErrorSuppressor()
+installWebViewBridgeNoiseSuppressor()
+installSafeTouchEventGuard()
 
 // Self-heal stale-chunk failures (common in long-lived in-app browser tabs after a deploy)
 // at the window level, before the error-boundary bundle itself can fail to load and drop
@@ -33,5 +41,11 @@ if (posthogToken) {
     defaults: '2026-01-30',
     capture_exceptions: true,
     debug: process.env.NODE_ENV === 'development',
+    before_send: (event) => {
+      if (isPostHogAndroidWebViewBridgeNoise(event)) return null
+      if (isPostHogBenignClientFetchError(event)) return null
+      if (isPostHogStaleFileNotFoundError(event)) return null
+      return event
+    },
   })
 }

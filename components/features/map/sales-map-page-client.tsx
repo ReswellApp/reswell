@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState, useSyncExternalStore } from "react"
-import { formatDistanceToNow, parseISO } from "date-fns"
+import { formatDistanceToNowLabel, RelativeTime } from "@/components/ui/relative-time"
 import { ArrowRight, MapPin, Package, TrendingUp } from "lucide-react"
 import type { MarketplaceSalesMapPayload } from "@/lib/types/marketplace-sales-map"
 import { BRAND_CTA_BLUE, BRAND_DARK_BLUE, BRAND_DEEP_BLUE } from "@/lib/brand-colors"
@@ -409,11 +409,9 @@ export function SalesMapPageClient({ data }: SalesMapPageClientProps) {
             </p>
           ) : null}
 
-          <p
-            className="mt-3 text-center text-[10px] text-muted-foreground sm:mt-4 sm:text-xs"
-            suppressHydrationWarning
-          >
-            Updated {formatDistanceToNow(parseISO(data.generatedAt), { addSuffix: true })} · New
+          <p className="mt-3 text-center text-[10px] text-muted-foreground sm:mt-4 sm:text-xs">
+            Updated{" "}
+            <RelativeTime iso={data.generatedAt} formatLabel={formatDistanceToNowLabel} /> · New
             sales added after checkout
           </p>
         </div>

@@ -178,7 +178,6 @@ export async function POST(request: NextRequest) {
    * unless paying via an accepted offer bundle (`offer_id`). */
   const offerIdParam = body.offer_id?.trim() || null
   let validatedOfferId: string | null = null
-  let offerFulfillmentLock: "pickup" | "shipping" | null = null
   const quantityByListingId: Record<string, number> = {}
   for (const id of listingIdsOrdered) quantityByListingId[id] = 1
 
@@ -196,7 +195,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: offerCheck.error }, { status: 400 })
     }
     validatedOfferId = offerIdParam
-    offerFulfillmentLock = offerCheck.fulfillment
     listingsForTotals = priceListingsFromAcceptedOffer(
       listingsOrdered,
       offerCheck.offer,
@@ -329,18 +327,6 @@ export async function POST(request: NextRequest) {
 
     impliedFulfillment =
       lp && sa ? (fulfillment === "shipping" ? "shipping" : "pickup") : !lp && sa ? "shipping" : "pickup"
-  }
-
-  if (offerFulfillmentLock && impliedFulfillment !== offerFulfillmentLock) {
-    return NextResponse.json(
-      {
-        error:
-          offerFulfillmentLock === "pickup"
-            ? "This accepted offer is for local pickup."
-            : "This accepted offer is for shipping.",
-      },
-      { status: 400 },
-    )
   }
 
   const addressId = body.address_id?.trim() || null

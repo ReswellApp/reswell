@@ -1,5 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
+import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { formatGuideUsd } from "@/lib/price-guide/format"
 import type { PriceGuideLiveListing } from "@/lib/types/price-guide"
 
@@ -31,6 +32,7 @@ export function PriceGuideLiveListings({
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, 25vw"
+                    unoptimized={listingImageShouldBypassOptimization(listing.image_url)}
                   />
                 ) : null}
               </div>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { formatDistanceToNowStrict } from "date-fns"
+import { RelativeTime } from "@/components/ui/relative-time"
 import { capitalizeWords, formatHomePeerListingConditionLine } from "@/lib/listing-labels"
 import { ListingTile, ListingTileSoldStamp } from "@/components/listing-tile"
 import {
@@ -95,7 +96,6 @@ function SoldListingCard({
     listing.city && listing.state
       ? `${listing.city}, ${listing.state}`
       : listing.profiles?.location || "Location not set"
-  const timeLine = soldRelativeLabel(listing.sold_at)
   const conditionLine = formatHomePeerListingConditionLine(listing.condition)
 
   return (
@@ -133,7 +133,11 @@ function SoldListingCard({
           </p>
           <div className="mt-1.5 space-y-0.5 text-xs font-normal leading-snug text-muted-foreground">
             <p>
-              {timeLine}
+              <RelativeTime
+                iso={listing.sold_at}
+                formatLabel={soldRelativeLabel}
+                placeholder="Sold"
+              />
               {!showShippedLabel ? (
                 <>
                   <span className="text-muted-foreground/80"> · </span>

@@ -146,7 +146,7 @@ export async function ShopListingDetailPage({
         </div>
 
         <div className="mx-auto grid w-full min-w-0 max-w-full gap-8 sm:max-w-6xl lg:grid-cols-[minmax(0,0.98fr)_minmax(0,1.02fr)] lg:items-start lg:gap-12 xl:gap-16">
-          <div className="relative min-w-0 w-full max-w-full lg:max-w-[29rem] lg:justify-self-start xl:max-w-[32rem]">
+          <div className="relative min-w-0 w-full max-w-full md:mx-auto md:max-w-[24rem] lg:mx-0 lg:max-w-[26rem] lg:justify-self-start xl:max-w-[28rem]">
             <ImageGallery images={images} title={title} />
           </div>
 

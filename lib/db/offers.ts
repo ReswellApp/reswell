@@ -164,8 +164,10 @@ export async function findPendingOfferForBuyer(
 /** Buyer–seller offer row where the buyer may check out at `current_amount` (listing stays `active`). */
 export type AcceptedOfferPricingRow = {
   id: string
+  listing_id: string
   current_amount: string | number
   seller_id: string
+  line_items?: unknown
 }
 
 export async function fetchAcceptedOfferForBuyerListing(
@@ -175,12 +177,34 @@ export async function fetchAcceptedOfferForBuyerListing(
 ): Promise<AcceptedOfferPricingRow | null> {
   const { data, error } = await supabase
     .from("offers")
-    .select("id, current_amount, seller_id")
+    .select("id, listing_id, current_amount, seller_id, line_items")
     .eq("listing_id", listingId)
     .eq("buyer_id", buyerId)
     .eq("status", "ACCEPTED")
+    .order("updated_at", { ascending: false })
+    .limit(1)
     .maybeSingle()
 
   if (error || !data) return null
   return data as AcceptedOfferPricingRow
+}
+
+/** ACCEPTED offers whose primary listing is in `listingIds` (newest first). */
+export async function fetchAcceptedOffersForBuyerListings(
+  supabase: SupabaseClient,
+  buyerId: string,
+  listingIds: string[],
+): Promise<AcceptedOfferPricingRow[]> {
+  if (listingIds.length === 0) return []
+
+  const { data, error } = await supabase
+    .from("offers")
+    .select("id, listing_id, current_amount, seller_id, line_items")
+    .eq("buyer_id", buyerId)
+    .eq("status", "ACCEPTED")
+    .in("listing_id", listingIds)
+    .order("updated_at", { ascending: false })
+
+  if (error || !data) return []
+  return data as AcceptedOfferPricingRow[]
 }

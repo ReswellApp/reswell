@@ -2,7 +2,10 @@
 
 import { useEffect } from "react"
 import { reportClientError } from "@/lib/utils/reportClientError"
+import { isAndroidWebViewBridgeNoise } from "@/lib/utils/is-android-webview-bridge-noise"
+import { isBenignClientFetchError } from "@/lib/utils/is-abort-error"
 import { isChunkLoadError } from "@/lib/utils/is-chunk-load-error"
+import { isStaleFileNotFoundError } from "@/lib/utils/is-stale-file-not-found-error"
 
 /**
  * Captures unhandled window errors and promise rejections into the ops store.
@@ -12,7 +15,14 @@ export function OpsErrorReporter(): null {
   useEffect(() => {
     const onError = (event: ErrorEvent) => {
       const err = event.error
-      if (err instanceof Error && isChunkLoadError(err)) return
+      if (
+        isChunkLoadError(err) ||
+        isAndroidWebViewBridgeNoise(err ?? event.message) ||
+        isBenignClientFetchError(err ?? event.message) ||
+        isStaleFileNotFoundError(err ?? event.message)
+      ) {
+        return
+      }
       const message = event.message || (err instanceof Error ? err.message : "Unhandled error")
       if (!message || message === "Script error.") return
 
@@ -26,7 +36,14 @@ export function OpsErrorReporter(): null {
 
     const onRejection = (event: PromiseRejectionEvent) => {
       const reason = event.reason
-      if (reason instanceof Error && isChunkLoadError(reason)) return
+      if (
+        isChunkLoadError(reason) ||
+        isAndroidWebViewBridgeNoise(reason) ||
+        isBenignClientFetchError(reason) ||
+        isStaleFileNotFoundError(reason)
+      ) {
+        return
+      }
       const message =
         reason instanceof Error
           ? reason.message

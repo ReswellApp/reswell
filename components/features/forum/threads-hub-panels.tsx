@@ -5,6 +5,7 @@ import { PenSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { capitalizeWords } from "@/lib/listing-labels"
 import type { BoardTalkForumThread } from "@/lib/services/forumThreads"
+import { RelativeTime } from "@/components/ui/relative-time"
 import { formatForumActivityTime } from "@/lib/utils/format-forum-activity-time"
 import { ThreadsParticipantStack } from "@/components/features/forum/threads-participant-stack"
 import {
@@ -74,7 +75,7 @@ export function ThreadsMostActivePanel({ threads, className }: ThreadsMostActive
                   <p className="mt-1 text-xs text-muted-foreground">
                     {thread.commentCount} {thread.commentCount === 1 ? "reply" : "replies"}
                     {" · "}
-                    {formatForumActivityTime(thread.updatedAt)}
+                    <RelativeTime iso={thread.updatedAt} formatLabel={formatForumActivityTime} />
                   </p>
                 </div>
               </Link>
@@ -144,7 +145,8 @@ export function ThreadsTopicTable({ threads }: ThreadsTopicTableProps) {
                     <p className="line-clamp-2 text-sm text-muted-foreground">{thread.bodyExcerpt}</p>
                   ) : null}
                   <p className="text-xs text-muted-foreground sm:hidden">
-                    {thread.commentCount} replies · {formatForumActivityTime(thread.updatedAt)}
+                    {thread.commentCount} replies ·{" "}
+                    <RelativeTime iso={thread.updatedAt} formatLabel={formatForumActivityTime} />
                   </p>
                 </div>
                 <ThreadsParticipantStack
@@ -169,7 +171,7 @@ export function ThreadsTopicTable({ threads }: ThreadsTopicTableProps) {
                 {thread.likeCount}
               </p>
               <p className="hidden text-right text-sm tabular-nums text-muted-foreground sm:block">
-                {formatForumActivityTime(thread.updatedAt)}
+                <RelativeTime iso={thread.updatedAt} formatLabel={formatForumActivityTime} />
               </p>
             </Link>
           </li>

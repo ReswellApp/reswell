@@ -24,6 +24,7 @@ import { ListingTileShimmer } from "@/components/ui/skeleton"
 import {
   listingPhotoBackdropStyle,
   listingPhotoIsCached,
+  preventNativeListingImageDrag,
 } from "@/components/features/listings/listing-gallery-photo"
 import {
   listingImageShouldBypassOptimization,
@@ -36,7 +37,7 @@ const DEFAULT_ASPECT_RATIO = 3 / 4
 /** Chrome around the photo — never used as the photo canvas itself. */
 const LIGHTBOX_SURFACE_CLASS = "bg-[#f3f4f6] dark:bg-muted"
 const PHOTO_LAYER =
-  "bg-transparent select-none object-contain object-center backface-hidden transform-gpu"
+  "bg-transparent select-none object-contain object-center backface-hidden transform-gpu [-webkit-user-drag:none] [-webkit-touch-callout:default]"
 
 function markPaintedAfterDecode(img: HTMLImageElement | null, mark: () => void): void {
   if (!img || !img.complete || img.naturalWidth === 0) return
@@ -223,6 +224,7 @@ function LightboxSlide({
             fill
             unoptimized={listingImageShouldBypassOptimization(underlaySrc)}
             draggable={false}
+            onDragStart={preventNativeListingImageDrag}
             className={cn(
               PHOTO_LAYER,
               "pointer-events-none z-[1]",
@@ -277,7 +279,7 @@ function LightboxSlide({
         >
           <TransformComponent
             wrapperClass="!h-full !w-full !bg-transparent"
-            contentClass="!relative !h-full !w-full !bg-transparent"
+            contentClass="!relative !h-full !w-full !bg-transparent [&_img]:!pointer-events-auto"
           >
             <Image
               key={src}
@@ -286,8 +288,10 @@ function LightboxSlide({
               fill
               unoptimized
               draggable={false}
+              onDragStart={preventNativeListingImageDrag}
               className={cn(
                 PHOTO_LAYER,
+                "!pointer-events-auto",
                 !fitCard && MOBILE_OVERSCAN_CLASS,
                 placeholderLoaded && loadedSrc !== src
                   ? "transition-opacity duration-200 ease-out"

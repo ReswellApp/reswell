@@ -5,6 +5,7 @@
 import { runImageCpuTask, runImagePrepareTask } from "@/lib/client-image-cpu-queue"
 import { prepareListingImagePairInWorker } from "@/lib/listing-image-worker"
 import { isAbortError } from "@/lib/utils/is-abort-error"
+import { isStaleFileNotFoundError } from "@/lib/utils/is-stale-file-not-found-error"
 
 export const LISTING_IMAGE_MAX_ORIGINAL_BYTES = 20 * 1024 * 1024
 export const LISTING_FULL_MAX_LONG_EDGE = 2000
@@ -370,7 +371,8 @@ export async function prepareListingImagePairFromFile(
       } catch (err) {
         // A transient worker memory abort should bubble so the retry wrapper can back off and try
         // again; only non-transient worker failures fall through to the main-thread pipeline.
-        if (isRetryableImageError(err)) throw err
+        // Stale picker files cannot be recovered on the main thread either — fail immediately.
+        if (isRetryableImageError(err) || isStaleFileNotFoundError(err)) throw err
       }
       try {
         return await runImageCpuTask(() => prepareListingImagePairOnMainThread(file, options))

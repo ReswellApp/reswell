@@ -8,6 +8,7 @@
     "analyze": "ANALYZE=true next build --webpack",
     "start": "next start",
     "lint": "eslint .",
+    "postinstall": "patch-package",
     "env:pull": "vercel env pull .env.local --yes && vercel env pull .env.production.local --environment=production --yes && node scripts/sync-search-console-env.mjs",
     "logs:scan": "node --experimental-strip-types scripts/scan-vercel-logs.mjs"
   },
@@ -21,6 +22,7 @@
     "@googlemaps/js-api-loader": "^2.0.2",
     "@hookform/resolvers": "^3.9.1",
     "@paypal/payouts-sdk": "^1.1.1",
+    "@posthog/nextjs-config": "^1.10.0",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "1.1.4",
     "@radix-ui/react-aspect-ratio": "1.1.1",
@@ -79,6 +81,7 @@
     "motion": "^12.38.0",
     "next": "^16.2.6",
     "next-themes": "^0.4.6",
+    "patch-package": "^8.0.1",
     "pdf-lib": "^1.17.1",
     "posthog-js": "^1.418.6",
     "posthog-node": "^5.49.2",

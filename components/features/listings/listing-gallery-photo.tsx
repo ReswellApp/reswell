@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { useState, type CSSProperties } from "react"
+import { useState, type CSSProperties, type DragEvent } from "react"
 import { ListingTileShimmer } from "@/components/ui/skeleton"
 import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-url"
 import { cn } from "@/lib/utils"
@@ -20,7 +20,12 @@ export interface ListingGalleryPhotoProps {
 }
 
 const PHOTO_LAYER =
-  "pointer-events-none bg-transparent select-none object-cover object-center backface-hidden transform-gpu"
+  "bg-transparent select-none object-cover object-center backface-hidden transform-gpu [-webkit-user-drag:none]"
+
+/** Block HTML image-drag so Embla swipe still owns the pointer. Right-click is unchanged. */
+export function preventNativeListingImageDrag(event: DragEvent<HTMLImageElement>): void {
+  event.preventDefault()
+}
 
 /**
  * CSS backdrop so the first compositor frame can show a cached listing photo
@@ -111,10 +116,11 @@ export function ListingGalleryPhoto({
           fill
           unoptimized={listingImageShouldBypassOptimization(preview)}
           draggable={false}
+          onDragStart={preventNativeListingImageDrag}
           aria-hidden
           className={cn(
             PHOTO_LAYER,
-            "z-[1]",
+            "pointer-events-none z-[1]",
             className,
             previewReady ? "opacity-100" : "opacity-0",
           )}
@@ -137,9 +143,10 @@ export function ListingGalleryPhoto({
         fill
         unoptimized={listingImageShouldBypassOptimization(src)}
         draggable={false}
+        onDragStart={preventNativeListingImageDrag}
         className={cn(
           PHOTO_LAYER,
-          "z-[2]",
+          "pointer-events-auto z-[2]",
           className,
           preview && previewReady ? "transition-opacity duration-200 ease-out" : null,
           srcReady ? "opacity-100" : "opacity-0",

@@ -6,6 +6,8 @@
  * Guest snapshots migrate to the signed-in user on auth so login redirects do not wipe progress.
  */
 
+import { isStaleFileNotFoundError } from "@/lib/utils/is-stale-file-not-found-error"
+
 const DB_NAME = "reswell-sell-draft"
 const STORE = "draft"
 /** Legacy single-slot key (pre–user-scoped drafts) — cleared on DB upgrade. */
@@ -252,12 +254,19 @@ export async function buildSellListingDraft(
   const imageBlobs: SellListingDraftImageBlob[] = []
   for (const im of images) {
     if (!im.file) continue
-    const buffer = await im.file.arrayBuffer()
-    imageBlobs.push({
-      name: im.file.name,
-      type: im.file.type || "image/jpeg",
-      buffer,
-    })
+    try {
+      const buffer = await im.file.arrayBuffer()
+      imageBlobs.push({
+        name: im.file.name,
+        type: im.file.type || "image/jpeg",
+        buffer,
+      })
+    } catch (e) {
+      // Picker Files can lose their OS backing path after camera-roll / WebView
+      // suspension — skip that photo so the rest of the draft still persists.
+      if (isStaleFileNotFoundError(e)) continue
+      throw e
+    }
   }
   const formSnapshot = JSON.parse(JSON.stringify(formData)) as SellListingDraftFormSnapshot
   if (imageBlobs.length === 0 && !sellDraftFormLooksFilled(listingType, formSnapshot)) return null

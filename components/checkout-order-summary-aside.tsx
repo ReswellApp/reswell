@@ -38,6 +38,7 @@ export function CheckoutOrderSummaryAside({
   appliedPromo = null,
   promoError = null,
   promoApplying = false,
+  acceptedOfferListingIds = [],
 }: {
   listings: CheckoutListing[]
   seller?: CheckoutSeller | null
@@ -50,6 +51,8 @@ export function CheckoutOrderSummaryAside({
   appliedPromo?: AppliedNewsletterPromo | null
   promoError?: string | null
   promoApplying?: boolean
+  /** Listing ids whose line price is the accepted offer amount. */
+  acceptedOfferListingIds?: string[]
 }) {
   const promoInteractive = Boolean(onPromoCodeInputChange && onApplyPromo)
   const fulfillmentLabel: "pickup" | "shipping" = needsShipping ? "shipping" : "pickup"
@@ -139,9 +142,14 @@ export function CheckoutOrderSummaryAside({
                     </p>
                   ) : null}
                 </div>
-                <p className="shrink-0 pt-0.5 text-[15px] font-semibold tabular-nums text-foreground">
-                  ${linePrice.toFixed(2)}
-                </p>
+                <div className="shrink-0 pt-0.5 text-right">
+                  <p className="text-[15px] font-semibold tabular-nums text-foreground">
+                    ${linePrice.toFixed(2)}
+                  </p>
+                  {acceptedOfferListingIds.includes(listing.id) ? (
+                    <p className="mt-0.5 text-[12px] font-medium text-emerald-700">Accepted offer</p>
+                  ) : null}
+                </div>
               </div>
             )
           })}
@@ -212,7 +220,7 @@ export function CheckoutOrderSummaryAside({
             </div>
           ) : null}
           <div className="flex justify-between gap-4">
-            <span className="text-neutral-600">Shipping</span>
+            <span className="text-neutral-600">Delivery method</span>
             <div className="min-w-[5rem] shrink-0 text-right text-[14px]">{shippingSummaryRight}</div>
           </div>
           <div className="flex justify-between gap-4 border-t border-neutral-200/90 pt-4 text-[16px] font-semibold">

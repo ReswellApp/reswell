@@ -1,3 +1,4 @@
+import { isConfiguredNextImageSrc } from "@/lib/brands/logo-mark"
 import { absoluteUrl } from "@/lib/site-metadata"
 
 /** Same-origin listing photo proxy — see `app/media/listings/[...path]/route.ts`. */
@@ -20,16 +21,23 @@ export function isProxiedListingMediaSrc(src: string | null | undefined): boolea
 }
 
 /**
- * Pre-sized storage served via `/media/*` proxies; skip Vercel Image Optimization to
- * avoid transformation + cache-write charges.
+ * Skip Vercel Image Optimization when:
+ * - the file is already served pre-sized via `/media/*` (avoid transform + cache-write charges)
+ * - the src is a blob/data URL
+ * - the remote host is not in `images.remotePatterns` — next/image's default loader
+ *   throws `unconfigured-host` at render and takes down the page (brand logos often
+ *   point at manufacturer WordPress/Shopify hosts that are not allowlisted)
  */
 export function listingImageShouldBypassOptimization(src: string | null | undefined): boolean {
   if (typeof src !== "string" || !src) return false
-  return (
+  if (
     src.startsWith("/media/") ||
     src.startsWith("blob:") ||
     src.startsWith("data:")
-  )
+  ) {
+    return true
+  }
+  return !isConfiguredNextImageSrc(src)
 }
 
 const PUBLIC_LISTINGS_MARKER = "/storage/v1/object/public/listings/"

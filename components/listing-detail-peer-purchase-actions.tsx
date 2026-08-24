@@ -149,8 +149,8 @@ export function ListingDetailPeerPurchaseActions({
       Number.isFinite(agreedCheckoutItemUsd) ? (
         <p className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.08] px-4 py-3 text-[13px] leading-snug text-emerald-900 dark:border-emerald-400/25 dark:bg-emerald-500/10 dark:text-emerald-100">
           You accepted <span className="font-semibold tabular-nums">${agreedCheckoutItemUsd.toFixed(2)}</span> for
-          this {peerListingItemNounForm(section).singular}. Buy now charges that price and uses the delivery method
-          from your offer.
+          this {peerListingItemNounForm(section).singular}. Buy now charges that price. You can still choose local
+          pickup or shipping at checkout if this listing offers both.
         </p>
       ) : null}
       {!purchaseBlocked ? (

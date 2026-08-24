@@ -50,7 +50,7 @@ export function isNewOAuthAccount(user: User): boolean {
 
 /**
  * True when a Google user should see `/auth/google-sign-up-success` (new sign-up, not a return visit).
- * Aligns with the username-setup modal: recent Google account without a chosen username yet.
+ * Recent Google accounts without a chosen username still count as new sign-ups.
  */
 export function shouldShowGoogleSignUpWelcome(user: User): boolean {
   if (!isGoogleAuthUser(user)) return false

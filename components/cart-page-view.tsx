@@ -102,7 +102,11 @@ export function CartPageView({
     for (const row of initialItems) {
       if (listingAvailable(row.listing)) {
         const qty = Math.max(1, row.quantity || 1)
-        total += Number(row.listing.price) * qty
+        const unit =
+          row.agreedPriceUsd != null && row.agreedPriceUsd > 0
+            ? row.agreedPriceUsd
+            : Number(row.listing.price)
+        total += unit * qty
         availUnits += qty
       } else {
         unavail += 1
@@ -270,7 +274,7 @@ export function CartPageView({
         <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] lg:items-start lg:gap-10">
           <div className="rounded-lg border border-neutral-200 bg-white p-4 sm:p-6 dark:border-white/10 dark:bg-background">
             <ul className="divide-y divide-neutral-200 dark:divide-white/10">
-              {initialItems.map(({ cartCreatedAt, listing, quantity }) => {
+              {initialItems.map(({ cartCreatedAt, listing, quantity, agreedPriceUsd }) => {
                 const img = listingTitleThumbnailSrc(listing.listing_images ?? null)
                 const seller = listing.profiles
                 const isShop = isReswellShopListing(listing.section)
@@ -279,7 +283,9 @@ export function CartPageView({
                 const available = listingAvailable(listing)
                 const href = listingDetailHref(listing)
                 const title = listing.title
-                const unitPrice = Number(listing.price)
+                const listPrice = Number(listing.price)
+                const hasAcceptedOffer = agreedPriceUsd != null && agreedPriceUsd > 0
+                const unitPrice = hasAcceptedOffer ? agreedPriceUsd : listPrice
                 const qty = Math.max(1, quantity || 1)
                 const lineTotal = unitPrice * qty
                 const stockMax = Math.max(1, Math.floor(Number(listing.stock_quantity) || qty))
@@ -326,7 +332,12 @@ export function CartPageView({
                           >
                             {title}
                           </Link>
-                          <p className="shrink-0 text-[16px] font-semibold tabular-nums text-foreground">
+                          <p className="shrink-0 text-right text-[16px] font-semibold tabular-nums text-foreground">
+                            {hasAcceptedOffer && listPrice !== unitPrice ? (
+                              <span className="mr-2 text-[13px] font-normal text-neutral-400 line-through">
+                                ${formatMoney(listPrice)}
+                              </span>
+                            ) : null}
                             ${formatMoney(lineTotal)}
                           </p>
                         </div>
@@ -335,6 +346,11 @@ export function CartPageView({
                           {attrParts.length > 0 ? `${attrParts.join(" · ")} · ` : null}
                           Price: ${formatMoney(unitPrice)} USD / per item
                         </p>
+                        {hasAcceptedOffer ? (
+                          <p className="mt-1 text-[13px] font-medium text-emerald-700 dark:text-emerald-400">
+                            Your accepted price: ${formatMoney(unitPrice)} at checkout
+                          </p>
+                        ) : null}
 
                         <div className="mt-2 flex flex-wrap items-center gap-x-2 text-[12px] text-neutral-500 dark:text-neutral-400">
                           <span>Sold by</span>

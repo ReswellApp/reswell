@@ -3,16 +3,18 @@
 import { randomUUID } from "node:crypto"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { isBlockedOwnListingPurchase, isCartEligibleSection } from "@/lib/cart-eligibility"
+import { fetchAcceptedOffersForBuyerListings } from "@/lib/db/offers"
 import { trackKlaviyoAddedToCart } from "@/lib/klaviyo/track-added-to-cart"
+import { isListingPurchasable } from "@/lib/listing-public-visibility"
 import { trackMetaAddToCartServerEvent } from "@/lib/meta/track-add-to-cart-server-event"
-import type { MetaBrowserSignalsInput } from "@/lib/validations/metaBrowserSignals"
 import type { PeerListingCartFields } from "@/lib/peer-listing-cart"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
-import { isBlockedOwnListingPurchase, isCartEligibleSection } from "@/lib/cart-eligibility"
-import { isReswellShopListing } from "@/lib/reswell-shop"
-import { isListingPurchasable } from "@/lib/listing-public-visibility"
-import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
 import { captureServerEvent } from "@/lib/posthog-server"
+import { isReswellShopListing } from "@/lib/reswell-shop"
+import { acceptedUnitPriceForSingleItemOffer } from "@/lib/services/acceptedOfferCheckout"
+import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/listingBuyerExclusiveWindow"
+import type { MetaBrowserSignalsInput } from "@/lib/validations/metaBrowserSignals"
 
 export type CartListingRow = {
   id: string
@@ -46,6 +48,8 @@ export type CartPageItem = {
   cartCreatedAt: string
   quantity: number
   listing: CartListingRow
+  /** Accepted single-item offer unit price. Cart/checkout charge this instead of list price. */
+  agreedPriceUsd: number | null
 }
 
 type CartEligibleListing = PeerListingCartFields & {
@@ -437,7 +441,26 @@ export async function getCartPageItems(): Promise<{
       cartCreatedAt: raw.created_at,
       quantity: isReswellShopListing(listing.section) ? qty : 1,
       listing,
+      agreedPriceUsd: null,
     })
+  }
+
+  const peerIds = items
+    .filter((row) => isPeerListingSection(row.listing.section))
+    .map((row) => row.listing.id)
+  const acceptedOffers = await fetchAcceptedOffersForBuyerListings(supabase, user.id, peerIds)
+  if (acceptedOffers.length > 0) {
+    const agreedByListingId = new Map<string, number>()
+    for (const offer of acceptedOffers) {
+      if (agreedByListingId.has(offer.listing_id)) continue
+      const listing = items.find((row) => row.listing.id === offer.listing_id)?.listing
+      if (!listing || offer.seller_id !== listing.user_id) continue
+      const unit = acceptedUnitPriceForSingleItemOffer(offer, offer.listing_id)
+      if (unit != null) agreedByListingId.set(offer.listing_id, unit)
+    }
+    for (const row of items) {
+      row.agreedPriceUsd = agreedByListingId.get(row.listing.id) ?? null
+    }
   }
 
   return { items, error: null }

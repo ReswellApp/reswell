@@ -237,12 +237,8 @@ export function OfferMessageCard({
               </Button>
               <p className="text-[12px] text-muted-foreground">
                 {isBundleOffer
-                  ? "Pay for every item in this bundle in one checkout at your agreed prices (local pickup)."
-                  : offer.fulfillment === "pickup"
-                    ? "Pay at your agreed price with local pickup."
-                    : offer.fulfillment === "shipping"
-                      ? "Pay at your agreed price — Reswell shipping is calculated at checkout."
-                      : "Pay at your agreed price with the delivery method from this offer."}
+                  ? "Pay for every item in this bundle in one checkout at your agreed prices. Choose local pickup or shipping there."
+                  : "Pay at your agreed price. Choose local pickup or shipping at checkout if this listing offers both."}
               </p>
             </div>
           )}
