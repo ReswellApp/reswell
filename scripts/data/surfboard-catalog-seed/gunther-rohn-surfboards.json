@@ -1,0 +1,24 @@
+{
+  "generated_for": "Gunther Rohn Surfboards official leftover named model",
+  "source": "https://grsurfboards.com/products/surfboard-retro-twin-fin",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "gunther-rohn-surfboards",
+      "name": "Gunther Rohn Surfboards",
+      "website_url": "https://grsurfboards.com",
+      "location_label": "Gold Coast, Queensland, Australia",
+      "founder_name": "Gunther Rohn",
+      "lead_shaper_name": "Gunther Rohn",
+      "short_description": "Gold Coast performance boards from veteran shaper Gunther Rohn, including Italo Ferreira models.",
+      "models": [
+        {
+          "name": "Retro Twin Fin",
+          "image_url": "https://cdn.shopify.com/s/files/1/2038/4429/files/Twin_Fin.png?v=1697267285",
+          "description": "Twin Fin 82, a surfboard that takes inspiration from the late 70s to mid-80s vintage style twin fins. This classic design combines the aesthetics of the 80s with modern improvements for enhanced performance. The Retro Twin Fin uses a classic twin fin setup with a flat deck, low tucked boxy rails running to a harder edge in the tail, vee bottom, lower rocker, and a winged swallow tail. Volume carries well to the nose and tail without over-shaping the vintage look.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
