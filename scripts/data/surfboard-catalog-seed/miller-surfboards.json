@@ -1,0 +1,88 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "miller-surfboards",
+      "name": "Miller Surfboards",
+      "website_url": "http://www.millershapes.com",
+      "location_label": "Jacksonville, Florida",
+      "founder_name": "Josh Miller",
+      "lead_shaper_name": "Josh Miller",
+      "short_description": "Jacksonville, Florida custom surfboards by Josh Miller — grovelers, shortboards, and longboards.",
+      "models": [
+        {
+          "name": "Phantom",
+          "image_url": "http://millershapes.com/images/grovelers/phantomnew.png",
+          "description": "Missing link between your standard shortboard and your fish. Ride the phantom 3-4 inches shorter than your normal shortboard. Board has fuller outline more volume, combined with a moderate single to double concave. Quad+1 set up. Recommended size range: 5'0\" to 6'6\".",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Red Label",
+          "image_url": "http://millershapes.com/images/grovelers/redlabelboard.png",
+          "description": "Enhanced volume, single to double concave. Thruster set up. Slightly more volume than your standard shortboard. Available in round-squash or swallow tail. Recommended size range: 5'0\" to 6'6\".",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Black Label",
+          "image_url": "http://millershapes.com/images/grovelers/blacklabelboard.png",
+          "description": "Enhanced volume, single to double concave, and a quad+1 fin set up makes this board a very good all around board. Available in round-squash or swallow tail. Recommended size range: 5'0\" to 6'6\".",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Gut Wagon",
+          "image_url": "http://millershapes.com/images/grovelers/gutwagonboard.png",
+          "description": "Short wide and thick. Low rocker with a single to double concave with V off the tail. Board is a wave catching machine! Best to order 4-6 inches shorter than your normal shortboard. Available in round-squash, swallow tail, or rocket tail. Recommended size range: 5'0\" to 6'6\".",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Zero",
+          "image_url": "http://millershapes.com/images/grovelers/zeroboard.png",
+          "description": "Low entry rocker with double to panel v out the tail. Board is a super versatile small wave board. That comes as a Quad+1. Recommended size range: 5'0\" to 6'6\".",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Miller Killer",
+          "image_url": "http://millershapes.com/images/shortboards/m1shorty.png",
+          "description": "Recommended size range: 5'0\" to 6'6\".",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "M-1",
+          "image_url": "http://millershapes.com/images/shortboards/m1theboard.png",
+          "description": "Fuller outline, wider tail block, all around more volume, combined with a moderate single to double concave makes this board a good groveler. Best in knee to head high surf. Recommended size range: 5'0\" to 6'6\".",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "M-2",
+          "image_url": "http://millershapes.com/images/shortboards/m2.png",
+          "description": "High performance go to shortboard for experienced surfers. Single concave, available in round-squash or swallow tail. Recommended size range: 5'0\" to 6'6\".",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Grommet",
+          "image_url": "http://millershapes.com/images/shortboards/groometboard.png",
+          "description": "Slimmer version of the Gut Wagon, single to double concave. Quad+1. Slightly more volume than your standard shortboard. Available in round-squash or swallow tail. Recommended size range: 5'0\" to 6'8\".",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Frank The Tank",
+          "image_url": "http://millershapes.com/images/longboards/frankthetankboardnew.png",
+          "description": "Slight single concave in the nose that flows out to rolled v off the tail. Classic all arounder that will work in most conditions. Comes standard as a 2+1 setup. Recommended size range: 9'0\" to 9'6\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Time Machine",
+          "image_url": "http://millershapes.com/images/longboards/timemachines.png",
+          "description": "Old school all the way! 50/50 rails with a spooned single concave in the nose that flows out to rolled belly of the tail. This is the ultimate nose rider. Recommended size range: 9'0\" to 9'6\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mini Tanker",
+          "image_url": "http://millershapes.com/images/longboards/minitankerboard.png",
+          "description": "This is the Frank The Tank model shrunk down and compressed to a minimal shape. Recommended size range: 8'0\" to 9'6\".",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
