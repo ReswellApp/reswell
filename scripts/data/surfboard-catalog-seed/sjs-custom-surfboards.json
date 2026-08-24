@@ -1,0 +1,28 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "sjs-custom-surfboards",
+      "name": "SJS Custom",
+      "website_url": "https://sjscustom.com.au",
+      "location_label": "Gold Coast, Queensland, Australia",
+      "founder_name": "Scotty James",
+      "lead_shaper_name": "Scotty James",
+      "short_description": "One-at-a-time Gold Coast performance and alternative shapes by Scotty James.",
+      "models": [
+        {
+          "name": "Rocket",
+          "image_url": "https://cdn.shopify.com/s/files/1/0601/6024/5942/files/IMG_4156_b8740a91-ab66-4d55-bfdb-31c0f0641d6a.jpg?v=1769461338",
+          "description": "My best seller. True to it's name. This modern retro performance twin fin is an easy to ride, loose and fast take on the late 70s design. This little beauty is suited for waves in the 2-5 foot range with a little more curve on the wave face. Great for beach breaks and draining point breaks.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Phoenix",
+          "image_url": "https://cdn.shopify.com/s/files/1/0601/6024/5942/files/IMG_6107.jpg?v=1779761251",
+          "description": "A fresh model hitting the racks I call the Phoenix. A winged swallow tail design that features my Scoop and dropped fliers set in a vee bottom, double concave deck and beveled rails. Fast and loose is the name of the game here.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
