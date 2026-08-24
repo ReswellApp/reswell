@@ -1,0 +1,88 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "joel-fitzgerald-surfboards",
+      "name": "Joel Fitzgerald Surfboards",
+      "website_url": "https://joelfitzgeraldsurf.com",
+      "location_label": "North Narrabeen, New South Wales, Australia",
+      "founder_name": "Joel Fitzgerald",
+      "lead_shaper_name": "Joel Fitzgerald",
+      "short_description": "Independent surfboards by Joel Fitzgerald, shaped from a lifetime at North Narrabeen and the Hot Buttered bay.",
+      "models": [
+        {
+          "name": "Speed Monkey",
+          "image_url": "https://cdn.shopify.com/s/files/1/0655/2590/7665/files/SpeedMonkey-Product-A26-01.png?v=1776047855",
+          "description": "The Speed Monkey is designed for fast, clean surfing—from everyday beach breaks at home, to hollow walls in Indonesia and further afar. A very subtle rocker maximises speed and paddle power, while still allowing for free-flowing, responsive turns in the pocket. The result is a board that maintains a high performance feel, even when drawing longer, faster lines. A clean outline paired with a pulled-in swallow tail provides control and lightning-fast direction changes, making the Speed Monkey ideal for 2–5 foot conditions across beach breaks, reefs, and point waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Temples Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0655/2590/7665/files/TemplesTwin-product-A26-01.png?v=1776048039",
+          "description": "The Temples Twin is dialled in for fast and fluid, all-around performance. This model suits a wide variety of breaks from your local beachie or point at home, to chasing more adventurous and exotic waves across Indonesia and the globe. Designed with mid-sized swells in mind, and perfect for long open walls, the Temples Twin is fine tuned with Joel’s signature design elements. A subtle rocker profile, medium to full rail foil, and swallow tail—all combine to provide stronger paddle power and early wave entry speed. With a deep double barrel concave starting from the belly and running out through the fins and tail, the Temples Twin generates immediate speed and acceleration right from the take off and through the first bottom turn. Designed as a highly-fun performance twin—this model is built to catch more waves, surf as fast as you can, and maximise your enjoyment for surfing. Ride it as a straight twin fin, or with a rear stabiliser for added control when needed.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Space Hawk",
+          "image_url": "https://cdn.shopify.com/s/files/1/0655/2590/7665/files/SpaceHawk-product-A26-01.jpg?v=1776046704",
+          "description": "The Space Hawk is a classic twin fin with rear stabiliser, that Joel has designed specifically for surfing at high-speed. Featuring a deep single to double barrel concave, plus extra foam under the front foot and through the nose—this model is a speed machine, easily picking up wave speed and accelerating down the line. Designed with a full rail forward, aggressive rail foil through the tail, and a pulled-in wing swallow tail, the Space Hawk manoeuvres easily while maintaining control, and drives down the line when riding the face of the wave at high velocity. Joel has developed this model with feedback from surfer, artist and friend Ozzie Wrong, to create an outrageously fun and supremely fast surfboard. We recommend the Space Hawk is the perfect board for surfers looking for an exciting twin with a difference—and ready to make the most of small, punchy beach breaks, or clean 3–5 foot conditions.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Dreamcatcher",
+          "image_url": "https://cdn.shopify.com/s/files/1/0655/2590/7665/files/Dreamcatcher-product-A26-03.jpg?v=1776225646",
+          "description": "The Dreamcatcher is a refined twin fin fish designed for speed and flow, with the versatility to be surfed in a variety of small to medium sized conditions. Available with either a Keel or Twinzer fin system, this model features subtle wing-hips and a slightly pulled-in deep swallow tail—adding extra bite, control, and drive when the waves become more critical. Originally developed as a small to medium wave board, the Dreamcatcher allows for increased control through steeper sections without losing its playful and fast feeling. A deep single to double barrel concave generates speed through fatter sections, allowing the board to glide effortlessly while maintaining agility and responsiveness. Equally at home in low-energy beach breaks or clean, fun point waves, the Dreamcatcher is built for surfers who enjoy trimming with speed, drawing smooth lines, and maximising flow in everyday conditions.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Sea Gypsy",
+          "image_url": "https://cdn.shopify.com/s/files/1/0655/2590/7665/files/SeaGypsy-product-A26-01.jpg?v=1776046086",
+          "description": "The Sea Gypsy is a fast and fluid mid-length single fin—designed for speed, glide, and all-round performance. The high-speed single to double barrel concave is a defining feature of the Sea Gypsy and a key reason it is widely regarded as one of the fastest paddling and surfing single fin surfboards available. This bottom contour has been developed and tested across Australia, Indonesia, and Hawaii, delivering exceptional speed and flow across a wide range of conditions. With water flowing cleanly past a round area pin tail and a forgiving medium rail, the Sea Gypsy offers control without sacrificing speed. This model performs beautifully in beach breaks and remains composed in clean reefs and point waves, making it a highly adaptable mid-length. The Sea Gypsy suits beginner, intermediate, and experienced surfers alike, particularly those looking to draw fast, classic lines in 1–6 foot waves. This model can be ordered as a single fin, or with the option to add side bites for more versatility.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Bolt",
+          "image_url": "https://cdn.shopify.com/s/files/1/0655/2590/7665/files/MidnightLightning-product-A26-01.jpg?v=1776045534",
+          "description": "The Bolt is a fast, down-the-line barrel hunter, with a classic single-fin design—fine tuned for drawing clean lines at high speed. This model features a traditional single-fin rocker profile, full plan shape, and subtle concave running through the centre of the board, flowing out through the tail. Together, these design elements allow for early wave entry, exceptional down the line speed, and the ability to fly through open sections with control and confidence. Proven in the waves of Hawaii, Indonesia, and Australia, The Bolt is built for surfers who enjoy bigger, more powerful swells, and really excels in clean, well-formed conditions where speed, timing, and commitment are rewarded. Best surfed with a straight 7.0\" single fin, this model is all about momentum, precision, and that classic single-fin feeling.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Cosmic Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0655/2590/7665/files/CosmicTwin-Product-A26-01.jpg?v=1776045036",
+          "description": "The Cosmic Twin is a progressive mid-length twin fin designed to bring speed, glide, and versatility to a wide range of conditions. Featuring a deep swallow tail and a flat bottom that transitions into a spiral vee through the keels—this design delivers fast acceleration and smooth rail-to-rail flow. Generous paddle power is balanced by a medium-low rail, preventing the board from feeling corky while maintaining control and responsiveness. In smaller surf, the Cosmic Twin can be surfed as a high-volume keel-fin fish, flying through flatter sections with ease. When conditions step up, the added volume allows you to get into waves early while still offering the ability to duck dive and stay mobile in the lineup. Tested across the waves of Indonesia and Australia, the Cosmic Twin is built to add a new dimension to your surfing—whether you’re chasing speed, flow, and rhythm, or just wanting to ride something a little different underfoot.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Voyager",
+          "image_url": "https://cdn.shopify.com/s/files/1/0655/2590/7665/files/SeaGypsyMK2-product-A26-01.png?v=1776046449",
+          "description": "The Voyager is a refined single-fin mid-length, designed and tested by Joel during one of the most memorable surf seasons in recent years. This new model takes inspiration from the original Sea Gypsy with subtle step-up performance enhancements. Adjustments to the width and outline include a pulled-in area pin tail and a lowered medium-low rail, improving drive, control, and hold through critical sections. A subtle rocker profile, combined with slight vee entry transitioning into concave with spiral vee out of the tail, delivers smooth manoeuvrability while maintaining paddle power and flow. The Voyager is an ideal choice for shortboarders transitioning to a mid-length, as well as surfers looking for a board that excels in smaller conditions yet remains dependable in larger swells and on surf trips to exotic and remote locations. Available as a single fin, with the option to add side bites or quad configuration, the Voyager offers a versatile, fast, and enjoyable mid-length built for speed, glide, and all-round performance.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Wing Pin Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0655/2590/7665/files/WingPinTwin-product-A26-01.jpg?v=1776048421",
+          "description": "The Wing Pin Twin is a refined mid-length design, shaped from decades of R&D testing, board design evolution, and hands-on surfboard building. Originally popularised in the early 1970s by shapers such as Dick Brewer, Gerry Lopez, and Terry Fitzgerald, the wing pin concept allows the board to release more easily between turns by effectively shortening the rail line. This design encourages tighter pivots in the pocket while improving hold in critical sections by reducing tail area under the back foot. This modern interpretation pairs the classic wing pin outline with twin fin or quad fin configurations, a subtle rocker profile for increased paddle power and early entry speed, and a medium-low rail. A slight vee entry transitions into concave with spiral vee out through the tail, enhancing rail-to-rail transitions and maintaining control at higher speeds. The result is a versatile mid-length that excels in small, low-energy waves, yet comes alive as a fast, barrel-hunting craft when conditions turn on.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Tomahawk 2.0",
+          "image_url": "https://cdn.shopify.com/s/files/1/0655/2590/7665/files/Tomahawk2-product-A26-01.png?v=1776048208",
+          "description": "The Tomahawk 2.0 is a refined short and wide performance surfboard built for speed, flow, and modern performance. Drawing from the original Tomahawk’s classic outline and strong down-the-line DNA, this refined 2.0 update blends traditional performance elements with contemporary design features. A deep single to double concave, medium-full rail foil, subtle wing hips, and swallow tail—all work together to deliver hyper fast and responsive surfing, with added drive and bite through critical sections. The Tomahawk 2.0 has become the go-to performance craft in the Joel Fitzgerald range, designed to be surfed fast and inject a modern and fluid feeling into your surfing—without sacrificing paddle power or lineup positioning. This model can be ordered as a twin fin plus rear stabiliser setup, or quad fin configuration.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Zi Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0655/2590/7665/files/ZiTwin-product-A26-01.jpg?v=1776049021",
+          "description": "The Zi Twin is built for thrills and versatility. This performance-driven twin fin design has become a standout in Bali, where it has been extensively tested across a wide range of surfers and wave conditions—for good reason. Offering a unique and engaging surfing experience, the Zi Twin delivers excellent manoeuvrability with fast and fluid transitions between turns. The pulled-in swallow tail adds carve and drive, while both the twin fin and optional quad fin configurations create less drag and more speed than a traditional thruster setup. A subtle rocker profile provides added paddle power, helping you generate early entry speed and draw longer, more connected lines. For surfers seeking a different feel underfoot, the Zi Twin is a highly versatile design that performs equally well in fun everyday conditions and larger, more powerful swells.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Zipper",
+          "image_url": "https://cdn.shopify.com/s/files/1/0655/2590/7665/files/ZiTwinMini-product-A26-01.jpg?v=1776048615",
+          "description": "The Zipper is designed for surfers seeking a balance of fun, speed, and paddle power in small-wave conditions. The design of this compact twin fin delivers a lively, fluid and engaged surfing experience. With a subtle rocker profile and wider nose area, the Zipper has excellent paddle power, fast wave entry, and smooth acceleration across the wave face. Whether you’re surfing low-energy beach breaks or playful point breaks, the Zipper's classic fish-inspired outline offers stability and flow, while the concave and twin fin configuration enhance responsiveness and speed. This model is a versatile small-wave board that suits both experienced surfers looking for maximum fun, and newer surfers wanting an easy, confidence-inspiring ride. The Zipper can be ordered with either a twin fin or twinzer setup.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
