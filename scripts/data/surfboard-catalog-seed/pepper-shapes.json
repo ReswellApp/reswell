@@ -1,0 +1,68 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "pepper-shapes",
+      "name": "Pepper Shapes",
+      "website_url": "https://peppershapes.com.au",
+      "location_label": "Long Jetty, New South Wales, Australia",
+      "short_description": "Low-production, high-quality surfboards from a family shaping bay in Long Jetty on the Central Coast of New South Wales.",
+      "models": [
+        {
+          "name": "The Blender",
+          "image_url": "https://peppershapes.com.au/wp-content/uploads/2023/11/pep-blen-main.jpg",
+          "description": "Our Hybrid High Performance Longboard model developed with surfer Grant Ferguson. The outline is nicely balanced with more area forward that pulls in through the bottom half to a rounded pin tail, flatter tail rocker with double vee concave and a hard resin edge in tail that creates fast transitions through turns and top to bottom rail surfing. Comes with a single fin box and side fin boxes in either future or fcs2 boxes.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Noserider Rounded Pin",
+          "image_url": "https://peppershapes.com.au/wp-content/uploads/2023/11/blen2.jpg",
+          "description": "A modern log designed for maximum tip time. Features A balanced plan shape that keeps its width through to the nose creating stability when crossing stepping. A wide square tail with late tail lift creates a locked in sensation through nose riders. Available from 9'0 to 9'8 and in 2 different tail variations available square tail or rounded pin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Channel Twin Fin",
+          "image_url": "https://peppershapes.com.au/wp-content/uploads/2023/11/pep-channel-twin.jpg",
+          "description": "The channel twin paddles like mid length but turns on a dime. With unbelievable speed and hold you can push hard through turns without it sliding but has the release there if you need it. The thing I like most about this board is how fast it is and the smooth transition and power you get coming out of turns. From 2ft to 6ft this board performs in all conditions but loves an open face and a barrel.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Keel Fish",
+          "image_url": "https://peppershapes.com.au/wp-content/uploads/2023/11/pep-keel-1.jpg",
+          "description": "Peppers take on the traditional keel Fish is a balanced blend of traditional and modern surfboard design to create a high performance twin fin fish. It's down rails and single to double concave makes for effortless speed and drive. A great board for flowing lines and drawn out turns.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Midstrength",
+          "image_url": "https://peppershapes.com.au/wp-content/uploads/2023/11/pep-mid-1.jpg",
+          "description": "Fast and flowy. This mid length single fin is a great and reliable all rounder. Perfect for beginners to the high performers. Great for clean open faces and down the line point breaks off the east coast. Think flowing high lines transitioning to longer rail turns. The 60's inspired egg style plan shape creates a classic vibe of lasting worth. A mostly flat bottom into subtle double vee concave in the back, tucked bottom rail into a soft edge for a fast and lively feel under the feet.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Noserider",
+          "image_url": "https://peppershapes.com.au/wp-content/uploads/2023/11/pep-nose-4.jpg",
+          "description": "A modern log designed for maximum tip time. Features A balanced plan shape that keeps its width through to the nose creating stability when crossing stepping. A wide square tail with late tail lift creates a locked in sensation through nose riders. Available from 9'0 to 9'8 and in 2 different tail variations available square tail or rounded pin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pearl",
+          "image_url": "https://peppershapes.com.au/wp-content/uploads/2023/11/pep-pearl-4.jpg",
+          "description": "A traditional Noserider specific Log. Custom rocker features extra tail flip, set fin at 80mm from the tail that ensures no slipping out on a steep nose ride section. The Pearl comes with timber tail block and colour resin panels applied in the final filler coat, to create a period correct aesthetic. Length is your friend with this design. Available from 9'6 to 10'1.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pelagic Fish",
+          "image_url": "https://peppershapes.com.au/wp-content/uploads/2023/11/pep-pel-1.jpg",
+          "description": "The Pelagic fish is a fast & responsive twin plus trailer fin hybrid shortboard. From 1 foot to 5 foot, it's a peak performing fish that's got plenty of get up and go speed. Featuring a S deck curve, low entry rocker, single to double concave, subtle beveled down rails and subtle flyers into a pulled in swallow tail. This design makes for an amazing experience when high performance surfing.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Wilder Twin Fin",
+          "image_url": "https://peppershapes.com.au/wp-content/uploads/2021/03/pep-wild-1.jpg",
+          "description": "The Wilder Twin is the ultimate all round surf craft, it performs in any conditions from 1 ft to well overhead. The deep double concave through to the large swallow tail gives you the hold you need to push as hard as you can on those big turns and the low level rocker combined with the twin fin helps maintain speed in smaller conditions, it has lots of volume up front around the chest area for easy paddling to keep your wave count up, if you're after a board to suit all kinds of conditions this is the board for you. Available from 6'6 to 7'6.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
