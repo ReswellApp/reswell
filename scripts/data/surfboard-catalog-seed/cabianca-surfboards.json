@@ -1,0 +1,142 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "cabianca-surfboards",
+      "name": "Cabianca Surfboards",
+      "website_url": "https://cabiancasurfboards.com/",
+      "location_label": "Zarautz, Basque Country, Spain",
+      "founder_name": "Johnny Cabianca",
+      "lead_shaper_name": "Johnny Cabianca",
+      "short_description": "Johnny Cabianca surfboards, shaped from his Zarautz, Basque Country facility.",
+      "models": [
+        {
+          "name": "DFK 2.0",
+          "image_url": "https://cabiancasurfboards.com/public/media/2023/12/DFK202.0.png",
+          "description": "BE PART OF THE EVOLUTION From ‘Da Freak Kid’ to three-time world champion, we’ve loved watching Gabriel’s ascent, from high-flying teen prodigy to the all-round surfing virtuoso he is today. Just like his surfing, Gabriel’s go-to pro model surfboard has evolved constantly over the past years, and after years of constant development, we think it’s the most refined, balanced and straight-up magic board in our lineup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "DFK Edge",
+          "image_url": "https://cabiancasurfboards.com/public/media/2025/09/dfkedge.jpg",
+          "description": "SAME SPEED. MORE BITE. The DFK has always been about high-performance surfing at the highest level – fast, drivey, and built to go wherever you take it. The DFK Edge takes that world title winning formula and sharpens it. Same magic shape, just tuned for more bite, more grip, more control.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Prism",
+          "image_url": "https://cabiancasurfboards.com/public/media/2023/12/theprism.jpg",
+          "description": "High Performance in every dimension Winning in challenging conditions is about making the most of what’s in front of you, and that’s where The Prism comes in: a high-performance shape designed to excel in low-performance waves. Low rocker from nose to tail makes The Prism a fast paddler, helping you get more waves and make more sections.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The GAME",
+          "image_url": "https://cabiancasurfboards.com/public/media/2023/12/The20Game.png",
+          "description": "Taking the DFK 2.0’s high performance DNA as a starting point, Johnny developed a board designed to be ultra responsive in high quality waves anywhere up to five feet. Featuring a brand new foil with lower, softer rails for great drive and hold, the GAME’s flatter tail rocker combines with a mellow single to double concave for maximum speed and flow.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Bandida",
+          "image_url": "https://cabiancasurfboards.com/public/media/2023/12/Bandida.png",
+          "description": "Turn every seven into a ten After Gabriel Medina won #thetest contest at Kelly’s wave pool with this board, Johnny asked him how it went – his reply? “Bandida!”. Bandida (literally ‘Bandit’) is retro Brazilian slang for ‘badass’, and the nickname has stuck – even though there’s nothing retro about this ultra progressive shape.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "El Caballero",
+          "image_url": "https://cabiancasurfboards.com/public/media/2023/12/El20Caballero.png",
+          "description": "To get the most out of a high performance surfboard, you need to be a high performance surfer, right? Wrong. The Caballero takes the Formula 1 DNA of our DFK model and makes it just a little more forgiving, making it the weapon of choice for good surfers looking for excellent all-round performance.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Muleke",
+          "image_url": "https://cabiancasurfboards.com/public/media/2023/12/muleke.jpg",
+          "description": "MAXIMUM FROTH Our grommet model is built for maximum froth factor. Muleke is an affectionate Brazilian term for a young kid who is both smart and wild in equal amounts, so we think it’s a pretty good name for our Grom model, which is designed to be both forgiving enough to learn the basics, yet progressive enough to keep up with the modern grom’s insanely fast learning curve.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Magnum",
+          "image_url": "https://cabiancasurfboards.com/public/media/2023/12/MAGNUM.png",
+          "description": "RAISE YOUR GAME ON THE HEAVIEST DAYS We’ve all been there: your favourite spot is firing bigger and better than you’ve ever seen it… and you miss the wave of the day, because you were under-gunned. In our opinion, a Semi Gun is THE board most surfers are missing from their quiver.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "The Pickpocket",
+          "image_url": "https://cabiancasurfboards.com/public/media/2024/04/pickpocket.jpg",
+          "description": "The magic happens in the details. The Pickpocket is Johnny’s latest high-performance creation – a technical, refined shape that gives progressive surfers the tool they need to elevate their rail game and push every move to its critical limit. Tuned to connect turns seamlessly within a condensed wave area, this board is your ticket to fast, pocket-perfect surfing.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Uber Twin",
+          "image_url": "https://cabiancasurfboards.com/public/media/2023/12/Uber20Twin.png",
+          "description": "Twin fin fun with a futuristic twist Back in the 1970’s, Mark Richards revolutionized small wave surfboards with his twin-fin design, while in the past few years Uber have revolutionized transportation with their taxi app. Not that we’re saying our new Uber Twin shape is revolutionary – it’s just an insanely fun summer board that combines all the speed and looseness of a classic twin with the maneuverability of a modern performance shortboard.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Evil Twin",
+          "image_url": "https://cabiancasurfboards.com/public/media/2023/12/Evil20Twin.png",
+          "description": "Twin fin + stabiliser, flat rocker + width = summer speed and drive When it comes to milking every drop of speed and fun from weak summer swells, you really can’t beat a twin fin’s ability to generate speed with minimal drag. Which is why we decided it was time to give our Uber Twin model a “twin” of its own… introducing the Evil Twin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "El Dorado",
+          "image_url": "https://cabiancasurfboards.com/public/media/2026/03/ElDorado_render.png",
+          "description": "The Gold You’ve Been Searching For Much like the fish designs that emerged in the 1970s, El Dorado draws from a time when speed, flow, and simplicity defined surfing. With its flat deck, low rocker, and swallow tail, it carries the easy glide and freedom of classic twin fins, while refined bottom contours and rail work bring it firmly into the present.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "70s Twin",
+          "image_url": "https://cabiancasurfboards.com/public/media/2023/12/70s20Twin.png",
+          "description": "Spirit of the seventies, performance of… now Just like the spirit of the seventies, the twin fin never really died – it lives on in the muscle memory of old surfers and shapers, and in the upgraded designs of guys like Johnny, who learned from the masters. Johnny’s version has plenty of the cruisy retro feel of a classic twin, but with all the extra sensitivity and response you expect from a modern master of performance shapes.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "XXX",
+          "image_url": "https://cabiancasurfboards.com/public/media/2023/12/XXX.png",
+          "description": "AN EXCELLENT OPTION FOR SMALL WAVE DAYS For this design I took the basic shape of The Medina and introduced elements that make stubby summer boards such wave catching machines – extra width, a fuller foil, a rocker and plenty of foam under the chest. Finally, I added a triple wing, making this board perfect for high velocity snaps and n releases.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Candy",
+          "image_url": "https://cabiancasurfboards.com/public/media/2023/12/CANDY.png",
+          "description": "The perfect entry to performance surfing Mastered the basics and itching to throw some spray around? The Candy is the perfect first step towards performance surfing. Plenty of DNA from The Medina, combined with all the ingredients you need to catch way more waves on average beach breaks: flat rocker, lots of foam under the chest, and a stable, easy glide for maximum control.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Go-to Guy",
+          "image_url": "https://cabiancasurfboards.com/public/media/2023/12/Go-to20Guy.png",
+          "description": "This guy makes you love the waves you thought you hated Summer doesn’t have to be a bummer, and when it comes to making the most of small, gutless surf, the Go-To Guy will always show you a good time. The secret to this board’s ultra high fun factor is how its high volume and width is combined with performance rails, subtle rocker and a single concave throughout, making it an easy-going wave catcher that still loves to be surfed progressively.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Sherpa",
+          "image_url": "https://cabiancasurfboards.com/public/media/2023/12/Sherpa.png",
+          "description": "Hybrid fun board that will carry you through any wave, anywhere Mid length models are very much back in vogue right now, with good reason. Inspired by the hull-bottomed models of the pre-Thruster era, these boards are the perfect choice for smooth, flowing turns and effortless glide on long, cruisy waves, especially point breaks.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Omelette",
+          "image_url": "https://cabiancasurfboards.com/public/media/2023/12/Omelette.png",
+          "description": "My personal take on a funboard classic Perfect for beginners and surf schools, the Omelette is also ideal for intermediates looking for a cruisy board that works in a wide variety of conditions. What makes the Omelette better than your average Egg is its tip-to-tail vee bottom contour: this allows the fuller, high volume shape to remain responsive from rail to rail, while slicing through chop on windblown faces.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Slimmer",
+          "image_url": "https://cabiancasurfboards.com/public/media/2023/12/Slimmer_2.png",
+          "description": "Smooth longboard with a hard performance edge We took the classic, sophisticated shape of the Trimmer and added a little performance edge to it. A pinch more rocker, less area in the nose, and a slimmer tail to increase both velocity and maneuverability. If you like combining big moves with a smooth flow, the Slimmer is the longboard for you.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Trimmer",
+          "image_url": "https://cabiancasurfboards.com/public/media/2023/12/Trimmer.png",
+          "description": "A modern twist on a timeless classic The Trimmer is a longboard that follows in the footsteps of the greats – Jed Noll, Takayama – but adds a little extra dash of the radical performance Cabianca shapes are known for. The full rails, classic outline and flat rocker make for effortlessly smooth down-the-line surfing, while the subtle tip-to-tail vee bottom ensures fast and fluid transitions from rail to rail.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Dreammer",
+          "image_url": "https://cabiancasurfboards.com/public/media/2023/12/Dreammer.png",
+          "description": "Classic longboard with a modern twist With the Trimmer, we created a classic longboard lightly spiced with classic Cabianca performance DNA; with the Slimmer we added even more spice for longboarders that like to smash the lip. But did we forget about you logging aficionados, in search of the perfect nose rider?",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
