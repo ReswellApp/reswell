@@ -85,7 +85,7 @@ export async function MagazinesListingDetailPage({
   prefetchedListing,
   viewerUser,
 }: ListingDetailPageSharedProps) {
-  const { supabase, user, listing: magazineRaw } = await loadListingDetailPageContext({
+  const { supabase, user, listing: magazineRaw, canSellerRelist } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
@@ -552,7 +552,7 @@ export async function MagazinesListingDetailPage({
                   dashboardListingsHref="/dashboard/listings"
                   sectionLabel="listing"
                   listingId={magazine.id as string}
-                  canRelist={magazine.sold_off_platform === true}
+                  canRelist={canSellerRelist}
                 />
               </div>
             )}

@@ -97,6 +97,21 @@ function matchesLength(row: FacetCountRow, values: string[]): boolean {
   )
 }
 
+export function rowMatchesBrowseFacets(
+  row: FacetCountRow,
+  sel: BoardsBrowseFacetSelections,
+): boolean {
+  return (
+    matchesStyle(row, sel.styles) &&
+    matchesCondition(row, sel.conditions) &&
+    matchesFinSetup(row, sel.finSetups) &&
+    matchesFinSystem(row, sel.finSystems) &&
+    matchesConstruction(row, sel.constructions) &&
+    matchesLength(row, sel.lengthBuckets) &&
+    matchesVolume(row, sel.volumeBuckets)
+  )
+}
+
 function matchesVolume(row: FacetCountRow, values: string[]): boolean {
   if (values.length === 0) return true
   const volumeL = resolveVolumeLiters(row)

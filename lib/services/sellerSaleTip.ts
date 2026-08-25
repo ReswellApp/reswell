@@ -74,8 +74,12 @@ export async function createSellerSaleTipPaymentIntent(
   if (!listing) {
     return { ok: false, status: 404, error: "Not found" }
   }
-  if (listing.status !== "sold") {
-    return { ok: false, status: 400, error: "Listing is not marked as sold" }
+  if (
+    listing.status !== "sold" &&
+    listing.status !== "active" &&
+    listing.status !== "pending_sale"
+  ) {
+    return { ok: false, status: 400, error: "Listing cannot accept a tip" }
   }
 
   let service: SupabaseClient

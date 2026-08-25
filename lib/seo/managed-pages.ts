@@ -27,7 +27,7 @@ export const MANAGED_PAGE_GROUPS: ManagedPageGroup[] = [
   { id: "content", label: "Content & community", description: "Editorial, forum, and help." },
   { id: "trust", label: "Trust & legal", description: "Policies buyers and sellers check." },
   { id: "marketing", label: "Marketing & growth", description: "Landing and conversion pages." },
-  { id: "dynamic", label: "Dynamic page types", description: "Templates applied to every listing, brand, and seller." },
+  { id: "dynamic", label: "Dynamic page types", description: "Templates applied to every listing, brand, seller, and city." },
 ]
 
 export interface ManagedPageDefaults {
@@ -308,7 +308,7 @@ export const MANAGED_PAGES: ManagedPage[] = [
   page("cities-top", "marketplace", "Top cities directory", {
     title: "Top cities for surf gear — Reswell",
     description:
-      "Browse every city with active surfboard and gear listings on Reswell, see how many are listed there, and jump into local boards.",
+      "Browse every city with active surfboard and gear listings on Reswell, then open that city's landing page to shop local pickup.",
     path: "/cities/top",
     keywords: ["surfboard cities", "used surfboards near me", "surf marketplace cities"],
   }),

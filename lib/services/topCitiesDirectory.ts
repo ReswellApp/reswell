@@ -6,7 +6,11 @@ import {
   normalizePickupStateCode,
   pickupLocalityKey,
 } from "@/lib/services/pickupOnlySurfboards"
-import { slugify } from "@/lib/slugify"
+import {
+  cityLandingHref,
+  cityNameSlug,
+  publicCityLandingSlug,
+} from "@/lib/city-landing-path"
 import type { TopCitiesDirectory, TopCityDirectoryRow } from "@/lib/types/top-cities-directory"
 
 function cityDirectoryLabel(city: string, state: string | null): string {
@@ -14,10 +18,6 @@ function cityDirectoryLabel(city: string, state: string | null): string {
   const stateLabel = normalizePickupStateCode(state)
   if (cityLabel && stateLabel) return `${cityLabel}, ${stateLabel}`
   return cityLabel
-}
-
-function cityBoardsHref(label: string): string {
-  return `/boards?location=${encodeURIComponent(label)}`
 }
 
 export function buildTopCitiesDirectory(
@@ -47,11 +47,21 @@ export function buildTopCitiesDirectory(
     })
   }
 
-  const cities: TopCityDirectoryRow[] = [...buckets.entries()]
+  const bucketEntries = [...buckets.entries()]
+  const cityNameCounts = new Map<string, number>()
+  for (const [, bucket] of bucketEntries) {
+    const nameSlug = cityNameSlug(bucket.city)
+    if (!nameSlug) continue
+    cityNameCounts.set(nameSlug, (cityNameCounts.get(nameSlug) ?? 0) + 1)
+  }
+
+  const cities: TopCityDirectoryRow[] = bucketEntries
     .map(([key, bucket]) => {
       const label = cityDirectoryLabel(bucket.city, bucket.state)
-      const slug = slugify(
-        bucket.state ? `${bucket.city} ${bucket.state}` : bucket.city,
+      const slug = publicCityLandingSlug(
+        bucket.city,
+        bucket.state,
+        cityNameCounts.get(cityNameSlug(bucket.city)) ?? 0,
       )
       return {
         key,
@@ -60,7 +70,7 @@ export function buildTopCitiesDirectory(
         city: bucket.city,
         state: bucket.state,
         listingCount: bucket.listingCount,
-        href: cityBoardsHref(label),
+        href: cityLandingHref(slug),
       }
     })
     .sort((a, b) => {

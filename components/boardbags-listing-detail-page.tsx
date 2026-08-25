@@ -89,7 +89,7 @@ export async function BoardbagsListingDetailPage({
   prefetchedListing,
   viewerUser,
 }: ListingDetailPageSharedProps) {
-  const { supabase, user, listing: boardbagRaw } = await loadListingDetailPageContext({
+  const { supabase, user, listing: boardbagRaw, canSellerRelist } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
@@ -625,7 +625,7 @@ export async function BoardbagsListingDetailPage({
                   dashboardListingsHref="/dashboard/listings"
                   sectionLabel="listing"
                   listingId={boardbag.id as string}
-                  canRelist={boardbag.sold_off_platform === true}
+                  canRelist={canSellerRelist}
                 />
               </div>
             )}

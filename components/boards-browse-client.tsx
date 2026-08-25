@@ -27,6 +27,13 @@ type BoardsBrowseClientProps = {
   description?: string
   /** Optional admin CMS control shown in the header action row. */
   headerAction?: ReactNode
+  /** Wave photo behind the title. Defaults on when `title` is set. */
+  atmosphere?: boolean
+  /** Hide the location facet (city landing pages lock location). */
+  hideLocation?: boolean
+  /** Hide the header Ship to me toggle (city landing pages are pickup-first). */
+  hideShipToMe?: boolean
+  showSaveSearch?: boolean
 }
 
 type ActiveChip = { id: string; label: string; onRemove: () => void }
@@ -37,6 +44,10 @@ export function BoardsBrowseClient({
   title,
   description,
   headerAction,
+  atmosphere,
+  hideLocation = false,
+  hideShipToMe = false,
+  showSaveSearch = true,
 }: BoardsBrowseClientProps) {
   const [isPending, startTransition] = useTransition()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -114,44 +125,48 @@ export function BoardsBrowseClient({
       <CategoryBrowsePageHeader
         title={title}
         description={description}
-        atmosphereImage={title ? boardsBrowseAtmosphere : undefined}
+        atmosphereImage={
+          title && atmosphere !== false ? boardsBrowseAtmosphere : undefined
+        }
         // Wave/barrel sits mid-frame — bias down from the sky-heavy top crop.
         atmosphereImageClassName="object-[38%_72%] md:object-[40%_60%]"
         action={
           <div className="flex flex-wrap items-center gap-2">
             {headerAction}
-            <Button
-              type="button"
-              variant="outline"
-              aria-pressed={state.shippingAvailable}
-              aria-label={
-                state.shippingAvailable
-                  ? "Showing boards that ship — click to clear"
-                  : "Show only boards that ship to you"
-              }
-              onClick={() => {
-                const next = !state.shippingAvailable
-                logBrowseButtonClick({
-                  category: "boards",
-                  button: "ship_to_me",
-                  detail: next ? "enabled" : "disabled",
-                })
-                state.setShippingAvailable(next)
-              }}
-              className={cn(
-                "h-10 shrink-0 gap-2 rounded-full px-4 text-sm font-semibold shadow-none transition-colors",
-                state.shippingAvailable
-                  ? "border-transparent bg-[#001A4A] text-white hover:bg-[#001A4A]/90"
-                  : "border-[#001A4A]/20 bg-[#E8EEF8] text-[#001A4A] hover:border-[#001A4A]/35 hover:bg-[#DCE6F5]",
-              )}
-            >
-              {state.shippingAvailable ? (
-                <Check className="h-4 w-4 stroke-[2.25]" aria-hidden="true" />
-              ) : (
-                <Truck className="h-4 w-4 stroke-[1.75]" aria-hidden="true" />
-              )}
-              Ship to me
-            </Button>
+            {hideShipToMe ? null : (
+              <Button
+                type="button"
+                variant="outline"
+                aria-pressed={state.shippingAvailable}
+                aria-label={
+                  state.shippingAvailable
+                    ? "Showing boards that ship — click to clear"
+                    : "Show only boards that ship to you"
+                }
+                onClick={() => {
+                  const next = !state.shippingAvailable
+                  logBrowseButtonClick({
+                    category: "boards",
+                    button: "ship_to_me",
+                    detail: next ? "enabled" : "disabled",
+                  })
+                  state.setShippingAvailable(next)
+                }}
+                className={cn(
+                  "h-10 shrink-0 gap-2 rounded-full px-4 text-sm font-semibold shadow-none transition-colors",
+                  state.shippingAvailable
+                    ? "border-transparent bg-[#001A4A] text-white hover:bg-[#001A4A]/90"
+                    : "border-[#001A4A]/20 bg-[#E8EEF8] text-[#001A4A] hover:border-[#001A4A]/35 hover:bg-[#DCE6F5]",
+                )}
+              >
+                {state.shippingAvailable ? (
+                  <Check className="h-4 w-4 stroke-[2.25]" aria-hidden="true" />
+                ) : (
+                  <Truck className="h-4 w-4 stroke-[1.75]" aria-hidden="true" />
+                )}
+                Ship to me
+              </Button>
+            )}
             <CategoryBrowseFilterButton
               category="boards"
               activeFilterCount={state.activeCount}
@@ -192,11 +207,16 @@ export function BoardsBrowseClient({
               state={state}
               counts={counts}
               locationListboxId="boards-location-sidebar"
+              hideLocation={hideLocation}
             />
-            <Separator className="my-4" />
-            <Suspense fallback={null}>
-              <BoardsSaveSearchPanel />
-            </Suspense>
+            {showSaveSearch ? (
+              <>
+                <Separator className="my-4" />
+                <Suspense fallback={null}>
+                  <BoardsSaveSearchPanel />
+                </Suspense>
+              </>
+            ) : null}
           </div>
         </aside>
 
@@ -289,11 +309,16 @@ export function BoardsBrowseClient({
                 state={state}
                 counts={counts}
                 locationListboxId="boards-location-drawer"
+                hideLocation={hideLocation}
               />
-              <Separator className="my-4" />
-              <Suspense fallback={null}>
-                <BoardsSaveSearchPanel />
-              </Suspense>
+              {showSaveSearch ? (
+                <>
+                  <Separator className="my-4" />
+                  <Suspense fallback={null}>
+                    <BoardsSaveSearchPanel />
+                  </Suspense>
+                </>
+              ) : null}
             </div>
           </ScrollArea>
 

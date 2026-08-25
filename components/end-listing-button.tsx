@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { EndListingDialog } from "@/components/end-listing-dialog"
+import { prefetchSaleTipCheckout } from "@/lib/stripe/prefetch-sale-tip-checkout"
 
 interface EndListingButtonProps {
   listingId: string
@@ -29,6 +30,9 @@ export function EndListingButton({
       <Button
         variant="outline"
         className={triggerClassName}
+        onPointerEnter={() => {
+          void prefetchSaleTipCheckout()
+        }}
         onClick={() => setOpen(true)}
       >
         End listing

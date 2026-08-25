@@ -47,3 +47,9 @@ export const searchTrendPeriodQuerySchema = z
   })
 
 export type SearchTrendPeriodQuery = z.infer<typeof searchTrendPeriodQuerySchema>
+
+export const searchQueryLookupSchema = z.object({
+  q: z.string().trim().min(1).max(200),
+})
+
+export type SearchQueryLookupInput = z.infer<typeof searchQueryLookupSchema>

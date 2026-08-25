@@ -94,7 +94,7 @@ export async function WetsuitsListingDetailPage({
   prefetchedListing,
   viewerUser,
 }: ListingDetailPageSharedProps) {
-  const { supabase, user, listing: wetsuitRaw } = await loadListingDetailPageContext({
+  const { supabase, user, listing: wetsuitRaw, canSellerRelist } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
@@ -640,7 +640,7 @@ export async function WetsuitsListingDetailPage({
                   dashboardListingsHref="/dashboard/listings"
                   sectionLabel="listing"
                   listingId={wetsuit.id as string}
-                  canRelist={wetsuit.sold_off_platform === true}
+                  canRelist={canSellerRelist}
                 />
               </div>
             )}

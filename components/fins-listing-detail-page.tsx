@@ -99,7 +99,7 @@ export async function FinsListingDetailPage({
   prefetchedListing,
   viewerUser,
 }: ListingDetailPageSharedProps) {
-  const { supabase, user, listing: finRaw } = await loadListingDetailPageContext({
+  const { supabase, user, listing: finRaw, canSellerRelist } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
@@ -647,7 +647,7 @@ export async function FinsListingDetailPage({
                   dashboardListingsHref="/dashboard/listings"
                   sectionLabel="listing"
                   listingId={fin.id as string}
-                  canRelist={fin.sold_off_platform === true}
+                  canRelist={canSellerRelist}
                 />
               </div>
             )}

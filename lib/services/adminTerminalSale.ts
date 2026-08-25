@@ -10,6 +10,7 @@ import {
   PEER_SURFBOARD_CHECKOUT_LISTING_SELECT,
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
+import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { fetchSellerFeeWaived } from "@/lib/db/profileSellerFee"
 import { getSellerEarnings } from "@/lib/seller-fees"
@@ -775,7 +776,7 @@ export async function completeAdminTerminalCashSale(
 
   const { error: listingErr } = await service
     .from("listings")
-    .update({ status: "sold" })
+    .update(listingSoldViaCheckoutUpdate())
     .eq("id", listing.id)
 
   if (listingErr) {

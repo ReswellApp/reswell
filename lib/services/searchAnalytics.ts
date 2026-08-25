@@ -10,6 +10,7 @@ import {
   indexSearchAnalyticsDocument,
   listMarketplaceSearchEvents,
   listNavBarMarketplaceKeywordEvents,
+  lookupMarketplaceQueryAllTime,
   topQueriesInRange,
   type NavBarMarketplaceKeywordEventHit,
   type SearchAnalyticsDoc,
@@ -1154,4 +1155,49 @@ export async function getSearchAnalyticsDashboardService(
     pulse,
     fetchedAt,
   })
+}
+
+export type SearchQueryLookupMatch = {
+  query: string
+  count: number
+}
+
+export type SearchQueryLookupResult = {
+  configured: boolean
+  query: string
+  queryNormalized: string
+  allTimeCount: number
+  firstOccurredAt: string | null
+  lastOccurredAt: string | null
+  related: SearchQueryLookupMatch[]
+}
+
+export async function lookupSearchQueryAllTimeService(
+  rawQuery: string,
+): Promise<SearchQueryLookupResult> {
+  const query = displayMarketplaceSearchQueryForAnalytics(rawQuery)
+  const queryNormalized = normalizeMarketplaceSearchQueryForAnalytics(rawQuery)
+
+  if (!isElasticsearchConfigured()) {
+    return {
+      configured: false,
+      query,
+      queryNormalized,
+      allTimeCount: 0,
+      firstOccurredAt: null,
+      lastOccurredAt: null,
+      related: [],
+    }
+  }
+
+  const hit = await lookupMarketplaceQueryAllTime(queryNormalized)
+  return {
+    configured: true,
+    query: hit?.queryDisplay ?? query,
+    queryNormalized,
+    allTimeCount: hit?.exactCount ?? 0,
+    firstOccurredAt: hit?.firstOccurredAt ?? null,
+    lastOccurredAt: hit?.lastOccurredAt ?? null,
+    related: hit?.matches ?? [],
+  }
 }

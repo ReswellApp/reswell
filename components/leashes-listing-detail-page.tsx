@@ -89,7 +89,7 @@ export async function LeashesListingDetailPage({
   prefetchedListing,
   viewerUser,
 }: ListingDetailPageSharedProps) {
-  const { supabase, user, listing: leashRaw } = await loadListingDetailPageContext({
+  const { supabase, user, listing: leashRaw, canSellerRelist } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
@@ -625,7 +625,7 @@ export async function LeashesListingDetailPage({
                   dashboardListingsHref="/dashboard/listings"
                   sectionLabel="listing"
                   listingId={leash.id as string}
-                  canRelist={leash.sold_off_platform === true}
+                  canRelist={canSellerRelist}
                 />
               </div>
             )}

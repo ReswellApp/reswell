@@ -737,7 +737,7 @@ function ListingRow({
             </Link>
           </Button>
         )}
-        {isSold && !sellerBanned && listing.sold_off_platform === true ? (
+        {isSold && !sellerBanned && listing.canRelist ? (
           <RelistListingButton
             listingId={listing.id}
             triggerClassName="min-w-[5.5rem] rounded-full bg-muted text-primary shadow-none hover:bg-muted/80"

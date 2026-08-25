@@ -14,6 +14,7 @@ import {
 } from "@/lib/services/applyAcceptedOfferToPeerCheckoutListings"
 import { validateAcceptedOfferForPaymentIntent } from "@/lib/services/acceptedOfferCheckout"
 import { pendingSaleFeeClause } from "@/lib/seller-fees"
+import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import { formatPeerItemCountPhrase } from "@/lib/peer-listing-item-nouns"
 import { isReswellShopListing } from "@/lib/reswell-shop"
@@ -869,7 +870,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
   if (peerListingIds.length > 0) {
     const { error: listingErr } = await serviceSupabase
       .from("listings")
-      .update({ status: "sold" })
+      .update(listingSoldViaCheckoutUpdate())
       .in("id", peerListingIds)
 
     if (listingErr) {

@@ -211,10 +211,12 @@ export function BoardsBrowseFacetControls({
   state,
   counts,
   locationListboxId,
+  hideLocation = false,
 }: {
   state: BoardsFilterState
   counts: FacetCountsMap
   locationListboxId: string
+  hideLocation?: boolean
 }) {
   const { selections } = state
   const advancedCount = advancedFilterCount(selections)
@@ -223,7 +225,7 @@ export function BoardsBrowseFacetControls({
     <Accordion
       type="multiple"
       defaultValue={[
-        ...PRIMARY_SECTION_IDS,
+        ...PRIMARY_SECTION_IDS.filter((id) => !(hideLocation && id === "location")),
         ...(advancedCount > 0 ? (["advanced"] as const) : []),
       ]}
       className="w-full"
@@ -232,9 +234,11 @@ export function BoardsBrowseFacetControls({
         <PriceSection state={state} />
       </FacetAccordionItem>
 
-      <FacetAccordionItem id="location" title="Location">
-        <BoardsBrowseLocationFilter state={state} listboxId={locationListboxId} />
-      </FacetAccordionItem>
+      {hideLocation ? null : (
+        <FacetAccordionItem id="location" title="Location">
+          <BoardsBrowseLocationFilter state={state} listboxId={locationListboxId} />
+        </FacetAccordionItem>
+      )}
 
       <FacetAccordionItem id="shipping" title="Shipping">
         <label

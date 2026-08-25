@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
@@ -16,8 +16,9 @@ import { canUseListingVacationMode } from "@/components/features/sell/listing-va
 import { toast } from "sonner"
 import { setListingVacationModeAction } from "@/lib/actions/listingVacationMode"
 import { postEndListing } from "@/lib/listing-end-request"
-import { postMarkListingSold } from "@/lib/listing-mark-sold-request"
 import { sellActionErrorMessage } from "@/lib/sell-flow/sell-submit-error"
+import { prefetchSaleTipCheckout } from "@/lib/stripe/prefetch-sale-tip-checkout"
+import { cn } from "@/lib/utils"
 
 type EndChoice = "delete" | "archive" | "mark_sold" | "vacation" | null
 type DialogStep = "main" | "sold_survey"
@@ -58,6 +59,11 @@ export function EndListingDialog({
   const tipCheckoutActiveRef = useRef(false)
   const router = useRouter()
 
+  useEffect(() => {
+    if (!open) return
+    void prefetchSaleTipCheckout()
+  }, [open])
+
   function resetState() {
     setStep("main")
     setChoice(null)
@@ -79,15 +85,8 @@ export function EndListingDialog({
     }
   }
 
-  function handleRelisted() {
-    markedSoldRef.current = false
-    resetState()
-    onOpenChange(false)
-  }
-
   function handleOpenChange(nextOpen: boolean) {
     if (!nextOpen) {
-      if (tipCheckoutActiveRef.current) return
       closeAndRefreshIfSold()
       return
     }
@@ -130,25 +129,10 @@ export function EndListingDialog({
     }
 
     if (choice === "mark_sold") {
-      setLoading(true)
-      try {
-        const result = await postMarkListingSold(listingId)
-        if (!result.ok) {
-          toast.error(result.error)
-          return
-        }
-        markedSoldRef.current = true
-        setSoldPriceUsd(
-          result.priceUsd > 0
-            ? result.priceUsd
-            : typeof listingPriceUsd === "number" && listingPriceUsd > 0
-              ? listingPriceUsd
-              : null,
-        )
-        setStep("sold_survey")
-      } finally {
-        setLoading(false)
-      }
+      setSoldPriceUsd(
+        typeof listingPriceUsd === "number" && listingPriceUsd > 0 ? listingPriceUsd : null,
+      )
+      setStep("sold_survey")
       return
     }
 
@@ -185,8 +169,16 @@ export function EndListingDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="max-h-[90vh] overflow-y-auto sm:max-w-lg"
-        showCloseButton={!tipCheckoutActive}
+        className={cn(
+          followUpOpen
+            ? [
+                "left-0 top-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-3 overflow-hidden overscroll-none rounded-none",
+                "p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]",
+                "sm:left-[50%] sm:top-[50%] sm:h-[40rem] sm:max-h-[40rem] sm:w-full sm:max-w-md sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg sm:p-5",
+              ]
+            : "max-h-[90vh] overflow-y-auto sm:max-w-lg",
+        )}
+        showCloseButton
         onOpenAutoFocus={(event) => {
           if (followUpOpen) event.preventDefault()
         }}
@@ -199,13 +191,16 @@ export function EndListingDialog({
         onInteractOutside={(event) => {
           if (followUpOpen) event.preventDefault()
         }}
+        onCloseAutoFocus={(event) => {
+          if (followUpOpen) event.preventDefault()
+        }}
       >
         {followUpOpen ? (
           <>
-            <DialogHeader className="pr-8">
-              <DialogTitle>Congrats on the sale</DialogTitle>
-              <DialogDescription>
-                Where it sold, plus an optional tip to Reswell and a rating.
+            <DialogHeader className="shrink-0 space-y-1 pr-8 text-left">
+              <DialogTitle className="text-base">Congrats on the sale</DialogTitle>
+              <DialogDescription className="text-xs">
+                Where it sold, optional tip, and a rating.
               </DialogDescription>
             </DialogHeader>
             {listingId ? (
@@ -214,7 +209,9 @@ export function EndListingDialog({
                 listingPriceUsd={followUpPriceUsd}
                 onCheckoutActiveChange={handleCheckoutActiveChange}
                 onClose={closeAndRefreshIfSold}
-                onRelisted={handleRelisted}
+                onMarkedSold={() => {
+                  markedSoldRef.current = true
+                }}
               />
             ) : null}
           </>
@@ -291,7 +288,7 @@ export function EndListingDialog({
                   ? choice === "delete"
                     ? "Deleting…"
                     : choice === "mark_sold"
-                      ? "Saving…"
+                      ? "Continue"
                       : choice === "vacation"
                         ? vacationMode
                           ? "Going live…"
@@ -302,7 +299,7 @@ export function EndListingDialog({
                     : choice === "archive"
                       ? "Archive listing"
                       : choice === "mark_sold"
-                        ? "Mark as sold"
+                        ? "Continue"
                         : choice === "vacation"
                           ? vacationMode
                             ? "Go live"

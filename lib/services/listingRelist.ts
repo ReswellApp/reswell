@@ -16,6 +16,7 @@ import {
 } from "@/lib/services/listingVisibilityAudit"
 import { evaluateSellerCanSell } from "@/lib/services/sellerBan"
 import { fetchSellerBanState, isSellerBanActive } from "@/lib/db/sellerBan"
+import { listingIdsWithOpenMarketplaceCheckout } from "@/lib/db/listingDeleteEligibility"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 
 function uniqueListingIds(listingIds: readonly (string | null | undefined)[]): string[] {
@@ -330,6 +331,18 @@ export async function relistSellerMarkedSoldListing(
     return { ok: false, status: 400, error: "Archived listings cannot be relisted from here" }
   }
   if (row.sold_off_platform !== true) {
+    return {
+      ok: false,
+      status: 400,
+      error: "Listings sold on Reswell can’t be relisted this way",
+    }
+  }
+
+  const checkoutSold = await listingIdsWithOpenMarketplaceCheckout(supabase, [listingId])
+  if (checkoutSold.error) {
+    return { ok: false, status: 500, error: "Could not verify listing" }
+  }
+  if (checkoutSold.listingIds.has(listingId)) {
     return {
       ok: false,
       status: 400,

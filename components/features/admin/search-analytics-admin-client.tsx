@@ -78,6 +78,7 @@ import type {
 import { SEARCH_TREND_WINDOW_DAYS } from "@/lib/validations/search-analytics"
 import { cn } from "@/lib/utils"
 import { SearchAnalyticsPulseBar } from "@/components/features/admin/search-analytics-pulse-bar"
+import { SearchAnalyticsQueryLookup } from "@/components/features/admin/search-analytics-query-lookup"
 
 const RANGE_OPTIONS = [
   { value: "7", label: "Last 7 days" },
@@ -2034,6 +2035,8 @@ export function SearchAnalyticsAdminClient() {
           {error}
         </p>
       )}
+
+      <SearchAnalyticsQueryLookup />
 
       {loading && !data ? (
         <div className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-20 text-sm text-slate-500 shadow-sm">

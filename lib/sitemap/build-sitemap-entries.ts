@@ -13,6 +13,8 @@ import { fetchForumThreadSitemapEntries } from "@/lib/db/sitemap-forum-threads"
 import { fetchPublishedBlogPostSitemapEntries } from "@/lib/db/sitemap-blog-posts-published"
 import { fetchPriceGuideSitemapPaths } from "@/lib/db/sitemap-price-guide"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
+import { getCachedTopCitiesDirectory } from "@/lib/cache/top-cities-directory"
+import { cityLandingHref } from "@/lib/city-landing-path"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { getNoindexManagedPaths } from "@/lib/seo/resolve-page-seo"
 import type { SitemapUrlEntry } from "@/lib/sitemap/types"
@@ -102,13 +104,15 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
   const now = new Date()
   const supabase = await supabaseForSitemapPublicRead()
 
-  const [brandRows, sellerEntries, forumEntries, blogEntries, priceGuidePaths] = await Promise.all([
-    fetchBrandSlugRowsForSitemap(supabase),
-    fetchSellerProfileSitemapEntries(supabase),
-    fetchForumThreadSitemapEntries(supabase),
-    fetchPublishedBlogPostSitemapEntries(supabase),
-    fetchPriceGuideSitemapPaths(supabase),
-  ])
+  const [brandRows, sellerEntries, forumEntries, blogEntries, priceGuidePaths, cityDirectory] =
+    await Promise.all([
+      fetchBrandSlugRowsForSitemap(supabase),
+      fetchSellerProfileSitemapEntries(supabase),
+      fetchForumThreadSitemapEntries(supabase),
+      fetchPublishedBlogPostSitemapEntries(supabase),
+      fetchPriceGuideSitemapPaths(supabase),
+      getCachedTopCitiesDirectory(),
+    ])
 
   const staticPages: SitemapUrlEntry[] = [
     { url: `${BASE}/`, lastModified: now, changeFrequency: "daily", priority: 1.0 },
@@ -163,6 +167,13 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     priority: 0.55,
   }))
 
+  const cityPages: SitemapUrlEntry[] = cityDirectory.cities.map((city) => ({
+    url: `${BASE}${cityLandingHref(city.slug)}`,
+    lastModified: now,
+    changeFrequency: "daily",
+    priority: 0.6,
+  }))
+
   const sellerPages: SitemapUrlEntry[] = sellerEntries.map((e) => ({
     url: `${BASE}${e.path}`,
     lastModified: e.lastModified,
@@ -195,6 +206,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     ...staticPages,
     ...boardFilterPages(now),
     ...brandPages,
+    ...cityPages,
     ...sellerPages,
     ...forumPages,
     ...blogPages,

@@ -2,14 +2,8 @@
 
 import { useCallback, useState } from "react"
 import { loadStripe } from "@stripe/stripe-js"
-import {
-  Elements,
-  ExpressCheckoutElement,
-  PaymentElement,
-  useElements,
-  useStripe,
-} from "@stripe/react-stripe-js"
-import type { Appearance, StripeExpressCheckoutElementConfirmEvent } from "@stripe/stripe-js"
+import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js"
+import type { Appearance } from "@stripe/stripe-js"
 import { useTheme } from "next-themes"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
@@ -17,7 +11,6 @@ import { Button } from "@/components/ui/button"
 import { BRAND_CTA_BLUE } from "@/lib/brand-colors"
 import { finalizeListingSaleTip } from "@/lib/listing-sale-feedback-request"
 import { stripePublishableKey } from "@/lib/stripe/client-checkout-enabled"
-import { cn } from "@/lib/utils"
 
 let stripePromise: ReturnType<typeof loadStripe> | null = null
 function getStripeBrowser() {
@@ -56,7 +49,6 @@ function TipPaymentForm({
   const [busy, setBusy] = useState(false)
   const [elementLoadError, setElementLoadError] = useState<string | null>(null)
   const [paymentReady, setPaymentReady] = useState(false)
-  const [expressVisible, setExpressVisible] = useState(false)
 
   const completeAfterSuccess = useCallback(
     async (paymentIntentId: string) => {
@@ -121,98 +113,28 @@ function TipPaymentForm({
     [stripe, elements, confirmAndComplete],
   )
 
-  const handleExpressConfirm = useCallback(
-    async (event: StripeExpressCheckoutElementConfirmEvent) => {
-      if (!stripe || !elements) {
-        event.paymentFailed({ reason: "fail" })
-        return
-      }
-
-      setBusy(true)
-      try {
-        const result = await confirmAndComplete()
-        if (!result.ok) {
-          event.paymentFailed({ reason: "fail", message: result.message })
-          toast.error(result.message)
-        }
-      } catch (err) {
-        console.error("Sale tip express checkout error", err)
-        event.paymentFailed({ reason: "fail" })
-        toast.error("Something went wrong. Try again.")
-      } finally {
-        setBusy(false)
-      }
-    },
-    [stripe, elements, confirmAndComplete],
-  )
-
   return (
-    <div className="block space-y-4">
-      {elementLoadError ? <p className="text-sm text-destructive">{elementLoadError}</p> : null}
-
-      <div className={cn(!expressVisible && "h-0 overflow-hidden", busy && "pointer-events-none opacity-60")}>
-        <ExpressCheckoutElement
-          options={{
-            business: { name: "Reswell" },
-            paymentMethodOrder: ["apple_pay", "google_pay", "link"],
-            paymentMethods: {
-              applePay: "auto",
-              googlePay: "auto",
-              link: "auto",
-              paypal: "never",
-              amazonPay: "never",
-              klarna: "never",
-            },
-            buttonType: { applePay: "donate", googlePay: "donate" },
-            layout: { maxColumns: 2, maxRows: 2, overflow: "auto" },
-          }}
-          onReady={(event) => {
-            const methods = event.availablePaymentMethods
-            setExpressVisible(
-              Boolean(methods && (methods.applePay || methods.googlePay || methods.link)),
-            )
-          }}
-          onConfirm={(event) => {
-            void handleExpressConfirm(event)
-          }}
-          onLoadError={(event) => {
-            setExpressVisible(false)
-            console.error("Stripe ExpressCheckoutElement load error", {
-              code: event.error?.code,
-              message: event.error?.message,
-              type: event.error?.type,
-            })
-          }}
-        />
-      </div>
-
-      {expressVisible ? (
-        <div className="flex items-center gap-3" role="separator" aria-label="or pay another way">
-          <div className="h-px flex-1 bg-neutral-200" />
-          <span className="text-[12px] text-neutral-500">or card</span>
-          <div className="h-px flex-1 bg-neutral-200" />
-        </div>
-      ) : null}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="flex h-full min-h-0 flex-col">
+      {elementLoadError ? <p className="text-xs text-destructive">{elementLoadError}</p> : null}
+      <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-2">
         {!paymentReady && !elementLoadError ? (
-          <p className="inline-flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
             Loading card form…
           </p>
         ) : null}
-        <div className="min-h-[220px]">
+        <div className="min-h-0 flex-1 overflow-hidden">
           <PaymentElement
             options={{
               layout: "tabs",
-              paymentMethodOrder: ["card", "link"],
+              paymentMethodOrder: ["card"],
               wallets: { applePay: "never", googlePay: "never" },
               fields: {
                 billingDetails: {
-                  name: "auto",
-                  email: "auto",
+                  name: "never",
+                  email: "never",
                   phone: "never",
-                  address: "if_required",
+                  address: "never",
                 },
               },
             }}
@@ -228,7 +150,7 @@ function TipPaymentForm({
         </div>
         <Button
           type="submit"
-          className="w-full"
+          className="h-9 w-full shrink-0"
           disabled={busy || !stripe || !!elementLoadError}
         >
           {busy ? (
@@ -276,6 +198,8 @@ export function MarkSoldTipCheckout({
           variables: {
             colorPrimary: BRAND_CTA_BLUE,
             borderRadius: "6px",
+            spacingUnit: "3px",
+            fontSizeBase: "14px",
           },
         }
 

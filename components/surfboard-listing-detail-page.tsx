@@ -92,7 +92,7 @@ export async function SurfboardListingDetailPage({
   prefetchedListing,
   viewerUser,
 }: ListingDetailPageSharedProps) {
-  const { supabase, user, listing: boardRaw } = await loadListingDetailPageContext({
+  const { supabase, user, listing: boardRaw, canSellerRelist } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
@@ -694,7 +694,7 @@ export async function SurfboardListingDetailPage({
                     dashboardListingsHref="/dashboard/listings"
                     sectionLabel="board"
                     listingId={board.id}
-                    canRelist={board.sold_off_platform === true}
+                    canRelist={canSellerRelist}
                   />
                 </div>
               )}

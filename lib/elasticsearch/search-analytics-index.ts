@@ -612,6 +612,131 @@ export async function countMarketplaceSearchesInRange(
   }
 }
 
+function escapeKeywordWildcard(value: string): string {
+  return value.replace(/[\\*?]/g, "\\$&")
+}
+
+export type MarketplaceQueryLookupMatch = {
+  query: string
+  count: number
+}
+
+export type MarketplaceQueryLookupResult = {
+  exactCount: number
+  queryDisplay: string | null
+  firstOccurredAt: string | null
+  lastOccurredAt: string | null
+  matches: MarketplaceQueryLookupMatch[]
+}
+
+function isoFromAgg(raw: string | number | null | undefined): string | null {
+  if (typeof raw === "string" && raw.trim()) return raw
+  if (typeof raw === "number" && Number.isFinite(raw)) return new Date(raw).toISOString()
+  return null
+}
+
+/**
+ * All-time marketplace search count for one query, plus nearby matching terms.
+ * Exact match uses `query_normalized`; related rows are prefix/contains on the same field.
+ */
+export async function lookupMarketplaceQueryAllTime(
+  queryNormalized: string,
+): Promise<MarketplaceQueryLookupResult | null> {
+  const es = getElasticsearchClient()
+  if (!es) return null
+
+  const escaped = escapeKeywordWildcard(queryNormalized)
+  const empty: MarketplaceQueryLookupResult = {
+    exactCount: 0,
+    queryDisplay: null,
+    firstOccurredAt: null,
+    lastOccurredAt: null,
+    matches: [],
+  }
+
+  try {
+    const [exactRes, relatedRes] = await Promise.all([
+      es.search({
+        index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
+        size: 1,
+        track_total_hits: true,
+        sort: [{ occurred_at: { order: "desc" } }],
+        _source: ["query_display"],
+        query: {
+          bool: {
+            filter: [
+              MARKETPLACE_SURFACE_FILTER as unknown as Record<string, unknown>,
+              { term: { query_normalized: queryNormalized } },
+            ],
+          },
+        },
+        aggs: {
+          first_t: { min: { field: "occurred_at" } },
+          last_t: { max: { field: "occurred_at" } },
+        },
+      }),
+      es.search({
+        index: ELASTICSEARCH_SEARCH_ANALYTICS_INDEX,
+        size: 0,
+        query: {
+          bool: {
+            filter: [MARKETPLACE_SURFACE_FILTER as unknown as Record<string, unknown>],
+            should: [
+              { prefix: { query_normalized: queryNormalized } },
+              { wildcard: { query_normalized: `*${escaped}*` } },
+            ],
+            minimum_should_match: 1,
+          },
+        },
+        aggs: {
+          q: {
+            terms: { field: "query_normalized", size: 12, order: { _count: "desc" } },
+          },
+        },
+      }),
+    ])
+
+    const hitsTotal = exactRes.hits?.total
+    const exactCount =
+      typeof hitsTotal === "number"
+        ? hitsTotal
+        : typeof hitsTotal === "object" && hitsTotal && "value" in hitsTotal
+          ? hitsTotal.value
+          : 0
+
+    const src = exactRes.hits?.hits?.[0]?._source as { query_display?: string } | undefined
+    const queryDisplay =
+      typeof src?.query_display === "string" && src.query_display.trim()
+        ? src.query_display.trim()
+        : null
+
+    const exactAggs = exactRes.aggregations as
+      | {
+          first_t?: { value?: number | null; value_as_string?: string | null }
+          last_t?: { value?: number | null; value_as_string?: string | null }
+        }
+      | undefined
+
+    const relatedAggs = relatedRes.aggregations as
+      | { q?: { buckets?: Array<{ key: string | number; doc_count: number }> } }
+      | undefined
+
+    return {
+      exactCount,
+      queryDisplay,
+      firstOccurredAt: isoFromAgg(exactAggs?.first_t?.value_as_string ?? exactAggs?.first_t?.value),
+      lastOccurredAt: isoFromAgg(exactAggs?.last_t?.value_as_string ?? exactAggs?.last_t?.value),
+      matches: bucketTerms(relatedAggs?.q?.buckets),
+    }
+  } catch (e) {
+    const status = (e as { meta?: { statusCode?: number } })?.meta?.statusCode
+    if (status === 404) return empty
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error("[elasticsearch] lookupMarketplaceQueryAllTime failed:", msg)
+    return empty
+  }
+}
+
 export type NavBarMarketplaceKeywordAgg = {
   volumeByDay: { date: string; count: number }[]
   topQueries: { query: string; count: number }[]

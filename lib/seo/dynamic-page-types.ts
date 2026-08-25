@@ -55,6 +55,19 @@ export const DYNAMIC_PAGE_TYPES: DynamicPageType[] = [
     defaultDescriptionTemplate: "{tagline}",
   },
   {
+    key: "type:city",
+    label: "City landing pages",
+    note: "Every local inventory page at /reswell/[slug] (e.g. /reswell/santa-barbara).",
+    samplePath: "/reswell/santa-barbara",
+    variables: [
+      { token: "city", label: "City label", sample: "Santa Barbara, CA" },
+      { token: "count", label: "Listing count label", sample: "153 listings" },
+    ],
+    defaultTitleTemplate: "Used surfboards in {city} — Reswell",
+    defaultDescriptionTemplate:
+      "Browse {count} of used surfboards and gear in {city}. Buy local and pick up in person on Reswell.",
+  },
+  {
     key: "type:seller",
     label: "Seller profiles",
     note: "Every shop/seller page at /sellers/[slug].",

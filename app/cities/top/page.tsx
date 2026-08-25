@@ -30,8 +30,8 @@ export default async function TopCitiesPage() {
               Top cities for surf gear
             </h1>
             <p className="mx-auto mt-3 max-w-xl text-pretty text-base text-muted-foreground sm:text-lg">
-              Browse every city with active listings on Reswell — then jump into boards listed
-              there.
+              Browse every city with active listings on Reswell — then open that city's page
+              to shop boards you can pick up locally.
             </p>
             {directory.totalCities > 0 ? (
               <p className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/80 px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur-sm">

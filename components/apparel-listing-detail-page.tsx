@@ -93,7 +93,7 @@ export async function ApparelListingDetailPage({
   prefetchedListing,
   viewerUser,
 }: ListingDetailPageSharedProps) {
-  const { supabase, user, listing: apparelRaw } = await loadListingDetailPageContext({
+  const { supabase, user, listing: apparelRaw, canSellerRelist } = await loadListingDetailPageContext({
     listingParam,
     prefetchedListing,
     viewerUser,
@@ -623,7 +623,7 @@ export async function ApparelListingDetailPage({
                   dashboardListingsHref="/dashboard/listings"
                   sectionLabel="listing"
                   listingId={apparel.id as string}
-                  canRelist={apparel.sold_off_platform === true}
+                  canRelist={canSellerRelist}
                 />
               </div>
             )}

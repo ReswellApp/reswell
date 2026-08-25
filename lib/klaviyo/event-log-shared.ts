@@ -34,6 +34,7 @@ const METRIC_CATEGORY: Record<string, KlaviyoMetricCategory> = {
   "Board Listing Request": "engagement",
   "Message Sent": "engagement",
   "Inactive Seller": "lifecycle",
+  "Listing Auto Vacation": "lifecycle",
   Listing: "engagement",
   "First Time Seller - Boards": "lifecycle",
   "First Time Seller - Fins": "lifecycle",

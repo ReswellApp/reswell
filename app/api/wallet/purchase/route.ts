@@ -26,6 +26,7 @@ import { assertBuyerMayPurchaseListingExclusiveWindow } from "@/lib/services/lis
 import { isBlockedOwnListingPurchase } from "@/lib/cart-eligibility"
 import { readAdAttributionFromCookies } from "@/lib/ads/read-request-attribution"
 import { insertOrderAdAttribution } from "@/lib/db/orderAdAttribution"
+import { listingSoldViaCheckoutUpdate } from "@/lib/listing-sold-state"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -266,7 +267,7 @@ export async function POST(request: NextRequest) {
   // Mark sold only — never mutate listings.price (offer discounts stay private).
   const { error: listingErr } = await serviceSupabase
     .from("listings")
-    .update({ status: "sold" })
+    .update(listingSoldViaCheckoutUpdate())
     .eq("id", listing.id)
 
   if (listingErr) {

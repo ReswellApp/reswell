@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { listingIdsBlockedFromPermanentDelete } from "@/lib/db/listingDeleteEligibility"
+import {
+  listingIdsBlockedFromPermanentDelete,
+  listingIdsWithOpenMarketplaceCheckout,
+} from "@/lib/db/listingDeleteEligibility"
+import { listingCanShowSellerRelist } from "@/lib/listing-sold-state"
 import { isPeerListingSection } from "@/lib/peer-listing-sections"
 import type { ListingCartOfferProspect } from "@/lib/types/listing-cart-holders"
 
@@ -28,6 +32,7 @@ export type MyListingRow = {
   hidden_from_site: boolean | null
   sold_off_platform: boolean | null
   canDelete: boolean
+  canRelist: boolean
   listing_images: MyListingImageRow[] | null
 }
 
@@ -127,12 +132,18 @@ export async function fetchMyListings(
 
   const listingRows = (listingsRes.data ?? []) as Omit<
     MyListingRow,
-    "cartCount" | "favoriteCount" | "canDelete"
+    "cartCount" | "favoriteCount" | "canDelete" | "canRelist"
   >[]
-  const blockedIds = await listingIdsBlockedFromPermanentDelete(
-    supabase,
-    listingRows.map((listing) => listing.id),
-  )
+  const soldIds = listingRows
+    .filter((listing) => listing.status === "sold")
+    .map((listing) => listing.id)
+  const [blockedIds, checkoutSold] = await Promise.all([
+    listingIdsBlockedFromPermanentDelete(
+      supabase,
+      listingRows.map((listing) => listing.id),
+    ),
+    listingIdsWithOpenMarketplaceCheckout(supabase, soldIds),
+  ])
   const listings = listingRows.map((listing) => {
     const engagement = engagementCounts.get(listing.id)
     return {
@@ -140,6 +151,10 @@ export async function fetchMyListings(
       cartCount: engagement?.cartCount ?? 0,
       favoriteCount: engagement?.favoriteCount ?? 0,
       canDelete: !blockedIds.has(listing.id),
+      canRelist: listingCanShowSellerRelist(
+        listing,
+        checkoutSold.listingIds.has(listing.id),
+      ),
     }
   })
 
