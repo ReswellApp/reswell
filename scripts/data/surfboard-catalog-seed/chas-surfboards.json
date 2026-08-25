@@ -1,0 +1,100 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "chas-surfboards",
+      "name": "Chas Surfboards",
+      "website_url": "https://www.chassurf.com/board-models",
+      "location_label": "Seal Beach, California",
+      "founder_name": "Chas Wickwire",
+      "lead_shaper_name": "Chas Wickwire",
+      "short_description": "Seal Beach, California surfboards by Chas Wickwire, former Harbour Surfboards head shaper — named standup models from the official Chas catalog.",
+      "models": [
+        {
+          "name": "ProToo",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/655e985a13f1b218b6e915c8_chas-pro-too-front.webp",
+          "description": "Our latest True High Performance offering, also the first to implement our TnT philosophy. Thick and Thin, fuller foil through the centerline and hyper taper on the rail line couple up for more overall volume and a board that rides smaller than the volume number would suggest. Outline is slightly racier than our other HP offerings. End result is a true performance shortboard with extra paddle power and a more solid platform to push through critical maneuvering. This one shrinks down brilliantly for the Groms, is a favorite with the young Rippers and will take years off the surfing of old Crustys that still want to rip. Rippers can scale up and down from 5’10” 18.8” 2.4” 28.5 liters and more domesticated scaling up and down from 6’0” 19.75 2.7” 32 liters.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "XC Pro 25",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/65de1c2de73248be92e3402b_xc-pro-24-front.webp",
+          "description": "The latest addition to the XC series. A racy HP out line, the tried and true universally well received XC rocker and bottom contours and the TnT design elements. Fuller centerline volume and finely foiled tapered rails create a responsive forgiving predictable feel. Rippers scale up or down from 5-10 18.8 2.38 28 liters. For a more domesticated version, scale fro 6-0 19.75 2.7 32 liters.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "BroToo",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/65de6d5a7657268861845757_chas-brotoo-front.webp",
+          "description": "The “Too” series Step Down. Same rocker and bottom contours as ProToo. A fuller outline coupled with our TnT design elements create the perfect performance daily driver. The fuller center foil and finely foiled rails give a nice responsive feel and plenty of paddle power and carry across less than ideal conditions. Order this an inch or two shorter than your HP shorty and don’t be afraid of an extra liter or two either. This model rides smaller than actual liters suggest. Foam is your friend in most “every day” scenarios. Rippers scale either way from 5-9 18.8 2.4 28 liters. Scale more domesticated version up or down fro 5-9 19.9 2.7 32 liters.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "XC Jaeger",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/655e912ed8f74ee347fd360e_chas-xc-jaeger-front.webp",
+          "description": "THE favorite High Performance Stepdown in our catalog the last couple years and the second offering built off the XC rocker/bottom contour. With a fullish outline, the XC bottom consists of my signature relaxed entry curve and continuous flowing moderate rocker creating easy wave entry, effortless speed generation and a freeness on the wave face to draw your “mind surfing” lines in a variety conditions. The quintessential daily driver for any performance minded surfer! Rippers scale up or down from 5’9” 19” 2.35” 28.5 liters, more domesticated minded scale up or down from 5’9” 19.85 2.6 31.5 liters.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "DubtrubToo",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/65e66c821b30e18b6998ce64_DubTrubToo-front.webp",
+          "description": "The latest “Too” Series installment. I took the perennial daily driver favorite DubTrub outline and married it with the “Too” series rocker, bottom contours and TnT design elements. The end result is a fast and responsive step down that will perform at a high level in a great variety of conditions. The fuller centerline foil and finely tapered rails allow for a board that rides smaller than the liters would suggest, so don’t be afraid of an extra liter or two when ordering this model. The DubTrub really rises to the occasion ridden with back foot firmly off the tail. Scale up or down from 5-9 19.9 2.7 32 liters. Order a couple inches shorter than your HP shorty. Comes standard with a quad fin option.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Dubtrub OG",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/65de75ceea54b8d3a422f158_DubTrub2-front.webp",
+          "description": "My original step down and a universally loved daily driver for a decade now. The fullish, not quite “fishy” outline with a throw back double bump swallow tail, coupled with a drivey, but forgiving bottom rocker give this model excellent wave entry qualities and a fast and loose ride. A true 300 day a year model. Scale up or down from the 5-9 20 2.5 30.5 liters example shown here.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Spudnik",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/656530af02c9a3052fc36972_chas-spudink-front-carbon.webp",
+          "description": "Maybe the most perfect surfboard I’ve ever designed. Fuller “Fishy” outline allows for effortless takeoffs and plenty of giddy up in smaller weak everyday conditions. A ProFormance rocker and bottom contour, coupled with a finely foiled rail volume allows for plentiful horsepower when the waves present spicier more rippable sections. Order this one 4”-5” shorter, 3/4”-1” wider and 1/8”-3/16” thicker than your performance shortboard. You can scale up or down from the 5’ 7” 20.5” 2.65” 32.5 liter shown here.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "XC Petrel",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/65e6710c1c706554a78c7d19_xc-petrel-front.webp",
+          "description": "The Original XC model. A fullish fishy single wing swallow outline, coupled with a predictable and fast moderate smoothly flowing rocker make for a fantastic feel in everyday conditions. My signature relaxed entry curve enables easy wave entry and brilliant built in speed. The quad fin configuration is set back a tad for a secure and predictable looseness. Scale up or down from 5-6 20.5 2.6 32 L. Order this gem 2 to 3 inches shorter than you daily driver HP short board.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "XC Petrel 2+1",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/65e65352937ea23e3cb9ae2b_petrel-front.webp",
+          "description": "The Petrel was the first model in the XC series. Fuller outline with an even flowing rocker create a fast and fantastically maneuverable ride in anything from a couple feet overhead down. The fins are pushed back a bit in a traditional twin location to provide plentiful drive and built in speed. The pulled in round pin off a mid fin wing, coupled with the trailing stabilizing fin give it a sturdy predictable feel on rail. You’d order this model 2-3 inches shorter than your performance shortboard. We scale dims up or down off the 5-7 20.5 2.6 31 liter example shown.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Gnarchotic",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/65de24cd645f82cabc11e594_gnarchotic-front.webp",
+          "description": "Originally designed for the curvaceous caverns of the now infamous South Side, Seal Beach, the Gnarchotic is a reliable partner in crime when the encountering waves of consequence and quality. Extra flip in the tips fit nicely in hollow conditions and enable controlled drops in the steep and deep. A slightly fuller forward foil allows paddle power to get over the ledge and quick entry under it if necessary. The Gnarchotic performs well in most “quality wave” scenarios making it an excellent travel companion to ideal destinations. Order this in your favorite Step Up dimensions, it stretches out nicely into the 6’6”-6’8” range as well. PU or XXStrong builds best bet.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "XC Pro 25 RPT",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/65e6767ecd837a0b5bd13e6f_xc-pro-24-RPT-front.webp",
+          "description": "Stretch up the reliable XC P25 a couple of inches, pull in the tail off the trailing fin into a sexy Round Pin and Wala! The perfect Step Up! TnT design elements with a fuller center foil and finely tapered rail profile make for plenty paddle power and a board that rides smaller than the liters would suggest. The tried and true XC rocker and bottom contours provide plenty of drive and a fantastic freeness under foot! Order this model 2-3 inches longer than you HP daily driver. Rippers scale up or down from 6-1 18.7 2.38 28 liters, the more crusty from 6-2 19.75 2.7 32 liters.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Y2K Step Up",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/6605fec367c3dc74ecb69a4d_y2k-front2.webp",
+          "description": "I built some very well received and reliable hand shaped Step Ups and Semi Guns in the late 90’s and early 2000’s. One of my good friends had a well preserved version in his garage that he shared with some of the local rippers in recent years. The board was still so very well received that I got numerous requests to digitize it. So I did and the results were brilliant. It may look a bit nostalgic, but the ride is very contemporary, proving that great curves are timeless! Order your Y2K in the 6-8 to 7-2 range and be amazed when the waves are amazing!",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "OTL",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/65e64f7a35a3f9e0e6822b34_otl-front.webp",
+          "description": "Originally a hand shaped copy of a Gerry Lopez model that my neighbor loved. Turns out the redo was MAGIC! I digitized my version and coined it the “Ode to Lopez” or OTL if you will. A versatile mid length that will continue to surprise with its inherent performance elements. We can scale it from 6-10 to 7-6.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Fun V25",
+          "image_url": "https://cdn.prod.website-files.com/65413f0dc1ecf0717ba1b174/65e74d9190e5e33d896db62d_fun24-front.webp",
+          "description": "We took the magic foil, rocker and bottom contours of the OTL and threw a more traditional “Fun Shape” outline on it. End result is a versatile and forgiving board for the novice or lower intermediate level surfer and a fun small wave alternative for the more skilled with surprising performance elements. 7-2 to 8-0 is the sweet spot size range.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
