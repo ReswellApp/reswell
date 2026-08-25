@@ -87,6 +87,12 @@ export const homeMostViewedCompactTileWrapClass = cn(
   "w-[calc((100svw-1rem-2rem)/2.2)] sm:w-40",
 )
 
+/** City landing top-listings strip — smaller than most-viewed compact on mobile (~2.8 cards). */
+export const cityTopListingTileWrapClass = cn(
+  "flex min-h-0 shrink-0 snap-start self-stretch flex-col",
+  "w-[calc((100svw-1rem-1.5rem)/2.85)] sm:w-40",
+)
+
 export const homeMostViewedCompactBodyClass =
   "flex min-h-0 min-w-0 flex-1 flex-col px-2 pb-2 pt-2"
 

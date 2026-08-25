@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react"
 import { HomeListingScrollRow } from "@/components/features/home/home-listing-scroll-row"
 import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
-import { homeMostViewedCompactTileWrapClass } from "@/lib/home-listing-scroll-styles"
+import { cityTopListingTileWrapClass } from "@/lib/home-listing-scroll-styles"
 import { createClient } from "@/lib/supabase/client"
 import type { CityLandingListing } from "@/lib/types/city-landing"
 import type { ListingImageForCard } from "@/lib/listing-image-display"
 
-const CITY_TOP_LISTING_IMAGE_SIZES = "(max-width: 639px) 38svw, 160px"
+const CITY_TOP_LISTING_IMAGE_SIZES = "(max-width: 639px) 30svw, 160px"
 
 export function CityTopSellerListingsRow({
   cityName,
@@ -60,8 +60,8 @@ export function CityTopSellerListingsRow({
       </h2>
       <HomeListingScrollRow
         uniformCardHeights
-        tileWrapClassName={homeMostViewedCompactTileWrapClass}
-        rowGapClassName="gap-2"
+        tileWrapClassName={cityTopListingTileWrapClass}
+        rowGapClassName="gap-1.5 sm:gap-2"
       >
         {listings.map((listing, tileIdx) => (
           <HomePeerListingScrollTile
