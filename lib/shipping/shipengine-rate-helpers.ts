@@ -32,6 +32,16 @@ function asRecord(v: unknown): Record<string, unknown> | null {
  */
 export const SHIPENGINE_PLACEHOLDER_US_PHONE = "805-453-9406"
 
+/** Printed on purchased labels so drivers see home delivery, not a commercial stop. */
+export const RESIDENTIAL_DELIVERY_LABEL_MESSAGE = "RESIDENTIAL DELIVERY"
+
+export function residentialDeliveryLabelMessages(residential: "yes" | "no" | "unknown"): {
+  reference1: string
+} | undefined {
+  if (residential !== "yes") return undefined
+  return { reference1: RESIDENTIAL_DELIVERY_LABEL_MESSAGE }
+}
+
 export function addressToPayload(a: ShippingAddressInput, role: "from" | "to") {
   const country = normalizeCountryCodeForShipping(a.country_code)
   const phone = a.phone.trim()
@@ -75,6 +85,10 @@ export function buildShipmentBody(
       height: opts.height,
       unit: opts.dimUnit,
     }
+  }
+  const labelMessages = residentialDeliveryLabelMessages(shipTo.residential)
+  if (labelMessages) {
+    pkg.label_messages = labelMessages
   }
   return {
     validate_address: opts.validateAddress,

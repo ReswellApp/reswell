@@ -77,6 +77,7 @@ import type {
 } from "@/lib/services/searchAnalytics"
 import { SEARCH_TREND_WINDOW_DAYS } from "@/lib/validations/search-analytics"
 import { cn } from "@/lib/utils"
+import { SearchAnalyticsPulseBar } from "@/components/features/admin/search-analytics-pulse-bar"
 
 const RANGE_OPTIONS = [
   { value: "7", label: "Last 7 days" },
@@ -2050,6 +2051,11 @@ export function SearchAnalyticsAdminClient() {
         <div className="min-h-[60vh] w-full max-w-[1600px] space-y-8">
           {/* Top bar — reference dashboard header */}
           <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+            {data.pulse ? (
+              <div className="border-b border-slate-100 bg-slate-50/70 px-6 py-5">
+                <SearchAnalyticsPulseBar pulse={data.pulse} />
+              </div>
+            ) : null}
             <div className="flex flex-col gap-4 px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-2xl font-semibold text-slate-900">Search Analytics Dashboard</h2>

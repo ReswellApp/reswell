@@ -1,10 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
-import { resolveCombinedPackedParcelFromListings } from "@/lib/reswell-packed-parcel-from-listing"
 import {
   computePeerBundleShippingUsd,
   computePeerCheckoutTotalsUsd,
+  type PeerReswellShippingQuote,
   type PeerSurfboardCheckoutListingRow,
 } from "@/lib/services/peerListingShippingQuote"
 import { fetchSellerFeeWaived } from "@/lib/db/profileSellerFee"
@@ -37,8 +37,9 @@ export async function computePeerMultiCheckoutUsd(params: {
   fulfillment: "pickup" | "shipping"
   buyerAddress: ProfileAddressRow | null
   diagnosticTagPrefix: string
-  /** Reuse shipping from `/api/checkout/shipping-quote` (signed token) — skips ShipEngine. */
-  preverifiedShipping?: { shippingUsd: number; usedReswellQuote: boolean }
+  /** Buyer-selected ShipEngine service from checkout — charge that live rate, not a cached total. */
+  selectedRateId?: string | null
+  selectedServiceCode?: string | null
   /** Units per listing id (shop inventory). Peer lines default to 1. */
   quantityByListingId?: Record<string, number>
 }): Promise<
@@ -52,6 +53,7 @@ export async function computePeerMultiCheckoutUsd(params: {
       totalPlatformFee: number
       totalSellerEarnings: number
       anyUsedReswellQuote: boolean
+      reswellQuote: PeerReswellShippingQuote | null
     }
   | { ok: false; error: string }
 > {
@@ -61,7 +63,8 @@ export async function computePeerMultiCheckoutUsd(params: {
     buyerAddress,
     supabase,
     diagnosticTagPrefix,
-    preverifiedShipping,
+    selectedRateId,
+    selectedServiceCode,
     quantityByListingId,
   } = params
 
@@ -105,21 +108,17 @@ export async function computePeerMultiCheckoutUsd(params: {
   }
 
   const sellerShipFromName =
-    fulfillment === "shipping" && !preverifiedShipping
-      ? await fetchSellerShipFromLabelName(supabase, sellerId)
-      : "Seller"
+    fulfillment === "shipping" ? await fetchSellerShipFromLabelName(supabase, sellerId) : "Seller"
 
   const feeWaived = await fetchSellerFeeWaived(sellerId)
 
   const lines: PeerCheckoutLineComputation[] = []
   let anyUsedReswellQuote = false
+  let reswellQuote: PeerReswellShippingQuote | null = null
 
   /** Multi-line shipping is quoted once for the whole box — per-line totals are computed shipping-free. */
   const perLineFulfillment: "pickup" | "shipping" =
     isMultiLine && fulfillment === "shipping" ? "pickup" : fulfillment
-
-  const singleLineShippingOverride =
-    !isMultiLine && fulfillment === "shipping" && preverifiedShipping ? preverifiedShipping : undefined
 
   for (let i = 0; i < listingsOrdered.length; i++) {
     const listing = listingsOrdered[i]!
@@ -130,12 +129,14 @@ export async function computePeerMultiCheckoutUsd(params: {
       buyerAddress,
       diagnosticTag: `${diagnosticTagPrefix}:${listing.id}:${i}`,
       sellerShipFromName,
-      shippingOverride: singleLineShippingOverride,
+      selectedRateId,
+      selectedServiceCode,
     })
     if (!totals.ok) {
       return { ok: false, error: totals.error }
     }
     if (totals.usedReswellQuote) anyUsedReswellQuote = true
+    if (totals.reswellQuote) reswellQuote = totals.reswellQuote
 
     const unitPrice = totals.itemPrice
     const lineItemTotal = Math.round(unitPrice * quantity * 100) / 100
@@ -166,28 +167,19 @@ export async function computePeerMultiCheckoutUsd(params: {
   }
 
   if (isMultiLine && fulfillment === "shipping") {
-    const bundleShipping = preverifiedShipping
-      ? (() => {
-          const parcelCheck = resolveCombinedPackedParcelFromListings(listingsOrdered)
-          if (!parcelCheck.ok) {
-            return parcelCheck
-          }
-          return {
-            ok: true as const,
-            shippingUsd: preverifiedShipping.shippingUsd,
-            usedReswellQuote: preverifiedShipping.usedReswellQuote,
-          }
-        })()
-      : await computePeerBundleShippingUsd({
-          listings: listingsOrdered,
-          buyerAddress,
-          diagnosticTag: `${diagnosticTagPrefix}:bundle`,
-          sellerShipFromName,
-        })
+    const bundleShipping = await computePeerBundleShippingUsd({
+      listings: listingsOrdered,
+      buyerAddress,
+      diagnosticTag: `${diagnosticTagPrefix}:bundle`,
+      sellerShipFromName,
+      selectedRateId,
+      selectedServiceCode,
+    })
     if (!bundleShipping.ok) {
       return { ok: false, error: bundleShipping.error }
     }
     if (bundleShipping.usedReswellQuote) anyUsedReswellQuote = true
+    if (bundleShipping.quote) reswellQuote = bundleShipping.quote
 
     /** Carry the one-box shipping charge on the first line so line sums stay exact. */
     const firstLine = lines[0]!
@@ -217,5 +209,6 @@ export async function computePeerMultiCheckoutUsd(params: {
     totalPlatformFee,
     totalSellerEarnings,
     anyUsedReswellQuote,
+    reswellQuote,
   }
 }

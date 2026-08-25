@@ -9,6 +9,7 @@ import {
   buildShipEngineRateShipment,
   type RateQuoteAddressFields,
 } from "@/lib/shipping/rate-address"
+import { RESIDENTIAL_DELIVERY_LABEL_MESSAGE } from "@/lib/shipping/shipengine-rate-helpers"
 import {
   extractRatesFromApiEnvelope,
   rateMoneyTotal,
@@ -151,7 +152,7 @@ export async function fetchShipEngineRatesForSurfboard(params: {
     }
   }
 
-  const shipment = buildShipEngineRateShipment(params.shipFrom, params.shipTo, {
+  const shipment = buildShipEngineRateShipment(params.shipFrom, { ...params.shipTo, residential: "yes" }, {
     weightValue: params.parcel.weightLb,
     weightUnit: "pound",
     length: params.parcel.lengthIn,
@@ -403,6 +404,9 @@ function buildShipEngineLabelPurchaseBody(opts: {
     label_format: "pdf",
     label_download_type: "url",
     label_layout: "4x6",
+    label_messages: {
+      reference1: RESIDENTIAL_DELIVERY_LABEL_MESSAGE,
+    },
   }
   if (opts.includePaperless) {
     body.display_scheme = "label_and_paperless"

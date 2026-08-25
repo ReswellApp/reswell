@@ -35,7 +35,7 @@ interface PurchaseOptionsProps {
   offerId?: string | null
   /** Newsletter welcome promo code (Reswell-funded discount). */
   promoCode?: string | null
-  /** Signed token from `/api/checkout/shipping-quote` — skips duplicate ShipEngine on payment intent. */
+  /** Signed token from `/api/checkout/shipping-quote` — locks the selected ShipEngine service at charge time. */
   shippingQuoteToken?: string | null
   /** When false, card checkout stays disabled until purchase details are complete. */
   purchaseDetailsReady?: boolean

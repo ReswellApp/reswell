@@ -201,8 +201,8 @@ export function buyerProfileAddressToShipTo(
       state_province: normalizeUsStateProvinceForShipping("US", st),
       postal_code: zip,
       country_code: "US",
-      /** Match admin calculator default (commercial-style quote). */
-      residential: "no",
+      /** Buyer homes — residential so purchased labels and rates match delivery. */
+      residential: "yes",
     },
   }
 }
@@ -424,7 +424,7 @@ export async function getCheapestReswellRateForListings(input: {
 
   const payload: ReswellListingRateRequestPayload = {
     rate_options: { carrier_ids: carrierIds },
-    shipment: buildShipmentBody(shipFrom.address, input.shipTo, {
+    shipment: buildShipmentBody(shipFrom.address, { ...input.shipTo, residential: "yes" }, {
       weightValue: parcel.weightOz,
       weightUnit: "ounce",
       length: parcel.lengthIn,

@@ -306,6 +306,7 @@ export function StripeCardCheckout({
 }) {
   const { resolvedTheme } = useTheme()
   const [clientSecret, setClientSecret] = useState<string | null>(null)
+  const [chargedTotalUsd, setChargedTotalUsd] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -342,6 +343,7 @@ export function StripeCardCheckout({
 
     let cancelled = false
     setClientSecret(null)
+    setChargedTotalUsd(null)
     setError(null)
     setLoading(true)
 
@@ -361,7 +363,12 @@ export function StripeCardCheckout({
             ...(shippingQuoteToken ? { quote_token: shippingQuoteToken } : {}),
           }),
         })
-        const data = (await res.json()) as { clientSecret?: string; error?: string }
+        const data = (await res.json()) as {
+          clientSecret?: string
+          error?: string
+          shippingUsd?: number
+          totalUsd?: number
+        }
         if (cancelled) return
         if (!res.ok) {
           console.error("[StripeCardCheckout] create-payment-intent failed", {
@@ -373,6 +380,9 @@ export function StripeCardCheckout({
         }
         if (data.clientSecret) {
           setClientSecret(data.clientSecret)
+          if (typeof data.totalUsd === "number" && Number.isFinite(data.totalUsd) && data.totalUsd > 0) {
+            setChargedTotalUsd(data.totalUsd)
+          }
         } else {
           console.error("[StripeCardCheckout] no clientSecret in response", data)
           setError("Could not start card payment — no client secret returned")
@@ -460,7 +470,7 @@ export function StripeCardCheckout({
     <Elements key={clientSecret} stripe={stripePromise} options={{ clientSecret, appearance }}>
       <CheckoutForm
         clientSecret={clientSecret}
-        amountLabel={`$${price.toFixed(2)}`}
+        amountLabel={`$${(chargedTotalUsd ?? price).toFixed(2)}`}
         disabled={false}
         submitButtonLabel={submitButtonLabel}
         submitButtonClassName={submitButtonClassName}

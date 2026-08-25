@@ -564,10 +564,18 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         buyerAddress,
         diagnosticTagPrefix: "finalize-order",
         quantityByListingId,
+        selectedRateId: pi.metadata.shipengine_rate_id?.trim() || null,
+        selectedServiceCode: pi.metadata.shipengine_service_code?.trim() || null,
       })
   if (!bundle.ok) {
     return { ok: false, error: bundle.error, status: 400 }
   }
+
+  const chargedShippingCentsRaw = pi.metadata.reswell_shipping_cents?.trim()
+  const shippingUsd =
+    chargedShippingCentsRaw && /^\d+$/.test(chargedShippingCentsRaw)
+      ? parseInt(chargedShippingCentsRaw, 10) / 100
+      : bundle.totalShippingUsd
 
   const promoCodeId = pi.metadata.promo_code_id?.trim() || null
   const promoCodeFromMeta = pi.metadata.promo_code?.trim() || null
@@ -603,7 +611,7 @@ export async function completeMarketplaceOrderFromPaymentIntent(
     const { discountUsd: expectedDiscountUsd, totalUsd: expectedPromoTotal } =
       computeCheckoutTotalWithNewsletterPromo({
         itemSubtotalUsd: bundle.totalItemPriceUsd,
-        shippingUsd: bundle.totalShippingUsd,
+        shippingUsd,
         discountPercent: promoDiscountPercent,
       })
 
@@ -623,18 +631,17 @@ export async function completeMarketplaceOrderFromPaymentIntent(
       ? Math.round(
           computeCheckoutTotalWithNewsletterPromo({
             itemSubtotalUsd: bundle.totalItemPriceUsd,
-            shippingUsd: bundle.totalShippingUsd,
+            shippingUsd,
             discountPercent: promoDiscountPercent,
           }).totalUsd * 100,
         )
-      : Math.round(bundle.totalUsd * 100)
+      : Math.round((bundle.totalItemPriceUsd + shippingUsd) * 100)
 
   if (pi.amount !== expectedCents) {
     return { ok: false, error: "Payment amount does not match listing", status: 400 }
   }
 
   const chargedUsd = pi.amount / 100
-  const shippingUsd = bundle.totalShippingUsd
   const platformFee = bundle.totalPlatformFee
   const sellerEarnings = bundle.totalSellerEarnings
 

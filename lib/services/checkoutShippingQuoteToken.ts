@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto"
 
-/** How long a shipping-quote token remains valid for payment-intent creation. */
+/** How long a shipping-quote token remains valid to lock the selected ShipEngine service. */
 export const CHECKOUT_SHIPPING_QUOTE_TOKEN_TTL_MS = 15 * 60 * 1000
 
 export type CheckoutShippingQuoteTokenPayload = {

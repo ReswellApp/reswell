@@ -1,7 +1,10 @@
 import { normalizeUsStateProvinceForShipping } from "@/lib/us-state-name-to-code"
 import { normalizeCountryCodeForShipping } from "@/lib/shipping/normalize-country-code"
 import type { ProfileAddressRow } from "@/lib/profile-address"
-import { SHIPENGINE_PLACEHOLDER_US_PHONE } from "@/lib/shipping/shipengine-rate-helpers"
+import {
+  residentialDeliveryLabelMessages,
+  SHIPENGINE_PLACEHOLDER_US_PHONE,
+} from "@/lib/shipping/shipengine-rate-helpers"
 import type { ShippingAddressInput } from "@/lib/shipping/shipengine-rate-helpers"
 
 /** Same shape as admin `AddressFields` — ShipEngine rate/label APIs expect this structure. */
@@ -127,6 +130,10 @@ export function buildShipEngineRateShipment(
       height: opts.height,
       unit: opts.dimUnit,
     }
+  }
+  const labelMessages = residentialDeliveryLabelMessages(shipTo.residential)
+  if (labelMessages) {
+    pkg.label_messages = labelMessages
   }
   return {
     validate_address: opts.validateAddress,
