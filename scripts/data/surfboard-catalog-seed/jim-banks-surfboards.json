@@ -1,0 +1,106 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "jim-banks-surfboards",
+      "name": "Jim Banks Surfboards",
+      "website_url": "https://www.jimbanksurf.com/",
+      "location_label": "Bali and Byron Bay",
+      "founder_name": "Jim Banks",
+      "lead_shaper_name": "Jim Banks",
+      "short_description": "Custom handcrafted surfboards, Bali and Byron Bay since 1971.",
+      "models": [
+        {
+          "name": "Revolution Groveller",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_5bca2b432b1c415bab8f284c72348bd1~mv2.png",
+          "description": "The small wave version of our revolutionary high performance twin fin pintail. The small wave version of our hi performance twin fin with an unbelievable level of speed, drive and control.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Revolution Daily Rider",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_b8bb810018354ebb95200e0b097b9152~mv2.png",
+          "description": "The daily rider version of our revolutionary high performance twin fin pintail. Your all round hi performance twin fin that puts an unbelievable amount of speed, drive and control under your feet.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Revolution Step Up",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_80e57cb3dada4616909f2c32d16fc138~mv2.png",
+          "description": "The step up version of our revolutionary high performance twin fin pintail. A powerful hi performance twin fin with a ton of speed, drive and control for when the waves get serious.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Revolution Cruiser",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_77a1d7510357419dacb2cb06bd657019~mv2.png",
+          "description": "The easy going version of our revolutionary high performance twin fin pintail. An easy going, smooth riding twin fin with lots of paddle power for relaxed surfing.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Magic Carpet",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_bfc160ac1c9c4586a6c24a5db3a4ad45~mv2.png",
+          "description": "With 15 years and 3500 hours of r&d under it. Recents mods to this much loved, smooth riding, hi speed glider have taken it to a whole new level of control and stability.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Pan Fried",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_64ace60d67d44b01b03c57f049ffae8e~mv2.png",
+          "description": "While the Pan Fried might look like a retro style twin keel board, under the hood it's powered by our FUTURE FORM bottom contour to give it a buttery smooth performance and response. And even tho my son surf's his up to double overhead it’s primarily designed for making smaller, softer waves a whole lot of fun, especially really tiny waves. The classic plan shape of the Pan Fried is heavily inspired by the original 70's Steve Lis fishes, but under the hood a modern, refined low rocker and the FUTURE FORM bottom contour allows the board to glide effortlessly across the smallest and softest waves, and turn on a dime when required.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Ultra Glide",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_a7fe7881b967489881b0dd2282b59282~mv2.png",
+          "description": "The Ultra Glide is a smooth surfing, very versatile twin fin that can be ridden as a step up, a mid length or even longboard style board. Now with an updated, more responsive rocker and a slightly more refined planshape, this much loved model is riding better than ever. Of course our unique FUTURE FORM bottom contour provides the buttery smooth rail to rail transitions that translate into easy turning and effortless gliding.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "2+",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_e7813d6a02a74a03855ec535a0391699~mv2.png",
+          "description": "A fuller planshape mid length style board as a twin fin for maximum control and glide in all sorts of conditions. The latest version of the two plus is a major design breakthrough. With the side fins now positioned for twin fins, not only does it surf great as a twin fin but now it surfs sooooo much better as a single fin with side bites.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Zen Glide",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_2c5c89bb92a04fde86397042d8161222~mv2.png",
+          "description": "Built for smooth, stylish surfing as a single fin or a quad, from knee high beach breaks to double overhead reefs. With its deceptively sleek but fuller outline, a lower entry rocker, a sensitive and responsive tail rocker, and our FUTURE FORM bottom contour, the Zen Glide is a highly refined board that will handle anything you throw it at.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Supa Glide",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_86415a210a584f66b8973fe79fdd36a4~mv2.png",
+          "description": "A classic looking retro single fin design with a smooth, even rocker and FLV bottom contour for a sweet glide and response. Our mid length team rider Julia Sullivan swears by this model and reckons this board is next level.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Sea Dart",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_724997d52b9c4cd3b8c4c4e4c732648c~mv2.png",
+          "description": "One of our most popular designs that surfs equally as well as a quad or a thruster in any sort of waves. Lightning fast off the mark and quick response for exciting surfing in any sort of waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Indo Rocket",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_64aa2ef32e4a49ae8729961b75a4a9bd~mv2.png",
+          "description": "Built for flying through Indo barrels, this design will amaze you with just how much fun it is in waist high beachbreaks.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Hit the Road",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_f28bba1035214dbdb77c4a57c910a2f3~mv2.png",
+          "description": "More than 40 years of taking on the worlds most challenging waves goes into the constantly evolving Hit the Road series. The key thing with building boards for larger waves is experience and knowledge. It's just such a different playing field than average size waves.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Winged Pin",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_e00b27497bfe47b9af374c3be9405bf4~mv2.png",
+          "description": "A lively single fin for a ton of fun in waves from knee high to slightly overhead.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Wanderer",
+          "image_url": "https://static.wixstatic.com/media/6f83ac_b4521df3f43b452b8e6da73f970a3dbd~mv2.png",
+          "description": "A classic and super versatile single fin for waves from waist high to well over head.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
