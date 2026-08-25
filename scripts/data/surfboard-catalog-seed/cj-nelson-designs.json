@@ -1,0 +1,135 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "cj-nelson-designs",
+      "name": "CJ Nelson Designs",
+      "website_url": "https://chvrnsurfboards.com/",
+      "founder_name": "CJ Nelson",
+      "lead_shaper_name": "CJ Nelson",
+      "short_description": "Independent surfboard designs from CJ Nelson under CHVRN, blending classic longboard templates with Thunderbolt construction.",
+      "models": [
+        {
+          "name": "Aeon Flux",
+          "image_url": "https://chvrnsurfboards.com/wp-content/uploads/2026/01/CHVRN-IC-TEMPLATE-AEON-FLUX-scaled.png",
+          "board_category_slug": "longboard",
+          "description": "The AEON FLUX has been a favorite of CJ and his team. The original design was based on a progressive involvement log concept that CJ designed to push his surfing on. After a couple years of evolving the design, CJ handed off the concept to his team rider Kevin Skvarna who was looking for a board he could battle for a world title on. After a few years, CJ picked this design back up and fell in love with it. The Aeon has a classic V bottom outline combined with performance foiled rails for speed and control, steep blended concave for maximum noserideing lift, and a classic rocker for that traditional flow and aesthetic. One of the most progressive logs ever built."
+        },
+        {
+          "name": "Apex",
+          "image_url": "https://chvrnsurfboards.com/wp-content/uploads/2026/01/CHVRN-IC-TEMPLATE-APEX-1-scaled.png",
+          "board_category_slug": "longboard",
+          "description": "The APEX takes all our knowledge of traditional and performance longboarding and rolls it into one beautiful package. When we designed this board we were out to make the most versatile classic longboard of all time. A board that's incredibly easy to ride for a novice but also a board that CJ can push himself on for many years to come. Concave in the nose for incredible noseriding lift, hip in the back like a classic \"involvement\" log for pivot and whip but with a lower performance style rail and a modern edge in the tail for speed and control. An homage to the past with modern touches. The \"Apex\" of classic longboard design."
+        },
+        {
+          "name": "Classic",
+          "image_url": "https://chvrnsurfboards.com/wp-content/uploads/2026/01/CHVRN-IC-TEMPLATE-COLONEL-4-1-scaled.png",
+          "board_category_slug": "longboard",
+          "description": "The CLASSIC is the most versatile log in our range. Classic by definition with a full nose for stability while noseriding, large beveled concave for maximum lift and control for navigating sections while on the nose, a wide but surprisingly loose tail, and 50/50 rails for that vintage feel we all love so much. This one is a bit of a no-brainer for any log lover. Functional art the old fashion way."
+        },
+        {
+          "name": "Noserider From Mars",
+          "image_url": "https://chvrnsurfboards.com/wp-content/uploads/2026/01/CJ-NELSON-MODEL-NRFM-2-scaled.png",
+          "board_category_slug": "longboard",
+          "description": "The NOSERIDER FROM MARS was originally designed in the mid 2000s, while CJ was living in Santa Cruz. Wanting to do something that was completely original, CJ spent a lot of time thinking about the physics of noseriding. After an afternoon hanging out at the harbor and watching the catamarans coming and going, it all came into view. Opening the front of a beveled concave, creating a pontoon effect that creates stability and lift, would be the objective. After a few tweaks and a bunch of variations, the NOSERIDER FROM MARS was born. Nothing beats climbing and dropping in the hang ten position while planing off a pontoon under each foot.  A cult classic that has been shaped by many and reinvented many times over ( named by Wayne Rich ). Best in show design winner BOARDROOM SHOW 2001."
+        },
+        {
+          "name": "OZ Noserider",
+          "image_url": "https://chvrnsurfboards.com/wp-content/uploads/2026/01/CJ-NELSON-MODEL-OZ-NOSERIDER-2-scaled.png",
+          "board_category_slug": "longboard",
+          "description": "The OZ Noserider is a classic involvement style noserider. If wide nose logs aren't your thing and you still want a perching machine, this board\u2019s for you. The OZ Noserider has all the same design attributes as the Slasher but we've blown out the tail a touch and added that beveled style nose concave we love so much."
+        },
+        {
+          "name": "Sinner",
+          "image_url": "https://chvrnsurfboards.com/wp-content/uploads/2026/01/CJ-NELSON-MODEL-SINNER-01-scaled.png",
+          "board_category_slug": "longboard",
+          "description": "The SINNER is our late 60s inspired speed hull. Half involvement log and half stubby, this thing packs a punch when it comes to speed and maneuverability. Rolled entry and knifey rails, paired with the flattest rocker in our range, make this puppy move like nobody\u2019s business. If fast and loose is your jam, this design will blow your mind and keep you indefinitely inspired. PS. To microdose this design, go stringerless and unlock the magical feels."
+        },
+        {
+          "name": "Slasher Low Pro OG",
+          "image_url": "https://chvrnsurfboards.com/wp-content/uploads/2026/01/CHVRN-IC-TEMPLATE-SLP-2-scaled.png",
+          "board_category_slug": "longboard",
+          "description": "The Slasher Low Pro is the most forward-thinking longboard in our range. Not a log, not an HP, but a fresh vehicle to take longboarding into the future with dignity. Performance rails for shredabillity, beveled concave for technical noseriding, wide point back for whip and control. This design has some hidden features that make this board quite possibly the smartest and most rippable longboard ever designed. This shape is designed in collaboration with our main man Ian Chisholm and his good friend CJ Nelson Get the future under your feet on the SLASHER LOW PRO built by us in polyester."
+        },
+        {
+      "name": "Slasher",
+      "image_url": "https://chvrnsurfboards.com/wp-content/uploads/2026/01/CJ-NELSON-MODEL-SLASHER-scaled.png",
+          "board_category_slug": "longboard",
+          "description": "The SLASHER is the classic involvement log that changed CJ's life. There have been a few pinnacle boards in CJ's life that literally changed the course of his surfing forever. The SLASHER was gifted to him in the winter of 2014 on a long trip to Australia. Growing up on noseriders, this design was way out of his comfort zone. CJ was blown away during his first surf and never looked back. Rolled entry for pocket tip control, wide point back for pivot and whip, low rocker for speed and carry, with a performance based rail for control and drive."
+        },
+        {
+          "name": "Sprout OG",
+          "image_url": "https://chvrnsurfboards.com/wp-content/uploads/2026/01/CHVRN-IC-TEMPLATE-SPROUT-OG-scaled.png",
+          "board_category_slug": "longboard",
+          "description": "The SPROUT is CJ's favorite surfboard of all time. Originally shaped by Washington's Dane Purlee and now resurrected and tweaked by Californian shaper Ryan Engle. This is an updated replica of the board CJ rode in Thomas Campbell's movie \"the Sprout\". Without a doubt, the best noseriding surfboard CJ has ever owned. Regarded by many as the best noserider of all time, this board was designed to take to Malibu or Scorpion Bay and hang ten. A must-have for any point break, tip dwelling, longboard enthusiast."
+        },
+        {
+          "name": "Chameleon",
+          "image_url": "https://chvrnsurfboards.com/wp-content/uploads/2025/05/cj-nelson-thunderbolt-chameleon-grey.png",
+          "board_category_slug": "hybrid",
+          "description": "The Chameleon knows no boundaries\u2014not a traditional log, not an HP, but a perfect hybrid of the two. Combining everything CJ and Ryan know about longboarding, this board features performance rails, a tuned rocker, a wide nose, blended concave, and edge in the tail for high-speed control. It noserides beautifully and turns on a dime. Take it anywhere and ride with confidence. Quite possibly one of the most user-friendly longboards in the world today."
+        },
+        {
+          "name": "Ibis",
+          "image_url": "https://chvrnsurfboards.com/wp-content/uploads/2025/08/cj-nelson-thunderbolt-GX1000-white-carbon-bottom.png",
+          "board_category_slug": "longboard",
+          "description": "The IBIS is our high performance longboard / speed shape. This thing packs a punch when it comes to speed and maneuverability. Performance rails, paired with a concave nose and our modest hp longboard rocker makes this puppy move like nobody\u2019s business. If fast and loose is your jam, this design will blow your mind and keep you indefinitely inspired."
+        },
+        {
+      "name": "Milo",
+      "image_url": "https://chvrnsurfboards.com/wp-content/uploads/2025/08/TB-CJ-MILO-DEEP-BLUE.png",
+      "board_category_slug": "fish",
+          "description": "The Milo is our performance fish, blending modern rails with a single-to-double concave bottom and a flat rocker profile. It\u2019s one of the most versatile boards in our range\u2014ideal for drawing tighter lines and increasing maneuverability. Ride the larger size if you\u2019re stepping down from a longboard."
+        },
+        {
+          "name": "Oracle",
+          "image_url": "https://chvrnsurfboards.com/wp-content/uploads/2025/08/TB-CJ-ORACLE-VOLAN.png",
+          "board_category_slug": "longboard",
+          "description": "In 2016, Thomas Campbell lent CJ his Skip Frye Eagle to help him get through the Santa Cruz summer. At the time, CJ\u2019s glider experience was minimal, aside from riding his father\u2019s 10\u20193\u201d Phil Edwards Waikiki. The speed and glide of the Eagle changed his outlook on what longboards could and should feel like. He was hooked on the flow, but envisioned a glider that could also noseride, pivot, and slash\u2014turning a novelty board into a daily driver."
+        },
+        {
+          "name": "Outlier X",
+          "image_url": "https://chvrnsurfboards.com/wp-content/uploads/2025/08/TB-CJ-OUTLIERX-ARMY.png",
+          "board_category_slug": "hybrid",
+          "description": "The Outlier X is our answer to the performance egg. Sometimes, you want a board that does the work for you. This one paddles and catches waves with ease while performing like a modern shortboard. The rolled entry promotes smooth trimming, while performance rails and rocker allow for quick pivots and controlled release. A consistent outline and modern rocker help the board ride shorter than its length."
+        },
+        {
+          "name": "Outlier",
+          "image_url": "https://chvrnsurfboards.com/wp-content/uploads/2025/08/TB-CJ-OUTLIER-MUSTARD.png",
+          "board_category_slug": "hybrid",
+          "description": "The Outlier is one of the most functional designs from the shortboard revolution, reimagined by CJ and Ryan. A true speed hull built for feel and rider enjoyment, this board is a game-changer. Drawing inspiration from surfing legends like MP and Nat Young, and incorporating knowledge from the transition era, we modernized the design for today\u2019s needs. Whether you\u2019re sizing down from a longboard or looking for a one-board travel quiver, the Outlier is your ideal companion."
+        },
+        {
+          "name": "Paragon",
+          "image_url": "https://chvrnsurfboards.com/wp-content/uploads/2025/08/TB-CJ-PARAGON-AVOCADO.png",
+          "board_category_slug": "longboard",
+          "description": "The Paragon is a workhorse for the traditional longboarder\u2014a \u201cclassic\u201d California-inspired step deck designed to be extremely neutral. It\u2019s fast and loose off the tail and stable on the nose for pocket tip riding. With a smooth rocker profile, slight step deck, and tail edge, the board flows and maneuvers with ease while remaining a versatile noserider. A rolled nose blends into a modern down rail in the tail, allowing for powerful bottom turns and smooth cutbacks. A favorite among the entire team."
+        },
+        {
+          "name": "Parallax Plus",
+          "image_url": "https://chvrnsurfboards.com/wp-content/uploads/2025/08/TB-CJ-PARALLAX-BURNT-ORANGE.png",
+          "board_category_slug": "longboard",
+          "description": "The Parallax Plus is a classic long hull. Inspired by the board ridden by Nat Young during the iconic summer of \u201868\u2014arguably the most groundbreaking surfing ever witnessed at Malibu\u2014this design pays tribute to that era with modern updates. We added more rocker, reduced roll, integrated performance rails, and designed a modest 2+1 fin setup. This board is a life-changer."
+        },
+        {
+          "name": "Slasher Low Pro",
+          "image_url": "https://chvrnsurfboards.com/wp-content/uploads/2025/08/TB-CJ-SLASHER-LOW-PRO-TAN-CARBON.png",
+          "board_category_slug": "longboard",
+          "description": "The Slasher Low Pro takes all our knowledge of involvement-style longboarding and rolls it into one beautiful package. When we designed this board, our goal was to create the most versatile involvement log of all time\u2014one that CJ can rely on for many years to come. It features concave in the nose for incredible noseriding lift and a hip in the tail for pivot and whip. The board is built with a lower, performance-style rail and a modern edge in the tail for speed and control. A homage to the past, enhanced with modern touches."
+        },
+        {
+          "name": "Sprout 2.0",
+          "image_url": "https://chvrnsurfboards.com/wp-content/uploads/2025/08/TB-CJ-SPROUT2.0-GOLD.png",
+          "board_category_slug": "longboard",
+          "description": "The Sprout 2.0 is our updated, modern noserider. CJ has ridden variations of this design throughout his entire surfing career. Some have even claimed the Sprout 2.0 to be the best noseriding surfboard of all time\u2014an honor we don\u2019t take lightly. This latest version features a bit more tail kick than past versions, a more pinched rail for wave face connectivity, an edge in the tail for maximum control, and a beveled Nuuhiwa-style concave. The benchmark in performance noseriding."
+        },
+        {
+          "name": "Subrosa",
+          "image_url": "https://chvrnsurfboards.com/wp-content/uploads/2025/08/TB-CJ-SUBROSA-SAMBA.png",
+          "board_category_slug": "hybrid",
+          "description": "The Subrosa is the quintessential \u201cone board quiver,\u201d known for its versatility across all wave types. It\u2019s the perfect daily driver for your local break and still performs when the surf turns on. It paddles like a longboard but responds like a shortboard. Size down if you\u2019re coming from a shortboard, and size up if you\u2019re transitioning from a longboard."
+        }
+      ]
+    }
+  ]
+}
