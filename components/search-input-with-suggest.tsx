@@ -638,7 +638,8 @@ export function SearchInputWithSuggest({
         setLoading(true)
         setExternalSettled(false)
         setExternalError(null)
-        setExternalData(null)
+        // Keep the previous payload so typeahead can show prefix-filtered rows
+        // instead of flashing an empty skeleton on every keystroke.
         if (isSearchInputFocused()) setOpen(true)
         try {
           const data = await externalSuggest.fetch(q)

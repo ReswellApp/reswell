@@ -1,14 +1,19 @@
-import Link from 'next/link'
-import type { Metadata } from 'next'
-import { Home, Waves } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import Link from "next/link"
+import type { Metadata } from "next"
+import { Home, Waves } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { buildAgentNotFoundMarkdown } from "@/lib/agent/not-found-markdown"
+import { publicSiteOrigin } from "@/lib/public-site-origin"
 
 export const metadata: Metadata = {
-  title: 'Page not found — Reswell',
-  description: 'We could not find that page.',
+  title: "Page not found — Reswell",
+  description: "We could not find that page.",
 }
 
 export default function NotFound() {
+  const origin = publicSiteOrigin()
+  const agentMarkdown = buildAgentNotFoundMarkdown(origin)
+
   return (
     <main className="flex flex-1 flex-col items-center justify-center bg-background px-4 py-16 text-center sm:py-24">
       <div className="mx-auto max-w-lg">
@@ -33,6 +38,28 @@ export default function NotFound() {
           The link may be broken, or the listing sailed away. Paddle back to the home break and
           try again.
         </p>
+
+        <p className="mt-3 text-pretty text-sm text-muted-foreground">
+          Looking for a machine-readable index? See{" "}
+          <Link href="/sitemap.xml" className="underline underline-offset-2 hover:text-foreground">
+            sitemap.xml
+          </Link>
+          ,{" "}
+          <Link href="/llms.txt" className="underline underline-offset-2 hover:text-foreground">
+            llms.txt
+          </Link>
+          ,{" "}
+          <Link href="/openapi.json" className="underline underline-offset-2 hover:text-foreground">
+            openapi.json
+          </Link>
+          , or{" "}
+          <Link href="/public-api" className="underline underline-offset-2 hover:text-foreground">
+            API docs
+          </Link>
+          .
+        </p>
+
+        <pre className="sr-only">{agentMarkdown}</pre>
 
         <Button asChild size="lg" className="mt-8 shadow-soft">
           <Link href="/" prefetch>

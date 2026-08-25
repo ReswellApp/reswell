@@ -42,9 +42,13 @@ export default function PublicApiPage() {
             research bots — use this instead of scraping HTML.
           </p>
           <p className="mt-3 text-sm text-muted-foreground">
-            Machine-readable guide:{" "}
+            Machine-readable guides:{" "}
             <Link href="/llms.txt" className="text-primary underline">
               /llms.txt
+            </Link>
+            {" · "}
+            <Link href="/openapi.json" className="text-primary underline">
+              /openapi.json
             </Link>
           </p>
         </div>

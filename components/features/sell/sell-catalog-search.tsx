@@ -50,7 +50,68 @@ import { finSetupLabel, finSizeLabel, finSystemLabel } from "@/lib/fin-listing-c
 import { compactSearchKey } from "@/lib/utils/fin-catalog-search-rank"
 import { cn } from "@/lib/utils"
 
-const SEARCH_DEBOUNCE_MS = 250
+const SEARCH_DEBOUNCE_MS = 160
+const SELL_CATALOG_FETCH_CACHE_LIMIT = 24
+const sellCatalogFetchCache = new Map<string, SellCatalogSearchResult>()
+
+function sellCatalogCacheKey(query: string): string {
+  return query.trim().toLowerCase()
+}
+
+function peekCachedSellCatalogSearch(query: string): SellCatalogSearchResult | undefined {
+  return sellCatalogFetchCache.get(sellCatalogCacheKey(query))
+}
+
+function getCachedSellCatalogSearch(query: string): SellCatalogSearchResult | undefined {
+  const key = sellCatalogCacheKey(query)
+  const hit = sellCatalogFetchCache.get(key)
+  if (!hit) return undefined
+  sellCatalogFetchCache.delete(key)
+  sellCatalogFetchCache.set(key, hit)
+  return hit
+}
+
+function setCachedSellCatalogSearch(query: string, data: SellCatalogSearchResult): void {
+  const key = sellCatalogCacheKey(query)
+  sellCatalogFetchCache.delete(key)
+  sellCatalogFetchCache.set(key, data)
+  if (sellCatalogFetchCache.size > SELL_CATALOG_FETCH_CACHE_LIMIT) {
+    const oldest = sellCatalogFetchCache.keys().next().value
+    if (oldest) sellCatalogFetchCache.delete(oldest)
+  }
+}
+
+function rankedRowsFromResult(data: SellCatalogSearchResult | null): SellCatalogSearchResultRow[] {
+  if (!data) return []
+  return data.meta.matchTier === "similar" ? data.similarResults : data.results
+}
+
+function rowMatchesQueryPrefix(row: SellCatalogSearchResultRow, query: string): boolean {
+  const needle = query.trim().toLowerCase()
+  if (!needle) return true
+  const brand = sellCatalogSearchRowBrandName(row).toLowerCase()
+  const model = (sellCatalogSearchRowModelName(row) ?? "").toLowerCase()
+  if (brand.includes(needle) || model.includes(needle)) return true
+  const compactNeedle = compactSearchKey(needle)
+  if (compactNeedle.length < 1) return false
+  return (
+    compactSearchKey(brand).includes(compactNeedle) ||
+    compactSearchKey(model).includes(compactNeedle)
+  )
+}
+
+function filterResultForQuery(
+  data: SellCatalogSearchResult,
+  query: string,
+): SellCatalogSearchResult | null {
+  const rows = rankedRowsFromResult(data).filter((row) => rowMatchesQueryPrefix(row, query))
+  if (rows.length === 0) return null
+  return {
+    results: rows,
+    similarResults: [],
+    meta: { ...data.meta, matchTier: "exact" },
+  }
+}
 
 export type SellCatalogSearchProps = {
   /** Show admin-only sell types (e.g. apparel) in the “list by type” row. */
@@ -649,6 +710,8 @@ function SellBrandModelsPanel({
 }
 
 async function fetchSellCatalogSearch(query: string): Promise<SellCatalogSearchResult> {
+  const cached = getCachedSellCatalogSearch(query)
+  if (cached) return cached
   const res = await fetch(
     `/api/sell/catalog-search?${new URLSearchParams({ q: query })}`,
     { method: "GET", headers: { Accept: "application/json" } },
@@ -657,6 +720,7 @@ async function fetchSellCatalogSearch(query: string): Promise<SellCatalogSearchR
   if (!res.ok || !body.data) {
     throw new Error(body.error ?? "Could not search the catalog. Please try again.")
   }
+  setCachedSellCatalogSearch(query, body.data)
   return body.data
 }
 
@@ -810,6 +874,19 @@ export function SellCatalogSearch({
   const showResultsPanel = suggestState.panelOpen && suggestState.query.length >= 1
   const focusMode = showFocusScrim
 
+  const displayData = React.useMemo(() => {
+    const exact = peekCachedSellCatalogSearch(suggestState.query)
+    if (exact) return exact
+    if (suggestState.settled && suggestState.data) return suggestState.data
+    if (suggestState.data) {
+      return filterResultForQuery(suggestState.data, suggestState.query)
+    }
+    return null
+  }, [suggestState.query, suggestState.settled, suggestState.data])
+
+  const hasDisplayRows = rankedRowsFromResult(displayData).length > 0
+  const showPanelSkeleton = suggestState.loading && !hasDisplayRows && !suggestState.error
+
   return (
     <main
       id="sell-catalog-search"
@@ -908,7 +985,7 @@ export function SellCatalogSearch({
                   id="sell-catalog-search-listbox"
                   role="listbox"
                   aria-live="polite"
-                  aria-busy={suggestState.loading && !suggestState.settled}
+                  aria-busy={suggestState.loading && !hasDisplayRows}
                   className={cn(
                     "absolute inset-x-0 top-full z-[80] -mt-px overflow-hidden rounded-b-2xl border border-t border-border bg-popover text-popover-foreground shadow-md",
                     "border-t-border/60 max-sm:rounded-b-xl",
@@ -920,8 +997,7 @@ export function SellCatalogSearch({
                   }}
                 >
                   <AnimatedPanelHeight>
-                    {suggestState.loading &&
-                    !(suggestState.data?.results.length || suggestState.data?.similarResults?.length) ? (
+                    {showPanelSkeleton ? (
                       <NavSuggestPanelSkeleton />
                     ) : (
                       <SellCatalogSearchPanel
@@ -930,7 +1006,7 @@ export function SellCatalogSearch({
                           loading: suggestState.loading,
                           settled: suggestState.settled,
                           error: suggestState.error,
-                          data: suggestState.data,
+                          data: displayData,
                           dismissPanel: dismissSearchFocus,
                         }}
                         isAdmin={isAdmin}

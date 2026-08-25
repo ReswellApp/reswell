@@ -160,6 +160,9 @@ export default async function HomePage() {
           <FadeInSection>
             <section className="max-lg:pt-6 max-lg:pb-12 lg:py-16">
               <div className="container mx-auto max-lg:px-4 sm:max-lg:px-6">
+                <div className="mb-4 flex min-w-0 items-center justify-between lg:mb-8">
+                  <h2 className="text-2xl font-bold">Recently listed</h2>
+                </div>
                 <HomeRecentlyListedGrid
                   listings={recentlyListedGrid}
                   userId={user?.id ?? null}
@@ -206,7 +209,7 @@ export default async function HomePage() {
           <div className="container mx-auto">
             <Link href="/sell" className={marketingCtaBannerLinkClassName}>
               <div>
-                <p className={marketingCtaBannerTitleClassName}>Gear that deserves another session</p>
+                <h2 className={marketingCtaBannerTitleClassName}>Gear that deserves another session</h2>
                 <p className={marketingCtaBannerDescriptionClassName}>
                   A community of surfers buying, selling, and passing along the boards and gear they love. Find your
                   next setup, or send one off to its next owner.
@@ -259,7 +262,7 @@ export default async function HomePage() {
           <div className="container mx-auto">
             <Link href="/contact" className={marketingCtaBannerLinkClassName}>
               <div>
-                <p className={marketingCtaBannerTitleClassName}>We&apos;re here whenever you need us</p>
+                <h2 className={marketingCtaBannerTitleClassName}>We&apos;re here whenever you need us</h2>
                 <p className={marketingCtaBannerDescriptionClassName}>
                   Real people, real surfers, happy to help with a listing, a question, or just pointing you toward the
                   right board. Say hi anytime.
@@ -309,7 +312,7 @@ export default async function HomePage() {
             <div className={marketingCtaBannerPanelClassName}>
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div className="min-w-0">
-                  <p className={marketingCtaBannerTitleClassName}>Come find a board</p>
+                  <h2 className={marketingCtaBannerTitleClassName}>Come find a board</h2>
                   <p className={marketingCtaBannerDescriptionClassName}>
                     Browse used boards and gear from surfers — or list one and send it on its next session.
                   </p>

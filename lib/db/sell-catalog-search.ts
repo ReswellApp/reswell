@@ -85,7 +85,9 @@ export async function searchSellCatalogModelRows(
       .in("product_category_slug", cats)
       .order("name", { ascending: true })
       .limit(limit),
-    supabase.from("brands").select("id").ilike("name", pattern).limit(10),
+    q.length >= 3
+      ? supabase.from("brands").select("id").ilike("name", pattern).limit(10)
+      : Promise.resolve({ data: [] as { id: string }[], error: null }),
   ])
 
   if (byModelName.error) {
@@ -98,7 +100,9 @@ export async function searchSellCatalogModelRows(
   const brandIds = ((matchingBrands.data ?? []) as { id: string }[]).map((b) => b.id)
 
   let byBrand: RawModelRow[] = []
-  if (brandIds.length > 0) {
+  // Short prefixes match too many brands (every "C*" name). Expanding those
+  // into catalog models is what made `/sell` typeahead feel stuck on one letter.
+  if (brandIds.length > 0 && q.length >= 3) {
     const { data, error } = await supabase
       .from("brand_models")
       .select(MODEL_SELECT)

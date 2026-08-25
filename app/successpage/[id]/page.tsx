@@ -9,6 +9,7 @@ import { GooglePurchaseConversionScript } from "@/components/google-ads/google-p
 import { StripPurchaseConversionParam } from "@/components/google-ads/strip-purchase-conversion-param"
 import { GooglePurchaseEventScript } from "@/components/google-analytics/google-purchase-event-script"
 import { MetaPurchaseEventScript } from "@/components/meta/meta-purchase-event-script"
+import { OpenAiAdsPurchaseEventScript } from "@/components/openai-ads/openai-purchase-event-script"
 import { getPostHogServerClient } from "@/lib/posthog-server"
 import {
   buildOrderSuccessPath,
@@ -104,6 +105,15 @@ export default async function PurchaseSuccessPage(props: PageProps) {
         contentIds={payload.orderLines
           .map((line) => line.listingId)
           .filter((id): id is string => Boolean(id))}
+      />
+      <OpenAiAdsPurchaseEventScript
+        orderId={payload.orderId}
+        value={payload.total}
+        items={payload.orderLines.map((line) => ({
+          itemId: line.listingId,
+          itemName: line.title,
+          quantity: line.quantity,
+        }))}
       />
     </>
   ) : fromCheckout ? (

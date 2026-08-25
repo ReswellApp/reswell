@@ -175,6 +175,7 @@ export function getPublicApiCatalog(): PublicApiCatalog {
     name: "Reswell public research API",
     docs: `${origin}/public-api`,
     llms_txt: `${origin}/llms.txt`,
+    openapi_json: `${origin}/openapi.json`,
     endpoints: [
       {
         method: "GET",

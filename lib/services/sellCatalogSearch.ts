@@ -1,7 +1,7 @@
 import "server-only"
 
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { listFinCatalogBrandIds } from "@/lib/db/fin-catalog-search"
+import { getFinCatalogBrandIdsCached } from "@/lib/cache/fin-catalog-brand-ids"
 import {
   getSellCatalogBrandRowsByIds,
   getSellCatalogModelRowsByIds,
@@ -32,6 +32,10 @@ import {
 } from "@/lib/types/sell-catalog-search"
 
 const MAX_RANKED_RESULTS = 12
+/** Single-letter typeahead: skip ES + fin variants; prefix `ilike` is enough. */
+const SHORT_PREFIX_MAX_LEN = 1
+/** Pull every model for an ES brand hit only once the query looks like a real name. */
+const BRAND_MODEL_BACKFILL_MIN_LEN = 4
 
 function mapFinRowToSellRow(row: FinCatalogSearchResultRow): SellCatalogSearchResultRow {
   if (row.kind === "brand") {
@@ -213,15 +217,25 @@ async function loadNonFinRowsFromElasticsearch(
     if (hits.length === 0) return null
 
     const brandIds = hits.filter((h) => h.kind === "brand").map((h) => h.id)
-    const modelIds = hits.filter((h) => h.kind === "model").map((h) => h.id)
+    const modelHits = hits.filter((h) => h.kind === "model")
+    // Short prefixes match every model under a brand via `brand_name.edge`
+    // ("ch" → every Channel Islands board). Cap hydration so typeahead
+    // stays fast and brands are not buried under a catalog dump.
+    const modelIds = (
+      q.length < BRAND_MODEL_BACKFILL_MIN_LEN ? modelHits.slice(0, 8) : modelHits
+    ).map((h) => h.id)
+
+    const backfillBrandModels =
+      brandIds.length > 0 && compactSearchKey(q).length >= BRAND_MODEL_BACKFILL_MIN_LEN
 
     const [brands, models, modelsForBrands] = await Promise.all([
       getSellCatalogBrandRowsByIds(supabase, brandIds, nonFinCategories),
       getSellCatalogModelRowsByIds(supabase, modelIds, nonFinCategories),
       // Mirror fin catalog: when ES resolves a brand (incl. synonyms), pull
       // that brand's models from Postgres so recent imports appear before the
-      // hourly `reswell_sell_catalog` reindex catches up.
-      brandIds.length > 0
+      // hourly `reswell_sell_catalog` reindex catches up. Skip on short
+      // prefixes — "c" matching Channel Islands would otherwise load 40 models.
+      backfillBrandModels
         ? listSellCatalogModelRowsByBrandIds(supabase, brandIds, nonFinCategories, 40)
         : Promise.resolve([]),
     ])
@@ -259,71 +273,73 @@ async function loadNonFinRowsFromElasticsearch(
   }
 }
 
-async function loadExactCandidates(
+async function loadSupabaseNonFinRows(
   supabase: SupabaseClient,
   q: string,
-  categories: readonly SellCatalogSearchCategory[],
-  nonFinEsRows: SellCatalogSearchResultRow[] | null,
-): Promise<{ rows: SellCatalogSearchResultRow[]; backend: "elasticsearch" | "supabase" }> {
-  const nonFinCategories = categories.filter((c) => c !== "fins")
-  const rows: SellCatalogSearchResultRow[] = []
-  let backend: "elasticsearch" | "supabase" = nonFinEsRows ? "elasticsearch" : "supabase"
-
-  if (categories.includes("fins")) {
-    const finBrandIds = await listFinCatalogBrandIds(supabase)
-    const finResult = await searchFinCatalogForSell(supabase, q, { finBrandIds })
-    if (finResult.meta.backend === "elasticsearch") backend = "elasticsearch"
-    rows.push(...finResult.results.map(mapFinRowToSellRow))
-  }
-
-  if (nonFinEsRows) {
-    rows.push(...nonFinEsRows)
-  }
-
-  // Always merge Supabase recall for non-fin categories. ES alone skips models
-  // that exist in `brand_models` but are not yet in `reswell_sell_catalog`
-  // (common after catalog import scripts that insert without live ES sync).
-  if (nonFinCategories.length > 0) {
-    const [brands, models] = await Promise.all([
-      searchSellCatalogBrandRows(supabase, q, nonFinCategories),
-      searchSellCatalogModelRows(supabase, q, nonFinCategories),
-    ])
-    rows.push(...brands, ...models)
-  }
-
-  return { rows: mergeRowsByKey(rows), backend }
+  nonFinCategories: readonly SellCatalogSearchCategory[],
+): Promise<SellCatalogSearchResultRow[]> {
+  if (nonFinCategories.length === 0) return []
+  const [brands, models] = await Promise.all([
+    searchSellCatalogBrandRows(supabase, q, nonFinCategories),
+    searchSellCatalogModelRows(supabase, q, nonFinCategories),
+  ])
+  return [...brands, ...models]
 }
 
-async function loadSimilarCandidates(
+async function loadFinCatalogRows(
   supabase: SupabaseClient,
   q: string,
   categories: readonly SellCatalogSearchCategory[],
-  nonFinEsRows: SellCatalogSearchResultRow[] | null,
-): Promise<{ rows: SellCatalogSearchResultRow[]; backend: "elasticsearch" | "supabase" }> {
-  const nonFinCategories = categories.filter((c) => c !== "fins")
-  const rows: SellCatalogSearchResultRow[] = []
-  let backend: "elasticsearch" | "supabase" = nonFinEsRows ? "elasticsearch" : "supabase"
-
-  if (categories.includes("fins")) {
-    const finBrandIds = await listFinCatalogBrandIds(supabase)
-    const finResult = await searchFinCatalogForSell(supabase, q, { finBrandIds })
-    if (finResult.meta.backend === "elasticsearch") backend = "elasticsearch"
-    rows.push(...finResult.similarResults.map(mapFinRowToSellRow))
+): Promise<{
+  exact: SellCatalogSearchResultRow[]
+  similar: SellCatalogSearchResultRow[]
+  backend: "elasticsearch" | "supabase"
+}> {
+  if (!categories.includes("fins")) {
+    return { exact: [], similar: [], backend: "supabase" }
   }
-
-  if (nonFinEsRows) {
-    rows.push(...nonFinEsRows)
+  const finBrandIds = await getFinCatalogBrandIdsCached()
+  const finResult = await searchFinCatalogForSell(supabase, q, { finBrandIds })
+  return {
+    exact: finResult.results.map(mapFinRowToSellRow),
+    similar: finResult.similarResults.map(mapFinRowToSellRow),
+    backend: finResult.meta.backend,
   }
+}
 
-  if (nonFinCategories.length > 0) {
-    const [brands, broadModels] = await Promise.all([
-      searchSellCatalogBrandRows(supabase, q, nonFinCategories),
-      searchSellCatalogModelRowsBroad(supabase, q, nonFinCategories),
-    ])
-    rows.push(...brands, ...broadModels)
+/**
+ * Single-letter typeahead: two prefix `ilike` queries across every requested
+ * category. ES edge-ngrams start at 2 chars and the fin-variant pipeline is
+ * wasted work for a single letter. Two-letter queries (e.g. "ci") still use
+ * the full path so catalog synonyms can resolve.
+ */
+async function searchSellCatalogPrefixFast(
+  supabase: SupabaseClient,
+  q: string,
+  categories: readonly SellCatalogSearchCategory[],
+): Promise<SellCatalogSearchResult> {
+  const [brands, models] = await Promise.all([
+    searchSellCatalogBrandRows(supabase, q, categories),
+    searchSellCatalogModelRows(supabase, q, categories),
+  ])
+  const rows = mergeRowsByKey([...brands, ...models])
+  const results = rankSellCatalogResults(q, rows, MAX_RANKED_RESULTS, "strict")
+  if (results.length > 0) {
+    return {
+      results,
+      similarResults: [],
+      meta: { backend: "supabase", matchTier: "exact" },
+    }
   }
-
-  return { rows: mergeRowsByKey(rows), backend }
+  const similarResults = rankSellCatalogResults(q, rows, MAX_RANKED_RESULTS, "relaxed")
+  if (similarResults.length > 0) {
+    return {
+      results: [],
+      similarResults,
+      meta: { backend: "supabase", matchTier: "similar" },
+    }
+  }
+  return emptyResult()
 }
 
 /**
@@ -346,15 +362,25 @@ export async function searchSellCatalogForSell(
     return emptyResult()
   }
 
-  const nonFinCategories = categories.filter((c) => c !== "fins")
-  const nonFinEsRows = await loadNonFinRowsFromElasticsearch(supabase, q, nonFinCategories)
+  if (q.length <= SHORT_PREFIX_MAX_LEN) {
+    return searchSellCatalogPrefixFast(supabase, q, categories)
+  }
 
-  const { rows: exactCandidates, backend } = await loadExactCandidates(
-    supabase,
-    q,
-    categories,
-    nonFinEsRows,
-  )
+  const nonFinCategories = categories.filter((c) => c !== "fins")
+  const [nonFinEsRows, finRows, supabaseRows] = await Promise.all([
+    loadNonFinRowsFromElasticsearch(supabase, q, nonFinCategories),
+    loadFinCatalogRows(supabase, q, categories),
+    loadSupabaseNonFinRows(supabase, q, nonFinCategories),
+  ])
+
+  const backend: "elasticsearch" | "supabase" =
+    nonFinEsRows || finRows.backend === "elasticsearch" ? "elasticsearch" : "supabase"
+
+  const exactCandidates = mergeRowsByKey([
+    ...finRows.exact,
+    ...(nonFinEsRows ?? []),
+    ...supabaseRows,
+  ])
   const results = rankSellCatalogResults(q, exactCandidates, MAX_RANKED_RESULTS, "strict")
 
   if (results.length > 0) {
@@ -365,12 +391,15 @@ export async function searchSellCatalogForSell(
     }
   }
 
-  const { rows: similarCandidates, backend: similarBackend } = await loadSimilarCandidates(
-    supabase,
-    q,
-    categories,
-    nonFinEsRows,
-  )
+  const broadModels =
+    nonFinCategories.length > 0
+      ? await searchSellCatalogModelRowsBroad(supabase, q, nonFinCategories)
+      : []
+  const similarCandidates = mergeRowsByKey([
+    ...exactCandidates,
+    ...finRows.similar,
+    ...broadModels,
+  ])
   let similarResults = rankSellCatalogResults(
     q,
     similarCandidates,
@@ -394,11 +423,11 @@ export async function searchSellCatalogForSell(
     return {
       results: [],
       similarResults,
-      meta: { backend: similarBackend, matchTier: "similar" },
+      meta: { backend, matchTier: "similar" },
     }
   }
 
-  return emptyResult(similarBackend)
+  return emptyResult(backend)
 }
 
 export { compactSearchKey }

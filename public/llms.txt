@@ -5,6 +5,7 @@
 
 Website: https://www.reswell.app
 Human docs / try-it: https://www.reswell.app/public-api
+OpenAPI: https://www.reswell.app/openapi.json
 Sitemap: https://www.reswell.app/sitemap.xml
 
 ## Preferred research flow
@@ -60,6 +61,7 @@ Over limit → HTTP `429` + `Retry-After`, with JSON like:
 
 ### Catalog
 - `GET https://www.reswell.app/api/public` — machine-readable endpoint index
+- `GET https://www.reswell.app/openapi.json` — OpenAPI 3.1 specification
 
 ## Examples
 

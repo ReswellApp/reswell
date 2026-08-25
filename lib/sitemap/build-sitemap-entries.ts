@@ -147,6 +147,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     { url: `${BASE}/faq`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
     { url: `${BASE}/public-api`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
     { url: `${BASE}/llms.txt`, lastModified: now, changeFrequency: "monthly", priority: 0.35 },
+    { url: `${BASE}/openapi.json`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
     { url: `${BASE}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.35 },
     { url: `${BASE}/careers`, lastModified: now, changeFrequency: "monthly", priority: 0.35 },
     { url: `${BASE}/shipping`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },

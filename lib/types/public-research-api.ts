@@ -85,6 +85,7 @@ export type PublicApiCatalog = {
   name: string
   docs: string
   llms_txt: string
+  openapi_json: string
   endpoints: Array<{
     method: "GET"
     path: string

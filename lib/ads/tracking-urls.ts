@@ -15,6 +15,12 @@ export const GOOGLE_SHOPPING_UTM = {
   utm_campaign: "google_shopping",
 } as const
 
+export const OPENAI_CATALOG_UTM = {
+  utm_source: "chatgpt",
+  utm_medium: "paid",
+  utm_campaign: "openai_catalog",
+} as const
+
 /** Paste into Meta Ads Manager → Ad → Website URL parameters (non-catalog / traffic ads). */
 export const META_ADS_MANAGER_URL_PARAMETERS =
   "utm_source=facebook&utm_medium=paid&utm_campaign={{campaign.name}}&utm_content={{ad.name}}&utm_term={{adset.name}}"
@@ -48,6 +54,13 @@ export function withMetaCatalogTracking(url: string, listingId: string): string 
 export function withGoogleShoppingTracking(url: string, listingId: string): string {
   return appendTrackingParams(url, {
     ...GOOGLE_SHOPPING_UTM,
+    utm_content: listingId,
+  })
+}
+
+export function withOpenAiCatalogTracking(url: string, listingId: string): string {
+  return appendTrackingParams(url, {
+    ...OPENAI_CATALOG_UTM,
     utm_content: listingId,
   })
 }

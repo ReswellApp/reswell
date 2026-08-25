@@ -333,8 +333,6 @@ export async function searchFinCatalogHitsFromElasticsearch(
   const compactW = escapeElasticsearchWildcard(compact)
 
   try {
-    await ensureFinCatalogIndex()
-
     const should: object[] = []
 
     if (compact.length >= 2) {

@@ -266,8 +266,6 @@ export async function searchSellCatalogHitsFromElasticsearch(
   const compactW = escapeElasticsearchWildcard(compact)
 
   try {
-    await ensureSellCatalogIndex()
-
     const should: object[] = []
 
     if (compact.length >= 2) {

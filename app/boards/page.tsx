@@ -1,11 +1,11 @@
 import type { Metadata } from "next"
-import { notFound } from "next/navigation"
 import { BoardsBrowsePage } from "@/components/boards-browse-page"
+import { BOARDS_BROWSE_REVALIDATE_SECONDS } from "@/lib/cache/boards-browse-catalog"
 import type { BoardsBrowseSearchParams } from "@/lib/marketplace-slug-metadata"
 import { metadataForBoardsBrowse } from "@/lib/seo/metadata-for-boards-browse"
 
 /** ISR for `/boards` — keep in sync with `BOARDS_BROWSE_REVALIDATE_SECONDS`. */
-export const revalidate = 3600
+export const revalidate = BOARDS_BROWSE_REVALIDATE_SECONDS
 
 function flattenSearchParams(
   sp: Record<string, string | string[] | undefined>,
@@ -18,33 +18,18 @@ function flattenSearchParams(
 }
 
 export async function generateMetadata(props: {
-  params: Promise<{ slug: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }): Promise<Metadata> {
-  const { slug } = await props.params
-  const rawSp = await props.searchParams
-  const flat = flattenSearchParams(rawSp)
-
-  if (slug === "boards") {
-    return await metadataForBoardsBrowse(flat as BoardsBrowseSearchParams)
-  }
-
-  notFound()
+  const flat = flattenSearchParams(await props.searchParams)
+  return await metadataForBoardsBrowse(flat as BoardsBrowseSearchParams)
 }
 
-export default async function MarketplaceSlugPage(props: {
-  params: Promise<{ slug: string }>
+export default function BoardsPage(props: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const { slug } = await props.params
-
-  if (slug === "boards") {
-    return (
-      <BoardsBrowsePage
-        searchParams={props.searchParams.then((sp) => flattenSearchParams(sp) as BoardsBrowseSearchParams)}
-      />
-    )
-  }
-
-  notFound()
+  return (
+    <BoardsBrowsePage
+      searchParams={props.searchParams.then((sp) => flattenSearchParams(sp) as BoardsBrowseSearchParams)}
+    />
+  )
 }

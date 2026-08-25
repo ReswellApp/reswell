@@ -39,6 +39,7 @@ export function FadeInSection({
     const markVisible = () => {
       if (visible) return
       visible = true
+      el.classList.remove("fade-in-pending")
       el.classList.add("is-visible")
     }
 
@@ -48,6 +49,9 @@ export function FadeInSection({
       markVisible()
       return
     }
+
+    // Hide below-fold sections only after JS runs so no-JS crawlers still see the HTML.
+    el.classList.add("fade-in-pending")
 
     const observer = new IntersectionObserver(
       ([entry]) => {

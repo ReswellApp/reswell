@@ -246,7 +246,7 @@ export function AdminTestPurchaseClient() {
             <li>NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_CONVERSION=AW-18062254229/FsjrCPnlwbAcEJXB4KRD</li>
           </ul>
           <p>
-            Admin test orders do not fire Google Ads, GA4, or Meta purchase pixels. Tag Assistant
+            Admin test orders do not fire Google Ads, GA4, Meta, or ChatGPT Ads purchase pixels. Tag Assistant
             needs a real checkout landing on{" "}
             <span className="font-mono text-xs">/successpage/&lt;orderId&gt;?gads_purchase=1</span>.
           </p>

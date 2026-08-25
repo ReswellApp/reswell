@@ -16,6 +16,7 @@ import { KlaviyoOnsite } from '@/components/klaviyo-onsite'
 import { KlaviyoPageViewTracker } from '@/components/klaviyo-page-view-tracker'
 import { PostHogIdentify } from '@/components/posthog-identify'
 import { MetaPixel } from '@/components/meta-pixel'
+import { OpenAiAdsPixel } from '@/components/openai-ads-pixel'
 import { MetaCapiParamBootstrap } from '@/components/meta/meta-capi-param-bootstrap'
 import { AdClickAttributionBootstrap } from '@/components/ads/ad-click-attribution-bootstrap'
 import { MetaPixelPageViewTracker } from '@/components/meta-pixel-page-view-tracker'
@@ -84,12 +85,16 @@ export default function RootLayout({
         className={`${stackSansText.variable} ${stackSansHeadline.variable} font-sans antialiased bg-background text-muted-foreground min-h-dvh overflow-x-clip selection:bg-slate-900/10 selection:text-foreground`}
         suppressHydrationWarning
       >
+        <noscript>
+          <style>{`.fade-in-section,.fade-in-section.fade-in-pending{opacity:1!important;transform:none!important}`}</style>
+        </noscript>
         <JsonLd data={[organizationSchema(publicSiteOrigin()), webSiteSchema(publicSiteOrigin())]} />
         <AbortErrorSuppressor />
         <OpsErrorReporter />
         <GoogleAdsGtag />
         <GoogleAnalyticsGtag />
         <MetaPixel />
+        <OpenAiAdsPixel />
         <LocaleProvider>
           <Suspense fallback={null}>
             <AdClickAttributionBootstrap />

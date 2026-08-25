@@ -42,7 +42,7 @@ export function MarketingCtaBanner({
   const link = (
     <Link href={href} className={marketingCtaBannerLinkClassName}>
       <div>
-        <p className={marketingCtaBannerTitleClassName}>{title}</p>
+        <h2 className={marketingCtaBannerTitleClassName}>{title}</h2>
         <p className={marketingCtaBannerDescriptionClassName}>{description}</p>
       </div>
       <span className={marketingCtaBannerCtaLabelClassName}>

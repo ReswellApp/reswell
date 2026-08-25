@@ -16,17 +16,15 @@ const querySchema = z.object({
   q: z.string().trim().min(1, "Enter a search term").max(200),
 })
 
-async function resolveSearchableCategories(): Promise<SellCatalogSearchCategory[]> {
-  if (!APPAREL_SELL_ADMIN_ONLY) return [...SELL_CATALOG_SEARCH_CATEGORIES]
+const CATEGORIES_WITHOUT_APPAREL: SellCatalogSearchCategory[] =
+  SELL_CATALOG_SEARCH_CATEGORIES.filter((category) => category !== "apparel")
 
+async function resolveIsAdmin(): Promise<boolean> {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  const isAdmin = user ? await fetchProfileIsAdmin(supabase, user.id) : false
-  return SELL_CATALOG_SEARCH_CATEGORIES.filter(
-    (category) => category !== "apparel" || isAdmin,
-  )
+  return user ? await fetchProfileIsAdmin(supabase, user.id) : false
 }
 
 /**
@@ -46,17 +44,27 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    const categories = await resolveSearchableCategories()
-    const data = await getSellCatalogSearchCached(parsed.data.q, categories)
+    const q = parsed.data.q
+    const cacheHeaders = {
+      "Cache-Control": `private, s-maxage=${SELL_CATALOG_SEARCH_REVALIDATE_SECONDS}, stale-while-revalidate=3600`,
+    }
 
-    return NextResponse.json(
-      { data },
-      {
-        headers: {
-          "Cache-Control": `private, s-maxage=${SELL_CATALOG_SEARCH_REVALIDATE_SECONDS}, stale-while-revalidate=3600`,
-        },
-      },
-    )
+    if (!APPAREL_SELL_ADMIN_ONLY) {
+      const data = await getSellCatalogSearchCached(q, [...SELL_CATALOG_SEARCH_CATEGORIES])
+      return NextResponse.json({ data }, { headers: cacheHeaders })
+    }
+
+    // Session + admin check runs in parallel with the public catalog lookup so
+    // it is not on the critical path for almost every seller.
+    const [isAdmin, publicData] = await Promise.all([
+      resolveIsAdmin(),
+      getSellCatalogSearchCached(q, CATEGORIES_WITHOUT_APPAREL),
+    ])
+    const data = isAdmin
+      ? await getSellCatalogSearchCached(q, [...SELL_CATALOG_SEARCH_CATEGORIES])
+      : publicData
+
+    return NextResponse.json({ data }, { headers: cacheHeaders })
   } catch (error) {
     console.error(
       "[api/sell/catalog-search]",
