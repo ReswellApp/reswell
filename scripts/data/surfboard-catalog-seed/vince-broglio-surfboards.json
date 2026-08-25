@@ -1,0 +1,138 @@
+{
+  "generated_for": "Vince Broglio Surfboards official model catalog",
+  "source": "https://www.vincebrogliosurfboards.com/surfboards",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "vince-broglio-surfboards",
+      "name": "Vince Broglio Surfboards",
+      "website_url": "https://www.vincebrogliosurfboards.com",
+      "location_label": "Santa Cruz, California",
+      "founder_name": "Vince Broglio",
+      "lead_shaper_name": "Vince Broglio",
+      "short_description": "Handcrafted custom surfboards shaped and glassed by Vince Broglio in Santa Cruz, California.",
+      "models": [
+        {
+          "name": "The RP1",
+          "image_url": "https://www.vincebrogliosurfboards.com/static/images/surfboards/the-rp1.jpg",
+          "description": "High-performance shortboard, 5'7\"–6'10\". Thruster, 5 Fin, or Twinzer configuration.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The RP2",
+          "image_url": "https://www.vincebrogliosurfboards.com/static/images/surfboards/the-rp2.jpg",
+          "description": "Performance shortboard, 5'10\"–6'10\". Thruster, 5 Fin, or Twinzer configuration.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The ST",
+          "image_url": "https://www.vincebrogliosurfboards.com/static/images/surfboards/the-st.jpg",
+          "description": "All-around shortboard, 5'6\"–6'6\". Thruster, 5 Fin, or Twinzer.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The ST1",
+          "image_url": "https://www.vincebrogliosurfboards.com/static/images/surfboards/the-st1.jpg",
+          "description": "Performance shortboard, 5'8\"–6'11\". Thruster or 5 Fin.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The ST2",
+          "image_url": "https://www.vincebrogliosurfboards.com/static/images/surfboards/the-st2.jpg",
+          "description": "Performance shortboard, 5'10\"–6'11\". Thruster or 5 Fin.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The ST3",
+          "image_url": "https://www.vincebrogliosurfboards.com/static/images/surfboards/the-st3.jpg",
+          "description": "Compact shortboard, 5'6\"–6'5\". Thruster or 5 Fin.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The DWST",
+          "image_url": "https://www.vincebrogliosurfboards.com/static/images/surfboards/the-dwst.jpg",
+          "description": "Versatile shortboard, 5'6\"–6'10\". Thruster, 5 Fin, or Twinzer.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Twin",
+          "image_url": "https://www.vincebrogliosurfboards.com/static/images/surfboards/the-twin.jpg",
+          "description": "Twin fin surfboard, 5'8\"–6'6\".",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Fish",
+          "image_url": "https://www.vincebrogliosurfboards.com/static/images/surfboards/the-fish.jpg",
+          "description": "Classic fish shape, 5'6\"–6'10\". Twin or Twinzer.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Winged Fish",
+          "image_url": "https://www.vincebrogliosurfboards.com/static/images/surfboards/the-winged-fish.jpg",
+          "description": "Winged fish surfboard, 5'6\"–6'10\". Twin or Twinzer.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Egg",
+          "image_url": "https://www.vincebrogliosurfboards.com/static/images/surfboards/the-egg.jpg",
+          "description": "Fun-shape egg, 7'6\"–8'6\". Single, 2+1, Thruster, Twin, or Twinzer.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The 70's",
+          "image_url": "https://www.vincebrogliosurfboards.com/static/images/surfboards/the-70s.jpg",
+          "description": "Retro single fin, 6'10\"–7'10\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Pug",
+          "image_url": "https://www.vincebrogliosurfboards.com/static/images/surfboards/the-pug.jpg",
+          "description": "Mid-length fun shape, 6'8\"–7'4\". Single, 2+1, Thruster, Twin, or Twinzer.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Silver Back",
+          "image_url": "https://www.vincebrogliosurfboards.com/static/images/surfboards/the-silver-back.jpg",
+          "description": "Mid-length performance, 6'10\"–7'10\". Thruster, Twin, or Twinzer.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Log",
+          "image_url": "https://www.vincebrogliosurfboards.com/static/images/surfboards/the-log.jpg",
+          "description": "Classic longboard, 8'10\"–9'6\". Single, 2+1, Thruster, Twin, or Twinzer.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Cruzer",
+          "image_url": "https://www.vincebrogliosurfboards.com/static/images/surfboards/the-cruzer.jpg",
+          "description": "Performance longboard, 9'–10'6\". Single, 2+1, or Twin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Roxy",
+          "image_url": "https://www.vincebrogliosurfboards.com/static/images/surfboards/the-roxy.jpg",
+          "description": "Versatile longboard, 8'10\"–10'6\". Single, Thruster, 5 Fin, or Twinzer.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Jack the Ripper",
+          "image_url": "https://www.vincebrogliosurfboards.com/static/images/surfboards/jack-the-ripper.jpg",
+          "description": "Performance longboard, 8'6\"–10'6\". Single, Thruster, or 5 Fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Going Big",
+          "image_url": "https://www.vincebrogliosurfboards.com/static/images/surfboards/going-big.jpg",
+          "description": "Step-up big wave board, 6'10\"–7'8\". Thruster, 5 Fin, or Twinzer.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Going Bigger",
+          "image_url": "https://www.vincebrogliosurfboards.com/static/images/surfboards/going-bigger.jpg",
+          "description": "Big wave gun, 7'4\"–8'6\". Thruster, 5 Fin, or Twinzer.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
