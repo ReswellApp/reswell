@@ -1,0 +1,73 @@
+{
+  "generated_for": "Jon Wegener Surfboards official named standup catalog",
+  "source": "https://www.wegenersurf.com/",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "jon-wegener-surfboards",
+      "name": "Jon Wegener Surfboards",
+      "website_url": "https://www.wegenersurf.com/",
+      "location_label": "Encinitas, California",
+      "founder_name": "Jon Wegener",
+      "lead_shaper_name": "Jon Wegener",
+      "short_description": "Handcrafted surfboards by Jon Wegener in Encinitas, California.",
+      "models": [
+        {
+          "name": "The Wegg",
+          "image_url": "https://www.wegenersurf.com/wp-content/uploads/2022/06/Wegg-scaled.jpg",
+          "description": "The Wegg is designed to catch waves, trim, and be very maneuverable. Between 6’10” and 8’6,” the Wegg has a paddling advantage over most of the boards in the line up. The Wegg has a moderate rocker that works well on small, not so powerful days, but has enough rocker to handle bigger steeper drops. The bottom contour transitions from light belly in the nose to a decent V (with a slight double concave) in the tail. This makes for nice cruising down the line and making off the lips and cut back turns. The rails are more like a shortboard with down rails. Again, this is good for maneuverability. This is a great design if you can only bring one board. It covers all the conditions.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Dynamo",
+          "image_url": "https://www.wegenersurf.com/wp-content/uploads/2019/08/dynamo-blue.jpg",
+          "description": "The ultimate short board. It’s bottom contour, fin set ups, and width all combine to generate speed. It’s round template make it very loose. These attributes blend together to create the ability to do the maneuvers you imagine yourself doing. The design is smooth and forgiving, and works well frontside or backside. It can be set up as three or four fin set up. The board reaches it’s full potential when constructed with eps foam and glassed with epoxy resin. This adds lightness and extra buoyancy.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Long Fish",
+          "image_url": "https://www.wegenersurf.com/wp-content/uploads/2022/06/Long-Fish_1-scaled.jpg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Almost Gentleman",
+          "image_url": "https://www.wegenersurf.com/wp-content/uploads/2022/06/Almost-gentleman-scaled.jpg",
+          "description": "The Almost Gentleman rides with a clean, pleasant style, like the surfers of the early 70’s, before the influence of competions, which demanded less stylish and aggressive manuevering. The Almost Gentleman isn’t too dignified, because it is a wave catcher, goes very fast, and it carves precise, smooth turns. Even with a pointier outline in the nose and tail, it is a small wave to a bit overhead wave riding board, due to it’s flatter, speedier rocker.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Go Cart",
+          "image_url": "https://www.wegenersurf.com/wp-content/uploads/2022/06/Go-Cart-scaled.jpg",
+          "description": "Fast and Loose! Do you have a need for speed? Scratch that itch with this surfboard. You’ll be on your way to Formula 1.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Fish",
+          "image_url": "https://www.wegenersurf.com/wp-content/uploads/2022/06/Fish-scaled.jpg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Beachmaster",
+          "image_url": "https://www.wegenersurf.com/wp-content/uploads/2022/06/8-10-Beach-Master-scaled.jpg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Gabezilla",
+          "image_url": "https://www.wegenersurf.com/wp-content/uploads/2022/06/GaveZilla-scaled.jpg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Noserider",
+          "image_url": "https://www.wegenersurf.com/wp-content/uploads/2022/06/Noserider-scaled.jpg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Bluegill",
+          "image_url": "https://www.wegenersurf.com/wp-content/uploads/2022/06/Bluegill-scaled.jpg",
+          "description": "The Bluegill is a offshoot from the alaia, the finless wooden surfboard my brother Tom and I have been making in recent years. The alaia is the most exciting board to ride due to its speed and ability to slide across the face of waves like no other surfboard. The downside to the alaia is its difficulty to paddle, because of it’s low buoyancy. Also due to the lack of float, one is submerged in cold water during the winter months, which results in short sessions. The Bluegill is made with foam and strategically placed wood stringers. The foam produces great paddling ability and the wood stringers retain flex, important to the ride of the alaia. The outline, bottom contour, and rails are all designed to keep as much speed, slide and glide that the alaia offers.",
+          "board_category_slug": "other"
+        }
+      ]
+    }
+  ]
+}
