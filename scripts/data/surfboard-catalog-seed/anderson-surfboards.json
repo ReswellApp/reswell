@@ -1,0 +1,160 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "anderson-surfboards",
+      "name": "Anderson Surfboards",
+      "website_url": "https://andersonsurfboards.com",
+      "location_label": "Malibu, California",
+      "founder_name": "Scott Anderson",
+      "lead_shaper_name": "Scott Anderson",
+      "short_description": "Malibu, California surfboards started in 1988 by Scott Anderson, shaped and glassed with Aquatech using first-rate materials for shortboards and longboards.",
+      "models": [
+        {
+          "name": "HIGH PERFORMANCE FISH",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2015/02/hp-fishP.jpg",
+          "description": "This is the all around board for closeouts to A-frames. This board rocker is made to fly down line and stay loose in the pocket. This board is also available in a rounded pin.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "BIG FISH",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2012/02/boad-173.jpeg",
+          "description": "A bigger version of our retro fish but with more hull in the front for more glide combined with vee off the tail to make this one really come alive.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "BIG GUY TRI",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2012/02/bigguytri.jpg",
+          "description": "Big guys don’t have to be relegated to funboards, not if they rip! This design has full volume, yet retains all the high performance elements.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "BLACK BIRD",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2015/01/BlackBird1.jpg",
+          "description": "This is a versatile board. From 1ft to 6ft it goes great. The Black Bird has the float of a fish and turns like a short board.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "BOJORQUEZ",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2014/11/BOJORQUEZ1.jpg",
+          "description": "Known as a “displacement hull”, this 70’s rocket was born and perfected at Malibu. It’s pinched rails and bellied hull make this a rail turner extraordinaire.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "BROTHERS MARSHALL",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2015/01/BM1.jpg",
+          "description": "From the master shaping hands of Scott Anderson comes the infamous Marshall Brothers model. Like the earlier Farberow models of the last decade, this board works in everything—from bigger bombs at the top of the point to ankle slappers on the inside. The board features a large 19″ nose platform with a blended concave on the underside. The rails down the middle are fairly parallel and foiled for water sensitivity with a kick out the tail for those ultra long tip rides. If you only needed one log… but who only wants one!",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "EVOLVER",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2015/01/evlover1.jpg",
+          "description": "A revolution in shortboard design, this performance masterpiece has been ordered by world champions whose names we’ve been asked not to divulge. Unusual elements synergize.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "FADER",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2015/01/FADER1.jpg",
+          "description": "The “Fader” is a unique blend of displacement hull hydrodynamics (front half) and current shortboard down-rail theory (back half). The tri-fin roundtail and flattened rocker combined with aforementioned elements to yield a fast yet tight maneuverability. Similar template to a mid to late 80s Skip Frye mid-length.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "FARBEROW 2 MODEL",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2015/01/Farberow1.jpg",
+          "description": "As much as the original J.F shines in point breaks, the F.J. 2 excels in beach and reef breaks. Nose rides are still epic and the cut back is way more responsive.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "FIRST POINT MODEL",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2013/01/first-point.jpg",
+          "description": "Test driven by some of malibu’s finest surfers the first point malibu, this board is a two plus one with a hull bottom in the front going to slight vee in the tail.Volume in the front helps paddling and the board turns great.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "FLOWMASTER",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2011/07/diamont-tail.jpeg",
+          "description": "At first glance it looks very “gun-like”. A pulled in nose and tail gives it a racey appearance. But it is a glider in micro to mackin’ waves",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "MASSIE THRUSTER FISH",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2014/11/boad-9.jpeg",
+          "description": "Rick Massie tuned the wide swallowtail into a performance small wave shredder. it will elicit uncanny amount of speed and energy from junk to double overhead.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "METH MODEL",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2015/01/meth1.jpg",
+          "description": "“Minimum Effort theory Hydrolyzed”, is a pocket rocket from the psychedelic era (a la Rich Wilken) that ups your wave count and reminds you what in a gadda da vida means",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "PHYSH QUAD",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2014/11/boad-61.jpg",
+          "description": "A four-finned version of our famous Physh, this model is narrower with subtle tweaks. Turns are more angular and… you just can’t spin da buggah!",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "PHYSH",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2012/02/boad-81.jpeg",
+          "description": "This retro classic from the early 70’s maintains the deep swallowtail, full planeshape, modest rocker, and generous volume to catapult you into the future.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Poacher Quad",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2011/08/poacher2.jpg",
+          "description": "A cross between a shortboard and a fish. Normally ridden shorter and wider than a standard shortboard. Concave throughout the bottom with a relaxed rocker enables faster paddling while maintaining performance.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "POACHER",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2014/11/boad-5.jpeg",
+          "description": "Starting with an early 80’s platform, this creation of Josh and Scott is nothing like the past: it’s combination of interacting concaves and 2+1 fins defy description.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "ROD LAGUNA",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2014/11/funshape1.jpeg",
+          "description": "A remake of the original Rod Laguna. A traditional 60’s longboard’ no concave to a rolled vee bottom. A real trimmer.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "SBT",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2015/01/shortB1.jpg",
+          "description": "a.k.a., shortboard thruster. Scott Anderson’s flagship for which he’s garnered respect and wwwotion world-wide from professional surfers. Accept no substitutes… they won’t.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SLIDE GLIDE",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2012/02/boad-13.jpeg",
+          "description": "Josh Farberow and Scott Anderson designed this new concept together and it has proven to be an unparalleled blend of existing new and old designs. Based on the ancient Hawaiian alaia board, the Slide and Glide is also almost finless. But three elements give it directional maneuverability (which the alaia lacks): deep dual concaves, adjacent longitudinal ribs, and two very small keel fins (1 1/4″ deep by 5 1/2″ long). The surfboard is made from modern polyurethane foam and 4 ounce fiberglass. Ridden by an advanced to expert surfer, it will perform controlled slides, 360’s, bottom turns, and speed runs high in the face of a wave.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "SLINGSHOT",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2015/01/shortBoard1.jpg",
+          "description": "A cross between a shortboard and a fish. Normally ridden shorter and wider than a standard shortboard. Concave throughout the bottom with a relaxed rocker enables faster paddling while maintaining performance",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "SNUB",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2011/08/bgt-surfboard1.jpeg",
+          "description": "A flat rocker’d mid-length combining a slight concave bottom to vee off the tail to make this one accelerate and turn on a dime.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "SO GNAR",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2012/02/boad-14.jpeg",
+          "description": "Sonar, a.k.a. Hullaballoo, a.k.a. Mini-Simmons: As might be inferred from the chip shape and the half-moon wood twin-fins, this fish was inspired by the legend himself, Bob Simmons. Upon first glance, it appears to be a single displacement hull. But a closer inspection will reveal the subtle single concave that starts at the 1/3 mark and continues off the tail but stays confined between the fins. The rail has a mellow integrated chine, which acts as a turning rail. These elements play together to create a fast and loose twinnie like no other. Bob would agree",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "SWARTZ MODEL",
+          "image_url": "https://andersonsurfboards.com/wp-content/uploads/2012/11/swartz-model.jpg",
+          "description": "The Swartz model was designed for high performance surfing in waves ranging from knee to overhead surf. A great travel board for the surfer who is seeking the all around board for good waves. The Swartz model was tested by traveling pro surfers on competitive world tour and free-surfing levels for the past decade.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
