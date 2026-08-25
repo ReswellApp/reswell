@@ -260,12 +260,23 @@ export async function computePeerCheckoutTotalsUsd(input: {
       return parcelCheck
     }
     const ship = input.shippingOverride.shippingUsd
+    const rateId = input.shippingOverride.rateId?.trim() || ""
     return {
       ok: true,
       itemPrice,
       shippingUsd: ship,
       totalUsd: itemPrice + ship,
       usedReswellQuote: input.shippingOverride.usedReswellQuote,
+      reswellQuote:
+        input.shippingOverride.usedReswellQuote && rateId
+          ? {
+              shippingUsd: ship,
+              rateId,
+              serviceCode: input.shippingOverride.serviceCode?.trim() || "",
+              serviceName: "",
+              availableRates: [],
+            }
+          : undefined,
     }
   }
 

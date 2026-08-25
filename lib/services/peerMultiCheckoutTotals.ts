@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { ProfileAddressRow } from "@/lib/profile-address"
 import { fetchSellerShipFromLabelName } from "@/lib/db/sellerShipFromLabel"
+import { resolveCombinedPackedParcelFromListings } from "@/lib/reswell-packed-parcel-from-listing"
 import {
   computePeerBundleShippingUsd,
   computePeerCheckoutTotalsUsd,
@@ -37,9 +38,16 @@ export async function computePeerMultiCheckoutUsd(params: {
   fulfillment: "pickup" | "shipping"
   buyerAddress: ProfileAddressRow | null
   diagnosticTagPrefix: string
-  /** Buyer-selected ShipEngine service from checkout — charge that live rate, not a cached total. */
-  selectedRateId?: string | null
-  selectedServiceCode?: string | null
+  /**
+   * Reuse the signed checkout quote. Rate lookups are free; this avoids a second
+   * ShipEngine /rates call. Does not purchase a label.
+   */
+  preverifiedShipping?: {
+    shippingUsd: number
+    usedReswellQuote: boolean
+    rateId?: string | null
+    serviceCode?: string | null
+  }
   /** Units per listing id (shop inventory). Peer lines default to 1. */
   quantityByListingId?: Record<string, number>
 }): Promise<
@@ -63,8 +71,7 @@ export async function computePeerMultiCheckoutUsd(params: {
     buyerAddress,
     supabase,
     diagnosticTagPrefix,
-    selectedRateId,
-    selectedServiceCode,
+    preverifiedShipping,
     quantityByListingId,
   } = params
 
@@ -108,7 +115,9 @@ export async function computePeerMultiCheckoutUsd(params: {
   }
 
   const sellerShipFromName =
-    fulfillment === "shipping" ? await fetchSellerShipFromLabelName(supabase, sellerId) : "Seller"
+    fulfillment === "shipping" && !preverifiedShipping
+      ? await fetchSellerShipFromLabelName(supabase, sellerId)
+      : "Seller"
 
   const feeWaived = await fetchSellerFeeWaived(sellerId)
 
@@ -120,6 +129,9 @@ export async function computePeerMultiCheckoutUsd(params: {
   const perLineFulfillment: "pickup" | "shipping" =
     isMultiLine && fulfillment === "shipping" ? "pickup" : fulfillment
 
+  const singleLineShippingOverride =
+    !isMultiLine && fulfillment === "shipping" && preverifiedShipping ? preverifiedShipping : undefined
+
   for (let i = 0; i < listingsOrdered.length; i++) {
     const listing = listingsOrdered[i]!
     const quantity = qtyFor(listing.id, listing.section)
@@ -129,8 +141,7 @@ export async function computePeerMultiCheckoutUsd(params: {
       buyerAddress,
       diagnosticTag: `${diagnosticTagPrefix}:${listing.id}:${i}`,
       sellerShipFromName,
-      selectedRateId,
-      selectedServiceCode,
+      shippingOverride: singleLineShippingOverride,
     })
     if (!totals.ok) {
       return { ok: false, error: totals.error }
@@ -167,14 +178,35 @@ export async function computePeerMultiCheckoutUsd(params: {
   }
 
   if (isMultiLine && fulfillment === "shipping") {
-    const bundleShipping = await computePeerBundleShippingUsd({
-      listings: listingsOrdered,
-      buyerAddress,
-      diagnosticTag: `${diagnosticTagPrefix}:bundle`,
-      sellerShipFromName,
-      selectedRateId,
-      selectedServiceCode,
-    })
+    const bundleShipping = preverifiedShipping
+      ? (() => {
+          const parcelCheck = resolveCombinedPackedParcelFromListings(listingsOrdered)
+          if (!parcelCheck.ok) {
+            return parcelCheck
+          }
+          const rateId = preverifiedShipping.rateId?.trim() || ""
+          return {
+            ok: true as const,
+            shippingUsd: preverifiedShipping.shippingUsd,
+            usedReswellQuote: preverifiedShipping.usedReswellQuote,
+            quote:
+              preverifiedShipping.usedReswellQuote && rateId
+                ? {
+                    shippingUsd: preverifiedShipping.shippingUsd,
+                    rateId,
+                    serviceCode: preverifiedShipping.serviceCode?.trim() || "",
+                    serviceName: "",
+                    availableRates: [],
+                  }
+                : undefined,
+          }
+        })()
+      : await computePeerBundleShippingUsd({
+          listings: listingsOrdered,
+          buyerAddress,
+          diagnosticTag: `${diagnosticTagPrefix}:bundle`,
+          sellerShipFromName,
+        })
     if (!bundleShipping.ok) {
       return { ok: false, error: bundleShipping.error }
     }

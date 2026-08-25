@@ -564,8 +564,17 @@ export async function completeMarketplaceOrderFromPaymentIntent(
         buyerAddress,
         diagnosticTagPrefix: "finalize-order",
         quantityByListingId,
-        selectedRateId: pi.metadata.shipengine_rate_id?.trim() || null,
-        selectedServiceCode: pi.metadata.shipengine_service_code?.trim() || null,
+        ...(pi.metadata.reswell_shipping_cents?.trim() &&
+        /^\d+$/.test(pi.metadata.reswell_shipping_cents.trim())
+          ? {
+              preverifiedShipping: {
+                shippingUsd: parseInt(pi.metadata.reswell_shipping_cents.trim(), 10) / 100,
+                usedReswellQuote: true,
+                rateId: pi.metadata.shipengine_rate_id?.trim() || null,
+                serviceCode: pi.metadata.shipengine_service_code?.trim() || null,
+              },
+            }
+          : {}),
       })
   if (!bundle.ok) {
     return { ok: false, error: bundle.error, status: 400 }

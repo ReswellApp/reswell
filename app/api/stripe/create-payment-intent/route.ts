@@ -353,8 +353,14 @@ export async function POST(request: NextRequest) {
   }
   buyerAddress = phoneCheck.address
 
-  let selectedRateId: string | null = null
-  let selectedServiceCode: string | null = null
+  let preverifiedShipping:
+    | {
+        shippingUsd: number
+        usedReswellQuote: boolean
+        rateId?: string | null
+        serviceCode?: string | null
+      }
+    | undefined
   const quoteTokenRaw = body.quote_token?.trim()
   if (impliedFulfillment === "shipping" && quoteTokenRaw && addressId) {
     const verified = verifyCheckoutShippingQuoteToken(quoteTokenRaw, {
@@ -368,8 +374,12 @@ export async function POST(request: NextRequest) {
     if (!verified.payload.usedReswellQuote) {
       return NextResponse.json({ error: "Invalid shipping quote token." }, { status: 400, headers: JSON_NO_STORE_HEADERS })
     }
-    selectedRateId = verified.payload.rateId?.trim() || null
-    selectedServiceCode = verified.payload.serviceCode?.trim() || null
+    preverifiedShipping = {
+      shippingUsd: verified.payload.shippingCents / 100,
+      usedReswellQuote: true,
+      rateId: verified.payload.rateId?.trim() || null,
+      serviceCode: verified.payload.serviceCode?.trim() || null,
+    }
   }
 
   const bundle = await computePeerMultiCheckoutUsd({
@@ -378,8 +388,7 @@ export async function POST(request: NextRequest) {
     fulfillment: impliedFulfillment,
     buyerAddress,
     diagnosticTagPrefix: "payment-intent",
-    selectedRateId,
-    selectedServiceCode,
+    preverifiedShipping,
     quantityByListingId,
   })
 
