@@ -1,0 +1,86 @@
+{
+  "generated_for": "Valaric Surfboards official named model catalog",
+  "source": "https://valaricsurf.com/models-2/",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "valaric-surfboards",
+      "name": "Valaric Surfboards",
+      "website_url": "https://valaricsurf.com/models-2/",
+      "founder_name": "Jordan Brazie",
+      "lead_shaper_name": "Jordan Brazie",
+      "short_description": "Valaric Surfboards was founded in 2004 by Jordan Brazie — born from a hands-on love of making surfboards start to finish.",
+      "models": [
+        {
+          "name": "Fish",
+          "image_url": "https://valaricsurf.com/wp-content/uploads/2023/01/fish.png",
+          "description": "Having a quiver without a proper fish is like golfing without a putter. The Fish has passed through space and time since it's origin in the late 60's by creator Steve Lis. Since then, it's been evolving, adapting, experimented with, and re-evolved. Through many shapers and surfers across the spectrum, the fish has seen countless unique shapes and sizes.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Sea Speeder",
+          "image_url": "https://valaricsurf.com/wp-content/uploads/2023/12/blue.jpg",
+          "description": "What started as a modern take on the Simmons inspired shortboard, the Sea Speeder has left the realm of novelty and gone into high performance in a new form. It's spooned nose, s-deck, and low lean rails give a much needed responsiveness for the glide and incredible speed the board offers. Fun for medium surf but works better as the waves get bigger and dare say hollower. The rockered out convex nose acts as a safety net for steep take-offs. A very unique and intuitive design that demands carves and turns for speed checking.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Oscillator",
+          "image_url": "https://valaricsurf.com/wp-content/uploads/2023/10/Blue-LoFi-Oscillator-1.jpg",
+          "description": "The Oscillator was born in punchy beach breaks on the east coast, primarily the outer banks, NC. A board that got in early and down the line fast. It has a large sweet spot giving it a long rail line for more speed and less work to get there. The nose rocker is lower but has a little displacement under it making it super forgiving on steep take-offs and softens up wind chop. The Oscillator comes in 2 forms. The Lo-Fi and Hi-fi. The Lo-Fi has a higher wide point and fuller outline. Ideal for 2-6ft surf. The Hi-Fi is the OG outline. Narrower, a little more rocker and leaner rails. This board can handle steeper days and loves to make fast sections.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Micro Dose",
+          "image_url": "https://valaricsurf.com/wp-content/uploads/2023/12/6.2-MD-Font.jpg",
+          "description": "Feeling indecisive on which board to take out? Not sure if you want to cruise and slip a couple cheater 5s or rip a few top to bottom turns with loads of easily gained speed? The Mirco Dose was added to the Valaric roster just for those moments in your surf journey where less thinking and more doing is key to happy times in the lineup. Inspired by the Donald Takayama \"Scorpion\" this variation has similar rail, foil and rocker elements found in other Valaric models like the Fish and Portal Gun. The main difference is the full nose outline giving a wide surface area for paddle power, speed and stability.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Bangarang",
+          "image_url": "https://valaricsurf.com/wp-content/uploads/2022/12/Bangb.png",
+          "description": "Designed primarily for punchy beachbreaks and hollow situations, this stretched outline of a modern classic single fin still offers a ton of versatility. It's fuller outline offers a large sweet spot to enhance paddle power and confidence. Stock setup comes as a 4+1 for an all-in-one Swiss army knife of a board but can be ordered as any preferred setup.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Portal Gun",
+          "image_url": "https://valaricsurf.com/wp-content/uploads/2023/12/6.4-Font.jpg",
+          "description": "A confident step up model inspired by smooth 70s outlines for smooth sailing purposes. Probably the most customizable design as far as fin arrangements and subtle outline changes to the tail like swallows, diamond, wings, etc.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Jane",
+          "image_url": "https://valaricsurf.com/wp-content/uploads/2022/12/janto.png",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Star Cruiser",
+          "image_url": "https://valaricsurf.com/wp-content/uploads/2022/12/starcruserF.png",
+          "description": "The Star Cruiser is a wide point back mid-length model that puts the user right over the sweet spot when taking off, providing instant speed and control from the \"cockpit\". Inspired by the 'Evolution' model by Wayne Lynch from the late sixties known as the Transition Era that dawned the beginning of high performance surfing. The inspiration from that plus modernized features like a lean foil, generous nose rocker and low rails gives this board its own domain in the mid size surfboard range. A fusion of classical and high performance surfing. Pilots will find this board to have a balance of drive, speed and maneuverability.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Shadowfax",
+          "image_url": "https://valaricsurf.com/wp-content/uploads/2022/12/shadowfax.png",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Captain's Log",
+          "image_url": "https://valaricsurf.com/wp-content/uploads/2022/12/captnl.png",
+          "description": "A modern take on a traditional \"all-arounder\" log, this board will fit your cruising needs with it's low entry rocker and slight belly into a subtle flipped out vee, allowing for smooth rail to rail performance. It's smooth blended nose concave and mild 60/40 rails will help you maintain long nose rides across flat sections. All these essential features surrounded by a mid-weight glass job makes this a signature log for your ever-growing quiver.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "CLX",
+          "image_url": "https://valaricsurf.com/wp-content/uploads/2026/02/cl.jpg",
+          "description": "This is a sporty version of the Captain's Log. Narrower nose but added squash to maintain plenty surface area for nose riding. Pulled in tail with added rocker for critical turning and a curve to fit in steep curls. These new features combined with the DNA of the CL provide enhanced performance on both ends while staying true to the realm of classic logging.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Spellcaster",
+          "image_url": "https://valaricsurf.com/wp-content/uploads/2022/12/Screenshot-2022-11-16-171726-e1670539213912.png",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
