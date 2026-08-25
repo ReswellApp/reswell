@@ -1,0 +1,72 @@
+{
+  "generated_for": "Michel Junod Surfboards official model catalog",
+  "source": "https://surfboardsbymicheljunod.com",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "michel-junod-surfboards",
+      "name": "Michel Junod Surfboards",
+      "website_url": "https://surfboardsbymicheljunod.com",
+      "location_label": "Oceanside, California",
+      "founder_name": "Michel Junod",
+      "lead_shaper_name": "Michel Junod",
+      "short_description": "Michel Junod surfboard shaper from Santa Cruz, known for single-fin logs, quad fishes, performance boards, and collabs with Thomas Campbell. Boards are shaped at Global Glassing in Oceanside, California.",
+      "models": [
+        {
+          "name": "Speed Seed",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/files/JUNO_speedseed_blue_top.png?v=1475847103",
+          "description": "5'8\"–7'0\". Super-fun wider single fin round pin for easy take offs and speedy rides. Beak nose and relaxed entry rocker with slight V and double barrel concave tail. Early into average to hollow 2'–8' surf. Comes with an 8\" MJ Flex Fin.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Carver",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/files/JUNOD_carver_orange_top.png?v=1475030392",
+          "description": "6'0\"–8'6\". For turning hard and going fast in head-high surf. Streamlined outline with enough volume to catch plenty of waves. 2+1 fin setup for drive off the bottom with easy-off-the-top thruster feel. Slight V and double barrel concave in the tail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Easy Rider",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/files/JUNOD_9_4_easyrider_greenyellow_top.png?v=1482334100",
+          "description": "8'6\"–10'6\". Designed as the one longboard quiver for most conditions from 2' to 8'. Medium-weight longboard that catches waves easily, with more kick in the nose for bigger waves. Down rails in the tail with slight V and double barrel concave. Clean outline with enough nose area for noseriding when the conditions are right.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Smooth Slider",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/files/JUNOD_nowski_blue_top.png?v=1475287200",
+          "description": "9'0\"–10'6\". All-around log with glide and maneuverability. Joint design by Thomas Campbell and Michel Junod. Slightly piggish outline with the wide point behind center. Nose is slightly narrower than a typical noserider but still stable for walking and noseriding. Comes with a 3/16\" Bass / 3/16\" Redwood T-band stringer and its own 9.5\" Smooth Slider model fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Diamond Tail Single Fin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/files/JUNOD_diamondtailsinglefin__top.png?v=1475944453",
+          "description": "6'0\"–7'6\". A modern twist on 70s single fins, not a retro single fin. Beak nose with slightly more chest volume for easy paddling, modern tail rocker, and double-barrel concave tail contours. Ridden by Michel Junod in Thomas Campbell's movie The Present. Comes with an 8\" MJ Flex Fin.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Big Five Diamond",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/files/JUNOD_big5diamond_rootbeer_top.png?v=1475287636",
+          "description": "6'0\"–8'0\". Extra full-volume shortboard to increase wave count while still surfing aggressively. Aimed at XL and XXL surfers who need a shortboard that floats and catches waves. Five Future boxes to ride as a quad or thruster. Comes with Future fiberglass thruster or quad fins.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Junod Egg",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/files/JUNOD_MID_sand_7_6_top.png?v=1482497898",
+          "description": "6'6\"–8'0\". Mid-range single-fin for glide and easy turning in small to head-high surf. Not a hull with soft rails: fast modern bottom with double-barrel concave and hard rails in the tail. Relaxed rocker for paddling and easy takeoffs. Comes with a 7.5\" or 8\" MJ Flex Fin depending on size.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Performance Pintail",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/files/JUNOD_LB_lightblue_9_4_top.png?v=1482368320",
+          "description": "8'6\"–9'6\". Fastest longboard model in the catalog. Comes alive in 4'–10' waves. More rocker than the other longboards for steep drops and fast, hollow waves. Available as a single fin or 2+1.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The R.O.N.",
+          "image_url": "https://cdn.shopify.com/s/files/1/0087/9632/files/JUNOD_Ron2014_bluebrown_top.png?v=1475287461",
+          "description": "9'0\"–10'6\". Regular Old Noserider. All-around log with an emphasis on walking to the nose. Blended nose concave for lift and control. Shaped from US Blanks Classic density foam for a solid 60s-log feel. Fin box 4\" from the tail for noseriding. 60/40 rails. Comes with the 9.75\" MJ Pivot Fin from Rainbow Fins.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
