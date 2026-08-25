@@ -271,6 +271,7 @@ export async function quoteOrderItemReturnRates(params: {
   let parcel: { lengthIn: number; widthIn: number; heightIn: number; weightLb: number }
   let tierId: SurfboardShippingTierId | null = null
   let adminCustomCarton = false
+  let listingSection: string | null = null
 
   if (params.parcel) {
     parcel = {
@@ -282,6 +283,7 @@ export async function quoteOrderItemReturnRates(params: {
   } else {
     const listing = await loadListingForParcel(params.supabase, line.listingId)
     if (!listing) return { ok: false, error: "Listing not found for parcel dimensions.", status: 404 }
+    listingSection = listing.section ?? null
     const resolved = resolveOrderLabelParcelFromListing(listing)
     if (!resolved.ok) return { ok: false, error: resolved.error, status: 400 }
     parcel = {
@@ -300,6 +302,7 @@ export async function quoteOrderItemReturnRates(params: {
     parcel,
     tierId,
     adminCustomCarton,
+    listingSection,
   })
   if (!ratesResult.ok) {
     return { ok: false, error: ratesResult.error, status: ratesResult.status }

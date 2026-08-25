@@ -1,7 +1,7 @@
 "use client"
 
 import type { ReactNode } from "react"
-import { useCallback, useDeferredValue, useMemo, useState, useTransition } from "react"
+import { useCallback, useDeferredValue, useEffect, useMemo, useState, useTransition } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -809,12 +809,18 @@ function BrandRow({
 // ---------------------------------------------------------------------------
 
 export function BrandCatalogOverviewClient(props: {
-  stats: { brands: number; models: number; variants: number }
-  nodes: BrandCatalogBrandNode[]
+  stats?: { brands: number; models: number; variants: number }
+  nodes?: BrandCatalogBrandNode[]
+  embedded?: boolean
+  refreshKey?: number
 }) {
-  const { stats, nodes } = props
+  const hasInitialData = props.stats !== undefined && props.nodes !== undefined
   const router = useRouter()
   const [refreshing, startRefresh] = useTransition()
+  const [stats, setStats] = useState(props.stats ?? { brands: 0, models: 0, variants: 0 })
+  const [nodes, setNodes] = useState<BrandCatalogBrandNode[]>(props.nodes ?? [])
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [loadingCatalog, setLoadingCatalog] = useState(!hasInitialData)
 
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS)
   const [sort, setSort] = useState<BrandSortKey>("variants")
@@ -827,7 +833,39 @@ export function BrandCatalogOverviewClient(props: {
     [nodes],
   )
 
-  const refreshData = useCallback(() => startRefresh(() => router.refresh()), [router, startRefresh])
+  const loadCatalog = useCallback(async () => {
+    setLoadError(null)
+    try {
+      const res = await fetch("/api/admin/brand-catalog-overview", { credentials: "include" })
+      const body = (await res.json().catch(() => ({}))) as {
+        data?: { stats: { brands: number; models: number; variants: number }; nodes: BrandCatalogBrandNode[] }
+        error?: string
+      }
+      if (!res.ok || !body.data) {
+        setLoadError(typeof body.error === "string" ? body.error : "Could not load brand catalog")
+        return
+      }
+      setStats(body.data.stats)
+      setNodes(body.data.nodes)
+    } catch {
+      setLoadError("Could not load brand catalog")
+    } finally {
+      setLoadingCatalog(false)
+    }
+  }, [])
+
+  const refreshData = useCallback(() => {
+    startRefresh(() => {
+      void loadCatalog()
+      router.refresh()
+    })
+  }, [loadCatalog, router, startRefresh])
+
+  useEffect(() => {
+    if (hasInitialData && (props.refreshKey ?? 0) === 0) return
+    setLoadingCatalog(true)
+    void loadCatalog()
+  }, [hasInitialData, loadCatalog, props.refreshKey])
 
   const deferredSearch = useDeferredValue(filters.search)
   const query = deferredSearch.trim().toLowerCase()
@@ -1135,26 +1173,58 @@ export function BrandCatalogOverviewClient(props: {
   const pricedPct = aggregate.variants > 0 ? aggregate.priced / aggregate.variants : 0
   const imagedPct = aggregate.variants > 0 ? aggregate.withImage / aggregate.variants : 0
 
+  if (loadingCatalog && nodes.length === 0) {
+    return (
+      <div className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-16 text-sm text-slate-500 shadow-sm">
+        <RefreshCw className="h-4 w-4 animate-spin" />
+        Loading brand catalog…
+      </div>
+    )
+  }
+
   return (
     <div className="w-full space-y-6">
+      {loadError ? (
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700" role="alert">
+          {loadError}
+        </div>
+      ) : null}
+
       {/* Header */}
       <div className="space-y-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                Brand catalog explorer
-              </h1>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                <Sparkles className="h-3 w-3" />
-                Pro
-              </span>
+              {props.embedded ? (
+                <h2 className="text-xl font-semibold tracking-tight text-slate-900">
+                  Brand / model / variant catalog
+                </h2>
+              ) : (
+                <>
+                  <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                    Brand catalog explorer
+                  </h1>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    <Sparkles className="h-3 w-3" />
+                    Pro
+                  </span>
+                </>
+              )}
             </div>
             <p className="max-w-2xl text-sm text-muted-foreground">
-              Live hierarchy of <span className="font-medium text-foreground">brands</span> →{" "}
-              <span className="font-medium text-foreground">brand_models</span> →{" "}
-              <span className="font-medium text-foreground">brand_model_variants</span>. Search, filter, analyze
-              coverage, and export the entire catalog.
+              {props.embedded ? (
+                <>
+                  Browse the full catalog and add brands, models, and variants without leaving the market
+                  dashboard.
+                </>
+              ) : (
+                <>
+                  Live hierarchy of <span className="font-medium text-foreground">brands</span> →{" "}
+                  <span className="font-medium text-foreground">brand_models</span> →{" "}
+                  <span className="font-medium text-foreground">brand_model_variants</span>. Search, filter, analyze
+                  coverage, and export the entire catalog.
+                </>
+              )}
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap items-center gap-2">

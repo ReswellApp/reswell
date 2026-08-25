@@ -520,6 +520,7 @@ export async function POST(request: NextRequest) {
       parcel,
       tierId,
       adminCustomCarton,
+      listingSection: (listing as { section?: string }).section,
     })
 
     if (!ratesResult.ok) {

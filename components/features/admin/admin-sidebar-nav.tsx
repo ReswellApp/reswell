@@ -128,11 +128,12 @@ function AdminNavItemIcon({ icon }: { icon: AdminNavIconKey }) {
 
 function isNavActive(pathname: string, href: string): boolean {
   const norm = pathname.replace(/\/$/, '') || '/'
+  const hrefPath = href.split('?')[0] || href
   // Exact-only for roots that have sibling child routes (e.g. /admin/shop/orders).
-  if (href === '/admin/home' || href === '/admin/overview' || href === '/admin/shop') {
-    return norm === href
+  if (hrefPath === '/admin/home' || hrefPath === '/admin/overview' || hrefPath === '/admin/shop') {
+    return norm === hrefPath
   }
-  return norm === href || norm.startsWith(`${href}/`)
+  return norm === hrefPath || norm.startsWith(`${hrefPath}/`)
 }
 
 interface AdminSidebarNavProps {

@@ -42,6 +42,10 @@ const GROUP_THEMES: Record<
     chipDot: 'bg-[#C45C3E]',
     wells: ['bg-[#9A3B24]', 'bg-[#C45C3E]', 'bg-[#D9784A]', 'bg-[#355185]'],
   },
+  tools: {
+    chipDot: 'bg-[#5C4E8A]',
+    wells: ['bg-[#3D3366]', 'bg-[#5C4E8A]', 'bg-[#7A6BA8]', 'bg-[#355185]'],
+  },
   analytics: {
     chipDot: 'bg-[#2A7A72]',
     wells: ['bg-[#1F5C56]', 'bg-[#2A7A72]', 'bg-[#3D9A8F]', 'bg-[#5574AD]'],

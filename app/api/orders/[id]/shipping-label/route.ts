@@ -301,6 +301,7 @@ export async function POST(
       shipFrom: resolved.from,
       shipTo: resolved.to,
       parcel,
+      listingSection: listing.section,
     })
 
     if (!ratesResult.ok) {

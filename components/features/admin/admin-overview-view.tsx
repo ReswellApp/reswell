@@ -1189,7 +1189,7 @@ export function AdminOverviewView({
             Search reports
           </Link>
           <Link
-            href="/admin/catalog-overview"
+            href="/admin/used-board-market-dashboard?tab=catalog"
             className="text-muted-foreground transition-colors hover:text-foreground hover:underline"
           >
             Brand catalog explorer

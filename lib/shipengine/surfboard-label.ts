@@ -4,6 +4,7 @@ import {
   formatShipEngineApiError,
   isLabelImagesNotSupportedError,
 } from "@/lib/shipengine/errors"
+import { curateLabelPurchaseRates } from "@/lib/shipping/label-purchase-rates"
 import {
   buildShipEngineRateShipment,
   type RateQuoteAddressFields,
@@ -41,6 +42,8 @@ export type ShipEngineRateOption = {
   serviceName: string
   amount: number
   currency: string
+  carrierCode?: string | null
+  serviceCode?: string | null
 }
 
 export function normalizeShipEngineRatesForUi(rates: Record<string, unknown>[]): ShipEngineRateOption[] {
@@ -48,6 +51,8 @@ export function normalizeShipEngineRatesForUi(rates: Record<string, unknown>[]):
   for (const r of rates) {
     const rateId = typeof r.rate_id === "string" ? r.rate_id : null
     if (!rateId) continue
+    const carrierCode = typeof r.carrier_code === "string" && r.carrier_code.trim() ? r.carrier_code.trim() : null
+    const serviceCode = typeof r.service_code === "string" && r.service_code.trim() ? r.service_code.trim() : null
     const carrierLabel =
       typeof r.carrier_friendly_name === "string"
         ? r.carrier_friendly_name
@@ -67,6 +72,8 @@ export function normalizeShipEngineRatesForUi(rates: Record<string, unknown>[]):
       serviceName,
       amount: total,
       currency: currency.toUpperCase(),
+      carrierCode,
+      serviceCode,
     })
   }
   out.sort((a, b) => a.amount - b.amount)
@@ -99,6 +106,8 @@ export async function fetchShipEngineRatesForSurfboard(params: {
   tierId?: SurfboardShippingTierId | null
   /** Admin custom carton — skip tier max box length; UPS DIM is the ceiling for shortboard. */
   adminCustomCarton?: boolean
+  /** Listing section — Media Mail is only offered for magazines. */
+  listingSection?: string | null
 }): Promise<
   | { ok: true; rates: ShipEngineRateOption[] }
   | { ok: false; error: string; status: number }
@@ -172,11 +181,15 @@ export async function fetchShipEngineRatesForSurfboard(params: {
   }
 
   const rawRates = extractRatesFromApiEnvelope(data)
-  const rates = normalizeShipEngineRatesForUi(rawRates)
+  const rates = curateLabelPurchaseRates(
+    normalizeShipEngineRatesForUi(rawRates),
+    params.listingSection,
+  )
   if (!rates.length) {
     return {
       ok: false,
-      error: "No carrier rates returned for this route. Check addresses and parcel size.",
+      error:
+        "No USPS, UPS, or FedEx Ground or Priority rates for this shipment. Check addresses and parcel size.",
       status: 422,
     }
   }

@@ -325,6 +325,8 @@ export async function quoteAdminExactParcelUpsRatesForOrder(params: {
     parcel: params.parcel,
     tierId: null,
     adminCustomCarton: true,
+    listingSection:
+      typeof loaded.listing.section === "string" ? loaded.listing.section : null,
   })
   if (!ratesResult.ok) {
     return { ok: false, error: ratesResult.error, status: ratesResult.status }

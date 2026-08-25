@@ -1,4 +1,6 @@
 import { orderStatusLocksDuringRefund } from "@/lib/order-status"
+import { carrierTrackingIndicatesScanned } from "@/lib/shipping/carrier-status-display"
+import type { OrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 
 export const SALES_LIST_FILTERS = ["all", "pending-shipment", "pending-pickup"] as const
 export type SalesListFilter = (typeof SALES_LIST_FILTERS)[number]
@@ -65,6 +67,24 @@ export function compareSalesForSellerList(
 /** Open shipment with a carrier label ready to print. */
 export function saleHasPrintableOpenLabel(input: SaleFulfillmentFilterInput): boolean {
   return saleIsPendingShipment(input) && input.hasPreparedShippingLabel
+}
+
+export type SaleAwaitingCarrierScanInput = SaleFulfillmentFilterInput & {
+  trackingNumber: string | null
+  trackingDetail: OrderTrackingDetail | null
+}
+
+/**
+ * Prepared package that the seller still needs to drop off.
+ * Disappears after the first carrier scan (or delivery / exception).
+ */
+export function saleIsAwaitingCarrierScan(input: SaleAwaitingCarrierScanInput): boolean {
+  if (!saleIsOpenForFulfillment(input)) return false
+  if (!saleIsShippingFulfillment(input)) return false
+  if (input.deliveryStatus === "delivered" || input.deliveryStatus === "picked_up") return false
+  const hasPackage = input.hasPreparedShippingLabel || Boolean(input.trackingNumber?.trim())
+  if (!hasPackage) return false
+  return !carrierTrackingIndicatesScanned(input.trackingDetail)
 }
 
 export function saleMatchesListFilter(

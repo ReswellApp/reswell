@@ -4,7 +4,7 @@ import { UsedBoardMarketDashboardClient } from "@/components/features/admin/used
 export const metadata = privatePageMetadata({
   title: "Used surfboard market dashboard — Admin — Reswell",
   description:
-    "Unified analytics view for the used surfboard market: inventory, supply, sales performance, pricing intelligence, and market overview.",
+    "Used surfboard market analytics plus the brand, model, and variant catalog CMS.",
   path: "/admin/used-board-market-dashboard",
 })
 

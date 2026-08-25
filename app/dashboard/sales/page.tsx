@@ -33,9 +33,14 @@ import {
   type PrintableShippingLabelSale,
 } from "@/components/features/sales/print-shipping-labels-module"
 import {
+  AwaitingDropoffTiles,
+  type AwaitingDropoffSale,
+} from "@/components/features/sales/awaiting-dropoff-tiles"
+import {
   compareSalesForSellerList,
   parseSalesListFilter,
   saleHasPrintableOpenLabel,
+  saleIsAwaitingCarrierScan,
   saleIsPendingPickup,
   saleIsPendingShipment,
   saleMatchesListFilter,
@@ -281,6 +286,24 @@ export default async function SalesPage({
       }
     })
 
+  const awaitingDropoffSales: AwaitingDropoffSale[] = list
+    .filter((sale) =>
+      saleIsAwaitingCarrierScan({
+        ...saleFilterInput(sale),
+        trackingNumber: sale.tracking_number,
+        trackingDetail: trackingDetailByOrderId.get(sale.id) ?? null,
+      }),
+    )
+    .map((sale) => {
+      const listing = Array.isArray(sale.listings) ? sale.listings[0] : sale.listings
+      return {
+        orderId: sale.id,
+        orderNum: formatOrderNumForCustomer(sale.order_num, sale.id),
+        title: listing?.title ? capitalizeWords(listing.title) : "Item (listing removed)",
+        imageUrl: primaryImage(listing?.listing_images ?? null),
+      }
+    })
+
   return (
     <div className="space-y-6">
       <OrdersListRealtimeRefresh role="seller" />
@@ -301,6 +324,10 @@ export default async function SalesPage({
             pendingPickupCount={pendingPickupCount}
           />
         </Suspense>
+      ) : null}
+
+      {!error && awaitingDropoffSales.length > 0 ? (
+        <AwaitingDropoffTiles sales={awaitingDropoffSales} />
       ) : null}
 
       {error && (

@@ -49,6 +49,22 @@ export function carrierTrackingIndicatesDelivered(
   return Boolean(detail.actual_delivery_date?.trim())
 }
 
+/** First physical scan or later (accepted, in transit, exception, delivered). */
+const CARRIER_SCANNED_STATUS_CODES = new Set(["AC", "IT", "AT", "OF", "DE", "EX"])
+
+/**
+ * True once the carrier has the package. Label-created / unknown / not-yet-in-system
+ * (`UN`, `NY`, empty) stay false so drop-off tiles can remain visible.
+ */
+export function carrierTrackingIndicatesScanned(
+  detail: OrderTrackingDetail | null | undefined,
+): boolean {
+  if (!detail) return false
+  if (detail.actual_delivery_date?.trim()) return true
+  const code = (detail.status_code ?? "").trim().toUpperCase()
+  return CARRIER_SCANNED_STATUS_CODES.has(code)
+}
+
 export function trackingStatusTone(
   statusCode: string | null | undefined,
 ): "default" | "success" | "warning" | "muted" {

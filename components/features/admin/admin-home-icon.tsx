@@ -1,6 +1,7 @@
 import {
   Activity,
   BellRing,
+  BookOpen,
   Brain,
   Code,
   ContactRound,
@@ -103,6 +104,8 @@ export function AdminHomeIcon({
       return <MapPin className={iconClassName} aria-hidden />
     case 'ticket':
       return <Ticket className={iconClassName} aria-hidden />
+    case 'bookOpen':
+      return <BookOpen className={iconClassName} aria-hidden />
     case 'bellRing':
       return <BellRing className={iconClassName} aria-hidden />
     case 'code':

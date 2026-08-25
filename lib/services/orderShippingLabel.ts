@@ -135,6 +135,7 @@ export async function fetchRatesForSurfboardOrder(params: {
   parcel: { lengthIn: number; widthIn: number; heightIn: number; weightLb: number }
   tierId?: SurfboardShippingTierId | null
   adminCustomCarton?: boolean
+  listingSection?: string | null
 }) {
   return fetchShipEngineRatesForSurfboard(params)
 }

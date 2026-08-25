@@ -1113,7 +1113,7 @@ function InsightCard({
               variant="outline"
               size="sm"
               className="h-8 gap-1.5 border-slate-200 bg-white text-xs"
-              onClick={() => openInNewTab("/admin/catalog-overview")}
+              onClick={() => openInNewTab("/admin/used-board-market-dashboard?tab=catalog")}
             >
               <ExternalLink className="h-3.5 w-3.5" />
               Brand catalog

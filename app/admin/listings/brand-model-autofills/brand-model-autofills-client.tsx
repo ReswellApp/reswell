@@ -706,7 +706,7 @@ export function BrandModelAutofillsAdminClient() {
             These active listings have a title the cron couldn’t match to the catalog. Use{" "}
             <span className="font-medium text-foreground">Edit catalog</span> to link a directory
             brand and model directly on the listing, or add missing entries in the{" "}
-            <Link href="/admin/catalog-overview" className="text-primary underline-offset-2 hover:underline">
+            <Link href="/admin/used-board-market-dashboard?tab=catalog" className="text-primary underline-offset-2 hover:underline">
               brand catalog explorer
             </Link>{" "}
             for the cron to pick up on the next run.
