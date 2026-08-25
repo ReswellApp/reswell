@@ -1,0 +1,160 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "mandala-custom-shapes",
+      "name": "Mandala Custom Shapes",
+      "website_url": "https://mandalacustomshapes.com/",
+      "location_label": "Leucadia, California",
+      "founder_name": "Manuel C. Caro",
+      "lead_shaper_name": "Manuel C. Caro",
+      "short_description": "Leucadia, California custom surfboards by Manuel “Manny” Caro, shaped since 2002 and glassed at Moonlight Glassing.",
+      "models": [
+        {
+          "name": "Twinzers",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2024/10/6.3_JAM_KARET_TWINZER_20.25_BW.jpg",
+          "description": "Inspired by the brilliant Wil Jobson and his efforts to bring the Twinzer to the world, my twinzers are a homage to his genius. Years later I dug up my notes from those shaping sessions and combined Wil’s Twinzer design concepts with my own fin templates, while integrating some golden ratio fin placements and spacial relationships.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "DELTA-V",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2022/05/DELTA_V_1.jpeg",
+          "description": "The addition of channels to add functional edge and control is nothing new, and here we’ve added them to our tried and true spiral vee concave to produce our own “Delta-V” bottom contour. Micro-channels located behind the trailing edge of each fin creates an area of low pressure, decreasing the turbulence at the trailing edge while adding a touch of rocker at the rail.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Edge Boards",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2016/08/5.9_ROUND_PIN_EDGE_BOARD.gif",
+          "description": "This design came my way via Marc Andreini, who was sent three templates from George Greenough. Many of the elements George adapted from boat hull design to his kneeboard spoons can be seen in the displacement hulls designed for stand up surfing.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "The Doobie Disc",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2015/11/ARI_DOOBIE_DISC_1.gif",
+          "description": "The smooth operator in our family of finlette sliders. In a nutty nutshell, this board is basically a Stubbie-ish template with hull entry to a very nice single concave throughout. Mini Keels give you freedom of movement and kinetic slide.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Arc-Swallowtail Quad Fish",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2015/02/5.8.ASQF_20.75.jpg",
+          "description": null,
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Oracle",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2014/04/5.9.ORACLE_20.jpg",
+          "description": "Designed in cahoots with Dane Peterson, the Oracle is a new take on our classic stubbie outline. We’ve pulled in the nose outline without sacrificing key elements of functional surface area and elliptical efficiency. Contemporary tail rockers combined with the Greenough 4A flex fin allows for a more progressive approach in hollower surf.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Dark Crystal",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2013/05/5.7.DARK_CRYSTAL_21.gif",
+          "description": "The latest incarnation features a deep single concave, nose to tail tucked-under edge, and 5.5” x 1.5” Mini Keels. These Mini Keels allow easy access to “almost finless” surfing, keeping bottom contours simple and water following the path of least resistance.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Double Rainbows",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2013/02/5.2.DEEP_SWALLOWTAIL_DOUBLE_RAINBOW_20.25.jpg",
+          "description": null,
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Seraph Pintail TPH",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2013/01/8.10_SERAPH_TPH.gif",
+          "description": "The timeless mid-length heat-seeking missile. Full displacementia, tri-plane hull, vee out the back door. Optional parabolic double concave can be added to the vee panel to transmute liquid light into useable energy.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Round Pin Quads",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2013/01/6.3.ROUND_.PIN_.QUAD_.VOLAN_.WEB_.jpg",
+          "description": null,
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Pintail Stubbies",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2012/12/6.8.PINTAIL_STUBBIE_QUAD_MIRROR.jpg",
+          "description": "This template draws its genetic heritage from the gene pool of my longer hulls while adding new DNA from the Stubbie family. The drawn out template naturally holds a long clean line, with the single to spiral-vee concave letting you drive hard off the rail in bigger surf.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Quad Fish",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2012/06/5.6.QUAD_.FISH_.WHITE_.WEB_.jpg",
+          "description": "This board is the design that got me started down the dark path of shaping back in 2002. The Quad Fish has become a common sight in many quivers and will always be one of those boards that places emphasis on the clean line. Early entry, extended bottom turns, carving off-the-tops…all day long.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Hunter Seeker TPH",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2012/05/HUNTER_SEEKER_1.jpg",
+          "description": "These boards represent the Greenough tri-plane hull design, as conveyed to me by Marc Andreini, extrapolated out into the realm of the glider. The hydrodynamic efficiency which these boards possess is immediately revealed the moment you start paddling.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Clandestino Pintail TPH",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2012/05/8.0.CLANDESTINO_JOHN_22.5.jpg",
+          "description": "The Clandestino is a tribute to the speed shapes of the transition era and the beginnings of high-performance surfing. The sweet spot finds focus over the wide-point behind center fulcrum, where rocker through the vee panel begins to accelerate as the template pulls in to the pintail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Classic Tri-Plane Hulls",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2012/05/classic_TPH_1.jpg",
+          "description": "The Greenough tri-plane hull design is a very fast and efficient bottom contour, featuring rolled hull entry blending into three distinct planing surfaces. A tri-plane is easier to surf than deeply rolled displacement hull, with flatter planing surfaces to drive off of.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Stubbie 2+1",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2012/05/stubbie_2+1_1.jpg",
+          "description": "Now that quad-fin designs have established themselves as a fundamental part of a well-rounded quiver, it’s refreshing to get back on something with the stability of a center fin. Big cutbacks are a staple maneuver with these boards, and rebounding off the whitewater is a bit easier with the depth of a center fin.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Super Stubbies",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2012/05/5.4.SUPER_STUBBIE_QUAD1.jpg",
+          "description": "This design takes advantage of a fuller outline, hull entry, single to spiral vee, and functional volume to create a design that allows larger human beings to excel in small surf, or average humans to be able to carve and flow on days normally reserved for logging or sleeping. Available as single fins, 2+1s, or quad fin set-ups.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "California Stubbie",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2012/05/5.6.STUBBIE_MIRRORS1.jpg",
+          "description": "A classic template handed down to me from Marc Andreini. I updated the tail making it more elliptical, but kept most everything that makes this design timeless and universal: hull entry, single to spiral vee, functional volume, and a refined foil that is forgiving to the uninitiated, yet offers a subtlety to the experienced.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Stubbie Quads",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2012/05/5.6.STUBBIE.QUAD_.INDIGO.WEB_.jpg",
+          "description": "The round-tail stubbie template has proven to be versatile in so many different kinds of waves that I decided to combine the speed and holding power of the quad fin set-up with the wider plan shape of a stubbie. Figure-8s become standard in average surf, and the boards really start to light up as the waves get hollower.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Arctail 2+1 Hull",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2012/05/5.6.ARCTAIL.HULL_1.jpg",
+          "description": "These Arctail Hulls are an attempt to walk in the footsteps of those who wanted to make a stand-up version of Greenough’s spoon and start carving for real. These Arctails are a little wider than my round-tail hull templates at similar lengths, with the width of the tail bringing in the curve from the wide-point to the tail closer to the curve of my fish template.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Superchunk",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2012/05/5.5.SUPERCHUNK_MIRROR_WHITE_OPAQUE.jpg",
+          "description": "Over the past few years we’ve played with so many different variations of the Superchunk—from short/wide grovelers for tiny waves, to thinner/narrower versions for “good” waves, to even identical twin stunt doubles of the ASQ template and foil. And they all work! The current standard foil is very much the same as the ASQ and represents the latest addition to the Mandala bucket of hammers.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Arc-Swallowtail Quads",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2012/05/ASQ_AMBER.jpg",
+          "description": "The Arc-Swallowtail (ASQ) finds its roots from a variety of sources: the template from George Greenough’s Velo spoon bisected by the deep swallowtail of the Mirandon family’s Twin Pin, spiral vee concave via the Campbell Brother’s Bonzer venturi bottoms, and quad fin placement voodoo from Rich Pavel’s Speed-Dialer.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Arctail Quads",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2012/05/5.1.ARCTAIL.QUAD_.22.jpg",
+          "description": "Inspired by the performance of the Mini-Simmons design resurrected by Joe Bauguess and further developed by Richard Kenvin, I combined the classic dimensions of the Greenough Velo Spoon template with the proven single concave to spiral vee bottom contour and the AK4 quad set-up. These shorter boards with fuller outlines are incredibly fast and maneuverable.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Void Comp Tri Plane Hull",
+          "image_url": "https://mandalacustomshapes.com/wp-content/uploads/2012/05/5.11.VOID_COMP_TPH_WEB_1.jpg",
+          "description": "Thinner and wider than the more user-friendly tri-plane hull (Classic TPH), the Void Comp finds its form and intention closer to that of the evolved displacement hull meant for use in clean, lined-up surf. Foiled thin for functional twist and flex, a Void Comp TPH laminated with a single layer of 6oz Volan bottom plus 4oz S-cloth deck provides an accelerated experience with access to free energy.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
