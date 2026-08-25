@@ -104,6 +104,10 @@
     {
       "path": "/api/cron/link-guest-contact-messages",
       "schedule": "25 * * * *"
+    },
+    {
+      "path": "/api/cron/sync-shipengine-adjustments",
+      "schedule": "30 8 * * *"
     }
   ]
 }

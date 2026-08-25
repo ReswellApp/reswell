@@ -7,6 +7,7 @@ import {
   type AdminOrdersDashboardQueues,
   type AdminOrdersOpsOrderRow,
   type AdminOrdersOpsLabelRow,
+  type AdminOrdersOpenLists,
 } from "@/lib/db/adminOrders"
 
 export type {
@@ -15,6 +16,7 @@ export type {
   AdminOrdersDashboardQueues,
   AdminOrdersOpsOrderRow,
   AdminOrdersOpsLabelRow,
+  AdminOrdersOpenLists,
 }
 
 export type AdminOrdersStatsResult =
@@ -59,6 +61,11 @@ const EMPTY_QUEUES: AdminOrdersDashboardQueues = {
   openLabels: [],
 }
 
+const EMPTY_OPEN_LISTS: AdminOrdersOpenLists = {
+  shipping: [],
+  pickup: [],
+}
+
 /** Dashboard KPIs, open-fulfillment breakdown, and attention queues for `/admin/orders`. */
 export async function getAdminOrdersStats(): Promise<AdminOrdersStatsResult> {
   const supabase = getServiceOrThrow()
@@ -82,6 +89,6 @@ export async function getAdminOrdersStats(): Promise<AdminOrdersStatsResult> {
 
   return {
     ok: true,
-    data: data ?? { stats: EMPTY_STATS, queues: EMPTY_QUEUES },
+    data: data ?? { stats: EMPTY_STATS, queues: EMPTY_QUEUES, openLists: EMPTY_OPEN_LISTS },
   }
 }

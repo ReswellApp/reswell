@@ -50,7 +50,7 @@ export function carrierTrackingIndicatesDelivered(
 }
 
 /** First physical scan or later (accepted, in transit, exception, delivered). */
-const CARRIER_SCANNED_STATUS_CODES = new Set(["AC", "IT", "AT", "OF", "DE", "EX"])
+export const CARRIER_SCANNED_STATUS_CODES = new Set(["AC", "IT", "AT", "OF", "DE", "EX"])
 
 /**
  * True once the carrier has the package. Label-created / unknown / not-yet-in-system
@@ -63,6 +63,37 @@ export function carrierTrackingIndicatesScanned(
   if (detail.actual_delivery_date?.trim()) return true
   const code = (detail.status_code ?? "").trim().toUpperCase()
   return CARRIER_SCANNED_STATUS_CODES.has(code)
+}
+
+/**
+ * Timestamp of first carrier possession. Prefers actual delivery, then the
+ * newest event, then the snapshot time.
+ */
+export function resolveCarrierAcceptedAt(
+  detail: OrderTrackingDetail,
+  observedAt: Date = new Date(),
+): Date {
+  const actual = detail.actual_delivery_date?.trim()
+  if (actual) {
+    const parsed = Date.parse(actual)
+    if (Number.isFinite(parsed)) return new Date(parsed)
+  }
+
+  const events = detail.events ?? []
+  for (const event of events) {
+    const at = event.occurred_at?.trim()
+    if (!at) continue
+    const parsed = Date.parse(at)
+    if (Number.isFinite(parsed)) return new Date(parsed)
+  }
+
+  const updated = detail.updated_at?.trim()
+  if (updated) {
+    const parsed = Date.parse(updated)
+    if (Number.isFinite(parsed)) return new Date(parsed)
+  }
+
+  return observedAt
 }
 
 export function trackingStatusTone(

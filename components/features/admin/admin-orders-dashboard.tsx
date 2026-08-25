@@ -554,9 +554,17 @@ export function AdminOrdersDashboard({ data, loading }: AdminOrdersDashboardProp
                 <p className="text-sm font-semibold text-foreground">Open orders</p>
                 <p className="text-xs text-muted-foreground">Oldest unfulfilled first</p>
               </div>
-              <Badge variant="outline" className="tabular-nums font-normal">
-                {stats ? compactNumber(stats.openUnfulfilled) : '—'}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="tabular-nums font-normal">
+                  {stats ? compactNumber(stats.openUnfulfilled) : '—'}
+                </Badge>
+                <Button type="button" variant="ghost" size="sm" className="h-8 px-2" asChild>
+                  <Link href="#open-orders">
+                    View all
+                    <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              </div>
             </div>
             {(queues?.openOrders.length ?? 0) === 0 ? (
               <div className="flex h-[220px] flex-col items-center justify-center text-center">

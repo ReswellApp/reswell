@@ -4,6 +4,10 @@ import {
   countMarketplaceMessagesSince,
   countNewListingsSince,
   countNewUsersSince,
+  countOpenPickupAwaitingCode,
+  countOpenShippingAwaitingDropoff,
+  countShippingLabelsCreatedSince,
+  sumIncreasedShipEngineAdjustments,
 } from '@/lib/db/adminHomePulse'
 import { isElasticsearchConfigured } from '@/lib/elasticsearch/config'
 import { countMarketplaceSearchesInRange } from '@/lib/elasticsearch/search-analytics-index'
@@ -24,11 +28,20 @@ export type AdminHomePulseCounts = {
   searchesTracked: boolean
   giveawayEntered: number
   giveawayNotEntered: number
+  shippingLabels: number
+}
+
+export type AdminHomePulseOps = {
+  openShipping: number
+  openPickup: number
+  adjustedLabels: number
+  adjustedFeesUsd: number
 }
 
 export type AdminHomePulse = {
   today: AdminHomePulseCounts
   week: AdminHomePulseCounts
+  ops: AdminHomePulseOps
 }
 
 async function loadPulseCounts(params: {
@@ -38,16 +51,18 @@ async function loadPulseCounts(params: {
   giveawaySlugs: string[]
 }): Promise<AdminHomePulseCounts> {
   const searchesTracked = isElasticsearchConfigured()
-  const [newUsers, newListings, orders, messages, searches, giveaway] = await Promise.all([
-    countNewUsersSince(params.db, params.sinceIso),
-    countNewListingsSince(params.db, params.sinceIso),
-    countConfirmedOrdersSince(params.db, params.sinceIso),
-    countMarketplaceMessagesSince(params.db, params.sinceIso),
-    searchesTracked
-      ? countMarketplaceSearchesInRange(params.sinceIso, params.nowIso)
-      : Promise.resolve(null),
-    countGiveawayEntriesByListing(params.db, params.giveawaySlugs, params.sinceIso),
-  ])
+  const [newUsers, newListings, orders, messages, searches, giveaway, shippingLabels] =
+    await Promise.all([
+      countNewUsersSince(params.db, params.sinceIso),
+      countNewListingsSince(params.db, params.sinceIso),
+      countConfirmedOrdersSince(params.db, params.sinceIso),
+      countMarketplaceMessagesSince(params.db, params.sinceIso),
+      searchesTracked
+        ? countMarketplaceSearchesInRange(params.sinceIso, params.nowIso)
+        : Promise.resolve(null),
+      countGiveawayEntriesByListing(params.db, params.giveawaySlugs, params.sinceIso),
+      countShippingLabelsCreatedSince(params.db, params.sinceIso),
+    ])
 
   return {
     newUsers,
@@ -58,6 +73,23 @@ async function loadPulseCounts(params: {
     searchesTracked,
     giveawayEntered: giveaway.entered,
     giveawayNotEntered: giveaway.notEntered,
+    shippingLabels,
+  }
+}
+
+async function loadPulseOps(
+  db: ReturnType<typeof createServiceRoleClient>,
+): Promise<AdminHomePulseOps> {
+  const [openShipping, openPickup, adjusted] = await Promise.all([
+    countOpenShippingAwaitingDropoff(db),
+    countOpenPickupAwaitingCode(db),
+    sumIncreasedShipEngineAdjustments(db),
+  ])
+  return {
+    openShipping,
+    openPickup,
+    adjustedLabels: adjusted.count,
+    adjustedFeesUsd: adjusted.amountUsd,
   }
 }
 
@@ -76,12 +108,13 @@ export async function loadAdminHomePulse(): Promise<
       (giveaway) => giveaway.slug,
     )
 
-    const [today, week] = await Promise.all([
+    const [today, week, ops] = await Promise.all([
       loadPulseCounts({ db, sinceIso: todayStartIso, nowIso, giveawaySlugs }),
       loadPulseCounts({ db, sinceIso: weekStartIso, nowIso, giveawaySlugs }),
+      loadPulseOps(db),
     ])
 
-    return { ok: true, data: { today, week } }
+    return { ok: true, data: { today, week, ops } }
   } catch {
     return {
       ok: false,

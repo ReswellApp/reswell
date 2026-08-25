@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import {
+  DollarSign,
   ExternalLink,
   Loader2,
   Package,
@@ -34,6 +35,7 @@ import type { LucideIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import type { AdminShippingStats } from '@/lib/services/adminShippingStats'
+import { AdminAdjustedLabelsTab } from './admin-adjusted-labels-tab'
 import { AdminLabelsCreatedTab } from './admin-labels-created-tab'
 import { AdminFailedLabelsTab } from './admin-failed-labels-tab'
 import { AdminOrderLabelPurchase } from './admin-order-label-purchase'
@@ -176,7 +178,8 @@ export function AdminShippingClient() {
     tabFromUrl === 'validate' ||
     tabFromUrl === 'rates' ||
     tabFromUrl === 'create' ||
-    tabFromUrl === 'labels-created'
+    tabFromUrl === 'labels-created' ||
+    tabFromUrl === 'adjusted-labels'
       ? tabFromUrl
       : 'overview'
 
@@ -454,6 +457,10 @@ export function AdminShippingClient() {
               Failed labels
               <NavUnreadCountBadge count={failedLabelCount} />
             </TabsTrigger>
+            <TabsTrigger value="adjusted-labels" className={tabTriggerClass}>
+              <DollarSign className="h-4 w-4" />
+              Adjusted labels
+            </TabsTrigger>
             <TabsTrigger value="overview" className={tabTriggerClass} disabled={!configured}>
               <Ship className="h-4 w-4" />
               Overview
@@ -484,6 +491,10 @@ export function AdminShippingClient() {
 
           <TabsContent value="analytics" className="page-enter mt-6">
             <ShippingAnalytics stats={stats} onRefresh={loadStats} />
+          </TabsContent>
+
+          <TabsContent value="adjusted-labels" className="page-enter mt-6">
+            <AdminAdjustedLabelsTab />
           </TabsContent>
 
           {configured && overview.configured ? (

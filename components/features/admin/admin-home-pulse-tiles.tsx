@@ -1,16 +1,24 @@
 import Link from 'next/link'
 import {
   Gift,
+  MapPin,
   MessageSquare,
   Package,
+  PackageOpen,
   PackageX,
   Search,
   ShoppingBag,
+  Stamp,
+  Tag,
   UserPlus,
   type LucideIcon,
 } from 'lucide-react'
 
-import type { AdminHomePulse, AdminHomePulseCounts } from '@/lib/services/adminHomePulse'
+import type {
+  AdminHomePulse,
+  AdminHomePulseCounts,
+  AdminHomePulseOps,
+} from '@/lib/services/adminHomePulse'
 import { cn } from '@/lib/utils'
 
 type PulseWindow = 'today' | 'week'
@@ -95,6 +103,59 @@ function tilesFromPulse(counts: AdminHomePulseCounts, window: PulseWindow): Puls
       well: 'bg-[#9A3B24]',
       value: formatCount(counts.giveawayNotEntered),
     },
+    {
+      id: `${window}-labels`,
+      href: '/admin/shipping?tab=labels-created',
+      label: 'Shipping labels',
+      footnote: isWeek ? 'Created past week' : 'Created today',
+      icon: Stamp,
+      well: 'bg-[#3D3366]',
+      value: formatCount(counts.shippingLabels),
+    },
+  ]
+}
+
+function formatUsd(value: number): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value)
+}
+
+function tilesFromOps(ops: AdminHomePulseOps): PulseTile[] {
+  return [
+    {
+      id: 'ops-open-shipping',
+      href: '/admin/orders#open-orders-shipping',
+      label: 'Open orders',
+      footnote: 'All time · labeled or not, not delivered',
+      icon: PackageOpen,
+      well: 'bg-[#2A7A72]',
+      value: formatCount(ops.openShipping),
+    },
+    {
+      id: 'ops-open-pickup',
+      href: '/admin/orders#open-orders-pickup',
+      label: 'Local pickup open',
+      footnote: 'All time · pickup code not entered',
+      icon: MapPin,
+      well: 'bg-[#5C4E8A]',
+      value: formatCount(ops.openPickup),
+    },
+    {
+      id: 'ops-adjusted-labels',
+      href: '/admin/shipping?tab=adjusted-labels',
+      label: 'ShipEngine adjusted fees',
+      footnote:
+        ops.adjustedLabels > 0
+          ? `${formatUsd(ops.adjustedFeesUsd)} extra billed`
+          : 'Labels with a price increase',
+      icon: Tag,
+      well: 'bg-[#C45C3E]',
+      value: formatCount(ops.adjustedLabels),
+    },
   ]
 }
 
@@ -102,10 +163,12 @@ function PulseRow({
   title,
   tiles,
   aside,
+  dense,
 }: {
   title: string
   tiles: PulseTile[]
   aside?: string
+  dense?: boolean
 }) {
   return (
     <div>
@@ -115,7 +178,12 @@ function PulseRow({
         </p>
         {aside ? <p className="text-[11px] text-muted-foreground">{aside}</p> : null}
       </div>
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7">
+      <div
+        className={cn(
+          'grid grid-cols-2 gap-2.5 sm:grid-cols-3',
+          dense ? 'xl:grid-cols-3' : 'xl:grid-cols-4 2xl:grid-cols-8',
+        )}
+      >
         {tiles.map((tile) => {
           const Icon = tile.icon
           return (
@@ -164,12 +232,16 @@ interface AdminHomePulseTilesProps {
 
 export function AdminHomePulseTiles({ pulse, isAdmin = true }: AdminHomePulseTilesProps) {
   const remap = (tiles: PulseTile[]) =>
-    tiles.map((tile) =>
-      tile.href === '/admin/users' && !isAdmin ? { ...tile, href: '/admin/home' } : tile,
-    )
+    tiles.map((tile) => {
+      if (!isAdmin && (tile.href === '/admin/users' || tile.href.startsWith('/admin/shipping'))) {
+        return { ...tile, href: '/admin/home' }
+      }
+      return tile
+    })
 
   return (
     <section className="space-y-5">
+      <PulseRow title="Open" tiles={remap(tilesFromOps(pulse.ops))} dense />
       <PulseRow
         title="Today"
         aside="Pacific Time"

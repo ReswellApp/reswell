@@ -2,6 +2,10 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { notifyBuyerOrderShippingUpdateKlaviyo } from "@/lib/services/notifyBuyerOrderShippingUpdateKlaviyo"
 import { notifyOrderShippedKlaviyoIfMissing } from "@/lib/services/notifyOrderShippedKlaviyo"
 import type { OrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
+import {
+  carrierTrackingIndicatesScanned,
+  resolveCarrierAcceptedAt,
+} from "@/lib/shipping/carrier-status-display"
 import { syncCarrierDeliveryFromTracking } from "@/lib/services/syncCarrierDeliveryFromTracking"
 import { tryReleaseShippingPayoutAfterCarrierHold } from "@/lib/services/autoReleaseShippingPayoutsAfterCarrierDelivery"
 
@@ -37,6 +41,22 @@ export async function persistOrderCarrierTrackingSnapshot(
   if (updErr) {
     console.error("[persistOrderCarrierTrackingSnapshot] tracking_detail update:", updErr.message)
     return
+  }
+
+  if (carrierTrackingIndicatesScanned(detail)) {
+    const { error: acceptedErr } = await supabase
+      .from("orders")
+      .update({
+        carrier_accepted_at: resolveCarrierAcceptedAt(detail).toISOString(),
+      })
+      .eq("id", orderId)
+      .is("carrier_accepted_at", null)
+    if (acceptedErr) {
+      console.error(
+        "[persistOrderCarrierTrackingSnapshot] carrier_accepted_at update:",
+        acceptedErr.message,
+      )
+    }
   }
 
   await syncCarrierDeliveryFromTracking(supabase, orderId, detail)
