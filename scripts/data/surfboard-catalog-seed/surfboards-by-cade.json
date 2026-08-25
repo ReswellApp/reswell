@@ -1,0 +1,84 @@
+{
+  "generated_for": "Surfboards by Cade official model catalog",
+  "source": "https://surfboardsbycade.com/pages/models",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "surfboards-by-cade",
+      "name": "Surfboards by Cade",
+      "website_url": "https://surfboardsbycade.com/pages/models",
+      "location_label": "Oceanside, California",
+      "founder_name": "Cade Doherty",
+      "lead_shaper_name": "Cade Doherty",
+      "short_description": "Oceanside, California surfboards by Cade Doherty — named standup models from the official Surfboards by Cade catalog.",
+      "models": [
+        {
+          "name": "Thunderbird",
+          "image_url": "https://surfboardsbycade.com/cdn/shop/files/7_4_Thunderbird.heic?v=1766899790&width=1500",
+          "description": "The T-bird is a blend of some of my personal favorite 70s templates from my collection. This model features a fuller nose to help with paddling and early entry to make it more suitable to the waves I surf often. This model can be shaped as a pintail, squash tail, or swallow.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Waymore",
+          "image_url": "https://surfboardsbycade.com/cdn/shop/files/IMG_1120.heic?v=1771732376&width=1500",
+          "description": "A speed shape directly inspired from the Skip Frye Eagle design with a semi parallel outline ideal for trimming at high speeds. The Waymore has a soft rolled entry leading into a single concave that transitions into a spiral vee off the tail. This allows for an ultra smooth ride with effortless speed and paddling. Sizes: 8'-12'.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Butterfield",
+          "image_url": "https://surfboardsbycade.com/cdn/shop/files/9_6_Butterfield.heic?v=1766898912&width=1500",
+          "description": "Inspired by the Australian Malibus of the 60s, The Butterfield has no concave that blends into a panel vee that makes this board more maneuverable for a classic style longboard. This model has the wide point set back from center with some additional width than any of the other models. This gives an added curve to the back third of the outline to further increase maneuverability. This board caters to more of the involvement approach and less to those who look to pose on the nose. Sizes: 8'8-10'.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Hazlewood",
+          "image_url": "https://surfboardsbycade.com/cdn/shop/files/IMG_5279.heic?v=1771732552&width=1500",
+          "description": "Named after singer Lee Hazlewood, this board is inspired by longboards made just after the 1966 world championships when boards started getting smaller and more foiled. This model has a narrower outline and foiled rails to increase sensitivity and maneuverability along with subtle nose concave to aid you in noserides in critical sections of the wave. This blends into rolled vee in the tail to allow you to transition from rail to rail with ease. This board is perfect for a longboarder with a more \"involvement\" style of longboard surfing. I recommend ordering this board 2-4\" smaller than your noserider. Sizes: 9'2-10'6.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Da Capo",
+          "image_url": "https://surfboardsbycade.com/cdn/shop/files/IMG_0140_1fc4ae70-6262-4a42-a498-28a5b2423218.heic?v=1771732673&width=1500",
+          "description": "A bread and butter noserider inspired by the boards of the mid-60's when David Nuuhiwa was king. The Da Capo has a wider nose with substantial concave to add stability while nose riding while the semi parallel outline and centered wide point allow the board to maintain speed when trimming and noseriding. Sizes: 9'2-10'6.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Steppin",
+          "image_url": "https://surfboardsbycade.com/cdn/shop/files/IMG_0227_62ccd5c3-799e-4621-b6c6-cd97c2efba23.heic?v=1771732771&width=1500",
+          "description": "A step-deck pintail with slight nose concave that blends into a nice roll in the tail for maneuverability. The step on the deck in the nose lightens the swing weight making it easier to turn along with adding flex that can aid in nose rides. Sizes: 8'6-10'6.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Cavalier",
+          "image_url": "https://surfboardsbycade.com/cdn/shop/files/IMG_1224.heic?v=1771732994&width=1500",
+          "description": "Inspired by the longboard surfing of Billy Hamilton in the mid 60's, the Cavalier is my take on mid 60's longboard in California before nose rider designs were all the rage. the bottom has roll from nose to tail and semi pinched rails. For those looking for a new feeling on a longboard. Sizes: 9'2-10'6.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pig",
+          "image_url": "https://surfboardsbycade.com/cdn/shop/files/IMG_8795.heic?v=1771733131&width=1500",
+          "description": "Inspired by the original Velzy pig design, this board has wide, round, hips set back from center to increase maneuverability and a pulled in nose. Sizes: 9'2-10'6.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Nouveau",
+          "image_url": "https://surfboardsbycade.com/cdn/shop/files/IMG_9408_525af7b2-0668-402c-952c-7cf20a02733e.heic?v=1771733259&width=1500",
+          "description": "Directly inspired by Wayne Lynch's evolution board design, the Nouveau has an eggy outline with the wide point pushed back for maneuverability. the bottom has a subtle rolled entry that blends into a vee panel off the tail to add to the maneuverability. The design came from the godfather of vertical surfing and should be surfed with the same intention for maximum enjoyment. Sizes: 7'6-8'6.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Red Wing",
+          "image_url": "https://surfboardsbycade.com/cdn/shop/files/coreys_redwing_510.heic?v=1770396770&width=1500",
+          "description": "An 80's style flat deck twin fin with more of a modern bottom to aid performance. Can be made as a swallow tail, diamond tail, or squash tail. Sizes: 5'3-6'8.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fish",
+          "image_url": "https://surfboardsbycade.com/cdn/shop/files/IMG_0442.heic?v=1771733394&width=1500",
+          "description": "A classic San Diego style fish. Sizes: 4'10-6'8.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
