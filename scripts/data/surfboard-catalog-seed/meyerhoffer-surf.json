@@ -1,0 +1,46 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "meyerhoffer-surf",
+      "name": "Meyerhoffer Surf",
+      "website_url": "https://meyerhoffersurf.com/",
+      "location_label": "Montara, California",
+      "founder_name": "Thomas Meyerhoffer",
+      "lead_shaper_name": "Thomas Meyerhoffer",
+      "short_description": "Independent California surfboards by designer Thomas Meyerhoffer, based on the coast in Montara between San Francisco and Santa Cruz.",
+      "models": [
+        {
+          "name": "XYZ",
+          "image_url": "https://meyerhoffersurf.com/wp-content/uploads/2020/12/meyerhoffer-xyz-surfboard-1.jpg",
+          "description": "The third generation of the Meyerhoffer longboard, the XYZ is a high-performance surfboard that brings together the best of longboards and shortboards. Smooth noseriding as well as hard turns off the tail come easy on the XYZ.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Slip In",
+          "image_url": "https://meyerhoffersurf.com/wp-content/uploads/2020/12/meyerhoffer-slip-in.jpg",
+          "description": "The Slip In takes the classic single-fin design into the future with a radical tail design that deliver a dynamic performance. The innovative concave outline of the tail allows you to draw classic lines, stall in the barrel, or turn like a tri-fin – all with the superior speed of a single-fin.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Super Normal",
+          "image_url": "https://meyerhoffersurf.com/wp-content/uploads/2020/12/supernormal-surfboard.jpg",
+          "description": "Welcome to the Supernormal: your everyday shortboard. A favorite board for several of our ambassadors – it’s fun, it’s functional and about as traditional as Meyerhoffer’s designs get. Based on the popular Horsepill, the Supernormal is the result of careful tweaking with the target to create a board that performs better in more types of waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Tippin Point",
+          "image_url": "https://meyerhoffersurf.com/wp-content/uploads/2020/12/meyerhoffer-tippinpoint-surfboard-1.jpg",
+          "description": "When we were developing the third-generation Meyerhoffer longboard, the XYZ, we started to question how far the concept of creating a longboard with two distinct zones and a narrow waist could go. So we decided to develop a shape where we pushed every design aspect to the Tippin Point.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "White Ass",
+          "image_url": "https://meyerhoffersurf.com/wp-content/uploads/2020/12/whiteass-surfboard.jpg",
+          "description": "Retro future glide. The White Ass is a modern intepretation of a simmons hull where a slighly more performance oriented tail with a double concave spiral vee is carefully blended with the hull in the nose to get you a ride with more drive than on a traditional Simmons hull.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
