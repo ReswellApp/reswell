@@ -1,0 +1,96 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "jc-hawaii",
+      "name": "JC Hawaii",
+      "website_url": "http://www.jchawaii.com/",
+      "location_label": "North Shore, Oahu, Hawaii",
+      "founder_name": "John Carper",
+      "lead_shaper_name": "John Carper",
+      "short_description": "Independent North Shore, Oahu surfboards by shaper John “JC” Carper.",
+      "models": [
+        {
+          "name": "T-RD",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_trd.png",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "White Fang",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_whitefang.png",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Enabler",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_enabler.png"
+        },
+        {
+          "name": "SD-3",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_sd3.png"
+        },
+        {
+          "name": "PMM",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_pmm.png"
+        },
+        {
+          "name": "SM",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_sm.png"
+        },
+        {
+          "name": "MP-B",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_mpb.png"
+        },
+        {
+          "name": "T-RX",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_trx.png"
+        },
+        {
+          "name": "Flying Pig",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_flyingpig.png",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Sting Ray",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_stingray.png"
+        },
+        {
+          "name": "Equalizer",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_equalizer.png"
+        },
+        {
+          "name": "Flying Fish",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_flyingfish.png",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Semi-Gun",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_semigun.png",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "NX-1",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_nx1.png"
+        },
+        {
+          "name": "Sling Shot",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_slingshot.png",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Shadow",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_shadow.png"
+        },
+        {
+          "name": "Flo-Master",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_flomaster.png",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "PBU",
+          "image_url": "http://www.jchawaii.com/viewer/viewer_pbu.png",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
