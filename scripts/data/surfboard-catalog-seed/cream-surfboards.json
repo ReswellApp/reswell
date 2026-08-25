@@ -1,0 +1,108 @@
+{
+  "generated_for": "Cream Surfboards official named standup catalog",
+  "source": "https://creamsurfboards.com/pages/cream-surfboards-all-boards",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "cream-surfboards",
+      "name": "Cream Surfboards",
+      "website_url": "https://creamsurfboards.com/",
+      "location_label": "Lavallette, New Jersey",
+      "founder_name": "Tony G",
+      "lead_shaper_name": "Tony G",
+      "short_description": "Surfboards by Cream founder Tony G.",
+      "models": [
+        {
+          "name": "Fireball Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0265/4620/8834/files/Fireball_Twin2_480x480.png?v=1701870301",
+          "description": "Meet the Fireball Twin. This new model has speed lift and unsurpassed maneuverability. The rocker is perfect for a twin fin and the 18 inch vent channel bottom gives the board speed and lift which makes it the most lively twin fin you will ever ride. Available in all sizes and constructions the fireball twin will make for a summer fun. It's all performance with an 1/2 wing at 11inches for plenty of width reduction for hold and control. I like upright twin fins from futures for the model.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Honky Cat",
+          "image_url": "https://cdn.shopify.com/s/files/1/0265/4620/8834/files/honky_cat_front.png?v=1666358797",
+          "description": "The Cream Honky Cat is a spinoff of the Stingray, a classic 80s style bump round tail. Super clean outline with a beak nose that hides the extra volume we put into the plane shape. Lower nose rocker allows you to take off early and set up fast for your first turn. Lots of fun in small to medium surf with a five fin cluster so you may ride it many ways. Jamie loves it as a twin with trailer. Made mostly in poly with a five fin futures starting at $695.00.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Classic Twin Fin Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0265/4620/8834/files/IMG_0514.png?v=1634000533",
+          "description": "This Classic Twin Fin Fish is a blend of a classic ride with that of a board designed in today's world of fun and performance. Made in all sizes up to 6'4\" this fish is a lot of fun in small to medium surf. Offered with Future Finz Boxes so you can create whatever ride you're after, draw out the line with a retro set of Keels or head up the lip with some upright fins. It's up to you, have fun.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Quad Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0265/4620/8834/files/quadfishdarkblue_cf7a798e-4b84-45e1-a992-89cead2d685c.png?v=1634132512",
+          "description": "The Quad Fish is an outstanding fish design only offered in a 4 fin setup. A slight single into a mellow double concave makes the quad fish smooth out of each and every turn. The transition out of each turn is clean and fast. The quad fish is build with a high end eopxy with a biax deck with a carbon strips giving it a simple flex pattern that you will feel in weighting and unweighting your turns.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Rocket Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0265/4620/8834/files/IMG_0533.png?v=1634095977",
+          "description": "The Rocket Fish is a super cool 5-fin ready for small to medium surf. A pulled in nose allows easier duck diving and the turns to be harder. Made in poly this model works well in all kinds of surf. A very stable ride with an earlier take off make the Rocket Fish a fun summer shape. Ride the Rocket Fish as a twin, quad, or tri, take your pic and have fun.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Tyler Pod",
+          "image_url": "https://cdn.shopify.com/s/files/1/0265/4620/8834/files/typodgreen.png?v=1634175395",
+          "description": "The Cream Tyler Pod is the most high performance fish in the Cream line up. I have pulled in the tail so you can ride a much bigger wave than the Classic Fish. The Tyler Pod has lots of hidden volume and mostly made in high-end epoxy for extra float. There is a basalt carbon and biax glass in the layup giving it strength and flex. The board has a deep single concave into a deep double thru the fun cluster than out to the small swallow tail. The five fin option gives you lots of variety in the fin setup so you can have fun all summer long.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Wing Swallow Tail",
+          "image_url": "https://cdn.shopify.com/s/files/1/0265/4620/8834/files/wingSTlightblue.png?v=1634259286",
+          "description": "The Cream Wing Swallow is the most versatile short board in the Cream line up.. It is a true all-arounder. A bit fuller in the back third of the outline, the Cream Wing Swallow takes off early and turns smoothly. There is a slight single into double concave thru the fun cluster with a touch of exit rocker. This board works great in 2-6 foot surf. It has a performance nose so you can turn the board as hard as you like and duck diving is a breeze. The Cream Wing Swallow is a great model for all skill levels.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Go Squash",
+          "image_url": "https://cdn.shopify.com/s/files/1/0265/4620/8834/files/gosquashwatermelon.png?v=1634262501",
+          "description": "The Cream Go Squash is our performance short board. You can push this model hard off the bottom and head straight for the lip with ease. It has lots of hold and speed. A deep single concave throughout the bottom with some late tail flip in the rocket makes this board fly and change direction when your weight shifts.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Performance Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0265/4620/8834/files/6-1.png?v=1634343251",
+          "description": "The Cream Performance Fish is a great model for all your summer surfing needs. The model has a wider back third giving it a great glide into the take off and first turn. Super easy to ride and more stable than your average short board. The wing gives it more hold and more speed in slower summer surf. The bottom of the Cream Performance Fish has a slight single concave into a slight double around the fin cluster. This board is very smooth in and out of each turn and every turn. We made this model in high end epoxy with basalt and biax glass but can be ordered any way you like.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Round Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0265/4620/8834/files/IMG_0760.png?v=1634409224",
+          "description": "The Cream Round Pin is a pure step up in any size you choose. It has a very clean outline to hold you in while you're going extremely fast. A single concave delivers the speed you need along with a fast reaction time in and out of the bottom and top turns. The Round Pin will hold you in on those big wall sets as a tri fin but also available in epoxy and a five fin set.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Grom Swallow",
+          "image_url": "https://cdn.shopify.com/s/files/1/0265/4620/8834/files/IMG_0299.png?v=1634345719",
+          "description": "The Cream Grom Swallow Tail is a high performance board for little people. The Grom Swallow allows a young surfer to learn how to duck dive and be able to paddle out faster and much calmer. They are no longer getting knocked around on their beginner board. He or she will quickly learn to develop a rail game on the face of the wave. Having the swallow tail lets me put a bit more width in the tail area, giving the surfer more stability as they catch the wave and make that first turn.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Bump Squash",
+          "image_url": "https://cdn.shopify.com/s/files/1/0265/4620/8834/files/IMG_0762.png?v=1634414996",
+          "description": "The Cream Bump Squash is a high performance short board with a slight bump at 11 inches in the tail to create a pivot point for the board to make turns off of. It is very slight but quite effective as you will see when you ride one. This is a low volume short board for quick release in and out of fast moving turns and tail slides. The bottom has a moderate single concave in to a slight double thru the fin cluster and regular nose and tail rocker.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Stingray",
+          "image_url": "https://cdn.shopify.com/s/files/1/0265/4620/8834/files/image1_bab18a7f-5f5f-4125-ae0d-1b99da6c9bc3.png?v=1634414361",
+          "description": "The Cream Stingray is an 80s style five fin super cool fish. It sets up with a low wing and dove tail swallow. The deck is a bit flatter and the model has a beak nose which allows me to put more foam into the forward part of the outline for ease as you take off. There is a lot of hidden volume in this model. The bottom has a bigger double concave than most for lots of rail to rail turns in the flats. The board carries a lot of speed thru the flat sections of mushy waves. We make mostly in poly with five fin futures.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Big Guy Tri",
+          "image_url": "https://cdn.shopify.com/s/files/1/0265/4620/8834/files/BGT.png?v=1634597902",
+          "description": "The BGT is a full extension of the Go Squash. The BGT has much more volume and a fuller outline for a bigger person who knows how to make a solid bottom turn or someone who aspires to do one. A single concave throughout the bottom gives the BGT a solid gas pedal under the front foot for lots of speed and smooth turns.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mid Range 2 Plus 1",
+          "image_url": "https://cdn.shopify.com/s/files/1/0265/4620/8834/files/p-image1_14_6ef5b4cc-9d1d-4234-a721-feaf351af87b_480x480.jpg?v=1666558072",
+          "description": "The Cream Mid Range Plus 1 is a classic outline perfect for all kinds of wave types. Easy to ride and catch waves the mid range 2 plus 1 has a big double concave with plenty of exit vee to finish off the tail which allows fluid turns in and out of the pocket of the wave you are riding. The semi full nose with lower nose rocker gets you cruzin earlier than expected.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
