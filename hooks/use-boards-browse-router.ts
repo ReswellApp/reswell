@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import {
   boardsBrowseSearchParamsEqual,
   mutateBoardsBrowseSearchParams,
+  replaceBrowseSearchParams,
   type BoardsBrowseNavigateOptions,
 } from "@/lib/utils/boards-browse-navigate"
 
@@ -37,10 +38,9 @@ export function useBoardsBrowseRouter(options?: UseBoardsBrowseRouterOptions) {
       const current = new URLSearchParams((baseParams ?? searchParams).toString())
       const next = mutateBoardsBrowseSearchParams(current, mutate, navOptions)
       if (!next || boardsBrowseSearchParamsEqual(next, current)) return
-      const qs = next.toString()
       const run = () => {
         onNavigate?.(next)
-        router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false })
+        replaceBrowseSearchParams(router, pathname, next, navOptions)
       }
       if (transitionStart) transitionStart(run)
       else run()

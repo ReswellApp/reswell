@@ -46,6 +46,7 @@ import {
   ListingBuyerProtectionTrustRibbon,
   ListingProtectionTrustRibbon,
 } from "@/components/features/listings/listing-about-seller-section"
+import { ListingFulfillmentAccordionItem } from "@/components/features/listings/listing-fulfillment-accordion-item"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { getBrandById } from "@/lib/brands/server"
 import { sellerProfileHref } from "@/lib/seller-slug"
@@ -753,30 +754,15 @@ export async function SurfboardListingDetailPage({
                   </AccordionContent>
                 </AccordionItem>
 
-                <AccordionItem value="shipping" className="border-border/55">
-                  <AccordionTrigger className="py-4 text-[16px] font-medium text-foreground hover:no-underline">
-                    Shipping &amp; pickup
-                  </AccordionTrigger>
-                  <AccordionContent className="pb-6 pt-0">
-                    <div className="space-y-3 text-[16px] leading-[1.65] text-foreground">
-                      <p className="font-medium">
-                        {listingLocationLine ?? "Location not specified"}
-                      </p>
-                      <p>
-                        {pickupOffered && shippingOffered &&
-                          "Pickup near this area, or the seller can ship to you at checkout."}
-                        {pickupOffered && !shippingOffered &&
-                          "Local pickup only — meet the seller near this area to inspect the board."}
-                        {!pickupOffered &&
-                          shippingOffered &&
-                          "Shipped to you after checkout. Confirm your address with the seller in messages."}
-                      </p>
-                      {pickupOffered ? (
-                        <p>Inspect for cracks, dings, or delamination before you pay.</p>
-                      ) : null}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
+                <ListingFulfillmentAccordionItem
+                  pickupOffered={pickupOffered}
+                  shippingOffered={shippingOffered}
+                  locationLine={listingLocationLine}
+                  itemNoun="board"
+                  shippingCostMode={boardShippingCostMode}
+                  shippingFlatRate={shippingFlatRate}
+                  inspectBeforePay
+                />
 
                 {!isOwnListing && !isSold ? (
                   <AccordionItem value="contact" className="border-border/55">

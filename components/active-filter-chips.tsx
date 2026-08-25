@@ -4,6 +4,7 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { useTransition } from "react"
 import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { scrollPageToTop } from "@/lib/utils/scroll-page-to-top"
 
 interface ActiveFilterChipsProps {
   /** Base URL for the "Clear all" link (no query string). */
@@ -64,6 +65,7 @@ export function ActiveFilterChips({
     const qs = params.toString()
     startTransition(() => {
       router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false })
+      scrollPageToTop()
     })
   }
 

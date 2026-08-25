@@ -1,7 +1,7 @@
 import type { ComponentProps } from "react"
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import { Flag, Hourglass, Truck } from "lucide-react"
+import { Flag, Hourglass } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Accordion,
@@ -42,6 +42,7 @@ import {
   ListingBuyerProtectionTrustRibbon,
   ListingProtectionTrustRibbon,
 } from "@/components/features/listings/listing-about-seller-section"
+import { ListingFulfillmentAccordionItem } from "@/components/features/listings/listing-fulfillment-accordion-item"
 import { BRANDS_BASE } from "@/lib/brands/routes"
 import { getBrandById } from "@/lib/brands/server"
 import { sellerProfileHref } from "@/lib/seller-slug"
@@ -706,36 +707,14 @@ export async function FinsListingDetailPage({
                 </AccordionItem>
               ) : null}
 
-              <AccordionItem value="shipping" className="border-border/55">
-                <AccordionTrigger className="py-4 text-[16px] font-medium text-foreground hover:no-underline">
-                  Shipping &amp; pickup
-                </AccordionTrigger>
-                <AccordionContent className="pb-6 pt-0">
-                  <div className="space-y-3 text-[16px] leading-[1.65] text-foreground">
-                    <p className="font-medium">{listingLocationLine ?? "Location not specified"}</p>
-                    <p>
-                      {pickupOffered && shippingOffered &&
-                        "Pickup near this area, or the seller can ship to you at checkout."}
-                      {pickupOffered && !shippingOffered &&
-                        "Local pickup only — meet the seller near this area to inspect the fins."}
-                      {!pickupOffered && shippingOffered &&
-                        "Shipped to you after checkout. Confirm your address with the seller in messages."}
-                    </p>
-                    {shippingOffered ? (
-                      <p className="inline-flex items-center gap-1.5 text-muted-foreground">
-                        <Truck className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                        <span>
-                          {boardShippingCostMode === "free"
-                            ? "Free shipping"
-                            : shippingFlatRate > 0
-                              ? `Flat $${shippingFlatRate.toFixed(2)} shipping`
-                              : "Shipping calculated at checkout"}
-                        </span>
-                      </p>
-                    ) : null}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
+              <ListingFulfillmentAccordionItem
+                pickupOffered={pickupOffered}
+                shippingOffered={shippingOffered}
+                locationLine={listingLocationLine}
+                itemNoun="fins"
+                shippingCostMode={boardShippingCostMode}
+                shippingFlatRate={shippingFlatRate}
+              />
 
               {!isOwnListing && !isSold ? (
                 <AccordionItem value="contact" className="border-border/55">

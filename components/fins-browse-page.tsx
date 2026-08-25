@@ -4,6 +4,10 @@ import { ListingTileGridSkeleton } from "@/components/listing-tile-skeleton"
 import { CategoryBrowseBreadcrumbs } from "@/components/category-browse-breadcrumbs"
 import { createClient } from "@/lib/supabase/server"
 import { FinsBrowseClient } from "@/components/fins-browse-client"
+import {
+  CategoryTopShopsSection,
+  CategoryTopShopsSectionSkeleton,
+} from "@/components/features/browse/category-top-shops-section"
 import { BoardsNoResultsSaveSearch } from "@/components/boards-no-results-save-search"
 import { HomePeerListingScrollTile } from "@/components/features/home/home-peer-listing-scroll-tile"
 import { fetchFinsBrowsePage, FINS_BROWSE_PAGE_SIZE } from "@/lib/db/fin-listings"
@@ -167,6 +171,10 @@ export async function FinsBrowsePage(props: {
           </FinsBrowseClient>
         </div>
       </section>
+
+      <Suspense fallback={<CategoryTopShopsSectionSkeleton />}>
+        <CategoryTopShopsSection section="fins" />
+      </Suspense>
     </main>
   )
 }

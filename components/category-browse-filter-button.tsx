@@ -14,6 +14,7 @@ type Props = {
   desktopFiltersOpen?: boolean
   onToggleDesktopFilters?: () => void
   className?: string
+  buttonClassName?: string
 }
 
 /** Compact Filter control shared by category browse page headers. */
@@ -24,6 +25,7 @@ export function CategoryBrowseFilterButton({
   desktopFiltersOpen = false,
   onToggleDesktopFilters,
   className,
+  buttonClassName,
 }: Props) {
   const badge =
     activeFilterCount > 0 ? (
@@ -40,7 +42,10 @@ export function CategoryBrowseFilterButton({
       <Button
         type="button"
         variant="outline"
-        className="h-10 shrink-0 gap-2 rounded-full border-[#001A4A]/15 bg-white px-4 text-sm font-medium text-[#001A4A] shadow-none hover:bg-[#F9F9F2] md:hidden"
+        className={cn(
+          "h-10 shrink-0 gap-2 rounded-full border-[#001A4A]/15 bg-white px-4 text-sm font-medium text-[#001A4A] shadow-none hover:bg-[#F9F9F2] md:hidden",
+          buttonClassName,
+        )}
         onClick={() => {
           logBrowseButtonClick({ category, button: "filter", detail: "mobile" })
           onOpenMobileFilters()
@@ -60,7 +65,10 @@ export function CategoryBrowseFilterButton({
           logBrowseButtonClick({ category, button: "filter", detail: "desktop" })
           onToggleDesktopFilters?.()
         }}
-        className="hidden h-10 shrink-0 gap-2 rounded-full border-[#001A4A]/15 bg-white px-4 text-sm font-medium text-[#001A4A] shadow-none hover:bg-[#F9F9F2] md:inline-flex"
+        className={cn(
+          "hidden h-10 shrink-0 gap-2 rounded-full border-[#001A4A]/15 bg-white px-4 text-sm font-medium text-[#001A4A] shadow-none hover:bg-[#F9F9F2] md:inline-flex",
+          buttonClassName,
+        )}
       >
         <SlidersHorizontal className="h-4 w-4 stroke-[1.75]" aria-hidden="true" />
         Filter

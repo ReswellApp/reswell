@@ -48,6 +48,24 @@ function shippingStatusRow({
     return soldShipped ? { title: "This item was shipped", detail: null } : null
   }
   const from = locationLine ? `from ${locationLine}` : null
+  if (shippingOffered && pickupOffered) {
+    if (shippingCostMode === "free") {
+      return { title: "Free shipping or local pickup", detail: from }
+    }
+    if (shippingFlatRate > 0) {
+      return {
+        title: "Shipping or local pickup",
+        detail: [`+ $${shippingFlatRate.toFixed(2)} shipping`, from].filter(Boolean).join(" "),
+      }
+    }
+    if (shippingCostMode === "reswell") {
+      return {
+        title: "Shipping or local pickup",
+        detail: ["calculated at checkout", from].filter(Boolean).join(" "),
+      }
+    }
+    return { title: "Shipping or local pickup", detail: from }
+  }
   if (shippingOffered && shippingCostMode === "free") {
     return { title: "Free Shipping", detail: from }
   }

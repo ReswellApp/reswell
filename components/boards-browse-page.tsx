@@ -10,6 +10,10 @@ import { BoardsBrowseAdminCurator } from "@/components/boards-browse-admin-curat
 import { getCachedRequestSession } from "@/lib/auth/cached-request-session"
 import { createAnonSupabaseClient } from "@/lib/supabase/anon"
 import { BoardsBrowseClient } from "@/components/boards-browse-client"
+import {
+  CategoryTopShopsSection,
+  CategoryTopShopsSectionSkeleton,
+} from "@/components/features/browse/category-top-shops-section"
 import { BoardsNoResultsSaveSearch } from "@/components/boards-no-results-save-search"
 import { boardSavedSearchCriteriaFromFilters } from "@/lib/utils/board-saved-search-criteria"
 import { BoardsBrowseJsonLd } from "@/components/features/marketplace/boards-browse-json-ld"
@@ -882,6 +886,10 @@ export async function BoardsBrowsePage(props: {
           </Suspense>
         </div>
       </section>
+
+      <Suspense fallback={<CategoryTopShopsSectionSkeleton />}>
+        <CategoryTopShopsSection section="surfboards" />
+      </Suspense>
     </main>
   )
 }

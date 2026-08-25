@@ -1,6 +1,7 @@
 "use client"
 
-import { type ReactNode, Suspense, useMemo, useState, useTransition } from "react"
+import { type ReactNode, Suspense, useMemo, useRef, useState, useTransition } from "react"
+import type { StaticImageData } from "next/image"
 import { Check, Truck, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -9,9 +10,14 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { CategoryBrowsePageHeader } from "@/components/category-browse-page-header"
 import { CategoryBrowseFilterButton } from "@/components/category-browse-filter-button"
+import {
+  BrowseFiltersHoverBar,
+  browseFiltersHoverBarClearanceClassName,
+} from "@/components/features/browse/browse-filters-hover-bar"
 import { BoardsBrowseFacetControls } from "@/components/boards-browse-facet-controls"
 import { useBoardsFilterState } from "@/components/boards-browse-filter-state"
 import { BoardsSaveSearchPanel } from "@/components/boards-save-search-panel"
+import { ListYourSurfboardSellCta } from "@/components/features/marketing/list-your-surfboard-sell-cta"
 import { facetOptionLabel, FACET_PARAM_KEYS } from "@/lib/boards-browse-facets"
 import { logBrowseButtonClick } from "@/lib/log-browse-button-click"
 import { cn } from "@/lib/utils"
@@ -29,14 +35,57 @@ type BoardsBrowseClientProps = {
   headerAction?: ReactNode
   /** Wave photo behind the title. Defaults on when `title` is set. */
   atmosphere?: boolean
-  /** Hide the location facet (city landing pages lock location). */
-  hideLocation?: boolean
-  /** Hide the header Ship to me toggle (city landing pages are pickup-first). */
-  hideShipToMe?: boolean
+  /** Overrides the default boards atmosphere photo (e.g. city landings). */
+  atmosphereImage?: StaticImageData | string
+  atmosphereImageClassName?: string
+  /** Rendered between the page header and the filter/results row. */
+  afterHeader?: ReactNode
   showSaveSearch?: boolean
+  /** Mobile hover-bar sell CTA — city landings only. */
+  showHoverBarListBoard?: boolean
 }
 
 type ActiveChip = { id: string; label: string; onRemove: () => void }
+
+function BoardsShipToMeButton({
+  pressed,
+  onToggle,
+  className,
+  label,
+}: {
+  pressed: boolean
+  onToggle: () => void
+  className?: string
+  label: ReactNode
+}) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      aria-pressed={pressed}
+      aria-label={
+        pressed
+          ? "Showing boards that ship — click to clear"
+          : "Show only boards that ship to you"
+      }
+      onClick={onToggle}
+      className={cn(
+        "shrink-0 gap-2 rounded-full text-sm font-semibold shadow-none transition-colors",
+        pressed
+          ? "border-transparent bg-[#001A4A] text-white hover:bg-[#001A4A]/90"
+          : "border-[#001A4A]/20 bg-[#E8EEF8] text-[#001A4A] hover:border-[#001A4A]/35 hover:bg-[#DCE6F5]",
+        className,
+      )}
+    >
+      {pressed ? (
+        <Check className="h-4 w-4 shrink-0 stroke-[2.25]" aria-hidden="true" />
+      ) : (
+        <Truck className="h-4 w-4 shrink-0 stroke-[1.75]" aria-hidden="true" />
+      )}
+      {label}
+    </Button>
+  )
+}
 
 export function BoardsBrowseClient({
   children,
@@ -45,13 +94,16 @@ export function BoardsBrowseClient({
   description,
   headerAction,
   atmosphere,
-  hideLocation = false,
-  hideShipToMe = false,
+  atmosphereImage,
+  atmosphereImageClassName,
+  afterHeader,
   showSaveSearch = true,
+  showHoverBarListBoard = false,
 }: BoardsBrowseClientProps) {
   const [isPending, startTransition] = useTransition()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [desktopFiltersOpen, setDesktopFiltersOpen] = useState(false)
+  const dropoffSentinelRef = useRef<HTMLDivElement>(null)
   const state = useBoardsFilterState(startTransition)
 
   const chips = useMemo<ActiveChip[]>(() => {
@@ -126,47 +178,30 @@ export function BoardsBrowseClient({
         title={title}
         description={description}
         atmosphereImage={
-          title && atmosphere !== false ? boardsBrowseAtmosphere : undefined
+          atmosphereImage ??
+          (title && atmosphere !== false ? boardsBrowseAtmosphere : undefined)
         }
         // Wave/barrel sits mid-frame — bias down from the sky-heavy top crop.
-        atmosphereImageClassName="object-[38%_72%] md:object-[40%_60%]"
+        atmosphereImageClassName={
+          atmosphereImageClassName ?? "object-[38%_72%] md:object-[40%_60%]"
+        }
         action={
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="hidden flex-wrap items-center gap-2 md:flex">
             {headerAction}
-            {hideShipToMe ? null : (
-              <Button
-                type="button"
-                variant="outline"
-                aria-pressed={state.shippingAvailable}
-                aria-label={
-                  state.shippingAvailable
-                    ? "Showing boards that ship — click to clear"
-                    : "Show only boards that ship to you"
-                }
-                onClick={() => {
-                  const next = !state.shippingAvailable
-                  logBrowseButtonClick({
-                    category: "boards",
-                    button: "ship_to_me",
-                    detail: next ? "enabled" : "disabled",
-                  })
-                  state.setShippingAvailable(next)
-                }}
-                className={cn(
-                  "h-10 shrink-0 gap-2 rounded-full px-4 text-sm font-semibold shadow-none transition-colors",
-                  state.shippingAvailable
-                    ? "border-transparent bg-[#001A4A] text-white hover:bg-[#001A4A]/90"
-                    : "border-[#001A4A]/20 bg-[#E8EEF8] text-[#001A4A] hover:border-[#001A4A]/35 hover:bg-[#DCE6F5]",
-                )}
-              >
-                {state.shippingAvailable ? (
-                  <Check className="h-4 w-4 stroke-[2.25]" aria-hidden="true" />
-                ) : (
-                  <Truck className="h-4 w-4 stroke-[1.75]" aria-hidden="true" />
-                )}
-                Ship to me
-              </Button>
-            )}
+            <BoardsShipToMeButton
+              pressed={state.shippingAvailable}
+              onToggle={() => {
+                const next = !state.shippingAvailable
+                logBrowseButtonClick({
+                  category: "boards",
+                  button: "ship_to_me",
+                  detail: next ? "enabled" : "disabled",
+                })
+                state.setShippingAvailable(next)
+              }}
+              className="h-10 px-4"
+              label="Ship to me"
+            />
             <CategoryBrowseFilterButton
               category="boards"
               activeFilterCount={state.activeCount}
@@ -178,7 +213,15 @@ export function BoardsBrowseClient({
         }
       />
 
-      <div className="mt-5 flex w-full min-w-0 gap-6">
+      {afterHeader}
+
+      <div
+        className={cn(
+          "flex w-full min-w-0 gap-6",
+          afterHeader ? "mt-0" : "mt-5",
+          browseFiltersHoverBarClearanceClassName,
+        )}
+      >
         {/* Desktop: collapsible left sidebar (toggled by the toolbar Filters button) */}
         <aside className={cn("hidden w-[260px] shrink-0", desktopFiltersOpen && "md:block")}>
           <div className="sticky top-4">
@@ -207,7 +250,6 @@ export function BoardsBrowseClient({
               state={state}
               counts={counts}
               locationListboxId="boards-location-sidebar"
-              hideLocation={hideLocation}
             />
             {showSaveSearch ? (
               <>
@@ -253,9 +295,49 @@ export function BoardsBrowseClient({
             aria-busy={isPending}
           >
             {children}
+            <div ref={dropoffSentinelRef} className="h-px w-full" aria-hidden />
           </div>
         </div>
       </div>
+
+      <BrowseFiltersHoverBar
+        hidden={mobileOpen}
+        label="Browse filters"
+        dropoffSentinel={dropoffSentinelRef}
+      >
+        <BoardsShipToMeButton
+          pressed={state.shippingAvailable}
+          onToggle={() => {
+            const next = !state.shippingAvailable
+            logBrowseButtonClick({
+              category: "boards",
+              button: "ship_to_me",
+              detail: next ? "enabled" : "disabled",
+            })
+            state.setShippingAvailable(next)
+          }}
+          className="h-11 min-w-0 flex-1 gap-1.5 px-2.5 sm:flex-none sm:px-4"
+          label={<span className="truncate">Ship</span>}
+        />
+        <CategoryBrowseFilterButton
+          category="boards"
+          activeFilterCount={state.activeCount}
+          onOpenMobileFilters={() => setMobileOpen(true)}
+          desktopFiltersOpen={desktopFiltersOpen}
+          onToggleDesktopFilters={() => setDesktopFiltersOpen((open) => !open)}
+          className="min-w-0 flex-1 sm:flex-none"
+          buttonClassName="h-11 w-full font-semibold px-2.5 sm:px-4"
+        />
+        {showHoverBarListBoard ? (
+          <ListYourSurfboardSellCta
+            showArrow={false}
+            size="sm"
+            className="h-11 min-w-0 flex-[1.35] rounded-full px-2.5 text-sm font-semibold sm:flex-none sm:px-4"
+          >
+            <span className="truncate">List your board</span>
+          </ListYourSurfboardSellCta>
+        ) : null}
+      </BrowseFiltersHoverBar>
 
       {/* Mobile: full-screen filter drawer */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -309,7 +391,6 @@ export function BoardsBrowseClient({
                 state={state}
                 counts={counts}
                 locationListboxId="boards-location-drawer"
-                hideLocation={hideLocation}
               />
               {showSaveSearch ? (
                 <>

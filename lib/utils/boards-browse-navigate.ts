@@ -1,5 +1,11 @@
+import { scrollPageToTop } from "@/lib/utils/scroll-page-to-top"
+
 /** Query keys that only affect pagination — changing them must not reset `page`. */
 export const BOARDS_BROWSE_PAGE_PARAM = "page"
+
+type BrowseRouterReplace = {
+  replace: (href: string, options?: { scroll?: boolean }) => void
+}
 
 export type BoardsBrowseNavigateOptions = {
   /**
@@ -34,6 +40,24 @@ export function mutateBoardsBrowseSearchParams(
   }
 
   return params
+}
+
+/**
+ * Replace the browse query string without Next.js default scroll restoration.
+ * Filter changes (`resetPage` default) jump to page 1 and the top of the page.
+ * Pagination (`resetPage: false`) leaves scroll to the pagination hook.
+ */
+export function replaceBrowseSearchParams(
+  router: BrowseRouterReplace,
+  pathname: string,
+  next: URLSearchParams,
+  navOptions?: BoardsBrowseNavigateOptions,
+): void {
+  const qs = next.toString()
+  router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false })
+  if (navOptions?.resetPage !== false) {
+    scrollPageToTop()
+  }
 }
 
 export function boardsBrowseSearchParamsEqual(a: URLSearchParams, b: URLSearchParams): boolean {
