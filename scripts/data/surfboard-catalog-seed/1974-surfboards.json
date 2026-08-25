@@ -1,0 +1,156 @@
+{
+  "generated_for": "1974 Surfboards official model catalog",
+  "source": "https://1974surfboards.com",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "1974-surfboards",
+      "name": "1974 Surfboards",
+      "website_url": "https://1974surfboards.com",
+      "location_label": "Rio de Janeiro, Brazil",
+      "founder_name": "Guilherme Vilas Boas",
+      "lead_shaper_name": "Guilherme Vilas Boas",
+      "short_description": "Rio de Janeiro surfboard shaper Guilherme Vilas Boas, making custom retro and modern performance boards, fishes, twins, single fins, mid-lengths, and longboards.",
+      "models": [
+        {
+          "name": "The Slicer",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2018/06/The-Slicer-Squash-1974Surfboards-9.jpg",
+          "description": "Our most performance model, it's ideal for hollow and powerful waves. The Slicer has a clean and distributed outline, with accentuated bottom rocker in the nose and tail for steep approaches, and a narrower tail for agility and immediate response at speed.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Overall",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2018/06/Overall-Squash-2024-1974Surfboard-4.jpg",
+          "description": "Based on The Slicer, developed to be more all-around and versatile. The outline is a bit rounder and filled, with less bottom rocker and more width in the tail and between the fins, which helps generate speed in flatter sections while remaining responsive in performance waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Sweetspot",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2018/06/Sweetspot-Squash-tail-1974-surfboards-10-1.jpg",
+          "description": "High-performance outline that is more filled and rounded, especially in the nose, with slightly reduced entry rocker for better paddling. Centralized volume and a wide point slightly forward offer comfort and stability in smaller and intermediate waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Slingshot",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2022/08/Slingshot-1974-surfboards-3.jpg",
+          "description": "High-performance shortboard that works in a wide range of wave conditions. Generates speed and projection quickly by moving the volume center, wide point, and thickness back from mid-board and widening the tail, putting more volume under the surfer's stance.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Speeed!",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2020/05/Speed-1974-surfboards-7.jpg",
+          "description": "Wider through the middle than the other 1974 shortboards, without an overly wide nose or tail. Balanced volume, easy paddling, and a slightly wider waist from midpoint to tail for lift and drive. Best in small to medium waves; not recommended for very fast or hollow conditions.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "UFO",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2026/05/UFO-1974Surfboards.jpg",
+          "description": "A performance model for small to medium waves. Rounded outline with good paddling and stability, accentuated tail rocker, medium nose rocker, and a single concave that turns into a double between the fins with a slight vee at the end.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Thumbs Up",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2018/07/Thumbs-UP-1974-Surfboards-6.jpg",
+          "description": "High-performance summer model for full and/or small waves. Wider outline reduces catching a rail in fat waves. Recommended 3 to 5 inches shorter than a high-performance board.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Modern Fish",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2018/06/Modern-Fish-1974Surfboards-6.jpg",
+          "description": "Inspired by the round-nose fish of the '90s. Wider, stable fish feel with increased tail rocker for maneuverability and less nose rocker for paddling. Works in small to medium waves from fat walls to steeper faces.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "'80s Twin",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2026/03/80s-Twin-1974-Surfboards-2026.jpg",
+          "description": "High-performance twin inspired by Mark Richards and Ben Aipa, with an outline that closely resembles a modern shortboard. Volume is concentrated from the middle to the tail for drive, with more pronounced nose and tail rocker for steep waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Duo Diamond",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2026/05/duo-diamond-2026.jpg",
+          "description": "High-performance twin fin with a balanced outline and volume distribution. Comfortable to paddle and catch waves without giving up vertical, modern surfing. Larger fins sit under the back foot for projection and a slingshot effect.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Butter Biscuit",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2019/06/butter-biscuit-twin-stabilizer-1974surfboards-5.jpg",
+          "description": "An adaptation of the '80s Twin for medium-sized waves. Fuller outline and wider nose for softer waves and easier paddling — a modern high-performance twin-fin fish.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Duo Diamond Mid Length",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2019/08/DDML-1974-2026.jpg",
+          "description": "Twin-fin mid-length adaptation of the Duo Diamond. Outline stays close to the original, with adjusted rocker and a less pronounced concave. Pronounced rocker and a narrower outline give fast rail-to-rail response; single-fin and thruster options are also offered.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Spearfish",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2019/08/Spearfish-midlength-1974-surfboards-11.jpg",
+          "description": "Mid-length fish adapted from the Curvalicious. Tail is narrower than a traditional retro fish from being stretched, but still has more tail area than the other 1974 mid-lengths. Loose and versatile in soft or weak waves while keeping fish stability.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Space Cruiser",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2019/08/Space-Cruiser-2026.jpg",
+          "description": "Single-fin mid-length adapted from the Pipe Driver with more nose and tail area and a balanced volume profile. More nose area for paddling. Classic late-'60s lines with a modern touch; a down-the-line board for open arcs.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Alternative",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2018/06/THE-ALTERNATIVE-2026.jpg",
+          "description": "Mid-length with a filled outline and lower rocker that is stable to surf and catch waves. For someone who wants longboard glide in a size that is easier to carry. Quad/single fin system adds variety.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Stream",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2018/06/Prancha-surfe-Monoquilha-Quadriquilha-Stream-1974-Surfboards-2.jpg",
+          "description": "Shortboard created for stable, comfortable surfing at smaller sizes, with extra nose area and low entry rocker for easy paddling. Ride it as a single fin for a mellow feel, or add the quad for a more modern, responsive setup.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Pipe Driver",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2018/06/Pipe-Driver-1974-Surfboards-3.jpg",
+          "description": "Inspired by the single fins Montgomery \"Buttons\" Kaluhiokalani rode in the '70s. Slightly narrower tail and nose with balanced volume for agile pocket surfing on a single fin. A down-the-line board for open, classic arcs.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Curvalicious",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2018/06/Curvalicious-high-performance-1974-Surfboards-2026.jpg",
+          "description": "Retro fish for full or weaker waves, with down-the-line drive from keel fins and enough agility to turn. Fuller outline with the wide point slightly above center; the tail narrows more than the Classic Twin. A modern take on a traditional twin-fin fish.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Classic Twin",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2018/06/Classic-Twin-1974-Surfboards-12.jpg",
+          "description": "Classic twin-fin fish inspired by the original Steve Lis outline from the early '70s, with glass-on keel as an option. Forward wide point and wider swallow tail for drive, speed, and bigger down-the-line arcs.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Quad Fever",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2018/06/Quad-Fever-1974-Surfboards-7.jpg",
+          "description": "Retro quad-fin fish. More agile than a keel-fin twin because the fins have less surface area. Volume is shifted back versus the Classic Twin, with a reduced nose, a narrower winged tail, and more flotation under the stance.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "California",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2018/06/california-2026-1974-surfboards-1.jpg",
+          "description": "Classic longboard outline that stays stable while keeping a good nose area and a narrower tail for direction changes. Agile enough to cross-step and noseride. Recommended bigger than 9'4\" for an authentic logging experience.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Noserider",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2018/06/noserider-2026.jpg",
+          "description": "Classic noserider with more volume, area, and a deeper single concave in the nose for hang-fives and hang-tens. Softer rails than the other 1974 longboards for floatation and stability.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Piggy Glider",
+          "image_url": "https://1974surfboards.com/wp-content/uploads/2018/06/piggy-glider-2026-1974-surfboards-1.jpg",
+          "description": "Longboard with the wide point further back and more area near the tail for lift, forward projection, and maneuverability. Narrower nose helps grab the face on steeper days. A more pivoty log for steeper waves.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
