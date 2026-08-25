@@ -1,0 +1,110 @@
+{
+  "generated_for": "Campbell Brothers official named Bonzer model catalog",
+  "source": "https://www.bonzer5.com/allboard",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "campbell-brothers",
+      "name": "Campbell Brothers",
+      "website_url": "https://www.bonzer5.com/allboard",
+      "location_label": "Oxnard, California",
+      "founder_name": "Malcolm Campbell",
+      "lead_shaper_name": "Malcolm Campbell",
+      "short_description": "Independent Oxnard shapers who invented the Bonzer. Official named standup catalog on bonzer5.com.",
+      "models": [
+        {
+          "name": "Russ Short",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/b3b54e14-d3d2-4b9f-b549-60709084c3cf/RShort1.jpeg",
+          "description": "This was our most popular Bonzer shape during the mid to late 70's. Russ Short, Duncan, Cliff Collinge and I all rode slight variations of this template during the time. This model was pushed to the limit in all types of waves and proved to be a very versatile high performance surfboard. The Russ Short model is used mostly with the 3 fin set up, but can incorporate the 5 fin system as well. The Russ Short model works well as a diamond, round or swallow tail. Recommended size 6'2\" x 14 1/2\" x 19 3/4\" 14\" to 7'2\" x 21 1/2\". Thickness is determined by weight of the rider.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Egg",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/1695185162593-VDOCGQR9C0J3B7WSTD5H/egg.jpeg",
+          "description": "The Bonzer egg has evolved from the eggs of the early 70's. They combine the best attributes of past, present and future. We make a wide range of them using mostly the 5 fin set up. They will work in many types of waves. Bonzer eggs utilize round, diamond and squash tails. Recommended size 5'10\" x 19 3/4\" x 2 3/8\" to 8'0\" x 22 1/2\" x 3\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Speed Egg",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/db3a6071-2188-4cfe-8eef-77146e135b79/SpEgg.jpeg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Alpha Omega",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/82e786be-c36b-4ac0-8e09-1e08fcffd38b/AO1-1.jpeg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Wi-5",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/214d9723-4b30-4174-a810-8f1640f2af24/wi-5-void.jpeg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MBLV",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/86dde146-848c-4695-84d8-c101e7ad3582/MBLV.jpeg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Egg Light",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/77458c66-f351-4486-8ba6-94ca62475bed/eggLT-void1a.jpg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mini Merk",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/0b9cca67-f17c-46a1-83ce-38e8f747c215/MMerk2.jpeg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Russ Shortboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/193c7f6b-3b87-42d0-b1c7-92d42cc2266a/RShortboard+void3b.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Bumblebee",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/54a81b5a-377c-4643-ae3c-808b726b1959/bumblebee2-768x1024.jpeg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mini Bonzer 5",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/7cf75b79-342a-4d99-a00f-1992b4d8ab03/Mini-B5.jpeg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Octafish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/7dc0ff4d-b794-44d3-89d0-fb29e7fb8cf3/octa2.jpeg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mod Bees",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/99c47450-96d2-458c-86b6-29d42b1f4a6d/Mod+BB+-+void2.jpg",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Pod",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/e5462fc4-3278-4568-8258-b7bf9e76bf05/pod1.jpeg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Shelter",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/6e579cb8-e15b-4b30-bb7e-340fa920ac5e/contemporary3.jpeg",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Longboard",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/c4e56436-739a-4009-a052-d5242f4d6bc1/longboard2a-668x1024.jpeg",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Guns",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/6e734929-ebd7-45b4-9124-af140853d4dd/guns-681x1024.jpeg",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Missing Links",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e632ccf089f49629fef5692/84c0ec1b-2a83-4103-b2ed-4b9ea5d254b8/missing-links.jpeg",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
