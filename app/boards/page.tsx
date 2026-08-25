@@ -1,11 +1,10 @@
 import type { Metadata } from "next"
 import { BoardsBrowsePage } from "@/components/boards-browse-page"
-import { BOARDS_BROWSE_REVALIDATE_SECONDS } from "@/lib/cache/boards-browse-catalog"
 import type { BoardsBrowseSearchParams } from "@/lib/marketplace-slug-metadata"
 import { metadataForBoardsBrowse } from "@/lib/seo/metadata-for-boards-browse"
 
-/** ISR for `/boards` — keep in sync with `BOARDS_BROWSE_REVALIDATE_SECONDS`. */
-export const revalidate = BOARDS_BROWSE_REVALIDATE_SECONDS
+/** ISR for `/boards` — keep in sync with `BOARDS_BROWSE_REVALIDATE_SECONDS` (3600). */
+export const revalidate = 3600
 
 function flattenSearchParams(
   sp: Record<string, string | string[] | undefined>,
