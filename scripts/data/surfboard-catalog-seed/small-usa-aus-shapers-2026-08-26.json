@@ -1,0 +1,388 @@
+{
+  "generated_for": "reswell surfboards catalog",
+  "purpose": "Daily growth of small USA and Australia surfboard-maker brands",
+  "generated_on": "2026-08-26",
+  "product_category_slug": "surfboards",
+  "integrity": {
+    "first_party_only": true,
+    "surfboard_models_only": true,
+    "require_image_name_description_logo": true
+  },
+  "brands": [
+    {
+      "slug": "ryan-sakal-surfboards",
+      "name": "Ryan Sakal Surfboards",
+      "website_url": "https://www.ryansakalsurfboards.com",
+      "location_label": "Costa Mesa / Oceanside, California",
+      "founder_name": "Ryan Sakal",
+      "lead_shaper_name": "Ryan Sakal",
+      "short_description": "Custom shortboards, fishes, mid-lengths, and twins from Ryan Sakal — shaped in North County San Diego with roots in the Sakal family shaping room.",
+      "logo_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1579734785940-08SPORWHJP9QONKP3FWH/text-logo.png",
+      "models": [
+        {
+          "name": "Bandit",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1585002222179-YGOXZALCG69VQEHNURUK/bandit.png",
+          "description": "A fun alternative to a standard shortboard. With its lower entry rocker, fuller outline mixed with a performance shortboard rail the Bandit is a smooth and flowing easy to ride and easy to catch plenty of waves. This board has Ryan Sakal’s VCV bottom, slight vee in the nose , single concave under the front foot, vee with double concave out the tail. Ridden 2”-6” shorter than a standard shortboard. 5’2” - 19” - 2 1/4” - 23.9L 5’4” - 19 1/8” - 2 5/16” - 25.0L 5’6” - 19 1/4” - 2 3/8” - 28.9L 5’8” - 19 3/4” - 2 7/16” - 29.5L 5’10” - 20” - 2 1/2” - 31.6L 6’0” - 20 1/4” - 2 5/8” - 34.5L 6’2” - 20 1/2” - 2 11/16” - 36.7L 6’4” - 20 5/8” - 2 11/16” - 38.3L 6’6” - 20 3/4” - 2 3/4” - 40.2L"
+        },
+        {
+          "name": "Broseph",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1586881911469-1MS5HRVK5T2UVP8RAYJ9/Broseph-2-Deck-1-Sized+copy.jpg",
+          "description": "The Broseph is another dependable board in the lineup that goes great on an average day at your local beach or point break and is ready to go on the days with more hollow conditions and you need a board that fits well in the pocket. With this board you can just grab and go but you know if its barreling you’re still good to go. It’s loose and snappy yet has plenty of drive. A fuller forward outline for stability and added forward volume for paddling yet its nimble and goes right where you want it to go. Foiled and refined rails for hold and still has plenty of volume for great paddling and wave catching. Typical Dimensions: 5’4” - 18 1/4” - 2 1/4” - 23.18 L"
+        },
+        {
+          "name": "Cavalry",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1585170203237-RI0YY1XMMEWZ5V7YEFBC/Cavalry-Deck-1-Sized.jpg",
+          "description": "The Cavalry is a traditional longboard with the balance of performance surfing and nose riding in mind. With plenty of flip in the tail rocker to allow for quick response when turning off the tail while still providing plenty of drive. Low nose rocker keeps this board planing well as you transition from turns and walking to the tip for some time on the nose. A deep nose concave helps to feel stabilized once you’re up on the nose and the slightly rolled forgiving bottom helps lean you over for turns. This is a great all around longboard for beginner to pro level surfers. Typical Dimensions: 9’0” - 22 1/4” - 2 5/8” 9’2” - 22 1/2” - 2 11/16” 9’4” - 22 5/8” - 2 3/4” 9’6” -22 3/4” - 2 13/16”…"
+        },
+        {
+          "name": "Chief",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1586889689733-MNKCLXZGWBFRKRUNHGCY/chief%402x.png",
+          "description": "The Chief stands proud as our step up model. Made for bigger waves at home or for that surf trip somewhere to waves of consequence the Chief will get you in the right spot early and with confidence."
+        },
+        {
+          "name": "Convoy",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1585002323190-O9SVTBM953OOTXP5U9HR/convoy.png",
+          "description": "The Convoy is a very versatile design. The original Convoy comes as a traditional single fin with low entry rocker, the wide point slightly pulled forward, a tri plane vee bottom , down rail’s and beaked nose. This board is a fun trip back to the style of the 60’s and 70’s and if a fun board in almost any condition. The original Convoy works as a perfect platform for most fin configuration so it can be ordered as a thruster, quad, or Bonzer as well as it’s original single fin . Pictured here is with the Campbell Brothers Alpha Omega bottom and fin configuration. Pin tails and rounded diamond tails are available upon request as well. 5’6” - 19 1/8” - 2 3/8”- 27.6L 5’8” - 19 1/4” - 2 3/8” -…"
+        },
+        {
+          "name": "Five O'Clock Shadow",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1586877140281-SM7TC9LJXEF5BHPN8XZW/5-oclock-Deck-1-Sized.jpg",
+          "description": "The Five O’clock Shadow is a high performance shortboard that shines in waist high sloppy beach break to clean head high point or reef breaks. With it’s low entry and exit rocker this board has a lot of drive creating speed in softer waves for high performance maneuvers and skating over flat sections with ease. It utilizes a smooth continuous outline and refined and foiled rails keeping it responsive. Being one of the most versatile board in our line up the Five O’clock Shadow makes the board bag on any trip or rides in your car daily. Order this board your height or 1 to 2 inches shorter than your standard shortboard. Typical Dimensions: 5’4” - 18 1/4” - 2 3/16”- 22.02 L"
+        },
+        {
+          "name": "Golden Bear",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1586890024345-X7GI32QF6UUWBEUOW3AN/golden-bear%402x.png",
+          "description": "The Golden Bear is our traditional longboard model. Cruise with your toes on the nose and enjoy the ride. This board catches waves really easy and it can be made for the experienced nose rider as well as a first timer."
+        },
+        {
+          "name": "Haulin Oats",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1586889476298-MMD4BIIBD0HD7OISTEY0/haulin-oats.png",
+          "description": "This board was conceived during a long flat spell after weeks of cruising on a long board and everything else in-between I had the thought to make a board that could be surfed in small waves the way you’d surf a head high wave. The key was finding a way to harness speed and build a board that fits the curve of small waves. Thinking outside the box on rocker, outline, and especially the bottom contours everything was designed to harness speed and allow you to use it as efficiently as possible. The bottom on the Haulin Oats is very unique and something I have never seen from any other shaper. Something I’m calling Flat Panel Concave. FPC concave is flat across on each side of the stringer.…"
+        },
+        {
+          "name": "HB Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1586890134590-2KD5XY3EFOY07HE1J72A/hb-fish%402x.png",
+          "description": "Like with the SD Fish Ryan wanted to pay respect to the original shapers ,designers and surfers who first imagined, tested, and proved the original Fish design by staying true to as many of the features that make that board a proven classic yet adjust its for performance for multiple conditions. The H.B. Fish keeps all of the original elements such as the classic fish outline, low foiled rails, and keel twin fin but the bottom is changed. Ryan took out the extreme deep single concave going out the tail and replaced it with spiral vee. Which is a slight vee with double concave running through the vee on each side of the stringer. Where the original SD Fish shines in fast down the line point…"
+        },
+        {
+          "name": "Howler Twinzer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/75d95dc8-359c-4f3d-b453-ed441185ab0d/Howlzer-deck-side.jpg",
+          "description": "A great everyday board. Works great in good point breaks, good beach breaks and will shine on average days at your local spot. The main focus is the fin setup, the Twinzer. The configuration is an upright twin with a smaller Canard fin placed in front. Not a quad! The small Canard directs water flow onto the upright twin making the water flow efficient. The feeling is added drive and ease of transition to a twin fin setup if youve yet to try one. The rocker is unique as it is not quite a standard short board rocker and not quite a fish rocker. Low entry in the nose with efficient flip and low exit rocker out of the tail and a significant tail flip for pop off of the tail. The outline was…"
+        },
+        {
+          "name": "Little Wing",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1586889897026-OQO4YRY6OUDW03R6C1IA/little-wing%402x.png",
+          "description": "The Little Wing is a single fin all about styling out and flowing turns. Catching waves is easy on this model and the board turns on a dime. Not shy of a good time The Little Wing makes surfing fun and effortless with style."
+        },
+        {
+          "name": "Rambler",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1583984221492-BL6VMS9XN8LHQJPU5537/rambler.png",
+          "description": "A modern take on the vintage Rocket Fish design. Built for speed and drive this board is a go-to in smaller softer waves yet still handles up to over head high waves. Features include low entry rocker with plenty of kick in the nose.The bottom has a deep single concave under the front foot blending into slight vee out of the tail. The tail has 2 channels which add drive. Think of them as a gas pedal on a surfboard, instant speed. Multiple fin set up’s available. Twin fin, Tri fin, Quad fin, or 5 fin for Tri/Quad option. Typical Dimensions: 5’4” - 18 1/2” - 2 3/16” - 23.3L 5’6” - 19” - 2 1/4” - 25.4L 5’8” - 19 1/2” - 2 5/16” - 27.7L 5’10” - 20 - 2 3/8” - 30.1L 6’0” - 20 1/2” - 2 7/16” -…"
+        },
+        {
+          "name": "Ranger",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/9cbf73b4-6f5a-4fc3-b2e2-fe7287185174/Ranger-2-2.jpg",
+          "description": "A fish with lots of modern elements. Made for performance surfing in mind yet staying a bit fishy. The Ranger has a full traditional fish nose outline mixed with a double wing to pull in the tail outline helping the board hold in at higher speed and thrust. The bottom contours on the Ranger has a deep single concave focused under the front foot flowing out of the tail into a vee with double concave inside. Recommended fin set up 5 fin to allow 3 or 4 fin.Does not come stock with double stringer as shown but is optional. Typical Dimensions: 5’2” - 19” - 2 1/4” - 23.9L 5’4” - 19 1/8” - 2 5/16” - 25.0L 5’6” - 19 1/4” - 2 3/8” - 28.9L 5’8” - 19 3/4” - 2 7/16” - 29.5L 5’10” - 20” - 2 1/2” -…"
+        },
+        {
+          "name": "Sabre",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/a4e68005-3d9d-4765-8412-96a8de3db887/Sabre-3.jpg",
+          "description": "Not your average egg. Built to perform as well as glide and flow. The outline with lots of curve and a wing pin tail pulling in the last third of the board for hold and flow through turns. Another board that uses Ryan’s VCV bottom, slight vee in the nose, single concave under the front foot mid section, into vee out the tail. The Sabre also has 4 deep channels for speed and drive off of your back foot, think of them as a gas pedal on a surfboard. All of this flows through large twin keel fins and a thinner foiled tail. Typical Dimensions: 5’10” - 20 1/4” - 2 3/8” - 31.6L 6’0” - 20 3/8” - 2 7/16 - 33.6L 6’2” - 20 1/2” - 2 1/2” - 35.6L 6’4” - 20 5/8” - 2 5/8” - 37.1L 6’6” - 20 3/4” - 2 5/8”…"
+        },
+        {
+          "name": "Scout",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1599846261622-TSOC7BMXY49ZE8VN9MRS/IMG_6616.jpg",
+          "description": "The Scout is an adventurous blend of yesterday’s outline with today’s performance. Made to be a fun board in waist high to overhead waves that has an alternative feel with the luxuries of performance from modern bottom contours and rocker. Low entry rocker with some hidden volume from the sleek beak nose helps this board ease into waves. The bottom contour makes this model maneuverable in the pocket and helps transition from rail to rail and skip over flat sections with ease. With 4 deep channels exiting the tail you’ve got instant speed and hold off your back foot when you need it. Multiple fin options available Twin, Tri, Quad, and five fin option for Tri/Quad option. Order this model 3…"
+        },
+        {
+          "name": "SD Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1585184563633-9G468OEALD7FFAVFAWOA/sd-fish.png",
+          "description": "The SD (San Diego) Fish. With the evolution of this design and the many variations and attempts to modernize it over the years since its inception Ryan wanted to pay respect to the original shapers ,designers and surfers who first imagined it. Guys like Steve Lis and Skip Frye who proved the original design on a small stretch of the San Diego coastline. By making his version as close to the original his goal is to spread the original message of the design as best as he can. The SD Fish is a proven design in so many conditions. Thought of as a small wave board by so many but under the feet of a highly skilled surfer this board and its design has shined in some of the best waves in the…"
+        },
+        {
+          "name": "Sith",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1585002574761-S8JJYJP9X1K3ONI06OWC/sith%402x.png",
+          "description": "The most progressive design in our high performance line up. There is a lot more going on than it appears with this board. The bottom contours are something I haven’t seen from any other shaper. Something I’m calling Flat Panel Concave. The concave is flat across each side of the stringer instead of slightly convex. Imagine a flat panel vee bottom but inverted to create concave. What this does is allow water to flow across the bottom of the board with less friction than a standard convex concave giving the feeling of glide while still holding. The FPC concave is deepest just above the back foot area and transitions into a slight vee just under the back fin with double concave inside the…"
+        },
+        {
+          "name": "Soapbox Derby",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/17ce8816-f3a9-4651-8756-31f49c5f20f2/Soapbox-2-2.jpg",
+          "description": "No need to drive around looking for the best sloppy wave the Soap Box Derby does all the driving. This model is designed from a mix of modern designs and old school theories. Old school flow and modern aggression makes surfing the Soap Box Derby a fun and unique experience. This design lets you put the pedal to the metal and stay controlled due to its bottom contour and tapered rails. Foiled tail helps it turn through maneuvers. Available with several tail options to customize for your surfing and wave conditions."
+        },
+        {
+          "name": "Sting",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1585001938946-3BVPQ6NEZSNI34PD6PFO/sting.png",
+          "description": "This board came about as a collaboration with Ryan Sakal and Chris Christenson. As an entry into the Vissla Cosmic Creek Surf Contest where Chris selected Ryan to be his surfer for the event both Chris and Ryan combined ideas to shape then both ride this board in the event. The board is a modern take on the Ben Aipa Sting with a few extras. Medium/low entry rocker flows into a slight vee with double concave exiting out the tail. The wing has a slight flute for added bite and hold. This board is a fun and surprisingly loose traditional single fin. Fun in any conditions but shines in head high open face waves. Typical Dimensions: 5’6” - 19 1/8” - 2 3/8” - 27.6L 5’8” - 19 1/4” - 2 3/8” -…"
+        },
+        {
+          "name": "Weapon of Choice",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1586889592382-00Q91D70QECHY0W07H2Z/weapon-of-choice%402x.png",
+          "description": "The Weapon of Choice is a new high performance short board design made to perform at it’s best on the days your local spot is really doing its thing or for that surf trip you have planned to that perfect point or reef break. This board holds it’s speed and carves like a weapon and also has plenty of pop when sections call for it to go to the air or release the fins. The rocker is a smooth medium entry rocker with plenty of flip in the last few inches of the nose to keep you out of trouble on late drops and recovering from critical maneuvers. The tail rocker has smooth continuous curve with a medium release out of the tail. The bottom contour has a single concave running from the nose all…"
+        },
+        {
+          "name": "Wounded Gull",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e0fe08c27c1675a2a71fdb5/1586889778079-PQHWYLTVAJL396CXICW1/wounded-gull%402x.png",
+          "description": "The Wounded Gull is a modern take on the twin fin’s of the 70’s and a bit of a tribute to Mr Wounded Gull himself Mark Richards. Our main focus was to make a board that had the smooth glide and flow of a traditional keel fin fish and the more high performance abilities of the MR style twin. The result is a fun board to ride in waves from knee high to overhead that has lots of speed and drive while is still easy to put on a rail and carves like a knife. The bottom contour and rails on this board are quite unique using a version of the tri plane hull bottom which gives it a smooth and forgiving feel. The rails are slight down rails and are foiled thin through the tail to help the rails and…"
+        }
+      ]
+    },
+    {
+      "slug": "natures-shapes",
+      "name": "Natures Shapes",
+      "website_url": "https://naturesshapes.com",
+      "location_label": "Sayville, Long Island, New York",
+      "founder_name": "Mike Becker",
+      "lead_shaper_name": "Mike Becker",
+      "short_description": "Long Island surfboards shaped and glassed by Mike Becker since 1993 — shortboards, fishes, mid-lengths, and logs built for East Coast beach breaks.",
+      "logo_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1592241348398-1QWIJELH1FKIUAZR37M7/natures-shapes-logo-straight.png",
+      "models": [
+        {
+          "name": "All Rounder",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591844763985-69QCRT4CCYDAS1RZF8QL/board_allrounder.png",
+          "description": "The All Rounder was designed to be a basic all-around shortboard for medium to overhead surf. This board features a performance shortboard outline with a fuller, thicker rail and foil. This extra volume helps with float and wave-catching ability, while the deep single- to double-concaves keep this shape nimble and fast."
+        },
+        {
+          "name": "C-Dog",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591845248873-MWVXSIE998JZIIJQBZZD/board_c-dog.png",
+          "description": "The C-Dog is a 70’s single-fin inspired shape. For this board, we kept a classic outline with modern changes to rails, rocker, and bottom contours. The C-Dog is a fun alternative that will glide in a wide variety of conditions."
+        },
+        {
+          "name": "Disket",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591845183217-8KEQ4BWQ92T90QAVMS3Z/board_discuit.png",
+          "description": "The Disket is an excellent small to medium wave board. This model should be ridden 4 to 6 inches smaller than your standard shortboard. Round nose and full, thick boxy rails add a great amount of float and wave catching ability. The shorter and rounder outline makes this shape extremely pivotal and easy to turn in the weakest of conditions. Smooth rail-to-rail transitions in small and/or mushy surf."
+        },
+        {
+          "name": "Ditch Digger",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591876841148-Z9O5Z9A58UAXPK5SL7MN/board_ditchdigger.png",
+          "description": "The Ditch Digger is a super wide, thick, wave catching machine. This model is designed for the larger surfer or average longboarder that wants to keep up with the SUPers. Unlike the NR2, this is not a heavy log-style board. It’s lightweight, featuring EPS construction with modern rocker and rails. These combinations along with a wide, hippy outline make the Ditch Digger an extremely maneuverable wave catching machine."
+        },
+        {
+          "name": "Go Kart",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591844928327-H8ECKQ6S28GY5M2AXOLJ/board_gokart.png",
+          "description": "The Go Kart was designed to be an alternative small wave board. The front half of the outline is similar to a round nose fish while the tail pulls in to a bump squash. The thickness is under the chest and foiled out to a relatively thin tail. All these combinations work together to make a wave catching machine that turns on a dime like a go kart."
+        },
+        {
+          "name": "Hipster",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591845224022-15HXLB089F549BN1AAKZ/board_hipster.png",
+          "description": "The Hipster is a fat, wide, stubby shape. This model comes standard with a single- to double-concave bottom with vee out the tail. It’s designed to be ridden at least 6 inches smaller than your standard shortboard. The Hipster is fast and responsive in small and weak surf, making it a great alternative to riding a longboard."
+        },
+        {
+          "name": "HP Mini",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591845272957-UKLRCYIQJVIKS2UO1Y2U/board_hp-mini.png",
+          "description": "The HP Mini is a great all around egg shape for small to medium size surf. Taken from the HP1 template, it’s basically a longboard that has been scaled down. The full outline makes it easy to catch waves, while the “hippy” tail shape and double barrel concave bottom allow it to maneuver like a shorter board. This shape also makes a great single-fin."
+        },
+        {
+          "name": "HP1",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591845329014-34189ER2DW3GDWY8F0YV/board_hp1.png",
+          "description": "The HP1 is our claim to fame. Ridden by professional longboarder Toby Smith (2007 Unsound Pro longboard champion) and NS shaper Mike Becker, the HP1 is our best all around performance longboard. Most longboards are designed for either performance or nose riding—the HP1 does both. In order to achieve this, we have been modifying the shape in increments of 1/8th of an inch since 1997. For the surfer that wants a longboard that maneuvers like a shortboard but still noserides, this is the shape for you. The double barrel performance bottom with a hippy outline and drawn in tail makes for an extremely pivotal shape while the nose concave creates lift for maximum tip time."
+        },
+        {
+          "name": "HP2",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591876473070-UI1CZR7669WY4B2G3084/board_hp2.png",
+          "description": "The HP2 was designed by our team riders to perfect the modern high performance longboard. The HP2 will ride the nose longer with more glide and inertia than the HP1. With added volume, this model is better in smaller surf, allowing more glide and float for the beginner surfer."
+        },
+        {
+          "name": "Hybrid",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591845049966-760SMUN54OEBR8SECWYC/board_hybrid.png",
+          "description": "The Hybrid was developed in 1998. Most of the intermediate surfers who ride larger shortboards can never find a board in the rack to fit them. It's either too narrow or too wide or it's just a simple funshape. The hybrid is designed to be the happy medium between a funshape and a shortboard. It has the volume and float of a funshape but the maneuverability of a shortboard. Mostly used as a larger surfers shortboard or a step down board from an egg or longboard shape. This model has a single to double barrel performance bottom contour along with either a round pin, squash or diamond tail shape. This is a very versatile shape that works well in small to large surf."
+        },
+        {
+          "name": "K72 Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591845106481-H144MPN4LDFI1D6A3L2G/board_k72.png",
+          "description": "The K72 Fish has a traditional fish outline—a combination of early 70’s fish templates. The retro shape with modern rails and a rolled v-bottom make for an extremely fast down-the-line board. The K72 works best in small to medium size surf. This model is available with a quad fin system using either Futures or LokBox fins. Glass or wood twin keel fins available upon request."
+        },
+        {
+          "name": "NR1",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591876594606-N3ZCER8L7RWEOWCOG7QP/board_nr1.png",
+          "description": "The NR1 is a classic combination of Hanson 50/50 and Bing templates and has become our best performing nose rider. If you are looking for a classic all around longboard this is the model for you. The combination of a wider outline, 50/50 rails, concave nose, and rolled v-bottom allows the NR1 to trim and nose ride without a step out of place."
+        },
+        {
+          "name": "NR2",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591876782564-YZ7FKBXL04FFDTC34ESU/board_nr2.png",
+          "description": "The NR2 is wider, thicker, and heavier than our NR1. It has a deep nose concave flowing into a rolled v-bottom and boxy 50/50 rails. The NR2 is heavily glassed, including extra knee and fin patches for reinforcement."
+        },
+        {
+          "name": "Q82 Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591845078642-PA0Z3L4TBUEYQ0J19L71/board_q82.png",
+          "description": "The Q82 Fish is one of our best selling models. This board combines a retro fish nose and mid section with the double bump tail shape of a modern rocket fish. A double concave between the quad fins runs into a slight v off of the tail corners. This overall shape gives the surfer the ability to surf in a variety of conditions. Unlike a twin keel fish, this board will allow for full roundhouse cutbacks and tighter turns in the pocket. From small weak surf to larger more powerful surf, the Q82 is extremely fast and versatile."
+        },
+        {
+          "name": "Snapper",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591844854087-U9AC1UPY372U5VE60EB1/board_snapper.png",
+          "description": "The Snapper is our newest fish added to the line up. Designed to be more of a rocket fish than a traditional fish, the Snapper has a slightly pulled in nose and tail. The change in outline, combined with subtle rocker and concave alterations makes for an extremely fast and responsive shape."
+        },
+        {
+          "name": "Stub Diamond",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5e1a25bcf86f5812d23bfc4e/1591844901645-POC60395UMUOFVZ96K6T/board_stubdiamond.png",
+          "description": "The Stub Diamond is a blend of a round-nose fish nose and a modern diamond tail. The fuller nose allows for quicker wave entry and more speed though the flat sections. The diamond tail shortens the rail line of the board allowing it to pivot and turn like a shorter board. The bottom contours consist of a single to double barrel concave with 2 channels off the diamond tail. Although the concaves are standard, the channels are a newly added feature. Channels allow for more drive and less slide off the end of the tail. The Stub Diamond should be ridden 2–4 inches shorter and about 1–1.5 inches wider than your standard shortboard. Available in 3, 4, or 5-fin combos."
+        }
+      ]
+    },
+    {
+      "slug": "zak-surfboards",
+      "name": "Zak Surfboards",
+      "website_url": "https://zaksurfboards.com.au",
+      "location_label": "Melbourne, Victoria, Australia",
+      "founder_name": null,
+      "lead_shaper_name": "Doug Rogers",
+      "short_description": "Victorian-made shortboards, twins, mid-lengths, and retro shapes from Zak Surfboards in Melbourne — own-label models shaped and finished locally.",
+      "logo_url": "https://melbournesurfboardshop.com.au/cdn/shop/files/Zak_Surfboards_-_Melbourne_Surfboard_Shop_640x640_cbe51534-bb9d-434d-a7f1-b33ead47f304.jpg",
+      "models": [
+        {
+          "name": "Bomber",
+          "image_url": "https://cdn.shopify.com/s/files/1/0318/4063/2891/products/zak-covid-killer-53-x-21-14-x-2-716-286l-fcsii-surfboards-zak-surfboards-160578.jpg",
+          "description": "Zak Surfboards - Bomber 5'3\" x 21 1/4\" x 2 7/16\" 28.6L FCSII Short wide and built for speed. This little bullet will have you flying over fat sections and throwing down turns on even the smallest, mush waves. A HP small wave machine."
+        },
+        {
+          "name": "Bumchin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0318/4063/2891/files/7564682E-0E25-467E-A6FE-E2D5000DC097.jpg",
+          "description": "Zak Bumchin Zak's latest take on a performance fish design has just landed in store... \"The Bumchin\" This model has a full outline with a single flyer behind the fins. This break in the outline gives you extra pivot through turns and drive off your front foot. The Bumchin has a fairly flat rocker with a single to double concave bottom with a touch of vee off the tail."
+        },
+        {
+          "name": "Con Leche Mid-length",
+          "image_url": "https://cdn.shopify.com/s/files/1/0318/4063/2891/products/zak-con-leche-mid-length-surfboards-zak-surfboards-367817.jpg",
+          "description": "Melbourne Surfboard Shop note: A smooth Zak mid-length for glide, paddle power and drawn-out turns. It is a strong option for surfers wanting more flow than a shortboard without moving to a full longboard. Zak Con Leche Mid-length. The Con Leche is all about glide and trim. Featuring a ultra smooth moderate rocker from nose to tail, coupled with beautifully tuned rail you can enjoy all the benefits of a larger board without feeling like your on a tank when you go to turn it. It has a fairly neutral bottom with a very subtle single concave through the middle of the board transitioning to a vee through the fins and off the tail. All of these come with a stronger than standard glass job."
+        },
+        {
+          "name": "Covid Killer - Round Tail",
+          "image_url": "https://cdn.shopify.com/s/files/1/0318/4063/2891/files/Photoroom-20240516_113430_672x672-Photoroom_5.jpg",
+          "description": "Melbourne Surfboard Shop note: A fuller Zak round-tail board for surfers wanting paddle power, hold and smoother lines in everyday waves. It suits riders who want more forgiveness than a narrow performance shortboard. Zak - Covid Killer - Round Tail While there is no such thing as a one board quiver, the Covid Killer round tail comes pretty close. The Covid Killer was born of boredom during the extended lockdown experienced during 2020 and out of it has come a board for the everyday surfer which can run in anything from 2 foot slop to proper 6 foot bombs. The rocker line is entirely new and provides enough curve for precision surfing in good quality conditions but not so much that it slows…"
+        },
+        {
+          "name": "Dicko SINN TWINN Rounded Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0318/4063/2891/files/E1A986EC-26FC-4E05-862C-A2EF21A434D5.jpg",
+          "description": "Zak Surfboards X Dicko SINN TWINN Rounded Pin Introducing the SINN TWINN, the ultimate fusion of performance and versatility for the modern surfer. Designed to deliver the thrill of a twin fin with the power and control needed to handle everything from small, playful waves to demanding double overhead barrels, the SINN stands out as an exceptional all-rounder. The bottom shape features a single concave transitioning into a set of channels through the tail. These channels are moderately deep to provide crucial drive and control, allowing you to execute clean turns and explosive manoeuvres with ease. Perfectly paired with an upright twin fin setup that strikes the ideal balance between…"
+        },
+        {
+          "name": "Dicko SINN TWINN Swallow",
+          "image_url": "https://cdn.shopify.com/s/files/1/0318/4063/2891/files/E14C8C18-8F29-4C0B-8128-3971096389C6.jpg",
+          "description": "Zak Surfboards X Dicko SINN TWINN Swallow Introducing the SINN TWINN, the ultimate fusion of performance and versatility for the modern surfer. Designed to deliver the thrill of a twin fin with the power and control needed to handle everything from small, playful waves to demanding double overhead barrels, the SINN stands out as an exceptional all-rounder. The bottom shape features a single concave transitioning into a set of channels through the tail. These channels are moderately deep to provide crucial drive and control, allowing you to execute clean turns and explosive manoeuvres with ease. Perfectly paired with an upright twin fin setup that strikes the ideal balance between drive,…"
+        },
+        {
+          "name": "Doug Rogers Double Flyer",
+          "image_url": "https://cdn.shopify.com/s/files/1/0318/4063/2891/files/zak-x-doug-rogers-double-flyer-surfboards-zak-surfboards-610-x-21-12-x-3-futures-894919.png",
+          "description": "Several times a year we get Doug Rogers to whip up a few hand-shapes for our racks & these double flyer swallow tails are the latest batch. A shape that is generous on the volume but doesn't skimp on performance. Built to be surfed as an allrounder for local conditions - this shape has a fuller foil up front with a classic beaked nose for paddle power and glide . The shape then thins out considerably through the back 3rd into a nice sharp refined tail for bite, responsiveness and manoeuvrability. The flyers allow the outline to be straighter in front of them - making this one speedy shape down the line, off the front foot. The flyers break this straight line and act a pivot points, helping…"
+        },
+        {
+          "name": "Doug Rogers Hybrid Short",
+          "image_url": "https://cdn.shopify.com/s/files/1/0318/4063/2891/files/Photoroom-20240516_113430_672x672-Photoroom.jpg",
+          "description": "Zak Surfboards X Doug Rogers Hybrid Short The Hybrid Short is a new hybrid shortboard from Torquay shaper Doug Rogers. Great for bigger guys or surfers who appreciate some extra paddle and stability without compromising on your ability to throw the board around. The hybrid shortboard features a relatively low rocker, plenty of foam under your chest and boxy rails. It also has a subtle single concave into pronounced vee, allowing easy rail to rail transitions. Excels in conditions from 2 to 5 feet, beachies, reefs or points."
+        },
+        {
+          "name": "Doug Rogers Twin Mid",
+          "image_url": "https://cdn.shopify.com/s/files/1/0318/4063/2891/files/zak-x-doug-rogers-twin-mid-surfboards-zak-surfboards-610-x-21-14-x-2-1516-futures-539673.png",
+          "description": "A brand new model by one of our favourite Torquay shapers, Doug Rogers. This board will give you all the fun and speed of a twin fin, blended perfectly with the paddle power and glide of a mid-length. There is plentiful volume under your chest for paddling and plenty of foam in the boxy rail for stability. The boxy rails are mitigated by a generous amount of vee through the back half of the board, allowing it to roll from rail to rail with ease. This is mixed with a low to medium rocker line so you will always have speed and glide over flatter sections. This board will love lined up walls and will handle most waves from 2 to 6 feet."
+        },
+        {
+          "name": "Hull",
+          "image_url": "https://cdn.shopify.com/s/files/1/0318/4063/2891/products/zak-hull-zak-surfboards-62-x-22-x-2-1316-fcsii-21-olive-567380.jpg",
+          "description": "Zak Hull We would like to introduce the new Zak Hull design hot off the press locally made here in Victoria. With inspiration being pulled from traditional ideologies of an original Kenny Reimers Hull shaped board. Zak has fused his modern knowledge of foam with these elements and created a great all-rounder for a smooth, down the line style of surfing. The wide point of the board has been nudged as far forward as possible to create an easy entry into the wave with all the paddle power you would ever need. The rocker sits at a low to medium level to traverse you through those flat sections with speed and glide. The bottom of the board is probably the most abstract part of the design with a…"
+        },
+        {
+          "name": "Pain Relief",
+          "image_url": "https://cdn.shopify.com/s/files/1/0318/4063/2891/files/zak-pain-relief-surfboards-zak-surfboards-389007.jpg",
+          "description": "Zak - Pain Relief The Pain Relief is a new small wave fun board derived from a retro fish/quad that has been in the Zak Surfboards quiver for a while, the tail has been pulled into a tight swallow and some fullness removed from the nose to give the board some 'modern' manoeuvrability by getting a curvier outline while keeping the rocker flat so you can go fast...real fast! Run it as a thruster on the beachies and as a quad when you want the speed to get around - or over - sections on the points. Keep it between 2 and 5 inches shorter than your regular shortboard and ride it up a touch in volume. Those slow, mushy, powerless waves will never been painful again. Warning: the Pain Relief can…"
+        },
+        {
+          "name": "Ringmaster",
+          "image_url": "https://cdn.shopify.com/s/files/1/0318/4063/2891/files/zak-ringmaster-surfboards-zak-surfboards-257067.jpg",
+          "description": "Melbourne Surfboard Shop note: A user-friendly Zak fish/alternative shape for surfers chasing glide, speed and easy flow in everyday waves. Check the fin setup and volume against your current board before buying. Zak Ringmaster The Zak Ringmaster really ticks a lot of boxes for a lot of our customers and as a result it has been one of our bestselling models since its introduction to our range. It is Zak's take on a hybrid style fish, containing all the paddle power you will need, packed into a sporty shape that you can maneuver easily. The Zak Ringmaster has a flat deck and boxy rails, ensuring an exceptionally forgiving and stable ride. The combination of a pulled in swallow tail and…"
+        },
+        {
+          "name": "The Coffin Lid Diamond Tail",
+          "image_url": "https://cdn.shopify.com/s/files/1/0318/4063/2891/products/zak-coffin-lid-diamond-tail-surfboards-zak-surfboards-64-x-21-x-2-78-4439l-futures-378224.jpg",
+          "description": "The Coffin Lid Diamond Tail - Zak's idea was to create a bigger, performance fish shape with maximum volume with minimal impact on performance. Basically a model that would allow people to ride a smaller board that was easier to throw around and manoeuvre - but still provide them the extra foam they need. Utilising a distinct flat deck that rapidly tapers down to a slimmer, performance rail - this model packs in the foam while retaining the sensitivity and bite of a much smaller board. The rocker is a fairly standard medium curve and the bottom is a single to double concave (subtly tweaked but really not too dissimilar to other shortboards we have in the range). Zak has put plenty of edge…"
+        },
+        {
+          "name": "The Mullet",
+          "image_url": "https://cdn.shopify.com/s/files/1/0318/4063/2891/files/5A06F8D0-F04F-4A7E-BD31-49A2609485A0.jpg",
+          "description": "Zak Surfboards The Mullet The latest incarnation of Zak's classic fish design. An oldschool Keel Fish outline with a more modern rail and bottom contour. Super fast, quick through turns and easy to paddle. This board generates speed where others struggle to float. Grab one of these and it's sure to keep you amped to surf, no matter how lacklustre the conditions. Like All Zak models this board is 100% made in Victoria, glassed with a more robust glass job than standard for extra strength (6+4oz deck & 6oz bottom)"
+        },
+        {
+          "name": "The Slopper",
+          "image_url": "https://cdn.shopify.com/s/files/1/0318/4063/2891/files/9b54e813-0c99-4628-8d5a-79f68e4e8e77_002.jpg",
+          "description": "Zak Surfboards The Slopper Introducing our latest addition to the ever-evolving Zak Surfboards range: The Slopper . This board is designed for high-performance surfing during the upcoming marginal summer months. From November through March, we often experience weaker easterly wind swells. This board is ideal for maintaining speed, power, and flow during these conditions. With a dynamic combination of a forward wide point and an ultra-thin, wide squash tail, this design enables easy speed generation from the back foot and allows you to push the board as hard as you like with the responsive tail. The forward wide point also enhances paddling ease into waves. We recommend riding it an inch or…"
+        },
+        {
+          "name": "The VHS",
+          "image_url": "https://cdn.shopify.com/s/files/1/0318/4063/2891/files/rn-image_picker_lib_temp_e7d47ffe-9fb2-4296-8913-3ff16658eb8f.jpg",
+          "description": "Zak Surfboards 'The VHS' Salt, sun, the sounds of synth pop, watching The Lost Boys at the local drive-in and an entire Summer spent at the beach trying hard to impress the local girls (usually to no avail). Zak is bringing a bit of 80s nostalgia back with 'The VHS' - our take on the 80s thruster. 'The VHS' has a medium rocker throughout, a pulled-down, semi-sharp boxy 80s rail, a beak nose with foam in all the right places, a double concave beginning under your front foot for smooth rail-to-rail transitions and the obligatory flyer to break the rail line allowing for tighter directional changes. Just like your favourite videotape sliding into a video recorder, 'The VHS' will slide…"
+        },
+        {
+          "name": "Trolley Pusher",
+          "image_url": "https://cdn.shopify.com/s/files/1/0318/4063/2891/files/Photoroom-20240516_113430_672x672-Photoroom_2.jpg",
+          "description": "Zak Surfboards - Trolley Pusher The new all-round high performance shortboard for everyday conditions from Zak Surfboards. The rocker is designed to provide both speed as well as enough curve for the most radical or turns. There is late lift in the nose to avoid catching in steeper sections, while the rocker remains relatively low through the middle of the board and extended rocker through the tail for responsiveness. The Trolley Pusher also possesses a generous single concave for lift and acceleration finished with a subtle double through the back half of the board for easy and rapid rail-to-rail transitions. The Trolley Pusher is the perfect blend of high performance fun whether its…"
+        },
+        {
+          "name": "Twinkie 2.0",
+          "image_url": "https://cdn.shopify.com/s/files/1/0318/4063/2891/files/Photoroom-20240516_113430_672x672-Photoroom_4.jpg",
+          "description": "Zak Twinkie 2.0 The Twinkie 2.0 has landed. A brand spanking new addition to our range, this is an easy surfing, performance fish shape. Specially designed to help you get jiggy in small to medium sized waves. With it's flatter entry rocker & wider tail block, this board has no problems generating speed in even the mushiest con. The full beaked nose means that plenty of thickness of up front - so it really paddles like a demon too. Through the back end there is a nice refined rail and a generous amount of tail rocker. This curve and bite through the tail ensures a quick response to direction and a tight turning circle. So you can throw down carves on even the smallest wave faces. The…"
+        }
+      ]
+    },
+    {
+      "slug": "z-shapes",
+      "name": "Z Shapes",
+      "website_url": "https://zshapes.com.au",
+      "location_label": "Dunsborough, Western Australia",
+      "founder_name": "Zak Ogram",
+      "lead_shaper_name": "Zak Ogram",
+      "short_description": "High-performance shortboards, fishes, mids, and guns from Zak Ogram in Dunsborough — shaped for Margaret River and South West reef waves.",
+      "logo_url": "https://zshapes.com.au/wp-content/uploads/2022/11/Z-SHAPES-LOGO_Pinline-110mm-2.png",
+      "models": [
+        {
+          "name": "Asset",
+          "image_url": "https://zshapes.com.au/wp-content/uploads/2022/11/asset.png",
+          "description": "Designed as a higher volume shortboard that’s a great paddler and easy to ride no matter your skill level. Forgiving glide into waves, flows through open face turns and can handle some size. Mellow rocker, foam under the chest with outline curve around the front foot pulling into a round tail."
+        },
+        {
+          "name": "Denzel",
+          "image_url": "https://zshapes.com.au/wp-content/uploads/2022/11/denzel.png",
+          "description": "Designed for when the waves are pumping and you want to unleash. Comfortable in the barrel, turns tight in the pocket and plenty of speed to go to the air. Even, curvy rocker with refined foil and outline."
+        },
+        {
+          "name": "Denzel Step Up",
+          "image_url": "https://zshapes.com.au/wp-content/uploads/2022/11/denzel-stepup.png",
+          "description": "All the same features as the Denzel but geared up to perform in bigger waves. Comfortable in the barrel, turns tight in the pocket and plenty of speed to go to the air. Even, curvy rocker with refined foil and outline."
+        },
+        {
+          "name": "GR Grom",
+          "image_url": "https://zshapes.com.au/wp-content/uploads/2022/11/gr-grom.png",
+          "description": "Designed to make surfing a whole lot of fun in the early years. Easy to catch plenty of waves and start flowing into turns. Mellow rocker with a fuller, forgiving outline."
+        },
+        {
+          "name": "Gun",
+          "image_url": "https://zshapes.com.au/wp-content/uploads/2022/11/gun.png",
+          "description": "Designed to handle the power of the open water reef breaks here in the South West. Chase down (or dodge) the sets, get a clean glide in with control and lay on rail when you want. Fuller up front, Sleeked out tail in both outline and foil."
+        },
+        {
+          "name": "Kinetic",
+          "image_url": "https://zshapes.com.au/wp-content/uploads/2023/01/Screen-Shot-2023-01-17-at-10.31.25-am.png",
+          "description": "Designed to add serious spark to those smaller days. Quick and easy speed, fly’s over flat sections and can be jammed in the face, pocket and lip without skipping out. Low rocker, foam under chest with refined tail, wing + swallow tail for bite."
+        },
+        {
+          "name": "Mid",
+          "image_url": "https://zshapes.com.au/wp-content/uploads/2022/11/mid.png",
+          "description": "Designed for everyone to enjoy, a wave catching machine with surprising performance. Cruise the point breaks, a lazy session at Yallingup or catch your very first waves. Full mid style outline with generous volume throughout."
+        },
+        {
+          "name": "Nectar",
+          "image_url": "https://zshapes.com.au/wp-content/uploads/2022/11/nectar.png",
+          "description": "Designed with every bit of my 15 years’ experience as a go-to shortboard you can rely on every day. Right in the sweet spot of speed and manoeuvrability, leave it in the car and ride it everywhere. Medium rocker with some lift out the tail, balanced performance foil and outline."
+        },
+        {
+          "name": "Oishii Fish",
+          "image_url": "https://zshapes.com.au/wp-content/uploads/2022/11/oishii.png",
+          "description": "Designed for pure fun, relax and enjoy the ride. Fly down the line and swoop through turns on flatter faced or smaller waves. Refined fish outline with low rocker, fuller flat deck for volume and a deep swallow tail quad fin combo."
+        }
+      ]
+    }
+  ],
+  "rejected": [],
+  "summary": {
+    "brand_count": 4,
+    "model_count": 64,
+    "image_count": 64,
+    "logo_count": 4
+  }
+}
