@@ -1,0 +1,172 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "surf-prescriptions",
+      "name": "Surf Prescriptions",
+      "website_url": "https://surfprescriptions.com/",
+      "location_label": "Huntington Beach, California",
+      "founder_name": "Jeff \"Doc\" Lausch",
+      "lead_shaper_name": "Jeff \"Doc\" Lausch",
+      "short_description": "Custom surfboards shaped by Jeff \"Doc\" Lausch in Huntington Beach, California since 1982.",
+      "models": [
+        {
+          "name": "Bushwacker",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/Bushwacker-groveler-surfboard-front-surf-prescriptions.png?v=1777567027",
+          "description": "The Bushwacker is a fun, easy-to-surf performance egg like surfboard by Jeff \"Doc\" Lausch. The Bushwacker is built like a performance egg, but with a pulled-in nose and tail that gives it a much more shortboard-like outline. Those subtle changes make it dramatically more capable in bigger and steeper conditions than a traditional egg, holding rail through real turns where most eggs would slide out.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Cal Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/Cal_Twin-fin-tiger-stripe-Front-surf-prescriptions-B.png?v=1777760516",
+          "description": "The Cal Twin is a high-performance twin fin shortboard. A customer once brought Doc an early 1980s twin fin he'd been riding for years, called it his magic board, and asked Doc to recreate it. Doc matched the original outline and basic vee bottom design, then started evolving it with modern dimensions and current surfing in mind. What came out the other end is the Cal Twin: a high-performance twin fin that's become a staple of the Surf Prescriptions lineup. The Cal Twin is a double winged swallow tail that rides like a modern shortboard. Doc kept the outline and the basic vee bottom that made the original work, then dialed in the rocker, foil, and dimensions for the way performance twins are surfed today. The result is a board that does everything a high-performance twin should do: paddles in early, generates speed where most twins stall, and lets you push hard through turns without washing out.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Deadly Flying Turtle",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/Deadly_Flying_Turtle_Front-surf-prescriptions.png?v=1777436618",
+          "description": "The Deadly Flying Turtle is a groveler shaped by Jeff \"Doc\" Lausch — the high-performance version of the V-12 Flying Turtle. The original V-12 has been dialed in for small waves that customers kept asking for a more progressive version that could push harder when the surf gets punchy. The Deadly Flying Turtle is the answer. This board keeps the full body and high volume that made the original Flying Turtle so easy to ride, but with the nose and tail pulled in significantly tighter than the V-12 and added rocker throughout. The result is a groveler that still paddles like a dream, catches everything, and lets you get \"deadly\" vertical when the small-wave surf actually has some pop to it.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "F-Money",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/F-Money_groveler-Front-surf-prescriptions.png?v=1777478766",
+          "description": "The F-Money is the #1 shortboard that Surf Prescriptions makes and the most-ordered custom shape in the Surf RX lineup. Doc designed the F-Money to do something most modern shortboards can't: hide volume in plain sight. The board has a slightly fuller nose, hidden volume under the chest, and a touch more width through the body than your average performance shape, which means it paddles into waves earlier than a traditional thruster and catches more of them. But the way Doc foils the rocker and outline keeps the F-Money looking sleek and traditional under your feet. You get the paddle of a fuller, friendlier shape and the look and feel of a clean performance shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "G-Money II",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/G-MoneyIIFront.png?v=1727404202",
+          "description": "The G-Money II is Doc Lausch's proven barrel-hunting surfboard. A custom shape built to get you into serious waves and hold the line through the heaviest sections. As Doc puts it: \"A reverse mullet: party in the front, and all business in the back.\" The G-Money II features a slightly relaxed entry rocker with extra width and volume foiled perfectly under your chest, so you can paddle into the wave of your life and get over the ledge with confidence. The pulled-in tail and sharp rails take over once you're in, holding tight, letting you adjust your line, and keeping you locked in deep through the pit.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "G-Money II XL",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/G-Money-II-step-up-gun-Front-surf-prescriptions.png?v=1777477207",
+          "description": "The G-Money II XL is a custom big wave gun — the board he reaches for 99 out of 100 times when shaping for serious surf. Doc started refining the G-Money II XL in the Canary Islands over 10 years ago, and has shaped them since for some of the heaviest waves on the planet: Puerto Escondido, Todos Santos, Baja, the cold slabs of Ireland, the winter beach break at Ocean Beach in San Francisco, and the North Shore of Oahu. The G-Money II XL combines lower nose rocker, a fuller outline up front, and added thickness under the chest to get you into the wave early and over the ledge with confidence. The tail is pulled in like a proper gun, with a clean double barrel concave running into vee and just the right amount of rocker out the back. The last third of the board tapers and is foiled out so cleanly that the front-end volume disappears under your feet. The board paddles insane, handles late drops, goes rail-to-rail with ease, and stays surprisingly maneuverable for its size.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "G-Nome",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/G-Nome-groveler_Front-surf-prescriptions.png?v=1777479762",
+          "description": "The G-Nome is a small-to-medium-wave groveler. A custom thruster that paddles into everything, flies down sections, and turns the kind of powerful, committed surfing you'd expect from a board. This board hunts. The wide template, low entry rocker, and gracious volume foiled sublimely under the chest mean the G-Nome catches waves earlier than just about anything else in its category. Once you're up and surfing, the G-Nome flies, generating speed through flat sections where most boards stall out. Just enough rocker through the entry keeps it capable on steeper drops and re-entries, so this isn't just a soft-wave specialist.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Hip Jell",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/Hip_Jell_mid-length-Front-surf-prescriptions.png?v=1777485097",
+          "description": "The Hip Jell Thang is a performance mid-length. A custom surfboard designed to bridge two normally-incompatible riding styles: the effortless trim and glide of a single fin, and the responsive turning ability of a thruster. Most mid-lengths force you to choose. You can have the smooth, hypnotic glide of a long single-fin trim line, or you can have the snap and rail response of a shorter performance shape. Doc designed the Hip Jell Thang to give you both. The deep double barrel concave running underneath lets this mid-length transition rail-to-rail with the kind of speed you don't expect from a longer board. While the glassed-on Thang keel side fins, Doc's signature wide-base keel-style setup that provides the drive and hold to push through turns like you would on a thruster.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "NDR",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/NDR_Groveler-Front-surf-prescriptions.png?v=1777477527",
+          "description": "The NDR is the one-board quiver killer. Our most versatile shortboard, custom shaped to rip equally well in small mushy waves and steeper, more powerful surf. The NDR was originally designed for smaller surf, but the board's secret is what isn't extreme about it. The nose and tail rocker are relaxed. The bottom runs a very slight single-to-double concave. The rails are neutral, more tapered than boxy. Nothing on this template is overbuilt for one specific condition. The most aggressive design element is how subtly the volume is foiled from nose to tail, with the foam placed exactly where you need it for paddling.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "New Buddy",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/New_Buddy_Front_ff264766-ff7e-40d6-8e37-49ed38489d41.png?v=1777478312",
+          "description": "The New Buddy is your go-to small wave performance shredder. A custom shortboard by Jeff \"Doc\" Lausch designed to make weak surf feel fun again. The New Buddy excels in softer waves thanks to a wide, full-volume template that paddles like a dream and gets you into waves early. The outline narrows quickly through the back of the board with a bump into a squash tail, locking in control where most small-wave boards start to feel washy. Underneath, a single-to-double concave generates speed through flat sections, while full, forgiving rails through the middle of the board keep the ride loose and playful.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "New Toy",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/New-Toy-groveler_Front-surf-prescriptions.png?v=1777480096",
+          "description": "The New Toy is one of Doc Lausch's most influential and enduring shapes. A custom performance groveler that helped define a whole category of small-wave performance boards. When Doc first started shaping the New Toy, nothing else in the industry looked like it. These days, every board manufacturer has their version. What made the New Toy ahead of its time was the outline: full and consistent from nose to tail, breaking from the more pulled-in shapes that dominated performance shortboards at the time. That outline gives the board paddle and stability, while a simple single-to-double concave underneath keeps it responsive and lively under your feet. Doc designed it as a \"mush killer\". A board that could turn weak surf into rideable performance, but the pulled-in tail also gives it the hold to work in steeper, more powerful waves than a typical small-wave shape would handle.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "No Bad Days",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/No_Bad-Days_Front.png?v=1725170501",
+          "description": "The No Bad Days is a progressive mid-length surfboard and according to Doc, the board that lives up to its name better than anything else he's ever shaped. Custom built to send you back to the parking lot grinning ear-to-ear, every single session. The No Bad Days comes from the Flying Turtle family. The same low entry rocker, same full nose, same turtle-style double barrel concave on the bottom, but stretched into a mid-length (or even longer) template that paddles into everything early. What makes this board genuinely special is the way Doc translated the Turtle bottom contour into a longer outline: the deep double barrel concave lets this mid-length turn far harder than most boards in its category. You get classic mid-length paddle and glide, plus the kind of rail response most wide mid-lengths give up.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Old School Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/Old_School_Twin_Front_d11a48a6-4791-455e-be31-908744337644.png?v=1725170278",
+          "description": "The Old School Twin is a retro classic twin fin fish. Unchanged for decades and currently more popular than it's ever been. \"Same as it ever was.\" Doc has been shaping this model forever and hasn't changed a thing about it, because there's nothing to change. The Old School Twin features a full standard fish outline, a wide and deep swallow tail, fins set back for that classic drive-and-glide feel, and a basic bottom contour with a touch of vee running out through the tail to aid in turning. Designed to be ridden with wide-base keel fins, the way classic twin fins were meant to feel.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Pro II XXV",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/Pro-II-XXV-shortboard-Front-surf-prescriptions.png?v=1777491883",
+          "description": "The Pro II XXV is Surf Prescriptions' prescription for precision. Our most popular high performance shortboard. The standard in bottom contours, the Pro II XXV features a refined single-to-double concave that drives forward when your weight is over your front foot and comes alive through turns the moment you transition to your back foot. It's a board built around the way good surfing actually works: smooth drive in, instant response coming out.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "RXP",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/RXP_shortboard-Front-surf-prescriptions.png?v=1777486079",
+          "description": "The RXP is a custom high-performance shortboard. Purpose-built for front-footed surfers. What makes the RXP genuinely unique is the bottom contour: forward vee transitioning into a double concave that blends out to a single concave through the tail. That progression of bottom shapes gives the RXP what Doc calls \"power steering\". The board responds to weight shifts up front the way most boards only respond from the back foot. If you surf forward on your board, drive your bottom turns from the front, and finish your maneuvers with hip rotation rather than tail snap, the RXP is shaped specifically for the way you ride.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Slot Machine",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/Slot_Machine_twin-fin-Front-surf-prescriptions_39d8b249-e39d-4716-9ef8-ed61579ad397.png?v=1777435688",
+          "description": "The Slot Machine is a single slot channel twin or twinzer mid-length surfboard by Jeff \"Doc\" Lausch. The name came from longtime Surf Prescriptions rider Brent, who summed it up after a test session: \"She's loose with big payouts.\" It stuck. The Slot Machine sits between two of our most popular round-tail modern twins: the Tur-Twin Pin and the Twinny Two, combining shortboard-style dimensions with mid-length glide. The single slot channel running through the tail adds drive and hold, while the twin or twinzer fin setup keeps it loose, fast, and skatey through turns.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Spanish Omelette",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/Spanish-Omelette-groveler-front-surf-prescriptions.png?v=1777484441",
+          "description": "The Spanish Omelette is a small-wave performance groveler. A custom shortboard built for surfers who want speed in weak waves without committing to a fish or full-nose egg shape. This is the board you reach for when the waves are too weak to get your high-performance shortboard going, but you still want to surf progressively rather than just survive the session. The Spanish Omelette features a full-body template with volume foiled exactly where you need it for performance: paddle power up front, response under your back foot, and zero compromise in the foam distribution. The deep single concave underneath generates speed, while a touch of vee out through the tail keeps the board from feeling too \"tracky\" and lets it come alive under your back foot.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Spicy Flying Turtle",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/Spicy-Flying-Turtle-groveler-Front-surf-prescriptions.png?v=1777491102",
+          "description": "The Spicy Flying Turtle is the spiciest of all the Flying Turtle templates. A custom performance groveler designed for surfers who want easy-paddle Flying Turtle DNA in a board that can actually hold up in steeper, more powerful surf. Customers kept asking Doc for a Flying Turtle that catches waves as easily as the original V-12 but with an outline that works in top-to-bottom waves, not just small mush. The Spicy Flying Turtle is the answer. A touch more rocker, a touch more pulled-in nose, a touch less volume, small adjustments that add up to a noticeably hotter recipe. The pulled-in swallow tail gives you the holding power of a performance board with the easy release of a groveler. The result: a responsive shape that catches waves like the V-12 but holds its rail in waves that have some real bite.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Tur-Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/Tur-Fish-twin-fin-Front-surf-prescriptions.png?v=1777437128",
+          "description": "The Tur-Fish is Surf Prescriptions's progressive retro twin fin fish. A custom mash-up of two of Doc's most popular shapes: the Old School Twin and the V-12 Flying Turtle . The result is a board that combines the unmistakable glide of a classic twin fin with the maneuverability of a modern progressive shape. Doc built the Tur-Fish by combining the deep double barrel concave from the V-12 Flying Turtle with the outline and generous volume of the Old School Twin. Those two design elements work together to do something most retro twins can't, keep the easy glide and full-bodied paddle of a classic fish while letting you turn the board hard on the steepest part of the wave.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Tur-Twin Pin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/Tur-Twin-Pin-twin-fin-Front-surf-prescriptions_7d651ee3-8ce8-4349-9443-3a535798ad1a.png?v=1777471764",
+          "description": "The Tur-Twin Pin is a round tail, 4 channel twin fin surfboard by Jeff \"Doc\" Lausch that works in just about every length you'd want to ride. Doc has been shaping this model in dimensions from shortboard to mid-length for years, and the feedback has been ultra-positive across the board. The Tur-Twin Pin features Doc's signature turtle bottom contour, a double concave running from tip to tail, paired with a relaxed rocker and an extra flip in the nose to keep you from pearling in steeper conditions. The fin placement, 4 channel bottom, round pin outline, and tapered foil of the tail all work together to give this board incredible hold, drive, and flow.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Twin 82",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/Twin82_Front_Blue.png?v=1727381549",
+          "description": "The Twin 82 is a classic wing swallow tail twin fin design from the 1980s and one of the most enduring shapes in the Surf Prescriptions lineup. Doc Lausch has been shaping the Twin 82 since the original era, before the thruster explosion took over the industry, and he still shapes them today because they're fun, they work insane, and the riders who own them never want to let them go. The Twin 82 features a flat deck, a full outline, and boxy rails for that classic 80s feel, paired with some vee running out through the tail so the board goes rail to rail effortlessly. The wing swallow tail gives it the bite and projection that made the original twin fin era so iconic. It paddles well, catches everything, and skates through small to medium surf with the kind of effortless flow that makes a session feel longer than it is.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twin Royale",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/Twin-Royale_twin-fin-Front-surf-prescriptions.png?v=1777472096",
+          "description": "The Twin Royale is a deluxe mid-length twin fin. A custom cruiser built to glide into waves easily and turn the kind of long, lit-up arcs that make mid-length surfing feel timeless. Mid-lengths are back, and the Twin Royale is the answer for surfers who want something stylish, easy-to-paddle, and unmistakably premium under their feet. The wide template gives the board the volume and stability to catch everything, while a deep double barrel concave running the full length of the bottom unlocks the maneuverability most wide mid-lengths give up. The result is a board that paddles like a glider, holds rail, and looks beautiful sitting in the rack.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Twinny Two",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/TwinnyTwo_Front_Pink.png?v=1727385732",
+          "description": "The Twinny Two is straight-up high performance modern twin fin design. Doc Lausch's most aggressive twin shape, built for surfers who want to push twin fins into surf where most twins start to fall apart. The Twinny Two is the high performance version of the Wonder Twin , specializing in crisp, explosive, in-the-pocket, no-holds-barred shredding. The bottom features a double barrel concave running into 4 channels out through the tail, with the tail itself foiled out for hold and bite. The outline, foil, channels, and fin placement all work together to give you a twin fin that's fast and free under your feet, but locked in when you push hard, so you don't wash out when the section calls for commitment.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "V-12 Flying Turtle",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/V-12-flying-turtle-groveler_Front-surf-prescriptions.png?v=1777491526",
+          "description": "The V-12 Flying Turtle is a long board alternative that zips and rips. A small-wave groveler, inspired by the Mini Simmons template but built to do more than just glide. Doc has always appreciated the speed, glide, and paddle ease of the classic Mini Simmons design, but wanted to build a version that could actually turn. The V-12 Flying Turtle keeps the iconic \"bar of soap\" outline that makes Mini Simmons-style boards so fun, but adds a tip-to-tail double barrel concave underneath that lets the straight outline hold on rail and bank hard through turns. The result is a board that's far more maneuverable than it looks. Insanely fast, fun, and capable of carving real arcs on a corner where most flat-bottomed grovelers just drift.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Wonder Twin",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/WonderTwin-twin-fin-front-surf-prescriptions.png?v=1777481695",
+          "description": "The Wonder Twin is a round wing pin version of the Twin 82. A custom performance twin fin groveler designed for surfers who want to push hard through small waves without holding back. The shape features a flat deck, a beak nose, and a wide point set above center for paddle power and easy wave entry. The wing pin tail tightens up the back end of the board for control and bite, while the bottom contour runs a double barrel concave from tip to tail for speed and drive.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "XYZ",
+          "image_url": "https://cdn.shopify.com/s/files/1/0323/6459/3292/files/XYZ_Front_8c06f145-4745-4a0a-9ff9-a3684353d0b3.png?v=1732227484",
+          "description": "The XYZ is Surf Prescriptions' latest high performance shortboard. A serious shred stick built for surfers who want speed, lift, and a board that responds to every push. The XYZ came out of an experiment: how deep can a single concave go before it becomes a liability? Turns out, deeper than we previously thought. The result is one of the deepest single concaves in the Surf Prescriptions lineup, paired with aggressive rocker from nose to tail. Together, they generate serious lift and speed and they reward committed, high-energy surfing.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
