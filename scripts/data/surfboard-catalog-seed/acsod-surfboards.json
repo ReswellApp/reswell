@@ -1,0 +1,88 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "acsod-surfboards",
+      "name": "ACSOD Surfboards",
+      "website_url": "https://acsodsurfboards.com/",
+      "location_label": "Tweed Heads South, New South Wales, Australia",
+      "founder_name": "Alex Crews",
+      "lead_shaper_name": "Alex Crews",
+      "short_description": "Gold Coast surfboards designed and shaped by Alex Crews since 2010. Workshop at The Glass Lab in Tweed Heads South.",
+      "models": [
+        {
+          "name": "2000",
+          "image_url": "https://cdn.shopify.com/s/files/1/0079/1504/4949/files/2000-DECK.jpg?v=1717986485",
+          "description": "Introducing the \"2000,\" our latest addition to our esteemed HI-Performance range. Drawing inspiration from our roots, we've reinvigorated an early shortboard design from ACSOD's inception in 2010, infusing it with new design elements honed over years of experience. The result is an all-around performance board that embodies speed, agility, and unparalleled responsiveness. Distinguished by its refined features and our original bear logo, the 2000 stands apart from its counterparts like the White Ferrari with a more pronounced curve in the outline, a deep single concave bottom, a straighter/flatter tail rocker, and strategically placed foam under the chest. Designed to thrive in 2-6ft beach breaks, points, or reefs.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Lotus",
+          "image_url": "https://cdn.shopify.com/s/files/1/0079/1504/4949/products/Lotus_deck.jpg?v=1671331289",
+          "description": "The ultimate ode to the classic 80s flat deck thruster design. The Lotus has been specifically crafted to combine all the original design elements that made the 80s thruster a classic while adding a modern twist to reinvigorate this classic design. The Lotus features a bump flyer, beak nose, low smooth rocker, and flat deck with chimed-down rails — all the hallmarks of the classic 80s thruster design.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Blue Lotus",
+          "image_url": "https://cdn.shopify.com/s/files/1/0079/1504/4949/products/Blue_Lotus_Deck.jpg?v=1671330995",
+          "description": "Modelling as a semi-step-up/all-rounder in the new Lotus Series. The Blue Lotus came about via repeat customers wanting to transfer the magic, retro fun of the original Lotus into a longer, stretched-out version that could handle bigger surf over the 4ft+ range. Keeping the original Lotus's characteristics as a base, I increased the length and added a rounded pintail for hold. The added length creates a narrower outline curve, giving you more drive and control.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Fox",
+          "image_url": "https://cdn.shopify.com/s/files/1/0079/1504/4949/products/Fox_Deck_6866b5ed-e405-4dac-9c4a-31addb21da4f.jpg?v=1671331111",
+          "description": "The FOX is the smaller/stubby version of its sibling model, the Fox Tail. It is a fun, fast 2 + 1 twin fin designed for high-performance surfing in average conditions. It's packed with speed and fast twitch manoeuvrability and makes some grindy conditions fun. A generous amount of foam is hidden along the stringer line and distributed evenly through the teardrop-style outline. This allows you to ride this board 4 to 5 inches shorter than your performance board.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Axe",
+          "image_url": "https://cdn.shopify.com/s/files/1/0079/1504/4949/products/Axe_deck.jpg?v=1671331606",
+          "description": "The Axe is a staple in the board bag for our team and customers when it comes to serious surf. Tried and tested in a variety of locations like Pipeline and Backdoor to Nias and all over Indo. The subtle, key features make the magic DNA of this step up. Smooth full rocker, slight single to double concave, low soft rails and precise volume distribution combine to get you in early, harness the power of the wave and control it.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Fox Tail",
+          "image_url": "https://cdn.shopify.com/s/files/1/0079/1504/4949/files/Fox_Tail_DeckNEW.png?v=1701913569",
+          "description": "The big brother of the original Fox design comes the FOX TAIL, a stretched-out version that harnesses the speed of the original design and channels it into a smoother, drawn-out twin fin. We've updated this model coming into the 2023-24 summer. Firstly, dropping the length down from a mid-length size to now be ridden one inch shorter than your performance board. The second was tweaking the bottom shape. We flattened out the entry and placed a subtle double concave in front of the fins, blending into vee off the tail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "White Ferrari",
+          "image_url": "https://cdn.shopify.com/s/files/1/0079/1504/4949/products/WF_Deck.jpg?v=1671331655",
+          "description": "The White Ferrari — the ultimate board for surfers who demand the best. The White Ferrari features a modern, high-performance shape specifically designed to meet the needs of experienced surfers. The board's outline is sleek and streamlined, with a pulled-in nose and tail that perfectly balance speed and control. The White Ferrari has a full rocker perfect for steep, bowly waves. This rocker lets you quickly draw deep bottom turns and perform tight maneuvers in the pocket while maintaining a good amount of release for progressive, fins-free surfing.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Ghost",
+          "image_url": "https://cdn.shopify.com/s/files/1/0079/1504/4949/products/Ghost_deck.jpg?v=1620365435",
+          "description": "The Ghost is a consistent all-rounder you can rely on for everyday surf. A little flatter in the rocker, a little wider in the outline, has fuller forgiving rails and a little more volume than the White Ferrari. Although this makes a more relaxed and forgiving shortboard, the Ghost is still packed with speed, release and responsiveness. Allowing you to surf with a performance approach but with a more user-friendly feel.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Two Fangs",
+          "image_url": "https://cdn.shopify.com/s/files/1/0079/1504/4949/products/TF-Deck-Y.jpg?v=1623381517",
+          "description": "The Two Fangs. A board that all have loved since its inception in 2016. Coming into 2021, we had one question off the back of the Two Fangs success. How do we make something great even better? After putting one under the feet of surfing icon Mick Fanning, he had some feedback we couldn't ignore: little more lift in the nose and pull the outline in a touch. These two minor changes were the catalyst of the improvement we were looking for. An already rippable twin is now even more rippable.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Slow Burn",
+          "image_url": "https://cdn.shopify.com/s/files/1/0079/1504/4949/products/SB-Deck.jpg?v=1623380008",
+          "description": "The Slow Burn is a unique split keel quad for the open-minded surfer. Best suited to clean running beach breaks or points in the 1-4ft range. The Slow Burn offers a unique feeling underfoot with its hydro-hull bottom contours. The hydro-hull is a double concave that cuts through the bottom of the board, adding lift and speed. Paired with a split keel quad, this board flies.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Monster",
+          "image_url": "https://cdn.shopify.com/s/files/1/0079/1504/4949/products/Monster-Deck-NEW.jpg?v=1624340257",
+          "description": "The Monster is our go-to step-down model for performance surfing in below-average conditions. Short, stubby and wide, the Monster is ridden 3 to 4 inches shorter than your standard high-performance board. A generous amount of foam is distributed throughout the model, adding paddle power and helping to generate speed in weak surf. This is the perfect board if you're after something short, stubby and high in volume but will surf fast and lively with that familiar performance feel of a standard shortboard.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Easy Rider",
+          "image_url": "https://cdn.shopify.com/s/files/1/0079/1504/4949/products/ER-Deck.jpg?v=1618448716",
+          "description": "The name says it all! The Easy Rider is our most user-friendly model in the range. Its wide outline, generous foam distribution, full/boxy rails and subtle concaves make this board perfect for any intermediate to beginner looking to take their surfing to the next level. The Easy Rider has heaps of paddle power and generates speed effortlessly. The wide outline creates great stability underfoot and adds lift in weak surf.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
