@@ -1,0 +1,174 @@
+{
+  "generated_for": "Edu Shapes official named standup catalog",
+  "source": "https://edushapes.com/boards/",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "edu-shapes",
+      "name": "Edu Shapes",
+      "website_url": "https://edushapes.com/",
+      "location_label": "Praia das Maças, Colares, Portugal",
+      "founder_name": "Eduardo Garcia",
+      "lead_shaper_name": "Eduardo Garcia",
+      "short_description": "Custom surfboards hand made in Portugal by Eduardo Garcia, tested from summer beach breaks to Nazare.",
+      "models": [
+        {
+          "name": "E1",
+          "image_url": "https://edushapes.com/_astro/old_E1.DJI4DuRL_Z2wkb1i.jpg",
+          "description": "The E1 is a versatile shape that leans directional, which makes it ideal for weaker and summer conditions. A wider tail and a bottom that runs single to double to V toward the tail keep the board fast when the wave is not. The profile stays flatter under your front foot with pronounced kicks at the nose and tail, so you can generate speed early and still turn hard when a section stands up. Measured correctly it suits every level of surfer and a wide range of techniques.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "E2",
+          "image_url": "https://edushapes.com/_astro/old_E2.Dsy8Bchb_25n6so.jpg",
+          "description": "The E2 was designed to be the board you reach for all winter. It is remarkably fast, gets onto the rail easily and paddles efficiently into hollow, strong waves. A full single bottom with the high point set further back and a low rail lets it shine in powerful conditions, whether the waves are big or simply forceful.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "E3",
+          "image_url": "https://edushapes.com/_astro/Edu_E3_Deck.JSp5n9OR_ZamayF.jpg",
+          "description": "The E3 is the step up in the range, made for committed rail turns and time inside the barrel. The bottom carries a smooth single contour that runs along the rails like the edge of a knife. It paddles exceptionally well, which means early entry when the sets are moving fast. Point breaks, slabs and powerful hollow beach breaks are its home. Order it at least two inches longer than your everyday board with a touch more thickness.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "iC Signature",
+          "image_url": "https://edushapes.com/_astro/old_iC.TJq8grmx_jiDsh.jpg",
+          "description": "The iC is an all round model developed for good surfers. It is genuinely fast, with a normal progressive rocker and soft concaves running single into a small double between the fins. The outline is narrow at the nose with volume balanced between your stance. Low rails make it very sensitive and quick from rail to rail, drawing tight, powerful lines through the critical part of the wave. Strong in the air and in the barrel, it is a great option for any good surfer.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "GT's",
+          "image_url": "https://edushapes.com/_astro/old_GTs.BNzuuFU1_14vmjH.jpg",
+          "description": "The GT's carries gentle, streamlined contours that make paddling easy while keeping performance high. It was developed specifically for kids and lighter framed surfers. Embraced by the new generation, it works brilliantly as an all round option across a wide range of styles.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Padre",
+          "image_url": "https://edushapes.com/_astro/old_Padre.Cah39Hew_ZGqcAW.jpg",
+          "description": "The Padre was born from a journey through the surf mecca of California, with input from surf legends Gary Linden and David Barr shaping its development. A flatter rocker, soft double concaves, a modern outline and low rails give it speed, paddle power and seamless entry. It moves rail to rail without effort, loves sharp turns and thrives in perfect, glassy, rippable conditions. Even through slower, fatter sections it keeps its speed and flow. It has been proven at Trestles, Huntington Beach, Oceanside and Newport Beach, and is tested by Brazilian pro David Do Carmo. Fully designed in California.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Padre Pro",
+          "image_url": "https://edushapes.com/_astro/old_Padre_Pro.CK97JvYR_viAuW.jpg",
+          "description": "The Padre Pro is the evolution of the original Padre, refined and perfected in California. It keeps the signature Californian rocker and brings in a narrower nose and tail for sharper response in hollow, fast waves. Softer concaves smooth the entry into the water while pivot and rail control stay razor sharp through critical sections. Built for skilled, fit surfers. Fair warning from everyone who has ridden one: this board is highly addictive.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MBF",
+          "image_url": "https://edushapes.com/_astro/old_MBF.BeCOCxUn_Z2jWm6H.jpg",
+          "description": "Designed in close collaboration with Luis Eyre, the MBF is built for the powerful, fast and often hollow beach breaks around Sintra. Luis wanted a board that stayed fun and loose while delivering the speed and control critical conditions demand. Based on the E2 family, the MBF takes those core features and dials them up into a more explosive, responsive ride. It paddles exceptionally well, holds strong through rail turns and flies through sections. Perfect for airs and high performance surfing. Controlled chaos and progressive lines, made for fun.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "E0",
+          "image_url": "https://edushapes.com/_astro/Edu_E0_Deck.Uuzyi-us_2kqrYJ.jpg",
+          "description": "The E0 excels when the waves go small, and it is exceptionally effective at it. A pleasing rocker, a bottom that moves from single to double to V and a wide nose keep performance alive in weak surf. It stands out for fast, tight turns and its appetite for the air. Edu prefers it with a swallow tail, though it performs with every tail shape in the list.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Cherry",
+          "image_url": "https://edushapes.com/_astro/Edu_Cherry_Deck.Dy9nDvjc_Z1RP346.jpg",
+          "description": "Developed together with surfer Daniel Nobrega, the Cherry was born for surfers who want fun without giving up performance. A bullet nose outline built on the curve of the Padre gives it speed, control and the freedom to link manoeuvres naturally. From a vertical hit off the lip to a layback or a snap to close the section, the line always stays fluid. It is a board that invites creative surfing. Loose when you want it, precise when the wave asks for it.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Tiki",
+          "image_url": "https://edushapes.com/_astro/Edu_Tiki_1_Deck.GpkfXBWP_Z1SMbKU.jpg",
+          "description": "The Tiki is the original Edu midlength, crafted for performance lines on an extended board. The easiest way to picture it is a fusion of a Malibu style board with shortboard characteristics: tight rails, a compact nose and tail. The bottom runs single to double to V, so the rail engages properly, turns stay close and the lip is never out of reach. Ride it as a thruster for longer lines or a twin for extra fun and drift.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Tiki 2",
+          "image_url": "https://edushapes.com/_astro/Edu_Tiki_2_Deck.Cot4E4-j_2eHkIr.jpg",
+          "description": "The Tiki 2 is the Tiki refined. Volume comes out of the nose area for surfers who do not need it to paddle in, and a little more performance goes back in its place. It handles all conditions and makes a great main board for the one board quiver surfer.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Tiki 3",
+          "image_url": "https://edushapes.com/_astro/Edu_Tiki_3_Deck.DDYlKo3N_Z1tF5hs.jpg",
+          "description": "Not everyone trains every day. Everyone deserves to surf better. The Tiki 3 is the evolution of the Tiki 2 and keeps everything that made the Tiki so much fun: easy paddling, early entry into the wave and natural speed. The difference is in the response, now faster, more precise and closer than ever to a shortboard. It is designed to be ridden at the length of your everyday shortboard, combining the curve of the Padre with a lower rocker nose to get into waves early, build speed sooner and stay quick from rail to rail. This is a board that forgives more without taking your freedom away. It gets in early, accelerates naturally and lets you draw modern lines with confidence, even when you are not surfing every day.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Tiki Pin",
+          "image_url": "https://edushapes.com/_astro/old_Tiki_Pin.D4xDKMZw_Z1iDSMm.jpg",
+          "description": "The Tiki Pin is the most enjoyable, highest performing spin on the Tiki. It delivers exceptional speed and a low rail for impressively large turns, all while keeping the playful character of a twin tail. Surf it from the bottom to the top of the wave, attack the lip and use the rail in the most enjoyable way there is.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Tiki Double Pin",
+          "image_url": "https://edushapes.com/_astro/old_Tiki_Double_Pin.BbIikWTh_1ap81a.jpg",
+          "description": "Like every Tiki, the Tiki Double Pin FD is designed for performance with a funboard feel. It shares the rocker and concave of its siblings but adds a flat deck rail, which increases volume without sacrificing performance. The rail engages more easily, transitions run smoothly from edge to edge and speed comes without effort. It performs across a wide range, from one foot days up to solid four to five foot waves, without compromising your line. Ride it twin or thruster. Ideal for older surfers, or any good surfer after a relaxed ride that gives nothing away.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Perrot Fish",
+          "image_url": "https://edushapes.com/_astro/Edu_Parrot_Fish_Deck.NPrcxFBq_aqxDl.jpg",
+          "description": "Twin fin. Flat deck. Channel between the fins. The Perrot Fish exists to make small days count. The flat deck keeps the volume where you need it while low rails keep the board sensitive. The channel between the fins adds hold without taking away the freedom every twin should have. It is fast from the first pump, loose when you want it and generates speed easily in weak surf. Designed for one to three foot days when the goal is simple: draw lines and have fun.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Fish",
+          "image_url": "https://edushapes.com/_astro/old_Fish.CpVy4lwJ_ZzoBiX.jpg",
+          "description": "This is not your conventional fish. It is a short, fun board designed for easy paddling and easy waves, thanks to a wide tail and nose. The bottom runs single into a large double between the fins, which helps the rail change and keeps turns smooth. Perfect for smaller days and relaxed surfing, without giving performance away. Skilled surfers will find plenty of lines in it. Set it up thruster, quad or twin, and ride it two inches shorter than your usual board.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "NGFish",
+          "image_url": "https://edushapes.com/_astro/old_NGFish.DRc5w0Bs_ZNlHq8.jpg",
+          "description": "The NGFish is Edu's take on the modern fish. It keeps the soul and refinement of a classic fish and updates it with cleaner, more progressive lines for a faster, looser, more playful approach. A wide tail with a pronounced fish swallow pairs with a quad setup built for speed and drive. The combination maximises rail engagement through the critical sections of weaker waves, giving instant acceleration and projection down the line. Up front the nose carries extra width on a shortboard inspired outline, balancing paddle power with control. The bottom runs single concave into double with vee out the tail, and the rocker stays low but well tuned. Extra curve under the back foot allows tighter turns and controlled adjustments when you need them.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "MM",
+          "image_url": "https://edushapes.com/_astro/old_MM.CReepYF8_Z1xn6KV.jpg",
+          "description": "The MM is Edu's MiniMal. A rounded nose makes paddling and wave entry easy, and a Tiki inspired bottom, flatter and rounded toward the nose, lets you draw smooth lines from your first session. Whether you are a beginner looking for a first board or simply want maximum fun, the MM delivers. It can also be set up as a twin, and it is an absolute riot that way.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Tiki Mini",
+          "image_url": "https://edushapes.com/_astro/old_Tiki_Mini.UWsTfhHe_ZIVykc.jpg",
+          "description": "The Tiki Mini is the Tiki compressed into sizes up to 6'4. Everything that makes the Tiki work is here: performance lines, tight rails, a compact nose and tail, and the single to double to V bottom. A fun board first and foremost, without sacrificing the performance the Tiki family is known for. Thruster for longer lines, twin for extra play.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Primitive Man",
+          "image_url": "https://edushapes.com/_astro/old_Primitive_Man.Bl5lufuA_KiJRk.jpg",
+          "description": "The Primitive Man is Edu's longboard, and unlike the rest of the range it was never about chasing performance numbers. It is about pure enjoyment: effortless glide, incredible lines and the joy of walking to the nose. The rocker pays homage to the origins of traditional guns, and the bottom carries a V shape channel that manages water flow with a distinct approach and distribution. Rails sit at 60/40 with a slightly narrower nose than new generation longboards.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Classic Man",
+          "image_url": "https://edushapes.com/_astro/old_Classic_Man.CuWgXWad_ZEpQJx.jpg",
+          "description": "The Classic Man is the quintessential classic longboard of the range and a tribute to timeless surfboard design. A generous tail rocker with extra kick brings unmatched stability, so walking to the nose feels effortless. The rolled bottom and concave nose enhance glide and control, while full classic 50/50 rails and a single fin keep the ride smooth and traditional. For surfers who want to carve graceful lines, feel the thrill of a proper nose ride and glide down long, peeling waves with style.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Gun",
+          "image_url": "https://edushapes.com/_astro/Edu_Gun_Deck.B-sZ8xPo_Z26tGr4.jpg",
+          "description": "This shape was developed side by side with Edu's former team riders, in the shaping bay and out in the lineup. It has been tested without mercy at Nazare and across the Portuguese coast, from Madeira to Peniche, Cascais and Alentejo. The long rocker from the tail and a single to double to V bottom give easy paddling, help on late drops and air drops, and provide all the performance you need once you are up and running. Two rail options are available: the traditional rail, or the flat deck, which adds volume and paddle power while keeping the same rail design in the water.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Gun Flat Deck",
+          "image_url": "https://edushapes.com/_astro/Edu_Gun_FD_Deck.CS6OijxP_2ekVoC.jpg",
+          "description": "The Gun Flat Deck is the evolution of the traditional Gun. The flat deck keeps the foam under your feet while allowing lower, more sensitive rails. The result is a board that feels secure on the paddle but connects to the wave face with far more precision. A more pronounced bottom curve was designed to sit higher in the critical part of the wave, increasing projection through transitions while keeping control at speed. Built for surfers looking for confidence without compromising performance.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Tow",
+          "image_url": "https://edushapes.com/_astro/Edu_Tow_Deck.UD-taadR_Z2r1VgQ.jpg",
+          "description": "Tow boards exist for the days when paddling is simply not an option. As techniques advance, the world's best want to surf giants the way they surf everything else, and these boards make that possible. Since 2018 Edu has worked on this approach alongside Joao Macedo, Antonio Silva, Alemao de Maresias, Chumbo and now Ivo Cacao, dropping into serious Nazare bombs to learn first hand. That real time feedback loop has shaped every detail of the boards. Depending on conditions, tow boards range from 3.5kg to 11kg for Nazare tow ins, each with measurements tailored to their intended use.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "NZxII Tow",
+          "image_url": "https://edushapes.com/_astro/Edu_NZxII_Tow_Deck.Bmx0xOtF_ZbPfDh.jpg",
+          "description": "The NZxII is the tow board for the biggest days. Compared with the NZ Tow it carries a more harmonious rocker and a narrower outline, creating a smoother, more predictable ride at extreme speeds. Developed to be ridden with 7 to 10kg of ballast, it delivers maximum stability, longer rail engagement and complete confidence when every movement matters.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
