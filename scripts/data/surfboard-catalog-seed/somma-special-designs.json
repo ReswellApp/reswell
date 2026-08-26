@@ -1,0 +1,82 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "somma-special-designs",
+      "name": "Somma Special Designs",
+      "website_url": "https://sommaspecialdesigns.com/",
+      "location_label": "San Luis Obispo, California",
+      "founder_name": "Shea Somma",
+      "lead_shaper_name": "Shea Somma",
+      "short_description": "Hand-shaped custom surfboards by Shea Somma in San Luis Obispo, California since 2008.",
+      "models": [
+        {
+          "name": "Ham & Cheese",
+          "image_url": "https://sommaspecialdesigns.com/wp-content/uploads/2021/02/IMG_6594-3.jpg",
+          "description": "The Ham and Cheese is a log designed around traditional longboarding at California reefs, points, and softer beachbreaks. A parallel template with a blunt nose and wide tail create a moving sidewalk feel, with panel vee, rocker lift, and a scooped deck in the aft end for lofty, controlled noserides.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Judah",
+          "image_url": "https://sommaspecialdesigns.com/wp-content/uploads/2021/01/IMG_6594-2.jpg",
+          "description": "The Judah is a trim-oriented midlength egg designed around Ocean Beach's shifting moods. It cruises in the small stuff and charges when the waves come up. The pulled-in tail and concave to spiral vee bottom give control through steep sections and let you lay down carves when the opportunity presents itself.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Cochon",
+          "image_url": "https://sommaspecialdesigns.com/wp-content/uploads/2020/12/Cochon_4_5.jpg",
+          "description": "The Cochon is a modern pig-styled longboard with reverse rocker, rolled bottom contours, wide point aft, soft rails, and a subtle blended nose concave. It can be ripped harder than the average classic log and still noseride beautifully in the pocket. The curvy template and narrow nose suit beach-break logging.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Daydream Hull",
+          "image_url": "https://sommaspecialdesigns.com/wp-content/uploads/2021/01/image-217.jpg",
+          "description": "A beachbreak-oriented displacement hull cooked up for Kyle Kennelley at Daydream Surf Shop in Costa Mesa. It translates the effortless trim, full rail engagement, and ball-bearing feel of a hull into a smaller, shorter package for the quick adjustments beachbreaks require.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mini Super",
+          "image_url": "https://sommaspecialdesigns.com/wp-content/uploads/2020/12/MiniSuper_4_5.jpg",
+          "description": "A Mini Simmons-style shred stick: short, wide, fast, and skatey. A hull entry into a deep, channeled concave running through the twin keel fins makes mincemeat of mushy surf and still goes extremely fast on groomed days.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "La Chancla",
+          "image_url": "https://sommaspecialdesigns.com/wp-content/uploads/2021/01/IMG_6594-2-1.jpg",
+          "description": "A sidecut fish inspired by Ryan Burch's twin-fin designs. The break in the template sits between the rider's feet, creating a pivot point ahead of the fins for a tighter arcing turn than a traditional fish. Extra tail rocker and a single concave make it sensitive and responsive.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Wadlog",
+          "image_url": "https://sommaspecialdesigns.com/wp-content/uploads/2021/02/IMG_6594-2.jpg",
+          "description": "A round-pintail, single-fin, wide-point-centered log for kneeslappers up to overhead. The most user-friendly, all-around log in the lineup, with smooth rail-to-rail transitions, easy noseriding, and a trim-oriented approach. Recommended for beginners or anyone who wants a forgiving go-to longboard.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Classic Fish",
+          "image_url": "https://sommaspecialdesigns.com/wp-content/uploads/2021/01/39690002-2-1.jpg",
+          "description": "A compact twin-fin fish with a short, wide template, deep swallowtail, keel fins, and down-rails. Shea shapes a channeled concave through the tail to add modern performance to this classic design. It works from knee-high and soft to overhead and barreling.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Duckface",
+          "image_url": "https://sommaspecialdesigns.com/wp-content/uploads/2020/12/Duckface_4_5.jpg",
+          "description": "The most high-performance board in the line — the shortboard of the group. A blunt-nosed template with a continuous curve, simple single concave, and extra tail rocker. The blunted nose adds paddle volume and stability. Built as a thruster or quad.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MLP",
+          "image_url": "https://sommaspecialdesigns.com/wp-content/uploads/2021/01/IMG_6594-2-2.jpg",
+          "description": "A short, wide, performance-oriented board inspired by the Channel Islands Biscuit and Gary Hanel's Diet Pill. Plenty of foam nose to tail for paddling, with shortboard-style rails, low rocker, a round tail, and a light single-to-double concave. Standard 5-box setup for thruster or quad.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Channeled Twin Pin",
+          "image_url": "https://sommaspecialdesigns.com/wp-content/uploads/2020/12/Channeled_Twinpin-4_5.jpg",
+          "description": "An alternative step-up that marries the loose, free feeling of twin fins with the drive and hold of a pintail. Wide-point-forward template with channels for bite, control, and thrust in larger surf, plus thicker foil for paddle power. Intended for when the waves are pumping.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
