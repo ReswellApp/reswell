@@ -1,0 +1,94 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "luke-young-shapes",
+      "name": "Luke Young Shapes",
+      "website_url": "https://www.lukeyoungshapes.co.uk/surfboards.html",
+      "location_label": "Plympton, Plymouth, Devon, United Kingdom",
+      "founder_name": "Luke Young",
+      "lead_shaper_name": "Luke Young",
+      "short_description": "Custom surfboards hand-shaped by Luke Young in Plympton, Plymouth, Devon.",
+      "models": [
+        {
+          "name": "Blitzkrieg",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/blitzkrieg-top.jpg",
+          "description": "The Blitzkrieg is a combo of the lower rockered performance front end of our tried and tested minizero and the acceleration, control and drive of the tail section of our popular Meteor model. A great all rounder that excels in beach, reef and point break waves up to 4-6 feet. The Blitzkrieg has a shortboard style single to sunk double concave and, like the Meteor, very foiled, bladey aft rails creating extra speed and control through turns.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Blitzkrieg Low",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/blitzkrieg-low-top.jpg",
+          "description": "In addition to the Blitzkrieg we also offer the Blitzkrieg Low which has all the same attributes of the original Blitz, but with a slightly lower entry rocker, a very slight increase in tail rocker and a wider nose and tail template. The Blitz low is still an all rounder but will suit a weaker wave, ideal for summer conditions.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Classic Mal",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/classic-mal-top.jpg",
+          "description": "All round classic cruiser, with wider nose and tail. Slight rolled Vee through the tail helps the board rock from rail to rail.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Dog Tool",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/dogtool-top.jpg",
+          "description": "With the standards of high performance surfing ever increasing, we spent this year carefully working on our brand new performance shortboard - the dog tool. We've drawn the rail line slightly straighter around the mid part of the board ever so slightly increasing nose and tail width and creating a faster, straighter plan shape. With a deep single concave throughout and increased tail lift, the dogtool is the perfect vehicle for today and tomorrow's ripping. Available Rounded square/round tail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Half Pint",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/half-pint-top-lrg.jpg",
+          "description": "Super-grom performance model, we took into account the difficulties of low paddle power and low body weight experienced by feather-weight surfers and designed the half pint with today's standards of performance surfing in mind. Low entry rocker, pinched rails, hidden chest/mid volume and our own mini fin cluster set up come together to fast track the next generation.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Iron Fist",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/iron-fist.jpg",
+          "description": "Gun template for big waves, flat bottom to slight double concave vee to rolled vee in the tail, increasing speed, control and drive. Ultra pulled in tail template to deal with waves as big as you can go.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Mahi 2",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/mahi-2-top.jpg",
+          "description": "The next generation twin fin fish following on from our popular Mahimahi original model. With a classic fish outline it has a deep single to double concave through to a slight vee in the tail, foiled rear rails for grip and control and has most of its volume towards the front half of the board for increased wave catching ability and to help engage the rear rails at speed. The Mahi2 is available in standard PU/polyester construction or LY eco sled stringered or stringerless Marko foam EPS and Super Sap epoxy.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Mako",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/mako-top.jpg",
+          "description": "A follow up to our popular Meteor model, the Mako is more shortboard in plan shape with a rounded diamond tail. The hip in the tail is brought forward to 16\" to widen the area directly below your centre of gravity when turning and to maintain a sensibly wider tail section. The deep 4 channel bottom and low, sharp rear rails add drive and grip in surf from 2-6 ft. The mako can be ordered shorter and wider for slacker surf or as standard shortboard dimensions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Meteor",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/meteor-top-lrg.jpg",
+          "description": "We created a performance fish outline with wing and shallow swallow tail to maximize planing area, coupled it with a deep single to sunk double concave through the fin area for increased lift. The Meteor has a very low entry rocker to increase paddle speed and also give you early entry into waves. We've rolled the deck, pinched the rails and especially foiled the aft rail for increased drive and grip through high speed turns.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Prodium",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/prodium-top.jpg",
+          "description": "Our new high performance shortboard replacing the dogtool model for experienced through to pro surfers. A continuous nose to tail rocker curve allows for tight, vertical pocket surfing in good quality waves. The Prodium has a deep single mid, to sunk double concave through the fin cluster adding a little more drive and control, coupled with a low mid rail through to foiled aft rail for grip and drive.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Supercharger",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/supercharger-top.jpg",
+          "description": "We took the cyber-charger and refined its outline and rocker so it performs better in many more conditions than just bigger, hollower waves. We've kept the nose width and entry rocker of the cyborg/minizero and added a rounded pin tail/mini swallow with a sleeker rail curve in the rear half. We've theoretically stuck the nose half of an easy paddling groveller board to the tail section of a step up board for a two in one feel.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Vulcan",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/vulcan-top.jpg",
+          "description": "Available as a winged swallow tail with quad fin set up, or rounded pin 5 fin convertible, the vulcan favours the heavier surfer in smaller, weaker surf. Super low nose entry with natural mid to tail rocker allows the vulcan to perform better than the standard fish design, with a deep single concave through to slight double in the fins flowing out into a light vee in the tail to aid the wide vulcan move from rail to rail. Extremely full deck volume gives the vulcan the most possible buoyancy without compromising performance.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Xenon",
+          "image_url": "https://www.lukeyoungshapes.co.uk/images/boards/xenon.jpg",
+          "description": "2019 summer small wave model available in EPS/epoxy and PU/polyester. The Xenon uses one of my tried and tested small waves rocker curves with a single to sunk double concave through the back foot giving plenty of lift and drive through flat wave sections. The outline is inspired by my escape pod wakesurf boards which have a snub nose and the main volume of the board in a shorter area for manoeuvrability.",
+          "board_category_slug": "groveler"
+        }
+      ]
+    }
+  ]
+}
