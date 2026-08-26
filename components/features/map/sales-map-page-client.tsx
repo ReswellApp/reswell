@@ -138,12 +138,17 @@ export function UsaSalesFlowMap({
 
   return (
     <div className={cn("relative", className)}>
-      <div className="overflow-hidden rounded-xl border border-border/80 bg-gradient-to-b from-muted/30 via-background to-background shadow-sm sm:rounded-2xl">
+      <div
+        className={cn(
+          "overflow-hidden border border-border/80 bg-gradient-to-b from-muted/30 via-background to-background shadow-sm",
+          isCompact ? "rounded-lg" : "rounded-xl sm:rounded-2xl",
+        )}
+      >
         <div
           className={cn(
             "relative w-full",
             isCompact
-              ? "h-[220px] sm:h-[260px] md:h-[280px]"
+              ? "h-[96px] sm:h-[108px] md:h-[120px]"
               : "h-[480px] sm:h-[520px] md:h-[560px] lg:h-[600px]",
           )}
         >
@@ -291,11 +296,28 @@ export function UsaSalesFlowMap({
           </svg>
 
           {selectionLabel && !isMobileView ? (
-            <div className="pointer-events-none absolute left-2 top-2 max-w-[11rem] rounded-lg border border-border/80 bg-background/95 px-2.5 py-2 shadow-lg backdrop-blur-sm sm:left-3 sm:top-3 sm:max-w-xs sm:rounded-xl sm:px-3 sm:py-2.5">
-              <p className="text-xs font-semibold text-foreground sm:text-sm">
+            <div
+              className={cn(
+                "pointer-events-none absolute left-2 top-2 rounded-lg border border-border/80 bg-background/95 shadow-lg backdrop-blur-sm",
+                isCompact
+                  ? "max-w-[8.5rem] px-2 py-1.5"
+                  : "max-w-[11rem] px-2.5 py-2 sm:left-3 sm:top-3 sm:max-w-xs sm:rounded-xl sm:px-3 sm:py-2.5",
+              )}
+            >
+              <p
+                className={cn(
+                  "font-semibold text-foreground",
+                  isCompact ? "text-[10px] leading-tight" : "text-xs sm:text-sm",
+                )}
+              >
                 {selectionLabel.title}
               </p>
-              <ul className="mt-0.5 space-y-0.5 text-[10px] text-muted-foreground sm:text-xs">
+              <ul
+                className={cn(
+                  "mt-0.5 space-y-0.5 text-muted-foreground",
+                  isCompact ? "text-[9px] leading-snug" : "text-[10px] sm:text-xs",
+                )}
+              >
                 {selectionLabel.lines.map((line) => (
                   <li key={line}>{line}</li>
                 ))}

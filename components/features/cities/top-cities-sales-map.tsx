@@ -13,10 +13,10 @@ export function TopCitiesSalesMap({ data }: TopCitiesSalesMapProps) {
   return (
     <div>
       <UsaSalesFlowMap data={data} size="compact" />
-      <div className="mt-2 flex items-center justify-end">
+      <div className="mt-1.5 flex items-center justify-center">
         <Link
           href="/map"
-          className="inline-flex items-center gap-1 text-xs font-medium text-foreground/80 transition-colors hover:text-foreground sm:text-sm"
+          className="inline-flex items-center gap-1 text-[11px] font-medium text-foreground/80 transition-colors hover:text-foreground sm:text-xs"
         >
           See the full sales map
           <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />

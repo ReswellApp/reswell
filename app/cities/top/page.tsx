@@ -29,10 +29,6 @@ export default async function TopCitiesPage() {
             <h1 className="mt-3 text-3xl font-bold tracking-tight text-balance text-foreground sm:text-4xl">
               Top cities for surf gear
             </h1>
-            <p className="mx-auto mt-3 max-w-xl text-pretty text-base text-muted-foreground sm:text-lg">
-              Browse every city with active listings on Reswell — then open that city's page
-              to shop boards you can pick up locally.
-            </p>
             {directory.totalCities > 0 ? (
               <p className="mt-4 inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-background/80 px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur-sm">
                 <MapPin className="h-3.5 w-3.5" aria-hidden />
@@ -44,7 +40,7 @@ export default async function TopCitiesPage() {
             ) : null}
           </div>
 
-          <div className="mx-auto mt-8 max-w-5xl">
+          <div className="mx-auto mt-6 max-w-[14rem] sm:max-w-[16rem] md:max-w-[18rem]">
             <TopCitiesSalesMap data={salesMap} />
           </div>
         </div>
