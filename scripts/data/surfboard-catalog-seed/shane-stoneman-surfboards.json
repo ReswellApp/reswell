@@ -1,0 +1,98 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "shane-stoneman-surfboards",
+      "name": "Shane Stoneman Surfboards",
+      "website_url": "https://www.shanestoneman.com/",
+      "location_label": "Cayucos, California",
+      "founder_name": "Shane Stoneman",
+      "lead_shaper_name": "Shane Stoneman",
+      "short_description": "Hand-shaped surfboards by Shane Stoneman in Cayucos, San Luis Obispo County, California, since 1987.",
+      "models": [
+        {
+          "name": "Twin Du Jour",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/545f9e19e4b0e58fabd5023b/1601855193095-9MY6K3E4D7HCB30OGE96/twindejour.jpg",
+          "description": "The Stoneman variation on a popular theme in the industry…the channel bottom pin tail twin fin. Ten years ago I made a Carpet Glider with twin fins and the customer raved about it yet I forgot about it and never made another one. Fast forward to today and these are ubiquitous in line ups and work in a wide spectrum of surf. These have all the insane speed of the twin fin configuration but the channels help give it another level of control and viability at high speed. Available in hot rod short board version or the longer cruise ship models that draw from the mid-length curves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Modern Classic",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/545f9e19e4b0e58fabd5023b/1422290729708-RH41Z422BODOX2BVCRD8/longboard-small.png",
+          "description": "Classic lines and volume with a modern feel. Shaped with a flat nose riding rocker, 60/40 rails, and a vee bottom blended into single concave in the nose. This is built to be ridden as a single fin and they are glassed to last --6/6/6 with gloss and polish.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Icarus",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/545f9e19e4b0e58fabd5023b/1433303516248-W1TVIRPGUQ09HKDD4U6G/icarus-small.jpg",
+          "description": "This is my high performance short board designed with a fairly straight outline and wider nose area to keep the board short and under your feet for maximum control. The stock Icarus comes with three fin boxes, a deep single concave, fuller rail, and a medium rocker. Generally, glassed 4/4/4 unless custom ordered.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Quad Swallow",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/545f9e19e4b0e58fabd5023b/1423415960351-3GQ6N15EUL6M68MFHDRH/quad-swallow-small.png",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Stonefeesh",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/545f9e19e4b0e58fabd5023b/1427065278646-TDT1JG3K2CCJS5ZTZNU9/fish.png",
+          "description": "Thick under the chest but thinned out in the tail, these flat rockered Stonefeesh are speed monsters (with tons of vee to keep it flowing rail to rail). This picture 5’8” x 15 x 20 ¼ x 15 ½ x 2 9/16 . Take this to Jeffrey’s Bay or Pavones and set a personal speed record. Also available with a wing behind the fins for a pulled in swallow tail aesthetic and feel as made for Christie Carter in this photo.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Gentleman's Gun",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/545f9e19e4b0e58fabd5023b/1432496886836-CMJ0XBH52OC2P39KGCKG/image-asset.jpeg",
+          "description": "These are boards in the 7’0 – 10’0” range characterized by high volume decks and fast paddling rockers. These are geared towards the guy who enjoys some extra paddle but doesn’t want to give up any performance. 5 fins and glassed to last at 6/4/6… unless custom ordered.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Tom Cat",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/545f9e19e4b0e58fabd5023b/1432775274124-8MN6ZX8HFJIVH7X5UZ6J/image-asset.jpeg",
+          "description": "These are essentially high performance fun boards. They share the same mini mal curve that fun boards have always possessed… only now the bottom is running with more tail rocker, a deep double concave, and healthy dose of vee. It’s a great all around board for a beginner or anyone who wants the extra float and wave catching provided. Five fin boxes for options. Generally glassed 4/6/4 unless custom ordered.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Purist",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/545f9e19e4b0e58fabd5023b/1601855326091-04Z2TFJUJPUJKN0S0NIC/thepurist.jpg",
+          "description": "This single reminds me of my very first surfboard with its simple and beautiful curves. As pictured it has a red cedar stringer and blue density foam for long lasting quality. Flat rocker with panel vee keeps this board driving along and turning with that pure single fin feel…smooth and neutral. It’s a board for all occasions and never goes out of style. Available in any size you want.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Rally Racer",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/545f9e19e4b0e58fabd5023b/1423416064427-R3S8F6D3SPZQ8Q36FZM3/rally-racer-small.png",
+          "description": "The Rally Racer is a great all around board that works in a variety of conditions. A stock Racer comes as a rounded pin with a wider tail dimension at 12” from the tail for stability and generating lift. The five fin boxes give you options on how to surf this board’s single to double to vee bottom contour (I prefer mine as a quad only…). Its beak nose carries a little extra thickness out towards the nose for better paddling and an artsy aesthetic. These boards do great stretched out into step ups. They are generally glassed 4/4/4 unless custom ordered.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Stonecaster",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/545f9e19e4b0e58fabd5023b/1505517125891-H4EM9K8LL7TRS0QOX3JL/stonecaster.png",
+          "description": "The Stonecaster is a winged, modified fish meant to fit a curvier hollower wave face than the standard Stonefeesh. I can still vary the design based on the needs of the customer though... For instance, I can make them ultra short for everyday applications or in a stretched out step up fish for pumping perfect surf. Christie Carter's surfing in the mentawais helped the design improve with every generation and if its pumping at hideaways you'll probably see him on his 6'2\" Stonecaster.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Quadcaster",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/545f9e19e4b0e58fabd5023b/1571631781495-JKCST4686SEJQNGPCLUE/quadfish.jpg",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "High Performance Long Board",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/545f9e19e4b0e58fabd5023b/1571632362189-2YWGC3TMJUV5KXZ87RJB/hplb.jpg",
+          "description": "The HPLB, or High Performance Long Board, has a bit more nose and tail rocker and is designed to catch waves and plane like a log but turn at lightning speed from the tail. It’s an excellent choice for someone who wants glide but still do short-board style ripping.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Carpet Glider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/545f9e19e4b0e58fabd5023b/1423415773145-V359ZJ69KKUEW2KERNSH/longboard-small.png",
+          "description": "Nothing fancy here—Just a small mini mal curve, flat rocker, with a subtle vee bottom for glide and buttery flow. I like to make these wide at center and nose dimensions but thin and sensitive on the rail. On any decent wave with some face these are so fun its hard to describe.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Skater",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/545f9e19e4b0e58fabd5023b/1427067428461-G2SI6U259OUA6RJHXF5T/skater.png",
+          "description": "The new “skater” design. This shot is of a 5’5″ x 18 7/8 x 2 1/2. It has lots of width in the template, flat rocker, and curvy bottom contours that give it incredible zing in small surf. The double concave deck with rail channels give you the instant “magic board” feel without waiting a month for foot wells to develop. Another cool feature of this deck design is the strange discovery that you can actually steer a bit with your pecs while paddling at top speed. I started bring a really big trailing fin that I can change out for days when the surf is bigger. I found this tiny thing held really well with that fin and handled tons of speed really well.",
+          "board_category_slug": "groveler"
+        }
+      ]
+    }
+  ]
+}
