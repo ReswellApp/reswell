@@ -1,0 +1,172 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "matta-surfboards",
+      "name": "MATTA Surfboards",
+      "website_url": "https://www.matta.surf/",
+      "location_label": "Costa da Caparica, Portugal",
+      "founder_name": "Nuno Matta",
+      "lead_shaper_name": "Nuno Matta",
+      "short_description": "Independent Costa da Caparica surfboards founded in 1996 by Nuno Matta, with named performance shorts, hybrids, and twins from the official factory and showroom at Rua Jaime Cortesão, Quinta da Vitória de Fora.",
+      "models": [
+        {
+          "name": "J5",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2022/12/2023_J5_deck.jpg",
+          "description": "The number 5 was the number on the jersey of Jadson while he was throwing the most technical, lofty airs on the World Championship Tour. This model is a collaboration between Nuno Matta and Ricardo Martins. It is a full on high performance shape that performs as your stand out high performance shortboard, yet it can also be ordered just that little bit shorter and wider.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "TLX",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2022/12/2023_TLT_deck.jpg",
+          "description": "You could say this could be your standard high performance shortboard, but there is nothing standard about it. This board allows for that extra bit of connection to the wave that surprises you — that solid, satisfying feeling through carves and long, drawn out bottom turns. It will maintain control in high speed turns and powerful waves while lifting you to the next level in your surfing ability.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SMP2",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2022/12/2023_SMP2_deck.jpg",
+          "description": "Sam Piter is growing and growing, so we wanted to update the successful design of the SMP to accommodate the physical changes that such a young, talented surfer goes through.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Pink Panther",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2024/01/2024_PP_deck.jpg",
+          "description": "The girls board.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MTM 2",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2022/12/2023_MTM2_deck.jpg",
+          "description": "This board has been designed for everyday use. Wake up, have breakfast, go for a surf. The outline provides a forgiving platform for big turns and makes it easy and forgiving to ride. On waves you need speed, and that is exactly what this board will bring you. Fast, swift and gentle on those Monday morning legs.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MTM Channel",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2022/12/2023_MTMch_deck.jpg",
+          "description": "This is the MTM model with added channels. It is the same board with more horse power. It will step up a notch or two and go into the next gear when taken into the water of that perfect point break, generating extra acceleration on open walls or full on speed and extra hold on those steeper sections.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "MTM Pool",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2025/05/2025_MTMpool_deck.jpg",
+          "description": "Meet the Pool Board — your go-to for small wave sessions and artificial perfection. Born from the DNA of the MTM and created as a celebration of Sam Piter's entry for the 2025 Stab High competition, this modern shape is fine-tuned for today's conditions: whether you are threading the perfect section in your local wavepool or making the most of knee-high runners at home.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "TTT",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2022/12/2023_TTT_deck.jpg",
+          "description": "It is a new curve, it is a new board that all our team riders are extremely excited about.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Petit Diable",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2022/12/2023_PD_deck.jpg",
+          "description": "Petit Diable is the SMP model. This board was designed for kids that want to make the next steps in their surfing. It is a powerful platform under their feet to grow their surfing ability to new heights.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Driver",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2022/12/2023_DRV_deck.jpg",
+          "description": "You like to be in the drivers seat? Get this board. Hit the gas, it will hit you back! This model generates speed like no other, while still maintaining control, flow and breaks out when needed in the pocket.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Driver XL",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2022/12/2023_DRVxl_deck.jpg",
+          "description": "Big guys shred too. This is the driver geared up for heavy machinery, heavy muscles and heavy humans.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Gravy",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2022/12/2023_GRV_deck.jpg",
+          "description": "Designed for barrels. The wide point of this board is more up front, which will get you into that gnarly beast.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Gravy X",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2022/12/2023_GRVx_deck.jpg",
+          "description": "Designed for turns and barrels. The step up board. It is perfect for power waves, that one model you need.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Lekker",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2022/12/2023_LKK_deck.jpg",
+          "description": "Lekker means good in Dutch. It is such a nice, sexy word to say and it is very versatile. The friendly board.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Lekker Channel",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2022/12/2023_LKKch_deck.jpg",
+          "description": "This is the Lekker model with added channels. It is the same board with more horse power. It will still work in the waves like the mushy North Sea.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Lekker Round",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2022/12/2023_LKKrnd_deck.jpg",
+          "description": "Lekker means good in Dutch. It is such a nice, sexy word to say and it is very versatile. The rounded friendly board.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "2825 MT",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2022/12/2023_2825MT_deck.jpg",
+          "description": "It is good to mix things up. Combine the right ingredients and you get a winner of a surfboard. It makes you find the joy of surfing in really small conditions.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "2825",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/05/2825_Deck_smart_black_2017-2.jpg",
+          "description": "The endless summer is here. This design was created to generate nothing but speed in really small waves. It makes you find the joy of surfing.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "SSB",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/05/SSB_deck_2017-2.jpg",
+          "description": "The Summer Silver Bullet. The smooth operator. It is different, it is fast, it has a free flow on a wave.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "SSB Round",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2024/04/2023_SSBrnd_deck.jpg",
+          "description": "The Summer Silver Bullet with a round tail. The smooth operator. It is different, it is fast, it has a free flow on a wave.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "BFF",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2024/04/2023_BFF_deck.jpg",
+          "description": "The Best Friend Forever board. The wider nose helps you to catch every wave you paddle for, the round pin tail makes it easy to turn.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "T20",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2019/12/2019_T20_green_deck.jpg",
+          "description": "The limited edition twin fin board. While celebrating 20 years of shaping, Nuno Matta used his black magic to bring back to life his first surfboard.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Pottz Tri Fin",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/POTTZ3_DECK.jpg",
+          "description": "This modern shortboard was created to celebrate Mr Pottz and continue his legacy. It is based on the MTM, then poured over a secret sauce in collaboration with Martin Potter. This is a high performance, modern, state of the art shortboard.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Pottz Twin Fin",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2017/09/POTTZ2_DECK.jpg",
+          "description": "The Saint. Martin Potter collaboration twin fin on the official MATTA catalog, with an epic artwork like it is 1989 all over again.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Hubby",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2024/04/2024_HUBBY_deck.jpg",
+          "description": "Girls Powered by MATTA – Hubby.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Triskle",
+          "image_url": "https://www.matta.surf/wp-content/uploads/2024/04/2024_TRISKLE_deck.jpg",
+          "description": "Girls Powered by MATTA – Triskle.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
