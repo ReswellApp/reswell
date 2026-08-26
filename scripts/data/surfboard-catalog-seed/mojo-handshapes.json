@@ -1,0 +1,88 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "mojo-handshapes",
+      "name": "Mojo Handshapes",
+      "website_url": "https://www.mojohandshapes.com/",
+      "location_label": "Whangamata, New Zealand",
+      "founder_name": "Mark O'Connor",
+      "lead_shaper_name": "Mark O'Connor",
+      "short_description": "Hand-shaped custom logs, longboards, mid-lengths, and performance retro surf craft by Mark O'Connor in Whangamata, New Zealand.",
+      "models": [
+        {
+          "name": "Catfish",
+          "image_url": "https://static.wixstatic.com/media/f4ada7_93d83c764485407e81a2047a0342bc66~mv2.jpeg",
+          "description": "Super fun fast fish. Wide point forward slightly pulled in Fish Swallow. Available as Quad or Twin. Loves junk but excels in good clean hollow waves. Flat deck with more of a beveled rail and beak nose. Great paddler and speed to burn. 5'4\"-6'2\". 1-5ft. Intermediate to advanced. Designer Mark O'Connor.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Hula Log",
+          "image_url": "https://static.wixstatic.com/media/11e436_bb715219a24b403c8750ac5850a38eea~mv2.jpg",
+          "description": "Our most popular log. Very versatile for great all-round logging. Flat rocker with pronounced tail kick. Moderate single concave to a slight flat panel into rolled vee. 50/50 rails with a bit of pinch. 9'2\"-10'. 1-3ft. Beginner to advanced logger. Designer Mark O'Connor.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "T Bone Twin",
+          "image_url": "https://static.wixstatic.com/media/11e436_a662456e676444ad86516fb52758b6b8~mv2.jpeg",
+          "description": "Super fun Twin with performance fun in mind. Mid rocker and rails. With or without Squirt Channel. Can be customised with fin options and also available with Rounded Squash tail. It's a great paddler with speed to burn. Available as Twin, Twin plus trailer or Twinzer. 5'6\"-6'8\". 2ft to overhead. Intermediate to advanced. Designer Mark O'Connor.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Crossroads",
+          "image_url": "https://static.wixstatic.com/media/f4ada7_4c2a957af5054d0684b84764c7b596b3~mv2.jpg",
+          "description": "Our take on the modern Mal. Single to double spiral vee. Round or Square tail. 60/40 rails with edge in the tail. Single fin or 2+1 set up. Ride it easy or get on the tail and hit some lips. 9'0\"-9'6\". 1-5ft. Beginner to advanced. Designer Mark O'Connor.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Lovin Machine",
+          "image_url": "https://static.wixstatic.com/media/11e436_ea7f1dbf75da41aab6d6c8b288677920~mv2.jpg",
+          "description": "All round Speed Egg or Mid length to some. Down railed low rocker single to double with nice bit of Vee (Spiral Vee). Available as a 2+1 or twin fin. A super fun and versatile board. 6'6\"-8'2\". 1ft to overhead. Beginner to advanced. Designer Mark O'Connor.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Electric Log",
+          "image_url": "https://static.wixstatic.com/media/11e436_0c3e4f6ed84448b9a4fa87615ceda5e5~mv2.jpeg",
+          "description": "The Electric Log was designed as a more versatile log for a wide range of conditions. By relaxing the rocker and creating a more constant curve the Electric log is at home in a wide range of conditions. A great board if you are starting on the road to logging or as a better wave log for more advanced loggers. Also available with a bit of edge in the tail if you are looking for a bit more bite in your turns. 9'0\"-9'6\". 1-3ft. Beginner to intermediate logger. Designer Mark O'Connor.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "LSB",
+          "image_url": "https://static.wixstatic.com/media/f4ada7_6105200ba00b4c26ba0c3767190d4da1~mv2.jpeg",
+          "description": "Basically, a down railed low rocker Egg Twin. Super versatile board for a lot of conditions. Switch out with upright Twins or keels to get a board that works in a large range of conditions. If you love speed and carving turns the LSB is the one for you. Can be with or without Channels. 6'6\"-7'6\". 3ft to overhead. Intermediate to advanced. Designer Mark O'Connor.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Sultan",
+          "image_url": "https://static.wixstatic.com/media/f4ada7_0522250ed47b4d17afac2ba590c7cede~mv2.jpeg",
+          "description": "The sultan is a very fast and versatile speed demon. Low rails with a medium rocker. With or without channels. 5'6\"-7'2\". 2-8ft. Intermediate to Advanced. Designer Mark O'Connor.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mojo Pin",
+          "image_url": "https://static.wixstatic.com/media/11e436_61dbe2ad3275424badd6bacdda71a93b~mv2.jpg",
+          "description": "The Mojo Pin is a better wave speed shape type of log. Single concave to mellow rolled vee. Pinched 50/50 rails with a bit of edge in the tail. More foiled out than our other logs to handle surf with a bit more power without losing the feel of a traditional log. Slightly more relaxed rocker and nice area pintail. 9'0\"-9'6\". 2-5ft. Beginner to advanced. Designer Mark O'Connor.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Scoop Dawg",
+          "image_url": "https://static.wixstatic.com/media/11e436_a3e61be6be914e91b3065d9cbafb2a05~mv2.jpeg",
+          "description": "The scoop dawg is a fuller outline log with a wider square tail and pronounced tail concave or scoop in the tail. Single scoop nose concave and foiled 50/50 rails. Flat rocker with nice tail kick. Available in single or double cedar stringers. 9'4\"-10'. 1-3ft. Beginner to advanced. Designer Mark O'Connor.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Freebird",
+          "image_url": "https://static.wixstatic.com/media/f4ada7_4d0f76e4f4c54dd9b466e0db61f54b8d~mv2.jpeg",
+          "description": "Section connecting cross country glider. Super smooth transitions. Our Gliders have a nice constant rocker. Super fun to surf in the right conditions. They need plenty of room, so not suited to your average crowded beachie. 9'6\"-10'4\", 11'-12' depending on blank availability. Intermediate to advanced. Designer Mark O'Connor.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "King / Queen Bee",
+          "image_url": "https://static.wixstatic.com/media/f4ada7_0acc83581ecc4397ab648b8bb83cd6f4~mv2.jpg",
+          "description": "The King / Queen Bee is a more parallel railed log with a nice hip. 50/50 rails with a light nose concave and mellow roll through the tail. Great for more pivot style turns and nose riding. 9'6\"-10'. 1-3ft. Beginner to advanced. Designer Mark O'Connor.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
