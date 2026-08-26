@@ -1,0 +1,50 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "san-francisco-surfboards",
+      "name": "San Francisco Surfboards",
+      "website_url": "https://www.sfsurfboards.com/",
+      "location_label": "Ocean Beach, San Francisco, California",
+      "short_description": "Custom hand-shaped surfboards from Ocean Beach, San Francisco.",
+      "models": [
+        {
+          "name": "Step Up",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5f5c29f76d1e5c3c84de3a2d/3ecbd6ce-2ad8-487c-bb5f-59f49d7c4b5e/6%274aquared.jpg?format=1500w",
+          "description": "This Step Up is a shortboard on a few extra shots of espresso for those barreling days. You have the option to run as a thruster, quad, or five-fin set-up. Comes with a round, pin tail or a swallow tail and is pulled in with more volume. Recommended as a 6’4-7’0.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Santiago Crasher",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5f5c29f76d1e5c3c84de3a2d/9e187c5f-0292-4eb4-8fa6-91e688a7afec/6%278x20-3%3A8x2-5%3A8.jpeg?format=1500w",
+          "description": "The Santiago Crasher is an all around board from small to medium waves. This board has more volume lower and lower entry rocker to help you get though the flat spots and snag a few good ones on junk days. Recommended as a 6’0-7’0.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mini Log",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5f5c29f76d1e5c3c84de3a2d/9cb6d6f9-0d5e-4560-9f7c-26b7ec111b4e/7%274x21-3%3A4x2-3%3A4aquaorange.jpg?format=1500w",
+          "description": "The Mini Log is going to be more of a classic egg shape. A great board for someone who is transitioning into their first hard board or for someone who just wants something fun for everyday conditions. Recommended as an 6’10 - 8’6.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Midlength",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5f5c29f76d1e5c3c84de3a2d/f800f8c3-39f6-41d8-b259-1b1922a67edf/7%2710x21x3-4%2B1.jpg?format=1500w",
+          "description": "The Midlength is a versatile shape. It’ll work well in bigger waves as well as cruise through those small, sloppy days. The wider template gives it plenty of paddle power and the more aggressive rail makes this a double threat. Fin setup will either be a 2+1 or a quad with a single fin box in the middle. Recommended as an 7’10 - 9’6.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "2+1",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5f5c29f76d1e5c3c84de3a2d/c2bd712b-d037-46d6-85a4-b8194abf906a/aquaseagreen.jpg?format=1500w",
+          "description": "The 2+1 is a high performance longboard. Recommended as an 9’0 - 10’0.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Gun",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/5f5c29f76d1e5c3c84de3a2d/0e374d8e-33e3-4434-b360-4a1b34d67d73/7%276x19-1%3A4x2-3%3A4aquafront.jpg?format=1500w",
+          "description": "A gun is going to be designed for more critical waves. This is shaped with a little more foam under the chest. Recommended as a 7’0 - 8’6.",
+          "board_category_slug": "step-up-gun"
+        }
+      ]
+    }
+  ]
+}
