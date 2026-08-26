@@ -1,0 +1,76 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "ben-webb-surfboards",
+      "name": "Ben Webb Surfboards",
+      "website_url": "https://www.surfboardsbybenwebb.com/",
+      "location_label": "South of the Gold Coast, Australia",
+      "founder_name": "Ben Webb",
+      "lead_shaper_name": "Ben Webb",
+      "short_description": "Alternative surfboard designs crafted start to finish by Ben Webb, located south of the Gold Coast, Australia.",
+      "models": [
+        {
+          "name": "Percher",
+          "image_url": "https://static.wixstatic.com/media/844cd4_1272b2448eec4484bb5e442e78602a00~mv2.png",
+          "description": "Traditional 60s inspired log. This shape has been developed toward the classic style of pivot turns, hotdogging and noseriding. The Percher is a heavy log with a rolled deck into pinched 50/50 rails. The bottom has deep rolled curves creating a smooth hull feeling, combined with the nose concave make for a great noserider.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "TwinSword",
+          "image_url": "https://static.wixstatic.com/media/844cd4_8361af6047164360a5bbd9f9a50c676e~mv2.png",
+          "description": "Looking for a longer board with extra foam and not wanting to go down the mid length route. I started working on a longer Twinblade, closer to a gun / big guy board mixed with a twin fin configuration. The lively twin fin feel allows you to still throw a bigger board around with minimal effort. Stacked with trim speed and paddle power its a board I've been surfing in all types of conditions and sizes.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Vault",
+          "image_url": "https://static.wixstatic.com/media/844cd4_950ad360feec462285d000bc994b3c71~mv2.png",
+          "description": "This board is motivated by my old mans shapes and the surfing done around the late 90's early 2000s. Longer rail lines, carvey type surfing. I ride the Vault in medium size waves head high and up. Slightly narrower and lower on the foam than the average board, to be ordered 2 to 3 inches longer than your height. This board has the most control and hold I've ever felt, the drive off the front foot made a huge difference to my surfing. It has some inspiration from my fathers old designs (Greg Webb) hence the old Shaping co Logo.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SubVault",
+          "image_url": "https://static.wixstatic.com/media/844cd4_70fb40e526e44dd98e69da106c1fe8dd~mv2.png",
+          "description": "Not wanting to effect the integrity of the Vault. I've designed a more all rounder version. For anyone asking to add more width and foam to the Vault, there's the SubVault. The board has some subtle changes including lower overall rocker and deeper concave. The outline runs straighter from center to back fins then breaks in, making a hip for more pivot. Order the length at your height or 1 - 2 inch below.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SC.Box",
+          "image_url": "https://static.wixstatic.com/media/844cd4_cef76d1006204c908b59ca5d5250feef~mv2.png",
+          "description": "The SC.BOX came about from wanting a board I can really lean on and push hard off the tail. It's made for those open faced, carve-focused waves, but it also works great on most average days. The extra foam creates momentum and using the bottom curves to keep drive and flow. I went with a lower rocker, a forward wide point, and a double concave to help the board carry speed and stay connected through turns. A lot of the inspiration came from Greg's 80s shapes — flat deck, beak nose and Box logo.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Twinblade",
+          "image_url": "https://static.wixstatic.com/media/844cd4_fb856c96336042c0a3d789cd26cf987e~mv2.png",
+          "description": "This board came about from a need for a step down board in average conditions. The Twinblade has similar elements to a shortboard while also feeling more freed up. There's a controlled release mixed surprisingly with hold and a tighter pivot. I surf this board from waist to head high, but really can be surfed in bigger waves too.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Loafer",
+          "image_url": "https://static.wixstatic.com/media/844cd4_f7ce2a99df324b20ad09c1b5dd09d30b~mv2.png",
+          "description": "Updated Loafer fish. Same low rocker, curved tail template without the keel fins now running a medium keel fin around 5.5\" fins positioned further back. Instead of the flat bottom to vee I've added single concave to vee creating more curve in the rail line. The great thing about this design is there's so much built in speed, allowing less time spent on pumping and more time on drawing lines.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Step up Vault",
+          "image_url": "https://static.wixstatic.com/media/844cd4_f8955fde60ea47c582b3fd7670d3f52a~mv2.png",
+          "description": "The main change to the step up is more foam in the front half. The center point is also pushed forward creating a longer rail line in the back half. Rocker is also increased slightly and subtly vee added out the tail.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Butterknife",
+          "image_url": "https://static.wixstatic.com/media/844cd4_bdc0a06e50084eb8aabe13d89db021ae~mv2.png",
+          "description": "This is a chopped down shortboard alternative to the Vault when the waves are small. Wide point moves forward of center keeping lines drawn out. Matched with a low entry rocker into a staged flatter center with some kick out the tail. The bottom has a deep double concave into vee in the tail. Making a fast down the line board that rolls rail to rail smooth like a snowboard.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Spearhead",
+          "image_url": "https://static.wixstatic.com/media/844cd4_a7246c4732414c12a45f15586acf3790~mv2.png",
+          "description": "This is an alternative midlength design I use in softer waves and point breaks. Midlength / egg shape I run in a variation of lengths. Thickness is made to order higher as an easy paddler while the deck is domed into a low rail. Spiral vee bottom design creates a smooth feel to turn off. Matched with a 2 + 1 setup for drive and long arcing turns.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
