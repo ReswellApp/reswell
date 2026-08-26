@@ -1,0 +1,100 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "b-clem-surfboards",
+      "name": "B. Clem Surfboards",
+      "website_url": "https://www.bclemsurfboards.com/surfboards",
+      "location_label": "Honolulu, Hawaii",
+      "founder_name": "Brent Clem",
+      "lead_shaper_name": "Brent Clem",
+      "short_description": "Hand-shaped custom surfboards by Brent Clem in Honolulu, Hawaii.",
+      "models": [
+        {
+          "name": "Minutia",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/1765404719345-MAD4ULVDEAVL3YTTSBWF/minutia.png",
+          "description": "This is the model team rider Matt Vasquez rides. Shaped to provide lift for noseriding while preserving speed and seamless glide along the wave's face, it features wider pulled-in hips, parallel rails, and a moderate nose scoop with user-friendly rails for all levels. Ideal for small to medium surf at points, reefs, or beach breaks. A versatile noserider that works best with a traditional pivot fin.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Pizza Pizza",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/1765403764994-F67M00JB1588W4W3BEF1/pizza+pizza+new.png",
+          "description": "A Mini Simmons that pays homage to Bob Simmons. It blends looseness, skate-like maneuverability, speed, and fluidity. Mini Simmons boards excel on lackluster days and still shine when the waves are overhead. The flat, straight design glides swiftly across the water.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "El Barong",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/1745095272768-P25RG5MI0DRW7KGRD719/el+barong.png",
+          "description": "A mid-formance twin pin for a loose, cruisy feel. Something a little shorter in the lineup for surfers who don't want to work too hard to get into good waves. Tested on bigger days on the South and North Shore, and tried for all conditions.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Hybrid Shorty",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/1743699659219-JYIVDOE06C063Q5HERWN/hybrid+short.png",
+          "description": "A tried-and-tested hybrid shortboard with volume in the right places and easy paddle. Designed for transitioning from a mid-length or longboard to something shorter and more agile, or for an accomplished logger surfing high-performance waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Log Jammin'",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/1742320979835-0OIVI0L92Y474209M9CB/Log+Jammin+Top+Updated.png",
+          "description": "A midformance longboard that handles one-foot slop through overhead barrels. Great as a single fin, even better as a 2+1. A hard-edged tail creates more drive and maneuverability for beginner to novice riders looking for one versatile log or a board to refine noseriding.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Billy Duke",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/1742319509833-SL4A8B4P22Z73I7AN8FA/billy+duke.png",
+          "description": "A contemporary evolution of the modern pig. It combines a classic logger-style noserider with a wider-hipped tail for more performance, plus a touch more width in the nose and softer rails at the tail. 50/50 rails and a single-entry nose concave into a rolled V make trimming and noseriding easy.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Townie",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/1742319578841-63J8Q52BSDOTQ43G6X2O/townie+updated+top.png",
+          "description": "A performance log (POG) for cross-stepping from nose to tail in all conditions. Pronounced kick tail and rocker add speed and maneuverability, while concave through the front keeps traction in the pocket for smooth noseriding. Designed to be surfed seamlessly from tail to nose.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "El Medio",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/1742319847600-X0KJFBFIQ79V0TX7PW59/el+medio+updated+top.png",
+          "description": "An easy modern midlength for intermediate surfers and mediocre conditions. Full nose, low-to-moderate rocker, boxy rails, and mid-to-high volume. Typically 7 to 8 feet, it excels in small to medium-sized waves.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "O'Dell Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/1742319781621-73ABMGGF37ALAQ5L92LA/odell+twin+updated+top.png",
+          "description": "A replica of a retro twin from the 1980s, recreated from an old Bob Burns Local Motion twin. Surfing this board brings back power turns and radical maneuvers from that era.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Town Tooter",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/1742320810920-BI2JAQLIPZY54GVYUPCB/town+tooter+top+updated.png",
+          "description": "A midformance performance log with a rolled back end, slightly pulled-in nose, and a distinct fliptail. The pulled-in nose creates drag through the tail while riding the nose. Ideal for knee to head-high waves around town.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "El Cabrón",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/1742319965974-ADBPZDN3G2QEVT8KK3WK/el+cabron+updated+top.png",
+          "description": "A traditional pig designed to ride shorter and faster. Compact outline with a narrower, slightly pointed beaked nose, down rail forward, wide point set back, and a 50/50 rail out the back. Wide, shallow swallow tail with a single-fin setup.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Slacker",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/a9dbbdfc-9598-4805-bbd2-f75b7203bdca/Tracker+Top.png",
+          "description": "A classic Tracker shape — the missing link from longboard to shortboard. Drawing from George Greenough and Marc Andreini, it has a natural rocker and a rolled bottom into a subtle vee toward the tail for effortless glide and graceful turns.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Retro Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/1742325673521-AZ7VAS3695DYKYUIP3XZ/retro+fish+top+updated.png",
+          "description": "A classic retro fish with updated curves and rocker. Loose, cruisy, and fast down the line, it allows unconventional lines and turns. Best in waist-high to just-overhead waves, it feels like a skateboard in a concrete bowl.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Abider Glider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/671fc77f1d644662d4fa52c0/1742320741624-GLU7SK8QAON926JN4TCL/abider+glider+top+updated.png",
+          "description": "A glider for the ultimate single-fin experience. Flat and fast for smooth, effortless speed, it excels in knee to head-high waves with long, cruisy rides, stability, and easy planing.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
