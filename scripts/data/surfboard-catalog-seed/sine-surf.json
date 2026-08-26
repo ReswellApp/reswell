@@ -1,0 +1,46 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "sine-surf",
+      "name": "Sine Surf",
+      "website_url": "https://sinesurf.com/",
+      "location_label": "Westleigh, New South Wales, Australia",
+      "founder_name": "Emile Theau",
+      "lead_shaper_name": "Emile Theau",
+      "short_description": "High-performance hollow wooden surfboards by Emile Theau, made from plantation paulownia in Sydney, Australia.",
+      "models": [
+        {
+          "name": "ButterCup",
+          "image_url": "https://cdn.shopify.com/s/files/1/0531/5582/3785/files/P1055046.jpg?v=1711347993",
+          "description": "The ButterCup is a performance Groveller surfboard, designed to put a smile in your surfing even when the waves are small. The ButterCup is designed to make surfing easier and more fun on days when the surf is less powerful and not overhead. This is done by elegantly placing a large amount of volume into a small package helping you paddle and allowing the board to easily glide and float over whatever section you come across. Paired with modern rails and contours the board will carry you through cut backs, whips and surf sharply like a high-performance surfboard. It has a unique deck profile, with a regular curved deck contour at the tail moving into a flat deck at the nose. The flat deck will improve your chest comfort when you paddle and helps increase the surfboard volume and paddle power. The rails are 60/40 rounded with a deck bevel at the nose and centre with a hard edge developing towards the tail.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "SunSpear",
+          "image_url": "https://cdn.shopify.com/s/files/1/0531/5582/3785/files/P1055087.jpg?v=1711347531",
+          "description": "The SunSpear is a modern fish surfboard, taking the best aspects of traditional 1970's fish surfboards, mixed with performance shortboard features. Shaped by Emile Theau and tested by Sydney's best surfers, over several years it's been incrementally tuned up and locked in. With a lot of volume, elegantly despersed into a small package, it has great paddling ability, giving you the upper hand in any lineup. You'll be able to catch more waves and spend more time surfing. Like traditional fishes, the overall rocker profile is fairly flat, although increased slightly to add manouverability. The surfboard carries you through long drawn out arcs, high lines, but also loves to whip and pivot in an organic way. The rails are 60/40 rounded at the nose and centre with a hard edge developing towards the tail.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Garnet",
+          "image_url": "https://cdn.shopify.com/s/files/1/0531/5582/3785/files/P1055063.jpg?v=1711354473",
+          "description": "The Garnet is a performance twin pin surfboard, designed for speed, flow and manoeuvrability. I wanted to design a twin pin that felt loose during a pivot, but also held it's line in steep sections and through cut back turns. It's designed to bring out the best of twin pin surfing, honing a free feeling that can also lock in and drive when the wave gets critical. This shape has a lot of volume, elegantly distributed throughout its length helping you catch more waves and spend more time up and surfing. It paddles and floats like a midlength but holds and turns like a shortboard. The Garnet has a unique flat deck profile, improving the comfort of your chest when paddling. The rails are 60/40 rounded with a deck bevel throughout.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Strider",
+          "image_url": "https://cdn.shopify.com/s/files/1/0531/5582/3785/files/P1055095.jpg?v=1711347419",
+          "description": "The Strider is a performance midlength surfboard that takes a timeless egg outline mixed with modern performance midlength features. Shaped by Emile Theau and tested by Sydney's best surfers (Declan Wyton, Harisson Stewart, ...), it's been fine tuned to unlock the best aspects of midlength surfing. The strider has a lot of volume, tapered elegantly at the nose and tail. It allows you to paddle faster and catch more waves, giving you more time up and surfing. It has a flatter rocker making it fast, with great speed conservationa across flatter sections but also enough curve to drive you in a tight arc when putting the board hard on rail. The rails are 60/40 rounded at the nose and centre with a hard edge developing towards the tail.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Daywalker",
+          "image_url": "https://cdn.shopify.com/s/files/1/0531/5582/3785/files/P1044602.jpg?v=1711356089",
+          "description": "The Daywalker is our modern noserider longboard. Designed by Emile Theau with close guidance from Steve O'Donnell and feedback from Declan Wyton (world no. 6) and Lawrence Harkness. The Daywalker embodies a deep dive into Australian longboarding history and culture, taking aspects of traditional log surfboards with added performance characteristics. Get this board in trim and it'll be one of the best feelings you experience. Rounded rails throughout help lock the board into the wave, giving you plenty of support when making steps towards the nose. Towards the tail the rail is tapered, allowing you to cut into the wave face for great connection from the beginning to the end of turns.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
