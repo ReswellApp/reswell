@@ -218,9 +218,9 @@ export function MarkSoldSurveyForm({
         </div>
       </section>
 
-      <section className="flex min-h-[10.75rem] flex-1 flex-col justify-end">
+      <section className="flex min-h-[16rem] flex-1 flex-col justify-end">
         {hasValidTip ? (
-          <div className="h-full min-h-0">{tipCheckout}</div>
+          <div className="h-full min-h-0 overflow-y-auto">{tipCheckout}</div>
         ) : (
           <Button type="button" className="w-full" disabled={!canSubmit} onClick={onSubmit}>
             {loading ? "Saving…" : "Done"}

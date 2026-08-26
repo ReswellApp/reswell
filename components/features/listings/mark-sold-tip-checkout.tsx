@@ -26,11 +26,16 @@ export function prefetchSaleTipStripeJs(): void {
 }
 
 function formatStripeConfirmError(error: unknown): string {
-  if (error && typeof error === "object" && "message" in error) {
-    const msg = (error as { message?: unknown }).message
-    if (typeof msg === "string" && msg.trim()) return msg
+  if (error == null) return "Payment could not be confirmed."
+  if (typeof error !== "object") return String(error)
+  const o = error as Record<string, unknown>
+  const msg = typeof o.message === "string" ? o.message.trim() : ""
+  if (msg) return msg
+  try {
+    return JSON.stringify(error, Object.getOwnPropertyNames(error as object))
+  } catch {
+    return "Payment could not be confirmed."
   }
-  return "Payment could not be confirmed."
 }
 
 function TipPaymentForm({
@@ -105,7 +110,7 @@ function TipPaymentForm({
         if (!result.ok) toast.error(result.message)
       } catch (err) {
         console.error("Sale tip checkout error", err)
-        toast.error("Something went wrong. Try again.")
+        toast.error(formatStripeConfirmError(err))
       } finally {
         setBusy(false)
       }
@@ -123,20 +128,12 @@ function TipPaymentForm({
             Loading card form…
           </p>
         ) : null}
-        <div className="min-h-0 flex-1 overflow-hidden">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           <PaymentElement
             options={{
               layout: "tabs",
               paymentMethodOrder: ["card"],
               wallets: { applePay: "never", googlePay: "never" },
-              fields: {
-                billingDetails: {
-                  name: "never",
-                  email: "never",
-                  phone: "never",
-                  address: "never",
-                },
-              },
             }}
             onReady={() => setPaymentReady(true)}
             onLoadError={(event) => {
@@ -151,7 +148,7 @@ function TipPaymentForm({
         <Button
           type="submit"
           className="h-9 w-full shrink-0"
-          disabled={busy || !stripe || !!elementLoadError}
+          disabled={busy || !stripe || !paymentReady || !!elementLoadError}
         >
           {busy ? (
             <>
