@@ -1,0 +1,52 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "locus-surfboards",
+      "name": "Locus Surfboards",
+      "website_url": "https://www.locussurfboards.com/",
+      "location_label": "Santa Cruz, California",
+      "founder_name": "Tyler Hopkins",
+      "lead_shaper_name": "Tyler Hopkins",
+      "short_description": "Hand-shaped Ecoboard surfboards by Tyler Hopkins in Santa Cruz, California.",
+      "models": [
+        {
+          "name": "Gibbon",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/593eba0286e6c0d633f4a3e3/1516859049083-3Z9LA87BUO3O7NA0XOS6/Locus-Gibbon-CU.jpg",
+          "description": "The Gibbon model is a performance planing hull designed to generate a ton speed and flow. The bottom has a slight vee transitioning to a single then deep double concave through the tail. Combined with low entry rocker and tail rocker. The Gibbon produces very little drag making for easy paddling and quick planing. The Gibbon is one of our most versatile boards generating its own speed and projection making less than ideal conditions all around more fun. Although, this design is not to be confused as just a small wave board as it performs really well in clean conditions up into the head + range. If you want to increase your wave counts and still rip off full rail turns, the Gibbon is for you. The Gibbon should be ridden 6 to 8 inches shorter than your standard short board.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Slack Tide",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/593eba0286e6c0d633f4a3e3/ca68098a-2556-45b8-9e38-d6e8e333f54d/IMG_2923.JPG",
+          "description": null,
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Butter Knife",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/593eba0286e6c0d633f4a3e3/1546111429048-QT7ZGBZJ7M61IAUBDEXA/9%271+Jackie-1-12.jpg",
+          "description": "The Butter Knife is a tried and true performance longboard. This model has been tested by our team in everything from 2 ft slop to well overhead beach break. Performing great in all but the weakest of conditions the Butter Knife really comes to life in the 3 - 8ft zone. The wide point is a bit forward making for a nice taper through the tail ending in a beautiful and functional pin tail. This produces a rail line that holds really well in the pocket and allows for quick rail to rail surfing. The bottom features a slight single concave through the nose finishing with slight panel vee through the tail. Performance rails with a nice hard edge through the tail round off the package. Sizes: 8' - 9'6\". Fins: Single or 2+1",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Monkey Wing",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/593eba0286e6c0d633f4a3e3/1516854996453-XPCJ6JAEWYFY611K8JG3/Monkey-Wing-Surfboard-Top.jpg",
+          "description": "The Monkeywing model is a Simmons-inspired planing hull. Short, wide and fast! This model really flies! The Monkey Wing is designed to extract the maximum amount of fun from even the most gutless surf. Very low entry rocker coupled with a wide outline and shovel nose make for easy paddling and instant speed on take off. The bottom is given slight vee transitioning to a single then a double concave out the back. The double concave in the tail compresses water and pushes that energy into the big twin keels generating lots of drive. The Monkeywing has extremely good projection out of bottom turns and the Locus designed keels hold all that speed through turns. The Monkeywing should be ridden 6 to 12 inches shorter than your standard shortboard.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "The Shakedown",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/593eba0286e6c0d633f4a3e3/1538617925474-IY1AAEEXQJHO3DID61VQ/Shakedown+Thumb.jpeg",
+          "description": "The Shakedown is a high performance-planning hull. Designed to be a great fit as a daily driver. With a straight, parallel outline and the overall width pulled in much closer to a more contemporary shortboard design. This model produces a ton of projection and drive. As a result the Shakedown must be ridden 6-12 inches shorter than your standard shortboard. Allowing the rider to easily overpower this down the line drive. The bottom has mid entry rocker and low, drag reducing tail rocker coupled with single to double concave through the tail. Designed to be ridden as a quad the Shakedown also performs well as a twin with wide based keels. The Shakedown paddles great and requires little energy to pop up on a plane. It produces speed effortlessly allowing the rider to focus on what to do with all that speed rather than generating it. This model excels in surf in the 2ft-6ft range. Hands down the most versatile model in our line up.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Booster Twin",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/593eba0286e6c0d633f4a3e3/f8020b58-5e75-4cd3-95b0-ebf673bde74a/IMG_0818.JPG",
+          "description": null,
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
