@@ -1,0 +1,60 @@
+{
+  "generated_for": "Tom Wegener official model catalog",
+  "source": "https://tomwegenersurfboards.com/models",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "tom-wegener-surfboards",
+      "name": "Tom Wegener Surfboards",
+      "website_url": "https://tomwegenersurfboards.com",
+      "location_label": "Noosa, Queensland, Australia",
+      "founder_name": "Tom Wegener",
+      "lead_shaper_name": "Tom Wegener",
+      "short_description": "Noosa, Queensland surfboards shaped by Tom Wegener.",
+      "models": [
+        {
+          "name": "Noserider",
+          "image_url": "https://tomwegenersurfboards.com/sites/default/files/styles/large/public/corky%20noserider%20at%20NL-itok=CL47ZRym.jpeg",
+          "description": "The Corky method has allowed me to get the flex that has been the sort of holy grail of noseriding while maintaining strength and consistent flex. The wood will not break or lose its flex or memory allowing for years of advanced noseriding. When on the nose you can control the rocker and speed up or stall or climb or drop in the pocket. The board flexes and springs so it feels like you are on a diving board or trampoline.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "12' Sunday Glider",
+          "image_url": "https://tomwegenersurfboards.com/sites/default/files/styles/large/public/12%20water%203-itok=7rlKdboX.JPG",
+          "description": "I see the 12 footer as the very short end of the spectrum of longboards. Longboards are from 12 to 20 feet long. I pull the centre of volume back from the midpoint because I want the sweet spot to be back to tighten the turning radius. My corky gliders focus on small waves and running through long green walls. I make the tail thicker to come out of tight turns with speed. The Corky 12 footer is half the weight and has soft rails.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Model A",
+          "image_url": "https://tomwegenersurfboards.com/sites/default/files/styles/Model%20A%20in%20water%202%20crop.jpg",
+          "description": "The Model A is the best Surfboard for learning how to surf. It is geared for catching waves easily and early, and then having control through the drop. The Model A makes the answer “surf” as the surfer glides toward the shoulder and finds trim. But it is not only a beginner board, it noserides well and one only needs to advance to the next board when either hanging ten becomes too easy or board feels slow in bigger waves. The corky Model A is soft and user friendly.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Finless Corkys",
+          "image_url": "https://tomwegenersurfboards.com/sites/default/files/styles/corky%20on%20rack.jpg",
+          "description": "The corky finless is the current phase in a long evolution in surfboard design. Extra dense EPS and XPS foams along with cork and veneers of paulownia make the boards. The spring and flex in the tail gives a quick response to turning and a tight radius. This board is stiff through the middle for a fast skimming surface area. With finless the rails slide as you drift around every corner and then accelerate out of the turn as the rails reengage with the wave.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Toothpick",
+          "image_url": "https://tomwegenersurfboards.com/sites/default/files/styles/toothpick.jpg",
+          "description": "If I could have only two surfboards, one would be an alaia and one would be a toothpick. The toothpick glides across a swell better than any other board I have known. The finesse and elegance of sliding into a swell way outside the impact zone on a long hollow plywood board is surreal. You feel the energy of the open ocean swell as it slows as it feels the bottom and lifts. The surfing is technical as you are going fast, but have to slowly anticipate where the wave is going and set your line early.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Ancient Hawaiian Olo",
+          "image_url": "https://tomwegenersurfboards.com/sites/default/files/styles/large/public/Olo%20on%20beach-itok=M36PHPAj.jpg",
+          "description": "The Olo surfboard was reserved for the ancient Hawaiian royal class. Surfing as the “sport of kings” comes from stand-up surfing by the royalty of Hawaii surfing on the long Olo surfboards. In 2004 I visited the Bishop Museum in Hawaii specifically to see and template the 16’ Olo of high chief Paki. I replicated this board and surfed it through 2005. It weighed 150 lbs and took a long time to understand.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Alaia",
+          "image_url": "https://tomwegenersurfboards.com/sites/default/files/styles/large/public/Chris%20del%20Moro%20alaia-itok=fnF2PNlh.jpg",
+          "description": "The Alaia is a thin wood surfboard used by the ancient Hawaiians. Although it was their most popular surfboard for hundreds of years, it virtually disappeared from history for the entire 20th century. Because the surfboard is very thin, never more than one inch or 24mm thick, it is difficult to paddle and without fins it was thought that it could not angle across a wave.",
+          "board_category_slug": "other"
+        }
+      ]
+    }
+  ]
+}
