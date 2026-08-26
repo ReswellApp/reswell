@@ -1,0 +1,108 @@
+{
+  "generated_for": "Mica Surfboards official named standup catalog",
+  "source": "https://micasurfboards.com/en/surfboards",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "mica-surfboards",
+      "name": "Mica Surfboards",
+      "website_url": "https://micasurfboards.com/",
+      "location_label": "Ericeira, Portugal",
+      "founder_name": "Mica Lourenço",
+      "lead_shaper_name": "Mica Lourenço",
+      "short_description": "Custom surfboards hand-shaped by Mica Lourenço in Ericeira, Portugal.",
+      "models": [
+        {
+          "name": "Peter's Relaunch",
+          "image_url": "https://micasurfboards.com/files/hl2xHQW0VjMFdGKI.png",
+          "description": "The Peter´s Relaunch is a lively small waves board tweaked with a few high performance design techniques to take surfing to the next level. The fuller surfboard outline provides speed and floatation to paddle easy into the waves. Its most notable feature is the double winged squash tail. It decreases the surface area in the tail, while balancing the volume of the nose area to give response and release. The concave to double to vee makes the wider squash tail looser and easier to turn in softer sections of the wave. Using a five fin setup increases the versatility of Peter´s Relaunch. A quad helps to loose the tail easier when the waves are weaker and a thruster provides drive and stability in every day conditions.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Pump",
+          "image_url": "https://micasurfboards.com/files/wkzXRScrG6Lg7Qrx.png",
+          "description": "The Pump is a radical speed bomb performing in smaller waves just like a high performance surfboard. It is designed for progressive versatility, fun and speed in one to four feet high waves. The fuller plane shaped surfboard is equipped with a flat deck that helps to carry more volume, giving the design an amazing ability to catch waves. The rocker is low to allow the board to generate surprising speed even in the weakest of conditions. To increase its adaptability to a variety of conditions, we suggest riding the Pump with a square or squash tail. The Pump rides best with a slightly deeper single concave bottom, which helps you to maintain drive and flow in all sections of the wave. You can surf the Pump two to four inches shorter then yourself.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Spoon",
+          "image_url": "https://micasurfboards.com/files/jRk3YKIesMNYoKEW.png",
+          "description": "The Spoon is your playful high performance buddy that brings loads of fun and versatility to small waves. It is the perfect alternative to your every day shortboard, as you will have same entertainment, speed and reactiveness in weaker conditions. The Spoon provides a smooth and connected feeling that enables you to draw tight arcs close to the foam ball. The surfboard outline has a fuller but still performance-oriented nose giving the Spoon an amazing ability to catch waves. Nose and tail rocker are low to allow the board to generate speed even in dismal conditions. The Spoon rides best with a diamond or squash tail. We suggest a deeper single concave bottom that accelerates in smaller waves to plane out quickly with abundant drive and flow.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Ugly Princess",
+          "image_url": "https://micasurfboards.com/files/JSgciZf5Sajr4pq9.png",
+          "description": "The Ugly Princess is a gentle and gracious wave catcher and thus the perfect buddy for small, soft summer days. Just like kissed by a prince these rather ugly board turns out princesses when gliding down the line. It is an entertaining board to ride smoothly and progressive at the same time in the weakest of conditions. The Ugly Princess has, just like a princess, a very sensitive responsive character. The surfboard outline is fuller plane shape with a lot of volume especially in the nose area to catch waves with surprisingly less effort. The flatter rocker and deck profile help to carry more volume, giving the design plenty of stability when up and surfing. Additionally, full rails provide a forgiving and yet responsive feel. Depending on your own preferences and conditions of your home break you can surf the Ugly Princess with a squash, square or round tail. We suggest a single concave bottom that provides top speed, drive and flow in the weakest of conditions.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Todo Terreno",
+          "image_url": "https://micasurfboards.com/files/UdECRqQKPiEd38EW.png",
+          "description": "The Todo Terreno is the perfect ATV (All-terrain vehicle) for all kinds of conditions. It is designed to adapt perfectly to every type of wave, while keeping up its magic as a flexible and speedy high performance surfboard. The Todo Terreno is the perfect choice for travellers with single board bags. The Todo Terreno has a narrow high performance surfboard outline and medium lift exit rocker to allow the board to fit into critical turns. The design blends surface area, rocker and performance curves to create a very all-round, fast and flowing shortboard. A round or thumb tail is the perfect fit to adapt best to every wave setting. We suggest riding the Todo Terreno with a single concave to double between the fins. This type of bottom ensures plenty of power and speed.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Essential",
+          "image_url": "https://micasurfboards.com/files/5T7fUBJblL0mKJdn.png",
+          "description": "The Essential is designed to give courageous surfers hold and control when the waves are getting serious. As a step-up solution the Essential is a responsive and trustful performance shortboard that wants to be surfed in more powerful swells. A narrow surfboard outline is combined with a extremer rocker. Both support an easy entrance in deeper conditions. The round tail allows the board to draw clean open face carves close to the pocket. It gives plenty of control at higher speed in more powerful surf. We suggest a single concave in the entry and vee throughout the tail as the perfect combination of speed and looseness.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Big Game",
+          "image_url": "https://micasurfboards.com/files/9qrkiI1NMUS983Lf.png",
+          "description": "The Big Game is made for exceptional conditions that require a trustful connection with the board and enough paddle power to catch the bomb of the day. It has a smooth and controlled feeling independently of the wave size, providing reliability when the set is coming. The surfboard outline is narrower in the nose and slightly more refined in the tail to allow the rounded pin tail to connect smoothly. The pin tail helps you to draw big carves by staying closer to the pocket at the same time. The Big Game rides best with a smooth full concave bottom. It provides hold and stability in serious conditions especially on tubing days.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Ovoo",
+          "image_url": "https://micasurfboards.com/files/pga7CEZMfUXDqGAr.png",
+          "description": "The Ovoo is an entertaining board meeting beginners at a progressive and more advanced surfers at a fun level. It is a trustful and forgiving wave catcher that helps you to surf your favorite waves as long as possible. If you are new to surfing, the Ovoo is the type of board you would take out to progress. The surfboard outline has plenty of volume under the chest for easy paddle and stability. Yet, a tighter squash tail contributes to flexible maneuverability. As a result, the Ovoo provides a smooth connected feeling and the ability to respond quickly when a good section lines up. The bottom is perfectly balanced between a single concave in the entry and vee throughout the tail. It gets up to top-speed in the mushiest of conditions while simplifying rail to rail transitions.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Minilong",
+          "image_url": "https://micasurfboards.com/files/4L5L8eJnljTc9Psn.png",
+          "description": "We designed the Minilong to bring great fun and versatility to small waves. It is a mini-longboard in size and shape combining the characteristics of a longboard and performance oriented every day shortboard. The surfboard outline approximates a funboard in the front half, yet it draws back to a tighter back half. The wider outline near the surfer's chest gives you paddle power and the narrow tail area lets you draw tight turns just like a performance shortboard. This specific outline allows you to surf radical but with a relaxed sense of style to find flow in all types of small conditions. Its flat rocker allows the board to gain surprising speed in the weakest of conditions to handle any good upcoming section. In combination with a squash tail, the Minilong works splendidly in all types of conditions. We suggest a bottom that runs from a slight vee in the entry to an accented vee out the tail. This bottom gives the board great speed, control from rail-to-rail as well as looseness and responsiveness. The Minilong rides best in the same size as yours.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Go Fish",
+          "image_url": "https://micasurfboards.com/files/SVK4T3Prv4FReDYj.png",
+          "description": "The Go Fish is designed for smaller and softer conditions. It is also the perfect solution for anyone starting out and looking for the transition from an Ovolution or softboard to the first surfboard that will allow to progress. The way the Go Fish is so easy to paddle and effortlessly generating speed allows you to ride this board with a relaxed mindset. The wide surfboard outline has generously plenty of volume under the chest for stronger paddle power, yet performance off the back foot thanks to a narrower swallow tail. All of this translates to you no more getting rails stuck in soft waves. We suggest a single concave in the entry into a slight double out the tail, which gives the board great speed to get through any soft section of the wave and ensures most tail release possible. All these features make the Go Fish handle those days where surface area and speed are crucial for maximum fun.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Keep it Long",
+          "image_url": "https://micasurfboards.com/files/CyqrvVvqfr6mNzUA.png",
+          "description": "Longboards are timeless and diverse. Both beginners and every-day surfers will appreciate easy wave catching, speed and wonderful smooth cruising. The Keep it Long has a fluid and flowing style for both, laid back and high performance settings. The Keep it Long is typically above eight feet in length. It features an outline with a rounded nose and a lower rocker profile. Smoothly gliding through the waves makes longboarding a state of mind. You can define yours with special features like a nose bubble, nose ride, your favorite tail, bottom and fin setup. It is just like your state of mind - you are free to create it.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Jimi Model",
+          "image_url": "https://micasurfboards.com/files/zdy0aNIH5CvgVzMy.png",
+          "description": "The Jimi Model is a classic retro board inspired by surfboard shapers in the 1960ies and 1970ies. With it we want to reintroduce that irresistible, addictive feeling of gliding freely through the water into nowadays surfing. The Jimi Model allows you to surf in harmony with the wave and draw clean, unbroken lines. The surfboard outline has generally a fuller nose and sharper rails. The widest point is two to eight inches closer to the nose. Its water drop like design lets you glide rapidly from section to section. You will be able to pull beautiful smooth turns without any effort. The Jimi Model rides best with a fish or diamond tail, but round and squash tails are fun too. We suggest a vee to double vee in between the fins. This bottom provides extra looseness for effortless rail-to-rail transitions.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "Still Single",
+          "image_url": "https://micasurfboards.com/files/cOELVkpbGZXJNBkf.png",
+          "description": "The Still Single offers an unmistakable smooth and glide-oriented old school style of surfing. It gets you early into the waves and endorses you to draw such different lines than a standard thruster. The Still Single allows you to ride in syntony with the wave, making your surfing fluid and flowing. The surfboard outline has straighter lines and sharper rails, which enable you to surf clean, unbroken turns. The Still Single feels stable and fast thanks to the single fin. Any tail fits, you can simply choose your favorite. We suggest a full vee bottom that intensifies the floating feeling, making the board looser and rail-to-rail transitions easier. To add a special spark we love to fiberglass the Still Single a bit heavier and decorate it with beautiful resin tint.",
+          "board_category_slug": "other"
+        },
+        {
+          "name": "S. Model",
+          "image_url": "https://micasurfboards.com/files/xeL22TAtGirGuCcP.png",
+          "description": "There are not many better feelings then surfing big s-shaped bottom-lip-bottom-lip turns. If point breaks or beach breaks, the S.Model is designed to give you the best support possible to perform these s-shaped turns. The board provides great sensitivity and a smooth connected feeling to draw seamless lines. A narrow high performance surfboard outline provides abundant acceleration for radical carves. To top it off, the rocker has an additional quarter of an inch in the tail that makes the board more maneuverable in the pocket. The S.Model performs best with a hipped squash tail to fit even closer into the pocket. We suggest a deeper single concave bottom, which provides an extra amount of speed and drive for powerful turns.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Scrambler",
+          "image_url": "https://micasurfboards.com/files/U7Kke75y6MUz2PyZ.png",
+          "description": "The Scrambler is a responsive small wave high performance surfboard designed to focus on maximum speed and sensitivity. For a shorter board that accomplishes the balance between performance and innovation, the Scrambler brings a new dimension to surfing. The clean surfboard outline is shorter and slightly wider for more paddle power and speed. Yet, it draws back to a swallow tail that gives extra looseness for radical turns even in dismal conditions. A full concave bottom provides the board with acceleration and offers in combination with a flatter rocker a special performance spark. It is best ridden two inches shorter then your average shortboard.",
+          "board_category_slug": "shortboard"
+        }
+      ]
+    }
+  ]
+}
