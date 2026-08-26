@@ -1,0 +1,106 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "ellis-surfboards",
+      "name": "Ellis Surfboards",
+      "website_url": "https://ellissurfboards.com/",
+      "location_label": "San Clemente, California",
+      "founder_name": "Mark Ellis",
+      "lead_shaper_name": "Mark Ellis",
+      "short_description": "Independent San Clemente surfboards shaped by Mark Ellis, with named performance shorts, fish, mid-lengths, and longboards from the official shop at 213 Calle De Los Molinos.",
+      "models": [
+        {
+          "name": "The Groveler",
+          "image_url": "https://img1.wsimg.com/isteam/ip/a0ad2fd6-4b74-49eb-9dc9-c9c3c6dbfda4/Groveler.jpg",
+          "description": "The Groveler is your everyday go to. It has a slightly fuller front end and constant outline curve to allow seamless turns, a single concave though out for speed. Available with square, squash or swallow tail.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Round Tail Ripper",
+          "image_url": "https://img1.wsimg.com/isteam/ip/a0ad2fd6-4b74-49eb-9dc9-c9c3c6dbfda4/Del%20Step.jpg",
+          "description": "The R.T.R is a versatile one board quiver. From waist high to overhead. From tubes to tricks. Tight rails and Single to double concave.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Hy-Tri",
+          "image_url": "https://img1.wsimg.com/isteam/ip/a0ad2fd6-4b74-49eb-9dc9-c9c3c6dbfda4/IMG_5397%20Hy%20Tri-0001.jpg",
+          "description": "This Hybrid Tri fin is the result of years of input from Dana Point style master Eric Diamond aka E.D. A full volume board based off of my HQ model with some minor adjustments to tail and fin placements. A medium rocker with a single to subtle double concave and full outline allow for easy glide. Lots of edge around the fins give a good bite on the turns. 5'8\" to 7'6\".",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Carve XL",
+          "image_url": "https://img1.wsimg.com/isteam/ip/a0ad2fd6-4b74-49eb-9dc9-c9c3c6dbfda4/IMG_4274.jpg",
+          "description": "A Big Boy short board, for the over 180 Lbs crew. Full volume meets Performance. A single concave to double spiral off tail. Available swallow, round or squash tail.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "H Q",
+          "image_url": "https://img1.wsimg.com/isteam/ip/a0ad2fd6-4b74-49eb-9dc9-c9c3c6dbfda4/H%20Q.jpg",
+          "description": "The Hybrid Quint is a versatile medium volume wave catcher. Ride it short as a Fish for summer kicks. Ride it Large for outer reefs and point breaks. 5'6\" - 7'6\" stock as 5-fin Swallow. also available as Tri or Twin.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Fun Thing",
+          "image_url": "https://img1.wsimg.com/isteam/ip/a0ad2fd6-4b74-49eb-9dc9-c9c3c6dbfda4/Fun%20Thing.jpg",
+          "description": "The Fun Thing is a user friendly all round board. For casual cruising to Rad Ripping. Fuller outline for Paddle and Float. From 6'0\" to 8'6\" Tri.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Diamond Tail Quad",
+          "image_url": "https://img1.wsimg.com/isteam/ip/a0ad2fd6-4b74-49eb-9dc9-c9c3c6dbfda4/DTQ%20web.jpg",
+          "description": "The Diamond Tail Quad has low entry rocker for paddle and glide with a single concave to spiral Vee off the tail. It's flat deck give it more volume for float and stability. Quad fin system, 5'6\" - 7'6\".",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "2020 Twin",
+          "image_url": "https://img1.wsimg.com/isteam/ip/a0ad2fd6-4b74-49eb-9dc9-c9c3c6dbfda4/Fish%205%204%20Keel.jpg",
+          "description": "This Twin is not Retro, It just might be your every day rip stick. Medium rocker, performance rails and a single to double concave to Vee bottom. removable or glass-on Keels. Ride +2\" to -2\" your height.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Easy Rider",
+          "image_url": "https://img1.wsimg.com/isteam/ip/a0ad2fd6-4b74-49eb-9dc9-c9c3c6dbfda4/Long%20colors.jpg",
+          "description": "The Easy Rider is a user friendly every day board. Tail rocker for flowing turns and a subtle concave in the nose for tip time. Available 2+1 or Single 9'0\" - 10'0\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Performance Long",
+          "image_url": "https://img1.wsimg.com/isteam/ip/a0ad2fd6-4b74-49eb-9dc9-c9c3c6dbfda4/Jameson.jpg",
+          "description": "The Performance Long is sleek and fine tuned for off the tail turns and lip bashing. It has slight concave throughout for speed and bite. A good choice for tube chasers. Also a replacement for your outer reef gun. 2+1 or Single.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mini Rider",
+          "image_url": "https://img1.wsimg.com/isteam/ip/a0ad2fd6-4b74-49eb-9dc9-c9c3c6dbfda4/Mini%20long.jpg",
+          "description": "The Mini Rider is the downsized version of the Easy Rider. Made for surfers 150 Lbs and less. 8'0\" to 8' 10\".",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "The Hulk",
+          "image_url": "https://img1.wsimg.com/isteam/ip/a0ad2fd6-4b74-49eb-9dc9-c9c3c6dbfda4/Long%203%20pin.JPG",
+          "description": "The Hulk is a Full Volume Tanker (24'+ wide and 3 3/8\"+ thick). It can ride the smallest swells but can also hold it's own in overhead surf as well. Concave up front, Flat at center to Vee off the back for turn-ability. 9'0\" - 11'0\" Single or 2+1.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Style Master",
+          "image_url": "https://img1.wsimg.com/isteam/ip/a0ad2fd6-4b74-49eb-9dc9-c9c3c6dbfda4/Retro%20espinola.JPG",
+          "description": "The Style Master has low rocker, a 60/40 rail and a Vee to Flat to Vee bottom. Round or Square tail, Knee patch, Single fin Box or Glass-on.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "80's Glider",
+          "image_url": "https://img1.wsimg.com/isteam/ip/a0ad2fd6-4b74-49eb-9dc9-c9c3c6dbfda4/GW.jpg",
+          "description": "Trim and Glide are what it's all about. With a wide point forward outline and a medium rocker sporting a flat to Vee bottom. Stock fin set up is the Widow Maker 2+1 - can also be ordered as Tri fin. Ride 6 inches to 2 feet over your height.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "80's Twin",
+          "image_url": "https://img1.wsimg.com/isteam/ip/a0ad2fd6-4b74-49eb-9dc9-c9c3c6dbfda4/shank%20twin.jpg",
+          "description": "The 80's Twin is a high volume low rocker-ed machine. Thick off both ends with full rails and hard edges off the back end. Flat to double concave Vee off tail. Twin Glass on or removable. Center stabilizer available. Ride 0\" to 4\" shorter.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
