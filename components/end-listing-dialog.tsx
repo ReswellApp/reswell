@@ -172,9 +172,12 @@ export function EndListingDialog({
         className={cn(
           followUpOpen
             ? [
-                "left-0 top-0 flex h-[100dvh] max-h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-3 overflow-hidden overscroll-none rounded-none",
+                "left-0 top-0 flex h-[100dvh] max-h-[100dvh] min-h-0 w-full max-w-none translate-x-0 translate-y-0 flex-col gap-3 overflow-hidden overscroll-none rounded-none",
                 "p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]",
-                "sm:left-[50%] sm:top-[50%] sm:h-[40rem] sm:max-h-[40rem] sm:w-full sm:max-w-md sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg sm:p-5",
+                "sm:left-[50%] sm:top-[50%] sm:w-full sm:max-w-md sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg sm:p-5",
+                tipCheckoutActive
+                  ? "sm:h-[min(48rem,calc(100dvh-2rem))] sm:max-h-[calc(100dvh-2rem)]"
+                  : "sm:h-[min(40rem,calc(100dvh-2rem))] sm:max-h-[calc(100dvh-2rem)]",
               ]
             : "max-h-[90vh] overflow-y-auto sm:max-w-lg",
         )}

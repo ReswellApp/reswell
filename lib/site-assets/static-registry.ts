@@ -132,6 +132,24 @@ export function listStaticSiteAssets(): SiteAssetEntry[] {
     publicImage("brand/boards-browse-barrel.jpg", "Surfboards browse atmosphere (Hawaii aerial)", "brand", [
       "/boards",
     ]),
+    publicImage(
+      "cities/santa-barbara-mesa-lane.jpg",
+      "Santa Barbara city landing atmosphere",
+      "marketing",
+      ["/reswell/santa-barbara"],
+    ),
+    publicImage(
+      "cities/charleston-coast.jpg",
+      "Charleston city landing atmosphere",
+      "marketing",
+      ["/reswell/charleston"],
+    ),
+    publicImage(
+      "cities/los-angeles-coast.jpg",
+      "Los Angeles city landing atmosphere",
+      "marketing",
+      ["/reswell/los-angeles"],
+    ),
     publicImage("brand/wetsuits-browse-atmosphere.jpg", "Wetsuits browse atmosphere", "brand", [
       "/wetsuits",
     ]),

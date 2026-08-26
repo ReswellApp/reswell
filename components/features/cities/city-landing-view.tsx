@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo } from "react"
+import type { StaticImageData } from "next/image"
 import { useSearchParams } from "next/navigation"
 import { BoardsBrowseClient } from "@/components/boards-browse-client"
 import { CityLandingListings } from "@/components/features/cities/city-landing-listings"
@@ -11,10 +12,41 @@ import {
 } from "@/lib/city-landing-filters"
 import { pickCityTopSellerListings } from "@/lib/city-landing-top-listings"
 import type { CityLandingPageData } from "@/lib/types/city-landing"
+import charlestonCoast from "@/public/images/cities/charleston-coast.jpg"
+import losAngelesCoast from "@/public/images/cities/los-angeles-coast.jpg"
 import santaBarbaraMesaLane from "@/public/images/cities/santa-barbara-mesa-lane.jpg"
 
-function isSantaBarbara(city: CityLandingPageData["city"]): boolean {
-  return city.slug === "santa-barbara" || city.city.toLowerCase() === "santa barbara"
+type CityAtmosphere = {
+  image: StaticImageData
+  className: string
+}
+
+function cityAtmosphere(city: CityLandingPageData["city"]): CityAtmosphere | undefined {
+  const slug = city.slug
+  const name = city.city.toLowerCase()
+
+  if (slug === "santa-barbara" || name === "santa barbara") {
+    return {
+      image: santaBarbaraMesaLane,
+      className: "object-[center_62%] md:object-[38%_55%]",
+    }
+  }
+
+  if (slug === "charleston" || slug === "charleston-sc" || name === "charleston") {
+    return {
+      image: charlestonCoast,
+      className: "object-[center_48%] md:object-[center_42%]",
+    }
+  }
+
+  if (slug === "los-angeles" || slug === "los-angeles-ca" || name === "los angeles") {
+    return {
+      image: losAngelesCoast,
+      className: "object-[center_62%] md:object-[center_58%]",
+    }
+  }
+
+  return undefined
 }
 
 export function CityLandingView({ data }: { data: CityLandingPageData }) {
@@ -31,7 +63,7 @@ export function CityLandingView({ data }: { data: CityLandingPageData }) {
     [listings, query],
   )
   const topSellerListings = useMemo(() => pickCityTopSellerListings(listings), [listings])
-  const santaBarbara = isSantaBarbara(city)
+  const atmosphere = cityAtmosphere(city)
 
   return (
     <section className="bg-offwhite">
@@ -39,11 +71,9 @@ export function CityLandingView({ data }: { data: CityLandingPageData }) {
         <BoardsBrowseClient
           counts={counts}
           title={`${city.city} Used Surfboards`}
-          atmosphere={santaBarbara}
-          atmosphereImage={santaBarbara ? santaBarbaraMesaLane : undefined}
-          atmosphereImageClassName={
-            santaBarbara ? "object-[center_62%] md:object-[38%_55%]" : undefined
-          }
+          atmosphere={Boolean(atmosphere)}
+          atmosphereImage={atmosphere?.image}
+          atmosphereImageClassName={atmosphere?.className}
           showHoverBarListBoard
           afterHeader={
             topSellerListings.length > 0 ? (

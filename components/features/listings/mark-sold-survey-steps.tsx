@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { cn } from "@/lib/utils"
 import {
   SALE_TIP_MAX_USD_LABEL,
   SALE_TIP_MIN_CENTS,
@@ -89,69 +90,77 @@ export function MarkSoldSurveyForm({
   const noTipSelected = selectedTipCents === null && !customTip.trim()
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <section className="shrink-0 space-y-1.5">
-        <h3 className="text-sm font-medium">Where did you sell it?</h3>
-        <div className="grid grid-cols-2 gap-1.5">
-          {CHANNELS.map((channel) => (
-            <Button
-              key={channel}
-              type="button"
-              size="sm"
-              variant={soldChannel === channel ? "default" : "outline"}
-              className="h-8 px-2 text-xs"
-              disabled={loading}
-              title={SOLD_OFF_PLATFORM_CHANNEL_LABELS[channel]}
-              onClick={() => onChannelChange(channel)}
-            >
-              {CHANNEL_SHORT_LABELS[channel]}
-            </Button>
-          ))}
-        </div>
-        {soldChannel === "elsewhere" ? (
-          <Input
-            value={elsewhereDetail}
-            onChange={(event) => onDetailChange(event.target.value)}
-            placeholder="Where did you sell it?"
-            maxLength={200}
-            disabled={loading}
-            aria-invalid={!elsewhereDetailValid}
-            className="h-8"
-          />
-        ) : null}
-        {soldChannel && soldChannel !== "reswell" ? (
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="reswell-helped-find-buyer"
-              checked={helpedOffPlatform}
-              disabled={loading}
-              onCheckedChange={(checked) => onHelpedOffPlatformChange(checked === true)}
-            />
-            <Label
-              htmlFor="reswell-helped-find-buyer"
-              className="text-xs font-normal text-muted-foreground"
-            >
-              Reswell helped find the buyer
-            </Label>
+    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+      <div
+        className={cn(
+          "min-h-0 space-y-3 overflow-y-auto overscroll-contain",
+          hasValidTip ? "max-h-[min(16rem,34dvh)] shrink-0" : "flex-1",
+        )}
+      >
+        <section className="space-y-1.5">
+          <h3 className="text-sm font-medium">Where did you sell it?</h3>
+          <div className="grid grid-cols-2 gap-1.5">
+            {CHANNELS.map((channel) => (
+              <Button
+                key={channel}
+                type="button"
+                size="sm"
+                variant={soldChannel === channel ? "default" : "outline"}
+                className="h-8 px-2 text-xs"
+                disabled={loading}
+                title={SOLD_OFF_PLATFORM_CHANNEL_LABELS[channel]}
+                onClick={() => onChannelChange(channel)}
+              >
+                {CHANNEL_SHORT_LABELS[channel]}
+              </Button>
+            ))}
           </div>
-        ) : null}
-      </section>
+          {soldChannel === "elsewhere" ? (
+            <Input
+              value={elsewhereDetail}
+              onChange={(event) => onDetailChange(event.target.value)}
+              placeholder="Where did you sell it?"
+              maxLength={200}
+              disabled={loading}
+              aria-invalid={!elsewhereDetailValid}
+              className="h-8"
+            />
+          ) : null}
+          {soldChannel && soldChannel !== "reswell" ? (
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="reswell-helped-find-buyer"
+                checked={helpedOffPlatform}
+                disabled={loading}
+                onCheckedChange={(checked) => onHelpedOffPlatformChange(checked === true)}
+              />
+              <Label
+                htmlFor="reswell-helped-find-buyer"
+                className="text-xs font-normal text-muted-foreground"
+              >
+                Reswell helped find the buyer
+              </Label>
+            </div>
+          ) : null}
+        </section>
 
-      <section className="shrink-0 space-y-1.5">
+      <section className="space-y-1.5">
         <div className="flex items-baseline justify-between gap-2">
           <h3 className="text-sm font-medium">Tip Reswell</h3>
           <p className="text-xs text-muted-foreground">Optional</p>
         </div>
-        <p className="text-[11px] leading-snug text-muted-foreground">
-          We hope you enjoyed your experience here at Reswell. We are working hard every day
-          to make Reswell the most enjoyable and trusted place to buy and sell surfboards. If
-          you feel inclined to leave a tip and feedback, we highly appreciate it — it helps us
-          continue to build Reswell into the surfer&apos;s marketplace we have always dreamed
-          of. Thanks again for being a part of Reswell!
-          <span className="mt-1 block font-medium text-foreground/80">
-            — Hayden Garfield, CEO, Reswell
-          </span>
-        </p>
+        {hasValidTip ? null : (
+          <p className="text-[11px] leading-snug text-muted-foreground">
+            We hope you enjoyed your experience here at Reswell. We are working hard every day
+            to make Reswell the most enjoyable and trusted place to buy and sell surfboards. If
+            you feel inclined to leave a tip and feedback, we highly appreciate it — it helps us
+            continue to build Reswell into the surfer&apos;s marketplace we have always dreamed
+            of. Thanks again for being a part of Reswell!
+            <span className="mt-1 block font-medium text-foreground/80">
+              — Hayden Garfield, CEO, Reswell
+            </span>
+          </p>
+        )}
         <div className="flex flex-wrap gap-1.5">
           <Button
             type="button"
@@ -195,7 +204,7 @@ export function MarkSoldSurveyForm({
         ) : null}
       </section>
 
-      <section className="shrink-0 space-y-1.5">
+      <section className="space-y-1.5">
         <h3 className="text-sm font-medium">Rate Reswell</h3>
         <div className="flex flex-wrap gap-1.5">
           {[1, 2, 3, 4, 5].map((value) => (
@@ -217,10 +226,16 @@ export function MarkSoldSurveyForm({
           ))}
         </div>
       </section>
+      </div>
 
-      <section className="flex min-h-[16rem] flex-1 flex-col justify-end">
+      <section
+        className={cn(
+          "flex flex-col",
+          hasValidTip ? "min-h-0 flex-1" : "shrink-0",
+        )}
+      >
         {hasValidTip ? (
-          <div className="h-full min-h-0 overflow-y-auto">{tipCheckout}</div>
+          <div className="flex h-full min-h-0 flex-col">{tipCheckout}</div>
         ) : (
           <Button type="button" className="w-full" disabled={!canSubmit} onClick={onSubmit}>
             {loading ? "Saving…" : "Done"}

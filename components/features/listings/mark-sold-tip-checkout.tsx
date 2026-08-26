@@ -128,10 +128,10 @@ function TipPaymentForm({
             Loading card form…
           </p>
         ) : null}
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <PaymentElement
             options={{
-              layout: "tabs",
+              layout: "accordion",
               paymentMethodOrder: ["card"],
               wallets: { applePay: "never", googlePay: "never" },
             }}
@@ -145,20 +145,22 @@ function TipPaymentForm({
             }}
           />
         </div>
-        <Button
-          type="submit"
-          className="h-9 w-full shrink-0"
-          disabled={busy || !stripe || !paymentReady || !!elementLoadError}
-        >
-          {busy ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Processing…
-            </>
-          ) : (
-            `Send ${amountLabel} tip`
-          )}
-        </Button>
+        <div className="shrink-0 bg-background pt-1">
+          <Button
+            type="submit"
+            className="h-9 w-full"
+            disabled={busy || !stripe || !paymentReady || !!elementLoadError}
+          >
+            {busy ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing…
+              </>
+            ) : (
+              `Send ${amountLabel} tip`
+            )}
+          </Button>
+        </div>
       </form>
     </div>
   )
