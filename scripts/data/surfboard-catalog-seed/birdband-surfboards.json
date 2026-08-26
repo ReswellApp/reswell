@@ -1,0 +1,130 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "birdband-surfboards",
+      "name": "Birdband Surfboards",
+      "website_url": "https://birdbandsurfboards.com/",
+      "location_label": "Mar del Plata, Argentina",
+      "founder_name": "Pepe Gil",
+      "lead_shaper_name": "Pepe Gil",
+      "short_description": "Hand-shaped surfboards by Pepe Gil in Mar del Plata, Argentina, near Playa Grande. Independent shaping bay since 1991.",
+      "models": [
+        {
+          "name": "SD Pro",
+          "image_url": "https://birdbandsurfboards.com/wp-content/uploads/2024/05/SD-PRO-FRENTE.jpg",
+          "description": "La SD pro bird es la ultima versión de la evolución continua de nuestro shortboard profesional más fácil de usar! Ideal para olas pequeñas a medianas, desarrollada para surfistas de nivel medio – avanzado , adaptándose muy fácil a los surfistas cotidianos. Medidas disponibles de 5’4″ a 6’6″",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mata Wave",
+          "image_url": "https://birdbandsurfboards.com/wp-content/uploads/2024/05/MATAWAVE-FRENTE.jpg",
+          "description": "El Mata wave es un diseño con una curva moderada que nos permite surfear olas pequeñas y medianas, sin perder él estilo que nos proporciona un modelo high performance. Medidas disponibles de 5’4″ a 6’3″",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Raptor",
+          "image_url": "https://birdbandsurfboards.com/wp-content/uploads/2024/06/RAPTOR-FRENTE.jpg",
+          "description": "El raptor funciona muy bien en una gran variedad de olas, desde puntas a rompientes de playa y tiene uno de los rockers mas fáciles de usar y de alto rendimiento que hemos diseñado, suave y limpio, con entrada media/baja hasta el medio con un buen balance hacia la cola. Medidas disponibles de 5’5″ a 6’8″",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Round Storm",
+          "image_url": "https://birdbandsurfboards.com/wp-content/uploads/2024/06/ROUND-STORM-FRENTE.jpg",
+          "description": "Un modelo de tabla súper versátil, una opción para usar en cualquier parte del mundo. Medidas disponibles de 5’8″ a 7’0″",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Round Storm XL",
+          "image_url": "https://birdbandsurfboards.com/wp-content/uploads/2024/10/ROUND-STORM-FRENTE-XL.jpg",
+          "description": "Un modelo de tabla súper versátil, una opción para usar en cualquier parte del mundo. Medidas disponibles de 5’9″ a 7’0″",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "H Bird",
+          "image_url": "https://birdbandsurfboards.com/wp-content/uploads/2024/05/H-BIRD-FRENTE-1.jpg",
+          "description": "El H-bird es un equilibrio entre tradición y rendimiento moderno. Adecuado tanto para surfistas de élite como para surfistas cotidianos, esta tabla se la reconoce por su uso diario, por su versatilidad en todo tipo de condiciones de surf, desde olas pequeñas de 1 a 3 pies hasta olas de 8 pies. Medidas disponibles de 5’2″ a 7’0″",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "HCPP",
+          "image_url": "https://birdbandsurfboards.com/wp-content/uploads/2024/05/HCPP-FRENTE-1.jpg",
+          "description": "La HCPP pertenece a la familia de la SQUASH BIRD , una versión de mayor dimensión y diseñada para ser tu tabla de referencia para condiciones diarias. Medidas disponibles de 5’8″ a 6’6″ ( Consultar otras medidas )",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Squash Bird",
+          "image_url": "https://birdbandsurfboards.com/wp-content/uploads/2024/06/SCUASH-BIRD-FRENTE.jpg",
+          "description": "La Squash bird pertenece a la familia de la round storm , una versión reducida y diseñada para ser tu tabla de referencia para condiciones diarias. Medidas disponibles de 5’6″ a 6’6″",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Squash Bird XL",
+          "image_url": "https://birdbandsurfboards.com/wp-content/uploads/2024/06/Squash-bird-front2.jpg",
+          "description": "La Squash bird pertenece a la familia de la round storm , una versión reducida y diseñada para ser tu tabla de referencia para condiciones diarias. Medidas disponibles de 5’6″ a 6’6″",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SW Bird",
+          "image_url": "https://birdbandsurfboards.com/wp-content/uploads/2024/05/SW-BIRD-frente.jpg",
+          "description": "Este modelo swallow tiene un rocker mas bajo en cola y punta , para una mejor conducción y velocidad en la linea de la ola. Medidas disponibles de 5’6″ a 6’3″",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Mid Bird",
+          "image_url": "https://birdbandsurfboards.com/wp-content/uploads/2024/05/MID-BIRD-FRENTE-1.jpg",
+          "description": "El mid bird es un diseño clásico moderno! Inspirado en líneas limpias y de bordes mas largos dibujadas por los huevos tradicionales y los single fin, el Mid bird infunde esa vibra atemporal con la nitidez, la sensibilidad y la libertades posibles gracias a las características modernas sinónimo de los principios de diseño de Birdband. Medidas disponibles de 6’6″ a 7’6″",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Minimal Fun",
+          "image_url": "https://birdbandsurfboards.com/wp-content/uploads/2024/06/MINIMAL-FUN-FRENTE.jpg",
+          "description": "El modelo minimal fun es perfecto para olas de todos los tamaños y para todos los niveles de surf. Medidas disponibles de 6’4″ a 7’8″",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Egg Bird",
+          "image_url": "https://birdbandsurfboards.com/wp-content/uploads/2024/05/EGG-BIRD-FRENTE.jpg",
+          "description": "El egg bird es una extensión del modelo H-bird. Para todos aquellos surfistas que disfrutan del shortboard, quedo claro que la tabla corta, relativamente plana y redondeada es una propuesta fácil para una diversión rápida en olas mas pequeñas. Medidas disponibles de 5’6″ a 6’5″",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Retro Fish",
+          "image_url": "https://birdbandsurfboards.com/wp-content/uploads/2024/06/frente-retro-fish.jpg",
+          "description": "Este modelo inspirado con el adn de Steve lis fish, es uno de nuestros peces favoritos! Estilizado y afinado para mayor rendimiento, lo que lo convierte en una tabla versátil que puede energizar tú sesión promedio. Medidas disponibles de 5’4″ a 6’2″",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Twin Round",
+          "image_url": "https://birdbandsurfboards.com/wp-content/uploads/2024/05/TWIN-ROUND-FRENTE-1.jpg",
+          "description": "Muy suelta y divertida en olas pequeñas si la utilizas con 2 quillas. Con mucho más agarre y drive cuando las olas crecen, añadiendo una quilla estabilizadora. Medidas disponibles de 5’0″ a 6’4″",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Sunset Classic",
+          "image_url": "https://birdbandsurfboards.com/wp-content/uploads/2024/05/Sunset-Classis-FRENTE.jpg",
+          "description": "El longboard perfecto para esos días clásicos, con el cual podremos hacer noserides muy largos. Muy suave a la hora de maniobrar y surfear en la parte trasera, y estable cuando vamos en el nose. Medidas disponibles de 9’0″ a 9’8″",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Wizard Pig",
+          "image_url": "https://birdbandsurfboards.com/wp-content/uploads/2024/06/WIZARD-PIG-FRENTE.jpg",
+          "description": "Longboard clasico donde se destaca su ancho de caderas Medidas disponibles de 9’0″ a 9’6″",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Mini Long",
+          "image_url": "https://birdbandsurfboards.com/wp-content/uploads/2024/06/MINI-LONG-FRENTE.jpg",
+          "description": "El Mini long V3 tiene características similares al Longboard Sunset V3, sin embargo, fabricado en un tamaño reducido. Medidas disponibles de 6’8″ a 8’0″",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Sunset V3 Performance",
+          "image_url": "https://birdbandsurfboards.com/wp-content/uploads/2024/06/SUNSET-V3-FRENTE.jpg",
+          "description": "Este longboard está diseñado para generar velocidad y navegar más rápido que la ola. Medidas disponibles de 9’0″ a 9’6″",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
