@@ -9,6 +9,7 @@ import { listingCanBePermanentlyDeleted } from "@/lib/db/listingDeleteEligibilit
 import { getListingCartHolderCount } from "@/lib/db/listing-cart-holders"
 import { isPeerListingSection, peerListingEditHref } from "@/lib/peer-listing-sections"
 import type { ListingEnrichmentGap } from "@/lib/sell-flow/listing-enrichment"
+import { cn } from "@/lib/utils"
 
 interface ListingOwnerManageActionsProps {
   listingId: string
@@ -53,7 +54,12 @@ export async function ListingOwnerManageActions({
   ])
 
   return (
-    <div className="border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70">
+    <div
+      className={cn(
+        isSold && "hidden",
+        !isSold && "border-b border-neutral-200/90 pb-4 dark:border-neutral-700/70",
+      )}
+    >
       <div className="flex min-w-0 flex-col items-start gap-2">
         <p className="text-[14px] text-muted-foreground">Your listing</p>
         {isDraft ? (

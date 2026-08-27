@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils"
 import { REAL_MARKETPLACE_PURCHASES_FILTER } from "@/lib/order-admin-test"
 import { LocalDateOnly } from "@/components/ui/local-datetime"
 import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
+import { existingMarketplaceReviewFromRow, isReviewsMetadataColumnMissing } from "@/lib/marketplace-review-photos"
 import {
   ReviewSellerControls,
   type ExistingSellerReview,
@@ -126,26 +127,39 @@ export function BuyerPurchasesTab() {
       )
 
       const ids = base.map((o) => o.id)
-      const { data: revs } =
-        ids.length > 0
-          ? await supabase
-              .from("reviews")
-              .select("order_id, id, rating, comment, created_at")
-              .in("order_id", ids)
-              .eq("reviewer_id", user.id)
-          : { data: [] as { order_id: string; id: string; rating: number; comment: string | null; created_at: string }[] }
+      type OwnReviewRow = {
+        order_id: string
+        id: string
+        rating: number
+        comment: string | null
+        created_at: string
+        metadata?: unknown
+      }
+      let revs: OwnReviewRow[] = []
+      if (ids.length > 0) {
+        const first = await supabase
+          .from("reviews")
+          .select("order_id, id, rating, comment, created_at, metadata")
+          .in("order_id", ids)
+          .eq("reviewer_id", user.id)
+        if (first.error && isReviewsMetadataColumnMissing(first.error)) {
+          const fallback = await supabase
+            .from("reviews")
+            .select("order_id, id, rating, comment, created_at")
+            .in("order_id", ids)
+            .eq("reviewer_id", user.id)
+          revs = (fallback.data ?? []) as OwnReviewRow[]
+        } else {
+          revs = (first.data ?? []) as OwnReviewRow[]
+        }
+      }
 
       const revByOrder = new Map((revs ?? []).map((x) => [x.order_id, x]))
 
       const normalized: Row[] = base.map((o) => {
         const rev = revByOrder.get(o.id)
         const existing: ExistingSellerReview | null = rev
-          ? {
-              id: rev.id,
-              rating: rev.rating,
-              comment: rev.comment,
-              created_at: rev.created_at,
-            }
+          ? existingMarketplaceReviewFromRow(rev)
           : null
         const canSubmit = !existing && canSubmitSellerReview(o)
         const sellerReview = canSubmit || existing ? { canSubmit, existing } : null

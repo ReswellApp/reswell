@@ -27,7 +27,7 @@ export const MANAGED_PAGE_GROUPS: ManagedPageGroup[] = [
   { id: "content", label: "Content & community", description: "Editorial, forum, and help." },
   { id: "trust", label: "Trust & legal", description: "Policies buyers and sellers check." },
   { id: "marketing", label: "Marketing & growth", description: "Landing and conversion pages." },
-  { id: "dynamic", label: "Dynamic page types", description: "Templates applied to every listing, brand, seller, and city." },
+  { id: "dynamic", label: "Dynamic page types", description: "Templates applied to every listing, brand, seller, city, and surf shop." },
 ]
 
 export interface ManagedPageDefaults {
@@ -311,6 +311,13 @@ export const MANAGED_PAGES: ManagedPage[] = [
       "Browse every city with active surfboard and gear listings on Reswell, then open that city's landing page to shop local pickup.",
     path: "/cities/top",
     keywords: ["surfboard cities", "used surfboards near me", "surf marketplace cities"],
+  }),
+  page("surf-shops", "marketplace", "Surf shops directory", {
+    title: "Surf shops — Reswell",
+    description:
+      "Independent surf shops featured on Reswell city pages. Find a shop, get directions, and browse used boards nearby.",
+    path: "/surf-shops",
+    keywords: ["surf shops", "local surf shop", "rincon designs"],
   }),
   page("public-api", "marketplace", "Public research API", {
     title: "Public research API — Reswell",

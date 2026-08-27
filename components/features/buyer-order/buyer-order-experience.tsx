@@ -54,6 +54,7 @@ import {
   type ExistingSellerReview,
 } from "@/components/review-seller-controls"
 import { SellerRatingStarRow } from "@/components/seller-rating-stars"
+import { MarketplaceReviewPhotos } from "@/components/features/reviews/marketplace-review-photos"
 
 export type BuyerOrderExperienceProps = {
   orderId: string
@@ -469,6 +470,11 @@ export function BuyerOrderExperience(props: BuyerOrderExperienceProps) {
               ) : (
                 <p className="text-sm text-muted-foreground italic">No written comment.</p>
               )}
+              <MarketplaceReviewPhotos
+                reviewId={props.reviewFromSeller.id}
+                photos={props.reviewFromSeller.photos}
+                size="sm"
+              />
             </CardContent>
           </Card>
         ) : null}

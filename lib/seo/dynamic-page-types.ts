@@ -80,6 +80,19 @@ export const DYNAMIC_PAGE_TYPES: DynamicPageType[] = [
     defaultDescriptionTemplate:
       "{name} on Reswell. Shop surf gear and boards — {location}.",
   },
+  {
+    key: "type:surf-shop",
+    label: "Surf shop pages",
+    note: "Hardcoded local surf shop landings at /surf-shops/[slug].",
+    samplePath: "/surf-shops/rincon-designs",
+    variables: [
+      { token: "name", label: "Shop name", sample: "Rincon Designs Surf Shop" },
+      { token: "location", label: "Location", sample: "Carpinteria, CA" },
+    ],
+    defaultTitleTemplate: "{name} — Reswell",
+    defaultDescriptionTemplate:
+      "{name} in {location}. Independent surf shop featured on Reswell.",
+  },
 ]
 
 const DYNAMIC_TYPE_BY_KEY = new Map(DYNAMIC_PAGE_TYPES.map((t) => [t.key, t]))

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
+import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -55,6 +56,7 @@ export function EndListingDialog({
   const [loading, setLoading] = useState(false)
   const [soldPriceUsd, setSoldPriceUsd] = useState<number | null>(null)
   const [tipCheckoutActive, setTipCheckoutActive] = useState(false)
+  const [soldThanks, setSoldThanks] = useState(false)
   const markedSoldRef = useRef(false)
   const tipCheckoutActiveRef = useRef(false)
   const router = useRouter()
@@ -70,6 +72,7 @@ export function EndListingDialog({
     setLoading(false)
     setSoldPriceUsd(null)
     setTipCheckoutActive(false)
+    setSoldThanks(false)
     tipCheckoutActiveRef.current = false
   }
 
@@ -87,6 +90,9 @@ export function EndListingDialog({
 
   function handleOpenChange(nextOpen: boolean) {
     if (!nextOpen) {
+      // Stripe's iframe teardown looks like an outside dismiss. Keep the
+      // sold follow-up (including "Tip sent") open until the user hits close.
+      if (step === "sold_survey") return
       closeAndRefreshIfSold()
       return
     }
@@ -172,16 +178,18 @@ export function EndListingDialog({
         className={cn(
           followUpOpen
             ? [
-                "left-0 top-0 flex h-[100dvh] max-h-[100dvh] min-h-0 w-full max-w-none translate-x-0 translate-y-0 flex-col gap-3 overflow-hidden overscroll-none rounded-none",
+                "left-0 top-0 flex max-h-[100dvh] min-h-0 w-full max-w-none translate-x-0 translate-y-0 flex-col gap-3 overflow-hidden overscroll-none rounded-none",
                 "p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]",
                 "sm:left-[50%] sm:top-[50%] sm:w-full sm:max-w-md sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-lg sm:p-5",
-                tipCheckoutActive
-                  ? "sm:h-[min(48rem,calc(100dvh-2rem))] sm:max-h-[calc(100dvh-2rem)]"
-                  : "sm:h-[min(40rem,calc(100dvh-2rem))] sm:max-h-[calc(100dvh-2rem)]",
+                soldThanks
+                  ? "h-[100dvh] sm:h-auto sm:max-h-[calc(100dvh-2rem)]"
+                  : tipCheckoutActive
+                    ? "h-[100dvh] sm:h-[min(48rem,calc(100dvh-2rem))] sm:max-h-[calc(100dvh-2rem)]"
+                    : "h-[100dvh] sm:h-[min(40rem,calc(100dvh-2rem))] sm:max-h-[calc(100dvh-2rem)]",
               ]
             : "max-h-[90vh] overflow-y-auto sm:max-w-lg",
         )}
-        showCloseButton
+        showCloseButton={!followUpOpen}
         onOpenAutoFocus={(event) => {
           if (followUpOpen) event.preventDefault()
         }}
@@ -194,24 +202,38 @@ export function EndListingDialog({
         onInteractOutside={(event) => {
           if (followUpOpen) event.preventDefault()
         }}
+        onEscapeKeyDown={(event) => {
+          if (followUpOpen) event.preventDefault()
+        }}
         onCloseAutoFocus={(event) => {
           if (followUpOpen) event.preventDefault()
         }}
       >
         {followUpOpen ? (
           <>
-            <DialogHeader className="shrink-0 space-y-1 pr-8 text-left">
-              <DialogTitle className="text-base">Congrats on the sale</DialogTitle>
-              <DialogDescription className="text-xs">
-                Where it sold, optional tip, and a rating.
-              </DialogDescription>
-            </DialogHeader>
+            <button
+              type="button"
+              className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              onClick={closeAndRefreshIfSold}
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            {soldThanks ? null : (
+              <DialogHeader className="shrink-0 space-y-1 pr-8 text-left">
+                <DialogTitle className="text-base">Congrats on the sale</DialogTitle>
+                <DialogDescription className="text-xs">
+                  Where it sold, optional tip, and a rating.
+                </DialogDescription>
+              </DialogHeader>
+            )}
             {listingId ? (
               <MarkSoldFollowUp
                 listingId={listingId}
                 listingPriceUsd={followUpPriceUsd}
                 onCheckoutActiveChange={handleCheckoutActiveChange}
                 onClose={closeAndRefreshIfSold}
+                onFinished={() => setSoldThanks(true)}
                 onMarkedSold={() => {
                   markedSoldRef.current = true
                 }}

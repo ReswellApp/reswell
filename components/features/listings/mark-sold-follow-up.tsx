@@ -297,14 +297,12 @@ export function MarkSoldFollowUp({
                   void (async () => {
                     const marked = await confirmListingSold()
                     if (!marked) return
-                    toast.success("Tip sent. Thank you.")
                     setTipped(true)
                     clientSecretRef.current = null
-                    setClientSecret(null)
                     startedForRef.current = null
                     onCheckoutActiveChangeRef.current?.(false)
-                    void saveFeedbackAndReview()
                     finish()
+                    void saveFeedbackAndReview()
                   })()
                 }}
               />

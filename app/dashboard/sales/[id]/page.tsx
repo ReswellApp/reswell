@@ -60,6 +60,7 @@ import {
 import { OrderDetailRealtimeRefresh } from "@/components/order-realtime-refresh"
 import { listingPortraitThumbClass, listingPortraitThumbSizes } from "@/lib/utils/dashboard-display-styles"
 import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
+import { existingMarketplaceReviewFromRow } from "@/lib/marketplace-review-photos"
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
 import { sellerReviewRequestAlreadySentForOrder } from "@/lib/services/sellerReviewRequest"
 import { AskBuyerReviewButton } from "@/components/features/sales/ask-buyer-review-button"
@@ -389,12 +390,7 @@ export default async function SaleDetailPage(props: { params: Promise<{ id: stri
     buyerReviewGate.ok && !buyerReviewForOrder && Boolean(sale.buyer_id)
 
   const existingSellerReviewOfBuyer = sellerReviewOfBuyer
-    ? {
-        id: sellerReviewOfBuyer.id,
-        rating: sellerReviewOfBuyer.rating,
-        comment: sellerReviewOfBuyer.comment,
-        created_at: sellerReviewOfBuyer.created_at,
-      }
+    ? existingMarketplaceReviewFromRow(sellerReviewOfBuyer)
     : null
   const canSubmitBuyerReview =
     buyerReviewGate.ok && !existingSellerReviewOfBuyer && Boolean(sale.buyer_id)

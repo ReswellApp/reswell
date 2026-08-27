@@ -35,6 +35,7 @@ import { OrderMessageThread, type OrderThreadMessage } from "@/components/order-
 import { canSubmitCancelRequest, canSubmitRefundHelpRequest } from "@/lib/services/orderBuyerSupport"
 import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
 import { getMarketplaceReviewByOrderAndReviewer } from "@/lib/db/order-reviews"
+import { existingMarketplaceReviewFromRow } from "@/lib/marketplace-review-photos"
 import { privatePageMetadata } from "@/lib/site-metadata"
 import {
   fetchOptionalOrderTrackingDetailJson,
@@ -254,21 +255,11 @@ export default async function OrderDetailPage(props: { params: Promise<{ id: str
   )
 
   const existingSellerReview = buyerOwnReviewRow
-    ? {
-        id: buyerOwnReviewRow.id,
-        rating: buyerOwnReviewRow.rating,
-        comment: buyerOwnReviewRow.comment,
-        created_at: buyerOwnReviewRow.created_at,
-      }
+    ? existingMarketplaceReviewFromRow(buyerOwnReviewRow)
     : null
 
   const reviewFromSeller = sellerRatedBuyerRow
-    ? {
-        id: sellerRatedBuyerRow.id,
-        rating: sellerRatedBuyerRow.rating,
-        comment: sellerRatedBuyerRow.comment,
-        created_at: sellerRatedBuyerRow.created_at,
-      }
+    ? existingMarketplaceReviewFromRow(sellerRatedBuyerRow)
     : null
 
   const canSubmitSellerReviewForOrder =

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type Stripe from "stripe"
+import { revalidatePath } from "next/cache"
 import { revalidateMarketplaceSoldFeedCatalog } from "@/lib/cache/revalidate-marketplace-sold-feed"
 import {
   getSellerSaleTipByPaymentIntentId,
@@ -15,6 +16,12 @@ import {
 } from "@/lib/validations/mark-listing-sold"
 
 export const SELLER_SALE_TIP_PI_PURPOSE = "seller_sale_tip"
+
+function revalidateAfterSellerSaleTip(): void {
+  revalidateMarketplaceSoldFeedCatalog()
+  revalidatePath("/sold")
+  revalidatePath("/about")
+}
 
 export type CreateSellerSaleTipResult =
   | { ok: true; clientSecret: string; amountCents: number }
@@ -152,7 +159,7 @@ export async function completeSellerSaleTipFromPaymentIntent(params: {
     return { ok: false, status: 404, error: "Tip record not found" }
   }
   if (existing.status === "succeeded") {
-    revalidateMarketplaceSoldFeedCatalog()
+    revalidateAfterSellerSaleTip()
     return { ok: true, alreadyProcessed: true }
   }
 
@@ -160,7 +167,7 @@ export async function completeSellerSaleTipFromPaymentIntent(params: {
   if (!marked) {
     return { ok: false, status: 500, error: "Failed to record tip" }
   }
-  revalidateMarketplaceSoldFeedCatalog()
+  revalidateAfterSellerSaleTip()
   return { ok: true, alreadyProcessed: false }
 }
 

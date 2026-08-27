@@ -32,8 +32,9 @@ function parseRpcStats(data: unknown): { soldCount: number; gmvTotal: number } |
 }
 
 /**
- * Public headline stats from confirmed checkout only (Stripe, wallet, POS,
- * admin terminal). List prices and listings marked sold off-platform are excluded.
+ * Public headline GMS: confirmed checkout totals plus listing prices of
+ * off-platform mark-as-sold listings with a succeeded seller tip.
+ * Untipped off-platform marks are excluded.
  */
 export async function getSoldFeedStats(
   sections: readonly string[] = PEER_LISTING_SECTIONS_FILTER,

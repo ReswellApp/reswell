@@ -80,6 +80,7 @@ import {
   getCachedReswellPlatformReviewSummary,
   getCachedSellerReviewSummary,
 } from "@/lib/cache/review-summaries"
+import { listSellerReviewPreviews } from "@/lib/db/order-reviews"
 import { ReswellPlatformRatingWidget } from "@/components/features/reswell/reswell-platform-rating-widget"
 import { MetaViewContentTracker } from "@/components/meta/meta-view-content-tracker"
 import { isMetaCatalogEligibleListing } from "@/lib/meta/catalog-product"
@@ -145,14 +146,7 @@ export async function SurfboardListingDetailPage({
     [cartHolderCount, listingWatchersCount],
   ] = await Promise.all([
     getCachedSellerReviewSummary(sellerId),
-    supabase
-      .from("reviews")
-      .select(
-        "id, rating, comment, created_at, reviewer:profiles!reviews_reviewer_id_fkey ( display_name )",
-      )
-      .eq("reviewed_id", sellerId)
-      .order("created_at", { ascending: false })
-      .limit(8),
+    listSellerReviewPreviews(supabase, sellerId),
     getCachedReswellPlatformReviewSummary(),
     supabase
       .from("listings")
@@ -700,7 +694,7 @@ export async function SurfboardListingDetailPage({
                 </div>
               )}
 
-              {isOwnListing && !isSold ? (
+              {isOwnListing ? (
                 <ListingOwnerManageActions
                   listingId={board.id}
                   section="surfboards"

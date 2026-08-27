@@ -9,6 +9,7 @@ import { absoluteProxiedProfileMediaUrl } from "@/lib/public-media-display-src"
 import { absoluteUrl } from "@/lib/site-metadata"
 import { PEER_LISTING_SECTIONS_FILTER } from "@/lib/peer-listing-sections"
 import { configuredReswellShopOwnerUserId } from "@/lib/services/resolveReswellShopOwnerUser"
+import { marketplaceReviewPhotoRefs, isReviewsMetadataColumnMissing } from "@/lib/marketplace-review-photos"
 
 const PROFILE_UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -205,19 +206,31 @@ export default async function SellerProfilePage({
   }
   const { data: listings } = await listingsQuery.order("created_at", { ascending: false })
 
-  const { data: reviews } = await supabase
+  const reviewsSelectWithMeta =
+    "id, rating, comment, created_at, metadata, reviewer:profiles!reviews_reviewer_id_fkey ( display_name ), listing:listings!reviews_listing_id_fkey ( user_id )"
+  const reviewsSelectLegacy =
+    "id, rating, comment, created_at, reviewer:profiles!reviews_reviewer_id_fkey ( display_name ), listing:listings!reviews_listing_id_fkey ( user_id )"
+
+  let reviewsRes = await supabase
     .from("reviews")
-    .select(
-      "id, rating, comment, created_at, reviewer:profiles!reviews_reviewer_id_fkey ( display_name ), listing:listings!reviews_listing_id_fkey ( user_id )",
-    )
+    .select(reviewsSelectWithMeta)
     .eq("reviewed_id", id)
     .order("created_at", { ascending: false })
+  if (reviewsRes.error && isReviewsMetadataColumnMissing(reviewsRes.error)) {
+    reviewsRes = await supabase
+      .from("reviews")
+      .select(reviewsSelectLegacy)
+      .eq("reviewed_id", id)
+      .order("created_at", { ascending: false })
+  }
+  const { data: reviews } = reviewsRes
 
   type ReviewRow = {
     id: string
     rating: number
     comment: string | null
     created_at: string
+    metadata?: unknown
     reviewer:
       | { display_name: string | null }
       | { display_name: string | null }[]
@@ -336,6 +349,7 @@ export default async function SellerProfilePage({
       comment: review.comment,
       created_at: review.created_at,
       reviewerLabel: reviewer?.display_name?.trim() || defaultReviewerLabel,
+      photos: marketplaceReviewPhotoRefs(review.metadata),
     }
   }
 

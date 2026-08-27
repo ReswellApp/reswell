@@ -203,10 +203,11 @@ export function MarkSoldSurveyForm({
           </p>
         ) : null}
       </section>
+      </div>
 
-      <section className="space-y-1.5">
+      <section className="shrink-0 space-y-1.5">
         <h3 className="text-sm font-medium">Rate Reswell</h3>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5 py-0.5">
           {[1, 2, 3, 4, 5].map((value) => (
             <button
               key={value}
@@ -226,7 +227,6 @@ export function MarkSoldSurveyForm({
           ))}
         </div>
       </section>
-      </div>
 
       <section
         className={cn(
@@ -254,10 +254,10 @@ export function MarkSoldThanksStep({
   tipped?: boolean
 }) {
   return (
-    <div className="space-y-4 py-2 text-center sm:text-left">
+    <div className="space-y-4 py-2 pr-8 text-center sm:text-left">
       <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600 sm:mx-0" />
       <div className="space-y-2">
-        <h3 className="text-lg font-semibold">Thank you</h3>
+        <h3 className="text-lg font-semibold">{tipped ? "Tip sent" : "Thank you"}</h3>
         <p className="text-sm text-muted-foreground">
           {tipped
             ? "Your tip and feedback help keep Reswell going for surfers."
@@ -265,7 +265,7 @@ export function MarkSoldThanksStep({
         </p>
       </div>
       <Button type="button" className="w-full sm:w-auto" onClick={onClose}>
-        Done
+        Close
       </Button>
     </div>
   )

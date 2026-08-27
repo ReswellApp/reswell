@@ -21,6 +21,7 @@ import { listingImageShouldBypassOptimization } from "@/lib/listing-media-proxy-
 import { canSubmitSellerReview } from "@/lib/services/orderSellerReview"
 import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import { ReviewSellerControls } from "@/components/review-seller-controls"
+import { existingMarketplaceReviewFromRow, isReviewsMetadataColumnMissing } from "@/lib/marketplace-review-photos"
 import { OrdersListRealtimeRefresh } from "@/components/order-realtime-refresh"
 import { DashboardPageHeader } from "@/components/features/dashboard/dashboard-page-header"
 import { listingPortraitThumbClass, listingPortraitThumbSizes } from "@/lib/utils/dashboard-display-styles"
@@ -170,14 +171,32 @@ export default async function PurchasesPage() {
 
   const orderIds = list.map((o) => o.id)
   const returnSummaries = await getOrderReturnSummariesByOrderIds(supabase, orderIds)
-  const { data: reviewRows } =
-    orderIds.length > 0
-      ? await supabase
-          .from("reviews")
-          .select("order_id, id, rating, comment, created_at")
-          .in("order_id", orderIds)
-          .eq("reviewer_id", user.id)
-      : { data: [] as { order_id: string; id: string; rating: number; comment: string | null; created_at: string }[] }
+  type OwnReviewRow = {
+    order_id: string
+    id: string
+    rating: number
+    comment: string | null
+    created_at: string
+    metadata?: unknown
+  }
+  let reviewRows: OwnReviewRow[] = []
+  if (orderIds.length > 0) {
+    const first = await supabase
+      .from("reviews")
+      .select("order_id, id, rating, comment, created_at, metadata")
+      .in("order_id", orderIds)
+      .eq("reviewer_id", user.id)
+    if (first.error && isReviewsMetadataColumnMissing(first.error)) {
+      const fallback = await supabase
+        .from("reviews")
+        .select("order_id, id, rating, comment, created_at")
+        .in("order_id", orderIds)
+        .eq("reviewer_id", user.id)
+      reviewRows = (fallback.data ?? []) as OwnReviewRow[]
+    } else {
+      reviewRows = (first.data ?? []) as OwnReviewRow[]
+    }
+  }
 
   const reviewsByOrderId = new Map((reviewRows ?? []).map((r) => [r.order_id, r]))
 
@@ -239,12 +258,7 @@ export default async function PurchasesPage() {
 
           const review = reviewsByOrderId.get(row.id)
           const existingSellerReview = review
-            ? {
-                id: review.id,
-                rating: review.rating,
-                comment: review.comment,
-                created_at: review.created_at,
-              }
+            ? existingMarketplaceReviewFromRow(review)
             : null
           const canReviewSeller =
             !existingSellerReview &&

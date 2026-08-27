@@ -6,6 +6,7 @@ import {
   getMarketplaceReviewByOrderAndReviewer,
 } from "@/lib/db/order-reviews"
 import { trackKlaviyoSellerReviewedBuyer } from "@/lib/klaviyo/track-seller-reviewed-buyer"
+import { resolveMarketplaceReviewAttachmentMetadata } from "@/lib/services/marketplaceReviewAttachments"
 import { validateSellerReviewForOrder } from "@/lib/services/orderSellerReview"
 import { parseOrderTrackingDetail } from "@/lib/shipping/order-tracking-detail"
 import { orderSellerReviewBodySchema } from "@/lib/validations/order-seller-review"
@@ -71,6 +72,14 @@ export async function POST(
 
   const reviewedId = isBuyer ? order.seller_id : order.buyer_id
 
+  const attachmentMeta = await resolveMarketplaceReviewAttachmentMetadata(
+    user.id,
+    parsed.data.attachments,
+  )
+  if (!attachmentMeta.ok) {
+    return NextResponse.json({ error: attachmentMeta.error }, { status: 400 })
+  }
+
   const { data, error } = await insertMarketplaceReviewForOrder(supabase, {
     order_id: orderId,
     reviewer_id: user.id,
@@ -78,6 +87,7 @@ export async function POST(
     listing_id: order.listing_id,
     rating: parsed.data.rating,
     comment: parsed.data.comment ?? null,
+    metadata: attachmentMeta.metadata,
   })
 
   if (error || !data) {

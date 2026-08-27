@@ -26,6 +26,8 @@ import {
   reswellProtectionCardClassName,
   reswellProtectionTrustRibbonColumnDividerClassName,
 } from "@/lib/reswell-protection-surface"
+import { MarketplaceReviewPhotos } from "@/components/features/reviews/marketplace-review-photos"
+import { marketplaceReviewPhotoRefs } from "@/lib/marketplace-review-photos"
 
 const STAR_FILL = ratingStarFilledClassName
 const STAR_EMPTY = ratingStarEmptyClassName
@@ -35,6 +37,7 @@ export type SellerReviewPreviewRow = {
   rating: number
   comment: string | null
   created_at: string
+  metadata?: unknown
 }
 
 type ReviewerEmbed =
@@ -348,6 +351,11 @@ export function ListingAboutSellerSection({
                       ) : (
                         <p className="mt-1 text-[14px] text-muted-foreground">Rated {rv.rating.toFixed(0)}★</p>
                       )}
+                      <MarketplaceReviewPhotos
+                        reviewId={rv.id}
+                        photos={marketplaceReviewPhotoRefs(rv.metadata)}
+                        size="sm"
+                      />
                     </li>
                   )
                 })}

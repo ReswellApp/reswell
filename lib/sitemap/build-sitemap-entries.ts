@@ -15,6 +15,7 @@ import { fetchPriceGuideSitemapPaths } from "@/lib/db/sitemap-price-guide"
 import { publicSiteOrigin } from "@/lib/public-site-origin"
 import { getCachedTopCitiesDirectory } from "@/lib/cache/top-cities-directory"
 import { cityLandingHref } from "@/lib/city-landing-path"
+import { CITY_SURF_SHOPS, surfShopHref } from "@/lib/city-landing-surf-shops"
 import { createClient, createServiceRoleClient } from "@/lib/supabase/server"
 import { getNoindexManagedPaths } from "@/lib/seo/resolve-page-seo"
 import type { SitemapUrlEntry } from "@/lib/sitemap/types"
@@ -141,6 +142,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     { url: `${BASE}/jamboards`, lastModified: now, changeFrequency: "daily", priority: 0.5 },
     { url: `${BASE}/sellers`, lastModified: now, changeFrequency: "weekly", priority: 0.4 },
     { url: `${BASE}/cities/top`, lastModified: now, changeFrequency: "daily", priority: 0.55 },
+    { url: `${BASE}/surf-shops`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
     { url: `${BASE}/priceguide`, lastModified: now, changeFrequency: "daily", priority: 0.7 },
     { url: `${BASE}/giveaways`, lastModified: now, changeFrequency: "weekly", priority: 0.55 },
     { url: `${BASE}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.45 },
@@ -173,6 +175,13 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     lastModified: now,
     changeFrequency: "daily",
     priority: 0.6,
+  }))
+
+  const surfShopPages: SitemapUrlEntry[] = CITY_SURF_SHOPS.map((shop) => ({
+    url: `${BASE}${surfShopHref(shop.slug)}`,
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.5,
   }))
 
   const sellerPages: SitemapUrlEntry[] = sellerEntries.map((e) => ({
@@ -208,6 +217,7 @@ export async function buildPagesSitemapUrlEntries(): Promise<SitemapUrlEntry[]> 
     ...boardFilterPages(now),
     ...brandPages,
     ...cityPages,
+    ...surfShopPages,
     ...sellerPages,
     ...forumPages,
     ...blogPages,

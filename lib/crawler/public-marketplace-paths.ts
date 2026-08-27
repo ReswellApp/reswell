@@ -11,11 +11,18 @@ export function isPublicMarketplaceHtmlPath(pathname: string): boolean {
     pathname === "/apparel" ||
     pathname === "/accessories" ||
     pathname === "/brands" ||
-    pathname === "/sellers"
+    pathname === "/sellers" ||
+    pathname === "/surf-shops"
   ) {
     return true
   }
-  if (pathname.startsWith("/brands/") || pathname.startsWith("/sellers/")) return true
+  if (
+    pathname.startsWith("/brands/") ||
+    pathname.startsWith("/sellers/") ||
+    pathname.startsWith("/surf-shops/")
+  ) {
+    return true
+  }
   return false
 }
 

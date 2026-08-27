@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 import { isHiddenFromAdminOverviewReport } from "@/lib/admin/overview-report-orders"
+import { listTippedMarkSoldGmsContributions } from "@/lib/db/sellerSaleTips"
 import type {
   IntelligenceCommerceSnapshot,
   IntelligenceDailyPoint,
@@ -59,16 +60,19 @@ export async function fetchIntelligenceCommerce(
   db: SupabaseClient,
   period: IntelligencePeriodResolved,
 ): Promise<IntelligenceCommerceSnapshot> {
-  const { data, error } = await db
-    .from("orders")
-    .select(
-      "id, amount, platform_fee, shipping_amount, seller_earnings, promo_discount_usd, status, created_at, listing_id",
-    )
-    .eq("is_admin_test", false)
-    .gte("created_at", period.prevFromIso)
-    .lt("created_at", period.toIsoExclusive)
-    .order("created_at", { ascending: false })
-    .limit(ORDERS_FETCH_CAP)
+  const [{ data, error }, tippedGms] = await Promise.all([
+    db
+      .from("orders")
+      .select(
+        "id, amount, platform_fee, shipping_amount, seller_earnings, promo_discount_usd, status, created_at, listing_id",
+      )
+      .eq("is_admin_test", false)
+      .gte("created_at", period.prevFromIso)
+      .lt("created_at", period.toIsoExclusive)
+      .order("created_at", { ascending: false })
+      .limit(ORDERS_FETCH_CAP),
+    listTippedMarkSoldGmsContributions(db),
+  ])
 
   if (error) {
     throw new Error("Could not load marketplace orders for intelligence.")
@@ -144,6 +148,28 @@ export async function fetchIntelligenceCommerce(
     }
   }
 
+  const aovCur = ordersCur > 0 ? gmvCur / ordersCur : 0
+  const aovPrev = ordersPrev > 0 ? gmvPrev / ordersPrev : 0
+
+  for (const tip of tippedGms) {
+    const ts = new Date(tip.succeededAt).getTime()
+    const inCurrent = ts >= periodStartMs && ts < periodEndMs
+    const inPrevious = ts >= prevStartMs && ts < prevEndMs
+    if (inCurrent) {
+      gmvCur += tip.listingPriceUsd
+      const day = businessDayKey(tip.succeededAt)
+      const bucket = dailyMap.get(day) ?? { date: day, gmv: 0, fees: 0, orders: 0 }
+      bucket.gmv += tip.listingPriceUsd
+      dailyMap.set(day, bucket)
+      const l = listingAgg.get(tip.listingId) ?? { gmv: 0, orders: 0 }
+      l.gmv += tip.listingPriceUsd
+      l.orders += 1
+      listingAgg.set(tip.listingId, l)
+    } else if (inPrevious) {
+      gmvPrev += tip.listingPriceUsd
+    }
+  }
+
   const listingMeta = await fetchListingMeta(db, Array.from(listingAgg.keys()))
   const brandAgg = new Map<string, { gmv: number; orders: number }>()
   const sectionAgg = new Map<string, { gmv: number; orders: number }>()
@@ -176,8 +202,6 @@ export async function fetchIntelligenceCommerce(
     }))
     .sort((a, b) => b.gmv - a.gmv)
 
-  const aovCur = ordersCur > 0 ? gmvCur / ordersCur : 0
-  const aovPrev = ordersPrev > 0 ? gmvPrev / ordersPrev : 0
   const refundDenom = ordersCur + refundedCur
 
   return {
@@ -311,7 +335,7 @@ export async function fetchIntelligenceMonthlyHistory(
   if (!earliest) return []
   const sinceIso = `${earliest}-01T00:00:00.000Z`
 
-  const [ordersRes, usersRes, listingsRes] = await Promise.all([
+  const [ordersRes, tippedGms, usersRes, listingsRes] = await Promise.all([
     db
       .from("orders")
       .select("amount, platform_fee, promo_discount_usd, created_at, status")
@@ -319,6 +343,7 @@ export async function fetchIntelligenceMonthlyHistory(
       .eq("status", "confirmed")
       .gte("created_at", sinceIso)
       .limit(ORDERS_FETCH_CAP),
+    listTippedMarkSoldGmsContributions(db),
     db.from("profiles").select("created_at").gte("created_at", sinceIso).limit(ORDERS_FETCH_CAP),
     db.from("listings").select("created_at").gte("created_at", sinceIso).limit(ORDERS_FETCH_CAP),
   ])
@@ -358,6 +383,12 @@ export async function fetchIntelligenceMonthlyHistory(
       promo_discount_usd: num(r.promo_discount_usd),
     })
     b.orders += 1
+  }
+  for (const tip of tippedGms) {
+    const ym = tip.succeededAt.slice(0, 7)
+    const b = bucket.get(ym)
+    if (!b) continue
+    b.gmv += tip.listingPriceUsd
   }
   for (const row of usersRes.data ?? []) {
     const ym = String((row as { created_at?: string }).created_at ?? "").slice(0, 7)

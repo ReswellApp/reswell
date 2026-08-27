@@ -1,3 +1,4 @@
+import { listTippedMarkSoldGmsContributions } from '@/lib/db/sellerSaleTips'
 import { createServiceRoleClient } from '@/lib/supabase/server'
 
 /**
@@ -6,7 +7,8 @@ import { createServiceRoleClient } from '@/lib/supabase/server'
  * Runs on the **service-role** client so listing and order aggregates are
  * accurate regardless of RLS, and replaces the previous per-user N+1 count
  * queries with three bulk reads tallied in memory. Money is USD; sales/GMV
- * use confirmed, non-test orders (matching `adminPlatformFees.ts`).
+ * use confirmed, non-test orders plus listing prices of off-platform
+ * mark-as-sold sales with a succeeded seller tip.
  */
 
 const PAGE = 1000
@@ -90,7 +92,7 @@ export async function loadAdminUsersDirectory(): Promise<
   }
 
   try {
-    const [profiles, listings, orders] = await Promise.all([
+    const [profiles, listings, orders, tippedGms] = await Promise.all([
       fetchAll<ProfileRow>((from, to) =>
         db
           .from('profiles')
@@ -106,6 +108,7 @@ export async function loadAdminUsersDirectory(): Promise<
       fetchAll<OrderRow>((from, to) =>
         db.from('orders').select('seller_id, amount, status, is_admin_test').range(from, to),
       ),
+      listTippedMarkSoldGmsContributions(db),
     ])
 
     const listingMap = new Map<string, { total: number; active: number; draft: number }>()
@@ -126,6 +129,13 @@ export async function loadAdminUsersDirectory(): Promise<
       agg.count += 1
       agg.gmv += num(o.amount)
       salesMap.set(o.seller_id, agg)
+    }
+
+    for (const tip of tippedGms) {
+      const agg = salesMap.get(tip.sellerUserId) ?? { count: 0, gmv: 0 }
+      agg.count += 1
+      agg.gmv += tip.listingPriceUsd
+      salesMap.set(tip.sellerUserId, agg)
     }
 
     const users: AdminUserDirectoryRow[] = profiles.map((p) => {

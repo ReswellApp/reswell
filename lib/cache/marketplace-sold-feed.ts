@@ -38,7 +38,7 @@ const getCachedSoldFeedPayload = unstable_cache(
 
     return payload
   },
-  ["marketplace-sold-feed-v10"],
+  ["marketplace-sold-feed-v11"],
   {
     revalidate: MARKETPLACE_SOLD_FEED_REVALIDATE_SECONDS,
     tags: [MARKETPLACE_SOLD_FEED_CACHE_TAG],
