@@ -53,6 +53,8 @@ type SellerDirectoryCardProps = {
   /** Pre-resolved from the sellers directory cache when available. */
   avatarSrc?: string
   mosaicSlots?: SellerDirectoryMosaicSlot[]
+  /** First-row tiles only — below-fold mosaics should lazy-load. */
+  imagePriority?: boolean
   className?: string
 }
 
@@ -63,9 +65,11 @@ function sellerLabel(shop: SellerDirectoryCardShop): string {
 function SellerDirectoryMosaic({
   slots,
   href,
+  imagePriority,
 }: {
   slots: SellerDirectoryMosaicSlot[]
   href: string
+  imagePriority?: boolean
 }) {
   const hasImages = sellerDirectoryMosaicHasRenderableImage(slots)
 
@@ -88,7 +92,7 @@ function SellerDirectoryMosaic({
         slot={slots[0]!}
         className="aspect-[3/4] w-full shrink-0 rounded-t-xl"
         sizes={homePeerListingGridImageSizes}
-        priority
+        priority={imagePriority}
       />
     </Link>
   )
@@ -113,6 +117,7 @@ export function SellerDirectoryCard({
   isOwnProfile,
   avatarSrc: avatarSrcProp,
   mosaicSlots: mosaicSlotsProp,
+  imagePriority = false,
   className,
 }: SellerDirectoryCardProps) {
   const label = sellerLabel(shop)
@@ -122,7 +127,7 @@ export function SellerDirectoryCard({
 
   return (
     <article className={cn(homePeerListingGridCardClass, className)}>
-      <SellerDirectoryMosaic slots={mosaicSlots} href={href} />
+      <SellerDirectoryMosaic slots={mosaicSlots} href={href} imagePriority={imagePriority} />
 
       <div className="px-2.5 pb-2 pt-2.5">
         <div className="flex items-start gap-2">

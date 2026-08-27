@@ -67,7 +67,12 @@ export async function GET(
     }
 
     const ownerUserId = listing.user_id
-    if (actorIsAdmin && ownerUserId && ownerUserId !== user.id) {
+    if (
+      actorIsAdmin &&
+      ownerUserId &&
+      ownerUserId !== user.id &&
+      impersonation?.userId === ownerUserId
+    ) {
       const { data: sellerProfile } = await supabase
         .from("profiles")
         .select("display_name, email")
@@ -78,11 +83,11 @@ export async function GET(
         displayName:
           typeof sellerProfile?.display_name === "string" && sellerProfile.display_name.trim()
             ? sellerProfile.display_name.trim()
-            : impersonation?.displayName || "User",
+            : impersonation.displayName || "User",
         email:
           typeof sellerProfile?.email === "string"
             ? sellerProfile.email
-            : impersonation?.email ?? null,
+            : impersonation.email ?? null,
       })
     }
 

@@ -1,7 +1,8 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { shouldShowImpersonationActingAsBanner } from "@/lib/utils/admin-listing-edit-entry"
 import { createClient } from "@/lib/supabase/client"
 import {
   getActiveImpersonationClient,
@@ -70,6 +71,7 @@ export function ImpersonationBanner({
   const supabase = createClient()
   const router = useRouter()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [isAdmin, setIsAdmin] = useState(initialIsAdmin)
   const [target, setTarget] = useState<ImpersonationData | null>(initialTarget)
   const [authReady, setAuthReady] = useState(initialIsAdmin)
@@ -154,7 +156,12 @@ export function ImpersonationBanner({
     }
   }
 
-  if (!authReady || !isAdmin || !target) {
+  if (
+    !authReady ||
+    !isAdmin ||
+    !target ||
+    !shouldShowImpersonationActingAsBanner(pathname, searchParams)
+  ) {
     return null
   }
 

@@ -23,10 +23,12 @@ import {
   BOARD_WIDTH_FOCUS_VALUE,
   BOARD_WIDTH_OPTIONS,
   formatBoardLengthPickerLabel,
+  formatInchesDecimalLabel,
   formatInchesFractionLabel,
   matchBoardInchesOptionValue,
   matchBoardLengthOptionValue,
   withCurrentDimensionOption,
+  withInchesDecimalLabels,
   type BoardDimensionOption,
 } from "@/lib/board-dimension-options"
 import {
@@ -58,8 +60,10 @@ type SellBoardDimensionsPickerProps = {
 const DIM_ITEM_HEIGHT_PX = 40
 const DIM_MENU_MAX_HEIGHT_PX = 300
 const DIM_MENU_GAP_PX = 6
-/** Wide enough that labels like `12' 0"` / `19 7/8"` never wrap. */
-const DIM_MENU_MIN_WIDTH_PX = 136
+/** Wide enough that labels like `12' 0"` / `19 7/8"` / `19.875"` never wrap. */
+const DIM_MENU_MIN_WIDTH_PX = 148
+
+type InchesNotation = "fraction" | "decimal"
 
 function segmentTriggerClassName(open: boolean) {
   return cn(
@@ -362,11 +366,13 @@ function DimSelect({
   )
 }
 
-function displayInchesOrRaw(raw: string): string {
+function displayInchesOrRaw(raw: string, notation: InchesNotation): string {
   const t = raw.trim()
   if (!t) return ""
   const n = parseBoardMeasurement(t)
-  if (n != null) return formatInchesFractionLabel(n)
+  if (n != null) {
+    return notation === "decimal" ? formatInchesDecimalLabel(n) : formatInchesFractionLabel(n)
+  }
   return t.endsWith('"') ? t : `${t}"`
 }
 
@@ -378,19 +384,28 @@ export function SellBoardDimensionsPicker({
   disabled = false,
   volumeInputRef,
 }: SellBoardDimensionsPickerProps) {
+  const [inchesNotation, setInchesNotation] = useState<InchesNotation>("fraction")
+
   const lengthOptions = useMemo(
     () => withCurrentDimensionOption(BOARD_LENGTH_OPTIONS, values.boardLength, "length"),
     [values.boardLength],
   )
-  const widthOptions = useMemo(
-    () => withCurrentDimensionOption(BOARD_WIDTH_OPTIONS, values.boardWidthInches, "inches"),
-    [values.boardWidthInches],
-  )
-  const thicknessOptions = useMemo(
-    () =>
-      withCurrentDimensionOption(BOARD_THICKNESS_OPTIONS, values.boardThicknessInches, "inches"),
-    [values.boardThicknessInches],
-  )
+  const widthOptions = useMemo(() => {
+    const base = withCurrentDimensionOption(
+      BOARD_WIDTH_OPTIONS,
+      values.boardWidthInches,
+      "inches",
+    )
+    return inchesNotation === "decimal" ? withInchesDecimalLabels(base) : base
+  }, [values.boardWidthInches, inchesNotation])
+  const thicknessOptions = useMemo(() => {
+    const base = withCurrentDimensionOption(
+      BOARD_THICKNESS_OPTIONS,
+      values.boardThicknessInches,
+      "inches",
+    )
+    return inchesNotation === "decimal" ? withInchesDecimalLabels(base) : base
+  }, [values.boardThicknessInches, inchesNotation])
 
   const lengthValue =
     matchBoardLengthOptionValue(values.boardLength, lengthOptions) ??
@@ -405,8 +420,10 @@ export function SellBoardDimensionsPicker({
   const lengthDisplay = lengthValue
     ? formatBoardLengthPickerLabel(lengthValue) || lengthValue
     : ""
-  const widthDisplay = widthValue ? displayInchesOrRaw(widthValue) : ""
-  const thicknessDisplay = thicknessValue ? displayInchesOrRaw(thicknessValue) : ""
+  const widthDisplay = widthValue ? displayInchesOrRaw(widthValue, inchesNotation) : ""
+  const thicknessDisplay = thicknessValue
+    ? displayInchesOrRaw(thicknessValue, inchesNotation)
+    : ""
 
   const lengthComplete = isBoardLengthEntryComplete(values.boardLength)
   const widthComplete = isTapeStyleInchesEntryComplete(values.boardWidthInches)
@@ -443,6 +460,7 @@ export function SellBoardDimensionsPicker({
   )
   const widthSelect = (
     <DimSelect
+      key={`width-${inchesNotation}`}
       value={widthValue}
       onValueChange={(next) => onChange({ boardWidthInches: next })}
       options={widthOptions}
@@ -455,6 +473,7 @@ export function SellBoardDimensionsPicker({
   )
   const thicknessSelect = (
     <DimSelect
+      key={`thickness-${inchesNotation}`}
       value={thicknessValue}
       onValueChange={(next) => onChange({ boardThicknessInches: next })}
       options={thicknessOptions}
@@ -551,6 +570,23 @@ export function SellBoardDimensionsPicker({
           {volumeField}
         </div>
       </div>
+
+      <button
+        type="button"
+        disabled={disabled}
+        aria-pressed={inchesNotation === "decimal"}
+        aria-label={
+          inchesNotation === "fraction"
+            ? "Show width and thickness as decimals"
+            : "Show width and thickness as fractions"
+        }
+        className="text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+        onClick={() =>
+          setInchesNotation((current) => (current === "fraction" ? "decimal" : "fraction"))
+        }
+      >
+        {inchesNotation === "fraction" ? "Decimals" : "Fractions"}
+      </button>
 
       <p className="sr-only">
         {[

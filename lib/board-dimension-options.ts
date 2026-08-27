@@ -5,6 +5,7 @@
 
 import {
   formatBoardLengthInputFromParts,
+  formatInchesDecimalDisplay,
   parseBoardLengthParts,
   parseBoardMeasurement,
   parseLengthFeet,
@@ -54,6 +55,25 @@ export function formatInchesFractionLabel(inches: number): string {
 export function formatInchesFractionValue(inches: number): string {
   const label = formatInchesFractionLabel(inches)
   return label.endsWith('"') ? label.slice(0, -1) : label
+}
+
+/** Same measurement as {@link formatInchesFractionLabel}, shown as a decimal (`19.75"`). */
+export function formatInchesDecimalLabel(inches: number): string {
+  return formatInchesDecimalDisplay(inches)
+}
+
+/**
+ * Keep stored fraction values (`19 3/4`) so toggling notation does not change
+ * the listing; only the dropdown labels become decimals.
+ */
+export function withInchesDecimalLabels(
+  options: readonly BoardDimensionOption[],
+): BoardDimensionOption[] {
+  return options.map((opt) => {
+    const n = parseBoardMeasurement(opt.value)
+    if (n == null || n <= 0) return opt
+    return { value: opt.value, label: formatInchesDecimalLabel(n) }
+  })
 }
 
 /** Length bar/dropdown label: `5' 10"` (space between feet and inches). */

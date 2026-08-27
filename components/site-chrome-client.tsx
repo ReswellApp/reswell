@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { Suspense, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { forceReleaseBodyScrollLock } from "@/hooks/use-body-scroll-lock"
 import { Header } from "@/components/header"
@@ -133,10 +133,12 @@ export function SiteChromeClient({
       >
         <RouteProgressBar />
         <SiteHeaderShell>
-          <ImpersonationBanner
-            initialIsAdmin={headerAuth.bootstrap?.profile?.is_admin === true}
-            initialTarget={initialImpersonation}
-          />
+          <Suspense fallback={null}>
+            <ImpersonationBanner
+              initialIsAdmin={headerAuth.bootstrap?.profile?.is_admin === true}
+              initialTarget={initialImpersonation}
+            />
+          </Suspense>
           <Header serverHeaderAuth={headerAuth} />
         </SiteHeaderShell>
         <div

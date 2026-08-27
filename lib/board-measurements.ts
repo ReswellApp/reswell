@@ -8,6 +8,17 @@ export function formatDecimalDimension(value: number): string {
   return Number.isInteger(value) ? String(value) : String(Number(value.toFixed(3)))
 }
 
+/**
+ * Inch decimals for the sell width/thickness picker (⅛" and ¹⁄₁₆" steps).
+ * Keeps four places so 2 ¹⁄₁₆ → `2.0625"`, not a 3-decimal round-off.
+ */
+export function formatInchesDecimalDisplay(inches: number): string {
+  if (!Number.isFinite(inches) || inches < 0) return ""
+  const n = Math.round(inches * 10000) / 10000
+  const body = Number.isInteger(n) ? String(Math.trunc(n)) : String(n)
+  return `${body}"`
+}
+
 /** Whole feet from the feet input. */
 export function parseLengthFeet(input: string): number | null {
   const t = input.trim()

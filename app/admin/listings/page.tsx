@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { listingDetailHref } from '@/lib/listing-href'
 import { proxiedListingImageSrc } from '@/lib/listing-media-proxy-url'
 import { setImpersonation } from '@/lib/impersonation'
+import { withAdminListingEditEntry } from '@/lib/utils/admin-listing-edit-entry'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { SiteSearchBar, siteSearchInputClassName } from '@/components/site-search-bar'
@@ -655,9 +656,9 @@ export default function AdminListingsPage() {
       const peerSellRoute = normalizedSection
         ? PEER_SELL_ROUTE_BY_SECTION[normalizedSection]
         : undefined
-      const editPath = peerSellRoute
-        ? `${peerSellRoute}?edit=${listing.id}`
-        : `/sell?edit=${listing.id}`
+      const editPath = withAdminListingEditEntry(
+        peerSellRoute ? `${peerSellRoute}?edit=${listing.id}` : `/sell?edit=${listing.id}`,
+      )
       // Full navigation so the server chrome reads the impersonation cookie
       // and the Acting as banner is present on first paint.
       window.location.assign(editPath)

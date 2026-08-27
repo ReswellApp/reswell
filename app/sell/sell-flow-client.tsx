@@ -88,6 +88,7 @@ import {
   ensureImpersonationForListingOwner,
   syncClientImpersonationForListingOwner,
 } from "@/lib/utils/admin-impersonation-for-listing"
+import { isAdminListingEditEntry } from "@/lib/utils/admin-listing-edit-entry"
 import type { IndexBoardModelSelection } from "@/components/index-board-model-combobox"
 import { SurfboardTitleIndexInput } from "@/components/surfboard-title-index-input"
 import {
@@ -1231,7 +1232,9 @@ function SellPageContentInner({
           replaceSellDraftEditUrl("surfboards", String(listing.id))
         }
       }
-      setImpersonation(await syncClientImpersonationForListingOwner(String(listing.user_id ?? "")))
+      if (isAdminListingEditEntry(sellSearchParams)) {
+        setImpersonation(await syncClientImpersonationForListingOwner(String(listing.user_id ?? "")))
+      }
       const loadedFulfillment = boardFulfillmentFromFlags(
         listing.local_pickup,
         listing.shipping_available
@@ -1494,7 +1497,7 @@ function SellPageContentInner({
 
       return { status: "ready" as const }
     },
-    [editId, hydrateExistingVideo, router],
+    [editId, hydrateExistingVideo, router, sellSearchParams],
   )
 
   const { editLoading, showEditSkeleton, editLoadError, retryEditLoad } = useOwnedListingEditLoad({
@@ -3785,7 +3788,7 @@ function SellPageContentInner({
           !fullscreenSellBlocking && !showBoardModeHeader && "pt-8",
         )}
       >
-        {impersonation ? (
+        {impersonation && (!editId || isAdminListingEditEntry(sellSearchParams)) ? (
           <ImpersonationActingAsStrip
             target={impersonation}
             onExit={() => {
@@ -3977,7 +3980,10 @@ function SellPageContentInner({
             </Alert>
           ) : null}
 
-          {!editLoading && getImpersonation() && listingIsDraft ? (
+          {!editLoading &&
+          isAdminListingEditEntry(sellSearchParams) &&
+          getImpersonation() &&
+          listingIsDraft ? (
             <Alert className="mb-6">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Seller draft</AlertTitle>

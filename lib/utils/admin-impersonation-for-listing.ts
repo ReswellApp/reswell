@@ -1,5 +1,4 @@
 import {
-  clearImpersonation,
   getActiveImpersonationClient,
   setImpersonation,
   type ImpersonationData,
@@ -18,8 +17,10 @@ export function adminIsEditingAnotherUsersListing(args: {
 }
 
 /**
- * Best-effort: set the impersonation cookie to this listing's seller before
- * an admin save. Update-listing and owned-edit no longer require the cookie.
+ * Refresh client storage when the admin is already acting as this seller.
+ * Does not start impersonation — that belongs to /admin/listings (and other
+ * explicit Act as User entry points). Public /l → edit must stay banner-free.
+ * Update-listing and owned-edit no longer require the cookie.
  */
 export async function ensureImpersonationForListingOwner(
   ownerUserId: string,
@@ -27,55 +28,25 @@ export async function ensureImpersonationForListingOwner(
   const trimmed = ownerUserId.trim()
   if (!trimmed) return
   const current = getActiveImpersonationClient()
-  if (current?.userId === trimmed) return
-  try {
-    const res = await fetch("/api/admin/impersonate", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: trimmed }),
-    })
-    if (!res.ok) return
-    const data = (await res.json().catch(() => ({}))) as {
-      displayName?: string
-      email?: string | null
-    }
-    setImpersonation({
-      userId: trimmed,
-      displayName:
-        typeof data.displayName === "string" && data.displayName.trim()
-          ? data.displayName.trim()
-          : "User",
-      email: typeof data.email === "string" ? data.email : null,
-    })
-  } catch {
-    // Cookie may already be present; update-listing allows admin without it.
+  if (current?.userId === trimmed) {
+    setImpersonation(current)
   }
 }
 
 /**
- * Point client impersonation at this listing's seller. Retargets a leftover
- * cookie instead of wiping it — wiping hid the Acting as banner and broke Save.
+ * Keep an existing admin impersonation session if it already matches this
+ * listing's seller. Does not start or retarget impersonation from a public
+ * listing edit — that made Acting as appear after /l → Edit.
  */
 export async function syncClientImpersonationForListingOwner(
   listingOwnerId: string,
 ): Promise<ImpersonationData | null> {
   const ownerId = listingOwnerId.trim()
-  if (!ownerId) return getActiveImpersonationClient()
-
   const current = getActiveImpersonationClient()
+  if (!ownerId) return current
   if (current?.userId === ownerId) {
     setImpersonation(current)
     return current
   }
-
-  await ensureImpersonationForListingOwner(ownerId)
-  const next = getActiveImpersonationClient()
-  if (next?.userId === ownerId) {
-    setImpersonation(next)
-    return next
-  }
-
-  if (current) clearImpersonation()
-  return null
+  return current
 }
