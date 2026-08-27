@@ -1,0 +1,82 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "myers-surfboards",
+      "name": "Myers Surfboards",
+      "website_url": "https://myerssurfboards.co/",
+      "location_label": "Wahiawa, Hawaii",
+      "founder_name": "Carson Myers",
+      "lead_shaper_name": "Carson Myers",
+      "short_description": "Wahiawa, Hawaii surfboards shaped by Carson Myers — born on Kauai, first shaped under Carl Olsen of Two Crows, with a flagship shop at 401 N Cane Street.",
+      "models": [
+        {
+          "name": "Lean",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/63f5b2450664364008dfa90f/1688639464406-YI3B52IK66O9SY1E6JL8/Lean.png",
+          "description": "Modeled after the original Lis fish from 1969, with added influence for some of Waldens earlier fish, the Lean carries the classic thats proven to work. It has everything you would find from the boards designed in that era. Down rails (though I modernize them a tad), low rocker, flat to V out the tail. The Lean allows for a fast yet responsive feel, that you can ride in knee to well over head surf.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Truss",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/63f5b2450664364008dfa90f/1688638499339-F9S0EMKHVJT0TRITODTT/Truss.png",
+          "description": "A twin with the trust of a thruster. The ability to push straight off the bottom and keep your speed while still having the agility of a twin, this board is hard to beat for when the waves are good. There are lots of key features in this board that makes it work, but to highlight some that set it apart… There is a concave deck that runs nose to tail, that locks your feet in similar to a skateboard. The concave deck also allows for a fuller rail which works complimentary to the V running nose to tail. You have a board that is quick going rail to rail but can still roll nicely when you want to bring it around. The Truss will go as hard as you can push it.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "FME",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/63f5b2450664364008dfa90f/1688638516240-V8N29YDLEX2M6A43B8JQ/FME.png",
+          "description": "Think playful yet engaging. Something that paddles in easy, fades in, swoops a big bottom turn, that than sets you up for a beautiful high line. Its all there. The roll in nose gives you that controlled almost longboard feel. The back third transitions into a modern tucked rail with edge allowing to push just as you would on a shortboard allowing you to effortlessly maneuver in small to big surf.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Intoku",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/63f5b2450664364008dfa90f/1688638532869-AXXPQO61LVLU274M1JKU/Intoku.png",
+          "description": "With such balance, the Intoku is a must for every quiver. A forward center point and added foam under your front foot, the Intoku allows the drive and feel of a bigger board. With a smaller rail and rocker, along with a single to spiral V bottom, it gives you the lift and drive that you want off your front foot and the lively response you need off your back foot.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Enzo",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/63f5b2450664364008dfa90f/1688638553356-DKL42OUPFFT8YOPG89PP/Enzo.png",
+          "description": "Such a versatile board. Made for everything knee to triple overhead, if you like… The Enzo starts at 8’0 and can be stretched out to as big as 9’6. Perfect for those who are looking to glide and turn with ease. Made to get in early, and keep your speed. Featuring 50/50 rails, but a slight tucked edge around the fin to give you some extra push through turns.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Naupaka",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/63f5b2450664364008dfa90f/1688638566988-YIF20FHT01YRUZZJ0OWQ/Naupaka.png",
+          "description": "The Naupaka is our most balanced longboard in the line up. A fast, maneuverable, single fin that you can still easily nose ride. The “secret” is in the proper balance of things. The widest point of the outline and the thickest part of the board are behind center, that along with its ever so slightly “flipped” rocker, and not overly complicated bottom, gives you what you want in that everyday longboard.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Motley",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/63f5b2450664364008dfa90f/1688638582613-ESQ4DGYVCNV6M1XRPGCX/Motley.png",
+          "description": "Designed as an all-arounder for less pitchy waves. The Motley will allow you to start turns while still riding higher up on the board, giving you more time to position for a turn or extend a noseride. When on the nose you will feel the board “lock into place” and give you a stable feel for long, controlled, noserides. Features a deep nose concave that stretches past the apex of the rocker. Belly throughout the entire board, with a slight V in the tail. Flip out the back half.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Babe",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/63f5b2450664364008dfa90f/1688638598309-V20YTM7ZNSXUUQKD0WV3/Babe.png",
+          "description": "The Babe is designed to slow things down for a clean, stable ride; and still able to quickly maneuver when needed. You ride the Babe a couple inches longer and about a 1/4” narrower than your normal longboard to keep a straighter rail line that is key to keep speed and control. With its long blended nose cave, it provides a lot of lift to keep you on the nose even through flatter sections. Also features a step deck, that allows the board quicker movement through the water and foam flow that hugs the water when on the nose.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "OZ",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/63f5b2450664364008dfa90f/1688638643304-XU97626ZQPBIQEO3RC2O/OZ.png",
+          "description": "The OZ brings a smooth, effortless feel. Inspired by East Coast Australian board design, it suits well in similar point break type waves you’d find there. Perfect for in the pocket nose rides and big rolled redirects. The OZ features a blended nose concave, lots of belly throughout to slight V out the back. This board would be enjoyed more by intermediate to advance surfers as some key elements, such as a pulled in nose and turned up rails, beginner surfers may find challenging. Though those key features will allow you to whip turns faster, fit in a tighter pocket and maneuver easier on the nose.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Kanaka",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/63f5b2450664364008dfa90f/1688638616982-KHUNW16A7RC10PGE96DH/Kanaka.png",
+          "description": "The noserider. With that as the goal the Kanaka has everything there that will keep you on the nose for as long as possible. Wide nose and tail. Low entry rock with a lot of kick out the tail. Wide nose concave and lots of V. Slow and stable. The Kanaka makes it easy for you to set a line and big those toes up.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Waiks",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/63f5b2450664364008dfa90f/1688638629911-GL96NEQ2K7B34V9WWGW1/Waiks.png",
+          "description": "Allowing you to pick off even the smallest waves this board opens up a new realm of surfing. The Waiks gives you speed and control like you have never experienced. Keeping a constant curve in the outline and rocker, mixed with its bottom contours, allow you to easily maneuver no matter where you are on the wave or the board. Features a slight belly throughout the majority of the board, with spiral V in the tail.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
