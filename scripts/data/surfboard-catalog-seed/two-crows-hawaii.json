@@ -1,0 +1,106 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "two-crows-hawaii",
+      "name": "Two Crows Hawaii",
+      "website_url": "https://www.twocrowssurfboards.com/",
+      "location_label": "Waialua, Hawaii",
+      "founder_name": "Carl Olsen",
+      "lead_shaper_name": "Carl Olsen",
+      "short_description": "Waialua, Hawaii surfboards from Two Crows Hawaii, shaped at the Old Waialua Sugar Mill.",
+      "models": [
+        {
+          "name": "Ladylog",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58e008aecd0f6881b773d801/1505794737061-UC4IPEB9DGKC8MLN5XAX/Ladylog_singlefin.png",
+          "description": "With years of R&D from the women on the team, the Ladylog is designed for what a girl needs. It’s a lighter pintail log with increased maneuverability. With a blended concave in the nose and a flat middle section, it’s nice and stable while noseriding. A slightly hardened edge in the tail and less overall volume creates a board that turns a little easier than your average log. This board is perfect for those cruisy morning or evening sessions where you just want to slide and glide, slipping along to your own rhythm and flow. It comes in two versions, the pintail, for a bit more control and maneuverability from the back of the board, and the squaretail which sacrifices that maneuverability for more hold when noseriding. All this packaged in a board that is not so heavy and wide that it’s intimidating to ride or carry.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Ladylog II",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58e008aecd0f6881b773d801/1505794278206-JKVRPS4TWX3J9854MD6J/Ladylog_II.png",
+          "description": "After a decade of honing our original Ladylog model, we are proud to introduce the Ladylog II. While it may look similar to the original, it has a few enhancements that are geared to the gal that’s looking for a solid go-to board. Modernized rails with a bit more edge in the tail make for a faster board down the line that can handle a wider variety of conditions. We also made a removable 2+1 fin setup standard on this model. The side fins give the board more bite and control when the waves get better, while retaining the option to remove them when the waves get small and you want to keep things simple. The nose has been pulled in a little bit to accommodate a slightly curvier template that is a little more maneuverable than the original Ladylog.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Ladylog MINI",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58e008aecd0f6881b773d801/1505802247988-5CWMOQ79650OVLM2A2FZ/Brooke_egg.png",
+          "description": "The Ladylog MINI is a shorter version of our Ladylog II. We designed it based on rider feedback for people that don’t necessary want a board for noseriding but want the overall paddle, ride and feel of our Ladylog II model. The shorter length makes for a more maneuverable board, both in and out of the water.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "HONO MODEL",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58e008aecd0f6881b773d801/1539729708346-W6PX6VIQU7LPYVKVCYRI/HONO_MODEL_3.png",
+          "description": "We’ve been working with Honolua Blomfield for nearly a decade and over the years we’ve worked the kinks out of this model. We’re proud to release it as our first ever Rider endorsed model and it’s a unique design thats a perfect addition to our lineup. It comes in a variety of colors and always has the trademark stripes in the nose.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Yardstick",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58e008aecd0f6881b773d801/1494394340974-RNE9B4SOCJ1L3RJQP7JP/yardstick.png",
+          "description": "The Yardstick model has all our noseriding features without hitting any extremes. Crafted for the average rider, this noserider won’t be too much to handle. Stability and maneuverability make this a great starting point for riders wanting a single fin noserider.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "California Noserider",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58e008aecd0f6881b773d801/1492809801312-04FYPPJ6HZMAR0LHXR4G/canoserider.png",
+          "description": "The California Noserider is the all around noserider for just about everyone. Perfected through years of team rider feedback and developed for maximum tip time. With a wider nose and a smooth blended concave, this noserider can keep your toes over in waves up to head high. The even rocker helps keep speed through slower sections while working in conjunction with the slight belly in the tail for better maneuverability. The flatter middle increases the stability. The thickness and length can be fine tuned suiting the individual riders height and build.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Midrange",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58e008aecd0f6881b773d801/1505783750510-DE5D3RAA33BKGVC5IQYY/midrange.png",
+          "description": "Designed for those in-between days and those people caught in-between. With Longboards, it’s always a compromise between turning and noseriding. It turns and noserides just as well. It won’t swing around like an HP and won’t noseride like the CANR, but it will turn better than the CANR and noseride better than the HP.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "SPOILER",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58e008aecd0f6881b773d801/1505795997643-78QZT1F8S1Q1HVRFMIG7/lowrider_2.png",
+          "description": "This board was originally designed for noseriding the long point breaks of Malibu and Scorpion Bay. It eventually became a must have pure noserider for medium to small conditions. It features a lowered nose rocker, a flipped tail and an extra deep blended concave. A bit wider than most noseriders you'll find around, this contributes to its stability on the nose. Trading maneuverability for a solid noserider, this board will drastically increase your tip time.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Superwide",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58e008aecd0f6881b773d801/1505783061063-V2QBB9LJE66UHLWWFTDL/superwide_c4708344-b931-4888-ac03-59e73a84a752.jpg",
+          "description": "The Superwide is designed for the big guy in mind. Team rider Waylon Olsen tips the scales at 220lbs and over 6’2” tall, needing a bit more foam than the average surfer. Using the same principles of the CA Noserider, The added width of the Superwide incorporates maximum stability, with a blended concave in the nose, a flat mid section, and belly in the tail. This board is recommended for larger people who want a more dynamic noserider and not just a flotation device.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Medley",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58e008aecd0f6881b773d801/1505783389088-2RHK7O6IEIF6RZTLNEKV/red_blue_medley.png",
+          "description": "This perfect day to day board for people that just want a board that works. We trimmed down the Midrange model for the guy or gal that doesn't care as much about noseriding and just wants something that they can take out for a quick fun surf after work or a hard day at school. The slightly pulled in waist and nose allows for a board that is more comfortable in a wider range of conditions than anything else in our line up. Add a round pin on this model and it'll handle good conditions just fine.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "HP",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58e008aecd0f6881b773d801/1505783838064-PQCJHO3Z1XA01BDV30DK/model_HP.png",
+          "description": "This is a longboard that is meant to turn. Off the lips and cutback are in the HP’s vocabulary. Reduced volume and more narrower dimensions increase maneuverability for more rail to rail action. This board works great in good waves, from chest high and above.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "GMR",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58e008aecd0f6881b773d801/1505783499340-1Y7O5020OD8X5E5BKWCB/GMR.png",
+          "description": "This variation of our popular Midrange model is designed for the Ladies that want something a bit more versatile than just a log. Glassed a little lighter, with less volume than what we build for the boys. We would hardly call this board \"dainty\" though. It will go where it's needed, and still noseride pretty damn well.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Keel Fish",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58e008aecd0f6881b773d801/1505783612624-5HR3AIU3J06P1FJUAC9S/fish.png",
+          "description": "Don’t feel like ripping and slashing? Check out the design of Steve Lis’s orginal fish as copied by Skip Frye and countless others. This is our version. Twin Keel fins and a little extra glass make this board a smooth rider. Great for open faced waves and down the line surfing. Paddles excellent and can be ridden in waves knee to head high. Even bigger if you’re daring.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "MINI SIMMS",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58e008aecd0f6881b773d801/1505795238548-AEKBOJZUPTYRB52TYHTU/Quad_MINI.png",
+          "description": "With an extra-wide tail and nose and a flattened rocker the MINI is an easy to surf sled that has all the speed you need on those mushy 2' days. The twin keel fin arrangement allows for a loose ride while retaining hold on steeper sections. The cut-down size is convenient when it comes to sticking it in the trunk or backseat of your car. Lots of volume helps with easy wave catching on those crap days. Endless enjoyment and a smooth glide, a great trunk board for summer.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "QUADINI",
+          "image_url": "https://images.squarespace-cdn.com/content/v1/58e008aecd0f6881b773d801/1521238920781-XLAEHM20D9BTMGEZ0YW5/image-asset.png",
+          "description": "The QUADINI was designed as an alternative board for surfing in small waves. It has been extensively tested and developed surfing small days on the North Shore. Its short length lets it drop in easily into small bowly waves. Its flat rocker and extra volume allows it to paddle good.",
+          "board_category_slug": "groveler"
+        }
+      ]
+    }
+  ]
+}
