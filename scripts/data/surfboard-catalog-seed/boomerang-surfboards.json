@@ -1,0 +1,46 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "boomerang-surfboards",
+      "name": "Boomerang Boards",
+      "website_url": "https://boomerangsurfboards.com/",
+      "location_label": "San Diego, California",
+      "founder_name": "John Hromin",
+      "lead_shaper_name": "John Hromin",
+      "short_description": "Handmade surfboards by San Diego shaper John Hromin, with over 30 years of shaping experience.",
+      "models": [
+        {
+          "name": "Fuze - recycled",
+          "image_url": "https://cdn.shopify.com/s/files/1/0324/9478/0556/files/fuzerecycle_surfbaord_top_webimg_boomerang.jpg",
+          "description": "Fuze model made from recyclable foam blank cut offs.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Go.2",
+          "image_url": "https://cdn.shopify.com/s/files/1/0324/9478/0556/files/Go2_surfbaord_top_webimg_boomerang.jpg",
+          "description": null,
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Majic Fish Egg",
+          "image_url": "https://cdn.shopify.com/s/files/1/0324/9478/0556/files/majic_Fishegg_Boomerang_half_webimg.jpg",
+          "description": "Four Fin with channel through quad fins, one of the most versatile boards, EPS and epoxy gives it a short board feel with a longer rail line and tons of speed. This board is just too much fun!",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Blob Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0324/9478/0556/files/Blob_fish_webimage.jpg",
+          "description": "Small to medium waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Jelly Fish",
+          "image_url": "https://cdn.shopify.com/s/files/1/0324/9478/0556/files/jelly_fish_webimage.jpg",
+          "description": "Short board for small waves. The Jelly Fish is the icon of the Boomerang brand and considered an entry model for every surfer wanting to start out riding a hand-shaped board. Developed in 1994, the ‘Jelly Fish’ has been developed with the ‘everyday surfer’ in mind. Tackle anything from small performance surfing to expert shredding. Nicely blended outline with a double-wing swallowtail.",
+          "board_category_slug": "fish"
+        }
+      ]
+    }
+  ]
+}
