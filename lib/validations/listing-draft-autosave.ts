@@ -31,6 +31,7 @@ export const listingDraftAutosaveSchema = z.object({
   boardTail: z.string().optional(),
   boardFinSystem: z.string().optional(),
   boardConstruction: z.string().optional(),
+  boardFinsIncluded: z.string().optional(),
   boardBrandId: z.string().optional(),
   boardBrandModelId: z.string().optional(),
   boardModelName: z.string().optional(),

@@ -106,6 +106,8 @@ export interface ListingMobileBuySummaryProps {
   showPurchaseProtection?: boolean
   agreedPriceUsd?: number | null
   compareAtPriceUsd?: number | null
+  /** Board spec table (or similar) between price and fulfillment/scarcity. */
+  afterPrice?: ReactNode
   children?: ReactNode
 }
 
@@ -131,6 +133,7 @@ export function ListingMobileBuySummary({
   showPurchaseProtection = false,
   agreedPriceUsd = null,
   compareAtPriceUsd = null,
+  afterPrice = null,
   children,
 }: ListingMobileBuySummaryProps) {
   const conditionLine = formatHomePeerListingConditionLine(condition)?.replace(" — ", " – ") ?? null
@@ -200,6 +203,7 @@ export function ListingMobileBuySummary({
           Your accepted price: ${agreedPriceUsd.toFixed(2)} at checkout
         </p>
       ) : null}
+      {afterPrice ? <div className="mt-4">{afterPrice}</div> : null}
 
       {shippingRow || showScarcity || recentlyListed || showPurchaseProtection ? (
         <ul className="mt-3 space-y-2.5">

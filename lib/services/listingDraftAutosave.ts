@@ -110,6 +110,7 @@ export function buildSurfboardDraftListingRow(
       boardFins: fd.boardFins,
       boardFinSystem: fd.boardFinSystem,
       boardConstruction: fd.boardConstruction,
+      boardFinsIncluded: fd.boardFinsIncluded,
     }),
     model: fd.boardModelName?.trim() ? fd.boardModelName.trim() : null,
     brand_model_id: fd.boardBrandModelId?.trim() ? fd.boardBrandModelId.trim() : null,

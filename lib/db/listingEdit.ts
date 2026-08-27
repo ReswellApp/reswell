@@ -52,6 +52,9 @@ export type OwnedListingForEditRow = {
   apparel_size?: string | null
   fin_setup?: string | null
   fin_system?: string | null
+  construction?: string | null
+  fins_setup?: string | null
+  fins_included?: boolean | null
   size?: string | null
   brand_id?: string | null
   brand_model_id?: string | null

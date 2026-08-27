@@ -13,6 +13,7 @@ import { Footer } from "@/components/footer"
 import { NavigationPageGate } from "@/components/navigation-page-gate"
 import { RouteProgressBar } from "@/components/route-progress-bar"
 import { AuthModalProvider } from "@/components/auth/auth-modal-context"
+import { AddedToCartProvider } from "@/components/features/cart/added-to-cart-context"
 import { ImpersonationBanner } from "@/components/impersonation-banner"
 import { NewsletterPromoPopup } from "@/components/features/marketing/newsletter-promo-popup"
 import { GiveawayEntryBootstrap } from "@/components/features/giveaways/giveaway-entry-bootstrap"
@@ -110,53 +111,57 @@ export function SiteChromeClient({
   if (hideSiteChrome(pathname)) {
     return (
       <AuthModalProvider>
-        <div className="flex min-h-dvh flex-col">
-          <GiveawayEntryBootstrap isLoggedIn={Boolean(headerAuth.user)} />
-          <GiveawaySignupPopup serverUser={headerAuth.user} />
-          <NewsletterPromoPopup serverUser={headerAuth.user} />
-          <RouteProgressBar />
-          <NavigationPageGate>{children}</NavigationPageGate>
-        </div>
+        <AddedToCartProvider>
+          <div className="flex min-h-dvh flex-col">
+            <GiveawayEntryBootstrap isLoggedIn={Boolean(headerAuth.user)} />
+            <GiveawaySignupPopup serverUser={headerAuth.user} />
+            <NewsletterPromoPopup serverUser={headerAuth.user} />
+            <RouteProgressBar />
+            <NavigationPageGate>{children}</NavigationPageGate>
+          </div>
+        </AddedToCartProvider>
       </AuthModalProvider>
     )
   }
   return (
     <AuthModalProvider>
-      <GiveawayEntryBootstrap isLoggedIn={Boolean(headerAuth.user)} />
-      <GiveawaySignupPopup serverUser={headerAuth.user} />
-      <NewsletterPromoPopup serverUser={headerAuth.user} />
-      <div
-        className={cn(
-          "flex flex-col",
-          lockViewport ? "h-dvh max-h-dvh overflow-hidden" : "min-h-dvh",
-        )}
-      >
-        <RouteProgressBar />
-        <SiteHeaderShell>
-          <Suspense fallback={null}>
-            <ImpersonationBanner
-              initialIsAdmin={headerAuth.bootstrap?.profile?.is_admin === true}
-              initialTarget={initialImpersonation}
-            />
-          </Suspense>
-          <Header serverHeaderAuth={headerAuth} />
-        </SiteHeaderShell>
+      <AddedToCartProvider>
+        <GiveawayEntryBootstrap isLoggedIn={Boolean(headerAuth.user)} />
+        <GiveawaySignupPopup serverUser={headerAuth.user} />
+        <NewsletterPromoPopup serverUser={headerAuth.user} />
         <div
           className={cn(
-            "flex flex-col pt-[var(--site-header-height,4rem)]",
-            flatMobileMessagesInbox ? "flex-none" : "min-h-0 flex-1",
-            lockViewport && "overflow-hidden",
-            hideFooter(pathname)
-              ? "pb-[env(safe-area-inset-bottom)]"
-              : "pb-10 sm:pb-12 md:pb-16",
+            "flex flex-col",
+            lockViewport ? "h-dvh max-h-dvh overflow-hidden" : "min-h-dvh",
           )}
         >
-          {showTopCategoryBar ? <SiteTopCategoryBar /> : null}
-          {showGiveawayMarquee ? <GiveawayMarquee /> : null}
-          <NavigationPageGate>{children}</NavigationPageGate>
+          <RouteProgressBar />
+          <SiteHeaderShell>
+            <Suspense fallback={null}>
+              <ImpersonationBanner
+                initialIsAdmin={headerAuth.bootstrap?.profile?.is_admin === true}
+                initialTarget={initialImpersonation}
+              />
+            </Suspense>
+            <Header serverHeaderAuth={headerAuth} />
+          </SiteHeaderShell>
+          <div
+            className={cn(
+              "flex flex-col pt-[var(--site-header-height,4rem)]",
+              flatMobileMessagesInbox ? "flex-none" : "min-h-0 flex-1",
+              lockViewport && "overflow-hidden",
+              hideFooter(pathname)
+                ? "pb-[env(safe-area-inset-bottom)]"
+                : "pb-10 sm:pb-12 md:pb-16",
+            )}
+          >
+            {showTopCategoryBar ? <SiteTopCategoryBar /> : null}
+            {showGiveawayMarquee ? <GiveawayMarquee /> : null}
+            <NavigationPageGate>{children}</NavigationPageGate>
+          </div>
+          {!hideFooter(pathname) ? <Footer /> : null}
         </div>
-        {!hideFooter(pathname) ? <Footer /> : null}
-      </div>
+      </AddedToCartProvider>
     </AuthModalProvider>
   )
 }

@@ -10,6 +10,7 @@ import { collectMetaClientBrowserSignals } from "@/lib/meta/collect-client-brows
 import { ListingTileBasketSvg } from "@/components/listing-tile-basket-svg"
 import { cn } from "@/lib/utils"
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
+import { useReportAddedToCart } from "@/components/features/cart/added-to-cart-context"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { useClientSearchParams } from "@/hooks/use-client-search-params"
 
@@ -60,6 +61,7 @@ export function ListingTileShopInventoryCartIcon({
   const [loading, setLoading] = useState(false)
   const [added, setAdded] = useState(false)
   const authModal = useOptionalAuthModal()
+  const reportAddedToCart = useReportAddedToCart()
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useClientSearchParams()
@@ -106,7 +108,7 @@ export function ListingTileShopInventoryCartIcon({
         eventId: r.metaEventId,
       })
       setAdded(true)
-      window.dispatchEvent(new CustomEvent("cartUpdated"))
+      reportAddedToCart(r)
       window.setTimeout(() => setAdded(false), 1600)
     } finally {
       setLoading(false)

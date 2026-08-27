@@ -6,6 +6,7 @@ import {
   retrieveSucceededPaymentIntent,
 } from "@/lib/stripe-complete-order"
 import { getPostHogServerClient } from "@/lib/posthog-server"
+import { isSellerSaleTipPaymentIntent } from "@/lib/stripe/seller-sale-tip-intent"
 
 export async function POST(request: NextRequest) {
   if (!process.env.STRIPE_SECRET_KEY?.trim()) {
@@ -24,6 +25,9 @@ export async function POST(request: NextRequest) {
   }
 
   const pi = retrieved.paymentIntent
+  if (isSellerSaleTipPaymentIntent(pi)) {
+    return NextResponse.json({ error: "Invalid payment" }, { status: 400 })
+  }
 
   const supabase = await createClient()
   const {

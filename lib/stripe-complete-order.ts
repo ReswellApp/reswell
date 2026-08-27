@@ -65,6 +65,7 @@ import {
   computeAdminTerminalInPersonCheckoutUsd,
 } from "@/lib/services/adminTerminalSale"
 import { syncAdminTerminalGuestToCrm } from "@/lib/services/crmAdminTerminalGuest"
+import { isSellerSaleTipPaymentIntent } from "@/lib/stripe/seller-sale-tip-intent"
 
 export type StripeCompleteOrderResult =
   | { ok: true; orderId: string; alreadyProcessed?: boolean }
@@ -291,6 +292,14 @@ async function emitPurchaseSuccessfulKlaviyoForOrderId(
 export async function completeMarketplaceOrderFromPaymentIntent(
   pi: Stripe.PaymentIntent,
 ): Promise<StripeCompleteOrderResult> {
+  if (isSellerSaleTipPaymentIntent(pi)) {
+    return {
+      ok: false,
+      error: "Sale tips are not marketplace orders",
+      status: 400,
+    }
+  }
+
   const piId = pi.id
   const isAdminTerminalSale = pi.metadata?.sales_channel === ADMIN_TERMINAL_SALES_CHANNEL
 

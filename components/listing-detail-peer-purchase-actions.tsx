@@ -15,6 +15,7 @@ import { prefetchStripeCheckout } from "@/lib/stripe/prefetch-stripe-checkout"
 import type { PeerListingSection } from "@/lib/peer-listing-sections"
 import { peerListingItemNounForm } from "@/lib/peer-listing-item-nouns"
 import { useOptionalAuthModal } from "@/components/auth/auth-modal-context"
+import { useReportAddedToCart } from "@/components/features/cart/added-to-cart-context"
 import { safeRedirectPath } from "@/lib/auth/safe-redirect"
 import { toast } from "sonner"
 import {
@@ -64,6 +65,7 @@ export function ListingDetailPeerPurchaseActions({
   const [cartAdded, setCartAdded] = useState(false)
   const [offerOpen, setOfferOpen] = useState(false)
   const authModal = useOptionalAuthModal()
+  const reportAddedToCart = useReportAddedToCart()
   const router = useRouter()
   const pathname = usePathname()
   const here = pathname || "/"
@@ -109,7 +111,7 @@ export function ListingDetailPeerPurchaseActions({
         eventId: r.metaEventId,
       })
       setCartAdded(true)
-      window.dispatchEvent(new CustomEvent("cartUpdated"))
+      reportAddedToCart(r)
       window.setTimeout(() => setCartAdded(false), 2000)
     } finally {
       setLoading(false)

@@ -56,8 +56,9 @@ import { ListingKlarnaAsLowAs } from "@/components/features/listings/listing-kla
 import { ListingMobileBuySummary } from "@/components/features/listings/listing-mobile-buy-summary"
 import { ListingDetailPeerPurchaseActionsLoader } from "@/components/listing-detail-peer-purchase-actions-loader"
 import { fetchAcceptedOfferForBuyerListing } from "@/lib/db/offers"
-import { ListingBoardDimensionsBlock } from "@/components/listing-board-dimensions-section"
 import { formatListingDimensionsLine } from "@/lib/listing-dimensions-display"
+import { ListingBoardSpecTable } from "@/components/features/listings/listing-board-spec-table"
+import { listingBoardSpecRows } from "@/lib/utils/listing-board-spec-rows"
 import { effectiveMinimumOfferPct } from "@/lib/utils/offers-minimum-pct"
 import { ListingPriceWithMarkdown } from "@/components/features/listings/listing-price-with-markdown"
 import {
@@ -248,6 +249,19 @@ export async function SurfboardListingDetailPage({
   const dimensionsLine = formatListingDimensionsLine({
     dimensions: (board as { dimensions?: string | null }).dimensions,
   })
+  const boardSpecRows = [
+    ...listingBoardSpecRows({
+      dimensions: (board as { dimensions?: string | null }).dimensions,
+      construction: (board as { construction?: string | null }).construction,
+      fin_system: (board as { fin_system?: string | null }).fin_system,
+      fins_setup: (board as { fins_setup?: string | null }).fins_setup,
+      fins_included: (board as { fins_included?: boolean | null }).fins_included,
+    }),
+    ...(boardSpecsBrandLabel
+      ? [{ label: "Brand", value: boardSpecsBrandLabel, href: boardSpecsBrandHref }]
+      : []),
+    ...(modelForSpecs ? [{ label: "Model", value: modelForSpecs }] : []),
+  ]
 
   /** Public sold/browse price — always original list price, never negotiated offer amounts. */
   const publicListPriceUsd = publicListingListPriceUsd(board.price)
@@ -510,6 +524,11 @@ export async function SurfboardListingDetailPage({
                 showPurchaseProtection={!isSold && !isOwnListing}
                 agreedPriceUsd={buyerAgreedPriceUsd}
                 compareAtPriceUsd={isSold ? null : compareAtPriceUsd}
+                afterPrice={
+                  boardSpecRows.length > 0 ? (
+                    <ListingBoardSpecTable rows={boardSpecRows} />
+                  ) : null
+                }
               >
                 {canPeerPurchase ? (
                   <ListingDetailPeerPurchaseActionsLoader
@@ -584,6 +603,7 @@ export async function SurfboardListingDetailPage({
                     ) : null}
                   </>
                 )}
+                <ListingBoardSpecTable rows={boardSpecRows} className="mt-5" />
                 {!isSold && !isOwnListing && board.status === "active" ? (
                   <p className="mt-4 flex items-start gap-2 text-[15px] text-foreground">
                     <Hourglass className="mt-0.5 h-[15px] w-[15px] shrink-0 text-muted-foreground" aria-hidden />
@@ -716,7 +736,7 @@ export async function SurfboardListingDetailPage({
             <div className="col-span-full min-w-0 max-w-full max-lg:order-3 lg:col-span-1 lg:[grid-area:about] lg:order-none lg:border-t lg:border-neutral-200/90 lg:pt-5 dark:lg:border-neutral-700/70 xl:pt-6">
               <Accordion
                 type="multiple"
-                defaultValue={["about", "specs", "shipping"]}
+                defaultValue={["about", "shipping"]}
                 className="w-full"
               >
                 <AccordionItem value="about" className="border-border/55">
@@ -727,24 +747,6 @@ export async function SurfboardListingDetailPage({
                     <div className="text-[16px] leading-[1.65] text-foreground">
                       <TranslateableDescription text={board.description || ""} className="text-foreground" />
                     </div>
-                  </AccordionContent>
-                </AccordionItem>
-
-                <AccordionItem value="specs" className="border-border/55">
-                  <AccordionTrigger className="py-4 text-[16px] font-medium text-foreground hover:no-underline">
-                    Board specs
-                  </AccordionTrigger>
-                  <AccordionContent className="space-y-4 pb-6 pt-0">
-                    <ListingBoardDimensionsBlock
-                      listingId={board.id}
-                      className="!rounded-none !border-0 !bg-transparent !px-0 !py-0 shadow-none dark:!bg-transparent"
-                      dimensions={{
-                        dimensions: (board as { dimensions?: string | null }).dimensions,
-                      }}
-                      brandLabel={boardSpecsBrandLabel}
-                      brandHref={boardSpecsBrandHref}
-                      modelLabel={modelForSpecs || null}
-                    />
                   </AccordionContent>
                 </AccordionItem>
 

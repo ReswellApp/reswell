@@ -11,11 +11,17 @@ import { retrieveSucceededPaymentIntent } from "@/lib/stripe-complete-order"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { getStripe, getStripeCheckoutKeyConfigError } from "@/lib/stripe-server"
 import {
+  SELLER_SALE_TIP_PI_PURPOSE,
+  buildSellerSaleTipPaymentIntentCreateParams,
+  isSellerSaleTipPaymentIntent,
+  sellerSaleTipPaymentIntentRoutesToSeller,
+} from "@/lib/stripe/seller-sale-tip-intent"
+import {
   SALE_TIP_MAX_CENTS,
   SALE_TIP_MIN_CENTS,
 } from "@/lib/validations/mark-listing-sold"
 
-export const SELLER_SALE_TIP_PI_PURPOSE = "seller_sale_tip"
+export { SELLER_SALE_TIP_PI_PURPOSE, isSellerSaleTipPaymentIntent }
 
 function revalidateAfterSellerSaleTip(): void {
   revalidateMarketplaceSoldFeedCatalog()
@@ -98,19 +104,15 @@ export async function createSellerSaleTipPaymentIntent(
 
   try {
     const stripe = getStripe()
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: params.amountCents,
-      currency: "usd",
-      automatic_payment_methods: { enabled: true, allow_redirects: "never" },
-      receipt_email: params.sellerEmail?.trim() || undefined,
-      metadata: {
-        purpose: SELLER_SALE_TIP_PI_PURPOSE,
-        listing_id: params.listingId,
-        seller_id: params.sellerUserId,
-        amount_cents: String(params.amountCents),
-      },
-      description: `Reswell tip — ${listing.title}`.slice(0, 1000),
-    })
+    const paymentIntent = await stripe.paymentIntents.create(
+      buildSellerSaleTipPaymentIntentCreateParams({
+        amountCents: params.amountCents,
+        listingId: params.listingId,
+        sellerUserId: params.sellerUserId,
+        listingTitle: listing.title,
+        sellerEmail: params.sellerEmail,
+      }),
+    )
 
     if (!paymentIntent.client_secret) {
       return { ok: false, status: 500, error: "Could not start tip payment" }
@@ -138,10 +140,6 @@ export async function createSellerSaleTipPaymentIntent(
   }
 }
 
-export function isSellerSaleTipPaymentIntent(pi: Stripe.PaymentIntent): boolean {
-  return pi.metadata?.purpose === SELLER_SALE_TIP_PI_PURPOSE
-}
-
 export async function completeSellerSaleTipFromPaymentIntent(params: {
   supabase: SupabaseClient
   paymentIntent: Stripe.PaymentIntent
@@ -149,6 +147,12 @@ export async function completeSellerSaleTipFromPaymentIntent(params: {
   const { supabase, paymentIntent: pi } = params
   if (!isSellerSaleTipPaymentIntent(pi)) {
     return { ok: false, status: 400, error: "Not a sale tip payment" }
+  }
+  if (sellerSaleTipPaymentIntentRoutesToSeller(pi)) {
+    console.error("[completeSellerSaleTipFromPaymentIntent] refused seller-routed tip", {
+      pi: pi.id,
+    })
+    return { ok: false, status: 400, error: "Tip cannot be sent to seller earnings" }
   }
   if (pi.status !== "succeeded") {
     return { ok: false, status: 400, error: "Payment has not succeeded" }

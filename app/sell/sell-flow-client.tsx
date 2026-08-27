@@ -173,6 +173,7 @@ import {
 } from "@/lib/board-measurements"
 import {
   boardBrowseFacetFieldsForDb,
+  finsIncludedFormValue,
   finsSetupFieldForDb,
 } from "@/lib/listing-facet-write"
 import { singleFinSetupSlugForForm } from "@/lib/listing-fin-setup-tags"
@@ -198,6 +199,7 @@ import { SellBoardStockSizePicker } from "@/components/features/sell/sell-board-
 import { SellRequiredMark } from "@/components/features/sell/sell-required-mark"
 import type { SurfboardStockSizeOption } from "@/lib/types/board-stock-sizes"
 import {
+  SellBoardFacetFields,
   SellFacetChipGroup,
 } from "@/components/features/sell/sell-board-facet-fields"
 import { SellPriceFields } from "@/components/features/sell/sell-price-fields"
@@ -521,6 +523,10 @@ function sellFormStateFromIdbSnapshot(
       typeof snapshot.boardConstruction === "string"
         ? snapshot.boardConstruction
         : base.boardConstruction,
+    boardFinsIncluded:
+      typeof snapshot.boardFinsIncluded === "string"
+        ? snapshot.boardFinsIncluded
+        : base.boardFinsIncluded,
   }
 }
 
@@ -636,6 +642,7 @@ function createInitialSellFormData() {
     boardTail: "",
     boardFinSystem: "",
     boardConstruction: "",
+    boardFinsIncluded: "",
     boardBrandId: "",
     boardBrandModelId: "",
     boardIndexBrandSlug: "",
@@ -1185,6 +1192,7 @@ function SellPageContentInner({
       boardTail: formData.boardTail,
       boardFinSystem: formData.boardFinSystem,
       boardConstruction: formData.boardConstruction,
+      boardFinsIncluded: formData.boardFinsIncluded,
       boardBrandId: formData.boardBrandId,
       boardBrandModelId: formData.boardBrandModelId,
       boardModelName: formData.boardModelName,
@@ -1408,6 +1416,9 @@ function SellPageContentInner({
         boardTail: (listing as { tail_shape?: string | null }).tail_shape ?? "",
         boardFinSystem: (listing as { fin_system?: string | null }).fin_system ?? "",
         boardConstruction: (listing as { construction?: string | null }).construction ?? "",
+        boardFinsIncluded: finsIncludedFormValue(
+          (listing as { fins_included?: boolean | null }).fins_included,
+        ),
         boardBrandId: (listing as { brand_id?: string | null }).brand_id?.trim() ?? "",
         boardBrandModelId: loadedBrandModelId,
         boardIndexBrandSlug: loadedCatalogBrandSlug || brandSlugFromCatalogModel,
@@ -4373,6 +4384,25 @@ function SellPageContentInner({
                           disabled={editLoading}
                         />
                       ) : null}
+                      <SellBoardFacetFields
+                        boardFins={formData.boardFins}
+                        boardFinSystem={formData.boardFinSystem}
+                        boardConstruction={formData.boardConstruction}
+                        boardFinsIncluded={formData.boardFinsIncluded}
+                        onBoardFinsChange={(boardFins) =>
+                          setFormData((fd) => ({ ...fd, boardFins }))
+                        }
+                        onBoardFinSystemChange={(boardFinSystem) =>
+                          setFormData((fd) => ({ ...fd, boardFinSystem }))
+                        }
+                        onBoardConstructionChange={(boardConstruction) =>
+                          setFormData((fd) => ({ ...fd, boardConstruction }))
+                        }
+                        onBoardFinsIncludedChange={(boardFinsIncluded) =>
+                          setFormData((fd) => ({ ...fd, boardFinsIncluded }))
+                        }
+                        disabled={editLoading}
+                      />
                     </div>
 
                     <Separator className="bg-border" />
