@@ -1,0 +1,70 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "sequoia-surfboards",
+      "name": "Sequoia Surfboards",
+      "website_url": "https://www.sequoiasurfboards.com/",
+      "location_label": "Cesena, Italy",
+      "founder_name": "Marcello Zani",
+      "lead_shaper_name": "Marcello Zani",
+      "short_description": "High-performance surfboards from founder and main shaper Marcello Zani, developed with computational fluid dynamics. Official about copy says Sequoia was born from functionality and beauty.",
+      "models": [
+        {
+          "name": "10y",
+          "image_url": "https://www.sequoiasurfboards.com/wp-content/uploads/2024/06/DSC_6304-scaled.jpg",
+          "description": "Official copy calls this a blend of retro style and modern innovation, all about speed, with a flat rocker and a bit of lift in the nose. Straight parallel rails, a tight tail-block, old-school foil, and modern concave. Twin-fin setup. Unlike the Toro model.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Carlos EVO",
+          "image_url": "https://www.sequoiasurfboards.com/wp-content/uploads/2023/10/DSC_2252.jpg",
+          "description": "Official copy says this is the new version of Sequoia’s high-performance model, created to represent modern performance surfing by mixing drive, speed, and tight turns. Developed with former CT surfer Marcelo Nunes by tuning tail concave and balancing it across the bottom for more reactivity.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "DUE",
+          "image_url": "https://www.sequoiasurfboards.com/wp-content/uploads/2023/10/foto-principale-prodotto-13-350x525.png",
+          "description": "Official copy says this is version two (“due” in Italian) of an old Sequoia shape, an all-round model with retro lines from a stretched shortboard previously called the JB. Mixes a versatile easy outline with modern double concave, tail vee, and a classic belly nose. Thruster setup.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Toro Superleggera",
+          "image_url": "https://www.sequoiasurfboards.com/wp-content/uploads/2022/08/DSC01906.png",
+          "description": "Official copy calls this the natural evolution of Sequoia’s top performance all-round shape: a full-carbon vacuum-bagged construction that lets Toro go even faster. Dedicated official Superleggera product page.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "CFD Fish",
+          "image_url": "https://www.sequoiasurfboards.com/wp-content/uploads/2021/04/SEQUOIA_TAVOLE_ECOMM153161-e1724523469417.jpg",
+          "description": "Official copy says the CFD Fish pushes performance while keeping traditional San Diego fish lines, with a stretched rail line for a more forgiving takeoff and a double-bat reverse fish tail for lift, release, and acceleration in weak conditions. Quad setup. User-friendly in everyday waves.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Enzo X",
+          "image_url": "https://www.sequoiasurfboards.com/wp-content/uploads/2021/04/SEQUOIA_TAVOLE_ECOMM153117-e1724523398584.jpg",
+          "description": "Official copy calls Enzo Sequoia’s hybrid for medium and small waves, developed with RED Fluid Dynamics. Generous volume in a short compact template, double bat tail, and CFD-optimized single concave. Official page says it handles sub-chest to head-high conditions with speed and maneuverability without losing paddle and stability.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Enzo Superleggera",
+          "image_url": "https://www.sequoiasurfboards.com/wp-content/uploads/2020/03/Enzo-SL.png",
+          "description": "Official copy calls this the natural evolution of Sequoia’s top performance hybrid: a full-carbon vacuum-bagged construction that lets Enzo go even faster. Dedicated official Superleggera product page. Five-fin setup.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Toro",
+          "image_url": "https://www.sequoiasurfboards.com/wp-content/uploads/2019/06/Toro_white.png",
+          "description": "Official copy says Toro boosts maneuverability of Sequoia’s older all-around model without losing paddle power or stability, keeping a wide nose and adding a higher wing. Easy paddle, stable takeoff, and the board explodes once on the tail. Single-to-double concave. Thruster.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "SJ",
+          "image_url": "https://www.sequoiasurfboards.com/wp-content/uploads/2019/06/SJ_1.png",
+          "description": "Official copy says the nose comes from a classic California noserider template — maximum width with a lot of foam for lift and stability — with two slight wings before the fins narrowing the tail. Boxy rails, flat rocker, thruster or 2+1. Official page calls it a mix between a classic longboard and a shortboard.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
