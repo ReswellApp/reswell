@@ -1,0 +1,83 @@
+{
+  "generated_for": "Geraghty Shapes official named standup catalog",
+  "source": "https://www.geraghtyshapes.com",
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "geraghty-shapes",
+      "name": "Geraghty Shapes",
+      "website_url": "https://www.geraghtyshapes.com",
+      "location_label": "Buderim, Sunshine Coast, Queensland",
+      "founder_name": "Dean Geraghty",
+      "lead_shaper_name": "Dean Geraghty",
+      "short_description": "Custom shortboards, hybrids, mid-lengths, and logs from Dean Geraghty on the Sunshine Coast — named models refined across 35 years of shaping.",
+      "models": [
+        {
+          "name": "ANON",
+          "image_url": "https://assets.cdn.filesafe.space/XsMTdNmvtHj2xyumgbrG/media/673c31e9d88b41c24af4f8ff.png",
+          "description": "A design inspired through a collaborative discussion with an ex WCT surfer who wished to remain “Anonymous”, resulting in the new Hi-Performance “ANON” design. This design has a higher bump-wing in its outline combined with generous tail kick to provide a super responsive top to bottom pocket-rocket board design with heaps of drive and speed.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "EP-Pro",
+          "image_url": "https://assets.cdn.filesafe.space/XsMTdNmvtHj2xyumgbrG/media/673c31e9f980e107aa82946d.png",
+          "description": "The original EP-PRO designed in collaboration with long-standing travelling team-rider Etienne Potgieter. This design has had 2 decades of refinements applied to it to provide a well-tested hi-performance board for the majority of surf conditions.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "EP-Pro 2.0",
+          "image_url": "https://assets.cdn.filesafe.space/XsMTdNmvtHj2xyumgbrG/media/673c31e915ee06ccabbfee1f.png",
+          "description": "This particular design is an evolution of the EP-PRO 1.0 for more advanced hi-performance surfing conditions. The increased nose & tail rocker and slightly deeper concaves provide the speed, power & flow in more “Bowly” conditions. Comes standard as a thruster set-up but can be upgraded to a D5-fin FCS 2 option. This design can be scaled nicely into a round-pin step-up for bigger waves too.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "Flow-Rider",
+          "image_url": "https://assets.cdn.filesafe.space/XsMTdNmvtHj2xyumgbrG/media/673c31e917d9a9dfd0443654.png",
+          "description": "Initially inspired as an evolution of the WINGFISH to handle hollower and bigger waves whilst I was away on a weekend trip away down to the Gold Coast and the infamous Snapper Rocks.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Feel Good",
+          "image_url": "https://assets.cdn.filesafe.space/XsMTdNmvtHj2xyumgbrG/media/673c31e915ee06059ebfee1e.png",
+          "description": "Whether you are wanting to “cruize” or carve the line-up the feel good Malibu range will allow you to do just that irrespective of your ability. This design won’t disappoint with a standard single fin box. Optional 2+1 set-ups available at an extra cost.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Ignite",
+          "description": "The Ignite will set your surf on fire! Designed as the ultimate mid-length for versatility, this board has just the right blend of volume and outline for easy paddling and smooth take-offs. With a single-to-double concave and foiled rails. The nose rocker gives you confidence on steeper drops, while the rounded pin tail brings flow and control to your turns. Can be configured as a thruster setup or Twin 2 + 1 set-up.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Nighthawk",
+          "image_url": "https://assets.cdn.filesafe.space/XsMTdNmvtHj2xyumgbrG/media/674038837776d559038ea91a.png",
+          "description": "Another hybrid evolution from the all-mighty Wingfish design into a reactive hi-performance design incorporating a diamond bevelled rail and flatter top-deck providing experienced surfers to catch waves easily on a shorter board and yet still being able to surf tight in the pocket. Great reactivity as a quad and holds its own well as a thruster FCS 2 set-up too.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Wingfish",
+          "image_url": "https://assets.cdn.filesafe.space/XsMTdNmvtHj2xyumgbrG/media/67403d991cefe234187d881c.png",
+          "description": "One of my most versatile all-round board designs I have created. Designed to be surfed 2-3” shorter than your regular board allowing you to paddle and fit very well into smaller wave faces but the foiled tail-area and overall outline provide incredible hold and “drive” to compliment your natural shortboard surfing style.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Summer Bullet",
+          "image_url": "https://assets.cdn.filesafe.space/XsMTdNmvtHj2xyumgbrG/media/69168944948ba52a319100af.png",
+          "description": "The Summer Bullet is Dean’s newest warm-water weapon — a fast, playful and highly responsive design built for surfers who want maximum speed and freedom in smaller, everyday conditions. Evolving from GS’s high-performance hybrids, the Summer Bullet introduces the brand-new Diamond Bat-tail, adding extra release off the top while keeping plenty of hold through fast carves. Combined with a fuller outline and a lower, more forgiving rocker, the board paddles incredibly well and accelerates instantly, even in weaker pockets. The board comes with a 5-fin setup, allowing surfers to switch between a quad for pure speed and looseness, or a thruster for tighter, more vertical surfing. Built to be surfed 3-4\" shorter than your regular shortboard.",
+          "board_category_slug": "groveler"
+        },
+        {
+          "name": "Utopia 2+1",
+          "image_url": "https://assets.cdn.filesafe.space/XsMTdNmvtHj2xyumgbrG/media/673c31e9d88b41e923f4f8fd.png",
+          "description": "It’s been 40 years since I last surfed a twin fin design – I decided it was time to create my first specific twin fin design. My first attempt was almost spot on – the final Utopia 2+1 is exactly that “Utopia” as it combines a dynamic board design with progressive surfing. The foiled tail provides great hold and drive whilst the width upfront gets me into waves beautifully. Small days I use the more upright twin templates + mini-nubster if I am needing the little extra hold or for larger more drawn out waves, I use the semi-keel fin template both in Futures fin boxes.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Joy",
+          "image_url": "https://assets.cdn.filesafe.space/XsMTdNmvtHj2xyumgbrG/media/6a44b73318d22f08d74752ee.png",
+          "description": "Well, the name says it all - this allround JOY design is Dean’s newest mid-length concept — an easy paddling, playful and highly responsive design built for surfers who want a beno-fide lazy glider for everyday conditions. Evolving from GS’s high-performance hybrids, JOY introduces the brand-new Dedicated 2 + 1 fin set-up, allowing a playful twin set-up on smaller days to a + 1 mini-stabilizer for those bigger days. A balanced outline with a low-entry rocker, the board paddles incredibly well and accelerates instantly. Built to be surfed 4\"+ longer than your regular shortboard, providing extra volume.",
+          "board_category_slug": "hybrid"
+        }
+      ]
+    }
+  ]
+}
