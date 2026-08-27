@@ -1,0 +1,64 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "malua-wood-waves",
+      "name": "Malua Wood & Waves",
+      "website_url": "https://www.malua.pt/",
+      "location_label": "Ericeira, Portugal",
+      "founder_name": "Leandro",
+      "lead_shaper_name": "Leandro",
+      "short_description": "Hollow wooden surfboards handcrafted in Ericeira, Portugal. Official homepage says Malua shapes surfboards to last a lifetime, using the natural grain of the wood.",
+      "models": [
+        {
+          "name": "Twin 70's",
+          "image_url": "https://static.wixstatic.com/media/4c0511_83c357ee639544f9854a2b616844d742~mv2.png",
+          "description": "Official copy says this model is inspired by the very first twin fin models from the early 70's and carries a classic essence. The dedicated model page says it is a versatile design meant to provide speed and drive in hollow and fast waves, and that it also performs well in small and groove waves. Official page calls it an excellent choice for surfers seeking style and fun.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Modern Fish",
+          "image_url": "https://static.wixstatic.com/media/4c0511_5a9e5de0116e4d02b6d6800b2fc85be9~mv2.png",
+          "description": "Official copy says past and future meet in one board: the Modern Fish combines timeless elements with modern innovations for a fun ride in any wave condition. The dedicated model page says these fish outlines use a narrower nose and an iconic winged swallow tail, and that the classic design and Vee concave deliver speed, drive, and control.",
+          "board_category_slug": "fish"
+        },
+        {
+          "name": "Wave Taker",
+          "image_url": "https://static.wixstatic.com/media/4c0511_ad5f607d57f449a9a7e543b018a00df7~mv2.png",
+          "description": "Official copy says Wave Taker is the performance model that epitomizes a one-board quiver: a highly versatile all-rounder shortboard designed to surf a huge range of waves. The dedicated model page says the minimalist short-round outline and generous surface area help it flow on smaller waves, while the narrow rounded tail and reduced nose area add speed and maneuverability in bigger, hollow waves.",
+          "board_category_slug": "shortboard"
+        },
+        {
+          "name": "The Single",
+          "image_url": "https://static.wixstatic.com/media/4c0511_0a758c567d184ce58dcaf1f9e6f1ed53~mv2.png",
+          "description": "Official copy says this short single-fin uses clean lines and reflects original 70's design. The dedicated model page says the outline has a fuller template and a winged round pin tail for versatility, with easy paddle, maneuverability, and control on both small, soft waves and large, powerful ones.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "Mid",
+          "image_url": "https://static.wixstatic.com/media/4c0511_50cbe2cc66ed4f9b870d825a7c38665d~mv2.png",
+          "description": "Official copy says this mid-length is a fusion of modern and classic designs. The dedicated model page says the all-arounder glides over flatter, smaller waves and excels from shoulder-high to nearly double overhead. Official page lists a clean outline, low entry rocker, double barrel concave, and refined rails for speed, pocket surfing, and carving, and says it is fun from beginners to advanced riders.",
+          "board_category_slug": "hybrid"
+        },
+        {
+          "name": "The Bolt",
+          "image_url": "https://static.wixstatic.com/media/4c0511_4467295ef8af46e3b3c10349d799a193~mv2.png",
+          "description": "Official copy says The Bolt is inspired by Gerry Lopez's most famous surfboard and balances performance and style. The dedicated model page says its smooth curved outline and slight rocker provide maneuverability for gliding across waves with precision and control, and that it is ideal for charging bigger days.",
+          "board_category_slug": "step-up-gun"
+        },
+        {
+          "name": "Log Performer",
+          "image_url": "https://static.wixstatic.com/media/4c0511_69e02eb19dc94b55a9536dfc6efbefe3~mv2.png",
+          "description": "Official copy says the name speaks for itself: this is Malua's performance longboard. The dedicated model page says it has a smooth entry concave that transitions into a double to make maneuvers and turns easier, plus a continuous outline, low rails, and a tight pin tail for a fast longboard with drive and control. Official page says it is ideal on classic, average, and big waves.",
+          "board_category_slug": "longboard"
+        },
+        {
+          "name": "Noserider",
+          "image_url": "https://static.wixstatic.com/media/4c0511_742f3ac35e4a4e0e9ce65808b90b618c~mv2.png",
+          "description": "Official copy says this nose-rider is all about style and is fully inspired by 60's longboards. The dedicated model page says the generous length and classic outline with a low wide point provide stability and smooth gliding, making it ideal for riding the nose for extended periods.",
+          "board_category_slug": "longboard"
+        }
+      ]
+    }
+  ]
+}
