@@ -1,0 +1,40 @@
+{
+  "product_category_slug": "surfboards",
+  "brands": [
+    {
+      "slug": "celtic-connection-surfboards",
+      "name": "Celtic Connection Surfboards",
+      "website_url": "https://celticconnectionsurfboards.co.uk/",
+      "location_label": "Bude, Cornwall, United Kingdom",
+      "founder_name": "Carl Welton",
+      "lead_shaper_name": "Carl Welton",
+      "short_description": "Hand-shaped surfboards from a workshop in Bude, Cornwall since 1995. Founded and shaped by Carl Welton.",
+      "models": [
+        {
+          "name": "SK",
+          "image_url": "https://celticconnectionsurfboards.co.uk/wp-content/uploads/2020/07/SK.jpg",
+          "board_category_slug": "shortboard",
+          "description": "The SK's a great all round performance shortboard for a wide range of waves. We've been working with team rider Sketch Michael Tines for the last couple of years on this board and it's had a huge amount of R&D put into it. Made using US EPS blanks with HD stringers and epoxy glass its able to keep the weight down and the volume up. This gives you more paddle power for a higher wave count. The board comes with carbon reinforced deck strips for extra strength. It's our go to recommended performance board for 2019 / 2020."
+        },
+        {
+          "name": "Refresher",
+          "image_url": "https://celticconnectionsurfboards.co.uk/wp-content/uploads/2020/07/Refresher.jpg",
+          "board_category_slug": "shortboard",
+          "description": "A popular shape and with good reason. The Refresher is a forgiving performance surfboard that has a wider plane shape thats pulled into a rounded pin. This makes the board easy to paddle and catch waves easily whilst feeling controlled in suckier hollow sections. Think about how when the surf can break quite flat out back and then pitch up on the inside. This can be a lot of beach breaks and reef passes. So this board will glide more readily into the waves and feel planted when you hit those steaper hollow sections. This would be a a good travel board covering a wide range of conditions."
+        },
+        {
+          "name": "Zoom",
+          "image_url": "https://celticconnectionsurfboards.co.uk/wp-content/uploads/2020/07/Wahoo.jpg",
+          "board_category_slug": "groveler",
+          "description": "The Zoom's a fun shape that'll catch waves super easy. The tail shape design will enable the board to feel solid and controlled in steeper bigger set waves. So in a way its an all rounder. An all rounder that's geared more towards the smaller waves. We suggest having this board made between 5'9 and 6'4. It has a wide profile under the chest with plenty of volume to make its an easy paddler and excellent wave catcher. Again with a pulled in pin tail shape it will feel controlled in the bigger waves."
+        },
+        {
+          "name": "Satsuma",
+          "image_url": "https://celticconnectionsurfboards.co.uk/wp-content/uploads/2020/07/Satsuma.jpg",
+          "board_category_slug": "hybrid",
+          "description": "Designed and shaped as a fun mid length sized board. The Satsuma can be ridden as a gliding single or a 2+1 for a little more drive out of your turns. It sits in the model range above the Zoom and will suit beginners to seasoned sliders. The board features a relaxed rocker for easy paddling and effortless wave catching, it's good for waves from knee to head high."
+        }
+      ]
+    }
+  ]
+}
